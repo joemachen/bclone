@@ -65,6 +65,12 @@ public partial class VillageMap : Control
     private static readonly Color ValleyEdge = new("#485453");
     private static readonly Color GridLine = new("#343d3d");
     internal static readonly Color HomeColour = new("#b98a52");
+
+    /// <summary>A household's fence — the outline of its plot's painted ground (D386).</summary>
+    private static readonly Color FenceEdge = new("#7a5a3a", 0.85f);
+
+    /// <summary>The door: a darker notch on the house's front edge, the lane side (D386).</summary>
+    private static readonly Color DoorColour = new("#4a3421");
     private static readonly Color GranaryColour = new("#d8c56a");
     private static readonly Color WarehouseColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
@@ -3220,6 +3226,13 @@ public partial class VillageMap : Control
         var byOwner = new Dictionary<int, HashSet<Vector2I>>();
         var owners = new List<int>();
 
+        // ⭐ THE FENCE IS THE PLOT'S OWNER ∩ THE PAINT (D386, `organic-housing.md §3.6`): a
+        // household's plot is a rectangle of tiles, and the fence follows the painted quarters
+        // inside it, so a yard the brush clipped is fenced along the brush's rim. Per household,
+        // as work ground is per building; collected in a list, never drawn from the dictionary.
+        var plotsByOwner = new Dictionary<int, HashSet<Vector2I>>();
+        var plotOwners = new List<int>();
+
         SimConfig config = _world!.Config;
 
         // ⛔⛔ A SITE'S OWN CLEARING MARK IS NOT DRAWN AS A MARK (D350). D100 paints the tile
@@ -3264,6 +3277,19 @@ public partial class VillageMap : Control
                 if (zones.ResidentialSub[index])
                 {
                     residential.Add(at);
+
+                    int plot = zones.PlotOwner(new SubTile(x, y).Tile);
+                    if (plot != 0)
+                    {
+                        if (!plotsByOwner.TryGetValue(plot, out HashSet<Vector2I>? fenced))
+                        {
+                            fenced = new HashSet<Vector2I>();
+                            plotsByOwner[plot] = fenced;
+                            plotOwners.Add(plot);
+                        }
+
+                        fenced.Add(at);
+                    }
                 }
 
                 if (zones.HarvestSub[index] && !underASite.Contains(new SubTile(x, y).Tile))
@@ -3292,6 +3318,16 @@ public partial class VillageMap : Control
         }
 
         Keep(residential, Layer.Residential, ResidentialEdge, owner: 0, waiting: false);
+
+        // The fences: a line round each plot's painted ground, no wash of its own — the wash is
+        // the neighbourhood's. Drawn with the residential layer, hidden with it.
+        for (int i = 0; i < plotOwners.Count; i++)
+        {
+            foreach (Vector2[] loop in ZoneOutline.Trace(plotsByOwner[plotOwners[i]], SubTile.PerTile))
+            {
+                _zoneOutlines.Add((Layer.Residential, FenceEdge, loop));
+            }
+        }
 
         // ⭐ THE HARVEST FILL IS TWO FILLS UNDER ONE BORDER (D345). A marked tile with nothing
         // left to take draws fainter (D343) — and a fill that follows the curve cannot change
@@ -5253,12 +5289,21 @@ public partial class VillageMap : Control
                 continue;
             }
 
+            // ⭐ TWO TILES WIDE, TURNED TO FACE ITS LANE, WITH A DOOR ON THE FRONT (D386). The
+            // footprint quad every other building is drawn as, at the house's own facing; the door
+            // is a darker notch on the local north edge, which the facing turns toward the lane
+            // (`PlotShape.LaneDirection` and this rotation agree — guarded).
             Vector2 centre = ToScreen(site);
-            float size = Mathf.Max(6f, _pixelsPerTile * 0.62f);
-            var rect = new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size);
+            float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
+            float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
+            ushort facing = household.HomeFacing.Raw;
+            Color paint = occupied ? HomeColour : HomeColour with { A = 0.25f };
 
             // A house whose family has died still stands, and reads as abandoned.
-            DrawRect(rect, occupied ? HomeColour : HomeColour with { A = 0.25f });
+            DrawColoredPolygon(FootprintQuad(centre, wide * 0.8f, deep * 0.8f, facing), paint);
+            DrawColoredPolygon(
+                FootprintQuad(centre, 0.28f, deep * 0.8f, facing, from: 0f, to: 0.22f),
+                occupied ? DoorColour : DoorColour with { A = 0.25f });
         }
     }
 
@@ -5623,7 +5668,9 @@ public partial class VillageMap : Control
 
         if (world.HouseholdAt(tile) is Household household && household.HomePosition is Point home)
         {
-            return BoxOf(ToScreen(home), 0.62f, 0.62f, 0);
+            float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
+            float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
+            return BoxOf(ToScreen(home), wide * 0.8f, deep * 0.8f, household.HomeFacing.Raw);
         }
 
         if (world.LibraryCovering(tile) is Library library)

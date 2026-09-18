@@ -603,6 +603,18 @@ public sealed class FishingTests
         loop.Step(config.TicksPerSeason);
         Assert.True(world.Laborers >= 1, "no laborer is spare, so the guard cannot see who would run to the hut");
 
+        // ⚠️ AND SOMEWHERE TO PUT IT (D370's rule, made a premise here since D386): a buffer is
+        // worth clearing only while a storage building has room, and the fixture's granary stands
+        // full by its second season now that the founders' walk is priced into the yield. Half
+        // the shelves are cleared so the question is about who carries, not whether anyone can.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.Kind == StoreKind.Granary)
+            {
+                store.Store.TryTake(Goods.Produce, store.Store[Goods.Produce] / 2);
+            }
+        }
+
         hut.Store.Receive(Goods.Fish, hut.Store.Capacity);
         int filled = hut.Store[Goods.Fish];
 

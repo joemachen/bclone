@@ -107,6 +107,28 @@ internal static class FarmFixtures
     /// leaves the wood standing (<see cref="SimWorld.Plough"/>), so painting over trees here
     /// would give a tile count that does not match the field the player can see.
     /// </remarks>
+    /// <summary>
+    /// One hand kept on the farm come what may (D384's premise, shared since D386): the farm
+    /// guards measure what a farm does with a hand on it, and the day the founders' houses moved
+    /// into plots the fixture's allocator seated its farmers a season differently — a probe
+    /// failed on a hand that left between spring and autumn, the farm learned five a hand instead
+    /// of six, and four guards about the cap read the allocator instead. The seat is the
+    /// measurement's premise, not its subject.
+    /// </summary>
+    internal static Villager PinAFarmhand(SimWorld world, Workplace farm)
+    {
+        foreach (Villager candidate in world.Villagers)
+        {
+            if (candidate.Alive && candidate.CanWork)
+            {
+                world.SetPinnedTrade(candidate, JobKind.Farmer);
+                return candidate;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"Nobody in the village can work {farm.Name}.");
+    }
+
     internal static int GiveItGround(SimWorld world, Workplace farm, int reach)
     {
         int given = 0;

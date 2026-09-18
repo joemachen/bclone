@@ -146,6 +146,8 @@ Standard DoD (`METHODOLOGY.md §3`), plus:
 
 ### 11.1 Does the player place homes? ✅ **Resolved (Joe, 2026-07-28): the player paints a ZONE, and the village builds inside it.**
 
+> ✅ **And since D386 (`organic-housing.md`) what the village builds inside it is a house in a plot:** three tiles by two, the house two wide on the front row facing a lane the plot leaves free, the yard behind, the fence the plot's painted ground. `ChooseSite` chooses the plot — every whole-painted tile at four facings, scored in tiles walked from the door plus *apart* and *clipped* — and the card says why: *"10 tiles to work and 3 to the granary, facing the lane to the south, beside the Ashfords."*
+
 The *Foundation* model, and it is better than either option I offered. **The player paints a residential area with a brush; villagers build individual homes inside it, positioned and oriented by the sim, and only when a home is actually needed.** No need, no houses. When the village needs more room than the painted area allows, **the player is prompted to paint another one.**
 
 Joe extends the same brush to **which forest to cut** and **where to plant trees**. See §12 — that is a bigger idea than a control scheme and it deserves its own section.

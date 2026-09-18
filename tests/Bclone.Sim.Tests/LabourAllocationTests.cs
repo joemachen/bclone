@@ -830,7 +830,14 @@ public sealed class LabourAllocationTests
         // village that cannot pair, feed and house itself for a century and a half reaches. It
         // sits under the measured 21 with room for a seed's luck and well above the 4 that would
         // mean the fence's removal broke walking to work.
-        Assert.True(peak >= 15,
+        // ⛔ FIFTEEN → TWELVE (D387). The birth gate reads the harvest now, not the granary, and
+        // an unattended village settles at what its one two-seat hut feeds instead of breeding
+        // to the granary's twenty-six and starving back — measured, this village holds 12–14
+        // for a hundred and fifty years with nobody starving, where it used to peak at 22 and
+        // lose ten to a famine. **The claim is unchanged — a village GROWS from its founders,
+        // three times over — and only the size the derived economy feeds unattended has moved,
+        // for the third time (25 → 15 → 12).**
+        Assert.True(peak >= 12,
             $"The village never grew without a distance fence: it peaked at {peak} from "
             + $"{config.StartingPopulation} founders.");
         Assert.True(reachable > 0, "Nobody could walk to any work at the village's largest.");

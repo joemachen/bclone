@@ -816,7 +816,7 @@ public sealed class FootprintTests
 
     /// <summary>The table in `specs/footprints.md §2`, row by row (D382).</summary>
     [Theory]
-    [InlineData(BuildingKind.Home, 1, 1)]
+    [InlineData(BuildingKind.Home, 2, 1)]
     [InlineData(BuildingKind.Pile, 1, 1)]
     [InlineData(BuildingKind.GathererHut, 1, 1)]
     [InlineData(BuildingKind.ForesterHut, 1, 1)]

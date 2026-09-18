@@ -95,6 +95,32 @@ public sealed class ZoneMap
 
     private readonly bool[] _harvestSub;
 
+    // ---------------------------------------------------------------
+    //  Plots — a household's ground (D386, `specs/organic-housing.md §3.4`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ THE FOURTH SHAPE IN HERE, AND IT IS NOT STATE. Residential is the village's, work
+    // ground a building's, harvest nobody's — and a plot is a HOUSEHOLD's, but unlike the
+    // three above it is derived: from the house's position, its facing and the household's id
+    // (`SimWorld.PlotFor`), and nothing else — the rectangle whole, painted or not, so that the
+    // index restates the households and only the households. It lives here because
+    // `ChooseSite` and the view ask *"whose ground is this tile?"* per tile, and folding every
+    // household's rectangle per ask is the shape Joe's rule forbids. ⛔ Maintained where a home
+    // is marked, raised, handed on or pulled down — never rebuilt per tick — and ⛔ never hashed
+    // (D335). The fence the view draws is this owner ∩ the residential paint, read at draw time,
+    // so it follows the paint's ragged rim — the *irregular* in Joe's picture — and moves with
+    // the brush.
+
+    /// <summary>Which household's plot each tile is in, or 0 — one owner per tile, as work ground.</summary>
+    private readonly int[] _plot;
+
+    /// <summary>How many plots front onto each tile — a lane while it is more than 0 (§3.2).</summary>
+    private readonly byte[] _lane;
+
+    private readonly Dictionary<int, List<int>> _plotByOwner = new();
+
+    private readonly Dictionary<int, List<int>> _laneByOwner = new();
+
     /// <summary>How many of each tile's sixteen sub-tiles are painted. Derived, never hashed.</summary>
     private readonly byte[] _residentialCount;
 
@@ -129,6 +155,8 @@ public sealed class ZoneMap
         _residentialCount = new byte[_width * _height];
         _workGroundCount = new byte[_width * _height];
         _harvestCount = new byte[_width * _height];
+        _plot = new int[_width * _height];
+        _lane = new byte[_width * _height];
     }
 
     /// <summary>How wide the sub-tile grid is — for the hash and the renderer.</summary>
@@ -589,6 +617,135 @@ public sealed class ZoneMap
 
     /// <summary>Every tile's owner, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<int> WorkGround => _workGround;
+
+    // ---------------------------------------------------------------
+    //  Plots (D386)
+    // ---------------------------------------------------------------
+
+    /// <summary>Which household's plot this tile is in, or 0.</summary>
+    public int PlotOwner(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? 0 : _plot[index];
+    }
+
+    /// <summary>Whether a plot fronts onto this tile — the row no plot may claim (§3.2).</summary>
+    public bool IsLane(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _lane[index] > 0;
+    }
+
+    /// <summary>The tiles of a household's plot, as indices into <see cref="PositionOf"/>'s space.</summary>
+    public IReadOnlyList<int> PlotOf(int ownerId) =>
+        _plotByOwner.TryGetValue(ownerId, out List<int>? tiles) ? tiles : Array.Empty<int>();
+
+    /// <summary>The plot layer per tile — for the renderer's fence, which is this owner ∩ the paint.</summary>
+    public IReadOnlyList<int> Plot => _plot;
+
+    /// <summary>
+    /// Give a household its plot — these tiles, and the lane it fronts. A tile already in
+    /// another plot is refused whole: the chooser has checked, and this is the guard on it.
+    /// </summary>
+    public void ClaimPlot(int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane)
+    {
+        ArgumentNullException.ThrowIfNull(tiles);
+        ArgumentNullException.ThrowIfNull(lane);
+        if (ownerId == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ownerId), "A plot needs a household.");
+        }
+
+        if (_plotByOwner.ContainsKey(ownerId))
+        {
+            throw new InvalidOperationException($"Household {ownerId} already holds a plot.");
+        }
+
+        var held = new List<int>(tiles.Count);
+        for (int t = 0; t < tiles.Count; t++)
+        {
+            int index = IndexOf(tiles[t]);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            if (_plot[index] != 0)
+            {
+                throw new InvalidOperationException(
+                    $"Tile {tiles[t]} is household {_plot[index]}'s ground, not {ownerId}'s.");
+            }
+
+            _plot[index] = ownerId;
+            held.Add(index);
+        }
+
+        var fronts = new List<int>(lane.Count);
+        for (int t = 0; t < lane.Count; t++)
+        {
+            int index = IndexOf(lane[t]);
+            if (index >= 0)
+            {
+                _lane[index]++;
+                fronts.Add(index);
+            }
+        }
+
+        _plotByOwner[ownerId] = held;
+        _laneByOwner[ownerId] = fronts;
+        Edits++;
+    }
+
+    /// <summary>Take a household's plot and its lane back. Returns the tiles freed.</summary>
+    public int ReleasePlot(int ownerId)
+    {
+        if (!_plotByOwner.TryGetValue(ownerId, out List<int>? held))
+        {
+            return 0;
+        }
+
+        for (int t = 0; t < held.Count; t++)
+        {
+            _plot[held[t]] = 0;
+        }
+
+        List<int> fronts = _laneByOwner[ownerId];
+        for (int t = 0; t < fronts.Count; t++)
+        {
+            _lane[fronts[t]]--;
+        }
+
+        _plotByOwner.Remove(ownerId);
+        _laneByOwner.Remove(ownerId);
+        Edits++;
+        return held.Count;
+    }
+
+    /// <summary>A plot changes hands with its house (D381's hand-me-down, D386).</summary>
+    public void HandPlotOn(int fromOwnerId, int toOwnerId)
+    {
+        if (!_plotByOwner.TryGetValue(fromOwnerId, out List<int>? held))
+        {
+            return;
+        }
+
+        if (_plotByOwner.ContainsKey(toOwnerId))
+        {
+            throw new InvalidOperationException($"Household {toOwnerId} already holds a plot.");
+        }
+
+        for (int t = 0; t < held.Count; t++)
+        {
+            _plot[held[t]] = toOwnerId;
+        }
+
+        _plotByOwner.Remove(fromOwnerId);
+        _plotByOwner[toOwnerId] = held;
+        List<int> fronts = _laneByOwner[fromOwnerId];
+        _laneByOwner.Remove(fromOwnerId);
+        _laneByOwner[toOwnerId] = fronts;
+        Edits++;
+    }
 
     // ---------------------------------------------------------------
     //  Harvest — what the village means to clear (D87)

@@ -125,8 +125,8 @@ public sealed class MarketTests
             + $"{froze} froze, {starved} starved, {aged} of old age.");
 
         // The same bar as the arm with a market (`TheVillageSustainsItselfAcrossGenerations`,
-        // D262's fifteen): the stall may not be what the growth was made of.
-        Assert.True(peak >= 15,
+        // D262's fifteen, D387's twelve): the stall may not be what the growth was made of.
+        Assert.True(peak >= 12,
             $"Without a market the village only ever reached {peak} from "
             + $"{noMarket.StartingPopulation} founders. Distribution by hand has stopped being "
             + "something the settlement can grow on.");
@@ -359,7 +359,9 @@ public sealed class MarketTests
             + $"{withMarket.LostToHungerOrCold} with one. The market has stopped being a "
             + "convenience and started keeping people alive (spec §14.4).");
 
-        Assert.True(without.PeakPopulation >= config.StartingPopulation * 4,
+        // Three times the founders, not four (D387): the harvest gate holds the unattended
+        // village at what its one hut feeds — 12–14 — where it used to overshoot to 21.
+        Assert.True(without.PeakPopulation >= config.StartingPopulation * 3,
             $"The control never got past {without.PeakPopulation} people, so it is not a living " +
             "village and there is nothing honest to compare a market against.");
 

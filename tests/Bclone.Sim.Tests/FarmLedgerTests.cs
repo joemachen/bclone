@@ -113,6 +113,7 @@ public sealed class FarmLedgerTests
 
         Workplace farm = FarmTestGround.SiteAFarm(world, walkAway, out int walk);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
+        FarmFixtures.PinAFarmhand(world, farm);
 
         var census = new Dictionary<VillagerState, int>();
         int handTicks = 0;

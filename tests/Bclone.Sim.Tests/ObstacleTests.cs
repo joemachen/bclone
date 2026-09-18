@@ -135,7 +135,7 @@ public sealed class ObstacleTests
             var expected = new HashSet<GridPos>();
             foreach (Household h in world.Households)
             {
-                if (h.HomePosition is Point p) { expected.UnionWith(world.FootprintOf(BuildingKind.Home, p).CoveredTiles()); }
+                if (world.HomeFootprintOf(h) is Footprint home) { expected.UnionWith(home.CoveredTiles()); }
             }
 
             foreach (Workplace w in world.Workplaces) { expected.UnionWith(w.Footprint.CoveredTiles()); }

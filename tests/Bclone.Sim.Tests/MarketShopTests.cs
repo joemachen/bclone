@@ -434,8 +434,16 @@ public sealed class MarketShopTests
         // ⚠️ Under two armfuls, not one: a gather lands on top of whatever is already in the arms,
         // so a forager can come home with 41. The loop this guards read 320.
         int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
-        _output.WriteLine($"the most anybody carried: {most} (an armful is {config.CarryCapacity}); the most firewood in a larder wanting {wanted}: {mostInALarder}");
-        Assert.True(most < config.CarryCapacity * 2, $"somebody carried {most} — armfuls piled on armfuls");
+        _output.WriteLine($"the most anybody carried: {most} (an armful is {config.CarryCapacity}, a gather at most {config.GatherYield}); the most firewood in a larder wanting {wanted}: {mostInALarder}");
+
+        // ⚠️ A GATHER IS ONE LOAD, HOWEVER BIG (D386). The bar was two armfuls, and it held while
+        // the fixture's derived `gather_yield` at its ring's density came in under eighty; the
+        // lane priced into the walk (D386) took the yield past it and a single day's gathering
+        // read as *armfuls piled on armfuls*. The claim is about loads on loads — a fetch on top
+        // of a haul — so the bar is the bigger of two armfuls and the biggest single load a
+        // trade puts in somebody's arms.
+        int oneLoad = System.Math.Max(config.CarryCapacity * 2, config.GatherYield);
+        Assert.True(most <= oneLoad, $"somebody carried {most} — armfuls piled on armfuls");
         Assert.True(mostInALarder <= wanted + config.CarryCapacity, $"a larder wanting {wanted} firewood held {mostInALarder}");
     }
 

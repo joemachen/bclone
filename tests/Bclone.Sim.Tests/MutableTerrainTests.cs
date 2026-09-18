@@ -226,8 +226,13 @@ public sealed class MutableTerrainTests
     [Fact]
     public void AVillageThatNeverChangesTheGroundIsUnaffected()
     {
-        SimConfig config = VillageFixtures.Village;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        // ⚠️ THE ONE-VILLAGER VALLEY, NOT THE VILLAGE (D386). The fixture village's second house
+        // stands on a wooded tile now that houses take plots in a wider diamond, and a house
+        // site on trees is a felling (D100) — so the village DOES change its ground inside five
+        // years, by the rule this file is about. A lone forager fells nothing and ploughs nothing,
+        // which is the premise "never changes the ground" always meant.
+        SimConfig config = Phase0Fixtures.Plenty;
+        var (loop, _) = Phase0Fixtures.Build(config);
 
         ulong mapBefore = StateHash.MixMap(0, loop.World.Map);
         loop.Step(config.TicksPerYear * 5);

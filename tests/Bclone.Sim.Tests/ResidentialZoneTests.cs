@@ -112,7 +112,9 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.Home() == tile)
+                    // Every tile the house stands on (D386: a house is two wide) — unpainting
+                    // under any of them marks it for demolition, and a roofless village freezes.
+                    if (world.HomeFootprintOf(household)?.Covers(tile) == true)
                     {
                         lived = true;
                     }
@@ -151,7 +153,9 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.Home() == tile)
+                    // Every tile the house stands on (D386: a house is two wide) — unpainting
+                    // under any of them marks it for demolition, and a roofless village freezes.
+                    if (world.HomeFootprintOf(household)?.Covers(tile) == true)
                     {
                         lived = true;
                     }
@@ -200,7 +204,7 @@ public sealed class ResidentialZoneTests
                 bool lived = false;
                 foreach (Household household in world.Households)
                 {
-                    if (household.Home() == tile) lived = true;
+                    if (world.HomeFootprintOf(household)?.Covers(tile) == true) lived = true;
                 }
 
                 if (!lived) world.EraseResidential(tile);

@@ -1,6 +1,52 @@
-# Handoff — bclone: **▶️ PHASE 5 — D384 (TRADES VISIBLY WORK) AND D385 (EVERY LOAD TO A STORE) PLAYED BY JOE AND PUSHED. NEXT: HIS CALL BETWEEN MATURE TREES, THE SHELL, AND ORGANIC HOUSING.**
+# Handoff — bclone: **▶️ PHASE 5 — ORGANIC HOUSING (D386: PLOTS, LANES, FENCES, A HOUSE THAT FACES ITS LANE) AND THE HARVEST GATE (D387) ARE BUILT IN ONE COMMIT. COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN THE PROFESSIONS AND THEIR BUILDINGS (HIS CALL).**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-17 — AFTER D385, PLAYED.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-17 — AFTER D386 + D387.**
+>
+> **The state:** `main` = D386 + D387 (one commit) on `0b1124b` = `origin/main`; **committed,
+> NOT pushed — Joe pushes after he plays.** Working tree clean. Suite **1181 passing, 0 failing,
+> 2 skipped of 1183, 3m31** (was 3m21; the per-tick cost measured unchanged at 5.6 µs a
+> person-tick — the extra is villages that live through their runs now, trap 88's shape; two
+> runs mid-slice read 5m03 and 5m22 with a second worktree's suite running beside them — read
+> trap 88 before chasing it); view 0 warnings on `--no-incremental`; probe green. The decision
+> log runs to **D387**. Read `DESIGN.md §0–§5`, §6, D385–D387 in §7, then
+> `specs/organic-housing.md` in full and `storage-and-distribution.md §12.4`.
+>
+> **✅ D386 — ORGANIC HOUSING.** Joe: *"organic housing - and then i think i want to go back to
+> building out the professions and their buildings."* A home is a 2×1 house on the front row of
+> a 3×2 plot the household owns, facing a lane the plot leaves free; the fence is the plot's
+> painted ground (owner ∩ paint, drawn with the residential layer); `ChooseSite` tries every
+> whole-painted tile at four facings and scores tiles walked from the door + *apart* (2 a side
+> with no neighbour) + *clipped* (a tile per yard tile the paint, water or a building clips off);
+> the card says why (*"a wooden cabin — 10 tiles to work and 3 to the granary, facing the lane to
+> the south, beside the Ashfords"*). The one new hashed fact is `Household.HomeFacing`; the plot
+> layer in `ZoneMap` is derived. The lane is priced on every home leg (`PlotLaneTiles`) — the
+> shipped number that moved: **`gather_yield` 112 → 123**; the fixture's diamond 4 → 6 and the
+> shipped `starting_residential_radius` with it. ⛔ Two bugs found on the way and fixed: **a
+> hunter's carry-back never arrived** (D384 — `HaulingToFarm` read as a farmer's errand and the
+> recall sent them home; the guard had passed on one rise), and **the farm derivation sat one
+> tick from a cliff** (priced ring by ring now; the same thirteen). Traps 95–98; D387's is 99.
+>
+> **✅ D387 — THE BIRTH GATE READS THE HARVEST.** The unattended fixture died after its first
+> famine under plots where D385's had happened to recover; Joe: *"build the production gate."* A
+> hashed food ledger (what came in, what was eaten, last year and this), and a couple has a
+> child only if last year the village brought in at least what it ate — no margin, and four
+> other readings built, measured and refused (§12.4). The fixture holds 13–16 for 150 years with
+> 2 starved against 26 of old age; twelve seeds **198 / 224 / 0**. Six growth guards 15 → 12.
+> The spring line says why when it says no.
+>
+> **⚠️ For Joe when he plays:** paint a neighbourhood — a blob, not a strip — and watch the
+> houses take plots: two tiles wide, a fence round each yard following your brush's edge, a
+> lane's row left free in front, the door on the lane. Click a house: the caption says why it is
+> where it is. Three numbers are yours to widen once you have seen it: `plot_depth` (2 — the yard
+> behind; 3 was measured and held fewer plots), `plot_apart_tiles` (2 — how much a house wants a
+> neighbour; it barely bit in the fixture), `plot_width` (3). And the harvest gate: when a village
+> stops having children, the log says *"brought in X and ate Y"* — the levers are hands gathering
+> and room to keep it. ⚠️ The windowed shot was not had again (the hook's frame never fired);
+> the look is yours.
+>
+> *(D385's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-17 — AFTER D385, PLAYED.**
 >
 > **The state:** `main` = `origin/main` = D385 (`2921d38`) on D384 (`fdaf828`, `02f8b62`,
 > `29e7e3a`) + this note; **Joe played both, 2026-09-17 — *"i played - it all feels fine"* —
@@ -76,7 +122,8 @@
 > derivations were leaning on the old timing (loggers sized from woodcutter *capacity*) and now
 > derive from the logs the homes burn. Twelve seeds: 155 / 202 / 42 against 154 / 202 / 36.
 >
-> **▶️ NEXT:** his call between
+> **▶️ NEXT, after his play:** *"the professions and their buildings"* (his words, 2026-09-17 —
+> the Phase 5 production chains, `DESIGN.md §4`); after that his call between
 > **mature trees** (a view slice; his "scale and
 > depth" question), **the shell** (per-stage RNG seeds → new-game screen → settings persistence →
 > save/load → title) and **organic housing — plots and lanes** (Phase 5's first bullet, unblocked
@@ -1288,6 +1335,45 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     only survived because larders hid the food — an old guard that never went red is a guard
     whose premise nobody has checked.
 
+95. **⛔⛔ A RULE THAT NEEDS A RECTANGLE OF PAINT WILL FIND THAT PAINT IS NEVER RECTANGULAR (D386).**
+    The first plot rule wanted every yard tile painted: a diamond of eighty-five tiles held
+    three plots, because a diamond's diagonal edge never holds a full 3×3. The second wanted a
+    full plot before a clipped one: a cramped valley sent the founders' second house twelve
+    tiles from the hut past a clipped plot six away. *Clip, do not refuse* — the fence follows
+    the brush, and a missing yard tile costs a tile of walk in the score, which is a sentence.
+    Draw the layout before trusting the rule (a scratch test that dumps tiles and a PIL script
+    took ten minutes and showed the three-plot diamond at once).
+
+96. **⛔ A DERIVATION THAT PASSES BY ONE TICK IS A CLIFF SOMEBODY WILL WALK OFF (D386).**
+    `FieldTilesOneFarmerKeeps` priced a radius-two diamond at 91 ticks against a season of 92
+    — since D383 — and the lane tile's two ticks dropped a farmer's field from thirteen tiles
+    to five and the crop derivation with it. It charged the inner five tiles at radius two's
+    walk; priced ring by ring it is 79. Trap 87 for derivations: when a derived number sits
+    within a few units of the boundary it steps at, say so in the remark, or fix the pricing.
+
+97. **⛔⛔ A GUARD THAT PASSED ON ONE EVENT IN TWO YEARS HAD ALREADY FAILED (D386, D384's bug).**
+    The hunter's carry-back reused the farmer's `HaulingToFarm`, `ErrandKind` read it as a
+    farmer's, and the recall sent every hunter home with the meat on the first tick — the D384
+    guard read *"the lodge rose 1 times with a hunter on it"* and passed on `> 0`. Then D385's
+    store-always rule walked the meat to the granary and nothing looked wrong until plots put
+    the hunt tiles further out and the count read zero. When a count reads one, ask why not
+    twenty; and any state reused across trades needs `HoldsTheJobFor` to know both.
+
+98. **⚠️ THE FIXTURE'S PAINT IS FOOD (D386).** `starting_residential_radius` 4 → 6 cost twelve
+    seeds 259 → 199 alive *with the old houses* — the diamond's west side lies inside the
+    founding forager's ring, and residential ground does not regrow. Seven cost 167. Any change
+    to the fixture's founding layout is a change to its food economy; measure the layout alone
+    (the old rule at the new radius) before blaming the rule.
+
+99. **⛔⛔ A GATE THAT READS A PROXY FOR A RATE WILL BREED TO THE PROXY (D387).** Five readings of
+    "can the harvest feed one more" were built and measured in one afternoon: the meals everyone
+    *would* eat (starves a generation of births — people eat when hungry, not on the calendar),
+    a child's share of margin (same), a full shelf at a season's turn (refills every summer
+    through a deficit), idle hands credited as harvest (a thinning ring does not scale), the
+    shelf level year on year (bounces round full). Only *what came in against what went down*
+    held. The measurement that told them apart each time was the fixture at 150 years and the
+    shipped established village at 110 — run both before believing a gate.
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -1308,6 +1394,18 @@ not need it.*
 four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE PLOT'S THREE NUMBERS, ONCE HE HAS SEEN THE ROWS (D386, 2026-09-17).** `plot_width` 3,
+  `plot_depth` 2, `plot_apart_tiles` 2 are stated, measured and shipped, and the *apart* term
+  barely bites at 2 (18 → 22 of ~68 houses beside a neighbour over twelve seeds). Whether the
+  yards read as yards, the lanes as lanes and the rows as rows is the picture, and the picture is
+  the spec (D352). The well as the lane's focal point and the kitchen garden in the yard are the
+  two things the plot was sized for and are not built.
+- ⚠️ **THE FARM'S LEARNED CAP SITS AT THE DERIVED THIRTEEN WHILE AN OVER-PAINTED FARM REAPS TWO
+  THIRDS OF WHAT IT SOWS (found D386).** `AFarmBringsInMostOfWhatItSows` read 76 % before and 68 %
+  after the lane tile; the probe (D361) climbs to the cap and does not step back though a third
+  rots. The guard's bar is two thirds now with the reason written; the accounting is a farm
+  slice's, not this one's.
 
 - ⭐ **THREE OF TWELVE HANDS WAIT A CENTURY ON STONE NOBODY QUARRIES (found D384, 2026-09-16).**
   The shipped established village, asked to build a granary, a warehouse, a market and a

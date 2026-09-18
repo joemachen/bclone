@@ -216,7 +216,12 @@
   // gather_walk_tiles (3) from the hut instead of standing on it, so the
   // trip is six tiles longer and a year holds 12 trips, not 15. Same
   // target, same scarcity; the trip is the one people are seen making.
-  "gather_yield": 112,
+  // 112 -> 123 (D386): a home is a house in a plot behind its lane, so every
+  // leg to or from a home is a tile longer (VillageEconomy.PlotLaneTiles);
+  // a year holds 11 trips, not 12 (and the floor is asked of the year's own
+  // sum now, which truncates twice: 122 fed 257 against a need of 258).
+  // Same target, same scarcity.
+  "gather_yield": 123,
   // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
   // Every N completed gathers sets the nearest mature tree in the hut's ring
   // back to a sapling; regrowth grows it up again on its own sweep. So a hut
@@ -1154,7 +1159,21 @@
   // four, a village nobody helps behaves as it always has, and the
   // brush becomes necessary when the player builds more granaries and
   // grows past it.
-  "starting_residential_radius": 4,
+  // Four → six (D386): a home is a house in a three-by-two plot with a lane
+  // now, and a radius-four diamond holds three of them. Six is the smallest
+  // that holds the fixture village; beyond it the paint eats the founding
+  // forager's ring (measured, SimConfig.StartingResidentialRadius).
+  "starting_residential_radius": 6,
+
+  // ORGANIC HOUSING (D386, specs/organic-housing.md). A home is a house in a plot:
+  // plot_width tiles along the lane by plot_depth back from it, the house (two
+  // wide) on the front row, the rest a yard. The row across the front is the lane,
+  // which no plot may claim. A plot with no neighbour along a side scores as
+  // plot_apart_tiles further from everything, per open side, which is what packs
+  // the houses into rows.
+  "plot_width": 3,
+  "plot_depth": 2,
+  "plot_apart_tiles": 2,
 
   // THE COLD START (D70). The founders arrive to an empty valley with a cart:
   // no granary, no warehouse, no market, no woodcutter's hut, no homes, and nothing

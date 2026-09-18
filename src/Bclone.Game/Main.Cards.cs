@@ -922,8 +922,16 @@ public partial class Main
         // Room for the rows it has, up to four; past four it scrolls (Joe).
         card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, shown)));
 
-        card.Portrait.Show(VillageMap.HomeColour, 0.62f, 0.62f, 0, null);
-        card.Caption.Text = home.HomePosition is null ? "no house" : "a wooden cabin";
+        float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
+        float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
+        card.Portrait.Show(VillageMap.HomeColour, wide * 0.8f, deep * 0.8f, home.HomeFacing.Raw, null);
+
+        // ⭐ WHY THE HOUSE IS WHERE IT IS (D386): the chooser's own sentence, in the currency it
+        // scored — *"10 tiles to work and 3 to the granary, facing the lane to the south, beside
+        // the Ashfords."* Held on the household from the day the site was chosen.
+        card.Caption.Text = home.HomePosition is null
+            ? "no house"
+            : home.WhyHere.Length > 0 ? $"a wooden cabin — {home.WhyHere}" : "a wooden cabin";
         return true;
     }
 

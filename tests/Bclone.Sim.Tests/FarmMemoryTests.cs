@@ -236,7 +236,14 @@ public sealed class FarmMemoryTests
         }
 
         _output.WriteLine($"learned {before} → {farm.FieldTilesLearned} over three fallow years");
-        Assert.Equal(before, farm.FieldTilesLearned);
+
+        // ⚠️ THE FLOOR IS ONE, AND A FARM THAT WAS NEVER SOWN STARTS AT ZERO (D386). Until the
+        // founders' plots moved a hand's way, nobody took this farm's seat in the fixture and the
+        // learning pass never ran; now one sows in spring, the summer clears it, and the pass
+        // reads a year that brought in nothing — which it floors to one, by design (*a thin year
+        // is about the hands that turned up, not about the ground*). The claim is that a fallow
+        // year never RAISES what the farm believes above what it knew, or above the floor.
+        Assert.Equal(System.Math.Max(before, 1), farm.FieldTilesLearned);
     }
 
     /// <summary>
@@ -362,6 +369,7 @@ public sealed class FarmMemoryTests
 
         Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
+        FarmFixtures.PinAFarmhand(world, farm);
 
         int idle = 0;
         int handTicks = 0;

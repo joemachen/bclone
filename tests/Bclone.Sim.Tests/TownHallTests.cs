@@ -363,8 +363,10 @@ public sealed class TownHallTests
         GridPos first = SomewhereBuildable(world);
         Assert.True(world.Mark(BuildingKind.TownHall, first).Allowed);
 
-        // Marked and not yet standing — the second must already be refused.
-        GridPos second = SomewhereBuildableOtherThan(world, first);
+        // Marked and not yet standing — the second must already be refused. Found as a spot
+        // where the hall's own rule is the refusal (D386): a granary-sized gap is not always a
+        // hall-sized one, and a hall-sized search refuses everywhere once one is marked.
+        GridPos second = SomewhereAHallIsRefusedOnlyForBeingSecond(world, first);
         PlacementVerdict whileASiteStands = world.CanBuildAt(BuildingKind.TownHall, second);
         Assert.False(whileASiteStands.Allowed);
         Assert.Contains("only ever one", whileASiteStands.Reason, System.StringComparison.Ordinal);
@@ -634,8 +636,24 @@ public sealed class TownHallTests
     private static GridPos SomewhereBuildable(SimWorld world) =>
         SomewhereBuildableOtherThan(world, new GridPos(int.MinValue, int.MinValue), BuildingKind.TownHall);
 
-    private static GridPos SomewhereBuildableOtherThan(SimWorld world, GridPos avoid) =>
-        SomewhereBuildableOtherThan(world, avoid, BuildingKind.Granary);
+    private static GridPos SomewhereAHallIsRefusedOnlyForBeingSecond(SimWorld world, GridPos avoid)
+    {
+        for (int y = 0; y < world.Map.Height; y++)
+        {
+            for (int x = 0; x < world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (at != avoid
+                    && world.Map.TerrainAt(at) == Terrain.Grass
+                    && world.CanBuildAt(BuildingKind.TownHall, at).Reason.Contains("only ever one", System.StringComparison.Ordinal))
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("Nowhere in the valley is a second hall refused for being second.");
+    }
 
     private static GridPos SomewhereBuildableOtherThan(SimWorld world, GridPos avoid, BuildingKind kind)
     {

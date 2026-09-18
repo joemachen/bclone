@@ -707,7 +707,37 @@ public sealed class HuntingTests
             $"the village does not think it has enough food ({world.FoodTheVillageHolds()} held), so this is not Joe's state");
 
         int inStoresBefore = world.FoodInGranaries();
-        loop.Step(config.TicksPerSeason);
+
+        // ⭐ CARRIED OUT, COUNTED AT THE DOOR (D386). The lodge is a load short of full, so the
+        // first hunt back from the woods fills it — 422 meat in one arrival — and a season's
+        // net change reads as the lodge GAINING while two hunters carried thirteen armfuls out.
+        // (Until D386 the carry-back never arrived at all — `HoldsTheJobFor` recalled every
+        // hunter on it — so the net read as the clearing alone.) Every drop is summed, tick by
+        // tick, as the D384 guard counts the rises.
+        int carriedOut = 0;
+        int putOnAShelf = 0;
+        int before = lodge.Store[Goods.Meat];
+        int shelved = world.FoodInGranaries();
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            int now = lodge.Store[Goods.Meat];
+            if (now < before)
+            {
+                carriedOut += before - now;
+            }
+
+            before = now;
+
+            // What arrives, not the net of what four people ate off the shelf meanwhile.
+            int onShelves = world.FoodInGranaries();
+            if (onShelves > shelved)
+            {
+                putOnAShelf += onShelves - shelved;
+            }
+
+            shelved = onShelves;
+        }
 
         int left = lodge.Store[Goods.Meat];
         int inStores = world.FoodInGranaries();
@@ -717,7 +747,7 @@ public sealed class HuntingTests
             inArms += villager.Carried[Goods.Meat];
         }
 
-        _output.WriteLine($"a season on: {meat} meat in the lodge became {left}; the stores went {inStoresBefore} → {inStores}, {inArms} in arms; {world.Villagers.Count(v => v.Alive)} alive");
+        _output.WriteLine($"a season on: {meat} meat in the lodge became {left}, {carriedOut} carried out; the stores went {inStoresBefore} → {inStores} with {putOnAShelf} put on a shelf, {inArms} in arms; {world.Villagers.Count(v => v.Alive)} alive");
 
         // The hunters keep hunting into it (the granaries ARE thin), so the bar is what left the
         // lodge: at least eight armfuls in a season, from four people who also eat — read at
@@ -728,10 +758,14 @@ public sealed class HuntingTests
         // and 40 in arms read as seven armfuls when eight had left the lodge. Half of it must
         // still have reached a shelf within the season, or the carrying is not where it can be
         // eaten.
-        int leftTheLodge = meat - left;
-        int reachedAShelf = inStores - inStoresBefore;
+        int leftTheLodge = carriedOut;
+        int reachedAShelf = putOnAShelf;
+        // ⚠️ SIX ARMFULS, NOT EIGHT (D386): the hunters really hunt now — a day in the woods and a
+        // 422-meat arrival that fills the lodge — and the clearing shares the season with it.
+        // Measured at exactly eight (320) the day the carry-back started arriving, which is a
+        // guard passing by its bar (trap 87); six is the claim with room to be wrong about.
         Assert.True(
-            leftTheLodge >= 8 * config.CarryCapacity,
+            leftTheLodge >= 6 * config.CarryCapacity,
             $"a season passed and only {leftTheLodge} meat left a lodge holding {meat} — "
             + "nobody is carrying it where it can be eaten");
         Assert.True(

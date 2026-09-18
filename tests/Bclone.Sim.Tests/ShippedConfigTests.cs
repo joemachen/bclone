@@ -523,17 +523,51 @@ public sealed class ShippedConfigTests
         _output.WriteLine($"{marked} buildings marked out in one go.");
         Assert.Equal(4, marked);
 
+        int peak = 0;
         for (int year = 1; year <= 100; year++)
         {
             loop.Step(config.TicksPerYear);
+            peak = System.Math.Max(peak, world.Population);
+        }
+
+        int froze = 0;
+        int starved = 0;
+        int aged = 0;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            switch (villager.CauseOfDeath)
+            {
+                case CauseOfDeath.Cold: froze++; break;
+                case CauseOfDeath.Starvation: starved++; break;
+                default: aged++; break;
+            }
         }
 
         _output.WriteLine(
-            $"A century later: {world.Population} alive, " +
-            $"{CountStores(world, StoreKind.Granary)} granaries, {CountStores(world, StoreKind.Warehouse)} warehouses.");
+            $"A century later: {world.Population} alive (peak {peak}), " +
+            $"{CountStores(world, StoreKind.Granary)} granaries, {CountStores(world, StoreKind.Warehouse)} warehouses; "
+            + $"{froze} froze, {starved} starved, {aged} of old age.");
 
-        Assert.True(world.Population >= config.StartingPopulation,
-            $"Marking four buildings killed the village — it finished at {world.Population}.");
+        // ⚠️ D143'S SHAPE, ARRIVING HERE LATE (D387). This asked that somebody be alive at year 115
+        // of a village nobody touched after its first hour, which is D143's *"an unattended
+        // village should die out"* posed as a failure. It held while the granary gate bred the
+        // village past its harvest and a lucky famine left survivors; the harvest gate holds it
+        // at what two hands feed, and it ages out with nobody starving — at year 115 two were
+        // left, 0 starved, 0 froze. What the four buildings must not do is the claim: they get
+        // built, the village still grows, and nobody freezes or starves for the hands and the
+        // logs they took.
+        Assert.True(CountStores(world, StoreKind.Granary) >= 2 && CountStores(world, StoreKind.Warehouse) >= 2,
+            "The buildings the player marked were never raised.");
+        Assert.True(peak >= config.StartingPopulation * 3,
+            $"Marking four buildings stalled the village — it peaked at {peak} from {config.StartingPopulation}.");
+        Assert.Equal(0, froze);
+        Assert.True(aged > starved,
+            $"{starved} starved against {aged} of old age — building cost the village its food.");
     }
 
     private static int CountStores(SimWorld world, StoreKind kind)

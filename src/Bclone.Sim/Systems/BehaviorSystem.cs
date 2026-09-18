@@ -199,24 +199,6 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // ⭐⭐ THEIR OWN RHYTHM, SPENT ONCE AT THE START OF A WORKING LIFE (§3.5, D28, D190).
-        //
-        // **This is the oldest open observation in the project.** Joe watched the village at 4×
-        // in Phase 1 and saw people travelling as duos rather than individuals; measured, two
-        // adults of one household holding one job are on the same tile 99.9% of ticks with
-        // identical hunger 100% of the time. They are not short of variability, they are
-        // SYMMETRIC — same home tile, same stepping rule, same constant durations — so they even
-        // stop to eat on the same tick.
-        //
-        // ⭐ A FEW TICKS, ONCE, IS ENOUGH, because nothing ever puts them back in step: two
-        // villagers who set off a tick apart arrive, work and eat a tick apart for the rest of
-        // their lives. That is §3.3's argument about differing durations, arriving on day one
-        // instead of after twenty years.
-        //
-        // ⚠️ ABOVE EATING ON PURPOSE. Below it, a villager whose rhythm is unspent would take
-        // their first meal in lockstep with their sibling and the stagger would be spent against
-        // an already-synchronised clock. Nobody starves for it: the draw is under one day and
-        // `TicksAtMaxHunger` needs six.
         if (villager.Rhythm > 0 && villager.CanWork)
         {
             villager.Rhythm--;
@@ -575,8 +557,27 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>Whether the job they hold matches the errand they are on.</summary>
-    private static bool HoldsTheJobFor(SimWorld world, Villager villager) =>
-        WorkplaceOf(world, villager)?.Kind == ErrandKind(villager.State);
+    /// <remarks>
+    /// ⛔ <b>`HaulingToFarm` is a hunter's errand too (D384, found D386).</b> The carry-back
+    /// from the woods reuses the farmer's state — *carrying a load to my own workplace's buffer*
+    /// — and `ErrandKind` read it as a farmer's, so this went false on the first tick of every
+    /// carry and the recall below sent the hunter home with the meat in their arms. The D384
+    /// guard passed on <em>one</em> rise of the lodge in two years — a hunt on the tile beside
+    /// it, arriving inside the same call — and D385's store-always rule then walked the meat to
+    /// the granary instead, so nothing looked wrong until plots put the hunt tiles further out
+    /// and the count read zero. The errand is the holder's when the load is bound for the
+    /// building they hold, whichever trade that is.
+    /// </remarks>
+    private static bool HoldsTheJobFor(SimWorld world, Villager villager)
+    {
+        JobKind? held = WorkplaceOf(world, villager)?.Kind;
+        if (villager.State == VillagerState.HaulingToFarm)
+        {
+            return held is JobKind.Farmer or JobKind.Hunter;
+        }
+
+        return held == ErrandKind(villager.State);
+    }
 
     /// <summary>
     /// The one good a trip is <em>for</em>, when somebody is holding more than one.
@@ -4257,7 +4258,11 @@ public sealed class BehaviorSystem : ISimSystem
             }
         }
 
-        Decide(world, villager);
+        // ⭐ AND THEY STAND ON THE LODGE FOR THE TICK THEY PUT IT DOWN (D373; found D386). This
+        // went straight to `Decide`, and the next hunt's first step, in the arrival's tick — so
+        // the store rose with nobody on the building at any tick the view could draw (four of
+        // fifteen rises read "nobody there"). The next tick's `Decide` sets off again.
+        villager.State = VillagerState.Idle;
     }
 
     private static void BeginGathering(SimWorld world, Villager villager, SimConfig config)
@@ -4524,6 +4529,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // so the trips saved pay for the ticks spent. The buffer is also what a marketer
                 // comes for, so a fishery feeds the village without its fisher ever walking home.
                 Workplace? at = WorkplaceOf(world, villager);
+                world.RecordFoodProduced(caught);
                 int intoTheHut = at is null ? 0 : at.Store.Add(Goods.Fish, caught);
                 int leftOver = caught - intoTheHut;
 
@@ -4595,6 +4601,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // pass a store, as it always did.
                 villager.Carried.Receive(Goods.Leather, hide);
                 villager.Carried.Receive(Goods.Meat, meat);
+                world.RecordFoodProduced(meat);
 
                 if (lodge is null)
                 {
@@ -4651,6 +4658,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // granary. The forager's household shops like every other now, at half a larder
                 // (D372), and inequality is distance and hands, as D32 asked.
                 villager.Carried.Receive(Goods.Produce, yield);
+                world.RecordFoodProduced(yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -4828,6 +4836,7 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 villager.Carried.Receive(grain, crop < 1 ? 1 : crop);
+                world.RecordFoodProduced(crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {

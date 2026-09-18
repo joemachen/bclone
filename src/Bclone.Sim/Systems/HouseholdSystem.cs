@@ -142,8 +142,26 @@ public sealed class HouseholdSystem : ISimSystem
             Household? standingEmpty = FindAnEmptyHome(world, aHouseOnly: true);
             if (standingEmpty is not null)
             {
+                // ⚠️ A family moving into a standing house gives up the one being raised for
+                // them (D386). A couple inherits a dead household whole — its id, its larder,
+                // and a site if one was marked (D381) — and until D386 that site went on being
+                // built for a family that had just moved in elsewhere, and handed them a second
+                // house on the day it was finished. The plot was the site's claim; a family
+                // holds one.
+                if (world.HomeSiteFor(household.Id) is Workplace abandoned)
+                {
+                    world.CancelConstruction(abandoned);
+                }
+
                 household.HomePosition = standingEmpty.HomePosition;
+                household.HomeFacing = standingEmpty.HomeFacing;
+                household.WhyHere = standingEmpty.WhyHere;
                 standingEmpty.HomePosition = null;
+                standingEmpty.HomeFacing = Angle.Zero;
+                standingEmpty.WhyHere = "";
+
+                // The plot goes with the house (D386, §3.5).
+                world.Zones.HandPlotOn(standingEmpty.Id, household.Id);
                 world.StandingChanged();
                 world.Narrate(
                     $"The {household.Name} household moved into the empty house at "
@@ -168,7 +186,7 @@ public sealed class HouseholdSystem : ISimSystem
 
             try
             {
-                world.MarkHome(household.Id, Household.ChooseSite(world, world.Map.FoundingSite));
+                world.MarkHome(household.Id, Household.ChooseSite(world, world.Map.FoundingSite, household.Id));
                 world.NeedsMoreResidentialLand = false;
             }
             catch (Household.NoRoomToBuildException noRoom)
@@ -351,12 +369,13 @@ public sealed class HouseholdSystem : ISimSystem
         // habitable by construction instead of by a lucky ring radius. It throws if the
         // painted land is full, BEFORE the household exists — so a couple is never left
         // half-formed by a site that could not be found.
-        GridPos site = Household.ChooseSite(world, world.Map.FoundingSite);
+        int id = NextHouseholdId(world);
+        HomeSite site = Household.ChooseSite(world, world.Map.FoundingSite, id);
 
         var household = new Household
         {
             Stockpile = world.NewStockpile(),
-            Id = NextHouseholdId(world),
+            Id = id,
             Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
 
             // ⭐ NO ROOF YET (D102). The house is marked out below and somebody has to build
@@ -631,6 +650,20 @@ public sealed class HouseholdSystem : ISimSystem
         // of deaths*: peak 22, 18 starved, 31 of old age.
         int surplus = world.FoodTheVillageHolds();
         if (surplus < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        {
+            return false;
+        }
+
+        // ⭐⭐ AND THE HARVEST, NOT ONLY THE GRANARY (D387, Joe: *"build the production gate"*).
+        // The stock above is a level; a full granary beside two forager seats says the village
+        // was small when it filled, not that the huts can feed one more. `storage-and-
+        // distribution.md §12.3` named this in July — *a proportional birth gate is the real
+        // answer* — and D385's pooling made it due: the unattended fixture bred to the granary's
+        // ceiling of twenty-six on seats that feed fourteen, and whether it recovered from the
+        // famine that followed was a dice roll every layout change re-rolled. A couple has a
+        // child only if last year's harvest fed everyone alive with a child's share to spare;
+        // the first year is not judged, because there is no harvest to judge by yet.
+        if (!world.TheHarvestFeedsOneMore())
         {
             return false;
         }

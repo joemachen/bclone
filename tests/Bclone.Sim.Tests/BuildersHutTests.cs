@@ -313,7 +313,10 @@ public sealed class BuildersHutTests
 
         // Straight into the world, ahead of the granary — `Mark` would refuse it, which is
         // the point: this is the state only `MarkHome` can produce.
-        world.MarkHome(world.Households[0].Id, marooned!.Value);
+        // For a family with no plot yet (D386): a household holds one, and the founders have theirs.
+        var roofless = new Household { Stockpile = world.NewStockpile(), Id = 900, Name = "Marooned" };
+        world.Households.Add(roofless);
+        world.MarkHome(roofless.Id, new HomeSite(marooned!.Value, Angle.Zero, ""));
         Workplace stranded = Assert.Single(
             world.Workplaces, place => place.Tile == marooned.Value && place.IsSite);
 

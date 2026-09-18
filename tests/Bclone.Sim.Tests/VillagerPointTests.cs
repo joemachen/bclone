@@ -113,8 +113,10 @@ public sealed class VillagerPointTests
     // ⚠️ RE-PINNED (D384), not for the clock: the forager gathers at a wooded tile up to three
     // tiles past the hut, so the walk is that much longer at both paces (the walk between them
     // 25 → 34). Were 14 / 39.
+    // ⚠️ RE-PINNED (D386), not for the clock: a house is two tiles wide in a plot behind its
+    // lane, and the founder's door is a tile further from the hut at pace 3. Was 52.
     private const int FirstGatherAtPace1 = 18;
-    private const int FirstGatherAtPace3 = 52;
+    private const int FirstGatherAtPace3 = 54;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -193,6 +195,12 @@ public sealed class VillagerPointTests
     /// what the larders are owed — a village with more mouths sooner and foragers who are
     /// never done: **105** trips, the 1st/10th/50th at **22/157/976**.
     /// </para>
+    /// <para>
+    /// **Re-pinned a twelfth time (D386/D387), not for the clock:** homes are houses in plots
+    /// behind lanes (the founders' houses stand elsewhere and a tile further), the lane is
+    /// priced into the yield, and the birth gate reads the harvest — **114** trips, the
+    /// 1st/10th/50th at **19/158/967**.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -223,8 +231,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(105, entries);
-        Assert.Equal(new ulong[] { 22, 157, 976 }, at);
+        Assert.Equal(114, entries);
+        Assert.Equal(new ulong[] { 19, 158, 967 }, at);
     }
 
     /// <summary>
@@ -272,7 +280,31 @@ public sealed class VillagerPointTests
 
                 Fixed length = villager.LegFrom.DistanceTo(villager.LegTo);
                 int expected = (length + Fixed.FromRatio(1, 2)).ToInt();
-                Assert.Equal(expected < 1 ? 1 : expected, villager.LegSteps);
+
+                // ⚠️ ON FRESH GRASS ONLY (D386). A leg's ticks follow the ground (D358 §3.5): a
+                // worn tile under it costs less than grass, and the first year wears one now
+                // that a house has a door and the walk leaves by the same line every trip — a
+                // 2.5-tile leg over it took two steps, not three. Over unworn ground the clock
+                // is exact; over worn ground it is cheaper, never dearer.
+                bool overWornGround = false;
+                const int Samples = 8;
+                for (int t = 0; t <= Samples; t++)
+                {
+                    var along = new Point(
+                        villager.LegFrom.X + ((villager.LegTo.X - villager.LegFrom.X) * Fixed.FromRatio(t, Samples)),
+                        villager.LegFrom.Y + ((villager.LegTo.Y - villager.LegFrom.Y) * Fixed.FromRatio(t, Samples)));
+                    overWornGround |= world.Paths.At(along.ToTile()) >= config.PathWornAt;
+                }
+
+                if (overWornGround)
+                {
+                    Assert.True(villager.LegSteps <= (expected < 1 ? 1 : expected),
+                        $"a leg over worn ground took {villager.LegSteps} steps for {length} tiles — dearer than grass");
+                }
+                else
+                {
+                    Assert.Equal(expected < 1 ? 1 : expected, villager.LegSteps);
+                }
 
                 // ⚠️ The staircase is measured between the POINTS, not their tiles (D382). A 2×2
                 // store's position is a tile corner, so a leg to it can end half a tile from a

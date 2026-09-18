@@ -215,6 +215,12 @@ public sealed class SubTileZoneTests
     /// ⚠️ Every other reader of <c>IsResidential</c> is untouched, and so is the count the
     /// economy and the goldens rest on. Only the siting asks the stricter question.
     /// </para>
+    /// <para>
+    /// ⚠️ <b>Posed on a plot since D386</b> (`organic-housing.md §3.1`): a home is a house in a
+    /// 3×3 plot, the house's two tiles whole-painted and the yard by the half rule. So the block
+    /// painted whole is a site; its centre — never a house tile, always yard — at half is still a
+    /// site; and the whole block at half is none, with *painted only in part* as the reason.
+    /// </para>
     /// </remarks>
     [Fact]
     public void AHomeIsOnlySitedOnATilePaintedInFull()
@@ -222,7 +228,7 @@ public sealed class SubTileZoneTests
         SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
         ZoneMap zones = world.Zones;
 
-        // Nothing painted anywhere, so the one tile below is the only candidate.
+        // Nothing painted anywhere, so the block below is the only candidate.
         for (int i = 0; i < zones.Residential.Count; i++)
         {
             if (zones.Residential[i])
@@ -231,25 +237,94 @@ public sealed class SubTileZoneTests
             }
         }
 
-        GridPos tile = ABareReachableTileNear(world, world.Map.FoundingSite);
-
-        for (int i = 0; i < SubTile.HalfATile; i++)
+        GridPos centre = ABareBlockAtLeast(world, world.Map.FoundingSite, 1);
+        foreach (GridPos tile in Block(centre))
         {
-            zones.SetResidential(SubTile.Of(tile, i % 4, i / 4), true);
+            zones.SetResidential(tile, true);
         }
 
-        Assert.True(zones.IsResidential(tile), "Half a tile counts as painted — that rule stands.");
+        HomeSite whole = Household.ChooseSite(world, world.Map.FoundingSite, 99);
+        Assert.Contains(whole.Front, Block(centre));
 
-        var refused = Assert.Throws<Household.NoRoomToBuildException>(
-            () => Household.ChooseSite(world, world.Map.FoundingSite));
-        _output.WriteLine($"half painted: {refused.Message}");
-
+        // The centre at half: yard for every facing, and the half rule is the yard's.
         for (int i = SubTile.HalfATile; i < SubTile.PerWholeTile; i++)
         {
-            zones.SetResidential(SubTile.Of(tile, i % 4, i / 4), true);
+            zones.SetResidential(SubTile.Of(centre, i % 4, i / 4), false);
         }
 
-        Assert.Equal(tile, Household.ChooseSite(world, world.Map.FoundingSite));
+        Assert.True(zones.IsResidential(centre), "Half a tile counts as painted — that rule stands.");
+        HomeSite halfYard = Household.ChooseSite(world, world.Map.FoundingSite, 99);
+        Assert.Contains(halfYard.Front, Block(centre));
+
+        // Every tile at half: no whole tile for a house to stand on.
+        foreach (GridPos tile in Block(centre))
+        {
+            for (int i = SubTile.HalfATile; i < SubTile.PerWholeTile; i++)
+            {
+                zones.SetResidential(SubTile.Of(tile, i % 4, i / 4), false);
+            }
+        }
+
+        var refused = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite, 99));
+        _output.WriteLine($"half painted: {refused.Message}");
+        Assert.Contains("painted only in part", refused.Message);
+    }
+
+    /// <summary>The nine tiles of a 3×3 block about a centre.</summary>
+    private static List<GridPos> Block(GridPos centre)
+    {
+        var block = new List<GridPos>(9);
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                block.Add(new GridPos(centre.X + dx, centre.Y + dy));
+            }
+        }
+
+        return block;
+    }
+
+    /// <summary>
+    /// The centre of a bare, reachable 5×5 of grass (a 3×3 plot with a lane's margin on every
+    /// side) at least this far from a site.
+    /// </summary>
+    private static GridPos ABareBlockAtLeast(SimWorld world, GridPos site, int tilesAway)
+    {
+        for (int radius = tilesAway; radius < tilesAway + 16; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (at.ManhattanDistanceTo(site) < tilesAway || !world.TravelCost.CanReach(site, at))
+                    {
+                        continue;
+                    }
+
+                    bool bare = true;
+                    for (int by = -2; by <= 2 && bare; by++)
+                    {
+                        for (int bx = -2; bx <= 2 && bare; bx++)
+                        {
+                            var tile = new GridPos(at.X + bx, at.Y + by);
+                            bare = world.Map.Contains(tile)
+                                && world.Map.TerrainAt(tile) == Terrain.Grass
+                                && !world.SomethingStandsAt(tile);
+                        }
+                    }
+
+                    if (bare)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"No bare reachable block {tilesAway} tiles from {site}.");
     }
 
     /// <summary>Open, standing-free ground the village can walk to, close by.</summary>
@@ -286,12 +361,17 @@ public sealed class SubTileZoneTests
 
         GridPos founding = world.Map.FoundingSite;
         int oldBound = VillageEconomy.MaxHomeToVillageTiles(world.Config);
-        GridPos far = ABareReachableTileAtLeast(world, founding, oldBound * 2);
-        zones.SetResidential(far, true);
 
-        GridPos chosen = Household.ChooseSite(world, founding);
-        _output.WriteLine($"painted {far}, {far.ManhattanDistanceTo(founding)} tiles from the founding (old bound ±{oldBound}); chosen {chosen}");
-        Assert.Equal(far, chosen);
+        // A plot's worth of paint (D386), not one tile.
+        GridPos far = ABareBlockAtLeast(world, founding, oldBound * 2);
+        foreach (GridPos tile in Block(far))
+        {
+            zones.SetResidential(tile, true);
+        }
+
+        HomeSite chosen = Household.ChooseSite(world, founding, 99);
+        _output.WriteLine($"painted about {far}, {far.ManhattanDistanceTo(founding)} tiles from the founding (old bound ±{oldBound}); chosen {chosen.Front} — {chosen.WhyHere}");
+        Assert.Contains(chosen.Front, Block(far));
     }
 
     /// <summary>The "nowhere to build" reason counts what is wrong, so the player can act on it (D381).</summary>
@@ -309,64 +389,26 @@ public sealed class SubTileZoneTests
         }
 
         var nothing = Assert.Throws<Household.NoRoomToBuildException>(
-            () => Household.ChooseSite(world, world.Map.FoundingSite));
+            () => Household.ChooseSite(world, world.Map.FoundingSite, 99));
         Assert.Contains("nothing is painted", nothing.Message);
 
         // A tile the store already stands on: painted in full, and built on.
         GridPos onTheStore = world.StoreBuildings[0].Tile;
         zones.SetResidential(onTheStore, true);
         var builtOn = Assert.Throws<Household.NoRoomToBuildException>(
-            () => Household.ChooseSite(world, world.Map.FoundingSite));
+            () => Household.ChooseSite(world, world.Map.FoundingSite, 99));
         _output.WriteLine(builtOn.Message);
-        Assert.Contains("1 built on already", builtOn.Message);
+        Assert.Contains("1 built on or in somebody's plot already", builtOn.Message);
         Assert.DoesNotContain("cut off", builtOn.Message);
-    }
 
-    private static GridPos ABareReachableTileAtLeast(SimWorld world, GridPos site, int tilesAway)
-    {
-        for (int radius = tilesAway; radius < tilesAway + 12; radius++)
-        {
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    var at = new GridPos(site.X + dx, site.Y + dy);
-                    if (at.ManhattanDistanceTo(site) >= tilesAway
-                        && world.Map.Contains(at)
-                        && world.Map.TerrainAt(at) == Terrain.Grass
-                        && !world.SomethingStandsAt(at)
-                        && world.TravelCost.CanReach(site, at))
-                    {
-                        return at;
-                    }
-                }
-            }
-        }
-
-        throw new Xunit.Sdk.XunitException($"No bare reachable ground {tilesAway} tiles from the founding site.");
-    }
-
-    private static GridPos ABareReachableTileNear(SimWorld world, GridPos site)
-    {
-        for (int radius = 1; radius < 12; radius++)
-        {
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    var at = new GridPos(site.X + dx, site.Y + dy);
-                    if (world.Map.Contains(at)
-                        && world.Map.TerrainAt(at) == Terrain.Grass
-                        && !world.SomethingStandsAt(at)
-                        && world.TravelCost.CanReach(site, at))
-                    {
-                        return at;
-                    }
-                }
-            }
-        }
-
-        throw new Xunit.Sdk.XunitException("No bare reachable ground near the founding site.");
+        // One bare tile, painted whole: nothing wrong with it but the plot it cannot hold (D386).
+        zones.SetResidential(onTheStore, false);
+        GridPos lone = ABareBlockAtLeast(world, world.Map.FoundingSite, 1);
+        zones.SetResidential(lone, true);
+        var noRoom = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite, 99));
+        _output.WriteLine(noRoom.Message);
+        Assert.Contains("1 without room for a plot", noRoom.Message);
     }
 
     /// <summary>⛔ A demolished building's ground goes, sub-tiles and all.</summary>

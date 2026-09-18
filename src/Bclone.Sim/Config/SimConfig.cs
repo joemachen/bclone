@@ -1514,8 +1514,55 @@ public sealed record SimConfig
     /// exactly when they are paying attention.
     /// </para>
     /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ Four → six (D386).</b> A home is a house in a plot now — three tiles by two and a
+    /// lane, nine tiles of paint against one — and the radius-four diamond held three plots
+    /// where the fixture village raises seven houses. ⛔ <b>Not seven or eight, and it was
+    /// measured:</b> the diamond's west side lies inside the founding forager's ring, and every
+    /// ring of paint beyond six costs food — residential ground does not regrow (RegrowthSystem)
+    /// — so twelve seeds read 259 / 278 / 12 at four, 199 / 252 / 46 at six and 167 / 239 / 62
+    /// at seven <em>with the old one-tile houses</em>. Six is the smallest diamond that holds the
+    /// village, and the fixture's food premise moved with it, not with the plots (204 / 247 / 21
+    /// with plots at six).
+    /// </remarks>
     [JsonPropertyName("starting_residential_radius")]
-    public int StartingResidentialRadius { get; init; } = 4;
+    public int StartingResidentialRadius { get; init; } = 6;
+
+    /// <summary>
+    /// A household's plot, in whole tiles along the lane (D386, `specs/organic-housing.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// Three: a house is two tiles wide and stands on the left or the right of its plot's front
+    /// row, so the third tile is the side yard and the fence between neighbours runs beside it.
+    /// Joe's picture (a *Foundation* screenshot): *each in its own fenced irregular yard, packed
+    /// like fields, with dirt lanes between them, houses facing the lane.*
+    /// </remarks>
+    [JsonPropertyName("plot_width")]
+    public int PlotWidth { get; init; } = 3;
+
+    /// <summary>A plot's depth back from the lane, in whole tiles, the house's row included (D386).</summary>
+    /// <remarks>
+    /// Two: the house's row and one row of yard behind it — four tiles of yard with the side
+    /// tile, room for the kitchen garden DESIGN §4 sizes the plot for (*"plots leave room for a
+    /// household kitchen garden later, so size them knowing that"*). ⚠️ Three was measured and
+    /// not kept: a plot and its lane are twelve tiles of paint at three deep against nine at
+    /// two, and the fixture's diamond held eight plots against eleven (`organic-housing.md §5`).
+    /// Joe's to widen once he has seen the yards.
+    /// </remarks>
+    [JsonPropertyName("plot_depth")]
+    public int PlotDepth { get; init; } = 2;
+
+    /// <summary>
+    /// What a plot with no neighbour along a side scores as, in tiles walked, per open side (D386,
+    /// `specs/organic-housing.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// The whole of *packing*: a plot beside another scores as if two tiles nearer, one on its
+    /// own as if four further. In the chooser's own currency so the inspector can say it —
+    /// *"beside the Ashfords"* is worth two tiles of walk each way.
+    /// </remarks>
+    [JsonPropertyName("plot_apart_tiles")]
+    public int PlotApartTiles { get; init; } = 2;
 
     /// <summary>
     /// Whether the founders arrive to a village already built, or to an empty valley (D70).
@@ -2299,6 +2346,12 @@ public sealed record SimConfig
             },
             WorkTicks = HomeWorkTicks,
             HouseCapacity = MaxHouseholdSize,
+
+            // ⭐ TWO WIDE, ONE DEEP (D386): a house stands across the front of its plot with its
+            // long side on the lane (`footprints.md §2` had it at 1×1 and said this row was
+            // Phase 5's). Anchored for its facing by `SimWorld.HomeAnchorOn`, so it claims
+            // exactly two tiles turned either way.
+            ExtentWidth = 2,
         },
         new BuildingRow
         {

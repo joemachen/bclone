@@ -17,7 +17,7 @@ facing are content rather than machinery with nothing behind it. This slice type
 
 | Building | Extent | Why this and not bigger |
 |---|---|---|
-| house | 1×1 | brush-sited and packed (D42); 2×1 houses in a plot are Phase 5's organic housing |
+| house | **2×1** | brush-sited in a plot behind its lane, turned to face it (D386, `organic-housing.md`); was 1×1 until Phase 5's organic housing. ⚠️ Anchored for its facing by `SimWorld.HomeAnchorOn` — the even extent turned a quarter is anchored north, not west — so it claims exactly two tiles either way |
 | stockpile | 1×1 | free ground, a pile; it is the founding's first store and stands anywhere |
 | forager's hut, forester's hut, fishing hut | 1×1 | a hut in the woods or on the bank; the ring, not the hut, is the size |
 | woodcutter's hut, builder's hut, hunter's lodge | 2×1 | a yard beside the door |

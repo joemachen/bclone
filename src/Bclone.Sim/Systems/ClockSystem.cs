@@ -50,6 +50,13 @@ public sealed class ClockSystem : ISimSystem
             return;
         }
 
+        // The year's harvest is closed before the season is narrated, so the spring line can
+        // already be judged by it (D387).
+        if (current.Year != previous.Year)
+        {
+            world.CloseTheFoodYear();
+        }
+
         NarrateSeasonTurn(world, current, previous, foragedThisSeason);
 
         // ⭐⭐ AND WHAT THE VILLAGE HAS MARKED OUT BUT CANNOT RAISE (2026-08-27). Joe's second

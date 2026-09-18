@@ -219,6 +219,60 @@ so the brake stops being a gate the village passes through for 65 years and beco
 
 **If capacity flattens the curve, the wave is still there and still worth fixing** — a proportional birth gate is the real answer, and it belongs with D28's re-derivation rather than here.
 
+### 12.4 ✅ THE BIRTH GATE READS THE HARVEST (D387, 2026-09-17 — Joe: *"build the production gate"*)
+
+**The wave came back the day D385 pooled every load in the stores** (§14.10): the level gate reads
+the granary, a full granary beside two forager seats says the village was small when it filled,
+and the unattended fixture bred to the granary's ceiling of twenty-six on seats that feed fourteen
+— then starved back, and whether it recovered was a dice roll every layout change re-rolled (D385's
+happened to; D386's plots did not, and ten fixture guards went red on the throw). §12.3's *real
+answer* was due.
+
+**The rule.** The village keeps a **food ledger** (`SimWorld.FoodProducedThisYear` /
+`FoodEatenThisYear`, closed into `…LastYear` when the year turns; `FoodLedgerYears` counts the
+closed years; all hashed, because they decide births): every gather, catch, kill and reaped tile
+is recorded **where the food comes into being**, every meal where it is taken (`TakeAMealFrom`,
+the one place). **A couple has a child only if last year the village brought in at least what it
+ate** (`TheHarvestFeedsOneMore`), on top of the level gate (D153/D385), the roof (D71), the house's
+room (D153) and the interval. The first year is not judged — there is no harvest to judge by. The
+spring line says why when it says no: *"Last year the village brought in 1,750 food and ate 1,900
+— no room at the table for another child until the harvest catches up."*
+
+**Judged against what was eaten, not what would be, and with no margin — both measured.**
+- *What everyone alive would eat in a year* was the first comparand, and the shipped village —
+  shelves full, foragers idle, bringing in exactly what was eaten — read as short by a tenth every
+  year, bore nothing for thirty, and aged out for want of a generation: people eat when they are
+  hungry, not on the calendar the sum assumes. What came in against what went down is the pair
+  that says whether the village lived within its harvest; at a full shelf the two are equal, which
+  is what a full shelf means.
+- A margin of one child's share held the gate shut through whole generations for the same reason.
+  At zero margin a village at its harvest's edge bears a child in a year the ledger says it can,
+  eats a little more the next, and the ledger says it cannot — the damped hover at capacity D155
+  called pressure, against the twenty-two-to-five crash the level gate alone allowed.
+- ⚠️ **Three excuses for a full shelf were built and measured first, and every one let the fixture
+  breed to twenty and starve:** *a year the shelves stood full at a season's turn is not judged*
+  (they refill every summer right through a growing deficit); *credit the ticks the food hands
+  stood down as harvest* (a thinning ring does not scale — it read 2,434 where flat-out hands
+  brought 1,950); *a year the shelf level did not fall is not judged* (the level bounces round
+  full and the gate with it).
+
+**Measured.** The fixture village, 150 years: **holds 13–16 with 2 starved against 26 of old age**
+(the level gate alone: peak 22, ten lost to one famine, then aged out). Twelve seeds × fifty years:
+**198 / 224 / 0** against 241 / 261 / 0 without the gate — the peak is the harvest's ceiling now,
+not the granary's. The shipped established village holds 12–15 for sixty years, nobody starving,
+and ages out by 110 — D143's fate for a village nobody touches, with the famine taken out of it.
+**Six growth guards re-based 15 → 12** (D262's fifteen was set when the village overshot to 21);
+`TheShippedVillageSurvivesBeingAskedToBuild` re-posed to D143's shape.
+
+**Guards.** `HarvestGateTests`: the ledger counts what comes in and what is eaten and the first
+year is not judged; a village whose foragers are stood down beside a granary kept full by hand
+bears no child while its working twin bears two (red with the gate removed: both arms bear); the
+ledger is hashed.
+
+⚠️ **The player's levers are the ones the sentence names**: more hands gathering (a hut, a seat),
+or more of the harvest kept (a store with room, a limit raised) — because a village that gathers
+only what its shelves will take brings in what it eats, and the ledger reads that truthfully.
+
 ---
 
 ## 14. The market (slice 4) — Joe's answers, 2026-07-27

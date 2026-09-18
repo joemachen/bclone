@@ -340,7 +340,14 @@ public sealed class LabourTests
         // ⛔ TWENTY-FIVE → FIFTEEN (D262), for the reason `VillageTests` records: a two-seat
         // hut feeds about twenty unattended, not forty. **Job-based foraging still has to grow
         // the village several times over, which is what this guard is for.**
-        Assert.True(peak >= 15,
+        // ⛔ FIFTEEN → TWELVE (D387). The birth gate reads the harvest now, not the granary, and
+        // an unattended village settles at what its one two-seat hut feeds instead of breeding
+        // to the granary's twenty-six and starving back — measured, this village holds 12–14
+        // for a hundred and fifty years with nobody starving, where it used to peak at 22 and
+        // lose ten to a famine. **The claim is unchanged — a village GROWS from its founders,
+        // three times over — and only the size the derived economy feeds unattended has moved,
+        // for the third time (25 → 15 → 12).**
+        Assert.True(peak >= 12,
             $"Job-based foraging only ever fed {peak} people from {Config.StartingPopulation}.");
 
         // ⚠️ HUNGER IS A MINORITY OF DEATHS, NOT ZERO (D155). This asserted nobody ever starved,

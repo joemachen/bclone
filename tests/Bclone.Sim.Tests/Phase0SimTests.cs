@@ -228,7 +228,11 @@ public sealed class Phase0SimTests
         // The village's food, larder and stores together: since D385 a forager takes every load
         // to a store and the larder is what they fetch back to eat from, so the larder alone can
         // RISE over a winter while the village as a whole drains.
-        int atWinterStart = loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries();
+        // And what is in their arms (D386): a load picked on the last day of autumn is put down
+        // in winter, and one load is more than a winter's eating for one — so the count that must
+        // fall is everything the village has, carried included.
+        int atWinterStart = loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries()
+            + loop.World.Villager.Carried[Goods.Produce];
 
         while (loop.World.Clock.IsWinter)
         {
@@ -244,7 +248,8 @@ public sealed class Phase0SimTests
 
         Assert.Equal(gathersAtWinterStart, loop.World.Villager.TotalGathers);
         Assert.True(
-            loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries() < atWinterStart,
+            loop.World.Stockpile[Goods.Produce] + loop.World.FoodInGranaries()
+                + loop.World.Villager.Carried[Goods.Produce] < atWinterStart,
             "Winter should drain the village's food.");
     }
 

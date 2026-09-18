@@ -511,8 +511,12 @@ public sealed class TileFindersAgreeTests
                 {
                     var at = new GridPos(site.X + dx, site.Y + dy);
 
-                    // Room to turn it, room to move it, and room to put something in its way.
-                    if (world.CanBuildAt(BuildingKind.Longhouse, at).Allowed
+                    // Room to turn it, room to move it, and room to put something in its way —
+                    // on bare grass, because a pile marked on a wooded tile waits to be cleared
+                    // (D100) and stands in nobody's way until it is. Found the day the founders'
+                    // houses moved into plots (D386) and the first spot with room had a tree there.
+                    if (world.Map.TerrainAt(new GridPos(at.X, at.Y + 1)) == Terrain.Grass
+                        && world.CanBuildAt(BuildingKind.Longhouse, at).Allowed
                         && world.CanBuildAt(BuildingKind.Longhouse, at, facing: Angle.FromTurnFraction(1, 4)).Allowed
                         && world.CanBuildAt(BuildingKind.Granary, new GridPos(at.X, at.Y + 1)).Allowed
                         && world.CanBuildAt(BuildingKind.Granary, new GridPos(at.X, at.Y + 4)).Allowed

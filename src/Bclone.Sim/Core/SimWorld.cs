@@ -114,6 +114,101 @@ public sealed class SimWorld : IObstacles
     /// <summary>Whether the village has already been told it can write. An edge, said once.</summary>
     internal bool SaidTheyCanWrite { get; set; }
 
+    // ---------------------------------------------------------------
+    //  The food ledger (D387, `specs/storage-and-distribution.md §12.4`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THE BIRTH GATE READS THE HARVEST, NOT THE GRANARY. §12.3 said it in July: *the granary
+    // is a stock and the gate wants a rate — a proportional birth gate is the real answer.* The
+    // stock gate (D153/D385) opens whenever the granary holds what everyone alive would want, and
+    // a full granary says nothing about whether the huts can feed one more; an unattended village
+    // bred to the granary's ceiling of twenty-six on two forager seats that feed fourteen, and
+    // starved, every time the dice fell that way (D385 recovered; D386's plots did not). The
+    // ledger is what the village actually brought in — every gather, catch, kill and reaped
+    // tile, the year it happened — and a couple has a child only if last year's harvest fed
+    // everyone alive with one more mouth to spare. ⛔ Hashed, all three: they decide births.
+
+    /// <summary>Food produced since the year began — every gather, catch, kill and reaped tile.</summary>
+    public int FoodProducedThisYear { get; private set; }
+
+    /// <summary>What the last full year brought in.</summary>
+    public int FoodProducedLastYear { get; private set; }
+
+    /// <summary>How many full years the ledger has closed. Zero means there is no harvest to judge by yet.</summary>
+    public int FoodLedgerYears { get; private set; }
+
+    /// <summary>Food eaten since the year began — every meal, from a larder, a shelf or somebody's arms.</summary>
+    /// <remarks>
+    /// ⭐⭐ THE HARVEST IS JUDGED AGAINST WHAT WAS EATEN, NOT WHAT WOULD BE. The first draft
+    /// compared the ledger to the meals everyone alive <em>would</em> eat in a year, and the
+    /// shipped village — shelves full, foragers idle, bringing in exactly what was eaten —
+    /// read as short by a tenth every year, bred nothing for thirty, and aged out for want of a
+    /// generation: people eat when they are hungry, not on the calendar the sum assumes. What
+    /// came in against what went down is the one pair that says whether the village lived
+    /// within its harvest, and at a full shelf the two are equal, which is what a full shelf
+    /// means. ⚠️ Three other readings were built and measured first — a year the shelves stood
+    /// full at a season's turn (they refill every summer through a growing deficit), the
+    /// hands' idle ticks credited as harvest (a thinning ring does not scale), and the shelf
+    /// level year on year (it bounces round full and the gate with it) — and every one of them
+    /// let the fixture breed to twenty and starve.
+    /// </remarks>
+    public int FoodEatenThisYear { get; private set; }
+
+    /// <summary>What was eaten over the last full year.</summary>
+    public int FoodEatenLastYear { get; private set; }
+
+    /// <summary>A producer put food into the world (D387). Called where the food comes into being, never where it is put down.</summary>
+    internal void RecordFoodProduced(int amount)
+    {
+        if (amount > 0)
+        {
+            FoodProducedThisYear += amount;
+        }
+    }
+
+    /// <summary>Somebody ate (D387). Called from the one place a meal is taken.</summary>
+    internal void RecordFoodEaten(int amount)
+    {
+        if (amount > 0)
+        {
+            FoodEatenThisYear += amount;
+        }
+    }
+
+    /// <summary>The year turned: last year's harvest is what this year's births are judged by (D387).</summary>
+    internal void CloseTheFoodYear()
+    {
+        FoodProducedLastYear = FoodProducedThisYear;
+        FoodEatenLastYear = FoodEatenThisYear;
+        FoodProducedThisYear = 0;
+        FoodEatenThisYear = 0;
+        FoodLedgerYears++;
+
+        if (!TheHarvestFeedsOneMore() && Population > 0)
+        {
+            Narrate(
+                $"Last year the village brought in {FoodProducedLastYear.Grouped()} food and ate "
+                + $"{FoodEatenLastYear.Grouped()} — no room at the table for another child until "
+                + $"the harvest catches up. {Clock.SeasonAndYear()}.", LogCategory.Season);
+        }
+    }
+
+    /// <summary>
+    /// Whether the village lived within its harvest last year (D387) — what came in was at least
+    /// what was eaten — and so may have one more mouth. True until a first full year has been
+    /// recorded, because there is nothing to judge by.
+    /// </summary>
+    /// <remarks>
+    /// <b>No margin, on purpose.</b> At a full shelf the two are equal, and a margin of even a
+    /// child's share held the gate shut through whole generations. A village at its harvest's
+    /// edge bears a child in a year the ledger says it can, eats a little more the next, and
+    /// the ledger says it cannot — that is the damped hover at capacity D155 called pressure,
+    /// against the twenty-two-to-five crash the level gate alone allowed.
+    /// </remarks>
+    public bool TheHarvestFeedsOneMore() =>
+        FoodLedgerYears == 0
+        || FoodProducedLastYear >= FoodEatenLastYear;
+
     /// <summary>
     /// Whether anybody here can write — <b>and it comes out of the granary</b> (D32, §7a).
     /// </summary>
@@ -1720,6 +1815,7 @@ public sealed class SimWorld : IObstacles
             }
         }
 
+        RecordFoodEaten(cost - owed);
         return owed == 0;
     }
 
@@ -5627,9 +5723,9 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     internal Angle FacingOfWhatStandsAt(GridPos tile)
     {
-        if (HouseholdAt(tile) is not null)
+        if (HouseholdAt(tile) is Household home)
         {
-            return Angle.Zero;
+            return home.HomeFacing;
         }
 
         if (WorkplaceCovering(tile) is Workplace workplace)
@@ -5675,6 +5771,9 @@ public sealed class SimWorld : IObstacles
         {
             StandingChanged();
             family.HomePosition = null;
+            family.HomeFacing = Angle.Zero;
+            family.WhyHere = "";
+            ReleasePlotOf(family.Id);
 
             string recovered = ReturnToStore(
                 tile, RefundFor(BuildingsCatalog.RecipeOf(BuildingKind.Home)));
@@ -5954,8 +6053,7 @@ public sealed class SimWorld : IObstacles
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomeTile is GridPos home
-                && FootprintOf(BuildingKind.Home, home).Covers(tile))
+            if (HomeFootprintOf(Households[i]) is Footprint home && home.Covers(tile))
             {
                 return Households[i];
             }
@@ -6151,6 +6249,73 @@ public sealed class SimWorld : IObstacles
             Height = BuildingsCatalog[kind]?.ExtentHeight ?? 1,
             Facing = facing,
         };
+
+    // ---------------------------------------------------------------
+    //  Homes in plots (D386, `specs/organic-housing.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Where a house pointed at this tile stands for this facing — D382's anchor rule applied to
+    /// the <em>turned</em> extent (§5): a 2×1 facing north or south is anchored half a tile west
+    /// and covers the tile and its western neighbour; facing east or west, half a tile north and
+    /// the tile and its northern neighbour. Exactly two tiles either way.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Not <see cref="AnchorOn"/>, which reads the extent unturned: a 2×1 anchored west and then
+    /// turned a quarter has its long edges <em>on</em> two neighbours' centres (D331's slip) and
+    /// claims four tiles. Homes are the one building the sim turns itself.
+    /// </remarks>
+    public Point HomeAnchorOn(GridPos tile, Angle facing)
+    {
+        (int width, int height) = ExtentOf(BuildingKind.Home);
+        bool turned = PlotShape.LaneDirection(facing).X != 0;
+        (int across, int deep) = turned ? (height, width) : (width, height);
+        Point centre = Point.CentreOf(tile);
+        return new Point(
+            across % 2 == 0 ? centre.X - Fixed.FromRatio(1, 2) : centre.X,
+            deep % 2 == 0 ? centre.Y - Fixed.FromRatio(1, 2) : centre.Y);
+    }
+
+    /// <summary>The footprint of a house pointed at this tile, facing this way.</summary>
+    public Footprint HomeFootprintAt(GridPos front, Angle facing) =>
+        FootprintOf(BuildingKind.Home, HomeAnchorOn(front, facing), facing);
+
+    /// <summary>A household's house as it stands — its position and facing — or null while roofless.</summary>
+    public Footprint? HomeFootprintOf(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        return household.HomePosition is Point home
+            ? FootprintOf(BuildingKind.Home, home, household.HomeFacing)
+            : null;
+    }
+
+    /// <summary>The plot a house pointed here, facing this way, would give this household (§3.1).</summary>
+    public PlotShape PlotFor(GridPos front, Angle facing, int householdId) =>
+        PlotShape.Of(front, facing, householdId, Config.PlotWidth, Config.PlotDepth);
+
+    /// <summary>
+    /// Give a household its plot — when its house is marked out, raised at the founding, or
+    /// handed on. The zone map's index is maintained here and in <see cref="ReleasePlotOf"/>, and
+    /// nowhere else. The whole rectangle, painted or not (it restates the household; the fence is
+    /// read against the paint at draw time), less any tile another plot already holds — a
+    /// clipped plot is the rim's, and the rim is where two rectangles can meet.
+    /// </summary>
+    internal void ClaimPlotFor(int householdId, GridPos front, Angle facing)
+    {
+        PlotShape plot = PlotFor(front, facing, householdId);
+        var mine = new List<GridPos>(plot.Tiles.Count);
+        for (int i = 0; i < plot.Tiles.Count; i++)
+        {
+            if (Zones.PlotOwner(plot.Tiles[i]) == 0 && !Zones.IsLane(plot.Tiles[i]))
+            {
+                mine.Add(plot.Tiles[i]);
+            }
+        }
+
+        Zones.ClaimPlot(householdId, mine, plot.Lane);
+    }
+
+    internal void ReleasePlotOf(int householdId) => Zones.ReleasePlot(householdId);
 
     public PlacementVerdict CanBuildAt(
         BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default) =>
@@ -6666,9 +6831,20 @@ public sealed class SimWorld : IObstacles
     /// redundant: <b>it should never fire again, and that is exactly why it stays.</b>
     /// </para>
     /// </remarks>
-    internal void MarkHome(int householdId, GridPos position)
+    internal void MarkHome(int householdId, HomeSite site)
     {
         BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Home, Config);
+        GridPos position = site.Front;
+
+        // ⭐ A SITE IS A CLAIM (D386, `specs/organic-housing.md §3.4`): the plot is the household's
+        // from the day the house is marked out, so the next family's chooser cannot take ground
+        // under a house that is still a plan. Released if the site is abandoned or finished
+        // for nobody.
+        ClaimPlotFor(householdId, site.Front, site.Facing);
+        if (FindHousehold(householdId) is Household family)
+        {
+            family.WhyHere = site.WhyHere;
+        }
 
         // ⚠️ AND WHEN THAT PROMISE IS BROKEN, SAY SO (D110). `ChooseSite` is supposed to have
         // found reachable ground, and in seed 11 of the twelve-seed arm it did not — a house
@@ -6694,7 +6870,9 @@ public sealed class SimWorld : IObstacles
             Zones.SetHarvest(position, true);
         }
 
-        RaiseSiteFor(BuildingKind.Home, Point.CentreOf(position), "a house", recipe, householdId);
+        RaiseSiteFor(
+            BuildingKind.Home, HomeAnchorOn(site.Front, site.Facing), "a house", recipe, householdId,
+            facing: site.Facing);
     }
 
     /// <summary>
@@ -7342,6 +7520,12 @@ public sealed class SimWorld : IObstacles
         }
 
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
+        if (site.Construction.Kind == BuildingKind.Home)
+        {
+            // The plot was the family's from the marking (D386); the ground is free again.
+            ReleasePlotOf(site.Construction.ForHouseholdId);
+        }
+
         RetireWorkplace(site);
 
         // ANYWHERE THAT TAKES IT, not a warehouse by name (D132). Asking for the kind
@@ -7406,11 +7590,13 @@ public sealed class SimWorld : IObstacles
                     // hands it to the next family that needs one).
                     Narrate($"The house at {site.Position} was finished with nobody left to "
                         + $"live in it. {Clock.SeasonAndYear()}.", LogCategory.Warning);
+                    ReleasePlotOf(plan.ForHouseholdId);
                     break;
                 }
 
                 StandingChanged();
                 family.HomePosition = site.Position;
+                family.HomeFacing = plan.Facing;
                 NeedsMoreResidentialLand = false;
 
                 // A house is the one building that does not go through `RaiseFinished`.
@@ -8826,14 +9012,14 @@ public sealed class SimWorld : IObstacles
     /// widen the paint by a ring rather than the fixture dying on a layout question — bounded,
     /// and only ever reached on a seed that would otherwise have no founding.
     /// </remarks>
-    private GridPos SiteAFoundersHome(SimConfig config, GridPos origin)
+    private HomeSite SiteAFoundersHome(SimConfig config, GridPos origin, int householdId)
     {
         var near = new GridPos(origin.X + config.HomeX, origin.Y + config.HomeY);
         for (int ring = 1; ; ring++)
         {
             try
             {
-                return Household.ChooseSite(this, near);
+                return Household.ChooseSite(this, near, householdId);
             }
             catch (Household.NoRoomToBuildException) when (ring <= 3)
             {
@@ -8907,8 +9093,8 @@ public sealed class SimWorld : IObstacles
             // household still exists — it is a family, not a building — and it goes on
             // holding a name, a larder and its members. What it does not have is anywhere
             // to put them, which is the whole of the cold start.
-            GridPos? home = config.FoundingBuildings
-                ? SiteAFoundersHome(config, origin)
+            HomeSite? home = config.FoundingBuildings
+                ? SiteAFoundersHome(config, origin, h + 1)
                 : null;
 
             var household = new Household
@@ -8916,8 +9102,16 @@ public sealed class SimWorld : IObstacles
                 Stockpile = NewStockpile(),
                 Id = h + 1,
                 Name = config.HouseholdNames[h % config.HouseholdNames.Count],
-                HomePosition = home is GridPos tile ? Point.CentreOf(tile) : null,
+                HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
+                HomeFacing = home?.Facing ?? Angle.Zero,
+                WhyHere = home?.WhyHere ?? "",
             };
+
+            // The founders' plots are claimed as everyone else's are (D386) — one rule.
+            if (home is HomeSite founded)
+            {
+                ClaimPlotFor(household.Id, founded.Front, founded.Facing);
+            }
 
             // Added before its members are drawn, so the next founding household's
             // ChooseSite can see this one and does not build on top of it.
@@ -8984,7 +9178,7 @@ public sealed class SimWorld : IObstacles
                     // Standing at their house, or at the cart they arrived in (D70). Not
                     // RestingPlaceOf — that reads the household, and this villager is not
                     // in it yet.
-                    Position = Point.CentreOf(home ?? origin),
+                    Position = household.HomePosition ?? Point.CentreOf(origin),
                     HouseholdId = household.Id,
 
                     // Year 1 is the first year, so someone aged N at founding was
@@ -9263,8 +9457,7 @@ public sealed class SimWorld : IObstacles
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition is Point home
-                && FootprintOf(BuildingKind.Home, home).Overlaps(shape))
+            if (HomeFootprintOf(Households[i]) is Footprint home && home.Overlaps(shape))
             {
                 return true;
             }
@@ -9493,9 +9686,9 @@ public sealed class SimWorld : IObstacles
     {
         for (int i = 0; i < Households.Count; i++)
         {
-            if (Households[i].HomePosition is Point home)
+            if (HomeFootprintOf(Households[i]) is Footprint home)
             {
-                yield return (FootprintOf(BuildingKind.Home, home), home.ToTile());
+                yield return (home, home.Origin.ToTile());
             }
         }
 
@@ -9522,9 +9715,9 @@ public sealed class SimWorld : IObstacles
             yield return (shape, shape.Origin.ToTile());
         }
 
-        if (_trialHome is GridPos trial)
+        if (_trialHome is Footprint trial)
         {
-            yield return (FootprintOf(BuildingKind.Home, trial), trial);
+            yield return (trial, trial.Origin.ToTile());
         }
     }
 
@@ -9765,7 +9958,7 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>A house stood for the length of one measurement (D383) — see <see cref="DetourOfAHouseAt"/>.</summary>
-    private GridPos? _trialHome;
+    private Footprint? _trialHome;
 
     /// <summary>
     /// What the village's daily walks would lengthen by, in tiles walked, if a house stood here
@@ -9783,9 +9976,9 @@ public sealed class SimWorld : IObstacles
     /// for seven converging hauls and sent the founders' second house into a pocket 147 tiles
     /// from their work.
     /// </remarks>
-    internal int DetourOfAHouseAt(List<DailyWalk> walks, GridPos tile)
+    internal int DetourOfAHouseAt(List<DailyWalk> walks, GridPos front, Angle facing)
     {
-        _trialHome = tile;
+        _trialHome = HomeFootprintAt(front, facing);
         StandingChanged();
         int detour = 0;
         try

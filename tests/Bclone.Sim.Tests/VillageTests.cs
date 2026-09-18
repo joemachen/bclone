@@ -489,7 +489,14 @@ public sealed class VillageTests
         // builds a second — measured, it peaks at 21 where it used to reach the high thirties.
         // **The claim is unchanged — a village GROWS from its founders — and only the size the
         // derived economy can feed unattended has moved.**
-        Assert.True(peak >= 15,
+        // ⛔ FIFTEEN → TWELVE (D387). The birth gate reads the harvest now, not the granary, and
+        // an unattended village settles at what its one two-seat hut feeds instead of breeding
+        // to the granary's twenty-six and starving back — measured, this village holds 12–14
+        // for a hundred and fifty years with nobody starving, where it used to peak at 22 and
+        // lose ten to a famine. **The claim is unchanged — a village GROWS from its founders,
+        // three times over — and only the size the derived economy feeds unattended has moved,
+        // for the third time (25 → 15 → 12).**
+        Assert.True(peak >= 12,
             $"The village only ever reached {peak} from {GrowingVillage.StartingPopulation} " +
             "founders, so the derived economy is not feeding a growing settlement.");
 

@@ -394,7 +394,14 @@ public sealed class FirewoodTests
         // ⭐ Fifteen still carries the claim: four founders to fifteen is a village that paired,
         // fed, housed and HEATED itself for three centuries, which is what "the chain keeps up
         // with a growing village" means. The zero-frozen assertion below is the sharp end.
-        Assert.True(peak >= 15,
+        // ⛔ FIFTEEN → TWELVE (D387). The birth gate reads the harvest now, not the granary, and
+        // an unattended village settles at what its one two-seat hut feeds instead of breeding
+        // to the granary's twenty-six and starving back — measured, this village holds 12–14
+        // for a hundred and fifty years with nobody starving, where it used to peak at 22 and
+        // lose ten to a famine. **The claim is unchanged — a village GROWS from its founders,
+        // three times over — and only the size the derived economy feeds unattended has moved,
+        // for the third time (25 → 15 → 12).**
+        Assert.True(peak >= 12,
             $"With fuel burning, the village only ever reached {peak} from " +
             $"{config.StartingPopulation} founders — the chain is not keeping up with it.");
 

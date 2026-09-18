@@ -180,8 +180,24 @@ public static class VillageEconomy
     /// </remarks>
     public const int ObstacleDetourTiles = 1;
 
-    /// <summary>The walk to work the trip derivations price: the ring, and a tile round what stands in the way.</summary>
-    public static int WalkBudgetTiles(SimConfig config) => MaxHomeToWorkTiles(config) + ObstacleDetourTiles;
+    /// <summary>
+    /// The tile every leg that starts or ends at a home carries for the lane the house fronts
+    /// (D386, `specs/organic-housing.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// A home is a house in a plot: two tiles wide, a lane across its front, and a yard behind, so
+    /// the front tile the walks are measured from stands a tile further from everything than a
+    /// house dropped on the nearest painted tile did. Measured across thirty generated valleys at
+    /// the founding: the typical family's walk to the hut went 6½ → 7½, never more than two
+    /// tiles, one on most seeds. <b>One tile, stated</b>, on the home legs — the same shape as
+    /// the detour above, and for the same reason: a village derived to feed itself on the
+    /// shorter walk makes fewer trips than it was budgeted for.
+    /// </remarks>
+    public const int PlotLaneTiles = 1;
+
+    /// <summary>The walk to work the trip derivations price: the ring, a tile round what stands in the way, and the lane a house fronts.</summary>
+    public static int WalkBudgetTiles(SimConfig config) =>
+        MaxHomeToWorkTiles(config) + ObstacleDetourTiles + PlotLaneTiles;
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
     /// <remarks>
@@ -248,10 +264,11 @@ public static class VillageEconomy
         var worstHome = new GridPos(fromVillage, 0);
 
         // The stand IS the worst home's budget point, so the first leg is nothing; the two
-        // real legs each go round what stands in the way (D383).
+        // real legs each go round what stands in the way (D383), and the leg home crosses the
+        // lane (D386).
         int worst = worstHome.ManhattanDistanceTo(stand)
             + stand.ManhattanDistanceTo(warehouse) + ObstacleDetourTiles
-            + warehouse.ManhattanDistanceTo(worstHome) + ObstacleDetourTiles;
+            + warehouse.ManhattanDistanceTo(worstHome) + ObstacleDetourTiles + PlotLaneTiles;
 
         return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
@@ -353,7 +370,7 @@ public static class VillageEconomy
 
         var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
         var worstHome = new GridPos(MaxHomeToVillageTiles(config), 0);
-        int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles;
+        int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles + PlotLaneTiles;
         int splits = config.SplitsPerStint < 1 ? 1 : config.SplitsPerStint;
 
         return (worst * config.TravelTicksPerUnit * 2) + (splits * config.SplitTicks);
@@ -777,24 +794,52 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
+        int radius = FieldRadiusOneFarmerKeeps(config);
+        return radius < 1 ? 0 : TilesInRing(radius);
+    }
+
+    /// <summary>
+    /// The last radius whose diamond one farmer can sow in a spring and reap in an autumn — the
+    /// loop <see cref="FieldTilesOneFarmerKeeps"/> and <see cref="FieldHaulTicksBudgeted"/> both
+    /// read, so the two cannot drift. Zero when not even the first ring fits.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ EACH TILE IS CHARGED THE WALK FROM ITS OWN RING (D386).</b> This priced every tile
+    /// of a radius-two diamond at radius two's walk — the steading's own tile and the four
+    /// beside it as if they were two out — and the sum came to 91 against a season of 92: the
+    /// derivation sat one tick from dropping to five tiles, and the tile a plot's lane adds to
+    /// the commute (<see cref="PlotLaneTiles"/>) pushed it over. A farmer who reaps fourteen
+    /// tiles an autumn (<c>AFarmerCanActuallyReapTheFieldTheDerivationGivesThem</c>) would have
+    /// been budgeted five. Priced ring by ring the radius-two diamond costs 79, the shape is the
+    /// same diamond, and the claim is still a floor reality beats.
+    /// </para>
+    /// <para>
+    /// Bounded rather than open-ended: the walk grows with the radius and the tiles with its
+    /// square, so this always terminates long before the bound — which is there so that a
+    /// config with a pathological travel cost fails as a zero rather than as a hang.
+    /// </para>
+    /// </remarks>
+    public static int FieldRadiusOneFarmerKeeps(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
         int budget = FieldSeasonTicks(config);
         int best = 0;
+        int reaping = FieldTileTicks(config, config.ReapTicks, 0, carrying: true);
 
-        // Bounded rather than open-ended: the walk grows with the radius and the tiles with its
-        // square, so this always terminates long before the bound — which is there so that a
-        // config with a pathological travel cost fails as a zero rather than as a hang.
         for (int radius = 1; radius <= MaxHomeToWorkTiles(config); radius++)
         {
-            int tiles = TilesInRing(radius);
-            int reaping = tiles * FieldTileTicks(config, config.ReapTicks, radius, carrying: true);
-            int sowing = tiles * FieldTileTicks(config, config.SowTicks, radius, carrying: false);
+            int band = TilesInRing(radius) - TilesInRing(radius - 1);
+            reaping += band * FieldTileTicks(config, config.ReapTicks, radius, carrying: true);
+            int sowing = TilesInRing(radius) * FieldTileTicks(config, config.SowTicks, radius, carrying: false);
 
             if (reaping > budget || sowing > budget)
             {
                 break;
             }
 
-            best = tiles;
+            best = radius;
         }
 
         return best;
@@ -868,25 +913,10 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int budget = FieldSeasonTicks(config);
-
-        for (int radius = 1; radius <= MaxHomeToWorkTiles(config); radius++)
-        {
-            int tiles = TilesInRing(radius);
-            int reaping = tiles * FieldTileTicks(config, config.ReapTicks, radius, carrying: true);
-            int sowing = tiles * FieldTileTicks(config, config.SowTicks, radius, carrying: false);
-
-            if (reaping > budget || sowing > budget)
-            {
-                // One short of the radius that no longer fits — the same last-radius-that-fits
-                // rule `FieldTilesOneFarmerKeeps` uses, and read from the same loop so the two
-                // cannot drift.
-                int settled = radius - 1 < 1 ? 1 : radius - 1;
-                return settled * config.TravelTicksPerUnit * 2;
-            }
-        }
-
-        return MaxHomeToWorkTiles(config) * config.TravelTicksPerUnit * 2;
+        // The last radius that fits — the same loop `FieldTilesOneFarmerKeeps` reads, so the two
+        // cannot drift; at least one, so a farm too poor for a ring still budgets a walk.
+        int settled = FieldRadiusOneFarmerKeeps(config);
+        return (settled < 1 ? 1 : settled) * config.TravelTicksPerUnit * 2;
     }
 
     /// <summary>
@@ -1141,7 +1171,20 @@ public static class VillageEconomy
         // hypothetical one standing in unbroken forest.
         int wooded = WorkingRingWoodedPercent(config);
         int denominator = trips * config.VigourMinPercent * wooded;
-        return ((needed * 100 * 100) + denominator - 1) / denominator;
+        int yield = ((needed * 100 * 100) + denominator - 1) / denominator;
+
+        // ⚠️ AND THEN ASKED OF THE SUM IT HAS TO SATISFY (D386). `FoodGatheredPerYear` truncates
+        // twice on the way — the wooded share, then the vigour — and the closed form above
+        // rounds once, so at eleven trips a year it answered 122 and the year it priced came to
+        // 257 against a need of 258. It held for four re-derivations by luck. The floor is the
+        // smallest yield the year's own arithmetic feeds the target on, and the closed form is
+        // where the search starts.
+        while (FoodGatheredPerYearAtWorst(config with { GatherYield = yield }) < needed)
+        {
+            yield++;
+        }
+
+        return yield;
     }
 
     /// <summary>

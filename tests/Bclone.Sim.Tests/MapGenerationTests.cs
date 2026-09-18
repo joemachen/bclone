@@ -451,7 +451,13 @@ public sealed class MapGenerationTests
     public void EveryValleyMeetsTheEconomysDistanceBudget()
     {
         SimConfig config = Config;
-        int budget = VillageEconomy.MaxHomeToWorkTiles(config);
+        // ⚠️ THE RING AND THE LANE (D386). A home is a house in a plot behind its lane now, so the
+        // tile a walk is measured from stands a tile further out than a house dropped on the
+        // nearest painted tile did — measured across these thirty valleys, +1 typical, never
+        // more than +2 — and the economy carries that tile on every home leg
+        // (`VillageEconomy.PlotLaneTiles`). The budget the generator is held to is the same walk
+        // the yield is derived against.
+        int budget = VillageEconomy.MaxHomeToWorkTiles(config) + VillageEconomy.PlotLaneTiles;
 
         int seedsBeyond = 0;
         int seedsWithin = 0;
@@ -884,13 +890,42 @@ public sealed class MapGenerationTests
 
         GridPos from = world.Households[0].Home();
 
+        // ⚠️ BUILDING TO BUILDING, NOT TILE TO TILE (D386). A house is two tiles wide now, and a
+        // walk between two buildings is the walk between their nearest tiles — the field leaves
+        // from and arrives at a footprint, not an anchor — so *the straight line* is the shortest
+        // Manhattan distance between any tile of the house and any tile of the workplace. Read
+        // 40 against 50 the day the founders' houses grew a second tile.
+        List<GridPos> houseTiles = world.HomeFootprintOf(world.Households[0])!.Value.CoveredTiles();
+
+        // ⚠️ AND "NOTHING IN THE WAY" HAS MEANT "NO WATER" SINCE D383 MADE BUILDINGS OBSTACLES:
+        // the founding's own stores and the other founders' houses stand between a home and
+        // some of its workplaces, and a walk round one costs a tile or two (D383 prices one a
+        // leg). Every walk is at least the straight line, at most two tiles over it, and at
+        // least one is the straight line exactly — which is still the claim: the field neither
+        // always goes the long way round nor ever says unreachable on dry land.
+        int exact = 0;
         foreach (Workplace workplace in world.Workplaces)
         {
             int path = world.TravelCost.Cost(from, workplace.Tile);
-            int straight = from.ManhattanDistanceTo(workplace.Tile) * TravelCostField.BaseTileCost;
+            int nearest = int.MaxValue;
+            foreach (GridPos mine in houseTiles)
+            {
+                foreach (GridPos theirs in workplace.Footprint.CoveredTiles())
+                {
+                    nearest = Math.Min(nearest, mine.ManhattanDistanceTo(theirs));
+                }
+            }
 
-            Assert.Equal(straight, path);
+            int straight = nearest * TravelCostField.BaseTileCost;
+            _output.WriteLine($"{workplace.Name}: {path} against {straight} as the crow flies");
+            Assert.InRange(path, straight, straight + (2 * TravelCostField.BaseTileCost));
+            if (path == straight)
+            {
+                exact++;
+            }
         }
+
+        Assert.True(exact > 0, "no walk at all was the straight line — the field goes the long way round everywhere");
     }
 
     [Fact]

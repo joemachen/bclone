@@ -242,6 +242,11 @@ public static class StateHash
                 hash = MixByte(hash, 1);
                 hash = MixFixed(hash, home.X);
                 hash = MixFixed(hash, home.Y);
+
+                // Which way it faces (D386): a turned house stands on different ground and
+                // fronts a different lane. Only with a home, so a homeless family hashes as
+                // it always did.
+                hash = MixAngle(hash, household.HomeFacing);
             }
             else
             {
@@ -444,6 +449,17 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.FirstGranaryTick);
             hash = MixUInt32(hash, (uint)(world.FirstGranaryTick >> 32));
         }
+
+        // ---- The food ledger (D387) ----
+        //
+        // ⛔ HASHED BECAUSE IT DECIDES BIRTHS. Every village produces food, so the sparseness rule
+        // does not apply: three counters, always. `FoodLedgerYears` is what says the first year is
+        // not judged, so it is state too.
+        hash = MixUInt32(hash, (uint)world.FoodProducedThisYear);
+        hash = MixUInt32(hash, (uint)world.FoodProducedLastYear);
+        hash = MixUInt32(hash, (uint)world.FoodLedgerYears);
+        hash = MixUInt32(hash, (uint)world.FoodEatenThisYear);
+        hash = MixUInt32(hash, (uint)world.FoodEatenLastYear);
 
         // ---- A library the village has been given and not yet placed ----
         //
