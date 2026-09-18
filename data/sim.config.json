@@ -520,6 +520,9 @@
   // and firewood is what a household burns in winter. Logs build; only
   // firewood heats. Drawn from the whole village, parents first.
   "logs_per_house": 30,
+  // The fence round a house's yard, a log a tile (D388): part of the house's
+  // construction, refunded with it, and never moved by the brush afterwards.
+  "fence_logs_per_tile": 1,
 
   // ---- Woodland (forests-and-gathering.md) -------------------
   // The valley is WOODED, not dotted with two stands. Joe: "there

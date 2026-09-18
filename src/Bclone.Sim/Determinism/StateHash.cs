@@ -248,6 +248,19 @@ public static class StateHash
                 // it always did.
                 hash = MixAngle(hash, household.HomeFacing);
             }
+
+            // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
+            // site has none, and hashes as it always did.
+            hash = MixUInt32(hash, (uint)household.FencedTiles.Count);
+            for (int t = 0; t < household.FencedTiles.Count; t++)
+            {
+                hash = MixUInt32(hash, (uint)household.FencedTiles[t].X);
+                hash = MixUInt32(hash, (uint)household.FencedTiles[t].Y);
+            }
+
+            if (household.HomePosition is not null)
+            {
+            }
             else
             {
                 hash = MixByte(hash, 0);

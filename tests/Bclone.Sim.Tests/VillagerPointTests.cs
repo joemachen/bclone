@@ -115,8 +115,10 @@ public sealed class VillagerPointTests
     // 25 → 34). Were 14 / 39.
     // ⚠️ RE-PINNED (D386), not for the clock: a house is two tiles wide in a plot behind its
     // lane, and the founder's door is a tile further from the hut at pace 3. Was 52.
-    private const int FirstGatherAtPace1 = 18;
-    private const int FirstGatherAtPace3 = 54;
+    // ⚠️ RE-PINNED (D388), not for the clock: the lane picks the door now and the founder's
+    // house faces by hash, so the first walk to the hut leaves from a different side. Were 18 / 54.
+    private const int FirstGatherAtPace1 = 21;
+    private const int FirstGatherAtPace3 = 53;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>

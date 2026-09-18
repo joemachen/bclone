@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — ORGANIC HOUSING (D386: PLOTS, LANES, FENCES, A HOUSE THAT FACES ITS LANE) AND THE HARVEST GATE (D387) ARE BUILT IN ONE COMMIT. COMMITTED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS; THEN THE PROFESSIONS AND THEIR BUILDINGS (HIS CALL).**
+# Handoff — bclone: **▶️ PHASE 5 — JOE'S PLAY NOTES ON THE PLOTS: D388 (THE LANE PICKS THE DOOR; THE FENCE IS BUILT) IS COMMITTED; D389 (STOCKING IS ONE CONTROL; SHELVES 5) AND D390 (WHAT'S HERE) FOLLOW. NOT PUSHED, UNPLAYED. THEN THE PROFESSIONS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-17 — AFTER D386 + D387.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 — AFTER D388.**
+>
+> **The state:** `main` = D388 on D386 + D387 (`63b859d`) on `0b1124b` = `origin/main`;
+> **committed, NOT pushed — Joe pushes after he plays.** Joe played D386/D387 on 2026-09-18 and
+> sent seven notes (D388's are the plots'; D389 and D390 are the storage control, the library's
+> shelves and the *what's here* window — read `DESIGN.md §7` D388 onward). Working tree clean.
+>
+> **✅ D388 — THE LANE PICKS THE DOOR; THE FENCE IS BUILT WITH THE HOUSE.** Joe: *"this isn't
+> supposed to be suburbs"* — the walk scores the plot from its own tile and the facing is the
+> lane's: a house fronts a street that is already there (a neighbour's lane, a walk, a worn
+> path), else faces by a hash of the household. The fixture faces four ways where it faced two.
+> Joe: *"it feels too malleable"* — `Household.FencedTiles` is the yard as it stood the day the
+> house was marked, a log a yard tile on the recipe (`fence_logs_per_tile`), refunded with the
+> house; the brush never moves a built fence. ⏸️ **Fences as walls with an open gate: Joe's yes,
+> as its own slice after the professions** (a per-tile edge mask in the cost field — `tech-tree.md
+> §9.6`). Twelve seeds 199 / 221 / 0. **1184 passing, 0 failing, 2 skipped of 1186, 3m00.**
+>
+> *(D386 + D387's banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-17 — AFTER D386 + D387.**
 >
 > **The state:** `main` = D386 + D387 (one commit) on `0b1124b` = `origin/main`; **committed,
 > NOT pushed — Joe pushes after he plays.** Working tree clean. Suite **1181 passing, 0 failing,
@@ -1395,6 +1414,11 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **FENCES AS WALLS WITH AN OPEN GATE (Joe's yes, 2026-09-18; after the professions).** A fence
+  runs on tile *edges*; the one cost field is tile-based. The slice: a per-tile edge mask in
+  `TravelCostField` honoured by every flow field and by `LineOfSight`, the door's lane edge open as
+  the gate, the D383 wall-off refusal extended to *"would fence somebody in"*, and then lanes
+  matter for real. `tech-tree.md §9.6` — *fences are walls the cost field routes around*.
 - ⭐ **THE PLOT'S THREE NUMBERS, ONCE HE HAS SEEN THE ROWS (D386, 2026-09-17).** `plot_width` 3,
   `plot_depth` 2, `plot_apart_tiles` 2 are stated, measured and shipped, and the *apart* term
   barely bites at 2 (18 → 22 of ~68 houses beside a neighbour over twelve seeds). Whether the

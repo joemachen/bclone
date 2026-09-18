@@ -156,9 +156,11 @@ public sealed class HouseholdSystem : ISimSystem
                 household.HomePosition = standingEmpty.HomePosition;
                 household.HomeFacing = standingEmpty.HomeFacing;
                 household.WhyHere = standingEmpty.WhyHere;
+                household.FencedTiles = standingEmpty.FencedTiles;
                 standingEmpty.HomePosition = null;
                 standingEmpty.HomeFacing = Angle.Zero;
                 standingEmpty.WhyHere = "";
+                standingEmpty.FencedTiles = new List<GridPos>();
 
                 // The plot goes with the house (D386, §3.5).
                 world.Zones.HandPlotOn(standingEmpty.Id, household.Id);

@@ -1750,6 +1750,20 @@ public sealed record SimConfig
     [JsonPropertyName("logs_per_house")]
     public int LogsPerHouse { get; init; } = 30;
 
+    /// <summary>
+    /// Logs a house's fence costs per yard tile it encloses (D388, `specs/organic-housing.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"when a constructed yard shape changes based on painting/unpainting, it should
+    /// require a round of proper construction/demolition with some level of cost/payback. it
+    /// feels too malleable."* The fence is part of the house's construction — the yard as it stood
+    /// the day the house was marked, a log a tile, hauled and worked with the rest, refunded with
+    /// the house — and the brush never moves it afterwards. One: a 3×2 plot is four yard tiles,
+    /// four logs on a thirty-log house, a cost that is felt and not a tax.
+    /// </remarks>
+    [JsonPropertyName("fence_logs_per_tile")]
+    public int FenceLogsPerTile { get; init; } = 1;
+
     // `forage_site_capacity` is deleted with the patches. *"How many people can work one
     // forage site at once"* has no subject any more: a gatherer's hut prices its seats from
     // its own ring (D112), which is the same idea derived rather than typed.

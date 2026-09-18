@@ -74,6 +74,20 @@ public readonly record struct PlotShape
         return (mix & 1) == 0;
     }
 
+    /// <summary>
+    /// Where a household's facings are tried from when no lane decides it (D388): an index into
+    /// <see cref="Facings"/> from a hash of the id, so the founders' houses and a plot with no lane
+    /// nearby face four ways between them rather than all north. ⛔ Never an <c>Rng</c> draw.
+    /// </summary>
+    public static int FacingByHash(int householdId)
+    {
+        uint mix = unchecked((uint)householdId * 2246822519u);
+        mix ^= mix >> 13;
+        mix = unchecked(mix * 3266489917u);
+        mix ^= mix >> 16;
+        return (int)(mix % (uint)Facings.Count);
+    }
+
     public static PlotShape Of(GridPos front, Angle facing, int householdId, int width, int depth)
     {
         if (width < 2 || depth < 1)

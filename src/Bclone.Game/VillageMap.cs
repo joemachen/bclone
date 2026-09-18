@@ -3226,10 +3226,12 @@ public partial class VillageMap : Control
         var byOwner = new Dictionary<int, HashSet<Vector2I>>();
         var owners = new List<int>();
 
-        // ⭐ THE FENCE IS THE PLOT'S OWNER ∩ THE PAINT (D386, `organic-housing.md §3.6`): a
-        // household's plot is a rectangle of tiles, and the fence follows the painted quarters
-        // inside it, so a yard the brush clipped is fenced along the brush's rim. Per household,
-        // as work ground is per building; collected in a list, never drawn from the dictionary.
+        // ⭐ THE FENCE IS WHAT WAS BUILT (D388, `organic-housing.md §3.5`): the tiles the
+        // household's fence encloses, whole — straight timber along tile edges, not the brush's
+        // curve, and not moved by the brush afterwards (D386 drew it as owner ∩ paint, and Joe
+        // called it *"too malleable"*). Per household, as work ground is per building; collected
+        // in a list, never drawn from the dictionary. Cached on `ZoneMap.Edits`, which the plot
+        // layer bumps when a fence goes up or comes down.
         var plotsByOwner = new Dictionary<int, HashSet<Vector2I>>();
         var plotOwners = new List<int>();
 
@@ -3277,19 +3279,19 @@ public partial class VillageMap : Control
                 if (zones.ResidentialSub[index])
                 {
                     residential.Add(at);
+                }
 
-                    int plot = zones.PlotOwner(new SubTile(x, y).Tile);
-                    if (plot != 0)
+                int plot = zones.PlotOwner(new SubTile(x, y).Tile);
+                if (plot != 0)
+                {
+                    if (!plotsByOwner.TryGetValue(plot, out HashSet<Vector2I>? fenced))
                     {
-                        if (!plotsByOwner.TryGetValue(plot, out HashSet<Vector2I>? fenced))
-                        {
-                            fenced = new HashSet<Vector2I>();
-                            plotsByOwner[plot] = fenced;
-                            plotOwners.Add(plot);
-                        }
-
-                        fenced.Add(at);
+                        fenced = new HashSet<Vector2I>();
+                        plotsByOwner[plot] = fenced;
+                        plotOwners.Add(plot);
                     }
+
+                    fenced.Add(at);
                 }
 
                 if (zones.HarvestSub[index] && !underASite.Contains(new SubTile(x, y).Tile))
@@ -3319,13 +3321,16 @@ public partial class VillageMap : Control
 
         Keep(residential, Layer.Residential, ResidentialEdge, owner: 0, waiting: false);
 
-        // The fences: a line round each plot's painted ground, no wash of its own — the wash is
-        // the neighbourhood's. Drawn with the residential layer, hidden with it.
+        // The fences: a line round each household's fenced tiles, no wash of its own — the wash
+        // is the neighbourhood's. Drawn with the residential layer, hidden with it; faint while
+        // the house is still a site, because the fence is on the recipe and not yet up.
         for (int i = 0; i < plotOwners.Count; i++)
         {
+            bool standing = _world.FindHousehold(plotOwners[i])?.HasHome == true;
+            Color edge = standing ? FenceEdge : FenceEdge with { A = 0.35f };
             foreach (Vector2[] loop in ZoneOutline.Trace(plotsByOwner[plotOwners[i]], SubTile.PerTile))
             {
-                _zoneOutlines.Add((Layer.Residential, FenceEdge, loop));
+                _zoneOutlines.Add((Layer.Residential, edge, loop));
             }
         }
 

@@ -172,7 +172,7 @@ public sealed class OrganicHousingTests
         }
 
         Assert.Equal(site.WhyHere, family.WhyHere);
-        Assert.Contains("facing the lane", family.WhyHere);
+        Assert.Contains("facing ", family.WhyHere);
     }
 
     /// <summary>
@@ -361,5 +361,174 @@ public sealed class OrganicHousingTests
 
         _output.WriteLine($"{plots} plots at year 40; {facingPairs} lane tiles with a house facing back across them.");
         Assert.True(plots >= 4, $"Only {plots} plots in forty years — nothing to read.");
+    }
+
+    /// <summary>
+    /// ⭐ The lane picks the door (D388): on an open square far from the village's walks, every
+    /// plot after the first that COULD front a lane a neighbour already fronts does — so a second
+    /// row faces the first across the street.
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"the homes should have less uniform orientation. this isn't supposed to be
+    /// suburbs."* D386 read the walks from the door, so every door faced the granary and a street
+    /// was a row all facing one way. Posed twelve tiles from the founding so no daily walk crosses
+    /// the square and the only lanes are the plots' own. Red with the lane term off: the facings
+    /// fall to the hash, and a plot beside a street faces away from it.
+    /// </remarks>
+    [Fact]
+    public void APlotBesideAStreetFrontsIt()
+    {
+        SimWorld world = Bare();
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 5);
+        Paint(world, centre, 5);
+
+        int couldFrontALane = 0;
+        int did = 0;
+        for (int i = 0; i < 6; i++)
+        {
+            Household family = ANewFamily(world, "F" + i);
+            HomeSite site = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
+
+            // What the four facings at this tile could front, read from the plot layer before
+            // the claim: the most lane tiles any of them has, and what the chosen one has.
+            int best = 0;
+            foreach (Angle facing in PlotShape.Facings)
+            {
+                if (Household.TilesClippedOff(world, world.PlotFor(site.Front, facing, family.Id)) >= 0)
+                {
+                    best = System.Math.Max(best, LaneTilesOf(world, site.Front, facing, family.Id));
+                }
+            }
+
+            int chosen = LaneTilesOf(world, site.Front, site.Facing, family.Id);
+            world.MarkHome(family.Id, site);
+            _output.WriteLine($"{family.Name} at {site.Front} facing {site.Facing}: fronts {chosen} lane tiles, best possible {best} — {site.WhyHere}");
+            if (best > 0)
+            {
+                couldFrontALane++;
+                if (chosen > 0)
+                {
+                    did++;
+                }
+            }
+        }
+
+        Assert.True(couldFrontALane >= 2, $"only {couldFrontALane} plots could have fronted a neighbour's lane, so this measures nothing");
+        Assert.Equal(couldFrontALane, did);
+    }
+
+    /// <summary>How many of a facing's lane-row tiles are already a lane — no walks cross this square, so it is the plots' own.</summary>
+    private static int LaneTilesOf(SimWorld world, GridPos front, Angle facing, int householdId)
+    {
+        PlotShape plot = world.PlotFor(front, facing, householdId);
+        var noWalks = new HashSet<GridPos>();
+        int lanes = 0;
+        foreach (GridPos tile in plot.Lane)
+        {
+            if (Household.IsALaneAlready(world, noWalks, tile))
+            {
+                lanes++;
+            }
+        }
+
+        return lanes;
+    }
+
+    /// <summary>
+    /// ⭐ With no lane to face, a house faces by hash (D388) — the fixture's houses at year sixty
+    /// face at least three ways, where D386's faced two (five of seven west).
+    /// </summary>
+    [Fact]
+    public void HousesWithNoLaneFaceByHash()
+    {
+        int[] byHash = new int[PlotShape.Facings.Count];
+        for (int id = 1; id <= 64; id++)
+        {
+            byHash[PlotShape.FacingByHash(id)]++;
+        }
+
+        _output.WriteLine($"sixty-four households by hash: {string.Join(" / ", byHash)}");
+        Assert.All(byHash, n => Assert.InRange(n, 4, 40));
+
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        loop.Step(Config.TicksPerYear * 60);
+        var faced = new HashSet<ushort>();
+        foreach (Household household in loop.World.Households)
+        {
+            if (household.HasHome)
+            {
+                faced.Add(household.HomeFacing.Raw);
+            }
+        }
+
+        _output.WriteLine($"the fixture at year sixty faces {faced.Count} ways");
+        Assert.True(faced.Count >= 3, $"the fixture's houses face only {faced.Count} ways — a suburb");
+    }
+
+    /// <summary>
+    /// ⛔ The fence is what was built (D388): fixed the day the house is marked, a log a yard
+    /// tile on the recipe, unmoved by the brush afterwards, and refunded with the house.
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"it feels too malleable."* A yard tile the paint had not reached on the marking day
+    /// is outside the fence for good, even painted the day after; a yard tile fenced that day
+    /// stays fenced when its paint goes. Red with the fence re-read from the paint: the
+    /// painted-after tile joins the plot.
+    /// </remarks>
+    [Fact]
+    public void TheFenceIsWhatWasBuilt()
+    {
+        SimWorld world = Bare();
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 1, 3);
+        Paint(world, centre, 3);
+
+        Household family = ANewFamily(world, "Ashford");
+        HomeSite site = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
+        PlotShape plot = world.PlotFor(site.Front, site.Facing, family.Id);
+
+        // One yard tile unpainted on the marking day.
+        GridPos bare = plot.Tiles[plot.Tiles.Count - 1];
+        Assert.DoesNotContain(bare, plot.House);
+        world.Zones.SetResidential(bare, false);
+
+        world.MarkHome(family.Id, site);
+        List<GridPos> fenced = new(family.FencedTiles);
+        _output.WriteLine($"fenced {fenced.Count} of {plot.Tiles.Count}: {string.Join(" ", fenced)}; bare {bare}");
+        Assert.DoesNotContain(bare, fenced);
+        Assert.Equal(plot.Tiles.Count - 1, fenced.Count);
+
+        // The recipe carries the fence: a log a yard tile over the catalogue's house.
+        Workplace siteOf = world.HomeSiteFor(family.Id)!;
+        int houseLogs = 0;
+        foreach (MaterialCost cost in BuildingRecipe.For(BuildingKind.Home, world.Config).Materials)
+        {
+            if (cost.Goods == Goods.Logs) { houseLogs = cost.Amount; }
+        }
+
+        int siteLogs = 0;
+        foreach (MaterialCost cost in siteOf.Construction!.Recipe.Materials)
+        {
+            if (cost.Goods == Goods.Logs) { siteLogs = cost.Amount; }
+        }
+
+        int yardTiles = fenced.Count - plot.House.Count;
+        Assert.Equal(houseLogs + (yardTiles * world.Config.FenceLogsPerTile), siteLogs);
+        Assert.Contains($"{yardTiles} tiles of fence", siteOf.Construction.Name);
+
+        // Painted the day after: still outside. Unpainted a fenced yard tile: still inside.
+        world.Zones.SetResidential(bare, true);
+        GridPos yard = fenced[fenced.Count - 1];
+        Assert.DoesNotContain(yard, plot.House);
+        world.EraseResidential(yard);
+        Assert.Equal(fenced, family.FencedTiles);
+        Assert.Equal(0, world.Zones.PlotOwner(bare));
+        Assert.Equal(family.Id, world.Zones.PlotOwner(yard));
+        Assert.NotNull(world.HomeSiteFor(family.Id));
+        Assert.False(world.HomeSiteFor(family.Id)!.Construction!.Demolishing, "unpainting the yard marked the house for demolition");
+
+        // And the fence is in the hash.
+        ulong before = StateHash.Compute(world);
+        family.FencedTiles.RemoveAt(family.FencedTiles.Count - 1);
+        Assert.NotEqual(before, StateHash.Compute(world));
     }
 }

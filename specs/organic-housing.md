@@ -10,10 +10,11 @@ sited on a whole-painted tile), D358/D368 (desire paths — the lanes), D381 (th
 the paint), D382 (footprints; *"2×1 houses in a plot are Phase 5's organic housing"*), D383
 (buildings are obstacles; the founding leaves lanes; the site-chooser prices the road), D357 (⛔ not
 yard modules the player attaches; the kitchen garden comes later, *after plots*).
-**Status:** ✅ **BUILT (2026-09-17, D386, one commit): slice 1 the sim, slice 2 the view — the fence, the
-turned house with its door, the card's sentence.** Built with D387 (the birth gate reads the harvest,
-`storage-and-distribution.md §12.4`), which the fixture's death under plots made due. Suite 1181 passing,
-0 failing, 2 skipped of 1183, 3m31. **Unplayed by Joe as of this line.** Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
+birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
+(2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **D388 unplayed by Joe as of this line.** Owner:
+Joe + Claude Code.
 
 ---
 
@@ -111,7 +112,27 @@ tie). Each is scored in **tiles walked**, the currency the chooser already uses:
   to widen once he has seen the rows; the guard that would prove it scored zero and says so.
 - `clipped` (**new**): one tile of walk for every yard tile the paint, the water or a building
   clips off (§3.1).
-- Ties: nearest the founding site, then row order, then the facing's order — as today.
+- Ties between tiles: nearest the founding site, then row order — as today.
+
+**⭐ The walk picks the plot; the lane picks the door (D388).** Joe, playing D386: *"the homes should
+have less uniform orientation. this isn't supposed to be suburbs."* D386 read `toWork + toStore`
+from the **door** tile, so every door landed on the granary's side and a street was a row of houses
+all facing one way — and its tie-break was the facings' fixed order, north first. Now the walks are
+read from the plot's own tile, the same for all four facings, and **which way the house faces is
+decided per tile, in order:** *(1)* the facing whose lane row is **already a lane** on the most tiles
+— a tile some plot fronts, a tile *touching* one some plot fronts (a street continues), a tile the
+village's daily walks cross (`TheDailyWalks()`'s routes), a tile feet have worn (`Paths.At ≥
+path_worn_at`); *(2)* the facing whose yard the paint clips least and whose sides have a neighbour
+(`apart + clipped`); *(3)* a **hash of the household id** (`PlotShape.FacingByHash`, ⛔ never the
+`Rng`) — the founders' first houses and a plot with no lane nearby face by hash, which is where the
+variety comes from. The wall-off sweep (D383) is asked of the chosen facing and, if it walls, the
+next. The sentence says which: *"facing the lane to the south"* / *"facing a lane of its own to the
+west"*. **Measured:** the fixture at year sixty faces four ways (D386: two, five of seven west) and
+its lane row at y=0 has houses fronting it from both sides; twelve seeds × fifty years **199 / 221 /
+0** (D387: 198 / 224 / 0), 49 of 70 houses fronting a lane that was already there, 27 of 70 beside a
+neighbour (22 before — a street packs). Guards: `APlotBesideAStreetFrontsIt` (posed twelve tiles
+from the founding so no walk crosses the square; red with the lane term off — the hash faces a plot
+away from the street beside it), `HousesWithNoLaneFaceByHash`.
 
 **And the walk is priced (D386, the D383 shape).** A house in a plot stands behind its lane, so
 the tile a walk is measured from is a tile further out than a house dropped on the nearest painted
@@ -133,51 +154,71 @@ back at the first because its own walks leave through the same lane. The well as
 
 ### 3.4 What the plot is, in state
 
-⭐ **The plot is derived, not stored** (D335: *a derived index is never hashed*). The state is the
-house: `Household.HomePosition` (a `Point`, as today) and **`Household.HomeFacing` (an `Angle`,
-new, hashed)** — the house's footprint (`FootprintOf(Home, position, facing)`, 2 × 1 turned) is
-the front row's house tiles, the facing says which way the lane lies, and the hash of the id says
-which side the house sits on; the plot rectangle and the lane row follow from those three.
-`ZoneMap` keeps a **plot layer** — per-tile owner and per-tile lane count, the work-ground shape
-one level up (the whole rectangle, painted or not, so the layer restates the households and only
-the households) — **maintained where the state changes** (a home marked, raised, inherited,
-demolished; a site cancelled), never rebuilt per tick. The layer is what `ChooseSite` and the view
-read; it is not hashed. The fence is the owner ∩ the residential paint, read at draw time.
+The state is the house and its fence: `Household.HomePosition` (a `Point`), **`Household.HomeFacing`
+(an `Angle`, hashed)** and **`Household.FencedTiles` (the tiles the fence encloses, house tiles
+included, hashed — D388)**. The house's footprint (`FootprintOf(Home, position, facing)`, 2 × 1
+turned) is the front row's house tiles, the facing says which way the lane lies, and the hash of the
+id says which side the house sits on; `PlotShape` is the arithmetic that turns those into the
+*proposal* — the rectangle, the lane row, the sides — and `FencedTiles` is what was built of it.
+`ZoneMap` keeps a **plot layer** — per-tile owner and per-tile lane count, the work-ground shape one
+level up — fed `FencedTiles` and **maintained where the state changes** (a home marked, raised,
+inherited, demolished; a site cancelled), never rebuilt per tick and never hashed: it restates the
+households.
 
 A site is a claim: the plot is reserved when the house is **marked** (`MarkHome` → `RaiseSiteFor`,
 facing carried on the `Construction`), so the next household cannot choose ground under a house
 that is still a plan. The site's facing becomes the household's when the house is raised.
 
-### 3.5 Hand-me-downs, demolition, and the brush
+### 3.5 The fence is built, not painted (D388)
 
-- **A new couple taking a dead family's house (D381) takes the plot** — the owner changes, the
-  fence stays. Same for the roofless household moving into an empty house.
-- **Demolishing a house releases its plot and its lane.** The ground stays painted; the next
-  household may claim it again.
-- **The brush does not move a fence.** Un-painting under a plot leaves the plot (as it leaves a
-  house); it only stops future plots. Painting more ground is the only way to make room. ⚠️ This
-  is the one place plot ground and paint disagree, and it is by design: a yard is a family's, the
-  paint is the player's *intent for the future*.
+Joe, playing D386: *"when a constructed yard shape changes based on painting/unpainting, it should
+require a round of proper construction/demolition with some level of cost/payback. it feels too
+malleable."* D386 derived the plot from the house and drew the fence along the paint at draw time,
+so the brush moved a fence for free. Now:
+
+- **The fence is fixed the day the house is marked.** `SimWorld.FencedTilesFor(plot)` takes the
+  proposal's rectangle less what the paint, the water, a building or another plot clips off *that
+  day* (the house's own two tiles always), and stores it on the household. A yard tile the paint had
+  not reached is outside the fence for good, even painted the day after; a fenced tile stays fenced
+  when its paint goes.
+- **The fence is on the recipe.** `fence_logs_per_tile` (1) × yard tiles is added to the house's
+  logs (`HomeRecipeWithFence`), hauled and worked by the builders like the rest; the site is named
+  for it — *"a house and 4 tiles of fence"* — and the marking line prices it. The founders' fences
+  cost nothing, as their houses do (the warm start raises them).
+- **The brush never moves a built fence.** Unpainting a yard tile changes nothing (the house stands,
+  the plot layer stands); unpainting a *house* tile still marks the house for demolition (D228), and
+  the fence comes down with the house — its logs refunded with the house's
+  (`DemolitionReturnsPercent`). Painting more ground beside a built plot does not grow the yard: the
+  yard is what was fenced, and the brush is the player's intent for the *next* house.
+- **A new couple taking a dead family's house (D381) takes the fence** — `FencedTiles` and the plot
+  layer move with the house. A roofless family moving into a standing house gives up the site being
+  raised for it, fence and all (D386).
+- Guard: `TheFenceIsWhatWasBuilt` — a yard tile unpainted on the marking day stays outside, painted
+  after; a fenced tile stays inside, unpainted after; the recipe carries a log a yard tile and the
+  site says so; the fence is in the hash. Red with the fence re-read from the rectangle.
 
 ### 3.6 The look (slice 2, the view)
 
-- The **fence**: the painted residential quarters inside each plot's tiles, traced and outlined
-  per household exactly as a farm's ground is (`ZoneOutline`), in a fence colour; no fill of its
-  own — the wash is the neighbourhood's. Drawn with the residential layer, hidden with it.
+- The **fence**: each household's fenced tiles, whole, traced and outlined per household exactly as
+  a farm's ground is (`ZoneOutline`) — straight timber along tile edges, not the brush's curve — in
+  a fence colour; no fill of its own, the wash is the neighbourhood's. Drawn with the residential
+  layer, hidden with it; faint while the house is a site (the fence is on the recipe and not yet up).
 - The **house**: drawn as its 2 × 1 footprint quad, turned by `HomeFacing`, the door on the lane
   side (a darker notch on the front edge).
-- The **card**: a home's status line says the sentence — *"Near the granary, facing the lane,
-  beside the Ashfords."* — from the three terms that chose it, held on the household when the
-  site was chosen (a string is cheaper than re-deriving it, and it is what the chooser *said*).
+- The **card**: a home's caption says the sentence — *"a wooden cabin — 10 tiles to work and 3 to
+  the granary, facing the lane to the south, beside the Ashfords."* — from the terms that chose it,
+  held on the household when the site was chosen (a string is cheaper than re-deriving it, and it
+  is what the chooser *said*).
 
 ## 4. Data model
 
 | Held | Where | Hashed? |
 |---|---|---|
 | `HomeFacing` | `Household` | ✅ new state |
+| `FencedTiles` — the tiles the fence encloses, fixed at the marking (D388) | `Household` | ✅ state, hashed |
 | the house site's facing | `Construction.Facing` (exists) | ✅ (already) |
 | plot layer: per-tile owner (household id), per-tile lane count | `ZoneMap` | ❌ derived, incremental |
-| `plot_width` 3, `plot_depth` 2, `plot_apart_tiles` 2 | `SimConfig` / `data/sim.config.json` | config |
+| `plot_width` 3, `plot_depth` 2, `plot_apart_tiles` 2, `fence_logs_per_tile` 1 (D388) | `SimConfig` / `data/sim.config.json` | config |
 | `VillageEconomy.PlotLaneTiles` 1 | the tile every home leg carries for the lane | derivation |
 | house extent 2 × 1 | `SimConfig.DefaultBuildings()` (`ExtentWidth` 2) | config |
 
@@ -254,6 +295,8 @@ the fixture village at year 150 (peak, deaths). Filled in per slice.
 | plots, radius 6, depth 2, unpriced | 204 | 247 | 21 | parity with the line above — the plots cost nothing, the paint did |
 | plots, the lane priced (`gather_yield` 123) | 241 | 261 | 0 | |
 | **+ D387, the harvest gate** | **198** | **224** | **0** | the peak is the harvest's ceiling now, not the granary's — the fixture holds 13–16 for 150 years (2 starved, 26 of old age) where it bred to 22 and lost ten |
+
+| **D388 — the lane picks the door, the fence is built** | **199** | **221** | **0** | 49 of 70 houses front a lane already there, 27 of 70 beside a neighbour (22), four facings used |
 
 Depth 3 was measured and not kept: 182 / 236 / 49 at radius 7 against 177 / 241 / 58 at depth 2,
 and eight plots in the diamond against eleven.

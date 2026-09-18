@@ -5775,8 +5775,12 @@ public sealed class SimWorld : IObstacles
             family.WhyHere = "";
             ReleasePlotOf(family.Id);
 
+            // The fence comes down with the house and its logs come back with it (D388).
+            int yardTiles = family.FencedTiles.Count - (BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1);
+            family.FencedTiles = new List<GridPos>();
+
             string recovered = ReturnToStore(
-                tile, RefundFor(BuildingsCatalog.RecipeOf(BuildingKind.Home)));
+                tile, RefundFor(HomeRecipeWithFence(yardTiles)));
 
             Narrate($"The {family.Name} household's house at {tile} came down — "
                 + $"{recovered} went back to store. {Clock.SeasonAndYear()}.", LogCategory.Building);
@@ -6294,26 +6298,77 @@ public sealed class SimWorld : IObstacles
         PlotShape.Of(front, facing, householdId, Config.PlotWidth, Config.PlotDepth);
 
     /// <summary>
-    /// Give a household its plot — when its house is marked out, raised at the founding, or
-    /// handed on. The zone map's index is maintained here and in <see cref="ReleasePlotOf"/>, and
-    /// nowhere else. The whole rectangle, painted or not (it restates the household; the fence is
-    /// read against the paint at draw time), less any tile another plot already holds — a
-    /// clipped plot is the rim's, and the rim is where two rectangles can meet.
+    /// The tiles a house marked here today would fence (D388, `organic-housing.md §3.5`): the
+    /// plot's rectangle less what the paint, the water, a building or another plot clips off — the
+    /// house's own two tiles always. Fixed on the household at the marking; this is the one place
+    /// the fence is decided.
     /// </summary>
-    internal void ClaimPlotFor(int householdId, GridPos front, Angle facing)
+    internal List<GridPos> FencedTilesFor(PlotShape plot)
     {
-        PlotShape plot = PlotFor(front, facing, householdId);
-        var mine = new List<GridPos>(plot.Tiles.Count);
+        var fenced = new List<GridPos>(plot.Tiles.Count);
         for (int i = 0; i < plot.Tiles.Count; i++)
         {
-            if (Zones.PlotOwner(plot.Tiles[i]) == 0 && !Zones.IsLane(plot.Tiles[i]))
+            GridPos tile = plot.Tiles[i];
+            bool house = tile == plot.House[0] || tile == plot.House[1];
+            if (house
+                || (Map.Contains(tile)
+                    && Map.TerrainAt(tile) != Terrain.Water
+                    && Zones.IsResidential(tile)
+                    && !SomethingStandsAt(tile)
+                    && Zones.PlotOwner(tile) == 0
+                    && !Zones.IsLane(tile)))
             {
-                mine.Add(plot.Tiles[i]);
+                fenced.Add(tile);
             }
         }
 
-        Zones.ClaimPlot(householdId, mine, plot.Lane);
+        return fenced;
     }
+
+    /// <summary>
+    /// A house's recipe with its fence (D388): the catalogue's house, plus
+    /// <see cref="SimConfig.FenceLogsPerTile"/> for every yard tile the fence encloses.
+    /// </summary>
+    internal BuildingRecipe HomeRecipeWithFence(int yardTiles)
+    {
+        BuildingRecipe house = BuildingRecipe.For(BuildingKind.Home, Config);
+        int fence = yardTiles < 0 ? 0 : yardTiles * Config.FenceLogsPerTile;
+        if (fence <= 0)
+        {
+            return house;
+        }
+
+        var materials = new List<MaterialCost>(house.Materials.Count + 1);
+        bool merged = false;
+        for (int i = 0; i < house.Materials.Count; i++)
+        {
+            MaterialCost cost = house.Materials[i];
+            if (cost.Goods == Goods.Logs)
+            {
+                materials.Add(new MaterialCost(Goods.Logs, cost.Amount + fence));
+                merged = true;
+            }
+            else
+            {
+                materials.Add(cost);
+            }
+        }
+
+        if (!merged)
+        {
+            materials.Add(new MaterialCost(Goods.Logs, fence));
+        }
+
+        return new BuildingRecipe(house.WorkTicks, materials.ToArray());
+    }
+
+    /// <summary>
+    /// Give a household its plot — the tiles its fence encloses — when its house is marked out or
+    /// raised at the founding. The zone map's index is maintained here, in <see cref="ReleasePlotOf"/>
+    /// and in the hand-me-down, and nowhere else; it restates <see cref="Household.FencedTiles"/>.
+    /// </summary>
+    internal void ClaimPlotFor(int householdId, IReadOnlyList<GridPos> fenced, IReadOnlyList<GridPos> lane) =>
+        Zones.ClaimPlot(householdId, fenced, lane);
 
     internal void ReleasePlotOf(int householdId) => Zones.ReleasePlot(householdId);
 
@@ -6833,18 +6888,25 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     internal void MarkHome(int householdId, HomeSite site)
     {
-        BuildingRecipe recipe = BuildingRecipe.For(BuildingKind.Home, Config);
         GridPos position = site.Front;
 
         // ⭐ A SITE IS A CLAIM (D386, `specs/organic-housing.md §3.4`): the plot is the household's
         // from the day the house is marked out, so the next family's chooser cannot take ground
         // under a house that is still a plan. Released if the site is abandoned or finished
-        // for nobody.
-        ClaimPlotFor(householdId, site.Front, site.Facing);
+        // for nobody. ⭐ AND THE FENCE IS FIXED THAT DAY (D388): the yard as it stands now is what
+        // gets built, a log a tile on the recipe, and the brush never moves it afterwards.
+        PlotShape plot = PlotFor(site.Front, site.Facing, householdId);
+        List<GridPos> fenced = FencedTilesFor(plot);
+        ClaimPlotFor(householdId, fenced, plot.Lane);
         if (FindHousehold(householdId) is Household family)
         {
             family.WhyHere = site.WhyHere;
+            family.FencedTiles = fenced;
         }
+
+        int yardTiles = fenced.Count - plot.House.Count;
+        BuildingRecipe recipe = HomeRecipeWithFence(yardTiles);
+        string name = yardTiles > 0 ? $"a house and {yardTiles} tiles of fence" : "a house";
 
         // ⚠️ AND WHEN THAT PROMISE IS BROKEN, SAY SO (D110). `ChooseSite` is supposed to have
         // found reachable ground, and in seed 11 of the twelve-seed arm it did not — a house
@@ -6871,7 +6933,7 @@ public sealed class SimWorld : IObstacles
         }
 
         RaiseSiteFor(
-            BuildingKind.Home, HomeAnchorOn(site.Front, site.Facing), "a house", recipe, householdId,
+            BuildingKind.Home, HomeAnchorOn(site.Front, site.Facing), name, recipe, householdId,
             facing: site.Facing);
     }
 
@@ -7522,8 +7584,13 @@ public sealed class SimWorld : IObstacles
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
         if (site.Construction.Kind == BuildingKind.Home)
         {
-            // The plot was the family's from the marking (D386); the ground is free again.
+            // The plot was the family's from the marking (D386); the ground is free again, and
+            // the fence that was never built is forgotten (D388).
             ReleasePlotOf(site.Construction.ForHouseholdId);
+            if (FindHousehold(site.Construction.ForHouseholdId) is Household never)
+            {
+                never.FencedTiles = new List<GridPos>();
+            }
         }
 
         RetireWorkplace(site);
@@ -7591,6 +7658,11 @@ public sealed class SimWorld : IObstacles
                     Narrate($"The house at {site.Position} was finished with nobody left to "
                         + $"live in it. {Clock.SeasonAndYear()}.", LogCategory.Warning);
                     ReleasePlotOf(plan.ForHouseholdId);
+                    if (FindHousehold(plan.ForHouseholdId) is Household nobody)
+                    {
+                        nobody.FencedTiles = new List<GridPos>();
+                    }
+
                     break;
                 }
 
@@ -9107,10 +9179,13 @@ public sealed class SimWorld : IObstacles
                 WhyHere = home?.WhyHere ?? "",
             };
 
-            // The founders' plots are claimed as everyone else's are (D386) — one rule.
+            // The founders' plots are claimed and fenced as everyone else's are (D386, D388) —
+            // one rule; theirs cost nothing because the founding raises them (D70's warm start).
             if (home is HomeSite founded)
             {
-                ClaimPlotFor(household.Id, founded.Front, founded.Facing);
+                PlotShape plot = PlotFor(founded.Front, founded.Facing, household.Id);
+                household.FencedTiles = FencedTilesFor(plot);
+                ClaimPlotFor(household.Id, household.FencedTiles, plot.Lane);
             }
 
             // Added before its members are drawn, so the next founding household's
