@@ -1,6 +1,118 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE FIRST PRODUCTION CHAIN IS BUILT: D391, TOOLS THAT WEAR AND THE SMITH'S HUT. SEVEN COMMITS ON `origin/main`, NOT PUSHED; D388–D391 UNPLAYED. NEXT: JOE PLAYS; THEN HIS CALL ON THE SECOND CHAIN (BREAD, THE QUARRY, THE WORKSHOP) OR FENCES AS WALLS.**
+# Handoff — bclone: **▶️ PHASE 5 — JOE'S BIG QA PASS (2026-09-19) IS TRIAGED AND HIS CALLS ARE IN. THE QUEUE, IN HIS ORDER: BATCH A (ONE COMMIT OF SMALL FIXES) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-18 (EVENING) — AFTER D391, D392 AND D393.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-19 — AFTER D394, AND JOE'S QA PASS.**
+>
+> **The state:** `origin/main` = `cd6ef7f` (D393) — Joe pushed on 2026-09-18 after playing D391.
+> On top of it, **committed, NOT pushed: D394** (`5e6f5f1`, the food messaging) — he plays, then
+> pushes. Working tree clean. Suite **1202 passing, 0 failing, 2 skipped of 1204, ~3m30**; view 0
+> warnings; probe green. The decision log runs to **D394** in §7, and **D395 is the entry that
+> records his calls of 2026-09-19** (decisions only, nothing built). Read `DESIGN.md §0–§5`, §6,
+> D391–D395 in §7, then this banner's queue.
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER (2026-09-19). Do it in this order; each step is its own commit.**
+>
+> **1. Batch A — one commit of small fixes, no design call in any of them:**
+> - *Profession changes take effect at once.* A job-limit or staffing change only lands on the
+>   next slack pass (`labour_slack_ticks` 60). Run `LabourAllocator.TakeUpSlack` the tick
+>   `SetJobLimit` / `SetStaffing` changes anything — the death rule (D47) already does this.
+> - *Food amber = below the survival floor*, not the quota's fill line (D378 read
+>   `TheVillageWantsMoreFood`, so a 96 %-full granary read amber). `VillageEconomy.StockFloor`;
+>   the quota's "wants more" becomes the tooltip. Update D378's sentence in `the-cards.md §5`.
+> - *"Not hired yet" still lists Blacksmith* (`NotYetInTheValley` / the professions roadmap list
+>   in `Main.cs`) — remove.
+> - *Knowledge / Civic / Other categories greyed out* until a building exists for them (the
+>   library gift, the hall gift); the space stays so the bar does not move (bar height 161).
+> - *A card for the library and the town hall* — `What's here` stays for bare ground and heaps.
+> - *Card Settings open by default.* *Remove the yellow warning line* (`SayIfWorkIsGoingUndone`'s
+>   line in the control bar) — the whole element.
+> - *Piles are clickable:* hit-test the drawn heap chips (0.78 tiles off the building's centre)
+>   before the tile under the pointer (D390 resolves the tile only).
+> - *Footpaths fade slower:* `path_wear_decay_per_season` 6 → 4, measured on six seeds (paths
+>   hold ~50 % longer); his number to move again.
+>
+> **2. Two investigations — measure before touching:**
+> - *Firewood rose 400 → 962 past a set limit with 0 woodcutters.* Write the guard first (limit
+>   400, one woodcutter, a year: never past 400 + one stint), watch it go red, fix what it shows.
+>   Splitting is the only source of firewood (traced); the dispatch and the stint both read
+>   `IsMet` — so something else is true. Half of it is the 60-tick seat lag above.
+> - *Villagers (and forest animals) skip a tile at the start of a day.* Hypothesis: a per-day
+>   system runs long, the fixed-timestep driver catches up two ticks in one frame, everyone
+>   jumps. Instrument first: max tick ms and a caught-up-N-ticks counter on the debug line. And
+>   the *icicle paths* (year 50, 2x): a trail bend drawn between two worn tiles that should not
+>   join — pose it in the probe (any segment longer than a tile and a half).
+>
+> **3. Tools on ticks at 34 %** — Joe's call (2026-09-18/19), reversing D391's yield axis:
+> `tool_speed_bonus_percent` 34 in `WorkTicksFor` beside mastery's 50 (floor one tick; 34 is the
+> smallest that bites at 3 ticks: gather 3→2, split 4→3, cast 10→7, hunt 15→10);
+> `tool_yield_bonus_percent` ships **0** and stays as the dial for a later *upgrade* (his words:
+> *"and eventually on yield when user unlocks upgrades for it"*). Measure twelve seeds and re-read
+> the rigs before typing; goldens move once. Update `tools-and-the-smith.md §3.4` and §5.
+>
+> **4. The quarry — spec first** (`specs/quarry.md`): *"it should be painted land like the
+> forester's hut"* — a workplace with owned ground (`ZoneMap` work ground) over a stone seam,
+> quarrymen dig the painted tiles; and the mine the same way for iron later. Pose it against
+> `buildings-plan.md §4.2` (Quarry, Civic) and the OPEN item on builders idle on stone. ⚠️ His
+> note with it: *"we'll need more stone and iron on the map"* — seam counts/sizes are worldgen
+> (D344's reshuffle) and **iron nodes must hold ≥ 50** for the smithy gift (below).
+>
+> **⭐ JOE'S CALLS OF 2026-09-19, VERBATIM WHERE IT MATTERS — each becomes a slice in the order
+> above once the queue is through. Recorded in D395; nothing here is built.**
+> - **Yards:** *"fixed at marking AND following the brush's quarter-tile edge."*
+>   `Household.FencedTiles` at quarter resolution (D386's look, D388's fixity).
+> - **Hunger and armfuls:** armful 40 → 80 (the *armful, not a tile* follow-up); he measured
+>   *"they stop to eat 1× every 2 days — change it to 4×"* — i.e. **once every four days**. Both
+>   are D16 numbers: re-derive the economy and read twelve seeds; one measured slice.
+> - **Ground quality: remove it** — the `g` overlay, the soil term in `CropYieldAt`,
+>   `ReferenceSoil` in the derivation, the settings row. ⚠️ **Leave the generator's soil draw in
+>   place** (dead data) until per-stage seeds land, or every seed reshuffles (D344/D392).
+> - **Doors and gates:** the *fences as walls with an open gate* slice, and **every building gets
+>   a door tile** (only homes have one; the woodcutter's, the work and civic buildings have
+>   none). He *"thought I observed villagers entering homes via non-door walls"* — the door is
+>   cosmetic today; check the arrival point against the door before believing the fence.
+> - **Camera rotation:** middle-mouse drag and Q/E rotate the map (`Camera2D` rotation; panels
+>   stay upright); a ghost in hand keeps middle-drag for building rotation. **Proceed.**
+> - **Tooltips on build icons:** after 1.5 s — what it does, cost in materials (tools included),
+>   what it outputs, any buff/unlock. The catalogue rows hold cost and seats. **Proceed.**
+> - **The smithy is a gift:** *"the gift is the building (smithy appears in the menu) which then
+>   allows the blacksmith to create iron tools (and stone tools)."* Unlocked after **50 iron
+>   mined** (each iron node ≥ 50 so the first node cleared unlocks it — a worldgen number); the
+>   village **starts with stone tools** (weaker); the smith's card offers *stone tools / iron
+>   tools*. Library/hall gift shape (D226/D252); `tools-and-the-smith.md` gains a section.
+> - **Cemetery:** first one free on the first death, 4×5, holds N headstones by size; unlocks a
+>   paintable cemetery of any size (Y by size); one gravedigger per cemetery; every cemetery full
+>   at a death → a happiness hit (waits on morale, Phase 6). Spec it.
+> - **Well:** stone + wood, placed by the player in the neighbourhood; homes fetch water from it
+>   (health/happiness), bakeries take it as a bread ingredient. Add to Phase 6's well entry.
+> - **City-centre fountain:** a village gift, placeable/movable; `Home` recentres on it; some
+>   benefit (morale, later). Roadmap.
+> - **Farmers tend fields in summer** (cosmetic — the D355 steading look). Proceed when reached.
+> - **Trees on pathways:** villagers walk *through* woodland today (only water is impassable, a
+>   forest tile costs grass). His rule: **laborers fell a tree that stands on a path, and no
+>   tree regrows on a path** — a desire-path/regrowth rule; spec with the pathing slice.
+> - **Trees vs fields look:** wheat with height and a graded dirt edge (Foundation's picture),
+>   the canopy-mesh way — a view slice with mature trees.
+> - **Handling ticks** at pickup/drop-off — a `handling_ticks` key, measured (walk cost changes).
+> - **House angles** (not robot-square) — rotated plots; after gates. Non-flat land noted.
+> - **Parked by Joe:** the *town bell / forced march* (revisit as a bell-tower village gift) and
+>   the *chronicle jump* (*"more complex than fun"*).
+> - **Smart brakes — proceed, and make the existing slowdowns consistent:** a technique
+>   discovery = drop to 1x **and stay at 1x**; a village gift = the same. A `Severity` on log
+>   entries in the sim; the view maps severities to *1x* / *pause*; a settings toggle. Shell
+>   work (Phase 4.5). Lands before any chronicle jump ever would.
+> - **Name generator — proceed as I see best:** `Bclone.Sim/World/`, prefix + suffix from
+>   `data/namelist.json` (his 100 × 100 lists), ⛔ **hashed from (seed, villager id), never an
+>   `Rng` draw** (D344/D392); collision → next hash; founders and newborns the same way.
+> - **Surnames — proceed as I see best:** `Household.Surname` from a pool (`household_names` is
+>   this), `Villager.FirstName` + a `FullName` reader through the household; a partner takes the
+>   household's name by moving in; children by birth; *"some version of mappable lineage"* — the
+>   town hall's records are where a lineage map belongs (`town-hall.md`).
+> - **Birthdays — proceed:** `Villager.BirthTick`; age a reader; founders' birth ticks spread by
+>   hash; life stages follow the exact birthday; the card says *born Day 20, Fall, Year 10*. ⚠️
+>   Moves every golden once and re-poses year-boundary age guards — its own measured commit.
+>
+> *(The 2026-09-18 evening banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-18 (EVENING) — AFTER D391, D392 AND D393.**
 >
 > **The state:** nine commits sit on `2921d38` = `origin/main` (⚠️ the banner below says
 > `0b1124b` is origin; it is one further back — `0b1124b` is the D385-played handoff and it is
