@@ -98,6 +98,34 @@ character; a village where nobody renamed anything hashes as it did before renam
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 
+## 4a. Where the food is — one number on the bar, three places in the popup (D394)
+
+Joe, playing D391 at year 37: *"Help me understand where all of the food is? There are 5 homes,
+the largest of which has 475 food. Is it in the hunter's lodge? … all of these different versions
+of the 'truth' of how much food there is can be very confusing."* The bar read **245** (the
+shelves alone), the popup *in homes and huts +4,336* (larders and a 2,103-meat lodge lumped), a
+farm's card *"it has 3092"* (`FoodTheVillageHolds`: shelves + huts, what the limit reads).
+Three definitions on one screen.
+
+**The rule: the number on the bar is the number the rules read.** The bar's *food* is
+`FoodTheVillageHolds` — the shelves (granaries and markets) and the huts (producers' buffers,
+armfuls in transit) — the same number the limit, the farm, the hunts and the birth gate read.
+⚠️ The bar's own comment had said so since D378; the code read the shelves. **The larders are
+outside it** and stay outside it — Joe: *"I don't want what is in the home larders to count
+against the limit. The limit should be what is in storage, in transit to storage and in markets
+— what is available to villagers outside of their home storage."* That was already the sim's
+rule (D161, D362); now it is the screen's.
+
+The `more ▾` popup names the three places, always present: **food on the shelves · waiting in
+the huts · in the larders** (`FoodInGranaries`, `FoodWaitingInHuts`, `FoodInLarders` — the
+first two partition the village's food, the third is shown and never decided on). A quoted total
+says where it is: *"you asked the village to keep 2000 food and it has 3092 — 245 on the shelves
+and 2,847 still in the huts."* And a producer's card whose buffer is half full or more reads
+amber: *"Working — 2,103 waiting to be carried in, 53 armfuls"* (`BufferIsSwollen`,
+`ArmfulsWaitingIn`) — a hunt brings 900 in fifteen ticks and a carry takes forty, so a lodge fills
+twenty times faster than it empties, and until D394 nothing on screen said so. Guard:
+`TheVillagesFoodIsTheShelvesAndTheHutsAndTheSentenceSaysWhere`.
+
 ## 5. Slice 2 — the two top bars, and the Overview panel goes (✅ built, D378)
 
 The Overview — a dozen rows in a window at the top-left — is **two boxes on one bar** along the

@@ -876,8 +876,14 @@ public partial class Main
         }
         else
         {
+            // ⭐ A BUFFER THE HANDS CANNOT KEEP UP WITH SAYS SO (D394): Joe's lodge held 2,103 meat
+            // — a hunt is 900 in fifteen ticks, a carry is forty — and its card read *Working*.
             string? why = world.IdleNote(place);
-            Status(card, working: why is null, why ?? $"Working — {place.WorkerIds.Count} of {place.Places} at it.");
+            bool swollen = why is null && world.BufferIsSwollen(place);
+            Status(card, working: why is null && !swollen,
+                why ?? (swollen
+                    ? $"Working — {world.FoodIn(place.Store):N0} waiting to be carried in, {world.ArmfulsWaitingIn(place)} armfuls."
+                    : $"Working — {place.WorkerIds.Count} of {place.Places} at it."));
 
             card.WorkersRow.Visible = true;
             card.WorkersLabel.Text = ProfessionName(world, place.Kind) + "s";

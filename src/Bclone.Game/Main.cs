@@ -304,7 +304,9 @@ public partial class Main : Control
         // case the run happens to have nothing on the ground.
         Refresh();
         _onTheGround.Text = "+1,234";
-        _foodElsewhere.Text = "+12,345";
+        _foodOnShelves.Text = "+12,345";
+        _foodInHuts.Text = "+12,345";
+        _foodInLarders.Text = "+12,345";
         ForceUpdateTransform();
         ProbePanelWidths("twelve years in, with heaps and larders posed");
 
@@ -462,7 +464,7 @@ public partial class Main : Control
         Vector2 before = _topBar.GetCombinedMinimumSize();
         Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
 
-        var cells = new List<Label> { _foodTotal, _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _foodElsewhere, _onTheGround };
+        var cells = new List<Label> { _foodTotal, _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _foodOnShelves, _foodInHuts, _foodInLarders, _onTheGround };
         foreach ((Goods _, Label held) in _goodsReadouts)
         {
             cells.Add(held);
@@ -1697,16 +1699,24 @@ public partial class Main : Control
             }
         }
 
-        // The umbrella, split the way the old Food row was: what the stores hold, and what is out
-        // in the larders behind it — on its OWN row now, always present, so the popup's width and
-        // height are the same whether the larders are full or empty (D367).
-        int foodInStores = world.FoodInGranaries();
-        int foodElsewhere = world.TotalFood() - foodInStores;
-        _foodTotal.Text = foodInStores.Grouped();
+        // ⭐⭐ THE NUMBER ON THE BAR IS THE NUMBER THE RULES READ (D394). The comment on the bar's
+        // build said so since D378 and the code read `FoodInGranaries` — the shelves alone — so a
+        // farm's card said *"it has 3092"* beside a bar saying 245 and Joe asked where the food
+        // was (a lodge, 2,103 of it). `FoodTheVillageHolds` is what the limit, the farm, the
+        // hunts and the birth gate read: the shelves and the huts, never the larders (Joe: *"the
+        // limit should be what is in storage, in transit to storage and in markets"*). The popup
+        // names the three places, always present, so its width never moves (D367).
+        int onShelves = world.FoodInGranaries();
+        int inHuts = world.FoodWaitingInHuts();
+        int inLarders = world.FoodInLarders();
+        _foodTotal.Text = world.FoodTheVillageHolds().Grouped();
+        _foodTotal.TooltipText = $"{onShelves.Grouped()} on the shelves and {inHuts.Grouped()} in the huts — what the food limit reads; the larders hold {inLarders.Grouped()} besides";
         ShowShortfall(_foodTotal, world.TheVillageWantsMoreFood(),
             $"the village is short of food — it holds {world.FoodTheVillageHolds().Grouped()} and wants "
             + $"{(world.StockLimits.For(Goods.Produce) ?? world.TargetFoodForTheGranary()).Grouped()}");
-        _foodElsewhere.Text = foodElsewhere > 0 ? $"+{foodElsewhere.Grouped()}" : "—";
+        _foodOnShelves.Text = onShelves.Grouped();
+        _foodInHuts.Text = inHuts > 0 ? inHuts.Grouped() : "—";
+        _foodInLarders.Text = inLarders > 0 ? inLarders.Grouped() : "—";
         _onTheGround.Text = onTheGround > 0 ? $"+{onTheGround.Grouped()}" : "—";
         _onTheGround.TooltipText = string.Join("\n", whyOnTheGround);
         _onTheGroundLabel.TooltipText = _onTheGround.TooltipText;
@@ -2828,7 +2838,8 @@ public partial class Main : Control
         // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05) AND IT COMES FIRST. `FoodTheVillageHolds` is
         // what the birth gate, the food limit and the labour quota all read, so the first number
         // on the bar is the number the village actually decides on; the four foods after it are
-        // its parts. The umbrella's chip is produce's, as the Overview's was.
+        // its parts. The umbrella's chip is produce's, as the Overview's was. ⚠️ This comment was
+        // true of the design and not of the code until D394 — the cell read the shelves alone.
         HBoxContainer first = BarRow();
         rows.AddChild(first);
         _foodTotal = AddBarCell(first, ChipColour(Goods.Produce), "food");
@@ -2905,7 +2916,7 @@ public partial class Main : Control
         {
             Text = "more ▾",
             Flat = true,
-            TooltipText = "The rest of the goods · in homes and huts · on the ground",
+            TooltipText = "The rest of the goods · where the food is · on the ground",
         };
         more.AddThemeFontSizeOverride("font_size", 12);
 
@@ -2933,10 +2944,22 @@ public partial class Main : Control
             _goodsReadouts.Add((goods, held));
         }
 
+        // Where the food is, in three named places (D394): the two the limit reads, and the one
+        // it does not. "in homes and huts" lumped a full lodge in with the larders.
         table.AddChild(new Control());
-        table.AddChild(Muted("in homes and huts"));
-        _foodElsewhere = Amount();
-        table.AddChild(_foodElsewhere);
+        table.AddChild(Muted("food on the shelves"));
+        _foodOnShelves = Amount();
+        table.AddChild(_foodOnShelves);
+
+        table.AddChild(new Control());
+        table.AddChild(Muted("waiting in the huts"));
+        _foodInHuts = Amount();
+        table.AddChild(_foodInHuts);
+
+        table.AddChild(new Control());
+        table.AddChild(Muted("in the larders"));
+        _foodInLarders = Amount();
+        table.AddChild(_foodInLarders);
 
         table.AddChild(new Control());
         _onTheGroundLabel = Muted("on the ground");
@@ -2970,7 +2993,9 @@ public partial class Main : Control
     }
 
     private PopupPanel _morePopup = null!;
-    private Label _foodElsewhere = null!;
+    private Label _foodOnShelves = null!;
+    private Label _foodInHuts = null!;
+    private Label _foodInLarders = null!;
     private Label _onTheGround = null!;
     private Label _onTheGroundLabel = null!;
 

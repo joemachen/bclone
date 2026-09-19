@@ -9,6 +9,16 @@
 > **D391** (`22b9fd8`), **D392** (`e7d4554`) and **D393** (this commit). **Joe has started playing
 > D391** — his first note became D393. **D388–D393 are otherwise unplayed.** Working tree clean.
 >
+> **✅ D394 — WHERE THE FOOD IS.** Joe at year 37: *"help me understand where all of the food
+> is?"* — 2,103 meat in a lodge behind a bar reading 245. The bar's *food* is
+> `FoodTheVillageHolds` now (shelves + huts, what the rules read; the code had read the shelves
+> under a comment saying otherwise); the popup reads *on the shelves · waiting in the huts · in
+> the larders*; the limit's sentence names the huts; a producer's buffer at half or more reads
+> amber in armfuls. Larders stay outside the limit (his rule). `the-cards.md §4a`. ⚠️ **For
+> Joe:** the bar's food should match the farm's *"it has N"*; open `more ▾` for the three rows;
+> the lodge's card should read *waiting to be carried in, N armfuls*. ⏸️ The pipe itself — a
+> hunt is 900 and a carry is 40 — is the *armful, not a tile* follow-up on the OPEN list.
+>
 > **✅ D393 — A STORE'S CARD LISTS EVERY GOOD IT CAN HOLD.** Joe at warehouse 1: *"I'm not sure
 > where the iron is being stored"* — it was there; the card showed the three biggest heaps of
 > five. Now one row per good the store can hold (chip · name · amount · ✓/✕ take toggle on the
@@ -18,7 +28,7 @@
 > Suite **1201 passing, 0 failing, 2 skipped of 1203** (~3m45 — was 3m12 before D391: the fixture
 > carries 8 % more people and every hand fetches a tool; read trap 88 and the per-test list in
 > trap 106 before chasing it); view 0 warnings on `--no-incremental`; probe green. The decision
-> log runs to **D393**. Read `DESIGN.md §0–§5`, §6, D386–D393 in §7, then
+> log runs to **D394**. Read `DESIGN.md §0–§5`, §6, D386–D394 in §7, then
 > `specs/tools-and-the-smith.md` in full and `skills-catalog.md §3.2c`'s new paragraph.
 >
 > **✅ D392 — THE FOUNDING DEALS ITS TRADES FROM A STATED LIST.** Joe: *"(a) now, rows later."*

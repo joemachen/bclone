@@ -750,6 +750,54 @@ public sealed class SimWorld : IObstacles
     /// here would re-add the household term D153 deliberately removed from the birth gate.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Food in the households' larders — <b>the part no rule reads</b> (D394, Joe: *"I don't want
+    /// what is in the home larders to count against the limit. The limit should be what is in
+    /// storage, in transit to storage and in markets — what is available to villagers outside of
+    /// their home storage"*). Shown, never decided on.
+    /// </summary>
+    public int FoodInLarders()
+    {
+        int total = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            total += FoodIn(Households[i].Stockpile);
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Food waiting in the huts — the producers' buffers, and the armfuls in transit — which is
+    /// <see cref="FoodTheVillageHolds"/> less what is on the shelves (D394).
+    /// </summary>
+    public int FoodWaitingInHuts() => FoodTheVillageHolds() - FoodInGranaries();
+
+    /// <summary>
+    /// A hut's buffer in armfuls still to be carried in — the number to say out loud when a
+    /// lodge fills twenty times faster than it empties (D394).
+    /// </summary>
+    /// <remarks>
+    /// Joe's lodge held 2,103 meat behind a bar reading *food 245*: a hunt brings 900 in fifteen
+    /// ticks and a carry takes forty, so the buffer swells and nothing on screen said so. A
+    /// buffer at half its capacity or more is one the hands cannot keep up with.
+    /// </remarks>
+    public int ArmfulsWaitingIn(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        int food = FoodIn(workplace.Store);
+        int armful = Config.CarryCapacity < 1 ? 1 : Config.CarryCapacity;
+        return (food + armful - 1) / armful;
+    }
+
+    /// <summary>Whether a hut's buffer has outrun the carrying — half full or more (D394).</summary>
+    public bool BufferIsSwollen(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return !workplace.IsSite && workplace.Store.Capacity > 0
+            && FoodIn(workplace.Store) * 2 >= workplace.Store.Capacity;
+    }
+
     public int FoodTheVillageHolds()
     {
         int total = FoodInGranaries();
@@ -10592,17 +10640,29 @@ public sealed class SimWorld : IObstacles
             return null;
         }
 
+        // ⭐ THE NUMBER SAYS WHERE IT IS (D394). Joe read *"it has 3092"* on a farm's card beside a
+        // bar saying 245 and asked where the food was: the difference was a lodge nobody had
+        // carried out. A quoted total that is more than the shelves names the huts.
         if (StockLimits.For(Goods.Produce) is int limit && holds >= limit)
         {
-            return $"you asked the village to keep {limit} food and it has {holds}";
+            return $"you asked the village to keep {limit} food and it has {holds}{WhereTheFoodIs()}";
         }
 
         if (holds >= TargetFoodForTheGranary() && RoomLeftForFood() > 0)
         {
-            return $"the village has the {TargetFoodForTheGranary()} food it needs — {holds} held";
+            return $"the village has the {TargetFoodForTheGranary()} food it needs — {holds} held{WhereTheFoodIs()}";
         }
 
         return $"every store that takes food is full — {FoodInGranaries()} in the stores, and nowhere to put more";
+    }
+
+    /// <summary>The clause after a quoted total: where it is, when any of it is off the shelves.</summary>
+    private string WhereTheFoodIs()
+    {
+        int huts = FoodWaitingInHuts();
+        return huts > 0
+            ? $" — {FoodInGranaries()} on the shelves and {huts} still in the huts"
+            : string.Empty;
     }
 
     /// <summary>

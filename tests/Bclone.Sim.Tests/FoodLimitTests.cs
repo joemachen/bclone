@@ -142,6 +142,54 @@ public sealed class FoodLimitTests
     /// granary</em> — and neither was on the screen. A forager who silently walks off to fell a
     /// tree is §1.1's failure whatever the sim is actually doing.
     /// </remarks>
+    /// <summary>
+    /// ⭐ The village's food is the shelves and the huts, never the larders — and a quoted total
+    /// says where it is (D394).
+    /// </summary>
+    /// <remarks>
+    /// Joe, at a farm reading *"it has 3092"* beside a bar reading 245: *"help me understand where
+    /// all of the food is?"* — 2,103 of it in a hunter's lodge. His rule for the limit: *"what is
+    /// in storage, in transit to storage and in markets — what is available to villagers outside
+    /// of their home storage."* So the three readers partition the village's food, the larders
+    /// are outside the number the rules read, and the limit's sentence names the huts.
+    /// </remarks>
+    [Fact]
+    public void TheVillagesFoodIsTheShelvesAndTheHutsAndTheSentenceSaysWhere()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Workplace lodge = HuntingTests.RaiseALodgeFor(world);
+        lodge.Store.Add(Goods.Meat, 2_000);
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.Add(Goods.Produce, 300);
+        }
+
+        int shelves = world.FoodInGranaries();
+        int huts = world.FoodWaitingInHuts();
+        int larders = world.FoodInLarders();
+        _output.WriteLine($"{shelves} on the shelves, {huts} in the huts, {larders} in the larders; the village holds {world.FoodTheVillageHolds()}");
+
+        // The partition, and the larders outside it.
+        Assert.Equal(shelves + huts, world.FoodTheVillageHolds());
+        Assert.True(huts >= 2_000, "the lodge's meat is not counted as waiting in the huts");
+        Assert.True(larders >= 300 * world.Households.Count, "the larders read less than was put in them");
+        Assert.Equal(world.TotalFood() - world.Villagers.Sum(v => world.FoodIn(v.Carried)), shelves + huts + larders);
+
+        // The sentence names the huts when the total is more than the shelves.
+        world.SetStockLimit(Goods.Produce, 100);
+        string? why = world.WhyTheVillageWantsNoMoreFood();
+        _output.WriteLine(why ?? "(wants food)");
+        Assert.NotNull(why);
+        Assert.Contains($"{shelves} on the shelves and {huts} still in the huts", why, StringComparison.Ordinal);
+
+        // A lodge two thirds full has outrun the carrying, and says so in armfuls.
+        Assert.True(world.BufferIsSwollen(lodge));
+        Assert.Equal((2_000 + config.CarryCapacity - 1) / config.CarryCapacity, world.ArmfulsWaitingIn(lodge));
+    }
+
     [Fact]
     public void AVillageThatWantsNoMoreFoodSaysWhichReasonItIs()
     {
