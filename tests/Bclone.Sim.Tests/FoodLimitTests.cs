@@ -243,12 +243,22 @@ public sealed class FoodLimitTests
         // where the foragers are stood down for want of ROOM, a different rule from the limit
         // this guard is about, and "foragers held their trade" reads zero for a reason that is
         // not the one being tested. The claim is the limit's alone, so the tools stay in the cart.
+        // ⚠️ AND POSED AT YEAR SEVEN, NOT TEN (D396). With the paths fading slower the same village
+        // without tools reads 2,542 on a 2,500 granary at year ten — at the brim again, the
+        // room rule again, foragers holding the trade for 0 ticks for the wrong reason. At year
+        // seven it holds 2,384 with room to spare (measured year by year: 2,349 · 2,312 · 2,384
+        // · 2,572 · 2,484 · 2,542 for years 5–10), and the premise is asserted below rather than
+        // assumed, so the next slice that fills the fixture faster is told so by name.
         SimConfig config = VillageFixtures.Village with { CartTools = 0 };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         ColdStartTests.PlayTheOpening(world);
-        loop.Step(config.TicksPerYear * 10);
+        loop.Step(config.TicksPerYear * 7);
+        Assert.True(
+            world.FoodInGranaries() < world.GranaryCapacity(),
+            $"The granary is at its brim ({world.FoodInGranaries()} of {world.GranaryCapacity()}) before the limit is set, "
+            + "so the foragers would be stood down for ROOM, not for the limit — pose this guard earlier.");
 
         // ⚠️ Read the limit OUT of the village rather than writing a number in — an instrument
         // that assumes a simpler world measures something else. Half of what it already holds
@@ -322,7 +332,12 @@ public sealed class FoodLimitTests
                     gatheringWhileMet++;
                 }
 
-                if (v.WorkNote.Length > 0)
+                // ⚠️ THE LIMIT'S NOTE, ONCE SEEN, IS THE ONE KEPT (D396). This village has no tools
+                // (posed above), so every forager's note reads *"Working without a tool"* on any
+                // tick the limit note is not rewritten — the whole of winter, when nothing can be
+                // gathered and the forager branch says nothing. Last-wins captured the winter
+                // note and the claim below is about the limit's sentence, not the tool's.
+                if (v.WorkNote.Length > 0 && (note.Length == 0 || v.WorkNote.Contains("asked the village to keep", StringComparison.Ordinal)))
                 {
                     note = v.WorkNote;
                 }

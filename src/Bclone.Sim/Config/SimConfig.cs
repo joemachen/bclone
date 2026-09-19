@@ -267,7 +267,7 @@ public sealed record SimConfig
 
     /// <summary>How much every tile fades when the season turns — the sweep that also hands wear to the cost field.</summary>
     [JsonPropertyName("path_wear_decay_per_season")]
-    public int PathWearDecayPerSeason { get; init; } = 6;
+    public int PathWearDecayPerSeason { get; init; } = 4;
 
     /// <summary>Wear at which grass reads as a worn path and crosses at <see cref="PathWornTileCost"/>.</summary>
     [JsonPropertyName("path_worn_at")]

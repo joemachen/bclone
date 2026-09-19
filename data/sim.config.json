@@ -265,13 +265,20 @@
   // never outlasts a decay of 6. path_holds_for 24 is the grace a path has
   // once it exists: its wear may fall that far under the line before it stops
   // being one, which with decay 6 is four seasons of nobody walking it -- and
-  // the whole lane goes together, not tile by tile. The view draws the same
+  // the whole lane goes together, not tile by tile.
+  // RE-TUNED AGAIN D396 (Joe, 2026-09-19: footpaths fade slower): decay 6 -> 4.
+  // The grace is now six seasons of nobody walking (24 / 4); the busy lane
+  // wears through in 1.2 seasons, the median (+11) in 2.7; the lone walker's
+  // 3 still never outlasts 4. MEASURED, six fixture seeds x fifty years: path
+  // tiles standing at year 50 366 -> 424 (+16%); alive 48 -> 45, peak 81 -> 80,
+  // starved 10 -> 16 -- two marginal seeds flip either way, D360's +-2 noise,
+  // not a cost of the paths. His number to move again. The view draws the same
   // class the routes price, so the picture and the walking agree. Cost 10 is
   // grass. The cap 2.6 asks for: packed at 8 means a worn detour a quarter
   // longer than the straight walk is still slower, so paths cannot lock a
   // bad route.
   "path_wear_per_step": 3,
-  "path_wear_decay_per_season": 6,
+  "path_wear_decay_per_season": 4,
   "path_worn_at": 30,
   "path_packed_at": 100,
   "path_holds_for": 24,

@@ -309,8 +309,10 @@ public sealed class SkillTests
     // put anywhere on a warm start), hands fetch and wear them, and a gather with one brings a
     // quarter more (see `StockLimitTests.ShippedFiftyYearHash`). Were 2381277489691931705
     // (fixture) and 17970266292719371419 (shipped).
-    [InlineData(false, 18248383024929281255UL)]
-    [InlineData(true, 8891282324951488121UL)]
+    // RE-TAKEN (D396) — footpaths fade slower (decay 6 → 4). Were 18248383024929281255 (fixture)
+    // and 8891282324951488121 (shipped).
+    [InlineData(false, 15577376948852228UL)]
+    [InlineData(true, 13451262210379389876UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

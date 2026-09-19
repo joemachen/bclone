@@ -187,13 +187,13 @@ public partial class VillageMap : Control
     // A library reads as ink rather than as grain or timber — deliberately unlike every other
     // building on the map, because it is the only one that produces nothing you can eat, burn or
     // build with. Cool blue against a palette that is otherwise earth and harvest.
-    private static readonly Color LibraryColour = new("#6a7fc9");
+    internal static readonly Color LibraryColour = new("#6a7fc9");
 
     // The town hall is cut stone with the founders' names on it — pale, and the lightest thing on
     // the map. It is next to the library on the wheel because they are the two buildings that
     // produce nothing the village can eat, burn or build with, and far enough from it that
     // *"which of those two blue squares is which?"* is never a question.
-    private static readonly Color TownHallColour = new("#b9b2a6");
+    internal static readonly Color TownHallColour = new("#b9b2a6");
 
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
@@ -388,6 +388,13 @@ public partial class VillageMap : Control
     /// <i>What's here</i> for it, or closes it on the same tile twice.
     /// </summary>
     public event System.Action<GridPos>? WhatsHereAsked;
+
+    /// <summary>
+    /// The player clicked a heap's chip (D396, Joe: *"piles of resources on the ground should be
+    /// clickable"*). The tile the heap lies on — which may be a store's own tile, a heap at a
+    /// door (D370) — so the shell shows <i>What's here</i> for the heap rather than the building.
+    /// </summary>
+    public event System.Action<GridPos>? HeapClicked;
 
     /// <summary>
     /// The player clicked on a person rather than on the ground (Joe, 2026-08-09).
@@ -1155,6 +1162,13 @@ public partial class VillageMap : Control
         // opens its card and bare ground, a library, a heap, the hall read in the window.
         if (click.ButtonIndex == MouseButton.Right)
         {
+            if (HeapUnder(click.Position) is GridPos heapAsked)
+            {
+                HeapClicked?.Invoke(heapAsked);
+                AcceptEvent();
+                return;
+            }
+
             Vector2 under = ToTile(click.Position);
             GridPos asked = _world!.WhatStandsUnder(PointUnderTheCursor(click.Position))
                 ?? new GridPos(Mathf.RoundToInt(under.X), Mathf.RoundToInt(under.Y));
@@ -1179,6 +1193,17 @@ public partial class VillageMap : Control
             if (VillagerAt(click.Position) is Villager person)
             {
                 VillagerClicked?.Invoke(person.Id);
+                AcceptEvent();
+                return;
+            }
+
+            // ⭐ A HEAP'S CHIP BEFORE THE BUILDING UNDER IT (D396). The chip is drawn just past
+            // the building's square, so it is over ground the building's rectangle may also
+            // claim — the tile-first resolve (D390) opened the store's card for a click on its
+            // door-heap, and Joe wanted the pile.
+            if (HeapUnder(click.Position) is GridPos heap)
+            {
+                HeapClicked?.Invoke(heap);
                 AcceptEvent();
                 return;
             }
@@ -1703,159 +1728,13 @@ public partial class VillageMap : Control
     /// contextual hint costs nothing when it is not needed.*
     /// </para>
     /// <para>
-    /// ⚠️ <b>Every one of these sentences must stay on ONE line at 1280 logical pixels.</b>
-    /// <c>PinTheBarHeight</c> reserves the placement label at a bare newline rather than posing a
-    /// real sentence, so a wrapped message grows the bar past its own pin and nothing catches it.
-    /// The width probe poses them (D327) — keep them there.
+    /// ⭐ Since D396 these sentences go to the village log rather than a label on the bar, so
+    /// their length no longer moves anything — the log wraps.
     /// </para>
     /// </remarks>
     private string TheBrushKeys(bool erasing) => erasing
         ? $" — {TheBrushInWords()}, alt+wheel resizes. Esc to stop."
         : $" — {TheBrushInWords()}, alt+wheel resizes, right-drag takes back. Esc to stop.";
-
-    /// <summary>
-    /// ⭐⭐ Every sentence the placement line can be given by a tool — <b>for the width probe</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// ⛔ <b>Posed and put back.</b> It sets the hand fields directly rather than going through
-    /// <see cref="SetTool"/>, which would fire <see cref="ToolChanged"/> and relight the bar
-    /// mid-measurement — and restores every one of them afterwards. *An instrument that leaves the
-    /// game in a state it could not have reached on its own is how it starts lying about something
-    /// else* (D326's fold probe, the same lesson).
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>It reads the real sentences rather than holding copies</b>, or the probe would be
-    /// measuring text the game does not say — which is the whole failure mode it exists to catch.
-    /// ⚠️ The sim's own refusals share this label and are NOT here: there is no list to take them
-    /// from, which is the reason `PinTheBarHeight` reserves a placeholder in the first place.
-    /// </para>
-    /// </remarks>
-    public IEnumerable<(string Tool, string Sentence)> EverySentenceAToolCanSay()
-    {
-        MapTool wasTool = Tool;
-        BuildingKind? wasBuilding = _building;
-        HarvestBrush? wasHarvest = _harvestMode;
-        int wasGroundFor = _groundFor;
-        int wasBrush = _brush;
-        bool wasDemolishing = _demolishing;
-        bool wasMoving = _moving;
-        bool wasEmptying = _emptying;
-        int wasRadius = _brushRadius;
-        BrushShape wasShape = _brushShape;
-        bool wasSnapping = _snapToGrid;
-
-        var said = new List<(string, string)>();
-
-        // ⛔ THE BIGGEST BRUSH AND THE LONGEST SHAPE WORD, because a sentence that fits at 5×5
-        // square and wraps at 13×13 round is the "correct at startup, wrong later" fault every
-        // other pose in this probe exists to refuse. **Measure the widest the player can reach.**
-        // ⛔ THE BIGGEST BRUSH THE PLAYER CAN ACTUALLY REACH (D336). This posed `MaxRadius`, which
-        // is the TILE-era ceiling and is now a smaller number in a different unit — so the probe
-        // was measuring a brush four times narrower than the one a spun wheel produces. *An
-        // instrument that keeps a constant after the constant changes meaning measures the past.*
-        _brushRadius = BrushStroke.MaxSubRadius;
-        _brushShape = BrushShape.Round;
-
-        void Say(string tool)
-        {
-            said.Add((tool, TheSentenceForWhatIsHeld()));
-        }
-
-        Clear();
-        _brush = 1;
-        Say("paint land");
-
-        _brush = -1;
-        Say("take land");
-
-        Clear();
-        _brush = 1;
-        _harvestMode = HarvestBrush.Everything;
-        Say("harvest");
-
-        _brush = -1;
-        Say("unmark");
-
-        // The longest workplace name the catalogue can produce, so the ground brush is posed at
-        // its widest rather than at whatever happens to stand in this village.
-        Clear();
-        _brush = 1;
-        _groundFor = LongestNamedWorkplace();
-        Say("give ground");
-
-        _brush = -1;
-        Say("take ground");
-
-        Clear();
-        _demolishing = true;
-        Say("demolish");
-
-        Clear();
-        _moving = true;
-        Say("move");
-
-        Clear();
-        _emptying = true;
-        Say("empty");
-
-        // ⛔⛔ BOTH WAYS ROUND, BECAUSE THE FREE ONE IS LONGER AND IS NOT THE DEFAULT (D330).
-        // The probe poses whatever state the map is in, and snapping starts ON — so measuring
-        // once would have measured the SHORT sentence and reported 47px spare on a line that
-        // wraps the moment somebody turns snapping off. *D242's rule, which this probe exists to
-        // enforce: every look anybody takes at the UI is a look at the default state.*
-        Clear();
-        _building = BuildingKind.Market;
-        _verdict = PlacementVerdict.Fine;
-        _snapToGrid = true;
-        Say("place");
-
-        _snapToGrid = false;
-        Say("place free");
-
-        _building = wasBuilding;
-        _harvestMode = wasHarvest;
-        _groundFor = wasGroundFor;
-        _brush = wasBrush;
-        _demolishing = wasDemolishing;
-        _moving = wasMoving;
-        _emptying = wasEmptying;
-        _brushRadius = wasRadius;
-        _brushShape = wasShape;
-        _snapToGrid = wasSnapping;
-        Tool = wasTool;
-
-        return said;
-
-        void Clear()
-        {
-            _building = null;
-            _harvestMode = null;
-            _groundFor = 0;
-            _brush = 0;
-            _demolishing = false;
-            _moving = false;
-            _emptying = false;
-        }
-    }
-
-    /// <summary>Which standing workplace has the longest name — the ground brush's worst case.</summary>
-    private int LongestNamedWorkplace()
-    {
-        int id = 0;
-        int longest = -1;
-
-        foreach (Workplace place in _world?.Workplaces ?? [])
-        {
-            if (place.Name.Length > longest)
-            {
-                longest = place.Name.Length;
-                id = place.Id;
-            }
-        }
-
-        return id;
-    }
 
     /// <summary>What the harvest brush is set to take, in the words the player chose it by.</summary>
     private string WhatTheHarvestBrushTakes() => _harvestMode switch
@@ -5619,9 +5498,25 @@ public partial class VillageMap : Control
             return;
         }
 
-        // Two goods on one tile are two chips side by side, not one over the other.
+        foreach ((GroundStack heap, Rect2 box) in EveryHeapChip())
+        {
+            DrawRect(box, GoodsPalette.ColourOf(heap.Goods));
+            DrawRect(box, HeapEdge, filled: false, width: 2f);
+        }
+    }
+
+    private readonly Dictionary<GridPos, int> _heapsOnTile = new();
+
+    /// <summary>Every drawn heap chip and where it is — <b>the one place a chip's rectangle is decided</b>.</summary>
+    /// <remarks>
+    /// Two goods on one tile are two chips side by side, not one over the other. Shared by the
+    /// draw and the click (D396), so what the player sees is what the player can hit — a
+    /// second copy of the offset arithmetic would be the two-truths bug at the pointer.
+    /// </remarks>
+    private IEnumerable<(GroundStack Heap, Rect2 Box)> EveryHeapChip()
+    {
         _heapsOnTile.Clear();
-        for (int i = 0; i < _world.GroundStacks.Count; i++)
+        for (int i = 0; i < _world!.GroundStacks.Count; i++)
         {
             GroundStack heap = _world.GroundStacks[i];
             if (heap.Amount <= 0)
@@ -5634,12 +5529,34 @@ public partial class VillageMap : Control
 
             Rect2 box = HeapRectOf(heap.Position);
             box.Position += new Vector2(box.Size.X * 1.15f * nth, 0f);
-            DrawRect(box, GoodsPalette.ColourOf(heap.Goods));
-            DrawRect(box, HeapEdge, filled: false, width: 2f);
+            yield return (heap, box);
         }
     }
 
-    private readonly Dictionary<GridPos, int> _heapsOnTile = new();
+    /// <summary>The tile of the heap whose chip is under the point, if any (D396).</summary>
+    /// <remarks>
+    /// Asked before the building and the tile (the chip is drawn over both), and answered from
+    /// the same rectangles the chips are drawn with. A chip is at least 3 px, which is a hard
+    /// target far out; the pile is also listed on its tile's <i>What's here</i>, so the chip is
+    /// a shortcut rather than the only way in.
+    /// </remarks>
+    private GridPos? HeapUnder(Vector2 screen)
+    {
+        if (_world is null)
+        {
+            return null;
+        }
+
+        foreach ((GroundStack heap, Rect2 box) in EveryHeapChip())
+        {
+            if (box.HasPoint(screen))
+            {
+                return heap.Position;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>Where a heap on a tile is drawn — <b>at the tile's lower-right corner, clear of any building on it</b> (D371).</summary>
     /// <remarks>
@@ -5751,10 +5668,29 @@ public partial class VillageMap : Control
         bool clear = !heap.Intersects(building);
         bool beside = heap.GetCenter().DistanceTo(building.GetCenter()) < _pixelsPerTile * 1.2f;
 
-        return clear && beside
+        // ⭐ AND THE CHIP IS WHAT THE CLICK HITS (D396): pose a heap on the store's tile, ask what
+        // is under the chip's centre, and expect the heap's tile back — not the store's card.
+        // Posed and put back: the stack is added straight to the list and removed after.
+        var posedHeap = new GroundStack { Position = store.Tile, Goods = Goods.Logs, Amount = 1 };
+        world.GroundStacks.Add(posedHeap);
+        GridPos? hit;
+        try
+        {
+            hit = HeapUnder(heap.GetCenter());
+        }
+        finally
+        {
+            world.GroundStacks.Remove(posedHeap);
+        }
+
+        bool clickable = hit == store.Tile;
+
+        return clear && beside && clickable
             ? $"[widths] heaps: ✅ a heap on {store.Name}'s tile draws {heap.Size.X:F0}px wide beside the building, "
-                + $"{heap.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from its centre"
-            : $"[widths] heaps: ⛔ a heap on {store.Name}'s tile draws {(clear ? "too far from" : "under")} the building — the door-heap is invisible";
+                + $"{heap.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from its centre, and a click on the chip is the heap"
+            : !clickable
+                ? $"[widths] heaps: ⛔ a click on the chip at {heap.GetCenter()} resolves to {(hit is null ? "no heap" : hit.ToString())}, not the heap on {store.Tile}"
+                : $"[widths] heaps: ⛔ a heap on {store.Name}'s tile draws {(clear ? "too far from" : "under")} the building — the door-heap is invisible";
     }
 
     private static readonly Color HeapEdge = new(0f, 0f, 0f, 0.45f);

@@ -69,6 +69,14 @@ this profession' number."*
 
 There is **one** number per profession. The panel and the building show it from two ends.
 
+**⭐ And it lands the same call (D396).** A number typed on the panel or on a building's card used
+to wait for the next slack pass (`labour_slack_ticks`, 60 — up to fifteen days), which Joe's QA
+pass read as the sim ignoring him. `SetJobLimit` and `SetStaffing` run
+`LabourAllocator.TakeUpSlack` themselves when they change anything — the pass the death rule (D47)
+already runs off-cadence — so the seat fills or the surplus is shed before a tick is stepped.
+Still a ceiling, not a summons (D146). Guards: `LabourCadenceTests.TheVillageObeysTheSameCall`,
+`AWorkplacesNumberLandsTheSameCall`; no golden moved.
+
 **⚠️ The panel's warnings (D367, D374).** A row shows ` ⚠` on its name, coloured, with the sentence
 as a tooltip — never a notes column, and the name is a fixed 110 px so the ⚠ cannot widen the
 table. Two sentences exist: *"you asked for N, the village wants none — why"* (needs the player to
@@ -158,7 +166,7 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
 
 **Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — herdsman,
-quarry worker, miner, blacksmith, brewer, teacher, physician, cleric — and each lands on §3's
+quarry worker, miner, brewer, teacher, physician, cleric (the blacksmith is the smith above, D391) — and each lands on §3's
 shape or argues why not.
 
 ### 4.1 New goods

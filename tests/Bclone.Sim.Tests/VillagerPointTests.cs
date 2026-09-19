@@ -212,6 +212,12 @@ public sealed class VillagerPointTests
     /// so the stores fill on fewer trips — **112** trips, the 1st/10th/50th at **19/171/988**;
     /// the first unchanged.
     /// </para>
+    /// <para>
+    /// **Re-pinned a fourteenth time (D396), not for the clock:** the paths fade slower
+    /// (`path_wear_decay_per_season` 6 → 4), so more of the valley's lanes are worn at the
+    /// yearly re-price and the walks that follow them are a tick quicker — **109** trips, the
+    /// 1st/10th/50th at **19/171/989**; the first and the tenth unchanged.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheValleyWalksOnThePinnedClock()
@@ -242,8 +248,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(112, entries);
-        Assert.Equal(new ulong[] { 19, 171, 988 }, at);
+        Assert.Equal(109, entries);
+        Assert.Equal(new ulong[] { 19, 171, 989 }, at);
     }
 
     /// <summary>

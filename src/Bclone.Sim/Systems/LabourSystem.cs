@@ -32,7 +32,9 @@ namespace Bclone.Sim.Systems;
 ///   <item>
 ///     <b>Every <c>labour_slack_ticks</c>, whoever is idle takes any opening</b> — ten days as
 ///     shipped (D200, Joe: *"30 days feels unresponsive"*). Food is stored per household (D14),
-///     so a household left with nobody working cannot wait until next spring.
+///     so a household left with nobody working cannot wait until next spring. ⭐ And since D396
+///     the player's own number does not wait for it either: <c>SimWorld.SetJobLimit</c> and
+///     <c>SetStaffing</c> run the same pass the call they change anything.
 ///     <para>
 ///     <b>⚠️ THIS USED TO CLAIM IT "NEVER MOVES SOMEONE WHO ALREADY HAS A JOB", AND THAT WAS
 ///     NEVER TRUE</b> — found by writing a guard for the claim (D200). <c>ShedSurplus</c>

@@ -291,7 +291,6 @@ public partial class Main : Control
         GD.Print(_map.TheSceneryIsMeshed());
         GD.Print(_map.AHeapAtADoorIsSeen());
         GD.Print(_map.TheFieldsStayInsideTheirFences());
-        ProbeThePlacementSentences();
 
         ProbeTheControlBar();
         ProbeTheProfessionsPanel();
@@ -605,6 +604,26 @@ public partial class Main : Control
         // later"* fault this whole method exists because of. **Every button on the strip is shown
         // at once**, which is wider than any tab will ever be — a deliberate over-estimate, and
         // the right direction to be wrong in.
+        // ⭐ THE FILTERS SAY WHICH GROUPS HOLD ANYTHING YET (D396): at the founding *Knowledge*,
+        // *Civic* and *Other* are greyed — no library until literacy, no hall until the founders
+        // are gone, nothing modded — and *Works* is not. Read before the pose below shows
+        // everything, because the pose is exactly the state this line must not mistake for real.
+        var greyed = new List<string>();
+        var lit = new List<string>();
+        foreach ((BuildCategory? category, Button button) in _filterButtons)
+        {
+            if (category is BuildCategory chip)
+            {
+                (button.Disabled ? greyed : lit).Add(chip.ToString());
+            }
+        }
+
+        bool greyRight = greyed.Contains("Knowledge") && greyed.Contains("Civic") && greyed.Contains("Other")
+            && lit.Contains("Works") && lit.Contains("Storage");
+        GD.Print(greyRight
+            ? $"[widths] filters: ✅ greyed at the founding: {string.Join(", ", greyed)}; lit: {string.Join(", ", lit)}"
+            : $"[widths] filters: ⛔ greyed at the founding: {string.Join(", ", greyed)}; lit: {string.Join(", ", lit)} — Knowledge, Civic and Other should be greyed and Works and Storage lit");
+
         var wereShowing = new List<(Button Button, bool Was)>(_strip.Count);
         foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
         {
@@ -743,80 +762,6 @@ public partial class Main : Control
                 ? $"[widths] bar height: ✅ {tallest:F0} everywhere"
                 : $"[widths] bar height: ⛔ {shortest:F0} at {shortestAt} to {tallest:F0} at "
                     + $"{tallestAt} — the map jumps by {tallest - shortest:F0}px");
-    }
-
-    /// <summary>
-    /// ⭐⭐ What the placement line actually renders each tool's sentence to (D327).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// ⛔⛔ <b>THE PLACEMENT LABEL IS THE ONE CONTROL <see cref="PinTheBarHeight"/> MEASURES WITH A
-    /// PLACEHOLDER RATHER THAN REAL TEXT.</b> It reserves a bare newline, for a stated reason — the
-    /// messages come from the map *and* from the sim's own refusals, so there is no list to take a
-    /// longest from. **The consequence is that a sentence which wraps at runtime grows the bar past
-    /// its own pin and nothing catches it**, which is exactly the 161 → 181 fault D323 found by
-    /// hand.
-    /// </para>
-    /// <para>
-    /// ⭐ The map's own sentences <em>are</em> a list, so they can be posed. This prints what each
-    /// one renders to and flags any that takes more than one line — D255's rule applied to the
-    /// other label: <em>print what the control will show before believing a string transform.</em>
-    /// </para>
-    /// <para>
-    /// ⚠️ Posed and put back, like every other pose in this probe. It reads the sentences from the
-    /// map rather than holding its own copies, or it would be measuring text the game does not say.
-    /// </para>
-    /// </remarks>
-    private void ProbeThePlacementSentences()
-    {
-        if (_placementLabel is null)
-        {
-            GD.Print("[widths] --- placement line: NOT BUILT ---");
-            return;
-        }
-
-        // ⛔⛔ MEASURED THROUGH THE FONT, NOT BY POSING THE TEXT AND READING `Size.Y` — AND THE
-        // FIRST VERSION DID THE SECOND AND REPORTED A GREEN THAT MEANT NOTHING (D327). The
-        // placement label is hidden whenever there is no message, so it is never laid out; posing
-        // it visible and re-sorting does not make the container reflow within the same call, and
-        // every sentence — including a 209-character one — duly measured **18 tall at 120 wide**,
-        // which is `WrappedTextMinWidth` rather than any line the player has. *A wrap check
-        // performed at the wrong width is exactly the instrument-that-assumes-a-default trap
-        // D326 paid for, and it passes everything.*
-        //
-        // ⭐ The font knows without being laid out. `GetStringSize` is what the label's own
-        // minimum-size calculation asks, so this is the same number by the same route.
-        Font font = _placementLabel.GetThemeFont("font");
-        int size = _placementLabel.GetThemeFontSize("font_size");
-        // ⛔⛔ THE WINDOW, NOT THE BAR, AND THE TWO DIFFER BY 377 PIXELS TODAY. The control bar is
-        // content-sized and its strip row already overflows — it measures 1657 against a 1280
-        // window — so a sentence that "fits the bar" can still be running off the screen. **The
-        // window is the ceiling that exists**, and `--resolution` is ignored here because
-        // `project.godot` lays the UI out at 1280 logical pixels and scales it: *there is no "it
-        // will fit on a bigger screen"* (D242).
-        float available = Mathf.Min(_controlBar?.Size.X ?? Size.X, Size.X);
-
-        GD.Print($"[widths] --- placement line has {available:F0} of a {Size.X:F0} window "
-            + $"(bar claims {_controlBar?.Size.X ?? 0f:F0}), font {size} ---");
-
-        foreach ((string Tool, string Sentence) posed in _map.EverySentenceAToolCanSay())
-        {
-            float wide = font.GetStringSize(
-                posed.Sentence, HorizontalAlignment.Left, -1f, size).X;
-
-            // ⚠️ A "tight" band, because the longest sentence sat at 6px spare when this probe was
-            // written and one added clause is 45. **A line with no headroom is a line the next
-            // edit wraps**, and the failure is invisible: the label grows the bar past the height
-            // `PinTheBarHeight` reserved for one line of it.
-            string verdict = wide > available
-                ? "  ⛔ WRAPS — this grows the bar past its pin"
-                : wide > available * 0.92f
-                    ? $"  ⚠️ tight — only {available - wide:F0} spare"
-                    : $"  ({available - wide:F0} spare)";
-
-            GD.Print($"[widths] say    {posed.Tool,-12} {posed.Sentence.Length,3} chars, "
-                + $"{wide:F0} of {available:F0}px{verdict}");
-        }
     }
 
     /// <summary>
@@ -1709,11 +1654,25 @@ public partial class Main : Control
         int onShelves = world.FoodInGranaries();
         int inHuts = world.FoodWaitingInHuts();
         int inLarders = world.FoodInLarders();
-        _foodTotal.Text = world.FoodTheVillageHolds().Grouped();
-        _foodTotal.TooltipText = $"{onShelves.Grouped()} on the shelves and {inHuts.Grouped()} in the huts — what the food limit reads; the larders hold {inLarders.Grouped()} besides";
-        ShowShortfall(_foodTotal, world.TheVillageWantsMoreFood(),
-            $"the village is short of food — it holds {world.FoodTheVillageHolds().Grouped()} and wants "
-            + $"{(world.StockLimits.For(Goods.Produce) ?? world.TargetFoodForTheGranary()).Grouped()}");
+        int foodHeld = world.FoodTheVillageHolds();
+        _foodTotal.Text = foodHeld.Grouped();
+
+        // ⭐ AMBER = BELOW THE SURVIVAL FLOOR, NOT BELOW THE QUOTA'S FILL LINE (D396, Joe's QA
+        // pass: a granary 96 % full read amber because D378 asked `TheVillageWantsMoreFood`, which
+        // is *"would the foragers still be sent out?"* — a fill line, not a shortage). The floor is
+        // D62's derived half — what the village needs not to die; the quota's *wants more* stays
+        // as a clause in the tooltip, so both readings are on the bar and neither is the other.
+        // ⚠️ `ShowShortfall` writes the tooltip, so the D394 sentence goes on after it.
+        int floor = VillageEconomy.SurvivalFloorFor(world.Config, Goods.Produce, world.Population, world.Households.Count);
+        int foodWanted = world.StockLimits.For(Goods.Produce) ?? world.TargetFoodForTheGranary();
+        ShowShortfall(_foodTotal, foodHeld < floor,
+            $"the village is short of food — it holds {foodHeld.Grouped()} and needs {floor.Grouped()} to see the year out");
+        string where = $"{onShelves.Grouped()} on the shelves and {inHuts.Grouped()} in the huts — what the food limit reads; the larders hold {inLarders.Grouped()} besides";
+        string wanting = world.TheVillageWantsMoreFood() ? $"; the food trades are out until it has {foodWanted.Grouped()}" : string.Empty;
+        _foodTotal.TooltipText = foodHeld < floor
+            ? $"{_foodTotal.TooltipText}{wanting}\n{where}"
+            : $"{where}{wanting}";
+        _foodTotal.MouseFilter = MouseFilterEnum.Pass;
         _foodOnShelves.Text = onShelves.Grouped();
         _foodInHuts.Text = inHuts > 0 ? inHuts.Grouped() : "—";
         _foodInLarders.Text = inLarders > 0 ? inLarders.Grouped() : "—";
@@ -1892,8 +1851,9 @@ public partial class Main : Control
     {
         // The docked panel is for what has no card (D377): hidden the moment the selection has one.
         bool carded = _selectedVillagerId != 0
-            || (_selectedTile is GridPos at
-                && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null));
+            || (!_heapAsked && _selectedTile is GridPos at
+                && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null
+                    || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))));
         // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
         // furniture is shown (`h`) — this line used to override both every frame.
         _whatsHerePanel.Visible = _furnitureShown
@@ -1902,7 +1862,7 @@ public partial class Main : Control
 
         if (_selectedTile is GridPos tile)
         {
-            _inspector.Text = DescribeWhatIsAt(world, tile);
+            _inspector.Text = DescribeWhatIsAt(world, tile, _heapAsked);
             return;
         }
 
@@ -1929,6 +1889,7 @@ public partial class Main : Control
     private void SelectVillager(int villagerId)
     {
         _selectedVillagerId = villagerId;
+        _heapAsked = false;
 
         // Clearing the tile is what makes the inspector describe the person rather than
         // the doorstep they are standing on: RefreshInspector reads the tile first.
@@ -2006,10 +1967,31 @@ public partial class Main : Control
         OnBuildingClicked(tile);
     }
 
+    /// <summary>
+    /// Whether the selection is a heap the player clicked by its chip (D396) — so <i>What's
+    /// here</i> lists the heap even when a building covers the heap's tile (a heap at a door).
+    /// </summary>
+    /// <remarks>
+    /// Cleared by every other click: a card click, a villager, bare ground. Not state about the
+    /// village — the pile is in the sim; this is only which thing on the tile the player meant.
+    /// </remarks>
+    private bool _heapAsked;
+
+    /// <summary>The player clicked a heap's chip: <i>What's here</i> for the pile, whatever stands on its tile.</summary>
+    private void OnHeapClicked(GridPos tile)
+    {
+        _selectedTile = tile;
+        _selectedVillagerId = 0;
+        _heapAsked = true;
+        _roster.DeselectAll();
+        RefreshInspector(_loop.World);
+    }
+
     private void OnBuildingClicked(GridPos tile)
     {
         _selectedTile = tile;
         _selectedVillagerId = 0;
+        _heapAsked = false;
         _roster.DeselectAll();
 
         // ⭐ A CARD FOR WHAT WAS CLICKED (D376): a store, a workplace or a home; bare ground still
@@ -2026,6 +2008,16 @@ public partial class Main : Control
         else if (world.HouseholdAt(tile) is Household home)
         {
             OpenCard(new CardSubject(CardKind.Household, home.Id));
+        }
+        else if (world.LibraryCovering(tile) is Library library)
+        {
+            // ⭐ A card for the library and the hall too (D396, Joe's QA pass) — they were the two
+            // buildings still reading in the docked *What's here* window.
+            OpenCard(new CardSubject(CardKind.Library, world.Libraries.IndexOf(library)));
+        }
+        else if (world.TownHall is not null && world.TownHallCovers(tile))
+        {
+            OpenCard(new CardSubject(CardKind.TownHall, 0));
         }
 
         RefreshInspector(world);
@@ -2054,13 +2046,35 @@ public partial class Main : Control
     /// legibility-first game cannot do.
     /// </para>
     /// </remarks>
-    private static string DescribeWhatIsAt(SimWorld world, GridPos tile)
+    private static string DescribeWhatIsAt(SimWorld world, GridPos tile, bool heapOnly = false)
     {
         var lines = new List<string>();
 
+        // ⭐ THE PILE, NOT WHAT IT LIES BESIDE (D396). A heap set down at a full store's door is on
+        // the store's own tile (D370), and the store has a card; a click on the chip means the
+        // pile, so the building's early return is skipped and the heap lines read alone.
+        if (heapOnly)
+        {
+            foreach (GroundStack heap in world.GroundStacksAt(tile))
+            {
+                lines.Add($"On the ground: {heap.Amount.Grouped()} {GoodsName(world, heap.Goods)} — "
+                    + $"{WhyItIsOnTheGround(world, heap.Goods)}.");
+            }
+
+            if (lines.Count == 0)
+            {
+                lines.Add("Nothing on the ground here any more — it was carried in.");
+            }
+
+            lines.Add(string.Empty);
+            lines.Add($"Tile {tile.X}, {tile.Y}");
+            return string.Join("\n", lines);
+        }
+
         // ⭐ A BUILDING IS ITS CARD NOW (D376). This panel keeps the controls; one line says which
         // building they are for. Joe: *"such a mess of stacked sentences i dont even know what to
-        // read. Remove text where you can."* Bare ground, the library and the hall still read here.
+        // read. Remove text where you can."* Bare ground and heaps still read here (the library and
+        // the hall have cards since D396).
 
         // ⭐ THE STORE FIRST, THEN WHO WORKS IT (D350). A market is both, and described stall-first
         // its `Holding:` line — the one sentence a store exists to say — came eleventh, below the
@@ -2087,33 +2101,11 @@ public partial class Main : Control
             return string.Empty;
         }
 
-        // ⛔⛔ THE FOURTH LIST, AND LEAVING IT OUT MADE A FINISHED LIBRARY READ AS "OPEN GROUND"
-        // (Joe, playing: *"it was constructed as buildings usually are, but no final building
-        // showed up upon completion"*). **This method knew about three kinds of thing that can
-        // stand on a tile and a library is a fourth** — the same shape as `SomethingStandsAt`,
-        // which had the identical hole in the sim half.
-        //
-        // ⚠️ AND THE BUTTON WAS NOT ENOUGH. The build button shipped with the building on D103's
-        // rule — *a feature the player cannot reach does not exist* — and that was checked off as
-        // done. **Placeable is not reachable.** A building the player can mark, pay for, watch get
-        // built, and then never see is D221's finding for the sixth time, arriving through the one
-        // door that had just been declared closed.
-        foreach (Library library in world.Libraries)
+        // ⭐ The library and the hall are cards now too (D396) — the fourth and fifth lists this
+        // method used to describe (D221's finding, twice) have gone where the other three went.
+        if (world.LibraryCovering(tile) is not null || (world.TownHall is not null && world.TownHallCovers(tile)))
         {
-            if (library.Footprint.Covers(tile))
-            {
-                DescribeLibrary(world, library, lines);
-            }
-        }
-
-        // ⛔ THE FIFTH LIST, AND IT IS HERE IN THE SAME COMMIT AS THE BUILDING (D252). The comment
-        // directly above records the library shipping built, paid for, watched being raised, and
-        // then reading as *"open ground"* — because this method knew about three kinds of thing
-        // that can stand on a tile and did not know about a fourth. **A fifth was always going to
-        // arrive; this is it.**
-        if (world.TownHall is { } hall && world.TownHallCovers(tile))
-        {
-            DescribeTheTownHall(world, hall, lines);
+            return string.Empty;
         }
 
         if (lines.Count == 0)
@@ -2151,96 +2143,6 @@ public partial class Main : Control
             3 => $"{number}rd",
             _ => $"{number}th",
         };
-    }
-
-    /// <summary>What a library says when you click it — its shelves, and what is on them.</summary>
-    /// <remarks>
-    /// <b>⭐ THE SHELVES ARE THE WHOLE PANEL, because they are the whole decision.</b> The player is
-    /// choosing which techniques outlive the people who worked them out, and *"two of three shelves
-    /// used"* is the sentence that makes the choice visible before it bites rather than afterwards.
-    /// </remarks>
-    private static void DescribeLibrary(SimWorld world, Library library, List<string> lines)
-    {
-        Separate(lines);
-
-        lines.Add($"{library.Name} — where the village writes things down");
-        lines.Add($"Shelves: {library.Records.Count} of {library.Shelves} used");
-
-        if (library.Records.Count == 0)
-        {
-            lines.Add("Nothing written yet. A master who has worked a trade for twenty "
-                + "years works something out, and it is recorded here.");
-            return;
-        }
-
-        for (int i = 0; i < library.Records.Count; i++)
-        {
-            // ⭐ THE SHELF SAYS WHO WORKED IT OUT (Joe, 2026-08-29: *"the written technique should
-            // source who found the technique. right now it is blank"*). ⚠️ The name is on the
-            // record rather than looked up, because by the time anybody reads this shelf that
-            // person has usually been dead for decades — which is what the library is FOR.
-            LibraryRecord record = library.Records[i];
-            string what = world.TechniquesCatalog[record.TechniqueId].Name;
-
-            lines.Add(record.FoundBy.Length > 0
-                ? $"  · {what} — worked out by {record.FoundBy}"
-                : $"  · {what}");
-        }
-
-        if (!library.HasRoom)
-        {
-            lines.Add("Full. The next technique anybody works out has nowhere to go, and "
-                + "will die with them unless another library stands.");
-        }
-    }
-
-    /// <summary>What the town hall says when you click it — <b>who it is for</b>.</summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐⭐ THE FOUNDERS ARE THE WHOLE PANEL, AND THAT IS SLICE 1's ENTIRE CLAIM</b>
-    /// (`specs/town-hall.md §6`): <em>standing in the village, it says what it is and who it is
-    /// for.</em> The collections, the charts and the knowledge roster are slices 2–4 and none of
-    /// them is here — but the tribute is, because the tribute is the reason the building exists.
-    /// </para>
-    /// <para>
-    /// <b>⛔ THE ORDERING OF THE SLICES IS A DEFENCE, NOT AN ACCIDENT.</b> `DESIGN.md §1`'s
-    /// non-negotiable most at risk in this building is <em>people, not a spreadsheet</em> — charts
-    /// and itemised collections are literally a spreadsheet. **Building the Founders panel first
-    /// means the first thing anybody ever sees inside a town hall is four people.**
-    /// </para>
-    /// </remarks>
-    private static void DescribeTheTownHall(SimWorld world, TownHall hall, List<string> lines)
-    {
-        Separate(lines);
-
-        lines.Add($"{hall.Name} — raised to the people who founded this village");
-
-        int named = 0;
-        for (int i = 0; i < world.Villagers.Count; i++)
-        {
-            Villager founder = world.Villagers[i];
-            if (!founder.Founder)
-            {
-                continue;
-            }
-
-            named++;
-
-            // ⚠️ A founder is dead by the time this building can stand — the hall's own trigger is
-            // the last of them dying — so this reads their age at death, which `AgeYears` stops
-            // advancing at. **Written as a life rather than as a row**: the register that keeps
-            // this panel from being a stat block is the same one D195's at-risk line uses.
-            lines.Add($"  · {founder.Name}, who lived {Years(founder.AgeYears)} "
-                + $"and saw {founder.WintersSurvived} winters here");
-        }
-
-        if (named == 0)
-        {
-            lines.Add("Nobody's names are cut into the lintel, which should not be possible.");
-        }
-
-        lines.Add(string.Empty);
-        lines.Add("The village keeps its records here. There is nothing to read yet.");
     }
 
     private static void DescribeBareGround(SimWorld world, GridPos tile, List<string> lines)
@@ -2471,15 +2373,6 @@ public partial class Main : Control
         _ => kind.ToString().ToLowerInvariant(),
     };
 
-    /// <summary>A blank line between two things standing on the same tile.</summary>
-    private static void Separate(List<string> lines)
-    {
-        if (lines.Count > 0)
-        {
-            lines.Add(string.Empty);
-        }
-    }
-
     /// <summary>Append only entries not yet drawn; rebuilding would reset scroll.</summary>
     private void AppendNewLogLines()
     {
@@ -2698,6 +2591,7 @@ public partial class Main : Control
         _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _map.BuildingClicked += OnBuildingClicked;
         _map.WhatsHereAsked += OnWhatsHereAsked;
+        _map.HeapClicked += OnHeapClicked;
         _map.VillagerClicked += OnVillagerClicked;
         AddChild(_map);
 
@@ -4062,19 +3956,11 @@ public partial class Main : Control
         // the two that hid the effect. They are their own collapsible panel now, on the left,
         // where they can be left open while the village gets on with it.
 
-        // The refusal or the warning, in the words the sim already produced — on its own
-        // line rather than squeezed between the buttons. Same standard as JobReason: a
-        // red square on its own is the shrug this project keeps refusing, and a sentence
-        // that has to share a row with nine buttons is a sentence nobody finishes.
-        _placementLabel = Wrapped(Body(string.Empty));
-        _placementLabel.Modulate = new Color(1f, 0.78f, 0.35f);
-        body.AddChild(_placementLabel);
-        _map.PlacementMessageChanged += message =>
-        {
-            _placementLabel.Text = message;
-            _placementLabel.Visible = message.Length > 0;
-        };
-        _placementLabel.Visible = false;
+        // ⛔ THE YELLOW LINE IS GONE FROM THE BAR (D396, Joe's QA pass: *"remove the yellow
+        // warning line"*). The refusal or the warning, in the words the sim already produced,
+        // goes to the village log instead — the one place the player already reads for what
+        // happened — so a *"can't build here"* is still said (§1.1) and the bar holds its height.
+        _map.PlacementMessageChanged += SayInTheLog;
 
         body.AddChild(Wrapped(Muted(
             "space to pause · 1-4 speed · WASD pan · wheel zoom · r turn · tab routes · "
@@ -5369,12 +5255,6 @@ public partial class Main : Control
     /// <summary>How narrow a wrapped sentence may be asked to get.</summary>
     private const float WrappedTextMinWidth = 120f;
 
-    /// <summary>What the cursor is over, or what just happened. Empty when not placing.</summary>
-    // ⚠️ Genuinely null until the control bar is built, and typed to say so. It was `null!`,
-    // which promised it was always there and cost a crash the first time a panel warned
-    // during construction — see `Warn`.
-    private Label? _placementLabel;
-
     /// <summary>
     /// The professions this village cannot hire yet. <b>Delete a row when it ships.</b>
     /// </summary>
@@ -5394,46 +5274,69 @@ public partial class Main : Control
         ("Herdsman", "no livestock"),
         ("Miner", "iron is on the map; nothing digs it"),
         ("Stonecutter", "stone is on the map; nothing quarries it"),
-        ("Blacksmith", "tools cannot be made, only brought"),
+
+        // ⭐ The blacksmith moved OFF this list with the smithy (D391) — and sat here for a day
+        // after, which Joe's QA pass caught (D396): the row is deleted the day its trade ships.
         ("Brewer", "no barley"),
         ("Teacher", "no school"),
         ("Physician", "illness is not modelled"),
     };
 
+    /// <summary>Show the sim's own warning — in the village log, since D396.</summary>
+    private void Warn(PlacementVerdict verdict)
+    {
+        if (verdict.HasWarning)
+        {
+            SayInTheLog(verdict.Warning);
+        }
+    }
+
+    /// <summary>The last sentence <see cref="SayInTheLog"/> said, so a repeat is not said again.</summary>
+    private string _lastSaidInTheLog = string.Empty;
+
     /// <summary>
-    /// Show the sim's own warning, <b>if there is anywhere to show it yet</b>.
+    /// A refusal or a warning, said in the village log in the warning colour.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⚠️ THE GUARD IS THE POINT, AND IT COST A CRASH TO LEARN.</b> <c>_placementLabel</c>
-    /// lives on the control bar, which is built <em>last</em> — and once the professions rows
-    /// started applying a real number at construction (rather than a null that changed
-    /// nothing), one of them returned <em>"there is only room for N on this kind of work"</em>
-    /// and wrote it to a label that did not exist yet. <c>BuildUi</c> threw halfway through,
-    /// so the roster was never created either, and every frame after that died on
-    /// <c>_roster.Clear()</c> — a null reference a long way from its cause.
+    /// ⭐ <b>Where the control bar's yellow line went (D396).</b> Placement refusals from the map,
+    /// the sim's own verdicts (a limit below the floor, more hands than seats) and a tool's
+    /// announce sentence all came to one label under the buttons that Joe asked to have removed.
+    /// The log is the place the player already reads for what happened, it wraps, and it keeps
+    /// the sentence after the moment — the label lost it on the next click.
     /// </para>
     /// <para>
-    /// Guarded rather than reordered: there is no build order that is right for every panel
-    /// somebody adds later, and a warning with nowhere to go is not worth a crash. It goes to
-    /// the console instead, so it is never simply lost.
+    /// ⚠️ <b>Appended by the view, not narrated by the sim</b> — the precedent is
+    /// <see cref="HaltTheVillage"/>. These are answers to the player's hand, not events in the
+    /// village, so they are not hashed, not in the audit file and not replayable; the sim's own
+    /// verdict sentences are still logged by the sim where it logs them. An empty message (the
+    /// tool put down) says nothing. Guarded the way the old label was: a verdict from a
+    /// professions row applied at construction arrives before the log exists.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Said once, not once per motion event.</b> The label overwrote itself, so a brush
+    /// stroke re-sending its warning on every drag step and alt+wheel announcing the brush on
+    /// every notch cost nothing; a log line each would be D42's click-farm in reverse. The same
+    /// sentence twice running is said once.
     /// </para>
     /// </remarks>
-    private void Warn(PlacementVerdict verdict)
+    private void SayInTheLog(string message)
     {
-        if (!verdict.HasWarning)
+        if (message.Length == 0 || message == _lastSaidInTheLog)
         {
             return;
         }
 
-        if (_placementLabel is null)
+        _lastSaidInTheLog = message;
+
+        if (_villageLog is null)
         {
-            GD.Print($"[placement] {verdict.Warning}");
+            GD.Print($"[placement] {message}");
             return;
         }
 
-        _placementLabel.Text = verdict.Warning;
-        _placementLabel.Visible = true;
+        _villageLog.AppendText(
+            $"[color=#{ColourOf(LogCategory.Warning).ToRgba32():x8}]{message.Replace("[", "[lb]", StringComparison.Ordinal)}[/color]\n");
     }
 
     /// <summary>What a kind of work is called on screen. Every value named (D108).</summary>
@@ -5858,25 +5761,19 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// ⭐ <b>So the bar is pinned to its own tallest configuration rather than to any row's
-    /// height.</b> Every tab × every filter is measured with the placement line reserved, and the
-    /// largest wins. It is recomputed only when something that could change the answer changes —
+    /// height.</b> Every tab × every filter is measured, and the largest wins. It is recomputed only when something that could change the answer changes —
     /// the width, the UI scale, or how many buildings are unlocked — because it costs a layout
     /// pass per state and `FitFloaters` runs every frame.
     /// </para>
     /// <para>
-    /// ⚠️ <b>The honest limit:</b> the placement line is reserved at two lines, so a warning long
-    /// enough to wrap to three still grows the bar. That is the one remaining case, and it is
-    /// left rather than clipped — <c>Wrapped</c> exists because this project decided a sentence
-    /// the player cannot finish is worse than a bar that moves.
+    /// ⭐ The placement line that used to be reserved here at two lines — the one case that could
+    /// still grow the bar — went to the village log (D396), so nothing on the bar changes height
+    /// with what the player does any more.
     /// </para>
     /// </remarks>
     private void PinTheBarHeight(float wanted)
     {
-        // ⚠️ BOTH, AND THE SECOND IS NOT BELT-AND-BRACES. `_controlBar` is assigned at the TOP of
-        // `BuildControlPanel` and `_placementLabel` at the bottom, so a `FitFloaters` landing
-        // between them sees a bar with no label — the null warning was pointing at a real
-        // ordering hazard rather than at a formality.
-        if (_controlBar is null || _placementLabel is null)
+        if (_controlBar is null)
         {
             return;
         }
@@ -5902,13 +5799,6 @@ public partial class Main : Control
 
         BuildTab wasOn = _tab;
         BuildCategory? filterWas = _filter;
-        bool noteWas = _placementLabel.Visible;
-        string noteText = _placementLabel.Text;
-
-        // Reserved rather than posed with a real sentence: the messages come from the map AND
-        // from the sim's own refusals, so there is no list to take a longest from.
-        _placementLabel.Visible = true;
-        _placementLabel.Text = "\n";
 
         // Measure from unpinned, or the pin from the last window size becomes a floor that can
         // only ever grow — a bar that never gets shorter when the window gets wider.
@@ -5930,8 +5820,6 @@ public partial class Main : Control
 
         _tab = wasOn;
         _filter = filterWas;
-        _placementLabel.Visible = noteWas;
-        _placementLabel.Text = noteText;
         RefreshTheStrip();
 
         _controlBar.CustomMinimumSize = new Vector2(0f, tallest);
@@ -6231,9 +6119,33 @@ public partial class Main : Control
         foreach ((BuildCategory? category, Button button) in _filterButtons)
         {
             button.SetPressedNoSignal(category == _filter);
+
+            // ⭐ A CATEGORY WITH NOTHING EARNED IN IT IS GREYED, NOT HIDDEN (D396, Joe's QA pass:
+            // *Knowledge* and *Civic* sat clickable from the founding and opened onto an empty
+            // strip; *Other* has never held anything). Disabled keeps the row's width, so the
+            // bar's pinned height does not move for it; a modded row lights *Other* the day it
+            // exists, and the library and the hall light theirs the day they are earned.
+            if (category is BuildCategory chip)
+            {
+                button.Disabled = !AnythingEarnedIn(chip);
+            }
         }
 
         RelightTheStrip();
+    }
+
+    /// <summary>Whether any BUILD button the village has earned sits in this category.</summary>
+    private bool AnythingEarnedIn(BuildCategory category)
+    {
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            if (entry.Tab == BuildTab.Build && entry.Category == category && EarnedYet(entry.Kind))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether the village has earned the right to see this button yet.</summary>

@@ -33,6 +33,12 @@ public partial class Main
         Workplace,
         Household,
         Villager,
+
+        /// <summary>A library (D396) — its Id is its index in <see cref="SimWorld.Libraries"/>; a library has no id of its own.</summary>
+        Library,
+
+        /// <summary>The town hall (D396) — a singleton, Id 0.</summary>
+        TownHall,
     }
 
     private readonly record struct CardSubject(CardKind Kind, int Id);
@@ -187,8 +193,26 @@ public partial class Main
                 _selectedTile = world.FindHousehold(subject.Id)?.HomeTile;
                 _selectedVillagerId = 0;
                 break;
+            case CardKind.Library:
+                _selectedTile = LibraryOf(card: subject)?.Tile;
+                _selectedVillagerId = 0;
+                break;
+            case CardKind.TownHall:
+                _selectedTile = world.TownHall?.Tile;
+                _selectedVillagerId = 0;
+                break;
         }
     }
+
+    /// <summary>The library a card is about — by index, which is all a library has (D396).</summary>
+    /// <remarks>
+    /// ⚠️ An index is not an id: demolish the first of two libraries and this card is about the
+    /// second. The card refreshes every frame, so it says so at once, and a library that is not
+    /// there closes the card like a demolished store. Cheaper than giving the sim an id nothing
+    /// else asks for.
+    /// </remarks>
+    private Library? LibraryOf(CardSubject card) =>
+        card.Id >= 0 && card.Id < _loop.World.Libraries.Count ? _loop.World.Libraries[card.Id] : null;
 
     private void CloseCard(Card card)
     {
@@ -341,12 +365,14 @@ public partial class Main
         column.AddChild(caption);
 
         // ---- the Settings fold (D377, Joe: "why 2 panels for one structure?") ----
-        // Folded by default so the five parts stay what you read; open, it is every control the
-        // docked panel used to hold for this thing, and it acts on THIS card's subject.
-        var settingsToggle = new Button { Text = "Settings ▸", Flat = true, ToggleMode = true };
+        // ⭐ OPEN by default since D396 (Joe's QA pass: *"card Settings open by default"*) — it was
+        // folded so the five parts stayed what you read, and in play the fold was one more click
+        // on every card. It is every control the docked panel used to hold for this thing, and it
+        // acts on THIS card's subject.
+        var settingsToggle = new Button { Text = "Settings ▾", Flat = true, ToggleMode = true, ButtonPressed = true };
         settingsToggle.Alignment = HorizontalAlignment.Left;
         column.AddChild(settingsToggle);
-        var settings = new VBoxContainer { Visible = false };
+        var settings = new VBoxContainer { Visible = true };
         settings.AddThemeConstantOverride("separation", 6);
         column.AddChild(settings);
 
@@ -498,6 +524,8 @@ public partial class Main
             CardKind.Workplace => world.FindWorkplace(card.Subject.Id) is Workplace place && ShowWorkplace(world, card, place),
             CardKind.Household => world.FindHousehold(card.Subject.Id) is Household home && ShowHousehold(world, card, home),
             CardKind.Villager => world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager),
+            CardKind.Library => LibraryOf(card.Subject) is Library library && ShowLibrary(world, card, library),
+            CardKind.TownHall => world.TownHall is TownHall hall && ShowTownHall(world, card, hall),
             _ => false,
         };
 
@@ -971,12 +999,7 @@ public partial class Main
 
         // The people, scrolling past four (Joe).
         card.PeopleScroll.Visible = true;
-        while (card.People.GetChildCount() > 0)
-        {
-            Node child = card.People.GetChild(0);
-            card.People.RemoveChild(child);
-            child.QueueFree();
-        }
+        ClearThePeople(card);
 
         int shown = 0;
         for (int i = 0; i < home.MemberIds.Count; i++)
@@ -1065,6 +1088,160 @@ public partial class Main
         }
 
         return true;
+    }
+
+    /// <summary>What a library says when you click it — its shelves, and what is on them (D396, a card since).</summary>
+    /// <remarks>
+    /// <b>⭐ THE SHELVES ARE THE WHOLE CARD, because they are the whole decision.</b> The player is
+    /// choosing which techniques outlive the people who worked them out, and *"two of three shelves
+    /// used"* is the sentence that makes the choice visible before it bites rather than afterwards.
+    /// The shelf says who worked it out (Joe, 2026-08-29) — the name is on the record rather than
+    /// looked up, because by the time anybody reads this shelf that person has usually been dead
+    /// for decades, which is what the library is FOR.
+    /// </remarks>
+    private bool ShowLibrary(SimWorld world, Card card, Library library)
+    {
+        var records = new List<(string What, string FoundBy)>(library.Records.Count);
+        for (int i = 0; i < library.Records.Count; i++)
+        {
+            LibraryRecord record = library.Records[i];
+            records.Add((world.TechniquesCatalog[record.TechniqueId].Name, record.FoundBy));
+        }
+
+        WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
+        return true;
+    }
+
+    /// <summary>The library card from plain facts — so the probe can pose a full one where none stands.</summary>
+    private void WriteLibraryCard(Card card, string name, int shelves, IReadOnlyList<(string What, string FoundBy)> records, int wide, int deep, ushort facing)
+    {
+        Title(card, name, renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+
+        bool full = records.Count >= shelves;
+        Status(
+            card,
+            working: !full,
+            full ? "Full. The next technique anybody works out has nowhere to go, and will die with them unless another library stands."
+                : records.Count == 0 ? "Nothing written yet. A master who has worked a trade for twenty years works something out, and it is recorded here."
+                : $"Shelves: {records.Count} of {shelves} used — where the village writes things down.");
+
+        Number(card, 0, $"{records.Count}/{shelves}", "shelves used");
+        Number(card, 1, $"{records.Count}", records.Count == 1 ? "technique kept" : "techniques kept");
+        Number(card, 2, $"{shelves - records.Count}", "free");
+
+        card.PeopleScroll.Visible = true;
+        ClearThePeople(card);
+        for (int i = 0; i < records.Count; i++)
+        {
+            var row = new HBoxContainer();
+            Label what = Body(records[i].What);
+            what.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            what.ClipText = true;
+            what.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            Label who = Muted(records[i].FoundBy.Length > 0 ? $"by {records[i].FoundBy}" : string.Empty);
+            who.ClipText = true;
+            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            row.AddChild(what);
+            row.AddChild(who);
+            card.People.AddChild(row);
+        }
+
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, records.Count)));
+        card.Portrait.Show(VillageMap.LibraryColour, wide * 0.8f, deep * 0.8f, facing, null);
+        card.Caption.Text = "where the village writes things down";
+        card.Caption.TooltipText = card.Caption.Text;
+    }
+
+    /// <summary>What the town hall says when you click it — <b>who it is for</b> (D396, a card since).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE FOUNDERS ARE THE WHOLE CARD, AND THAT IS SLICE 1's ENTIRE CLAIM</b>
+    /// (`specs/town-hall.md §6`): <em>standing in the village, it says what it is and who it is
+    /// for.</em> The collections, the charts and the knowledge roster are slices 2–4 and none of
+    /// them is here — but the tribute is, because the tribute is the reason the building exists.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE ORDERING OF THE SLICES IS A DEFENCE, NOT AN ACCIDENT.</b> `DESIGN.md §1`'s
+    /// non-negotiable most at risk in this building is <em>people, not a spreadsheet</em> — charts
+    /// and itemised collections are literally a spreadsheet. **Building the Founders panel first
+    /// means the first thing anybody ever sees inside a town hall is four people.**
+    /// </para>
+    /// </remarks>
+    private bool ShowTownHall(SimWorld world, Card card, TownHall hall)
+    {
+        var founders = new List<(string Name, string Life)>();
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager founder = world.Villagers[i];
+            if (!founder.Founder)
+            {
+                continue;
+            }
+
+            // ⚠️ A founder is dead by the time this building can stand — the hall's own trigger is
+            // the last of them dying — so this reads their age at death, which `AgeYears` stops
+            // advancing at. **Written as a life rather than as a row**: the register that keeps
+            // this card from being a stat block is the same one D195's at-risk line uses.
+            founders.Add((founder.Name, $"lived {Years(founder.AgeYears).ToLowerInvariant()}, saw {founder.WintersSurvived} winters here"));
+        }
+
+        int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
+        WriteTownHallCard(card, hall.Name, founders, raised, hall.ExtentWidth, hall.ExtentHeight, hall.Facing.Raw);
+        return true;
+    }
+
+    /// <summary>The town hall card from plain facts — so the probe can pose one where none stands.</summary>
+    private void WriteTownHallCard(Card card, string name, IReadOnlyList<(string Name, string Life)> founders, int raisedInYear, int wide, int deep, ushort facing)
+    {
+        Title(card, name, renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+
+        Status(
+            card,
+            working: founders.Count > 0,
+            founders.Count > 0 ? "Raised to the people who founded this village."
+                : "Nobody's names are cut into the lintel, which should not be possible.");
+
+        Number(card, 0, $"{founders.Count}", "founders");
+        Number(card, 1, $"Year {raisedInYear}", "raised");
+        Number(card, 2, "none yet", "records");
+
+        card.PeopleScroll.Visible = true;
+        ClearThePeople(card);
+        for (int i = 0; i < founders.Count; i++)
+        {
+            var row = new HBoxContainer();
+            Label who = Body(founders[i].Name);
+            who.ClipText = true;
+            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            Label life = Muted(founders[i].Life);
+            life.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            life.ClipText = true;
+            life.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            row.AddChild(who);
+            row.AddChild(life);
+            card.People.AddChild(row);
+        }
+
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, founders.Count)));
+        card.Portrait.Show(VillageMap.TownHallColour, wide * 0.8f, deep * 0.8f, facing, null);
+        card.Caption.Text = "the village keeps its records here — nothing to read yet";
+        card.Caption.TooltipText = card.Caption.Text;
+    }
+
+    private static void ClearThePeople(Card card)
+    {
+        while (card.People.GetChildCount() > 0)
+        {
+            Node child = card.People.GetChild(0);
+            card.People.RemoveChild(child);
+            child.QueueFree();
+        }
     }
 
     // ---- the small writers ----
@@ -1232,6 +1409,48 @@ public partial class Main
             faults.Add($"a {SimWorld.NameLengthLimit}-letter name or a long status widens a card's minimum to {posedWidth:F0}");
         }
 
+        // ⭐ A LIBRARY AND THE HALL HAVE CARDS (D396). Neither stands at the founding, so the
+        // writers are posed with the facts a full one would carry — five shelves, every technique
+        // name at the rename limit, four founders — and the width read back. Put back by the
+        // refresh at the end, which rewrites the card for its real subject.
+        var fullShelves = new List<(string What, string FoundBy)>();
+        for (int i = 0; i < 5; i++)
+        {
+            fullShelves.Add((new string('W', SimWorld.NameLengthLimit), new string('M', SimWorld.NameLengthLimit)));
+        }
+
+        WriteLibraryCard(posed, new string('L', SimWorld.NameLengthLimit), 5, fullShelves, 1, 1, 0);
+        ForceUpdateTransform();
+        float libraryWidth = posed.Panel.GetCombinedMinimumSize().X;
+        if (libraryWidth > CardWidth + 1f)
+        {
+            faults.Add($"a full library with 40-letter techniques widens a card's minimum to {libraryWidth:F0}");
+        }
+
+        if (posed.Values[0].Text != "5/5" || posed.People.GetChildCount() != 5)
+        {
+            faults.Add($"a full library card reads {posed.Values[0].Text} with {posed.People.GetChildCount()} rows, not 5/5 with 5");
+        }
+
+        var founders = new List<(string Name, string Life)>();
+        for (int i = 0; i < 4; i++)
+        {
+            founders.Add((new string('F', SimWorld.NameLengthLimit), "lived seventy-three years, saw 71 winters here"));
+        }
+
+        WriteTownHallCard(posed, new string('H', SimWorld.NameLengthLimit), founders, 58, 3, 2, 0);
+        ForceUpdateTransform();
+        float hallWidth = posed.Panel.GetCombinedMinimumSize().X;
+        if (hallWidth > CardWidth + 1f)
+        {
+            faults.Add($"a hall with four 40-letter founders widens a card's minimum to {hallWidth:F0}");
+        }
+
+        if (posed.Values[0].Text != "4" || posed.People.GetChildCount() != 4)
+        {
+            faults.Add($"a hall card reads {posed.Values[0].Text} founders with {posed.People.GetChildCount()} rows, not 4 with 4");
+        }
+
         // Drag: move the selected card's panel and read it back.
         Card dragged = _cards[^1];
         Vector2 before = dragged.Panel.Position;
@@ -1278,7 +1497,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library and the hall posed, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }

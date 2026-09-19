@@ -151,7 +151,7 @@ worlds** — the suite runs worlds in parallel and a shared buffer is a determin
 (`CLAUDE.md`). `Forget()` drops it with the fields.
 
 ### 4.4 Config (`data/sim.config.json`)
-`path_wear_per_step` 3 · `path_wear_decay_per_season` 6 · `path_worn_at` 30 · `path_packed_at` 100 ·
+`path_wear_per_step` 3 · `path_wear_decay_per_season` **4** (D396; 6 from D362) · `path_worn_at` 30 · `path_packed_at` 100 ·
 `path_holds_for` 24 ·
 `path_worn_tile_cost` 9 · `path_packed_tile_cost` 8. The comment in the file carries the
 measurement the numbers came from. Paving will add classes to the same table, not a second one.
@@ -217,6 +217,13 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   disappear … exist for longer before growing back"* → worn 30 / packed 100 / decay 6 and the
   `path_holds_for` dial (24); classes move every season; the view draws the class the routes
   price, so a lane appears and goes as one lane, not dot by dot.
+- [x] **Fourth pass (D396, Joe's QA pass at 2x through year 58):** *"footpaths fade slower"* →
+  decay **6 → 4**, so an abandoned lane's grace is six seasons (24 ÷ 4) where it was four, and a
+  busy lane wears through in 1.2 seasons, the median in 2.7; the lone walker's 3 a season still
+  never outlasts a decay of 4. **Measured, six fixture seeds × fifty years:** path tiles standing
+  at year 50 **366 → 424** (+16 %); alive 48 → 45, peak 81 → 80, starved 10 → 16 — two marginal
+  seeds flipping either way, D360's ±2 noise, not a cost of the paths. Six goldens moved once.
+  His number to move again once he has seen it.
 - [x] ⛔⛔ **D368 — a block of worn tiles is a yard.** Founding-site traffic wears a solid block
   (many villagers, many distinct chords to the cart), and the per-tile rules drew it as rails and
   rungs with a hole in every cell — Joe's *"grid/staircase patterns"* in years 1–3, gone by year 5

@@ -44,18 +44,26 @@ public sealed class LabourCadenceTests
     //  ⭐⭐ The thing Joe asked for
     // ---------------------------------------------------------------
 
-    /// <summary>⭐⭐ A change on the professions panel bites within the stated cadence.</summary>
+    /// <summary>⭐⭐ A change on the professions panel bites <b>the same call</b> (D396).</summary>
     /// <remarks>
-    /// <b>Asserted from wherever in the cycle the instruction lands</b>, because that is what the
-    /// player experiences: the same change took 25 days set early in a season and 5 days set
-    /// late. The claim is the **worst** case, not the lucky one.
+    /// <para>
+    /// <b>This used to assert "within <c>labour_slack_ticks</c>"</b> — the worst case, from
+    /// wherever in the cycle the instruction landed — and Joe's QA pass (2026-09-19) said the
+    /// fifteen days it could take read as the sim ignoring him. Now <c>SetJobLimit</c> runs the
+    /// slack pass itself, so the count is already down <em>before a tick is stepped</em>.
+    /// </para>
+    /// <para>
+    /// Still posed from four offsets into the cycle, because the claim is that the offset no
+    /// longer matters. Red with the pass call removed from <c>SetJobLimit</c>: the count is
+    /// unchanged until the next slack tick.
+    /// </para>
     /// </remarks>
     [Theory]
     [InlineData(0)]
     [InlineData(13)]
     [InlineData(27)]
     [InlineData(39)]
-    public void TheVillageObeysWithinTheCadence(int offsetTicks)
+    public void TheVillageObeysTheSameCall(int offsetTicks)
     {
         SimConfig config = Shipped;
         SimLoop loop = Loop(config);
@@ -75,29 +83,53 @@ public sealed class LabourCadenceTests
         Assert.True(before > 0, "Nobody is foraging, so this measures nothing.");
 
         world.SetJobLimit(JobKind.Forager, before - 1);
+        int after = Holding(world, JobKind.Forager);
 
-        int took = -1;
-        for (int i = 1; i <= config.TicksPerYear; i++)
+        _output.WriteLine($"set {offsetTicks} ticks into the cycle: foragers {before} → {after} the same call");
+
+        Assert.True(
+            after < before,
+            $"The village still holds {after} foragers after being asked for {before - 1}: the "
+            + "instruction is waiting for the next slack pass instead of landing when it is given.");
+    }
+
+    /// <summary>⭐ And a workplace's own number lands the same call too (D396).</summary>
+    /// <remarks>
+    /// The mirror of the guard above for <c>SetStaffing</c>: lowering a hut's places below what
+    /// it holds sheds the surplus in the call. Raising it is a ceiling, not a summons (D146), so
+    /// that half is not asserted here — <c>IdleWorkplaceTests</c> holds that line.
+    /// </remarks>
+    [Fact]
+    public void AWorkplacesNumberLandsTheSameCall()
+    {
+        SimConfig config = Shipped;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        for (int i = 0; i < (config.TicksPerYear * 10) + config.TicksPerSeason; i++)
         {
             loop.StepOnce();
-            if (Holding(world, JobKind.Forager) < before)
+        }
+
+        Workplace? busiest = null;
+        int held = 0;
+        foreach (Workplace place in world.Workplaces)
+        {
+            int here = world.Villagers.Count(v => v.Alive && v.HasJob && v.WorkplaceId == place.Id);
+            if (here > held)
             {
-                took = i;
-                break;
+                held = here;
+                busiest = place;
             }
         }
 
-        _output.WriteLine(
-            $"set {offsetTicks} ticks into the cycle: foragers {before} → "
-            + $"{Holding(world, JobKind.Forager)} after "
-            + $"{(took < 0 ? "never" : $"{took} ticks = {took / config.TicksPerDay} days")}");
+        Assert.True(busiest is not null && held > 1, "No workplace holds two people, so this measures nothing.");
 
-        Assert.True(took > 0, "The village never acted on the instruction at all.");
-        Assert.True(
-            took <= config.LabourSlackTicks,
-            $"The village took {took} ticks to act on an instruction, and the cadence is "
-            + $"{config.LabourSlackTicks}. Whatever is deciding when to obey is not "
-            + "`labour_slack_ticks`.");
+        world.SetStaffing(busiest!, held - 1);
+        int after = world.Villagers.Count(v => v.Alive && v.HasJob && v.WorkplaceId == busiest!.Id);
+
+        _output.WriteLine($"{busiest!.Name}: {held} → {after} the same call, asked for {held - 1}");
+        Assert.True(after <= held - 1, $"{busiest.Name} still holds {after} after being told {held - 1}.");
     }
 
     /// <summary>

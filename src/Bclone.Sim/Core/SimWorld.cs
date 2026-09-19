@@ -584,6 +584,13 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.Fine;
         }
 
+        // ⭐ THE CHANGE LANDS THE SAME CALL, NOT ON THE NEXT SLACK PASS (D396, Joe's QA pass:
+        // a number typed on the professions panel took up to fifteen days to move anybody —
+        // `labour_slack_ticks` is 60 — and read as the sim ignoring him). The death rule (D47)
+        // already runs the slack pass off-cadence; a player's instruction is at least as urgent.
+        // Only when something changed: `JobLimits.Set` returned false above for a no-op.
+        Systems.LabourAllocator.TakeUpSlack(this);
+
         if (target is not int asked)
         {
             Log(Logging.LogLevel.Info, "labour",
@@ -8973,10 +8980,19 @@ public sealed class SimWorld : IObstacles
                 nameof(places), places, "A workplace cannot be staffed by fewer than nobody.");
         }
 
+        if (workplace.StaffingOverride == places)
+        {
+            return;
+        }
+
         workplace.StaffingOverride = places;
 
         Narrate($"{workplace.Name} is to be worked by {places} " +
             $"{(places == 1 ? "person" : "people")} from now on. {Clock.SeasonAndYear()}.", LogCategory.Building);
+
+        // The same tick, for the same reason as `SetJobLimit` (D396). Still a ceiling, not a
+        // summons (D146): the pass fills the seat only if the village wants a hand there.
+        Systems.LabourAllocator.TakeUpSlack(this);
     }
 
     public Workplace? FindWorkplace(int id)

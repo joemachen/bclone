@@ -355,7 +355,10 @@ public sealed class StockLimitTests
     // RE-TAKEN (D391) — tools: the founders' twenty in the warehouse, fetched and worn, a quarter
     // more on every gather with one; twelve fixture seeds × fifty years 201 / 222 / 0 → 218 / 238 / 0.
     // Was 9897404666935308282.
-    private const ulong FixtureFiftyYearHash = 1405808184657301407UL;
+    // RE-TAKEN (D396) — footpaths fade slower (decay 6 → 4); six fixture seeds × fifty years hold
+    // 424 path tiles against 366, alive 48 → 45 and starved 10 → 16 (two marginal seeds flipping,
+    // D360's noise). Was 1405808184657301407.
+    private const ulong FixtureFiftyYearHash = 9533260203811408204UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -443,7 +446,9 @@ public sealed class StockLimitTests
     //   before tools wore and the smith existed (D391): 12408667623076758325 — the cart's twenty
     //     are taken into hands, wear one use an action, and add a quarter to what an action
     //     brings in; the shipped opening read 78 / 116 / 31 without tools and 98 / 133 / 19 with.
-    private const ulong ShippedFiftyYearHash = 7275135838661862946UL;
+    //   before footpaths faded slower (D396): 7275135838661862946 — decay 6 → 4, Joe's number
+    //     from his QA pass; the yearly re-price keeps more of the lanes.
+    private const ulong ShippedFiftyYearHash = 18023434392071687963UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

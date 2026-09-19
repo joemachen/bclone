@@ -267,7 +267,9 @@ public sealed class FarmGoldenTests
     // at the counter for the tick they stock it. Was 9482899366174648224.
     // RE-TAKEN (D391) — tools: fetched from the warehouse, worn a use an action, a quarter more on
     // every gather, fell and reaped tile with one. Was 14374936427997010783.
-    private const ulong SeamGoldenHash = 8862376988002807199UL;
+    // RE-TAKEN (D396) — footpaths fade slower: `path_wear_decay_per_season` 6 → 4, so the yearly
+    // re-price hands the routes more worn tiles and the walks follow. Was 8862376988002807199.
+    private const ulong SeamGoldenHash = 5056644931275689688UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -319,7 +321,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D372) with it again — the shop. Was 16396613229820389487.
     // RE-TAKEN (D373) with it again — the stand. Was 4275989670500860885.
     // RE-TAKEN (D391) with it again — tools. Was 7046811770416837128.
-    private const ulong SeamBeforeAnybodyGotBetter = 6316944139986529022UL;
+    // RE-TAKEN (D396) with it again — paths fade slower. Was 6316944139986529022.
+    private const ulong SeamBeforeAnybodyGotBetter = 9257962022883154738UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

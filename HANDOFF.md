@@ -1,6 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5 — JOE'S BIG QA PASS (2026-09-19) IS TRIAGED AND HIS CALLS ARE IN. THE QUEUE, IN HIS ORDER: BATCH A (ONE COMMIT OF SMALL FIXES) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
+# Handoff — bclone: **▶️ PHASE 5 — BATCH A IS BUILT (D396). THE QUEUE, IN JOE'S ORDER: ✅ BATCH A → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-19 — AFTER D394, AND JOE'S QA PASS.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-19 (EVENING) — AFTER D396.**
+>
+> **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
+> plays, then pushes:** D394 (`5e6f5f1`), the D395 handoff (`8ce952c`) and **D396 (this commit,
+> Batch A)**. Working tree clean. Suite **1203 passing, 0 failing, 2 skipped of 1205 — 5m34 with `bg3_dx11` running beside it; read trap 111 before chasing the clock**; view 0 warnings on `--no-incremental`;
+> probe green, bar height 161. The decision log runs to **D396**. Read `DESIGN.md §0–§5`, §6 (its
+> *Current phase* line is honest again), D395–D396 in §7, then the queue below.
+>
+> **✅ D396 — BATCH A, THE EIGHT SMALL FIXES, ONE COMMIT.** Every item of step 1 below is built:
+> a professions or card number lands *the same call* (`SetJobLimit` / `SetStaffing` run the slack
+> pass; no golden moved); food amber = below the survival floor, the quota's *wants more* in the
+> tooltip; Blacksmith off the not-hired list; Knowledge / Civic / Other greyed until earned;
+> **cards for the library and the hall**; Settings open by default; **the yellow line is gone from
+> the control bar** — refusals and warnings go to the village log in the warning colour (Joe's
+> call, asked directly); **heap chips are clickable** with either button; `path_wear_decay_per_season`
+> 6 → 4 (measured: path tiles at year 50 +16 %, population inside the noise; **six goldens moved
+> once**, for this reason alone). Probe: `filters:`, `cards:` (a full library and the hall posed),
+> `heaps:` (a posed chip clicked) — three red checks, three red.
+>
+> **⚠️ For Joe when he plays D396:** type a number on Professions and watch it bite before the
+> day turns; a 96 %-full granary's food reads white now, amber only under the floor (hover it for
+> both numbers); click a pile — the *What's here* window lists the pile, even at a granary's
+> door; click the library and the hall — cards; try to build on water — the refusal is in the log
+> now, not under the buttons; the paths should hold about half as long again before fading.
+> **Three numbers are yours:** `path_wear_decay_per_season` (4), and whether the log is the right
+> home for refusals (a toast/banner is the alternative if the log scrolls them away too fast).
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER (2026-09-19). Do it in this order; each step is its own commit.**
+>
+> **1. ✅ Batch A — DONE (D396).** *Kept below as it was written, for the record.*
+>
 >
 > **The state:** `origin/main` = `cd6ef7f` (D393) — Joe pushed on 2026-09-18 after playing D391.
 > On top of it, **committed, NOT pushed: D394** (`5e6f5f1`, the food messaging) — he plays, then
@@ -9,9 +39,11 @@
 > records his calls of 2026-09-19** (decisions only, nothing built). Read `DESIGN.md §0–§5`, §6,
 > D391–D395 in §7, then this banner's queue.
 >
-> **▶️ THE QUEUE, IN JOE'S ORDER (2026-09-19). Do it in this order; each step is its own commit.**
+> *(The 2026-09-19 morning banner, kept below. Its step 1 is D396 now.)*
 >
-> **1. Batch A — one commit of small fixes, no design call in any of them:**
+> **⭐⭐ WHERE THINGS WERE, 2026-09-19 (MORNING) — AFTER D394, AND JOE'S QA PASS.**
+>
+> **1. Batch A — one commit of small fixes, no design call in any of them:** ✅ **built as D396.**
 > - *Profession changes take effect at once.* A job-limit or staffing change only lands on the
 >   next slack pass (`labour_slack_ticks` 60). Run `LabourAllocator.TakeUpSlack` the tick
 >   `SetJobLimit` / `SetStaffing` changes anything — the death rule (D47) already does this.
@@ -1675,6 +1707,45 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     All long-horizon villages; none new. If the next slice moves the clock again, compare
     against this list before attributing it.
 
+107. **⚠️ A HANDOFF CAN NAME THE WRONG METHOD FOR A THING THE PLAYER SAW (D396).** The QA
+    triage wrote *"remove the yellow warning line (`SayIfWorkIsGoingUndone`'s line in the control
+    bar)"*. `SayIfWorkIsGoingUndone` has only ever written to the village log; the yellow element
+    on the bar was `_placementLabel`, and the two do different jobs (one narrates the village, one
+    answers the player's hand). Traced, then **asked Joe** rather than guessing — a one-question
+    ask cost a minute; building the wrong removal would have cost the slice. *When a note names a
+    method, grep the method before believing the note; when the note and the code disagree about
+    what the player saw, the player's word ("yellow", "control bar") is the one to trust.*
+
+108. **⚠️ `ShowShortfall` OVERWRITES THE TOOLTIP, AND D394 SET IT ON THE LINE BEFORE.** The bar's
+    food tooltip (*"N on the shelves and M in the huts — what the food limit reads…"*) was written
+    and then replaced by `ShowShortfall`'s own sentence (or cleared) on the next line, from the day
+    D394 shipped. Nobody hovered. The composed tooltip is set *after* `ShowShortfall` now. *A
+    helper that writes a property you also write is two writers; check who wins.*
+
+109. **⚠️ A CARD KEYED BY INDEX IS A CARD ABOUT WHATEVER IS AT THAT INDEX.** `CardKind.Library`
+    uses the library's position in `SimWorld.Libraries` because a library has no id. Demolish the
+    first of two and the open card is about the second, said on the next refresh. Chosen over
+    giving the sim an id nothing else asks for; if a third thing without an id wants a card, that
+    is the moment to add ids rather than a third index.
+
+110. **⚠️ THE VIEW CAN WRITE TO THE VILLAGE LOG, AND WHAT IT WRITES IS NOT THE VILLAGE'S.**
+    `SayInTheLog` (D396) and `HaltTheVillage` (D364) append to `_villageLog` directly — not
+    hashed, not in the audit file, not replayable. Fine for answers to the player's hand and for a
+    halt; ⛔ never for anything about the village's state, which the sim narrates. And it dedupes
+    the last sentence, because a brush stroke re-sends its warning on every motion event and
+    alt+wheel announces the brush on every notch.
+
+111. **⚠️ THE SUITE READ 5m34 AGAINST ~3m30, AND IT WAS A GAME RUNNING ON THE MACHINE.** After
+    D396 the full run took 4m13, then 5m33, then 5m34 — and the trx said every long-horizon
+    village was **+47 % uniformly** against D391's list (trap 106): `MostSeedsProduce…` 102 → 168 s,
+    `CapacityIsWhat…` 87 → 122, `AFoundingThatPaintsNoSeam…` 79 → 111. A uniform per-tick cost
+    across every test is either the sim or the machine; the three slowest **isolated** read
+    2m17 at decay 4 and 2m23 at decay 6 — the same — and `Get-Process | Sort CPU` showed
+    `bg3_dx11` (Baldur's Gate 3) at 12,900 CPU-seconds and 6.3 GB beside the run. Trap 88's
+    shape again, with a name this time. ⭐ *Before attributing the clock: isolate the slowest
+    three against the change reverted, and look at what else the machine is doing.* The next
+    session should re-time on a quiet machine and write the number here.
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -1702,7 +1773,7 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
   the workshop — condition and maintenance, the D65 reversal, and the builder's hammer (D391 left
   the builder without a tool because a builder's bonus would fall on a site's ticks, a second
   seam). The order is his; a spec that poses them is the first move, as D391's was.
-- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** Built on yield — a percentage off a three-tick
+- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** ✅ **CALLED BY JOE, 2026-09-19: ticks at 34 % — queue step 3 (D395).** Built on yield — a percentage off a three-tick
   gather rounds to nothing while the same off a fifteen-tick hunt is half again, and a tool that
   helps one trade by an accident of duration is the illegible outcome. His words were *"slower
   without"*. If he wants ticks, it is one seam (`WorkTicksFor` beside the mastery bonus) and the

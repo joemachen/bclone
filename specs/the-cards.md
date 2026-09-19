@@ -52,14 +52,15 @@ building, a death) closes itself on refresh.
 
 **The controls are on the card, under `Settings ▸`** (D377 — Joe, at a stockpile with its card
 and the docked panel both open: *"shouldn't all of this be in the same panel? why 2 panels for one
-structure?"*). Folded by default so the five parts stay what you read; open, it holds every
-control the docked panel used to: a store's *Stocking: Open / Closed / Emptying* (D389 — one
+structure?"*). **Open by default since D396** (Joe's QA pass — folded, it was one more click on
+every card; the five parts still come first); it holds every control the docked panel used to: a store's *Stocking: Open / Closed / Emptying* (D389 — one
 three-state control; Emptying turns itself back to Open when the last armful leaves), *When full: Marker* and (a market's) *Keeps
 up to:* (*Takes:* moved onto the storage rows, D393); a workplace's idle marker, ground brush and felling mode, a site's build queue; a
 villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowContainer`), so the
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
-*What's here*, for what has no card yet** (bare ground, the library, the town hall) and hides the
+*What's here*, for what has no card** (bare ground and heaps — the library and the town hall have
+cards since D396: the shelves and who wrote on them; the founders and their lives) and hides the
 moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
 card — and it returns on the next bare-ground click; every other panel's ✕ does what unticking it in
 Settings does, and the tick reads the window's state every frame (D380). ✅ **Since D390 (Joe's play
@@ -68,6 +69,11 @@ as a left-click resolves it, so a building opens its card), a second right-click
 closes it, and **Esc closes it** when nothing is in hand (a tool in hand goes down first — D327's
 cancel keeps its place); the brush's right-click take-back and a tool's right-click cancel are
 unchanged. And **a heap on the tile is listed**: *"On the ground: 40 logs — still to be carried in."*
+✅ **Since D396 the heap's chip is itself clickable** (Joe: *"piles of resources on the ground should
+be clickable"*): either button on the drawn chip — hit-tested from the same rectangles the chips
+are drawn with (`VillageMap.EveryHeapChip`), before the building under the point — opens *What's
+here* for the pile alone, even when the pile lies on a store's own tile (a heap at a door, D370);
+the `heaps:` probe line clicks a posed chip and expects the heap back.
 
 ⛔ **Not in the card:** a fourth number, a second sentence, a control that belongs to the Settings
 panel. If a card wants more, the building is asking for a second card, not a longer one. ⚠️ **A
@@ -139,9 +145,15 @@ glances at went to Settings. `Main.cs`, `BuildTopBars`.
 | **Villagers** | `N villagers · N adults · N children · N elders · N laborers` (dots in the map's own villager colours) over `Fernhollow · Day 3, Summer, Year 17 · 2 households` | `Population`, the life-stage count, `Laborers`, `Name`, `Clock`, `LivingHouseholds` |
 
 **Amber on a number = the village is short of it, by the sim's own reckoning** — the predicates that
-staff the trades, so the bar and the Professions panel cannot disagree: food while
-`TheVillageWantsMoreFood()`, firewood while `LabourQuota.WoodcuttersWanted > 0`, logs while
-`LabourQuota.ForestersWanted > 0`; the tooltip says the number behind it. Nothing else has a demand
+staff the trades, so the bar and the Professions panel cannot disagree: firewood while
+`LabourQuota.WoodcuttersWanted > 0`, logs while `LabourQuota.ForestersWanted > 0`, tools while
+`SmithsWanted > 0` (D391); the tooltip says the number behind it. ⚠️ **Food is the exception since
+D396:** it read amber while `TheVillageWantsMoreFood()`, which is *"would the foragers still be sent
+out?"* — a fill line, so a granary 96 % full read as a shortage (Joe's QA pass). Food goes amber
+**below the survival floor** — `VillageEconomy.SurvivalFloorFor(Produce)`, D62's derived half, what
+the village needs not to die — and the quota's *"the food trades are out until it has N"* is a
+clause in the tooltip beside the D394 sentence, so both readings are on the bar and neither is the
+other. Nothing else has a demand
 function today, so nothing else goes amber — ⛔ a stock limit is not one: a limit is a ceiling, and
 holding less than a ceiling is not a shortage. A founding village opens with food and logs amber
 and firewood not (no home yet, so the woodcutter quota wants nothing), which is honest.
