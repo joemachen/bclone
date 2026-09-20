@@ -168,7 +168,9 @@ becomes the ratchet §11 exists to prevent. Written down in three places on purp
    for the last founder's death; the moment with the tribute in it; `BuildingKind.TownHall` as a
    catalogue row; the singleton refusal; a build button that appears only when the gift is owed or
    the hall stands; a colour on the map; an inspector row. **No tabs.** Standing in the village, it
-   says what it is and who it is for.
+   says what it is and who it is for. ✅ **A card since D396** (`the-cards.md §2`), and since D397
+   it carries **View records** — on the card and on the control bar beside Settings while the hall
+   stands — which is slice 2's front door, saying *"not written up yet"* until slice 2 opens it.
 2. **Founders + collections.** The first two tabs, and the screen itself.
 3. **Knowledge** — Phase 4's slice 3, which now has its front door.
 4. **Charts** — needs a sampled history, which does not exist and is the only slice here that adds

@@ -727,7 +727,50 @@ closed.
 store drains to zero and stays shut); `AClosedStoreTakesNothingAndKeepsWhatItHas` (no deliveries,
 nobody sent to clear it, in the hash; emptying an empty store is opening it).
 
----
+### 14.12 ✅ THE FOOD JOURNEY IS CONSERVED TO THE UNIT — AND WHERE IT ENDS UP (D397, 2026-09-20)
+
+Joe: *"please double check the journey for all food from all sources to ensure it is all making
+it from those sources through the delivery to the granary/market then to the villager's homes and
+then being consumed. share your findings."*
+
+**The instrument.** Two lifetime counters at the journey's ends — `SimWorld.FoodEverProduced`
+(the four sources: a gather, a cast, a hunt, a reaped tile, by good in `FoodEverProducedOf`) and
+`FoodEverEaten` (the one place a meal is taken) — and one accountant's reader,
+`FoodHeldAnywhere()`: every stockpile (shelves, larders, huts), every pair of hands, every heap on
+the ground. ⛔ Statistics, not state — unhashed, like `LogsEverFelled`. The claim, on every tick of
+fifty years: `produced − eaten == held − held at the start` (the cart's food was never produced).
+
+**Finding 1 — it holds, exactly.** Zero drift on every tick: three shipped seeds, two fixture seeds,
+and three fixture villages with every source raised (a lodge, a fishing hut, a farm with ground).
+Nothing leaves the world by a door the ledger cannot see — not a death (the load goes down), not a
+demolition, not an emptied store. Guard: `FoodConservationTests.EveryUnitOfFoodIsProducedEatenOrHeldSomewhere`
+(red with hands left out of the reader: 3 of 3).
+
+**Finding 2 — conserved is not the same as consumed, and the all-sources village says so.** With a
+lodge, a fishing hut and a farm beside the foragers, fifty years read (fixture, seed 12345):
+produced **512,857** (fish 162k, meat 308k, wheat 37k, produce 6k), eaten **81,296**, shelves
+2,860, huts 3,582, larders 2,455 — and **421,042 on the ground in 43 heaps**, with
+`TheVillageWantsMoreFood()` reading **false on every year's end**. The path: `needsFood`
+(`BehaviorSystem`, D216/D385) is true whenever *the household's own larder is below target*, with
+no limit set and the village's stores full; a forager answers that with an armful, a hunter with a
+**900-meat hunt** and a fisher with a 400 cast, into a lodge or hut that cannot take it; the
+producer clears the buffer to the nearest store with room, finds none, and sets the armful down at
+a full store's door (D370's measured rule) — every day, for ever. The larders never rise above a
+few hundred because the household fetches at half and eats; the heaps rise without bound.
+
+**What this is not.** Not a leak (finding 1), not D394's lodge (that meat was moving, forty an
+armful), and not new: the shipped opening has no lodge, and D384's hunt walk measured the rig,
+not the pile. It is *the hunt's yield answering a larder's question*.
+
+**⏸️ Joe's call, two shapes, both measured before typing:** *(a)* the household-short reason
+sends a hunter or a fisher to **fetch** (the errand a few lines below `needsFood`), never to
+produce — production waits on the village's want or the limit, as the forager's own comment says
+it should (*"gathering more food into a village that has told you to stop is the loop, not the
+remedy"*); D385 kept the larder reason for the forager by measurement (155/207/44 against
+244/270/24), so the hunter and fisher get the same twelve-seed arm with a lodge and a hut raised;
+*(b)* a hunt or a cast needs **room** — `HutCannotTakeAnotherLoad` false and a store with room for
+it — so a full valley stops producing and the note says *"the lodge is full and no store has
+room"*. Either moves goldens once. The guard's output prints the pile so the number is in every run.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

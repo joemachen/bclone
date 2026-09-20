@@ -158,11 +158,13 @@ public sealed class SimWorld : IObstacles
     public int FoodEatenLastYear { get; private set; }
 
     /// <summary>A producer put food into the world (D387). Called where the food comes into being, never where it is put down.</summary>
-    internal void RecordFoodProduced(int amount)
+    internal void RecordFoodProduced(Goods goods, int amount)
     {
         if (amount > 0)
         {
             FoodProducedThisYear += amount;
+            FoodEverProduced += amount;
+            _foodEverProducedOf[goods] = FoodEverProducedOf(goods) + amount;
         }
     }
 
@@ -172,7 +174,70 @@ public sealed class SimWorld : IObstacles
         if (amount > 0)
         {
             FoodEatenThisYear += amount;
+            FoodEverEaten += amount;
         }
+    }
+
+    /// <summary>Every unit of food any source ever produced, and every unit ever eaten (D397).</summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The two ends of the food journey, for the conservation guard</b> — Joe: *"double
+    /// check the journey for all food from all sources … through the delivery to the granary /
+    /// market then to the villager's homes and then being consumed."* Produced − eaten − held
+    /// anywhere (<see cref="FoodHeldAnywhere"/>) must read zero on every tick, or a unit has gone
+    /// somewhere the village cannot name. The founding cart's food was never produced, so the
+    /// guard reads what is held at tick zero as its baseline.
+    /// </para>
+    /// <para>
+    /// Statistics, not state — the shape of <see cref="LogsEverFelled"/>: nothing in the sim
+    /// reads them, so they are not hashed.
+    /// </para>
+    /// </remarks>
+    public int FoodEverProduced { get; private set; }
+
+    /// <summary>What each edible good's sources ever produced — the same counter, by good (D397).</summary>
+    public int FoodEverProducedOf(Goods goods) =>
+        _foodEverProducedOf.TryGetValue(goods, out int amount) ? amount : 0;
+
+    private readonly Dictionary<Goods, int> _foodEverProducedOf = new();
+
+    public int FoodEverEaten { get; private set; }
+
+    /// <summary>
+    /// Every unit of food anywhere in the valley — every stockpile (shelves, larders, huts),
+    /// every villager's hands, and every heap on the ground (D397).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Not <see cref="FoodTheVillageHolds"/>, which is the number the RULES read (shelves that
+    /// accept food, and huts) and deliberately leaves out larders, a closed store's shelves, hands
+    /// and the ground. This is the accountant's number, for the conservation guard alone.
+    /// </remarks>
+    public int FoodHeldAnywhere()
+    {
+        int total = 0;
+        foreach (Stockpile store in AllStores())
+        {
+            total += FoodIn(store);
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            total += FoodIn(Villagers[i].Carried);
+        }
+
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            for (int g = 0; g < edible.Count; g++)
+            {
+                if (GroundStacks[i].Goods == edible[g])
+                {
+                    total += GroundStacks[i].Amount;
+                }
+            }
+        }
+
+        return total;
     }
 
     /// <summary>The year turned: last year's harvest is what this year's births are judged by (D387).</summary>
@@ -340,7 +405,7 @@ public sealed class SimWorld : IObstacles
         {
             if (Libraries[i].HasRoom)
             {
-                Libraries[i].Records.Add(new LibraryRecord(techniqueId, foundBy));
+                Libraries[i].Records.Add(new LibraryRecord(techniqueId, foundBy, Clock.Year));
                 return Libraries[i];
             }
         }

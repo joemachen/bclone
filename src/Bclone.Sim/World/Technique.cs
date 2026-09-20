@@ -334,5 +334,11 @@ public sealed class Library
 /// line of history, exactly like a collections entry — the day it grants a bonus, the library has
 /// become the ratchet §11 exists to prevent.
 /// </para>
+/// <para>
+/// ⭐ <b>The year it was written is history too</b> (D397, Joe: *"Tended patches — discovered by
+/// Amos in Year 58"*), and it follows <c>FoundBy</c>'s rule (D258): a pure function of when the
+/// trade was mastered, which the villagers are already hashed for — so it is <b>not</b> in the
+/// hash, and no golden moved for it.
+/// </para>
 /// </remarks>
-public readonly record struct LibraryRecord(int TechniqueId, string FoundBy);
+public readonly record struct LibraryRecord(int TechniqueId, string FoundBy, int FoundInYear);

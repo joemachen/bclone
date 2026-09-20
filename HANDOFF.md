@@ -1,6 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 5 — BATCH A IS BUILT (D396). THE QUEUE, IN JOE'S ORDER: ✅ BATCH A → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
+# Handoff — bclone: **▶️ PHASE 5 — D397 IS BUILT (JOE'S NOTES ON BATCH A). NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW. ⏸️ AND ONE CALL FOR JOE: THE HUNT THAT ANSWERS A LARDER.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-19 (EVENING) — AFTER D396.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 — AFTER D397.**
+>
+> **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
+> plays, then pushes:** D394, the D395 handoff, D396 (played: *"items 1–8 look good"*) and **D397
+> (this commit)**. Working tree clean. Suite **1206 passing, 0 failing, 2 skipped of 1208, 4m10 on a quiet machine (Baldur's Gate closed — trap 111's number)**; view 0 warnings on
+> `--no-incremental`; probe green, bar height 161. The decision log runs to **D397**. Read
+> `DESIGN.md §0–§5`, §6, D395–D397 in §7, `storage-and-distribution.md §14.12`, then the queue.
+>
+> **✅ D397 — HIS FIVE NOTES ON D396.** The tool's announce sentence is out of the log and on the
+> lit button's tooltip (`hints:` probe); the hall's card reads *name — 77 · 57 winters* with a
+> **View records** button, and a **Records** button sits on the control bar beside Settings while
+> the hall stands (neither wired — they say so); the library's shelves read *technique / +10 % to
+> foraging · Amos, Year 58* (`LibraryRecord.FoundInYear`, unhashed); **the food journey is
+> conserved to the unit** on every tick of fifty years (`FoodConservationTests`) — **and the
+> all-sources village puts 300–420k of meat and fish on the ground** while it wants no more food
+> (below). Villagers through yards = fences-as-walls, next.
+>
+> **⏸️⏸️ JOE'S CALL, FROM THE AUDIT — THE HUNT THAT ANSWERS A LARDER (§14.12).** `needsFood` is
+> true whenever a household's larder is below its target, with no limit set and the stores full;
+> a hunter answers it with a 900-meat hunt into a full lodge, the producer clears the lodge to a
+> store with no room, and D370 sets it down at the door — every day. Two shapes, both to be
+> measured on twelve seeds with a lodge and a hut raised before typing: *(a)* the household-short
+> reason sends a hunter/fisher to **fetch**, never to produce (the forager keeps it — D385 measured
+> that); *(b)* **no room, no hunt** — `HutCannotTakeAnotherLoad` and a store with room, else the
+> note *"the lodge is full and no store has room"*. Either moves goldens once. ⚠️ Also worth his
+> eye: `FoodInGranaries` counts only stores that *Accept* food, so a **Closed** granary's food is
+> off the bar and off every rule (`TheVillageWantsMoreFood`), though the accountant's reader
+> counts it — unchanged, named.
+>
+> **⚠️ For Joe when he plays D397:** pick up a brush — the log stays quiet and the lit button's
+> tooltip says the sentence; click the hall — the founders in one line each and *View records*;
+> the bar has *Records* beside Settings; click the library — the benefit under each technique.
+>
+> **▶️ THE QUEUE:** **1. Fences as walls with an open gate** (his call, 2026-09-20: after this
+> round, before the investigations — `organic-housing.md §3.5`, `tech-tree.md §9.6`: a per-tile
+> edge mask in `TravelCostField` honoured by every flow field and `LineOfSight`, the door's lane
+> edge open, D383's wall-off refusal extended to *"would fence somebody in"*; spec first, twelve
+> seeds, goldens move once) → **2.** the two investigations → **3.** tools on ticks at 34 % →
+> **4.** the quarry spec → the design threads.
+>
+> *(The D396 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-19 (EVENING) — AFTER D396.**
 >
 > **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
 > plays, then pushes:** D394 (`5e6f5f1`), the D395 handoff (`8ce952c`) and **D396 (this commit,
@@ -1743,8 +1785,21 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     2m17 at decay 4 and 2m23 at decay 6 — the same — and `Get-Process | Sort CPU` showed
     `bg3_dx11` (Baldur's Gate 3) at 12,900 CPU-seconds and 6.3 GB beside the run. Trap 88's
     shape again, with a name this time. ⭐ *Before attributing the clock: isolate the slowest
-    three against the change reverted, and look at what else the machine is doing.* The next
-    session should re-time on a quiet machine and write the number here.
+    three against the change reverted, and look at what else the machine is doing.* ✅ Re-timed
+    on a quiet machine at D397: **4m10** for 1,208 tests (D391 read 3m45 for 1,200; the
+    conservation guard adds ~8 s of fifty-year villages). That is the baseline now.
+
+112. **⚠️ ONE EVENT, TWO MEANINGS, AND THE LOG TOOK BOTH (D397).** `PlacementMessageChanged`
+    carried the tool's *announce* (*"Drag to mark trees to take…"*, fired on every `SetTool`,
+    brush notch and placement) AND the refusals. Routing the event to the log (D396) routed the
+    hint with it, and a last-sentence dedupe cannot catch two sentences alternating. *When an
+    event's listeners change, ask what else fires it.* The announce is `ToolAnnounced` now; a
+    hint is a tooltip, never a log line.
+
+113. **⚠️ A CONSERVATION GUARD ANSWERS "IS IT ALL THERE?", NOT "WHERE IS IT?" (D397).** The food
+    ledger held to the unit on eight villages, and the same run had 421,042 meat and fish on the
+    ground in 43 heaps behind a green assertion. Print the distribution beside the invariant —
+    the guard's output does — and read it. *Conserved is not consumed.*
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

@@ -35,7 +35,7 @@ public sealed class FishingTests
         SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
 
     /// <summary>A buildable tile with the river beside it.</summary>
-    private static GridPos ABankTile(SimWorld world)
+    internal static GridPos ABankTile(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
         for (int radius = 1; radius < 60; radius++)
@@ -743,7 +743,7 @@ public sealed class FishingTests
     }
 
     /// <summary>Raise a fishing hut outright, without waiting for a builder.</summary>
-    private static Workplace RaiseAFishery(SimWorld world, GridPos? at = null)
+    internal static Workplace RaiseAFishery(SimWorld world, GridPos? at = null)
     {
         GridPos bank = at ?? ABankTile(world);
         Assert.True(world.Mark(BuildingKind.FishingHut, bank).Allowed);

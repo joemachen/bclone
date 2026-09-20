@@ -1606,7 +1606,19 @@ public partial class VillageMap : Control
     }
 
     /// <summary>Tell the shell what the cursor is currently over.</summary>
-    private void Announce() => PlacementMessageChanged?.Invoke(TheSentenceForWhatIsHeld());
+    private void Announce() => ToolAnnounced?.Invoke(TheSentenceForWhatIsHeld());
+
+    /// <summary>
+    /// The sentence for what is now in hand — <b>a hint, never a log line</b> (D397).
+    /// </summary>
+    /// <remarks>
+    /// D396 sent the placement label's every message to the village log, and the announce rode
+    /// the same event: Joe's log filled with *"Free — click to mark it out. Middle-drag turns
+    /// it…"* between every refusal. The announce is what the bar's tooltip says
+    /// (<c>Main.RelightTheStrip</c>); <see cref="PlacementMessageChanged"/> is for what the
+    /// village refused or warned, which is worth keeping.
+    /// </remarks>
+    public event System.Action<string>? ToolAnnounced;
 
     /// <summary>
     /// <b>The sentence for whatever is in hand</b> — separated from saying it (D327).
@@ -1618,7 +1630,7 @@ public partial class VillageMap : Control
     /// cannot be measured**, and these are a list — the sim's own refusals, which share the label,
     /// are not. *One condition, two callers, applied to a string.*
     /// </remarks>
-    private string TheSentenceForWhatIsHeld()
+    internal string TheSentenceForWhatIsHeld()
     {
         // ⚠️ THE GROUND BRUSH FIRST, because it is a positive brush and the residential
         // wording below would otherwise claim it. Joe saw exactly that: pressing "Give ground"

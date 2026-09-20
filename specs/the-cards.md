@@ -60,7 +60,14 @@ villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowC
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
 *What's here*, for what has no card** (bare ground and heaps — the library and the town hall have
-cards since D396: the shelves and who wrote on them; the founders and their lives) and hides the
+cards since D396 — and since D397 they read at a glance: a library's shelf is two lines, the
+technique and *"+10 % to foraging · Amos, Year 58"* (the row's own `yield_bonus_percent` on the
+skill's trade, the record's finder and year — `LibraryRecord.FoundInYear`, unhashed by D258's
+rule); the hall's founders are *name — 77 · 57 winters*, the name giving way and the numerals
+never, under a **View records** button that also sits on the control bar beside Settings while the
+hall stands — one click away, saying *"not written up yet"* until `town-hall.md` slices 2–4 land.
+Joe asked whether to make the card bigger: no — a card is 268 by D367/D376's rule; the words fit
+the card) and hides the
 moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
 card — and it returns on the next bare-ground click; every other panel's ✕ does what unticking it in
 Settings does, and the tick reads the window's state every frame (D380). ✅ **Since D390 (Joe's play
@@ -69,7 +76,11 @@ as a left-click resolves it, so a building opens its card), a second right-click
 closes it, and **Esc closes it** when nothing is in hand (a tool in hand goes down first — D327's
 cancel keeps its place); the brush's right-click take-back and a tool's right-click cancel are
 unchanged. And **a heap on the tile is listed**: *"On the ground: 40 logs — still to be carried in."*
-✅ **Since D396 the heap's chip is itself clickable** (Joe: *"piles of resources on the ground should
+⚠️ **The tool's announce sentence is a hint, never a log line (D397):** D396 sent the placement
+label's every message to the log and the announce rode the same event, so *"Free — click to mark
+it out…"* sat between every refusal; it is the lit strip button's tooltip now (`ToolAnnounced`,
+`RelightTheStrip`), the first inch of the tooltips thread, and the `hints:` probe line picks up
+the land brush and expects the tooltip and no log line. ✅ **Since D396 the heap's chip is itself clickable** (Joe: *"piles of resources on the ground should
 be clickable"*): either button on the drawn chip — hit-tested from the same rectangles the chips
 are drawn with (`VillageMap.EveryHeapChip`), before the building under the point — opens *What's
 here* for the pile alone, even when the pile lies on a store's own tile (a heap at a door, D370);

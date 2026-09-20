@@ -4678,7 +4678,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // so the trips saved pay for the ticks spent. The buffer is also what a marketer
                 // comes for, so a fishery feeds the village without its fisher ever walking home.
                 Workplace? at = WorkplaceOf(world, villager);
-                world.RecordFoodProduced(caught);
+                world.RecordFoodProduced(Goods.Fish, caught);
                 int intoTheHut = at is null ? 0 : at.Store.Add(Goods.Fish, caught);
                 int leftOver = caught - intoTheHut;
 
@@ -4750,7 +4750,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // pass a store, as it always did.
                 villager.Carried.Receive(Goods.Leather, hide);
                 villager.Carried.Receive(Goods.Meat, meat);
-                world.RecordFoodProduced(meat);
+                world.RecordFoodProduced(Goods.Meat, meat);
 
                 if (lodge is null)
                 {
@@ -4811,7 +4811,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // granary. The forager's household shops like every other now, at half a larder
                 // (D372), and inequality is distance and hands, as D32 asked.
                 villager.Carried.Receive(Goods.Produce, yield);
-                world.RecordFoodProduced(yield);
+                world.RecordFoodProduced(Goods.Produce, yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -4990,7 +4990,7 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 villager.Carried.Receive(grain, crop < 1 ? 1 : crop);
-                world.RecordFoodProduced(crop < 1 ? 1 : crop);
+                world.RecordFoodProduced(grain, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {

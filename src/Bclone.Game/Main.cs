@@ -293,6 +293,7 @@ public partial class Main : Control
         GD.Print(_map.TheFieldsStayInsideTheirFences());
 
         ProbeTheControlBar();
+        GD.Print(TheAnnounceIsAHintNotALogLine());
         ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
@@ -631,6 +632,13 @@ public partial class Main : Control
             entry.Button.Visible = true;
         }
 
+        // And the Records button the hall will show (D397) — posed for the same reason.
+        bool recordsWas = _recordsButton?.Visible ?? false;
+        if (_recordsButton is not null)
+        {
+            _recordsButton.Visible = true;
+        }
+
         // Every child of the filter row AND the tab note at once — wider than any real tab,
         // which is the deliberate over-estimate this probe exists to make.
         bool filterWas = _filterRow.Visible;
@@ -699,6 +707,11 @@ public partial class Main : Control
             button.Visible = was;
         }
 
+        if (_recordsButton is not null)
+        {
+            _recordsButton.Visible = recordsWas;
+        }
+
         _filterRow.Visible = filterWas;
         _tabNote.Visible = noteWas;
 
@@ -762,6 +775,39 @@ public partial class Main : Control
                 ? $"[widths] bar height: ✅ {tallest:F0} everywhere"
                 : $"[widths] bar height: ⛔ {shortest:F0} at {shortestAt} to {tallest:F0} at "
                     + $"{tallestAt} — the map jumps by {tallest - shortest:F0}px");
+    }
+
+    /// <summary>
+    /// A tool picked up puts its sentence on the lit button's tooltip and nothing in the log — <b>a probe line</b> (D397).
+    /// </summary>
+    /// <remarks>
+    /// Joe's log after D396: *"Free — click to mark it out. Middle-drag turns it…"* between every
+    /// refusal. Posed and put back: the land brush is picked up, the strip relit, the tool put down.
+    /// </remarks>
+    private string TheAnnounceIsAHintNotALogLine()
+    {
+        string saidBefore = _lastSaidInTheLog;
+        int linesBefore = _villageLog.GetLineCount();
+        _map.BeginPainting(1);
+        RelightTheStrip();
+
+        Button? lit = null;
+        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
+        {
+            if (entry.Button.ButtonPressed)
+            {
+                lit = entry.Button;
+            }
+        }
+
+        string sentence = _map.TheSentenceForWhatIsHeld();
+        string tip = lit?.TooltipText ?? string.Empty;
+        bool logged = _villageLog.GetLineCount() != linesBefore || _lastSaidInTheLog != saidBefore;
+        _map.PutTheToolDown();
+
+        return lit is not null && tip == sentence && sentence.Length > 0 && !logged
+            ? $"[widths] hints: ✅ the land brush lit its button with its sentence as the tooltip ({sentence.Length} chars) and wrote nothing to the log"
+            : $"[widths] hints: ⛔ lit button {(lit is null ? "none" : "found")}, tooltip {(tip == sentence ? "matches" : $"reads '{tip}'")}, log {(logged ? "GAINED a line" : "untouched")}";
     }
 
     /// <summary>
@@ -1069,6 +1115,9 @@ public partial class Main : Control
     private Button? _libraryButton;
     private Button? _townHallButton;
 
+    /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
+    private Button? _recordsButton;
+
     /// <summary>Which tab of the build bar is showing.</summary>
     private BuildTab _tab = BuildTab.Build;
 
@@ -1193,6 +1242,11 @@ public partial class Main : Control
         {
             _foundersGone = world.SaidTheFoundersAreGone;
             RefreshTheStrip();
+        }
+
+        if (_recordsButton is not null)
+        {
+            _recordsButton.Visible = world.TownHall is not null;
         }
 
         if (_townHallButton is null)
@@ -3890,6 +3944,15 @@ public partial class Main : Control
         settings.Pressed += ToggleSettings;
         controls.AddChild(settings);
 
+        // ⭐ RECORDS, ONE CLICK AWAY, ONCE THE HALL STANDS (D397, Joe: *"that button should also
+        // show up in the main control bar when town hall is built, so it is one click away,
+        // because it will eventually open a window with a ton of useful information"*). Beside
+        // Settings for Settings' reason — the bar is the one thing that is always there.
+        // ⛔ Not wired yet; it says so (D103).
+        _recordsButton = new Button { Text = "Records", Visible = false };
+        _recordsButton.Pressed += OpenTheRecords;
+        controls.AddChild(_recordsButton);
+
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
         // the whole point: *"give me more room to see the game map"* (D305) was answered by
         // shrinking the furniture, and this answers the other half by having less of it.
@@ -3961,6 +4024,10 @@ public partial class Main : Control
         // goes to the village log instead — the one place the player already reads for what
         // happened — so a *"can't build here"* is still said (§1.1) and the bar holds its height.
         _map.PlacementMessageChanged += SayInTheLog;
+
+        // ⭐ THE ANNOUNCE IS A HINT, NOT A LOG LINE (D397, Joe: *"that should be tooltip stuff, not
+        // village log stuff"*). It lands on the lit button's tooltip when the strip relights.
+        _map.ToolAnnounced += _ => RelightTheStrip();
 
         body.AddChild(Wrapped(Muted(
             "space to pause · 1-4 speed · WASD pan · wheel zoom · r turn · tab routes · "
@@ -5789,6 +5856,12 @@ public partial class Main : Control
             }
         }
 
+        // The hall standing shows the Records button on the controls row (D397) — a fourth thing.
+        if (_recordsButton is { Visible: true })
+        {
+            earned += 1000;
+        }
+
         var key = new Vector3(Mathf.Round(wanted), Mathf.Round(_uiScale * 1000f), earned);
         if (key == _barPinnedFor)
         {
@@ -6191,11 +6264,17 @@ public partial class Main : Control
         BuildingKind? building = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
         ToolMark? mark = MarkFor(tool, _map.PendingHarvest);
 
+        // ⭐ THE TOOL'S OWN SENTENCE IS THE LIT BUTTON'S TOOLTIP (D397) — *"Drag to mark trees to
+        // take — a 3-tile round, alt+wheel resizes…"* — set on every relight because it reads the
+        // brush's size and the owner's name, which change while the tool is held. A button not in
+        // hand keeps its name; the sentence is what the hand is doing, not what the button is.
+        string sentence = tool == VillageMap.MapTool.None ? string.Empty : _map.TheSentenceForWhatIsHeld();
         foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
         {
-            entry.Button.SetPressedNoSignal(
-                (entry.Kind is not null && entry.Kind == building)
-                || (entry.Mark is not null && entry.Mark == mark));
+            bool lit = (entry.Kind is not null && entry.Kind == building)
+                || (entry.Mark is not null && entry.Mark == mark);
+            entry.Button.SetPressedNoSignal(lit);
+            entry.Button.TooltipText = lit ? sentence : string.Empty;
         }
     }
 

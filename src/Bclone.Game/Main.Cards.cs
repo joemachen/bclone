@@ -71,6 +71,9 @@ public partial class Main
         public required VBoxContainer People { get; init; }
         public required BuildingPortrait Portrait { get; init; }
         public required Label Caption { get; init; }
+
+        /// <summary>The hall's <i>View records</i> (D397) — hidden on every other kind, wired to a sentence until slice 2 lands.</summary>
+        public required Button Records { get; init; }
         public required Button SettingsToggle { get; init; }
         public required VBoxContainer Settings { get; init; }
         public CardKind? SettingsBuiltFor { get; set; }
@@ -364,6 +367,15 @@ public partial class Main
         caption.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         column.AddChild(caption);
 
+        // ---- View records (the hall, D397) ----
+        // One click away from the card, and from the control bar beside it (`_recordsButton`),
+        // because the window it will open — collections, charts, the knowledge roster
+        // (`town-hall.md` slices 2–4) — is where a lot of what the player wants to know will be.
+        // ⛔ Not wired yet, and it says so rather than doing nothing (D103: a button that does
+        // nothing silently is a feature the player cannot reach).
+        var records = new Button { Text = "View records", Visible = false };
+        column.AddChild(records);
+
         // ---- the Settings fold (D377, Joe: "why 2 panels for one structure?") ----
         // ⭐ OPEN by default since D396 (Joe's QA pass: *"card Settings open by default"*) — it was
         // folded so the five parts stayed what you read, and in play the fold was one more click
@@ -397,6 +409,7 @@ public partial class Main
             People = people,
             Portrait = portrait,
             Caption = caption,
+            Records = records,
             SettingsToggle = settingsToggle,
             Settings = settings,
         };
@@ -411,6 +424,7 @@ public partial class Main
             pin.TooltipText = on ? "Pinned — stays when you click elsewhere" : "Pin: keep this card when you click elsewhere";
         };
         close.Pressed += () => CloseCard(card);
+        records.Pressed += OpenTheRecords;
         edit.Pressed += () =>
         {
             rename.Text = card.Title.Text;
@@ -518,6 +532,7 @@ public partial class Main
             BuildSettings(card, world);
         }
 
+        card.Records.Visible = false;
         bool shown = card.Subject.Kind switch
         {
             CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(card, store),
@@ -1105,11 +1120,25 @@ public partial class Main
         for (int i = 0; i < library.Records.Count; i++)
         {
             LibraryRecord record = library.Records[i];
-            records.Add((world.TechniquesCatalog[record.TechniqueId].Name, record.FoundBy));
+            TechniqueRow row = world.TechniquesCatalog[record.TechniqueId];
+            records.Add((row.Name, ShelfLine(world, row, record)));
         }
 
         WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
         return true;
+    }
+
+    /// <summary>What a technique is worth, who worked it out and when — the shelf's second line (D397).</summary>
+    /// <remarks>
+    /// Joe: *"Tended patches — discovered by Amos in Year 58. +15% buff to X."* The benefit is the
+    /// row's own `yield_bonus_percent` on the skill's trade — nothing new is typed for the card;
+    /// the finder and the year are the record's (history, unhashed — D258).
+    /// </remarks>
+    private static string ShelfLine(SimWorld world, TechniqueRow row, LibraryRecord record)
+    {
+        string trade = row.Skill >= 0 && row.Skill < world.Config.Skills.Count ? world.Config.Skills[row.Skill].Name : "its trade";
+        string worth = $"+{row.YieldBonusPercent} % to {trade}";
+        return record.FoundBy.Length > 0 ? $"{worth} · {record.FoundBy}, Year {record.FoundInYear}" : worth;
     }
 
     /// <summary>The library card from plain facts — so the probe can pose a full one where none stands.</summary>
@@ -1132,24 +1161,26 @@ public partial class Main
         Number(card, 1, $"{records.Count}", records.Count == 1 ? "technique kept" : "techniques kept");
         Number(card, 2, $"{shelves - records.Count}", "free");
 
+        // Two lines a shelf (D397): the technique, then what it is worth and who wrote it —
+        // *"+10 % to foraging · Amos, Year 58"* — wrapped, never clipped, so the card holds 268.
         card.PeopleScroll.Visible = true;
         ClearThePeople(card);
         for (int i = 0; i < records.Count; i++)
         {
-            var row = new HBoxContainer();
-            Label what = Body(records[i].What);
-            what.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var shelf = new VBoxContainer();
+            shelf.AddThemeConstantOverride("separation", 0);
+            Label what = Body(Capitalise(records[i].What));
             what.ClipText = true;
             what.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-            Label who = Muted(records[i].FoundBy.Length > 0 ? $"by {records[i].FoundBy}" : string.Empty);
-            who.ClipText = true;
-            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-            row.AddChild(what);
-            row.AddChild(who);
-            card.People.AddChild(row);
+            Label worth = Wrapped(Muted(records[i].FoundBy));
+            shelf.AddChild(what);
+            shelf.AddChild(worth);
+            card.People.AddChild(shelf);
         }
 
-        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, records.Count)));
+        // Two lines a shelf, so the window is twice the height a row of people gets, and it
+        // still scrolls past four.
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 2.9f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, records.Count)));
         card.Portrait.Show(VillageMap.LibraryColour, wide * 0.8f, deep * 0.8f, facing, null);
         card.Caption.Text = "where the village writes things down";
         card.Caption.TooltipText = card.Caption.Text;
@@ -1185,7 +1216,9 @@ public partial class Main
             // the last of them dying — so this reads their age at death, which `AgeYears` stops
             // advancing at. **Written as a life rather than as a row**: the register that keeps
             // this card from being a stat block is the same one D195's at-risk line uses.
-            founders.Add((founder.Name, $"lived {Years(founder.AgeYears).ToLowerInvariant()}, saw {founder.WintersSurvived} winters here"));
+            // Short numerals on the card (D397, Joe: *"inscrutable. word wrap and use less words"*);
+            // the spelled-out register stays in the log, where it has the room.
+            founders.Add((founder.Name, $"{founder.AgeYears} · {founder.WintersSurvived} winters"));
         }
 
         int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
@@ -1215,14 +1248,13 @@ public partial class Main
         ClearThePeople(card);
         for (int i = 0; i < founders.Count; i++)
         {
+            // The name gives way, the numerals never do — a 40-letter name clips, *77 · 57 winters* reads.
             var row = new HBoxContainer();
             Label who = Body(founders[i].Name);
+            who.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             who.ClipText = true;
             who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
             Label life = Muted(founders[i].Life);
-            life.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            life.ClipText = true;
-            life.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
             row.AddChild(who);
             row.AddChild(life);
             card.People.AddChild(row);
@@ -1230,9 +1262,19 @@ public partial class Main
 
         card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, founders.Count)));
         card.Portrait.Show(VillageMap.TownHallColour, wide * 0.8f, deep * 0.8f, facing, null);
-        card.Caption.Text = "the village keeps its records here — nothing to read yet";
-        card.Caption.TooltipText = card.Caption.Text;
+
+        // The caption's sentence became the button (D397): the records are what it opens.
+        card.Caption.Text = string.Empty;
+        card.Caption.TooltipText = string.Empty;
+        card.Records.Visible = true;
     }
+
+    /// <summary>
+    /// <i>View records</i> — the hall's window is `town-hall.md` slices 2–4 and is not built;
+    /// pressing the button says so (D397).
+    /// </summary>
+    private void OpenTheRecords() =>
+        SayInTheLog("The village's records are not written up yet — the hall will hold its collections, its charts and what it knows.");
 
     private static void ClearThePeople(Card card)
     {
@@ -1416,7 +1458,7 @@ public partial class Main
         var fullShelves = new List<(string What, string FoundBy)>();
         for (int i = 0; i < 5; i++)
         {
-            fullShelves.Add((new string('W', SimWorld.NameLengthLimit), new string('M', SimWorld.NameLengthLimit)));
+            fullShelves.Add((new string('W', SimWorld.NameLengthLimit), $"+15 % to woodcutting · {new string('M', SimWorld.NameLengthLimit)}, Year 158"));
         }
 
         WriteLibraryCard(posed, new string('L', SimWorld.NameLengthLimit), 5, fullShelves, 1, 1, 0);
@@ -1435,7 +1477,7 @@ public partial class Main
         var founders = new List<(string Name, string Life)>();
         for (int i = 0; i < 4; i++)
         {
-            founders.Add((new string('F', SimWorld.NameLengthLimit), "lived seventy-three years, saw 71 winters here"));
+            founders.Add((new string('F', SimWorld.NameLengthLimit), "73 · 71 winters"));
         }
 
         WriteTownHallCard(posed, new string('H', SimWorld.NameLengthLimit), founders, 58, 3, 2, 0);
@@ -1449,6 +1491,21 @@ public partial class Main
         if (posed.Values[0].Text != "4" || posed.People.GetChildCount() != 4)
         {
             faults.Add($"a hall card reads {posed.Values[0].Text} founders with {posed.People.GetChildCount()} rows, not 4 with 4");
+        }
+
+        // The numerals beside a 40-letter name are never the part that clips (D397), and the
+        // hall's card offers View records.
+        foreach (Node row in posed.People.GetChildren())
+        {
+            if (row.GetChildCount() == 2 && row.GetChild(1) is Label numerals && numerals.Size.X < numerals.GetCombinedMinimumSize().X - 1f)
+            {
+                faults.Add($"a founder's numerals are squeezed to {numerals.Size.X:F0} of {numerals.GetCombinedMinimumSize().X:F0}");
+            }
+        }
+
+        if (!posed.Records.Visible)
+        {
+            faults.Add("the hall's card offers no View records");
         }
 
         // Drag: move the selected card's panel and read it back.
