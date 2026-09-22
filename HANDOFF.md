@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5 — D399 IS BUILT. NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
+# Handoff — bclone: **▶️ PHASE 5 — D399 IS PUSHED; FENCES AS WALLS IS SPECCED (D400) AND IS THE NEXT BUILD. THEN: TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D399.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D400.**
+>
+> **The state:** `origin/main` = **`ee20c03` (D399) — Joe played D396–D399 (*"all looks good"*) and
+> everything through D399 is PUSHED.** On top of it: **D400, this commit, docs only.** Working tree
+> clean. Suite **1212 passing, 0 failing, 2 skipped of 1214, 3m39**; view 0 warnings; probe green.
+>
+> **▶️ THE NEXT BUILD IS WRITTEN AND MEASURED: `specs/fences-as-walls.md` (D400).** A fence edge
+> becomes a wall in the one cost field; one gate a plot, on the lane. **The number that says it is
+> worth doing: 16.2 % of every step in the valley — one in six — is taken inside somebody else's
+> fenced yard** (six shipped seeds × fifty years, 502,090 steps). Read the spec, then §6 before
+> writing anything: it says what must be measured before it merges, and §9 has three calls that
+> are Joe's. ⚠️ It moves every golden once and can strangle a village (a plot that fences somebody
+> in) — D383's sweep is the guard and §5 names the failure.
+>
+> *(The D399 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-20 — AFTER D399.**
 >
 > **The state:** `origin/main` = `cd6ef7f` (D393); on top of it, **committed, NOT pushed — Joe
 > plays, then pushes:** D394, the D395 handoff, D396 (played), D397, D398 and **D399 (this

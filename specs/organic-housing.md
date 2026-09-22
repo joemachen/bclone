@@ -193,6 +193,11 @@ so the brush moved a fence for free. Now:
 - **A new couple taking a dead family's house (D381) takes the fence** — `FencedTiles` and the plot
   layer move with the house. A roofless family moving into a standing house gives up the site being
   raised for it, fence and all (D386).
+⏸️ **AND SINCE D400 THE FENCE HAS A SPEC OF ITS OWN FOR BECOMING A WALL** — `fences-as-walls.md`,
+Joe's call from his D396 play notes (*"villagers are definitely walking through other villager's
+yards"*): measured at **16.2 % of every step in the valley** taken inside somebody else's yard.
+Written, not started.
+
 - Guard: `TheFenceIsWhatWasBuilt` — a yard tile unpainted on the marking day stays outside, painted
   after; a fenced tile stays inside, unpainted after; the recipe carries a log a yard tile and the
   site says so; the fence is in the hash. Red with the fence re-read from the rectangle.
