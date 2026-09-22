@@ -762,15 +762,33 @@ few hundred because the household fetches at half and eats; the heaps rise witho
 armful), and not new: the shipped opening has no lodge, and D384's hunt walk measured the rig,
 not the pile. It is *the hunt's yield answering a larder's question*.
 
-**⏸️ Joe's call, two shapes, both measured before typing:** *(a)* the household-short reason
-sends a hunter or a fisher to **fetch** (the errand a few lines below `needsFood`), never to
-produce — production waits on the village's want or the limit, as the forager's own comment says
-it should (*"gathering more food into a village that has told you to stop is the loop, not the
-remedy"*); D385 kept the larder reason for the forager by measurement (155/207/44 against
-244/270/24), so the hunter and fisher get the same twelve-seed arm with a lodge and a hut raised;
-*(b)* a hunt or a cast needs **room** — `HutCannotTakeAnotherLoad` false and a store with room for
-it — so a full valley stops producing and the note says *"the lodge is full and no store has
-room"*. Either moves goldens once. The guard's output prints the pile so the number is in every run.
+**✅ CLOSED BY JOE, 2026-09-20 — (a), and it is built (D398).** The household-short half of
+`needsFood` is the forager's alone; the hunter and the fisher read `theVillageNeedsFood` (the
+village wants food, and the limit is not met) in all three places each — the buffer clear, the
+go-to-work test and the why-not note. Production waits on the village's want, as the forager's own
+comment has always said it should (*"gathering more food into a village that has told you to stop
+is the loop, not the remedy"*); a short larder is answered by the fetch errand a few lines above.
+D385 kept the larder reason for the forager by measurement (155/207/44 against 244/270/24) and it
+keeps it still — an armful is not a deer.
+
+**Measured, twelve fixture seeds × fifty years with a lodge and a fishery raised:**
+
+| | alive | peak | starved | on the ground | produced |
+|---|---|---|---|---|---|
+| before | 190 | 221 | 11 | **3,671,184** | 4,600,562 |
+| after | **198** | 205 | **9** | **0** | 873,398 |
+
+Household-empty-larder ticks fell 337 → 361 (noise on twelve villages); **without a lodge the
+twelve seeds are byte-identical**, and no golden moved anywhere — no shipped fixture has a lodge
+or a fishery. The peak falls because the village is no longer stockpiling a mountain it cannot
+eat; the *alive* number rises. Guards:
+`HuntingTests.AHunterWithAShortLarderFetchesFromTheGranaryInsteadOfHunting`,
+`FishingTests.AFisherWithAShortLarderDoesNotCast` (both red with the split reverted), and
+`FoodConservationTests`' new bound — **the ground stays under two buildings' capacity**, which is
+the claim a conservation guard cannot make on its own (trap 113). ⚠️ One fixture premise moved
+with it: `TradesVisiblyWorkTests.AHunterHuntsAtAForestTileAndBringsTheMeatToTheLodge` used to get
+its hunts from the larder reason and saw 17 ticks on 1 tile; it poses the demand now (a limit above
+capacity, the storehouses' meat carried off) and sees **344 ticks on 20 tiles**.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

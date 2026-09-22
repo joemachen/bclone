@@ -116,6 +116,22 @@ the mechanism, then the content.*
   forest tile within `hunt_walk_tiles` (6) of the lodge, hunts there, and carries the catch back
   to the lodge; until D384 they hunted standing on the lodge and re-armed in place. The rig's
   on-the-job ticks count the walk and the carry-back; `meat_yield` is still the rig's alone.
+- ⭐⭐ **A HUNT ANSWERS THE VILLAGE, NEVER A LARDER (D398, Joe's call (a) on D397's audit).** The
+  decision every food trade shares (`BehaviorSystem`'s `needsFood`) has two halves — *the village
+  wants food* and *my own household's larder is short* — and the second one sent a hunter into the
+  woods whenever their cupboard was a little low, which with no limit set and the stores full is
+  most days. **A forager's answer to that question is an armful; a hunter's is 900 meat**, into a
+  lodge the village has no reason to clear, whose overflow goes down at a full store's door (D370).
+  Twelve fixture seeds with a lodge and a fishery carried **3,671,184 food on the ground** after
+  fifty years. The hunter and the fisher now read the village's half alone
+  (`theVillageNeedsFood`); the forager keeps both, because there the household half costs an
+  armful and D385 measured that removing it cost the village people. **A short larder still gets
+  its answer** — the fetch errand, which is what a granary is for. Measured, twelve seeds × fifty
+  years with a lodge and a fishery: alive/peak/starved **190 / 221 / 11 → 198 / 205 / 9**, the
+  ground **3,671,184 → 0**, produced 4.6M → 873k; **without a lodge, byte-identical** (no golden
+  moved anywhere — no shipped fixture has one). Guards:
+  `AHunterWithAShortLarderFetchesFromTheGranaryInsteadOfHunting`,
+  `AFisherWithAShortLarderDoesNotCast`, and `FoodConservationTests`' ground bound.
 - **Year-round.** ⛔ Not season-gated. `IsForaging` must **not** include hunting, or winter will
   march the hunter home — *this is D281 exactly, and it will happen again if a state is reused.*
 - The lodge holds a local buffer a marketer runs dry, exactly as the farm and the fishery do — and the hunter drains it themselves when it cannot take another kill (D370; `fishing.md` has the rule). **And whoever clears it stands on the lodge for the tick they load** (D373): the load and the first step of the haul used to happen in one tick, so nobody was ever drawn at the lodge — Joe: *"they stop a few pixels before actually going to it and then turn around."* Guard: `AHunterClearingTheLodgeIsSeenStandingOnIt`.

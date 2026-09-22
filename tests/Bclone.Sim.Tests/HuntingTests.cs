@@ -774,4 +774,99 @@ public sealed class HuntingTests
             + "it leaves the lodge and does not arrive");
         Assert.DoesNotContain(world.Villagers, v => v.CauseOfDeath == CauseOfDeath.Starvation);
     }
+
+    // ---------------------------------------------------------------
+    //  § The hunt answers the village, never the larder (D398)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A hunter whose own larder is short, in a village with full stores, walks to the granary —
+    /// not into the woods (D398, Joe's call (a) on D397's audit).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The household half of <c>needsFood</c> sent a hunter hunting whenever their cupboard was a
+    /// little low; a hunt is 900 meat into a lodge the village has no room to clear, and twelve
+    /// fixture seeds carried <b>3.67 million</b> food on the ground after fifty years. The forager
+    /// keeps the household reason (an armful; D385 measured taking it away); the hunter and the
+    /// fisher hear only the village's. <b>Measured before typed, twelve seeds × fifty years with a
+    /// lodge and a fishery:</b> 190 / 221 / 11 → <b>198 / 205 / 9</b>, the ground <b>3,671,184 →
+    /// 0</b>, produced 4.6M → 873k; without a lodge, byte-identical.
+    /// </para>
+    /// <para>
+    /// Red with the hunter reading <c>needsFood</c> again: the hunter goes <c>TravelingToGame</c>.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AHunterWithAShortLarderFetchesFromTheGranaryInsteadOfHunting()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace lodge = RaiseALodge(world);
+
+        // Only the hunter holds a job; the stores are full to the target and beyond, so the village
+        // wants no more food; one household's larder is half empty, so the household half of
+        // `needsFood` is true — the exact state that used to send the hunter out.
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, kind == JobKind.Hunter ? 1 : 0);
+        }
+
+        loop.Step(config.TicksPerDay * 3);
+        Villager? hunter = null;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (world.FindWorkplace(villager.WorkplaceId) is { Kind: JobKind.Hunter })
+            {
+                hunter = villager;
+            }
+        }
+
+        Assert.True(hunter is not null, "Nobody took the lodge, so this measures nothing.");
+        Household home = world.HouseholdOf(hunter!);
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.Add(Goods.Produce, store.Store.FreeSpace);
+        }
+
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TakeAll(Goods.Produce);
+            household.Stockpile.Add(Goods.Produce, ReferenceEquals(household, home) ? world.TargetFoodFor(household) / 3 : world.TargetFoodFor(household));
+        }
+
+        Assert.False(world.TheVillageWantsMoreFood(), "The village still wants food, so the larder is not the only reason left.");
+        Assert.True(world.FoodIn(home.Stockpile) < world.TargetFoodFor(home), "The hunter's larder is not short, so nothing is posed.");
+
+        // ⚠️ A hunt already in flight is finished — you do not drop the deer because the granary
+        // filled while you were out — so the count starts once the hunter is home from it. And the
+        // fetch is the household's, not the hunter's: a spare hand goes for the armful (D385).
+        int hunting = 0;
+        int fetching = 0;
+        bool home_ = false;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            bool out_ = hunter.State is VillagerState.TravelingToGame or VillagerState.Hunting or VillagerState.HaulingToStore;
+            home_ |= !out_;
+            if (home_ && hunter.State is VillagerState.TravelingToGame or VillagerState.Hunting)
+            {
+                hunting++;
+            }
+
+            foreach (int id in home.MemberIds)
+            {
+                if (world.FindVillager(id) is { State: VillagerState.FetchingFromStore })
+                {
+                    fetching++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{hunter.Name}, larder short in a fed village: {hunting} ticks hunting, {fetching} ticks fetching from a store, over a season; {lodge.Name} holds {lodge.Store[Goods.Meat]} meat");
+        Assert.True(hunting == 0, $"{hunter.Name} went hunting for {hunting} ticks to fill their own larder while the village wanted no more food — the hunt answered the larder.");
+        Assert.True(fetching > 0, $"{hunter.Name} never fetched from a store either, so the short larder went unanswered (D7).");
+    }
 }

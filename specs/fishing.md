@@ -101,6 +101,11 @@ armful, once the village has the food it wants and a seated fisher has nothing b
 fisherman (when its full) and 2) the marketer (when they have nothing more pressing)"*
 (`OnlyTheFisherAndAMarketerEverClearAFishingHut`).
 
+⭐⭐ **A CAST ANSWERS THE VILLAGE, NEVER A LARDER (D398)** — the hunter's rule one trade over, and
+for the same measured reason: a cast is 400 fish where a forager's answer to a short cupboard is an
+armful, so the fisher reads *the village wants food* alone and a short larder is answered by the
+fetch errand. `hunting.md §6` carries the numbers. Guard: `AFisherWithAShortLarderDoesNotCast`.
+
 **⭐⭐ A LONGER CAST WAS A PURE PACING CHANGE, AND ONLY MEASUREMENT COULD SAY SO (D282).** Joe:
 *"he does reach the hut and fishes, but catches fish too quickly."* The plan called raising
 `fish_ticks` *"a yield change wearing a pacing change's clothes"* — **and the plan was wrong.**

@@ -2388,6 +2388,18 @@ public sealed class BehaviorSystem : ISimSystem
             && (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
                 || world.TheVillageWantsMoreFood());
 
+        // ⭐⭐ THE HUNT AND THE CAST ANSWER THE VILLAGE, NEVER THE LARDER (D398, Joe's call (a)
+        // on D397's audit). `needsFood` above has two halves, and the household half sent a hunter
+        // into the woods whenever their own cupboard was a little low — with the village's stores
+        // full and no limit set, that is most days — and a hunt is 900 meat, a cast 400, into a
+        // lodge that cannot take it; the overflow went down at a full store's door (D370) and
+        // twelve fixture seeds carried **3.67 million** food on the ground after fifty years.
+        // A forager's answer to the same question is an armful, and D385 measured that taking the
+        // household reason from foragers cost the village people — so the forager keeps both halves,
+        // and the hunter and the fisher hear only the village's. A short larder still gets its
+        // answer: the fetch errand a few lines down, which is what a granary is for.
+        bool theVillageNeedsFood = !world.FoodLimitIsMet() && world.TheVillageWantsMoreFood();
+
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
         //
@@ -2491,12 +2503,12 @@ public sealed class BehaviorSystem : ISimSystem
         // fisherman's job"*). A hut that cannot take another load sends its own worker to the
         // store with an armful before they hunt, fish or idle again — whether or not the village
         // wants more food, because meat in a lodge nobody can reach is D362's starvation game.
-        if (canHunt && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: needsFood))
+        if (canHunt && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: theVillageNeedsFood))
         {
             return;
         }
 
-        if (needsFood && canHunt)
+        if (theVillageNeedsFood && canHunt)
         {
             // ⭐ INTO THE WOODS, NOT ONTO THE LODGE (D384). Joe: *"im not sure that hunters
             // spend any time at the hunting lodge or in the forest actually 'hunting'."* They
@@ -2520,7 +2532,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         // A hunter with a full village says so, the same way a forager and a fisher do (D216).
-        if (canHunt && !needsFood)
+        if (canHunt && !theVillageNeedsFood)
         {
             villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string enough
                 ? enough
@@ -2529,12 +2541,12 @@ public sealed class BehaviorSystem : ISimSystem
 
         bool canFish = villager.CanWork && job?.Kind == JobKind.Fisher;
 
-        if (canFish && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: needsFood))
+        if (canFish && TryClearOwnBuffer(world, villager, job!, onlyWhenFull: theVillageNeedsFood))
         {
             return;
         }
 
-        if (needsFood && canFish)
+        if (theVillageNeedsFood && canFish)
         {
             if (villager.Tile == job!.Tile)
             {
@@ -2552,7 +2564,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         // A fisher with a full village says so, the same way a forager does (D216).
-        if (canFish && !needsFood)
+        if (canFish && !theVillageNeedsFood)
         {
             villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string full
                 ? $"Nothing to fish for — {full}."

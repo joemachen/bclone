@@ -1107,4 +1107,86 @@ public sealed class FishingTests
 
         Assert.Equal(worth, world.GatherYieldAt(forage));
     }
+
+    // ---------------------------------------------------------------
+    //  § The cast answers the village, never the larder (D398)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ The hunter's rule, one trade over: a fisher whose own larder is short, in a village with
+    /// full stores, does not cast (D398, Joe's call (a) on D397's audit).
+    /// </summary>
+    /// <remarks>
+    /// A cast is 400 fish into a hut the village has no room to clear; the overflow went down at a
+    /// full store's door (D370). The forager keeps the household reason (an armful; D385); the
+    /// fisher hears only the village's, and a short larder is answered by the fetch errand.
+    /// Red with the fisher reading <c>needsFood</c> again.
+    /// </remarks>
+    [Fact]
+    public void AFisherWithAShortLarderDoesNotCast()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace hut = RaiseAFishery(world);
+
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, kind == JobKind.Fisher ? 1 : 0);
+        }
+
+        loop.Step(config.TicksPerDay * 3);
+        Villager? fisher = null;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (world.FindWorkplace(villager.WorkplaceId) is { Kind: JobKind.Fisher })
+            {
+                fisher = villager;
+            }
+        }
+
+        Assert.True(fisher is not null, "Nobody took the fishery, so this measures nothing.");
+        Household home = world.HouseholdOf(fisher!);
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.Add(Goods.Produce, store.Store.FreeSpace);
+        }
+
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TakeAll(Goods.Produce);
+            household.Stockpile.Add(Goods.Produce, ReferenceEquals(household, home) ? world.TargetFoodFor(household) / 3 : world.TargetFoodFor(household));
+        }
+
+        Assert.False(world.TheVillageWantsMoreFood(), "The village still wants food, so the larder is not the only reason left.");
+        Assert.True(world.FoodIn(home.Stockpile) < world.TargetFoodFor(home), "The fisher's larder is not short, so nothing is posed.");
+
+        // A cast already in flight is finished, as a hunt is — the count starts once they are home.
+        int casting = 0;
+        int fetching = 0;
+        bool home_ = false;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            bool out_ = fisher.State is VillagerState.TravelingToWater or VillagerState.Fishing or VillagerState.HaulingToStore;
+            home_ |= !out_;
+            if (home_ && fisher.State is VillagerState.TravelingToWater or VillagerState.Fishing)
+            {
+                casting++;
+            }
+
+            foreach (int id in home.MemberIds)
+            {
+                if (world.FindVillager(id) is { State: VillagerState.FetchingFromStore })
+                {
+                    fetching++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{fisher.Name}, larder short in a fed village: {casting} ticks casting, {fetching} household-ticks fetching, over a season; {hut.Name} holds {hut.Store[Goods.Fish]} fish");
+        Assert.True(casting == 0, $"{fisher.Name} cast for {casting} ticks to fill their own larder while the village wanted no more food.");
+        Assert.True(fetching > 0, $"{fisher.Name}'s household never fetched either, so the short larder went unanswered (D7).");
+    }
 }

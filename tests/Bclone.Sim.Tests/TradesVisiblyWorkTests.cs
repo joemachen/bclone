@@ -102,6 +102,16 @@ public sealed class TradesVisiblyWorkTests
         Workplace lodge = HuntingTests.RaiseALodgeFor(world);
         world.SetStaffing(lodge, 1);
 
+        // ⚠️ THE DEMAND IS POSED, AND SINCE D398 IT HAS TO BE. A hunt answers the VILLAGE's want,
+        // never a household's short larder (Joe's call (a) on D397's audit) — and this fixture is
+        // fed, so the hunter hunted once and the guard's *"the woods are being walked"* claim had
+        // one tile to look at. The player asks for more food than the granaries can hold, and the
+        // meat is carried away from the storehouses as fast as it arrives (the lodge's own buffer
+        // is left alone, because the rises counted below are the carry-back into it): a village
+        // that wants food for two years, which is the premise this guard has always needed and
+        // used to get by accident.
+        Assert.True(world.SetStockLimit(Goods.Produce, 1_000_000).Allowed);
+
         int hunting = 0;
         int onTheLodge = 0;
         var seen = new HashSet<GridPos>();
@@ -113,6 +123,14 @@ public sealed class TradesVisiblyWorkTests
         for (int tick = 0; tick < Config.TicksPerYear * 2; tick++)
         {
             loop.StepOnce();
+
+            // The storehouses' meat goes, so the village never stops wanting food; the produce
+            // stays, so the households go on eating and this stays a guard about hunting.
+            for (int i = 0; i < world.StoreBuildings.Count; i++)
+            {
+                world.StoreBuildings[i].Store.TakeAll(Goods.Meat);
+            }
+
             int meatNow = lodge.Store[Goods.Meat];
             if (meatNow > meatBefore)
             {

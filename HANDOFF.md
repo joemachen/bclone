@@ -1,6 +1,35 @@
-# Handoff — bclone: **▶️ PHASE 5 — D397 IS BUILT (JOE'S NOTES ON BATCH A). NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW. ⏸️ AND ONE CALL FOR JOE: THE HUNT THAT ANSWERS A LARDER.**
+# Handoff — bclone: **▶️ PHASE 5 — D398 IS BUILT. NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 — AFTER D397.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D398.**
+>
+> **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
+> plays, then pushes:** D394, the D395 handoff, D396 (played: *"items 1–8 look good"*), D397 and
+> **D398 (this commit)**. Working tree clean. Suite **1208 passing, 0 failing, 2 skipped of 1210,
+> 4m02**; view 0 warnings; probe green, bar height 161. The log runs to **D398**.
+>
+> **✅ D398 — THE HUNT ANSWERS THE VILLAGE, NEVER A LARDER.** His call (a) on D397's audit, taken
+> before fences-as-walls at his word. The hunter and the fisher read *the village wants food*
+> alone; the forager keeps the household half (an armful is not a deer; D385 measured it). A short
+> larder is answered by the fetch errand. **Twelve seeds × fifty years with a lodge and a fishery:
+> 190 / 221 / 11 → 198 / 205 / 9, the ground 3,671,184 → 0; without a lodge byte-identical, no
+> golden moved.** The conservation guard now bounds the ground, which is the claim D397's could not
+> make (trap 113).
+>
+> **⚠️ For Joe when he plays D397 + D398:** the D397 list below, and then — build a hunting lodge
+> or a fishing hut in a fed village and watch: the hunter stops hunting and goes to the granary
+> for the family's armful instead, and no meat piles up outside. The bar's *food* should look the
+> same; the **peak** population is a little lower and the **living** a little higher.
+>
+> **▶️ THE QUEUE:** **1. Fences as walls with an open gate** (spec first — `organic-housing.md
+> §3.5`, `tech-tree.md §9.6`: a per-tile edge mask in `TravelCostField` honoured by every flow
+> field and `LineOfSight`, the door's lane edge open, D383's wall-off refusal extended to *"would
+> fence somebody in"*; twelve seeds; goldens move once) → **2.** the two investigations (firewood
+> past a set limit; the start-of-day tile skip and the icicle paths) → **3.** tools on ticks at
+> 34 % → **4.** the quarry spec → the design threads.
+>
+> *(The D397 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-20 — AFTER D397.**
 >
 > **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
 > plays, then pushes:** D394, the D395 handoff, D396 (played: *"items 1–8 look good"*) and **D397
@@ -1799,7 +1828,25 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 113. **⚠️ A CONSERVATION GUARD ANSWERS "IS IT ALL THERE?", NOT "WHERE IS IT?" (D397).** The food
     ledger held to the unit on eight villages, and the same run had 421,042 meat and fish on the
     ground in 43 heaps behind a green assertion. Print the distribution beside the invariant —
-    the guard's output does — and read it. *Conserved is not consumed.*
+    the guard's output does — and read it. *Conserved is not consumed.* ✅ **Bounded at D398:**
+    the same guard now asserts the ground stays under two buildings' capacity.
+
+114. **⚠️ ONE PREDICATE, TWO QUESTIONS, AND THE CHEAP TRADE WROTE IT (D398).** `needsFood` meant
+    *"somebody needs food"* and was read by the forager (an armful), the fisher (400) and the
+    hunter (900). It was written where an armful was the answer, and the trades that could not
+    afford it read it hardest. *When a shared predicate drives actions of wildly different size,
+    ask what it costs the biggest one.*
+
+115. **⚠️ A `Stockpile`'s DEFAULT CAPACITY IS `int.MaxValue` (D398).** A household larder has no
+    wall, so `capacity * 2` in a test bound overflowed negative and failed a village with nothing
+    on the ground at all. Take a bar from the buildings the village actually put up, and clamp it.
+
+116. **⚠️ A GUARD CAN BE PASSING ON A PREMISE IT NEVER STATED (D398).**
+    `AHunterHuntsAtAForestTileAndBringsTheMeatToTheLodge` watched *"the woods are being walked"*
+    on 17 hunting ticks across one tile, because its hunts came from the household larder reason
+    rather than from any demand it posed. Taking that reason away took its evidence with it. It
+    poses the demand now and watches 344 ticks on 20 tiles — *the guard got stronger by being
+    broken.*
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

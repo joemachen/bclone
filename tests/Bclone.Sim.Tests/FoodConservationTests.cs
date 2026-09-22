@@ -24,12 +24,16 @@ namespace Bclone.Sim.Tests;
 /// <para>
 /// <b>Measured before it was written, and it held:</b> zero drift on every tick, three shipped
 /// seeds, two fixture seeds, and three fixture villages with every source raised (a lodge, a
-/// fishing hut, a farm with ground). ⚠️ <b>What the measurement found instead is filed, not
-/// asserted here:</b> the all-sources village puts <b>300–420k</b> of meat and fish on the ground
-/// in fifty years while <c>TheVillageWantsMoreFood()</c> reads false throughout — the hunt and the
-/// cast answer *"my family is short"* (`BehaviorSystem`'s `needsFood`) with 900 and 400 at a time
-/// into a full lodge, and the overflow goes down at a full store's door (D370). Conserved, and
-/// wasted; Joe's call (`handoff.md`).
+/// fishing hut, a farm with ground).
+/// </para>
+/// <para>
+/// ⭐⭐ <b>And what the ledger found is asserted now too (D398): the pile is gone.</b> The audit
+/// read <b>300–420k</b> of meat and fish on the ground after fifty years while the village wanted
+/// no more food — the hunt and the cast answered *"my family is short"* with 900 and 400 at a time
+/// into a full lodge, and the overflow went down at a full store's door (D370). Joe's call (a):
+/// the hunt and the cast answer the village, a short larder answers with a fetch. The all-sources
+/// arm now asserts the ground <b>stays small</b> — a conservation guard that only asks *is it all
+/// there?* passed happily over four hundred thousand meat in a field (trap 113).
 /// </para>
 /// </remarks>
 public sealed class FoodConservationTests
@@ -106,6 +110,29 @@ public sealed class FoodConservationTests
 
         // Anti-vacuity (D7): a village that produced nothing conserves nothing.
         Assert.True(world.FoodEverProduced - produced0 > 1000, "The village barely produced, so this measures nothing.");
+
+        // ⭐ AND IT ENDED UP SOMEWHERE THE VILLAGE CAN USE (D398). A heap at a full store's door is
+        // right and normal (D370) — a lodge's worth of it is not. The bar is one lodge and one
+        // store's capacity, which a working village never approaches: measured at 0 on both
+        // all-sources arms after fifty years, against 345,569 and 421,042 before the split.
+        // ⚠️ A `Stockpile`'s default capacity is `int.MaxValue` (a household larder has no wall),
+        // so the bar is taken from the BUILDINGS the village put up and clamped — doubling
+        // `int.MaxValue` overflowed negative and failed a village with nothing on the ground at all.
+        long bar = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            bar = Math.Max(bar, Math.Min(world.Workplaces[i].Store.Capacity, 100_000));
+        }
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            bar = Math.Max(bar, Math.Min(world.StoreBuildings[i].Store.Capacity, 100_000));
+        }
+
+        Assert.True(
+            onTheGround <= bar * 2,
+            $"After fifty years {onTheGround} food is lying on the ground — more than two buildings could hold ({bar * 2}). "
+            + "It is all accounted for and none of it is being eaten: something is producing food the village has no room for.");
         if (everySource)
         {
             Assert.True(
