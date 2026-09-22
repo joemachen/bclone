@@ -794,6 +794,39 @@ public sealed class ZoneMap
     private void RaiseTheFence(
         int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house)
     {
+        List<(GridPos From, GridPos To)> edges = FenceEdges(tiles, lane, house, out bool gated);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            Wall(edges[e].From, edges[e].To, up: true);
+        }
+
+        _gatedPlots[ownerId] = gated;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Which edges a plot's fence runs along — <b>the one rule, and it has two consumers</b>
+    /// (D401): the fence that goes up with the house, and the fence the site-chooser stands for a
+    /// moment to ask *"would this shut somebody in?"* (`SimWorld.DetourOfAHouseAt`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>Never on the house's own edges</b>, which would seal the door: a house tile is already
+    /// impassable (D383) and is entered only by the field whose destination it is, so a wall there
+    /// is a family that can never get home.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>One gate</b>, the first edge from a yard tile to a lane tile in the plot's own stated
+    /// order, so the gate is the same edge every run. A yard whose every tile is the house's has
+    /// no gate and needs none — there is nothing inside it to reach.
+    /// </para>
+    /// </remarks>
+    public static List<(GridPos From, GridPos To)> FenceEdges(
+        IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house, out bool gated)
+    {
+        ArgumentNullException.ThrowIfNull(tiles);
+        ArgumentNullException.ThrowIfNull(lane);
+        ArgumentNullException.ThrowIfNull(house);
+
         var plot = new HashSet<GridPos>();
         for (int t = 0; t < tiles.Count; t++)
         {
@@ -812,7 +845,8 @@ public sealed class ZoneMap
             onTheLane.Add(lane[l]);
         }
 
-        bool gated = false;
+        gated = false;
+        var edges = new List<(GridPos, GridPos)>();
         for (int t = 0; t < tiles.Count; t++)
         {
             GridPos tile = tiles[t];
@@ -835,11 +869,11 @@ public sealed class ZoneMap
                     continue;
                 }
 
-                Wall(tile, beyond, up: true);
+                edges.Add((tile, beyond));
             }
         }
 
-        _gatedPlots[ownerId] = gated;
+        return edges;
     }
 
     /// <summary>The four steps, in the order a fence is raised — stated, so a gate is the same edge every run.</summary>

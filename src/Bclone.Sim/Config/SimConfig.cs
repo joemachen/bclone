@@ -1653,7 +1653,7 @@ public sealed record SimConfig
     /// Joe's to widen once he has seen the yards.
     /// </remarks>
     [JsonPropertyName("plot_depth")]
-    public int PlotDepth { get; init; } = 2;
+    public int PlotDepth { get; init; } = 3;
 
     /// <summary>
     /// What a plot with no neighbour along a side scores as, in tiles walked, per open side (D386,

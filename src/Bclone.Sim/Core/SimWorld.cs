@@ -6733,7 +6733,25 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>The walls on a tile's edges (D401) — <see cref="IObstacles"/>.</summary>
-    public byte WallsOn(GridPos tile) => Zones.WallsOn(tile);
+    /// <remarks>
+    /// ⭐ <b>The standing fences, plus whatever the site-chooser is standing for a moment</b>
+    /// (<see cref="DetourOfAHouseAt"/>): a candidate plot's fence is part of the trial, so the
+    /// same re-pricing that already refuses a house which would wall somebody off refuses a
+    /// *fence* that would — no second sweep, no second rule.
+    /// </remarks>
+    public byte WallsOn(GridPos tile)
+    {
+        byte standing = Zones.WallsOn(tile);
+        if (_trialWalls is null)
+        {
+            return standing;
+        }
+
+        return _trialWalls.TryGetValue(tile, out byte trial) ? (byte)(standing | trial) : standing;
+    }
+
+    /// <summary>The fence the chooser is standing for the length of one measurement (D401).</summary>
+    private Dictionary<GridPos, byte>? _trialWalls;
 
     /// <summary>Moves when a fence goes up or comes down (D401) — <see cref="IObstacles"/>.</summary>
     public int WallGeneration => Zones.WallGeneration;
@@ -10450,9 +10468,31 @@ public sealed class SimWorld : IObstacles
     /// for seven converging hauls and sent the founders' second house into a pocket 147 tiles
     /// from their work.
     /// </remarks>
-    internal int DetourOfAHouseAt(List<DailyWalk> walks, GridPos front, Angle facing)
+    internal int DetourOfAHouseAt(List<DailyWalk> walks, GridPos front, Angle facing, int householdId)
     {
         _trialHome = HomeFootprintAt(front, facing);
+
+        // ⭐ THE FENCE IS PART OF THE TRIAL (D401). Without it the chooser sites a house whose own
+        // yard walls the lane it came down — measured: six shipped seeds built 14 houses in fifty
+        // years against 33 before fences, and the villages stopped growing at two homes.
+        if (householdId != 0)
+        {
+            PlotShape trial = PlotFor(front, facing, householdId);
+            List<GridPos> fenced = FencedTilesFor(trial);
+            List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(fenced, trial.Lane, trial.House, out _);
+            var walls = new Dictionary<GridPos, byte>(edges.Count * 2);
+            for (int e = 0; e < edges.Count; e++)
+            {
+                (GridPos from, GridPos to) = edges[e];
+                byte here = ZoneMap.EdgeBit(to.X - from.X, to.Y - from.Y);
+                byte there = ZoneMap.EdgeBit(from.X - to.X, from.Y - to.Y);
+                walls[from] = (byte)(walls.GetValueOrDefault(from) | here);
+                walls[to] = (byte)(walls.GetValueOrDefault(to) | there);
+            }
+
+            _trialWalls = walls;
+        }
+
         StandingChanged();
         int detour = 0;
         try
@@ -10471,6 +10511,7 @@ public sealed class SimWorld : IObstacles
         finally
         {
             _trialHome = null;
+            _trialWalls = null;
             StandingChanged();
         }
 

@@ -294,7 +294,17 @@ public sealed class Household
                     }
                 }
 
-                fits.Add(new Facing(facing, f, laneAlready, openSides * world.Config.PlotApartTiles, clipped, neighbour));
+                // ⭐⭐ IT CHARGES FOR A NEIGHBOUR, NOT FOR ROOM (D401, Joe: *"could the fence problem
+                // be that you're cramming the houses in too closely? they need some room to breathe
+                // with yards and pathways and such"* — and he was right, and the old comment here
+                // admitted it: a side with NO neighbour cost `plot_apart_tiles`, which is a packing
+                // term wearing a spacing term's name). Packing is what makes a fence enclose a
+                // door. **Measured, six shipped seeds × fifty years with fences up:** charging for
+                // open sides built 14 houses and held 17 people; charging for neighbours built 26
+                // and held 55. ⚠️ The magnitude stopped mattering once the sign flipped (−2, −4 and
+                // −6 were identical), so the term is a tie-break and the number stays 2.
+                int sidesWithANeighbour = plot.Beside.Count - openSides;
+                fits.Add(new Facing(facing, f, laneAlready, sidesWithANeighbour * world.Config.PlotApartTiles, clipped, neighbour));
             }
 
             if (fits.Count == 0)
@@ -374,7 +384,7 @@ public sealed class Household
             int bestDetour = 0;
             for (int i = 0; i < sites.Count && sites[i].Score < bestScore; i++)
             {
-                int detour = world.DetourOfAHouseAt(walks, sites[i].Front, sites[i].Facing);
+                int detour = world.DetourOfAHouseAt(walks, sites[i].Front, sites[i].Facing, householdId);
                 if (detour == int.MaxValue)
                 {
                     continue;

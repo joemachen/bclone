@@ -1240,11 +1240,25 @@
   // ORGANIC HOUSING (D386, specs/organic-housing.md). A home is a house in a plot:
   // plot_width tiles along the lane by plot_depth back from it, the house (two
   // wide) on the front row, the rest a yard. The row across the front is the lane,
-  // which no plot may claim. A plot with no neighbour along a side scores as
-  // plot_apart_tiles further from everything, per open side, which is what packs
-  // the houses into rows.
+  // which no plot may claim.
+  //
+  // plot_apart_tiles is charged PER SIDE THAT HAS A NEIGHBOUR (D401) -- it used to
+  // be charged per side WITHOUT one, which packed the houses into rows and was a
+  // packing term wearing a spacing term's name. Joe, on the fences slice: "could
+  // the problem be that you're cramming the houses in too closely? they need some
+  // room to breathe with yards and pathways and such." He was right. MEASURED,
+  // six shipped seeds x fifty years with the fences up: charging for open sides
+  // built 14 houses and held 17 people; charging for neighbours built 26 and held
+  // 55. The magnitude stopped mattering once the sign flipped (-2, -4 and -6 read
+  // identically), so this is a tie-break and the number stays 2.
+  //
+  // plot_depth 2 -> 3 for the same reason and by the same run: with the fences up
+  // and the chooser standing each candidate's fence for a moment, depth 2 held 42
+  // people with 18 starved and depth 3 held 57 with 8. D386 left this number as
+  // Joe's to widen once he had seen the rows; this is the measurement that widens
+  // it. A yard of six tiles is also what the kitchen garden was sized for (D357).
   "plot_width": 3,
-  "plot_depth": 2,
+  "plot_depth": 3,
   "plot_apart_tiles": 2,
 
   // THE COLD START (D70). The founders arrive to an empty valley with a cart:
