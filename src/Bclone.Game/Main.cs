@@ -294,6 +294,7 @@ public partial class Main : Control
 
         ProbeTheControlBar();
         GD.Print(TheAnnounceIsAHintNotALogLine());
+        GD.Print(ShiftRSquaresTheGhost());
         ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
@@ -775,6 +776,51 @@ public partial class Main : Control
                 ? $"[widths] bar height: ✅ {tallest:F0} everywhere"
                 : $"[widths] bar height: ⛔ {shortest:F0} at {shortestAt} to {tallest:F0} at "
                     + $"{tallestAt} — the map jumps by {tallest - shortest:F0}px");
+    }
+
+    /// <summary>
+    /// ⭐ Shift+R squares a ghost turned to any angle — <b>a probe line</b> (D401).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"what is a good method to get it back to 'square'?"* There was none — shift+R ADDED a
+    /// quarter, so a free-dragged ghost kept its offset for ever. It snaps to the next quarter now,
+    /// and this poses the two cases that matter: an off-square ghost squares in one tap, and a
+    /// square one still steps a quarter, which is what the control did before.
+    /// </remarks>
+    private string ShiftRSquaresTheGhost()
+    {
+        BuildingKind? was = _map.PendingBuilding;
+        Angle facingWas = _map.GhostFacing;
+
+        _map.BeginBuilding(BuildingKind.Granary);
+        var faults = new List<string>();
+
+        foreach (int posed in new[] { 1, 4_321, 16_383, 16_384, 40_000, 65_000 })
+        {
+            _map.GhostFacing = Angle.FromRaw((ushort)posed);
+            _map.TurnTheGhost(toTheQuarter: true);
+            int now = _map.GhostFacing.Raw;
+            if (now % 16_384 != 0)
+            {
+                faults.Add($"{posed} → {now}, which is not square");
+            }
+            else if (posed % 16_384 == 0 && now == posed)
+            {
+                faults.Add($"a square ghost at {posed} did not step a quarter");
+            }
+        }
+
+        _map.PutTheToolDown();
+        if (was is BuildingKind holding)
+        {
+            _map.BeginBuilding(holding);
+        }
+
+        _map.GhostFacing = facingWas;
+
+        return faults.Count == 0
+            ? "[widths] turning: ✅ shift+R squares a ghost from any angle in one tap, and steps a quarter from square"
+            : $"[widths] turning: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
