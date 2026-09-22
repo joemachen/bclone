@@ -27,4 +27,18 @@ public interface IObstacles
 
     /// <summary>The tiles of the building standing on this one — empty when nothing does.</summary>
     IReadOnlyList<GridPos> FootprintCovering(GridPos tile);
+
+    /// <summary>
+    /// The walls on this tile's four edges — N 1, E 2, S 4, W 8 (D401,
+    /// `specs/fences-as-walls.md`). <b>A step across a set bit is impossible.</b>
+    /// </summary>
+    /// <remarks>
+    /// A fourth question on the same seam, and the field asks it the same way it asks the others:
+    /// <em>is there a wall here?</em> — never <em>whose?</em> A yard's fence writes the bits today
+    /// and a player-built fence will write the same ones (§10).
+    /// </remarks>
+    byte WallsOn(GridPos tile);
+
+    /// <summary>Moves whenever a wall goes up or comes down, so a field knows to rebuild.</summary>
+    int WallGeneration { get; }
 }

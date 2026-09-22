@@ -41,7 +41,7 @@ public static class LineOfSight
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(obstacles);
         bool clear = true;
-        Walk(from, to, tile =>
+        Walk(from, to, (was, tile) =>
         {
             if (!map.Contains(tile) || !TerrainRules.IsPassable(map.TerrainAt(tile)))
             {
@@ -50,6 +50,17 @@ public static class LineOfSight
             }
 
             if (obstacles.StandsOn(tile) && !Among(leaving, tile) && !Among(arriving, tile))
+            {
+                clear = false;
+                return false;
+            }
+
+            // ⭐⭐ AND IT MAY NOT CROSS A FENCE (D401, `fences-as-walls.md §3.4`). Without this a
+            // villager routes round a yard — the cost field refuses the edge — and then *draws*
+            // straight through it, because a leg is a straight line to the furthest visible route
+            // tile (D356). The routing and the drawing have to read the same wall.
+            byte crossing = ZoneMap.EdgeBit(tile.X - was.X, tile.Y - was.Y);
+            if (crossing != 0 && (obstacles.WallsOn(was) & crossing) != 0)
             {
                 clear = false;
                 return false;
@@ -78,7 +89,7 @@ public static class LineOfSight
         ArgumentNullException.ThrowIfNull(map);
 
         bool clear = true;
-        Walk(from, to, tile =>
+        Walk(from, to, (_, tile) =>
         {
             if (!map.Contains(tile) || !TerrainRules.IsPassable(map.TerrainAt(tile)))
             {
@@ -96,7 +107,7 @@ public static class LineOfSight
     public static List<GridPos> TilesCrossed(Point from, Point to)
     {
         var tiles = new List<GridPos>();
-        Walk(from, to, tile =>
+        Walk(from, to, (_, tile) =>
         {
             tiles.Add(tile);
             return true;
@@ -122,12 +133,12 @@ public static class LineOfSight
     /// Manhattan distance between the two tiles plus the corner visits, so it cannot spin.
     /// </para>
     /// </remarks>
-    private static void Walk(Point from, Point to, Func<GridPos, bool> visit)
+    private static void Walk(Point from, Point to, Func<GridPos, GridPos, bool> visit)
     {
         GridPos tile = from.ToTile();
         GridPos last = to.ToTile();
 
-        if (!visit(tile) || tile == last)
+        if (!visit(tile, tile) || tile == last)
         {
             return;
         }
@@ -148,6 +159,7 @@ public static class LineOfSight
 
         while (budget-- > 0)
         {
+            GridPos was = tile;
             // Distance along t to the next grid line on each axis, as numerator over denominator.
             long numX = denX == 0 ? 0 : Math.Abs(NextLine(tile.X, stepX) - x0);
             long numY = denY == 0 ? 0 : Math.Abs(NextLine(tile.Y, stepY) - y0);
@@ -159,12 +171,22 @@ public static class LineOfSight
                 // ⛔ A corner: both tiles beside it are touched, then the diagonal one.
                 var beside = new GridPos(tile.X + stepX, tile.Y);
                 var above = new GridPos(tile.X, tile.Y + stepY);
-                if (!visit(beside) || !visit(above))
+
+                // ⭐ BOTH ARE ENTERED FROM THE CORNER TILE (D401), not from each other — they do
+                // not touch. A line through a corner crosses both of those edges, so a fence on
+                // either is a fence this leg may not cross.
+                if (!visit(tile, beside) || !visit(tile, above))
                 {
                     return;
                 }
 
                 tile = new GridPos(tile.X + stepX, tile.Y + stepY);
+                if (!visit(beside, tile) || tile == last)
+                {
+                    return;
+                }
+
+                continue;
             }
             else if (order < 0)
             {
@@ -175,7 +197,7 @@ public static class LineOfSight
                 tile = new GridPos(tile.X, tile.Y + stepY);
             }
 
-            if (!visit(tile) || tile == last)
+            if (!visit(was, tile) || tile == last)
             {
                 return;
             }

@@ -6717,10 +6717,32 @@ public sealed class SimWorld : IObstacles
     /// raised at the founding. The zone map's index is maintained here, in <see cref="ReleasePlotOf"/>
     /// and in the hand-me-down, and nowhere else; it restates <see cref="Household.FencedTiles"/>.
     /// </summary>
-    internal void ClaimPlotFor(int householdId, IReadOnlyList<GridPos> fenced, IReadOnlyList<GridPos> lane) =>
-        Zones.ClaimPlot(householdId, fenced, lane);
+    /// <summary>
+    /// Claim a plot and raise its fence (D386, D388; a wall since D401).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The house's own tiles are passed</b> so the fence is not raised on them: a house tile
+    /// is already impassable and is entered only by the field whose destination it is, so a wall
+    /// there is a family that can never get home (`fences-as-walls.md §3.1`).
+    /// </remarks>
+    internal void ClaimPlotFor(
+        int householdId, IReadOnlyList<GridPos> fenced, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house)
+    {
+        Zones.ClaimPlot(householdId, fenced, lane, house);
+        TravelCost.Forget();
+    }
 
-    internal void ReleasePlotOf(int householdId) => Zones.ReleasePlot(householdId);
+    /// <summary>The walls on a tile's edges (D401) — <see cref="IObstacles"/>.</summary>
+    public byte WallsOn(GridPos tile) => Zones.WallsOn(tile);
+
+    /// <summary>Moves when a fence goes up or comes down (D401) — <see cref="IObstacles"/>.</summary>
+    public int WallGeneration => Zones.WallGeneration;
+
+    internal void ReleasePlotOf(int householdId)
+    {
+        Zones.ReleasePlot(householdId);
+        TravelCost.Forget();
+    }
 
     public PlacementVerdict CanBuildAt(
         BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default) =>
@@ -7247,7 +7269,7 @@ public sealed class SimWorld : IObstacles
         // gets built, a log a tile on the recipe, and the brush never moves it afterwards.
         PlotShape plot = PlotFor(site.Front, site.Facing, householdId);
         List<GridPos> fenced = FencedTilesFor(plot);
-        ClaimPlotFor(householdId, fenced, plot.Lane);
+        ClaimPlotFor(householdId, fenced, plot.Lane, plot.House);
         if (FindHousehold(householdId) is Household family)
         {
             family.WhyHere = site.WhyHere;
@@ -9556,7 +9578,7 @@ public sealed class SimWorld : IObstacles
             {
                 PlotShape plot = PlotFor(founded.Front, founded.Facing, household.Id);
                 household.FencedTiles = FencedTilesFor(plot);
-                ClaimPlotFor(household.Id, household.FencedTiles, plot.Lane);
+                ClaimPlotFor(household.Id, household.FencedTiles, plot.Lane, plot.House);
             }
 
             // Added before its members are drawn, so the next founding household's

@@ -297,12 +297,28 @@ public sealed class TerrainCostField
         /// sweep. Called once per obstacle generation; a field opens its own destination's
         /// footprint around its refill.
         /// </summary>
+        /// <summary>
+        /// ⭐ The walls on every tile's edges (D401) — N 1, E 2, S 4, W 8, read by the relax.
+        /// </summary>
+        /// <remarks>
+        /// Beside <see cref="Passable"/> because it answers the same kind of question one step
+        /// further in: passability is about the tile you are entering, a wall is about the edge
+        /// you cross to get there.
+        /// </remarks>
+        public byte[] Walls = System.Array.Empty<byte>();
+
         public void Block(GeneratedMap map, IObstacles obstacles)
         {
+            if (Walls.Length != Passable.Length)
+            {
+                Walls = new byte[Passable.Length];
+            }
+
             for (int i = 0; i < Passable.Length; i++)
             {
                 var at = new GridPos((i % map.Width) + map.MinX, (i / map.Width) + map.MinY);
                 Passable[i] = TerrainRules.IsPassable(map.TerrainAt(at)) && !obstacles.StandsOn(at);
+                Walls[i] = obstacles.WallsOn(at);
             }
         }
 
@@ -328,6 +344,16 @@ public sealed class TerrainCostField
     /// the suite's parallel load the collector turned that into a suite three times slower. The
     /// fields are kept and refilled: same arrays, same answer.
     /// </remarks>
+    /// <summary>Which edge bit a step crosses — N 1, E 2, S 4, W 8, the one table (D401).</summary>
+    private static byte EdgeBit(int dx, int dy) => (dx, dy) switch
+    {
+        (0, -1) => 1,
+        (1, 0) => 2,
+        (0, 1) => 4,
+        (-1, 0) => 8,
+        _ => 0,
+    };
+
     internal void Refill(int baseTileCost, byte[]? entryCost, Scratch scratch)
     {
         int[] cost = _cost;
@@ -338,6 +364,7 @@ public sealed class TerrainCostField
 
         int start = IndexOf(Destination);
         bool[] passable = scratch.Passable;
+        byte[] walls = scratch.Walls;
 
         // The scratch's answer, not the terrain's: a destination under a building is passable
         // here because the caller opened its footprint (D383); one in the water is not.
@@ -363,15 +390,15 @@ public sealed class TerrainCostField
                 int currentCost = cost[current];
                 int x = current % width;
                 int y = current / width;
-                Sweep(x + 1, y, currentCost);
-                Sweep(x - 1, y, currentCost);
-                Sweep(x, y + 1, currentCost);
-                Sweep(x, y - 1, currentCost);
+                Sweep(x + 1, y, currentCost, current);
+                Sweep(x - 1, y, currentCost, current);
+                Sweep(x, y + 1, currentCost, current);
+                Sweep(x, y - 1, currentCost, current);
             }
 
             return;
 
-            void Sweep(int nx, int ny, int currentCost)
+            void Sweep(int nx, int ny, int currentCost, int from)
             {
                 if (nx < 0 || nx >= width || ny < 0 || ny >= height)
                 {
@@ -385,6 +412,15 @@ public sealed class TerrainCostField
                 }
 
                 if (!passable[index])
+                {
+                    return;
+                }
+
+                // ⭐ A FENCE IS A WALL (D401). The bit is read on the tile being LEFT, which is
+                // the same edge as the bit on the tile being entered — `ZoneMap.Wall` writes both
+                // in one statement, so the two can never disagree.
+                if (walls.Length != 0
+                    && (walls[from] & EdgeBit(nx - (from % width), ny - (from / width))) != 0)
                 {
                     return;
                 }
@@ -428,16 +464,16 @@ public sealed class TerrainCostField
 
                 int x = current % width;
                 int y = current / width;
-                Relax(x + 1, y);
-                Relax(x - 1, y);
-                Relax(x, y + 1);
-                Relax(x, y - 1);
+                Relax(x + 1, y, current);
+                Relax(x - 1, y, current);
+                Relax(x, y + 1, current);
+                Relax(x, y - 1, current);
             }
 
             bucket.Clear();
             settling++;
 
-            void Relax(int nx, int ny)
+            void Relax(int nx, int ny, int from)
             {
                 if (nx < 0 || nx >= width || ny < 0 || ny >= height)
                 {
@@ -446,6 +482,14 @@ public sealed class TerrainCostField
 
                 int index = (ny * width) + nx;
                 if (!passable[index])
+                {
+                    return;
+                }
+
+                // ⭐ A FENCE IS A WALL (D401), read on the tile being left — the same edge, and
+                // `ZoneMap.Wall` writes both sides in one statement.
+                if (walls.Length != 0
+                    && (walls[from] & EdgeBit(nx - (from % width), ny - (from / width))) != 0)
                 {
                     return;
                 }
