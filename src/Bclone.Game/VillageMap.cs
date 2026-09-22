@@ -565,6 +565,13 @@ public partial class VillageMap : Control
     /// </remarks>
     private Angle _ghostFacing;
 
+    /// <summary>Which way the ghost in hand is turned — <b>for the probe</b> (D401).</summary>
+    internal Angle GhostFacing
+    {
+        get => _ghostFacing;
+        set => _ghostFacing = value;
+    }
+
     /// <summary>True when the next click pulls a building down instead of raising one.</summary>
     private bool _demolishing;
 
@@ -999,13 +1006,28 @@ public partial class VillageMap : Control
         // *"i want finer control than a sixteenth for the turn increment"*). ⚠️ Still a UI choice
         // rather than a limit of the type: `Angle` holds 65,536 poses (D318), and this number is
         // one line to change again.
-        // ⭐⭐ AND SHIFT SNAPS TO THE QUARTER, which is what makes a fine step usable rather than
-        // tedious: sixteen taps to get back to square would be a worse control than the coarse one
-        // it replaced. *Fine by default, coarse on demand — the opposite way round would make the
+        // ⭐⭐ AND SHIFT SQUARES IT, which is what makes a fine step usable rather than tedious:
+        // sixteen taps to get back to square would be a worse control than the coarse one it
+        // replaced. *Fine by default, square on demand — the opposite way round would make the
         // common case the awkward one.*
-        _ghostFacing += toTheQuarter
-            ? Angle.FromTurnFraction(1, 4)
-            : Angle.FromTurnFraction(1, 64);
+        //
+        // ⛔⛔ IT SNAPS TO THE NEXT QUARTER RATHER THAN ADDING ONE (D401, Joe: *"what is a good
+        // method to get it back to 'square'? is there a hotkey — rather than trying to slowly
+        // rotate it to what looks like square?"*). **Adding a quarter carries the offset with it
+        // for ever**: a ghost free-dragged to 37° went 37 → 127 → 217 and never once stood square,
+        // so a middle-drag was a decision the player could not take back. Rounding UP to the next
+        // multiple of a quarter is the same control when the ghost is already square — it steps
+        // 90°, as it always did — and is **one tap back to square when it is not.**
+        if (toTheQuarter)
+        {
+            const int Quarter = 65536 / 4;
+            int raw = _ghostFacing.Raw;
+            _ghostFacing = Angle.FromRaw(unchecked((ushort)(((raw / Quarter) + 1) * Quarter)));
+        }
+        else
+        {
+            _ghostFacing += Angle.FromTurnFraction(1, 64);
+        }
 
         QueueRedraw();
     }
@@ -1720,7 +1742,7 @@ public partial class VillageMap : Control
             // still cancels a held building; the sentence names the gesture that works for every
             // tool instead of both.
             _ => (_snapToGrid ? "Click to mark it out. " : "Free — click to mark it out. ")
-                + "Middle-drag turns it (shift: fine), R steps. Esc to stop."
+                + "Middle-drag turns it (shift: fine), R nudges, shift+R squares. Esc to stop."
                 + TheMarketsServiceArea(),
         };
     }
