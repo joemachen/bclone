@@ -116,7 +116,7 @@ the mechanism, then the content.*
   forest tile within `hunt_walk_tiles` (6) of the lodge, hunts there, and carries the catch back
   to the lodge; until D384 they hunted standing on the lodge and re-armed in place. The rig's
   on-the-job ticks count the walk and the carry-back; `meat_yield` is still the rig's alone.
-- ⭐⭐ **A HUNT ANSWERS THE VILLAGE, NEVER A LARDER (D398, Joe's call (a) on D397's audit).** The
+- ⭐⭐ **A HUNT ANSWERS THE VILLAGE, NEVER A LARDER (D398, Joe's call (a) on D397's audit; ✅ and since D399 the forager hears the same rule, so it is every food trade — `storage-and-distribution.md §14.13`).** The
   decision every food trade shares (`BehaviorSystem`'s `needsFood`) has two halves — *the village
   wants food* and *my own household's larder is short* — and the second one sent a hunter into the
   woods whenever their cupboard was a little low, which with no limit set and the stores full is

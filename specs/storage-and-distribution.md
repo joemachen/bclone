@@ -727,6 +727,73 @@ closed.
 store drains to zero and stays shut); `AClosedStoreTakesNothingAndKeepsWhatItHas` (no deliveries,
 nobody sent to clear it, in the hash; emptying an empty store is opening it).
 
+### 14.13 ✅ NOBODY PRODUCES FOOD FOR THEIR OWN LARDER, AND A LARDER HAS WALLS (D399, 2026-09-20)
+
+Joe, after D398: *"foragers should also no longer go to work because their own family's cupboard is
+low — only because the village wants food"*, and *"a larder should have a size limit."*
+
+**The rule.** `BehaviorSystem`'s `needsFood` had two halves — *the village wants food* and *my
+household's larder is short*. The second is gone for every trade, so **one sentence decides who
+goes to work**: the village wants food and the player's limit is not met. A short cupboard is
+answered by the fetch errand, which is what a granary is for. ⚠️ This reverses D385's measured call
+for the forager (155/207/44 against 244/270/24 then), on Joe's instruction, with the numbers below.
+
+**A larder has walls.** The home's catalogue row carries `local_store_cap` — the column the
+farmhouse, the fishery and the lodge already have — at **`home_store_cap` 400**, food and firewood
+together. The hearth's share is reserved and `SimWorld.TargetFoodFor` is clamped to what is left,
+so a family bigger than their house keeps less of a winter at home and walks to the granary more
+often; **it is the house tiers' hook** (D206: a stone cottage raises it by changing a row). A cap
+below *a winter's firewood + one armful* is refused by name at load.
+
+**⛔ THE FINDING, AND IT IS THE INTERESTING ONE: the household's own hunger was the village's
+growth engine, and nothing in the docs said so.** Removing it alone read **93 alive → 1 over twelve
+fixture seeds** — every village stuck at its four founders for fifty years, producing 668 against
+672 eaten. Two readings were doing the work:
+
+1. **The village produced for its shelves only.** `TargetFoodForTheGranary` (a winter a head) is
+   *also* the bar the birth gate reads (D153), so a village that produces exactly to it eats it and
+   never crosses. The village now produces for **the shelves' target plus what the cupboards hold**
+   (`FoodTheLardersWant`), because a larder is deliberately outside the number the rules read
+   (D394) and somebody still had to bring that food in. ⚠️ The left side of the comparison stays
+   *shelves and huts* — counting larders on both sides let a village fill its cupboards and stop
+   with half-empty shelves, and recovered only 1 → 17.
+2. **A cupboard is somewhere to put food.** The room test (D33/D76: *a village cannot want more
+   food than it has somewhere to put*) read the shelves alone, whose room is choked by logs and
+   firewood most of the year (a mixed store keeps half its room for food, D361) — measured, the
+   village said it wanted no more food on **83 % of ticks while holding 119 of 616**. Larder room
+   counts as room now.
+
+**Measured, twelve seeds × fifty years.** Fixture (`VillageFixtures.Village`) and the shipped
+config, before this commit and after, at the shipped cap:
+
+| | alive | peak | starved | cold | on the ground |
+|---|---|---|---|---|---|
+| fixture, before | 93 | 148 | 29 | 0 | 16,384 |
+| fixture, after | 77 | 139 | 59 | 0 | 0 |
+| **shipped, before** | 92 | 121 | 21 | 8 | 69,040 |
+| **shipped, after** | **122** | **159** | 30 | **0** | 35,827 |
+
+⭐ **The game Joe plays gets better and the fixture gets hungrier**, and both are reported because
+only one of them is the game. The fixture's extra starvation is the honest price of the rule: a
+family's own hunger no longer puts anybody to work, so a household that cannot fetch in time goes
+without. ⏸️ **If that price is not wanted, the lever is the fetch**, not the rule — `storage`'s
+`fetch_below_share_percent` (50) and the emergency restock are where a hungrier household would be
+answered sooner, and that is a measured slice of its own.
+
+**The cap's number.** 200 / 300 / 400 / 500 / uncapped over twelve seeds sit inside seed noise, so
+400 is the largest that still bites: at `stockpile_target` 95 a household of four wants 380 food
+and the winter's firewood is 24, so **any household of four or more is capped**. His number to move.
+
+**Guards.** `GathererHutTests.AForagerWithAShortLarderDoesNotGather` (the D398 hunter guard one
+trade over), `LarderCapacityTests` (the house's row is the number; the food target leaves room for
+the fire; a full larder takes what fits and **the rest stays in their arms**; a house too small is
+refused by name). ⛔ `UnloadAtHome` had to start reading what `Add`/`Receive` returned — it emptied
+the arms regardless, which with a cap **destroys food**; `FoodConservationTests` reddened on all
+three arms and is what would have caught it. Five fixture premises re-posed, each with its reason
+in the guard.
+
+---
+
 ### 14.12 ✅ THE FOOD JOURNEY IS CONSERVED TO THE UNIT — AND WHERE IT ENDS UP (D397, 2026-09-20)
 
 Joe: *"please double check the journey for all food from all sources to ensure it is all making

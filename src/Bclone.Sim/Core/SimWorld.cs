@@ -517,6 +517,22 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     internal Stockpile NewStockpile() => new(GoodsCatalog.Count);
 
+    /// <summary>A household's larder — <b>the one stockpile whose walls come from a building row</b> (D399).</summary>
+    /// <remarks>
+    /// The home's <c>local_store_cap</c>, so house tiers raise it later by changing a row (D206).
+    /// ⚠️ A household with no house still has a larder of this size: they are a family, not a
+    /// building (the cold start), and giving the roofless an unbounded shelf would make *"build a
+    /// house"* a storage decision.
+    /// </remarks>
+    internal Stockpile NewLarder() =>
+        new(GoodsCatalog.Count) { Capacity = LarderCapacity };
+
+    /// <summary>How much a larder holds, food and firewood together (D399).</summary>
+    public int LarderCapacity =>
+        BuildingsCatalog[BuildingKind.Home]?.LocalStoreCap is int cap && cap > 0
+            ? cap
+            : int.MaxValue;
+
     /// <summary>Structured sink. Entries are stamped with the current tick.</summary>
     public ISimLogger Logger { get; }
 
@@ -9526,7 +9542,7 @@ public sealed class SimWorld : IObstacles
 
             var household = new Household
             {
-                Stockpile = NewStockpile(),
+                Stockpile = NewLarder(),
                 Id = h + 1,
                 Name = config.HouseholdNames[h % config.HouseholdNames.Count],
                 HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
@@ -10585,8 +10601,22 @@ public sealed class SimWorld : IObstacles
     /// from empty — perpetually foraging, never building a surplus, and therefore
     /// never having children. A household stores enough for <em>everyone in it</em>.
     /// </remarks>
-    public int TargetFoodFor(Household household) =>
-        Config.StockpileTarget * Math.Max(1, LivingMembersOf(household));
+    /// <remarks>
+    /// ⭐ <b>CLAMPED BY THE HOUSE SINCE D399.</b> A larder has walls (<see cref="LarderCapacity"/>)
+    /// and the hearth's share is reserved first, so a family bigger than their house can hold
+    /// keeps less of a winter at home and walks to the granary more often — which is the house
+    /// tiers' hook (D206) and a sentence the card can say. ⛔ Without the clamp the top-up loop
+    /// (`BehaviorSystem.StillShort`) would chase a number the larder can never reach.
+    /// </remarks>
+    public int TargetFoodFor(Household household)
+    {
+        int wanted = Config.StockpileTarget * Math.Max(1, LivingMembersOf(household));
+        int room = LarderCapacity == int.MaxValue
+            ? int.MaxValue
+            : LarderCapacity - VillageEconomy.FirewoodStoreWantedPerHousehold(Config);
+
+        return wanted < room ? wanted : room;
+    }
 
     /// <summary>
     /// Food the village wants in the granary — a winter's store for everyone.
@@ -10623,6 +10653,46 @@ public sealed class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public int TargetFoodForTheGranary() => Config.StockpileTarget * Population;
+
+    /// <summary>What every living household's larder would hold if it were full (D399).</summary>
+    /// <remarks>
+    /// The households' own targets, summed — clamped by the house (<see cref="TargetFoodFor"/>),
+    /// so a village of small houses produces for less. ⛔ Not a second demand on the same food:
+    /// it is the part of the village's need that ends up in cupboards rather than on shelves, and
+    /// it is counted here because <see cref="FoodTheVillageHolds"/> deliberately does not count it.
+    /// </remarks>
+    /// <summary>How much more food every living household's larder would take (D399).</summary>
+    public int LarderRoomForFood()
+    {
+        int total = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (LivingMembersOf(Households[i]) > 0)
+            {
+                int room = TargetFoodFor(Households[i]) - FoodIn(Households[i].Stockpile);
+                if (room > 0)
+                {
+                    total += room;
+                }
+            }
+        }
+
+        return total;
+    }
+
+    public int FoodTheLardersWant()
+    {
+        int total = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            if (LivingMembersOf(Households[i]) > 0)
+            {
+                total += TargetFoodFor(Households[i]);
+            }
+        }
+
+        return total;
+    }
 
     /// <summary>
     /// Food worth gathering for the village store — the target, or what will fit,
@@ -10690,7 +10760,21 @@ public sealed class SimWorld : IObstacles
         // own rule — `SetStockLimit` already warns at the moment it is set, because *a game that
         // refuses the player's number is arguing with them, and one that obeys it silently has
         // killed them without saying so.*
-        int wanted = StockLimits.For(Goods.Produce) ?? TargetFoodForTheGranary();
+        // ⭐⭐ THE SHELVES AND THE CUPBOARDS, SINCE D399 — and leaving the cupboards out was what
+        // made the household reason load-bearing without anybody noticing. `TargetFoodForTheGranary`
+        // is *"a winter per head on the shelves"*, and it is also the bar the birth gate reads
+        // (D153). While a forager also went out for their own larder, that second reason produced
+        // the surplus that carried a village over the bar. Take it away (Joe, D399: *"only because
+        // the village wants food"*) and the village produces exactly to a target that IS the bar,
+        // eats it, and never crosses: measured at **93 alive → 1 over twelve seeds**, every village
+        // stuck at its four founders for fifty years with produced ≈ eaten to within a meal.
+        //
+        // ⭐ So the village produces for what the village needs: the shelves' target **plus what
+        // the households' cupboards hold**, because a larder is deliberately outside the number
+        // the rules read (Joe's rule, D394: *"storage, in transit to storage and in markets"*) and
+        // food that goes home is still food somebody had to bring in. ⛔ The player's limit still
+        // caps the lot — it is a ceiling over everything, which is D62.
+        int wanted = StockLimits.For(Goods.Produce) ?? (TargetFoodForTheGranary() + FoodTheLardersWant());
 
         // Across every store the village can actually put food in (D76, D79) — the
         // granaries it has built, the pile the player dropped on day one, and the cart
@@ -10700,7 +10784,15 @@ public sealed class SimWorld : IObstacles
         // than it has somewhere to put* (D33, D76). Asking for 2000 with granaries for 900 is a
         // request for granaries, and the forager who stops now says so out loud rather than
         // wandering off to fell a tree — see `BehaviorSystem`'s note where this is read.
-        int capacity = FoodInGranaries() + RoomLeftForFood();
+        // ⭐⭐ AND A CUPBOARD IS SOMEWHERE TO PUT FOOD (D399). The room cap is D33/D76's rule —
+        // *a village cannot want more food than it has somewhere to put* — and it reads the
+        // SHELVES only. Measured when the household reason went: the shelves' room is choked by
+        // logs and firewood most of the year (a mixed store keeps only half its room for food,
+        // D361), so the village said it wanted no more food on **83 % of ticks while holding 119
+        // of 616** — and with nobody foraging for their own cupboard any more, that was the
+        // village. Larders are deliberately outside the number the rules read (D394) and they are
+        // still a place a load can go, so the room they have left counts as room.
+        int capacity = FoodInGranaries() + RoomLeftForFood() + LarderRoomForFood();
         return wanted < capacity ? wanted : capacity;
     }
 
@@ -10769,8 +10861,28 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public bool TheVillageWantsMoreFood()
     {
-        int wanted = StockLimits.For(Goods.Produce) ?? TargetFoodForTheGranary();
-        return FoodTheVillageHolds() < wanted && RoomLeftForFood() > 0;
+        // ⭐⭐ THE SHELVES AND THE CUPBOARDS (D399), and leaving the cupboards out is what made
+        // the household reason load-bearing without anybody noticing. `TargetFoodForTheGranary`
+        // is a winter per head on the shelves — and it is also the bar the birth gate reads
+        // (D153). While a forager ALSO went out for their own larder, that second reason produced
+        // the surplus that carried a village over the bar; with it gone (Joe, D399) the village
+        // produced exactly to a target that IS the bar, ate it, and never crossed — **93 alive
+        // → 1 over twelve fixture seeds**, every village stuck at its four founders.
+        //
+        // ⛔ AND *SOMEWHERE TO PUT IT* INCLUDES A CUPBOARD. The room test is D33/D76's rule — a
+        // village cannot want more food than it has somewhere to put — and it read the SHELVES
+        // alone, whose room is choked by logs and firewood most of the year (a mixed store keeps
+        // half its room for food, D361). Measured: the village said it wanted no more food on
+        // **83 % of ticks while holding 119 of 616**. A larder is deliberately outside the number
+        // the rules read (D394) and is still a place a load can go.
+        int wanted = StockLimits.For(Goods.Produce) ?? (TargetFoodForTheGranary() + FoodTheLardersWant());
+        // ⚠️ THE LEFT SIDE IS WHAT THE RULES READ — the shelves and the huts, never the cupboards
+        // (D394, Joe's rule). Counting larders on both sides let a village fill its cupboards and
+        // stop with half-empty shelves, and the birth gate reads the shelves (D153): measured, it
+        // recovered the collapse only from 1 alive to 17 of a 93 baseline. The village produces
+        // until the SHELVES hold what the shelves and the cupboards both want.
+        return FoodTheVillageHolds() < wanted
+            && RoomLeftForFood() + LarderRoomForFood() > 0;
     }
 
     /// <summary>Free space across every STORAGE building that would take food (D370: the market is a counter, and its room is not somewhere a producer can put a catch).</summary>

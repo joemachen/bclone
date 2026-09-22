@@ -129,9 +129,17 @@ public sealed class FoodLimitTests
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
         Assert.Null(world.StockLimits.For(Goods.Produce));
+
+        // ⭐ THE SHELVES' TARGET **AND THE CUPBOARDS'** SINCE D399. The unset default is still
+        // *"the player has not said"* and still derived rather than typed — what moved is what
+        // the village derives: it produces for the shelves and for the larders both, because a
+        // larder is outside the number the rules read (D394) and somebody still had to bring that
+        // food in. Leaving the cupboards out is what made the forager's own-larder reason
+        // load-bearing, and taking that reason away (D399) took 93 villagers to 1.
         Assert.Equal(
-            world.TargetFoodForTheGranary(),
+            world.TargetFoodForTheGranary() + world.FoodTheLardersWant(),
             world.FoodTheVillageHasRoomFor());
+        Assert.True(world.FoodTheLardersWant() > 0, "No household wants anything, so the sum says nothing.");
     }
 
     /// <summary>

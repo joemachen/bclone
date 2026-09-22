@@ -311,8 +311,10 @@ public sealed class SkillTests
     // (fixture) and 17970266292719371419 (shipped).
     // RE-TAKEN (D396) — footpaths fade slower (decay 6 → 4). Were 18248383024929281255 (fixture)
     // and 8891282324951488121 (shipped).
-    [InlineData(false, 15577376948852228UL)]
-    [InlineData(true, 13451262210379389876UL)]
+    // RE-TAKEN (D399) — the larder rules. Were 15577376948852228 (fixture) and
+    // 13451262210379389876 (shipped).
+    [InlineData(false, 3307825737465935125UL)]
+    [InlineData(true, 14000407223446823889UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

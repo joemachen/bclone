@@ -213,6 +213,14 @@ public sealed class VillagerPointTests
     /// the first unchanged.
     /// </para>
     /// <para>
+    /// **Re-pinned a fifteenth time (D399), and this one IS a behaviour change:** nobody produces
+    /// food for their own larder any more (Joe's call), so this warm start's stocked granary had
+    /// to be emptied for anyone to gather at all — the pose is stated above. On an emptied
+    /// opening: **51** trips, the 1st/10th/50th at **10/143/1,929**. Fewer trips because the
+    /// village stops when the shelves and the cupboards are both answered, and the first is
+    /// sooner because the stores start bare.
+    /// </para>
+    /// <para>
     /// **Re-pinned a fourteenth time (D396), not for the clock:** the paths fade slower
     /// (`path_wear_decay_per_season` 6 → 4), so more of the valley's lanes are worn at the
     /// yearly re-price and the walks that follow them are a tick quicker — **109** trips, the
@@ -224,6 +232,20 @@ public sealed class VillagerPointTests
     {
         SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
         SimWorld world = loop.World;
+
+        // ⚠️ THE STORES ARE EMPTIED FIRST, AND SINCE D399 THEY HAVE TO BE. Nobody produces food
+        // for their own larder any more (Joe's call): the only reason to gather is that the
+        // village wants food, and this warm start opens with a stocked granary — so the first
+        // gathering trip came hundreds of ticks later and the pin read fewer than ten in two
+        // thousand ticks. The claim here is the WALK's clock, not when hunger arrives, so the
+        // demand is posed rather than borrowed from the fixture's opening stock.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            foreach (Goods goods in world.GoodsCatalog.EdibleGoods)
+            {
+                store.Store.TakeAll(goods);
+            }
+        }
 
         var was = new Dictionary<int, VillagerState>();
         int entries = 0;
@@ -248,8 +270,8 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(109, entries);
-        Assert.Equal(new ulong[] { 19, 171, 989 }, at);
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 10, 143, 1929 }, at);
     }
 
     /// <summary>

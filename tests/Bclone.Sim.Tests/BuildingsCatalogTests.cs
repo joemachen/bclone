@@ -250,11 +250,16 @@ public sealed class BuildingsCatalogTests
             // purpose or not at all.** An accidental one keeps goods where the market cannot reach
             // them, which is the failure this guard exists for; it is a named list now rather than
             // a single name.
+            // ⭐ AND THE HOUSE CARRIES ONE SINCE D399, WHICH IS THE LARDER'S WALLS (Joe: *"a larder
+            // should have a size limit"*). It is the same column doing the same job one building
+            // over — a store that belongs to this building rather than to the village — and it is
+            // the house tiers' hook (D206): a stone cottage raises it by changing a row.
             int buffer = kind switch
             {
                 BuildingKind.Farmhouse => config.FarmStoreCap,
                 BuildingKind.FishingHut => config.FishingHutStoreCap,
                 BuildingKind.HunterLodge => config.HunterLodgeStoreCap,
+                BuildingKind.Home => config.HomeStoreCap,
                 _ => 0,
             };
 

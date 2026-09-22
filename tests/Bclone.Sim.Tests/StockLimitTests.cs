@@ -358,7 +358,9 @@ public sealed class StockLimitTests
     // RE-TAKEN (D396) — footpaths fade slower (decay 6 → 4); six fixture seeds × fifty years hold
     // 424 path tiles against 366, alive 48 → 45 and starved 10 → 16 (two marginal seeds flipping,
     // D360's noise). Was 1405808184657301407.
-    private const ulong FixtureFiftyYearHash = 9533260203811408204UL;
+    // RE-TAKEN (D399) — nobody produces food for their own larder (Joe's call), and the
+    // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 9533260203811408204.
+    private const ulong FixtureFiftyYearHash = 7985778814479655621UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -448,7 +450,9 @@ public sealed class StockLimitTests
     //     brings in; the shipped opening read 78 / 116 / 31 without tools and 98 / 133 / 19 with.
     //   before footpaths faded slower (D396): 7275135838661862946 — decay 6 → 4, Joe's number
     //     from his QA pass; the yearly re-price keeps more of the lanes.
-    private const ulong ShippedFiftyYearHash = 18023434392071687963UL;
+    //   before nobody produced for their own larder (D399): 18023434392071687963 — and the
+    //     village began producing for its cupboards as well as its shelves; a larder has walls.
+    private const ulong ShippedFiftyYearHash = 1017578343772418148UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

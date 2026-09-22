@@ -696,6 +696,24 @@
 
   "farm_store_cap": 100,
 
+  // ---- The house's larder (D399) -----------------------------
+  // A LARDER HAS WALLS (Joe, 2026-09-20). It was the one store in the
+  // game with none. Food and firewood together; the hearth's share is
+  // reserved first and the household's food target is clamped to what
+  // is left (SimWorld.TargetFoodFor), so a family bigger than their
+  // house keeps less of a winter at home and walks to the granary more.
+  //
+  // 400 BITES, WHICH IS THE POINT: at stockpile_target 95 a four-member
+  // household wants 380 food and the winter's firewood is 24, so any
+  // household of four or more is capped. MEASURED over twelve shipped
+  // seeds x fifty years, against the same arm uncapped: alive 109 -> 122,
+  // peak 161 -> 159, starved 36 -> 30, food on the ground 36,548 ->
+  // 35,827. Across 200/300/400/500/uncapped the spread is seed noise,
+  // so this is the largest number that still bites rather than a cliff
+  // anybody measured a village against. It is the house TIERS' hook
+  // (D206): a stone cottage raises it by changing a row.
+  "home_store_cap": 400,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

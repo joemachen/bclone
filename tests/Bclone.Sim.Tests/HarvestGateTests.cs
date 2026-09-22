@@ -93,12 +93,22 @@ public sealed class HarvestGateTests
         int bornBefore = world.Villagers.Count;
         for (int tick = 0; tick < config.TicksPerYear * 7; tick++)
         {
-            // The granary kept full, tick by tick, so the level gate reads plenty throughout.
+            // The granary kept at the level gate's own bar, tick by tick, so that gate reads
+            // plenty throughout and the LEDGER is what is being tested.
+            //
+            // ⚠️ IT USED TO BE FILLED TO THE BRIM, AND SINCE D399 THAT STOOD THE CONTROL ARM DOWN
+            // TOO. Nobody produces food for their own larder any more (Joe): the only reason to
+            // work is that the village wants food, and a granary filled to 2,500 wants none — so
+            // the control village foraged nothing, brought in less than it ate, and bore no child
+            // for the same reason the treatment arm did. **A control that fails for the reason
+            // under test proves nothing** (D7). Topped up to the bar instead: the level gate is
+            // satisfied exactly, and the village still wants the food its cupboards will hold.
+            int bar = world.TargetFoodForTheGranary();
             foreach (StoreBuilding store in world.StoreBuildings)
             {
-                if (store.Kind == StoreKind.Granary)
+                if (store.Kind == StoreKind.Granary && world.FoodInGranaries() < bar)
                 {
-                    store.Store.Receive(Goods.Produce, store.Store.Capacity - world.FoodIn(store.Store));
+                    store.Store.Receive(Goods.Produce, bar - world.FoodInGranaries());
                 }
             }
 

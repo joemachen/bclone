@@ -959,6 +959,29 @@ public sealed record SimConfig
     [JsonPropertyName("farm_store_cap")]
     public int FarmStoreCap { get; init; } = 100;
 
+    /// <summary>How much a house's larder holds — food and firewood together (D399).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A LARDER HAS WALLS</b> (Joe, 2026-09-20: *"a larder should have a size limit"*). It was
+    /// the one store in the game with none — <c>Stockpile.Capacity</c> defaults to
+    /// <c>int.MaxValue</c> — so a household's shelf was as deep as the village could fill it.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It is the HOME's row, not a rule about households</b>, so the house tiers (D206:
+    /// wooden cabin → stone cottage → insulated manor) raise it by changing a row, and a modder's
+    /// house gets one for free — the same column the farmhouse, the fishery and the lodge already
+    /// carry (<see cref="World.BuildingRow.LocalStoreCap"/>).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The hearth's share is reserved and the food target is clamped to what is left</b>
+    /// (<c>SimWorld.TargetFoodFor</c>), or a big family would top up for ever toward a number their
+    /// house cannot hold. So this number decides, for a household bigger than it, how much of a
+    /// winter they keep at home and how often somebody walks to the granary.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("home_store_cap")]
+    public int HomeStoreCap { get; init; } = 400;
+
     /// <summary>Where a warm start's builder's hut stands (D108).</summary>
     /// <remarks>
     /// <b>A position is content, and so are the hut's seats since 2026-08-30.</b> Where a building
@@ -2459,6 +2482,7 @@ public sealed record SimConfig
             },
             WorkTicks = HomeWorkTicks,
             HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = HomeStoreCap,
 
             // ⭐ TWO WIDE, ONE DEEP (D386): a house stands across the front of its plot with its
             // long side on the lane (`footprints.md §2` had it at 1×1 and said this row was
@@ -3625,6 +3649,24 @@ public sealed record SimConfig
         // which deletes the buffer the store exists to be. Zero is not "no buffer", it is a
         // number that makes the deposit path unreachable and the guard on it vacuous (D98's
         // rule: a number that is always zero is a lie waiting to be found).
+        // ⛔ A HOUSE THAT CANNOT HOLD THE WINTER'S FIREWOOD AND AN ARMFUL OF FOOD IS A HOUSE
+        // NOBODY CAN LIVE IN (D399). Refused by name rather than silently starving a village: the
+        // fire's share is reserved first, so the floor is a winter of it plus one trip's food.
+        //
+        // ⚠️ IT IS ABOUT THE HOUSE, NOT ABOUT THE TARGET, and the first cut had `stockpile_target`
+        // in it — which the yield rigs pose at 100,000 to hold demand open (D286), so a shipped
+        // house of 400 was refused for a number no house was ever meant to hold. What a big family
+        // cannot keep at home they fetch; `SimWorld.TargetFoodFor` clamps for that. **A floor that
+        // reads a posed number is a floor that refuses the pose.**
+        int larderFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(this) + CarryCapacity;
+        if (HomeStoreCap < larderFloor)
+        {
+            throw new SimConfigException(
+                $"home_store_cap must be at least {larderFloor} — a winter's firewood "
+                + $"({VillageEconomy.FirewoodStoreWantedPerHousehold(this)}) and one armful of food "
+                + $"({CarryCapacity}) — but it is {HomeStoreCap}.");
+        }
+
         if (FarmStoreCap <= 0)
         {
             throw new SimConfigException(

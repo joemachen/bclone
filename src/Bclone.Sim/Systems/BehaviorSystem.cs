@@ -2374,30 +2374,31 @@ public sealed class BehaviorSystem : ISimSystem
         // its own target sent its forager out with the village's stores capped and full. That is
         // the one he felt.
         //
+        // ⭐⭐ AND SINCE D399 THAT IS THE WHOLE OF IT: NOBODY PRODUCES FOOD FOR THEIR OWN LARDER.
+        // Joe, after D398: *"foragers should also no longer go to work because their own family's
+        // cupboard is low — only because the village wants food."* The second half of this
+        // predicate is gone for every trade, so one sentence decides who goes to work: **the
+        // village wants food, and the player's limit is not met.**
+        //
         // ⭐ IT COSTS THE HOUSEHOLD NOTHING, and that is why it is safe rather than a starvation
-        // risk: a met limit means the stores are FULL of food, so the hungry family's answer is
-        // the fetch errand a few lines below — walk to the granary and carry an armful home —
-        // not another trip to the berry patch. **Gathering more food into a village that has
-        // told you to stop gathering is the loop, not the remedy.**
+        // risk: the village not wanting food means the stores are FULL of it, so the hungry
+        // family's answer is the fetch errand a few lines below — walk to the granary and carry
+        // an armful home — not another trip to the berry patch. **Gathering more food into a
+        // village that has told you to stop gathering is the loop, not the remedy.**
+        //
+        // ⚠️ **THIS REVERSES D385's MEASURED CALL, AND THE NUMBERS ARE IN D399.** Taking the
+        // household reason from foragers then read 155 / 207 / 44 against 244 / 270 / 24 — it
+        // cost people, on a village without organic housing (D386), the harvest birth gate
+        // (D387), tools (D391) or D398. Re-measured on today's code before it was typed.
         //
         // ⚠️ **The seat is kept, not cut** (Joe's call, over shrinking the quota): they are
         // still a forager, they still hold the job, and they fall through to labouring. Churning
         // the trade instead would throw away proficiency, which accrues per trade and is the
         // whole of Phase 3.
-        bool needsFood = !world.FoodLimitIsMet()
-            && (world.FoodIn(household.Stockpile) < world.TargetFoodFor(household)
-                || world.TheVillageWantsMoreFood());
-
-        // ⭐⭐ THE HUNT AND THE CAST ANSWER THE VILLAGE, NEVER THE LARDER (D398, Joe's call (a)
-        // on D397's audit). `needsFood` above has two halves, and the household half sent a hunter
-        // into the woods whenever their own cupboard was a little low — with the village's stores
-        // full and no limit set, that is most days — and a hunt is 900 meat, a cast 400, into a
-        // lodge that cannot take it; the overflow went down at a full store's door (D370) and
-        // twelve fixture seeds carried **3.67 million** food on the ground after fifty years.
-        // A forager's answer to the same question is an armful, and D385 measured that taking the
-        // household reason from foragers cost the village people — so the forager keeps both halves,
-        // and the hunter and the fisher hear only the village's. A short larder still gets its
-        // answer: the fetch errand a few lines down, which is what a granary is for.
+        //
+        // ⚠️ `theVillageNeedsFood` keeps D398's name because that is what it asks; the old
+        // `needsFood` is gone rather than redefined, so nothing reads a name that has quietly
+        // changed meaning (D148's name-that-lies).
         bool theVillageNeedsFood = !world.FoodLimitIsMet() && world.TheVillageWantsMoreFood();
 
         // FETCH — before work, because a household with an empty larder has a more
@@ -2578,7 +2579,7 @@ public sealed class BehaviorSystem : ISimSystem
             && job?.Kind == JobKind.Forager
             && SeasonRules.IsGatherable(world.Clock.Season);
 
-        if (needsFood && canForage)
+        if (theVillageNeedsFood && canForage)
         {
             // ⭐ INTO THE RING, NOT ONTO THE HUT (D384). Joe: *"im not sure that … foragers spend
             // any time … in the forest."* They gathered standing on the hut; now each trip goes
@@ -2609,7 +2610,7 @@ public sealed class BehaviorSystem : ISimSystem
         // What they declined it *for* is the thing that was invisible, and its two causes have
         // opposite answers: *raise the limit* against *build a granary*. METHODOLOGY §4 — every
         // refusal writes its own reason.
-        if (canForage && !needsFood)
+        if (canForage && !theVillageNeedsFood)
         {
             villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string why
                 ? $"Nothing to gather for — {why}."
@@ -3499,6 +3500,9 @@ public sealed class BehaviorSystem : ISimSystem
     /// carrying what — so a twenty-year run is not a guard for it. Posed directly, it is three
     /// lines and cannot go vacuous.
     /// </remarks>
+    internal static void UnloadAtHomeForTest(SimWorld world, Villager villager) =>
+        UnloadAtHome(world, villager);
+
     internal static void ArriveWithALoadForTest(SimWorld world, Villager villager) =>
         ArriveAt(world, villager, VillagerState.HaulingToStore);
 
@@ -3770,8 +3774,11 @@ public sealed class BehaviorSystem : ISimSystem
         // this much", and a fetch is goods changing hands (see Stockpile.Receive).
         // Food carried straight back from a gather IS production, though, so that
         // one is added rather than received.
-        larder.Receive(Goods.Firewood, villager.CarriedFirewood);
-        villager.Carried.TakeAll(Goods.Firewood);
+        // ⛔⛔ TAKE ONLY WHAT THE LARDER ACTUALLY TOOK (D399). A larder has walls now, and this
+        // line put the whole armful in and emptied the arms regardless — which with a cap
+        // **destroys food**, the one thing `FoodConservationTests` exists to catch. What will not
+        // fit stays in their hands; the caller turns anyone still holding something toward a store.
+        villager.Carried.TryTake(Goods.Firewood, larder.Receive(Goods.Firewood, villager.CarriedFirewood));
 
         // ⛔ EVERY EDIBLE, NOT `Goods.Produce` — AND THE COMMENT BELOW IS WHY THIS WAS MISSED.
         // *"Everything else stays in their arms"* is the right rule for a log and the wrong
@@ -3785,8 +3792,7 @@ public sealed class BehaviorSystem : ISimSystem
             int carried = villager.Carried[edible[i]];
             if (carried > 0)
             {
-                larder.Add(edible[i], carried);
-                villager.Carried.TakeAll(edible[i]);
+                villager.Carried.TryTake(edible[i], larder.Add(edible[i], carried));
             }
         }
 
@@ -3814,8 +3820,7 @@ public sealed class BehaviorSystem : ISimSystem
                 + "the village has nowhere to put them, so they are stranded in the larder "
                 + "where nothing can spend them. Build a stockpile or a warehouse.");
 
-            larder.Receive(goods, held);
-            villager.Carried.TakeAll(goods);
+            villager.Carried.TryTake(goods, larder.Receive(goods, held));
         }
     }
 

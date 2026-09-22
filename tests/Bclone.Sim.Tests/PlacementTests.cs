@@ -446,14 +446,49 @@ public sealed class PlacementTests
     [Fact]
     public void AVillageThatIsAskedForNothingBehavesExactlyAsBefore()
     {
-        // The guard that keeps this slice honest: placement exists, and a village
-        // nobody asks anything of runs precisely as it did.
+        // The guard that keeps this slice honest: placement exists, and a village nobody asks
+        // anything of runs precisely as it did.
+        //
+        // ⚠️ ASKED IN D143's CURRENCY SINCE D399, AND THE OLD BAR WAS PASSING ON LUCK. It read
+        // *"at least the founding population still alive at year 200"* — but **an unattended
+        // village is supposed to die out** (D143), which is why `TheVillageSurvivesWithTheMarketS
+        // witchedOff` was re-posed this way at D385. A village with no granary ever marked ages
+        // out; what this guard is actually for is that placement changed nothing for a village
+        // that places nothing. So: it GROWS from its founders, and its dead die of old age.
         SimConfig config = Config;
         SimLoop loop = Build(config);
-        loop.Step(config.TicksPerYear * 200);
 
-        _output.WriteLine($"{loop.World.Population} alive at year 200 with nothing ever marked.");
-        Assert.True(loop.World.Population >= config.StartingPopulation);
+        int peak = 0;
+        for (int year = 0; year < 150; year++)
+        {
+            loop.Step(config.TicksPerYear);
+            peak = System.Math.Max(peak, loop.World.Population);
+        }
+
+        int old = 0;
+        int starved = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            if (villager.CauseOfDeath == CauseOfDeath.OldAge)
+            {
+                old++;
+            }
+            else if (villager.CauseOfDeath == CauseOfDeath.Starvation)
+            {
+                starved++;
+            }
+        }
+
+        _output.WriteLine(
+            $"nothing ever marked: peaked at {peak} from {config.StartingPopulation} founders, "
+            + $"{loop.World.Population} alive at year 150, {old} died of old age and {starved} starved.");
+        Assert.True(peak > config.StartingPopulation, $"the village never grew past its {config.StartingPopulation} founders");
+        Assert.True(old > starved, $"{starved} starved against {old} of old age — the village did not live its life out");
         Assert.Equal(0, LabourQuota.For(loop.World).Builders);
     }
 

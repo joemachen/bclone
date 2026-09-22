@@ -1,6 +1,39 @@
-# Handoff — bclone: **▶️ PHASE 5 — D398 IS BUILT. NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
+# Handoff — bclone: **▶️ PHASE 5 — D399 IS BUILT. NEXT: FENCES AS WALLS WITH AN OPEN GATE (SPEC FIRST) → TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D398.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D399.**
+>
+> **The state:** `origin/main` = `cd6ef7f` (D393); on top of it, **committed, NOT pushed — Joe
+> plays, then pushes:** D394, the D395 handoff, D396 (played), D397, D398 and **D399 (this
+> commit)**. Working tree clean. Suite **1212 passing, 0 failing, 2 skipped of 1214, 3m39**; view
+> 0 warnings; probe green, bar height 161. The log runs to **D399**.
+>
+> **✅ D399 — NOBODY PRODUCES FOOD FOR THEIR OWN LARDER, AND A LARDER HAS WALLS.** His two calls
+> after D398. One sentence now decides who works — the village wants food — for every trade; a
+> short cupboard is answered by the fetch errand. A larder holds `home_store_cap` **400** (food and
+> firewood together), from the home's catalogue row, which is the **house tiers' hook** (D206).
+>
+> **⛔⛔ THE FINDING A FUTURE SESSION MUST KNOW: the household's own hunger was the village's
+> growth engine, and nothing said so.** Removing it alone read **93 alive → 1 over twelve fixture
+> seeds**. Two readings were carrying the game — the village produced for its **shelves only**
+> (whose target IS the birth bar, D153), and the room test read the **shelves' room**, choked by
+> logs most of the year (the village wanted no food on 83 % of ticks while holding 119 of 616).
+> Both are fixed (`storage-and-distribution.md §14.13`), and the measured result is:
+> **shipped alive 92 → 122, peak 121 → 159, starved 21 → 30, cold 8 → 0; fixture 93 → 77, 148 →
+> 139, starved 29 → 59.** ⏸️ **If the fixture's extra starvation is not wanted, the lever is the
+> FETCH** (`fetch_below_share_percent` 50, the emergency restock), not the rule — its own measured
+> slice.
+>
+> **⚠️ For Joe when he plays D397–D399:** the earlier lists, and then — a fed village's foragers
+> stand idle instead of topping up their own cupboards, and a big family's larder stops at 400
+> (their card's `food/target` says so). Watch a winter in a house far from the granary.
+>
+> **▶️ THE QUEUE:** **1. Fences as walls with an open gate** (spec first — `organic-housing.md
+> §3.5`, `tech-tree.md §9.6`) → **2.** the two investigations → **3.** tools on ticks at 34 % →
+> **4.** the quarry spec → the design threads.
+>
+> *(The D398 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-20 — AFTER D398.**
 >
 > **The state:** `origin/main` = `cd6ef7f` (D393). On top of it, **committed, NOT pushed — Joe
 > plays, then pushes:** D394, the D395 handoff, D396 (played: *"items 1–8 look good"*), D397 and
@@ -1847,6 +1880,20 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     rather than from any demand it posed. Taking that reason away took its evidence with it. It
     poses the demand now and watches 344 ticks on 20 tiles — *the guard got stronger by being
     broken.*
+
+117. **⛔⛔ A RULE CAN BE LOAD-BEARING WITHOUT BEING WRITTEN DOWN ANYWHERE (D399).** *"A forager
+    also goes out when their own larder is short"* read like a convenience. It was the surplus
+    that carried every village over the birth gate, and the slack that hid two wrong readings —
+    the village producing for its shelves alone when the shelves' target IS the birth bar, and a
+    room test choked by logs. Removing it read **93 alive → 1 over twelve seeds**. ⭐ *Before
+    deleting a rule that has been there for a year, measure the thing it is nearest to — and if
+    the result is a cliff, the cliff is the finding, not the change.*
+
+118. **⚠️ A CONFIG FLOOR THAT READS A POSED NUMBER REFUSES THE POSE (D399).** `home_store_cap`'s
+    floor included `stockpile_target`, which the yield rigs set to 100,000 to hold demand open
+    (D286) — so a shipped house of 400 was refused for a number no house was ever meant to hold.
+    A validation floor should be about the thing it governs, not about a tuning value somebody
+    else is entitled to pose.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

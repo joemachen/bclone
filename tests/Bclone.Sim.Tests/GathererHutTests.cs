@@ -394,4 +394,97 @@ public sealed class GathererHutTests
 
         throw new Xunit.Sdk.XunitException("The hut's ring has no woodland in it.");
     }
+
+    // ---------------------------------------------------------------
+    //  § The gather answers the village, never the larder (D399)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐⭐ A forager whose own larder is short, in a village that wants no more food, walks to the
+    /// granary — not to the berry patch (D399, Joe: <i>"foragers should also no longer go to work
+    /// because their own family's cupboard is low — only because the village wants food"</i>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The hunter's and the fisher's rule (D398) reaching the last food trade, and with it the
+    /// predicate collapses: <b>one sentence decides who goes to work</b> — the village wants food
+    /// and the player's limit is not met. A short cupboard is answered by the fetch errand, which
+    /// is what a granary is for.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>This reverses D385's measured call, and the numbers are in D399.</b> Taking the
+    /// household reason away then cost the village people; re-measured on today's code it costs
+    /// the fixture starvation and buys the shipped game population — both tables are in
+    /// `storage-and-distribution.md §14.13`. Red with the household half restored.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AForagerWithAShortLarderDoesNotGather()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+        Workplace hut = RaiseAHut(world, WoodiestSpotNear(world, 6));
+
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, kind == JobKind.Forager ? 1 : 0);
+        }
+
+        loop.Step(config.TicksPerDay * 3);
+        Villager? forager = null;
+        foreach (Villager villager in world.Villagers)
+        {
+            if (world.FindWorkplace(villager.WorkplaceId) is { Kind: JobKind.Forager })
+            {
+                forager = villager;
+            }
+        }
+
+        Assert.True(forager is not null, "Nobody took the hut, so this measures nothing.");
+        Household home = world.HouseholdOf(forager!);
+
+        // The stores full to the brim, every larder at target but this one: the village wants no
+        // more food and exactly one cupboard is short — the state that used to send them out.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.Add(Goods.Produce, store.Store.FreeSpace);
+        }
+
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TakeAll(Goods.Produce);
+            household.Stockpile.Add(Goods.Produce, ReferenceEquals(household, home) ? world.TargetFoodFor(household) / 3 : world.TargetFoodFor(household));
+        }
+
+        Assert.False(world.TheVillageWantsMoreFood(), "The village still wants food, so the larder is not the only reason left.");
+        Assert.True(world.FoodIn(home.Stockpile) < world.TargetFoodFor(home), "The forager's larder is not short, so nothing is posed.");
+
+        // A trip already begun is finished, as a hunt is — the count starts once they are home.
+        int gathering = 0;
+        int fetching = 0;
+        bool home_ = false;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            bool out_ = forager.State is VillagerState.TravelingToFood or VillagerState.Gathering or VillagerState.HaulingToStore;
+            home_ |= !out_;
+            if (home_ && forager.State is VillagerState.TravelingToFood or VillagerState.Gathering)
+            {
+                gathering++;
+            }
+
+            foreach (int id in home.MemberIds)
+            {
+                if (world.FindVillager(id) is { State: VillagerState.FetchingFromStore })
+                {
+                    fetching++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{forager.Name}, larder short in a fed village: {gathering} ticks gathering, {fetching} household-ticks fetching, over a season; {hut.Name}'s ring is untouched");
+        Assert.True(gathering == 0, $"{forager.Name} gathered for {gathering} ticks to fill their own larder while the village wanted no more food.");
+        Assert.True(fetching > 0, $"{forager.Name}'s household never fetched either, so the short larder went unanswered (D7).");
+    }
 }

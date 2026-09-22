@@ -142,7 +142,14 @@ public sealed class LabourAllocationTests
             // a village that wants no more food rightly spares a hand for timber though the
             // arithmetic says four foragers could not feed ten mouths — the granary already has.
             // The quota's bite is measured while the village is short.
-            if (!loop.World.TheVillageWantsMoreFood())
+            //
+            // ⭐ ON THE HUNGER LINE, NOT THE STOCKING TARGET (D399). This asked
+            // `TheVillageWantsMoreFood`, which is a *stocking* question — and D399 made the
+            // village want its cupboards' worth as well as its shelves', so the skip stopped
+            // firing and the guard began biting on a village with a full granary that was in no
+            // sense short. `VillageIsShortOfFood` is the hunger line D73 drew for exactly this
+            // distinction, and it is what "the village is short" was always supposed to mean here.
+            if (!LabourQuota.VillageIsShortOfFood(loop.World))
             {
                 continue;
             }
@@ -236,10 +243,17 @@ public sealed class LabourAllocationTests
         SimLoop loop = Build(Config);
         loop.StepOnce();
 
-        foreach (Household household in loop.World.Households)
+        // ⚠️ IN THE STORES, NOT THE LARDERS (D399). This filled every larder with ten times its
+        // target, which a larder with walls cannot hold — so the village stayed hungry and wanted
+        // foresters after all. The food the village counts lives on the shelves anyway (D394), and
+        // the logs the houses want were never a household's to keep (D211).
+        foreach (StoreBuilding store in loop.World.StoreBuildings)
         {
-            household.Stockpile.Add(Goods.Produce, loop.World.TargetFoodFor(household) * 10);
-            household.Stockpile.Add(Goods.Logs, Config.LogsPerHouse * 10);
+            if (store.IsStorage)
+            {
+                store.Store.Receive(Goods.Produce, store.Store.FreeSpace / 2);
+                store.Store.Receive(Goods.Logs, store.Store.FreeSpace);
+            }
         }
 
         Assert.False(LabourQuota.VillageIsShortOfFood(loop.World));
