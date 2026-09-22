@@ -99,7 +99,7 @@ The fence is drawn (D386/D388). Two things follow from it becoming a wall:
 |---|---|---|
 | The fence itself | `Household.FencedTiles` (hashed) | `FencedTilesFor` at the marking (D388) |
 | The plot layer, per tile | `ZoneMap._plot` / `_plotByOwner` | `ClaimPlot` / `ReleasePlot` — **the two write sites** |
-| ⭐ **The wall mask, per tile** | `ZoneMap._walls`, a `byte` a tile: N/E/S/W bits | **the same two write sites**, plus a generation counter |
+| ⭐ **The wall layer, per tile** | `ZoneMap._walls`, a `byte` a tile: N/E/S/W bits — **every wall on that edge, whatever put it there** (§10) | the plot's two write sites today, plus a generation counter |
 | The gate | one cleared bit in the mask | computed with the mask, from `HomeFacing` |
 
 - **`ZoneMap.WallsOn(GridPos) → byte`** and a `WallGeneration` counter, the shape
@@ -111,6 +111,8 @@ The fence is drawn (D386/D388). Two things follow from it becoming a wall:
   relax — the same cost as the passability check beside it.
 - **Symmetry is a construction rule, not an assertion**: writing a wall on tile A's east edge
   writes tile B's west edge in the same statement, so the two can never disagree.
+- ⭐ **The layer is a union, not a plot outline** (§10). `ZoneMap.Wall(edge, on)` is what the plot
+  writes through; the field asks *"is there a wall here?"* and never *"whose?"*
 
 ## 5. Edge cases and failure modes
 
@@ -178,3 +180,51 @@ a look at a year-30 neighbourhood say whether the lanes now carry what the yards
   pay to cross is a wall the player cannot read off the screen.*
 - **What happens when the kitchen garden lands** (D357): a gardener walks through the gate, and
   that is the first time anybody needs to.
+
+---
+
+## 10. ⭐ What the player-built fence will need, and what this slice does for it (Joe, 2026-09-20)
+
+> Joe: *"eventually we are going to want to add 'fence' as a thing the user can build themselves,
+> along with gate placement — for example, a fence around a crop field to prevent people from
+> walking through (and for aesthetics). It sounds like this work is valuable as foundation for the
+> user-placed fences as well?"* **It is, and here is the honest split**, written down now because
+> one line of it changes a decision above while that decision is still free.
+
+**What a player-built fence inherits from this slice, whole:**
+
+- the **edge mask in the one cost field** and the relax that reads it (§4) — the expensive,
+  risky half, and it does not care who put a wall there;
+- **`LineOfSight`** honouring edges, so a drawn leg and a routed leg agree (D356);
+- the **wall-off refusal** (§3.3) — which matters *more* for a player fence, because a brush can
+  draw a line across the whole valley where a plot can only ever fence its own five tiles;
+- the **gate**, as a cleared bit in the same mask.
+
+**What it does NOT inherit, and must not:**
+
+| | the yard's fence (this slice) | the player's fence (later) |
+|---|---|---|
+| Where the wall comes from | **derived** from `Household.FencedTiles` + the facing | **its own fact** — the edges the player marked |
+| Hashed? | ⛔ never (D335 — it restates the plot) | ✅ always — a player decision, like a stock limit or the paint |
+| Built? | with the house, on its recipe (D388) | its own site, its own logs, its own demolition |
+| Drawn by | the plot's outline | **an edge tool the view does not have** — today's brush paints tiles and quarter-tiles (D327/D352); marking an *edge* is a new interaction, and per-edge gate placement is another |
+
+**⭐ THE ONE DECISION THIS CHANGES, TAKEN NOW WHILE IT IS FREE:** `ZoneMap`'s wall layer is
+**every wall on that edge, whatever put it there** — not "the plot outlines' mask". Same array,
+same cost, one method (`Wall(edge, on)`) that the plot writes through today and a player fence
+writes through later. The field asks *is there a wall here?* and never *whose?* ⛔ Retrofitting a
+second source into a layer shaped for one would mean touching the cost field and every golden a
+second time, which is the whole reason this paragraph exists.
+
+⚠️ **The hashing rule that falls out of it, stated before it can be got wrong:** hash the
+*sources* that are facts — the player's fences — and never the layer itself, which restates them
+(D335). A village whose walls are all derived hashes exactly as it does today.
+
+**⭐ The crop field is the good stress test, and it is half-built already:** work ground is painted
+per workplace and `ZoneMap` already keeps a per-owner layer for it (`_groundByOwner`), so a field's
+outline can contribute walls exactly as a plot's does — and the farmer's gate falls out of the same
+question this slice already has to answer, *can the owner still reach their own ground?* ⛔ Not in
+this slice, and not implied by it: a field fence is the player's to place, and placing it is the
+edge tool above.
+
+---
