@@ -1,4 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5 — D399 IS PUSHED; FENCES AS WALLS IS SPECCED (D400) AND IS THE NEXT BUILD. THEN: TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
+# Handoff — bclone: **▶️ PHASE 5 — D402. THE D398/D399 TRADE IS MEASURED AND ACCEPTED BY JOE; THE SKIP IS INSTRUMENTED AND WANTS HIS EYES ON THE DEBUG LINE. FENCES ARE ON `slice/fences-as-walls`, UNMERGED. THEN: THE TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+
+> **⭐⭐ START HERE, 2026-09-22 — AFTER D402.**
+>
+> **The state:** `origin/main` = D402; everything through D401 is pushed and played. The fences
+> slice is `slice/fences-as-walls` (pushed, unmerged — the wall layer, the cost field, the leg, the
+> gate, the chooser's trial fence and the *room to breathe* spacing all work; it still wants its
+> guards, the §3.3 refusal in words, the spec's §6 and the goldens).
+>
+> **▶️ WHAT IS WAITING ON JOE:** play at 2x–20x and read the **debug line's new numbers** —
+> *N tick/frame, catch-up X of Y, worst N ticks, slowest step N ms*. If catch-up frames are common
+> the skip is the interpolation reading the previous FRAME rather than the previous TICK
+> (`VillageMap.AdvanceInterpolation`); if they are rare it is something else and the instrument
+> says so. ⛔ **Do not "fix" the skip before that number exists** — the two candidate fixes trade a
+> dash for a snap, and which is right depends on how often it fires.
+>
+> **⚠️ SETTLED, DO NOT RE-OPEN:** the D398/D399 trade. Measured at D402 — first birth year 2 → 3
+> and year-10 population 10 → 6 on seed 12345, against **two of three shipped seeds going from
+> dead-by-year-5 to alive**. Joe: *"accept the trade."* And the granary↔home *"loop"* is **not a
+> regression**: fetching is 16.2 % of adult ticks before and 15.4 % after; resting rose 27 % → 39 %,
+> which is why it looks worse.
+>
+> *(The D399 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE — AFTER D399.**
+
+# (superseded) **▶️ PHASE 5 — D399 IS PUSHED; FENCES AS WALLS IS SPECCED (D400) AND IS THE NEXT BUILD. THEN: TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → THE DESIGN THREADS BELOW.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-20 (LATE) — AFTER D400.**
 >
