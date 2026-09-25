@@ -53,6 +53,7 @@ public sealed class TravelCostField
     /// <summary>What stands on the ground, and the generation the fields were built against (D383).</summary>
     private IObstacles? _obstacles;
     private int _builtAtObstacleGeneration = -1;
+    private int _builtAtWallGeneration = -1;
 
     /// <summary>
     /// Tell the field what stands where. <b>A tile a building stands on cannot be walked
@@ -66,6 +67,7 @@ public sealed class TravelCostField
         ArgumentNullException.ThrowIfNull(obstacles);
         _obstacles = obstacles;
         _builtAtObstacleGeneration = -1;
+        _builtAtWallGeneration = -1;
         Forget();
     }
 
@@ -218,10 +220,13 @@ public sealed class TravelCostField
         int cheapest = Unreachable;
         for (int i = 0; i < footprint.Count; i++)
         {
-            Consider(new GridPos(footprint[i].X + 1, footprint[i].Y));
-            Consider(new GridPos(footprint[i].X - 1, footprint[i].Y));
-            Consider(new GridPos(footprint[i].X, footprint[i].Y + 1));
-            Consider(new GridPos(footprint[i].X, footprint[i].Y - 1));
+            // ⛔ Not out through a fence (D404): a building beside a yard carries the yard's wall
+            // on its own side of the edge, and stepping off it into the yard is crossing that wall.
+            byte walls = _obstacles.WallsOn(footprint[i]);
+            if ((walls & 2) == 0) { Consider(new GridPos(footprint[i].X + 1, footprint[i].Y)); }
+            if ((walls & 8) == 0) { Consider(new GridPos(footprint[i].X - 1, footprint[i].Y)); }
+            if ((walls & 4) == 0) { Consider(new GridPos(footprint[i].X, footprint[i].Y + 1)); }
+            if ((walls & 1) == 0) { Consider(new GridPos(footprint[i].X, footprint[i].Y - 1)); }
         }
 
         cost = cheapest;
@@ -353,9 +358,13 @@ public sealed class TravelCostField
         // ⛔ THE STANDING SET CHANGED: EVERY FIELD IS WRONG (D383). A building placed, moved or
         // pulled down changes routes everywhere, so the fields go and the scratch's passability is
         // rebuilt with the buildings closed. A few times a year, on demand — D358's shape.
-        if (_obstacles is not null && _obstacles.Generation != _builtAtObstacleGeneration)
+        // ⭐ And a fence is the same kind of change (D404): a wall goes up or comes down with a plot,
+        // and `WallGeneration` is the counter that says so — no caller has to remember to forget.
+        if (_obstacles is not null
+            && (_obstacles.Generation != _builtAtObstacleGeneration || _obstacles.WallGeneration != _builtAtWallGeneration))
         {
             _builtAtObstacleGeneration = _obstacles.Generation;
+            _builtAtWallGeneration = _obstacles.WallGeneration;
             _fields.Clear();
             _scratch = null;
         }

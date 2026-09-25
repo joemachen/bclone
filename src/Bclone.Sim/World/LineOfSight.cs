@@ -55,12 +55,22 @@ public static class LineOfSight
                 return false;
             }
 
-            // ⭐⭐ AND IT MAY NOT CROSS A FENCE (D401, `fences-as-walls.md §3.4`). Without this a
+            // ⭐⭐ AND IT MAY NOT CROSS A FENCE (D404, `fences-as-walls.md §3.4`). Without this a
             // villager routes round a yard — the cost field refuses the edge — and then *draws*
             // straight through it, because a leg is a straight line to the furthest visible route
             // tile (D356). The routing and the drawing have to read the same wall.
-            byte crossing = ZoneMap.EdgeBit(tile.X - was.X, tile.Y - was.Y);
-            if (crossing != 0 && (obstacles.WallsOn(was) & crossing) != 0)
+            if (AWallBetween(obstacles, was, tile))
+            {
+                clear = false;
+                return false;
+            }
+
+            return true;
+        },
+        (above, diagonal) =>
+        {
+            // ⭐ The fourth edge at a corner (D404) — see Walk.
+            if (AWallBetween(obstacles, above, diagonal))
             {
                 clear = false;
                 return false;
@@ -69,6 +79,66 @@ public static class LineOfSight
             return true;
         });
         return clear;
+    }
+
+    /// <summary>
+    /// Whether a move from one point to another goes through no wall (D404) — the physical
+    /// question, where <see cref="Clear(GeneratedMap, IObstacles, Point, Point, IReadOnlyList{GridPos}, IReadOnlyList{GridPos})"/>
+    /// is the stricter one a planned leg must answer.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A move through a grid corner touches the four edges that meet there at a single point, so
+    /// it goes <em>through</em> a wall only if <b>both</b> ways round the corner are walled — which
+    /// is exactly the move that slips diagonally into a yard between two of its fences. A leg is
+    /// held to more (it may not graze a post at all), because it is planned and can simply go
+    /// round; this is asked of what actually happened, including a villager set down on a
+    /// building's standing place at the end of a walk (<c>BehaviorSystem.Arrive</c>).
+    /// </para>
+    /// <para>Asked of every villager's every move by <c>NoStepEverCrossesAWall</c>.</para>
+    /// </remarks>
+    public static bool ClearOfWalls(IObstacles obstacles, Point from, Point to)
+    {
+        ArgumentNullException.ThrowIfNull(obstacles);
+        List<GridPos> tiles = TilesCrossed(from, to);
+        for (int i = 1; i < tiles.Count; i++)
+        {
+            // A corner is listed as the tile, the two beside the corner, then the diagonal.
+            if (i + 1 < tiles.Count && tiles[i].ManhattanDistanceTo(tiles[i + 1]) == 2)
+            {
+                if (i + 2 < tiles.Count)
+                {
+                    GridPos corner = tiles[i - 1];
+                    GridPos beside = tiles[i];
+                    GridPos above = tiles[i + 1];
+                    GridPos diagonal = tiles[i + 2];
+                    bool besideShut = AWallBetween(obstacles, corner, beside) || AWallBetween(obstacles, beside, diagonal);
+                    bool aboveShut = AWallBetween(obstacles, corner, above) || AWallBetween(obstacles, above, diagonal);
+                    if (besideShut && aboveShut)
+                    {
+                        return false;
+                    }
+                }
+
+                // A move that ends ON the corner touches it and goes no further.
+                i += 2;
+                continue;
+            }
+
+            if (AWallBetween(obstacles, tiles[i - 1], tiles[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Whether a wall stands on the edge a unit step crosses — false for no step at all.</summary>
+    private static bool AWallBetween(IObstacles obstacles, GridPos from, GridPos to)
+    {
+        byte crossing = ZoneMap.EdgeBit(to.X - from.X, to.Y - from.Y);
+        return crossing != 0 && (obstacles.WallsOn(from) & crossing) != 0;
     }
 
     private static bool Among(IReadOnlyList<GridPos> tiles, GridPos tile)
@@ -133,7 +203,8 @@ public static class LineOfSight
     /// Manhattan distance between the two tiles plus the corner visits, so it cannot spin.
     /// </para>
     /// </remarks>
-    private static void Walk(Point from, Point to, Func<GridPos, GridPos, bool> visit)
+    private static void Walk(
+        Point from, Point to, Func<GridPos, GridPos, bool> visit, Func<GridPos, GridPos, bool>? alsoCrossed = null)
     {
         GridPos tile = from.ToTile();
         GridPos last = to.ToTile();
@@ -172,7 +243,7 @@ public static class LineOfSight
                 var beside = new GridPos(tile.X + stepX, tile.Y);
                 var above = new GridPos(tile.X, tile.Y + stepY);
 
-                // ⭐ BOTH ARE ENTERED FROM THE CORNER TILE (D401), not from each other — they do
+                // ⭐ BOTH ARE ENTERED FROM THE CORNER TILE (D404), not from each other — they do
                 // not touch. A line through a corner crosses both of those edges, so a fence on
                 // either is a fence this leg may not cross.
                 if (!visit(tile, beside) || !visit(tile, above))
@@ -180,8 +251,30 @@ public static class LineOfSight
                     return;
                 }
 
+                // ⛔⛔ A LINE THAT ENDS ON THE CORNER ENDS IN ONE OF THE TWO (D404). A point on a grid
+                // corner is filed under the tile it floors to, which is `beside` or `above` — never
+                // the diagonal — so the old test (`tile == last` after the diagonal) never matched
+                // and the walk ran on past the end until its budget ran out. A villager stepping
+                // (−2.5, −1.7) → (−2, −2) was walked through seven tiles, one of them across the
+                // Fletchers' fence. Every leg `Clear` judged that way was judged by ground it
+                // never touches.
+                if (beside == last || above == last)
+                {
+                    return;
+                }
+
                 tile = new GridPos(tile.X + stepX, tile.Y + stepY);
-                if (!visit(beside, tile) || tile == last)
+                if (!visit(beside, tile))
+                {
+                    return;
+                }
+
+                // ⭐ AND THE FOURTH EDGE (D404): a line through a corner touches all four edges that
+                // meet there, and a fence on any of them is a post the leg would graze. The tile is
+                // entered once (from `beside`), so the edge from `above` is asked on its own —
+                // otherwise `TilesCrossed` would list the diagonal twice. Asked before the arrival
+                // test, so a leg that ENDS past a corner is held to it too.
+                if ((alsoCrossed is not null && !alsoCrossed(above, tile)) || tile == last)
                 {
                     return;
                 }

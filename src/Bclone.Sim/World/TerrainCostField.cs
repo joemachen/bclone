@@ -41,6 +41,12 @@ public sealed class TerrainCostField
     public const int Unreachable = int.MaxValue;
 
     private readonly int[] _cost;
+
+    /// <summary>
+    /// The walls this field was filled against (D404) — the scratch's array, shared, so the
+    /// descent in <see cref="StepFrom"/> refuses the same edges the fill refused.
+    /// </summary>
+    private byte[] _walls = System.Array.Empty<byte>();
     private readonly int _width;
     private readonly int _height;
     private readonly int _minX;
@@ -293,12 +299,7 @@ public sealed class TerrainCostField
         }
 
         /// <summary>
-        /// Close every tile a building stands on (D383) — water and walls are one answer to the
-        /// sweep. Called once per obstacle generation; a field opens its own destination's
-        /// footprint around its refill.
-        /// </summary>
-        /// <summary>
-        /// ⭐ The walls on every tile's edges (D401) — N 1, E 2, S 4, W 8, read by the relax.
+        /// ⭐ The walls on every tile's edges (D404) — N 1, E 2, S 4, W 8, read by the relax.
         /// </summary>
         /// <remarks>
         /// Beside <see cref="Passable"/> because it answers the same kind of question one step
@@ -307,6 +308,12 @@ public sealed class TerrainCostField
         /// </remarks>
         public byte[] Walls = System.Array.Empty<byte>();
 
+        /// <summary>
+        /// Close every tile a building stands on (D383) and copy the walls (D404) — water and
+        /// buildings are one answer to the sweep, and a fence is the edge beside it. Called once
+        /// per obstacle or wall generation; a field opens its own destination's footprint around
+        /// its refill.
+        /// </summary>
         public void Block(GeneratedMap map, IObstacles obstacles)
         {
             if (Walls.Length != Passable.Length)
@@ -344,18 +351,9 @@ public sealed class TerrainCostField
     /// the suite's parallel load the collector turned that into a suite three times slower. The
     /// fields are kept and refilled: same arrays, same answer.
     /// </remarks>
-    /// <summary>Which edge bit a step crosses — N 1, E 2, S 4, W 8, the one table (D401).</summary>
-    private static byte EdgeBit(int dx, int dy) => (dx, dy) switch
-    {
-        (0, -1) => 1,
-        (1, 0) => 2,
-        (0, 1) => 4,
-        (-1, 0) => 8,
-        _ => 0,
-    };
-
     internal void Refill(int baseTileCost, byte[]? entryCost, Scratch scratch)
     {
+        _walls = scratch.Walls;
         int[] cost = _cost;
         for (int i = 0; i < cost.Length; i++)
         {
@@ -416,11 +414,11 @@ public sealed class TerrainCostField
                     return;
                 }
 
-                // ⭐ A FENCE IS A WALL (D401). The bit is read on the tile being LEFT, which is
+                // ⭐ A FENCE IS A WALL (D404). The bit is read on the tile being LEFT, which is
                 // the same edge as the bit on the tile being entered — `ZoneMap.Wall` writes both
                 // in one statement, so the two can never disagree.
                 if (walls.Length != 0
-                    && (walls[from] & EdgeBit(nx - (from % width), ny - (from / width))) != 0)
+                    && (walls[from] & ZoneMap.EdgeBit(nx - (from % width), ny - (from / width))) != 0)
                 {
                     return;
                 }
@@ -486,10 +484,10 @@ public sealed class TerrainCostField
                     return;
                 }
 
-                // ⭐ A FENCE IS A WALL (D401), read on the tile being left — the same edge, and
+                // ⭐ A FENCE IS A WALL (D404), read on the tile being left — the same edge, and
                 // `ZoneMap.Wall` writes both sides in one statement.
                 if (walls.Length != 0
-                    && (walls[from] & EdgeBit(nx - (from % width), ny - (from / width))) != 0)
+                    && (walls[from] & ZoneMap.EdgeBit(nx - (from % width), ny - (from / width))) != 0)
                 {
                     return;
                 }
@@ -548,10 +546,16 @@ public sealed class TerrainCostField
         GridPos best = from;
         int bestCost = here;
 
-        Consider(new GridPos(from.X + 1, from.Y));
-        Consider(new GridPos(from.X - 1, from.Y));
-        Consider(new GridPos(from.X, from.Y + 1));
-        Consider(new GridPos(from.X, from.Y - 1));
+        // ⛔⛔ THE DESCENT READS THE WALLS TOO (D404). The fill refuses a step across a fence, so a
+        // tile just outside a yard is priced by the long way round — but the tile just INSIDE,
+        // reached through the gate, can still be cheaper, and a descent that only compares costs
+        // stepped straight over the fence to it. Measured on the first run of the guard: a founder
+        // across the Fletchers' fence at tick 17.
+        byte walls = _walls.Length == 0 ? (byte)0 : _walls[IndexOf(from)];
+        if ((walls & 2) == 0) { Consider(new GridPos(from.X + 1, from.Y)); }
+        if ((walls & 8) == 0) { Consider(new GridPos(from.X - 1, from.Y)); }
+        if ((walls & 4) == 0) { Consider(new GridPos(from.X, from.Y + 1)); }
+        if ((walls & 1) == 0) { Consider(new GridPos(from.X, from.Y - 1)); }
 
         return best;
 

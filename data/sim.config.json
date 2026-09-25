@@ -1242,7 +1242,7 @@
   // wide) on the front row, the rest a yard. The row across the front is the lane,
   // which no plot may claim.
   //
-  // plot_apart_tiles is charged PER SIDE THAT HAS A NEIGHBOUR (D401) -- it used to
+  // plot_apart_tiles is charged PER SIDE THAT HAS A NEIGHBOUR (D404) -- it used to
   // be charged per side WITHOUT one, which packed the houses into rows and was a
   // packing term wearing a spacing term's name. Joe, on the fences slice: "could
   // the problem be that you're cramming the houses in too closely? they need some

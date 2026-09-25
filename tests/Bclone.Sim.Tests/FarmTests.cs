@@ -322,8 +322,10 @@ public sealed class FarmTests
                 if (world.Map.Contains(at)
                     && world.Map.TerrainAt(at) == Terrain.Grass
                     && world.Zones.WorkGroundOwner(at) == 0
+                    && world.Zones.PlotOwner(at) == 0
                     && !world.SomethingStandsAt(at))
                 {
+                    // ⚠️ Not in a yard (D404): yards are refused as work ground now.
                     return at;
                 }
             }

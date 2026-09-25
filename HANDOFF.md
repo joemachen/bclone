@@ -1,4 +1,52 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D395–D403 IN §7. THE NEXT BUILD IS FINISHING `slice/fences-as-walls`. THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D404 IN §7. `slice/fences-as-walls` IS BUILT, GUARDED AND MEASURED, AND WAITS ON ONE CALL OF JOE'S (`specs/fences-as-walls.md §9.1`). THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-25 (EVENING) — AFTER D404.**
+>
+> **The state:** `origin/main` = **D403**, unchanged. **`slice/fences-as-walls` has one new
+> commit on it (D404), NOT pushed, NOT merged, NOT played.** On the branch the suite reads
+> **1,204 passing, 23 failing, 2 skipped of 1,229** — 5 goldens, the 3 walk pins, and 15 fixture
+> premises a smaller unattended village no longer meets — and ⛔ **they are left red on
+> purpose**: what they move to depends on Joe's answer below, and goldens move ONCE.
+>
+> **⏸️⏸️ THE ONE CALL THAT BLOCKS THE MERGE — `specs/fences-as-walls.md §9.1`, D404's numbers:**
+>
+> | six shipped / twelve fixture seeds × 50 yrs | alive | peak | starved | dead valleys | others' yards |
+> |---|---|---|---|---|---|
+> | main — shipped | 65 | 83 | 10 | 0 | 16.2 % |
+> | **fences — shipped** | **71** | **87** | 11 | **0** | **0.3 %** |
+> | main — fixture | 95 | 156 | 64 | 0 | 9.9 % |
+> | **fences — fixture** | **65** | 136 | 53 | 1 | **0.4 %** |
+>
+> **The game he plays gets better; the unattended fixture gets hungrier** (and
+> `MostSeedsProduceAValleyAVillageCanLiveIn` reads 9 of 24 against main's 15 and a floor of 12).
+> D402's shape exactly. *(a)* **Accept** → re-pose the 15 fixture guards with that reason, move
+> the goldens once, re-pin 37 / 91, merge. *(b)* **Try §9.4 first** — price the walk from the DOOR
+> with the plot's fence standing, so a house stops facing away from the store (the founder's
+> first errand is +11 ticks round its own yard); ⚠️ it pulls doors back toward the granary,
+> which D388 moved away from on his word (*"this isn't supposed to be suburbs"*). Measure before
+> typing. ⛔ **Not `plot_depth` 2** — measured: shipped 71 → 40 alive, 8 frozen.
+>
+> **⭐ What D404 found — read D404 before touching movement code:** the branch as found **did not
+> stop anyone walking through a fence** (only the field's fill read walls; the descent, the step
+> off a building, a leg's corners and the first leg out of a building did not); `LineOfSight.Walk`
+> **ran past the end of every segment ending on a grid corner** (pre-existing since slice 4); a
+> hand-me-down fence stayed up for ever; a gate could open onto a building; a building or a field
+> could be put on somebody's yard. All fixed, each with a guard, each guard red-checked.
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER (unchanged but for step 1):**
+>
+> 1. **His call on §9.1**, then finish the merge as that section says (the goldens, the premises,
+>    the pins; `organic-housing.md §3.5` pointed at the spec; Joe plays it — DoD §8.6).
+> 2. **The firewood investigation** (D395) — see the D403 banner below; unchanged.
+> 3. **Tools on ticks at 34 %.**  4. **The quarry, spec first.**  5. **Joe's design threads.**
+>
+> ⚠️ **Worktrees:** this session measured main and the branch-as-found in two `git worktree`s
+> under its scratchpad (`wt-main`, `wt-wip`). If `git worktree list` still shows them, `git
+> worktree remove --force <path>` — they hold nothing that is not in git.
+>
+> *(The D403 banner and everything before it are kept below, in order.)*
+
+# (superseded) **▶️ PHASE 5 — D403. THE NEXT BUILD IS FINISHING `slice/fences-as-walls`.**
 
 > **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-25 — AFTER D403.**
 >
@@ -2027,6 +2075,55 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     A validation floor should be about the thing it governs, not about a tuning value somebody
     else is entitled to pose.
 
+119. **⚠️ A BRANCH CAN SPEND A DECISION NUMBER MAIN SPENDS TOO (D404).** `slice/fences-as-walls`
+    was written as *"D401"* in two commits and a dozen comments while main gave D401 to shift+R
+    two days later. Nothing checks; the next person to grep §7 for "D401" finds two unrelated
+    decisions. *Take the number when the entry is written into §7 on main, and renumber a branch's
+    comments when it merges* — `git grep -n "D40[0-9]"` before the merge commit.
+
+120. **⛔⛔ A WALL MUST BE READ BY EVERY STEP OF A WALK, NOT ONLY BY THE MAP OF COSTS (D404).**
+    The branch refused the fence edge in the field's fill and nowhere else, so every flow field
+    priced the yard correctly and villagers walked through it anyway: `StepFrom` (the descent
+    picks the cheapest neighbour — a yard tile cheap *via the gate* is cheapest straight over the
+    fence), `StepOff` (leaving a building), a leg through a corner, and the first leg out of a
+    multi-tile building. **Five places, and the branch had one.** The Phase 0 pin moving 26 → 27
+    looked like the fence's cost and was the bug's number. *When a cost field learns a new
+    refusal, grep every reader of the field — `CostFrom`, `StepFrom`, `StepOff`, `RouteFrom`,
+    `LineOfSight` — not just the writer.*
+
+121. **⛔ A GRID WALK BOUNDED BY A BUDGET CAN RUN PAST ITS END (D404; pre-existing since slice 4).**
+    `LineOfSight.Walk` stopped when the tile it had just entered was the last — but a segment
+    ending exactly on a grid corner ends in the corner's `beside` or `above` tile, never the
+    diagonal it asked about, so it walked on until its budget ran out. `Clear` judged every such
+    leg by a dozen tiles past its end. Found only because a new guard walked villagers' moves with
+    `TilesCrossed` and saw a fence crossed two tiles from anybody.
+
+122. **⚠️ "THE ADJACENT TILE IS ALWAYS VISIBLE" IS FALSE FROM INSIDE A MULTI-TILE BUILDING (D404).**
+    A route out of a building steps off whichever footprint tile is cheapest, not the one the
+    villager stands on, so `PlanLeg`'s unchecked first leg cut across the building next door.
+    It walks to the exit tile first now. *An assumption written for one-tile buildings (D356) went
+    stale the day buildings grew (D382) and nobody re-read it.*
+
+123. **⚠️ A LAYER THAT IS A UNION NEEDS BOOKKEEPING PER CONTRIBUTOR, AT EVERY WRITE SITE (D404).**
+    The wall layer was written by claim and cleared by release, and `HandPlotOn` — the third write
+    site, the hand-me-down — moved the plot and not its fence, so an heir's release left the walls
+    up for ever with nobody holding them. And clearing "my side" of a shared edge by guessing
+    whether the neighbour held the other side kept stale walls on a neighbour's house. *List a
+    derived index's write sites before trusting it; for a union, keep what each contributor wrote.*
+
+124. **⚠️ A GUARD THAT MEASURES MOVEMENT MUST TRACE THE PATH, NOT THE CHORD (D404).** The first
+    `NoStepEverCrossesAWall` drew a straight line from where a villager was to where they are,
+    and a tick that snaps off a building and starts a leg is two segments. It raised a false
+    crossing and cost an hour. It checks previous → the new leg's start → now, and asks the
+    physical question (`ClearOfWalls`: through a corner only if both ways round are walled), which
+    is looser than what a planned leg must meet (`Clear`: no fence post grazed).
+
+125. **⚠️ BEFORE CALLING A POPULATION DROP "THE COST", LOOK FOR THE STUCK AND THE WALLED OFF (D404).**
+    The fixture's 95 → 65 could have been a village with a door nobody could reach. The seed-4
+    probe printed unreachable homes and workplaces every year (none), the state and note
+    histograms (resting and walking home, not stuck), and gathering ticks against main (−20 %):
+    *then* it was the cost. That order is the one to keep.
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -2091,7 +2188,12 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
   hand walks for a tool once in three years; the per-test top ten is in trap 106. Not chased —
   named so the next session does not attribute it to its own change.
 
-- ⏸️ **FENCES AS WALLS WITH AN OPEN GATE (Joe's yes, 2026-09-18; after the professions).** A fence
+- ⏸️⏸️ **FENCES AS WALLS — §9.1, THE TRADE (D404) — see the top banner.** Built on the branch;
+  the shipped game 65 → 71 alive, the fixture 95 → 65. Accept, or measure §9.4 (the facing) first.
+- ⏸️ **A BUILDING ON THE LANE IN FRONT OF A GATE (D404, spec §9.3)** is allowed and shuts the yard.
+  Harmless until the kitchen garden needs a yard entered; refusing it is one more lane tile the
+  player may not build on. His call.
+- ~~⏸️ **FENCES AS WALLS WITH AN OPEN GATE (Joe's yes, 2026-09-18; after the professions).**~~ ✅ built, D404. A fence
   runs on tile *edges*; the one cost field is tile-based. The slice: a per-tile edge mask in
   `TravelCostField` honoured by every flow field and by `LineOfSight`, the door's lane edge open as
   the gate, the D383 wall-off refusal extended to *"would fence somebody in"*, and then lanes

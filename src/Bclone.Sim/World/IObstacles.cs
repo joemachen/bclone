@@ -29,7 +29,7 @@ public interface IObstacles
     IReadOnlyList<GridPos> FootprintCovering(GridPos tile);
 
     /// <summary>
-    /// The walls on this tile's four edges — N 1, E 2, S 4, W 8 (D401,
+    /// The walls on this tile's four edges — N 1, E 2, S 4, W 8 (D404,
     /// `specs/fences-as-walls.md`). <b>A step across a set bit is impossible.</b>
     /// </summary>
     /// <remarks>

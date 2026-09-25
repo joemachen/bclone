@@ -4569,7 +4569,30 @@ public sealed class SimWorld : IObstacles
                     : $"That ground belongs to {other.Name}.");
         }
 
+        // ⛔ NOT IN SOMEBODY'S YARD (D404). A yard is walled and gated now, and a field painted
+        // inside one is ground its farmer reaches only through a family's gate — the fixture's
+        // farm was given five of the Fletchers' yard tiles and reaped two tiles in four years.
+        if (WhoseYard(tile) is string yard)
+        {
+            return PlacementVerdict.No($"That is {yard} yard.");
+        }
+
         return PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// "the Fletchers'" if this tile is in a household's plot, else null (D404) — the one
+    /// sentence the yard refusals share.
+    /// </summary>
+    private string? WhoseYard(GridPos tile)
+    {
+        int plot = Zones.PlotOwner(tile);
+        if (plot == 0)
+        {
+            return null;
+        }
+
+        return FindHousehold(plot) is Household family ? $"the {family.Name}s'" : "somebody's";
     }
 
     public PlacementVerdict PaintWorkGround(Workplace workplace, GridPos tile)
@@ -6714,25 +6737,21 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>
     /// Give a household its plot — the tiles its fence encloses — when its house is marked out or
-    /// raised at the founding. The zone map's index is maintained here, in <see cref="ReleasePlotOf"/>
-    /// and in the hand-me-down, and nowhere else; it restates <see cref="Household.FencedTiles"/>.
-    /// </summary>
-    /// <summary>
-    /// Claim a plot and raise its fence (D386, D388; a wall since D401).
+    /// raised at the founding, and raise its fence (D386, D388; a wall since D404). The zone map's
+    /// index is maintained here, in <see cref="ReleasePlotOf"/> and in the hand-me-down, and
+    /// nowhere else; it restates <see cref="Household.FencedTiles"/>.
     /// </summary>
     /// <remarks>
     /// ⚠️ <b>The house's own tiles are passed</b> so the fence is not raised on them: a house tile
     /// is already impassable and is entered only by the field whose destination it is, so a wall
-    /// there is a family that can never get home (`fences-as-walls.md §3.1`).
+    /// there is a family that can never get home (`fences-as-walls.md §3.1`). The routes notice
+    /// by <see cref="WallGeneration"/>, as they notice a building by the standing generation.
     /// </remarks>
     internal void ClaimPlotFor(
-        int householdId, IReadOnlyList<GridPos> fenced, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house)
-    {
+        int householdId, IReadOnlyList<GridPos> fenced, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house) =>
         Zones.ClaimPlot(householdId, fenced, lane, house);
-        TravelCost.Forget();
-    }
 
-    /// <summary>The walls on a tile's edges (D401) — <see cref="IObstacles"/>.</summary>
+    /// <summary>The walls on a tile's edges (D404) — <see cref="IObstacles"/>.</summary>
     /// <remarks>
     /// ⭐ <b>The standing fences, plus whatever the site-chooser is standing for a moment</b>
     /// (<see cref="DetourOfAHouseAt"/>): a candidate plot's fence is part of the trial, so the
@@ -6750,17 +6769,13 @@ public sealed class SimWorld : IObstacles
         return _trialWalls.TryGetValue(tile, out byte trial) ? (byte)(standing | trial) : standing;
     }
 
-    /// <summary>The fence the chooser is standing for the length of one measurement (D401).</summary>
+    /// <summary>The fence the chooser is standing for the length of one measurement (D404).</summary>
     private Dictionary<GridPos, byte>? _trialWalls;
 
-    /// <summary>Moves when a fence goes up or comes down (D401) — <see cref="IObstacles"/>.</summary>
+    /// <summary>Moves when a fence goes up or comes down (D404) — <see cref="IObstacles"/>.</summary>
     public int WallGeneration => Zones.WallGeneration;
 
-    internal void ReleasePlotOf(int householdId)
-    {
-        Zones.ReleasePlot(householdId);
-        TravelCost.Forget();
-    }
+    internal void ReleasePlotOf(int householdId) => Zones.ReleasePlot(householdId);
 
     public PlacementVerdict CanBuildAt(
         BuildingKind kind, GridPos position, bool alreadyStanding = false, Angle facing = default) =>
@@ -6798,6 +6813,19 @@ public sealed class SimWorld : IObstacles
         if (!alreadyStanding && SomethingOverlaps(FootprintOf(kind, where, facing)))
         {
             return PlacementVerdict.No("Something already stands there.");
+        }
+
+        // ⛔ AND NOT ON SOMEBODY'S YARD (D404). A yard's edges are walls now, so a building across
+        // one has a fence running through the middle of it — the fixture's farmhouse was set down
+        // with a corner on the Fletchers' yard and a wall between two of its own tiles. Asked of
+        // every tile it would cover, moved or new: a building carried onto a yard is the same shape.
+        List<GridPos> onTheGround = FootprintOf(kind, where, facing).CoveredTiles();
+        for (int i = 0; i < onTheGround.Count; i++)
+        {
+            if (WhoseYard(onTheGround[i]) is string yard)
+            {
+                return PlacementVerdict.No($"That is {yard} yard.");
+            }
         }
 
         // ⛔⛔ AND EVERY OTHER TILE THE BUILDING WILL COVER (D321). The three checks above ask
@@ -10213,28 +10241,38 @@ public sealed class SimWorld : IObstacles
         }
     }
 
+    /// <summary>The free ground as it is, swept once per standing and wall generation (a derived index, never hashed).</summary>
+    private bool[]? _freeGroundToday;
+    private int _freeGroundTodayGeneration = -1;
+    private int _freeGroundTodayWalls = -1;
+
     /// <summary>
     /// What a building here would cut off from the village — a name, or null if nothing (D383).
     /// </summary>
     /// <remarks>
     /// <para>
     /// Two breadth-first sweeps of the free ground from the founding site — as it is (cached per
-    /// standing generation) and with this footprint closed as well. The founding site, every
-    /// standing shape, and the new one must keep a reached free tile beside them; what had none
-    /// before is not this proposal's doing. ~10,000 tiles a sweep, at a click, a site search or a
-    /// hut's founding — and last in <c>CanBuildAt</c>, after every cheaper refusal.
+    /// standing and wall generation) and with this footprint closed as well. The founding site,
+    /// every standing shape, and the new one must keep a reached free tile beside them; what had
+    /// none before is not this proposal's doing. ~10,000 tiles a sweep, at a click, a site search
+    /// or a hut's founding — and last in <c>CanBuildAt</c>, after every cheaper refusal.
     /// </para>
     /// <para>
     /// ⚠️ Reachability is asked of the FOUNDING SITE, as `EveryVillageCanReachItsOwnBuildings`
     /// asks it (D111): the village is where it landed, and a building that only the far bank
     /// can reach is walled off however much bank there is.
     /// </para>
+    /// <para>
+    /// ⭐⭐ <b>AND THE SWEEP READS THE FENCES</b> (D404, `fences-as-walls.md §3.3`). A fence is a
+    /// wall in the cost field, and a sweep that walked through one judged a hut on the lane tile
+    /// outside a gate harmless — the yard behind it was "reached" across its own fence. Both
+    /// sweeps refuse a step across a wall, and a shape counts as reached only from a side with no
+    /// wall on it. <paramref name="fence"/> is a house's own fence, stood for this question only
+    /// (<see cref="TrialFence"/>): the site-chooser asks it of every plot, so a plot whose fence
+    /// would shut a neighbour in is refused before anybody sees it — and says so in those words.
+    /// </para>
     /// </remarks>
-    /// <summary>The free ground as it is, swept once per standing generation (a derived index, never hashed).</summary>
-    private bool[]? _freeGroundToday;
-    private int _freeGroundTodayGeneration = -1;
-
-    internal string? WhatThisWouldWallOff(Footprint proposed)
+    internal string? WhatThisWouldWallOff(Footprint proposed, IReadOnlyDictionary<GridPos, byte>? fence = null)
     {
         RebuildTheStandingIndexIfStale();
         List<GridPos> proposedTiles = proposed.CoveredTiles();
@@ -10243,14 +10281,17 @@ public sealed class SimWorld : IObstacles
         // generator put across the water (seed 42's forager's hut) — is not something this
         // proposal walls off, and refusing every building in the valley on its account is how
         // the founding stopped founding. Two sweeps: the free ground as it is, and as it would be.
-        if (_freeGroundToday is null || _freeGroundTodayGeneration != StandingGeneration)
+        if (_freeGroundToday is null
+            || _freeGroundTodayGeneration != StandingGeneration
+            || _freeGroundTodayWalls != Zones.WallGeneration)
         {
-            _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>());
+            _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
             _freeGroundTodayGeneration = StandingGeneration;
+            _freeGroundTodayWalls = Zones.WallGeneration;
         }
 
         bool[] before = _freeGroundToday;
-        bool[] after = SweepTheFreeGround(proposedTiles);
+        bool[] after = SweepTheFreeGround(proposedTiles, fence);
 
         // First, the village can still leave where it landed: the founding site keeps a reached
         // free tile beside it. Seed 11's founding is a one-tile spit with one land neighbour, and
@@ -10258,20 +10299,28 @@ public sealed class SimWorld : IObstacles
         // past that. Asked before the shapes, so a one-exit spit is told that, not the name of
         // whichever house happens to be first in the list.
         GridPos[] founding = { Map.FoundingSite };
-        if (HasAReachedNeighbour(before, founding) && !HasAReachedNeighbour(after, founding))
+        if (HasAReachedNeighbour(before, founding, null) && !HasAReachedNeighbour(after, founding, fence))
         {
             return "That would wall off the founding site — the village could not leave it.";
         }
 
         for (int i = 0; i < _standingFootprints.Count; i++)
         {
-            if (HasAReachedNeighbour(before, _standingFootprints[i]) && !HasAReachedNeighbour(after, _standingFootprints[i]))
+            if (HasAReachedNeighbour(before, _standingFootprints[i], null)
+                && !HasAReachedNeighbour(after, _standingFootprints[i], fence))
             {
+                // A house shut in by somebody's new fence is a family that cannot get home, and
+                // the sentence says it that way (§3.3).
+                if (fence is not null && HouseholdAt(_standingFootprints[i][0]) is Household shutIn)
+                {
+                    return $"{FencesSomebodyIn} the {shutIn.Name}s — nobody could reach their door.";
+                }
+
                 return $"That would wall off {NameOfWhatStandsAt(_standingFootprints[i][0])} — nobody could reach it.";
             }
         }
 
-        if (!HasAReachedNeighbour(after, proposedTiles))
+        if (!HasAReachedNeighbour(after, proposedTiles, fence))
         {
             return "Nobody could reach that spot — it is walled in.";
         }
@@ -10280,10 +10329,103 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// The free ground reachable from the founding site — passable terrain with nothing standing
-    /// on it and none of <paramref name="alsoClosed"/> — as a bitmap over the map (D383).
+    /// How §3.3's sentence begins — one copy, so the chooser can count a plot refused for its
+    /// fence apart from one cut off by its house (D404).
     /// </summary>
-    private bool[] SweepTheFreeGround(IReadOnlyList<GridPos> alsoClosed)
+    internal const string FencesSomebodyIn = "That would fence in";
+
+    /// <summary>
+    /// A house's fence as wall bits, for the length of one question (D404) — the plot's own fence
+    /// by <see cref="ZoneMap.FenceEdges"/>, the one rule the real fence goes up by.
+    /// </summary>
+    /// <remarks>
+    /// Two consumers: the chooser's wall-off question (<see cref="WhatThisWouldWallOff"/>) and its
+    /// detour trial (<see cref="DetourOfAHouseAt"/>). Built per candidate, never kept.
+    /// </remarks>
+    /// <summary>
+    /// ⭐ Whether a plot's yard would have a gate that works (D404): one onto ground somebody can
+    /// stand on, with every yard tile reachable from it inside the fence — or no yard at all.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Found by <c>AGateIsTheOneWayIn</c> on its first two runs. The fixture's founding put the
+    /// Thatchers' gate on a lane tile a founding building already stood on; moved, the Fletchers'
+    /// yard lost the only tile that touched the lane to a building's clip and had no gate at all;
+    /// and a yard the clip cuts in two has a half no gate reaches. The chooser asks this of every
+    /// facing it keeps, beside the paint and the neighbours — a facing whose yard cannot be got
+    /// into does not fit.
+    /// </remarks>
+    internal bool GateOpensAt(GridPos front, Angle facing, int householdId)
+    {
+        PlotShape plot = PlotFor(front, facing, householdId);
+        List<GridPos> fenced = FencedTilesFor(plot);
+        var yard = new HashSet<GridPos>(fenced);
+        for (int h = 0; h < plot.House.Count; h++)
+        {
+            yard.Remove(plot.House[h]);
+        }
+
+        if (yard.Count == 0)
+        {
+            return true;
+        }
+
+        ZoneMap.FenceEdges(fenced, plot.Lane, plot.House, out (GridPos Yard, GridPos Lane)? gate);
+        if (gate is not (GridPos inside, GridPos lane)
+            || !Map.Contains(lane) || !TerrainRules.IsPassable(Map.TerrainAt(lane)) || SomethingStandsAt(lane))
+        {
+            return false;
+        }
+
+        // Every yard tile reached from the gate's, inside the fence.
+        var reached = new HashSet<GridPos> { inside };
+        var queue = new Queue<GridPos>();
+        queue.Enqueue(inside);
+        while (queue.Count > 0)
+        {
+            GridPos at = queue.Dequeue();
+            foreach (GridPos next in new[]
+            {
+                new GridPos(at.X, at.Y - 1), new GridPos(at.X + 1, at.Y),
+                new GridPos(at.X, at.Y + 1), new GridPos(at.X - 1, at.Y),
+            })
+            {
+                if (yard.Contains(next) && reached.Add(next))
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        return reached.Count == yard.Count;
+    }
+
+    internal Dictionary<GridPos, byte> TrialFence(GridPos front, Angle facing, int householdId)
+    {
+        PlotShape trial = PlotFor(front, facing, householdId);
+        List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(FencedTilesFor(trial), trial.Lane, trial.House, out _);
+        var walls = new Dictionary<GridPos, byte>(edges.Count * 2);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            (GridPos from, GridPos to) = edges[e];
+            walls[from] = (byte)(walls.GetValueOrDefault(from) | ZoneMap.EdgeBit(to.X - from.X, to.Y - from.Y));
+            walls[to] = (byte)(walls.GetValueOrDefault(to) | ZoneMap.EdgeBit(from.X - to.X, from.Y - to.Y));
+        }
+
+        return walls;
+    }
+
+    /// <summary>The walls on a tile for a sweep: the standing fences, and a proposed one if any.</summary>
+    private byte WallsForTheSweep(GridPos tile, IReadOnlyDictionary<GridPos, byte>? fence) =>
+        fence is not null && fence.TryGetValue(tile, out byte proposed)
+            ? (byte)(Zones.WallsOn(tile) | proposed)
+            : Zones.WallsOn(tile);
+
+    /// <summary>
+    /// The free ground reachable from the founding site — passable terrain with nothing standing
+    /// on it and none of <paramref name="alsoClosed"/>, and no step across a wall — as a bitmap
+    /// over the map (D383; walls D404).
+    /// </summary>
+    private bool[] SweepTheFreeGround(IReadOnlyList<GridPos> alsoClosed, IReadOnlyDictionary<GridPos, byte>? fence)
     {
         int width = Map.Width;
         int height = Map.Height;
@@ -10316,25 +10458,29 @@ public sealed class SimWorld : IObstacles
             SeedBeside(underTheFounding[i]);
         }
 
+        // ⭐ A step across a wall is not taken (D404) — N 1, E 2, S 4, W 8, read on the tile
+        // being left, which `ZoneMap.Wall` keeps equal to the bit on the tile being entered.
         while (head < tail)
         {
             int at = queue[head++];
             int x = at % width;
             int y = at / width;
-            if (x + 1 < width) { Visit(at + 1); }
-            if (x > 0) { Visit(at - 1); }
-            if (y + 1 < height) { Visit(at + width); }
-            if (y > 0) { Visit(at - width); }
+            byte walls = WallsForTheSweep(new GridPos(x + Map.MinX, y + Map.MinY), fence);
+            if (x + 1 < width && (walls & 2) == 0) { Visit(at + 1); }
+            if (x > 0 && (walls & 8) == 0) { Visit(at - 1); }
+            if (y + 1 < height && (walls & 4) == 0) { Visit(at + width); }
+            if (y > 0 && (walls & 1) == 0) { Visit(at - width); }
         }
 
         return reached;
 
         void SeedBeside(GridPos tile)
         {
-            Seed(new GridPos(tile.X + 1, tile.Y));
-            Seed(new GridPos(tile.X - 1, tile.Y));
-            Seed(new GridPos(tile.X, tile.Y + 1));
-            Seed(new GridPos(tile.X, tile.Y - 1));
+            byte walls = WallsForTheSweep(tile, fence);
+            if ((walls & 2) == 0) { Seed(new GridPos(tile.X + 1, tile.Y)); }
+            if ((walls & 8) == 0) { Seed(new GridPos(tile.X - 1, tile.Y)); }
+            if ((walls & 4) == 0) { Seed(new GridPos(tile.X, tile.Y + 1)); }
+            if ((walls & 1) == 0) { Seed(new GridPos(tile.X, tile.Y - 1)); }
         }
 
         void Seed(GridPos tile)
@@ -10359,13 +10505,17 @@ public sealed class SimWorld : IObstacles
         }
     }
 
-    private bool HasAReachedNeighbour(bool[] reached, IReadOnlyList<GridPos> footprint)
+    /// <summary>Whether a shape has a reached tile beside it, across an edge with no wall on it (D383; walls D404).</summary>
+    private bool HasAReachedNeighbour(bool[] reached, IReadOnlyList<GridPos> footprint, IReadOnlyDictionary<GridPos, byte>? fence)
     {
         for (int i = 0; i < footprint.Count; i++)
         {
             GridPos t = footprint[i];
-            if (Reached(new GridPos(t.X + 1, t.Y)) || Reached(new GridPos(t.X - 1, t.Y))
-                || Reached(new GridPos(t.X, t.Y + 1)) || Reached(new GridPos(t.X, t.Y - 1)))
+            byte walls = WallsForTheSweep(t, fence);
+            if (((walls & 2) == 0 && Reached(new GridPos(t.X + 1, t.Y)))
+                || ((walls & 8) == 0 && Reached(new GridPos(t.X - 1, t.Y)))
+                || ((walls & 4) == 0 && Reached(new GridPos(t.X, t.Y + 1)))
+                || ((walls & 1) == 0 && Reached(new GridPos(t.X, t.Y - 1))))
             {
                 return true;
             }
@@ -10472,27 +10622,10 @@ public sealed class SimWorld : IObstacles
     {
         _trialHome = HomeFootprintAt(front, facing);
 
-        // ⭐ THE FENCE IS PART OF THE TRIAL (D401). Without it the chooser sites a house whose own
+        // ⭐ THE FENCE IS PART OF THE TRIAL (D404). Without it the chooser sites a house whose own
         // yard walls the lane it came down — measured: six shipped seeds built 14 houses in fifty
         // years against 33 before fences, and the villages stopped growing at two homes.
-        if (householdId != 0)
-        {
-            PlotShape trial = PlotFor(front, facing, householdId);
-            List<GridPos> fenced = FencedTilesFor(trial);
-            List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(fenced, trial.Lane, trial.House, out _);
-            var walls = new Dictionary<GridPos, byte>(edges.Count * 2);
-            for (int e = 0; e < edges.Count; e++)
-            {
-                (GridPos from, GridPos to) = edges[e];
-                byte here = ZoneMap.EdgeBit(to.X - from.X, to.Y - from.Y);
-                byte there = ZoneMap.EdgeBit(from.X - to.X, from.Y - to.Y);
-                walls[from] = (byte)(walls.GetValueOrDefault(from) | here);
-                walls[to] = (byte)(walls.GetValueOrDefault(to) | there);
-            }
-
-            _trialWalls = walls;
-        }
-
+        _trialWalls = TrialFence(front, facing, householdId);
         StandingChanged();
         int detour = 0;
         try

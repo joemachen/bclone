@@ -1645,24 +1645,35 @@ public sealed record SimConfig
 
     /// <summary>A plot's depth back from the lane, in whole tiles, the house's row included (D386).</summary>
     /// <remarks>
-    /// Two: the house's row and one row of yard behind it — four tiles of yard with the side
-    /// tile, room for the kitchen garden DESIGN §4 sizes the plot for (*"plots leave room for a
-    /// household kitchen garden later, so size them knowing that"*). ⚠️ Three was measured and
-    /// not kept: a plot and its lane are twelve tiles of paint at three deep against nine at
-    /// two, and the fixture's diamond held eight plots against eleven (`organic-housing.md §5`).
-    /// Joe's to widen once he has seen the yards.
+    /// <para>
+    /// Three since D404: the house's row and two rows of yard behind it — room for the kitchen
+    /// garden DESIGN §4 sizes the plot for (*"plots leave room for a household kitchen garden
+    /// later, so size them knowing that"*). D386 shipped two and measured three as holding eight
+    /// of the fixture's plots against eleven (`organic-housing.md §5`), and left it Joe's to widen.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The fences widened it</b> (D404): with a fence a wall, depth two held 42 people and
+    /// starved 18 over six shipped seeds × fifty years, and depth three held 57 and starved 8 —
+    /// packed yards are yards whose fences shut doors.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("plot_depth")]
     public int PlotDepth { get; init; } = 3;
 
     /// <summary>
-    /// What a plot with no neighbour along a side scores as, in tiles walked, per open side (D386,
-    /// `specs/organic-housing.md §3.3`).
+    /// What a plot WITH a neighbour along a side scores as, in tiles walked, per such side (D386;
+    /// the sign flipped in D404, `specs/organic-housing.md §3.3`).
     /// </summary>
     /// <remarks>
-    /// The whole of *packing*: a plot beside another scores as if two tiles nearer, one on its
-    /// own as if four further. In the chooser's own currency so the inspector can say it —
-    /// *"beside the Ashfords"* is worth two tiles of walk each way.
+    /// <para>
+    /// D386 charged the OPEN sides, which was the whole of <em>packing</em> — a packing term with
+    /// a spacing term's name. Joe, on the fences slice: *"they need some room to breathe with
+    /// yards and pathways and such."* Charged per neighbour, six shipped seeds × fifty years with
+    /// the fences up built 26 houses and held 55 people, against 14 and 17.
+    /// </para>
+    /// <para>
+    /// ⚠️ A tie-break, not a lever: −2, −4 and −6 read identically once the sign flipped.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("plot_apart_tiles")]
     public int PlotApartTiles { get; init; } = 2;
