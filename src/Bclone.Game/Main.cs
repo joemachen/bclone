@@ -157,6 +157,18 @@ public partial class Main : Control
         int ticks = _driver.Advance(delta, _loop.World.Tick);
         if (ticks > 0 && !_halted)
         {
+            // ⭐⭐ HOW MANY TICKS LANDED IN ONE FRAME, AND HOW LONG THEY TOOK (D402, the D395
+            // investigation: *"villagers (and forest animals) skip a tile at the start of a day"*,
+            // and Joe again on 2026-09-22: *"it feels like villagers appear at the market — the
+            // skipping has gotten worse"*). **Instrument before touching anything**, because the
+            // hypothesis and the cause are different things: a frame that steps two ticks moves
+            // everybody two ticks' worth while the view interpolates ONE frame of it
+            // (`VillageMap.AdvanceInterpolation` reads *the previous frame*, not the previous
+            // tick), and that reads on screen exactly as a skip.
+            //
+            // ⚠️ `Stopwatch` is a wall-clock read and is deliberately the ONLY other one: it is
+            // the view's, never the sim's, and nothing it produces reaches `SimWorld`.
+            long before = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
                 _loop.Step(ticks);
@@ -165,6 +177,19 @@ public partial class Main : Control
             {
                 HaltTheVillage(fault);
             }
+
+            double spent = (System.Diagnostics.Stopwatch.GetTimestamp() - before)
+                * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
+            _ticksThisFrame = ticks;
+            _framesStepped++;
+            if (ticks > 1)
+            {
+                _framesThatCaughtUp++;
+                _mostTicksInAFrame = System.Math.Max(_mostTicksInAFrame, ticks);
+            }
+
+            _slowestStepMs = System.Math.Max(_slowestStepMs, spent);
         }
 
         Refresh();
@@ -6545,6 +6570,17 @@ public partial class Main : Control
     private Label? _frameCounter;
 
     /// <summary>Refresh the debug readout. Costs nothing in an export, where it does not exist.</summary>
+    /// <summary>What the last frame's stepping cost — the skip investigation's numbers (D402).</summary>
+    private int _ticksThisFrame;
+
+    private long _framesStepped;
+
+    private long _framesThatCaughtUp;
+
+    private int _mostTicksInAFrame;
+
+    private double _slowestStepMs;
+
     private void ShowTheFrameCost()
     {
         if (_frameCounter is null)
@@ -6552,8 +6588,18 @@ public partial class Main : Control
             return;
         }
 
+        // ⭐ THE SKIP'S OWN NUMBERS, BESIDE THE FRAME'S (D402). A frame that steps more than one
+        // tick is the hypothesis for *"villagers appear at the market"*; `catch-up` counts them,
+        // `worst` is the most ticks one frame ever carried, and `step` is the slowest single
+        // stepping — a per-day system running long is what the investigation expects to see.
+        string caughtUp = _framesThatCaughtUp == 0
+            ? "no catch-up"
+            : $"catch-up {_framesThatCaughtUp} of {_framesStepped} ({_framesThatCaughtUp * 100.0 / _framesStepped:F1}%), worst {_mostTicksInAFrame} ticks";
+
         _frameCounter.Text =
-            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}";
+            $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}"
+            + $"  ·  {_ticksThisFrame} tick/frame, {caughtUp}, slowest step {_slowestStepMs:F1}ms"
+            + (_driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty);
     }
 
     private void AddTheSkipControls(Container controls)
