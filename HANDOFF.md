@@ -1,4 +1,94 @@
-# Handoff — bclone: **▶️ PHASE 5 — D402. THE D398/D399 TRADE IS MEASURED AND ACCEPTED BY JOE; THE SKIP IS INSTRUMENTED AND WANTS HIS EYES ON THE DEBUG LINE. FENCES ARE ON `slice/fences-as-walls`, UNMERGED. THEN: THE TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D395–D403 IN §7. THE NEXT BUILD IS FINISHING `slice/fences-as-walls`. THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-25 — AFTER D403.**
+>
+> **The state:** `origin/main` = **D403**, and everything on it is **pushed and played** — Joe has
+> played through D402 and signed the skip measurement off (*"I think it looks okay?"*). Working
+> tree clean. Suite **1212 passing, 0 failing, 2 skipped of 1214, ~3m30**; view 0 warnings on
+> `--no-incremental`; probe green, **bar height 161**. The decision log runs to **D403**.
+>
+> **⛔ THERE IS AN UNMERGED BRANCH AND IT IS THE NEXT BUILD: `slice/fences-as-walls`** (pushed;
+> `6156ef0`). Read `specs/fences-as-walls.md` in full before touching it — §6 says what must be
+> measured before it merges and §10 says why the wall layer is shaped the way it is.
+>
+> | on the branch | state |
+> |---|---|
+> | `ZoneMap` wall layer (one byte a tile, N/E/S/W), maintained at `ClaimPlot`/`ReleasePlot`, never per tick, never hashed | ✅ built |
+> | `IObstacles.WallsOn` + both relaxations in `TerrainCostField` refusing a step across a wall | ✅ built |
+> | `LineOfSight` refusing a leg that crosses a fence (so routing and drawing agree) | ✅ built |
+> | The gate; the house's own edges never walled (a walled house is a family that cannot get home) | ✅ built |
+> | `ZoneMap.FenceEdges` — one rule, two consumers: the real fence and the chooser's trial | ✅ built |
+> | The chooser stands each candidate's **fence** (`SimWorld._trialWalls` in `DetourOfAHouseAt`) | ✅ built |
+> | *Room to breathe*: `plot_apart_tiles` charges for a side that HAS a neighbour; `plot_depth` 2 → 3 | ✅ built |
+> | The guards from the spec's §7, each red-checked | ⛔ **not done** |
+> | §3.3's refusal in words when the **player** marks a house | ⛔ **not done** |
+> | The spec's §6 filled in from a run; the `ZzProbe*` harness deleted | ⛔ **not done** |
+> | The Phase 0 walk pins (26 → 27, 70 → 73) and the valley pin re-pinned; goldens moved once | ⛔ **not done** |
+>
+> **⭐ What the branch measured, six shipped seeds × fifty years:** through-traffic in somebody
+> else's yard **16.2 % → ~2.9 %** (the residual is mostly the house's own two tiles, which are
+> deliberately never walled and are open ground before the house is built — ⚠️ **the honest guard
+> is *"no step ever crosses a wall"*, checked directly, not *"steps in other people's yards"***);
+> and with the spacing fixed, **alive 17 → 57, homes 14 → 24** against 65 alive / 33 plots with no
+> fences at all. The walls still cost a village something, and that something is now a longer walk
+> rather than a family with nowhere to live.
+>
+> ---
+>
+> **⚠️⚠️ SETTLED THIS STRETCH — DO NOT RE-OPEN, AND DO NOT RE-INVESTIGATE:**
+>
+> - **The D398/D399 trade is Joe's, accepted with the numbers in front of him** (D402): on seed
+>   12345 the first birth moved **year 2 → 3** and year-10 population **10 → 6**, converging by
+>   year 24; against **two of three shipped seeds going from dead-by-year-5 to 11 alive at 24**.
+>   His word: *"accept the trade."*
+> - **The granary↔home "loop" is not a regression** (D402). Fetching is **16.2 % of adult ticks at
+>   D397 and 15.4 % today**; what moved is **resting, 27.4 % → 39.2 %**. Villagers are idle more, so
+>   the errands that remain are a bigger share of what the eye sees. *A thing that looks new can be
+>   a thing that became visible.*
+> - **The skip is NOT the driver and NOT the interpolation** (D403). Measured in Joe's own play at
+>   speed: **catch-up 3 frames of 12,059 (0.0 %), worst 2 ticks, slowest single step 51.2 ms.** The
+>   hypothesis D395 filed — *a per-day system runs long and the driver catches up two ticks in one
+>   frame* — **is dead.** ⛔ Do not fix `AdvanceInterpolation`; it is not the cause.
+>   ⭐ **What is left of the skip, and where to look if Joe raises it again:** the remaining
+>   *"now and then"* hop is sim-side — a villager moving more than a tile in one tick. The two
+>   candidates, in order: **`BehaviorSystem.Arrive`** snaps the villager onto the building's
+>   standing place (up to about a tile, and it fires at the end of every walk), and **a leg whose
+>   `steps` are few for its straight length** (`AlongTheLeg`, D356/D361's clock). Measure the
+>   per-tick distance distribution before changing either.
+>
+> ---
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER:**
+>
+> 1. **Finish `slice/fences-as-walls`** (the four ⛔ rows above), then merge.
+> 2. **The firewood investigation** (D395): firewood rose 400 → 962 past a set limit with no
+>    woodcutter. Write the guard first (limit 400, one woodcutter, a year: never past 400 + one
+>    stint), watch it go red, fix what it shows. Splitting is the only source; both the dispatch and
+>    the stint read `IsMet`, so something else is true.
+> 3. **Tools on ticks at 34 %** — `tool_speed_bonus_percent` in `WorkTicksFor` beside mastery's 50,
+>    floor one tick; `tool_yield_bonus_percent` ships **0** and stays as the dial for a later
+>    upgrade. Twelve seeds, re-read the rigs, goldens move once; `tools-and-the-smith.md §3.4`/§5.
+> 4. **The quarry, spec first** (`specs/quarry.md`): painted work ground over a stone seam, the
+>    forester's-hut shape. Seam counts are worldgen (D344); iron nodes ≥ 50 for the smithy gift.
+> 5. **Joe's design threads** — the ⏸️ OPEN section below, and D395's list in §7.
+>
+> ---
+>
+> **⭐ WHAT A FRESH SESSION SHOULD KNOW ABOUT THIS STRETCH (D396–D403), IN ONE PARAGRAPH.** Joe's
+> QA pass of 2026-09-19 became Batch A (D396), his play notes on it became D397, and the food audit
+> in D397 found **300–420k of meat and fish lying on the ground** while the village wanted no more
+> food — which became D398 (a hunt answers the village, never a larder) and then D399 (nobody
+> produces for their own larder at all, and a larder has walls at `home_store_cap` 400). D399 is
+> the one to understand before touching the food economy: **the household's own hunger had been the
+> village's growth engine, and nothing in the docs said so** — removing it alone read 93 alive → 1
+> over twelve seeds, because the village produced only for its shelves (whose target IS the birth
+> bar) and because the room test read shelves whose room is choked by logs. Both are fixed
+> (`storage-and-distribution.md §14.13`). D400 specced the fences, D401 made shift+R square a
+> ghost, D402 measured the trade and instrumented the skip, D403 read the instrument.
+>
+> *(The D402 banner and everything before it are kept below, in order.)*
+
+# (superseded) **▶️ PHASE 5 — D402. THE D398/D399 TRADE IS MEASURED AND ACCEPTED BY JOE; THE SKIP IS INSTRUMENTED AND WANTS HIS EYES ON THE DEBUG LINE. FENCES ARE ON `slice/fences-as-walls`, UNMERGED. THEN: THE TWO INVESTIGATIONS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
 > **⭐⭐ START HERE, 2026-09-22 — AFTER D402.**
 >
@@ -1957,6 +2047,21 @@ not need it.*
 four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
+  *"I think it looks okay? there are some skips now and then."* The numbers from his play:
+  **catch-up 3 frames of 12,059 (0.0 %), worst 2 ticks, slowest step 51.2 ms** — so the frame
+  driver and `AdvanceInterpolation` are **not** the cause and must not be "fixed". What is left is
+  sim-side: `BehaviorSystem.Arrive` snapping a villager onto a building's standing place at the end
+  of every walk (up to about a tile), and a leg whose step count is small for its straight length.
+  ⚠️ **Measure the per-tick distance distribution first** — if arrivals are the whole of it, the
+  fix is to walk the last fraction of a tile rather than snap, which is `gridless.md §8`'s
+  deferred waypoint arriving at last. Not scheduled; his call whether it is worth a slice.
+- ⭐ **THE SLOWEST TICK IS 51 ms, AND NOBODY HAS ASKED WHY (D403).** The same instrument reports
+  it. A tick is 67 ms of real time at 20×, so one tick in the year nearly fills the budget —
+  almost certainly the yearly re-price (D358: every cost change clears every flow field). Harmless
+  today at 0.0 % catch-up; **the number to watch if the valley ever grows** — and the debug line
+  already carries it.
 
 - ⭐ **THE SECOND CHAIN (after D391's tools).** Bread — mill and bakery, `food-catalog.md §6`,
   waiting on *deriving a diet* (the survival floor is solved against ONE food); the quarry — the
