@@ -1,6 +1,68 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE D409 BANNER, THEN `DESIGN.md §0–§6` AND D404–D409 IN §7. NEXT: HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST, `organic-housing.md §3.3`) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE D410 BANNER, THEN `DESIGN.md §0–§6` AND D404–D409 IN §7. NEXT: D410 (JOE'S PLAY NOTES ON D409 — A STALE WORK NOTE, AND "FOOD" OFF THE BAR; PLAN APPROVED, BELOW) → HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D409.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END OF DAY) — AFTER JOE PLAYED D409.**
+>
+> **Branches:** `main` = D409 merged (`642c652`), **NOT pushed** — Joe pushes when he is happy. Suite
+> **1237 passing, 0 failing, 4 skipped of 1241**, ~3m; view 0 warnings; probe green, bar height 161.
+> **D410 is NOT built** — no code has changed since D409; D410 is not yet in `DESIGN.md §7`.
+>
+> **⭐ JOE'S NOTES FROM PLAYING D409 (2026-09-26), AND HIS CALLS:**
+> - **The ⚠ beside a good on the bar: good** — *"⚠️ appears and looks good, the hover text appears —
+>   we'll worry about styling it later."* ⛔ Do not restyle it unasked; the tooltip is a raw line today.
+> - **The grouped Stock limits panel: good** — *"looks good for now."*
+> - ⛔ **"why do i still see 'food' in the top bar? remove it."** Asked where the food cell's two jobs
+>   should go (the bar's only "short of food" amber, D396; the "where the food is" hover, D394), he
+>   chose **"Remove it entirely"** — *no total anywhere; you read forage, wheat, fish and meat
+>   separately, and the shortage warning is gone.* That reverses D394's "one number on the bar" and
+>   D396's survival-floor amber on his word — write both into D410 so nobody puts them back.
+> - 🐛 **Wendell, a farmer who sowed nothing in spring of year 6, was switched to forager in summer;
+>   in autumn his card still read "Nothing standing to reap at farmhouse 1."** Traced this session —
+>   **not stuck behaviour, a stale note**: he forages normally, but `villager.WorkNote` is written by
+>   the farmer branch (`BehaviorSystem.cs` ~2790) and nothing clears it when the job changes.
+>   `LabourAllocator.Assign` / `Release` / the reshuffle already clear `CommuteNote` for exactly this
+>   reason and never `WorkNote`; the forager branch writes no note while gathering, so the farmer's
+>   sentence stays. (`WorkNote` is not hashed.)
+>
+> **▶️ THE NEXT BUILD — D410, PLAN APPROVED BY JOE ("i approve the plan"):**
+> 1. **A note belongs to the job it was written for.** In `LabourAllocator.Assign` (`LabourAllocator.cs`
+>    ~432) clear `villager.WorkNote` when the new workplace differs from the previous one; in `Release`
+>    (~1096) clear it too — beside the `CommuteNote` clears. ⛔ Leave the year-start reshuffle loop
+>    (~110) alone: a note kept through an UNCHANGED job is D396's behaviour, and `FoodLimitTests` reads
+>    it. **Guard:** a farmer holding the reaping sentence, moved to foraging through the professions
+>    call (`SetJobLimit(Farmer, 0)` + a forager seat) — the note is empty the same call. Red-check with
+>    the clear removed; count the reds.
+> 2. **"food" off the top bar, no total anywhere.** `Main.BuildResourcesBox` (~2926): drop the
+>    `_foodTotal` cell (row one becomes forage · wheat · fish · meat). `Main.Refresh` (~1810–1842):
+>    delete the food-total block — the survival-floor amber via `ShowShortfall`, the D394 "where" /
+>    "wanting" tooltip — and the now-dead locals and field. `more ▾` (`BuildTheMoreButton`): remove the
+>    three food-total rows (*food on the shelves*, *waiting in the huts*, *in the larders*) and their
+>    fields; ⭐ **keep *on the ground*** (it counts heaps of every good). Probe: `TheBarsHoldTheirShape`
+>    (~518) and the "twelve years in" posing (~330) stop naming the removed labels. Update the
+>    `BuildResourcesBox` / `ShowShortfall` doc comments (firewood / logs / tools amber stays).
+>    **Nothing in the sim changes** — `FoodTheVillageHolds` is still what the rules read.
+> 3. **Docs in the same commit:** `the-cards.md` §4a and §5's Resources row marked superseded by D410;
+>    DESIGN §6 + **D410** in §7; this banner; a new trap — *a note written by one trade outlives the
+>    trade unless the job change clears it; clear per-job text where the job changes, the way
+>    `CommuteNote` already is.*
+> 4. **Verify (all four):** suite (expect 1238, one new guard), game build 0 warnings, probe (bars ✅,
+>    161, panels ✅, `done.`), golden grep — **expect no golden to move.** Branch
+>    `slice/d409-play-notes`, merge to `main` locally, do not push.
+>
+> **Then the queue, in Joe's order:** homes that do not read as suburbia — spec first (the D408 banner
+> below has his words and the likely shape) → tools on ticks at 34 % → the quarry spec → his design
+> threads (the ⏸️ list, including D406's valley-clearing starvation and its two skipped guards).
+>
+> **Tools a session needs:** Godot is at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`
+> (`$GODOT` is not set in the agent's shell). The fifty-year measurement harness D409 used is saved
+> outside the repo at `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/45adf59f-5b2b-44df-bfc9-93a604c62979/scratchpad/ZzMeasure.cs`
+> (copy into `tests/Bclone.Sim.Tests/`, run with `--filter FullyQualifiedName~ZzMeasure`, delete
+> before committing). ⚠️ Its opening never raises a granary — add the `StorageArm` (granary +
+> warehouse marked in year 3) before believing a "the village got smaller" reading.
+>
+> *(The D409 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATE) — AFTER D409.**
 >
 > **Branches:** `slice/firewood-matters` (D407–D409) is **MERGED into `main` locally, NOT pushed** — Joe
 > plays, then pushes. Suite **1237 passing, 0 failing, 4 skipped of 1241**, 3m02; view 0 warnings; probe
@@ -29,9 +91,7 @@
 > whether it is a cart-only village. The harness text is in this session's scratchpad
 > (`ZzMeasure.cs`), not the repo.
 >
-> **⏸️ Unplayed by Joe.** What to look at when he plays: the ⚠ beside logs once the village holds 200
-> (and its tooltip), the grouped Stock limits panel, the word "forage", and whether a new village
-> grows at the pace he expects before its first granary.
+> **✅ Played by Joe** (2026-09-26) — his notes are in the D410 banner above.
 >
 > **▶️ THE QUEUE, IN JOE'S ORDER:** homes that do not read as suburbia — spec first (the D408 banner
 > below has his words and the likely shape) → tools on ticks at 34 % → the quarry spec → his design
