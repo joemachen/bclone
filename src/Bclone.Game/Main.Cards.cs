@@ -864,6 +864,35 @@ public partial class Main
         }
     }
 
+    /// <summary>
+    /// Where a workplace's hands work, as the card's middle number (D404, Joe: *"what does no ground
+    /// mean?"*). Only foresters and farms work painted ground (<see cref="SimWorld.KeepsWorkGround"/>);
+    /// a forager works a ring round the hut, a hunter the woods within a range, a fisher the water —
+    /// and the card said *"no ground"* of all three, which read as a fault.
+    /// </summary>
+    private static string HeldCaption(int capacity) =>
+        capacity != int.MaxValue ? $"of {capacity:N0} held here" : "held here";
+
+    private static (string Value, string Key) WhereItWorks(JobKind kind, int ground, int ring, int huntingRange)
+    {
+        if (SimWorld.KeepsWorkGround(kind))
+        {
+            return ground > 0 ? ($"{ground}", "tiles of ground") : ("—", "no ground painted");
+        }
+
+        if (ring > 0)
+        {
+            return ($"{ring}", "tiles round it");
+        }
+
+        if (kind == JobKind.Hunter)
+        {
+            return ($"{huntingRange}", "tiles of range");
+        }
+
+        return kind == JobKind.Fisher ? ("—", "the water") : ("—", "at the building");
+    }
+
     private bool ShowStore(Card card, StoreBuilding store)
     {
         Title(card, store.Name, renamable: true);
@@ -911,9 +940,24 @@ public partial class Main
 
         if (place.Construction is { IsFinished: false } site)
         {
-            Status(card, working: false, $"Being built — {Ordinal(world.QueuePositionOf(place))} in the queue.");
+            // ⭐ EVERY MATERIAL, NOT JUST THE LOGS (Joe, year 114: a lodge read *40/40 logs* while its
+            // builder said *"still wants 5 stone, and nowhere within reach has any"* — the card showed
+            // a site fully supplied). The status names what is missing, in the sim's own words
+            // (`DescribeWhatIsMissing`), so a clipped number cell can never hide it.
+            string queued = $"Being built — {Ordinal(world.QueuePositionOf(place))} in the queue";
+            Status(card, working: false, site.HasMaterials
+                ? queued + "."
+                : $"{queued} · still wants {site.DescribeWhatIsMissing(world.GoodsCatalog)}.");
             card.WorkersRow.Visible = false;
-            Number(card, 0, $"{site.LogsDelivered}/{site.Recipe.Of(Goods.Logs)}", "logs");
+            var have = new List<string>();
+            var names = new List<string>();
+            foreach (MaterialCost material in site.Recipe.Materials)
+            {
+                have.Add($"{site.Delivered(material.Goods)}/{material.Amount}");
+                names.Add(world.GoodsCatalog.NameOf(material.Goods));
+            }
+
+            Number(card, 0, string.Join(" · ", have), string.Join(" · ", names));
             Number(card, 1, $"{site.WorkDone}/{site.Recipe.WorkTicks}", "work");
             Number(card, 2, $"{world.BuildQueue().Count}", "sites queued");
         }
@@ -938,9 +982,16 @@ public partial class Main
                 holding += place.Store[(Goods)g];
             }
 
-            Number(card, 0, $"{holding:N0}", $"of {place.Store.Capacity:N0} held here");
-            int ground = world.Zones.WorkGroundTiles(place.Id);
-            Number(card, 1, ground > 0 ? $"{ground}" : "—", ground > 0 ? "tiles of ground" : "no ground");
+            // ⚠️ A BUFFER WITH NO WALL HAS NO "OF" (Joe: *"what is the 0 of 2,147,483 representative
+            // of?"*). A workplace without a store of its own is `int.MaxValue` wide — a sentinel for
+            // "no limit", and trap 115's number printed as if it were a size.
+            Number(card, 0, $"{holding:N0}", HeldCaption(place.Store.Capacity));
+            (string value, string key) reach = WhereItWorks(
+                place.Kind,
+                world.Zones.WorkGroundTiles(place.Id),
+                place.GatheringRadius,
+                world.BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0);
+            Number(card, 1, reach.value, reach.key);
             Number(card, 2, $"{place.Places}", place.Places == 1 ? "seat" : "seats");
         }
 
@@ -1379,6 +1430,104 @@ public partial class Main
             faults.Add("a villager card offers ✎");
         }
 
+        // ⭐ EVERY WORKPLACE'S NUMBERS MEAN SOMETHING (D404): no raw `int.MaxValue`, and no "no ground"
+        // on a trade that never works painted ground. Asked of every catalogue row that employs
+        // somebody, with the numbers a finished building of that row would carry (the sim's own
+        // rule: no `local_store_cap` is an unbounded store) — the probe's cold start has none built.
+        int tradesAsked = 0;
+        BuildingsCatalog rows = world.BuildingsCatalog;
+        for (int id = 0; id < rows.Count; id++)
+        {
+            if (rows.EmployedBy(id) is not JobKind trade)
+            {
+                continue;
+            }
+
+            BuildingRow row = rows[id];
+            tradesAsked++;
+            string held = HeldCaption(row.LocalStoreCap > 0 ? row.LocalStoreCap : int.MaxValue);
+            (string _, string where) = WhereItWorks(trade, 0, row.GatheringRadius, row.HuntingRadius);
+            if (held.Contains("2,147", StringComparison.Ordinal))
+            {
+                faults.Add($"a {row.Name}'s card would print int.MaxValue ({held})");
+            }
+
+            if (!SimWorld.KeepsWorkGround(trade) && where.Contains("ground", StringComparison.Ordinal))
+            {
+                faults.Add($"a {row.Name}'s card would talk about ground it never works ({where})");
+            }
+        }
+
+        if (tradesAsked == 0)
+        {
+            faults.Add("no catalogue row employs anybody, so the card's numbers were asked of nothing");
+        }
+
+        // ⭐ A SITE SHOWS EVERY MATERIAL AND SAYS WHICH IS SHORT (D404): posed on the first kind whose
+        // recipe wants more than one good, marked on the first tile that takes it.
+        string siteShape = "no site siteToShow";
+        foreach (BuildingKind kind in System.Enum.GetValues<BuildingKind>())
+        {
+            if (kind == BuildingKind.Home || BuildingRecipe.For(kind, world.Config).Materials.Count < 2)
+            {
+                continue;
+            }
+
+            Workplace? siteToShow = null;
+            GridPos at = world.Map.FoundingSite;
+            for (int r = 3; r < 20 && siteToShow is null; r++)
+            {
+                for (int dx = -r; dx <= r && siteToShow is null; dx++)
+                {
+                    var tile = new GridPos(at.X + dx, at.Y + r);
+                    if (world.CanBuildAt(kind, tile).Allowed && world.Mark(kind, tile).Allowed)
+                    {
+                        siteToShow = world.Workplaces.Find(w => w.Construction is { IsFinished: false } c && c.Kind == kind);
+                    }
+                }
+            }
+
+            if (siteToShow is null)
+            {
+                continue;
+            }
+
+            OpenCard(new CardSubject(CardKind.Workplace, siteToShow.Id));
+            Card siteCard = _selectedCard!;
+            ForceUpdateTransform();
+            siteShape = $"{siteCard.Values[0].Text} {siteCard.Keys[0].Text} · \"{siteCard.Status.Text}\" at {siteCard.Panel.Size.X:F0} wide";
+            if (!siteCard.Keys[0].Text.Contains(" · ", StringComparison.Ordinal) || !siteCard.Status.Text.Contains("still wants", StringComparison.Ordinal))
+            {
+                faults.Add($"a site needing {siteToShow.Construction!.Recipe.Describe(world.GoodsCatalog)} reads {siteShape}");
+            }
+
+            // ⚠️ The number cells CLIP rather than widen, so a width check alone would pass a cell
+            // that shows "0/40 · 0/…". Measured against the text itself.
+            for (int i = 0; i < 1; i++)
+            {
+                Label value = siteCard.Values[i];
+                Label key = siteCard.Keys[i];
+                float valueWide = value.GetThemeFont("font").GetStringSize(value.Text, HorizontalAlignment.Left, -1, value.GetThemeFontSize("font_size")).X;
+                float keyWide = key.GetThemeFont("font").GetStringSize(key.Text, HorizontalAlignment.Left, -1, key.GetThemeFontSize("font_size")).X;
+                // The row is three ExpandFill cells, six apart, inside the panel's style margins —
+                // laid out on the next frame, so derived here as the container will.
+                float inner = siteCard.Panel.Size.X - siteCard.Panel.GetThemeStylebox("panel").GetMinimumSize().X;
+                float cell = (inner - (2 * 6f)) / 3f;
+                siteShape += $"; the cell {cell:F0} for {valueWide:F0} and {keyWide:F0}";
+                if (valueWide > cell + 1f || keyWide > cell + 1f)
+                {
+                    faults.Add($"a site's materials clip in their cell ({valueWide:F0} and {keyWide:F0} in {cell:F0})");
+                }
+            }
+
+            if (siteCard.Panel.Size.X > CardWidth + 1f)
+            {
+                faults.Add($"a site card widened to {siteCard.Panel.Size.X:F0}");
+            }
+
+            break;
+        }
+
         if (place is not null)
         {
             OpenCard(new CardSubject(CardKind.Workplace, place.Id));
@@ -1554,7 +1703,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library and the hall posed, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library and the hall posed, every workplace's numbers honest, a site {siteShape}, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }
