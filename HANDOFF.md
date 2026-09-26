@@ -1,6 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D410 IN §7. D410 IS BUILT, MERGED INTO `main` LOCALLY, NOT PUSHED, UNPLAYED. NEXT: HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST, `organic-housing.md §3.3`) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D411 IN §7. D410 IS PUSHED. D411 (HOMES THAT DO NOT READ AS SUBURBIA) IS SPECCED IN `organic-housing.md §9`, NOT BUILT, WAITING ON JOE'S FIVE CALLS (§9.9). THEN: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D410.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATE NIGHT) — AFTER D411.**
+>
+> **Branches:** `main` = D410 (pushed, `6fa438b`) + the D411 spec commit (docs only, **not pushed**).
+> No code has changed since D410: suite 1239 / 0 / 4 of 1243, probe green, as the banner below says.
+>
+> **D411 is a spec, not a build.** `specs/organic-housing.md §9`: Joe asked for *"organic housing, and
+> NOT uniform rows of housing"*. §9.2 names the four causes in `Household.ChooseSite`, §9.4 proposes
+> R1 (a lane counts only where one is, as a cost, not a first sort key) and R2 (a lane holds a pair;
+> the third house in a same-facing line pays), with R3 (hashed plot sizes) and R4 (a drawn skew)
+> for later or asked. ⛔ **Do not build before Joe answers §9.9's five calls**, especially Q5: it
+> re-poses D388's guard `APlotBesideAStreetFrontsIt`, which is his rule.
+>
+> **When he answers:** measure the baseline FIRST (§9.8, as played with the storage arm; the harness
+> is in an old session's scratchpad, see the D410 plan banner below) and draw the sim's picture of a
+> shipped seed at year 30 for him. Then R1, measure, R2, measure, new picture. Branch
+> `slice/organic-not-suburbia`.
+>
+> **What I need from Joe:** the five calls in `organic-housing.md §9.9`, and push `main` if the spec
+> reads right.
+>
+> *(The D410 banner, kept below.)*
+>
+
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (NIGHT) — AFTER D410. (Pushed at Joe's word; D411 is above.)**
 >
 > **Branches:** `main` = D410 merged (`slice/d409-play-notes`), **NOT pushed** — Joe pushes after he
 > plays (D409 and everything before it IS on `origin/main`, pushed this session at his word). Suite
