@@ -120,8 +120,13 @@ public sealed class VillagerPointTests
     // ⚠️ RE-PINNED (D391), not for the clock: the founder walks to the cart for a tool before
     // the first trip — a walk of its own, which is why the gap between the paces grew (32 → 44:
     // the fetch is priced at the pace too). Were 21 / 53.
-    private const int FirstGatherAtPace1 = 26;
-    private const int FirstGatherAtPace3 = 70;
+    // ⚠️ RE-PINNED (D406), not for the clock: a fence is a wall (`fences-as-walls.md`), and the
+    // founder's house faces west with its yard between the door and the store, so every errand walks
+    // round the yard. Joe chose that: *"let longer walks be the price of fences."* (The branch's
+    // first draft read 27 / 73 only because its villagers still walked through their own fence.)
+    // Were 26 / 70.
+    private const int FirstGatherAtPace1 = 37;
+    private const int FirstGatherAtPace3 = 91;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -270,8 +275,10 @@ public sealed class VillagerPointTests
         }
 
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 10, 143, 1929 }, at);
+        // ⚠️ RE-PINNED (D406), not for the clock: fences are walls and the walks go round the
+        // yards — 50 trips, the 1st/10th/50th at 10/199/1,975. Were 51 at 10/143/1,929.
+        Assert.Equal(50, entries);
+        Assert.Equal(new ulong[] { 10, 199, 1975 }, at);
     }
 
     /// <summary>

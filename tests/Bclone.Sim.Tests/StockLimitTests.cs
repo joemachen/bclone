@@ -360,7 +360,8 @@ public sealed class StockLimitTests
     // D360's noise). Was 1405808184657301407.
     // RE-TAKEN (D399) — nobody produces food for their own larder (Joe's call), and the
     // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 9533260203811408204.
-    private const ulong FixtureFiftyYearHash = 7985778814479655621UL;
+    // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Was 7985778814479655621.
+    private const ulong FixtureFiftyYearHash = 4610569127384925856UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -452,7 +453,8 @@ public sealed class StockLimitTests
     //     from his QA pass; the yearly re-price keeps more of the lanes.
     //   before nobody produced for their own larder (D399): 18023434392071687963 — and the
     //     village began producing for its cupboards as well as its shelves; a larder has walls.
-    private const ulong ShippedFiftyYearHash = 1017578343772418148UL;
+    //   before fences became walls (D406): 1017578343772418148 — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences."
+    private const ulong ShippedFiftyYearHash = 4997044733819871548UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -918,20 +920,25 @@ public sealed class StockLimitTests
 
         SimLoop content = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         content.Step(years);
+        int without = content.World.LogsInWarehouses();
 
+        // ⚠️ ABOVE WHAT THIS VILLAGE KEEPS, MEASURED, NOT A FIXED 200 (D406). The claim is about a
+        // limit ABOVE what the village would hold anyway; 200 was that while it kept 84, and with
+        // fences as walls the same village keeps 219 on its own — so 200 was a ceiling it already
+        // sat over, and the guard failed for asking the wrong question. Two hundred more than it keeps.
+        int asked = without + 200;
         SimLoop ambitious = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        ambitious.World.SetStockLimit(Goods.Logs, 200);
+        ambitious.World.SetStockLimit(Goods.Logs, asked);
         ambitious.Step(years);
 
-        int without = content.World.LogsInWarehouses();
         int with = ambitious.World.LogsInWarehouses();
         _output.WriteLine(
-            $"logs held after 12 years: {without} with no opinion, {with} asked for 200. "
+            $"logs held after 12 years: {without} with no opinion, {with} asked for {asked}. "
             + $"alive: {content.World.Population} and {ambitious.World.Population}.");
 
         Assert.True(
             with > without,
-            $"A village asked for 200 logs held {with}, no better than the {without} it "
+            $"A village asked for {asked} logs held {with}, no better than the {without} it "
             + "would have kept anyway. The limit is still only a ceiling.");
 
         // And the stockpile is a want, not a need: it must not be built out of the hands

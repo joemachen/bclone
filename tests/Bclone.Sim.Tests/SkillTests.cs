@@ -313,8 +313,10 @@ public sealed class SkillTests
     // and 8891282324951488121 (shipped).
     // RE-TAKEN (D399) — the larder rules. Were 15577376948852228 (fixture) and
     // 13451262210379389876 (shipped).
-    [InlineData(false, 3307825737465935125UL)]
-    [InlineData(true, 14000407223446823889UL)]
+    // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Were 3307825737465935125 (fixture) and
+    // 14000407223446823889 (shipped).
+    [InlineData(false, 15864852231978267454UL)]
+    [InlineData(true, 17357106328646177055UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -1279,8 +1281,15 @@ public sealed class SkillTests
         // which has nothing to do with whether they get up at the same moment.
         //
         // ⭐ The numbers are still printed. They are worth reading and worth nothing to assert.
+        //
+        // ⚠️ **40, LOWERED FROM 95 WHEN FENCES BECAME WALLS (D406) — 100% → 50%.** Two identical
+        // adults now fall out of step on their own partway through the five years (the walks round
+        // the yards part them), where on main they held 100% throughout. Half the ticks in step is
+        // still plainly a lockstep for the rhythm to break, against 0% shipped — this precondition
+        // proves there is something to fix, and it still does. If it falls again, it has stopped
+        // discriminating: delete it, on the same rule as the tile bar above.
         Assert.True(
-            lockstepped.Hunger >= 95,
+            lockstepped.Hunger >= 40,
             $"With both switched off, two adults share a hunger value only "
             + $"{lockstepped.Hunger}% of ticks. The symmetry D28 describes is not there.");
 

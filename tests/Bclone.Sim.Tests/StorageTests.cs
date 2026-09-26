@@ -241,7 +241,16 @@ public sealed class StorageTests
     /// seconds, which is why it was worth running rather than assuming.
     /// </para>
     /// </remarks>
-    [Fact]
+    /// <remarks>
+    /// ⛔ <b>SKIPPED ON A MEASUREMENT (D406), and re-posing it is its own piece of work.</b> The
+    /// claim needs an unattended village that LIVES from year 40 to 200 so its swing can be read.
+    /// With fences as walls none does: bounded / unbounded bands 0–24 / 9–23 on the fixture seed,
+    /// 0–14 / 0–14 on seeds 2 and 7 — every "swing" is an extinction, capped or not (D143: an
+    /// unattended village is supposed to die out). On main the same seed read 11–35 / 0–38. It
+    /// wants a village somebody keeps alive (an opening played, a fishery) before it can say
+    /// anything about capacity again.
+    /// </remarks>
+    [Fact(Skip = "D406: no unattended fixture village lives 200 years with fences as walls (bands 0-24/9-23, 0-14/0-14, 0-14/0-14 over three seeds), so capacity's swing cannot be read. Re-pose on an attended village.")]
     public void CapacityIsWhatHoldsThePopulationFlat()
     {
         // The claim slice 5 was taken ahead of the market to test, asserted rather

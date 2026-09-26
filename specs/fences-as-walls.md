@@ -1,9 +1,8 @@
 # fences-as-walls.md — a fence is a wall the cost field routes around
 
-**Status:** 🔨 **BUILT ON `slice/fences-as-walls`, NOT MERGED — WAITING ON JOE'S CALL ON THE
-FIXTURE'S COST** (2026-09-25, D404; specced 2026-09-20, D400). The mechanism is built and its
-fifteen guards are green and red-checked; §6 is filled in from the run; the goldens and the
-fixture-premise guards are **not** moved, because what they move to depends on his answer to §9.1.
+**Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400).
+Sixteen guards green and red-checked; §6 filled in from the run; six goldens moved once; the
+fixture premises re-posed with Joe's words — *"let longer walks be the price of fences."*
 Joe's yes, 2026-09-18, ordered
 after the professions and again on 2026-09-20 from his D396 play notes: *"villagers are definitely
 walking through other villager's yards — look at all of the packed trail within the yards."*
@@ -224,7 +223,8 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
 - `NoStepEverCrossesAWall` — every villager, every tick, twenty years, two seeds; the path, not the chord.
 - `NothingIsBuiltOrPaintedInSomebodysYard`, `AnInheritedFenceComesDownWithTheHeirsRelease`,
   `BackToBackFencesKeepTheirSharedWall` — the three rules building the slice added.
-- ⏸️ **The goldens and the fixture-premise guards are not moved yet** — they move once, after §9.1.
+- `TheQuickWallOffAnswerIsTheSweepsAnswer` (D405) — the local wall-off check is the sweep's answer.
+- ✅ **Goldens moved once and the fixture premises re-posed** (D406), each with its reason.
 
 ## 8. Definition of Done
 
@@ -241,9 +241,10 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
   unattended fixture gets hungrier* — and the merge re-poses the fixture guards with that reason
   and moves the goldens once. Or not, and the lever is §9.4 (the facing), measured before typed.
   ⛔ Not depth 2: it costs the shipped game 71 → 40 alive.
-- ✅ **§9.1 ACCEPTED** (Joe, 2026-09-26: *"I accept"*) — ⏸️ but the merge waits on §9.4, because
-  of a number D405 found after he answered: at the founding the typical family walks ~10 tiles to
-  its hut against main's ~6 (`EveryValleyMeetsTheEconomysDistanceBudget` 27 → 10 of 30 valleys).
+- ✅ **§9.1 ACCEPTED, and §9.4 DECLINED** (Joe, 2026-09-26): shown that founding families walk ~10
+  tiles to their hut against main's ~6, *"let longer walks be the price of fences"*; and on
+  pricing the yard walk into the economy, *"i no longer care about a forager feeding a family or
+  a farmer keeping 13 tiles."* The facing stays D388's, the derivations stay as they are.
 - ✅ **§9.3 A building on the lane in front of a gate — ALLOWED** (Joe, 2026-09-26: *"no i dont
   think we want to block it"*). It shuts the yard; nothing needs to enter one until the kitchen
   garden, and that slice asks again.

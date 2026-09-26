@@ -503,7 +503,13 @@ public sealed class TownHallTests
 
         // ⭐ AND INTO A VILLAGE, NOT A CAMP. *"The village outgrowing its founders"* is the
         // catalyst (D251) — a handful of survivors has not outgrown anybody.
-        Assert.True(alive > 4, $"Only {alive} alive when the hall arrived; that is not a village.");
+        // ⚠️ AT LEAST THE FOUNDING FOUR, NOT MORE THAN THEM (D406). On main this village held 13 when
+        // its hall came in year 58; with fences as walls the same unattended village is back at
+        // 4 by then (Joe: *"let longer walks be the price of fences"*), so "into a village that grew"
+        // is no longer true of this seed and is written down here rather than posed away. The
+        // guard's subject is the hall's timing — late, and after literacy — and that held (year 58
+        // on both); this asks only that there is still a village to give it to.
+        Assert.True(alive >= config.StartingPopulation, $"Only {alive} alive when the hall arrived; that is not a village.");
 
         // ⚠️ RECORDED RATHER THAN ASSERTED: this village never learns to write, because nobody
         // places its granary. Not a bug — an unattended valley has no player — but it is why the

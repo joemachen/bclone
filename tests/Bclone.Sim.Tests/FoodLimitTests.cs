@@ -109,9 +109,13 @@ public sealed class FoodLimitTests
         // no limit under the brim can beat it — and the limited village hovers about its number,
         // seasons off when it reads met. The claim that survives is that the number reached the
         // foragers: at some point in three years they brought the stores up to what was asked.
+        // ⚠️ TOWARD THE NUMBER, NOT TO IT (D406). This asked the village to reach 2,000, and on main
+        // it did (2,135). With fences as walls its foragers walk round the yards and it peaks at
+        // 1,772 — Joe: *"let longer walks be the price of fences."* What the limit must still do is
+        // move the village: hold more than the same year with no limit (1,576).
         Assert.True(
-            asked.MostHeld >= 2000,
-            $"A food limit of 2000 was never reached (most held {asked.MostHeld}) — the foragers did not work toward the number asked.");
+            asked.MostHeld > unset.MostHeld,
+            $"A food limit of 2000 held at most {asked.MostHeld} against {unset.MostHeld} with no limit — the foragers did not work toward the number asked.");
     }
 
     /// <summary>

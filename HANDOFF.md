@@ -1,6 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D405 IN §7. `slice/fences-as-walls` IS BUILT, GUARDED AND MEASURED, AND WAITS ON ONE CALL OF JOE'S (`specs/fences-as-walls.md §9.4`). THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D406 IN §7. FENCES AS WALLS IS MERGED (NOT PUSHED). NEXT: FIREWOOD — THE LEDGER GUARD, THEN THE FIX, THEN JOE'S DIALS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 — AFTER D405.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 (LATER) — AFTER D406.**
+>
+> **The state:** fences as walls is **MERGED into main locally (D404–D406), NOT pushed** — Joe
+> plays, then pushes. **1227 passing, 0 failing, 4 skipped of 1231**, ~3m; view 0 warnings; probe
+> green, bar height 161.
+>
+> **Joe's words that settled it:** *"let longer walks be the price of fences"* and *"i no longer
+> care about a forager feeding a family or a farmer keeping 13 tiles."* The economy's derivations
+> were deliberately NOT re-priced for the yard walk; the guards that held reality to them were
+> lowered with those words beside them. ⛔ Do not "fix" those derivations back without asking him.
+>
+> **⛔ Two guards are skipped on findings — read D406:** painting the valley for clearing nearly
+> wipes an unattended village out **on main too** (5 against 35 alive over three seeds) — its own
+> slice, on his list; and the capacity guard needs an attended village to measure.
+>
+> **▶️ NEXT (approved): firewood** — Joe: *"I can skip 10 years without a woodcutter and still
+> have lots of firewood. it seems like a non-factor."* Plan: a firewood ledger guard with
+> woodcutters at 0 for ten years (the `FoodConservationTests` shape), watch it go red, fix what it
+> shows — the suspect is **the free fire** (a larder at 1–2 logs burns nothing, `TryTake(3)`, yet
+> counts as a lit hearth) — then measure and bring him the dials (burn 24 → 32, split 53 → less).
+>
+> *(The D405 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 — AFTER D405.**
 >
 > **The state:** `origin/main` = D403. **`slice/fences-as-walls` = D404 + three D405 commits, NOT
 > pushed, NOT merged**: the 237 ms tick (the site-chooser, 211 → 63 ms, exact), the cards (no raw
@@ -2161,6 +2184,16 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     keyed on the dead worker's building said nothing in the guard's first pose. *Read the player's
     words for the unit they mean.*
 
+129. **⚠️ A GUARD THAT ASSERTS "ANYBODY LEFT" ON ONE SEED CAN BE GREEN AND BLIND (D406).**
+    `AVillageThatClearsItsValleyStillLives` passed on main with 2 survivors out of ~12. Asked as
+    the comparison its name makes — the same villages left alone — it read 5 against 35: the
+    thing it exists to catch had been happening all along. *When a bar is "more than zero", ask
+    what the control would say.*
+
+130. **⚠️ A GOLDEN CAN HIDE BEHIND ANOTHER GOLDEN IN THE SAME TEST (D406).** The seam test asserts
+    two hashes in a row; the first failing hid the second, so D404 counted five goldens to move
+    and there were six. *Count goldens by assertion, not by failing test.*
+
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 
 **The roster and the village log were both `288x0` for two commits** (D311). Joe sent a screenshot
@@ -2225,8 +2258,12 @@ four founders froze in Winter Year 1 and every line saying so rendered into noth
   hand walks for a tool once in three years; the per-test top ten is in trap 106. Not chased —
   named so the next session does not attribute it to its own change.
 
-- ⏸️⏸️ **FENCES AS WALLS — §9.1, THE TRADE (D404) — see the top banner.** Built on the branch;
-  the shipped game 65 → 71 alive, the fixture 95 → 65. Accept, or measure §9.4 (the facing) first.
+- ⭐⭐ **PAINTING THE VALLEY FOR CLEARING NEARLY WIPES AN UNATTENDED VILLAGE OUT (D406) — ON MAIN
+  TOO.** Three seeds × thirty years: 5 alive with the valley painted against 35 left alone (0
+  against 35 with fences). `AVillageThatClearsItsValleyStillLives` had passed on 2 survivors of one
+  seed. Pre-existing; skipped with the numbers; its own slice, and the order is his.
+- ~~⏸️⏸️ **FENCES AS WALLS — §9.1, THE TRADE (D404).**~~ ✅ Merged (D406): *"let longer walks be
+  the price of fences."*
 - ⏸️ **A BUILDING ON THE LANE IN FRONT OF A GATE (D404, spec §9.3)** is allowed and shuts the yard.
   Harmless until the kitchen garden needs a yard entered; refusing it is one more lane tile the
   player may not build on. His call.

@@ -196,8 +196,8 @@ so the brush moved a fence for free. Now:
 ⏸️ **AND SINCE D400 THE FENCE HAS A SPEC OF ITS OWN FOR BECOMING A WALL** — `fences-as-walls.md`,
 Joe's call from his D396 play notes (*"villagers are definitely walking through other villager's
 yards"*): measured at **16.2 % of every step in the valley** taken inside somebody else's yard.
-🔨 **Built on `slice/fences-as-walls` (D404) and down to 0.3 %; not merged** — it waits on Joe's
-§9.1 there. ⚠️ Two rules it adds reach this spec: `plot_apart_tiles` charges a side WITH a
+✅ **Built and merged (D404–D406), down to 0.3 %** — Joe: *"let longer walks be the price of
+fences."* ⚠️ Two rules it adds reach this spec: `plot_apart_tiles` charges a side WITH a
 neighbour now (it charged the open sides, which packed plots until fences shut doors), and
 `plot_depth` is 3; and the chooser refuses a facing whose gate would open onto a building
 (`SimWorld.GateOpensAt`).

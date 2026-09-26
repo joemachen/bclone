@@ -271,7 +271,8 @@ public sealed class FarmGoldenTests
     // re-price hands the routes more worn tiles and the walks follow. Was 8862376988002807199.
     // RE-TAKEN (D399) — nobody produces food for their own larder (Joe's call), and the
     // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 5056644931275689688.
-    private const ulong SeamGoldenHash = 14210363952345594970UL;
+    // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Was 14210363952345594970.
+    private const ulong SeamGoldenHash = 10117165481261788478UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -325,7 +326,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D391) with it again — tools. Was 7046811770416837128.
     // RE-TAKEN (D396) with it again — paths fade slower. Was 6316944139986529022.
     // RE-TAKEN (D399) with it again. Was 9257962022883154738.
-    private const ulong SeamBeforeAnybodyGotBetter = 9162761230975367702UL;
+    // RE-TAKEN (D406) with it again — fences as walls. Was 9162761230975367702.
+    private const ulong SeamBeforeAnybodyGotBetter = 15289892284834333155UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
