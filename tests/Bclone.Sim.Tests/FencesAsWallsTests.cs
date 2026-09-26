@@ -620,4 +620,69 @@ public sealed class FencesAsWallsTests
             LineOfSight.Clear(world.Map, world, from, to, System.Array.Empty<GridPos>(), System.Array.Empty<GridPos>()),
             "A planned leg grazed a fence post at a grid corner.");
     }
+
+    /// <summary>
+    /// ⛔ The wall-off question's quick local answer is the whole-valley sweep's answer, for every
+    /// plot the chooser could ask about and every pile the player could drop (D404, the 237 ms tick).
+    /// </summary>
+    /// <remarks>
+    /// A crowded neighbourhood: six houses sited in a painted square, then every whole-painted tile
+    /// asked at all four facings with its fence, and every tile asked for a one-tile pile — once
+    /// locally, once with <see cref="SimWorld.AlwaysSweepTheWholeValley"/>. Anti-vacuity: some of
+    /// those questions must actually be refused, or two answers of "fine" agreed about nothing.
+    /// Red with the local check trusting a boundary it never joined.
+    /// </remarks>
+    [Fact]
+    public void TheQuickWallOffAnswerIsTheSweepsAnswer()
+    {
+        SimWorld world = Founded();
+        GridPos site = world.Map.FoundingSite;
+        for (int dy = -7; dy <= 7; dy++)
+        {
+            for (int dx = -7; dx <= 7; dx++)
+            {
+                world.PaintResidential(new GridPos(site.X + dx, site.Y + dy));
+            }
+        }
+
+        for (int house = 0; house < 6; house++)
+        {
+            var family = new Household { Stockpile = world.NewStockpile(), Id = 950 + house, Name = "Crowd" + house };
+            world.Households.Add(family);
+            world.MarkHome(family.Id, Household.ChooseSite(world, site, family.Id));
+        }
+
+        int asked = 0;
+        int refused = 0;
+        foreach (GridPos front in world.Zones.WholeResidentialTiles)
+        {
+            foreach (Angle facing in PlotShape.Facings)
+            {
+                Footprint home = world.HomeFootprintAt(front, facing);
+                Dictionary<GridPos, byte> fence = world.TrialFence(front, facing, 999);
+                Compare(home, fence);
+            }
+
+            Compare(world.FootprintOf(BuildingKind.Pile, front), null);
+        }
+
+        _output.WriteLine($"{asked} questions, {refused} refused, every one answered alike.");
+        Assert.True(refused > 0, "Nothing asked was refused, so the two answers agreed about nothing.");
+
+        void Compare(Footprint proposed, Dictionary<GridPos, byte>? fence)
+        {
+            world.AlwaysSweepTheWholeValley = false;
+            string? quick = world.WhatThisWouldWallOff(proposed, fence);
+            world.AlwaysSweepTheWholeValley = true;
+            string? swept = world.WhatThisWouldWallOff(proposed, fence);
+            world.AlwaysSweepTheWholeValley = false;
+            asked++;
+            if (swept is not null)
+            {
+                refused++;
+            }
+
+            Assert.True(quick == swept, $"At {proposed.Origin}: the quick answer said \"{quick}\", the sweep said \"{swept}\".");
+        }
+    }
 }

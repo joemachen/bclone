@@ -10291,7 +10291,7 @@ public sealed class SimWorld : IObstacles
         }
 
         bool[] before = _freeGroundToday;
-        bool[] after = SweepTheFreeGround(proposedTiles, fence);
+        bool[] after = TheFreeGroundAfter(before, proposedTiles, fence);
 
         // First, the village can still leave where it landed: the founding site keeps a reached
         // free tile beside it. Seed 11's founding is a one-tile spit with one land neighbour, and
@@ -10327,6 +10327,171 @@ public sealed class SimWorld : IObstacles
 
         return null;
     }
+
+    /// <summary>
+    /// ⭐⭐ The free ground as it would be with this proposal closed — asked locally first, and swept
+    /// across the whole valley only when the local answer cannot be trusted (D404).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>Joe's year-109 village read a 237.6 ms tick</b>, and it was the site-chooser: one sweep
+    /// of the valley (~10,000 tiles) for every candidate plot, so a big painted neighbourhood paid
+    /// hundreds of sweeps for one house — 147 ms on main over 441 painted tiles, 211 ms once the
+    /// fences made the question per facing. *Nothing derivable incrementally may be rebuilt per
+    /// candidate* is Joe's rule in another coat.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The local answer, and why it is exact.</b> Closing the proposal can only cut a walk that
+    /// went through it — through a closed tile or across a new wall. Every such walk enters and
+    /// leaves the changed ground from a <em>boundary</em> tile: free, reached today, beside a closed
+    /// tile or on a new wall. If all the boundary tiles still reach one another inside a small box
+    /// round the proposal, every cut walk can be re-routed round it, so everything reached today is
+    /// reached after — and the free ground after is today's, less the closed tiles. Only when the
+    /// box cannot join them (or the proposal is near where the sweep starts) is the valley swept.
+    /// <c>TheQuickWallOffAnswerIsTheSweepsAnswer</c> holds the two to the same answer.
+    /// </para>
+    /// </remarks>
+    private bool[] TheFreeGroundAfter(bool[] before, List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence)
+    {
+        if (AlwaysSweepTheWholeValley)
+        {
+            return SweepTheFreeGround(proposedTiles, fence);
+        }
+
+        var closed = new HashSet<int>();
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        void Grow(GridPos t)
+        {
+            minX = Math.Min(minX, t.X);
+            minY = Math.Min(minY, t.Y);
+            maxX = Math.Max(maxX, t.X);
+            maxY = Math.Max(maxY, t.Y);
+        }
+
+        for (int i = 0; i < proposedTiles.Count; i++)
+        {
+            int index = IndexOfTile(proposedTiles[i]);
+            if (index >= 0)
+            {
+                closed.Add(index);
+            }
+
+            Grow(proposedTiles[i]);
+        }
+
+        if (fence is not null)
+        {
+            foreach (GridPos t in fence.Keys)
+            {
+                Grow(t);
+            }
+        }
+
+        const int Margin = 2;
+        minX -= Margin;
+        minY -= Margin;
+        maxX += Margin;
+        maxY += Margin;
+
+        // Where the sweep starts is special (it seeds from the site and beside it, walls or not
+        // at the seeding): near it, the whole sweep answers.
+        GridPos site = Map.FoundingSite;
+        if (site.X >= minX - 1 && site.X <= maxX + 1 && site.Y >= minY - 1 && site.Y <= maxY + 1)
+        {
+            return SweepTheFreeGround(proposedTiles, fence);
+        }
+
+        // The boundary: reached today, not closed, and beside a closed tile or on a new wall.
+        var boundary = new List<GridPos>();
+        void Consider(GridPos t)
+        {
+            int index = IndexOfTile(t);
+            if (index >= 0 && before[index] && !closed.Contains(index) && !boundary.Contains(t))
+            {
+                boundary.Add(t);
+            }
+        }
+
+        for (int i = 0; i < proposedTiles.Count; i++)
+        {
+            GridPos t = proposedTiles[i];
+            Consider(new GridPos(t.X, t.Y - 1));
+            Consider(new GridPos(t.X + 1, t.Y));
+            Consider(new GridPos(t.X, t.Y + 1));
+            Consider(new GridPos(t.X - 1, t.Y));
+        }
+
+        if (fence is not null)
+        {
+            foreach (GridPos t in fence.Keys)
+            {
+                Consider(t);
+            }
+        }
+
+        if (boundary.Count > 1)
+        {
+            // Walk the after-ground inside the box from the first boundary tile.
+            var seen = new HashSet<GridPos> { boundary[0] };
+            var queue = new Queue<GridPos>();
+            queue.Enqueue(boundary[0]);
+            while (queue.Count > 0)
+            {
+                GridPos at = queue.Dequeue();
+                byte walls = WallsForTheSweep(at, fence);
+                Step(at, 0, -1, 1, walls);
+                Step(at, 1, 0, 2, walls);
+                Step(at, 0, 1, 4, walls);
+                Step(at, -1, 0, 8, walls);
+            }
+
+            for (int i = 1; i < boundary.Count; i++)
+            {
+                if (!seen.Contains(boundary[i]))
+                {
+                    return SweepTheFreeGround(proposedTiles, fence);
+                }
+            }
+
+            void Step(GridPos from, int dx, int dy, byte bit, byte walls)
+            {
+                if ((walls & bit) != 0)
+                {
+                    return;
+                }
+
+                var next = new GridPos(from.X + dx, from.Y + dy);
+                if (next.X < minX || next.X > maxX || next.Y < minY || next.Y > maxY || seen.Contains(next))
+                {
+                    return;
+                }
+
+                int index = IndexOfTile(next);
+                if (index < 0 || closed.Contains(index) || _standing![index]
+                    || !TerrainRules.IsPassable(Map.TerrainAt(next)))
+                {
+                    return;
+                }
+
+                seen.Add(next);
+                queue.Enqueue(next);
+            }
+        }
+
+        var after = (bool[])before.Clone();
+        foreach (int index in closed)
+        {
+            after[index] = false;
+        }
+
+        return after;
+    }
+
+    /// <summary>
+    /// Always sweep the whole valley in <see cref="TheFreeGroundAfter"/> — for the guard that holds
+    /// the local answer to the sweep's, never for play.
+    /// </summary>
+    internal bool AlwaysSweepTheWholeValley { get; set; }
 
     /// <summary>
     /// How §3.3's sentence begins — one copy, so the chooser can count a plot refused for its
