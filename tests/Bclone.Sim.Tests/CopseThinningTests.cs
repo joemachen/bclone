@@ -206,9 +206,20 @@ public sealed class CopseThinningTests
         // ⛔ SAMPLED MID-CYCLE, NOT ON A BOUNDARY. The sweep matures every sapling it passes, so
         // counting them just after one runs reports zero however hard the wood is being worked.
         // Half a regrowth period in is where young wood actually exists.
-        loop.Step((on.TicksPerYear * 30) + (on.TicksPerDay * on.RegrowthPeriodDays / 2));
-
-        int saplingsAfter = Count(world, hut, Terrain.Sapling);
+        // ⚠️ AND WATCHED THE WHOLE WAY, NOT CAUGHT AT ONE INSTANT (D407). Counted once, this read
+        // 0 → 1 on main and 0 → 0 once the village's rhythm moved: one sapling at one tick is a
+        // coin toss, not a measurement. The claim is that thinning makes young wood at all, so the
+        // ring is counted every day of the run and the most is kept.
+        int saplingsAfter = 0;
+        int ticks = (on.TicksPerYear * 30) + (on.TicksPerDay * on.RegrowthPeriodDays / 2);
+        for (int tick = 0; tick < ticks; tick++)
+        {
+            loop.StepOnce();
+            if (tick % on.TicksPerDay == 0)
+            {
+                saplingsAfter = Math.Max(saplingsAfter, Count(world, hut, Terrain.Sapling));
+            }
+        }
         int grassAfter = Count(world, hut, Terrain.Grass);
         int saplingsBefore = 0;
 

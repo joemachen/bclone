@@ -363,7 +363,12 @@ public sealed class ShelterAndExposureTests
         }
 
         _output.WriteLine($"{loop.World.Population} alive at year 100 with cold switched off.");
-        Assert.True(loop.World.Population > clothed.StartingPopulation);
+
+        // ⚠️ STILL THE FOUNDERS, NOT MORE THAN THEM (D407). The claim is the loop above: with outdoor
+        // cold off, nobody dies of it. This second line asked the unattended fixture to have GROWN
+        // by year 100 — 10 on main, and 4 once firewood stopped being split without asking and the
+        // walks went round the yards (D406). D143: an unattended village is allowed to shrink.
+        Assert.True(loop.World.Population >= clothed.StartingPopulation);
     }
 
     [Fact]

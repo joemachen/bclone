@@ -405,9 +405,13 @@ public sealed class MarketTests
         // Zero was measured in a village with three dependants' slack; one is the walk.
         // ⚠️ TWO SINCE D406: the walk goes round the yards now that a fence is a wall (Joe: *"let
         // longer walks be the price of fences"*), and it read 2. Still the walk, not a bank run.
+        // ⚠️ AND A COMPARISON AGAIN SINCE D407, which is what D79 dropped it for: that comparison
+        // stopped discriminating at 0 against 0. With homes now fetching firewood in earnest (the
+        // last logs burn) it reads 3 against 5 without a stall — nonzero, so asking "fewer with a
+        // market" means something again, and it is the claim the building is for.
         Assert.True(
-            withMarket.DryPerTenThousand <= 2,
-            $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food — a bank run the market exists to stop.");
+            withMarket.DryPerTenThousand <= 1 || withMarket.DryPerTenThousand < without.DryPerTenThousand,
+            $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food, against {without.DryPerTenThousand} without a market — a bank run the market exists to stop.");
     }
 
     /// <summary>Fetching done by households over a run, and the village that did it.</summary>

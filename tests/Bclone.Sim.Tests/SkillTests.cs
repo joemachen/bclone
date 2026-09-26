@@ -315,8 +315,10 @@ public sealed class SkillTests
     // 13451262210379389876 (shipped).
     // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Were 3307825737465935125 (fixture) and
     // 14000407223446823889 (shipped).
-    [InlineData(false, 15864852231978267454UL)]
-    [InlineData(true, 17357106328646177055UL)]
+    // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Were 15864852231978267454 (fixture) and
+    // 17357106328646177055 (shipped).
+    [InlineData(false, 1809397811475245451UL)]
+    [InlineData(true, 448535629324644598UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

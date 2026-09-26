@@ -99,6 +99,20 @@ public sealed class IdleWorkplaceTests
 
         // And something to split, or the note would be about logs rather than the limit.
         world.AnyStoreOf(StoreKind.Warehouse).Store.Add(Goods.Logs, Config.LogsPerSplit * 4);
+
+        // ⚠️ AND THE HOMES SHORT OF FIREWOOD (D407): a woodcutter only splits what the village
+        // wants now, and a hut whose homes are stocked says so — that is its own sentence, not
+        // this guard's. Emptied here so "working" is the true state before the limit is set.
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TakeAll(Goods.Firewood);
+        }
+
+        foreach (Household family in world.Households)
+        {
+            family.Stockpile.TakeAll(Goods.Firewood);
+        }
+
         Assert.Null(world.IdleNote(hut));
 
         world.SetStockLimit(Goods.Firewood, 0);
@@ -492,7 +506,11 @@ public sealed class IdleWorkplaceTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
-        loop.Step(config.TicksPerYear * 40);
+        // ⚠️ FIVE YEARS IN, NOT FORTY (D407). This village is starved of firewood by design (one a
+        // split, one seat), and it lived forty years only on the free fire — a larder at a log or
+        // two was a lit hearth for ever. With the last logs burning, it freezes as it should, so the
+        // sentence is read while there is still a village to say it about.
+        loop.Step(config.TicksPerYear * 5);
 
         // ⚠️ SAMPLED ACROSS A YEAR, NOT AT ONE TICK. `WoodcuttersWanted` reads the warehouse, so on
         // any given tick a stocked village needs nobody — the first draft of this guard read

@@ -275,6 +275,21 @@ public sealed class FoodLimitTests
         // ⚠️ Read the limit OUT of the village rather than writing a number in — an instrument
         // that assumes a simpler world measures something else. Half of what it already holds
         // is met by definition, whatever this fixture's economy happens to be doing.
+        // ⚠️ SET WHILE A FORAGER HOLDS THE TRADE (D407). This fixture seats foragers only now and
+        // then (on main too: at every year's end of the first seven, nobody forages), so whether the
+        // met limit found anybody in the trade was the luck of the tick — 243 forager-ticks on main,
+        // 0 once the firewood changes moved the village's rhythm. The claim is about a forager the
+        // limit finds at work, so the limit is set when there is one.
+        for (int tick = 0; tick < config.TicksPerYear
+            && !world.Villagers.Exists(v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Forager); tick++)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.True(
+            world.Villagers.Exists(v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Forager),
+            "Nobody took the forager's trade in a year, so there is nobody for the limit to stand down.");
+
         int holds = world.FoodTheVillageHolds();
         Assert.True(holds > 0, "The village stored no food in ten years, so this is vacuous.");
         world.SetStockLimit(Goods.Produce, holds / 2);

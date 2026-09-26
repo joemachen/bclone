@@ -931,6 +931,64 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public int FirewoodInWarehouses() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
 
+    /// <summary>Firewood lying in heaps on the ground — split with nowhere to put it (D96), not yet carried in.</summary>
+    public int FirewoodOnTheGround()
+    {
+        int total = 0;
+        for (int i = 0; i < GroundStacks.Count; i++)
+        {
+            if (GroundStacks[i].Goods == Goods.Firewood)
+            {
+                total += GroundStacks[i].Amount;
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The firewood the village has made and nobody has burned — its stores' and its heaps'
+    /// (D407). What a limit is met against and what the homes' want is weighed against.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THE HEAPS WERE INVISIBLE, AND THAT WAS D395.</b> When the woodyard's store was full a
+    /// split went down on the ground beside the hut (D96), and every "has the village enough?"
+    /// counted the stores alone — so the woodcutter never saw the pile and split on: a two-home
+    /// cold start held <b>718 firewood on the ground by tick 312</b> and 742 split for homes that
+    /// wanted ~134, and the haulers later carried the heaps in past any limit (Joe, D395: *"firewood
+    /// rose 400 → 962 past a set limit"*).
+    /// </remarks>
+    public int FirewoodTheVillageHas() => FirewoodInWarehouses() + FirewoodOnTheGround();
+
+    /// <summary>
+    /// ⭐⭐ Whether the village wants more firewood split — <b>the one question</b>, asked where a
+    /// woodcutter sets out, before every split of a stint, and by the hiring quota (D407).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With a limit set it is the player's number, met against the stores AND the heaps (D62's
+    /// ceiling, and an ambition when it sits above what the homes want — the log limit's rule).
+    /// With none, it is what the homes want: <see cref="LabourQuota.FirewoodShortfall"/>, the
+    /// per-home target and the winter to come, against what they can fetch — the stores.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A split still goes ahead with the stores full</b> and sets its firewood down (D96): a
+    /// split takes six logs out of the store, which is room, and a first draft that refused to split
+    /// without room froze a village whose stores were packed with logs — the old endless splitting
+    /// had been making that room all along (trap 117's shape).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>IT USED TO BE ONLY THE LIMIT</b> at the place a woodcutter set out, so with no limit set
+    /// anybody seated at the hut split whenever there were logs — Joe, 2026-09-26: *"I can skip 10
+    /// years without a woodcutter and still have lots of firewood. It seems like a non-factor."*
+    /// </para>
+    /// </remarks>
+    public bool TheVillageWantsMoreFirewood() =>
+        StockLimits.For(Goods.Firewood) is not null
+            ? !StockLimits.IsMet(Goods.Firewood, FirewoodTheVillageHas())
+            : LabourQuota.FirewoodShortfall(this) > 0;
+
+
     /// <summary>
     /// How much of any good the village's stores hold between them.
     /// </summary>
@@ -3298,11 +3356,18 @@ public sealed class SimWorld : IObstacles
 
     private string? WoodcutterIdleNote(Workplace hut)
     {
-        if (StockLimits.IsMet(Goods.Firewood, FirewoodInWarehouses()))
+        if (StockLimits.IsMet(Goods.Firewood, FirewoodTheVillageHas()))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInWarehouses()}.";
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodTheVillageHas()}.";
         }
+
+        if (!TheVillageWantsMoreFirewood())
+        {
+            return $"{hut.Name} has stopped — the homes have the firewood they want, "
+                + $"and the stores hold {FirewoodTheVillageHas()}.";
+        }
+
 
         return NearestStoreAccepting(
                 hut.Tile, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)

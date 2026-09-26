@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D406 IN §7. FENCES AS WALLS IS MERGED (NOT PUSHED). NEXT: FIREWOOD — THE LEDGER GUARD, THEN THE FIX, THEN JOE'S DIALS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D407 IN §7. FENCES ARE MERGED (NOT PUSHED). FIREWOOD IS ON `slice/firewood-matters`, NOT MERGED, WAITING ON TWO CALLS OF JOE'S (D407) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 (LATER) — AFTER D406.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 (LATEST) — AFTER D407.**
+>
+> **The state:** `main` = fences merged (D406), **not pushed**. **`slice/firewood-matters` = D407,
+> committed, NOT merged, NOT pushed**: 1230 passing, 0 failing, 4 skipped of 1234; view 0 warnings;
+> probe green.
+>
+> **⏸️⏸️ WAITING ON JOE — read D407's measurement before touching it.** Four firewood leaks are closed
+> and each is right on its own, but together they took the shipped game **71 → 56 alive, starved
+> 11 → 28** over six seeds, because **the endless split was the village's only log sink**: logs from
+> clearing the harvest paint now fill a cold start's small stores and heap on the ground (19,818 on
+> shipped seed 1, which starved in year 45 with its cart full of firewood). Two calls, in order:
+> *(1)* **what the village does with logs it does not want** — a derived log ceiling (cleared logs
+> not carried in past it), or keep turning surplus logs into firewood (the non-factor he started
+> from); *(2)* **the dial** — burn 24 → 32 (shipped 62 / 15), split 53 → 35 (shipped 67 / 15), both,
+> or neither. ⛔ Do not merge the branch as it stands, and do not "fix" the regression by putting the
+> unasked split back — that IS the leak.
+>
+> *(The D406 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATER) — AFTER D406.**
 >
 > **The state:** fences as walls is **MERGED into main locally (D404–D406), NOT pushed** — Joe
 > plays, then pushes. **1227 passing, 0 failing, 4 skipped of 1231**, ~3m; view 0 warnings; probe
@@ -2193,6 +2212,18 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 130. **⚠️ A GOLDEN CAN HIDE BEHIND ANOTHER GOLDEN IN THE SAME TEST (D406).** The seam test asserts
     two hashes in a row; the first failing hid the second, so D404 counted five goldens to move
     and there were six. *Count goldens by assertion, not by failing test.*
+
+131. **⛔⛔ WHEN A LEAK HAS RUN FOR A YEAR, IT IS SOMEBODY'S SUPPLY (D407).** The woodcutter split
+    whenever there were logs, and that endless split was the village's only log sink: close it, and
+    the logs from clearing the player's paint fill the stores until food has no room. It also hid a
+    second leak — loggers hired to feed a woodyard already holding 2,000 logs — because while splitting
+    never stopped there was never a firewood shortfall to price. Trap 117's shape, one good over.
+    *Before closing a leak, ask what has been living on it.*
+
+132. **⚠️ A GUARD THAT READS STATE AFTER A TICK CAN BLAME AN ACTOR FOR WHAT A LATER ACTOR DID (D407).**
+    Villagers act one after another in a tick: a woodcutter rightly stepped up under the limit, a
+    hauler later in the same tick carried a heap in, and a guard reading the total at the tick's end
+    counted a split "begun past the limit". Read what the actor saw — before the tick.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

@@ -381,7 +381,7 @@ public readonly record struct LabourQuota
         // on it.
         StockLimits limits = world.StockLimits;
 
-        if (limits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()))
+        if (limits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()))
         {
             woodcutters = 0;
         }
@@ -824,7 +824,7 @@ public readonly record struct LabourQuota
     /// </remarks>
     private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
     {
-        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()),
+        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()),
 
         // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
         // A met log limit stops the felling; a hut with bare ground of its own still has work,
@@ -1143,7 +1143,15 @@ public readonly record struct LabourQuota
         // them are supply. Reading one would have had the village cutting wood it
         // already had the moment somebody built a second warehouse — the same shape as the
         // bug where this counted firewood stranded in homes.
-        int shortfall = demand - world.FirewoodInWarehouses();
+        // ⛔⛔ THE HEAPS COUNT ONLY WHILE THEY CAN BE CARRIED IN (D407, measured three ways). A heap
+        // beside the hut is firewood the haulers bring to a shelf — while some store has room.
+        // Never counted, the woodcutter split onto the ground below the want and the heap arrived
+        // after (373 in the stores against a want of 346). Always counted, a village whose stores
+        // were packed with logs (2,493 by year 34) froze beside 339 firewood on the ground: the
+        // heap said "enough", nobody split, and nobody could fetch it. With no room anywhere the
+        // heap is stranded and is not supply, so a split goes ahead — and it frees six logs' room.
+        int heaps = world.SomewhereToPut(Goods.Firewood) ? world.FirewoodOnTheGround() : 0;
+        int shortfall = demand - world.FirewoodInWarehouses() - heaps;
         return shortfall <= 0 ? 0 : shortfall;
     }
 
@@ -1223,6 +1231,20 @@ public readonly record struct LabourQuota
         Config.SimConfig config = world.Config;
         int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
         int logs = CeilingDivide(shortfall * config.LogsPerSplit, perFirewood);
+
+        // ⛔⛔ LESS THE LOGS ALREADY IN THE STORES (D407). This hired loggers for every log the
+        // firewood shortfall would take, as if the woodyard were empty — and while the woodcutter
+        // split without asking (see `SimWorld.TheVillageWantsMoreFirewood`) the shortfall was
+        // nearly always nil, so it never showed. Once splitting answered the homes, a winter's
+        // shortfall hired foresters to fell for a yard holding 2,000 logs, the stores filled with
+        // timber to the roof, and the room food needed went with it. Felling for the huts is for
+        // the logs the huts do not already have.
+        logs -= world.LogsInWarehouses();
+        if (logs <= 0)
+        {
+            return 0;
+        }
+
         return CeilingDivide(logs, VillageEconomy.WoodCutPerYearAtWorst(config));
     }
 

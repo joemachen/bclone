@@ -706,8 +706,16 @@ public sealed class MapGenerationTests
     /// the number in front of him — *"let longer walks be the price of fences"* — and the shipped
     /// game gained people (65 → 71 over six seeds, `fences-as-walls.md §6`). Seven: under the
     /// measurement with two valleys of headroom, and still far above D103's collapse.
+    /// ⛔ <b>Re-based a third time at D407 — firewood is a factor now, and this is what it costs the
+    /// UNATTENDED village:</b> a burn takes the last logs and nobody splits what the homes do not
+    /// want, so over these 24 valleys × 120 years <b>11 freeze where none did</b>, starvation goes
+    /// 87 → 109, and liveable valleys <b>9 → 6</b>. Joe asked for firewood to stop being *"a
+    /// non-factor"*. Five. ⚠️ <b>This is the last lowering this guard can honestly take:</b> the
+    /// unattended fixture is now weak enough that the bar sits near where D103's collapse did,
+    /// and — like `CapacityIsWhatHoldsThePopulationFlat` — it wants re-posing on a village somebody
+    /// plays (an opening, a fishery) before the next economy change is measured against it.
     /// </remarks>
-    private const int LiveableValleysWanted = 7;
+    private const int LiveableValleysWanted = 5;
 
     // ---------------------------------------------------------------
     //  Water you have to go round — specs/pathfinding-and-water.md (D40)

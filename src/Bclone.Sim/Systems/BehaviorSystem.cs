@@ -2661,13 +2661,24 @@ public sealed class BehaviorSystem : ISimSystem
             // Checked here, where the work actually happens, so it holds however the villager
             // came to be standing at the hut. Not an idle villager — they fall through to the
             // spare work below, which is the same thing a woodcutter with no logs does.
-            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses()))
+            // ⭐⭐ AND NOT WHEN THE HOMES HAVE WHAT THEY WANT (D407). The limit
+            // was the only thing asked here, so with none set a seated woodcutter split whenever
+            // there were logs, and with the stores full the firewood went on the ground where no
+            // count could see it. `TheVillageWantsMoreFirewood` is the one question.
+            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()))
             {
                 villager.WorkNote =
                     $"Nothing to split — you asked the village to keep "
                     + $"{world.StockLimits.For(Goods.Firewood)} firewood and it has "
-                    + $"{world.FirewoodInWarehouses()}.";
+                    + $"{world.FirewoodTheVillageHas()}.";
             }
+            else if (!world.TheVillageWantsMoreFirewood())
+            {
+                villager.WorkNote =
+                    $"Nothing to split — the homes have the firewood they want, and the stores hold "
+                    + $"{world.FirewoodTheVillageHas()}.";
+            }
+
             else
             {
             // The nearest warehouse that actually has a batch in it. Naming THAT warehouse rather
@@ -3651,7 +3662,8 @@ public sealed class BehaviorSystem : ISimSystem
         // D142's shape exactly — a rule that reached some of its call sites — and the fix is
         // the same: both halves in one place, with the second reading what the first left.
         int foodShort = world.TargetFoodFor(household) - world.FoodIn(household.Stockpile);
-        load -= world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, load));
+        int foodTaken = world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, load));
+        load -= foodTaken;
 
         // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
         // to carry and this does nothing — the second trip is then carry capacity doing its
@@ -3664,7 +3676,15 @@ public sealed class BehaviorSystem : ISimSystem
 
         int firewoodShort =
             VillageEconomy.FirewoodStoreWantedPerHousehold(config) - household.Stockpile.Firewood;
-        int firewood = Smallest(firewoodShort, load, target.Store.Firewood);
+
+        // ⚠️ NO MORE THAN THE LARDER HAS ROOM FOR (D407). A larder's walls are shared by food and
+        // firewood (D399), and a fetch took what the hearth wanted whether or not it would fit once
+        // this trip's food was in — the rest stayed in the carrier's arms (D399's rule, nothing
+        // destroyed), went foraging with them, and was set down at the granary, which takes no
+        // firewood. Found by `AVillageWithRoomNeverSetsAnythingDown` once homes fetched firewood in
+        // earnest (the last logs burn now).
+        int room = household.Stockpile.FreeSpace - foodTaken;
+        int firewood = Smallest(firewoodShort, load, Smallest(target.Store.Firewood, room, room));
         if (firewood > 0 && target.Store.TryTake(Goods.Firewood, firewood))
         {
             villager.Carried.Receive(Goods.Firewood, firewood);
@@ -4074,7 +4094,8 @@ public sealed class BehaviorSystem : ISimSystem
             // player's filter, so a pile set to logs-only took the firewood in the other arm.
             // Whatever the destination will not have goes down where they stand, one line
             // below, which is D96's rule already sitting here.
-            if (StoreForTheLoad(world, villager) is StoreBuilding destination)
+            StoreBuilding? unloadedAt = StoreForTheLoad(world, villager);
+            if (unloadedAt is StoreBuilding destination)
             {
                 Stockpile store = destination.Store;
 
@@ -4093,6 +4114,19 @@ public sealed class BehaviorSystem : ISimSystem
                         villager.Carried.TryTake(goods, destination.Put(goods, villager.Carried[goods]));
                     }
                 }
+            }
+
+            // ⭐ AND THE REST TO A STORE THAT TAKES IT, BEFORE THE GROUND (D407). A mixed armful was
+            // sent to the store for its first good — food to the granary — and whatever that store
+            // refused was set down at its door, with a warehouse that would take it standing
+            // empty: Agnes set three firewood beside the granary. Walked on when another store has
+            // room for what is left; set down only when none has (D96).
+            if (villager.IsCarrying
+                && StoreForTheLoad(world, villager) is StoreBuilding onward
+                && !ReferenceEquals(onward, unloadedAt))
+            {
+                Travel(world, villager, onward.Position, VillagerState.HaulingToStore);
+                return;
             }
 
             if (villager.IsCarrying)
@@ -4332,6 +4366,17 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>The first split of a stint at the block (D384).</summary>
     private static void BeginSplitting(SimWorld world, Villager villager)
     {
+        // ⚠️ ASKED AGAIN AT THE BLOCK (D407). The woodcutter set out when the village wanted more,
+        // and a hauler can carry a heap in while they walk — `AFirewoodLimitStopsTheWoodcutters`
+        // caught two splits begun with the limit already held. The stint asks before every split
+        // after the first; the first now asks too.
+        if (!world.TheVillageWantsMoreFirewood())
+        {
+            villager.SplitsThisStint = 0;
+            villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
         villager.SplitsThisStint = 0;
         villager.State = VillagerState.MakingFirewood;
         villager.ActionTicksRemaining =
@@ -5227,8 +5272,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // and the market-off village to one soul before this line.
                 villager.SplitsThisStint++;
                 if (villager.SplitsThisStint < world.Config.SplitsPerStint
-                    && !world.StockLimits.IsMet(Goods.Firewood, world.FirewoodInWarehouses())
-                    && LabourQuota.FirewoodShortfall(world) > 0
+                    && world.TheVillageWantsMoreFirewood()
                     && NearestStoreWithLogs(world, villager.Tile, world.Config.LogsPerSplit) is not null)
                 {
                     villager.ActionTicksRemaining =
