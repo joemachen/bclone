@@ -86,7 +86,7 @@ internal static class LabourAllocator
         ArgumentNullException.ThrowIfNull(world);
 
         LabourQuota quota = LabourQuota.For(world);
-        ReleaseUnfit(world);
+        _ = ReleaseUnfit(world);
         MakeRoomForPins(world, quota);
 
         // Snapshot before clearing, so a job change can say what it changed from.
@@ -141,11 +141,73 @@ internal static class LabourAllocator
 
         LabourQuota quota = LabourQuota.For(world);
 
-        ReleaseUnfit(world);
+        List<(Villager Dead, Workplace Place)> leftByTheDead = ReleaseUnfit(world);
+        HashSet<int> workingBefore = leftByTheDead.Count == 0 ? new HashSet<int>() : WhoIsWorking(world);
         MakeRoomForPins(world, quota);
         List<int> shed = ShedSurplus(world, quota);
         Match(world, quota, previousWorkplaces: null);
         ExplainTheIdle(world, quota, shed);
+        SayWhoTookOver(world, leftByTheDead, workingBefore);
+    }
+
+    /// <summary>
+    /// ⭐ *"… and Bess took over their work"* (Joe, 2026-09-26: *"when someone in a profession dies
+    /// and a laborer automatically takes over their spot in that profession, the village log should
+    /// say … and X person took over their job at X"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A death is narrated where it happens (<c>MortalitySystem</c>, late in the tick) and the seat
+    /// is filled at the start of the next (<see cref="LabourSystem"/>'s <c>AnyVacancyLeftByTheDead</c>),
+    /// so this is its own line one tick after the epitaph — not a clause of it, which would mean
+    /// holding the epitaph back or running a slack pass inside a death. Under the Deaths filter,
+    /// beside the line it follows.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The trade, not the building</b> — Joe's words were *"takes over their spot in that
+    /// profession"*, and the pass seats whoever is nearest to <em>any</em> opening in the trade: the
+    /// guard's first pose had the dead forager's heir seated at the other forager's hut, and a line
+    /// keyed on the building said nothing. So it names the heir's own workplace. And only somebody
+    /// who had no job before the pass: the quota may have shrunk with the death, and then nothing is
+    /// said here — <c>SayIfWorkIsGoingUndone</c> already speaks for work left undone.
+    /// </para>
+    /// </remarks>
+    private static void SayWhoTookOver(
+        SimWorld world, List<(Villager Dead, Workplace Place)> leftByTheDead, HashSet<int> workingBefore)
+    {
+        var claimed = new HashSet<int>();
+        foreach ((Villager dead, Workplace place) in leftByTheDead)
+        {
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                Villager heir = world.Villagers[i];
+                if (!heir.HasJob || workingBefore.Contains(heir.Id) || claimed.Contains(heir.Id)
+                    || world.FindWorkplace(heir.WorkplaceId) is not Workplace now || now.Kind != place.Kind)
+                {
+                    continue;
+                }
+
+                claimed.Add(heir.Id);
+                world.Narrate(
+                    $"{heir.Name} took over {dead.Name}'s work as a {world.JobsCatalog.NameOf(place.Kind)}, at {now.Name}.",
+                    LogCategory.Death);
+                break;
+            }
+        }
+    }
+
+    private static HashSet<int> WhoIsWorking(SimWorld world)
+    {
+        var working = new HashSet<int>();
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.HasJob)
+            {
+                working.Add(villager.Id);
+            }
+        }
+
+        return working;
     }
 
     // ---------------------------------------------------------------
@@ -838,8 +900,10 @@ internal static class LabourAllocator
         return false;
     }
 
-    private static void ReleaseUnfit(SimWorld world)
+    /// <summary>Let go of everyone who can no longer work where they do; returns the seats the dead left.</summary>
+    private static List<(Villager Dead, Workplace Place)> ReleaseUnfit(SimWorld world)
     {
+        var leftByTheDead = new List<(Villager Dead, Workplace Place)>();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -857,6 +921,11 @@ internal static class LabourAllocator
 
             if (!villager.CanWork)
             {
+                if (!villager.Alive)
+                {
+                    leftByTheDead.Add((villager, workplace));
+                }
+
                 Release(world, villager, villager.Alive ? "No work: too young to work." : "No work: died.");
                 continue;
             }
@@ -890,6 +959,8 @@ internal static class LabourAllocator
                         + $"left {workplace.Name}.");
             }
         }
+
+        return leftByTheDead;
     }
 
     /// <summary>
