@@ -1,6 +1,42 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE D410 BANNER, THEN `DESIGN.md §0–§6` AND D404–D409 IN §7. NEXT: D410 (JOE'S PLAY NOTES ON D409 — A STALE WORK NOTE, AND "FOOD" OFF THE BAR; PLAN APPROVED, BELOW) → HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D410 IN §7. D410 IS BUILT, MERGED INTO `main` LOCALLY, NOT PUSHED, UNPLAYED. NEXT: HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST, `organic-housing.md §3.3`) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END OF DAY) — AFTER JOE PLAYED D409.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D410.**
+>
+> **Branches:** `main` = D410 merged (`slice/d409-play-notes`), **NOT pushed** — Joe pushes after he
+> plays (D409 and everything before it IS on `origin/main`, pushed this session at his word). Suite
+> **1239 passing, 0 failing, 4 skipped of 1243**, 3m06; view 0 warnings; probe green, bar height 161,
+> the bars check now reads **1119×58** (the food cell's 32 px gone). **No golden moved.**
+>
+> **What D410 is (read it in §7):** Joe's two play notes on D409, as the approved plan below said.
+> *(1)* `Villager.WorkNote` is cleared where the job changes — `LabourAllocator.Assign` when the
+> workplace differs from the previous one, and `Release` — so Wendell no longer carries *"Nothing
+> standing to reap"* into foraging. Two guards in `LabourAllocationTests`. ⚠️ **Read the red-check
+> counts before trusting the first guard alone:** the professions call goes Release → Assign, so
+> `AFarmersNoteDoesNotFollowThemOntoAnotherTrade` **scores 0 on either clear by itself** (1 red with
+> both gone); the reshuffle guard is the one that holds `Assign`'s clear (1 red removed, 1 red made
+> unconditional). *(2)* **No food total anywhere on screen** — bar row one is forage · wheat · fish ·
+> meat; the survival-floor amber, the D394 hover and the three `more ▾` food rows are gone. ⛔ **This
+> reverses D394 and D396 on Joe's word — do not put them back without asking him.** Sim unchanged.
+>
+> ⚠️ **One thing noticed and NOT changed (plan said leave the reshuffle loop alone):** a villager the
+> year-start reshuffle leaves **jobless** had `WorkplaceId` zeroed without `Release`, so their last
+> trade's `WorkNote` survives until whatever they do next writes one. Laborer work writes its own
+> notes, so it is likely self-correcting — but if Joe reports a stale note on an idle villager, that
+> is where it lives.
+>
+> **▶️ NEXT, IN JOE'S ORDER:** homes that do not read as suburbia — **spec first**
+> (`organic-housing.md §3.3`; the D408 banner below has his words and the likely shape: "lane
+> already" only as a tie-break within a small radius, a real spread of facings / plot offsets, ⛔
+> not §9.4's walk-from-the-door) → tools on ticks at 34 % → the quarry spec → his design threads
+> (the ⏸️ list, including D406's valley-clearing starvation and its two skipped guards).
+>
+> **What I need from Joe:** play D410 (the bar's first row and a farmer moved off the farm), then
+> push `main`.
+>
+> *(The D410 plan banner, kept below.)*
+>
+
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (END OF DAY) — AFTER JOE PLAYED D409. (D410 below is now BUILT — see the banner above.)**
 >
 > **Branches:** `main` = D409 merged (`642c652`), **NOT pushed** — Joe pushes when he is happy. Suite
 > **1237 passing, 0 failing, 4 skipped of 1241**, ~3m; view 0 warnings; probe green, bar height 161.
@@ -3051,6 +3087,8 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⚠️ A NOTE WRITTEN BY ONE TRADE OUTLIVES THE TRADE UNLESS THE JOB CHANGE CLEARS IT (2026-09-26, D410).** `WorkNote` is written by each trade's branch in `BehaviorSystem`; a forager gathering writes none, so a farmer moved to foraging carried *"Nothing standing to reap"* all autumn. **Clear per-job text where the job changes** (`Assign` to a different workplace, `Release`), the way `CommuteNote` already was. ⭐ *And two clears on one path can each hide the other's removal:* the professions-call guard scored **0** on either clear alone — only a second guard on a path that reaches one of them (the year's reshuffle, which never calls `Release`) makes the red-check mean anything.
 
 - **⚠️ A DELTA ON A VILLAGE-WIDE TOTAL CANNOT TELL ONE TRADE FROM ANOTHER (2026-09-11, D348).** A guard compared village produce before and after a farm's autumn and called any rise "the reap writing produce" — the fixture village has foragers, who raised it by two. *Read the instrument that only the thing under test can move* (the farm's own store's produced counter).
 - **⛔ A NEW ENUM VALUE TAKES THE NEXT ID, AND A TEST FIXTURE MAY ALREADY BE SITTING ON IT (2026-09-11, D348 — and the same fixture said "6 stopped being free the day Fish shipped").** `ModdedGoodTests` keeps its modded good one above the last built-in; every new good bumps it. The loader says so plainly — read the message before assuming the new code is wrong.

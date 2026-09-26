@@ -457,6 +457,15 @@ internal static class LabourAllocator
         villager.JobReason = reason.ToString();
         villager.CommuteNote = DescribeTheCommute(world, workplace, cost);
 
+        // ⭐ A NOTE BELONGS TO THE JOB IT WAS WRITTEN FOR (D410). The trade's own branch writes
+        // `WorkNote` and nothing else clears it, and a forager gathering writes none — so a
+        // farmer moved to foraging carried "Nothing standing to reap" on their card all autumn.
+        // Kept through an UNCHANGED job: the reshuffle re-hires most people where they were.
+        if (previousWorkplaceId != workplace.Id)
+        {
+            villager.WorkNote = string.Empty;
+        }
+
         // Into the audit log as well as onto the villager. The sentence on a villager
         // answers "why is she doing that?" for whoever is looking right now; the log
         // answers "why did the whole village rearrange itself in year 84?", which is a
@@ -1099,6 +1108,9 @@ internal static class LabourAllocator
         // Somebody with no job has no commute. Leaving the note behind would have the panel
         // telling a resting villager how much of their day the road takes.
         villager.CommuteNote = string.Empty;
+
+        // Nor the trade's note: it was about the job they no longer hold (D410).
+        villager.WorkNote = string.Empty;
     }
 
     // ---------------------------------------------------------------

@@ -1,6 +1,6 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378, D379, D380. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Decisions:** D376 (this document), D377, D378, D379, D380; §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
 **Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** D380 unplayed. Owner: Joe + Claude Code.
 
 ---
@@ -31,7 +31,7 @@ the title clips with an ellipsis, the status wraps), built once and rewritten ev
 | Part | What it says | Where it comes from |
 |---|---|---|
 | **Title** | the name; ✎ (**a building's card only** — not a person's, not a home's, D380) opens a `LineEdit` in place, Enter or focus-out commits; ⌖ pins; ✕ closes | `Name` (§3) |
-| **Status** | one sentence; a green light for *working*, amber and the sentence for the one reason it is not | `SimWorld.IdleNote` (workplace); full / emptying / *N of cap used* (store); the larder's share against `restock_emergency_percent` and cold (home); `Villager.WorkNote` else `DescribeState` (person) |
+| **Status** | one sentence; a green light for *working*, amber and the sentence for the one reason it is not | `SimWorld.IdleNote` (workplace); full / emptying / *N of cap used* (store); the larder's share against `restock_emergency_percent` and cold (home); `Villager.WorkNote` else `DescribeState` (person) — ⚠️ the note is the trade's own and **is cleared where the job changes** (`LabourAllocator.Assign` to a different workplace, and `Release`), the way `CommuteNote` is (D410) |
 | **Workers** | *N / seats* with − and + — the same number the Professions panel edits from the other end (D109) | `SimWorld.SetStaffing` |
 | **Three numbers** | workplace: held (*"of N"* only when the building has a wall — a hut with no store of its own is unbounded and says *"held here"*, D404), **where it works** (painted ground for a forester or farm, *"tiles round it"* for a forager's ring, *"tiles of range"* for a hunter, *"the water"* for a fisher, *"at the building"* otherwise — D404, Joe: *"what does no ground mean?"*), seats · site: **every material** (*"40/40 · 0/5"* over *"logs · stone"*, and the status names what is still wanted — D404, Joe: *"stone doesn't show up as a requirement"*), work, sites queued · home: food/target, firewood/target, people · person: age, trade, household. ⛔ **A store has no three numbers since D393** — it has the storage list below | — |
 | **Storage list** (stores, D393) | one row per good the store can hold, in catalogue order: chip · name · amount (*—* and dimmed when none) · **✓/✕ take toggle on the row** (`PlayerAllows`, D389). Every row adds up to the status line's *N of M used*. Joe, at a warehouse reading *714 used* over three numbers summing to 660 — the iron and tools were the missing 54: *"add a new line for each item that can go in a warehouse/granary/etc."*, with Foundation's warehouse card as the model. The *Takes:* row under Settings went with it — a good is described in one place (D139) | `StoreBuilding.CanEverHold`, `PlayerAllows`, `ToggleSelectedAccepts` |
@@ -115,7 +115,16 @@ character; a village where nobody renamed anything hashes as it did before renam
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 
-## 4a. Where the food is — one number on the bar, three places in the popup (D394)
+## 4a. Where the food is — one number on the bar, three places in the popup (D394) — ⛔ SUPERSEDED BY D410
+
+> ⛔ **Superseded by D410 (2026-09-26), on Joe's word:** *"why do i still see 'food' in the top bar?
+> remove it."* — and, asked where its two jobs should go, **"Remove it entirely."** There is **no
+> food total on the bar, in `more ▾`, or anywhere on screen**: forage, wheat, fish and meat are read
+> one by one, as their limits are (D409). The bar's survival-floor amber (D396) went with it, and
+> so did the popup's three rows below. **Nothing in the sim changed** — `FoodTheVillageHolds` is
+> still what the birth gate, the quota and the farm read, and the rule below about the larders
+> still holds for them. A producer's swollen-buffer amber on its card is untouched. ⛔ Do not put
+> the total back without asking him. The section is kept as the record of why it once existed.
 
 Joe, playing D391 at year 37: *"Help me understand where all of the food is? There are 5 homes,
 the largest of which has 475 food. Is it in the hunter's lodge? … all of these different versions
@@ -151,8 +160,8 @@ glances at went to Settings. `Main.cs`, `BuildTopBars`.
 
 | Box | What it says | Where it comes from |
 |---|---|---|
-| **Resources** | two rows: **food** *(the umbrella, first)*, forage *(was "produce", D409)*, wheat, fish, meat / logs, firewood, stone, tools — a chip, a number, a name; then `more ▾` | `FoodInGranaries` for food; `InStores(g)` per good; `BarRows` fixes the eight in Joe's order, **every other catalogue good is behind `more`** in catalogue order (iron, leather today; a modded good lands there the day it exists — D210's rule kept) |
-| **`more ▾`** | a popup: the leftover goods, then the two permanent rows *in homes and huts* `+N`/`—` and *on the ground* `+N`/`—` (its tooltip the per-good reason, D134) | `TotalFood − FoodInGranaries`; `OnTheGround(g)` summed, `WhyItIsOnTheGround` |
+| **Resources** | two rows: forage *(was "produce", D409)*, wheat, fish, meat / logs, firewood, stone, tools — a chip, a number, a name; then `more ▾`. ⛔ **No *food* umbrella** — it led row one from D378 to D409 and left on Joe's word (D410) | `InStores(g)` per good; `BarRows` fixes the eight in Joe's order, **every other catalogue good is behind `more`** in catalogue order (iron, leather today; a modded good lands there the day it exists — D210's rule kept) |
+| **`more ▾`** | a popup: the leftover goods, then the one permanent row *on the ground* `+N`/`—` (its tooltip the per-good reason, D134). ⛔ The food rows (D367's *in homes and huts*, then D394's three places) are gone with the total (D410) | `OnTheGround(g)` summed, `WhyItIsOnTheGround` |
 | **Villagers** | `N villagers · N adults · N children · N elders · N laborers` (dots in the map's own villager colours) over `Fernhollow · Day 3, Summer, Year 17 · 2 households` | `Population`, the life-stage count, `Laborers`, `Name`, `Clock`, `LivingHouseholds` |
 
 **⚠ beside a good = the player's limit on it is met (D409)** — in a fixed 18 px slot after the name, so the bar

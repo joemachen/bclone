@@ -327,15 +327,12 @@ public partial class Main : Control
 
         // ⛔ AND THE PANELS AGAIN, TWELVE YEARS IN (D367). At the founding there are no heaps and
         // the larders are empty, so the first measurement cannot see the strings that used to
-        // widen the Overview; this one can. The two rows under `more ▾` are posed as well, in
+        // widen the Overview; this one can. The ground row under `more ▾` is posed as well, in
         // case the run happens to have nothing on the ground.
         Refresh();
         _onTheGround.Text = "+1,234";
-        _foodOnShelves.Text = "+12,345";
-        _foodInHuts.Text = "+12,345";
-        _foodInLarders.Text = "+12,345";
         ForceUpdateTransform();
-        ProbePanelWidths("twelve years in, with heaps and larders posed");
+        ProbePanelWidths("twelve years in, with heaps posed");
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
@@ -515,7 +512,7 @@ public partial class Main : Control
         Vector2 before = _topBar.GetCombinedMinimumSize();
         Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
 
-        var cells = new List<Label> { _foodTotal, _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _foodOnShelves, _foodInHuts, _foodInLarders, _onTheGround };
+        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _onTheGround };
         foreach ((Goods _, Label held) in _goodsReadouts)
         {
             cells.Add(held);
@@ -1808,39 +1805,11 @@ public partial class Main : Control
             mark.TooltipText = why ?? string.Empty;
         }
 
-        // ⭐⭐ THE NUMBER ON THE BAR IS THE NUMBER THE RULES READ (D394). The comment on the bar's
-        // build said so since D378 and the code read `FoodInGranaries` — the shelves alone — so a
-        // farm's card said *"it has 3092"* beside a bar saying 245 and Joe asked where the food
-        // was (a lodge, 2,103 of it). `FoodTheVillageHolds` is what the limit, the farm, the
-        // hunts and the birth gate read: the shelves and the huts, never the larders (Joe: *"the
-        // limit should be what is in storage, in transit to storage and in markets"*). The popup
-        // names the three places, always present, so its width never moves (D367).
-        int onShelves = world.FoodInGranaries();
-        int inHuts = world.FoodWaitingInHuts();
-        int inLarders = world.FoodInLarders();
-        int foodHeld = world.FoodTheVillageHolds();
-        _foodTotal.Text = foodHeld.Grouped();
-
-        // ⭐ AMBER = BELOW THE SURVIVAL FLOOR, NOT BELOW THE QUOTA'S FILL LINE (D396, Joe's QA
-        // pass: a granary 96 % full read amber because D378 asked `TheVillageWantsMoreFood`, which
-        // is *"would the foragers still be sent out?"* — a fill line, not a shortage). The floor is
-        // D62's derived half — what the village needs not to die; the quota's *wants more* stays
-        // as a clause in the tooltip, so both readings are on the bar and neither is the other.
-        // ⚠️ `ShowShortfall` writes the tooltip, so the D394 sentence goes on after it.
-        int floor = VillageEconomy.SurvivalFloorFor(world.Config, Goods.Produce, world.Population, world.Households.Count);
-        // D409: no food total to set — what the food trades aim for is the village's derived need.
-        int foodWanted = world.TargetFoodForTheGranary() + world.FoodTheLardersWant();
-        ShowShortfall(_foodTotal, foodHeld < floor,
-            $"the village is short of food — it holds {foodHeld.Grouped()} and needs {floor.Grouped()} to see the year out");
-        string where = $"{onShelves.Grouped()} on the shelves and {inHuts.Grouped()} in the huts — what the food limit reads; the larders hold {inLarders.Grouped()} besides";
-        string wanting = world.TheVillageWantsMoreFood() ? $"; the food trades are out until it has {foodWanted.Grouped()}" : string.Empty;
-        _foodTotal.TooltipText = foodHeld < floor
-            ? $"{_foodTotal.TooltipText}{wanting}\n{where}"
-            : $"{where}{wanting}";
-        _foodTotal.MouseFilter = MouseFilterEnum.Pass;
-        _foodOnShelves.Text = onShelves.Grouped();
-        _foodInHuts.Text = inHuts > 0 ? inHuts.Grouped() : "—";
-        _foodInLarders.Text = inLarders > 0 ? inLarders.Grouped() : "—";
+        // ⛔ NO FOOD TOTAL ON THE BAR, AND NO SHORTAGE AMBER FOR ONE (D410, Joe: *"why do i still
+        // see 'food' in the top bar? remove it."* — and asked where its two jobs should go, *"Remove
+        // it entirely"*). Forage, wheat, fish and meat are read one by one, as their limits are
+        // (D409). This reverses D394's one number and D396's survival-floor amber on his word;
+        // `FoodTheVillageHolds` is still what the rules read — it is simply not on the bar.
         _onTheGround.Text = onTheGround > 0 ? $"+{onTheGround.Grouped()}" : "—";
         _onTheGround.TooltipText = string.Join("\n", whyOnTheGround);
         _onTheGroundLabel.TooltipText = _onTheGround.TooltipText;
@@ -2916,14 +2885,10 @@ public partial class Main : Control
         rows.AddThemeConstantOverride("separation", 3);
         box.AddChild(rows);
 
-        // ⭐⭐ FOOD IS AN UMBRELLA (Joe, 2026-09-05) AND IT COMES FIRST. `FoodTheVillageHolds` is
-        // what the birth gate, the food limit and the labour quota all read, so the first number
-        // on the bar is the number the village actually decides on; the four foods after it are
-        // its parts. The umbrella's chip is produce's, as the Overview's was. ⚠️ This comment was
-        // true of the design and not of the code until D394 — the cell read the shelves alone.
+        // ⛔ The four foods, each on its own — no "food" umbrella before them (D410, Joe's word;
+        // it was D394's total). Each has its own limit and its own ⚠ (D409).
         HBoxContainer first = BarRow();
         rows.AddChild(first);
-        _foodTotal = AddBarCell(first, ChipColour(Goods.Produce), "food");
         foreach (Goods goods in BarRows[0])
         {
             AddGoodsCell(first, world, goods);
@@ -2997,9 +2962,10 @@ public partial class Main : Control
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The two permanent rows are D367's: food out in the larders and buffers, and goods lying
-    /// in the yard, <c>—</c> when there is nothing and <c>+N</c> when there is. The per-good
-    /// reason a heap is on the ground (D134's three states) is the ground row's tooltip.
+    /// The permanent row is D367's: goods lying in the yard, <c>—</c> when there is nothing and
+    /// <c>+N</c> when there is. The per-good reason a heap is on the ground (D134's three states)
+    /// is its tooltip. ⛔ The three food-total rows (D394's shelves, huts and larders) went with the
+    /// food total (D410).
     /// </para>
     /// <para>
     /// ⚠️ A <see cref="PopupPanel"/> is a <see cref="Window"/>, not a child in the scaled tree, so
@@ -3012,7 +2978,7 @@ public partial class Main : Control
         {
             Text = "more ▾",
             Flat = true,
-            TooltipText = "The rest of the goods · where the food is · on the ground",
+            TooltipText = "The rest of the goods · on the ground",
         };
         more.AddThemeFontSizeOverride("font_size", 12);
 
@@ -3039,23 +3005,6 @@ public partial class Main : Control
             table.AddChild(held);
             _goodsReadouts.Add((goods, held));
         }
-
-        // Where the food is, in three named places (D394): the two the limit reads, and the one
-        // it does not. "in homes and huts" lumped a full lodge in with the larders.
-        table.AddChild(new Control());
-        table.AddChild(Muted("food on the shelves"));
-        _foodOnShelves = Amount();
-        table.AddChild(_foodOnShelves);
-
-        table.AddChild(new Control());
-        table.AddChild(Muted("waiting in the huts"));
-        _foodInHuts = Amount();
-        table.AddChild(_foodInHuts);
-
-        table.AddChild(new Control());
-        table.AddChild(Muted("in the larders"));
-        _foodInLarders = Amount();
-        table.AddChild(_foodInLarders);
 
         table.AddChild(new Control());
         _onTheGroundLabel = Muted("on the ground");
@@ -3089,9 +3038,6 @@ public partial class Main : Control
     }
 
     private PopupPanel _morePopup = null!;
-    private Label _foodOnShelves = null!;
-    private Label _foodInHuts = null!;
-    private Label _foodInLarders = null!;
     private Label _onTheGround = null!;
     private Label _onTheGroundLabel = null!;
 
@@ -3175,12 +3121,12 @@ public partial class Main : Control
     /// <remarks>
     /// <para>
     /// ⭐ <b>The same predicates that staff the trades, so the bar and the Professions panel
-    /// cannot disagree</b> (D378): food while <see cref="SimWorld.TheVillageWantsMoreFood"/>,
-    /// firewood while <see cref="LabourQuota.WoodcuttersWanted"/> wants hands, logs while
-    /// <see cref="LabourQuota.ForestersWanted"/> does, tools while
+    /// cannot disagree</b> (D378): firewood while <see cref="LabourQuota.WoodcuttersWanted"/>
+    /// wants hands, logs while <see cref="LabourQuota.ForestersWanted"/> does, tools while
     /// <see cref="LabourQuota.SmithsWanted"/> does (D391). Nothing else has a demand function
     /// today, so nothing else goes amber — and a stock limit is deliberately not one: a limit is
-    /// a ceiling, and holding less than a ceiling is not a shortage.
+    /// a ceiling, and holding less than a ceiling is not a shortage. ⛔ Food no longer goes amber:
+    /// its amber was the food total's, and the total left the bar on Joe's word (D410).
     /// </para>
     /// <para>
     /// A founding village is short of all three, so the bar opens amber. That is honest: it is.
@@ -3313,9 +3259,6 @@ public partial class Main : Control
 
     /// <summary>Every goods row's amount label, so the tick can fill them in.</summary>
     private readonly List<(Goods Goods, Label Held)> _goodsReadouts = new();
-
-    /// <summary>The Food row — <b>every kind of food, which no single good answers</b>.</summary>
-    private Label _foodTotal = null!;
 
     /// <summary>The whole valley, small, with a box round what you are looking at.</summary>
     /// <remarks>

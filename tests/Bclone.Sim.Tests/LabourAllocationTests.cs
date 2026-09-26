@@ -488,6 +488,96 @@ public sealed class LabourAllocationTests
     }
 
     /// <summary>
+    /// ⭐ A note belongs to the job it was written for (D410): a farmer moved to foraging does not
+    /// carry the farm's sentence onto the new trade.
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe's play of D409:</b> Wendell, a farmer who sowed nothing in spring of year 6, was
+    /// switched to forager in summer, and in autumn his card still read <i>"Nothing standing to
+    /// reap at farmhouse 1."</i> Not stuck behaviour — a stale note. <c>WorkNote</c> is written by
+    /// the trade's own branch, the forager branch writes none while gathering, and the job change
+    /// cleared <c>CommuteNote</c> and never this. <b>Posed through the professions panel's own
+    /// call</b>, since that is the click that moved him, and the note is read the same call —
+    /// <c>SetJobLimit</c> lands its change at once (D396).
+    /// </remarks>
+    [Fact]
+    public void AFarmersNoteDoesNotFollowThemOntoAnotherTrade()
+    {
+        SimWorld world = Build(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        world.SetJobLimit(JobKind.Farmer, 1);
+
+        Villager farmer = Assert.Single(world.Villagers, v => v.WorkplaceId == farm.Id);
+        string stale = $"Nothing standing to reap at {farm.Name}.";
+        farmer.WorkNote = stale;
+
+        // Somewhere to go: a forager's seat with room, so the move is a move, not a lay-off.
+        int foraging = world.Villagers.Count(v =>
+            v.HasJob && world.FindWorkplace(v.WorkplaceId)!.Kind == JobKind.Forager);
+        Assert.Contains(world.Workplaces, w => w.Kind == JobKind.Forager && !w.IsSite && !w.IsFull);
+        world.SetJobLimit(JobKind.Forager, foraging + 1);
+        world.SetJobLimit(JobKind.Farmer, 0);
+
+        Workplace? now = farmer.HasJob ? world.FindWorkplace(farmer.WorkplaceId) : null;
+        _output.WriteLine(
+            $"{farmer.Name}: {now?.Name ?? "no work"} — \"{farmer.JobReason}\"; note \"{farmer.WorkNote}\"");
+
+        Assert.NotEqual(farm.Id, farmer.WorkplaceId);
+        Assert.True(
+            farmer.WorkNote.Length == 0,
+            $"{farmer.Name} left {farm.Name} for {now?.Name ?? "no work"} and their card still reads "
+            + $"\"{farmer.WorkNote}\" — a note about a job they no longer hold.");
+    }
+
+    /// <summary>
+    /// The year's reshuffle keeps a note through an unchanged job and drops it with a changed one.
+    /// </summary>
+    /// <remarks>
+    /// <b>The path the guard above does not reach.</b> The professions call sheds the farmer
+    /// through <c>Release</c> before hiring them again, so either clear alone keeps that guard green
+    /// (red-checked, D410). The year-start reshuffle empties every job <em>without</em>
+    /// <c>Release</c> and re-hires nearly everyone where they were — so the clear lives in
+    /// <c>Assign</c>, keyed on the job actually changing. ⚠️ Both halves: dropping every note at the
+    /// reshuffle would lose D396's sentence through a winter nobody's job changed in.
+    /// </remarks>
+    [Fact]
+    public void TheYearsReshuffleKeepsANoteThroughTheSameJobAndDropsItWithANewOne()
+    {
+        SimWorld world = Build(Config).World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        world.SetJobLimit(JobKind.Farmer, 1);
+
+        Villager farmer = Assert.Single(world.Villagers, v => v.WorkplaceId == farm.Id);
+        string stale = $"Nothing standing to reap at {farm.Name}.";
+        farmer.WorkNote = stale;
+
+        LabourAllocator.Reshuffle(world);
+        Assert.Equal(farm.Id, farmer.WorkplaceId);
+        Assert.Equal(stale, farmer.WorkNote);
+
+        // Written straight into the limits, not through `SetJobLimit`, so nothing is shed before
+        // the reshuffle: the move below is the reshuffle's own.
+        int foraging = world.Villagers.Count(v =>
+            v.HasJob && world.FindWorkplace(v.WorkplaceId)!.Kind == JobKind.Forager);
+        Assert.Contains(world.Workplaces, w => w.Kind == JobKind.Forager && !w.IsSite && !w.IsFull);
+        world.JobLimits.Set(JobKind.Forager, foraging + 1);
+        world.JobLimits.Set(JobKind.Farmer, 0);
+
+        LabourAllocator.Reshuffle(world);
+
+        Workplace? now = farmer.HasJob ? world.FindWorkplace(farmer.WorkplaceId) : null;
+        _output.WriteLine(
+            $"{farmer.Name}: {now?.Name ?? "no work"} — \"{farmer.JobReason}\"; note \"{farmer.WorkNote}\"");
+
+        Assert.True(farmer.HasJob, $"{farmer.Name} was left without work, so this is not the move it poses.");
+        Assert.NotEqual(farm.Id, farmer.WorkplaceId);
+        Assert.True(
+            farmer.WorkNote.Length == 0,
+            $"The reshuffle moved {farmer.Name} to {now!.Name} and their card still reads "
+            + $"\"{farmer.WorkNote}\".");
+    }
+
+    /// <summary>
     /// Cut a single tile off from the rest of the valley — <b>ground nobody can walk to</b>.
     /// </summary>
     /// <remarks>
