@@ -1,6 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D404 IN §7. `slice/fences-as-walls` IS BUILT, GUARDED AND MEASURED, AND WAITS ON ONE CALL OF JOE'S (`specs/fences-as-walls.md §9.1`). THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D405 IN §7. `slice/fences-as-walls` IS BUILT, GUARDED AND MEASURED, AND WAITS ON ONE CALL OF JOE'S (`specs/fences-as-walls.md §9.4`). THEN: THE FIREWOOD INVESTIGATION → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-25 (EVENING) — AFTER D404.**
+> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 — AFTER D405.**
+>
+> **The state:** `origin/main` = D403. **`slice/fences-as-walls` = D404 + three D405 commits, NOT
+> pushed, NOT merged**: the 237 ms tick (the site-chooser, 211 → 63 ms, exact), the cards (no raw
+> `int.MaxValue`, where a trade works, every material a site wants), and the heir's line in the log.
+> Same 23 red tests as D404, left red on purpose.
+>
+> **⏸️⏸️ THE MERGE WAITS ON ONE ANSWER OF JOE'S — `fences-as-walls.md §9.4`.** He accepted the trade
+> (§9.1), then D405 found what most of the fixture's cost is: founding families walk **~10 tiles**
+> to their hut on the branch against **~6** on main (10 of 30 valleys inside the economy's budget,
+> against 27), because a house faces for variety (D388) and its own fenced yard sits between the
+> door and the work. Either *(a)* re-pose the guards as accepted (a patch for
+> `WithNoRiverEveryCostIsTheStraightLine` is saved in the session scratchpad, not the repo — it
+> widens the bound by a yard's depth), or *(b)* build §9.4 first and measure again. ⛔ Do not re-pose
+> `EveryValleyMeetsTheEconomysDistanceBudget` to pass without his word — it is the guard saying so.
+>
+> ⏸️ **Firewood +30 % — handed back to him** (D405): D365 already was his +30 %; the pile is inside
+> the quota's band; the cold lines are outdoor exposure, not fuel. Ask what bothers him — the pile
+> (then D395, queue item 2) or the cold lines (then the exposure levers).
+>
+> *(The D404 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-25 (EVENING) — AFTER D404.**
 >
 > **The state:** `origin/main` = **D403**, unchanged. **`slice/fences-as-walls` has one new
 > commit on it (D404), NOT pushed, NOT merged, NOT played.** On the branch the suite reads
@@ -2123,6 +2145,21 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     probe printed unreachable homes and workplaces every year (none), the state and note
     histograms (resting and walking home, not stuck), and gathering ticks against main (−20 %):
     *then* it was the cost. That order is the one to keep.
+
+126. **⚠️ READ THE DEBUG LINE IN EVERY SCREENSHOT JOE SENDS (D405).** His year-109 play carried
+    *"slowest step 237.6 ms"* — a tick at 20× is 67 ms — and he said nothing about it; it was the
+    site-chooser sweeping the valley per candidate, a cost D404 had made 45 % worse. The instrument
+    D402 put on the screen is only worth having if somebody reads it when a picture arrives.
+
+127. **⚠️ A PROBE THAT LOOPS OVER THE WORLD CAN ASK NOTHING (D405).** The card probe's first check
+    walked every finished workplace — and the probe's valley is a cold start with none, so two red
+    checks scored zero and the green meant nothing. It asks the catalogue's rows now and fails when
+    it asked nothing. *Count what a loop-shaped guard actually visited.*
+
+128. **⚠️ "TOOK OVER THEIR SPOT" IS A TRADE, NOT A BUILDING (D405).** The slack pass seats whoever is
+    nearest to any opening in the trade, so a dead forager's heir can sit at the other hut. A line
+    keyed on the dead worker's building said nothing in the guard's first pose. *Read the player's
+    words for the unit they mean.*
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

@@ -241,9 +241,12 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
   unattended fixture gets hungrier* — and the merge re-poses the fixture guards with that reason
   and moves the goldens once. Or not, and the lever is §9.4 (the facing), measured before typed.
   ⛔ Not depth 2: it costs the shipped game 71 → 40 alive.
-- **§9.3 A building on the lane in front of a gate** is allowed and shuts the yard. Harmless
-  until something needs to enter a yard (the kitchen garden); refusing it is one more tile of
-  the lane the player may not build on.
+- ✅ **§9.1 ACCEPTED** (Joe, 2026-09-26: *"I accept"*) — ⏸️ but the merge waits on §9.4, because
+  of a number D405 found after he answered: at the founding the typical family walks ~10 tiles to
+  its hut against main's ~6 (`EveryValleyMeetsTheEconomysDistanceBudget` 27 → 10 of 30 valleys).
+- ✅ **§9.3 A building on the lane in front of a gate — ALLOWED** (Joe, 2026-09-26: *"no i dont
+  think we want to block it"*). It shuts the yard; nothing needs to enter one until the kitchen
+  garden, and that slice asks again.
 - **§9.4 The facing and the walk.** D388 chose facings for variety (*"this isn't supposed to be
   suburbs"*); a fence makes a door facing away from the store cost every errand a walk round the
   yard. Pricing the walk from the door with the plot's fence standing is the fix that reads, and
