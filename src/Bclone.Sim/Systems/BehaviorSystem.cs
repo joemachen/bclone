@@ -3385,6 +3385,27 @@ public sealed class BehaviorSystem : ISimSystem
             furthest = i;
         }
 
+        // ⛔⛔ THE FIRST TILE IS NOT ALWAYS IN SIGHT (D404). "The adjacent tile is always visible"
+        // is true of a villager standing on open ground — but a route out of a building steps off
+        // whichever of its tiles is cheapest (`TravelCostField.StepOff`), not the one the villager
+        // is standing on, and the straight line from a granary's far corner to that tile cut
+        // across the builder's hut beside it and the Fletchers' fence round both. Found by
+        // `NoStepEverCrossesAWall`. The villager walks through the building they are leaving to the
+        // tile the route steps off from, and plans again from there.
+        if (furthest == 0
+            && !LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[0]), leaving, arriving)
+            && ExitToward(world, leaving, route[0]) is GridPos exit
+            && exit != villager.Tile)
+        {
+            villager.LegFrom = villager.Position;
+            villager.LegTo = Point.CentreOf(exit);
+            villager.LegTarget = target;
+            int inside = (villager.Position.DistanceTo(villager.LegTo) + Fixed.FromRatio(1, 2)).ToInt();
+            villager.LegSteps = inside < 1 ? 1 : inside;
+            villager.LegStep = 0;
+            return true;
+        }
+
         villager.LegFrom = villager.Position;
         villager.LegTo = Point.CentreOf(route[furthest]);
         villager.LegTarget = target;
@@ -3411,6 +3432,25 @@ public sealed class BehaviorSystem : ISimSystem
         villager.LegSteps = steps < 1 ? 1 : steps;
         villager.LegStep = 0;
         return true;
+    }
+
+    /// <summary>
+    /// The tile of the building being left that a route's first step goes out from — beside it,
+    /// with no wall between (D404) — or null if none is.
+    /// </summary>
+    private static GridPos? ExitToward(SimWorld world, IReadOnlyList<GridPos> leaving, GridPos firstStep)
+    {
+        for (int i = 0; i < leaving.Count; i++)
+        {
+            GridPos tile = leaving[i];
+            byte crossing = ZoneMap.EdgeBit(firstStep.X - tile.X, firstStep.Y - tile.Y);
+            if (crossing != 0 && (world.WallsOn(tile) & crossing) == 0)
+            {
+                return tile;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -80,7 +80,11 @@ public sealed class FarmMemoryTests
         SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(Config));
         SimWorld world = loop.World;
 
-        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
+        // ⚠️ EIGHT TICKS OUT, NOT TEN (D406). With fences as walls the fixture's walks went round
+        // yards, and ten happened to be a flat spot (5 → 5). Measured across the range: 6 → 8 → 13,
+        // 7 → 7 → 9, 8 → 7 → 10, 9 → 5 → 6, 12 → 4 → 5 — the memory climbs everywhere else. Eight
+        // still opens well under the derived cap, which is what makes the farm "distant" here.
+        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 8, out int walk);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
 
         int opening = world.FieldTilesThisFarmCommitsPerHand(farm);
@@ -232,6 +236,12 @@ public sealed class FarmMemoryTests
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
 
+        // ⚠️ NOBODY SOWS IT (D406). This sowed in spring and wiped the crop in summer — and the
+        // memory reads `sown − standing`, so a wiped field is a field brought in: with fences the
+        // fixture's farm moved, sowed more, and the pose "taught" it 2. A fallow year is a year
+        // nobody sows; the seats are kept empty, which is the player's own way to leave it fallow.
+        world.SetStaffing(farm, 0);
+
         // Nothing sown at all, three years running.
         int before = farm.FieldTilesLearned;
         for (int year = 0; year < 3; year++)
@@ -249,7 +259,9 @@ public sealed class FarmMemoryTests
         // reads a year that brought in nothing — which it floors to one, by design (*a thin year
         // is about the hands that turned up, not about the ground*). The claim is that a fallow
         // year never RAISES what the farm believes above what it knew, or above the floor.
-        Assert.Equal(System.Math.Max(before, 1), farm.FieldTilesLearned);
+        Assert.True(
+            farm.FieldTilesLearned <= System.Math.Max(before, 1),
+            $"Three fallow years taught the farm {farm.FieldTilesLearned}, from {before}.");
     }
 
     /// <summary>

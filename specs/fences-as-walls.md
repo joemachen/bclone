@@ -1,6 +1,9 @@
 # fences-as-walls.md — a fence is a wall the cost field routes around
 
-**Status:** ✍️ **SPEC WRITTEN, NOT STARTED** (2026-09-20, D400). Joe's yes, 2026-09-18, ordered
+**Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400).
+Sixteen guards green and red-checked; §6 filled in from the run; six goldens moved once; the
+fixture premises re-posed with Joe's words — *"let longer walks be the price of fences."*
+Joe's yes, 2026-09-18, ordered
 after the professions and again on 2026-09-20 from his D396 play notes: *"villagers are definitely
 walking through other villager's yards — look at all of the packed trail within the yards."*
 Owner: Joe + Claude Code. Phase 5.
@@ -84,12 +87,42 @@ the same sweep runs when a *house* is marked, and the refusal reads:
 village's daily walks round each candidate (D383); a candidate whose fence would wall anything off
 is refused there, before the player ever sees it, exactly as an obstacle is.
 
+### 3.3a What building the slice added to the rules (D404)
+
+Four holes the guards found on their first runs, each closed by a rule rather than a patch:
+
+> **Nothing is built on somebody's yard, and no field is painted in one.** *"That is the
+> Fletchers' yard."* (`CanBuildAt`, `CanPaintWorkGround`.) Before fences a yard was paint and a
+> hut on it cost nothing; with fences the fixture's farmhouse stood with a wall running between
+> two of its own tiles, and its field was five tiles of somebody's garden behind their gate.
+
+> **A plot is sited only where its yard has a working gate** — onto ground somebody can stand
+> on, with every yard tile reachable from it inside the fence (`SimWorld.GateOpensAt`). The
+> founding put the Thatchers' gate on a lane tile a founding building stood on, and then the
+> Fletchers' yard lost its only lane-side tile to a building's clip and had no gate at all.
+
+> **The wall-off sweep reads the walls** — standing ones, and the candidate's own fence while the
+> chooser asks (`SimWorld.TrialFence`) — and a shape counts as reached only across an edge with no
+> wall on it. The chooser asks it per facing (two facings share a house, never a fence), and a
+> plot refused for its fence is counted apart: *"N whose fence would shut a neighbour in"* in the
+> no-room sentence. ⚠️ Houses are never placed by hand (the strip has no house button), so this
+> is where §3.3's words reach the player.
+
+> **A walk obeys the walls at every step, not only in the fill.** The descent down a field
+> (`TerrainCostField.StepFrom`), the step off a building (`TravelCostField.StepOff`), a leg's
+> straight line through a grid corner (all four edges, not two), and the first leg out of a
+> multi-tile building (`BehaviorSystem.PlanLeg` walks to the exit tile first when the route's
+> first tile is not in sight). The branch as found had only the fill: its villagers still walked
+> through fences, and the Phase 0 pin moving *26 → 27* was that bug's number.
+
 ### 3.4 What the view already does, and what it must do
 
 The fence is drawn (D386/D388). Two things follow from it becoming a wall:
 
 - the **gate** is drawn as a gap in the outline — the one place the line stops — so the rule is
-  on the screen before it is felt;
+  on the screen before it is felt; ✅ **D404: the fence is drawn from the wall layer itself**, an
+  edge wherever a wall stands, so the gate is a gap and the house's own sides are open, exactly
+  as the villagers feel it (`VillageMap`'s fence pass; it traced a closed loop before);
 - a leg's straight line may not cross a fence edge, so `LineOfSight.Clear` reads the mask. Without
   it a villager routes round the fence and then *draws* through it (D356's string-pulled leg).
 
@@ -125,42 +158,73 @@ The fence is drawn (D386/D388). Two things follow from it becoming a wall:
 | A fence built round a standing building | Cannot happen: `FencedTilesFor` already clips what a building covers. |
 | A dead household | `ReleasePlot` drops the mask with the layer, in the same call. |
 | Demolition | The fence comes down with the house (D388), so the mask goes with the plot. |
+| A house handed on (D381) | The fence's edges move to the heir with the plot, so the heir's release takes them down (D404 — the branch left them with the dead family, standing for ever). |
+| A building on a yard | Refused by name (§3.3a). A building against a fence carries the yard's wall on its own side of the edge, and a route off it cannot step through (`StepOff`). |
+| A gate onto a building, or a yard the clip cuts in two | That facing does not fit (§3.3a). |
+| ⏸️ A building put on the lane tile in front of a standing gate | **Allowed**, and the yard behind it is shut. Nothing enters a yard today; §9.3. |
 
 ⛔⛔ **The failure that ends a village, named before it happens: a neighbourhood that packs plots
 until somebody's door is unreachable.** D383's sweep is the guard, and §6 measures how often it
 fires. If it fires often, the answer is the **site-chooser's score** (lanes weigh more), not a
 softer wall.
 
-## 6. Measure before merging — what must be known
+## 6. Measure before merging — what must be known ✅ MEASURED (D404)
 
-Twelve fixture seeds and the shipped seeds, fifty years, before and after:
+**How:** a throwaway harness (deleted; the D404 entry says what it counted) played each village
+from the cold start (`ColdStartTests.PlayTheOpening`) for fifty years and counted every tile
+change of every villager — six shipped seeds (12345, 2, 7, 1, 3, 11 on `data/sim.config.json`)
+and twelve fixture seeds (1–11 and 12345). ⭐ **It reproduces D400 to the step on main: 502,090
+shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column below is like for like.
 
-1. **The traffic this exists to stop:** steps inside somebody else's yard, now **16.2 %** of all
-   steps. It must go to **zero**; anything else means a hole in the mask.
-2. **What it costs a walk:** ticks per gathering trip, the `VillagerPointTests` pins, and the
-   village's total walking time (D358 measured 6.8 % either way and that was a feature).
-3. **What it costs a village:** alive / peak / starved, against D399's numbers
-   (shipped 122 / 159 / 30; fixture 77 / 139 / 59).
-4. **How often a house cannot be sited** for the new refusal, and whether any village stops
-   building houses.
-5. **The suite's clock** (4m02 at D399): every flow field now reads one more array.
+| | alive | peak | starved | cold | homes | dead valleys | others' yards | own yard |
+|---|---|---|---|---|---|---|---|---|
+| main — shipped | 65 | 83 | 10 | 0 | 31 | 0 | **16.2 %** | 24.3 % |
+| branch as found — shipped | 57 | 73 | 8 | 2 | 22 | 1 | 3.2 % | 17.2 % |
+| **D404 — shipped** | **71** | **87** | 11 | 0 | 29 | **0** | **0.3 %** | 14.7 % |
+| D404 at `plot_depth` 2 — shipped | 40 | 63 | 8 | 8 | 19 | 2 | 0.3 % | — |
+| main — fixture | 95 | 156 | 64 | 0 | 56 | 0 | 9.9 % | 17.0 % |
+| branch as found — fixture | 56 | 133 | 64 | 0 | 48 | 2 | 1.7 % | 11.4 % |
+| **D404 — fixture** | **65** | 136 | 53 | 0 | 45 | 1 | **0.4 %** | 8.9 % |
+| D404 at `plot_depth` 2 — fixture | 79 | 149 | 57 | 0 | 52 | 0 | 0.2 % | — |
 
-⭐ **The trails are the picture, and the picture is the spec (D352):** the `trails:` probe line and
-a look at a year-30 neighbourhood say whether the lanes now carry what the yards used to.
+1. **The traffic:** 16.2 % → **0.3 %**. ⚠️ **Not zero, and not a hole:** the residue is the
+   house's own two tiles, which are never walled (§3.1) and are open ground until the house is
+   built. The honest guard is the one the handoff asked for — **no step ever crosses a wall** —
+   and it is asserted directly (`NoStepEverCrossesAWall`: ~46,000 tile steps a seed over twenty
+   years, none across).
+2. **What it costs a walk:** the Phase 0 pins **26 → 37** and **70 → 91**. The founder's house
+   faces west, away from the store, so the yard lies between the door and every errand and the
+   walk goes round it. ⚠️ D388 picks a facing for variety (the lane, then the neighbours, then a
+   hash) and never for the walk; a fence is what makes that expensive — §9.4.
+3. **What it costs a village — THE TRADE:** **the shipped game is better than main** (71 alive
+   against 65, no dead valley), and **the fixture pays** (65 against 95; one dead valley). Over
+   120 years `MostSeedsProduceAValleyAVillageCanLiveIn` reads **9 of 24** liveable against main's
+   **15** (peaks 331 against 446) and against its floor of 12. The fixture's unattended warm
+   start is marginal on main already (seed 4 holds six people for a decade and survives) and
+   ~20 % fewer gathering ticks tips it: nothing is walled off and nobody is stuck — its walks are
+   longer. *More paint does not buy it back* (two more rings: 10 of 24); depth 2 does (12 of 24)
+   and costs the shipped game 71 → 40 alive. §9.1.
+4. **Houses that cannot be sited:** the chooser can always site one in the fixture's paint; no
+   village of the eighteen stopped building for want of a plot. Fewer plots fit (45 homes
+   against 56) because a plot is nine tiles and a lane.
+5. **The suite's clock:** 2m48 for the full run including the build, against D403's ~3m30.
 
-## 7. How it is tested
+## 7. How it is tested (`FencesAsWallsTests`, fifteen guards; the reds and the two zeros are in the D404 entry)
 
-- `AFenceIsAWall` — two plots side by side, a walk from one to the other: the route goes round the
-  outline and never crosses an edge. Red with the mask ignored.
-- `AGateIsTheOneWayIn` — the yard is reachable, and only through the gate's edge.
-- `ALegNeverCrossesAFence` — `LineOfSight.Clear` refuses a straight line across an edge, so the
-  drawing and the routing agree (D356's leg).
-- `AHouseThatWouldFenceSomebodyInIsRefusedByName` — the D383 sweep, extended, in words.
-- `TheSiteChooserNeverProposesAPlotThatWallsAnythingOff`.
-- `TheWallMaskIsNotHashed` — two villages identical but for a rebuilt mask hash alike (D335).
-- `TheWallsAreMaintainedNotRebuilt` — the generation moves only on a claim or a release, never on
-  a tick (Joe's rule, CLAUDE.md).
-- The conservation and determinism guards stay green; **goldens move once**, for one stated reason.
+- `AFenceIsAWall` — every yard tile with walkable ground behind a fence: the route in goes round.
+- `AGateIsTheOneWayIn` — exactly one open edge, onto the lane, and the walk in comes through it.
+- `ALegNeverCrossesAFence` — `LineOfSight.Clear` refuses a straight line across an edge.
+- `ALegDoesNotGrazeAFencePost` — nor through a grid corner where any of the four edges is walled.
+- `ABuildingOnTheOnlyWayInIsRefusedByName` — the sweep reads a standing wall.
+- `AHouseThatWouldFenceSomebodyInIsRefusedByName` — the sweep reads a proposed fence, in §3.3's words.
+- `TheSiteChooserNeverProposesAPlotThatWallsAnythingOff` — forty years, every door reachable every year.
+- `TheWallMaskIsNotHashed` (D335).
+- `TheWallsAreMaintainedNotRebuilt` — the generation moves only on a tick a plot changed (Joe's rule).
+- `NoStepEverCrossesAWall` — every villager, every tick, twenty years, two seeds; the path, not the chord.
+- `NothingIsBuiltOrPaintedInSomebodysYard`, `AnInheritedFenceComesDownWithTheHeirsRelease`,
+  `BackToBackFencesKeepTheirSharedWall` — the three rules building the slice added.
+- `TheQuickWallOffAnswerIsTheSweepsAnswer` (D405) — the local wall-off check is the sweep's answer.
+- ✅ **Goldens moved once and the fixture premises re-posed** (D406), each with its reason.
 
 ## 8. Definition of Done
 
@@ -172,6 +236,22 @@ a look at a year-30 neighbourhood say whether the lanes now carry what the yards
 6. Joe plays it and says the yards read as yards.
 
 ## 9. Open, and Joe's to call
+
+- ⭐⭐ **§9.1 THE TRADE (D404).** Accept it as D402 accepted D399's — *the game gets better, the
+  unattended fixture gets hungrier* — and the merge re-poses the fixture guards with that reason
+  and moves the goldens once. Or not, and the lever is §9.4 (the facing), measured before typed.
+  ⛔ Not depth 2: it costs the shipped game 71 → 40 alive.
+- ✅ **§9.1 ACCEPTED, and §9.4 DECLINED** (Joe, 2026-09-26): shown that founding families walk ~10
+  tiles to their hut against main's ~6, *"let longer walks be the price of fences"*; and on
+  pricing the yard walk into the economy, *"i no longer care about a forager feeding a family or
+  a farmer keeping 13 tiles."* The facing stays D388's, the derivations stay as they are.
+- ✅ **§9.3 A building on the lane in front of a gate — ALLOWED** (Joe, 2026-09-26: *"no i dont
+  think we want to block it"*). It shuts the yard; nothing needs to enter one until the kitchen
+  garden, and that slice asks again.
+- **§9.4 The facing and the walk.** D388 chose facings for variety (*"this isn't supposed to be
+  suburbs"*); a fence makes a door facing away from the store cost every errand a walk round the
+  yard. Pricing the walk from the door with the plot's fence standing is the fix that reads, and
+  it pulls doors back toward the granary — the tension is his.
 
 - **The gate's width and where exactly it sits** — the tile nearest the door is the proposal; a
   yard whose door tile is the house itself may want the gate beside it.

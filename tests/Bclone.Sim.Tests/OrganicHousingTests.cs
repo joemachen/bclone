@@ -40,7 +40,7 @@ public sealed class OrganicHousingTests
     }
 
     /// <summary>A bare, reachable square of grass of this half-width about a centre, at least this far from a site.</summary>
-    private static GridPos ABareSquareAtLeast(SimWorld world, GridPos site, int tilesAway, int half)
+    internal static GridPos ABareSquareAtLeast(SimWorld world, GridPos site, int tilesAway, int half)
     {
         for (int radius = tilesAway; radius < tilesAway + 20; radius++)
         {

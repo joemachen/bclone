@@ -3169,7 +3169,7 @@ public partial class VillageMap : Control
         // called it *"too malleable"*). Per household, as work ground is per building; collected
         // in a list, never drawn from the dictionary. Cached on `ZoneMap.Edits`, which the plot
         // layer bumps when a fence goes up or comes down.
-        var plotsByOwner = new Dictionary<int, HashSet<Vector2I>>();
+        var plotsByOwner = new Dictionary<int, HashSet<GridPos>>();
         var plotOwners = new List<int>();
 
         SimConfig config = _world!.Config;
@@ -3218,17 +3218,18 @@ public partial class VillageMap : Control
                     residential.Add(at);
                 }
 
-                int plot = zones.PlotOwner(new SubTile(x, y).Tile);
+                GridPos tile = new SubTile(x, y).Tile;
+                int plot = zones.PlotOwner(tile);
                 if (plot != 0)
                 {
-                    if (!plotsByOwner.TryGetValue(plot, out HashSet<Vector2I>? fenced))
+                    if (!plotsByOwner.TryGetValue(plot, out HashSet<GridPos>? fenced))
                     {
-                        fenced = new HashSet<Vector2I>();
+                        fenced = new HashSet<GridPos>();
                         plotsByOwner[plot] = fenced;
                         plotOwners.Add(plot);
                     }
 
-                    fenced.Add(at);
+                    fenced.Add(tile);
                 }
 
                 if (zones.HarvestSub[index] && !underASite.Contains(new SubTile(x, y).Tile))
@@ -3258,16 +3259,33 @@ public partial class VillageMap : Control
 
         Keep(residential, Layer.Residential, ResidentialEdge, owner: 0, waiting: false);
 
-        // The fences: a line round each household's fenced tiles, no wash of its own — the wash
-        // is the neighbourhood's. Drawn with the residential layer, hidden with it; faint while
-        // the house is still a site, because the fence is on the recipe and not yet up.
+        // The fences: no wash of its own — the wash is the neighbourhood's. Drawn with the
+        // residential layer, hidden with it; faint while the house is still a site, because the
+        // fence is on the recipe and not yet up.
+        //
+        // ⭐⭐ DRAWN FROM THE WALLS, NOT TRACED ROUND THE PLOT (D404, `fences-as-walls.md §3.4`). A
+        // fence is a wall the villagers route round now, so the line on the screen IS the rule:
+        // every edge of this household's ground that has a wall on it, and nothing else — which
+        // leaves **the gate as a gap** in the outline and the house's own sides open (they are never
+        // walled, §3.1). The trace drew a closed loop round both, a fence the player could see and
+        // the villagers could not feel, which is the invisible-rule failure §1.1 forbids.
         for (int i = 0; i < plotOwners.Count; i++)
         {
             bool standing = _world.FindHousehold(plotOwners[i])?.HasHome == true;
             Color edge = standing ? FenceEdge : FenceEdge with { A = 0.35f };
-            foreach (Vector2[] loop in ZoneOutline.Trace(plotsByOwner[plotOwners[i]], SubTile.PerTile))
+            HashSet<GridPos> ground = plotsByOwner[plotOwners[i]];
+            foreach (GridPos tile in ground)
             {
-                _zoneOutlines.Add((Layer.Residential, edge, loop));
+                byte walls = zones.WallsOn(tile);
+                if (walls == 0)
+                {
+                    continue;
+                }
+
+                AddFenceSide(tile, 0, -1, 1, ground, walls, edge);
+                AddFenceSide(tile, 1, 0, 2, ground, walls, edge);
+                AddFenceSide(tile, 0, 1, 4, ground, walls, edge);
+                AddFenceSide(tile, -1, 0, 8, ground, walls, edge);
             }
         }
 
@@ -3401,6 +3419,30 @@ public partial class VillageMap : Control
 
             _zoneFills.Add((layer, owner, waiting, triangles));
         }
+    }
+
+    /// <summary>
+    /// One side of a fenced tile as a line, if a wall stands on it and the ground beyond is not
+    /// this household's own (D404) — in sub-tile space, like every other outline.
+    /// </summary>
+    private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge)
+    {
+        if ((walls & bit) == 0 || ground.Contains(new GridPos(tile.X + dx, tile.Y + dy)))
+        {
+            return;
+        }
+
+        int p = SubTile.PerTile;
+        float left = tile.X * p;
+        float top = tile.Y * p;
+        (Vector2 from, Vector2 to) = (dx, dy) switch
+        {
+            (0, -1) => (new Vector2(left, top), new Vector2(left + p, top)),
+            (1, 0) => (new Vector2(left + p, top), new Vector2(left + p, top + p)),
+            (0, 1) => (new Vector2(left, top + p), new Vector2(left + p, top + p)),
+            _ => (new Vector2(left, top), new Vector2(left, top + p)),
+        };
+        _zoneOutlines.Add((Layer.Residential, edge, new[] { from, to }));
     }
 
     /// <summary>

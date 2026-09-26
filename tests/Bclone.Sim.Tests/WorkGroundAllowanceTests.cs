@@ -90,6 +90,11 @@ public sealed class WorkGroundAllowanceTests
     }
 
     /// <summary>Tiles near the founding site that are not water, so painting takes.</summary>
+    /// <remarks>
+    /// ⚠️ <b>And in nobody's yard</b> (D404): a yard is walled and refused as work ground now
+    /// (<i>"That is the Fletchers' yard."</i>), and the founders' plots are the first ground a
+    /// ring round the founding site meets. The guards here are about size, not about yards.
+    /// </remarks>
     private static IEnumerable<GridPos> DryGround(SimWorld world, int count)
     {
         GridPos site = world.Map.FoundingSite;
@@ -104,7 +109,8 @@ public sealed class WorkGroundAllowanceTests
                     var at = new GridPos(site.X + dx, site.Y + dy);
                     if (world.Map.Contains(at)
                         && world.Map.TerrainAt(at) != Terrain.Water
-                        && world.Zones.WorkGroundOwner(at) == 0)
+                        && world.Zones.WorkGroundOwner(at) == 0
+                        && world.Zones.PlotOwner(at) == 0)
                     {
                         found++;
                         yield return at;

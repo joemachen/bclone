@@ -403,8 +403,10 @@ public sealed class MarketTests
         // (`RequiredDependants` 1), and the fixture village lives at that floor: with the stores
         // holding food only just, a larder can be empty for the tick or two a marketer's walk takes.
         // Zero was measured in a village with three dependants' slack; one is the walk.
+        // ⚠️ TWO SINCE D406: the walk goes round the yards now that a fence is a wall (Joe: *"let
+        // longer walks be the price of fences"*), and it read 2. Still the walk, not a bank run.
         Assert.True(
-            withMarket.DryPerTenThousand <= 1,
+            withMarket.DryPerTenThousand <= 2,
             $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food — a bank run the market exists to stop.");
     }
 

@@ -557,7 +557,14 @@ public sealed class MapGenerationTests
         // distance the generator no longer produces, and nothing else in the suite would say
         // so. Measured at 27 of 30 — a three-quarters bar leaves real headroom and still fires
         // long before the derivation and the map have drifted apart.
-        Assert.True(seedsWithin * 4 >= Seeds * 3,
+        //
+        // ⚠️ RE-POSED FOR FENCES (D406), AND THE DRIFT IS THE ONE THIS GUARD EXISTS TO NAME. With a
+        // fence a wall, a founder's house that faces away from the hut walks round its own yard:
+        // the typical founding walk went ~6 → ~10 tiles and this read **10 of 30**. Joe saw that
+        // number and chose it: *"let longer walks be the price of fences"* — option (a) over
+        // pricing the door's walk (`fences-as-walls.md §9.4`). The bar is a fifth (6 of 30), below
+        // the new measurement with headroom, so a generator that drifts further still fires.
+        Assert.True(seedsWithin * 5 >= Seeds,
             $"Only {seedsWithin} of {Seeds} valleys put the typical family inside the "
             + $"{budget}-tile budget the food economy is derived against.");
     }
@@ -693,8 +700,14 @@ public sealed class MapGenerationTests
     /// fishery or a farm — so 5 of 24 seeds die out and 3 more never reach twelve (16 liveable,
     /// mean peak 15.5). Half, with the same headroom under the measurement, still fires on a
     /// collapsed generator: D103's and D110's peaks sat at four or five on every seed.
+    /// ⚠️ <b>Re-based at D406 for fences, and again it is the economy, not the generator:</b> a
+    /// fence is a wall, founding walks go round the family's own yard (~6 → ~10 tiles), and this
+    /// unattended village reads <b>9 of 24</b> (main 15; peaks 331 against 446). Joe chose it with
+    /// the number in front of him — *"let longer walks be the price of fences"* — and the shipped
+    /// game gained people (65 → 71 over six seeds, `fences-as-walls.md §6`). Seven: under the
+    /// measurement with two valleys of headroom, and still far above D103's collapse.
     /// </remarks>
-    private const int LiveableValleysWanted = 12;
+    private const int LiveableValleysWanted = 7;
 
     // ---------------------------------------------------------------
     //  Water you have to go round — specs/pathfinding-and-water.md (D40)
@@ -918,7 +931,10 @@ public sealed class MapGenerationTests
 
             int straight = nearest * TravelCostField.BaseTileCost;
             _output.WriteLine($"{workplace.Name}: {path} against {straight} as the crow flies");
-            Assert.InRange(path, straight, straight + (2 * TravelCostField.BaseTileCost));
+            // ⚠️ AND SINCE D404 A FENCE IS A WALL: a house's own yard can stand between its door and
+            // the work, and the walk goes round it — up to a yard's depth more. Read 110 against 70
+            // (the builder's hut behind the founder's yard) the day fences became walls.
+            Assert.InRange(path, straight, straight + ((2 + config.PlotDepth) * TravelCostField.BaseTileCost));
             if (path == straight)
             {
                 exact++;

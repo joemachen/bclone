@@ -121,6 +121,82 @@ public sealed class ZoneMap
 
     private readonly Dictionary<int, List<int>> _laneByOwner = new();
 
+    /// <summary>
+    /// ⭐⭐ Every wall on every tile's four edges — <b>whatever put it there</b> (D404,
+    /// `specs/fences-as-walls.md §4`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One bit an edge: N 1, E 2, S 4, W 8. A yard's fence writes through
+    /// <see cref="Wall"/> today; a player-built fence will write through the same method
+    /// (§10), and the cost field asks <em>is there a wall here?</em> and never <em>whose?</em>
+    /// — which is what keeps the later slice a contributor rather than a retrofit.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Derived, and therefore never hashed</b> (D335): it restates
+    /// <c>Household.FencedTiles</c> and the home's facing. ⛔ <b>And never rebuilt per tick</b>
+    /// (CLAUDE.md): it is written where plots are claimed and released, and
+    /// <see cref="WallGeneration"/> is the cheap honest answer to *"has it changed?"*.
+    /// </para>
+    /// </remarks>
+    private readonly byte[] _walls;
+
+    /// <summary>Moves whenever a wall goes up or comes down — the cost field rebuilds on it.</summary>
+    public int WallGeneration { get; private set; }
+
+    /// <summary>The walls on this tile's four edges: N 1, E 2, S 4, W 8.</summary>
+    public byte WallsOn(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? (byte)0 : _walls[index];
+    }
+
+    /// <summary>Which bit an edge is, given the step that crosses it.</summary>
+    /// <remarks>
+    /// ⛔ <b>North is −Y</b>, as everywhere else in this game. The step is a unit step; anything
+    /// else is a caller bug and is refused rather than silently read as one of the four.
+    /// </remarks>
+    public static byte EdgeBit(int stepX, int stepY) => (stepX, stepY) switch
+    {
+        (0, -1) => 1,
+        (1, 0) => 2,
+        (0, 1) => 4,
+        (-1, 0) => 8,
+        _ => 0,
+    };
+
+    /// <summary>
+    /// Put a wall up, or take it down, on the edge between two tiles — <b>both sides in one
+    /// statement</b>, so the two can never disagree (§4).
+    /// </summary>
+    public void Wall(GridPos from, GridPos to, bool up)
+    {
+        int stepX = to.X - from.X;
+        int stepY = to.Y - from.Y;
+        byte here = EdgeBit(stepX, stepY);
+        if (here == 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(to), $"A wall runs between two tiles that touch, not {from} and {to}.");
+        }
+
+        byte there = EdgeBit(-stepX, -stepY);
+        int a = IndexOf(from);
+        int b = IndexOf(to);
+
+        if (a >= 0)
+        {
+            _walls[a] = up ? (byte)(_walls[a] | here) : (byte)(_walls[a] & ~here);
+        }
+
+        if (b >= 0)
+        {
+            _walls[b] = up ? (byte)(_walls[b] | there) : (byte)(_walls[b] & ~there);
+        }
+
+        WallGeneration++;
+    }
+
     /// <summary>How many of each tile's sixteen sub-tiles are painted. Derived, never hashed.</summary>
     private readonly byte[] _residentialCount;
 
@@ -155,6 +231,7 @@ public sealed class ZoneMap
         _residentialCount = new byte[_width * _height];
         _workGroundCount = new byte[_width * _height];
         _harvestCount = new byte[_width * _height];
+        _walls = new byte[_harvestCount.Length];
         _plot = new int[_width * _height];
         _lane = new byte[_width * _height];
     }
@@ -647,7 +724,8 @@ public sealed class ZoneMap
     /// Give a household its plot — these tiles, and the lane it fronts. A tile already in
     /// another plot is refused whole: the chooser has checked, and this is the guard on it.
     /// </summary>
-    public void ClaimPlot(int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane)
+    public void ClaimPlot(
+        int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos>? house = null)
     {
         ArgumentNullException.ThrowIfNull(tiles);
         ArgumentNullException.ThrowIfNull(lane);
@@ -693,7 +771,146 @@ public sealed class ZoneMap
 
         _plotByOwner[ownerId] = held;
         _laneByOwner[ownerId] = fronts;
+        RaiseTheFence(ownerId, tiles, lane, house ?? Array.Empty<GridPos>());
         Edits++;
+    }
+
+    /// <summary>
+    /// ⭐⭐ The fence goes up with the plot, and its gate with it (D404, §3.1–§3.2).
+    /// </summary>
+    /// <remarks>
+    /// The edges are kept per owner, because the layer is a union (§10) and a union is taken
+    /// apart contributor by contributor — see <see cref="PullTheFenceDown"/>.
+    /// </remarks>
+    private void RaiseTheFence(
+        int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house)
+    {
+        List<(GridPos From, GridPos To)> edges = FenceEdges(tiles, lane, house, out _);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            Wall(edges[e].From, edges[e].To, up: true);
+        }
+
+        _fenceByOwner[ownerId] = edges;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Which edges a plot's fence runs along — <b>the one rule, and it has two consumers</b>
+    /// (D404): the fence that goes up with the house, and the fence the site-chooser stands for a
+    /// moment to ask *"would this shut somebody in?"* (`SimWorld.DetourOfAHouseAt`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>Never on the house's own edges</b>, which would seal the door: a house tile is already
+    /// impassable (D383) and is entered only by the field whose destination it is, so a wall there
+    /// is a family that can never get home.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>One gate</b>, the first edge from a yard tile to a lane tile in the plot's own stated
+    /// order, so the gate is the same edge every run. A yard whose every tile is the house's has
+    /// no gate and needs none — there is nothing inside it to reach.
+    /// </para>
+    /// </remarks>
+    public static List<(GridPos From, GridPos To)> FenceEdges(
+        IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house,
+        out (GridPos Yard, GridPos Lane)? gate)
+    {
+        ArgumentNullException.ThrowIfNull(tiles);
+        ArgumentNullException.ThrowIfNull(lane);
+        ArgumentNullException.ThrowIfNull(house);
+
+        var plot = new HashSet<GridPos>();
+        for (int t = 0; t < tiles.Count; t++)
+        {
+            plot.Add(tiles[t]);
+        }
+
+        var indoors = new HashSet<GridPos>();
+        for (int h = 0; h < house.Count; h++)
+        {
+            indoors.Add(house[h]);
+        }
+
+        var onTheLane = new HashSet<GridPos>();
+        for (int l = 0; l < lane.Count; l++)
+        {
+            onTheLane.Add(lane[l]);
+        }
+
+        gate = null;
+        var edges = new List<(GridPos, GridPos)>();
+        for (int t = 0; t < tiles.Count; t++)
+        {
+            GridPos tile = tiles[t];
+            if (indoors.Contains(tile))
+            {
+                continue;
+            }
+
+            foreach ((int dx, int dy) in Steps)
+            {
+                var beyond = new GridPos(tile.X + dx, tile.Y + dy);
+                if (plot.Contains(beyond))
+                {
+                    continue;
+                }
+
+                if (gate is null && onTheLane.Contains(beyond))
+                {
+                    gate = (tile, beyond);
+                    continue;
+                }
+
+                edges.Add((tile, beyond));
+            }
+        }
+
+        return edges;
+    }
+
+    /// <summary>The four steps, in the order a fence is raised — stated, so a gate is the same edge every run.</summary>
+    private static readonly (int Dx, int Dy)[] Steps = { (0, -1), (1, 0), (0, 1), (-1, 0) };
+
+    /// <summary>Each plot's fence edges, as raised — so it can be taken down exactly (D404). Derived, never hashed.</summary>
+    private readonly Dictionary<int, List<(GridPos From, GridPos To)>> _fenceByOwner = new();
+
+    /// <summary>Take a plot's walls off the edges it put them on — and put back any a neighbour still holds.</summary>
+    /// <remarks>
+    /// ⚠️ Two plots back to back share an edge and each raised it (§5). The layer is a union
+    /// (§10), so this plot's edges come down on both sides and then every neighbouring fence that
+    /// touched one of them is raised again — its own edges, whole. ⛔ The first draft cleared one
+    /// side and guessed the other from "is the tile beyond in somebody's plot?", which kept a
+    /// stale bit on a neighbour's HOUSE tile (never fenced, §3.1) and shut that door on one side.
+    /// </remarks>
+    private void PullTheFenceDown(int ownerId)
+    {
+        if (!_fenceByOwner.Remove(ownerId, out List<(GridPos From, GridPos To)>? edges))
+        {
+            return;
+        }
+
+        var neighbours = new SortedSet<int>();
+        for (int e = 0; e < edges.Count; e++)
+        {
+            (GridPos from, GridPos to) = edges[e];
+            Wall(from, to, up: false);
+            int beyond = IndexOf(to);
+            if (beyond >= 0 && _plot[beyond] != 0 && _plot[beyond] != ownerId)
+            {
+                neighbours.Add(_plot[beyond]);
+            }
+        }
+
+        foreach (int neighbour in neighbours)
+        {
+            if (_fenceByOwner.TryGetValue(neighbour, out List<(GridPos From, GridPos To)>? theirs))
+            {
+                for (int e = 0; e < theirs.Count; e++)
+                {
+                    Wall(theirs[e].From, theirs[e].To, up: true);
+                }
+            }
+        }
     }
 
     /// <summary>Take a household's plot and its lane back. Returns the tiles freed.</summary>
@@ -703,6 +920,10 @@ public sealed class ZoneMap
         {
             return 0;
         }
+
+        // ⭐ THE FENCE COMES DOWN WITH THE PLOT, in the same call (D404). Taken off the edges
+        // it was put on — the tiles are still this owner's as the loop below runs.
+        PullTheFenceDown(ownerId);
 
         for (int t = 0; t < held.Count; t++)
         {
@@ -744,6 +965,15 @@ public sealed class ZoneMap
         List<int> fronts = _laneByOwner[fromOwnerId];
         _laneByOwner.Remove(fromOwnerId);
         _laneByOwner[toOwnerId] = fronts;
+
+        // ⛔ THE FENCE GOES WITH IT (D404). The walls stand where they stood; what moves is whose
+        // they are, so the heir's release takes them down. Left behind, a house pulled down after
+        // an inheritance kept its fence up for ever with nobody holding it.
+        if (_fenceByOwner.Remove(fromOwnerId, out List<(GridPos From, GridPos To)>? fence))
+        {
+            _fenceByOwner[toOwnerId] = fence;
+        }
+
         Edits++;
     }
 

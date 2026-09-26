@@ -183,10 +183,10 @@ public sealed class Household
         // must be whole-painted (D350) and free; the yard is the rest of the rectangle, in nobody's
         // plot and on nobody's lane, painted or not — the fence follows the paint, and a yard the
         // brush clipped is a smaller yard, not no house. The score is the chooser's old currency,
-        // tiles walked, read from the lane tile in front of the door — plus the *apart* term,
-        // which is what packs houses into rows: a side with no neighbour's plot along it costs
-        // `plot_apart_tiles` — plus a tile of walk for every yard tile the paint, the water or a
-        // building clips off. ⚠️ Not "a full plot first": that was built and measured, and in a
+        // tiles walked, read from the lane tile in front of the door — plus the *apart* term, a
+        // side WITH a neighbour's plot along it costs `plot_apart_tiles` (D404 flipped it: it
+        // used to charge the open sides, which packed houses into rows) — plus a tile of walk for
+        // every yard tile the paint, the water or a building clips off. ⚠️ Not "a full plot first": that was built and measured, and in a
         // cramped valley it sent the founders' second house twelve tiles from the hut past a
         // clipped plot six away — the walk is what feeds people, the yard is what a fence goes
         // round, and one tile of walk per missing tile is the exchange rate the sentence can say.
@@ -206,6 +206,7 @@ public sealed class Household
         bool found = false;
         int builtOn = 0;
         int cutOff = 0;
+        int fencedIn = 0;
         int noRoom = 0;
 
         // Every plot that can take a house, scored by its own walks; sorted best first below.
@@ -223,10 +224,6 @@ public sealed class Household
                 walked.Add(route[t]);
             }
         }
-
-        // A house pair is the same for two of the four facings, so the wall-off sweep — a walk of
-        // the valley — is asked once per pair rather than once per facing.
-        var wallOff = new Dictionary<(GridPos Front, bool AlongY), bool>();
 
         // Row order (Y then X — the zone map's set is sorted so), which is the order the old box
         // walked, so an exact tie still resolves the same way. An unordered tie between two
@@ -267,6 +264,13 @@ public sealed class Household
                     continue;
                 }
 
+                // ⛔ A gate onto a building is no gate (D404): the yard behind it is shut to
+                // everybody, its own family included.
+                if (!world.GateOpensAt(front, facing, householdId))
+                {
+                    continue;
+                }
+
                 int openSides = 0;
                 int neighbour = 0;
                 for (int side = 0; side < plot.Beside.Count; side++)
@@ -294,7 +298,17 @@ public sealed class Household
                     }
                 }
 
-                fits.Add(new Facing(facing, f, laneAlready, openSides * world.Config.PlotApartTiles, clipped, neighbour));
+                // ⭐⭐ IT CHARGES FOR A NEIGHBOUR, NOT FOR ROOM (D404, Joe: *"could the fence problem
+                // be that you're cramming the houses in too closely? they need some room to breathe
+                // with yards and pathways and such"* — and he was right, and the old comment here
+                // admitted it: a side with NO neighbour cost `plot_apart_tiles`, which is a packing
+                // term wearing a spacing term's name). Packing is what makes a fence enclose a
+                // door. **Measured, six shipped seeds × fifty years with fences up:** charging for
+                // open sides built 14 houses and held 17 people; charging for neighbours built 26
+                // and held 55. ⚠️ The magnitude stopped mattering once the sign flipped (−2, −4 and
+                // −6 were identical), so the term is a tie-break and the number stays 2.
+                int sidesWithANeighbour = plot.Beside.Count - openSides;
+                fits.Add(new Facing(facing, f, laneAlready, sidesWithANeighbour * world.Config.PlotApartTiles, clipped, neighbour));
             }
 
             if (fits.Count == 0)
@@ -310,8 +324,10 @@ public sealed class Household
             }
 
             // The lane first, then the yard and the neighbours, then the household's own hash —
-            // and the first of them whose house would not wall a neighbour in (D383): the sweep
-            // is a walk of the valley, asked once per house pair and only of facings that could win.
+            // and the first of them whose house AND FENCE would not wall a neighbour in (D383,
+            // D404): the sweep is a walk of the valley, asked only of facings that could win.
+            // ⚠️ Once per facing, not once per house pair as it was: two facings share a house
+            // but never a fence, and the fence is the half that shuts people in.
             int start = PlotShape.FacingByHash(householdId);
             fits.Sort((a, b) =>
                 a.LaneAlready != b.LaneAlready ? b.LaneAlready.CompareTo(a.LaneAlready)
@@ -319,24 +335,33 @@ public sealed class Household
                 : ((a.Order - start + 4) % 4).CompareTo((b.Order - start + 4) % 4));
 
             Facing? chosen = null;
+            bool shutsSomebodyIn = false;
             for (int i = 0; i < fits.Count && chosen is null; i++)
             {
-                var pair = (front, PlotShape.LaneDirection(fits[i].Angle).X != 0);
-                if (!wallOff.TryGetValue(pair, out bool walls))
-                {
-                    walls = world.WhatThisWouldWallOff(world.HomeFootprintAt(front, fits[i].Angle)) is not null;
-                    wallOff[pair] = walls;
-                }
-
-                if (!walls)
+                string? walls = world.WhatThisWouldWallOff(
+                    world.HomeFootprintAt(front, fits[i].Angle),
+                    world.TrialFence(front, fits[i].Angle, householdId));
+                if (walls is null)
                 {
                     chosen = fits[i];
+                }
+                else if (walls.StartsWith(Core.SimWorld.FencesSomebodyIn, StringComparison.Ordinal))
+                {
+                    shutsSomebodyIn = true;
                 }
             }
 
             if (chosen is not Facing best)
             {
-                cutOff++;
+                if (shutsSomebodyIn)
+                {
+                    fencedIn++;
+                }
+                else
+                {
+                    cutOff++;
+                }
+
                 continue;
             }
 
@@ -374,7 +399,7 @@ public sealed class Household
             int bestDetour = 0;
             for (int i = 0; i < sites.Count && sites[i].Score < bestScore; i++)
             {
-                int detour = world.DetourOfAHouseAt(walks, sites[i].Front, sites[i].Facing);
+                int detour = world.DetourOfAHouseAt(walks, sites[i].Front, sites[i].Facing, householdId);
                 if (detour == int.MaxValue)
                 {
                     continue;
@@ -429,6 +454,13 @@ public sealed class Household
         if (cutOff > 0)
         {
             reasons.Add($"{cutOff} cut off from the village");
+        }
+
+        // ⭐ §3.3's refusal, in words the player can act on: the plot would fit, but its fence
+        // would shut a neighbour's door (D404).
+        if (fencedIn > 0)
+        {
+            reasons.Add($"{fencedIn} whose fence would shut a neighbour in");
         }
 
         if (painted > whole)

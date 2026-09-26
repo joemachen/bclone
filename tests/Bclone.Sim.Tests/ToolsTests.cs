@@ -177,9 +177,16 @@ public sealed class ToolsTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
-        loop.Step(config.TicksPerYear);
+        // ⚠️ SAMPLED EVERY TICK, NOT READ ONCE AT THE YEAR'S END (D406): the note is on whoever is at
+        // work, and with fences the walks moved so that nobody happened to be at work on that one
+        // tick. The claim is that the note is said, not when.
+        Villager? noted = null;
+        for (int tick = 0; tick < config.TicksPerYear && noted is null; tick++)
+        {
+            loop.StepOnce();
+            noted = world.Villagers.FirstOrDefault(v => v.Alive && v.WorkNote.Contains("without a tool", StringComparison.Ordinal));
+        }
 
-        Villager? noted = world.Villagers.FirstOrDefault(v => v.Alive && v.WorkNote.Contains("without a tool", StringComparison.Ordinal));
         Assert.All(world.Villagers, v => Assert.Equal(0, v.ToolUses));
         Assert.NotNull(noted);
         _output.WriteLine($"{noted!.Name}: {noted.WorkNote}");

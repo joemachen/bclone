@@ -322,8 +322,10 @@ public sealed class FarmTests
                 if (world.Map.Contains(at)
                     && world.Map.TerrainAt(at) == Terrain.Grass
                     && world.Zones.WorkGroundOwner(at) == 0
+                    && world.Zones.PlotOwner(at) == 0
                     && !world.SomethingStandsAt(at))
                 {
+                    // ⚠️ Not in a yard (D404): yards are refused as work ground now.
                     return at;
                 }
             }
@@ -777,8 +779,14 @@ public sealed class FarmTests
             $"the derivation promises {promised} tiles a farmer; over {Years} years the farm's "
             + $"{farm.Places} seat(s) reaped {reaped} — {perYear} a year");
 
+        // ⚠️ HALF, NOT ALL OF IT (D406). With fences as walls the farmer's walks home and to the
+        // store go round yards the derivation never priced, and this read 8 a year against 13 —
+        // on main 14. Joe, asked whether the economy should price the yard walk in: *"i no longer
+        // care about a forager feeding a family or a farmer keeping 13 tiles."* So the derivation
+        // stays as it is and this guards the collapse, not the promise: a farm with a hand on it
+        // still brings in at least half of what the derivation says.
         Assert.True(
-            perYear >= promised,
+            perYear * 2 >= promised,
             $"The derivation promises {promised} tiles a year and the farm reaped {perYear}. "
             + "A budget that over-states capacity is how a harvest comes to rot while every "
             + "guard says the arithmetic is fine.");

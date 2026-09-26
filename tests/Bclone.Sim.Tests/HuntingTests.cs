@@ -696,6 +696,35 @@ public sealed class HuntingTests
             }
         }
 
+        // ⚠️ EVERYBODY JUST ATE (D406). The shelves are emptied at an arbitrary tick, and after
+        // fences moved the fixture's walks a founder stood at hunger 78 with nothing at home right
+        // then, and starved inside thirty ticks — before a first armful could reach a shelf. The
+        // claim is about a season of carrying out of the lodge, not about who is nearest to
+        // starving on the tick the pose is struck.
+        foreach (Villager fed in world.Villagers)
+        {
+            fed.Hunger = 0;
+        }
+
+        // …and every larder holds a few days' food (the Fletchers' held 80, the Thatchers' none),
+        // so the first armful out of the lodge has time to reach a shelf before a family runs out.
+        // ⚠️ Posed so, it reads 320 carried out — EXACTLY the eight-armful bar, against main's 440
+        // (the walks round the yards; Joe: *"let longer walks be the price of fences"*). Written
+        // down because a guard sitting on its bar is one noise-tick from red.
+        foreach (Household family in world.Households)
+        {
+            int held = 0;
+            foreach (Goods goods in world.GoodsCatalog.EdibleGoods)
+            {
+                held += family.Stockpile[goods];
+            }
+
+            if (held < 80)
+            {
+                family.Stockpile.Add(Goods.Produce, 80 - held);
+            }
+        }
+
         int meat = lodge.Store.Capacity - config.MeatYield - 1;
         lodge.Store.Add(Goods.Meat, meat);
         Assert.True(world.BufferWorthClearing(lodge), "a lodge a load short of full beside thin granaries was not worth clearing");
