@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9, D411): ✍️ SPECCED 2026-09-26, NOT BUILT, and waiting on Joe's calls in §9.9.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9, D411): ✍️ SPECCED 2026-09-26, NOT BUILT. Rewritten the same day against Joe's Foundation screenshot: houses at any angle facing their path, yards as turned tile-edge walls, the well as a later focal point (§9.4–§9.5). His three calls are made; the build is next.** Owner:
 Joe + Claude Code.
 
 ---
@@ -328,7 +328,7 @@ spec (D352's lesson).**
 
 ---
 
-## 9. Slice 3: a village, not a street (D411, **✍️ SPECCED, NOT BUILT, and waiting on Joe's calls in §9.9**)
+## 9. Slice 3: a village, not a street (D411, **✍️ SPECCED, NOT BUILT; path-first at any angle after Joe measured it against Foundation, §9.4**)
 
 ### 9.1 What Joe asked, three times
 
@@ -365,8 +365,9 @@ Four causes. Each is a rule that is right on its own, and together they build a 
    re-posed, and ⛔ only with Joe's word, because it is D388's rule (§9.9).
 
 **Not a cause, but a limit on the fix:** the fence is a per-tile edge mask (D404) and the one cost
-field is tile-based, so plots stay axis-aligned rectangles facing one of four ways. Variety has to
-come from **which** way, **where** and **what size**, not from free angles (§9.4, R4).
+field is tile-based, so plots stay axis-aligned rectangles facing one of four ways. The first draft took
+this as a limit on angles. **It is not** (§9.4): houses take free angles already, and only the
+fence stays on tile edges.
 
 ### 9.3 What "organic" means here, in things a guard can count
 
@@ -377,135 +378,163 @@ desire paths (D358).** Measured:
 
 | Measure | Definition | Suburbia reads | The aim |
 |---|---|---|---|
-| **run** | houses in a chain where each plot touches the next, all with the same facing and their door tiles on one line | runs of 5 (the D408 shot) | **no run longer than 2**, a pair (§9.9 Q2) |
+| **run** | houses in a chain where each plot touches the next, all with the same facing and their door tiles on one line | runs of 5 (the D408 shot) | **no run longer than 2**, a pair (§9.5 P3) |
 | **modal facing** | the share of all houses that face the most common way | high | **≤ 50 %** of any village of 8+ houses |
 | **lined-up doors** | houses whose door tile is on the same row or column as 2+ other same-facing doors within 6 tiles | most | a minority, measured before/after |
 | **beside a neighbour** | as §3.3 (27 of 70 at D388) | | kept roughly; clusters are still clusters |
 | **founders' walk to the hut** | as D405 (~10 tiles since fences) | | not worse by more than a tile |
 
-### 9.4 The rules (proposed)
+### 9.4 Measured against Foundation: the first draft would not get there
 
-> **R1: a lane is a lane where there is one, and it does not spread.** Drop the *touches a fronted
-> tile* clause from `IsALaneAlready`. A lane-row tile counts only if a plot fronts it, a daily walk
-> crosses it, or feet have worn it. **The lane stops being the first sort key and becomes a cost in
-> the facing's own score:** a facing whose lane row is not already a lane pays `plot_new_lane_tiles`
-> (2) tiles of walk. That puts it in the same currency as `apart` and `clipped`, and the household's
-> hash breaks the ties. A house beside a real path still usually fronts it, and a house beside a
-> *plot* no longer has to.
+Joe, 2026-09-26, with a Foundation screenshot (everything inside the green line is residential; he
+placed only the wells): *"will it get us to what Foundation is doing?"* **No.** The first draft
+(R1: a lane only where one is; R2: a lane holds a pair; R3: hashed plot sizes; R4: a drawn skew)
+breaks the rows and spreads the facings. What it would give is a **scattered checkerboard**:
+axis-aligned rectangles facing four ways. Foundation's look comes from five things:
 
-> **R2: a lane holds a pair, not a row.** A plot whose door would extend a **run** (§9.3) pays
-> `plot_row_tiles` (3) tiles of walk for each house already in the run beyond `plot_row_free` (1).
-> The second house in a line is free, the third costs 3 and the fourth 6. It goes into the
-> **site's** score, not only the facing's, so the chooser goes somewhere else: across the lane
-> (facing back), round a corner, or past a gap to start a new cluster. It is legible: *"not a
-> third along the lane to the south; the lane has its pair."* ⭐ This is the direct cure. R1 alone
-> gives variety inside a row, and only R2 stops the row.
+| What the shot shows | the first draft | |
+|---|---|---|
+| **Houses at any angle**, each turned to the path in front of it | four facings | ❌ the biggest difference on screen |
+| **Paths first**: a curving web between houses, wells and the market, with the houses along it | R1 kept "front a worn path", but a lane was still a tile row in front of a rectangle | ⚠️ half |
+| **Yards shaped to the house**, sizes all over the place | closed 3 × 3 tile rectangles; R3 only 3–4 | ❌ |
+| **Generous, uneven spacing**: commons, gaps, clusters | the walk score packs toward the store; R2 only capped runs | ⚠️ half |
+| **Focal points** (wells, the market) that paths run out from and houses gather round | none; the well is Phase 6 | ❌ |
+| No rows | R2 | ✅ |
 
-> **R3: every plot its own shape, by hash (after Joe has seen R1 + R2).** `plot_width` 3 or 4,
-> `plot_depth` 3 or 4, and the house on the near side, the far side or (width 4) the middle, all
-> from `PlotShape`'s hash of the household id. ⛔ Never the `Rng`. The config becomes a range
-> (`plot_width: [3, 4]`, `plot_depth: [3, 4]`). ⚠️ It costs paint: a plot plus its lane averages
-> ~15.75 tiles against 12 today (3×3 + 3, 3×4 + 3, 4×3 + 4 and 4×4 + 4, evenly). And bigger yards mean longer walks round fences, the price Joe
-> accepted for fences (D405) but measured again here. A **set-back** (house one row behind the
-> front with a front garden) was considered and **not proposed**: it moves the door off the gate
-> edge that `GateOpensAt`, `TrialFence` and the wall-off sweep all assume.
+**What the engine already allows** (checked in the code, so this needs no new foundations):
+buildings take free `Angle`s (D401: a ghost stands at 37°); `Footprint.Covers` blocks tiles by the
+centre rule at any angle (D382/D383); `Household.HomePosition` is a `Point` and `HomeFacing` an
+`Angle`; desire paths wear and are drawn smoothed (D358/D368). **What holds the grid in place** is
+only this spec's own shapes: `PlotShape`'s tile rectangles, four `Facings`, and a lane defined as
+the row in front of them.
 
-> **R4: a house turned a few degrees inside its fence (view only). NOT PROPOSED, asked.** A hashed
-> ±6° turn on the drawn house, with the sim's 2 × 1 footprint unchanged, would do the most for
-> *"naturally occurring orientations"* at the least cost. But the house drawn would not be the
-> house the sim walks round, and a turned 2 × 1 overhangs its tiles. §1.6 (*traceable over
-> clever*) says ask first (§9.9 Q4).
+**Joe's calls, 2026-09-26:**
+- **Houses at any angle, each facing its path.**
+- **Yards stay walls on tile edges (D404).** The fence follows the turned yard as a tile-edge
+  outline, and it is drawn along those same edges, so what is drawn is what blocks. A slightly
+  stepped fence beside an angled house is accepted.
+- **A placeable well as a focal point, as a later slice.** Water and health stay in Phase 6.
+
+**R1–R4 are superseded by §9.5.** R2's idea (no row) survives as a term, and R1's (front a real
+path) becomes the whole rule.
+
+### 9.5 The rules: path first, at any angle
+
+> **P1: a house faces its path.** A candidate site is a free `Point` set back from a **path**: a
+> tile feet have worn (`PathWear.At ≥ path_worn_at`), a tile a daily walk crosses
+> (`TheDailyWalks()`), or the path in front of another house (P4). The setback is a hash of the
+> household id, `home_setback_tiles` [1.5, 2.5]. The house's `HomeFacing` is the `Angle` from the
+> house to the nearest path point, rounded to the engine's 1/64 turn. So a house on a bend is
+> turned to the bend, and two houses on one path face it from both sides. ⛔ No `Rng`: the
+> candidates are walked in a fixed order and every variety is a hash.
+
+> **P2: spacing, not packing.** Each household gets a gap, `home_gap_tiles` [1, 3] by hash: the
+> least clear ground between its yard and a neighbour's. A site closer than its gap is not a
+> candidate. A site with a neighbour inside `gap + 2` is still preferred to one alone, by
+> `home_company_tiles` (2) of walk, so clusters form without packing. This **replaces `apart`**,
+> which D404 found only ever broke ties.
+
+> **P3: no rows.** R2 kept, re-stated for free angles. A site whose facing is within 1/16 turn of
+> two or more houses within 6 tiles, **with their doors on nearly one line**, pays `home_row_tiles`
+> (3) of walk per such house past the first. Legible: *"not a third in a line along the lane."*
+
+> **P4: the yard follows the house.** The yard is the house's turned 2 × 1 grown by a hashed
+> margin (`yard_margin_tiles` [1, 2] behind and at the sides, none in front), rasterised to tiles
+> by the centre rule and clipped as today (paint, water, a building, somebody's plot). The fence is
+> the edge mask of those tiles: `ZoneMap.FenceEdges`, D404's walls, **unchanged**. The gate is the
+> fence edge nearest the door. The tile in front of the door, and the straight line from it to the
+> path point the house faces, is this house's **path** for P1, so the next household can face it.
+> The yard is fixed the day the house is marked, as §3.5 says.
+
+> **P5: the score, whole.** It stays in tiles walked:
+> **toWork + toStore + detour + clipped + row − company**,
+> with the walks read from the door and the facing already fixed by P1. ⚠️ Read from the door, the
+> walks no longer pull every door toward the granary (D386's failure), because the **path** picks
+> the facing, not the score. The score only picks *which* site along the paths. The sentence says
+> it: *"8 tiles to work and 3 to the granary, facing the path to the south-west, near the
+> Ashfords."*
+
+> **P6 (slice C, later): the well.** A placeable well, data-driven like every building, with no
+> water mechanic yet. It is a destination the desire paths wear toward and a term in P5:
+> `toWell`, the walk to the nearest well, weighted by `home_well_weight`. Houses gather round the
+> wells the player places, which is exactly what Joe did in the Foundation shot.
 
 **Not proposed, and why:**
-- ⛔ **§9.4 of `fences-as-walls.md`, the walk priced from the door.** It pulls every door toward the
-  granary, which is D386's uniformity again. Joe declined it (D405).
-- ⛔ **Off-axis plots.** The fence is tile edges (D404).
-- ⏸️ **The well as a focal point.** Clusters round a green are the most organic shape there is,
-  and the well is Phase 6's. §3.3 already says it would be *"one more term"*. R2's clusters leave
-  room for it, and nothing here builds it.
+- ⛔ **Free-shaped (polygon) fences.** Walls are tile edges (Joe's call above, D404).
+- ⛔ **Partial, decorative fences.** They would reverse D404's walls.
+- ⛔ **§9.4 of `fences-as-walls.md`, the walk priced from the door with the fence standing.**
+  Declined (D405). P5 reads the walk from the door, but the facing is not chosen by the walk.
 
-### 9.5 The score, whole, after R1 + R2
+### 9.6 State, determinism and cost
 
-> **site score = toWork + toStore + detour + apart + clipped + newLane + row**
-
-Every term is in tiles walked. The facing is the lowest `apart + clipped + newLane + row` for that
-tile, then the household's hash, and the wall-off sweep runs as before. The card's sentence gets
-one clause per new term that is not zero. For example: *"8 tiles to work and 3 to the granary,
-facing a lane of its own to the west, beside the Ashfords; not a third along the lane to the
-south."* Nothing is refused that was allowed before. R1 and R2 are prices, never refusals, so a
-cramped valley still gets its house (D120's shape).
-
-### 9.6 Determinism, state and hashing
-
-- **No new state.** The facing and the plot are already `HomeFacing` and `FencedTiles` (hashed).
-  R3's width, depth and side are derived from the id hash, so they are recomputable, the same way
-  the house's side is today.
-- **The run is read from the plot layer** (`ZoneMap`: owner and lane per tile, already maintained
-  where plots change). It is a walk along one line of at most a few plots per candidate facing.
-  ⛔ It is not rebuilt per tick and not cached across ticks (CLAUDE.md's index rule: the plot layer
-  *is* the index).
-- ⚠️ **The chooser's cost.** D405 took the site-chooser from 211 ms to 63 ms. R2 adds a short line
-  walk per candidate facing. The suite's clock and the D405 tick timing are both read before and
-  after.
-- **Goldens move once**, for the one reason *"homes are sited by §9's rules"*. Every fixture golden
-  and the shipped skills hash will move, because sites and facings change from the first house.
+- **State:** `HomePosition` (a `Point`, now off-centre) and `HomeFacing` (any 1/64 `Angle`) are
+  already hashed. `FencedTiles` stays hashed. **`PlotShape` stops being four rectangles:** it
+  becomes the turned house plus a hashed margin, and it stays pure arithmetic.
+- **The plot layer** (`ZoneMap`: owner and lane per tile) gains each house's path line. It is
+  maintained where plots change and never rebuilt per tick (CLAUDE.md's index rule). **Not hashed**
+  (D335).
+- **Candidates.** Sampling points along the paths, instead of taking every whole-painted tile at
+  four facings, changes the chooser's cost. D405 got it to 63 ms. It is timed before and after; a
+  regression past ~2× goes back to the sampling density, not the rules.
+- **Things that assume four facings** and must be checked: `SimWorld.HomeAnchorOn`, the house's
+  door (`PlotShape.Door`), `GateOpensAt`, `TrialFence`, `WhatThisWouldWallOff`,
+  `DetourOfAHouseAt`, the founding's warm-start houses, D381's inheritance, the view's house quad
+  and door notch. `Footprint.Covers` at free angles is already exercised by player buildings.
+- **Goldens move once**, for the one reason *"homes are sited path-first, at any angle (§9.5)"*.
 
 ### 9.7 Guards (`OrganicHousingTests`), each red-checked with the reds counted
 
-- `NoStreetRunsPastAPair`: a wide painted rectangle away from the founding, a dozen households
-  housed one after another. The longest run is ≤ 2. Red with R2's term off (expected: the D408
-  column).
-- `ALaneDoesNotSpreadByTouchingAPlot`: a plot whose lane row only *touches* a fronted tile faces
-  by hash, not toward the street. Red with the touch clause put back.
-- `AHouseBesideAWornPathStillFrontsIt`: R1 keeps D388's good half. A plot whose own lane row is a
-  worn path faces it when nothing else costs more.
-- `TheFacingsSpread`: the fixture village at year 30 on the twelve fixture seeds. The modal facing
-  is ≤ 50 % on each seed with 8+ houses. Stated as a rate over the sample, not *"every"* (D344's
-  lesson).
-- *(R3)* `PlotShapesVaryByHashNotRng`: the same valley twice is identical, and 64 ids cover every
-  width, depth and side.
-- **Re-posed with Joe's word:** `APlotBesideAStreetFrontsIt`. Proposed as *"a plot beside a street
-  fronts it unless the street has its pair"*, which is D388's rule with R2 as the stated exception.
-- **Kept unchanged:** `HousesWithNoLaneFaceByHash`, `TheFenceIsWhatWasBuilt`, and every
-  fences-as-walls guard.
+- `AHouseFacesThePathInFrontOfIt`: a worn path posed on a diagonal. The house raised beside it
+  faces it to within 1/64 turn. Red with the facing snapped to four.
+- `HousesAlongABendTurnWithIt`: a curved worn path and a run of houses along it. Their facings
+  spread across at least three distinct angles. Red with P1 off.
+- `NoRowOfThreeAlongALine`: a wide straight path and a dozen households. No three houses on one
+  line with one facing. Red with P3 off.
+- `NeighboursKeepTheirGap`: no two yards closer than the smaller of their hashed gaps. Red with P2
+  off.
+- `TheFenceIsTheTurnedYardsTileEdges`: the fence is the edge mask of the rasterised turned yard,
+  and nobody walks through it (D404's guards re-run at free angles).
+- `TheSameValleyTwiceIsTheSameVillage`: the determinism guard plus the setback, gap and margin coming
+  from the id hash, never the `Rng`.
+- `TheFacingsSpread`, measured (not *"every"*, D344): the mean angular spread over the fixture
+  seeds at year 30 is above the four-facing baseline.
+- **Retired with Joe's word:** `APlotBesideAStreetFrontsIt` (the suburbia rule, §9.2 cause 4).
+  **Re-posed:** `HousesWithNoLaneFaceByHash` becomes *"a founder with no path yet faces the
+  founding site"* (the first houses face the cart, and the paths start there).
 
 ### 9.8 Measurement, and the order of the build
 
-Measured **as played** (D409's lesson): six shipped seeds × fifty years, cold start, the starting
-stock limits on, **and the storage arm** (granary and warehouse marked in year 3, since the
-harness's own opening never raises one). Plus the twelve fixture seeds. Every §9.3 measure is taken
-alongside alive / peak / starved / froze.
+As played (D409): six shipped seeds × fifty years, cold start, starting stock limits on, **with the
+storage arm**, plus the twelve fixture seeds.
 
-| build | runs ≥ 3 | longest run | modal facing | lined-up doors | beside a neighbour | founders' walk | shipped alive / peak / starved / froze | fixture alive / peak / starved |
-|---|---|---|---|---|---|---|---|---|
-| main (D410), the baseline | *to measure first* | | | | | | | |
-| + R1 | | | | | | | | |
-| + R1 + R2 | | | | | | | | |
-| + R3 (if asked for) | | | | | | | | |
+| build | longest row | angular spread | modal-facing share | nearest-house gap (median) | beside a neighbour | founders' walk | shipped alive / peak / starved / froze | fixture alive / peak / starved | chooser ms |
+|---|---|---|---|---|---|---|---|---|---|
+| main (D410), the baseline | *to measure first* | | | | | | | | 63 (D405) |
+| + slices A + B (P1–P5) | | | | | | | | | |
+| + slice C (P6, the well) | | | | | | | | | |
 
-**Order:** measure the baseline, **and draw the sim's picture of a shipped seed at year 30 for
-Joe** (D352: the picture is the spec). Then R1, measured, then R2, measured, and a new picture.
-R3 only after he has looked. **The merge gate:** the shipped arm's alive count not below the
-baseline by more than the seed-to-seed noise, which is D402's rule. A drop past that goes to Joe as
-a trade, the way D404 did.
+**Order:**
+1. **Measure the baseline and draw the sim's picture** of a shipped seed at year 30 for Joe, with
+   the Foundation shot beside it (D352: the picture is the spec).
+2. **Slices A + B together** (P1–P5), because an angled house inside a square plot is neither. Then
+   measure again and draw a new picture.
+3. **Slice C** once he has looked.
 
-### 9.9 ⏸️ Joe's calls before building
+**The merge gate:** the shipped arm's alive count not below the baseline by more than the
+seed-to-seed noise (D402). A bigger drop is a trade for Joe, the way D404's was. Spacing costs
+paint and walk, and he may want to pay it.
 
-1. **Which rules.** Recommended: **R1 + R2 now**, R3 after he has seen them, R4 not yet.
-2. **The run cap.** A pair (`plot_row_free` 1: the third in a line pays) is the recommendation. A
-   three (a short terrace) is his if he wants a little street.
-3. **R3's paint.** A bigger average plot means fewer houses per painted tile and longer walks. Is
-   that a trade he wants, once R1 + R2 are on screen?
-4. **R4, the drawn skew.** Yes or no. It is the cheapest "organic" there is, and the drawn house
-   stops being exactly the sim's house.
-5. **`APlotBesideAStreetFrontsIt`** is re-posed as in §9.7, which is a partial reversal of D388's
-   *"the lane picks the door"* on his word.
+### 9.9 Still open (for the build, not blocking)
 
-### 9.10 Definition of Done (slice 3)
+The hashed ranges (`home_setback_tiles`, `home_gap_tiles`, `yard_margin_tiles`) and the weights
+(`home_company_tiles`, `home_row_tiles`, `home_well_weight`) are starting values and are
+**measured, not guessed**. They go into `data/sim.config.json` with the reasons beside them.
 
-R1 + R2 in `Household.ChooseSite` (with `PlotShape`, `ZoneMap`'s plot layer read, never
-rebuilt). The new config values are in `data/sim.config.json` and `SimConfig`, with the reasons
-beside them. The card's sentence names the new terms. The §9.7 guards are red-checked and counted.
-Goldens move once with the one reason. §9.8's table is filled. The before-and-after picture is shown
-to Joe. Suite, game build, probe and golden grep are all green (CLAUDE.md). DESIGN §6/§7 and this
-status line move in the same commit. **Joe plays it**: the picture is the spec.
+### 9.10 Definition of Done (slices A + B)
+
+P1–P5 are in `Household.ChooseSite`, `PlotShape` and `SimWorld`, with the plot layer maintained,
+never rebuilt. The config values are in data with their reasons. The card's sentence names the
+path and the terms. The §9.7 guards are red-checked and counted. Goldens move once. §9.8 is filled
+and the before/after picture is shown. The view draws the turned house with its door and the fence
+on tile edges. The four CLAUDE.md checks pass. DESIGN §6/§7 and this status line move in the same
+commit. **Joe plays it.**
