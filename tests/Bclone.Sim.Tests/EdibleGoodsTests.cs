@@ -53,6 +53,9 @@ public sealed class EdibleGoodsTests
                 rows[i] = rows[i] with
                 {
                     Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition,
+
+                    // An edible good sits under Food (D409), or the load refuses it.
+                    Category = GoodCategory.Food,
                     StoredBy = new[] { StoreKind.Granary, StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
                 };
             }
@@ -92,7 +95,7 @@ public sealed class EdibleGoodsTests
         {
             if (rows[i].Id == (int)Goods.Logs)
             {
-                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition + 1 };
+                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition + 1, Category = GoodCategory.Food };
             }
         }
 

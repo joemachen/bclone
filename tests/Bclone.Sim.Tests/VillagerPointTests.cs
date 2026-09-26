@@ -277,8 +277,10 @@ public sealed class VillagerPointTests
         _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
         // ⚠️ RE-PINNED (D406), not for the clock: fences are walls and the walks go round the
         // yards — 50 trips, the 1st/10th/50th at 10/199/1,975. Were 51 at 10/143/1,929.
-        Assert.Equal(50, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1975 }, at);
+        // ⚠️ RE-PINNED (D407), not for the clock: firewood is split only for what the homes want and
+        // the last logs burn — 52 trips, the 1st/10th/50th at 10/199/1,929. Were 50 at 10/199/1,975.
+        Assert.Equal(52, entries);
+        Assert.Equal(new ulong[] { 10, 199, 1929 }, at);
     }
 
     /// <summary>

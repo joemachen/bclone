@@ -29,6 +29,12 @@ namespace Bclone.Sim.Tests;
 /// <c>TargetFoodForTheGranary</c> is what the <em>birth</em> gate reads and stays derived (D153).
 /// The player's number governs work; the derived number governs children.
 /// </para>
+/// <para>
+/// ⭐ <b>RE-POSED ON THE FORAGE ROW (D409).</b> There is no food total any more — Joe: *"remove
+/// produce entirely and add a forage row"* — so every limit here is the forager's own good
+/// (<c>Goods.Produce</c>, called "forage"), which is what D216 was always about: the person who
+/// would produce toward the number.
+/// </para>
 /// </remarks>
 public sealed class FoodLimitTests
 {
@@ -191,7 +197,11 @@ public sealed class FoodLimitTests
         Assert.Equal(world.TotalFood() - world.Villagers.Sum(v => world.FoodIn(v.Carried)), shelves + huts + larders);
 
         // The sentence names the huts when the total is more than the shelves.
-        world.SetStockLimit(Goods.Produce, 100);
+        // ⚠️ D409: WITH NO LIMIT, NOT A LIMIT OF 100. There is no food total to set; the sentence
+        // that names the huts is the village's own "it has the food it needs", and a lodge of
+        // 2,000 meat is past any founding village's target.
+        Assert.True(world.FoodTheVillageHolds() >= world.TargetFoodForTheGranary(),
+            "The village holds less than its target, so it still wants food and there is no sentence to read.");
         string? why = world.WhyTheVillageWantsNoMoreFood();
         _output.WriteLine(why ?? "(wants food)");
         Assert.NotNull(why);
@@ -214,16 +224,16 @@ public sealed class FoodLimitTests
 
         // Nothing wanted at all: the limit is the reason, and it names the limit.
         world.SetStockLimit(Goods.Produce, 0);
-        string? byLimit = world.WhyTheVillageWantsNoMoreFood();
+        string? byLimit = world.WhyTheVillageWantsNoMoreOf(Goods.Produce);
         _output.WriteLine($"limit 0: {byLimit}");
 
         Assert.NotNull(byLimit);
-        Assert.Contains("asked the village to keep", byLimit);
+        Assert.Contains("asked the village to keep 0 forage", byLimit);
 
         // Room to spare and a high limit: the village wants more, so there is nothing to say.
         world.SetStockLimit(Goods.Produce, 100000);
-        _output.WriteLine($"limit 100000: {world.WhyTheVillageWantsNoMoreFood() ?? "(still wants food)"}");
-        Assert.Null(world.WhyTheVillageWantsNoMoreFood());
+        _output.WriteLine($"limit 100000: {world.WhyTheVillageWantsNoMoreOf(Goods.Produce) ?? "(still wants forage)"}");
+        Assert.Null(world.WhyTheVillageWantsNoMoreOf(Goods.Produce));
     }
 
     /// <summary>⭐⭐ A met limit stops the work — and the forager is still a forager.</summary>
@@ -275,10 +285,25 @@ public sealed class FoodLimitTests
         // ⚠️ Read the limit OUT of the village rather than writing a number in — an instrument
         // that assumes a simpler world measures something else. Half of what it already holds
         // is met by definition, whatever this fixture's economy happens to be doing.
-        int holds = world.FoodTheVillageHolds();
-        Assert.True(holds > 0, "The village stored no food in ten years, so this is vacuous.");
+        // ⚠️ SET WHILE A FORAGER HOLDS THE TRADE (D407). This fixture seats foragers only now and
+        // then (on main too: at every year's end of the first seven, nobody forages), so whether the
+        // met limit found anybody in the trade was the luck of the tick — 243 forager-ticks on main,
+        // 0 once the firewood changes moved the village's rhythm. The claim is about a forager the
+        // limit finds at work, so the limit is set when there is one.
+        for (int tick = 0; tick < config.TicksPerYear
+            && !world.Villagers.Exists(v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Forager); tick++)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.True(
+            world.Villagers.Exists(v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Forager),
+            "Nobody took the forager's trade in a year, so there is nobody for the limit to stand down.");
+
+        int holds = world.HeldAgainstItsLimit(Goods.Produce);
+        Assert.True(holds > 0, "The village stored no forage in seven years, so this is vacuous.");
         world.SetStockLimit(Goods.Produce, holds / 2);
-        Assert.True(world.FoodLimitIsMet(), "The limit must be met, or nothing is being tested.");
+        Assert.True(world.LimitIsMet(Goods.Produce), "The limit must be met, or nothing is being tested.");
 
         // ⚠️ COUNTED ONLY ON THE TICKS WHERE THE LIMIT IS ACTUALLY MET, and the first draft of
         // this guard was not — it asserted zero gathering over two whole years and measured 327.
@@ -305,7 +330,7 @@ public sealed class FoodLimitTests
         {
             loop.StepOnce();
 
-            bool met = world.FoodLimitIsMet();
+            bool met = world.LimitIsMet(Goods.Produce);
             if (met && !wasMet)
             {
                 inFlight.Clear();

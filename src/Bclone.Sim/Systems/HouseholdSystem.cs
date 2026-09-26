@@ -651,7 +651,7 @@ public sealed class HouseholdSystem : ISimSystem
         // 60 → 100 by Joe's D155 criterion, *growth arrives and starvation is still a minority
         // of deaths*: peak 22, 18 starved, 31 of old age.
         int surplus = world.FoodTheVillageHolds();
-        if (surplus < world.TargetFoodForTheGranary() * config.BirthFoodPercent / 100)
+        if (surplus < world.FoodABirthNeeds(world.Population))
         {
             return false;
         }

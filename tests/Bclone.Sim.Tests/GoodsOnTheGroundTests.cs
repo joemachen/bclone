@@ -303,24 +303,44 @@ public sealed class GoodsOnTheGroundTests
         GridPos at = world.Map.FoundingSite;
         world.SetDown(at, Goods.Logs, 120);
 
+        // ⚠️ THE WALK MAY NOT BEGIN WHILE THERE IS NOWHERE TO PUT IT (D407). This counted every tick
+        // anybody spent tidying, on the premise that the stores stay full for a season. They do
+        // not now: the homes start short of firewood and burn their last logs, so a household
+        // fetching firewood out of a store packed with logs makes real room — and a carrier then
+        // rightly walks to the heap. The claim is the name's: nobody sets out for a load while no
+        // store would take it.
+        var was = new Dictionary<Villager, VillagerState>();
         int tidyTicks = 0;
+        int wrongStarts = 0;
         for (int tick = 0; tick < config.TicksPerYear / 4; tick++)
         {
-            loop.StepOnce();
-            for (int i = 0; i < world.Villagers.Count; i++)
+            bool room = world.SomewhereToPut(Goods.Logs);
+            foreach (Villager villager in world.Villagers)
             {
-                if (world.Villagers[i].State == VillagerState.TidyingGround)
+                was[villager] = villager.State;
+            }
+
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.State != VillagerState.TidyingGround)
                 {
-                    tidyTicks++;
+                    continue;
+                }
+
+                tidyTicks++;
+                if (!room && was.GetValueOrDefault(villager) != VillagerState.TidyingGround)
+                {
+                    wrongStarts++;
                 }
             }
         }
 
         _output.WriteLine(
             $"stores full: {world.GroundStackAt(at, Goods.Logs)} still on the ground, "
-            + $"{tidyTicks} villager-ticks spent walking to it");
+            + $"{tidyTicks} villager-ticks spent walking to it, {wrongStarts} walks begun with nowhere to put it");
 
-        Assert.Equal(0, tidyTicks);
+        Assert.Equal(0, wrongStarts);
     }
 
     /// <summary>

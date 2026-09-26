@@ -320,22 +320,32 @@ public sealed class StoreBuilding
     public int RoomFor(Goods goods)
     {
         int free = Store.FreeSpace;
-        if (Catalog.Edible(goods) || !SharesItsRoofWithFood)
+        if (!SharesItsRoofWithFood)
         {
             return free;
         }
 
         int foodHeld = 0;
+        int othersHeld = 0;
         for (int id = 0; id < Catalog.Count; id++)
         {
             if (Catalog.Edible(id))
             {
                 foodHeld += Store[(Goods)id];
             }
+            else
+            {
+                othersHeld += Store[(Goods)id];
+            }
         }
 
-        int owedToFood = (Store.Capacity / 2) - foodHeld;
-        int room = owedToFood <= 0 ? free : free - owedToFood;
+        // ⭐ AND HALF FOR EVERYTHING ELSE (D409) — D361 one way round, now both. Food filled a
+        // cold start's cart (1,598 of 1,650) the moment forage could be asked for past it, the pile
+        // was full of logs, and no store in the village had room for one log of firewood: seed 2
+        // froze in year 9 beside 420 split firewood lying on the ground. Whichever side fills a
+        // shared roof, the other still has its half.
+        int owed = (Store.Capacity / 2) - (Catalog.Edible(goods) ? othersHeld : foodHeld);
+        int room = owed <= 0 ? free : free - owed;
         return room < 0 ? 0 : room;
     }
 

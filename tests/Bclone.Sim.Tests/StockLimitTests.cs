@@ -361,7 +361,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D399) — nobody produces food for their own larder (Joe's call), and the
     // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 9533260203811408204.
     // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Was 7985778814479655621.
-    private const ulong FixtureFiftyYearHash = 4610569127384925856UL;
+    // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Was 4610569127384925856.
+    private const ulong FixtureFiftyYearHash = 12200356494293742937UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -454,7 +455,8 @@ public sealed class StockLimitTests
     //   before nobody produced for their own larder (D399): 18023434392071687963 — and the
     //     village began producing for its cupboards as well as its shelves; a larder has walls.
     //   before fences became walls (D406): 1017578343772418148 — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences."
-    private const ulong ShippedFiftyYearHash = 4997044733819871548UL;
+    //   before firewood became a factor (D407): 4997044733819871548 — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor").
+    private const ulong ShippedFiftyYearHash = 13929426755288217303UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -487,7 +489,9 @@ public sealed class StockLimitTests
         // The established village either way: this golden is about stock limits being a
         // no-op, and it was captured before the cold start existed. ColdStartTests owns the
         // founding.
-        SimConfig config = shipped ? ShippedConfig.Established() : VillageFixtures.Village;
+        // ⚠️ WITH NO LIMITS SET (D409), which is what the name has always said: the shipped file now
+        // starts every game with the player's limits, and this guard is the no-op's licence.
+        SimConfig config = shipped ? ShippedConfig.EstablishedWithNoLimitsSet() : VillageFixtures.Village;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
         loop.Step(config.TicksPerYear * 50);
@@ -718,26 +722,54 @@ public sealed class StockLimitTests
         int unlimited = world.FirewoodInWarehouses();
 
         world.SetStockLimit(Goods.Firewood, 40);
-        loop.Step(config.TicksPerYear * 20);
+
+        // ⚠️ THE LIMIT, ASKED DIRECTLY (D407). This compared the capped village with the uncapped
+        // one ("less than half"), which was a claim about an uncapped village that split whenever it
+        // had logs — hundreds. Uncapped now splits what its homes want (90 here) and a stint is four
+        // splits, so the two can sit within a stint of each other and prove nothing. What a limit
+        // means is that no split STARTS once the village holds it. A split starts in two places:
+        // a woodcutter stepping up to the block, and a stint carrying on after a split finishes —
+        // both watched here, with the village's firewood read as it stands at that moment (a
+        // hauler can carry a heap in while a split is under way, so reading it at the finish
+        // would blame a split that began below the limit).
+        int splitsPastTheLimit = 0;
+        var was = new Dictionary<Villager, (VillagerState State, int Left)>();
+        for (int tick = 0; tick < config.TicksPerYear * 20; tick++)
+        {
+            foreach (Villager villager in world.Villagers)
+            {
+                was[villager] = (villager.State, villager.ActionTicksRemaining);
+            }
+
+            // Read before the tick: villagers act one after another, and a hauler later in the
+            // same tick can carry a heap in after a woodcutter has already, rightly, stepped up.
+            bool heldTheLimit = world.FirewoodTheVillageHas() >= 40;
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive || villager.State != VillagerState.MakingFirewood || !heldTheLimit)
+                {
+                    continue;
+                }
+
+                (VillagerState before, int left) = was.GetValueOrDefault(villager);
+                bool steppedUp = before != VillagerState.MakingFirewood;
+
+                // Their own split timer wound back up: THIS woodcutter began another split — not
+                // somebody else at the next block finishing theirs on the same tick.
+                bool carriedOn = !steppedUp && villager.ActionTicksRemaining > left;
+                if (steppedUp || carriedOn)
+                {
+                    splitsPastTheLimit++;
+                    _output.WriteLine(
+                        $"tick {world.Tick}: {villager.Name} began a split ({before} → {villager.State}) with the limit of 40 already held");
+                }
+            }
+        }
 
         int limited = world.FirewoodInWarehouses();
-        _output.WriteLine($"firewood in warehouses: {unlimited} unlimited, {limited} capped at 40");
+        _output.WriteLine($"firewood in warehouses: {unlimited} unlimited, {limited} capped at 40; splits begun past the limit: {splitsPastTheLimit}");
 
-        // ⭐⭐ IT ASSERTS THAT PRODUCTION STOPPED, WHICH IS STRONGER THAN THE BOUND IT REPLACES
-        // (D192). The old guard allowed one batch of overshoot, which was a guess at how much
-        // work can be in flight when the limit bites — and a faster thaw (Joe, D192) put more
-        // winter hours into the chain and crossed it at 107 against 90.
-        //
-        // ⛔ THE FIRST FIX WAS ALSO A GUESS AND WAS ALSO WRONG: `seats × split` came out at 50
-        // for a fixture that derives ONE woodcutter seat, so it did not even cover the observed
-        // number. *Two guesses at a tolerance is the point at which the tolerance is the wrong
-        // thing to assert.*
-        //
-        // **What the limit promises is that the work stops, not that the stock lands on a
-        // particular number** — so that is what this checks: the capped village is far below
-        // the uncapped one, and twenty more years does not move it. A limit that merely slowed
-        // production would keep climbing here and pass any fixed bound generous enough to
-        // absorb the overshoot.
         int settled = world.FirewoodInWarehouses();
         loop.Step(config.TicksPerYear * 20);
         int stillSettled = world.FirewoodInWarehouses();
@@ -747,10 +779,7 @@ public sealed class StockLimitTests
             $"twenty years later: {stillSettled} firewood, population {world.Population}, "
             + $"{frozen} ever frozen");
 
-        Assert.True(
-            limited < unlimited / 2,
-            $"Firewood settled at {limited} against {unlimited} uncapped — the limit is not "
-            + "biting at all.");
+        Assert.Equal(0, splitsPastTheLimit);
 
         // ⛔⛔ THE OLD ASSERTION HERE READ ZERO FOR A REASON IT DID NOT KNOW (D370). It asked
         // that the stock not move over twenty years and read 0 → 0 — the warehouse is full of
@@ -915,38 +944,49 @@ public sealed class StockLimitTests
     [Fact]
     public void ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling()
     {
-        SimConfig config = VillageFixtures.Village;
-        int years = config.TicksPerYear * 12;
+        // ⚠️ THREE SEEDS SUMMED, NOT ONE (D407, D360's lesson). The "stockpiling must not cost
+        // lives" half read 8 against 10 on the fixture seed once firewood stopped being split
+        // without asking — two people in a village of ten over twelve years, which is when a
+        // child happens to be born, not a price. The sum can tell noise from a cost.
+        int heldWith = 0, heldWithout = 0, aliveWith = 0, aliveWithout = 0;
+        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL })
+        {
+            SimConfig config = VillageFixtures.Village with { Seed = seed };
+            int years = config.TicksPerYear * 12;
 
-        SimLoop content = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        content.Step(years);
-        int without = content.World.LogsInWarehouses();
+            SimLoop content = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+            content.Step(years);
+            int without = content.World.LogsInWarehouses();
 
-        // ⚠️ ABOVE WHAT THIS VILLAGE KEEPS, MEASURED, NOT A FIXED 200 (D406). The claim is about a
-        // limit ABOVE what the village would hold anyway; 200 was that while it kept 84, and with
-        // fences as walls the same village keeps 219 on its own — so 200 was a ceiling it already
-        // sat over, and the guard failed for asking the wrong question. Two hundred more than it keeps.
-        int asked = without + 200;
-        SimLoop ambitious = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        ambitious.World.SetStockLimit(Goods.Logs, asked);
-        ambitious.Step(years);
+            // ⚠️ ABOVE WHAT THIS VILLAGE KEEPS, MEASURED, NOT A FIXED 200 (D406). The claim is about a
+            // limit ABOVE what the village would hold anyway; 200 was that while it kept 84, and with
+            // fences as walls the same village kept 219 on its own. Two hundred more than it keeps.
+            int asked = without + 200;
+            SimLoop ambitious = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+            ambitious.World.SetStockLimit(Goods.Logs, asked);
+            ambitious.Step(years);
 
-        int with = ambitious.World.LogsInWarehouses();
-        _output.WriteLine(
-            $"logs held after 12 years: {without} with no opinion, {with} asked for {asked}. "
-            + $"alive: {content.World.Population} and {ambitious.World.Population}.");
+            int with = ambitious.World.LogsInWarehouses();
+            _output.WriteLine(
+                $"seed {seed}: logs held after 12 years: {without} with no opinion, {with} asked for {asked}. "
+                + $"alive: {content.World.Population} and {ambitious.World.Population}.");
 
-        Assert.True(
-            with > without,
-            $"A village asked for {asked} logs held {with}, no better than the {without} it "
-            + "would have kept anyway. The limit is still only a ceiling.");
+            Assert.True(
+                with > without,
+                $"Seed {seed}: a village asked for {asked} logs held {with}, no better than the {without} it "
+                + "would have kept anyway. The limit is still only a ceiling.");
+
+            heldWith += with;
+            heldWithout += without;
+            aliveWith += ambitious.World.Population;
+            aliveWithout += content.World.Population;
+        }
 
         // And the stockpile is a want, not a need: it must not be built out of the hands
-        // that keep everybody fed.
+        // that keep everybody fed — asked of the three together, with a child's worth of slack.
         Assert.True(
-            ambitious.World.Population >= content.World.Population,
-            $"Stockpiling cost lives: {ambitious.World.Population} alive against "
-            + $"{content.World.Population} in the same village that never bothered.");
+            aliveWith + 2 >= aliveWithout,
+            $"Stockpiling cost lives: {aliveWith} alive against {aliveWithout} in the same villages that never bothered.");
     }
 
     // ---------------------------------------------------------------

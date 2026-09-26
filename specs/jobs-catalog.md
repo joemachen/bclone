@@ -89,6 +89,7 @@ JobRow
   Doing      string   the gerund for the log: "gathering", "felling timber"
   WorksAt    BuildingKind?   the workplace it staffs, or none
   LimitedBy  Goods?   whose stock limit stands this trade down, or none
+                      (the forager names forage since D409 — there is no food total)
 ```
 
 ⚠️ **`WorksAt` points at an enum that is still an enum.** That is honest and temporary: buildings

@@ -31,7 +31,9 @@ public sealed class FarmLedgerTests
 
     public FarmLedgerTests(ITestOutputHelper output) => _output = output;
 
-    private static SimConfig Config => ShippedConfig.Established();
+    // ⚠️ With no stock limits set (D409): these claims are about learning and cadence, and the
+    // player's starting wheat and forage limits stand in front of both. See `ShippedConfig`.
+    private static SimConfig Config => ShippedConfig.EstablishedWithNoLimitsSet();
 
     /// <summary>
     /// ⭐⭐ Where a distant farm's autumn actually goes, by state and by armful.

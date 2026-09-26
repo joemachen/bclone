@@ -287,6 +287,7 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheBarsHoldTheirShape());
+        GD.Print(AMetLimitIsMarkedOnTheBar());
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
         // their content correctly and draw NONE of it. Both were `size 288x0` for the life of
@@ -483,6 +484,30 @@ public partial class Main : Control
     /// width, because a bar that runs under the minimap is a bar nobody can read.
     /// </para>
     /// </remarks>
+    private string AMetLimitIsMarkedOnTheBar()
+    {
+        SimWorld world = _loop.World;
+        int? was = world.StockLimits.For(Goods.Logs);
+        (Goods _, Label mark) = _limitMarks.Find(m => m.Goods == Goods.Logs);
+        if (mark is null)
+        {
+            return "[widths] limits: ⛔ logs have no ⚠ slot on the bar";
+        }
+
+        Refresh();
+        string open = mark.Text;
+        world.SetStockLimit(Goods.Logs, 0);
+        Refresh();
+        string met = mark.Text;
+        string why = mark.TooltipText;
+        world.SetStockLimit(Goods.Logs, was);
+        Refresh();
+
+        return met == "⚠" && why.Length > 0 && open.Length == 0 && mark.Text.Length == 0
+            ? $"[widths] limits: ✅ a met log limit marks logs ⚠ and says \"{why}\"; unmet, the slot is empty"
+            : $"[widths] limits: ⛔ logs read \"{open}\" unmet and \"{met}\" met, tooltip \"{why}\"";
+    }
+
     private string TheBarsHoldTheirShape()
     {
         Refresh();
@@ -499,6 +524,12 @@ public partial class Main : Control
         foreach (Label cell in cells)
         {
             cell.Text = "+12,345";
+        }
+
+        // ⚠ in every limit slot as well (D409): the mark comes and goes, and the bar must not move.
+        foreach ((Goods _, Label mark) in _limitMarks)
+        {
+            mark.Text = "⚠";
         }
 
         string clockWas = _clockLabel.Text;
@@ -1769,6 +1800,14 @@ public partial class Main : Control
             }
         }
 
+        for (int i = 0; i < _limitMarks.Count; i++)
+        {
+            (Goods goods, Label mark) = _limitMarks[i];
+            string? why = world.WhyTheLimitIsMet(goods);
+            mark.Text = why is null ? string.Empty : "⚠";
+            mark.TooltipText = why ?? string.Empty;
+        }
+
         // ⭐⭐ THE NUMBER ON THE BAR IS THE NUMBER THE RULES READ (D394). The comment on the bar's
         // build said so since D378 and the code read `FoodInGranaries` — the shelves alone — so a
         // farm's card said *"it has 3092"* beside a bar saying 245 and Joe asked where the food
@@ -1789,7 +1828,8 @@ public partial class Main : Control
         // as a clause in the tooltip, so both readings are on the bar and neither is the other.
         // ⚠️ `ShowShortfall` writes the tooltip, so the D394 sentence goes on after it.
         int floor = VillageEconomy.SurvivalFloorFor(world.Config, Goods.Produce, world.Population, world.Households.Count);
-        int foodWanted = world.StockLimits.For(Goods.Produce) ?? world.TargetFoodForTheGranary();
+        // D409: no food total to set — what the food trades aim for is the village's derived need.
+        int foodWanted = world.TargetFoodForTheGranary() + world.FoodTheLardersWant();
         ShowShortfall(_foodTotal, foodHeld < floor,
             $"the village is short of food — it holds {foodHeld.Grouped()} and needs {floor.Grouped()} to see the year out");
         string where = $"{onShelves.Grouped()} on the shelves and {inHuts.Grouped()} in the huts — what the food limit reads; the larders hold {inLarders.Grouped()} besides";
@@ -1827,9 +1867,31 @@ public partial class Main : Control
             // Read from the sim rather than from the widget: the label cannot drift from the
             // state it describes.
             int? limit = world.StockLimits.For(goods);
+            // ⭐ THE RULE'S OWN NUMBER (D409): `HeldAgainstItsLimit` — stores, heaps, and a food's
+            // hut buffers — for every good, so the row can never disagree with the stop it explains.
+            // It read the warehouses for firewood while the rule read the heaps too, which is how Joe
+            // saw *"stop at 400 · have 450"*. And a ⚠ where the limit is met, in the sim's words.
+            int have = world.HeldAgainstItsLimit(goods);
+            string? met = world.WhyTheLimitIsMet(goods);
             held.Text = limit is null
-                ? $"no limit · have {HeldFor(world, goods)}"
-                : $"stop at {limit.Value} · have {HeldFor(world, goods)}";
+                ? $"no limit · have {have.Grouped()}"
+                : $"{(met is null ? string.Empty : "⚠ ")}stop at {limit.Value.Grouped()} · have {have.Grouped()}";
+            held.TooltipText = met ?? string.Empty;
+            held.MouseFilter = met is null ? MouseFilterEnum.Ignore : MouseFilterEnum.Pass;
+        }
+
+        // ⭐ THE FOOD HEADING (D409): the food rows added up, and a ⚠ when they sit below what the
+        // next child needs — with no food total, the rows can cap births and nothing else would say.
+        if (_foodCeiling is not null)
+        {
+            int? ceiling = world.FoodLimitsCeiling();
+            int nextChild = world.FoodABirthNeeds(world.Population + 1);
+            bool caps = ceiling is int c && c < nextChild;
+            _foodCeiling.Text = ceiling is int sum ? $"{(caps ? "⚠ " : string.Empty)}{sum.Grouped()} in all" : "no ceiling";
+            _foodCeiling.TooltipText = caps
+                ? $"The food limits add up to {ceiling!.Value.Grouped()}, and a village of {world.Population + 1} needs {nextChild.Grouped()} held before another child is born — births stop here. Raise a food row."
+                : string.Empty;
+            _foodCeiling.MouseFilter = caps ? MouseFilterEnum.Pass : MouseFilterEnum.Ignore;
         }
 
         // The same glance for the professions: how many are actually on this work, and how
@@ -2909,7 +2971,22 @@ public partial class Main : Control
     {
         Label held = AddBarCell(row, ChipColour(goods), world.GoodsCatalog.NameOf(goods));
         _goodsReadouts.Add((goods, held));
+
+        // ⭐ THE ⚠ WHEN THE PLAYER'S LIMIT IS MET (D409). Joe: *"there should be a message or signal
+        // somewhere visible for the user in the UI to indicate that the limit for logs is reached."*
+        // A slot of its own at a fixed width, so the bar never moves when it comes and goes (D367),
+        // and beside amber rather than instead of it: amber is *short*, ⚠ is *stopped at your number*.
+        var mark = new Label { CustomMinimumSize = new Vector2(LimitMarkWidth, 0f), MouseFilter = MouseFilterEnum.Pass };
+        mark.AddThemeFontSizeOverride("font_size", 12);
+        mark.AddThemeColorOverride("font_color", LightStopped);
+        held.GetParent().AddChild(mark);
+        _limitMarks.Add((goods, mark));
     }
+
+    /// <summary>Room for one ⚠ at the bar's size.</summary>
+    private const float LimitMarkWidth = 18f;
+
+    private readonly List<(Goods Goods, Label Mark)> _limitMarks = new();
 
     /// <summary>Room for "123,456" at <see cref="RowSize"/> — a bar's cell, narrower than a panel's.</summary>
     private const float BarAmountWidth = 48f;
@@ -3925,9 +4002,45 @@ public partial class Main : Control
         table.AddChild(new Control());
         table.AddChild(Muted("HAVE"));
 
-        foreach (Goods goods in StockLimits.Kinds)
+        // ⭐ GROUPED BY THE GOOD'S OWN CATEGORY (D409, Joe: *"group like categories together in the
+        // stock limits menu"*). The heading a good sits under is its catalogue row's, so a modded
+        // good lands in its group with no line here.
+        SimWorld world = _loop.World;
+        foreach (GoodCategory category in Enum.GetValues<GoodCategory>())
         {
-            AddStockLimitRow(table, goods);
+            if (category == GoodCategory.Unset)
+            {
+                continue;
+            }
+
+            // The total sits in the HAVE column, which wraps — nowhere else in the row can take it
+            // without widening the panel.
+            Label total = Wrapped(Muted(string.Empty));
+            if (category == GoodCategory.Food)
+            {
+                _foodCeiling = total;
+            }
+
+            // ⚠️ THE HEADING IN A PLAIN CONTROL, WHICH TAKES NO SIZE FROM ITS CHILD. In the name
+            // column as a label it set that column's width — "FUEL & GOODS" is wider than any
+            // good's name — and the panel widened past its 360 (the probe's ⛔, 379 then 385). The
+            // row's LIMIT and clear cells are empty, so the heading simply draws across them.
+            var heading = new Control { CustomMinimumSize = new Vector2(0f, 18f), MouseFilter = MouseFilterEnum.Ignore };
+            heading.AddChild(Muted(CategoryName(category)));
+
+            table.AddChild(new Control());
+            table.AddChild(heading);
+            table.AddChild(new Control());
+            table.AddChild(new Control());
+            table.AddChild(total);
+
+            foreach (Goods goods in StockLimits.Kinds)
+            {
+                if (world.GoodsCatalog.CategoryOf(goods) == category)
+                {
+                    AddStockLimitRow(table, goods);
+                }
+            }
         }
 
         return table;
@@ -5554,34 +5667,41 @@ public partial class Main : Control
     /// The controls are unchanged from the two-line rows this replaced — same <c>SpinBox</c>, same
     /// defaults, same <c>SetStockLimit</c> call, same clear button. **Only the layout moved.**
     /// </remarks>
+    private static string CategoryName(GoodCategory category) => category switch
+    {
+        GoodCategory.Food => "FOOD",
+        GoodCategory.Materials => "MATERIALS",
+        GoodCategory.FuelAndGoods => "FUEL & GOODS",
+        _ => category.ToString(),
+    };
+
+    /// <summary>The Food heading's sum of the food limits, and its ⚠ (D409).</summary>
+    private Label? _foodCeiling;
+
     private void AddStockLimitRow(GridContainer table, Goods goods)
     {
         table.AddChild(Chip(ChipColour(goods)));
         table.AddChild(Body(GoodsName(_loop.World, goods)));
 
-        int startsAt = goods switch
-        {
-            Goods.Produce => 2000,
-
-            // ⭐ The same as food's, deliberately (D348): the wheat limit is what a limit on
-            // this row ALONE does to the farmers, and the default must change nothing until a
-            // player sets it.
-            Goods.Wheat => 2000,
-            Goods.Firewood => 400,
-            _ => 200,
-        };
+        // ⛔⛔ THE PANEL NO LONGER HAS NUMBERS OF ITS OWN (D409). It set food 2000, firewood 400 and
+        // 200 for the rest into the sim the moment it was built — so the game Joe played always
+        // had limits and no test or measurement ever did, and the firewood branch that measured
+        // fine headless left nobody alive in his game. The starting limits live in
+        // `data/sim.config.json` now and the sim holds them from the first tick; this row shows
+        // and edits what the sim holds. Joe: *"synced with and regulated by the stock limit panel."*
+        int? starts = _loop.World.StockLimits.For(goods);
 
         var amount = new SpinBox
         {
             MinValue = 0,
             MaxValue = 100_000,
             Step = 10,
-            Value = startsAt,
             Editable = true,
             CustomMinimumSize = new Vector2(74, 0),
         };
+        amount.SetValueNoSignal(starts ?? 0);
 
-        var clear = new Button { Text = "clear", Flat = true, Disabled = true };
+        var clear = new Button { Text = "clear", Flat = true, Disabled = starts is null };
 
         Label held = Wrapped(Muted(string.Empty));
 
@@ -5593,9 +5713,6 @@ public partial class Main : Control
 
         amount.ValueChanged += _ => Set((int)amount.Value);
         clear.Pressed += () => Set(null);
-
-        _loop.World.SetStockLimit(goods, startsAt);
-        clear.Disabled = false;
 
         table.AddChild(amount);
         table.AddChild(clear);
@@ -5701,47 +5818,6 @@ public partial class Main : Control
         return name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
     }
 
-    /// <summary>
-    /// How much of a good the limit is actually measured against.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The same total <c>LabourQuota</c> reads, and it must stay that way.</b> Firewood is
-    /// counted in the warehouses, not everywhere, because a pile in somebody else's home is not
-    /// supply — no errand reaches it. Showing the player a village-wide total beside a limit
-    /// that governs the warehouse would explain a stopped woodcutter with a number that had
-    /// nothing to do with why it stopped, which is D29 wearing a UI.
-    /// </para>
-    /// <para>
-    /// <b>⛔ AND FOR MONTHS IT DID NOT (2026-08-27). The invariant above was asserted and
-    /// broken in the same method</b>, in two places:
-    /// </para>
-    /// <para>
-    /// <b>Stone, tools and iron fell to <c>_ =&gt; 0</c></b>, so a village holding three hundred
-    /// stone read <em>"stop at 100 · have 0"</em> — a row telling the player their limit is
-    /// nowhere near binding while it binds. The sim never had this gap: <c>MayTake</c> is
-    /// <c>InStores(goods)</c> for every good by index, with nothing switching on a name, which
-    /// is `goods-catalog.md §2.1`'s rule. **A modded good read zero here for ever.**
-    /// </para>
-    /// <para>
-    /// <b>And Food read <c>FoodInGranaries()</c> where every sim decision reads
-    /// <c>FoodTheVillageHolds()</c></b> — granaries <em>plus</em> workplace stores. They stopped
-    /// being the same number when D161 gave the farm a buffer, and the row has disagreed with
-    /// the quota it describes ever since.
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>The arms are the sim's own reads, per good, and not a tidy single call</b>: logs
-    /// and firewood genuinely are counted in the warehouses by <c>LabourQuota</c>, and collapsing all
-    /// five to <c>InStores</c> would break the invariant in the other direction.
-    /// </para>
-    /// </remarks>
-    private static int HeldFor(SimWorld world, Goods goods) => goods switch
-    {
-        Goods.Produce => world.FoodTheVillageHolds(),
-        Goods.Logs => world.LogsInWarehouses(),
-        Goods.Firewood => world.FirewoodInWarehouses(),
-        _ => world.InStores(goods),
-    };
 
     /// <summary>Why a good is lying in the open, asked rather than assumed.</summary>
     /// <remarks>

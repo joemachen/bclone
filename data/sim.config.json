@@ -1306,6 +1306,27 @@
   // village says so out loud.
   "demolition_returns_percent": 50,
 
+  // THE STOCK LIMITS A NEW GAME STARTS WITH (D409) -- the player's, set before
+  // he has touched them, and the Stock limits panel shows and edits exactly these.
+  // They lived in the view until 2026-09-26, so no test or measurement ever saw
+  // them. Joe's numbers: "logs 200, firewood 400 ... and 200 for everything else",
+  // wheat 1000, fish 250, meat 250 -- and forage 2000, raised from 1000 once it
+  // was measured: births need 95 food a head held, and in a cold start forage is
+  // the only food, so 1000 capped every village at about ten people. There is no
+  // food total any more -- each food stops its own trade. Keys are goods' names.
+  "starting_stock_limits": {
+    "forage": 2000,
+    "wheat": 1000,
+    "fish": 250,
+    "meat": 250,
+    "logs": 200,
+    "firewood": 400,
+    "stone": 200,
+    "tools": 200,
+    "iron": 200,
+    "leather": 200,
+  },
+
   "villager_names": [
     "Mabel", "Otto", "Bess", "Silas",
     "Agnes", "Wendell", "Hattie", "Amos",

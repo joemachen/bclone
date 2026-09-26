@@ -151,9 +151,13 @@ glances at went to Settings. `Main.cs`, `BuildTopBars`.
 
 | Box | What it says | Where it comes from |
 |---|---|---|
-| **Resources** | two rows: **food** *(the umbrella, first)*, produce, wheat, fish, meat / logs, firewood, stone, tools — a chip, a number, a name; then `more ▾` | `FoodInGranaries` for food; `InStores(g)` per good; `BarRows` fixes the eight in Joe's order, **every other catalogue good is behind `more`** in catalogue order (iron, leather today; a modded good lands there the day it exists — D210's rule kept) |
+| **Resources** | two rows: **food** *(the umbrella, first)*, forage *(was "produce", D409)*, wheat, fish, meat / logs, firewood, stone, tools — a chip, a number, a name; then `more ▾` | `FoodInGranaries` for food; `InStores(g)` per good; `BarRows` fixes the eight in Joe's order, **every other catalogue good is behind `more`** in catalogue order (iron, leather today; a modded good lands there the day it exists — D210's rule kept) |
 | **`more ▾`** | a popup: the leftover goods, then the two permanent rows *in homes and huts* `+N`/`—` and *on the ground* `+N`/`—` (its tooltip the per-good reason, D134) | `TotalFood − FoodInGranaries`; `OnTheGround(g)` summed, `WhyItIsOnTheGround` |
 | **Villagers** | `N villagers · N adults · N children · N elders · N laborers` (dots in the map's own villager colours) over `Fernhollow · Day 3, Summer, Year 17 · 2 households` | `Population`, the life-stage count, `Laborers`, `Name`, `Clock`, `LivingHouseholds` |
+
+**⚠ beside a good = the player's limit on it is met (D409)** — in a fixed 18 px slot after the name, so the bar
+never moves when it comes and goes (the probe poses every slot), with `SimWorld.WhyTheLimitIsMet` as its tooltip:
+who has stopped and the harvest paint left standing. It sits beside amber, never instead of it.
 
 **Amber on a number = the village is short of it, by the sim's own reckoning** — the predicates that
 staff the trades, so the bar and the Professions panel cannot disagree: firewood while

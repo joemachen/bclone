@@ -931,6 +931,52 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public int FirewoodInWarehouses() => TotalAccepting(Goods.Firewood, static store => store.Firewood);
 
+    /// <summary>Firewood lying in heaps on the ground — split with nowhere to put it (D96), not yet carried in.</summary>
+    public int FirewoodOnTheGround() => OnTheGround(Goods.Firewood);
+
+    /// <summary>
+    /// ⭐⭐ The firewood the village has made and nobody has burned — its stores' and its heaps'
+    /// (D407). What a limit is met against and what the homes' want is weighed against.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>THE HEAPS WERE INVISIBLE, AND THAT WAS D395.</b> When the woodyard's store was full a
+    /// split went down on the ground beside the hut (D96), and every "has the village enough?"
+    /// counted the stores alone — so the woodcutter never saw the pile and split on: a two-home
+    /// cold start held <b>718 firewood on the ground by tick 312</b> and 742 split for homes that
+    /// wanted ~134, and the haulers later carried the heaps in past any limit (Joe, D395: *"firewood
+    /// rose 400 → 962 past a set limit"*).
+    /// </remarks>
+    public int FirewoodTheVillageHas() => FirewoodInWarehouses() + FirewoodOnTheGround();
+
+    /// <summary>
+    /// ⭐⭐ Whether the village wants more firewood split — <b>the one question</b>, asked where a
+    /// woodcutter sets out, before every split of a stint, and by the hiring quota (D407).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With a limit set it is the player's number, met against the stores AND the heaps (D62's
+    /// ceiling, and an ambition when it sits above what the homes want — the log limit's rule).
+    /// With none, it is what the homes want: <see cref="LabourQuota.FirewoodShortfall"/>, the
+    /// per-home target and the winter to come, against what they can fetch — the stores.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A split still goes ahead with the stores full</b> and sets its firewood down (D96): a
+    /// split takes six logs out of the store, which is room, and a first draft that refused to split
+    /// without room froze a village whose stores were packed with logs — the old endless splitting
+    /// had been making that room all along (trap 117's shape).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>IT USED TO BE ONLY THE LIMIT</b> at the place a woodcutter set out, so with no limit set
+    /// anybody seated at the hut split whenever there were logs — Joe, 2026-09-26: *"I can skip 10
+    /// years without a woodcutter and still have lots of firewood. It seems like a non-factor."*
+    /// </para>
+    /// </remarks>
+    public bool TheVillageWantsMoreFirewood() =>
+        StockLimits.For(Goods.Firewood) is not null
+            ? !LimitIsMet(Goods.Firewood)
+            : LabourQuota.FirewoodShortfall(this) > 0;
+
+
     /// <summary>
     /// How much of any good the village's stores hold between them.
     /// </summary>
@@ -1106,19 +1152,20 @@ public sealed class SimWorld : IObstacles
     /// A village drowning in timber that reports a shortage is a §1.1 failure, not a balance
     /// one, so the number exists to be shown.
     /// </remarks>
-    public int OnTheGround(Goods goods)
-    {
-        int total = 0;
-        for (int i = 0; i < GroundStacks.Count; i++)
-        {
-            if (GroundStacks[i].Goods == goods)
-            {
-                total += GroundStacks[i].Amount;
-            }
-        }
+    public int OnTheGround(Goods goods) => _onTheGround[(int)goods];
 
-        return total;
-    }
+    /// <summary>
+    /// What lies in heaps, per good — <b>kept where a heap changes, never summed per ask</b> (D409).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Every stock limit is met against the heaps now (D407's rule for firewood, made general),
+    /// and <see cref="MayTake"/> is asked for every good by every idle adult with painted ground
+    /// in front of them — a walk of every heap in the valley per good per adult per tick is
+    /// exactly what CLAUDE.md's ⛔ rule forbids. <see cref="SetDown"/> and
+    /// <see cref="TakeFromGround"/> are the only two places a heap changes, so the count moves
+    /// there. ⚠️ A derived index: it restates <see cref="GroundStacks"/>, so it is not hashed (D335).
+    /// </remarks>
+    private readonly int[] _onTheGround;
 
     /// <summary>
     /// Put a load down where somebody is standing. The one door in.
@@ -1143,11 +1190,13 @@ public sealed class SimWorld : IObstacles
             if (GroundStacks[i].Position == position && GroundStacks[i].Goods == goods)
             {
                 GroundStacks[i].Amount += amount;
+                _onTheGround[(int)goods] += amount;
                 return;
             }
         }
 
         GroundStacks.Add(new GroundStack { Position = position, Goods = goods, Amount = amount });
+        _onTheGround[(int)goods] += amount;
     }
 
     /// <summary>A free building the player marked, waiting for its ground to be cleared.</summary>
@@ -1852,28 +1901,125 @@ public sealed class SimWorld : IObstacles
     /// and the reason a mod-added good is limited the day it is added.
     /// </para>
     /// </remarks>
-    public bool MayTake(Goods goods) => !StockLimits.IsMet(goods, InStores(goods));
+    public bool MayTake(Goods goods) => !StockLimits.IsMet(goods, HeldAgainstItsLimit(goods));
 
-    /// <summary>Whether the player's food limit is met, by the total every food decision uses.</summary>
+    /// <summary>
+    /// ⭐⭐ What a good's stock limit is met against — <b>one number per good, read by the rule, the
+    /// panel and the ⚠️ on the bar alike</b> (D409).
+    /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐ ONE DOOR, because food is the one good measured against something other than
-    /// <c>InStores</c>.</b> <see cref="MayTake"/> answers every other good by index and nothing
-    /// switches on a name there; food is different because <see cref="FoodTheVillageHolds"/>
-    /// counts workplace buffers as well as granaries (D161), and the quota, the panel and the
-    /// forager all have to agree about which number the player's limit is compared against.
+    /// <b>The stores, the heaps, and — for anything edible — the huts' buffers.</b> Each half is a
+    /// ruling this game already paid for, now read the same way for every good instead of by name:
+    /// the heaps are D407's (a split with the stores full went down on the ground and every count
+    /// read the stores alone, so a woodcutter split into a heap of 718); the buffers are D161's (a
+    /// farm's buffer is food the village has — Joe's lodge held 2,103 meat behind a bar that read
+    /// 245).
     /// </para>
     /// <para>
-    /// ⚠️ <b>They did not agree, which is what this exists to stop.</b> The stock limit was read
-    /// against three different totals in three places, and the panel read a fourth. When a
-    /// player asks *"why is my forager still working?"* the only useful answer is one number.
+    /// ⭐ <b>The heaps are what make Joe's rule on logs hold</b> (D408): *"if the user paints an area
+    /// for tree harvest and the village limit for logs is reached, the laborers should not harvest
+    /// the trees."* A cold start's cart takes no logs and its pile is small, so a limit met against
+    /// the stores alone was never met — the laborers cleared into heaps, 19,818 on shipped seed 1.
     /// </para>
     /// <para>
-    /// <b>False when no limit is set</b>, which keeps every unlimited village byte-identical —
-    /// the shape D216 was careful about for the same reason.
+    /// ⛔ <b>No food total any more</b> (Joe, 2026-09-26: *"i dont think it makes sense to have a
+    /// 'food' overall limit + individual limits for each sub category"*). Forage, wheat, fish and
+    /// meat each have their own row and each stops its own trade.
     /// </para>
     /// </remarks>
-    public bool FoodLimitIsMet() => StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
+    public int HeldAgainstItsLimit(Goods goods)
+    {
+        int held = InStores(goods) + OnTheGround(goods);
+        if (!GoodsCatalog.Edible(goods))
+        {
+            return held;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            held += Workplaces[i].Store[goods];
+        }
+
+        return held;
+    }
+
+    /// <summary>Whether the player's limit on this good is set and met — the ⚠️ on the bar (D409).</summary>
+    public bool LimitIsMet(Goods goods) => !MayTake(goods);
+
+    /// <summary>
+    /// ⭐ The ⚠️'s sentence: who a met limit has stopped, and how to undo it — or null while the
+    /// limit is not met (D408, D409).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"there should be a message or signal somewhere visible for the user in the UI to
+    /// indicate that the limit for logs is reached and that is why more aren't being generated."*
+    /// The trades are the ones whose job names this good (<c>limited_by</c>) and the harvest paint is
+    /// named when the good is taken from painted ground — both read from the rows, never by name.
+    /// </remarks>
+    public string? WhyTheLimitIsMet(Goods goods)
+    {
+        if (!LimitIsMet(goods) || StockLimits.For(goods) is not int limit)
+        {
+            return null;
+        }
+
+        var stopped = new List<string>();
+        for (int id = 0; id < JobsCatalog.Count; id++)
+        {
+            if (JobsCatalog.LimitedBy((JobKind)id) == goods)
+            {
+                stopped.Add(JobsCatalog.PluralOf((JobKind)id));
+            }
+        }
+
+        string who = stopped.Count > 0
+            ? $"the {string.Join(" and the ", stopped)} have stopped"
+            : "nothing more is made";
+        string paint = GoodsCatalog.YieldPerTileOf(goods) > 0
+            ? $", and ground painted for harvest in {GoodsCatalog.SourceNameOf(goods)} is left standing"
+            : string.Empty;
+        return $"At your limit of {limit.Grouped()} {GoodsCatalog.NameOf(goods)} ({HeldAgainstItsLimit(goods).Grouped()} held) — "
+            + $"{who}{paint}. Raise it under Stock limits.";
+    }
+
+    /// <summary>
+    /// The food limits added up — <b>the most food the village will ever keep</b> — or null while
+    /// any food has no limit, which is no ceiling at all (D409).
+    /// </summary>
+    public int? FoodLimitsCeiling()
+    {
+        int sum = 0;
+        for (int id = 0; id < GoodsCatalog.Count; id++)
+        {
+            if (GoodsCatalog.CategoryOf((Goods)id) != GoodCategory.Food)
+            {
+                continue;
+            }
+
+            if (StockLimits.For((Goods)id) is not int limit)
+            {
+                return null;
+            }
+
+            sum += limit;
+        }
+
+        return sum;
+    }
+
+    /// <summary>
+    /// ⭐ What the birth gate asks the village to hold for a village of this size — <b>one door</b>,
+    /// read by <see cref="Systems.HouseholdSystem"/> and by the Food heading's ⚠️ (D409).
+    /// </summary>
+    /// <remarks>
+    /// The tension D409 opened: with no food total, the food rows can add up to less than the next
+    /// child needs, and births stop there however hard anybody works. Measured: forage at 1,000
+    /// held every cold start at about ten people. The heading says so when it happens.
+    /// </remarks>
+    public int FoodABirthNeeds(int population) =>
+        Config.StockpileTarget * population * Config.BirthFoodPercent / 100;
+
 
     /// <summary>Whether any of the four tiles around this one is the ground named.</summary>
     /// <remarks>
@@ -2144,8 +2290,9 @@ public sealed class SimWorld : IObstacles
         // April on the strength of a number that may be false by August.
         if (SeasonRules.IsReaping(Clock.Season) && !MayReap())
         {
+            Goods grown = JobsCatalog.LimitedBy(JobKind.Farmer) ?? Goods.Wheat;
             return $"{farm.Name} has stopped reaping — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Produce)} food and it has {FoodTheVillageHolds()}. "
+                + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)}. "
                 + "The crop stands until the village eats into it, and winter takes the rest.";
         }
 
@@ -3285,10 +3432,10 @@ public sealed class SimWorld : IObstacles
             return null;
         }
 
-        if (hut.Mode != WorkMode.PlantOnly && StockLimits.IsMet(Goods.Logs, LogsInWarehouses()))
+        if (hut.Mode != WorkMode.PlantOnly && LimitIsMet(Goods.Logs))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Logs)} logs and it has {LogsInWarehouses()}.";
+                + $"{StockLimits.For(Goods.Logs)} logs and it has {HeldAgainstItsLimit(Goods.Logs)}.";
         }
 
         return hut.Mode == WorkMode.PlantOnly
@@ -3298,11 +3445,18 @@ public sealed class SimWorld : IObstacles
 
     private string? WoodcutterIdleNote(Workplace hut)
     {
-        if (StockLimits.IsMet(Goods.Firewood, FirewoodInWarehouses()))
+        if (LimitIsMet(Goods.Firewood))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodInWarehouses()}.";
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodTheVillageHas()}.";
         }
+
+        if (!TheVillageWantsMoreFirewood())
+        {
+            return $"{hut.Name} has stopped — the homes have the firewood they want, "
+                + $"and the stores hold {FirewoodTheVillageHas()}.";
+        }
+
 
         return NearestStoreAccepting(
                 hut.Tile, Goods.Logs, store => store.Store.Logs >= Config.LogsPerSplit)
@@ -3330,8 +3484,8 @@ public sealed class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(smithy);
 
-        int held = InStores(Goods.Tools);
-        if (StockLimits.IsMet(Goods.Tools, held))
+        int held = HeldAgainstItsLimit(Goods.Tools);
+        if (LimitIsMet(Goods.Tools))
         {
             return $"Nothing to forge — you asked the village to keep "
                 + $"{StockLimits.For(Goods.Tools)} tools and it has {held}.";
@@ -3621,8 +3775,13 @@ public sealed class SimWorld : IObstacles
     /// <c>CropSystem.Rot</c> already narrates that loss — which is the honest bill for capping
     /// food while keeping farmers on, and the signal to lower one or raise the other.
     /// </para>
+    /// <para>
+    /// ⭐ <b>The farmer's own good since D409</b> — the row the farmer's job names
+    /// (<c>limited_by</c>, wheat today), not a total over every food. D348's wheat row already meant
+    /// *"what stops the farmers"*; the food total that stood beside it is gone.
+    /// </para>
     /// </remarks>
-    public bool MayReap() => !StockLimits.IsMet(Goods.Produce, FoodTheVillageHolds());
+    public bool MayReap() => JobsCatalog.LimitedBy(JobKind.Farmer) is not Goods grown || MayTake(grown);
 
     /// <summary>
     /// Seats at farmhouses the year still has work for — <b>the village's demand for farmers</b>.
@@ -4124,6 +4283,7 @@ public sealed class SimWorld : IObstacles
 
             int taken = amount < stack.Amount ? amount : stack.Amount;
             stack.Amount -= taken;
+            _onTheGround[(int)goods] -= taken;
             if (stack.Amount == 0)
             {
                 GroundStacks.RemoveAt(i);
@@ -9203,6 +9363,19 @@ public sealed class SimWorld : IObstacles
         LastKnowerIds = new int[TechniquesCatalog.Count];
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
+        _onTheGround = new int[GoodsCatalog.Count];
+
+        // ⭐ THE PLAYER'S STARTING LIMITS, HELD BY THE SIM FROM THE FIRST TICK (D409). They lived
+        // in the view's panel, so every harness measured a game with no limits at all. Walked in
+        // id order, not dictionary order — the order is the determinism contract, even here.
+        for (int id = 0; id < GoodsCatalog.Count; id++)
+        {
+            if (GoodsCatalog[id] is GoodRow row && config.StartingStockLimits.TryGetValue(row.Name, out int limit))
+            {
+                StockLimits.Set((Goods)id, limit);
+            }
+        }
+
         Logger = logger;
         Seed = seed;
         Rng = new DeterministicRandom(seed);
@@ -11102,7 +11275,11 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public int FoodTheVillageHasRoomFor()
     {
-        // ⭐⭐ THE PLAYER'S NUMBER IF THEY HAVE GIVEN ONE, THE DERIVED TARGET IF NOT (D216).
+        // ⛔ D409: THERE IS NO FOOD TOTAL TO SET ANY MORE. The paragraphs below are D216's history;
+        // D216's rule itself — *the player's number is what the producer works toward* — now lives
+        // per good, in `WantsMoreOf`. This method answers the village's derived need.
+        //
+        // ⭐⭐ (D216, HISTORY) THE PLAYER'S NUMBER IF THEY HAVE GIVEN ONE, THE DERIVED TARGET IF NOT.
         //
         // **This read the derived target ONLY, so a food limit was invisible to the one person
         // who would produce toward it.** Joe, playing: *"if there are trees marked for harvest,
@@ -11135,7 +11312,9 @@ public sealed class SimWorld : IObstacles
         // the rules read (Joe's rule, D394: *"storage, in transit to storage and in markets"*) and
         // food that goes home is still food somebody had to bring in. ⛔ The player's limit still
         // caps the lot — it is a ceiling over everything, which is D62.
-        int wanted = StockLimits.For(Goods.Produce) ?? (TargetFoodForTheGranary() + FoodTheLardersWant());
+        // ⛔ NO LONGER THE PLAYER'S NUMBER (D409): there is no food total to set. Each food's own
+        // row stops its own trade; what the village needs stays derived.
+        int wanted = TargetFoodForTheGranary() + FoodTheLardersWant();
 
         // Across every store the village can actually put food in (D76, D79) — the
         // granaries it has built, the pile the player dropped on day one, and the cart
@@ -11158,6 +11337,51 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
+    /// ⭐⭐ Whether the trade that brings in this food should go out for more — <b>D216's rule, one
+    /// good at a time</b> (D409).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>With the player's limit on this good set, it is his number</b>: the trade works toward it
+    /// and stops at it, whatever the other foods hold — D216's *"a limit of 2000 and no limit at all
+    /// produced byte-identical behaviour"* is the reason the number is an ambition as well as a
+    /// ceiling. <b>With none, it is the village's derived need</b>, <see cref="TheVillageWantsMoreFood"/>,
+    /// unchanged — which keeps every village with no limits byte-identical.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>And never past the room there is</b> (D33, D76): a village cannot want food it has
+    /// nowhere to put, limit or no limit.
+    /// </para>
+    /// </remarks>
+    public bool WantsMoreOf(Goods food)
+    {
+        if (StockLimits.For(food) is not int limit)
+        {
+            return TheVillageWantsMoreFood();
+        }
+
+        return HeldAgainstItsLimit(food) < limit
+            && RoomLeftForFood() + LarderRoomForFood() > 0;
+    }
+
+    /// <summary>Why the trade that brings in this food is not going out, or null while it is (D409).</summary>
+    public string? WhyTheVillageWantsNoMoreOf(Goods food)
+    {
+        if (WantsMoreOf(food))
+        {
+            return null;
+        }
+
+        if (StockLimits.For(food) is int limit && HeldAgainstItsLimit(food) >= limit)
+        {
+            return $"you asked the village to keep {limit} {GoodsCatalog.NameOf(food)} and it has {HeldAgainstItsLimit(food)}";
+        }
+
+        return WhyTheVillageWantsNoMoreFood()
+            ?? $"every store that takes food is full — {FoodInGranaries()} in the stores, and nowhere to put more";
+    }
+
+    /// <summary>
     /// Why the village has stopped wanting food, or null while it still does.
     /// </summary>
     /// <remarks>
@@ -11177,11 +11401,6 @@ public sealed class SimWorld : IObstacles
         // ⭐ THE NUMBER SAYS WHERE IT IS (D394). Joe read *"it has 3092"* on a farm's card beside a
         // bar saying 245 and asked where the food was: the difference was a lodge nobody had
         // carried out. A quoted total that is more than the shelves names the huts.
-        if (StockLimits.For(Goods.Produce) is int limit && holds >= limit)
-        {
-            return $"you asked the village to keep {limit} food and it has {holds}{WhereTheFoodIs()}";
-        }
-
         if (holds >= TargetFoodForTheGranary() && RoomLeftForFood() > 0)
         {
             return $"the village has the {TargetFoodForTheGranary()} food it needs — {holds} held{WhereTheFoodIs()}";
@@ -11236,7 +11455,9 @@ public sealed class SimWorld : IObstacles
         // half its room for food, D361). Measured: the village said it wanted no more food on
         // **83 % of ticks while holding 119 of 616**. A larder is deliberately outside the number
         // the rules read (D394) and is still a place a load can go.
-        int wanted = StockLimits.For(Goods.Produce) ?? (TargetFoodForTheGranary() + FoodTheLardersWant());
+        // ⛔ NO LONGER THE PLAYER'S NUMBER (D409): there is no food total to set. Each food's own
+        // row stops its own trade; what the village needs stays derived.
+        int wanted = TargetFoodForTheGranary() + FoodTheLardersWant();
         // ⚠️ THE LEFT SIDE IS WHAT THE RULES READ — the shelves and the huts, never the cupboards
         // (D394, Joe's rule). Counting larders on both sides let a village fill its cupboards and
         // stop with half-empty shelves, and the birth gate reads the shelves (D153): measured, it

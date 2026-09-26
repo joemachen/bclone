@@ -1,6 +1,122 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D406 IN §7. FENCES AS WALLS IS MERGED (NOT PUSHED). NEXT: FIREWOOD — THE LEDGER GUARD, THEN THE FIX, THEN JOE'S DIALS → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE D409 BANNER, THEN `DESIGN.md §0–§6` AND D404–D409 IN §7. NEXT: HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST, `organic-housing.md §3.3`) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 (LATER) — AFTER D406.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D409.**
+>
+> **Branches:** `slice/firewood-matters` (D407–D409) is **MERGED into `main` locally, NOT pushed** — Joe
+> plays, then pushes. Suite **1237 passing, 0 failing, 4 skipped of 1241**, 3m02; view 0 warnings; probe
+> green, bar height 161, the new `[widths] limits:` line ✅. **One golden moved** (the shipped skills
+> hash); every fixture golden held.
+>
+> **What D409 is, in one paragraph (read D409 in §7 before touching stock limits, storage or food):**
+> the Stock limits panel had been writing its OWN numbers into the sim since 2026-08-25, so no test or
+> measurement had ever played the game Joe plays — and the firewood branch, played as he would have
+> (firewood 400), left **nobody alive on six shipped seeds of six**. Now the starting limits are data
+> (`starting_stock_limits` in `data/sim.config.json`: forage 2000, wheat 1000, fish 250, meat 250, logs
+> 200, firewood 400, 200 the rest — Joe's numbers), the sim holds them from the first tick, and the
+> panel shows and edits them. **No food total**: each food stops its own trade. "Produce" is
+> **"forage"** to the player (the enum is still `Goods.Produce`). Every good has a `Category`; the panel
+> is grouped FOOD / MATERIALS / FUEL & GOODS and the Food heading adds its rows with a ⚠ if they cap
+> births. A met limit is a **⚠ on the top bar** with who stopped. Every limit reads ONE number,
+> `SimWorld.HeldAgainstItsLimit` (stores + heaps + a food's hut buffers). Two cold-start storage bugs
+> fixed on the way: an armful takes what the stores are **shortest of** first, and a mixed store keeps
+> **half for each side** (D361 mirrored).
+>
+> **⚠️ What a fresh session must know about the numbers:** measured with the player raising a granary
+> and warehouse in year 3, this build reads **61 alive / 77 peak / 0 froze against main's 52 / 70 / 0**.
+> A village that never builds storage now plateaus at ~9 (the cart holds 825 food under the halves —
+> *build a granary* is D33's intended reply). ⚠️ **The measurement harness's opening never raises a
+> granary in fifty years**; any future "the shipped game got smaller" reading should first ask
+> whether it is a cart-only village. The harness text is in this session's scratchpad
+> (`ZzMeasure.cs`), not the repo.
+>
+> **⏸️ Unplayed by Joe.** What to look at when he plays: the ⚠ beside logs once the village holds 200
+> (and its tooltip), the grouped Stock limits panel, the word "forage", and whether a new village
+> grows at the pace he expects before its first granary.
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER:** homes that do not read as suburbia — spec first (the D408 banner
+> below has his words and the likely shape) → tools on ticks at 34 % → the quarry spec → his design
+> threads (the ⏸️ list, including D406's valley-clearing starvation and its two skipped guards).
+>
+> ⚠️ **Worktrees:** this session measured main and the branch-as-found in `git worktree`s under its
+> scratchpad (`wt-main`, `wt-head`). If `git worktree list` still shows them, `git worktree remove
+> --force <path>` — they hold nothing that is not in git.
+>
+> *(The D408 banner, kept below.)*
+>
+
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END OF DAY) — AFTER D408.**
+>
+> **Branches:** `main` = fences merged (D400–D406) **+ nothing else; not pushed** — Joe pushes after
+> he plays. **`slice/firewood-matters`** (D407, `9173676` + this handoff) is **committed, NOT merged,
+> NOT pushed**: 1230 passing, 0 failing, 4 skipped of 1234; view 0 warnings; probe green.
+>
+> **Read first:** `DESIGN.md §0–§6`, then D404–D408 in §7 (newest first, just above D403), then
+> `specs/fences-as-walls.md` and `specs/wood-fuel-and-tools.md §6a`.
+>
+> **⭐⭐ JOE'S CALLS OF 2026-09-26 (END OF DAY) — D408, SETTLED:**
+> 1. **The dial stays** (burn 24 a home a winter, 53 firewood a split): *"i think it feels okay
+>    as-is. lets stick with it for now and change later if needed."* ⛔ Do not change either number.
+> 2. **Surplus logs — his rule, in his words:** *"if a forester is actively providing logs, but the
+>    village limit for logs is reached, then the forester doesn't provide logs until under the
+>    limit. if the user paints an area for tree harvest and the village limit for logs is reached,
+>    the laborers should not harvest the trees — there should be a message or signal somewhere
+>    visible for the user in the UI to indicate that the limit for logs is reached and that is why
+>    more aren't being generated."* ⭐ **Most of it is BUILT**: a met log limit stops the forester's
+>    felling (D146, `SimWorld.MayFell`) and the laborers' clearing (D212,
+>    `NearestHarvest(out heldBackBy)` → the note *"Nothing left to clear — you asked the village to
+>    keep N logs…"*). **What is missing is exactly the two things D407's regression needs:**
+>    *(a)* **no log limit is set by default**, so a new game has no ceiling at all and cleared logs
+>    fill a cold start's cart and pile and heap on the ground (19,818 on shipped seed 1);
+>    *(b)* **the signal lives only on a laborer's card** — nothing the player sees at a glance.
+>
+> **▶️ THE NEXT BUILD, ON `slice/firewood-matters` (then merge it):**
+> 1. **A default log limit in `data/sim.config.json`** — D62's own list says *"200 wood"*; measure
+>    before typing (six shipped + twelve fixture seeds × 50 years, the D407 harness — its text is in
+>    the scratchpad, not the repo; rebuild it from D407's description: cold start via
+>    `ColdStartTests.PlayTheOpening`, count alive/peak/starved/cold and the share of adult ticks in
+>    `MakingFirewood`). ⚠️ The limits are the player's (D62) — a *default* is a starting value he can
+>    change, stated as such, and the stock-limit panel must show it set.
+> 2. **The visible signal** — logs amber on the bar when the log limit is met and trees are left
+>    standing, with the reason on the tooltip (the food bar's pattern, `the-cards.md §5`); and a
+>    harvest area whose clearing is held back says so on its own card/tooltip. Probe line for it.
+> 3. **Re-measure against D407's table** (main: shipped 71 / 11 starved; the fixes: 56 / 28). The
+>    merge is fine when the shipped arm is back at or above main. Then goldens once, docs, merge.
+>
+> **⭐ ALSO FROM JOE, TO PLAN (not scheduled): THE HOMES READ AS SUBURBIA.** His 2026-09-26 screenshot:
+> five houses in one column, all facing the same lane, fenced plots stacked like a street of
+> semis — *"the home placement looks like suburbia instead of having more naturally occurring
+> orientations, no?"* He is right, and it is D388's rule winning every time: the facing goes to the
+> lane with the most "already a lane" tiles, so every new house fronts the first street. Fences made
+> it stronger (a back-facing house walks round its yard — §9.4, which he declined on cost). Likely
+> shape: the "lane already" term only as a tie-break within a small radius, and a real spread of
+> facings / plot offsets. ⛔ Not the walk-from-the-door fix (§9.4) — that would make it MORE uniform.
+> Spec first (`organic-housing.md §3.3`), measure the facings' spread before/after.
+>
+> **Queue after that, in Joe's order:** tools on ticks at 34 % → the quarry spec → his design threads
+> (the ⏸️ list below, including the valley-clearing starvation D406 found and the two skipped guards).
+>
+> *(The D407 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATEST) — AFTER D407.**
+>
+> **The state:** `main` = fences merged (D406), **not pushed**. **`slice/firewood-matters` = D407,
+> committed, NOT merged, NOT pushed**: 1230 passing, 0 failing, 4 skipped of 1234; view 0 warnings;
+> probe green.
+>
+> **⏸️⏸️ WAITING ON JOE — read D407's measurement before touching it.** Four firewood leaks are closed
+> and each is right on its own, but together they took the shipped game **71 → 56 alive, starved
+> 11 → 28** over six seeds, because **the endless split was the village's only log sink**: logs from
+> clearing the harvest paint now fill a cold start's small stores and heap on the ground (19,818 on
+> shipped seed 1, which starved in year 45 with its cart full of firewood). Two calls, in order:
+> *(1)* **what the village does with logs it does not want** — a derived log ceiling (cleared logs
+> not carried in past it), or keep turning surplus logs into firewood (the non-factor he started
+> from); *(2)* **the dial** — burn 24 → 32 (shipped 62 / 15), split 53 → 35 (shipped 67 / 15), both,
+> or neither. ⛔ Do not merge the branch as it stands, and do not "fix" the regression by putting the
+> unasked split back — that IS the leak.
+>
+> *(The D406 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATER) — AFTER D406.**
 >
 > **The state:** fences as walls is **MERGED into main locally (D404–D406), NOT pushed** — Joe
 > plays, then pushes. **1227 passing, 0 failing, 4 skipped of 1231**, ~3m; view 0 warnings; probe
@@ -2193,6 +2309,25 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 130. **⚠️ A GOLDEN CAN HIDE BEHIND ANOTHER GOLDEN IN THE SAME TEST (D406).** The seam test asserts
     two hashes in a row; the first failing hid the second, so D404 counted five goldens to move
     and there were six. *Count goldens by assertion, not by failing test.*
+
+131. **⛔⛔ WHEN A LEAK HAS RUN FOR A YEAR, IT IS SOMEBODY'S SUPPLY (D407).** The woodcutter split
+    whenever there were logs, and that endless split was the village's only log sink: close it, and
+    the logs from clearing the player's paint fill the stores until food has no room. It also hid a
+    second leak — loggers hired to feed a woodyard already holding 2,000 logs — because while splitting
+    never stopped there was never a firewood shortfall to price. Trap 117's shape, one good over.
+    *Before closing a leak, ask what has been living on it.*
+
+132. **⚠️ A GUARD THAT READS STATE AFTER A TICK CAN BLAME AN ACTOR FOR WHAT A LATER ACTOR DID (D407).**
+    Villagers act one after another in a tick: a woodcutter rightly stepped up under the limit, a
+    hauler later in the same tick carried a heap in, and a guard reading the total at the tick's end
+    counted a split "begun past the limit". Read what the actor saw — before the tick.
+133. **⛔⛔ A NUMBER THE VIEW WRITES INTO THE SIM IS A NUMBER NO HARNESS HAS EVER SEEN (D409).** The
+    Stock limits panel set food 2000 / firewood 400 / 200 the rest into the sim when it was built,
+    for a month. Every test and every fifty-year measurement ran with no limits; D407 measured "56
+    alive" on a game nobody plays, and the same branch, played as Joe plays it, froze every village.
+    **Before trusting a measurement, ask what the game's startup does that the harness does not** —
+    grep the view for `SetStockLimit`, `SetJobLimit`, `SetStaffing` and anything else it calls at
+    build time. And a harness whose opening never builds storage measures a cart-only village.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

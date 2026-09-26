@@ -45,6 +45,20 @@ public static class ShippedConfig
     /// </remarks>
     public static SimConfig Established() => Load() with { FoundingBuildings = true };
 
+    /// <summary>
+    /// <see cref="Established"/>, with the player's starting stock limits left unset (D409).
+    /// </summary>
+    /// <remarks>
+    /// <b>For a guard whose claim is about something a limit would stand in front of</b> — a farm's
+    /// memory learning upward, a labour call landing on the tick it is given. Since D409 the shipped
+    /// file starts every game with the player's limits, and a met wheat limit stops the reaping by
+    /// design, so a farm that stops at 1,000 wheat reads as a cap that cannot learn. The limits are
+    /// the player's instruction, not the shipped economy's numbers, and those guards are about the
+    /// numbers. <b>Everything else keeps <see cref="Established"/></b>, which plays the game as shipped.
+    /// </remarks>
+    public static SimConfig EstablishedWithNoLimitsSet() =>
+        Established() with { StartingStockLimits = new Dictionary<string, int>() };
+
     /// <summary>The directory holding <c>bclone.sln</c>, walked up from the test binaries.</summary>
     public static string RepoRoot()
     {

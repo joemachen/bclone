@@ -93,7 +93,14 @@ public sealed class HearthSystem : ISimSystem
                 continue;
             }
 
-            if (!household.Stockpile.TryTake(Goods.Firewood, config.FirewoodPerWinterDay))
+            // ⛔⛔ WHAT IS LEFT, NOT THREE OR NOTHING (D407). A burn that could only take a whole
+            // day's three left a larder holding one or two logs untouched — and a home with any
+            // firewood is a lit hearth (`SimWorld`'s fire test), so it stayed warm for ever at no
+            // cost. Measured: an established village's stores ran dry in year six and both homes
+            // wintered four more years on 1–2 logs, nobody cold. The last logs burn now, and the
+            // house is cold on the next beat.
+            int burn = Math.Min(household.Stockpile.Firewood, config.FirewoodPerWinterDay);
+            if (burn <= 0 || !household.Stockpile.TryTake(Goods.Firewood, burn))
             {
                 continue;
             }

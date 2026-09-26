@@ -46,7 +46,9 @@ public sealed class FarmMemoryTests
 
     public FarmMemoryTests(ITestOutputHelper output) => _output = output;
 
-    private static SimConfig Config => ShippedConfig.Established();
+    // ⚠️ With no stock limits set (D409): these claims are about learning and cadence, and the
+    // player's starting wheat and forage limits stand in front of both. See `ShippedConfig`.
+    private static SimConfig Config => ShippedConfig.EstablishedWithNoLimitsSet();
 
     private static SimLoop Loop(SimConfig config) =>
         SimFactory.CreatePhase0(config, new InMemoryLogSink());

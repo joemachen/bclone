@@ -562,6 +562,8 @@ public sealed class StorageTests
     /// with nobody idle and nothing wrong. So <see cref="StoreBuilding.RoomFor"/> lets non-food
     /// see only the room above what food is still owed, <see cref="StoreBuilding.Put"/> clamps to
     /// it, and a granary or warehouse — which do not share a roof — are exactly as they were.
+    /// ⭐ <b>And both ways since D409:</b> a cart full of FOOD froze a village beside 420 split firewood
+    /// no store had room for, so food sees only the room above what everything else is owed.
     /// </remarks>
     [Fact]
     public void AMixedStoreKeepsHalfItsRoomForFood()
@@ -584,9 +586,12 @@ public sealed class StorageTests
         int owed = (capacity / 2) - food;
         _output.WriteLine($"cart holds {food} food of {capacity}; {free} free, {owed} still owed to food");
 
-        // Firewood sees the room above what food is owed; food sees all of it.
+        // Firewood sees the room above what food is owed; and since D409, food sees the room above
+        // what everything else is owed — the cart's stone and tools count toward that half.
+        int others = cart.Store.Held - food;
+        int owedToOthers = (capacity / 2) - others;
         Assert.Equal(owed > 0 ? free - owed : free, cart.RoomFor(Goods.Firewood));
-        Assert.Equal(free, cart.RoomFor(Goods.Produce));
+        Assert.Equal(owedToOthers > 0 ? free - owedToOthers : free, cart.RoomFor(Goods.Produce));
 
         // Fill it with firewood, and the food's half is still there.
         int put = cart.Put(Goods.Firewood, capacity);
@@ -599,6 +604,22 @@ public sealed class StorageTests
         int fed = cart.Put(Goods.Produce, capacity);
         Assert.True(fed > 0);
         Assert.True(cart.Store.IsFull);
+
+        // ⭐ AND THE MIRROR (D409): a fresh cart filled with FOOD still has half for everything else.
+        // Seed 2 froze in year 9 with the cart at 1,598 forage of 1,650 and no store in the village
+        // with room for one log of firewood.
+        SimWorld other = SimFactory.CreatePhase0(ShippedConfig.Load(), new InMemoryLogSink()).World;
+        StoreBuilding full = other.AnyStoreOf(StoreKind.Cart);
+
+        // The founding load is over half food already (it arrives, it is not put) — empty it first,
+        // so what goes in is what the rule lets in.
+        Assert.True(full.Store.TryTake(Goods.Produce, full.Store[Goods.Produce]));
+        full.Put(Goods.Produce, capacity);
+        int nonFood = full.Store.Held - full.Store[Goods.Produce];
+        _output.WriteLine($"a cart filled with food holds {full.Store[Goods.Produce]} of it, {nonFood} else, {full.Store.FreeSpace} free");
+        Assert.True(full.Store.FreeSpace + nonFood >= capacity / 2, $"food took {full.Store[Goods.Produce]} of {capacity} and left the rest no half");
+        Assert.False(full.HasRoomFor(Goods.Produce));
+        Assert.True(full.HasRoomFor(Goods.Firewood));
 
         // The single-purpose stores are untouched by the rule.
         Assert.Equal(granary.Store.FreeSpace, granary.RoomFor(Goods.Produce));

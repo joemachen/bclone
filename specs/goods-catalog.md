@@ -77,7 +77,13 @@ GoodRow
   SourceName    string?  what it is taken from: "woodland", "a stone seam". Falls back to Name
   YieldPerTile  int      what one tile of its source gives. 0 for goods nothing harvests
   StoredBy      flags    which StoreKinds accept it
+  Nutrition     int      0 for anything nobody eats (D277)
+  Category      enum     the stock-limit heading: Food | Materials | FuelAndGoods (D409).
+                         Unset fails at load; anything edible must be Food
 ```
+
+**Id 0 is called "forage"** since D409 (Joe: *"I no longer want it to be called Produce"*); the
+enum keeps `Goods.Produce`, which the player never sees.
 
 **Ids are hashed by position and appended, never renumbered** — the rule `SkillRow`, `JobKind` and
 `Terrain` are all pinned by. Renumbering silently reinterprets every golden and every seed.
