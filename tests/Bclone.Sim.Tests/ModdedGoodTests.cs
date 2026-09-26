@@ -66,19 +66,19 @@ public sealed class ModdedGoodTests
     private static string JsonWithPitch => """
     {
       "goods": [
-        { "id": 0, "name": "produce",     "stored_by": ["Granary", "Market", "Cart"] },
-        { "id": 1, "name": "logs",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Warehouse"] },
-        { "id": 2, "name": "firewood", "stored_by": ["Warehouse", "Market", "Cart"] },
-        { "id": 3, "name": "stone",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Warehouse", "Cart"] },
-        { "id": 4, "name": "tools",    "stored_by": ["Warehouse", "Cart"] },
-        { "id": 5, "name": "iron",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Warehouse", "Cart"] },
-        { "id": 6, "name": "fish",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
-        { "id": 7, "name": "meat",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
-        { "id": 8, "name": "leather",  "source_name": "the woods",    "stored_by": ["Warehouse", "Cart"] },
-        { "id": 9, "name": "wheat",    "source_name": "the fields",   "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 0, "name": "forage", "category": "Food",     "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 1, "name": "logs", "category": "Materials",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Warehouse"] },
+        { "id": 2, "name": "firewood", "category": "FuelAndGoods", "stored_by": ["Warehouse", "Market", "Cart"] },
+        { "id": 3, "name": "stone", "category": "Materials",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Warehouse", "Cart"] },
+        { "id": 4, "name": "tools", "category": "FuelAndGoods",    "stored_by": ["Warehouse", "Cart"] },
+        { "id": 5, "name": "iron", "category": "Materials",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Warehouse", "Cart"] },
+        { "id": 6, "name": "fish", "category": "Food",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 7, "name": "meat", "category": "Food",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 8, "name": "leather", "category": "Materials",  "source_name": "the woods",    "stored_by": ["Warehouse", "Cart"] },
+        { "id": 9, "name": "wheat", "category": "Food",    "source_name": "the fields",   "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
 
         // The modder's own good, above every built-in. Nothing in the sim has heard of it.
-        { "id": 10, "name": "pitch",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
+        { "id": 10, "name": "pitch", "category": "Materials",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
       ]
     }
     """;
@@ -148,7 +148,7 @@ public sealed class ModdedGoodTests
         // ⛔ Ids are appended, never renumbered — the rule every golden is pinned to. If adding
         // a good could shift `Goods.Produce` off id 0, every saved limit and every seed would
         // silently mean something else.
-        Assert.Equal("produce", catalog.NameOf(Goods.Produce));
+        Assert.Equal("forage", catalog.NameOf(Goods.Produce));
         Assert.Equal("logs", catalog.NameOf(Goods.Logs));
         Assert.Equal("iron", catalog.NameOf(Goods.Iron));
         Assert.Equal(12, catalog.YieldPerTileOf(Goods.Logs));
@@ -257,6 +257,7 @@ public sealed class ModdedGoodTests
             Id = plain.GoodsCatalog.Count,
             Name = "pitch",
             SourceName = "a tar seep",
+            Category = GoodCategory.Materials,
             StoredBy = new[] { StoreKind.Warehouse },
         };
 
@@ -349,7 +350,7 @@ public sealed class ModdedGoodTests
         string missingFood = """
         {
           "goods": [
-            { "id": 1, "name": "logs", "stored_by": ["Warehouse"] }
+            { "id": 1, "name": "logs", "category": "Materials", "stored_by": ["Warehouse"] }
           ]
         }
         """;

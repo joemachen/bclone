@@ -489,7 +489,9 @@ public sealed class StockLimitTests
         // The established village either way: this golden is about stock limits being a
         // no-op, and it was captured before the cold start existed. ColdStartTests owns the
         // founding.
-        SimConfig config = shipped ? ShippedConfig.Established() : VillageFixtures.Village;
+        // ⚠️ WITH NO LIMITS SET (D409), which is what the name has always said: the shipped file now
+        // starts every game with the player's limits, and this guard is the no-op's licence.
+        SimConfig config = shipped ? ShippedConfig.EstablishedWithNoLimitsSet() : VillageFixtures.Village;
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
 
         loop.Step(config.TicksPerYear * 50);

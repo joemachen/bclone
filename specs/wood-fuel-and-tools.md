@@ -1,6 +1,8 @@
 # Spec: Wood as Fuel — logs, firewood, and the first processing chain
 
-> Status: **built — acceptance test passing** · Owner: Joe + Claude Code
+> Status: **built — acceptance test passing** · Owner: Joe + Claude Code · **D407's firewood leaks merged
+> by D409** (with the player's stock limits held by the sim; measured as played, 61 alive / 0 froze
+> against main's 52 / 0 with storage raised)
 > Format per `METHODOLOGY.md §2`. Implements decision **D17**, extended by **D29** and **D31**.
 
 ---

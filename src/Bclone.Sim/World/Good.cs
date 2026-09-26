@@ -52,7 +52,7 @@ public sealed record GoodRow
     /// <remarks>
     /// <b>⛔ IT USED TO LIVE IN TWO PLACES, WITH THE SAME WORDS IN BOTH.</b>
     /// <c>Stockpile.Name</c> and <c>SimWorld</c> each carried
-    /// <c>Goods.Produce =&gt; "produce", Goods.Logs =&gt; "logs", Goods.Firewood =&gt; "firewood"</c>.
+    /// <c>Goods.Produce =&gt; "produce" (now "forage", D409), Goods.Logs =&gt; "logs", Goods.Firewood =&gt; "firewood"</c>.
     /// That is D148's finding and D188's — <em>two vocabularies for one thing</em> — in code rather
     /// than in the view, and it is exactly the drift a row exists to stop.
     /// </remarks>
@@ -164,6 +164,46 @@ public sealed record GoodRow
     /// <summary>Whether anybody can eat it. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool Edible => Nutrition > 0;
+
+    /// <summary>
+    /// Which heading it sits under in the stock limits (D409) — <b>in the row, so a modder's good
+    /// lands in the right group without a line of view code</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, 2026-09-26: *"group like categories together in the stock limits menu (food [forage,
+    /// wheat, fish, meat, etc], resources [logs, stone, iron, etc.], etc)"*. The grouping is the
+    /// panel's; <b>which group a good is in is a fact about the good</b>, so it lives here.
+    /// </para>
+    /// <para>
+    /// ⛔ <b><see cref="GoodCategory.Unset"/> fails at load</b>, and an edible good must be
+    /// <see cref="GoodCategory.Food"/>: the Food heading adds its rows up and compares the sum
+    /// with what the village needs to grow, so an edible good filed elsewhere would be food the
+    /// warning cannot see.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("category")]
+    public GoodCategory Category { get; init; }
+}
+
+/// <summary>The stock-limit headings, in the order the panel shows them (D409).</summary>
+/// <remarks>
+/// ⚠️ <b><see cref="Unset"/> is zero on purpose</b>: a row that forgets its category must fail at
+/// load, not quietly become food.
+/// </remarks>
+public enum GoodCategory
+{
+    /// <summary>Not stated. Refused at load.</summary>
+    Unset = 0,
+
+    /// <summary>Anything anybody can eat — forage, wheat, fish, meat.</summary>
+    Food = 1,
+
+    /// <summary>What things are made from — logs, stone, iron, leather.</summary>
+    Materials = 2,
+
+    /// <summary>What is burned or used up — firewood, tools.</summary>
+    FuelAndGoods = 3,
 }
 
 /// <summary>
@@ -240,7 +280,7 @@ public sealed class GoodsCatalog
     /// <summary>The row for one good, by id — for goods a mod added, which have no enum value.</summary>
     public GoodRow this[int id] => _rows[id];
 
-    /// <summary>What the village calls it: <em>"produce"</em>, <em>"logs"</em>.</summary>
+    /// <summary>What the village calls it: <em>"forage"</em>, <em>"logs"</em>.</summary>
     public string NameOf(Goods goods) => _rows[(int)goods].Name;
 
     /// <summary>
@@ -272,6 +312,9 @@ public sealed class GoodsCatalog
 
     /// <summary>What one unit of it is worth to a hungry person. Zero if nobody can eat it.</summary>
     public int NutritionOf(Goods goods) => _rows[(int)goods].Nutrition;
+
+    /// <summary>Which stock-limit heading it sits under (D409).</summary>
+    public GoodCategory CategoryOf(Goods goods) => _rows[(int)goods].Category;
 
     /// <summary>
     /// Every good anybody can eat, in id order — <b>the list that replaces naming

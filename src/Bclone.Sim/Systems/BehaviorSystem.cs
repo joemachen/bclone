@@ -2399,7 +2399,7 @@ public sealed class BehaviorSystem : ISimSystem
         // ⚠️ `theVillageNeedsFood` keeps D398's name because that is what it asks; the old
         // `needsFood` is gone rather than redefined, so nothing reads a name that has quietly
         // changed meaning (D148's name-that-lies).
-        bool theVillageNeedsFood = !world.FoodLimitIsMet() && world.TheVillageWantsMoreFood();
+        // (Asked just below `job`, once the trade is known — D409.)
 
         // FETCH — before work, because a household with an empty larder has a more
         // pressing errand than its job.
@@ -2436,6 +2436,17 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         Workplace? job = WorkplaceOf(world, villager);
+
+        // ⭐ D409: `theVillageNeedsFood` (the paragraphs above FETCH), ASKED OF THIS TRADE'S OWN
+        // GOOD. There is no food total to set any more (Joe: *"i dont think it makes sense to have
+        // a 'food' overall limit + individual limits for each sub category"*); a hunter reads the
+        // meat row, a fisher the fish row, a forager the forage row — the good the job's
+        // `limited_by` names. With that row unset it is the village's derived need, as before.
+        bool theVillageNeedsFood = job is not null
+            && world.JobsCatalog.LimitedBy(job.Kind) is Goods made
+            && world.GoodsCatalog.Edible(made)
+                ? world.WantsMoreOf(made)
+                : world.TheVillageWantsMoreFood();
 
         // ⭐ A HAND WITH A JOB KEEPS A TOOL (D391, `tools-and-the-smith.md §3.5`). Before any
         // trade's own branch, so the rule is one line rather than one per trade: somebody holding
@@ -2535,7 +2546,7 @@ public sealed class BehaviorSystem : ISimSystem
         // A hunter with a full village says so, the same way a forager and a fisher do (D216).
         if (canHunt && !theVillageNeedsFood)
         {
-            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string enough
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreOf(Goods.Meat) is string enough
                 ? enough
                 : string.Empty;
         }
@@ -2567,7 +2578,7 @@ public sealed class BehaviorSystem : ISimSystem
         // A fisher with a full village says so, the same way a forager does (D216).
         if (canFish && !theVillageNeedsFood)
         {
-            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string full
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreOf(Goods.Fish) is string full
                 ? $"Nothing to fish for — {full}."
                 : string.Empty;
         }
@@ -2612,7 +2623,7 @@ public sealed class BehaviorSystem : ISimSystem
         // refusal writes its own reason.
         if (canForage && !theVillageNeedsFood)
         {
-            villager.WorkNote = world.WhyTheVillageWantsNoMoreFood() is string why
+            villager.WorkNote = world.WhyTheVillageWantsNoMoreOf(Goods.Produce) is string why
                 ? $"Nothing to gather for — {why}."
                 : string.Empty;
         }
@@ -2665,7 +2676,7 @@ public sealed class BehaviorSystem : ISimSystem
             // was the only thing asked here, so with none set a seated woodcutter split whenever
             // there were logs, and with the stores full the firewood went on the ground where no
             // count could see it. `TheVillageWantsMoreFirewood` is the one question.
-            if (world.StockLimits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()))
+            if (world.LimitIsMet(Goods.Firewood))
             {
                 villager.WorkNote =
                     $"Nothing to split — you asked the village to keep "
@@ -2777,10 +2788,11 @@ public sealed class BehaviorSystem : ISimSystem
                 // gets its own sentence rather than one shrug (§1.1). The order matters: a
                 // met limit is the reason the player cannot see from the farm's own panel,
                 // which is D147's finding and why that marker was worth building.
+                Goods grown = world.JobsCatalog.LimitedBy(job.Kind) ?? Goods.Wheat;
                 villager.WorkNote = !world.MayReap() && SeasonRules.IsReaping(world.Clock.Season)
                     ? $"Not bringing the harvest in at {job.Name} — you asked the village to "
-                      + $"keep {world.StockLimits.For(Goods.Produce)} food and it has "
-                      + $"{world.FoodTheVillageHolds()}. It stands until the village eats."
+                      + $"keep {world.StockLimits.For(grown)} {world.GoodsCatalog.NameOf(grown)} and it has "
+                      + $"{world.HeldAgainstItsLimit(grown)}. It stands until the village eats."
                     : SeasonRules.IsSowing(world.Clock.Season)
                         ? $"Every tile at {job.Name} is already sown."
                         : SeasonRules.IsReaping(world.Clock.Season)
@@ -2848,7 +2860,7 @@ public sealed class BehaviorSystem : ISimSystem
                           + "off, and its ground is wooded again."
                         : $"{job.Name} has stopped felling — you asked the village "
                           + $"to keep {world.StockLimits.For(Goods.Logs)} logs and it has "
-                          + $"{world.LogsInWarehouses()}. Its ground is wooded again."
+                          + $"{world.HeldAgainstItsLimit(Goods.Logs)}. Its ground is wooded again."
                     : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
 
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
@@ -3193,15 +3205,20 @@ public sealed class BehaviorSystem : ISimSystem
         // stays on the ground — picking it up put it straight back down at the full door and
         // sent everybody to fetch it again. `HasAShelf` is the question `NearestGroundStack`
         // asked to send us here, asked of each stack in turn.
+        //
+        // ⛔⛔ AND SHORTEST FIRST, NOT FOOD FIRST (D409). Id order put forage (id 0) in every armful
+        // ahead of everything else on the tile, and a cold start's cart is the one store that
+        // takes both food and fuel: forage heaped beside a full cart took every slot a fetch freed,
+        // the 428 firewood heaped on the same tile never went in, and homes — which fetch from
+        // stores, never from heaps — froze beside it. Five shipped seeds of six, measured. So the
+        // armful takes first the good the stores hold least of against the player's own number
+        // for it; a good with no limit keeps its place after them, in id order, which is what
+        // keeps a village with no limits byte-identical.
         int room = world.Config.CarryCapacity;
-        for (int g = 0; g < villager.Carried.Slots && room > 0; g++)
+        List<Goods> order = OrderToPickUp(world, at, villager.Carried.Slots);
+        for (int i = 0; i < order.Count && room > 0; i++)
         {
-            var goods = (Goods)g;
-            if (world.GroundStackAt(at, goods) <= 0 || world.NearestStorageWithRoomFor(at, goods) is null)
-            {
-                continue;
-            }
-
+            Goods goods = order[i];
             int took = world.TakeFromGround(at, goods, room);
             villager.Carried.Receive(goods, took);
             room -= took;
@@ -3216,6 +3233,49 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.State = VillagerState.HaulingToStore;
         HaulOrSetDown(world, villager);
+    }
+
+    /// <summary>
+    /// The goods on a heap's tile that some store would take, <b>shortest against the player's
+    /// limit first</b> (D409) — then the unlimited ones, in id order.
+    /// </summary>
+    /// <remarks>
+    /// Short is <em>what the stores hold, as a share of the limit</em>: stores, because that is what
+    /// a home can fetch from, and a share, so 0 of 400 firewood outranks 1,500 of 2,000 forage.
+    /// Ties fall to id order, so the answer never depends on anything but the state.
+    /// </remarks>
+    private static List<Goods> OrderToPickUp(SimWorld world, GridPos at, int slots)
+    {
+        var limited = new List<(long Share, int Id)>();
+        var order = new List<Goods>();
+        for (int g = 0; g < slots; g++)
+        {
+            var goods = (Goods)g;
+            if (world.GroundStackAt(at, goods) <= 0 || world.NearestStorageWithRoomFor(at, goods) is null)
+            {
+                continue;
+            }
+
+            if (world.StockLimits.For(goods) is int limit)
+            {
+                long share = limit <= 0 ? long.MaxValue : (long)world.InStores(goods) * 1_000_000 / limit;
+                limited.Add((share, g));
+            }
+            else
+            {
+                order.Add(goods);
+            }
+        }
+
+        limited.Sort(static (a, b) => a.Share != b.Share ? a.Share.CompareTo(b.Share) : a.Id.CompareTo(b.Id));
+        var first = new List<Goods>(limited.Count + order.Count);
+        for (int i = 0; i < limited.Count; i++)
+        {
+            first.Add((Goods)limited[i].Id);
+        }
+
+        first.AddRange(order);
+        return first;
     }
 
     private static bool TryHelpWithHarvest(SimWorld world, Villager villager)
@@ -3542,6 +3602,10 @@ public sealed class BehaviorSystem : ISimSystem
 
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);
+
+    /// <summary>Picking a heap up, exposed so the armful's order can be posed directly (D409).</summary>
+    internal static void PickUpFromTheGroundForTest(SimWorld world, Villager villager) =>
+        PickUpFromTheGround(world, villager);
 
     /// <summary>Putting a load down at a store, exposed so a test can pose the case directly.</summary>
     /// <remarks>

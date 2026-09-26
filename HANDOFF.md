@@ -1,4 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE D408 BANNER, THEN `DESIGN.md §0–§6` AND D404–D408 IN §7. NEXT: A DEFAULT LOG LIMIT + A VISIBLE "LIMIT MET" SIGNAL ON `slice/firewood-matters`, RE-MEASURE, MERGE → HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE D409 BANNER, THEN `DESIGN.md §0–§6` AND D404–D409 IN §7. NEXT: HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST, `organic-housing.md §3.3`) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D409.**
+>
+> **Branches:** `slice/firewood-matters` (D407–D409) is **MERGED into `main` locally, NOT pushed** — Joe
+> plays, then pushes. Suite **1237 passing, 0 failing, 4 skipped of 1241**, 3m02; view 0 warnings; probe
+> green, bar height 161, the new `[widths] limits:` line ✅. **One golden moved** (the shipped skills
+> hash); every fixture golden held.
+>
+> **What D409 is, in one paragraph (read D409 in §7 before touching stock limits, storage or food):**
+> the Stock limits panel had been writing its OWN numbers into the sim since 2026-08-25, so no test or
+> measurement had ever played the game Joe plays — and the firewood branch, played as he would have
+> (firewood 400), left **nobody alive on six shipped seeds of six**. Now the starting limits are data
+> (`starting_stock_limits` in `data/sim.config.json`: forage 2000, wheat 1000, fish 250, meat 250, logs
+> 200, firewood 400, 200 the rest — Joe's numbers), the sim holds them from the first tick, and the
+> panel shows and edits them. **No food total**: each food stops its own trade. "Produce" is
+> **"forage"** to the player (the enum is still `Goods.Produce`). Every good has a `Category`; the panel
+> is grouped FOOD / MATERIALS / FUEL & GOODS and the Food heading adds its rows with a ⚠ if they cap
+> births. A met limit is a **⚠ on the top bar** with who stopped. Every limit reads ONE number,
+> `SimWorld.HeldAgainstItsLimit` (stores + heaps + a food's hut buffers). Two cold-start storage bugs
+> fixed on the way: an armful takes what the stores are **shortest of** first, and a mixed store keeps
+> **half for each side** (D361 mirrored).
+>
+> **⚠️ What a fresh session must know about the numbers:** measured with the player raising a granary
+> and warehouse in year 3, this build reads **61 alive / 77 peak / 0 froze against main's 52 / 70 / 0**.
+> A village that never builds storage now plateaus at ~9 (the cart holds 825 food under the halves —
+> *build a granary* is D33's intended reply). ⚠️ **The measurement harness's opening never raises a
+> granary in fifty years**; any future "the shipped game got smaller" reading should first ask
+> whether it is a cart-only village. The harness text is in this session's scratchpad
+> (`ZzMeasure.cs`), not the repo.
+>
+> **⏸️ Unplayed by Joe.** What to look at when he plays: the ⚠ beside logs once the village holds 200
+> (and its tooltip), the grouped Stock limits panel, the word "forage", and whether a new village
+> grows at the pace he expects before its first granary.
+>
+> **▶️ THE QUEUE, IN JOE'S ORDER:** homes that do not read as suburbia — spec first (the D408 banner
+> below has his words and the likely shape) → tools on ticks at 34 % → the quarry spec → his design
+> threads (the ⏸️ list, including D406's valley-clearing starvation and its two skipped guards).
+>
+> ⚠️ **Worktrees:** this session measured main and the branch-as-found in `git worktree`s under its
+> scratchpad (`wt-main`, `wt-head`). If `git worktree list` still shows them, `git worktree remove
+> --force <path>` — they hold nothing that is not in git.
+>
+> *(The D408 banner, kept below.)*
+>
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END OF DAY) — AFTER D408.**
 >
@@ -2277,6 +2321,13 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     Villagers act one after another in a tick: a woodcutter rightly stepped up under the limit, a
     hauler later in the same tick carried a heap in, and a guard reading the total at the tick's end
     counted a split "begun past the limit". Read what the actor saw — before the tick.
+133. **⛔⛔ A NUMBER THE VIEW WRITES INTO THE SIM IS A NUMBER NO HARNESS HAS EVER SEEN (D409).** The
+    Stock limits panel set food 2000 / firewood 400 / 200 the rest into the sim when it was built,
+    for a month. Every test and every fifty-year measurement ran with no limits; D407 measured "56
+    alive" on a game nobody plays, and the same branch, played as Joe plays it, froze every village.
+    **Before trusting a measurement, ask what the game's startup does that the harness does not** —
+    grep the view for `SetStockLimit`, `SetJobLimit`, `SetStaffing` and anything else it calls at
+    build time. And a harness whose opening never builds storage measures a cart-only village.
 
 ## ⛔⛔ THE TRAP THIS STRETCH PAID FOR — A PANEL CAN HOLD ITS CONTENT AND DRAW NONE OF IT
 

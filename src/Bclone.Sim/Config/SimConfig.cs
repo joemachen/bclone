@@ -2110,7 +2110,12 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Produce,
-            Name = "produce",
+            Category = World.GoodCategory.Food,
+            // ⭐ "FORAGE", NOT "PRODUCE" (Joe, 2026-09-26, D409): *"I no longer want it to be called
+            // Produce. I want it to be called Forage."* What a forager brings in. The enum keeps
+            // `Goods.Produce` — the player never sees it, and the id (0) is what every golden is
+            // pinned to.
+            Name = "forage",
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
 
             // ⭐ THE ONLY EDIBLE GOOD TODAY, AND THE NUMBER IS DELIBERATELY 1 RATHER THAN
@@ -2123,6 +2128,7 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Logs,
+            Category = World.GoodCategory.Materials,
             Name = "logs",
             SourceName = "woodland",
             YieldPerTile = 12,
@@ -2135,12 +2141,14 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Firewood,
+            Category = World.GoodCategory.FuelAndGoods,
             Name = "firewood",
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Market, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Stone,
+            Category = World.GoodCategory.Materials,
             Name = "stone",
             SourceName = "a stone seam",
             YieldPerTile = 12,
@@ -2149,12 +2157,14 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Tools,
+            Category = World.GoodCategory.FuelAndGoods,
             Name = "tools",
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
         },
         new GoodRow
         {
             Id = (int)World.Goods.Iron,
+            Category = World.GoodCategory.Materials,
             Name = "iron",
             SourceName = "an iron seam",
             YieldPerTile = 8,
@@ -2163,6 +2173,7 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Fish,
+            Category = World.GoodCategory.Food,
             Name = "fish",
             SourceName = "the river",
 
@@ -2179,6 +2190,7 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Meat,
+            Category = World.GoodCategory.Food,
             Name = "meat",
             SourceName = "the woods",
 
@@ -2190,6 +2202,7 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Leather,
+            Category = World.GoodCategory.Materials,
             Name = "leather",
             SourceName = "the woods",
 
@@ -2200,6 +2213,7 @@ public sealed record SimConfig
         new GoodRow
         {
             Id = (int)World.Goods.Wheat,
+            Category = World.GoodCategory.Food,
             Name = "wheat",
             SourceName = "the fields",
 
@@ -2210,6 +2224,30 @@ public sealed record SimConfig
             Nutrition = 1,
         },
     };
+
+    /// <summary>
+    /// The stock limits a new game starts with, by good name — <b>the player's, set before he
+    /// has touched them</b> (D409).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THESE LIVED IN THE VIEW, AND EVERY HARNESS MEASURED A GAME NOBODY PLAYS.</b> The
+    /// Stock limits panel set its own numbers the moment it was built (food 2000, firewood 400,
+    /// 200 for the rest — since 2026-08-25), so the game Joe played always had limits and the
+    /// sim, the tests and D407's fifty-year measurement never did. D407's *"shipped 56 alive,
+    /// 28 starved"* was a village with no ceiling on anything. Joe: *"They should be synced with
+    /// and regulated by the stock limit panel — that is literally the whole point of the stock
+    /// limit panel."* So the sim holds them from the first tick and the panel shows and edits
+    /// what the sim holds.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Empty by default, and the shipped file fills it.</b> A config that says nothing — every
+    /// code-built fixture — gets a village with no limits, which is what those fixtures were
+    /// written against. A key that names no good fails at load.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("starting_stock_limits")]
+    public IReadOnlyDictionary<string, int> StartingStockLimits { get; init; } = new Dictionary<string, int>();
 
     /// <summary>
     /// The crops a farm can grow — <b>rows that name their good</b> (D348).
@@ -2243,9 +2281,11 @@ public sealed record SimConfig
             Doing = "gathering",
             WorksAt = BuildingKind.GathererHut,
 
-            // ⛔ No limit. Food is gathered as well as farmed, and standing the gatherers down on
-            // a full granary is a decision nobody has taken.
-            LimitedBy = null,
+            // ⭐ THE FORAGE ROW (D409). This was null — *"standing the gatherers down on a full
+            // granary is a decision nobody has taken"* — while ONE food limit stood every food trade
+            // down through the quota's back door. Joe took that decision: *"remove produce entirely
+            // and add a forage row"*. The forager stops at the forage limit and at nothing else.
+            LimitedBy = World.Goods.Produce,
             UsesTool = true,
         },
         new JobRow
@@ -4113,6 +4153,51 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') has nutrition {good.Nutrition}. Zero means "
                     + "nobody can eat it; negative means nothing.");
+            }
+
+            // ⛔ Every good sits under a stock-limit heading (D409), and a food under Food: that
+            // heading adds its rows up against what the village needs to grow, so an edible good
+            // filed elsewhere is food the warning cannot see.
+            if (good.Category == World.GoodCategory.Unset)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') names no category. Say which stock-limit heading it "
+                    + "sits under: Food, Materials or FuelAndGoods.");
+            }
+
+            if (good.Edible && good.Category != World.GoodCategory.Food)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') can be eaten and is filed under {good.Category}. "
+                    + "Anything edible sits under Food, where the stock limits add the foods up.");
+            }
+        }
+
+        // ⛔ A starting limit names a good the catalogue has (D409). A misspelt key would be a limit
+        // the player sees in the file and the village never obeys.
+        if (StartingStockLimits is null)
+        {
+            throw new SimConfigException("starting_stock_limits must be an object, not null.");
+        }
+
+        foreach (KeyValuePair<string, int> limit in StartingStockLimits)
+        {
+            bool named = false;
+            for (int i = 0; i < GoodsCatalog.Count; i++)
+            {
+                named |= string.Equals(GoodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
+            }
+
+            if (!named)
+            {
+                throw new SimConfigException(
+                    $"starting_stock_limits names '{limit.Key}', which is not a good in the catalogue.");
+            }
+
+            if (limit.Value < 0)
+            {
+                throw new SimConfigException(
+                    $"starting_stock_limits sets {limit.Key} to {limit.Value}; a limit is zero or more.");
             }
         }
 

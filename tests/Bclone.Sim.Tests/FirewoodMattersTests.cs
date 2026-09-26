@@ -80,7 +80,10 @@ public sealed class FirewoodMattersTests
     [Fact]
     public void NobodySplitsFirewoodTheVillageDoesNotWant()
     {
-        SimConfig config = ShippedConfig.Load();
+        // ⚠️ WITH NO LIMIT SET (D409). The claim is the unasked case — the homes' own want — and the
+        // shipped file now starts every game with a firewood limit of 400, which is an ambition the
+        // splitting correctly works up to (the next guard's case).
+        SimConfig config = ShippedConfig.Load() with { StartingStockLimits = new Dictionary<string, int>() };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);

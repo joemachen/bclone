@@ -14,6 +14,10 @@ the predicate and ignored by two deposit paths). Guarded by `StockLimitTests` an
 > stone, tools and iron, so a village holding 300 stone read *"stop at 100 · have 0"*, and Food
 > read `FoodInGranaries()` where every sim decision reads `FoodTheVillageHolds()`.
 > ⚠️ *A spec silent on its own subject for a day is the mild form of what D159 found.*
+>
+> **⭐⭐ D409 (2026-09-26) — THE LIMITS LIVE IN THE SIM, ONE PER GOOD, NO FOOD TOTAL. §4.4.** The
+> starting limits are data, the panel is grouped and shows what the sim holds, every limit reads
+> one number, and a met limit is a ⚠ on the bar. ✅ Built and guarded (`StartingStockLimitsTests`).
 
 ---
 
@@ -157,6 +161,36 @@ player ceiling*, finally wired on the work side.
 **After: clearing 871 → 220 forager ticks, food held 1077 → 1652.** No golden moved — `null` is
 still the default.
 
+⚠️ **Superseded in shape by §4.4 (D409):** there is no food total any more. D216's rule — *the
+player's number is what the producer works toward* — now holds per good (`SimWorld.WantsMoreOf`).
+
+### 4.4 ⭐⭐ ONE LIMIT PER GOOD, HELD BY THE SIM FROM THE FIRST TICK (D409)
+
+**⛔ The finding that started it: the panel had numbers of its own.** `Main.AddStockLimitRow` set
+food 2000, firewood 400 and 200 for the rest into the sim when it was built, so the game Joe played
+always had limits and **no test or measurement ever did**. The firewood branch that measured fine
+headless left nobody alive in his game.
+
+- **Starting limits are data:** `starting_stock_limits` in `data/sim.config.json`, keyed by the
+  goods' names — forage 2000, wheat 1000, fish 250, meat 250, logs 200, firewood 400, 200 for the
+  rest (Joe's numbers). Empty by default, so a config that says nothing has no limits. An unknown
+  key fails at load. The panel seeds its rows from `StockLimits` and pushes nothing.
+- **One number per good — `SimWorld.HeldAgainstItsLimit`:** stores + heaps + (edible goods) the
+  huts' buffers. `MayTake` / `LimitIsMet` read it, and so every stop does: the forester (D146), the
+  brush (D212), the woodcutter, the smith, the quota, and the panel's *have*. The heaps are what
+  make a cold start's log limit hold — its cart takes no logs and its pile is small. **§4.1's rule
+  still holds, generalised:** the limit reads what the thing it stops produces into.
+- **No food total.** Joe: *"remove produce entirely and add a forage row."* The forager's job names
+  forage (`limited_by`, `jobs-catalog.md`), and each food trade stops at its own row only — a met
+  meat limit stands the hunters down and the mouths the lodge fed fall to the patches. With a row
+  set, the trade works toward it (D216, per good); with none, the village's derived need decides.
+- **The tension it opens, and where it is said:** the food rows can add up to less than the next
+  child needs (`SimWorld.FoodABirthNeeds`) and births stop there. The **Food** heading adds its
+  rows and shows ⚠ with that sentence when they do. Measured: forage 1000 held every cold start at
+  about ten people, which is why the default is 2000.
+- **Grouped by the good's own category** (`GoodRow.Category`: Food, Materials, FuelAndGoods), so a
+  modded good lands in its group with no view code. Unset fails at load; anything edible is Food.
+
 ---
 
 ## 5. Laborers
@@ -244,6 +278,13 @@ is the game working.
 - A limit below the derived floor warns **once, when it is set**, naming the floor. Once when
   set, not once per tick — the D42 rule about the distance warning firing per brush stroke
   rather than per house.
+- ⭐ **A met limit is a ⚠ beside the good on the top bar** (D409, Joe: *"a message or signal
+  somewhere visible for the user in the UI"*), in a fixed slot so the bar never moves, with
+  `SimWorld.WhyTheLimitIsMet` as its tooltip: *"At your limit of 200 logs (212 held) — the
+  foresters have stopped, and ground painted for harvest in woodland is left standing. Raise it
+  under Stock limits."* The panel's row carries the same ⚠ and sentence. Amber still means *short*.
+- The panel is grouped **FOOD / MATERIALS / FUEL & GOODS**; the Food heading reads *"3,500 in all"*,
+  with ⚠ when that caps births.
 
 ---
 

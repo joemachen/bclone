@@ -381,12 +381,12 @@ public readonly record struct LabourQuota
         // on it.
         StockLimits limits = world.StockLimits;
 
-        if (limits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()))
+        if (world.LimitIsMet(Goods.Firewood))
         {
             woodcutters = 0;
         }
 
-        if (limits.IsMet(Goods.Logs, world.LogsInWarehouses()))
+        if (world.LimitIsMet(Goods.Logs))
         {
             // ⭐ A MET LOG LIMIT STOPS THE FELLING, NOT THE PROFESSION (Joe, D146). *"A capped
             // hut can replant. Priority should be replant → extra-hands labour. It just
@@ -423,7 +423,15 @@ public readonly record struct LabourQuota
         // deliberately avoided.
         // What the village holds, not only what is in the granaries (D161): a player's food
         // limit is about the village's stock, and a farm's buffer is part of it.
-        bool foodIsEnough = limits.IsMet(Goods.Produce, world.FoodTheVillageHolds());
+        //
+        // ⭐ D409: PER TRADE, NOT ONE FOOD TOTAL. Joe: *"i dont think it makes sense to have a
+        // 'food' overall limit + individual limits for each sub category."* Each food trade is
+        // stood down by its own row (the good its `limited_by` names) and nothing else — and the
+        // chain below cascades on its own: a lodge stood down by the meat limit feeds nobody, so
+        // `afterHunting` leaves those mouths to the fishers and the patches.
+        bool meatIsEnough = StoppedByItsOwnLimit(world, JobKind.Hunter);
+        bool fishIsEnough = StoppedByItsOwnLimit(world, JobKind.Fisher);
+        bool forageIsEnough = StoppedByItsOwnLimit(world, JobKind.Forager);
 
         // ⛔⛔ BOUNDED BY THE SEATS THAT ACTUALLY EXIST (D262). Taking more hands than the huts
         // can seat books them for a job with no room and **leaves them idle**, because they are
@@ -462,7 +470,7 @@ public readonly record struct LabourQuota
         // without). Not kept. If a played village ever shows a lodge draining too slowly under a
         // met limit, that seat is the lever, and `AVillageDoesNotStarveBesideAFullLodge` is the
         // guard that would see it.
-        int hunters = foodIsEnough ? 0 : Take(ref free, huntable);
+        int hunters = meatIsEnough ? 0 : Take(ref free, huntable);
 
         int afterHunting = toFeedEveryone - hunters;
         if (afterHunting < 0)
@@ -472,7 +480,7 @@ public readonly record struct LabourQuota
 
         int fishSeats = TotalCapacityFor(world, JobKind.Fisher);
         int fishable = afterHunting < fishSeats ? afterHunting : fishSeats;
-        int fishers = foodIsEnough ? 0 : Take(ref free, fishable);
+        int fishers = fishIsEnough ? 0 : Take(ref free, fishable);
 
         // What the fishers could not cover, the berry patches answer for — so a village with a
         // fishery big enough needs no foragers at all, which is the ranking arriving as a
@@ -493,14 +501,15 @@ public readonly record struct LabourQuota
         // for the forager and the fisher from D148 to D374 and nobody caught it, because a young
         // village is always short and a fed one had been told to build another hut so often that
         // the sentence read as noise (Joe, 2026-09-15). The seats themselves are unchanged.
-        bool wantsMoreFood = world.TheVillageWantsMoreFood();
-        needed[(int)JobKind.Hunter] = wantsMoreFood ? toFeedEveryone : 0;
-        needed[(int)JobKind.Fisher] = wantsMoreFood ? afterHunting : 0;
-        needed[(int)JobKind.Forager] = wantsMoreFood ? stillToFeed : 0;
+        // ⭐ D409: each rung asks after its own good, the question its villagers ask
+        // (`SimWorld.WantsMoreOf`) — identical to `TheVillageWantsMoreFood` with no limits set.
+        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : 0;
+        needed[(int)JobKind.Fisher] = world.WantsMoreOf(Goods.Fish) ? afterHunting : 0;
+        needed[(int)JobKind.Forager] = world.WantsMoreOf(Goods.Produce) ? stillToFeed : 0;
 
         int seats = world.GatheringSeats();
         int seatable = stillToFeed < seats ? stillToFeed : seats;
-        int foragers = canGather && !foodIsEnough ? Take(ref free, seatable) : 0;
+        int foragers = canGather && !forageIsEnough ? Take(ref free, seatable) : 0;
 
         // ⭐ THE FARM, AND IT SITS HERE FOR A STATED REASON (`crops-and-orchards.md`, D161).
         //
@@ -616,7 +625,7 @@ public readonly record struct LabourQuota
         // Half is the margin building already uses (above) and for the same reason. Placed
         // after building too, because a stockpile is the most discretionary want in the
         // village: houses the player marked are a plan, and a number in a box is a wish.
-        if (limits.For(Goods.Logs) is int wantedInStore && world.LogsInWarehouses() < wantedInStore)
+        if (limits.For(Goods.Logs) is int wantedInStore && world.HeldAgainstItsLimit(Goods.Logs) < wantedInStore)
         {
             foresters += Take(
                 ref free,
@@ -652,7 +661,7 @@ public readonly record struct LabourQuota
         // patch was free while a hut seated seven; with two, the surplus is booked for a seat
         // that does not exist and **does nothing at all** — no farming, no timber, no market.
         // *The village's answer to "we are hungry" must stop at the doors it actually has.*
-        if (canGather && !foodIsEnough)
+        if (canGather && !forageIsEnough)
         {
             int room = seats - foragers;
             int spare = free < room ? free : room;
@@ -818,25 +827,26 @@ public readonly record struct LabourQuota
 
     /// <summary>Whether this kind of work is one a reached stock limit puts a stop to.</summary>
     /// <remarks>
-    /// Only the two that make a good the player can cap. A gatherer is governed by the food
-    /// limit through the food floor rather than here, because stopping the food chain dead
-    /// is how a village starves with a full granary and an empty larder (D79).
+    /// Every trade whose job names a good (<c>limited_by</c>). ⚠️ Since D409 that includes the
+    /// forager, on the forage row: D79's worry — *stopping the food chain dead is how a village
+    /// starves* — was about ONE food limit standing every food trade down at once, and there is
+    /// no such limit any more; the forage row stops the patches and nothing else.
     /// </remarks>
     private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
     {
-        JobKind.Woodcutter => world.StockLimits.IsMet(Goods.Firewood, world.FirewoodTheVillageHas()),
+        JobKind.Woodcutter => world.LimitIsMet(Goods.Firewood),
 
         // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
         // A met log limit stops the felling; a hut with bare ground of its own still has work,
         // so a professions number the player typed must not be overruled while it does.
-        JobKind.Forester => world.StockLimits.IsMet(Goods.Logs, world.LogsInWarehouses())
+        JobKind.Forester => world.LimitIsMet(Goods.Logs)
             && world.ForesterSeatsWithGroundToPlant() == 0,
 
         // ⭐ AND A FARMER ONLY WHEN THERE IS NOTHING LEFT TO BRING IN. Exactly the forester's
         // shape: a met food limit stops the sowing (`SimWorld.MaySow`), and a farm with a crop
         // still standing has work a cap has no business cancelling — so a professions number
         // the player typed must not be overruled while it does.
-        JobKind.Farmer => world.StockLimits.IsMet(Goods.Produce, world.FoodTheVillageHolds())
+        JobKind.Farmer => StoppedByItsOwnLimit(world, kind)
             && world.FarmerSeatsWithGroundToWork() == 0,
 
         // ⭐ ANYTHING ELSE — INCLUDING A TRADE A MOD ADDED — IS STOPPED BY ITS ROW'S LIMIT IF IT
@@ -850,9 +860,15 @@ public readonly record struct LabourQuota
         // limit does not stop a farmer with a crop still standing. `jobs-catalog.md §2.1` records
         // this as the second exemption beside the idle note: **the good is data; knowing when the
         // cap has no business applying is not.**
-        _ => world.JobsCatalog.LimitedBy(kind) is Goods limited
-            && world.StockLimits.IsMet(limited, world.InStores(limited)),
+        _ => StoppedByItsOwnLimit(world, kind),
     };
+
+    /// <summary>
+    /// Whether the good this trade makes (its <c>limited_by</c>) has a limit set and met — against
+    /// <see cref="SimWorld.HeldAgainstItsLimit"/>, the one number per good (D409).
+    /// </summary>
+    private static bool StoppedByItsOwnLimit(SimWorld world, JobKind kind) =>
+        world.JobsCatalog.LimitedBy(kind) is Goods limited && world.LimitIsMet(limited);
 
     /// <summary>
     /// Why the village is asking for nobody on this work — <b>a clause, not a sentence</b>.
