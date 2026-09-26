@@ -1,6 +1,59 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THIS, THEN `DESIGN.md §0–§6` AND D400–D407 IN §7. FENCES ARE MERGED (NOT PUSHED). FIREWOOD IS ON `slice/firewood-matters`, NOT MERGED, WAITING ON TWO CALLS OF JOE'S (D407) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → JOE'S DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE D408 BANNER, THEN `DESIGN.md §0–§6` AND D404–D408 IN §7. NEXT: A DEFAULT LOG LIMIT + A VISIBLE "LIMIT MET" SIGNAL ON `slice/firewood-matters`, RE-MEASURE, MERGE → HOMES THAT DO NOT READ AS SUBURBIA (SPEC FIRST) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE. WHERE THINGS ACTUALLY ARE, 2026-09-26 (LATEST) — AFTER D407.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END OF DAY) — AFTER D408.**
+>
+> **Branches:** `main` = fences merged (D400–D406) **+ nothing else; not pushed** — Joe pushes after
+> he plays. **`slice/firewood-matters`** (D407, `9173676` + this handoff) is **committed, NOT merged,
+> NOT pushed**: 1230 passing, 0 failing, 4 skipped of 1234; view 0 warnings; probe green.
+>
+> **Read first:** `DESIGN.md §0–§6`, then D404–D408 in §7 (newest first, just above D403), then
+> `specs/fences-as-walls.md` and `specs/wood-fuel-and-tools.md §6a`.
+>
+> **⭐⭐ JOE'S CALLS OF 2026-09-26 (END OF DAY) — D408, SETTLED:**
+> 1. **The dial stays** (burn 24 a home a winter, 53 firewood a split): *"i think it feels okay
+>    as-is. lets stick with it for now and change later if needed."* ⛔ Do not change either number.
+> 2. **Surplus logs — his rule, in his words:** *"if a forester is actively providing logs, but the
+>    village limit for logs is reached, then the forester doesn't provide logs until under the
+>    limit. if the user paints an area for tree harvest and the village limit for logs is reached,
+>    the laborers should not harvest the trees — there should be a message or signal somewhere
+>    visible for the user in the UI to indicate that the limit for logs is reached and that is why
+>    more aren't being generated."* ⭐ **Most of it is BUILT**: a met log limit stops the forester's
+>    felling (D146, `SimWorld.MayFell`) and the laborers' clearing (D212,
+>    `NearestHarvest(out heldBackBy)` → the note *"Nothing left to clear — you asked the village to
+>    keep N logs…"*). **What is missing is exactly the two things D407's regression needs:**
+>    *(a)* **no log limit is set by default**, so a new game has no ceiling at all and cleared logs
+>    fill a cold start's cart and pile and heap on the ground (19,818 on shipped seed 1);
+>    *(b)* **the signal lives only on a laborer's card** — nothing the player sees at a glance.
+>
+> **▶️ THE NEXT BUILD, ON `slice/firewood-matters` (then merge it):**
+> 1. **A default log limit in `data/sim.config.json`** — D62's own list says *"200 wood"*; measure
+>    before typing (six shipped + twelve fixture seeds × 50 years, the D407 harness — its text is in
+>    the scratchpad, not the repo; rebuild it from D407's description: cold start via
+>    `ColdStartTests.PlayTheOpening`, count alive/peak/starved/cold and the share of adult ticks in
+>    `MakingFirewood`). ⚠️ The limits are the player's (D62) — a *default* is a starting value he can
+>    change, stated as such, and the stock-limit panel must show it set.
+> 2. **The visible signal** — logs amber on the bar when the log limit is met and trees are left
+>    standing, with the reason on the tooltip (the food bar's pattern, `the-cards.md §5`); and a
+>    harvest area whose clearing is held back says so on its own card/tooltip. Probe line for it.
+> 3. **Re-measure against D407's table** (main: shipped 71 / 11 starved; the fixes: 56 / 28). The
+>    merge is fine when the shipped arm is back at or above main. Then goldens once, docs, merge.
+>
+> **⭐ ALSO FROM JOE, TO PLAN (not scheduled): THE HOMES READ AS SUBURBIA.** His 2026-09-26 screenshot:
+> five houses in one column, all facing the same lane, fenced plots stacked like a street of
+> semis — *"the home placement looks like suburbia instead of having more naturally occurring
+> orientations, no?"* He is right, and it is D388's rule winning every time: the facing goes to the
+> lane with the most "already a lane" tiles, so every new house fronts the first street. Fences made
+> it stronger (a back-facing house walks round its yard — §9.4, which he declined on cost). Likely
+> shape: the "lane already" term only as a tie-break within a small radius, and a real spread of
+> facings / plot offsets. ⛔ Not the walk-from-the-door fix (§9.4) — that would make it MORE uniform.
+> Spec first (`organic-housing.md §3.3`), measure the facings' spread before/after.
+>
+> **Queue after that, in Joe's order:** tools on ticks at 34 % → the quarry spec → his design threads
+> (the ⏸️ list below, including the valley-clearing starvation D406 found and the two skipped guards).
+>
+> *(The D407 banner, kept below.)*
+>
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATEST) — AFTER D407.**
 >
 > **The state:** `main` = fences merged (D406), **not pushed**. **`slice/firewood-matters` = D407,
 > committed, NOT merged, NOT pushed**: 1230 passing, 0 failing, 4 skipped of 1234; view 0 warnings;
