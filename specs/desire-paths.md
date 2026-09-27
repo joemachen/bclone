@@ -6,7 +6,8 @@ slice)**, D414 (walkers keep to the path; the wear ceiling). Follows `gridless.m
 `pathfinding-and-water.md`.
 **Status:** ✅ **BUILT, SIM AND VIEW (2026-09-11, D358); PLAYED BY JOE FIVE TIMES (D359, D360, D362,
 D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes and wear has a ceiling —
-BUILT ON `slice/paths-pull`, NOT MERGED, UNPLAYED. The view's corridor pass (D415) follows it.**
+BUILT ON `slice/paths-pull`, NOT MERGED, UNPLAYED. ✅ D415 — the view draws a two-wide corridor as
+one lane and fills a yard only at a packed 3×3 junction — on the same branch, unplayed.**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
 *Paths* overlay (P), an inspector sentence, a probe line. Paving (§2.6's *upgrade an emerged path*)
@@ -301,6 +302,21 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   length that says *"the player drew this"* and a 3×3 junction drew as Joe's *"big square"*. The
   probe now reads 8.4 of 9 and refuses a 9.0. And yes — the worn shapes ARE the worn-to-earth
   yard the skinned game will show (Joe's question, answered).
+- [x] ⛔⛔ **D415 — a corridor is a lane; only a packed junction is a yard** (Joe, 2026-09-26: *"thinner
+  walked paths … a few exceptions in the highest traffic intersections"*). D368 filled every tile of
+  any fully worn 2×2, so the commonest shape round a hub — a lane two tiles wide between buildings,
+  genuinely walked (D414) — drew as a fat patch. Now a **junction** is a tile in a fully PACKED 3×3
+  (`IsJunctionTile`) and only junctions are traced and filled; every other tile in a full 2×2 is a
+  **corridor** tile and draws at the mean centre of the full 2×2s it is in (`CorridorPointOf`), so a
+  corridor's two rows land on one point on the midline: the rails merge into one ribbon and the rung
+  has no length. Each disc and bend is laid once a pass (the colours are translucent and the two rows
+  would lay the midline twice). ⚠️ Four-wide worn-not-packed ground would spread its points a tile
+  apart and lattice again; measured on the D414 villages it does not occur (widest 3×3), and packed
+  it is a junction. **Probe:** a posed packed 3×3 is still one yard of 8.4; a posed 2×5 worn corridor
+  is one lane down its middle. Red-checked: the corridor rule off → *"two rails (5 of 5 columns off
+  the midline)"*; the junction rule back to any full 2×2 → *"a packed 3×3 junction draws as a square
+  … 19 block tiles"* (the corridor filled and joined the yard). ⚠️ The draw-once rule has no guard —
+  written down, not claimed.
 - [x] ⛔⛔ **D366 — the trails are a mesh, built with the collection.** Slices D358–D360 collected
   once a season and then drew a `DrawCircle` per worn tile and a `DrawPolyline` per joined pair
   **every frame**, with the L-corner and joining rules recomputed per tile per frame — the D338

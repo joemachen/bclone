@@ -1,9 +1,11 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D414 IN §7. `main` IS PUSHED (D413). `slice/paths-pull` HOLDS D414 (SIM), NOT MERGED. NEXT: D415 — THE VIEW'S CORRIDORS ON THE SAME BRANCH → JOE PLAYS BOTH → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D414 IN §7 (D404–D415). `main` IS PUSHED (D413). `slice/paths-pull` HOLDS D414 (SIM) + D415 (VIEW), NOT MERGED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D414, ON A BRANCH.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D414 + D415, ON A BRANCH.**
 >
-> **Branches:** `main` = `origin/main` (D413). **`slice/paths-pull` = D414 committed, NOT merged, NOT
-> pushed** — Joe merges and pushes. **1247 passing, 0 failing, 4 skipped of 1251**, 4m21 against
+> **Branches:** `main` = `origin/main` (D413). **`slice/paths-pull` = D414 (sim) + D415 (view)
+> committed, NOT merged, NOT pushed** — Joe plays it, then merges and pushes. ✅ **D415 is built:** a
+> two-wide corridor draws as one lane, only a fully packed 3×3 is a yard (probe poses both,
+> red-checked; the draw-once rule is unguarded). The paragraph below was D414's plan for it. **1247 passing, 0 failing, 4 skipped of 1251**, 4m21 against
 > main's 4m17 back to back (the machine was slower tonight than the 3m15 of the morning — compare
 > back to back, never across the day); view 0 warnings; probe green, bar height 161.
 >
