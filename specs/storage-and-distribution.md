@@ -434,6 +434,9 @@ that belongs there.
 - **⛔ §14.4 is unchanged and is the acceptance test**: switch the market off and the village
   survives exactly as it does today. Stocking is additive.
 - **The market must not become a second granary.** Its capacity is the guard, and it is derived.
+  ⚠️ **Since D416 the capacity is stated (`market_store_capacity` 4,000, Joe's number) and the guard
+  is the restock target alone** — `MarketStockWanted`, 40 per occupied household — which is what
+  D197 found actually decides how much a market carries.
 - **Goods conservation** across the new leg.
 
 #### ⚠️ And the honest failure mode to measure for

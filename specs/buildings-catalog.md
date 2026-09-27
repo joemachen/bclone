@@ -110,7 +110,7 @@ says capacity is *mostly* data, which is true of **stores** and not of **seats**
 | Building | Store capacity | Seats |
 |---|---|---|
 | Granary | ✅ **stated** — `granary_capacity` (D219) | — |
-| Market | two stated numbers multiplied | ✅ **stated** — `market_capacity` |
+| Market | ✅ **stated** — `market_store_capacity` 4,000 (D416; was two stated numbers multiplied, 800) | ✅ **stated** — `market_capacity` |
 | Warehouse | ⛔ **derived** — a horizon of households, their firewood, the logs to split it, a house's timber, floored at a granary | — |
 | Stockpile | ⛔ **derived** — the first buildings' logs *and stone*, plus the founders' firewood | — |
 | Woodcutter's hut | — | ✅ **stated** — `woodcutter_hut_capacity` |

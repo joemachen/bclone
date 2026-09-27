@@ -300,7 +300,9 @@ public sealed class BuildingsCatalogTests
         Assert.Equal(config.GranaryCapacity, catalog[BuildingKind.Granary].StoreCapacity);
         Assert.Null(catalog[BuildingKind.Warehouse].StoreCapacity);
         Assert.Null(catalog[BuildingKind.Pile].StoreCapacity);
-        Assert.Null(catalog[BuildingKind.Market].StoreCapacity);
+        // ⭐ A market states its size since D416 (Joe: "increase market capacity to 4000"), as the
+        // granary did at D219 — it left the derived set.
+        Assert.Equal(config.MarketStoreCapacity, catalog[BuildingKind.Market].StoreCapacity);
 
         Assert.Equal(config.WoodcutterHutCapacity, catalog[BuildingKind.WoodcutterHut].Seats);
         Assert.Equal(config.MarketCapacity, catalog[BuildingKind.Market].Seats);
