@@ -1,6 +1,82 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D413 IN §7. D412/D413 (HOMES PATH-FIRST AT ANY ANGLE; EMPTIED STORES STAY CLOSED) ARE MERGED INTO `main`, NOT PUSHED. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D413 IN §7. `main` IS PUSHED (D413). NEXT: JOE'S PATH NOTE — THINNER WALKED PATHS, NOT BLOBS (INVESTIGATE AND PROPOSE FIRST) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LAST) — AFTER D413.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END) — AFTER D413, PUSHED.**
+>
+> **State:** `main` = `origin/main` (D412 + D413 merged at `5b8882b`, then this handoff commit, pushed). **1242 passing, 0 failing, 4
+> skipped of 1246**, ~3m15; view 0 warnings; probe green, bar height 161. No branch is open. Nothing
+> was built after the push — this banner is the whole of what changed.
+>
+> **Joe played D412/D413:** *"looks good. i really like fixture seed 4. plays nicely too."* Merged,
+> the row rule deleted, an emptied store stays Closed until he opens it (reverses D389).
+>
+> **▶️ THE NEXT TASK — JOE'S PATH NOTE (2026-09-26), IN HIS WORDS:** *"i would like to re-examine the
+> path building. i dont like these big blobs of packed trail. some areas make sense, but i want them
+> to look more like thinner walked paths [with] big swaths of open ground, again like in the
+> foundation screenshot. there are of course a few exceptions in the highest traffic intersections.
+> im not ruling it out entirely, just want to tune down what's already there — unless you have a
+> better suggestion."* His screenshot (year 24, Fernhollow, 13 villagers) has red arrows on: the
+> packed blob round the hub between the stores; blobs at the two work huts top-left; a blob at a
+> house's door inside a yard; and a thick fat trail running down to a house at the bottom. His
+> Foundation screenshot, arrowed: thin branching paths, and wide packed ground ONLY at the main
+> crossroads by the market.
+>
+> **⛔ INVESTIGATE AND PROPOSE BEFORE BUILDING — he asked to tune and invited a better idea.** What
+> the last session found reading the code (read-only, nothing measured yet):
+>
+> - **Where the blobs come from: D368's "yard" rule, in the VIEW.** `VillageMap.cs` `IsBlockTile`
+>   (~4145): a worn tile in any fully worn 2×2 is a block tile, and block tiles are traced and filled
+>   as ONE patch (`ZoneOutline.Trace(blocks, 1)` → `Fill`), the packed subset as a second patch over
+>   it. D368 built it because a block of worn tiles drew as a ladder of rails and rungs. Lanes are
+>   ribbons of `TrailHalfWidth = 0.17` tiles (~4076) — thin already; **the blobs are the patches.**
+> - **Why blocks form at all: the SIM.** Every step treads the tile under the villager
+>   (`BehaviorSystem.Travel` → `PathWear.Tread`); legs are straight lines (the gridless slices), so
+>   many villagers walking from many doors to one store draw a FAN of distinct lines that wears a
+>   solid area near the store. Numbers (`data/sim.config.json` ~280): `path_wear_per_step` 3,
+>   `path_worn_at` 30 (ten steps), `path_packed_at` 100, `path_wear_decay_per_season` 4,
+>   `path_holds_for` 24; worn/packed tiles cost 9/8 against grass 10, re-priced into the one cost
+>   field once a year in spring (D358). D412 makes more doors face the same paths, which may add to it.
+> - **The levers, cheapest first** (the session's recommendation, for Joe to choose — ask him):
+>   *(A) view only, no golden moves:* make the yard patch need PACKED 2×2s, not worn ones (or a 3×3),
+>   and inset/erode it, so only the true crossroads read as open ground; worn blocks draw as their
+>   lanes. *(B) the "better suggestion" — consolidation in the sim:* real desire paths are thin
+>   because walkers FOLLOW the path already there; here the discount is 10 → 9 → 8, too weak to pull
+>   a straight leg onto an existing trail, so every walker makes their own line. A stronger pull
+>   (a bigger worn/packed discount, or a leg that bends to a worn line within a tile or two) would
+>   CONVERGE the fan into a few lines. It changes the walk clock, the goldens and the economy's walk
+>   derivations — measure, and ask him before typing. *(C) thresholds:* raise `path_worn_at` / speed
+>   the decay — sim-side, moves goldens, and thins everything including what should stay.
+>   Recommendation: **measure first** (worn / packed / block-tile counts per year on shipped seed
+>   12345 and fixture seed 4, the one Joe likes; the probe's `trails:` line and `[widths]` harness
+>   already count some of this), render before/after pictures (the D412 `render.py` draws wear), then
+>   **A, and B only on his word.**
+> - **⚠️ Doc bug to fix in the same commit:** `specs/desire-paths.md`'s status line still says
+>   *"⚠️ UNPLAYED BY JOE"* — false since D359/D360/D368 (he played it three times). CLAUDE.md rule 4.
+> - **Read first:** `specs/desire-paths.md`, then D358, D359, D360, D368 in `DESIGN.md §7` (grep
+>   them — the D368 entry is the yard rule's whole reasoning, and its red-checked guards/probe lines
+>   must survive whatever changes).
+>
+> **Tools a session needs:** Godot at `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`
+> (`$GODOT` unset in the agent shell). The D412 measurement kit — `ZzHousing.cs` (layout arm,
+> survival arm, 24 wide shipped seeds, a map dump with wear per tile) and `render.py` (draws a dump
+> to a PNG with worn/packed paths, fences, turned houses) — is in
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/8011b7b3-6e33-4cf6-bd04-c5ccccf7c0de/scratchpad/`.
+> Copy `ZzHousing.cs` into `tests/Bclone.Sim.Tests/`, set `ZZ_DUMP` and `ZZ_LABEL`, delete before
+> committing. ⚠️ Joe keeps a windowed game running (`Godot…mono_win64.exe --path src/Bclone.Game`,
+> no `--headless`) — never kill that one; only a headless probe left over is yours to kill.
+>
+> **⏸️ Still on Joe's list (new this session):** the every-source founding pose (a lodge, a fishery
+> and a farm raised at the founding, `FoodConservationTests`) kills half its villages on main too —
+> no forage and no fish produced in the dead ones.
+>
+> **Then the queue:** the well, slice C (`organic-housing.md §9.5` P6) → tools on ticks at 34 % →
+> the quarry spec → his design threads (the ⏸️ list below).
+>
+> **What the next session needs from Joe:** which lever (A / B / C) after it has measured and shown him.
+>
+> *(The D413 banner, kept below.)*
+>
+
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LAST) — AFTER D413. (Pushed since — see above.)**
 >
 > **Branches:** `main` = D412 + D413 merged (`slice/organic-not-suburbia`), **NOT pushed** — Joe
 > pushes. **1242 passing, 0 failing, 4 skipped of 1246**, 3m13; view 0 warnings; probe green, bar
