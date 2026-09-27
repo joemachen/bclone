@@ -2,8 +2,11 @@
 
 **Decisions:** D41 (one shared cost field), D179 (the breadth-first sweep — *"that day"*), D353 (Phase
 4.5 item 3), D356 (legs, clock A), D357 (Joe's rule: worn cheaper, built cheaper still), **D358 (this
-slice).** Follows `gridless.md §8–§9` and `pathfinding-and-water.md`.
-**Status:** ✅ **BUILT, SIM AND VIEW, IN ONE COMMIT (2026-09-11, D358); ⚠️ UNPLAYED BY JOE.**
+slice)**, D414 (walkers keep to the path; the wear ceiling). Follows `gridless.md §8–§9` and
+`pathfinding-and-water.md`.
+**Status:** ✅ **BUILT, SIM AND VIEW (2026-09-11, D358); PLAYED BY JOE FIVE TIMES (D359, D360, D362,
+D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes and wear has a ceiling —
+BUILT ON `slice/paths-pull`, NOT MERGED, UNPLAYED. The view's corridor pass (D415) follows it.**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
 *Paths* overlay (P), an inspector sentence, a probe line. Paving (§2.6's *upgrade an emerged path*)
@@ -51,9 +54,13 @@ Every tick a travelling villager moves (`BehaviorSystem.Travel`, after `WalkTo`)
 their new position gains `path_wear_per_step` (**3** since D360 — a finer unit so the ratios Joe
 asked for fit in integers; it was 1). It is the tile **under the straight line**
 (`Villager.Tile`, the floor of the `Point`), not the route tile the staircase would have used —
-so a trail is worn where people actually walk. Wear saturates at `ushort.MaxValue`; it never wraps
-(a wrap would turn the main street into fresh grass identically on both machines — the D317
-overflow argument).
+so a trail is worn where people actually walk. Wear stops at **`path_wear_ceiling` = 130** (D414);
+it never wraps (a wrap would turn the main street into fresh grass identically on both machines —
+the D317 overflow argument).
+⛔ **Until D414 it ran on to `ushort.MaxValue`**, and measured, hub tiles of a twenty-five-year
+village held 2,000–6,400 wear: an abandoned hub path would have stayed packed for a century or more
+where §3.2 promises seasons. A tile is no more a path at 6,000 than at 100 — the class is the whole
+answer (§3.3) — so the excess only ever bought a path that could not fade.
 
 ### 3.2 Decay
 At every season boundary (`PathWearSystem`, after `CropSystem`), every tile fades by
@@ -74,6 +81,13 @@ path's wear may fall before it stops being one (the hysteresis band, which had b
 itself). A busy 10-a-season lane (30 − 6 = +24) is a path in **1.3 seasons** (was 2.5); the median
 5-a-season lane (+9) in 3.3 (was 12); an abandoned path holds for **four seasons** and then goes as
 one lane; the lone forager's 3 a season still never outlasts a decay of 6.
+**Bounded at the top (D414).** A tile at the ceiling that nobody walks is packed for
+(130 − 76) ⁄ 4 = **13 seasons**, worn until it falls under 6, and grass after **32 seasons — eight
+years** (`AnAbandonedPackedPathFadesInYearsNotCenturies`). ⚠️ The "six seasons of grace" above is a
+lane *at the line*; a ceiling low enough to give a hub tile that was measured and refused: at 104
+(packed + one decay, the lowest that can still pack — the sweep fades BEFORE it classes, so at 100
+no tile could ever be packed and 42 fifty-year villages lost 53 people) the same 42 villages carried
+311 alive against 337; at 130, 330 (level). Validated `≥ path_packed_at + path_wear_decay_per_season`.
 
 ### 3.3 Price
 A tile's **entry cost** — what it costs to step onto it — is one of three classes:
@@ -123,6 +137,37 @@ exactly the route's step count — clock A untouched, D356's pins hold. On a wor
 (`AWornPathCostsFewerTicksInTheField`). If either end is unreachable the leg is charged its route
 steps, as before.
 
+### 3.6 A walker the route puts on a path stays on it (D414)
+Joe, 2026-09-26: *"i dont like these big blobs of packed trail … i want them to look more like
+thinner walked paths [with] big swaths of open ground."*
+**Measured before anything was built:** 90–97 % of footsteps already landed on path tiles, and the
+blobs were the 2–3-tile gaps between buildings round the hub, genuinely walked (block-tile median
+~25 treads a year). What the discount did NOT do was hold a walker to a lane: the route (4-connected,
+so on grass every staircase costs the same and any path tile in the walk's rectangle is cheaper) bent
+onto the lane, and `PlanLeg`'s string-pulling then drew the line to the furthest route tile *in
+sight* — on open ground, straight past the lane across the grass beside it. Every walker cut their own
+chord.
+**The rule:** while pulling the string, a leg is not extended to route tile *i* if the footsteps it
+would take on grass (the tiles `Travel` would tread, one a step — `BehaviorSystem.GrassUnder`) exceed
+the route's own grass tiles up to *i* by more than **`path_shortcut_grass_allowance` = 0**. Grass is
+what the field charges `BaseTileCost` for, so a paved road later counts as off the grass for free.
+⚠️ Footsteps, not the tiles the line touches: `LineOfSight` lists both tiles beside every corner, so
+a 45° line "crosses" three a step and would lose to its own staircase on bare grass. **On bare grass
+nothing changes** — a straight line treads no more tiles than the staircase — so the clock and the
+Phase 0 pins are untouched by construction. Tick charging (§3.5) is unchanged. A leg to the route's
+first tile (a step off a building, D404) is never judged: it replaces no route.
+**Measured (shipped 12345, fixture 4, thirty years; 42 fifty-year villages):** block tiles (in any
+fully worn 2×2 — what the view fills as a yard) shipped y25 36 → 14, y30 41 → 19; fixture 4 y3–15
+19 → 6; survival level with the ceiling (alive 337 → 330, starved 108 → 100). Guards:
+`AWalkerKeepsToTheLaneTheRouteTakes` (1,413 legs over six fixture years, 1,288 with a path on the
+route, none cut across the grass beside it), `TheFoundingHubWearsLanesNotABlock` (fifteen fixture
+years: 6 block tiles of 28 against 22 of 37 cutting corners).
+⚠️ **The tension, written down:** the route's metric is Manhattan and the walk is Euclidean, so a
+lane the route prefers can be a longer walk than the chord it replaces — §3.3's lock-in cap is about
+the field, not this. Measured it does not bite (the thirty-year runs walked *fewer* villager-ticks),
+because a worn lane is where straight walks already went. If a village ever shows walkers going the
+long way round on a lane, this is where to look.
+
 ## 4. Data model
 
 ### 4.1 `PathWear` (sim state, hashed)
@@ -153,7 +198,8 @@ worlds** — the suite runs worlds in parallel and a shared buffer is a determin
 ### 4.4 Config (`data/sim.config.json`)
 `path_wear_per_step` 3 · `path_wear_decay_per_season` **4** (D396; 6 from D362) · `path_worn_at` 30 · `path_packed_at` 100 ·
 `path_holds_for` 24 ·
-`path_worn_tile_cost` 9 · `path_packed_tile_cost` 8. The comment in the file carries the
+`path_worn_tile_cost` 9 · `path_packed_tile_cost` 8 · **`path_wear_ceiling` 130** (D414, ≥ packed +
+decay) · **`path_shortcut_grass_allowance` 0** (D414). The comment in the file carries the
 measurement the numbers came from. Paving will add classes to the same table, not a second one.
 
 ## 5. What the sim sees, and what the view sees
@@ -168,6 +214,12 @@ nothing about wear directly except `Tread` and the seasonal system. The view (§
   the village fixture wear 15 tiles through (10 packed); twenty years of Phase 0's one villager wear
   none.
 - **Lock-in** (§2.6): the cap in §3.3, guarded in `AWornLaneIsCheaperAndTheRouteTakesIt`.
+- **A path that can never fade** (D414): wear stops at the ceiling (`WearStopsAtTheCeiling`,
+  `AnAbandonedPackedPathFadesInYearsNotCenturies`).
+- **A ceiling that can never pack** (D414): the sweep fades before it classes, so a ceiling under
+  packed + decay is a valley with no packed ground — refused by validation.
+- **Blobs of chords** (D414): §3.6, guarded by `AWalkerKeepsToTheLaneTheRouteTakes` and
+  `TheFoundingHubWearsLanesNotABlock`.
 - **A footstep rebuilds a field:** guarded by `WearReachesTheRoutesOnlyWhenTheSeasonTurns` — a
   row trodden hard mid-season still routes at grass prices, and the cached field count does not move.
 - **Wear on water:** cannot happen — nobody stands on water (`NobodyEverStandsOnWater`), and
@@ -181,7 +233,9 @@ nothing about wear directly except `Tread` and the seasonal system. The view (§
 
 ## 7. How it is tested
 
-`tests/Bclone.Sim.Tests/DesirePathTests.cs` — the eight named above. Red checks recorded in D358.
+`tests/Bclone.Sim.Tests/DesirePathTests.cs` — the eight named above, and D414's five (the ceiling
+two, validation, the two in §3.6). Red checks recorded in D358 and D414 (rule off → 2 reds; ceiling
+off → 2; validation off → 1).
 The clock: `VillagerPointTests` keeps `FirstGatherAtPace1 = 20` and `FirstGatherAtPace3 = 41`
 unchanged (one villager never wears a path); `TheValleyWalksOnTheSameClockAsBefore` is re-pinned
 with the reason that worn ground is now faster — **the first deliberate clock change since Phase 2.**
@@ -196,6 +250,14 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] Six config keys, validated, measured before chosen.
 - [x] `DesirePathTests` green; goldens re-taken with the reason (the walk is faster on worn ground).
 - [x] Suite wall-clock accounted for (D358 records the number).
+
+### Slice 3 — keep to the path, and a ceiling ✅ BUILT (2026-09-26, D414), ⚠️ NOT MERGED, UNPLAYED
+- [x] Measured the premise first (treads on path, block tiles, per-tile traffic, the wear ceiling).
+- [x] §3.6's rule in `PlanLeg`; §3.1's ceiling; two keys, validated.
+- [x] Five guards, red-checked (5 reds); four guards re-posed with their reasons (D414).
+- [x] Survival level over 42 fifty-year runs; six goldens moved once; the suite's clock level back
+  to back with main (4m21 against 4m17).
+- [ ] Joe plays it.
 
 ### Slice 2 — the view ✅ MET (2026-09-11, D358, same commit)
 - [x] Trails drawn on the ground from `Paths.Tiles`: worn as earth showing through, packed darker,

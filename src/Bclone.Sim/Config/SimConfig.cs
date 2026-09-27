@@ -280,10 +280,29 @@ public sealed record SimConfig
     /// <summary>
     /// How far under its line a path's wear may fall before it stops being one — <b>the grace a
     /// path has once it exists</b> (D362; Joe: *"once it exists, it should exist for longer before
-    /// growing back"*). In wear, so with decay 6 a value of 24 is four seasons of nobody walking it.
+    /// growing back"*). In wear, so with decay 4 (D396) a value of 24 is six seasons of nobody walking it.
     /// </summary>
     [JsonPropertyName("path_holds_for")]
     public int PathHoldsFor { get; init; } = 24;
+
+    /// <summary>
+    /// The most wear a tile can hold (D414) — so a path nobody walks any more fades on the clock
+    /// the spec promises. Before it, wear ran on to 65,535 and a hub tile abandoned at year
+    /// twenty-five would have stayed packed for a century. ⛔ At least <c>path_packed_at</c> +
+    /// <c>path_wear_decay_per_season</c>: the sweep fades BEFORE it classes, so at a ceiling of
+    /// exactly packed no tile could ever be packed again — measured, 42 fifty-year villages lost 53
+    /// people to it.
+    /// </summary>
+    [JsonPropertyName("path_wear_ceiling")]
+    public int PathWearCeiling { get; init; } = 130;
+
+    /// <summary>
+    /// How many more footsteps on grass a straight-line shortcut may take than the route it
+    /// replaces (D414). 0: <b>a walker the route puts on a path stays on it</b> rather than cutting
+    /// the corner across the grass beside it. Large: any shortcut the eye can see, as before D414.
+    /// </summary>
+    [JsonPropertyName("path_shortcut_grass_allowance")]
+    public int PathShortcutGrassAllowance { get; init; }
 
     /// <summary>Cost of crossing a worn tile, against <c>TravelCostField.BaseTileCost</c> (10) for grass.</summary>
     [JsonPropertyName("path_worn_tile_cost")]
@@ -3628,6 +3647,21 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"path_holds_for must be at least 0 and less than path_worn_at (got {PathHoldsFor} against {PathWornAt}).");
+        }
+
+        // ⛔ The sweep fades before it classes (D414): a ceiling under packed + one season's decay
+        // is a valley where nothing can ever be packed.
+        if (PathWearCeiling < PathPackedAt + PathWearDecayPerSeason || PathWearCeiling > ushort.MaxValue)
+        {
+            throw new SimConfigException(
+                $"path_wear_ceiling must be at least path_packed_at + path_wear_decay_per_season and at most {ushort.MaxValue} "
+                + $"(got {PathWearCeiling} against {PathPackedAt} + {PathWearDecayPerSeason}).");
+        }
+
+        if (PathShortcutGrassAllowance < 0)
+        {
+            throw new SimConfigException(
+                $"path_shortcut_grass_allowance cannot be negative (got {PathShortcutGrassAllowance}).");
         }
 
         if (PathPackedTileCost < 1 || PathWornTileCost < PathPackedTileCost || PathWornTileCost > World.TravelCostField.BaseTileCost)

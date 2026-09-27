@@ -48,7 +48,9 @@ public sealed class FoodConservationTests
     // founding kills half its villages on main AND on D412 (seeds 3 and 7 die on main, 3 and 12345
     // on D412 — no forage and no fish produced in either) — only which half moved. The ledger held
     // to the unit in the dead ones too; the coverage half needs a village that lives. On Joe's list.
-    [InlineData(7UL, true)]
+    // ⚠️ AND SEED 4 SINCE D414: walkers keeping to the lanes moved the half again — measured over
+    // thirteen seeds, 5 live on main (2 7 8 10 11) and 5 on D414 (2 4 11 12 12345). Seed 7 died.
+    [InlineData(4UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

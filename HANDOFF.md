@@ -1,4 +1,39 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D413 IN §7. `main` IS PUSHED (D413). NEXT: JOE'S PATH NOTE — THINNER WALKED PATHS, NOT BLOBS (INVESTIGATE AND PROPOSE FIRST) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D414 IN §7. `main` IS PUSHED (D413). `slice/paths-pull` HOLDS D414 (SIM), NOT MERGED. NEXT: D415 — THE VIEW'S CORRIDORS ON THE SAME BRANCH → JOE PLAYS BOTH → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D414, ON A BRANCH.**
+>
+> **Branches:** `main` = `origin/main` (D413). **`slice/paths-pull` = D414 committed, NOT merged, NOT
+> pushed** — Joe merges and pushes. **1247 passing, 0 failing, 4 skipped of 1251**, 4m21 against
+> main's 4m17 back to back (the machine was slower tonight than the 3m15 of the morning — compare
+> back to back, never across the day); view 0 warnings; probe green, bar height 161.
+>
+> **Joe's call on his path note (2026-09-26):** *"build B properly (tests, red checks, goldens, docs),
+> cap wear so abandoned paths fade the way the spec says, then a view pass that draws 2-wide corridors
+> as a single lane and fills only large packed junctions."* D414 is the first two; **D415, the view
+> pass, is next on the same branch** (plan: `VillageMap.cs` ~4082–4330 and `VillageMap.Meshes.cs`
+> `BuildTheTrailMesh` — a junction is a tile in a fully PACKED 3×3 and is the only yard filled; a
+> corridor tile (in a fully worn 2×2, not a junction) draws at the mean centre of its full 2×2s, so a
+> 2-wide corridor's two rows land on one midline; the probe poses a packed 3×3 and a 2×5 worn
+> corridor; ⚠️ check how common 4+-wide worn-not-packed areas are first — they would lattice).
+>
+> **What D414 found (read D414 in §7 — the reasoning is all there):** walkers were already on the
+> paths (90–97 % of footsteps); the blobs are genuinely walked gaps between buildings; the string-pull
+> threw away the route's bend onto a lane. Wear had no ceiling. **Ceiling 100 would have killed
+> villages** (the sweep fades before it classes — nothing could ever pack); 130 is level.
+>
+> **⏸️ New for Joe (also in the OPEN list):** the ceiling's number (130 is level; 104 is nearer the
+> spec's six seasons and cost 26 of 337 alive); and a builder moved to foraging leaves a STOCKED site
+> unbuilt for a whole year (`AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt`, found, not fixed —
+> the labour allocator's behaviour, on main too).
+>
+> **Tools:** the measurement harness is `ZzHousing.cs` in this session's scratchpad
+> (`C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/742898cb-4727-4fad-ae90-6bfd6f68ae6e/scratchpad/`)
+> — it now has `PathArm` (a per-year path census: path/worn/packed/block tiles, largest block, walk
+> ticks), `EverySource`, `ColdOff`, and `ZZ_ALLOW` / `ZZ_CEIL` env dials; `render.py` (thresholds 30/100)
+> draws its dumps. Copy in, run with `--filter`, delete before committing.
+>
+> *(The D413 banner, kept below.)*
+>
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (END) — AFTER D413, PUSHED.**
 >
@@ -2596,7 +2631,34 @@ not need it.*
 ⚠️ **The empty log is also why the previous stretch read as "the game starts with no villagers"** —
 four founders froze in Winter Year 1 and every line saying so rendered into nothing.
 
+## ⛔⛔ THE TRAP D414 PAID FOR — MEASURE THE PREMISE, AND THE ORDER THE SWEEP DOES THINGS IN
+
+**The handoff's lever B rested on a story — "walkers ignore the paths, so each wears their own
+line" — and one counter on every footstep said it was false:** 90–97 % of treads were already on
+path tiles. The true cause (the string-pull draws past the lane the route chose) was one more
+counter away. ⭐ **Before building a fix, count the thing the fix assumes.**
+
+⛔ **And the wear ceiling's first number, 100 (= packed), would have shipped a valley where nothing
+can ever be packed again** — `PathWear.Decay` fades BEFORE it classes, so a tile at 100 reads 96 at
+the sweep. The arithmetic ("abandoned: packed for six seasons") was right about abandonment and blind
+to the living lanes. **42 fifty-year villages lost 53 people** and only the survival arm said so.
+It is validated now (`≥ packed + decay`), but the lesson is general: *a cap is also a floor on what
+the busiest thing can ever reach.*
+
+⚠️ **A guard that fails after a walk change is often a timing premise, not a regression.** Four did
+here: a room sample taken before the tick (room opened inside it), a "finished within the year"
+that main met with 32 ticks to spare, and two one-seed villages. Each was measured across seeds or
+diagnosed by trace before it was re-posed — never re-posed on sight.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE WEAR CEILING'S NUMBER (D414).** 130 is level over 42 fifty-year villages (330 alive vs
+  337, starved 100 vs 108) and an abandoned hub path is grass in eight years. 104 — the nearest to the
+  spec's "six seasons" — cost 26 people. His number to move if he wants paths to fade faster.
+- ⭐ **A BUILDER MOVED OFF A STOCKED SITE (found in D414, not fixed; on main too).** In
+  `AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt`'s pose, the one builder put 37 work into a
+  fully stocked warehouse, then the labour allocator moved her to foraging and nobody touched the
+  site for all of year two. Worth a look when builders next come up.
 
 - ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
   *"I think it looks okay? there are some skips now and then."* The numbers from his play:

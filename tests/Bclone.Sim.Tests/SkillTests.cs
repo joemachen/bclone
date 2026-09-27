@@ -319,8 +319,9 @@ public sealed class SkillTests
     // 17357106328646177055 (shipped).
     // RE-TAKEN (D409), THE SHIPPED ONE ONLY — the shipped file now starts every game with the player's stock limits (they lived in the view, so no run had them); one limit per good, no food total; a limit counts the heaps; an armful takes the good the stores are shortest of first; a mixed store keeps half for everything that is not food. The fixture sets no limits and did not move. Was 448535629324644598 (shipped).
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Were 1809397811475245451 (fixture) and 9052017553299419280 (shipped).
-    [InlineData(false, 15636651256834973744UL)]
-    [InlineData(true, 11682607479568112513UL)]
+    // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Were 15636651256834973744 (fixture) and 11682607479568112513 (shipped).
+    [InlineData(false, 15694792062086194684UL)]
+    [InlineData(true, 14012360185614587487UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
