@@ -285,8 +285,11 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D414), not for the clock on grass: walkers keep to the lanes the route takes,
         // so a walk over worn ground is a different line — 51 trips, the 1st/10th/50th at
         // 10/199/1,964. Were 52 at 10/199/1,958.
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1964 }, at);
+        // ⚠️ RE-PINNED (D417), not for the clock: the market is stocked to 100 a household, not 40,
+        // so the marketer's errands and the foragers' seats land differently — 52 trips, the
+        // 1st/10th/50th at 10/199/1,929. Were 51 at 10/199/1,964.
+        Assert.Equal(52, entries);
+        Assert.Equal(new ulong[] { 10, 199, 1929 }, at);
     }
 
     /// <summary>

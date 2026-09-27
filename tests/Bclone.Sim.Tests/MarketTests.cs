@@ -833,4 +833,20 @@ public sealed class MarketTests
         Assert.Equal(config.MarketStockPerHousehold * 5, VillageEconomy.MarketStockWanted(config, 5));
         Assert.Throws<SimConfigException>(() => (config with { MarketStoreCapacity = 0 }).Validate());
     }
+
+    /// <summary>
+    /// ⭐ The counter is kept to a hundred per household (D417, Joe: *"I want markets that visibly
+    /// carry more stock"*) — in the shipped file AND the C# default the fixtures are built from.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Both halves, because the village fixture reads the C# default, not the JSON: a number
+    /// changed in one place alone is a game and a suite that disagree about the market.
+    /// </remarks>
+    [Fact]
+    public void TheMarketIsStockedToAHundredPerHousehold()
+    {
+        Assert.Equal(100, ShippedConfig.Load().MarketStockPerHousehold);
+        Assert.Equal(100, new SimConfig().MarketStockPerHousehold);
+        Assert.Equal(500, VillageEconomy.MarketStockWanted(new SimConfig(), 5));
+    }
 }

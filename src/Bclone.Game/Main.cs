@@ -316,6 +316,7 @@ public partial class Main : Control
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
         GD.Print(_map.AHeapAtADoorIsSeen());
+        GD.Print(_map.AMarketShowsItsStock());
         GD.Print(_map.TheFieldsStayInsideTheirFences());
 
         ProbeTheControlBar();
