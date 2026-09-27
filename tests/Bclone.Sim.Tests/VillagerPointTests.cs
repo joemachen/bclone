@@ -279,8 +279,11 @@ public sealed class VillagerPointTests
         // yards — 50 trips, the 1st/10th/50th at 10/199/1,975. Were 51 at 10/143/1,929.
         // ⚠️ RE-PINNED (D407), not for the clock: firewood is split only for what the homes want and
         // the last logs burn — 52 trips, the 1st/10th/50th at 10/199/1,929. Were 50 at 10/199/1,975.
+        // ⚠️ RE-PINNED (D411), not for the clock: homes are sited path-first at any angle, so the
+        // founders' houses stand elsewhere — still 52 trips, the 1st/10th/50th at 10/199/1,958.
+        // Were 10/199/1,929.
         Assert.Equal(52, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1929 }, at);
+        Assert.Equal(new ulong[] { 10, 199, 1958 }, at);
     }
 
     /// <summary>

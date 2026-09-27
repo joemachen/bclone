@@ -597,7 +597,8 @@ public partial class Main
 
                 // ⭐ ONE CONTROL FOR WHETHER IT TAKES DELIVERIES (Joe, D389): Open takes what the
                 // Takes row allows; Closed takes nothing and keeps what it has; Emptying is closed
-                // and carried out, and turns itself back to Open when the last armful leaves. Three
+                // and carried out, and stays Closed when the last armful leaves (D413) until the
+                // player opens it. Three
                 // exclusive states rather than a switch beside Empty — two switches whose meanings
                 // overlap (closed-and-emptying?) is the D139 shape.
                 (c.StockingRow, HFlowContainer stockingControls) = InspectorRow(body, Muted("Stocking:"));

@@ -942,7 +942,12 @@ public sealed class MapGenerationTests
             // ⚠️ AND SINCE D404 A FENCE IS A WALL: a house's own yard can stand between its door and
             // the work, and the walk goes round it — up to a yard's depth more. Read 110 against 70
             // (the builder's hut behind the founder's yard) the day fences became walls.
-            Assert.InRange(path, straight, straight + ((2 + config.PlotDepth) * TravelCostField.BaseTileCost));
+            // D412: the deepest yard a hash can give, in whole rows behind the house — and its
+            // widest, because a yard turned toward its path can stand side-on to the work, and the
+            // walk goes round its width as well as its depth (read 140 against 70).
+            int deepest = 1 + (config.HomeYardBackQuarters.Max() / 4);
+            int widest = 2 + ((config.HomeYardSideQuarters.Max() + config.HomeYardOtherSideQuarters.Max() + 3) / 4);
+            Assert.InRange(path, straight, straight + ((2 + deepest + widest) * TravelCostField.BaseTileCost));
             if (path == straight)
             {
                 exact++;

@@ -959,11 +959,16 @@ public sealed class LabourAllocationTests
     [Fact]
     public void EveryHouseholdCanWalkToFood()
     {
+        // ⚠️ EVERY TEN YEARS OF THE 150, NOT ONLY THE LAST TICK (D412). The claim is about every
+        // household there is; asked once at year 150 it asked a village that had died (this seed's,
+        // once D412 moved its houses), and passed or failed on whether anyone was left.
         SimConfig config = Config;
         SimLoop loop = Build(config);
-        loop.Step(config.TicksPerYear * 150);
 
         int checked_ = 0;
+        for (int decade = 0; decade < 15; decade++)
+        {
+        loop.Step(config.TicksPerYear * 10);
         foreach (Household household in loop.World.Households)
         {
             if (loop.World.LivingMembersOf(household) == 0)
@@ -987,9 +992,10 @@ public sealed class LabourAllocationTests
                 $"The {household.Name} household at {household.Home()} cannot walk to any "
                 + "food at all.");
         }
+        }
 
-        // Anti-vacuity: a village that died leaves no occupied households, and the
-        // loop above would pass by never running.
+        // Anti-vacuity: a village that died at once leaves no occupied households, and the
+        // loops above would pass by never running.
         Assert.True(checked_ > 0, "No occupied households left to check — the village died.");
     }
 

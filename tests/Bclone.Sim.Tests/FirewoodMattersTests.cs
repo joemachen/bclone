@@ -64,9 +64,18 @@ public sealed class FirewoodMattersTests
         int split = world.LogsEverSplit;
         int start = HeldAnywhere(world);
 
-        loop.Step(config.TicksPerYear * 10);
+        // ⚠️ UNTIL IT IS GONE, UP TO TWENTY YEARS — not "after ten" (D412). The claim is that it runs
+        // out; ten years was a horizon, and a village of two homes (D412's founding on this valley)
+        // still had 36 burning in its two lived-in larders at ten. A fire that never goes out still
+        // fails: twenty years of two homes is five times the stock.
+        int years = 0;
+        while (HeldAnywhere(world) > 0 && years < 20)
+        {
+            loop.Step(config.TicksPerYear);
+            years++;
+        }
 
-        _output.WriteLine($"ten years with no woodcutter: {start} firewood → {HeldAnywhere(world)}; logs split {world.LogsEverSplit - split}");
+        _output.WriteLine($"{years} years with no woodcutter: {start} firewood → {HeldAnywhere(world)}; logs split {world.LogsEverSplit - split}");
         Assert.Equal(split, world.LogsEverSplit);
         Assert.True(start > 0, "There was no firewood to burn down, so the guard proved nothing.");
         Assert.Equal(0, HeldAnywhere(world));

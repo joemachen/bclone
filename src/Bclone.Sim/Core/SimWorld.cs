@@ -5484,7 +5484,8 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     /// <summary>
     /// Open, close or empty a store (D389) — the one control on a store's card, and the
-    /// Removal tab's <i>Empty</i> tool. A store told to empty with nothing in it is simply open.
+    /// Removal tab's <i>Empty</i> tool. A store told to empty with nothing in it is simply closed
+    /// (D413): emptied is closed until the player opens it.
     /// </summary>
     public PlacementVerdict SetStocking(StoreBuilding store, Stocking state)
     {
@@ -5492,7 +5493,7 @@ public sealed class SimWorld : IObstacles
 
         if (state == Stocking.Emptying && store.Store.Held <= 0)
         {
-            state = Stocking.Open;
+            state = Stocking.Closed;
         }
 
         if (store.Stocking == state)
@@ -5511,16 +5512,22 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// The last armful has left a store being emptied (D389): it takes deliveries again, and says
-    /// so once. Called from the one errand that carries a store out.
+    /// The last armful has left a store being emptied: it is <b>closed</b>, and says so once
+    /// (D413, reversing D389's reopening). Called from the one errand that carries a store out.
     /// </summary>
-    internal void ReopenTheEmptiedStore(StoreBuilding store)
+    /// <remarks>
+    /// Joe, 2026-09-26: *"an 'emptied' store should be 'closed' once it is marked to be emptied and remain closed until the user chooses to open it again."* D389 set it Open, and D412 found what that cost: a store emptied to be MOVED
+    /// reopened as the last armful left and was refilled by a delivery the same tick, so the player
+    /// could never catch it empty. Closed keeps what it has (nothing) and takes nothing; the player
+    /// opens it, or moves it.
+    /// </remarks>
+    internal void CloseTheEmptiedStore(StoreBuilding store)
     {
         ArgumentNullException.ThrowIfNull(store);
         if (store.Stocking == Stocking.Emptying && store.Store.Held <= 0)
         {
-            store.Stocking = Stocking.Open;
-            Narrate($"{store.Name} is empty and takes deliveries again. {Clock.SeasonAndYear()}.", LogCategory.Building);
+            store.Stocking = Stocking.Closed;
+            Narrate($"{store.Name} is empty, and stays closed until you open it. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
     }
 
@@ -6826,9 +6833,51 @@ public sealed class SimWorld : IObstacles
             : null;
     }
 
-    /// <summary>The plot a house pointed here, facing this way, would give this household (§3.1).</summary>
-    public PlotShape PlotFor(GridPos front, Angle facing, int householdId) =>
-        PlotShape.Of(front, facing, householdId, Config.PlotWidth, Config.PlotDepth);
+    /// <summary>The plot a house pointed here, facing this way, would give this household (§3.1, §9.5 P4).</summary>
+    /// <remarks>
+    /// The house's tiles are its footprint's by the centre rule — the tiles it stands on as an
+    /// obstacle (D383) — so the plot, the obstacle and the fence cannot disagree about where the
+    /// house is. The yard's reach and depth are the household's, by hash (D411).
+    /// </remarks>
+    public PlotShape PlotFor(GridPos front, Angle facing, int householdId)
+    {
+        // ⭐ A PURE FUNCTION, REMEMBERED (D411). A plot is arithmetic on these three and the
+        // config, nothing in the world, and the chooser asks for the same one four times a facing
+        // (its own fit, the gate, the trial fence, the detour) — rebuilt each time it was most of the
+        // chooser's cost. The same inputs always give the same plot, so remembering it cannot change
+        // an answer; it is never hashed and never read as state. Bounded, and emptied whole when full.
+        var key = (front, facing.Raw, householdId);
+        if (_plotsAsked.TryGetValue(key, out PlotShape known))
+        {
+            return known;
+        }
+
+        if (_plotsAsked.Count >= 65536)
+        {
+            _plotsAsked.Clear();
+        }
+
+        PlotShape plot = ShapeThePlot(front, facing, householdId);
+        _plotsAsked[key] = plot;
+        return plot;
+    }
+
+    private readonly Dictionary<(GridPos, ushort, int), PlotShape> _plotsAsked = new();
+
+    private static readonly int[] TheTwoEnds = { 0, 1 };
+
+    private PlotShape ShapeThePlot(GridPos front, Angle facing, int householdId)
+    {
+        Point centre = HomeAnchorOn(front, facing);
+        List<GridPos> house = FootprintOf(BuildingKind.Home, centre, facing).CoveredTiles();
+        Fixed gateEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.SideSalt, Config.HomeYardSideQuarters), 4);
+        Fixed otherEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.OtherSideSalt, Config.HomeYardOtherSideQuarters), 4);
+        Fixed back = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.BackSalt, Config.HomeYardBackQuarters), 4);
+        bool gateOnTheLeft = PlotShape.ByHash(householdId, PlotShape.WhichSideSalt, TheTwoEnds) == 0;
+        return gateOnTheLeft
+            ? PlotShape.Of(front, facing, centre, house, gateEnd, otherEnd, back)
+            : PlotShape.Of(front, facing, centre, house, otherEnd, gateEnd, back);
+    }
 
     /// <summary>
     /// The tiles a house marked here today would fence (D388, `organic-housing.md §3.5`): the
@@ -6836,13 +6885,26 @@ public sealed class SimWorld : IObstacles
     /// house's own two tiles always. Fixed on the household at the marking; this is the one place
     /// the fence is decided.
     /// </summary>
+    private static bool IsOneOf(IReadOnlyList<GridPos> tiles, GridPos tile)
+    {
+        for (int i = 0; i < tiles.Count; i++)
+        {
+            if (tiles[i] == tile)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     internal List<GridPos> FencedTilesFor(PlotShape plot)
     {
         var fenced = new List<GridPos>(plot.Tiles.Count);
         for (int i = 0; i < plot.Tiles.Count; i++)
         {
             GridPos tile = plot.Tiles[i];
-            bool house = tile == plot.House[0] || tile == plot.House[1];
+            bool house = IsOneOf(plot.House, tile);
             if (house
                 || (Map.Contains(tile)
                     && Map.TerrainAt(tile) != Terrain.Water
@@ -8252,15 +8314,12 @@ public sealed class SimWorld : IObstacles
                 // A house is the one building that does not go through `RaiseFinished`.
                 RetireTheClearingMark(FootprintOf(BuildingKind.Home, site.Position, plan.Facing));
 
-                // Standing outside their new door, rather than wherever the errand that
-                // filled the last tick left them.
-                for (int i = 0; i < Villagers.Count; i++)
-                {
-                    if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
-                    {
-                        Villagers[i].StandAt(site.Position);
-                    }
-                }
+                // ⛔ NOBODY IS PUT AT THE NEW DOOR (D411). The family used to be stood outside it the
+                // tick it was finished, wherever they were — and since fences are walls (D404) that
+                // put a man through his own family's yard fence five tiles from where he rested
+                // (`NoStepEverCrossesAWall`, seed 7, once D411 sited the Coopers across it). They
+                // walk home like anyone else: their home is this house now, and the next errand home
+                // goes through the gate.
 
                 Narrate($"The {family.Name} household moved into the house they had raised at "
                     + $"{site.Position} — {Clock.SeasonAndYear()}.", LogCategory.Life);

@@ -71,6 +71,21 @@ public sealed class RelocateTests
         throw new System.InvalidOperationException("No buildable tile near the village.");
     }
 
+    /// <summary>Step until an emptying store has been emptied and closed (D413), or give up.</summary>
+    private static bool StepUntilEmptied(SimLoop loop, StoreBuilding store, int ticks)
+    {
+        for (int t = 0; t < ticks; t++)
+        {
+            loop.StepOnce();
+            if (store.Stocking == Stocking.Closed)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Deliver a site's materials and work it to completion, as a crew would.</summary>
     private static void Finish(SimWorld world, GridPos site)
     {
@@ -177,10 +192,14 @@ public sealed class RelocateTests
         full.Store.Receive(Goods.Produce, 120);
         Assert.False(world.MarkRelocation(from, Buildable(world, from)).Allowed);
 
+        // ⭐ No workaround (D413): an emptied store is closed until the player opens it, so it is
+        // still empty a year after the last armful left, and it can move. Under D389 it reopened
+        // as the last armful left and a delivery refilled it the same tick (D412 found it).
         full.Stocking = Stocking.Emptying;
-        loop.Step(Config.TicksPerYear * 3);
+        Assert.True(StepUntilEmptied(loop, full, Config.TicksPerYear * 3), $"{full.Name} was never emptied in three years.");
+        loop.Step(Config.TicksPerYear);
 
-        _output.WriteLine($"{full.Name} holds {full.Store.Held} after three years of clearing");
+        _output.WriteLine($"{full.Name} holds {full.Store.Held} a year after it was emptied, and is {full.Stocking}");
 
         Assert.Equal(0, full.Store.Held);
         Assert.True(world.MarkRelocation(from, Buildable(world, from)).Allowed);
@@ -194,13 +213,16 @@ public sealed class RelocateTests
     /// would be refilled by the same errands emptying it, and the two would race for ever.
     /// </remarks>
     /// <summary>
-    /// ⭐ An emptied store opens itself again (D389). Joe: *"once it is empty, it should
-    /// automatically go back to being able to be stocked. presently the user has to click 'empty'
-    /// again in the menu — which isnt intuitive."* Red without the reopening: the store drains to
-    /// zero and stays shut.
+    /// ⭐ An emptied store is closed, and stays closed until the player opens it (D413). Joe: *"an
+    /// 'emptied' store should be 'closed' once it is marked to be emptied and remain closed until
+    /// the user chooses to open it again."*
     /// </summary>
+    /// <remarks>
+    /// Reverses D389's reopening. Red with the last armful setting it Open: it refills (the
+    /// fixture's foragers deliver here) and the year-on read finds it stocked.
+    /// </remarks>
     [Fact]
-    public void AnEmptiedStoreOpensItselfAgain()
+    public void AnEmptiedStoreStaysClosedUntilOpened()
     {
         SimLoop loop = Loop();
         SimWorld world = loop.World;
@@ -213,12 +235,17 @@ public sealed class RelocateTests
         Assert.Equal(Stocking.Emptying, full.Stocking);
         Assert.False(full.Accepts(Goods.Produce));
 
-        loop.Step(Config.TicksPerYear * 3);
-        _output.WriteLine($"{full.Name} holds {full.Store.Held} and is {full.Stocking}");
+        Assert.True(StepUntilEmptied(loop, full, Config.TicksPerYear * 3), $"{full.Name} was never emptied in three years.");
+        loop.Step(Config.TicksPerYear);
+        _output.WriteLine($"{full.Name} holds {full.Store.Held} a year after it was emptied, and is {full.Stocking}");
 
+        Assert.Equal(Stocking.Closed, full.Stocking);
         Assert.Equal(0, full.Store.Held);
-        Assert.Equal(Stocking.Open, full.Stocking);
-        Assert.True(full.Accepts(Goods.Produce), "the emptied store still refuses deliveries");
+        Assert.False(full.Accepts(Goods.Produce), "the emptied store took deliveries nobody opened it for");
+
+        // And the player's word opens it.
+        Assert.True(world.SetStocking(full, Stocking.Open).Allowed);
+        Assert.True(full.Accepts(Goods.Produce));
     }
 
     /// <summary>
@@ -259,10 +286,11 @@ public sealed class RelocateTests
         Assert.Equal(Stocking.Closed, shut.Stocking);
         Assert.Equal(0, cleared);
 
-        // Emptying an empty store is being open (nothing to carry out).
+        // Emptying an empty store is being closed (nothing to carry out, D413 — it was "open" under D389).
         shut.Store.TakeAll(Goods.Produce);
+        Assert.True(world.SetStocking(shut, Stocking.Open).Allowed);
         Assert.True(world.SetStocking(shut, Stocking.Emptying).Allowed);
-        Assert.Equal(Stocking.Open, shut.Stocking);
+        Assert.Equal(Stocking.Closed, shut.Stocking);
     }
 
     [Fact]

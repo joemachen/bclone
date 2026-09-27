@@ -115,7 +115,7 @@ public sealed class OrganicHousingTests
     {
         SimWorld world = Bare();
         var front = new GridPos(3, 5);
-        foreach (Angle facing in PlotShape.Facings)
+        foreach (Angle facing in PlotShape.Quarters)
         {
             Footprint house = world.HomeFootprintAt(front, facing);
             List<GridPos> covered = house.CoveredTiles();
@@ -159,7 +159,7 @@ public sealed class OrganicHousingTests
         _output.WriteLine($"{site.Front} facing {site.Facing}: {site.WhyHere}");
 
         PlotShape plot = world.PlotFor(site.Front, site.Facing, family.Id);
-        Assert.Equal(Config.PlotWidth * Config.PlotDepth, plot.Tiles.Count);
+        Assert.True(plot.Tiles.Count > plot.House.Count, "The plot is the house alone — no yard.");
         foreach (GridPos tile in plot.Tiles)
         {
             Assert.Equal(family.Id, world.Zones.PlotOwner(tile));
@@ -177,19 +177,15 @@ public sealed class OrganicHousingTests
 
     /// <summary>
     /// ⛔ The plot is the household's from the marking (§3.4): a second family choosing next day
-    /// takes none of it and none of its lane — and stands beside it, sharing a side (§3.3).
+    /// takes none of it and none of its lane.
     /// </summary>
     /// <remarks>
-    /// ⚠️ <b>Scored ZERO against the <i>apart</i> term (D386), and the zero is written down:</b>
-    /// on this open square the walks alone put the second plot beside the first, so the term is
-    /// not what this guard proves. What it proves is the claim itself — no tile of the second
-    /// plot is the first's ground or lane, and the chooser's sentence names the neighbour. The
-    /// term's own measurement is in `organic-housing.md §7`: over twelve seeds and fifty years it
-    /// moves 18 of 67 houses beside a neighbour to 22 of 69 — a nudge at two tiles, and Joe's to
-    /// widen once he has seen the rows.
+    /// D386 asserted the second plot also SHARED A SIDE with the first — the packing D404 and D411
+    /// took away (§9.5 P2: a hashed gap between yards). The claim is what is left, and it is the
+    /// half that was always the point.
     /// </remarks>
     [Fact]
-    public void TheNextPlotSharesASideAndKeepsOffTheLane()
+    public void TheNextPlotKeepsOffTheFirstsGroundAndLane()
     {
         SimWorld world = Bare();
         GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 1, 5);
@@ -212,38 +208,33 @@ public sealed class OrganicHousingTests
             Assert.DoesNotContain(tile, plotA.Tiles);
             Assert.DoesNotContain(tile, plotA.Lane);
         }
-
-        bool touches = false;
-        foreach (IReadOnlyList<GridPos> side in plotB.Beside)
-        {
-            foreach (GridPos tile in side)
-            {
-                touches |= world.Zones.PlotOwner(tile) == first.Id;
-            }
-        }
-
-        Assert.True(touches, "The second plot does not share a side with the first.");
-        Assert.Contains($"beside the {first.Name}s", b.WhyHere);
     }
 
     /// <summary>
-    /// ⭐ Which side of its front row the house sits on is a hash of the household, not a draw:
-    /// the same valley twice sites the same houses, and two households differ.
+    /// ⭐ A household's yard, setback and gap are a hash of the household, not a draw (§9.5): every
+    /// value each range holds is reached, and the same valley twice sites the same houses.
     /// </summary>
     [Fact]
-    public void TheHouseSitsLeftOrRightByHashNotByDraw()
+    public void TheYardIsHashedNotDrawn()
     {
-        int near = 0;
-        for (int id = 1; id <= 64; id++)
+        foreach ((int salt, IReadOnlyList<int> values) in new[]
         {
-            if (PlotShape.HouseOnTheNearSide(id))
+            (PlotShape.SideSalt, Config.HomeYardSideQuarters),
+            (PlotShape.OtherSideSalt, Config.HomeYardOtherSideQuarters),
+            (PlotShape.BackSalt, Config.HomeYardBackQuarters),
+            (PlotShape.SetbackSalt, Config.HomeSetbackQuarters),
+            (PlotShape.GapSalt, Config.HomeGapTiles),
+        })
+        {
+            var seen = new HashSet<int>();
+            for (int id = 1; id <= 64; id++)
             {
-                near++;
+                seen.Add(PlotShape.ByHash(id, salt, values));
             }
-        }
 
-        _output.WriteLine($"{near} of 64 households have the house at the near end of the row.");
-        Assert.InRange(near, 16, 48);
+            _output.WriteLine($"salt {salt}: {string.Join(", ", seen.OrderBy(v => v))} of {string.Join(", ", values)}");
+            Assert.Equal(values.Count, seen.Count);
+        }
 
         SimWorld once = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
         SimWorld twice = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
@@ -251,6 +242,7 @@ public sealed class OrganicHousingTests
         {
             Assert.Equal(once.Households[i].HomePosition, twice.Households[i].HomePosition);
             Assert.Equal(once.Households[i].HomeFacing, twice.Households[i].HomeFacing);
+            Assert.Equal(once.Households[i].FencedTiles, twice.Households[i].FencedTiles);
         }
     }
 
@@ -295,10 +287,13 @@ public sealed class OrganicHousingTests
 
         Assert.Equal(world.Households.Count, claimed);
 
-        // Hand it on: the roofless family takes the empty house, and the plot with it.
+        // Hand it on: the roofless family takes the empty house, and the plot with it. ⚠️ The plot
+        // is what was FENCED (D388), not the proposal's rectangle — since D411 a turned yard is
+        // clipped by the founding's buildings more often than a square one was, and this guard
+        // walked the rectangle.
         var heir = new Household { Stockpile = world.NewStockpile(), Id = 900, Name = "Heir" };
         world.Zones.HandPlotOn(family.Id, heir.Id);
-        foreach (GridPos tile in plot.Tiles)
+        foreach (GridPos tile in family.FencedTiles)
         {
             Assert.Equal(heir.Id, world.Zones.PlotOwner(tile));
         }
@@ -306,8 +301,8 @@ public sealed class OrganicHousingTests
         Assert.True(world.Zones.IsLane(plot.Door));
 
         // And free: nothing owns the ground, the lane is a lane no more.
-        Assert.Equal(plot.Tiles.Count, world.Zones.ReleasePlot(heir.Id));
-        foreach (GridPos tile in plot.Tiles)
+        Assert.Equal(family.FencedTiles.Count, world.Zones.ReleasePlot(heir.Id));
+        foreach (GridPos tile in family.FencedTiles)
         {
             Assert.Equal(0, world.Zones.PlotOwner(tile));
         }
@@ -363,106 +358,251 @@ public sealed class OrganicHousingTests
         Assert.True(plots >= 4, $"Only {plots} plots in forty years — nothing to read.");
     }
 
-    /// <summary>
-    /// ⭐ The lane picks the door (D388): on an open square far from the village's walks, every
-    /// plot after the first that COULD front a lane a neighbour already fronts does — so a second
-    /// row faces the first across the street.
-    /// </summary>
+    // ---------------------------------------------------------------
+    //  D411 — a village, not a street (`organic-housing.md §9`)
+    // ---------------------------------------------------------------
+
+    /// <summary>A painted square far from the village's walks, with ground worn along these tiles.</summary>
     /// <remarks>
-    /// Joe: *"the homes should have less uniform orientation. this isn't supposed to be
-    /// suburbs."* D386 read the walks from the door, so every door faced the granary and a street
-    /// was a row all facing one way. Posed twelve tiles from the founding so no daily walk crosses
-    /// the square and the only lanes are the plots' own. Red with the lane term off: the facings
-    /// fall to the hash, and a plot beside a street faces away from it.
+    /// ⚠️ Eight tiles each way, and the paths posed well inside it. The chooser takes the shortest
+    /// walk, which is the paint's edge nearest the village; a path run out to that edge puts the
+    /// best site where its yard hangs over unpainted ground, and the square facing that loses less
+    /// of it is right to win — found by <c>AHouseFacesThePathInFrontOfIt</c>'s first run.
     /// </remarks>
-    [Fact]
-    public void APlotBesideAStreetFrontsIt()
+    private static (SimWorld World, GridPos Centre) ASquareWithAPath(Func<GridPos, IEnumerable<GridPos>> path)
     {
         SimWorld world = Bare();
-        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 5);
-        Paint(world, centre, 5);
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 6);
+        Paint(world, centre, 8);
+        foreach (GridPos tile in path(centre))
+        {
+            world.Paths.Tread(tile, 200);
+        }
 
-        int couldFrontALane = 0;
-        int did = 0;
-        for (int i = 0; i < 6; i++)
+        return (world, centre);
+    }
+
+    /// <summary>Site this many families one after another, as a growing village would.</summary>
+    private List<HomeSite> SiteFamilies(SimWorld world, int families)
+    {
+        var sites = new List<HomeSite>();
+        for (int i = 0; i < families; i++)
         {
             Household family = ANewFamily(world, "F" + i);
             HomeSite site = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
-
-            // What the four facings at this tile could front, read from the plot layer before
-            // the claim: the most lane tiles any of them has, and what the chosen one has.
-            int best = 0;
-            foreach (Angle facing in PlotShape.Facings)
-            {
-                if (Household.TilesClippedOff(world, world.PlotFor(site.Front, facing, family.Id)) >= 0)
-                {
-                    best = System.Math.Max(best, LaneTilesOf(world, site.Front, facing, family.Id));
-                }
-            }
-
-            int chosen = LaneTilesOf(world, site.Front, site.Facing, family.Id);
             world.MarkHome(family.Id, site);
-            _output.WriteLine($"{family.Name} at {site.Front} facing {site.Facing}: fronts {chosen} lane tiles, best possible {best} — {site.WhyHere}");
-            if (best > 0)
-            {
-                couldFrontALane++;
-                if (chosen > 0)
-                {
-                    did++;
-                }
-            }
+            _output.WriteLine($"{family.Name} at {site.Front} facing {site.Facing.Raw}: {site.WhyHere}");
+            sites.Add(site);
         }
 
-        Assert.True(couldFrontALane >= 2, $"only {couldFrontALane} plots could have fronted a neighbour's lane, so this measures nothing");
-        Assert.Equal(couldFrontALane, did);
+        return sites;
     }
 
-    /// <summary>How many of a facing's lane-row tiles are already a lane — no walks cross this square, so it is the plots' own.</summary>
-    private static int LaneTilesOf(SimWorld world, GridPos front, Angle facing, int householdId)
+    /// <summary>The smaller way round between two facings, in raw turns (65,536 a whole turn).</summary>
+    private static int TurnBetween(Angle a, Angle b)
     {
-        PlotShape plot = world.PlotFor(front, facing, householdId);
-        var noWalks = new HashSet<GridPos>();
-        int lanes = 0;
-        foreach (GridPos tile in plot.Lane)
-        {
-            if (Household.IsALaneAlready(world, noWalks, tile))
-            {
-                lanes++;
-            }
-        }
-
-        return lanes;
+        int turn = (ushort)(a.Raw - b.Raw);
+        return System.Math.Min(turn, 65536 - turn);
     }
 
     /// <summary>
-    /// ⭐ With no lane to face, a house faces by hash (D388) — the fixture's houses at year sixty
-    /// face at least three ways, where D386's faced two (five of seven west).
+    /// ⭐⭐ Houses face the path in front of them, at whatever angle it lies — not at a compass point
+    /// (§9.5 P1, Joe with a Foundation screenshot: every house turned to the path before it).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A worn path on the diagonal through an open square, and six families. Every house's door
+    /// looks at a path — a step along its facing, from one to eight tiles out, lands within a tile of
+    /// worn ground or of a lane some house already fronts (P1's paths) — and at least half are
+    /// turned off the four quarters. Red with the facing
+    /// snapped to the quarters, which is D388's chooser: no house off them.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>"At the path", not "square to it", and a rate, not the first house.</b> The first
+    /// draft asserted the first family faced the diagonal square on and failed against a right
+    /// answer twice: the chooser takes the shortest walk — the paint's edge nearest the village —
+    /// and from there the nearest stretch of the path lies at 79°, not 45° (D344: a claim about one
+    /// case is a claim about that case).
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void HousesWithNoLaneFaceByHash()
+    public void HousesFaceThePathInFrontOfThem()
     {
-        int[] byHash = new int[PlotShape.Facings.Count];
-        for (int id = 1; id <= 64; id++)
+        (SimWorld world, _) = ASquareWithAPath(c =>
+            Enumerable.Range(-7, 15).Select(k => new GridPos(c.X + k, c.Y + k)));
+
+        List<HomeSite> sites = SiteFamilies(world, 6);
+        int offTheQuarters = 0;
+        foreach (HomeSite site in sites)
         {
-            byHash[PlotShape.FacingByHash(id)]++;
+            if (site.Facing.Raw % 16384 != 0)
+            {
+                offTheQuarters++;
+            }
+
+            Point from = Point.CentreOf(site.Front);
+            Point step = new Point(Fixed.Zero, -Fixed.FromInt(1)).RotatedBy(site.Facing);
+            bool looksAtIt = false;
+            for (int k = 1; k <= 8 && !looksAtIt; k++)
+            {
+                GridPos ahead = (from + new Point(step.X * Fixed.FromInt(k), step.Y * Fixed.FromInt(k))).ToTile();
+                for (int dy = -1; dy <= 1 && !looksAtIt; dy++)
+                {
+                    for (int dx = -1; dx <= 1 && !looksAtIt; dx++)
+                    {
+                        var near = new GridPos(ahead.X + dx, ahead.Y + dy);
+                        looksAtIt = world.Paths.At(near) >= world.Config.PathWornAt || world.Zones.IsLane(near);
+                    }
+                }
+            }
+
+            Assert.True(looksAtIt, $"The house at {site.Front}, facing {site.Facing.Raw}, looks at no path: {site.WhyHere}");
         }
 
-        _output.WriteLine($"sixty-four households by hash: {string.Join(" / ", byHash)}");
-        Assert.All(byHash, n => Assert.InRange(n, 4, 40));
+        _output.WriteLine($"{offTheQuarters} of {sites.Count} turned off the four quarters.");
+        Assert.True(offTheQuarters * 2 >= sites.Count, $"Only {offTheQuarters} of {sites.Count} houses are turned off a compass point.");
+    }
 
-        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
-        loop.Step(Config.TicksPerYear * 60);
-        var faced = new HashSet<ushort>();
-        foreach (Household household in loop.World.Households)
+    /// <summary>
+    /// ⭐⭐ Houses along a bend turn with it (§9.5 P1): a village on a curved path faces many ways,
+    /// and no one way is most of them.
+    /// </summary>
+    /// <remarks>
+    /// A quarter circle of worn ground through the square and a dozen families. Stated over the
+    /// dozen, not house by house (D344: a rate, not an "every"). Red with the facing snapped to the
+    /// four quarters: four facings at most.
+    /// </remarks>
+    [Fact]
+    public void HousesAlongABendTurnWithIt()
+    {
+        (SimWorld world, _) = ASquareWithAPath(c =>
         {
-            if (household.HasHome)
+            var arc = new List<GridPos>();
+            for (int step = 0; step <= 24; step++)
             {
-                faced.Add(household.HomeFacing.Raw);
+                double at = step * System.Math.PI / 48;
+                arc.Add(new GridPos(
+                    c.X - 6 + (int)System.Math.Round(10 * System.Math.Sin(at)),
+                    c.Y + 6 - (int)System.Math.Round(10 * (1 - System.Math.Cos(at)))));
+            }
+
+            return arc;
+        });
+
+        List<HomeSite> sites = SiteFamilies(world, 12);
+        var faced = sites.GroupBy(s => s.Facing.Raw).Select(g => g.Count()).ToList();
+        _output.WriteLine($"{faced.Count} facings among {sites.Count}; the most common holds {faced.Max()}");
+
+        Assert.True(faced.Count >= 6, $"A dozen houses on a bend face only {faced.Count} ways.");
+        Assert.True(faced.Max() * 2 <= sites.Count, $"{faced.Max()} of {sites.Count} face one way — a street.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ No row of three along a line (§9.2's column of five, Joe: *"NOT uniform rows of housing"*).
+    /// </summary>
+    /// <remarks>
+    /// A straight worn path across the square and a dozen families, every one of whom would face it
+    /// square on: no house has two others on its front line (within ¾ of a tile of it and six tiles
+    /// along), facing its way. ⚠️ <b>It guards the outcome, not a term.</b> D412 built a row price
+    /// (§9.5 P3) and this guard scored ZERO against it — as did the whole 18-seed layout arm: facing
+    /// the path and the gap between yards already break rows. Joe: *"delete it."* What would turn this
+    /// red is the lane-first facing D388 had.
+    /// </remarks>
+    [Fact]
+    public void NoThirdHouseInALine()
+    {
+        (SimWorld world, _) = ASquareWithAPath(c =>
+            Enumerable.Range(-8, 17).Select(k => new GridPos(c.X + k, c.Y)));
+
+        SiteFamilies(world, 12);
+        var houses = new List<(Point Centre, Angle Facing, string Name)>();
+        foreach (Household household in world.Households)
+        {
+            foreach (Workplace place in world.Workplaces)
+            {
+                if (place.Construction is { Kind: BuildingKind.Home } plan && plan.ForHouseholdId == household.Id)
+                {
+                    houses.Add((place.Position, plan.Facing, household.Name));
+                }
             }
         }
 
-        _output.WriteLine($"the fixture at year sixty faces {faced.Count} ways");
-        Assert.True(faced.Count >= 3, $"the fixture's houses face only {faced.Count} ways — a suburb");
+        foreach ((Point centre, Angle facing, string name) in houses)
+        {
+            int inLine = 0;
+            foreach ((Point other, Angle theirs, string _) in houses)
+            {
+                if (other == centre || TurnBetween(theirs, facing) > 4096)
+                {
+                    continue;
+                }
+
+                Point local = (other - centre).RotatedBy(-facing);
+                Fixed x = local.X < Fixed.Zero ? -local.X : local.X;
+                Fixed y = local.Y < Fixed.Zero ? -local.Y : local.Y;
+                if (y <= Fixed.FromRatio(3, 4) && x <= Fixed.FromInt(6))
+                {
+                    inLine++;
+                }
+            }
+
+            Assert.True(inLine <= 1, $"The {name}s' house has {inLine} others on its front line, facing its way — a row.");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Where there is room, every house has a yard (§9.5 P4) — a turned rectangle rasterised on
+    /// the grid does not get to leave a family with none.
+    /// </summary>
+    /// <remarks>
+    /// Found on the first picture: most houses by a diagonal path stood with no yard, because a yard
+    /// no gate reaches was dropped at no cost. Now an unreached yard tile is priced as a clipped one,
+    /// and a facing that keeps half its yard is taken before one that does not. Red with the
+    /// unreached tiles left out of <c>TilesClippedOff</c>.
+    /// </remarks>
+    [Fact]
+    public void EveryHouseHasAYardWhereThereIsRoom()
+    {
+        (SimWorld world, _) = ASquareWithAPath(c =>
+            Enumerable.Range(-6, 13).Select(k => new GridPos(c.X + k, c.Y + k)));
+
+        SiteFamilies(world, 6);
+        foreach (Household household in world.Households)
+        {
+            if (household.Id < 900)
+            {
+                continue;
+            }
+
+            int ground = world.Zones.PlotOf(household.Id).Count;
+            _output.WriteLine($"{household.Name}: {ground} tiles of plot");
+            Assert.True(ground >= 4, $"The {household.Name}s' house stands with {ground - 2} tiles of yard.");
+        }
+    }
+
+    /// <summary>
+    /// With no path in reach, the first houses face the village — the paths start there (§9.5 P1).
+    /// </summary>
+    /// <remarks>
+    /// Red with the no-path branch gone: the direction is empty and the house faces north whatever
+    /// the village's bearing.
+    /// </remarks>
+    [Fact]
+    public void AHouseWithNoPathNearFacesTheVillage()
+    {
+        (SimWorld world, _) = ASquareWithAPath(_ => Array.Empty<GridPos>());
+        HomeSite site = SiteFamilies(world, 1)[0];
+
+        // ⚠️ The bearing itself, to the 1/64 turn, not "anywhere toward it": the first draft scored
+        // ZERO against the no-path branch removed, because a house facing north passed whenever the
+        // village lay anywhere north of the square.
+        GridPos village = world.Map.FoundingSite;
+        double bearing = System.Math.Atan2(village.X - site.Front.X, -(village.Y - site.Front.Y));
+        int expected = (int)System.Math.Round(bearing / (2 * System.Math.PI) * 64) & 63;
+        int got = site.Facing.Raw / 1024;
+        int apart = System.Math.Min((got - expected) & 63, (expected - got) & 63);
+        Assert.True(apart <= 1, $"The house at {site.Front} faces {got}/64, not the village at {village} ({expected}/64).");
+        Assert.Contains("facing the village", site.WhyHere);
     }
 
     /// <summary>

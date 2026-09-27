@@ -4245,9 +4245,9 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 TakeALoadOutOf(world, villager, clearing);
 
-                // The last armful reopens the store (D389) — the player asked for it to be
-                // emptied, not for it to stay shut.
-                world.ReopenTheEmptiedStore(clearing);
+                // The last armful closes the store (D413, Joe) — emptied means shut until the
+                // player opens it; D389 reopened it, and it refilled before it could be moved.
+                world.CloseTheEmptiedStore(clearing);
             }
 
             HaulOrSetDown(world, villager);

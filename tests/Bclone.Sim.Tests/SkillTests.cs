@@ -318,8 +318,9 @@ public sealed class SkillTests
     // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Were 15864852231978267454 (fixture) and
     // 17357106328646177055 (shipped).
     // RE-TAKEN (D409), THE SHIPPED ONE ONLY — the shipped file now starts every game with the player's stock limits (they lived in the view, so no run had them); one limit per good, no food total; a limit counts the heaps; an armful takes the good the stores are shortest of first; a mixed store keeps half for everything that is not food. The fixture sets no limits and did not move. Was 448535629324644598 (shipped).
-    [InlineData(false, 1809397811475245451UL)]
-    [InlineData(true, 9052017553299419280UL)]
+    // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Were 1809397811475245451 (fixture) and 9052017553299419280 (shipped).
+    [InlineData(false, 15636651256834973744UL)]
+    [InlineData(true, 11682607479568112513UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -401,18 +402,31 @@ public sealed class SkillTests
         loop.Step((config.TicksPerYear * 5) + config.TicksPerSeason + (config.TicksPerSeason / 2));
         Assert.Equal(Season.Summer, loop.World.Clock.Season);
 
+        // ⚠️ AND ON FROM THERE, A DAY AT A TIME, UNTIL SOMEBODY WORKS (D412). Since D409 a village
+        // whose stock limits are met stands its hands down — the shipped village here reads 0 of 4
+        // working at this very tick, the forage and log limits met — so one instant can hold nobody
+        // in a trade. The claim is about whoever is.
         var working = new List<Villager>();
         var spare = new List<Villager>();
-
-        for (int i = 0; i < loop.World.Villagers.Count; i++)
+        for (int day = 0; day < config.TicksPerYear && working.Count == 0; day += config.TicksPerDay)
         {
-            Villager villager = loop.World.Villagers[i];
-            if (!villager.Alive || !villager.CanWork)
+            working.Clear();
+            spare.Clear();
+            for (int i = 0; i < loop.World.Villagers.Count; i++)
             {
-                continue;
+                Villager villager = loop.World.Villagers[i];
+                if (!villager.Alive || !villager.CanWork)
+                {
+                    continue;
+                }
+
+                (villager.HasJob ? working : spare).Add(villager);
             }
 
-            (villager.HasJob ? working : spare).Add(villager);
+            if (working.Count == 0)
+            {
+                loop.Step(config.TicksPerDay);
+            }
         }
 
         Assert.NotEmpty(working);

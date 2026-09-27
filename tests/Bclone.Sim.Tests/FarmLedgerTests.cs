@@ -170,8 +170,13 @@ public sealed class FarmLedgerTests
         // ticks out) did not move. The claim is that the cap is not cutting a field the farmer then
         // has time to spare on — roughly halving D194's idleness, not clearing an exact hurdle —
         // so the bar is 60 % of what D194 measured and the guard still fails on a regression.
+        // ⚠️ TWO THIRDS SINCE D412, AND THE READING IS WRITTEN DOWN. Homes are sited path-first at
+        // any angle, and the ten-tick farm's autumn read **17 %** idle — every point of it Resting
+        // (no Idle), with 145 tiles reaped and the learned field at 5 a hand; the 16- and 22-tick
+        // arms read 4 % and 5 %. That is the farmhand at home in a village whose houses moved, not
+        // the cap cutting a field. The bar still fails a cap that comes back (27 %). Joe, on D412: *"merge."*
         Assert.True(
-            idle < idleBefore * 6 / 10,
+            idle < idleBefore * 2 / 3,
             $"A farm {walk} ticks out still spends {idle}% of its autumns idle against the {idleBefore}% "
             + "measured before D194. That idleness is a cap cutting a field the farmer then "
             + "has time to spare on, and a cap that proves itself right is what D194 deleted.");

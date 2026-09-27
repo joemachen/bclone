@@ -1237,29 +1237,48 @@
   // forager's ring (measured, SimConfig.StartingResidentialRadius).
   "starting_residential_radius": 6,
 
-  // ORGANIC HOUSING (D386, specs/organic-housing.md). A home is a house in a plot:
-  // plot_width tiles along the lane by plot_depth back from it, the house (two
-  // wide) on the front row, the rest a yard. The row across the front is the lane,
-  // which no plot may claim.
+  // ORGANIC HOUSING (D386, D411, specs/organic-housing.md 9). A home is a house in a
+  // yard, turned to face its path at any angle (to the 1/64 turn) -- Joe, with a
+  // Foundation screenshot: "organic housing, and NOT uniform rows of housing". D386's
+  // plots were one of four 3 x 3 rectangles and a street of them read as suburbia
+  // (plot_width / plot_depth / plot_apart_tiles, retired by D411).
   //
-  // plot_apart_tiles is charged PER SIDE THAT HAS A NEIGHBOUR (D404) -- it used to
-  // be charged per side WITHOUT one, which packed the houses into rows and was a
-  // packing term wearing a spacing term's name. Joe, on the fences slice: "could
-  // the problem be that you're cramming the houses in too closely? they need some
-  // room to breathe with yards and pathways and such." He was right. MEASURED,
-  // six shipped seeds x fifty years with the fences up: charging for open sides
-  // built 14 houses and held 17 people; charging for neighbours built 26 and held
-  // 55. The magnitude stopped mattering once the sign flipped (-2, -4 and -6 read
-  // identically), so this is a tie-break and the number stays 2.
+  // Every range below is one value per household, by a hash of its id -- never the
+  // Rng -- so the same valley twice is the same village.
   //
-  // plot_depth 2 -> 3 for the same reason and by the same run: with the fences up
-  // and the chooser standing each candidate's fence for a moment, depth 2 held 42
-  // people with 18 starved and depth 3 held 57 with 8. D386 left this number as
-  // Joe's to widen once he had seen the rows; this is the measurement that widens
-  // it. A yard of six tiles is also what the kitchen garden was sized for (D357).
-  "plot_width": 3,
-  "plot_depth": 3,
-  "plot_apart_tiles": 2,
+  // The yard is a rectangle in the house's own frame: home_yard_side_quarters past
+  // the gate end of the house, home_yard_other_side_quarters past the other end (which
+  // end is the gate's is hashed), home_yard_back_quarters behind it, nothing in front. Its
+  // fence is the tiles whose centres it covers, walled on their edges (D404, Joe's
+  // call: walls on tile edges). QUARTERS AND NEVER AN EXACT HALF: a half puts the
+  // yard's edge on a row of tile centres and the centre rule's inclusive edge
+  // claims a whole extra row on one facing and not the next (D331) -- the loader
+  // refuses one. THE GATE END IS AT LEAST 3 (a tile past the house): a yard exactly
+  // as wide as its house sits wholly behind it, touches the lane nowhere and has no
+  // gate -- found on the first picture, most houses standing with no yard at all.
+  // Other end 1 = flush with the house; 3 = a tile past it. Back 5 = one row behind;
+  // 9 = two (D404 measured two rows against one: 57 held vs 42).
+  "home_yard_side_quarters": [3, 5],
+  "home_yard_other_side_quarters": [1, 3],
+  "home_yard_back_quarters": [5, 9],
+
+  // How far back from its path a household likes its house, in quarter tiles. Each
+  // quarter off it costs a quarter tile of walk, so fronts do not share one line.
+  "home_setback_quarters": [6, 8, 10],
+
+  // The clear ground a household wants between its yard and a neighbour's, in tiles;
+  // every tile short of it costs home_crowd_tiles of walk. Joe, on the fences slice:
+  // "they need some room to breathe with yards and pathways and such."
+  "home_gap_tiles": [1, 2, 3],
+  "home_crowd_tiles": 3,
+
+  // A neighbour within two tiles of the gap is worth this much walk, so houses
+  // gather into clusters without packing into rows.
+  "home_company_tiles": 2,
+
+
+  // How far a site looks for a path to face; beyond it, a house faces the village.
+  "home_path_search_tiles": 8,
 
   // THE COLD START (D70). The founders arrive to an empty valley with a cart:
   // no granary, no warehouse, no market, no woodcutter's hut, no homes, and nothing

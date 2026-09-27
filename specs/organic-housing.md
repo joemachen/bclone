@@ -1,6 +1,6 @@
 # Spec: Organic housing — plots and lanes
 
-**Decisions:** D386 (this document), D388, D411 (§9). Joe, 2026-09-17: *"organic housing - and then i think i want to
+**Decisions:** D386 (this document), D388, D411 (§9), D412 (§9.11). Joe, 2026-09-17: *"organic housing - and then i think i want to
 go back to building out the professions and their buildings."* The picture is his, from a
 *Foundation* screenshot (DESIGN §4, Phase 5): *a painted zone, a hand-placed well, houses auto-placed
 each in its own fenced irregular yard, packed like fields, with dirt lanes between them running to
@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9, D411): ✍️ SPECCED 2026-09-26, NOT BUILT. Rewritten the same day against Joe's Foundation screenshot: houses at any angle facing their path, yards as turned tile-edge walls, the well as a later focal point (§9.4–§9.5). His three calls are made; the build is next.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well) not built.** Owner:
 Joe + Claude Code.
 
 ---
@@ -328,7 +328,7 @@ spec (D352's lesson).**
 
 ---
 
-## 9. Slice 3: a village, not a street (D411, **✍️ SPECCED, NOT BUILT; path-first at any angle after Joe measured it against Foundation, §9.4**)
+## 9. Slice 3: a village, not a street (D411 spec; **A + B built and merged, D412/D413, §9.11**)
 
 ### 9.1 What Joe asked, three times
 
@@ -538,3 +538,71 @@ path and the terms. The §9.7 guards are red-checked and counted. Goldens move o
 and the before/after picture is shown. The view draws the turned house with its door and the fence
 on tile edges. The four CLAUDE.md checks pass. DESIGN §6/§7 and this status line move in the same
 commit. **Joe plays it.**
+
+### 9.11 As built (D412, 2026-09-26) — slices A + B on `slice/organic-not-suburbia`, NOT merged
+
+**What §9.5 became when it met the code** — every change below was found by a measurement or a
+guard, and each is written where it lives:
+
+- **P1 as specced**, plus: ⛔ out of reach of any path costs what the reach's edge does, not nothing
+  (a site with no path near beat every site beside one). Toward the path's *middle* — the sum of the
+  path tiles within a tile of the nearest — so a staircase of worn tiles does not flip facings.
+- **P2 as a price**, not a refusal: each tile short of the hashed gap costs `home_crowd_tiles` (3);
+  a neighbour within reach of the gap is worth `home_company_tiles` (2).
+- **P3 DELETED (D413, Joe: *"delete it"*)**: switched off, the 18-seed layout arm read identically
+  (longest row 3 on 2 seeds, modal facing 21 % median) — facing the path and the gap already break
+  rows. `home_row_tiles` is gone; `NoThirdHouseInALine` stays as the guard on the OUTCOME.
+- **P4 grew four rules**: *(a)* **one yard end always reaches past the house** (`home_yard_side_quarters`
+  ≥ 3, the other end `home_yard_other_side_quarters`, which end hashed) — a yard exactly as wide as
+  its house sits wholly behind it, touches the lane nowhere and has no gate; *(b)* **two yard tiles
+  that meet only at a corner are joined** (`PlotShape.Bridge`) — a 45° yard was otherwise mostly no
+  gate's; *(c)* **only the yard one gate opens onto is kept** (`OneWayIn`), and what is dropped is
+  priced as clipped (`PlotShape.Unreached`); *(d)* the lane runs a tile past the yard at each end.
+  And the facing taken is **the first on the path's order that keeps at least half its yard**.
+- **P5 grew the walk round the yard**: when the work lies behind the house, a tile per yard row there
+  and back, plus one (`RoundTheYard`) — found by `EveryValleyMeetsTheEconomysDistanceBudget` (seed 15:
+  a family walking 20 tiles round its own fence to a hut scored at 12). It prices the SITE, never the
+  facing, so it is not fences §9.4.
+- ⛔ **A turned house is a rectangle** (D331): the chooser refuses a facing whose house overlaps
+  anything standing (`SomethingOverlaps`). Square facings are exact and never overlap a neighbour.
+- ⛔ **Nobody is teleported to a new front door** (`SimWorld`, the house-finished arm): since
+  2026-09-11 a family was stood at its new house the tick it was raised, wherever it was — through
+  its own yard fence once the D412 layout put one between (`NoStepEverCrossesAWall`, seed 7).
+- **The chooser searches best first** (cheap half: walks + setback for every painted tile; dear half:
+  plot, gate, the valley's sweep and the road's detour, asked in score order and stopped once nothing
+  left can win) and **`PlotFor` is remembered** (a pure function of tile, facing and household). 63 ms
+  (D405) → 68 ms median per siting on the layout arm; a warm-start village 86 → 95 ms.
+
+**§9.8, filled** — 18 seeds (6 shipped, 12 fixture), a 17×17 square painted beside a ten-year
+village and twenty families sited into it:
+
+| build | longest row | seeds with a row of 3+ | modal facing (median) | distinct facings (median) | chooser ms (median) |
+|---|---|---|---|---|---|
+| main (D410) | 5 (on 13) | 17 of 18 | 54 % | 4 | ~36 |
+| **D412** | **3** | **2 of 18** | **21 %** | **14** | 68 |
+
+Survival, fifty years, as played (starting limits, the storage arm):
+
+| arm | build | alive (sum / median) | peak | starved | froze | dead villages |
+|---|---|---|---|---|---|---|
+| shipped, the usual six | main | 61 / 9.5 | 77 | 20 | 0 | 0 |
+| | D412 | 49 / 8.5 | 65 | 22 | 0 | 0 |
+| shipped, 24 more seeds | main | 149 / 3 | 236 | 67 | 16 | 6 |
+| | D412 | ~155 / 5 | 230 | 69 | 12 | 5 |
+| fixture, twelve | main | 145 / 13 | 182 | 26 | 1 | 0 |
+| | D412 | 147 / 11.5 | 181 | 19 | 0 | 0 |
+
+Level across 42 runs; the six-seed drop is D344's small-sample noise (the 24 fresh seeds and the
+fixture both read level or better).
+
+**✅ Merged on Joe's word (D413) — the nine re-posed, each with its reason where it lives; the six goldens
+moved once.** As it stood before his call: nine guards that read the
+fixture's one seed (12345) over 50–150 years (farm idleness ×2, firewood running out, food
+conservation, every household walking to food, the no-river straight line, the market ×2, time on the
+trade) flip with any change to where its houses stand — which ones flip changed between runs of this
+slice — while the twelve-seed fixture arm is level. **The five goldens are held at main's values** so
+they move once, with his answer. **The picture** (`d412-before-after-*.png`, the session scratchpad):
+no column on the rim, yards spread with ground between them, houses by worn paths turned to them —
+and ⚠️ **most houses in a freshly painted square still face square**, because nothing has worn a path
+there yet and a neighbour's lane is straight. Foundation's look needs the paths first; slice C (the
+well) is the lever that puts them there.

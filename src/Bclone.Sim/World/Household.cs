@@ -191,26 +191,20 @@ public sealed class Household
         // clipped plot six away — the walk is what feeds people, the yard is what a fence goes
         // round, and one tile of walk per missing tile is the exchange rate the sentence can say.
         //
-        // ⭐⭐ THE WALK PICKS THE PLOT, THE LANE PICKS THE DOOR (D388, Joe: *"the homes should have
-        // less uniform orientation. this isn't supposed to be suburbs."*). D386 read the walks
-        // from the DOOR tile, so every door landed on the granary's side and a street was a row of
-        // houses all facing one way — and its tie-break was the facings' fixed order, north first.
-        // The walks are read from the plot's own tile now, the same for all four facings; which
-        // way the house faces is decided per tile, in order: a facing whose lane row is already a
-        // lane (a tile some plot fronts, a worn path, a tile the village's daily walks cross) —
-        // the most such tiles wins, so a second row faces the first across the street and a house
-        // beside a path fronts it; then the facing whose yard the paint clips least and whose
-        // sides have a neighbour; then a hash of the household (⛔ never the `Rng`) — the founders'
-        // first houses and a plot with no lane nearby face by hash, which is where the variety
-        // comes from.
-        bool found = false;
+        // ⭐⭐⭐ THE PATH TURNS THE HOUSE (D411, `organic-housing.md §9.5`, Joe: *"organic housing, and
+        // NOT uniform rows of housing"* — with a Foundation screenshot). D388 let the lane pick one
+        // of four facings, sorted first, and counted a lane-row tile that only TOUCHED a fronted one
+        // as a lane: so a street extended itself plot by plot, and five houses in a column faced
+        // one lane (§9.2). Now each tile faces the paths near it — worn ground, the village's daily
+        // walks, a lane some house already fronts — at whatever angle they lie (to the 1/64 turn),
+        // and the site is priced in the same tiles walked: how far the house stands off its path
+        // against the household's hashed setback (P1), how short of its hashed gap to a neighbour's
+        // yard (P2) less a little for company within reach of it, and a third house on one line
+        // facing one way (P3). ⛔ Every variety is a hash of the household, never the `Rng`.
         int builtOn = 0;
         int cutOff = 0;
         int fencedIn = 0;
         int noRoom = 0;
-
-        // Every plot that can take a house, scored by its own walks; sorted best first below.
-        var sites = new List<Candidate>();
 
         // The haul routes, once per search, so a house is not sited on the road (D383) — and the
         // tiles they cross, once, so a house can face the road (D388).
@@ -225,9 +219,20 @@ public sealed class Household
             }
         }
 
-        // Row order (Y then X — the zone map's set is sorted so), which is the order the old box
-        // walked, so an exact tie still resolves the same way. An unordered tie between two
-        // equally good sites is a desync waiting to happen.
+        // The houses already standing or marked, once, for the neighbour check (P2).
+        List<(Point Centre, Angle Facing)> standing = HousesAndSites(world, householdId);
+        int setback = PlotShape.ByHash(householdId, PlotShape.SetbackSalt, world.Config.HomeSetbackQuarters);
+        int gap = PlotShape.ByHash(householdId, PlotShape.GapSalt, world.Config.HomeGapTiles);
+
+        // ⭐⭐ FIRST THE CHEAP HALF OF EVERY TILE'S SCORE, THEN THE DEAR HALF OF THE BEST FEW (D411).
+        // The walks and the setback are a few lookups; whether a plot fits, has a gate, walls nobody
+        // in and bends no road are a plot, a fence and a sweep of the valley each. Every term left
+        // for the second half only ever ADDS (a clipped yard, a crowd, the yard's walk, a detour) but one —
+        // company, at most `home_company_tiles` off — so a tile whose cheap half, less that, is no
+        // better than the best whole score found can never win, and nothing after it in cheap order
+        // can either: the search stops there. Exactly the answer scoring every tile would give;
+        // measured, the chooser tried every painted tile in full and ran at four times D405's 63 ms.
+        var cheap = new List<Cheap>();
         foreach (GridPos front in world.Zones.WholeResidentialTiles)
         {
             // ⛔⛔ "INSIDE" MEANS THE WHOLE TILE, NOT HALF OF IT (D350). A tile is residential at
@@ -248,110 +253,198 @@ public sealed class Household
             }
 
             // The walk, read from the plot's own tile: the same whichever way the house faces.
-            int toWork = NearestWorkDistance(world, front);
+            (int toWork, GridPos? workAt) = NearestWork(world, front);
             int toStore = toWork == int.MaxValue ? int.MaxValue : NearestStoreDistance(world, front, StoreKind.Granary);
 
-            // Every facing the plot fits at, with what the lane, the paint and the neighbours say
-            // about it; the best of them is this tile's candidate.
-            var fits = new List<Facing>(PlotShape.Facings.Count);
-            for (int f = 0; f < PlotShape.Facings.Count; f++)
+            // P1: which way the paths near this tile lie, and how far off the nearest is.
+            (int dx, int dy, int offQuarters) = TowardThePath(world, walked, front);
+            bool onAPath = offQuarters >= 0;
+            if (!onAPath)
             {
-                Angle facing = PlotShape.Facings[f];
-                PlotShape plot = world.PlotFor(front, facing, householdId);
-                int clipped = TilesClippedOff(world, plot);
-                if (clipped < 0)
-                {
-                    continue;
-                }
-
-                // ⛔ A gate onto a building is no gate (D404): the yard behind it is shut to
-                // everybody, its own family included.
-                if (!world.GateOpensAt(front, facing, householdId))
-                {
-                    continue;
-                }
-
-                int openSides = 0;
-                int neighbour = 0;
-                for (int side = 0; side < plot.Beside.Count; side++)
-                {
-                    int along = NeighbourAlong(world, plot.Beside[side]);
-                    if (along == 0)
-                    {
-                        openSides++;
-                    }
-                    else if (neighbour == 0)
-                    {
-                        neighbour = along;
-                    }
-                }
-
-                // A lane row is "already a lane" tile by tile: some plot fronts it, or it touches
-                // a tile some plot fronts (a street continues), or the village walks it, or feet
-                // have worn it.
-                int laneAlready = 0;
-                for (int i = 0; i < plot.Lane.Count; i++)
-                {
-                    if (IsALaneAlready(world, walked, plot.Lane[i]))
-                    {
-                        laneAlready++;
-                    }
-                }
-
-                // ⭐⭐ IT CHARGES FOR A NEIGHBOUR, NOT FOR ROOM (D404, Joe: *"could the fence problem
-                // be that you're cramming the houses in too closely? they need some room to breathe
-                // with yards and pathways and such"* — and he was right, and the old comment here
-                // admitted it: a side with NO neighbour cost `plot_apart_tiles`, which is a packing
-                // term wearing a spacing term's name). Packing is what makes a fence enclose a
-                // door. **Measured, six shipped seeds × fifty years with fences up:** charging for
-                // open sides built 14 houses and held 17 people; charging for neighbours built 26
-                // and held 55. ⚠️ The magnitude stopped mattering once the sign flipped (−2, −4 and
-                // −6 were identical), so the term is a tie-break and the number stays 2.
-                int sidesWithANeighbour = plot.Beside.Count - openSides;
-                fits.Add(new Facing(facing, f, laneAlready, sidesWithANeighbour * world.Config.PlotApartTiles, clipped, neighbour));
+                // No path in reach: the first houses face the village, and the paths start there.
+                dx = villageCentre.X - front.X;
+                dy = villageCentre.Y - front.Y;
             }
 
-            if (fits.Count == 0)
+            // ⛔ Out of reach of any path costs what the reach's own edge does, not nothing — found
+            // by `AHouseFacesThePathInFrontOfIt`: a site with no path near paid no setback at all and
+            // beat every site beside one. The price rises with the distance and then holds.
+            int reachQuarters = world.Config.HomePathSearchTiles * 4;
+            int offTheLine = System.Math.Abs((onAPath ? offQuarters : reachQuarters) - setback) / 4;
+            bool reachable = toWork != int.MaxValue && toStore != int.MaxValue;
+            int floor = reachable ? toWork + toStore + offTheLine - world.Config.HomeCompanyTiles : int.MaxValue;
+            cheap.Add(new Cheap(
+                front, toWork, toStore, offTheLine, FacingToward(dx, dy), onAPath, floor,
+                front.ManhattanDistanceTo(villageCentre), workAt));
+        }
+
+        cheap.Sort(static (a, b) =>
+            a.Floor != b.Floor ? a.Floor.CompareTo(b.Floor)
+            : a.FromVillage != b.FromVillage ? a.FromVillage.CompareTo(b.FromVillage)
+            : a.Front.Y != b.Front.Y ? a.Front.Y.CompareTo(b.Front.Y)
+            : a.Front.X.CompareTo(b.Front.X));
+
+        Candidate? best = null;
+        int bestTotal = int.MaxValue;
+        int bestDetour = 0;
+        Candidate? bestByItsOwnWalks = null;
+        // ⭐ BEST FIRST, AND THE ROAD PRICED LAST (D411). A site that walls nobody in waits,
+        // unpriced, beside the tiles not yet looked at; each turn resolves whichever is cheaper —
+        // the waiting site with the lowest own score (its detour asked, as D383 always asked them,
+        // lowest score first), or the next tile by its floor. Once neither can beat the best whole
+        // total in hand, nothing can, and the search stops. ⚠️ Asking the detour of every site as it
+        // was found, in tile order, was most of a warm-start village's time.
+        var waiting = new List<Candidate>();
+        int next = 0;
+        while (true)
+        {
+            int w = CheapestWaiting(waiting);
+            int waitingScore = w < 0 ? int.MaxValue : waiting[w].Score;
+            int nextFloor = next < cheap.Count ? cheap[next].Floor : int.MaxValue;
+
+            // Nothing left can beat what is in hand. ⚠️ Only once something is: with nothing found,
+            // every tile is looked at, so the "none can take one" counts below are whole.
+            if ((best is not null && System.Math.Min(waitingScore, nextFloor) >= bestTotal)
+                || (w < 0 && next >= cheap.Count))
+            {
+                break;
+            }
+
+            if (w >= 0 && waitingScore <= nextFloor)
+            {
+                Candidate site = waiting[w];
+                waiting.RemoveAt(w);
+
+                // ⭐ NOT ON THE ROAD (D383): buildings are obstacles, and a house on the way to the
+                // granary costs every haul, every day. The site is stood for a moment and the
+                // village's daily walks priced again (`SimWorld.DetourOfAHouseAt`); what they
+                // lengthen by is added to its score, tile for tile — a penalty, not a refusal, so a
+                // village with nowhere else still gets a house and the road bends. Legible: *"the
+                // house went there because the path to the granary runs here."*
+                int detour = world.DetourOfAHouseAt(walks, site.Front, site.Facing, householdId);
+                if (detour != int.MaxValue)
+                {
+                    int total = site.Score + detour;
+                    if (total < bestTotal || (total == bestTotal && best is Candidate held && site.FromVillage < held.FromVillage))
+                    {
+                        bestTotal = total;
+                        best = site;
+                        bestDetour = detour;
+                    }
+                }
+
+                continue;
+            }
+
+            Cheap tile = cheap[next++];
+            GridPos front = tile.Front;
+            bool anyFits = false;
+            bool sited = false;
+            bool shutsSomebodyIn = false;
+            bool couldNotWin = false;
+
+            // ⭐ The facings in the path's order, those whose yard keeps at least half its ground
+            // first (D411: a turned rectangle rasterised on the grid can lose most of its yard, and
+            // the first picture had houses standing with none — the path still turns the house, it
+            // does not get to take the family's yard). Each is scored, and only one that could still
+            // win is stood for the valley's sweep and the road's detour — the dear questions, asked
+            // last and least (⚠️ asking them of every facing that fitted took a warm-start village
+            // from 86 ms to 151 and the suite from 3m to 5½). The first that walls nobody in is the
+            // tile's house.
+            var losesMore = new List<PlotShape>();
+            List<Angle> facings = FacingsToTry(tile.Toward);
+            for (int pass = 0; pass < 2 && !sited; pass++)
+            {
+                int count = pass == 0 ? facings.Count : losesMore.Count;
+                for (int f = 0; f < count && !sited; f++)
+                {
+                    PlotShape plot;
+                    if (pass == 0)
+                    {
+                        plot = world.PlotFor(front, facings[f], householdId);
+                        int lost = TilesClippedOff(world, plot);
+
+                        // ⛔ A gate onto a building is no gate (D404): the yard behind it is shut to
+                        // everybody, its own family included. ⛔ And a turned house is a rectangle,
+                        // not two tiles (D331: collision is geometry) — turned toward its path it can
+                        // reach into the ground beside it, and two turned houses on neighbouring tiles
+                        // would stand in each other (D411).
+                        if (lost < 0
+                            || world.SomethingOverlaps(world.HomeFootprintAt(front, facings[f]))
+                            || !world.GateOpensAt(front, facings[f], householdId))
+                        {
+                            continue;
+                        }
+
+                        anyFits = true;
+                        if (lost * 2 > plot.Tiles.Count - plot.House.Count + plot.Unreached)
+                        {
+                            losesMore.Add(plot);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        plot = losesMore[f];
+                    }
+
+                    if (tile.Floor == int.MaxValue)
+                    {
+                        // Cut off from the work or the store: counted below, never a house.
+                        continue;
+                    }
+
+                    int clipped = TilesClippedOff(world, plot);
+                    Point centre = world.HomeAnchorOn(front, plot.Facing);
+                    (int clear, int neighbour) = AnyoneWithin(standing, centre, gap + 2 + Reach)
+                        ? ClearGroundTo(world, plot, householdId, gap + 2)
+                        : (int.MaxValue, 0);
+                    int crowd = clear < gap ? (gap - clear) * world.Config.HomeCrowdTiles : 0;
+                    int company = neighbour != 0 && clear >= gap ? world.Config.HomeCompanyTiles : 0;
+                    int roundTheYard = RoundTheYard(world, plot, tile.WorkAt, householdId);
+                    int score = tile.ToWork + tile.ToStore + clipped + tile.OffTheLine + crowd + roundTheYard - company;
+
+                    // A detour is never negative: a facing no better than the best whole total so
+                    // far cannot win, and is not stood for the sweep.
+                    if (score >= bestTotal)
+                    {
+                        couldNotWin = true;
+                        continue;
+                    }
+
+                    string? walls = world.WhatThisWouldWallOff(
+                        world.HomeFootprintAt(front, plot.Facing),
+                        world.TrialFence(front, plot.Facing, householdId));
+                    if (walls is not null)
+                    {
+                        shutsSomebodyIn |= walls.StartsWith(Core.SimWorld.FencesSomebodyIn, StringComparison.Ordinal);
+                        continue;
+                    }
+
+                    sited = true;
+                    var site = new Candidate(
+                        front, plot.Facing, score, tile.FromVillage, tile.ToWork, tile.ToStore, clipped,
+                        company > 0 || crowd > 0 ? neighbour : 0, tile.OnAPath, crowd, roundTheYard);
+
+                    if (bestByItsOwnWalks is not Candidate own || score < own.Score)
+                    {
+                        bestByItsOwnWalks = site;
+                    }
+
+                    waiting.Add(site);
+                }
+            }
+
+            // Why a tile took no house — whole only when nothing was found, which is when it is read.
+            if (!anyFits)
             {
                 noRoom++;
-                continue;
             }
-
-            if (toWork == int.MaxValue || toStore == int.MaxValue)
+            else if (tile.Floor == int.MaxValue)
             {
                 cutOff++;
-                continue;
             }
-
-            // The lane first, then the yard and the neighbours, then the household's own hash —
-            // and the first of them whose house AND FENCE would not wall a neighbour in (D383,
-            // D404): the sweep is a walk of the valley, asked only of facings that could win.
-            // ⚠️ Once per facing, not once per house pair as it was: two facings share a house
-            // but never a fence, and the fence is the half that shuts people in.
-            int start = PlotShape.FacingByHash(householdId);
-            fits.Sort((a, b) =>
-                a.LaneAlready != b.LaneAlready ? b.LaneAlready.CompareTo(a.LaneAlready)
-                : (a.Apart + a.Clipped) != (b.Apart + b.Clipped) ? (a.Apart + a.Clipped).CompareTo(b.Apart + b.Clipped)
-                : ((a.Order - start + 4) % 4).CompareTo((b.Order - start + 4) % 4));
-
-            Facing? chosen = null;
-            bool shutsSomebodyIn = false;
-            for (int i = 0; i < fits.Count && chosen is null; i++)
-            {
-                string? walls = world.WhatThisWouldWallOff(
-                    world.HomeFootprintAt(front, fits[i].Angle),
-                    world.TrialFence(front, fits[i].Angle, householdId));
-                if (walls is null)
-                {
-                    chosen = fits[i];
-                }
-                else if (walls.StartsWith(Core.SimWorld.FencesSomebodyIn, StringComparison.Ordinal))
-                {
-                    shutsSomebodyIn = true;
-                }
-            }
-
-            if (chosen is not Facing best)
+            else if (!sited && !couldNotWin)
             {
                 if (shutsSomebodyIn)
                 {
@@ -361,69 +454,19 @@ public sealed class Household
                 {
                     cutOff++;
                 }
-
-                continue;
             }
-
-            int score = toWork + toStore + best.Apart + best.Clipped;
-            int fromVillage = front.ManhattanDistanceTo(villageCentre);
-            sites.Add(new Candidate(
-                front, best.Angle, best.Order, score, fromVillage, toWork, toStore, best.Apart, best.Clipped,
-                best.NeighbourId, best.LaneAlready));
-            found = true;
         }
 
-        if (found)
+        if (best is Candidate winner)
         {
-            // ⭐ NOT ON THE ROAD (D383): buildings are obstacles, and a house on the way to the
-            // granary costs every haul, every day. The sites are stood for a moment each, best
-            // by their own walks first, and the village's daily walks priced again
-            // (`SimWorld.DetourOfAHouseAt`); what they lengthen by is added to the site's score,
-            // tile for tile — a penalty, not a refusal, so a village with nowhere else still
-            // gets a house and the road bends. Legible: *"the house went there because the path
-            // to the granary runs here."*
-            //
-            // ⚠️ EVERY SITE THAT COULD STILL WIN, NOT THE BEST FEW. A detour is never negative,
-            // so once a site's own score is no better than the best total so far nothing after
-            // it can beat that total and the trials stop — but the fixture's whole road scored
-            // 8 and the first free tile off it 10, and a shortlist of six was six road tiles.
-            sites.Sort(static (a, b) =>
-                a.Score != b.Score ? a.Score.CompareTo(b.Score)
-                : a.FromVillage != b.FromVillage ? a.FromVillage.CompareTo(b.FromVillage)
-                : a.Front.Y != b.Front.Y ? a.Front.Y.CompareTo(b.Front.Y)
-                : a.Front.X != b.Front.X ? a.Front.X.CompareTo(b.Front.X)
-                : a.FacingOrder.CompareTo(b.FacingOrder));
-            int bestScore = int.MaxValue;
-            int bestFromVillage = int.MaxValue;
-            Candidate best = sites[0];
-            int bestDetour = 0;
-            for (int i = 0; i < sites.Count && sites[i].Score < bestScore; i++)
-            {
-                int detour = world.DetourOfAHouseAt(walks, sites[i].Front, sites[i].Facing, householdId);
-                if (detour == int.MaxValue)
-                {
-                    continue;
-                }
+            return new HomeSite(winner.Front, winner.Facing, TheReason(world, winner, bestDetour));
+        }
 
-                int score = sites[i].Score + detour;
-                if (score < bestScore || (score == bestScore && sites[i].FromVillage < bestFromVillage))
-                {
-                    bestScore = score;
-                    bestFromVillage = sites[i].FromVillage;
-                    best = sites[i];
-                    bestDetour = detour;
-                }
-            }
-
-            if (bestScore == int.MaxValue)
-            {
-                // Every site would cut a daily walk altogether; the best by its own walks is
-                // still a house.
-                best = sites[0];
-                bestDetour = 0;
-            }
-
-            return new HomeSite(best.Front, best.Facing, TheReason(world, best, bestDetour));
+        if (bestByItsOwnWalks is Candidate fallback)
+        {
+            // Every site would cut a daily walk altogether; the best by its own walks is still a
+            // house.
+            return new HomeSite(fallback.Front, fallback.Facing, TheReason(world, fallback, 0));
         }
 
         // Nowhere in the painted land — and SAY WHICH WAY nowhere (D381). The old sentence
@@ -448,7 +491,7 @@ public sealed class Household
         if (noRoom > 0)
         {
             reasons.Add($"{noRoom} without room for a plot round them "
-                + $"({world.Config.PlotWidth} by {world.Config.PlotDepth} painted tiles and a lane)");
+                + "(a house on whole-painted tiles, and a lane in front of it)");
         }
 
         if (cutOff > 0)
@@ -472,14 +515,15 @@ public sealed class Household
             $"{painted} tiles are painted for houses and none can take one: {string.Join(", ", reasons)}");
     }
 
+    /// <summary>A painted tile's cheap half of the score (D411): its walks, its setback, which way its path lies.</summary>
+    private readonly record struct Cheap(
+        GridPos Front, int ToWork, int ToStore, int OffTheLine, Angle Toward, bool OnAPath, int Floor, int FromVillage,
+        GridPos? WorkAt);
+
     /// <summary>One plot the chooser could take, and the terms that scored it.</summary>
     private readonly record struct Candidate(
-        GridPos Front, Angle Facing, int FacingOrder, int Score, int FromVillage,
-        int ToWork, int ToStore, int Apart, int Clipped, int NeighbourId, int LaneAlready);
-
-    /// <summary>One facing a plot fits at, and what the lane, the paint and the neighbours say about it (D388).</summary>
-    private readonly record struct Facing(
-        Angle Angle, int Order, int LaneAlready, int Apart, int Clipped, int NeighbourId);
+        GridPos Front, Angle Facing, int Score, int FromVillage,
+        int ToWork, int ToStore, int Clipped, int NeighbourId, bool FacesAPath, int Crowd, int RoundTheYard);
 
     /// <summary>
     /// Whether a plot can be taken here (§3.1–3.2), and how much of its yard the paint, the water
@@ -538,65 +582,376 @@ public sealed class Household
             }
         }
 
-        return clipped;
+        return clipped + plot.Unreached;
     }
 
     /// <summary>
-    /// Whether a tile is already a lane (D388): some plot fronts it, or it touches a tile some plot
-    /// fronts (a street continues along it), or a daily walk crosses it, or feet have worn it.
+    /// ⭐ The walk round a house's own yard when its work lies behind it (§9.5 P5, D411): a tile of
+    /// walk for every row of yard behind the house, there and back, and one across — 0 when the work
+    /// is ahead of the door or to its side.
     /// </summary>
-    internal static bool IsALaneAlready(Core.SimWorld world, HashSet<GridPos> walked, GridPos tile)
+    /// <remarks>
+    /// <para>
+    /// ⛔ Found by <c>EveryValleyMeetsTheEconomysDistanceBudget</c>: on seed 15 the Fletchers' door
+    /// faced its path east, the gatherer's hut lay west, and the family walked 20 tiles round its
+    /// own fence to a hut the chooser had scored at 12. D405 found the same walk under the four
+    /// facings (founders at ~10 tiles against ~6) and Joe let it stand as the price of fences.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It prices the site, never the facing</b> — the path still turns the house (P1), so
+    /// this does not pull doors toward the granary the way fences §9.4 would have (the reason Joe
+    /// declined it, D405). What it does is prefer the tiles where the path runs between the house
+    /// and its work: houses face the road to their work, which is how a village round a hub looks.
+    /// </para>
+    /// </remarks>
+    private static int RoundTheYard(Core.SimWorld world, PlotShape plot, GridPos? work, int householdId)
     {
-        if (world.Zones.IsLane(tile) || walked.Contains(tile) || world.Paths.At(tile) >= world.Config.PathWornAt)
+        if (work is not GridPos at)
         {
-            return true;
+            return 0;
         }
 
-        return world.Zones.IsLane(new GridPos(tile.X + 1, tile.Y))
-            || world.Zones.IsLane(new GridPos(tile.X - 1, tile.Y))
-            || world.Zones.IsLane(new GridPos(tile.X, tile.Y + 1))
-            || world.Zones.IsLane(new GridPos(tile.X, tile.Y - 1));
+        Point forward = new Point(Fixed.Zero, -Fixed.FromInt(1)).RotatedBy(plot.Facing);
+        Point toWork = Point.CentreOf(at) - Point.CentreOf(plot.Front);
+        Fixed ahead = (toWork.X * forward.X) + (toWork.Y * forward.Y);
+        if (ahead >= Fixed.Zero)
+        {
+            return 0;
+        }
+
+        int rowsBehind = PlotShape.ByHash(householdId, PlotShape.BackSalt, world.Config.HomeYardBackQuarters) / 4;
+        return (2 * rowsBehind) + 1;
     }
 
-    /// <summary>The household whose plot lies along this side of a plot, or 0 for nobody.</summary>
-    private static int NeighbourAlong(Core.SimWorld world, IReadOnlyList<GridPos> side)
+    /// <summary>
+    /// The waiting site to price next — lowest own score, then nearest the village, then row order
+    /// (D383's order, stated, so a tie resolves the same way every run) — or −1.
+    /// </summary>
+    private static int CheapestWaiting(List<Candidate> waiting)
     {
-        for (int i = 0; i < side.Count; i++)
+        int best = -1;
+        for (int i = 0; i < waiting.Count; i++)
         {
-            int owner = world.Zones.PlotOwner(side[i]);
-            if (owner != 0)
+            if (best < 0 || Before(waiting[i], waiting[best]))
             {
-                return owner;
+                best = i;
             }
         }
 
-        return 0;
+        return best;
+
+        static bool Before(Candidate a, Candidate b) =>
+            a.Score != b.Score ? a.Score < b.Score
+            : a.FromVillage != b.FromVillage ? a.FromVillage < b.FromVillage
+            : a.Front.Y != b.Front.Y ? a.Front.Y < b.Front.Y
+            : a.Front.X != b.Front.X ? a.Front.X < b.Front.X
+            : a.Facing.Raw < b.Facing.Raw;
     }
 
     /// <summary>
-    /// The chooser's own sentence for the card (D386): the three terms that chose the plot, in
-    /// the currency they were scored in.
+    /// ⭐ Which way the paths near a tile lie, and how far off the nearest is, in quarter tiles
+    /// (§9.5 P1) — or −1 for the distance when none is within <c>home_path_search_tiles</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A path is a lane some house already fronts, a tile the village's daily walks cross, or ground
+    /// feet have worn (<c>Paths.At ≥ path_worn_at</c>) — D388's three, less the fourth: ⛔ a tile that
+    /// only <em>touches</em> a lane is not a lane (§9.2 cause 1 — it is how one street became five
+    /// houses in a column).
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Toward the path's middle, not its nearest tile.</b> A diagonal path is a staircase of
+    /// tiles, and the nearest step alone turns a row of houses by a quarter at every other one. The
+    /// direction is the sum over every path tile within a tile of the nearest — the bend's own
+    /// average — and integer throughout.
+    /// </para>
+    /// </remarks>
+    private static (int Dx, int Dy, int OffQuarters) TowardThePath(
+        Core.SimWorld world, HashSet<GridPos> walked, GridPos from)
+    {
+        int reach = world.Config.HomePathSearchTiles;
+        int nearest = int.MaxValue;
+
+        // Outward ring by ring: every tile on ring r is at least r away, so once r² passes the
+        // nearest found nothing farther out can be nearer, and the search stops (D411 — the whole
+        // square round every painted tile was a third of the chooser's time).
+        for (int r = 1; r <= reach && r * r <= nearest; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != r)
+                    {
+                        continue;
+                    }
+
+                    int d2 = (dx * dx) + (dy * dy);
+                    if (d2 >= nearest || d2 > reach * reach)
+                    {
+                        continue;
+                    }
+
+                    if (IsAPath(world, walked, new GridPos(from.X + dx, from.Y + dy)))
+                    {
+                        nearest = d2;
+                    }
+                }
+            }
+        }
+
+        if (nearest == int.MaxValue)
+        {
+            return (0, 0, -1);
+        }
+
+        int offQuarters = IntSqrt(nearest * 16);
+        int within = offQuarters + 4;
+        int box = System.Math.Min(reach, (within / 4) + 1);
+        int sumX = 0;
+        int sumY = 0;
+        for (int dy = -box; dy <= box; dy++)
+        {
+            for (int dx = -box; dx <= box; dx++)
+            {
+                int d2 = (dx * dx) + (dy * dy);
+                if (d2 == 0 || d2 * 16 > within * within)
+                {
+                    continue;
+                }
+
+                if (IsAPath(world, walked, new GridPos(from.X + dx, from.Y + dy)))
+                {
+                    sumX += dx;
+                    sumY += dy;
+                }
+            }
+        }
+
+        // A path on both sides in balance leaves no direction: face the nearest step, in scan order.
+        if (sumX == 0 && sumY == 0)
+        {
+            for (int dy = -reach; dy <= reach && sumX == 0 && sumY == 0; dy++)
+            {
+                for (int dx = -reach; dx <= reach; dx++)
+                {
+                    if ((dx * dx) + (dy * dy) == nearest && IsAPath(world, walked, new GridPos(from.X + dx, from.Y + dy)))
+                    {
+                        sumX = dx;
+                        sumY = dy;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return (sumX, sumY, offQuarters);
+    }
+
+    private static bool IsAPath(Core.SimWorld world, HashSet<GridPos> walked, GridPos tile) =>
+        world.Map.Contains(tile)
+        && (world.Zones.IsLane(tile) || walked.Contains(tile) || world.Paths.At(tile) >= world.Config.PathWornAt);
+
+    /// <summary>The floor of a square root, in integers — so no float is ever in a site's score.</summary>
+    private static int IntSqrt(int value)
+    {
+        int root = 0;
+        while ((root + 1) * (root + 1) <= value)
+        {
+            root++;
+        }
+
+        return root;
+    }
+
+    /// <summary>The 64 facings a house can take (§9.5 P1: to the 1/64 turn), and each one's forward step.</summary>
+    private static readonly (Angle Angle, Point Forward)[] Turns = BuildTurns();
+
+    private static (Angle, Point)[] BuildTurns()
+    {
+        var turns = new (Angle, Point)[64];
+        for (int k = 0; k < 64; k++)
+        {
+            Angle angle = Angle.FromTurnFraction(k, 64);
+            turns[k] = (angle, new Point(Fixed.Zero, -Fixed.FromInt(1)).RotatedBy(angle));
+        }
+
+        return turns;
+    }
+
+    /// <summary>The 1/64 turn whose forward step points most nearly along (dx, dy) — the lowest on a tie.</summary>
+    internal static Angle FacingToward(int dx, int dy)
+    {
+        if (dx == 0 && dy == 0)
+        {
+            return Angle.Zero;
+        }
+
+        int best = 0;
+        Fixed bestDot = Fixed.Zero;
+        for (int k = 0; k < Turns.Length; k++)
+        {
+            Point forward = Turns[k].Forward;
+            Fixed dot = (Fixed.FromInt(dx) * forward.X) + (Fixed.FromInt(dy) * forward.Y);
+            if (k == 0 || dot > bestDot)
+            {
+                bestDot = dot;
+                best = k;
+            }
+        }
+
+        return Turns[best].Angle;
+    }
+
+    /// <summary>
+    /// The facings a tile tries, in order: toward its path, a sixteenth either side, then the four
+    /// quarters from the nearest round — a plot the paint or a neighbour clips at the path's own
+    /// angle may still fit squarer, and a cramped founding needs every way D388 could turn it.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Found on the first measurement: with only the nearest quarter as the last resort, fixture
+    /// seed 7's founding found no plot for a founder in 161 painted tiles. D388 tried all four.
+    /// </remarks>
+    private static List<Angle> FacingsToTry(Angle toward)
+    {
+        Angle sixteenth = Angle.FromTurnFraction(1, 16);
+        Angle quarter = Angle.FromRaw((ushort)((toward.Raw + 0x2000) & 0xC000));
+        var tries = new List<Angle>(7);
+        foreach (Angle a in new[]
+        {
+            toward, toward + sixteenth, toward - sixteenth,
+            quarter, quarter + Angle.Right, quarter - Angle.Right, quarter + Angle.Right + Angle.Right,
+        })
+        {
+            if (!tries.Contains(a))
+            {
+                tries.Add(a);
+            }
+        }
+
+        return tries;
+    }
+
+    /// <summary>
+    /// ⭐ The clear ground between a plot and the nearest other household's, in whole tiles, and
+    /// whose it is (§9.5 P2) — looking no further than <paramref name="look"/> tiles; farther is
+    /// "on its own" (<c>int.MaxValue</c>, 0).
+    /// </summary>
+    private static (int Clear, int NeighbourId) ClearGroundTo(
+        Core.SimWorld world, PlotShape plot, int householdId, int look)
+    {
+        int clear = int.MaxValue;
+        int neighbour = 0;
+        for (int t = 0; t < plot.Tiles.Count; t++)
+        {
+            GridPos tile = plot.Tiles[t];
+            for (int dy = -look - 1; dy <= look + 1; dy++)
+            {
+                for (int dx = -look - 1; dx <= look + 1; dx++)
+                {
+                    int between = System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) - 1;
+                    if (between < 0 || between > clear)
+                    {
+                        continue;
+                    }
+
+                    int owner = world.Zones.PlotOwner(new GridPos(tile.X + dx, tile.Y + dy));
+                    if (owner == 0 || owner == householdId)
+                    {
+                        continue;
+                    }
+
+                    // The nearest, and the lowest id among the nearest — stated, so the sentence
+                    // names the same neighbour every run.
+                    if (between < clear || owner < neighbour)
+                    {
+                        clear = between;
+                        neighbour = owner;
+                    }
+                }
+            }
+        }
+
+        return neighbour == 0 ? (int.MaxValue, 0) : (clear, neighbour);
+    }
+
+    /// <summary>
+    /// How far a plot's ground can lie from its house's centre, in whole tiles, rounded up — the
+    /// farthest corner of the widest, deepest yard the config's ranges allow is well inside it.
+    /// </summary>
+    private const int Reach = 4;
+
+    /// <summary>
+    /// Whether any house stands within this many tiles of a centre, twice over (theirs and ours) —
+    /// the cheap question before <see cref="ClearGroundTo"/>'s tile-by-tile one (D411: most sites
+    /// have nobody near, and scanning thirteen by thirteen round every yard tile of every site to
+    /// find nobody was most of the chooser's time).
+    /// </summary>
+    private static bool AnyoneWithin(List<(Point Centre, Angle Facing)> standing, Point centre, int tiles)
+    {
+        Fixed reach = Fixed.FromInt(tiles + Reach);
+        Fixed square = reach * reach;
+        for (int i = 0; i < standing.Count; i++)
+        {
+            Point apart = standing[i].Centre - centre;
+            if ((apart.X * apart.X) + (apart.Y * apart.Y) <= square)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Every house standing or marked, but this household's own — its centre and facing (P3).</summary>
+    private static List<(Point Centre, Angle Facing)> HousesAndSites(Core.SimWorld world, int householdId)
+    {
+        var list = new List<(Point, Angle)>();
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.Id != householdId && household.HomePosition is Point home)
+            {
+                list.Add((home, household.HomeFacing));
+            }
+        }
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace place = world.Workplaces[i];
+            if (place.Construction is { Kind: BuildingKind.Home, Demolishing: false } site && site.ForHouseholdId != householdId)
+            {
+                list.Add((place.Position, site.Facing));
+            }
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// The chooser's own sentence for the card (D386, D411): the terms that chose the plot, in the
+    /// currency they were scored in.
     /// </summary>
     private static string TheReason(Core.SimWorld world, Candidate chosen, int detour)
     {
-        string facing = PlotShape.LaneDirection(chosen.Facing) switch
-        {
-            { Y: -1 } => "north",
-            { X: 1 } => "east",
-            { Y: 1 } => "south",
-            _ => "west",
-        };
-
+        string facing = Compass[((chosen.Facing.Raw + 0x1000) & 0xFFFF) >> 13];
+        string toward = chosen.FacesAPath ? $"facing the path to the {facing}" : $"facing the village, to the {facing}";
         string beside = chosen.NeighbourId != 0 && world.FindHousehold(chosen.NeighbourId) is Household neighbour
-            ? $"beside the {neighbour.Name}s"
+            ? (chosen.Crowd > 0 ? $"close by the {neighbour.Name}s" : $"near the {neighbour.Name}s")
             : "on its own";
 
         string road = detour > 0 ? $"; the road bends {detour} for it" : "";
         string yard = chosen.Clipped > 0 ? $"; {chosen.Clipped} of the yard clipped off" : "";
-        string lane = chosen.LaneAlready > 0 ? "the lane" : "a lane of its own";
+        string crowd = chosen.Crowd > 0 ? ", closer than the family would like" : "";
+        string behind = chosen.RoundTheYard > 0 ? $"; the work lies behind it, {chosen.RoundTheYard} round the yard" : "";
         return $"{chosen.ToWork} tiles to work and {chosen.ToStore} to the granary, "
-            + $"facing {lane} to the {facing}, {beside}{yard}{road}.";
+            + $"{toward}, {beside}{crowd}{yard}{behind}{road}.";
     }
+
+    private static readonly string[] Compass =
+    {
+        "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west",
+    };
 
     private static int NearestStoreDistance(Core.SimWorld world, GridPos from, StoreKind kind)
     {
@@ -609,7 +964,7 @@ public sealed class Household
                 continue;
             }
 
-            // By walking, not by ruler (D111) — the same correction as NearestWorkDistance,
+            // By walking, not by ruler (D111) — the same correction as NearestWork,
             // and it has to be the same or a home's two scores measure different worlds.
             int distance = WalkingTiles(world, from, store.Tile);
             if (distance < nearest)
@@ -641,7 +996,7 @@ public sealed class Household
     }
 
     /// <summary>
-    /// How far the nearest food is <b>by walking</b>, in tiles, or <c>int.MaxValue</c>.
+    /// How far the nearest food is <b>by walking</b>, in tiles, or <c>int.MaxValue</c> — and where it is (D411), null with none anywhere.
     /// </summary>
     /// <remarks>
     /// <b>⭐ THIS MEASURED WITH A RULER AND EVERY OTHER SYSTEM WALKS (D111)</b>, which is the
@@ -657,9 +1012,10 @@ public sealed class Household
     /// reachable ground — a sentence that was simply not true, and that nothing tested.
     /// </para>
     /// </remarks>
-    private static int NearestWorkDistance(Core.SimWorld world, GridPos from)
+    private static (int Tiles, GridPos? At) NearestWork(Core.SimWorld world, GridPos from)
     {
         int nearest = int.MaxValue;
+        GridPos? at = null;
         bool anyWorkAtAll = false;
 
         for (int i = 0; i < world.Workplaces.Count; i++)
@@ -676,6 +1032,7 @@ public sealed class Household
             if (distance < nearest)
             {
                 nearest = distance;
+                at = workplace.Tile;
             }
         }
 
@@ -693,7 +1050,7 @@ public sealed class Household
         // ⚠️ It is deliberately NOT the same as "work exists but this tile cannot reach it",
         // which stays `int.MaxValue` and is still refused. One is an empty valley; the other
         // is the far bank (D111).
-        return anyWorkAtAll ? nearest : 0;
+        return anyWorkAtAll ? (nearest, at) : (0, null);
     }
 
     /// <summary>
