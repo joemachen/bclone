@@ -1126,12 +1126,15 @@
   // budgeted for. A market is a short trip, not a second granary -
   // sized flat it would become the real store as the village grew,
   // re-centralising everything storage just spread out.
-  "market_stock_per_household": 40,
+  // 100 since D417 (was 40; Joe: "markets that visibly carry more stock") -
+  // measured level on survival and marketer seats; still per household, so
+  // still not the building-sized target D197 found doubling the hauling.
+  "market_stock_per_household": 100,
 
   // What the market HOLDS, food and firewood together (D416, Joe: "increase
   // market capacity to 4000"). Stated, like the granary (D219); it was
   // market_stock_per_household x economy_horizon_households = 800. The size of
-  // the building, not what it is stocked to: the marketer still restocks to 40
+  // the building, not what it is stocked to: the marketer still restocks to 100
   // per occupied household above (D197 measured a target sized to the building
   // doubling the hauling).
   "market_store_capacity": 4000,

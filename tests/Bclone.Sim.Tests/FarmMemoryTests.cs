@@ -86,7 +86,10 @@ public sealed class FarmMemoryTests
         // yards, and ten happened to be a flat spot (5 → 5). Measured across the range: 6 → 8 → 13,
         // 7 → 7 → 9, 8 → 7 → 10, 9 → 5 → 6, 12 → 4 → 5 — the memory climbs everywhere else. Eight
         // still opens well under the derived cap, which is what makes the farm "distant" here.
-        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 8, out int walk);
+        // ⚠️ NINE SINCE D417, for D406's reason: stocking the market to 100 a household made eight
+        // the flat spot (7 → 7), while 6 → 13, 7 → 8, 9 → 7, 10 → 6 and 12 → 5 all still climb.
+        // Nine reads 5 → 7 at the old 40 and the new 100 alike, so it is not posed on a coin-toss.
+        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 9, out int walk);
         FarmFixtures.GiveItGround(world, farm, reach: 3);
 
         int opening = world.FieldTilesThisFarmCommitsPerHand(farm);

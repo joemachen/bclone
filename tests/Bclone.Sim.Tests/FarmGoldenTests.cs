@@ -275,7 +275,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Was 10117165481261788478.
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 6764057696688231654.
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Was 3520429905368766944.
-    private const ulong SeamGoldenHash = 16478286618016232765UL;
+    // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 16478286618016232765.
+    private const ulong SeamGoldenHash = 836586678125485000UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -333,7 +334,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D407) with it again — firewood a factor. Was 15289892284834333155.
     // RE-TAKEN (D412) with it again: homes sited path-first at any angle; emptied stores stay closed (D413). Was 7359344035547708990.
     // RE-TAKEN (D414) with it again: walkers keep to the paths, wear has a ceiling. Was 1600556099512445086.
-    private const ulong SeamBeforeAnybodyGotBetter = 13071203690319198168UL;
+    // RE-TAKEN (D417) with it again: the market is stocked to 100 a household, not 40. Was 13071203690319198168.
+    private const ulong SeamBeforeAnybodyGotBetter = 9971580707305620644UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

@@ -364,7 +364,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Was 4610569127384925856.
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 12200356494293742937.
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Was 3459576586681051924.
-    private const ulong FixtureFiftyYearHash = 11240235022264512335UL;
+    // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 11240235022264512335.
+    private const ulong FixtureFiftyYearHash = 14044782459210154740UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -460,7 +461,8 @@ public sealed class StockLimitTests
     //   before firewood became a factor (D407): 4997044733819871548 — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor").
     //   before homes were sited path-first at any angle (D412): 13929426755288217303 — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413).
     //   before walkers kept to the paths and wear had a ceiling (D414): 15592398038866525312 — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved.
-    private const ulong ShippedFiftyYearHash = 2961155205934716277UL;
+    //   before the market was stocked to 100 a household (D417): 2961155205934716277 — it was 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved.
+    private const ulong ShippedFiftyYearHash = 11395883105451251724UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -952,8 +954,13 @@ public sealed class StockLimitTests
         // lives" half read 8 against 10 on the fixture seed once firewood stopped being split
         // without asking — two people in a village of ten over twelve years, which is when a
         // child happens to be born, not a price. The sum can tell noise from a cost.
+        // ⚠️ SIX SEEDS AND A COUPLE'S SLACK PER THREE SINCE D417 (Joe: *"accept"*). Stocking the market
+        // to 100 a household read 26 against 30 on three — two seeds a couple down each. Measured on
+        // these six at 40 / 99 / 100 / 101 the ambitious arm ran +2 / 0 / −4 / +2 against the content
+        // one: a couple either way, whichever seeds it lands on. The failure this guards was a village
+        // halved (ten alive down to four), which four of sixty still catches with room to spare.
         int heldWith = 0, heldWithout = 0, aliveWith = 0, aliveWithout = 0;
-        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL })
+        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 5UL })
         {
             SimConfig config = VillageFixtures.Village with { Seed = seed };
             int years = config.TicksPerYear * 12;
@@ -987,9 +994,9 @@ public sealed class StockLimitTests
         }
 
         // And the stockpile is a want, not a need: it must not be built out of the hands
-        // that keep everybody fed — asked of the three together, with a child's worth of slack.
+        // that keep everybody fed — asked of the six together, with a couple's slack per three.
         Assert.True(
-            aliveWith + 2 >= aliveWithout,
+            aliveWith + 4 >= aliveWithout,
             $"Stockpiling cost lives: {aliveWith} alive against {aliveWithout} in the same villages that never bothered.");
     }
 

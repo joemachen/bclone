@@ -51,7 +51,13 @@ public sealed class FoodLimitTests
         SimWorld world = loop.World;
 
         ColdStartTests.PlayTheOpening(world);
-        loop.Step(config.TicksPerYear * 10);
+
+        // ⚠️ YEAR EIGHT SINCE D417, NOT TEN — AND THE PREMISE IS ASSERTED NOW. With the market stocked
+        // to 100 a household the tenth year became one where the unlimited village never meets its
+        // own want: its foragers cleared 10 ticks, the limited arm ran byte-identical, and there was
+        // nothing for a limit to change. Swept: the unlimited arm clears 203 / 142 / 125 / 10 / 111 / 6
+        // at years 4 / 6 / 8 / 10 / 12 / 15, and wherever it clears the limit takes it to 3–21.
+        loop.Step(config.TicksPerYear * 8);
 
         if (foodLimit > 0)
         {
@@ -102,6 +108,12 @@ public sealed class FoodLimitTests
     {
         Tally unset = RunAForagingYear(0, _output);
         Tally asked = RunAForagingYear(2000, _output);
+
+        // ⛔ THE PREMISE FIRST (D417): with no limit, foragers must actually go clearing — otherwise
+        // the village never met its own want and there is nothing for the limit to take them off.
+        Assert.True(
+            unset.Clearing >= 50,
+            $"With no limit the foragers cleared only {unset.Clearing} ticks — the village never met its own want, so this pose cannot show a limit working.");
 
         Assert.True(
             asked.Clearing < unset.Clearing,

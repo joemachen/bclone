@@ -426,30 +426,37 @@ public sealed class HuntingTests
         Assert.True(
             fisher is not null, "Nobody was posted to the fishery, so there is no rival.");
 
+        // ⛔ THE BUILDING, NOT THE PERSON (D417, Joe: *"accept"*). This followed the first hunter
+        // posted, and the labour allocator is free to move a hunter: stocking the market to 100 a
+        // household sent that one to woodcutting part-way through the year, and the guard went on
+        // timing a woodcutter — 357 against 725. The claim is *a lodge beats a fishery per hour
+        // worked*, so both sides count whoever is posted there, tick by tick, and what they carry.
+        // ⚠️ AND BOTH BUFFERS START EMPTY. Traced: after a year of this four-founder village the lodge
+        // stands at 2,460–2,700 of its 2,700, so its hunters spend the measured year carrying meat
+        // OUT of a full shed — which measures the haul, not the hunt (212 against 647 at 100; 1,237
+        // against 440 at 40, on the same shed). Emptied, each trade has room to show what it brings:
+        // 1,616 / 1,697 / 805 / 805 against 657 / 772 / 772 / 772 at 40 / 99 / 100 / 101. ⚠️ THIN AT
+        // 100: the emptied lodge fills back to its 2,700 and nobody carries it off, so the hunters
+        // stop for room — a shed nobody empties, which is this pose's limit, not hunting's.
+        lodge.Store.TakeAll(Goods.Meat);
+        fishery.Store.TakeAll(Goods.Fish);
         int meat = 0;
         int fish = 0;
         int huntTicks = 0;
         int fishTicks = 0;
-        int meatHeld = lodge.Store[Goods.Meat] + hunter!.Carried[Goods.Meat];
-        int fishHeld = fishery.Store[Goods.Fish] + fisher!.Carried[Goods.Fish];
+        int meatHeld = lodge.Store[Goods.Meat] + CarriedBy(world, lodge, Goods.Meat);
+        int fishHeld = fishery.Store[Goods.Fish] + CarriedBy(rival.World, fishery, Goods.Fish);
 
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
             rival.StepOnce();
 
-            if (OnTheJob(hunter.State))
-            {
-                huntTicks++;
-            }
+            huntTicks += OnTheJobAt(world, lodge);
+            fishTicks += OnTheJobAt(rival.World, fishery);
 
-            if (OnTheJob(fisher.State))
-            {
-                fishTicks++;
-            }
-
-            int meatNow = lodge.Store[Goods.Meat] + hunter.Carried[Goods.Meat];
-            int fishNow = fishery.Store[Goods.Fish] + fisher.Carried[Goods.Fish];
+            int meatNow = lodge.Store[Goods.Meat] + CarriedBy(world, lodge, Goods.Meat);
+            int fishNow = fishery.Store[Goods.Fish] + CarriedBy(rival.World, fishery, Goods.Fish);
 
             if (meatNow > meatHeld)
             {
@@ -481,6 +488,14 @@ public sealed class HuntingTests
             + "Joe's ranking is hunting above fishing above foraging, so a lodge has to beat a "
             + "fishery per worker — measured over hours worked, never per load.");
     }
+
+    /// <summary>How many of the people posted at a workplace are on the job this tick.</summary>
+    private static int OnTheJobAt(SimWorld world, Workplace workplace) =>
+        world.Villagers.Count(v => v.Alive && v.WorkplaceId == workplace.Id && OnTheJob(v.State));
+
+    /// <summary>What the people posted at a workplace have in their arms of one good.</summary>
+    private static int CarriedBy(SimWorld world, Workplace workplace, Goods goods) =>
+        world.Villagers.Where(v => v.Alive && v.WorkplaceId == workplace.Id).Sum(v => v.Carried[goods]);
 
     /// <summary>The states that count as doing the job — the work, the walk out, and the haul.</summary>
     private static bool OnTheJob(VillagerState state) =>

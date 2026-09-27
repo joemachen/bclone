@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ⏳ **every storage building shows its stock the same way — next (D418)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -435,8 +435,8 @@ that belongs there.
   survives exactly as it does today. Stocking is additive.
 - **The market must not become a second granary.** Its capacity is the guard, and it is derived.
   ⚠️ **Since D416 the capacity is stated (`market_store_capacity` 4,000, Joe's number) and the guard
-  is the restock target alone** — `MarketStockWanted`, 40 per occupied household — which is what
-  D197 found actually decides how much a market carries.
+  is the restock target alone** — `MarketStockWanted`, 40 per occupied household (**100 since D417**,
+  §14.14) — which is what D197 found actually decides how much a market carries.
 - **Goods conservation** across the new leg.
 
 #### ⚠️ And the honest failure mode to measure for
@@ -868,6 +868,82 @@ the claim a conservation guard cannot make on its own (trap 113). ⚠️ One fix
 with it: `TradesVisiblyWorkTests.AHunterHuntsAtAForestTileAndBringsTheMeatToTheLodge` used to get
 its hunts from the larder reason and saw 17 ticks on 1 tile; it poses the demand now (a limit above
 capacity, the storehouses' meat carried off) and sees **344 ticks on 20 tiles**.
+
+### 14.14 ✅ A MARKET THAT VISIBLY CARRIES MORE STOCK (D417, 2026-09-26) — built, played, merged (D418)
+
+**Joe:** *"I want markets that visibly carry more stock. … eventually there will be a greater variety
+of items in there too."* D416 made the building hold 4,000 and nothing changed on screen, because
+a market is stocked for its households (§14.8), not filled to its walls. His calls: **both** a drawn
+stall and more stock, the stock at **100 a household, measured first**.
+
+**The stall (view only).** A market draws a crate per good on its stall, in the good's own colour
+(`GoodsPalette` — the overview chip and the heap on the ground), standing on the stall's floor and
+**as tall as that counter is full against the marketer's limit for it**. An empty good keeps its
+slot and draws nothing. **Every good the catalogue lets a market hold gets a slot**
+(`GoodsCatalog.StoredBy(…, Market)`, `BehaviorSystem.MarketGoodsIn`'s own question), five across,
+a second row past five — so a good added to the catalogue appears on the stall with no view edit.
+Crates are inside the footprint and turned with it, so they cannot read as a heap (D371's heaps lie
+outside, at the door). Hidden below 8 px a tile. Probe: `[widths] market stall` (posed shelf: full,
+a tenth, empty → two crates, the full one taller, all inside), 3 of 3 red-checks land. ⚠️ **The
+draw call itself is unguarded**: delete it from `DrawStores` and the probe stays green (it tests the
+geometry) — a zero, written down.
+
+**The stock.** `market_stock_per_household` **40 → 100**, per good. Measured with a 48-run
+harness (twelve fixture seeds, twelve shipped seeds with a market placed at year 3; fifty years):
+
+| arm | alive | starved | mean marketers seated | mean market stock | peak |
+|---|---|---|---|---|---|
+| fixture 40 → 100 | 152 → 149 | 13 → 7 | 0.77 → 0.87 | ~140 → ~300 | ~390 → ~750 |
+| shipped + market 40 → 100 | 94 → 85 | 41 → 39 | 0.56 → 0.55 | ~110 → ~260 | |
+| shipped + market, noise | 41: 87 · 99: 104 | 41: 43 · 99: 32 | | | |
+
+Pooled 40/41 against 99/100 on the shipped arm: **181 against 189 alive, 84 against 71 starved** —
+the single-value swing (40 → 41 moves 7, 99 → 100 moves 19) is larger than the effect. Food held
+flat. **Level**, and the reason D197's doubling does not return: that target was sized to the
+BUILDING (800 for five homes); this is still sized to the households.
+
+⚠️ **The capacity is shared.** 4,000 across every good: five goods at 100 each fill it at **eight
+households**, where 40 each reached it at twenty. A village of eight or more with all five goods
+in store will show a full market — which is what Joe asked to see — and the full-store ring
+(D140) with it.
+
+**Guards.** `MarketTests.TheMarketIsStockedToAHundredPerHousehold` (the shipped file, the C#
+default and the derived 500 for five homes; red with the default back at 40 → 1). Six goldens moved once (the farm
+seam and its skill-free twin, both fifty-year skill goldens, both fifty-year stock-limit
+goldens). `TheValleyWalksOnThePinnedClock` re-pinned (52 trips at 10/199/1,929).
+`ADistantFarmEndsUpCommittingMoreGroundThanThePredictionGaveIt` re-posed eight → nine ticks out:
+eight became D406's flat spot (7 → 7) while 6, 7, 9, 10 and 12 still climb, and nine reads 5 → 7 at
+40 and 100 alike.
+
+⏸️ **Four one-village guards flip, and they flip on NEIGHBOURING values too — Joe's call (D404's
+shape):** `TheMarketKeepsLardersFromRunningDry` (3 per 10,000 against 1; fails at **41** as well),
+`AHunterOutEarnsAFisherPerTickWorked` (357 against 725; fails at 100 and 101, passes at 99 — the
+measured hunter is moved to woodcutting mid-year), `AFoodLimitKeepsForagersOnFoodRatherThanOnPaintedTrees`
+(10 against 10; fails at 99 and 100, passes at 101), `ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling`
+(26 against 30 alive; fails at 100 only). Held red on the branch, not re-posed.
+
+**✅ Joe, 2026-09-27: *"markets look good!"* and *"accept"* (D418).** The four, re-posed — each one
+diagnosed first, and two of them were not the chaos the first read called them:
+- **The food limit was a broken premise, not noise.** At year ten the unlimited village never met
+  its own want, so its foragers cleared 10 ticks and the limited arm ran byte-identical. Swept years
+  4–15; re-posed at **year eight** (125 → 20 clearing, most held 1,401 → 2,123) with the premise
+  now asserted (the unlimited arm must clear ≥ 50 ticks) — year ten fails it.
+- **The hunter guard measured the wrong thing twice.** It followed one person, whom the allocator
+  moved to woodcutting; and the lodge started the measured year full (2,460–2,700 of 2,700), so the
+  hunters were carrying meat out of a full shed. Now per BUILDING (whoever is posted) with both
+  buffers emptied first: lodge 1,616 / 1,697 / 805 / 805 against the fishery's 657 / 772 / 772 / 772
+  at 40 / 99 / 100 / 101. ⚠️ **Thin at 100** — the emptied lodge refills to 2,700 and nobody
+  carries it off.
+- **The log limit: six seeds, a couple's slack per three.** Across 40 / 99 / 100 / 101 the
+  stockpiling arm ran +2 / 0 / −4 / +2 against the content one — a couple either way.
+- **The dry larders: a bar of three** (41 reads 3 too). ⏸️ Its fifth move since D363; whether one
+  village can answer it at this size is on Joe's list.
+
+**⏳ NEXT, JOE'S CALL (D418): every storage building shows its stock the same way** — *"granaries,
+stockpiles, and warehouses should have the same 'market stock' visibility — all storage buildings
+should. When we get to visuals, I would like this to manifest as visual goods being added to /
+removed from each building."* The crates are the placeholder for that; the art pass is where goods
+are seen arriving and leaving.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

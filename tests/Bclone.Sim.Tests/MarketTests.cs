@@ -415,8 +415,13 @@ public sealed class MarketTests
         // market" means something again, and it is the claim the building is for.
         // ⚠️ TWO AGAIN SINCE D412 — D406's bar, "the walk, not a bank run": D412 moved the houses and
         // it read 2 against 2 without a stall. Joe, on D412: *"merge."*
+        // ⚠️ THREE SINCE D417, and measured as noise before it was moved: stocking the market to 100 a
+        // household read 3 against 1 — and so did 41, a value that changes nothing but the seat
+        // timing. Three in ten thousand is still a marketer's walk, not a bank run. Joe: *"accept."*
+        // ⏸️ This bar has moved five times since D363; the open question (handoff) is whether a
+        // single village can answer it at all at this size.
         Assert.True(
-            withMarket.DryPerTenThousand <= 2 || withMarket.DryPerTenThousand < without.DryPerTenThousand,
+            withMarket.DryPerTenThousand <= 3 || withMarket.DryPerTenThousand < without.DryPerTenThousand,
             $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food, against {without.DryPerTenThousand} without a market — a bank run the market exists to stop.");
     }
 
@@ -832,5 +837,21 @@ public sealed class MarketTests
 
         Assert.Equal(config.MarketStockPerHousehold * 5, VillageEconomy.MarketStockWanted(config, 5));
         Assert.Throws<SimConfigException>(() => (config with { MarketStoreCapacity = 0 }).Validate());
+    }
+
+    /// <summary>
+    /// ⭐ The counter is kept to a hundred per household (D417, Joe: *"I want markets that visibly
+    /// carry more stock"*) — in the shipped file AND the C# default the fixtures are built from.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Both halves, because the village fixture reads the C# default, not the JSON: a number
+    /// changed in one place alone is a game and a suite that disagree about the market.
+    /// </remarks>
+    [Fact]
+    public void TheMarketIsStockedToAHundredPerHousehold()
+    {
+        Assert.Equal(100, ShippedConfig.Load().MarketStockPerHousehold);
+        Assert.Equal(100, new SimConfig().MarketStockPerHousehold);
+        Assert.Equal(500, VillageEconomy.MarketStockWanted(new SimConfig(), 5));
     }
 }

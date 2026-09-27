@@ -1356,9 +1356,13 @@ public sealed record SimConfig
     /// rather than flat so it does not become the village's real store as the
     /// settlement grows, which would quietly re-centralise everything storage just
     /// spread out.
+    /// ⭐ <b>100 since D417</b> (was 40; Joe: *"I want markets that visibly carry more stock"*). Measured
+    /// over 48 fifty-year runs: survival level within the seed noise and the marketer seats flat, the
+    /// counter holding ~2.2× — D197's doubled hauling came from a target sized to the BUILDING (800 for
+    /// five homes), which this still is not.
     /// </remarks>
     [JsonPropertyName("market_stock_per_household")]
-    public int MarketStockPerHousehold { get; init; } = 40;
+    public int MarketStockPerHousehold { get; init; } = 100;
 
     /// <summary>
     /// How much a market HOLDS, food and firewood together — a stated number (D416, Joe:
@@ -1370,8 +1374,8 @@ public sealed record SimConfig
     /// divergence. ⛔ <b>The building's size, not what it is stocked to:</b> the marketer still
     /// restocks to <c>market_stock_per_household</c> per occupied household
     /// (<c>VillageEconomy.MarketStockWanted</c>), because D197 measured a restock target sized to
-    /// the building doubling the village's hauling. The capacity only caps that target past
-    /// 100 households.
+    /// the building doubling the village's hauling. The capacity caps one good's target only past
+    /// 40 households, but it is shared: five goods at 100 each (D417) fill it at eight.
     /// </remarks>
     [JsonPropertyName("market_store_capacity")]
     public int MarketStoreCapacity { get; init; } = 4000;

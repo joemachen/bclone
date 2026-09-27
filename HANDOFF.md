@@ -1,6 +1,58 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D416 IN §7. `main` = D414–D416 MERGED LOCALLY, NOT PUSHED (JOE PUSHES). NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D418 IN §7. `main` = D418, PUSHED. NEXT: EVERY STORAGE BUILDING SHOWS ITS STOCK (JOE, D418) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D416.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-27 — AFTER D418.**
+>
+> **State:** `main` = D417 + D418 merged from `slice/market-stock` and **pushed at Joe's word**.
+> Read D417/D418 in §7 and `storage-and-distribution.md §14.14`.
+>
+> **Joe's calls (D418):** *"markets look good!"*; the four held guards → *"accept"* (re-posed after
+> diagnosis — two were a dead premise and a wrong measurement, not chaos); *"push"*.
+>
+> **▶️ NEXT, HIS:** *"granaries, stockpiles, and warehouses should have the same 'market stock'
+> visibility — all storage buildings should."* `VillageMap.CratesOnTheStall` / `ShelfOf` are the
+> market's; generalise them. Later (visuals pass): goods seen arriving at and leaving each building.
+>
+> **⏸️ Also asked, answer given in chat, NOTHING BUILT:** should a stock limit count only what is in
+> storage (+ in transit), never what is in home larders? See the ⏸️ OPEN list.
+>
+> *(The D417 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LAST) — AFTER D417, ON A BRANCH.**
+>
+> **State:** `main` = D416 (not pushed — Joe pushes). **`slice/market-stock` = D417, committed, NOT
+> merged.** On the branch: **1245 passing, 4 failing, 4 skipped of 1253** — the four are ON PURPOSE,
+> held for Joe (below). ~3m23 against main's 3m14 back to back (two runs read 6m+ — the machine;
+> summed test time +9 %). View 0 warnings; probe green, bar height 161, new line `market stall`.
+>
+> **Joe's ask:** *"I want markets that visibly carry more stock. … eventually there will be a greater
+> variety of items in there too."* His calls when asked: **both** a drawn stall and more stock; the
+> stock at **100 a household, measured first**. Read D417 in §7 and `storage-and-distribution.md §14.14`.
+> - **The stall (view):** a crate per good on the market, in the good's colour, as tall as the counter
+>   is full against its limit; a slot for every good the catalogue lets a market hold, so new goods
+>   show up with no view edit. `VillageMap.CratesOnTheStall` / `ShelfOf`.
+> - **The stock (sim):** `market_stock_per_household` 40 → 100. Measured level (48 fifty-year runs,
+>   one-value noise bigger than the effect). ⚠️ The 4,000 is shared: five goods at 100 fill it at
+>   eight households — he will see full markets in a village that size.
+>
+> **⏸️⏸️ JOE'S CALL (D404/D412's shape):** four one-village guards flip, and they flip at 41 / 99 /
+> 101 too — chaos, not a cause: `TheMarketKeepsLardersFromRunningDry` (3 vs 1 per 10,000, red at 41
+> too; its bar has crept since D363), `AHunterOutEarnsAFisherPerTickWorked` (the measured hunter is
+> moved to woodcutting mid-year), `AFoodLimitKeepsForagersOnFoodRatherThanOnPaintedTrees`,
+> `ALogLimitAboveWhatTheVillageSpendsIsAnAmbitionAndNotAceiling`. **(a) Accept** → re-pose the four
+> with that reason, merge. **(b) Hold** → investigate. Plus: play the branch and look at the stalls.
+>
+> **Tools:** the D417 harness `ZzMarket.cs` (arms `fixture` / `shipped` / `shipmkt`, dial `ZZ_MKT`)
+> is in this session's scratchpad
+> (`C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/daaf8d82-19dd-44c6-922d-2d92fec29708/scratchpad/`);
+> `ZzHousing.cs` / `render.py` are still in the D414 session's (path in the banner below). Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D416 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D416.**
 >
 > **State:** `main` = D414 + D415 (Joe's path note, merged from `slice/paths-pull`) + D416 (the
 > market holds 4,000, merged from `slice/market-4000`), **NOT pushed — Joe pushes**. No branch is
@@ -2700,8 +2752,34 @@ here: a room sample taken before the tick (room opened inside it), a "finished w
 that main met with 32 ticks to spare, and two one-seed villages. Each was measured across seeds or
 diagnosed by trace before it was re-posed — never re-posed on sight.
 
+## ⛔⛔ THE TRAP D417 PAID FOR — A FAILING GOLDEN IS A FAST TEST, AND A SLOW CLOCK MAY BE THE MACHINE
+
+**The suite read 3m31 on the first run of the change and 6m14 on the second, with the same sim code.**
+Two stories fit: the machine, or the goldens — a golden that fails at its first assert skips the rest
+of its test, so a run with eleven reds can be *faster* than the fixed one. **Neither was true alone
+and only a back-to-back pair, then a pair of trx files, could say so:** summed test time +9 % (real,
+the market villages restock more), wall-clock 3m23 against 3m14 when the machine was quiet. ⭐ Compare
+back to back, with `--logger trx`, and read the per-test deltas before believing either clock.
+
+⚠️ **And a guard that flips at the change should be run at the value beside it before it is judged.**
+Running the four flipped guards at 41 / 99 / 101 separated chaos (they flip on neighbours) from a
+cause (the farm memory flipped at 99–101 only, and a sweep of distances found a single flat spot).
+One extra build per value; it is the cheapest honest classifier this project has.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⭐ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? (Joe, 2026-09-27 — thoughts asked, nothing built.)**
+  *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition to whatever is in
+  home larders."* ⭐ **It already excludes them** — `SimWorld.HeldAgainstItsLimit` (D409) counts the
+  stores (the market included), the heaps on the ground, and for anything edible the huts' buffers;
+  never a larder. The gaps against his wording: (1) **a load in someone's arms is not counted**, so a
+  limit overshoots by an armful per producer in flight; (2) **the market's shelf counts** — with 100 a
+  household (D417) that is up to 500 of a good that is "storage" to the rule but distribution to the
+  player (D199); (3) **a hut's buffer counts for food only** (D161). Recommendation given: count loads
+  headed TO storage (not fetches out of it), keep the buffers, and ask him about the market.
+- ✅ **D417'S FOUR HELD GUARDS — ANSWERED, *"accept"* (D418), re-posed.** Still open: `TheMarketKeepsLardersFromRunningDry`'s bar has
+  been nudged five times since D363 (0 → 1 → 2 → a comparison → 2); it may be the wrong shape of guard
+  for a number this small, not the wrong number.
 - ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*).** 130 is level over
   42 fifty-year villages (330 alive vs 337, starved 100 vs 108) and an abandoned hub path is grass in
   eight years. 104 — the nearest to the spec's "six seasons" — cost 26 people. His to revisit.
