@@ -273,7 +273,8 @@ public sealed class FarmGoldenTests
     // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 5056644931275689688.
     // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Was 14210363952345594970.
     // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Was 10117165481261788478.
-    private const ulong SeamGoldenHash = 6764057696688231654UL;
+    // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 6764057696688231654.
+    private const ulong SeamGoldenHash = 3520429905368766944UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -329,7 +330,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D399) with it again. Was 9257962022883154738.
     // RE-TAKEN (D406) with it again — fences as walls. Was 9162761230975367702.
     // RE-TAKEN (D407) with it again — firewood a factor. Was 15289892284834333155.
-    private const ulong SeamBeforeAnybodyGotBetter = 7359344035547708990UL;
+    // RE-TAKEN (D412) with it again: homes sited path-first at any angle; emptied stores stay closed (D413). Was 7359344035547708990.
+    private const ulong SeamBeforeAnybodyGotBetter = 1600556099512445086UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT on `slice/organic-not-suburbia` (D412, §9.11), NOT MERGED — nine one-seed fixture guards left red and the goldens held for Joe's call. Slice C (the well) not built.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well) not built.** Owner:
 Joe + Claude Code.
 
 ---
@@ -328,7 +328,7 @@ spec (D352's lesson).**
 
 ---
 
-## 9. Slice 3: a village, not a street (D411 spec; **A + B built on a branch, D412, §9.11 — not merged**)
+## 9. Slice 3: a village, not a street (D411 spec; **A + B built and merged, D412/D413, §9.11**)
 
 ### 9.1 What Joe asked, three times
 
@@ -549,9 +549,9 @@ guard, and each is written where it lives:
   path tiles within a tile of the nearest — so a staircase of worn tiles does not flip facings.
 - **P2 as a price**, not a refusal: each tile short of the hashed gap costs `home_crowd_tiles` (3);
   a neighbour within reach of the gap is worth `home_company_tiles` (2).
-- **P3 kept, and it scores ZERO**: switched off, the 18-seed layout arm reads identically (longest
-  row 3 on 2 seeds, modal facing 21 % median) — facing the path and the gap already break rows.
-  `NoThirdHouseInALine` scores zero against it and says so. ⏸️ Joe's to keep or delete.
+- **P3 DELETED (D413, Joe: *"delete it"*)**: switched off, the 18-seed layout arm read identically
+  (longest row 3 on 2 seeds, modal facing 21 % median) — facing the path and the gap already break
+  rows. `home_row_tiles` is gone; `NoThirdHouseInALine` stays as the guard on the OUTCOME.
 - **P4 grew four rules**: *(a)* **one yard end always reaches past the house** (`home_yard_side_quarters`
   ≥ 3, the other end `home_yard_other_side_quarters`, which end hashed) — a yard exactly as wide as
   its house sits wholly behind it, touches the lane nowhere and has no gate; *(b)* **two yard tiles
@@ -595,7 +595,8 @@ Survival, fifty years, as played (starting limits, the storage arm):
 Level across 42 runs; the six-seed drop is D344's small-sample noise (the 24 fresh seeds and the
 fixture both read level or better).
 
-**⏸️ Left red on the branch, on purpose (D404's shape) — Joe's call:** nine guards that read the
+**✅ Merged on Joe's word (D413) — the nine re-posed, each with its reason where it lives; the six goldens
+moved once.** As it stood before his call: nine guards that read the
 fixture's one seed (12345) over 50–150 years (farm idleness ×2, firewood running out, food
 conservation, every household walking to food, the no-river straight line, the market ×2, time on the
 trade) flip with any change to where its houses stand — which ones flip changed between runs of this

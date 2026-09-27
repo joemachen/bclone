@@ -1276,9 +1276,6 @@
   // gather into clusters without packing into rows.
   "home_company_tiles": 2,
 
-  // A pair on one front line facing one way is free; each house past the first
-  // already there costs this much walk -- the third in a line pays (9.5 P3).
-  "home_row_tiles": 3,
 
   // How far a site looks for a path to face; beyond it, a house faces the village.
   "home_path_search_tiles": 8,

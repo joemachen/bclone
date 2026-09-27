@@ -700,7 +700,15 @@ because the granary now feeds the fetches that used to come from the larder; the
 worn tiles; the no-seam bar; the valley pin). Six goldens moved once (the seam pair, the fifty-year
 pair, the two skill hashes).
 
-### 14.11 ✅ STOCKING IS ONE CONTROL: OPEN / CLOSED / EMPTYING (D389, 2026-09-18)
+### 14.11 ✅ STOCKING IS ONE CONTROL: OPEN / CLOSED / EMPTYING (D389, 2026-09-18) — ⛔ THE REOPENING REVERSED BY D413
+
+> ⛔ **D413 (2026-09-26), on Joe's word:** Joe, 2026-09-26: *"an 'emptied' store should be 'closed' once it is marked to be emptied and remain closed until the user chooses to open it again."* An emptied store is now **Closed** —
+> when the last armful leaves (`SimWorld.CloseTheEmptiedStore`, narrated *"…is empty, and stays
+> closed until you open it"*), and when an already-empty store is told to empty. Only the player
+> opens it. D412 found why D389's reopening had to go: a store emptied to be moved reopened as the
+> last armful left and was refilled the same tick. Guards: `AnEmptiedStoreStaysClosedUntilOpened`,
+> `AStoreMarkedForEmptyingIsCarriedOutAndThenCanMove` (no workaround now). The rest of this section
+> — one three-state control, hashed sparsely — stands.
 
 Joe, playing D386: *"when emptying a storage building, once it is empty, it should automatically go
 back to being able to be stocked. presently the user has to click 'empty' again in the menu — which

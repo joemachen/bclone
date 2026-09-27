@@ -44,7 +44,11 @@ public sealed class FoodConservationTests
 
     [Theory]
     [InlineData(12345UL, false)]
-    [InlineData(12345UL, true)]
+    // ⚠️ SEED 7 FOR EVERY SOURCE SINCE D412, AND WHY: raising a lodge, a fishery and a farm at the
+    // founding kills half its villages on main AND on D412 (seeds 3 and 7 die on main, 3 and 12345
+    // on D412 — no forage and no fish produced in either) — only which half moved. The ledger held
+    // to the unit in the dead ones too; the coverage half needs a village that lives. On Joe's list.
+    [InlineData(7UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

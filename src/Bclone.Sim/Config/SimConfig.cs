@@ -1705,13 +1705,6 @@ public sealed record SimConfig
     [JsonPropertyName("home_company_tiles")]
     public int HomeCompanyTiles { get; init; } = 2;
 
-    /// <summary>
-    /// What each house past the first already standing on a site's front line, facing its way,
-    /// costs, in tiles walked (D411, P3): a pair is free, a third in a line is not.
-    /// </summary>
-    [JsonPropertyName("home_row_tiles")]
-    public int HomeRowTiles { get; init; } = 3;
-
     /// <summary>How far a site looks for a path to face, in tiles (D411, P1). Beyond it, a house faces the village.</summary>
     [JsonPropertyName("home_path_search_tiles")]
     public int HomePathSearchTiles { get; init; } = 8;

@@ -5484,7 +5484,8 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     /// <summary>
     /// Open, close or empty a store (D389) — the one control on a store's card, and the
-    /// Removal tab's <i>Empty</i> tool. A store told to empty with nothing in it is simply open.
+    /// Removal tab's <i>Empty</i> tool. A store told to empty with nothing in it is simply closed
+    /// (D413): emptied is closed until the player opens it.
     /// </summary>
     public PlacementVerdict SetStocking(StoreBuilding store, Stocking state)
     {
@@ -5492,7 +5493,7 @@ public sealed class SimWorld : IObstacles
 
         if (state == Stocking.Emptying && store.Store.Held <= 0)
         {
-            state = Stocking.Open;
+            state = Stocking.Closed;
         }
 
         if (store.Stocking == state)
@@ -5511,16 +5512,22 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// The last armful has left a store being emptied (D389): it takes deliveries again, and says
-    /// so once. Called from the one errand that carries a store out.
+    /// The last armful has left a store being emptied: it is <b>closed</b>, and says so once
+    /// (D413, reversing D389's reopening). Called from the one errand that carries a store out.
     /// </summary>
-    internal void ReopenTheEmptiedStore(StoreBuilding store)
+    /// <remarks>
+    /// Joe, 2026-09-26: *"an 'emptied' store should be 'closed' once it is marked to be emptied and remain closed until the user chooses to open it again."* D389 set it Open, and D412 found what that cost: a store emptied to be MOVED
+    /// reopened as the last armful left and was refilled by a delivery the same tick, so the player
+    /// could never catch it empty. Closed keeps what it has (nothing) and takes nothing; the player
+    /// opens it, or moves it.
+    /// </remarks>
+    internal void CloseTheEmptiedStore(StoreBuilding store)
     {
         ArgumentNullException.ThrowIfNull(store);
         if (store.Stocking == Stocking.Emptying && store.Store.Held <= 0)
         {
-            store.Stocking = Stocking.Open;
-            Narrate($"{store.Name} is empty and takes deliveries again. {Clock.SeasonAndYear()}.", LogCategory.Building);
+            store.Stocking = Stocking.Closed;
+            Narrate($"{store.Name} is empty, and stays closed until you open it. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
     }
 

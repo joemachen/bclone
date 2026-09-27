@@ -498,12 +498,15 @@ public sealed class OrganicHousingTests
     }
 
     /// <summary>
-    /// ⭐⭐ A lane holds a pair, not a row (§9.5 P3 — the cure for §9.2's column of five).
+    /// ⭐⭐ No row of three along a line (§9.2's column of five, Joe: *"NOT uniform rows of housing"*).
     /// </summary>
     /// <remarks>
     /// A straight worn path across the square and a dozen families, every one of whom would face it
     /// square on: no house has two others on its front line (within ¾ of a tile of it and six tiles
-    /// along), facing its way. Red with the row term off: the column of five D408's screenshot shows.
+    /// along), facing its way. ⚠️ <b>It guards the outcome, not a term.</b> D412 built a row price
+    /// (§9.5 P3) and this guard scored ZERO against it — as did the whole 18-seed layout arm: facing
+    /// the path and the gap between yards already break rows. Joe: *"delete it."* What would turn this
+    /// red is the lane-first facing D388 had.
     /// </remarks>
     [Fact]
     public void NoThirdHouseInALine()

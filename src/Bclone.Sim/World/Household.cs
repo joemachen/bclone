@@ -219,7 +219,7 @@ public sealed class Household
             }
         }
 
-        // The houses already standing or marked, once, for the row term (P3).
+        // The houses already standing or marked, once, for the neighbour check (P2).
         List<(Point Centre, Angle Facing)> standing = HousesAndSites(world, householdId);
         int setback = PlotShape.ByHash(householdId, PlotShape.SetbackSalt, world.Config.HomeSetbackQuarters);
         int gap = PlotShape.ByHash(householdId, PlotShape.GapSalt, world.Config.HomeGapTiles);
@@ -227,7 +227,7 @@ public sealed class Household
         // ⭐⭐ FIRST THE CHEAP HALF OF EVERY TILE'S SCORE, THEN THE DEAR HALF OF THE BEST FEW (D411).
         // The walks and the setback are a few lookups; whether a plot fits, has a gate, walls nobody
         // in and bends no road are a plot, a fence and a sweep of the valley each. Every term left
-        // for the second half only ever ADDS (a clipped yard, a crowd, a row, a detour) but one —
+        // for the second half only ever ADDS (a clipped yard, a crowd, the yard's walk, a detour) but one —
         // company, at most `home_company_tiles` off — so a tile whose cheap half, less that, is no
         // better than the best whole score found can never win, and nothing after it in cheap order
         // can either: the search stops there. Exactly the answer scoring every tile would give;
@@ -401,10 +401,8 @@ public sealed class Household
                         : (int.MaxValue, 0);
                     int crowd = clear < gap ? (gap - clear) * world.Config.HomeCrowdTiles : 0;
                     int company = neighbour != 0 && clear >= gap ? world.Config.HomeCompanyTiles : 0;
-                    int inARow = InARow(standing, centre, plot.Facing);
-                    int row = inARow > 1 ? (inARow - 1) * world.Config.HomeRowTiles : 0;
                     int roundTheYard = RoundTheYard(world, plot, tile.WorkAt, householdId);
-                    int score = tile.ToWork + tile.ToStore + clipped + tile.OffTheLine + crowd + row + roundTheYard - company;
+                    int score = tile.ToWork + tile.ToStore + clipped + tile.OffTheLine + crowd + roundTheYard - company;
 
                     // A detour is never negative: a facing no better than the best whole total so
                     // far cannot win, and is not stood for the sweep.
@@ -426,7 +424,7 @@ public sealed class Household
                     sited = true;
                     var site = new Candidate(
                         front, plot.Facing, score, tile.FromVillage, tile.ToWork, tile.ToStore, clipped,
-                        company > 0 || crowd > 0 ? neighbour : 0, tile.OnAPath, row, crowd, roundTheYard);
+                        company > 0 || crowd > 0 ? neighbour : 0, tile.OnAPath, crowd, roundTheYard);
 
                     if (bestByItsOwnWalks is not Candidate own || score < own.Score)
                     {
@@ -525,7 +523,7 @@ public sealed class Household
     /// <summary>One plot the chooser could take, and the terms that scored it.</summary>
     private readonly record struct Candidate(
         GridPos Front, Angle Facing, int Score, int FromVillage,
-        int ToWork, int ToStore, int Clipped, int NeighbourId, bool FacesAPath, int Row, int Crowd, int RoundTheYard);
+        int ToWork, int ToStore, int Clipped, int NeighbourId, bool FacesAPath, int Crowd, int RoundTheYard);
 
     /// <summary>
     /// Whether a plot can be taken here (§3.1–3.2), and how much of its yard the paint, the water
@@ -931,35 +929,6 @@ public sealed class Household
     }
 
     /// <summary>
-    /// ⭐ How many houses already stand on this house's front line, facing its way (§9.5 P3): within
-    /// a sixteenth of a turn, their centres within ¾ of a tile of the line and six tiles along it.
-    /// </summary>
-    private static int InARow(List<(Point Centre, Angle Facing)> standing, Point centre, Angle facing)
-    {
-        Fixed across = Fixed.FromRatio(3, 4);
-        Fixed along = Fixed.FromInt(6);
-        int count = 0;
-        for (int i = 0; i < standing.Count; i++)
-        {
-            int turn = (ushort)(standing[i].Facing.Raw - facing.Raw);
-            if (System.Math.Min(turn, 65536 - turn) > 4096)
-            {
-                continue;
-            }
-
-            Point local = (standing[i].Centre - centre).RotatedBy(-facing);
-            Fixed x = local.X < Fixed.Zero ? -local.X : local.X;
-            Fixed y = local.Y < Fixed.Zero ? -local.Y : local.Y;
-            if (y <= across && x <= along)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    /// <summary>
     /// The chooser's own sentence for the card (D386, D411): the terms that chose the plot, in the
     /// currency they were scored in.
     /// </summary>
@@ -973,11 +942,10 @@ public sealed class Household
 
         string road = detour > 0 ? $"; the road bends {detour} for it" : "";
         string yard = chosen.Clipped > 0 ? $"; {chosen.Clipped} of the yard clipped off" : "";
-        string row = chosen.Row > 0 ? "; not a third in a line along the path" : "";
         string crowd = chosen.Crowd > 0 ? ", closer than the family would like" : "";
         string behind = chosen.RoundTheYard > 0 ? $"; the work lies behind it, {chosen.RoundTheYard} round the yard" : "";
         return $"{chosen.ToWork} tiles to work and {chosen.ToStore} to the granary, "
-            + $"{toward}, {beside}{crowd}{yard}{row}{behind}{road}.";
+            + $"{toward}, {beside}{crowd}{yard}{behind}{road}.";
     }
 
     private static readonly string[] Compass =

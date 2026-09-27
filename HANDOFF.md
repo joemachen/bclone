@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D412 IN §7. D412 (HOMES PATH-FIRST AT ANY ANGLE) IS BUILT ON `slice/organic-not-suburbia`, NOT MERGED — ⏸️ JOE'S CALL ON NINE RED FIXTURE GUARDS. THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D413 IN §7. D412/D413 (HOMES PATH-FIRST AT ANY ANGLE; EMPTIED STORES STAY CLOSED) ARE MERGED INTO `main`, NOT PUSHED. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATEST) — AFTER D412.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LAST) — AFTER D413.**
+>
+> **Branches:** `main` = D412 + D413 merged (`slice/organic-not-suburbia`), **NOT pushed** — Joe
+> pushes. **1242 passing, 0 failing, 4 skipped of 1246**, 3m13; view 0 warnings; probe green, bar
+> height 161. Six goldens moved once (D412/D413).
+>
+> **Joe's calls of 2026-09-26 (D413):** merge (*"i really like fixture seed 4. plays nicely too"*);
+> the row rule deleted; ⛔ **an emptied store is Closed until the player opens it** (reverses D389).
+>
+> **⏸️ New on his list:** the every-source founding pose (a lodge, a fishery and a farm raised at
+> the founding, `FoodConservationTests`) kills half its villages on main too — no forage and no
+> fish produced in the dead ones. Worth a look before the food chain grows.
+>
+> **▶️ NEXT: the well, slice C** (`organic-housing.md §9.5` P6) — a placeable well with no water
+> mechanic yet, a destination paths wear toward and a term in the home score. Spec says measure
+> before typing; the harness (`ZzHousing.cs`, `render.py`) is in the previous session's scratchpad
+> (the D412 banner below has the path).
+>
+> *(The D412 banner, kept below.)*
+>
+
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATEST) — AFTER D412. (Merged by D413 — see above.)**
 >
 > **Branches:** `main` = D411 (spec), pushed. **`slice/organic-not-suburbia` = D412, committed, NOT
 > merged, NOT pushed.** On the branch: **1228 passing, 14 failing, 4 skipped of 1246**, 3m25 — the 14 are
@@ -3142,6 +3163,9 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⚠️ A GUARD THAT SCORES ZERO AGAINST A RULE MAY BE SAYING THE RULE DOES NOTHING (2026-09-26, D413).** `NoThirdHouseInALine` scored 0 against the row term; the whole 18-seed layout arm then read identically without it — the term was dead code with a reason on it. Measure the rule, not just the guard, before keeping the code.
+- **⚠️ A TEST'S POSE CAN KILL HALF ITS VILLAGES AND NOBODY NOTICES WHILE THE SEED THAT LIVES IS THE ONE IN THE ROW (2026-09-26, D413).** `FoodConservationTests`' every-source pose dies on seeds 3 and 7 on main; 12345 happened to live. When a one-seed guard fails, run its pose on two or three more seeds on BOTH builds before blaming the change.
 
 - **⛔ COMPARE THE SUITE'S CLOCK BACK TO BACK, NEVER ACROSS THE DAY (2026-09-26, D412).** The branch read 5m30 against the morning's 3m06 and looked like a regression; run back to back with main in a worktree it was **4m02 against main's 4m40** — the machine had slowed, not the code. Sum the per-test durations from a `trx` too: equal CPU with a longer wall clock is the schedule, not the work.
 - **⚠️ A GOLDEN TEST CAN HOLD TWO GOLDENS (2026-09-26, D412).** `AVillageThatFarmsAndClearsAtOnce…` asserts the hash AND the hash without skills; moving the first and seeing the test still fail looked like nondeterminism across processes. It was line 347. **Read the line number before suspecting the sim.**

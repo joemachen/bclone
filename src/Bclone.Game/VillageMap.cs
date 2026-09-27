@@ -1507,6 +1507,8 @@ public partial class VillageMap : Control
             }
 
             // The same control as the card's (D389): Emptying, or Open again on a second click.
+            // ⚠️ An emptied store is Closed (D413), so a second click on one opens it — the
+            // player's word, which is the only thing that opens an emptied store now.
             _world.SetStocking(store, store.Emptying ? Stocking.Open : Stocking.Emptying);
             PlacementMessageChanged?.Invoke(store.Emptying
                 ? $"{store.Name} is being cleared out — its {store.Store.Held} goods will be "

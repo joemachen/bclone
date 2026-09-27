@@ -362,7 +362,8 @@ public sealed class StockLimitTests
     // village produces for its cupboards as well as its shelves; a larder has walls at 400. Was 9533260203811408204.
     // RE-TAKEN (D406) — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences." Was 7985778814479655621.
     // RE-TAKEN (D407) — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor"). Was 4610569127384925856.
-    private const ulong FixtureFiftyYearHash = 12200356494293742937UL;
+    // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 12200356494293742937.
+    private const ulong FixtureFiftyYearHash = 3459576586681051924UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -456,7 +457,8 @@ public sealed class StockLimitTests
     //     village began producing for its cupboards as well as its shelves; a larder has walls.
     //   before fences became walls (D406): 1017578343772418148 — fences are walls with one gate a plot (`fences-as-walls.md`); plots are 3 deep and spaced by neighbour; nothing is built or painted on a yard; a leg never grazes a fence post and ends where it ends (LineOfSight's corner overrun). Joe: "let longer walks be the price of fences."
     //   before firewood became a factor (D407): 4997044733819871548 — firewood is split only for what the homes want (a limit counts the heaps), the last logs burn, loggers fell only what the stores lack, a fetch takes what the larder has room for, and a mixed armful's remainder goes on to a store that takes it (Joe: firewood was "a non-factor").
-    private const ulong ShippedFiftyYearHash = 13929426755288217303UL;
+    //   before homes were sited path-first at any angle (D412): 13929426755288217303 — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413).
+    private const ulong ShippedFiftyYearHash = 15592398038866525312UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
