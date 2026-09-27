@@ -1927,18 +1927,33 @@ public sealed class SimWorld : IObstacles
     /// 'food' overall limit + individual limits for each sub category"*). Forage, wheat, fish and
     /// meat each have their own row and each stops its own trade.
     /// </para>
+    /// <para>
+    /// ⭐⭐ <b>AND A LOAD ON ITS WAY TO STORAGE, AND EVERY GOOD'S BUFFER</b> (D420, Joe: *"loads in
+    /// transit should count and the market's shelf should count toward the limit too"* — the market
+    /// already did, through <see cref="InStores"/>). A villager carries no flag saying what a load
+    /// is for, so the state is the signal and the rule is an inclusion list:
+    /// <c>HaulingToStore</c> ends in storage, <c>HaulingToFarm</c> in the hut's buffer, which counts.
+    /// A household's fetch rides home as <c>TravelingHome</c> — the state an interrupted producer
+    /// walks home in too — which is why this is not "everything in anyone's arms". The dead keep
+    /// their arms and are nobody's haul. The buffers count for every good now because the hide goes
+    /// into the lodge (`stock-limits-and-laborers.md §4.5`).
+    /// </para>
     /// </remarks>
     public int HeldAgainstItsLimit(Goods goods)
     {
         int held = InStores(goods) + OnTheGround(goods);
-        if (!GoodsCatalog.Edible(goods))
-        {
-            return held;
-        }
-
         for (int i = 0; i < Workplaces.Count; i++)
         {
             held += Workplaces[i].Store[goods];
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager villager = Villagers[i];
+            if (villager.Alive && villager.State is VillagerState.HaulingToStore or VillagerState.HaulingToFarm)
+            {
+                held += villager.Carried[goods];
+            }
         }
 
         return held;
@@ -1979,7 +1994,7 @@ public sealed class SimWorld : IObstacles
         string paint = GoodsCatalog.YieldPerTileOf(goods) > 0
             ? $", and ground painted for harvest in {GoodsCatalog.SourceNameOf(goods)} is left standing"
             : string.Empty;
-        return $"At your limit of {limit.Grouped()} {GoodsCatalog.NameOf(goods)} ({HeldAgainstItsLimit(goods).Grouped()} held) — "
+        return $"At your limit of {limit.Grouped()} {GoodsCatalog.NameOf(goods)} ({HeldAgainstItsLimit(goods).Grouped()} stored, not counting home larders) — "
             + $"{who}{paint}. Raise it under Stock limits.";
     }
 
@@ -2292,7 +2307,7 @@ public sealed class SimWorld : IObstacles
         {
             Goods grown = JobsCatalog.LimitedBy(JobKind.Farmer) ?? Goods.Wheat;
             return $"{farm.Name} has stopped reaping — you asked the village to keep "
-                + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)}. "
+                + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)} stored. "
                 + "The crop stands until the village eats into it, and winter takes the rest.";
         }
 
@@ -3204,38 +3219,66 @@ public sealed class SimWorld : IObstacles
     /// buffer is a pass-through, and D161's count is honest only while it behaves like one.
     /// </para>
     /// </remarks>
-    public bool BufferWorthClearing(Workplace workplace)
+    public bool BufferWorthClearing(Workplace workplace) => GoodWorthClearing(workplace) is not null;
+
+    /// <summary>
+    /// The good in a workplace's buffer worth somebody's walk — <b>food first, then any other good</b>
+    /// (D420) — or null when there is none.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>Every good, because the hide goes into the lodge now</b> (D420,
+    /// `stock-limits-and-laborers.md §4.5`). A buffer that only its food could leave would fill with
+    /// hides until the meat had no room — the room is shared. Food is asked first, so a hut holding
+    /// food answers exactly as it did.
+    /// </para>
+    /// <para>
+    /// ⭐ AN ARMFUL, AND SOMEWHERE TO PUT IT — asked of STORAGE (D370). The first draft of D362 asked
+    /// every store, market included, and the code's own comment at `StoreForTheLoad` describes what
+    /// two finders that disagree about "room" do: a carrier takes an armful because the market has
+    /// space, is sent to a granary because only storage may take it, finds it full, sets the load
+    /// down at the door and goes home — and comes back for it. The "nearly full" arm this used to
+    /// end with is gone: a buffer below an armful is not worth anybody's walk, full or not.
+    /// </para>
+    /// </remarks>
+    public Goods? GoodWorthClearing(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
         if (workplace.IsSite)
         {
-            return false;
+            return null;
         }
 
-        Goods? food = null;
         IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
-        for (int i = 0; i < edible.Count && food is null; i++)
+        for (int i = 0; i < edible.Count; i++)
         {
             if (workplace.Store[edible[i]] > 0)
             {
-                food = edible[i];
+                // The first food held decides for the food, as it always did — and a food short of
+                // an armful does not keep the hides in.
+                if (WorthTheWalk(edible[i]))
+                {
+                    return edible[i];
+                }
+
+                break;
             }
         }
 
-        if (food is null)
+        for (int g = 0; g < workplace.Store.Slots; g++)
         {
-            return false;
+            var goods = (Goods)g;
+            if (!GoodsCatalog.Edible(goods) && WorthTheWalk(goods))
+            {
+                return goods;
+            }
         }
 
-        // ⭐ AN ARMFUL, AND SOMEWHERE TO PUT IT — asked of STORAGE (D370). The first draft of
-        // D362 asked every store, market included, and the code's own comment at
-        // `StoreForTheLoad` describes what two finders that disagree about "room" do: a carrier
-        // takes an armful because the market has space, is sent to a granary because only storage
-        // may take it, finds it full, sets the load down at the door and goes home — and comes
-        // back for it. The "nearly full" arm this used to end with is gone: a buffer below an
-        // armful is not worth anybody's walk, full or not.
-        return workplace.Store[food.Value] >= Config.CarryCapacity && SomewhereToPut(food.Value);
+        return null;
+
+        bool WorthTheWalk(Goods goods) =>
+            workplace.Store[goods] >= Config.CarryCapacity && SomewhereToPut(goods);
     }
 
     /// <summary>
@@ -3435,7 +3478,7 @@ public sealed class SimWorld : IObstacles
         if (hut.Mode != WorkMode.PlantOnly && LimitIsMet(Goods.Logs))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Logs)} logs and it has {HeldAgainstItsLimit(Goods.Logs)}.";
+                + $"{StockLimits.For(Goods.Logs)} logs and it has {HeldAgainstItsLimit(Goods.Logs)} stored.";
         }
 
         return hut.Mode == WorkMode.PlantOnly
@@ -3448,7 +3491,7 @@ public sealed class SimWorld : IObstacles
         if (LimitIsMet(Goods.Firewood))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {FirewoodTheVillageHas()}.";
+                + $"{StockLimits.For(Goods.Firewood)} firewood and it has {HeldAgainstItsLimit(Goods.Firewood)} stored.";
         }
 
         if (!TheVillageWantsMoreFirewood())
@@ -3488,7 +3531,7 @@ public sealed class SimWorld : IObstacles
         if (LimitIsMet(Goods.Tools))
         {
             return $"Nothing to forge — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Tools)} tools and it has {held}.";
+                + $"{StockLimits.For(Goods.Tools)} tools and it has {held} stored.";
         }
 
         if (Config.FirewoodPerTool > 0 && LabourQuota.FirewoodShortfall(this) > 0)
@@ -11433,7 +11476,7 @@ public sealed class SimWorld : IObstacles
 
         if (StockLimits.For(food) is int limit && HeldAgainstItsLimit(food) >= limit)
         {
-            return $"you asked the village to keep {limit} {GoodsCatalog.NameOf(food)} and it has {HeldAgainstItsLimit(food)}";
+            return $"you asked the village to keep {limit} {GoodsCatalog.NameOf(food)} and it has {HeldAgainstItsLimit(food)} stored";
         }
 
         return WhyTheVillageWantsNoMoreFood()

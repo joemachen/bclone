@@ -1841,15 +1841,17 @@ public partial class Main : Control
             // Read from the sim rather than from the widget: the label cannot drift from the
             // state it describes.
             int? limit = world.StockLimits.For(goods);
-            // ⭐ THE RULE'S OWN NUMBER (D409): `HeldAgainstItsLimit` — stores, heaps, and a food's
-            // hut buffers — for every good, so the row can never disagree with the stop it explains.
+            // ⭐ THE RULE'S OWN NUMBER (D409): `HeldAgainstItsLimit` — stores (the market too), heaps,
+            // the huts' buffers and the loads on their way to storage (D420), never a larder — for
+            // every good, so the row can never disagree with the stop it explains. "Stored", not
+            // "have" (D420): the village holds more than this, in its homes.
             // It read the warehouses for firewood while the rule read the heaps too, which is how Joe
             // saw *"stop at 400 · have 450"*. And a ⚠ where the limit is met, in the sim's words.
             int have = world.HeldAgainstItsLimit(goods);
             string? met = world.WhyTheLimitIsMet(goods);
             held.Text = limit is null
-                ? $"no limit · have {have.Grouped()}"
-                : $"{(met is null ? string.Empty : "⚠ ")}stop at {limit.Value.Grouped()} · have {have.Grouped()}";
+                ? $"no limit · stored {have.Grouped()}"
+                : $"{(met is null ? string.Empty : "⚠ ")}stop at {limit.Value.Grouped()} · stored {have.Grouped()}";
             held.TooltipText = met ?? string.Empty;
             held.MouseFilter = met is null ? MouseFilterEnum.Ignore : MouseFilterEnum.Pass;
         }
@@ -3733,7 +3735,7 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// <b>Collapsible and left open by default</b> — they are standing orders, not a dialog you
-    /// dismiss, and the numbers beside them (*"200 · have 214"*) are worth watching while the
+    /// dismiss, and the numbers beside them (*"200 · stored 214"*) are worth watching while the
     /// year runs.
     /// </para>
     /// </remarks>

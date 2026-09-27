@@ -1,6 +1,50 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D419 IN §7. `main` = D418, PUSHED. `slice/store-stock` = D419, NOT MERGED. FIRST: ASK JOE THE THREE QUESTIONS IN THE BANNER (play + merge; two stock-limit calls). THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D420 IN §7. `main` = D418, PUSHED. `slice/store-stock` = D419 and `slice/limit-in-transit` = D420 (stacked on it), NEITHER MERGED. FIRST: JOE PLAYS BOTH → MERGE. THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (END) — AFTER D419, ON A BRANCH.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (LAST) — AFTER D420, ON A STACKED BRANCH.**
+>
+> **State:** `main` = D418 (`c1556b3`), pushed. `slice/store-stock` = D419 + its handoff, NOT merged.
+> **`slice/limit-in-transit` = D420, cut from `slice/store-stock` (Joe's call), committed, NOT merged,
+> NOT pushed** — merging it merges both. **1260 passing, 0 failing, 4 skipped of 1264**, 3m37 (base
+> commit back to back 3m39); view 0 warnings; probe green, bar height 161. **One golden moved**
+> (`SkillTests` shipped-without-mastery).
+>
+> **Joe's answers this session:** *"loads in transit should count and the market's shelf should count
+> toward the limit too"* — the market already did (his call, over my "leave it out"); and **(b)** for
+> the hide, *"build it into this slice"*. Read D420 and `stock-limits-and-laborers.md §4.5`.
+> - `HeldAgainstItsLimit` now also counts what a **living** villager carries while `HaulingToStore` or
+>   `HaulingToFarm` (never a fetch, a restock, a builder's materials, the dead), and **every good's**
+>   hut buffer.
+> - The hunter puts the hide into the lodge with the meat (meat first). Buffers clear any good: food
+>   first, a non-food good only into an empty armful (`SimWorld.GoodWorthClearing`,
+>   `BehaviorSystem.TakeTheOtherGoods`).
+> - Labels say **"stored"** (panel row, ⚠ sentence, every "it has N stored" note).
+>
+> **▶️ FIRST, ASK JOE:** play `slice/limit-in-transit` (it carries D419's crates too) → merge both, then
+> he pushes. Things to look at: the Stock limits rows read "stored"; a lodge now fills with hides
+> between clearings (up to ~730 measured) — they leave with a marketer or when the lodge is full.
+>
+> **⚠️ Tell him the survival numbers straight (they are in D420):** every-source villages 95 → 154
+> alive; shipped 178 → 174, fixture 149 → 141 alive with more starved — **diagnosed as drift, not the
+> rule** (the forage limit was met 0 ticks in the three years before every new famine, in both arms;
+> a +1-limit noise arm of the OLD rule moves shipped alive by 17). If he wants it re-measured on
+> more seeds, the harness is below.
+>
+> **Then the queue (unchanged):** the well, slice C (`organic-housing.md §9.5` P6) → tools on ticks at
+> 34 % → the quarry, spec first → his design threads (⏸️ OPEN list).
+>
+> **Tools:** the D420 harness `ZzLimit.cs` (arm `Measure` = 30 shipped + 12 fixture + 13 every-source,
+> as played with the shipped limits; `Diag` = per-year food/limit/starvation print; dial `ZZ_BUMP`
+> adds N to every limit) is in
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/e3e1ad71-0b21-483d-9cfa-4a276b096683/scratchpad/`.
+> A/B it against a `git worktree add <dir> <base commit>` rather than a C# dial. Copy into
+> `tests/Bclone.Sim.Tests/`, run with `--filter`, **delete before committing**. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D419 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (END) — AFTER D419, ON A BRANCH.**
 >
 > **State:** `main` = D418 (`c1556b3`), **pushed**. **`slice/store-stock` = D419 (`c1983dd`) + this
 > handoff commit — NOT merged, NOT pushed.** On the branch: **1249 passing, 0 failing, 4 skipped of
@@ -2863,10 +2907,21 @@ shelf it was checking. A shelf that dropped a good dropped it from both sides an
 red check scored **zero**. ⭐ **Count the truth from the source (the store), and the claim from the
 thing under test (the shelf) — never both from the same list.**
 
+## ⛔ THE TRAP D420 PAID FOR — A RED CHECK THAT DOES NOT COMPILE SCORES ZERO, SILENTLY
+
+The seventh mutation (`if (true || … is not Goods goods …)`) left `goods` unassigned — CS0165 — so
+the test run built nothing, ran nothing, and the script that counted `Failed` lines reported **0
+reds** as though the guard were blind. It was not; the break never landed. ⭐ **A red-check script
+must check the build before it counts reds**, and a zero is read as "did it compile?" before it is
+read as "the guard is weak". The same session: `python open()` in text mode rewrote every LF file it
+touched as CRLF on Windows — pass `newline=""`.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? (Joe, 2026-09-27 — thoughts given, TWO CALLS ASKED,
-  nothing built.)** *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition
+- ✅ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? — ANSWERED AND BUILT (D420).** Joe: *"loads in transit
+  should count and the market's shelf should count toward the limit too"*; (b) for the hide. Kept
+  open for him only: the survival read in D420 (drift, diagnosed), and whether "stored" is the word
+  he wants. *(The original entry, kept:)* **(Joe, 2026-09-27 — thoughts given, TWO CALLS ASKED.)** *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition
   to whatever is in home larders. a limit of 400 logs means 400 logs in storage in addition to
   whatever is in home larders. Same for everything else."* ⭐ **It already excludes them** —
   `SimWorld.HeldAgainstItsLimit` (D409) counts every store that accepts the good (the market, cart
