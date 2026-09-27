@@ -316,7 +316,7 @@ public partial class Main : Control
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
         GD.Print(_map.AHeapAtADoorIsSeen());
-        GD.Print(_map.AMarketShowsItsStock());
+        GD.Print(_map.EveryStoreShowsItsStock());
         GD.Print(_map.TheFieldsStayInsideTheirFences());
 
         ProbeTheControlBar();
@@ -338,6 +338,10 @@ public partial class Main : Control
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
         GD.Print(_map.TheTrailsLieOnTheGround());
+
+        // Asked again here (D419): the founding has only the cart, twelve years in the granaries and
+        // warehouses stand — so the rule the draw obeys is read on every kind that exists.
+        GD.Print(_map.EveryStoreShowsItsStock());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();

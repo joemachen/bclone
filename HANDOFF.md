@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D418 IN §7. `main` = D418, PUSHED. NEXT: EVERY STORAGE BUILDING SHOWS ITS STOCK (JOE, D418) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D419 IN §7. `main` = D418, PUSHED. `slice/store-stock` = D419, NOT MERGED — JOE PLAYS IT. THEN: HIS STOCK-LIMIT ANSWER → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-27 — AFTER D418.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-27 (LATER) — AFTER D419, ON A BRANCH.**
+>
+> **State:** `main` = D418, pushed. **`slice/store-stock` = D419, committed, NOT merged, NOT pushed**
+> — every storage building draws its goods the way the market does (view only, no golden moved).
+> 1249 / 0 / 4 of 1253, 3m27; view 0 warnings; probe green (`store stock`), bar height 161.
+>
+> **What Joe needs to do:** play the branch — granaries and warehouses show crates; a storage crate
+> is that good's share of the building, a market's is its counter against the marketer's number.
+> Then merge.
+>
+> **⏸️ Waiting on him:** his answer on the stock-limit question (⏸️ OPEN list: loads in transit, and
+> whether the market's shelf counts toward a limit). Nothing built.
+>
+> ⚠️ The unattended probe village builds only the cart even at twelve years — a store-kind probe that
+> needs a granary has to pose one.
+>
+> *(The D418 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-09-27 — AFTER D418.**
 >
 > **State:** `main` = D417 + D418 merged from `slice/market-stock` and **pushed at Joe's word**.
 > Read D417/D418 in §7 and `storage-and-distribution.md §14.14`.
@@ -2765,6 +2784,13 @@ back to back, with `--logger trx`, and read the per-test deltas before believing
 Running the four flipped guards at 41 / 99 / 101 separated chaos (they flip on neighbours) from a
 cause (the farm memory flipped at 99–101 only, and a sweep of distances found a single flat spot).
 One extra build per value; it is the cheapest honest classifier this project has.
+
+## ⛔ THE TRAP D419 PAID FOR — A CHECK THAT COUNTS FROM WHAT IT CHECKS AGREES WITH ITSELF
+
+The store-stock probe compared "goods held" against "crates drawn", and took "goods held" from the
+shelf it was checking. A shelf that dropped a good dropped it from both sides and stayed green — the
+red check scored **zero**. ⭐ **Count the truth from the source (the store), and the claim from the
+thing under test (the shelf) — never both from the same list.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
