@@ -18,6 +18,9 @@ the predicate and ignored by two deposit paths). Guarded by `StockLimitTests` an
 > **⭐⭐ D409 (2026-09-26) — THE LIMITS LIVE IN THE SIM, ONE PER GOOD, NO FOOD TOTAL. §4.4.** The
 > starting limits are data, the panel is grouped and shows what the sim holds, every limit reads
 > one number, and a met limit is a ⚠ on the bar. ✅ Built and guarded (`StartingStockLimitsTests`).
+>
+> **⭐⭐ D420 (2026-09-27) — A LOAD ON ITS WAY TO STORAGE COUNTS; THE HIDE GOES IN THE LODGE. §4.5.**
+> ✅ Built and guarded (`LimitInTransitTests`).
 
 ---
 
@@ -176,7 +179,7 @@ headless left nobody alive in his game.
   rest (Joe's numbers). Empty by default, so a config that says nothing has no limits. An unknown
   key fails at load. The panel seeds its rows from `StockLimits` and pushes nothing.
 - **One number per good — `SimWorld.HeldAgainstItsLimit`:** stores + heaps + (edible goods) the
-  huts' buffers. `MayTake` / `LimitIsMet` read it, and so every stop does: the forester (D146), the
+  huts' buffers. *(Since D420, §4.5: every good's buffers, and the loads on their way to storage.)* `MayTake` / `LimitIsMet` read it, and so every stop does: the forester (D146), the
   brush (D212), the woodcutter, the smith, the quota, and the panel's *have*. The heaps are what
   make a cold start's log limit hold — its cart takes no logs and its pile is small. **§4.1's rule
   still holds, generalised:** the limit reads what the thing it stops produces into.
@@ -190,6 +193,42 @@ headless left nobody alive in his game.
   about ten people, which is why the default is 2000.
 - **Grouped by the good's own category** (`GoodRow.Category`: Food, Materials, FuelAndGoods), so a
   modded good lands in its group with no view code. Unset fails at load; anything edible is Food.
+
+### 4.5 ⭐⭐ A LOAD ON ITS WAY TO STORAGE COUNTS, AND SO DOES THE HIDE IN THE LODGE (D420)
+
+Joe, 2026-09-27: *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition
+to whatever is in home larders."* Asked the two gaps against that, he answered: **"loads in transit
+should count and the market's shelf should count toward the limit too."**
+
+- **What `HeldAgainstItsLimit` counts now:** the stores (**the market included** — it already was,
+  `InStores` sums every store that accepts the good; Joe's call, over the recommendation to leave it
+  out), the heaps on the ground, **every** hut's buffer (any good, not only food), and **what a
+  living villager carries while `HaulingToStore` or `HaulingToFarm`**. Never a larder.
+- **Why those two states, and not "everything in anyone's arms":** a villager carries no flag
+  saying what a load is for; the state is the one signal. `HaulingToStore` is every leg that ends in
+  storage — a producer's haul, a cleared buffer, a tidied heap, an emptied store, a dead household's
+  larder, a builder's or a marketer's leftover. `HaulingToFarm` is a catch or a reap on its way to
+  the hut's own buffer, which already counts. **Out, by construction:** a household's fetch (it
+  rides home as `TravelingHome`, the same state an interrupted producer walks home in — which is
+  why the rule is an inclusion list), a marketer's restock (`StockingTheMarket`), a builder's
+  materials (`FetchingMaterials`), and the dead (a corpse keeps its arms).
+- **Nothing is counted twice:** picking a load up takes it out of the heap, buffer or store that
+  was counting it; putting it down takes it out of the arms. The count is now level across the walk
+  where it used to dip for the length of it.
+- **The hide goes into the lodge with the meat** (Joe's call (b)). Until D420 the hide rode in the
+  hunter's arms from hunt to hunt — through `Idle`, `TravelingToGame`, `Hunting` — until the lodge
+  was full or they went home, so no limit could see it. Now `PutTheCatchInTheLodge` puts down
+  everything the hunter carries, meat first (the meat is the trade, and the lodge's room is shared);
+  what does not fit goes on to a store as before (D385). **So a buffer holds a non-food good for the
+  first time, and every reader of a buffer reads every good:** `BufferWorthClearing` (an armful of
+  any one good, with storage room for it — food asked first), the producer's own clearing and the
+  marketer's round (food first, as before; a non-food good only into an empty armful, so an armful
+  never needs two kinds of store).
+- **Known gap, kept:** a producer interrupted mid-haul (`TrySeekWarmth`, `TryEmergencyRestock`)
+  keeps the load under another state and is not counted until it is put down.
+- **What the player sees:** the panel's number is **"stored"**, not "have" and not "in storage" —
+  it includes the market's shelf and the loads on the road, and it never includes the larders
+  (walls at 400 each, D399), so the village holds more food than the row says.
 
 ---
 

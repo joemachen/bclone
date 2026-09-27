@@ -2884,9 +2884,9 @@ public partial class VillageMap : Control
                 colour with { A = 0.85f },
                 colour);
 
-            if (building.Kind == StoreKind.Market && _pixelsPerTile >= StallDetailFrom)
+            if (ShowsItsStock(building))
             {
-                foreach ((Goods goods, Vector2[] crate) in CratesOnTheStall(building, ShelfOf(world, building)))
+                foreach ((Goods goods, Vector2[] crate) in CratesIn(building, ShelfOf(world, building)))
                 {
                     DrawColoredPolygon(crate, GoodsPalette.ColourOf(goods));
                     for (int c = 0; c < 4; c++)
@@ -2919,31 +2919,54 @@ public partial class VillageMap : Control
         }
     }
 
-    /// <summary>Closer than this and a market's stall shows its crates; further out it is the footprint alone.</summary>
-    private const float StallDetailFrom = 8f;
+    /// <summary>Closer than this and a store shows its crates; further out it is the footprint alone.</summary>
+    private const float StockDetailFrom = 8f;
 
-    /// <summary>How many crates stand side by side on a stall before a second row starts.</summary>
+    /// <summary>How many crates stand side by side in a store before a second row starts.</summary>
     private const int CratesPerRow = 5;
 
+    /// <summary>Narrower than this a crate is not drawn — the footprint alone says more than a smear.</summary>
+    private const float NarrowestCrate = 2f;
+
     /// <summary>
-    /// What a market's counter holds, good by good, against what the marketer keeps it to (D417).
+    /// ⭐ Whether a store draws its goods — <b>every store, not only the market</b> (D419, Joe:
+    /// *"granaries, stockpiles, and warehouses should have the same 'market stock' visibility — all
+    /// storage buildings should"*). One predicate, so the probe asks the rule the draw obeys.
+    /// </summary>
+    private bool ShowsItsStock(StoreBuilding store) => store.Store.Capacity > 0 && _pixelsPerTile >= StockDetailFrom;
+
+    /// <summary>
+    /// What a store holds, good by good, against the number its crate is measured by (D417, D419).
     /// </summary>
     /// <remarks>
-    /// ⭐ <b>Every good the catalogue lets a market hold gets a slot, whether or not any is there</b>
-    /// — read from <c>GoodsCatalog.StoredBy</c>, the same question <c>BehaviorSystem.MarketGoodsIn</c>
-    /// asks, so a good added to the catalogue appears on the stall with no edit here (Joe: *"eventually
-    /// there will be a greater variety of items in there"*). A slot per good, held in catalogue order,
-    /// means a crate never jumps sideways because the one beside it ran out.
+    /// <para>
+    /// ⭐ <b>Every good the catalogue lets this kind of store hold gets a slot, whether or not any is
+    /// there</b> — <c>GoodsCatalog.StoredBy(goods, store.Kind)</c> — so a good added to the catalogue
+    /// appears on the shelf with no edit here (Joe: *"eventually there will be a greater variety of
+    /// items in there"*). Catalogue order, so a crate never jumps sideways because the one beside it
+    /// ran out.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Two measures, because the two kinds of building answer different questions.</b> A
+    /// market's counter is kept to a number per good (<c>MarketStockLimit</c>), so its crate reads
+    /// <i>how near the marketer's number</i>. Storage has no number per good — one capacity shared by
+    /// everything in it — so a granary's or a warehouse's crate reads <i>this good's share of the
+    /// building</i>: a granary full of forage is one tall crate, logs a twentieth of a warehouse a
+    /// sliver.
+    /// </para>
     /// </remarks>
-    private static List<(Goods Goods, int Held, int Limit)> ShelfOf(SimWorld world, StoreBuilding market)
+    private static List<(Goods Goods, int Held, int Measure)> ShelfOf(SimWorld world, StoreBuilding store)
     {
         var shelf = new List<(Goods, int, int)>();
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
-            if (world.GoodsCatalog.StoredBy(goods, StoreKind.Market))
+            if (world.GoodsCatalog.StoredBy(goods, store.Kind))
             {
-                shelf.Add((goods, market.Store[goods], world.MarketStockLimit(market, goods)));
+                int measure = store.Kind == StoreKind.Market
+                    ? world.MarketStockLimit(store, goods)
+                    : store.Store.Capacity;
+                shelf.Add((goods, store.Store[goods], measure));
             }
         }
 
@@ -2951,25 +2974,29 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// ⭐ The crates on a market's stall — <b>the one place a crate's corners are decided</b>, shared by
-    /// the draw and the probe (D417, Joe: *"I want markets that visibly carry more stock"*).
+    /// ⭐ The crates in a store — <b>the one place a crate's corners are decided</b>, shared by the
+    /// draw and the probe (D417 on the market; every store since D419).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A crate per good the market holds, in the good's own colour (<see cref="GoodsPalette"/>, the
-    /// chip in the overview and the heap in the valley), standing on the stall's floor and <b>as tall
-    /// as the counter is full</b> — its stock against the marketer's limit for that good, so a counter
-    /// kept at its limit reads full at any village size and a sliver says it is nearly out. An empty
-    /// good draws nothing and keeps its slot.
+    /// A crate per good the store holds, in the good's own colour (<see cref="GoodsPalette"/>, the
+    /// chip in the overview and the heap in the valley), standing on the floor and <b>as tall as its
+    /// measure is full</b> (<see cref="ShelfOf"/>). An empty good draws nothing and keeps its slot.
+    /// Five a row; a crate narrower than <see cref="NarrowestCrate"/> is not drawn — the stockpile and
+    /// the cart are small and hold many goods, and show their crates as the player zooms in.
     /// </para>
     /// <para>
     /// ⚠️ <b>Inside the footprint and turned with it</b>, in the building's own frame like
     /// <see cref="FootprintQuadAt"/> — so a crate cannot be mistaken for a heap, which lies OUTSIDE a
     /// building at its door (D371).
     /// </para>
+    /// <para>
+    /// ⏳ <b>A placeholder for the art pass</b> (Joe, D419: *"when we get to visuals, i would like this
+    /// to manifest as visual goods being added to / removed from each building"*).
+    /// </para>
     /// </remarks>
-    private List<(Goods Goods, Vector2[] Quad)> CratesOnTheStall(
-        StoreBuilding market, IReadOnlyList<(Goods Goods, int Held, int Limit)> shelf)
+    private List<(Goods Goods, Vector2[] Quad)> CratesIn(
+        StoreBuilding store, IReadOnlyList<(Goods Goods, int Held, int Measure)> shelf)
     {
         var crates = new List<(Goods, Vector2[])>();
         if (shelf.Count == 0)
@@ -2978,12 +3005,12 @@ public partial class VillageMap : Control
         }
 
         // The footprint's drawn size (0.8 of the extent, as `DrawStores` draws it), in pixels.
-        float width = market.ExtentWidth * 0.8f * _pixelsPerTile;
-        float height = market.ExtentHeight * 0.8f * _pixelsPerTile;
-        float radians = market.Facing.Raw * Mathf.Tau / 65536f;
+        float width = store.ExtentWidth * 0.8f * _pixelsPerTile;
+        float height = store.ExtentHeight * 0.8f * _pixelsPerTile;
+        float radians = store.Facing.Raw * Mathf.Tau / 65536f;
         float cos = Mathf.Cos(radians);
         float sin = Mathf.Sin(radians);
-        Vector2 centre = ToScreen(market.Position);
+        Vector2 centre = ToScreen(store.Position);
 
         Vector2 Corner(float x, float y) =>
             centre + new Vector2((x * cos) - (y * sin), (x * sin) + (y * cos));
@@ -2991,22 +3018,26 @@ public partial class VillageMap : Control
         int perRow = Mathf.Min(shelf.Count, CratesPerRow);
         int rows = (shelf.Count + CratesPerRow - 1) / CratesPerRow;
 
-        // A margin inside the stall's edge, then slots across and bands down; each crate is a
+        // A margin inside the building's edge, then slots across and bands down; each crate is a
         // share of its slot so neighbours never touch.
         float left = -width * 0.4f;
         float slot = width * 0.8f / perRow;
         float top = -height * 0.35f;
         float band = height * 0.75f / rows;
+        if (slot * 0.7f < NarrowestCrate)
+        {
+            return crates;
+        }
 
         for (int i = 0; i < shelf.Count; i++)
         {
-            (Goods goods, int held, int limit) = shelf[i];
+            (Goods goods, int held, int measure) = shelf[i];
             if (held <= 0)
             {
                 continue;
             }
 
-            float full = Mathf.Clamp(held / (float)Mathf.Max(1, limit), 0f, 1f);
+            float full = Mathf.Clamp(held / (float)Mathf.Max(1, measure), 0f, 1f);
             float tall = band * 0.85f * Mathf.Max(0.15f, full);
 
             int row = i / CratesPerRow;
@@ -3028,89 +3059,132 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// ⭐ A market's stall shows its stock — for the width probe (D417).
+    /// ⭐ Every store shows its stock — for the width probe (D417, D419).
     /// </summary>
     /// <remarks>
-    /// Posed, not read: the village's own market is at whatever stock the founding left it, so the
-    /// probe hands <see cref="CratesOnTheStall"/> a shelf of three goods — one at its limit, one at a
-    /// tenth of it, one empty — on the village's market's footprint (the first store's at the founding,
-    /// which raises none), and asks that two crates stand, the
-    /// full one taller, every corner inside the stall. Nothing in the sim is touched.
+    /// <para>
+    /// <b>Posed:</b> <see cref="CratesIn"/> is handed a shelf of three goods — one at its measure, one
+    /// at a tenth, one empty — on the first store's footprint, and must stand two crates, the full one
+    /// taller, every corner inside. <b>Read:</b> every store in the village is asked the rule the draw
+    /// obeys (<see cref="ShowsItsStock"/>) at a working zoom, and every good a store holds must draw a
+    /// crate — so a store the rule forgets, or a shelf that drops a good, is red.
+    /// </para>
+    /// <para>Nothing in the sim is touched; the zoom is put back.</para>
     /// </remarks>
-    public string AMarketShowsItsStock()
+    public string EveryStoreShowsItsStock()
     {
         SimWorld world = _world!;
-        StoreBuilding? market = null;
-        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        if (world.StoreBuildings.Count == 0)
         {
-            if (world.StoreBuildings[i].Kind == StoreKind.Market)
-            {
-                market = world.StoreBuildings[i];
-                break;
-            }
+            return "[widths] store stock: ⛔ no store in the village to pose a shelf on";
         }
 
-        // ⚠️ The founding raises no market, so the stall is posed on the first store's footprint
-        // then: the crates are geometry in the building's own frame and ask nothing else of it.
-        StoreBuilding? stallOf = market ?? (world.StoreBuildings.Count > 0 ? world.StoreBuildings[0] : null);
-        if (stallOf is null)
+        StoreBuilding posedOn = world.StoreBuildings[0];
+        float zoomWas = _pixelsPerTile;
+        _pixelsPerTile = MaxPixelsPerTile;
+        try
         {
-            return "[widths] market stall: ⛔ no store in the village to pose a stall on";
-        }
-
-        int slots = 0;
-        for (int id = 0; id < world.GoodsCatalog.Count; id++)
-        {
-            if (world.GoodsCatalog.StoredBy((Goods)id, StoreKind.Market))
+            var posed = new List<(Goods, int, int)>
             {
-                slots++;
-            }
-        }
+                (Goods.Produce, 400, 400),
+                (Goods.Fish, 40, 400),
+                (Goods.Firewood, 0, 400),
+            };
 
-        var posed = new List<(Goods, int, int)>
-        {
-            (Goods.Produce, 400, 400),
-            (Goods.Fish, 40, 400),
-            (Goods.Firewood, 0, 400),
-        };
+            List<(Goods Goods, Vector2[] Quad)> crates = CratesIn(posedOn, posed);
+            Vector2[] footprint = FootprintQuad(
+                ToScreen(posedOn.Position),
+                posedOn.ExtentWidth * 0.8f,
+                posedOn.ExtentHeight * 0.8f,
+                posedOn.Facing.Raw);
 
-        List<(Goods Goods, Vector2[] Quad)> crates = CratesOnTheStall(stallOf, posed);
-        Vector2[] stall = FootprintQuad(
-            ToScreen(stallOf.Position),
-            stallOf.ExtentWidth * 0.8f,
-            stallOf.ExtentHeight * 0.8f,
-            stallOf.Facing.Raw);
-
-        int outside = 0;
-        foreach ((Goods _, Vector2[] quad) in crates)
-        {
-            foreach (Vector2 corner in quad)
+            int outside = 0;
+            foreach ((Goods _, Vector2[] quad) in crates)
             {
-                if (!Geometry2D.IsPointInPolygon(corner, stall))
+                foreach (Vector2 corner in quad)
                 {
-                    outside++;
+                    if (!Geometry2D.IsPointInPolygon(corner, footprint))
+                    {
+                        outside++;
+                    }
                 }
             }
+
+            float Tall(Vector2[] quad) => quad[0].DistanceTo(quad[3]);
+
+            if (crates.Count != 2)
+            {
+                return $"[widths] store stock: ⛔ a shelf of two stocked goods and one empty draws {crates.Count} crates";
+            }
+
+            if (Tall(crates[0].Quad) <= Tall(crates[1].Quad) * 2f)
+            {
+                return $"[widths] store stock: ⛔ a full good draws {Tall(crates[0].Quad):F1}px against "
+                    + $"{Tall(crates[1].Quad):F1}px at a tenth — the shelf cannot say which is full";
+            }
+
+            if (outside > 0)
+            {
+                return $"[widths] store stock: ⛔ {outside} crate corners lie outside the building — stock reads as a heap";
+            }
+
+            // Every store, read: the rule the draw obeys, and a crate for every good it holds.
+            var kinds = new SortedSet<string>();
+            int held = 0;
+            int drawn = 0;
+            for (int i = 0; i < world.StoreBuildings.Count; i++)
+            {
+                StoreBuilding store = world.StoreBuildings[i];
+                if (!ShowsItsStock(store))
+                {
+                    return $"[widths] store stock: ⛔ {store.Name} ({store.Kind}) does not draw its stock at {_pixelsPerTile:F0}px a tile";
+                }
+
+                kinds.Add(store.Kind.ToString());
+                List<(Goods Goods, int Held, int Measure)> shelf = ShelfOf(world, store);
+                // Held counted from the store itself, never from the shelf — a shelf that drops a good
+                // would otherwise agree with its own crates (the first draft's red check scored zero).
+                for (int id = 0; id < world.GoodsCatalog.Count; id++)
+                {
+                    if (store.Store[(Goods)id] > 0)
+                    {
+                        held++;
+                    }
+                }
+
+                drawn += CratesIn(store, shelf).Count;
+            }
+
+            // And what each kind's shelf will hold, from the catalogue, since the probe's village may not
+            // have built one of each: a new good shows up here before it shows up on the map.
+            var slots = new List<string>();
+            foreach (StoreKind kind in System.Enum.GetValues<StoreKind>())
+            {
+                int count = 0;
+                for (int id = 0; id < world.GoodsCatalog.Count; id++)
+                {
+                    if (world.GoodsCatalog.StoredBy((Goods)id, kind))
+                    {
+                        count++;
+                    }
+                }
+
+                if (count > 0)
+                {
+                    slots.Add($"{kind} {count}");
+                }
+            }
+
+            return held == drawn && held > 0
+                ? $"[widths] store stock: ✅ posed, a full good stands {Tall(crates[0].Quad):F1}px, a tenth "
+                    + $"{Tall(crates[1].Quad):F1}px, an empty one draws nothing, all inside; every store draws its "
+                    + $"stock ({string.Join(", ", kinds)}): {drawn} crates for {held} goods held; slots {string.Join(", ", slots)}"
+                : $"[widths] store stock: ⛔ the village's stores hold {held} goods and draw {drawn} crates";
         }
-
-        float Tall(Vector2[] quad) => quad[0].DistanceTo(quad[3]);
-
-        if (crates.Count != 2)
+        finally
         {
-            return $"[widths] market stall: ⛔ a shelf of two stocked goods and one empty draws {crates.Count} crates";
+            _pixelsPerTile = zoomWas;
         }
-
-        if (Tall(crates[0].Quad) <= Tall(crates[1].Quad) * 2f)
-        {
-            return $"[widths] market stall: ⛔ a counter at its limit draws {Tall(crates[0].Quad):F1}px against "
-                + $"{Tall(crates[1].Quad):F1}px at a tenth — the stall cannot say which is full";
-        }
-
-        return outside == 0
-            ? $"[widths] market stall: ✅ {slots} goods have a slot on a stall; posed on {stallOf.Name}, a full "
-                + $"counter stands {Tall(crates[0].Quad):F1}px, a tenth {Tall(crates[1].Quad):F1}px, an empty one "
-                + "draws nothing, and every crate is inside the stall"
-            : $"[widths] market stall: ⛔ {outside} crate corners lie outside the stall — stock reads as a heap";
     }
 
     /// <summary>

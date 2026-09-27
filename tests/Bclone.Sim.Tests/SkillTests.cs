@@ -321,8 +321,9 @@ public sealed class SkillTests
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Were 1809397811475245451 (fixture) and 9052017553299419280 (shipped).
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Were 15636651256834973744 (fixture) and 11682607479568112513 (shipped).
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Were 15694792062086194684 (fixture) and 14012360185614587487 (shipped).
+    // RE-TAKEN (D420), THE SHIPPED ONE ONLY — a stock limit counts a load on its way to storage (HaulingToStore / HaulingToFarm, never a fetch, a restock or the dead) and every good in a hut's buffer, and the hide goes into the lodge with the meat (`stock-limits-and-laborers.md §4.5`, Joe: "loads in transit should count"). The fixture sets no limits and has no lodge, and did not move. Was 6377524262115766935 (shipped).
     [InlineData(false, 6080727105567841863UL)]
-    [InlineData(true, 6377524262115766935UL)]
+    [InlineData(true, 11736680872473445797UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ⏳ **every storage building shows its stock the same way — next (D418)** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), BUILT on `slice/store-stock` — unplayed, not merged** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -939,11 +939,26 @@ diagnosed first, and two of them were not the chaos the first read called them:
 - **The dry larders: a bar of three** (41 reads 3 too). ⏸️ Its fifth move since D363; whether one
   village can answer it at this size is on Joe's list.
 
-**⏳ NEXT, JOE'S CALL (D418): every storage building shows its stock the same way** — *"granaries,
+**✅ BUILT (D419), unplayed — JOE'S CALL (D418): every storage building shows its stock the same way** — *"granaries,
 stockpiles, and warehouses should have the same 'market stock' visibility — all storage buildings
 should. When we get to visuals, I would like this to manifest as visual goods being added to /
 removed from each building."* The crates are the placeholder for that; the art pass is where goods
 are seen arriving and leaving.
+
+**How it reads (D419).** Every store draws a crate per good it holds, on the same rule
+(`VillageMap.ShowsItsStock`, `ShelfOf`, `CratesIn`); a slot for every good its KIND may hold
+(`StoredBy(goods, kind)` — granary 4, warehouse 6, market 5, cart 9, pile 6 today). ⚠️ **Two
+measures:** a market's crate is its counter against the marketer's number for that good; a storage
+building has no number per good, so its crate is **that good's share of the building's capacity** —
+a granary full of forage is one tall crate, logs at a twentieth of a warehouse a sliver. A crate
+narrower than 2 px is not drawn, so the cart and the stockpile (small, many goods) show theirs as
+the player zooms in. Probe `[widths] store stock` (at the founding and twelve years in): the posed
+shelf, every store asked the draw's rule, and a crate for every good a store holds counted from the
+store itself — **3 of 3 reds** (the rule market-only; a shelf read by the market's kind; the empty
+drawn). ⚠️ The shelf red **first scored zero**: "held" was counted from the shelf under test, which
+agreed with itself; fixed to count the store. ⚠️ The probe's unattended village builds only the
+cart, even twelve years in, so the read half covers one kind; the line prints each kind's slot
+count from the catalogue.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

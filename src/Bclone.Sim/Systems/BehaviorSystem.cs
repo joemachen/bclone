@@ -2030,20 +2030,11 @@ public sealed class BehaviorSystem : ISimSystem
 
                 // ⛔ WHAT THE BUFFER ACTUALLY HOLDS, NOT `Goods.Produce` (2026-09-03): a marketer
                 // once walked to a hut brimming with fish and collected nothing, because the errand
-                // had asked for something that was not there.
-                Goods? holding = null;
-                IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-                for (int g = 0; g < edible.Count && holding is null; g++)
+                // had asked for something that was not there. The same question the errand's
+                // predicate asked — food first, then a hide (D420).
+                if (world.GoodWorthClearing(workplace) is Goods holding)
                 {
-                    if (workplace.Store[edible[g]] > 0)
-                    {
-                        holding = edible[g];
-                    }
-                }
-
-                if (holding is not null)
-                {
-                    Offer(workplace.Tile, holding.Value);
+                    Offer(workplace.Tile, holding);
                 }
             }
         }
@@ -2681,7 +2672,7 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"Nothing to split — you asked the village to keep "
                     + $"{world.StockLimits.For(Goods.Firewood)} firewood and it has "
-                    + $"{world.FirewoodTheVillageHas()}.";
+                    + $"{world.HeldAgainstItsLimit(Goods.Firewood)} stored.";
             }
             else if (!world.TheVillageWantsMoreFirewood())
             {
@@ -2792,7 +2783,7 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote = !world.MayReap() && SeasonRules.IsReaping(world.Clock.Season)
                     ? $"Not bringing the harvest in at {job.Name} — you asked the village to "
                       + $"keep {world.StockLimits.For(grown)} {world.GoodsCatalog.NameOf(grown)} and it has "
-                      + $"{world.HeldAgainstItsLimit(grown)}. It stands until the village eats."
+                      + $"{world.HeldAgainstItsLimit(grown)} stored. It stands until the village eats."
                     : SeasonRules.IsSowing(world.Clock.Season)
                         ? $"Every tile at {job.Name} is already sown."
                         : SeasonRules.IsReaping(world.Clock.Season)
@@ -2860,7 +2851,7 @@ public sealed class BehaviorSystem : ISimSystem
                           + "off, and its ground is wooded again."
                         : $"{job.Name} has stopped felling — you asked the village "
                           + $"to keep {world.StockLimits.For(Goods.Logs)} logs and it has "
-                          + $"{world.HeldAgainstItsLimit(Goods.Logs)}. Its ground is wooded again."
+                          + $"{world.HeldAgainstItsLimit(Goods.Logs)} stored. Its ground is wooded again."
                     : $"Nothing bare left to plant at {job.Name} — its ground is wooded again.";
 
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
@@ -3142,7 +3133,29 @@ public sealed class BehaviorSystem : ISimSystem
         return true;
     }
 
-    /// <summary>An armful of food out of the buffer, then to a store by the ordinary path.</summary>
+    /// <summary>
+    /// ⭐ A buffer's non-food good — a hide in the lodge — <b>into an empty armful only</b> (D420).
+    /// </summary>
+    /// <remarks>
+    /// Food goes to a granary and a hide to a warehouse, so an armful of both is two walks with a
+    /// set-down at the first door. The good is the one <see cref="SimWorld.GoodWorthClearing"/>
+    /// names, which is the question that sent the carrier here.
+    /// </remarks>
+    private static void TakeTheOtherGoods(SimWorld world, Villager villager, Workplace workplace, int room)
+    {
+        if (villager.IsCarrying || world.GoodWorthClearing(workplace) is not Goods goods || world.GoodsCatalog.Edible(goods))
+        {
+            return;
+        }
+
+        int take = Smallest(room, room, workplace.Store[goods]);
+        if (take > 0 && workplace.Store.TryTake(goods, take))
+        {
+            villager.Carried.Receive(goods, take);
+        }
+    }
+
+    /// <summary>An armful out of the buffer — food first, then a hide (D420) — and to a store by the ordinary path.</summary>
     private static void TakeFromTheBuffer(SimWorld world, Villager villager)
     {
         var at = new GridPos(villager.ErrandX, villager.ErrandY);
@@ -3172,6 +3185,8 @@ public sealed class BehaviorSystem : ISimSystem
                     room -= take;
                 }
             }
+
+            TakeTheOtherGoods(world, villager, workplace, room);
         }
 
         if (!villager.IsCarrying)
@@ -4124,6 +4139,8 @@ public sealed class BehaviorSystem : ISimSystem
                 }
             }
 
+            // ⭐ AND A HIDE, INTO AN EMPTY ARMFUL ONLY (D420) — one kind of store per armful.
+            TakeTheOtherGoods(world, villager, workplace, load);
             break;
         }
 
@@ -4602,24 +4619,36 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Back at the lodge with the catch (D384): the meat into its store, and the hunter decides
-    /// again — the next hunt, or clearing the lodge when it is full. What the lodge will not take
-    /// goes to a store (D385, never home); the hide stays in their arms until they pass a store.
+    /// Back at the lodge with the catch (D384): the meat into its store, then the hide (D420), and
+    /// the hunter decides again — the next hunt, or clearing the lodge when it is full. What the
+    /// lodge will not take goes to a store (D385, never home).
     /// </summary>
+    /// <remarks>
+    /// ⭐ <b>THE HIDE GOES IN TOO</b> (D420, Joe's call (b)). It stayed in the hunter's arms from
+    /// hunt to hunt until the lodge was full or they went home, and no stock limit could see it
+    /// (`stock-limits-and-laborers.md §4.5`). Meat first: the room is shared and the meat is the
+    /// trade. Every good in the arms, not leather by name — whatever a catch makes is the lodge's.
+    /// </remarks>
     private static void PutTheCatchInTheLodge(SimWorld world, Villager villager)
     {
         if (WorkplaceOf(world, villager) is Workplace lodge)
         {
-            int carried = villager.Carried[Goods.Meat];
-            int intoTheLodge = lodge.Store.Add(Goods.Meat, carried);
+            int intoTheLodge = lodge.Store.Add(Goods.Meat, villager.Carried[Goods.Meat]);
             villager.Carried.TryTake(Goods.Meat, intoTheLodge);
-            if (villager.Carried[Goods.Meat] > 0)
+            for (int g = 0; g < villager.Carried.Slots; g++)
+            {
+                var goods = (Goods)g;
+                int into = goods == Goods.Meat ? 0 : lodge.Store.Add(goods, villager.Carried[goods]);
+                villager.Carried.TryTake(goods, into);
+            }
+
+            if (villager.IsCarrying)
             {
                 // To a store, never home (D385) — the forager's rule, one trade over.
                 villager.State = VillagerState.HaulingToStore;
                 world.Log(LogLevel.Debug, "behavior",
                     $"{villager.Name} put {intoTheLodge} meat down at {lodge.Name}, "
-                    + $"{villager.Carried[Goods.Meat]} carried on — {world.Clock}.");
+                    + $"{villager.Carried.Held} carried on — {world.Clock}.");
                 return;
             }
         }
