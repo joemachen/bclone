@@ -8530,7 +8530,7 @@ public sealed class SimWorld : IObstacles
     /// <b>⭐ THE EXEMPTION `buildings-catalog.md §2.2` NAMES ON THE RECORD, AND IT IS PRINCIPLED
     /// RATHER THAN A SHORTCUT: a STATED capacity is data; a DERIVED one is the survival floor, and
     /// the survival floor is <see cref="VillageEconomy"/>'s business (D16).</b> A granary is a box
-    /// of a stated size (D219). A warehouse is <em>solved</em> — a horizon of households, the firewood
+    /// of a stated size (D219), and so is a market since D416. A warehouse is <em>solved</em> — a horizon of households, the firewood
     /// they want, the logs to split it out of, a house's timber, floored at a granary — and typing
     /// that number into a row is exactly the move D16 exists to refuse.
     /// </para>
@@ -8552,7 +8552,6 @@ public sealed class SimWorld : IObstacles
         {
             BuildingKind.Warehouse => VillageEconomy.WarehouseCapacity(Config),
             BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
-            BuildingKind.Market => VillageEconomy.MarketCapacity(Config),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind), kind, "That store states no capacity and the economy derives none."),
         };

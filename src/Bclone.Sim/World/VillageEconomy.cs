@@ -1442,20 +1442,19 @@ public static class VillageEconomy
     }
 
     /// <summary>
-    /// How much the market holds, across food and firewood together.
+    /// How much the market holds, across food and firewood together — `market_store_capacity`.
     /// </summary>
     /// <remarks>
-    /// <b>Stated target: enough that a household's errand is usually satisfied at the
-    /// market rather than at the granary</b>, and no more. Scaled by the village the
-    /// economy is budgeted for, so a growing settlement does not quietly turn its
-    /// market into the real store — which would re-centralise everything D30 just
-    /// spread out, and put the walking back.
+    /// ⭐ <b>Stated since D416</b> (Joe: *"increase market capacity to 4000"*); it was
+    /// <c>market_stock_per_household × economy_horizon_households</c> (800 shipped), a building
+    /// that sized itself. What stops a big market re-centralising the village (D30) is not its size
+    /// but <see cref="MarketStockWanted"/>: it is still only stocked for the households it has.
     /// </remarks>
     public static int MarketCapacity(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        return config.MarketStockPerHousehold * config.EconomyHorizonHouseholds;
+        return config.MarketStoreCapacity;
     }
 
     /// <summary>
@@ -1467,7 +1466,8 @@ public static class VillageEconomy
     /// <b>⛔⛔ THE CAPACITY IS A CEILING FOR THE HORIZON VILLAGE AND USING IT AS THE TARGET
     /// DOUBLED THE VILLAGE'S HAULING.</b> <see cref="MarketCapacity"/> is
     /// <c>market_stock_per_household × economy_horizon_households</c> — <b>800 units</b> on the
-    /// shipped config — and the first draft of the restock leg filled it. **A village of five
+    /// shipped config then (a stated 4,000 since D416) — and the first draft of the restock leg
+    /// filled it. **A village of five
     /// homes needing forty apiece had a marketer hauling stock for twenty households**, and
     /// measured distribution effort went up 24–79% while household fetching fell.
     /// </para>

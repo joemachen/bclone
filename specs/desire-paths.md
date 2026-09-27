@@ -6,8 +6,8 @@ slice)**, D414 (walkers keep to the path; the wear ceiling). Follows `gridless.m
 `pathfinding-and-water.md`.
 **Status:** ✅ **BUILT, SIM AND VIEW (2026-09-11, D358); PLAYED BY JOE FIVE TIMES (D359, D360, D362,
 D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes and wear has a ceiling —
-BUILT ON `slice/paths-pull`, NOT MERGED, UNPLAYED. ✅ D415 — the view draws a two-wide corridor as
-one lane and fills a yard only at a packed 3×3 junction — on the same branch, unplayed.**
+and ✅ D415 — the view draws a two-wide corridor as one lane and fills a yard only at a packed 3×3
+junction — PLAYED BY JOE AND MERGED (D416: *"looks so much better. keep it at 130 for now"*).**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
 *Paths* overlay (P), an inspector sentence, a probe line. Paving (§2.6's *upgrade an emerged path*)
@@ -252,13 +252,13 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] `DesirePathTests` green; goldens re-taken with the reason (the walk is faster on worn ground).
 - [x] Suite wall-clock accounted for (D358 records the number).
 
-### Slice 3 — keep to the path, and a ceiling ✅ BUILT (2026-09-26, D414), ⚠️ NOT MERGED, UNPLAYED
+### Slice 3 — keep to the path, and a ceiling ✅ MET (2026-09-26, D414; played and merged D416)
 - [x] Measured the premise first (treads on path, block tiles, per-tile traffic, the wear ceiling).
 - [x] §3.6's rule in `PlanLeg`; §3.1's ceiling; two keys, validated.
 - [x] Five guards, red-checked (5 reds); four guards re-posed with their reasons (D414).
 - [x] Survival level over 42 fifty-year runs; six goldens moved once; the suite's clock level back
   to back with main (4m21 against 4m17).
-- [ ] Joe plays it.
+- [x] Joe plays it (D416): *"looks so much better. keep it at 130 for now. merge."*
 
 ### Slice 2 — the view ✅ MET (2026-09-11, D358, same commit)
 - [x] Trails drawn on the ground from `Paths.Tiles`: worn as earth showing through, packed darker,

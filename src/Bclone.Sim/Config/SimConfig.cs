@@ -1360,6 +1360,22 @@ public sealed record SimConfig
     [JsonPropertyName("market_stock_per_household")]
     public int MarketStockPerHousehold { get; init; } = 40;
 
+    /// <summary>
+    /// How much a market HOLDS, food and firewood together — a stated number (D416, Joe:
+    /// *"increase market capacity to 4000"*).
+    /// </summary>
+    /// <remarks>
+    /// Was derived — <c>market_stock_per_household × economy_horizon_households</c>, 800 shipped —
+    /// the shape D219 took away from the granary because a size that derives itself can hide a
+    /// divergence. ⛔ <b>The building's size, not what it is stocked to:</b> the marketer still
+    /// restocks to <c>market_stock_per_household</c> per occupied household
+    /// (<c>VillageEconomy.MarketStockWanted</c>), because D197 measured a restock target sized to
+    /// the building doubling the village's hauling. The capacity only caps that target past
+    /// 100 households.
+    /// </remarks>
+    [JsonPropertyName("market_store_capacity")]
+    public int MarketStoreCapacity { get; init; } = 4000;
+
     // ---------------------------------------------------------------
     //  What buildings cost to raise (D43)
     // ---------------------------------------------------------------
@@ -2527,7 +2543,9 @@ public sealed record SimConfig
             // A market is a place to work as well as a place to keep things (D14) — the one row
             // that both stores and employs.
             Stores = StoreKind.Market,
-            StoreCapacity = null,
+
+            // ⭐ A STATED SIZE SINCE D416, so it is data in the row like the granary's (D219).
+            StoreCapacity = MarketStoreCapacity,
             Seats = MarketCapacity,
 
             // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
@@ -3836,6 +3854,12 @@ public sealed record SimConfig
         // its village is now a legitimate configuration with a visible consequence** — the village
         // stops growing sooner and the player builds another — which is the whole of Joe's ruling:
         // *"it's fine if the granary feeds a different number of people."*
+        if (MarketStoreCapacity < 1)
+        {
+            throw new SimConfigException(
+                $"market_store_capacity must be at least 1 (got {MarketStoreCapacity}) — a market that holds nothing is not a store.");
+        }
+
         if (GranaryCapacity < 1)
         {
             throw new SimConfigException(

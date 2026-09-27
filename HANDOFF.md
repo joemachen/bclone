@@ -1,6 +1,50 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D358–D368 + D404–D414 IN §7 (D404–D415). `main` IS PUSHED (D413). `slice/paths-pull` HOLDS D414 (SIM) + D415 (VIEW), NOT MERGED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D416 IN §7. `main` = D414–D416 MERGED LOCALLY, NOT PUSHED (JOE PUSHES). NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D414 + D415, ON A BRANCH.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATE) — AFTER D416.**
+>
+> **State:** `main` = D414 + D415 (Joe's path note, merged from `slice/paths-pull`) + D416 (the
+> market holds 4,000, merged from `slice/market-4000`), **NOT pushed — Joe pushes**. No branch is
+> open. **1248 passing, 0 failing, 4 skipped of 1252**, ~3m30 (the clock swings 3m15–4m35 across a
+> day on this machine — compare back to back, never across the day); view 0 warnings; probe green,
+> bar height 161.
+>
+> **Joe's calls this session:** B (walkers keep to the path) + a wear ceiling + the corridor view
+> pass — played: *"looks so much better. keep it at 130 for now. merge."* Then *"increase market
+> capacity to 4000"* — done as a STATED building size (`market_store_capacity`), with the restock
+> target untouched (40 per occupied household; raising the per-household number would have been
+> D197's doubled hauling). ⚠️ **No golden moved**: no market in the suite's fifty-year runs ever held
+> more than 800, so he will not SEE the bigger market unless something fills it — told him; if he
+> expected a visible change, the lever he may mean is `market_stock_per_household` (ask first — D197).
+>
+> **▶️ THE NEXT TASK: the well, slice C** (`organic-housing.md §9.5` P6) — a placeable well with no
+> water mechanic yet, a destination paths wear toward and a term in the home score. Spec says measure
+> before typing. ⭐ **It lands on D414's paths:** walkers now keep to the lanes the route takes, so a
+> well is exactly the kind of destination that should grow ONE lane, not a fan — measure block tiles
+> before and after (the harness below has a census for it).
+>
+> **Then the queue:** tools on ticks at 34 % (reversing D391's yield axis) → the quarry, spec first
+> (`specs/quarry.md`) → his design threads (the ⏸️ list below).
+>
+> **⏸️ New on his list this session (in the OPEN list):** the ceiling's number (130 kept "for now";
+> 104 cost 26 of 337 alive); a builder moved to foraging leaves a stocked site unbuilt a whole year
+> (found in D414, on main too); and still the every-source founding pose that kills half its villages.
+>
+> **Tools a session needs:** Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`
+> (`$GODOT` unset in the agent shell). The measurement harness `ZzHousing.cs` and `render.py` are in
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/742898cb-4727-4fad-ae90-6bfd6f68ae6e/scratchpad/`:
+> `PathArm` (per-year path census — path/worn/packed/block tiles, largest block, walk ticks, map dumps
+> at y5/15/25), `Measure` + `WideShipped` (the 42-run survival arm), `LayoutArm`, `EverySource`,
+> `ColdOff`; dials `ZZ_ALLOW`, `ZZ_CEIL`, `ZZ_LABEL`, `ZZ_DUMP`. Copy into `tests/Bclone.Sim.Tests/`,
+> run with `--filter "FullyQualifiedName~ZzHousing.<Arm>"`, **delete before committing**. ⚠️ The
+> village FIXTURE is built from C# defaults (`Phase0Fixtures.Plenty`), not `data/sim.config.json` —
+> an A/B on the fixture flips the `SimConfig` default, not the JSON (this session lost ten minutes
+> to that). ⚠️ Joe keeps a windowed game running (`…mono_win64.exe`, no `--headless`) — never kill
+> it; only a leftover headless probe is yours.
+>
+> *(The D414/D415 banner, kept below — its plan for D415 is built.)*
+>
+> **(superseded by the banner above)** **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-26 (NIGHT) — AFTER D414 + D415, ON A BRANCH.**
 >
 > **Branches:** `main` = `origin/main` (D413). **`slice/paths-pull` = D414 (sim) + D415 (view)
 > committed, NOT merged, NOT pushed** — Joe plays it, then merges and pushes. ✅ **D415 is built:** a
@@ -2647,6 +2691,10 @@ to the living lanes. **42 fifty-year villages lost 53 people** and only the surv
 It is validated now (`≥ packed + decay`), but the lesson is general: *a cap is also a floor on what
 the busiest thing can ever reach.*
 
+⚠️ **The village fixture is built from `SimConfig`'s C# defaults (`Phase0Fixtures.Plenty`), NOT from
+`data/sim.config.json`.** An A/B that edits the JSON changes the shipped arm and leaves every
+fixture test exactly where it was — and reads as "the change made no difference". Flip the default.
+
 ⚠️ **A guard that fails after a walk change is often a timing premise, not a regression.** Four did
 here: a room sample taken before the tick (room opened inside it), a "finished within the year"
 that main met with 32 ticks to spare, and two one-seed villages. Each was measured across seeds or
@@ -2654,9 +2702,9 @@ diagnosed by trace before it was re-posed — never re-posed on sight.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **THE WEAR CEILING'S NUMBER (D414).** 130 is level over 42 fifty-year villages (330 alive vs
-  337, starved 100 vs 108) and an abandoned hub path is grass in eight years. 104 — the nearest to the
-  spec's "six seasons" — cost 26 people. His number to move if he wants paths to fade faster.
+- ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*).** 130 is level over
+  42 fifty-year villages (330 alive vs 337, starved 100 vs 108) and an abandoned hub path is grass in
+  eight years. 104 — the nearest to the spec's "six seasons" — cost 26 people. His to revisit.
 - ⭐ **A BUILDER MOVED OFF A STOCKED SITE (found in D414, not fixed; on main too).** In
   `AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt`'s pose, the one builder put 37 work into a
   fully stocked warehouse, then the labour allocator moved her to foraging and nobody touched the

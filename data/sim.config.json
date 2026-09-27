@@ -1128,6 +1128,14 @@
   // re-centralising everything storage just spread out.
   "market_stock_per_household": 40,
 
+  // What the market HOLDS, food and firewood together (D416, Joe: "increase
+  // market capacity to 4000"). Stated, like the granary (D219); it was
+  // market_stock_per_household x economy_horizon_households = 800. The size of
+  // the building, not what it is stocked to: the marketer still restocks to 40
+  // per occupied household above (D197 measured a target sized to the building
+  // doubling the hauling).
+  "market_store_capacity": 4000,
+
   // ---- What buildings cost to raise (D43) --------------------
   // Two numbers each, on purpose. Logs are what the village must
   // HAVE; work ticks are what it must SPEND. A building that is

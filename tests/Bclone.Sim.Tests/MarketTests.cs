@@ -810,4 +810,27 @@ public sealed class MarketTests
             }
         }
     }
+
+    /// <summary>
+    /// ⭐ The market HOLDS what the config states and is STOCKED for the households it has (D416,
+    /// Joe: *"increase market capacity to 4000"*) — the building grew, the marketer's work did not.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ The restock half is D197's lesson: a target sized to the building doubled the hauling.
+    /// </remarks>
+    [Fact]
+    public void TheMarketHoldsItsStatedSizeAndIsStockedForItsHouseholds()
+    {
+        SimConfig config = Config;
+        Assert.Equal(4000, ShippedConfig.Load().MarketStoreCapacity);
+
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        StoreBuilding? market = world.StoreBuildings.Find(s => s.Kind == StoreKind.Market);
+        Assert.NotNull(market);
+        Assert.Equal(config.MarketStoreCapacity, market!.Store.Capacity);
+
+        Assert.Equal(config.MarketStockPerHousehold * 5, VillageEconomy.MarketStockWanted(config, 5));
+        Assert.Throws<SimConfigException>(() => (config with { MarketStoreCapacity = 0 }).Validate());
+    }
 }
