@@ -80,8 +80,12 @@ public sealed class FencesAsWallsTests
             {
                 foreach ((int dx, int dy) in Steps)
                 {
+                    // ⚠️ Ground somebody could stand on: a walk that begins on a building steps off
+                    // it first (D383), and since D411 a lane may have a building on it beside a
+                    // fence (fences §9.3, Joe: allowed) — its route starts past the building.
                     var outside = new GridPos(yard.X + dx, yard.Y + dy);
                     if (!CrossesAWall(world.Zones, outside, yard)
+                        || world.SomethingStandsAt(outside)
                         || !world.TravelCost.CanReach(world.Map.FoundingSite, outside))
                     {
                         continue;
@@ -321,7 +325,7 @@ public sealed class FencesAsWallsTests
 
         // The house the fence would come with stands somewhere else entirely.
         GridPos far = OrganicHousingTests.ABareSquareAtLeast(world, site, 8, 2);
-        Footprint proposed = world.HomeFootprintAt(far, PlotShape.Facings[0]);
+        Footprint proposed = world.HomeFootprintAt(far, PlotShape.Quarters[0]);
         Assert.Null(world.WhatThisWouldWallOff(proposed));
 
         string? refused = world.WhatThisWouldWallOff(proposed, fence);
@@ -516,7 +520,11 @@ public sealed class FencesAsWallsTests
     {
         SimWorld world = Founded();
         Household family = world.Households[0];
-        GridPos yard = YardOf(world, family)[0];
+
+        // ⚠️ The yard tile farthest from the house (D411): a house turned toward its path is a
+        // rectangle that can reach into the yard tile beside it, and a pile there is refused as
+        // "something already stands there" before the yard is asked (D331: collision is geometry).
+        GridPos yard = YardOf(world, family)[^1];
 
         PlacementVerdict pile = world.CanBuildAt(BuildingKind.Pile, yard);
         _output.WriteLine($"a pile in the {family.Name}s' yard: {pile.Reason}");
@@ -656,7 +664,7 @@ public sealed class FencesAsWallsTests
         int refused = 0;
         foreach (GridPos front in world.Zones.WholeResidentialTiles)
         {
-            foreach (Angle facing in PlotShape.Facings)
+            foreach (Angle facing in PlotShape.Quarters)
             {
                 Footprint home = world.HomeFootprintAt(front, facing);
                 Dictionary<GridPos, byte> fence = world.TrialFence(front, facing, 999);

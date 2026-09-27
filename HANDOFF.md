@@ -1,6 +1,37 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D411 IN §7. D411 (HOMES, PATH-FIRST AT ANY ANGLE — `organic-housing.md §9`) IS SPECCED AND JOE'S CALLS ARE MADE; BUILD SLICES A + B NEXT → THE WELL → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D412 IN §7. D412 (HOMES PATH-FIRST AT ANY ANGLE) IS BUILT ON `slice/organic-not-suburbia`, NOT MERGED — ⏸️ JOE'S CALL ON NINE RED FIXTURE GUARDS. THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATE NIGHT) — AFTER D411.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LATEST) — AFTER D412.**
+>
+> **Branches:** `main` = D411 (spec), pushed. **`slice/organic-not-suburbia` = D412, committed, NOT
+> merged, NOT pushed.** On the branch: **1228 passing, 14 failing, 4 skipped of 1246**, 3m25 — the 14 are
+> ON PURPOSE: five goldens held at main's values (they move ONCE, with Joe's answer) and nine guards
+> that read fixture seed 12345's single village over 50–150 years. Game build 0 warnings; probe green,
+> bar height 161.
+>
+> **Read `organic-housing.md §9.11` first** — it is the build, the measurements and the list.
+>
+> **⏸️⏸️ JOE'S CALL (D404's shape):** the game he plays is level (42 fifty-year runs; layout: rows
+> of 3+ on 17 → 2 of 18 seeds, modal facing 54 % → 21 %) while nine one-seed fixture guards flip —
+> *which* nine changed between runs of this slice, the signature of chaos, not of a cause. (a)
+> **Accept** → re-pose the nine with that reason, move the five goldens once, merge. (b) **Hold** →
+> investigate seed 12345's village first. Also his: delete the row term (it scores zero, §9.11)?
+> and D389's reopening racing a store emptied to be moved (it refills the same tick).
+>
+> **The picture:** `d412-before-after-shipped-1.png` and `-fixture-4.png`, rendered by
+> `render.py` from `ZzHousing.cs`'s dumps — all in this session's scratchpad
+> (`C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/8011b7b3-6e33-4cf6-bd04-c5ccccf7c0de/scratchpad/`),
+> not the repo. `ZzHousing.cs` is the measurement harness (layout arm, survival arm, 24 wide shipped
+> seeds); copy it into `tests/Bclone.Sim.Tests/`, set `ZZ_DUMP`/`ZZ_LABEL`, delete before committing.
+>
+> ⚠️ **Worktree:** `scratchpad/wt-main` is a `git worktree` of main used for back-to-back timing —
+> `git worktree remove --force` it; it holds nothing that is not in git.
+>
+> **What I need from Joe:** the call above, and to look at the before/after picture.
+>
+> *(The D411 banner, kept below.)*
+>
+
+> **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LATE NIGHT) — AFTER D411. (D412 is built — see above.)**
 >
 > **Branches:** `main` = D410 (pushed) + the D411 spec commits (docs only, **not pushed**). No code
 > has changed since D410: suite 1239 / 0 / 4 of 1243, probe green.
@@ -3111,6 +3142,12 @@ like buildings rather than tokens. *If "everything is the same size and that siz
 complaint, that is where to spend the effort.*
 
 ## Traps, in the order they will cost you
+
+- **⛔ COMPARE THE SUITE'S CLOCK BACK TO BACK, NEVER ACROSS THE DAY (2026-09-26, D412).** The branch read 5m30 against the morning's 3m06 and looked like a regression; run back to back with main in a worktree it was **4m02 against main's 4m40** — the machine had slowed, not the code. Sum the per-test durations from a `trx` too: equal CPU with a longer wall clock is the schedule, not the work.
+- **⚠️ A GOLDEN TEST CAN HOLD TWO GOLDENS (2026-09-26, D412).** `AVillageThatFarmsAndClearsAtOnce…` asserts the hash AND the hash without skills; moving the first and seeing the test still fail looked like nondeterminism across processes. It was line 347. **Read the line number before suspecting the sim.**
+- **⛔ A PRICE THAT IS ZERO OUT OF RANGE IS A SUBSIDY FOR BEING OUT OF RANGE (2026-09-26, D412).** The setback cost a site nothing when no path was within reach, so sites far from every path beat sites beside one. Hold the price at the range's edge.
+- **⚠️ A TURNED RECTANGLE ON THE GRID IS CORNER-CONNECTED (2026-09-26, D412).** At 45° a yard's tile centres touch only at corners; villagers step edge to edge; most of the yard was no gate's. Join the corners (`PlotShape.Bridge`) and price what no gate reaches.
+- **⛔ A DELIBERATE TELEPORT OUTLIVES THE RULE THAT MADE IT SAFE (2026-09-26, D412).** Families were stood at a new house's door the tick it was finished (2026-09-11); fences became walls in D404 and the teleport went through one on seed 7 once D412 moved a house. Removed.
 
 - **⚠️ A NOTE WRITTEN BY ONE TRADE OUTLIVES THE TRADE UNLESS THE JOB CHANGE CLEARS IT (2026-09-26, D410).** `WorkNote` is written by each trade's branch in `BehaviorSystem`; a forager gathering writes none, so a farmer moved to foraging carried *"Nothing standing to reap"* all autumn. **Clear per-job text where the job changes** (`Assign` to a different workplace, `Release`), the way `CommuteNote` already was. ⭐ *And two clears on one path can each hide the other's removal:* the professions-call guard scored **0** on either clear alone — only a second guard on a path that reaches one of them (the year's reshuffle, which never calls `Release`) makes the red-check mean anything.
 

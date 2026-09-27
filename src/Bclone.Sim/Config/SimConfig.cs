@@ -1632,51 +1632,89 @@ public sealed record SimConfig
     public int StartingResidentialRadius { get; init; } = 6;
 
     /// <summary>
-    /// A household's plot, in whole tiles along the lane (D386, `specs/organic-housing.md §3.1`).
+    /// How far a house's yard reaches past its GATE end, in quarter tiles, one of these by a hash of
+    /// the household (D411, `specs/organic-housing.md §9.5` P4). Which end is the gate's is hashed too.
     /// </summary>
     /// <remarks>
-    /// Three: a house is two tiles wide and stands on the left or the right of its plot's front
-    /// row, so the third tile is the side yard and the fence between neighbours runs beside it.
-    /// Joe's picture (a *Foundation* screenshot): *each in its own fenced irregular yard, packed
-    /// like fields, with dirt lanes between them, houses facing the lane.*
+    /// <para>
+    /// ⭐ <b>The yard follows the house, whichever way it is turned.</b> It is a rectangle about the
+    /// house — this far past each end, <see cref="HomeYardBackQuarters"/> behind, nothing in front —
+    /// and the fence is the tiles whose centres it covers (the centre rule, D319), walled on their
+    /// edges (D404). Joe, with a Foundation screenshot: *"everything in the green boundary is
+    /// housing"* — yards of every size, each turned with its house.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Quarters, and never a half.</b> A tile centre sits on a half along a house turned a
+    /// quarter, and the centre rule's edge is inclusive, so a reach of exactly a half claims a whole
+    /// extra row on one facing and not the next (D331's slip).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>At least three.</b> The gate end must reach a tile past the house, or the yard sits
+    /// wholly behind it, touches the lane nowhere, and has no gate — found on the first picture,
+    /// where most houses stood with no yard at all. The loader refuses less.
+    /// </para>
     /// </remarks>
-    [JsonPropertyName("plot_width")]
-    public int PlotWidth { get; init; } = 3;
+    [JsonPropertyName("home_yard_side_quarters")]
+    public IReadOnlyList<int> HomeYardSideQuarters { get; init; } = new[] { 3, 5 };
 
-    /// <summary>A plot's depth back from the lane, in whole tiles, the house's row included (D386).</summary>
+    /// <summary>How far a house's yard reaches past its OTHER end, in quarter tiles, one of these by hash (D411, P4).</summary>
+    /// <remarks>One quarter keeps that end flush with the house; three reaches a tile past it.</remarks>
+    [JsonPropertyName("home_yard_other_side_quarters")]
+    public IReadOnlyList<int> HomeYardOtherSideQuarters { get; init; } = new[] { 1, 3 };
+
+    /// <summary>How far a house's yard reaches behind it, in quarter tiles, one of these by hash (D411, P4).</summary>
     /// <remarks>
-    /// <para>
-    /// Three since D404: the house's row and two rows of yard behind it — room for the kitchen
-    /// garden DESIGN §4 sizes the plot for (*"plots leave room for a household kitchen garden
-    /// later, so size them knowing that"*). D386 shipped two and measured three as holding eight
-    /// of the fixture's plots against eleven (`organic-housing.md §5`), and left it Joe's to widen.
-    /// </para>
-    /// <para>
-    /// ⭐ <b>The fences widened it</b> (D404): with a fence a wall, depth two held 42 people and
-    /// starved 18 over six shipped seeds × fifty years, and depth three held 57 and starved 8 —
-    /// packed yards are yards whose fences shut doors.
-    /// </para>
+    /// Five is one row behind the house, nine is two (D404 measured two rows against one: 57 people
+    /// held against 42, 8 starved against 18, with the fences up). ⚠️ Quarters for the reason
+    /// <see cref="HomeYardSideQuarters"/> gives.
     /// </remarks>
-    [JsonPropertyName("plot_depth")]
-    public int PlotDepth { get; init; } = 3;
+    [JsonPropertyName("home_yard_back_quarters")]
+    public IReadOnlyList<int> HomeYardBackQuarters { get; init; } = new[] { 5, 9 };
 
     /// <summary>
-    /// What a plot WITH a neighbour along a side scores as, in tiles walked, per such side (D386;
-    /// the sign flipped in D404, `specs/organic-housing.md §3.3`).
+    /// How far back from its path a household likes its house, in quarter tiles, one of these by
+    /// hash (D411, `organic-housing.md §9.5` P1).
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// D386 charged the OPEN sides, which was the whole of <em>packing</em> — a packing term with
-    /// a spacing term's name. Joe, on the fences slice: *"they need some room to breathe with
-    /// yards and pathways and such."* Charged per neighbour, six shipped seeds × fifty years with
-    /// the fences up built 26 houses and held 55 people, against 14 and 17.
-    /// </para>
-    /// <para>
-    /// ⚠️ A tie-break, not a lever: −2, −4 and −6 read identically once the sign flipped.
-    /// </para>
+    /// Every quarter tile off it costs a quarter tile of walk in the site's score, so houses stand
+    /// back from a path by different amounts and their fronts do not share one line — the thing
+    /// that made the rows read as a street (§9.2).
     /// </remarks>
-    [JsonPropertyName("plot_apart_tiles")]
-    public int PlotApartTiles { get; init; } = 2;
+    [JsonPropertyName("home_setback_quarters")]
+    public IReadOnlyList<int> HomeSetbackQuarters { get; init; } = new[] { 6, 8, 10 };
+
+    /// <summary>
+    /// The clear ground a household wants between its yard and a neighbour's, in tiles, one of
+    /// these by hash (D411, P2). Every tile short of it costs <see cref="HomeCrowdTiles"/>.
+    /// </summary>
+    /// <remarks>
+    /// Joe, on the fences slice: *"they need some room to breathe with yards and pathways and such."*
+    /// It replaces D386's <c>plot_apart_tiles</c>, which D404 measured as a tie-break and nothing more.
+    /// </remarks>
+    [JsonPropertyName("home_gap_tiles")]
+    public IReadOnlyList<int> HomeGapTiles { get; init; } = new[] { 1, 2, 3 };
+
+    /// <summary>What each tile a site stands short of its household's gap costs, in tiles walked (D411, P2).</summary>
+    [JsonPropertyName("home_crowd_tiles")]
+    public int HomeCrowdTiles { get; init; } = 3;
+
+    /// <summary>
+    /// What a neighbour within two tiles of the gap is worth, in tiles walked (D411, P2) — so houses
+    /// gather into clusters rather than scattering, without packing into rows.
+    /// </summary>
+    [JsonPropertyName("home_company_tiles")]
+    public int HomeCompanyTiles { get; init; } = 2;
+
+    /// <summary>
+    /// What each house past the first already standing on a site's front line, facing its way,
+    /// costs, in tiles walked (D411, P3): a pair is free, a third in a line is not.
+    /// </summary>
+    [JsonPropertyName("home_row_tiles")]
+    public int HomeRowTiles { get; init; } = 3;
+
+    /// <summary>How far a site looks for a path to face, in tiles (D411, P1). Beyond it, a house faces the village.</summary>
+    [JsonPropertyName("home_path_search_tiles")]
+    public int HomePathSearchTiles { get; init; } = 8;
 
     /// <summary>
     /// Whether the founders arrive to a village already built, or to an empty valley (D70).
@@ -3944,6 +3982,42 @@ public sealed record SimConfig
         if (TownNames is null || TownNames.Count == 0)
         {
             throw new SimConfigException("town_names must contain at least one name.");
+        }
+
+        // ⛔ D411: every hashed range must hold something, and a reach of an exact half is a
+        // centre-rule tie (see `HomeYardSideQuarters`) — refused here, where the mistake is.
+        foreach ((string key, IReadOnlyList<int>? values, int min) in new[]
+        {
+            ("home_yard_side_quarters", HomeYardSideQuarters, 3),
+            ("home_yard_other_side_quarters", HomeYardOtherSideQuarters, 0),
+            ("home_yard_back_quarters", HomeYardBackQuarters, 1),
+            ("home_setback_quarters", HomeSetbackQuarters, 0),
+            ("home_gap_tiles", HomeGapTiles, 0),
+        })
+        {
+            if (values is null || values.Count == 0)
+            {
+                throw new SimConfigException($"{key} must hold at least one value.");
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (values[i] < min)
+                {
+                    throw new SimConfigException($"{key} cannot hold {values[i]} (the least is {min}).");
+                }
+
+                if (key.StartsWith("home_yard", StringComparison.Ordinal) && values[i] % 4 == 2)
+                {
+                    throw new SimConfigException(
+                        $"{key} cannot hold {values[i]}: an exact half tile puts the yard's edge on a row of tile centres (D331).");
+                }
+            }
+        }
+
+        if (HomePathSearchTiles <= 0)
+        {
+            throw new SimConfigException($"home_path_search_tiles must be greater than zero (got {HomePathSearchTiles}).");
         }
 
         if (FounderAge < 0)

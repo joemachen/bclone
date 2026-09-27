@@ -6826,9 +6826,51 @@ public sealed class SimWorld : IObstacles
             : null;
     }
 
-    /// <summary>The plot a house pointed here, facing this way, would give this household (§3.1).</summary>
-    public PlotShape PlotFor(GridPos front, Angle facing, int householdId) =>
-        PlotShape.Of(front, facing, householdId, Config.PlotWidth, Config.PlotDepth);
+    /// <summary>The plot a house pointed here, facing this way, would give this household (§3.1, §9.5 P4).</summary>
+    /// <remarks>
+    /// The house's tiles are its footprint's by the centre rule — the tiles it stands on as an
+    /// obstacle (D383) — so the plot, the obstacle and the fence cannot disagree about where the
+    /// house is. The yard's reach and depth are the household's, by hash (D411).
+    /// </remarks>
+    public PlotShape PlotFor(GridPos front, Angle facing, int householdId)
+    {
+        // ⭐ A PURE FUNCTION, REMEMBERED (D411). A plot is arithmetic on these three and the
+        // config, nothing in the world, and the chooser asks for the same one four times a facing
+        // (its own fit, the gate, the trial fence, the detour) — rebuilt each time it was most of the
+        // chooser's cost. The same inputs always give the same plot, so remembering it cannot change
+        // an answer; it is never hashed and never read as state. Bounded, and emptied whole when full.
+        var key = (front, facing.Raw, householdId);
+        if (_plotsAsked.TryGetValue(key, out PlotShape known))
+        {
+            return known;
+        }
+
+        if (_plotsAsked.Count >= 65536)
+        {
+            _plotsAsked.Clear();
+        }
+
+        PlotShape plot = ShapeThePlot(front, facing, householdId);
+        _plotsAsked[key] = plot;
+        return plot;
+    }
+
+    private readonly Dictionary<(GridPos, ushort, int), PlotShape> _plotsAsked = new();
+
+    private static readonly int[] TheTwoEnds = { 0, 1 };
+
+    private PlotShape ShapeThePlot(GridPos front, Angle facing, int householdId)
+    {
+        Point centre = HomeAnchorOn(front, facing);
+        List<GridPos> house = FootprintOf(BuildingKind.Home, centre, facing).CoveredTiles();
+        Fixed gateEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.SideSalt, Config.HomeYardSideQuarters), 4);
+        Fixed otherEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.OtherSideSalt, Config.HomeYardOtherSideQuarters), 4);
+        Fixed back = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.BackSalt, Config.HomeYardBackQuarters), 4);
+        bool gateOnTheLeft = PlotShape.ByHash(householdId, PlotShape.WhichSideSalt, TheTwoEnds) == 0;
+        return gateOnTheLeft
+            ? PlotShape.Of(front, facing, centre, house, gateEnd, otherEnd, back)
+            : PlotShape.Of(front, facing, centre, house, otherEnd, gateEnd, back);
+    }
 
     /// <summary>
     /// The tiles a house marked here today would fence (D388, `organic-housing.md §3.5`): the
@@ -6836,13 +6878,26 @@ public sealed class SimWorld : IObstacles
     /// house's own two tiles always. Fixed on the household at the marking; this is the one place
     /// the fence is decided.
     /// </summary>
+    private static bool IsOneOf(IReadOnlyList<GridPos> tiles, GridPos tile)
+    {
+        for (int i = 0; i < tiles.Count; i++)
+        {
+            if (tiles[i] == tile)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     internal List<GridPos> FencedTilesFor(PlotShape plot)
     {
         var fenced = new List<GridPos>(plot.Tiles.Count);
         for (int i = 0; i < plot.Tiles.Count; i++)
         {
             GridPos tile = plot.Tiles[i];
-            bool house = tile == plot.House[0] || tile == plot.House[1];
+            bool house = IsOneOf(plot.House, tile);
             if (house
                 || (Map.Contains(tile)
                     && Map.TerrainAt(tile) != Terrain.Water
@@ -8252,15 +8307,12 @@ public sealed class SimWorld : IObstacles
                 // A house is the one building that does not go through `RaiseFinished`.
                 RetireTheClearingMark(FootprintOf(BuildingKind.Home, site.Position, plan.Facing));
 
-                // Standing outside their new door, rather than wherever the errand that
-                // filled the last tick left them.
-                for (int i = 0; i < Villagers.Count; i++)
-                {
-                    if (Villagers[i].Alive && Villagers[i].HouseholdId == family.Id)
-                    {
-                        Villagers[i].StandAt(site.Position);
-                    }
-                }
+                // ⛔ NOBODY IS PUT AT THE NEW DOOR (D411). The family used to be stood outside it the
+                // tick it was finished, wherever they were — and since fences are walls (D404) that
+                // put a man through his own family's yard fence five tiles from where he rested
+                // (`NoStepEverCrossesAWall`, seed 7, once D411 sited the Coopers across it). They
+                // walk home like anyone else: their home is this house now, and the next errand home
+                // goes through the gate.
 
                 Narrate($"The {family.Name} household moved into the house they had raised at "
                     + $"{site.Position} — {Clock.SeasonAndYear()}.", LogCategory.Life);

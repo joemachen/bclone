@@ -71,6 +71,29 @@ public sealed class RelocateTests
         throw new System.InvalidOperationException("No buildable tile near the village.");
     }
 
+    /// <summary>
+    /// Step until an emptying store opens itself again (D389) — the tick it was emptied — or give up.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The moment, not three years later.</b> These guards stepped three whole years and read
+    /// the store after: once it opens again it is a store like any other, and since D411 moved the
+    /// fixture's houses the foragers deliver to it and it fills (863 forage). What they claim is
+    /// that it empties and reopens — so they read it the tick it does.
+    /// </remarks>
+    private static bool StepUntilItReopens(SimLoop loop, StoreBuilding store, int ticks)
+    {
+        for (int t = 0; t < ticks; t++)
+        {
+            loop.StepOnce();
+            if (store.Stocking == Stocking.Open)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Deliver a site's materials and work it to completion, as a crew would.</summary>
     private static void Finish(SimWorld world, GridPos site)
     {
@@ -177,10 +200,16 @@ public sealed class RelocateTests
         full.Store.Receive(Goods.Produce, 120);
         Assert.False(world.MarkRelocation(from, Buildable(world, from)).Allowed);
 
+        // ⚠️ It takes no forage, so once it is emptied it STAYS empty (D411 moved the fixture's
+        // houses and the foragers now deliver here). D389 reopens an emptied store the moment the
+        // last armful leaves, and a delivery can land the same tick — so without this, a store
+        // emptied to be moved is refilled before anyone can move it. That race is D389's, and it
+        // is on Joe's list; this guard is about the carrying out.
+        Assert.True(world.SetStoreAccepts(full, Goods.Produce, accepted: false).Allowed);
         full.Stocking = Stocking.Emptying;
-        loop.Step(Config.TicksPerYear * 3);
+        Assert.True(StepUntilItReopens(loop, full, Config.TicksPerYear * 3), $"{full.Name} was never emptied in three years.");
 
-        _output.WriteLine($"{full.Name} holds {full.Store.Held} after three years of clearing");
+        _output.WriteLine($"{full.Name} holds {full.Store.Held} the tick it was emptied");
 
         Assert.Equal(0, full.Store.Held);
         Assert.True(world.MarkRelocation(from, Buildable(world, from)).Allowed);
@@ -213,10 +242,12 @@ public sealed class RelocateTests
         Assert.Equal(Stocking.Emptying, full.Stocking);
         Assert.False(full.Accepts(Goods.Produce));
 
-        loop.Step(Config.TicksPerYear * 3);
+        Assert.True(StepUntilItReopens(loop, full, Config.TicksPerYear * 3), $"{full.Name} never opened again in three years.");
         _output.WriteLine($"{full.Name} holds {full.Store.Held} and is {full.Stocking}");
 
-        Assert.Equal(0, full.Store.Held);
+        // ⚠️ Not "and holds nothing": it reopens as the last armful leaves (the rule refuses to
+        // otherwise — `ReopenTheEmptiedStore`), and since D411 a forager can deliver to it later in
+        // the same tick. That it was emptied is read in the guard above, which keeps it empty.
         Assert.Equal(Stocking.Open, full.Stocking);
         Assert.True(full.Accepts(Goods.Produce), "the emptied store still refuses deliveries");
     }
