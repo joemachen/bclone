@@ -2,6 +2,7 @@ using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -95,6 +96,79 @@ public sealed class DesirePathTests
         wear.Tread(tile, ushort.MaxValue - 2);
         wear.Tread(tile, 10);
         Assert.Equal(ushort.MaxValue, wear.At(tile));
+    }
+
+    /// <summary>
+    /// ⛔ Wear stops at the ceiling (D414) — a tile walked a thousand times holds no more than one
+    /// walked just past packed, because the class is the whole answer and the excess only ever
+    /// bought a path that could not fade.
+    /// </summary>
+    [Fact]
+    public void WearStopsAtTheCeiling()
+    {
+        var wear = new PathWear(Map("..", ".."));
+        wear.CapAt(100);
+        var tile = new GridPos(1, 1);
+        for (int i = 0; i < 1_000; i++)
+        {
+            wear.Tread(tile, 3);
+        }
+
+        Assert.Equal(100, wear.At(tile));
+    }
+
+    /// <summary>
+    /// ⭐⭐ An abandoned PACKED path fades in years, not centuries (D414) — however busy it once was.
+    /// </summary>
+    /// <remarks>
+    /// Shipped numbers: packed at 100, a grace of 24, decay 4, ceiling 130. A hub tile walked a
+    /// thousand times sits at the ceiling; abandoned, it is packed while its wear is 76 or more —
+    /// thirteen sweeps — worn until it falls under 6, and grass on the thirty-second: eight years.
+    /// ⛔ Before the ceiling the same tile held 3,000 wear and would have stayed packed for 731
+    /// seasons; D414 measured hub tiles at 2,000–6,400 in a twenty-five-year village. (The spec's
+    /// six seasons of grace is a lane AT the line; a ceiling low enough to give a hub tile that —
+    /// 104 — measured 26 people fewer over 42 fifty-year villages, so it is 130.)
+    /// </remarks>
+    [Fact]
+    public void AnAbandonedPackedPathFadesInYearsNotCenturies()
+    {
+        var wear = new PathWear(Map("..", ".."));
+        wear.PriceAt(wornAt: 30, packedAt: 100, holdsFor: 24);
+        wear.CapAt(130);
+        var tile = new GridPos(0, 0);
+        for (int i = 0; i < 1_000; i++)
+        {
+            wear.Tread(tile, 3);
+        }
+
+        wear.Decay(0);
+        Assert.Equal(2, wear.ClassAt(tile));
+
+        int packedFor = 0;
+        int sweeps = 0;
+        while (wear.ClassAt(tile) > 0 && sweeps < 1_000)
+        {
+            wear.Decay(4);
+            sweeps++;
+            if (wear.ClassAt(tile) == 2)
+            {
+                packedFor++;
+            }
+        }
+
+        _output.WriteLine($"abandoned at the ceiling: packed for {packedFor} more seasons, grass after {sweeps}");
+        Assert.Equal(13, packedFor);
+        Assert.Equal(32, sweeps);
+    }
+
+    [Fact]
+    public void TheCeilingAndTheAllowanceAreValidated()
+    {
+        SimConfig config = Config;
+        Assert.Throws<SimConfigException>(() => (config with { PathWearCeiling = config.PathPackedAt + config.PathWearDecayPerSeason - 1 }).Validate());
+        Assert.Throws<SimConfigException>(() => (config with { PathWearCeiling = ushort.MaxValue + 1 }).Validate());
+        Assert.Throws<SimConfigException>(() => (config with { PathShortcutGrassAllowance = -1 }).Validate());
+        (config with { PathWearCeiling = config.PathPackedAt + config.PathWearDecayPerSeason, PathShortcutGrassAllowance = 0 }).Validate();
     }
 
     // ---------------------------------------------------------------
@@ -415,6 +489,143 @@ public sealed class DesirePathTests
         // 7 tiles × 8 = 56 cost = 5.6 ticks → the field truncates to 5; a leg rounds to 6.
         Assert.Equal(56, field.Cost(c, d));
         Assert.True(field.TicksBetween(c, d) < 7);
+    }
+
+    /// <summary>
+    /// ⭐⭐ A walker the route puts on a path stays on it — <b>no leg puts more feet on grass than
+    /// the route it cuts</b> (D414), asked of every leg the village plans over six years.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The route bends onto a worn lane (on grass every staircase costs the same, so the field
+    /// takes any path tile in the walk's rectangle); before D414 the string-pulling threw the bend
+    /// away and the walker cut a chord across the grass beside the lane — every walker their own,
+    /// and the fan wore Joe's blobs. The route is recomputed here from the leg's own start, which
+    /// is the route `PlanLeg` pulled: the field does not move inside a season.
+    /// </para>
+    /// <para>
+    /// ⚠️ Skipped: legs out through a building (D404's exit, not on the route), legs to the route's
+    /// first tile (nothing is cut), and legs planned on a tick the season turned (the classes
+    /// moved under them).
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AWalkerKeepsToTheLaneTheRouteTakes()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        var seen = new Dictionary<int, (Point From, Point To)>();
+        int legs = 0;
+        int overPath = 0;
+        int alongPathOnly = 0;
+        int cut = 0;
+        for (int t = 0; t < config.TicksPerYear * 6; t++)
+        {
+            int generation = world.Paths.Generation;
+            loop.StepOnce();
+            if (world.Paths.Generation != generation)
+            {
+                continue;
+            }
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive || villager.LegSteps == 0 || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
+                {
+                    continue;
+                }
+
+                seen[villager.Id] = (villager.LegFrom, villager.LegTo);
+                List<GridPos> route = world.TravelCost.RouteFrom(villager.LegFrom.ToTile(), villager.LegTarget);
+                // ⚠️ A leg to the route's FIRST tile replaces no route and cuts nothing — the step off
+                // a building (D404) is one, and from a door on a 2×2 it is two footsteps to one
+                // route tile. The rule judges only a leg pulled past the first tile.
+                int end = route.IndexOf(villager.LegTo.ToTile());
+                if (end < 1)
+                {
+                    continue;
+                }
+
+                legs++;
+                int routeGrass = 0;
+                for (int i = 0; i <= end; i++)
+                {
+                    routeGrass += world.TravelCost.CostToEnter(route[i]) == TravelCostField.BaseTileCost ? 1 : 0;
+                }
+
+                if (routeGrass <= end)
+                {
+                    overPath++;
+                    alongPathOnly += routeGrass == 0 ? 1 : 0;
+                }
+
+                if (BehaviorSystem.GrassUnder(world, villager.LegFrom, villager.LegTo) > routeGrass + config.PathShortcutGrassAllowance)
+                {
+                    cut++;
+                }
+            }
+        }
+
+        _output.WriteLine($"six years: {legs} legs checked, {overPath} whose route uses a path ({alongPathOnly} entirely on one), {cut} cut across the grass beside it");
+        Assert.True(overPath > 100, $"only {overPath} legs had a path on their route — the guard proves nothing");
+        Assert.Equal(0, cut);
+    }
+
+    /// <summary>
+    /// ⭐⭐ The founding hub wears lanes, not a block (D414) — the outcome Joe asked for, measured
+    /// against the same village walking the way it did before.
+    /// </summary>
+    /// <remarks>
+    /// A block tile is one in any fully worn 2×2 — what the view fills as a yard. The same fixture,
+    /// the same years, once as shipped and once with the allowance so large any shortcut the eye can
+    /// see is taken (the walk before D414). ⚠️ And paths must still exist: §2.6's *no paths* failure
+    /// is the other ditch.
+    /// </remarks>
+    [Fact]
+    public void TheFoundingHubWearsLanesNotABlock()
+    {
+        (int kept, int keptPaths) = BlockTilesAfter(Config, 15);
+        (int cut, int cutPaths) = BlockTilesAfter(Config with { PathShortcutGrassAllowance = 1_000 }, 15);
+        _output.WriteLine($"fifteen fixture years: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
+        Assert.True(keptPaths >= 10, $"only {keptPaths} path tiles — the village wore no paths (§2.6)");
+        Assert.True(kept * 10 <= cut * BlockBarTenths,
+            $"keeping to the lanes left {kept} block tiles against {cut} — not a thinner network");
+    }
+
+    /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in tenths of the corner-cutting village's block.</summary>
+    private const int BlockBarTenths = 7;
+
+    private static (int Block, int Paths) BlockTilesAfter(SimConfig config, int years)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        loop.Step(config.TicksPerYear * years);
+        SimWorld world = loop.World;
+        bool Path(int x, int y) => world.Paths.ClassAt(new GridPos(x, y)) > 0;
+        int block = 0;
+        int paths = 0;
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
+        {
+            for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width; x++)
+            {
+                if (!Path(x, y))
+                {
+                    continue;
+                }
+
+                paths++;
+                if ((Path(x + 1, y) && Path(x, y + 1) && Path(x + 1, y + 1))
+                    || (Path(x - 1, y) && Path(x, y + 1) && Path(x - 1, y + 1))
+                    || (Path(x + 1, y) && Path(x, y - 1) && Path(x + 1, y - 1))
+                    || (Path(x - 1, y) && Path(x, y - 1) && Path(x - 1, y - 1)))
+                {
+                    block++;
+                }
+            }
+        }
+
+        return (block, paths);
     }
 
     /// <summary>The paths are hashed — two worlds whose grass differs by one footstep differ.</summary>

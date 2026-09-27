@@ -721,12 +721,22 @@ public sealed class HousesAreBuiltTests
 
         _output.WriteLine(
             $"a year with no timber anywhere: the stocked warehouse is "
-            + $"{(stocked.Construction.IsFinished ? "built" : "STILL A SITE")}, the starved "
+            + $"{(stocked.Construction.IsFinished ? "built" : $"a site with {stocked.Construction.WorkDone} work in it")}, the starved "
             + $"granary holds {starved.Construction!.LogsDelivered} logs.");
 
+        // ⚠️ WORKED, NOT FINISHED (D414). This asserted the warehouse was BUILT inside the year, and
+        // on main it finished on tick 448 of 480. When walkers began keeping to the lanes the day
+        // shifted and the one builder reached the site at ~400 and put 37 of its work in by the
+        // year's end — then the labour allocator moved her to foraging for all of year two, which
+        // is its own behaviour and not this guard's. D135's bug was builders who never TOUCHED a
+        // stocked site behind a starved head; that is what is asked. ⚠️ RED CHECK SCORED ZERO,
+        // kept and written down (D326): with D135's branch in `WorkTheSite` (`NextBuildableSite`)
+        // cut out, the builder still reaches the stocked site — AND SO DID MAIN'S version of this
+        // guard, checked the same way on the old walking. This pose no longer reaches that branch;
+        // what it still guards is the outcome.
         Assert.True(
-            stocked.Construction.IsFinished,
-            "A warehouse with every log it needs went unbuilt for a year because the site ahead of "
+            stocked.Construction.IsFinished || stocked.Construction.WorkDone > 0,
+            "A warehouse with every log it needs went untouched for a year because the site ahead of "
             + "it in the queue was waiting on timber that does not exist. The queue is meant to "
             + "decide where materials go, not to stop a pair of hands working.");
     }

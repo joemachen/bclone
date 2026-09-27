@@ -68,11 +68,23 @@ public sealed class PathWear
         return index < 0 ? 0 : _wear[index];
     }
 
-    /// <summary>A footstep: add <paramref name="amount"/> to the tile, saturating rather than wrapping.</summary>
+    /// <summary>A footstep: add <paramref name="amount"/> to the tile, stopping at the ceiling rather than wrapping.</summary>
     /// <remarks>
-    /// ⛔ Saturates at <see cref="ushort.MaxValue"/> — a wrap would turn the most-walked tile in the
-    /// village back into fresh grass, identically on both machines, so the determinism suite would
-    /// stay green while the main street vanished (the `Fixed` overflow argument, D317).
+    /// <para>
+    /// ⛔⛔ <b>THE GROUND'S MEMORY IS BOUNDED (D414).</b> Wear stops at <see cref="CapAt">the
+    /// ceiling</see> — `path_wear_ceiling`, a little past packed. Until D414 it ran on to
+    /// <see cref="ushort.MaxValue"/>, and measured, the hub tiles of a twenty-five-year village held
+    /// 2,000–6,400 wear: at a decay of 4 a season a path abandoned there would have stayed packed
+    /// for a century or more, where the spec promised six seasons of grace. A busy tile is no more a
+    /// path at 6,000 than at 100 — the class is the whole answer (D362) — so all the excess ever
+    /// bought was a path that could not fade.
+    /// </para>
+    /// <para>
+    /// ⛔ And it still never WRAPS — a wrap would turn the most-walked tile in the village back into
+    /// fresh grass, identically on both machines, so the determinism suite would stay green while
+    /// the main street vanished (the `Fixed` overflow argument, D317). The ceiling is validated to
+    /// fit a <see cref="ushort"/>.
+    /// </para>
     /// </remarks>
     public void Tread(GridPos tile, int amount)
     {
@@ -88,8 +100,31 @@ public sealed class PathWear
         }
 
         int next = _wear[index] + amount;
-        _wear[index] = next > ushort.MaxValue ? ushort.MaxValue : (ushort)next;
+        if (next > _ceiling)
+        {
+            next = Math.Max(_ceiling, (int)_wear[index]);
+        }
+
+        _wear[index] = (ushort)next;
     }
+
+    /// <summary>
+    /// The most wear a tile can hold — `path_wear_ceiling` (D414). A tile at the ceiling that nobody
+    /// walks is back under the packed line after <c>(ceiling − (packed − holdsFor)) ⁄ decay</c>
+    /// seasons.
+    /// </summary>
+    public void CapAt(int ceiling)
+    {
+        if (ceiling < 1 || ceiling > ushort.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(ceiling), $"The wear ceiling must run 1..{ushort.MaxValue} (got {ceiling}).");
+        }
+
+        _ceiling = ceiling;
+    }
+
+    private int _ceiling = ushort.MaxValue;
 
     /// <summary>
     /// The season turns: every tile fades by <paramref name="amount"/>, floored at nothing, and the

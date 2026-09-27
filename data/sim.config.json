@@ -285,6 +285,27 @@
   "path_worn_tile_cost": 9,
   "path_packed_tile_cost": 8,
 
+  // D414 (Joe's path note, 2026-09-26: "i dont like these big blobs of packed
+  // trail ... thinner walked paths"). MEASURED FIRST: 90-97% of footsteps were
+  // already on path tiles, and the blobs were 2-3-tile gaps between buildings
+  // that really are walked. Two sim changes, both his call:
+  // path_shortcut_grass_allowance 0 -- a straight-line shortcut may not put more
+  // feet on grass than the route it cuts, so a walker the route puts on a lane
+  // stays on it instead of cutting the corner beside it. Measured before it was
+  // picked: shipped 12345 year 25 block tiles 36 -> 18; fixture 4 years 3-15
+  // 19 -> 6; 42 fifty-year villages level (alive 337 -> 334, starved 108 -> 103).
+  // path_wear_ceiling 130 -- until D414 wear ran on to 65,535 and hub tiles
+  // held 2,000-6,400, so an abandoned path stayed packed for a century. At the
+  // ceiling a path nobody walks drops out of packed after
+  // (ceiling - (packed_at - holds_for)) / decay = 13 seasons and is grass after
+  // 32 (eight years). MEASURED, B + ceiling, 42 fifty-year villages: at 130
+  // alive 337 -> 330, starved 108 -> 100 (level); at 104 (packed + one decay,
+  // the nearest to six seasons) alive 311 -- a real cost; at 100 nothing can
+  // ever be packed (the sweep fades before it classes) and alive fell to 284.
+  // Must be at least path_packed_at + path_wear_decay_per_season.
+  "path_shortcut_grass_allowance": 0,
+  "path_wear_ceiling": 130,
+
   // Also DERIVED: enough to carry one member through a foraging-less
   // winter, plus the margin that absorbs a worker dying part-way
   // through one. Per member, not per household.

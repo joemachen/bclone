@@ -282,8 +282,11 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D411), not for the clock: homes are sited path-first at any angle, so the
         // founders' houses stand elsewhere — still 52 trips, the 1st/10th/50th at 10/199/1,958.
         // Were 10/199/1,929.
-        Assert.Equal(52, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1958 }, at);
+        // ⚠️ RE-PINNED (D414), not for the clock on grass: walkers keep to the lanes the route takes,
+        // so a walk over worn ground is a different line — 51 trips, the 1st/10th/50th at
+        // 10/199/1,964. Were 52 at 10/199/1,958.
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 10, 199, 1964 }, at);
     }
 
     /// <summary>

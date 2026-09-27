@@ -3446,9 +3446,28 @@ public sealed class BehaviorSystem : ISimSystem
         IReadOnlyList<GridPos> leaving = world.FootprintCovering(from);
         IReadOnlyList<GridPos> arriving = world.FootprintCovering(target);
         int furthest = 0;
+        int routeGrass = world.TravelCost.CostToEnter(route[0]) == TravelCostField.BaseTileCost ? 1 : 0;
         for (int i = 1; i < route.Count; i++)
         {
             if (!LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[i]), leaving, arriving))
+            {
+                break;
+            }
+
+            // ⭐⭐ AND A SHORTCUT MAY NOT PUT MORE FEET ON GRASS THAN THE ROUTE IT CUTS (D414). The
+            // route already bends onto a worn lane — on grass every staircase costs the same, so any
+            // path tile inside the walk's rectangle is cheaper and the field takes it — and the
+            // string-pulling above then threw that bend away: on open ground the line sees straight
+            // past the lane, and every walker cut their own chord across the grass beside it. That
+            // fan was Joe's blobs (*"i want them to look more like thinner walked paths"*). On bare
+            // grass nothing changes — a straight line treads no more tiles than the staircase it
+            // replaces — so the walk's clock and the Phase 0 pins are untouched by construction.
+            if (world.TravelCost.CostToEnter(route[i]) == TravelCostField.BaseTileCost)
+            {
+                routeGrass++;
+            }
+
+            if (GrassUnder(world, villager.Position, Point.CentreOf(route[i])) > routeGrass + world.Config.PathShortcutGrassAllowance)
             {
                 break;
             }
@@ -3503,6 +3522,38 @@ public sealed class BehaviorSystem : ISimSystem
         villager.LegSteps = steps < 1 ? 1 : steps;
         villager.LegStep = 0;
         return true;
+    }
+
+    /// <summary>
+    /// How many of the footsteps a straight walk from <paramref name="from"/> to
+    /// <paramref name="to"/> would take land on grass — the tiles <c>Travel</c> would tread,
+    /// one a step, at a step a tile (D414).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The footsteps, not the tiles the line touches: <see cref="LineOfSight"/> is conservative
+    /// at corners and lists both tiles beside every corner a diagonal passes through, so a 45° walk
+    /// "crosses" three tiles a step and would lose to its own staircase on bare grass. Grass is
+    /// what the cost field charges full price for, so a paved road later counts as off the grass
+    /// for free. Once per candidate waypoint per leg, never per tick.
+    /// </remarks>
+    internal static int GrassUnder(SimWorld world, Point from, Point to)
+    {
+        int steps = (from.DistanceTo(to) + Fixed.FromRatio(1, 2)).ToInt();
+        if (steps < 1)
+        {
+            steps = 1;
+        }
+
+        int grass = 0;
+        for (int step = 1; step <= steps; step++)
+        {
+            if (world.TravelCost.CostToEnter(AlongTheLeg(from, to, step, steps).ToTile()) == TravelCostField.BaseTileCost)
+            {
+                grass++;
+            }
+        }
+
+        return grass;
     }
 
     /// <summary>

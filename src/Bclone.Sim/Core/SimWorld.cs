@@ -9459,6 +9459,7 @@ public sealed class SimWorld : IObstacles
         TravelCost.ReadWearFrom(
             Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost,
             config.PathHoldsFor);
+        Paths.CapAt(config.PathWearCeiling);
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now

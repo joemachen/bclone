@@ -321,6 +321,13 @@ public sealed class GoodsOnTheGroundTests
             }
 
             loop.StepOnce();
+
+            // ⚠️ AND NO ROOM AFTER THE TICK EITHER (D414). Room can open INSIDE a tick — a household
+            // takes its firewood out of the store, and a carrier deciding later in the same tick
+            // rightly sets out for the heap. Once walkers kept to the lanes the day's order shifted
+            // and exactly that happened on tick 107; sampling the stores only before the tick
+            // called it a wrong start.
+            room |= world.SomewhereToPut(Goods.Logs);
             foreach (Villager villager in world.Villagers)
             {
                 if (villager.State != VillagerState.TidyingGround)

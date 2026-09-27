@@ -4077,16 +4077,21 @@ public partial class VillageMap : Control
 
     /// <summary>
     /// Where a worn tile's mark is drawn: its centre — or, for the corner of an L, the square's
-    /// shared corner the line actually passed through.
+    /// shared corner the line actually passed through — or, in a CORRIDOR, the corridor's midline.
     /// </summary>
     private Vector2 TrailPointOf(GridPos tile)
     {
-        // ⚠️ The block before the L (D368): a block tile with one lone arm on its far side is
-        // the corner of exactly one L by the rule below, and would be pulled to that corner —
-        // then every lane meeting the block would aim at the wrong point.
-        if (IsBlockTile(tile))
+        // ⚠️ The square before the L (D368): a tile in a fully worn 2×2 with one lone arm on its far
+        // side is the corner of exactly one L by the rule below, and would be pulled to that corner —
+        // then every lane meeting it would aim at the wrong point.
+        if (IsJunctionTile(tile))
         {
             return new Vector2(tile.X, tile.Y);
+        }
+
+        if (IsInAFullSquare(tile))
+        {
+            return CorridorPointOf(tile);
         }
 
         if (LCornerOf(tile) is (GridPos armA, GridPos armC))
@@ -4134,8 +4139,88 @@ public partial class VillageMap : Control
     };
 
     /// <summary>
-    /// ⭐⭐ Whether a worn tile is part of a <b>block</b> — any fully worn 2×2 square: itself, a
-    /// right-angle pair of neighbours and their diagonal, all worn (D368).
+    /// ⭐⭐ Where a CORRIDOR tile draws (D415): the mean centre of the fully worn 2×2 squares it
+    /// belongs to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"i want them to look more like thinner walked paths … a few exceptions in the
+    /// highest traffic intersections."*</b> D368 filled every tile of any fully worn 2×2 as one yard,
+    /// so a two-tile-wide lane between two buildings — the commonest shape round a hub, and walked
+    /// for real (D414 measured it) — drew as a fat patch. A corridor two tiles wide is one lane
+    /// walked a little either side of its middle, and this draws it so: both rows' tiles sit in the
+    /// same two squares, so both land on the same point on the midline, the rails merge into one
+    /// ribbon and the rung between them has no length. A 3×3 of worn collapses to within a tile.
+    /// </para>
+    /// <para>
+    /// ⚠️ Four wide and wider, worn but not packed, the points spread a tile apart and would draw
+    /// D368's lattice again. Measured on the D414 villages it does not occur (the widest such area
+    /// was 3×3); a packed one is a junction and fills (<see cref="IsJunctionTile"/>).
+    /// </para>
+    /// </remarks>
+    private Vector2 CorridorPointOf(GridPos tile)
+    {
+        Vector2 sum = Vector2.Zero;
+        int squares = 0;
+        for (int k = 0; k < 4; k++)
+        {
+            (int ax, int ay) = Arm(k);
+            (int cx, int cy) = Arm(k + 1);
+            if (TrailGradeAt(new GridPos(tile.X + ax, tile.Y + ay)) > 0
+                && TrailGradeAt(new GridPos(tile.X + cx, tile.Y + cy)) > 0
+                && TrailGradeAt(new GridPos(tile.X + ax + cx, tile.Y + ay + cy)) > 0)
+            {
+                sum += new Vector2(tile.X + ((ax + cx) / 2f), tile.Y + ((ay + cy) / 2f));
+                squares++;
+            }
+        }
+
+        return squares == 0 ? new Vector2(tile.X, tile.Y) : sum / squares;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Whether a packed tile is part of a <b>junction</b> — any fully PACKED 3×3 — and so part
+    /// of a filled yard (D415; D368 filled any fully worn 2×2).
+    /// </summary>
+    /// <remarks>
+    /// The yard is kept for what Joe's Foundation screenshot kept it for: wide packed ground only at
+    /// the busiest crossroads. Everything narrower is a corridor and draws as a lane
+    /// (<see cref="CorridorPointOf"/>). D368's reasoning still holds inside a junction — a per-tile
+    /// rule cannot draw an area — so a junction is traced and filled exactly as the yard was.
+    /// </remarks>
+    private bool IsJunctionTile(GridPos tile)
+    {
+        if (TrailGradeAt(tile) != 2)
+        {
+            return false;
+        }
+
+        for (int oy = -2; oy <= 0; oy++)
+        {
+            for (int ox = -2; ox <= 0; ox++)
+            {
+                bool packed = true;
+                for (int dy = 0; dy < 3 && packed; dy++)
+                {
+                    for (int dx = 0; dx < 3 && packed; dx++)
+                    {
+                        packed = TrailGradeAt(new GridPos(tile.X + ox + dx, tile.Y + oy + dy)) == 2;
+                    }
+                }
+
+                if (packed)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Whether a worn tile is in any fully worn 2×2 square: itself, a right-angle pair of
+    /// neighbours and their diagonal, all worn (D368) — a junction's tile or a corridor's (D415).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -4155,7 +4240,7 @@ public partial class VillageMap : Control
     /// so a smoothed corner leaves no gap. *A per-tile rule cannot draw an area.*
     /// </para>
     /// </remarks>
-    private bool IsBlockTile(GridPos tile)
+    private bool IsInAFullSquare(GridPos tile)
     {
         if (TrailGradeAt(tile) == 0)
         {
@@ -4204,7 +4289,7 @@ public partial class VillageMap : Control
                 return false;
             }
 
-            return IsBlockTile(tile) || IsBlockTile(neighbour) || !ParallelDiagonals(tile, neighbour);
+            return IsInAFullSquare(tile) || IsInAFullSquare(neighbour) || !ParallelDiagonals(tile, neighbour);
         }
 
         // A diagonal runs through the corner of an L (one off-corner worn and it is that L's
@@ -4300,14 +4385,15 @@ public partial class VillageMap : Control
             }
         }
 
-        // ⭐ The blocks — the yards — once a season with the grades (D368). Asked after every
-        // grade is in, because a block is a fact about four tiles.
+        // ⭐ The junctions — the yards — once a season with the grades (D368; D415 keeps a yard for
+        // a fully packed 3×3 only). Asked after every grade is in, because a junction is a fact
+        // about nine tiles.
         _blockTiles.Clear();
         _packedBlockTiles.Clear();
         for (int i = 0; i < _trail.Count; i++)
         {
             (GridPos tile, byte grade) = _trail[i];
-            if (IsBlockTile(tile))
+            if (IsJunctionTile(tile))
             {
                 _blockTiles.Add(new Vector2I(tile.X, tile.Y));
                 if (grade == 2)
@@ -4420,13 +4506,24 @@ public partial class VillageMap : Control
                 world.Paths.Tread(new GridPos(from.X + dx, from.Y + 3 + dy), world.Config.PathWornAt);
             }
 
-            // And a 3×3 block further down — a yard, what founding-site traffic wears — so the
-            // block rule (D368) is exercised: it must draw as one patch, not as rails and rungs.
+            // And a PACKED 3×3 further down — a junction, the busiest crossroads — so the yard rule
+            // (D368, a junction since D415) is exercised: one patch, not rails and rungs.
             for (int dy = 0; dy < 3; dy++)
             {
                 for (int dx = 0; dx < 3; dx++)
                 {
-                    world.Paths.Tread(new GridPos(from.X + 5 + dx, from.Y + 6 + dy), world.Config.PathWornAt);
+                    world.Paths.Tread(new GridPos(from.X + 5 + dx, from.Y + 6 + dy), world.Config.PathPackedAt);
+                }
+            }
+
+            // And a WORN corridor two tiles wide and five long below it — the commonest shape round a
+            // hub (D414 measured it) — so the corridor rule (D415) is exercised: one lane down its
+            // middle, no yard.
+            for (int dy = 0; dy < 2; dy++)
+            {
+                for (int dx = 0; dx < 5; dx++)
+                {
+                    world.Paths.Tread(new GridPos(from.X + dx, from.Y + 11 + dy), world.Config.PathWornAt);
                 }
             }
 
@@ -4489,12 +4586,42 @@ public partial class VillageMap : Control
         // a full nine is a square with its corners kept — Joe's *"big square"*), and its centre is a
         // block tile with no disc and no L-corner of its own.
         GridPos blockCentre = new(world.Map.FoundingSite.X + 6, world.Map.FoundingSite.Y + 7);
-        bool blockIsAYard = IsBlockTile(blockCentre) && LCornerOf(blockCentre) is null
+        bool blockIsAYard = IsJunctionTile(blockCentre) && LCornerOf(blockCentre) is null
             && _blockTiles.Count >= 9 && TrailBlockAreaWorn > 7f && TrailBlockAreaWorn < 9f;
         if (!blockIsAYard)
         {
-            return $"[widths] trails: ⛔ a 3×3 block of worn tiles draws as {(TrailBlockAreaWorn >= 9f ? "a square with its corners kept" : "ribbons")} "
+            return $"[widths] trails: ⛔ a packed 3×3 junction draws as {(TrailBlockAreaWorn >= 9f ? "a square with its corners kept" : "ribbons")} "
                 + $"(patch area {TrailBlockAreaWorn:F1} of 9, {_blockTiles.Count} block tiles)";
+        }
+
+        // ⭐ The corridor (D415): no tile of it is a yard, each column's two tiles draw at ONE point
+        // on the midline, and the lane along it is one chain.
+        int corridorInAYard = 0;
+        int corridorOffTheMidline = 0;
+        int corridorBreaks = 0;
+        for (int dx = 0; dx < 5; dx++)
+        {
+            var top = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 11);
+            var bottom = new GridPos(top.X, top.Y + 1);
+            corridorInAYard += (_blockTiles.Contains(new Vector2I(top.X, top.Y)) ? 1 : 0) + (_blockTiles.Contains(new Vector2I(bottom.X, bottom.Y)) ? 1 : 0);
+            corridorOffTheMidline += TrailPointOf(top) == TrailPointOf(bottom) && Mathf.IsEqualApprox(TrailPointOf(top).Y, top.Y + 0.5f) ? 0 : 1;
+            if (dx < 4)
+            {
+                var next = new GridPos(top.X + 1, top.Y);
+                int count = JoinedNeighbours(top, joined);
+                bool joinsNext = false;
+                for (int k = 0; k < count; k++)
+                {
+                    joinsNext |= joined[k] == next;
+                }
+
+                corridorBreaks += joinsNext ? 0 : 1;
+            }
+        }
+
+        if (corridorInAYard > 0 || corridorOffTheMidline > 0 || corridorBreaks > 0)
+        {
+            return $"[widths] trails: ⛔ a 2×5 worn corridor draws as {(corridorInAYard > 0 ? $"a yard ({corridorInAYard} of 10 tiles filled)" : corridorOffTheMidline > 0 ? $"two rails ({corridorOffTheMidline} of 5 columns off the midline)" : $"a lane in pieces ({corridorBreaks} breaks)")} — not one walked lane";
         }
 
         if (!cornerOnTheLine)
@@ -4511,7 +4638,7 @@ public partial class VillageMap : Control
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
                 + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain, a staircase's clipped corner draws on the line, "
-                + $"and a 3×3 block is one yard of {TrailBlockAreaWorn:F1} tiles; "
+                + $"a packed 3×3 junction is one yard of {TrailBlockAreaWorn:F1} tiles, and a 2×5 worn corridor is one lane down its middle; "
                 + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";

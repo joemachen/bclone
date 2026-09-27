@@ -534,6 +534,8 @@ public partial class VillageMap
         {
             Color colour = pass == 2 ? PackedPath : WornPath;
             _trailBuilder.Clear();
+            _trailDiscsDrawn.Clear();
+            _trailBendsDrawn.Clear();
 
             // ⭐⭐ THE YARDS FIRST (D368): every block of worn tiles as one smoothed patch — the
             // paint's tracer at a cell a tile, ear-clipped — on this pass's surface for the tiles
@@ -587,16 +589,31 @@ public partial class VillageMap
                     continue;
                 }
 
-                if (grade == pass)
+                // ⭐ A CORRIDOR'S TWO ROWS SHARE A POINT (D415), so the neighbour across the corridor
+                // is no step at all — dropped — and each row draws the same ribbon along the midline,
+                // which is drawn ONCE: the trail colours are translucent, and the same shape laid
+                // twice would draw the corridor darker than the lane it is.
+                int kept = 0;
+                for (int k = 0; k < count; k++)
+                {
+                    if (TrailPointOf(joined[k]) != here)
+                    {
+                        joined[kept++] = joined[k];
+                    }
+                }
+
+                count = kept;
+                if (grade == pass && _trailDiscsDrawn.Add(here))
                 {
                     _trailBuilder.Disc(here, TrailHalfWidth, colour);
                 }
 
                 if (count == 1)
                 {
-                    if (Lesser(grade, TrailGradeAt(joined[0])) == pass)
+                    Vector2 midway = MidwayInTiles(tile, joined[0]);
+                    if (Lesser(grade, TrailGradeAt(joined[0])) == pass && _trailBendsDrawn.Add(Shape(midway, here, here)))
                     {
-                        _trailBuilder.Band(MidwayInTiles(tile, joined[0]), here, TrailHalfWidth, colour);
+                        _trailBuilder.Band(midway, here, TrailHalfWidth, colour);
                     }
 
                     continue;
@@ -607,12 +624,14 @@ public partial class VillageMap
                     for (int q = p + 1; q < count; q++)
                     {
                         byte least = Lesser(grade, Lesser(TrailGradeAt(joined[p]), TrailGradeAt(joined[q])));
-                        if (least != pass)
+                        Vector2 from = MidwayInTiles(tile, joined[p]);
+                        Vector2 to = MidwayInTiles(tile, joined[q]);
+                        if (least != pass || !_trailBendsDrawn.Add(Shape(from, here, to)))
                         {
                             continue;
                         }
 
-                        Bend(MidwayInTiles(tile, joined[p]), here, MidwayInTiles(tile, joined[q]), bend);
+                        Bend(from, here, to, bend);
                         _trailBuilder.Strip(bend, TrailHalfWidth, colour);
                     }
                 }
@@ -632,6 +651,15 @@ public partial class VillageMap
 
         LastTrailBuildMs = Since(started);
     }
+
+    /// <summary>A bend (or a band, whose control is its own end) the same whichever end it is read from.</summary>
+    private static (Vector2, Vector2, Vector2) Shape(Vector2 from, Vector2 control, Vector2 to) =>
+        from.X < to.X || (from.X == to.X && from.Y <= to.Y) ? (from, control, to) : (to, control, from);
+
+    /// <summary>The discs and bends laid on this pass so far — a corridor's two rows would lay each twice (D415).</summary>
+    private readonly HashSet<Vector2> _trailDiscsDrawn = new();
+
+    private readonly HashSet<(Vector2, Vector2, Vector2)> _trailBendsDrawn = new();
 
     /// <summary>Segments a bend is sampled at. Eight: a quarter turn in twelve-degree steps.</summary>
     private const int BendSegments = 8;
