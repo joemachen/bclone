@@ -1,6 +1,60 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D420 IN §7. `main` = D418, PUSHED. `slice/store-stock` = D419 and `slice/limit-in-transit` = D420 (stacked on it), NEITHER MERGED. FIRST: JOE PLAYS BOTH → MERGE. THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D421 IN §7. `main` = D421, PUSHED; NO BRANCH OPEN. NEXT: A FRESH BRANCH FOR JOE'S FOUR D421 NOTES (THE LARDER LOOP FIRST) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (LAST) — AFTER D420, ON A STACKED BRANCH.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (CLOSE) — AFTER D421, ALL MERGED.**
+>
+> **State:** `main` = D419 + D420 merged from `slice/limit-in-transit` (it carried `slice/store-stock`)
+> + D421's docs, **pushed at Joe's word** (*"Merge push"*). No branch is open — **cut a fresh one**
+> (e.g. `slice/joe-d421`). 1260 passing, 0 failing, 4 skipped of 1264, ~3m37; view 0 warnings; probe
+> green, bar height 161.
+>
+> **Joe played it:** *"otherwise, it is vastly improved."* **His four notes, ALL CALLED (D421 has the
+> reasoning) — build them on the fresh branch, in this order:**
+> 1. **⭐ THE LARDER LOOP — FIRST, MEASURED BEFORE TYPING, GOLDENS ONCE.** Joe: *"villagers get stuck in
+>    loops and not doing their jobs until i manually shuffle their jobs … related to granary/market/home
+>    and picking stuff up for the home … their decisions are changing very rapidly."* From his session
+>    log (`src/Bclone.Game/logs/bclone-20260927-172933.log`, read-only, 33,565 transitions): **742 of
+>    3,655 fetches carried under an armful** — rest → fetch 10 → home → rest → fetch 16 … (Bess #7,
+>    ticks 13,534–13,640). ⚠️ **The marketers' 1–2-tick flips are NOT it** — a market two tiles from its
+>    store, ~3,400 food in and ~2,700 fetched out in 500 ticks; real work. ⚠️ **Hysteresis already
+>    exists** (`BehaviorSystem.PlanFetch` ~1192: `ToppingUpFood` / `StillShort`, fire at half, fetch to
+>    target; D372) — do not "add" it. **Hypothesis, UNVERIFIED:** the top-up never ENDS. `TargetFoodFor`
+>    (SimWorld ~11247) clamps the target to the wall (400, D399) minus the firewood *allowance*, but a
+>    larder can hold MORE than the allowance — extra firewood, or goods set down at home when no store
+>    takes them (`UnloadAtHome`) — so `held < wanted` stays true and each fetch brings only the room a
+>    meal just freed. **Prove it first:** pose or replay, print per fetch the larder's Held / Capacity,
+>    food held vs target, firewood vs allowance, and what else is in it. Then choose the fix (the
+>    target read from the room actually left is one candidate) and measure it (survival, fetch-size
+>    histogram, the suite's clock). Also find out why Bess had no work to go to (his screenshot shows
+>    wheat met — D238 keeps the seat). **Then re-read the frame skip** (a villager turning round every
+>    tick reads as a skip; D403's arrival snap is the rest).
+> 2. **THE STOCK LIMITS PANEL KEEPS ONLY ITS LIMITS AND BUTTONS.** Joe: *"I want that whole section
+>    removed. only have the limits and the related buttons on this pane."* Delete the HAVE column
+>    (`Main.cs` `BuildStockLimitTable` ~3943, `AddStockLimitRow` ~5631, `_stockLimitReadouts` refresh
+>    ~1825) and the Food heading's *"7,500 in all"*; **keep a bare ⚠ on the FOOD heading** with D409's
+>    births tooltip (`_foodCeiling`, ~1859) — his call on my recommendation. The top bar's ⚠ per good
+>    stays. Check the probe's `limits:` and `panels:` lines still read (the panel narrows).
+> 3. **CRATES STAND UPRIGHT ON SCREEN.** `VillageMap.CratesIn` (~2998) draws in the building's frame, so
+>    a store at a quarter turn (D412) lays them on their side. Floor = the footprint edge lowest on
+>    screen: snap the facing (with the camera's turn) to the nearest quarter and swap width/height when
+>    it is odd. Probe `store stock` must pose a quarter-turned store and red-check it.
+> 4. **THE LODGE CARD SAYS WHAT IT HOLDS BY GOOD** — `Main.Cards.cs` ~980 sums every good into
+>    *"18 of 2,700 hel…"* (truncated). Show *"10 meat · 8 leather"* with the capacity; any workplace
+>    with a buffer, read from the catalogue, never by name.
+>
+> **Then the queue (unchanged):** the well, slice C → tools on ticks at 34 % → the quarry, spec first →
+> his design threads (⏸️ OPEN list).
+>
+> **Tools:** the log-reading one-offs were inline Python over the game log (behavior lines are
+> `Name #id: from -> to at (x, y)`; the `at` is WHERE the transition happens — the pickup store for
+> collecting → stocking, the market for stocking → idle). The D420 harness `ZzLimit.cs` is in
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/e3e1ad71-0b21-483d-9cfa-4a276b096683/scratchpad/`.
+> Godot at `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D420 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (LAST) — AFTER D420, ON A STACKED BRANCH.**
 >
 > **State:** `main` = D418 (`c1556b3`), pushed. `slice/store-stock` = D419 + its handoff, NOT merged.
 > **`slice/limit-in-transit` = D420, cut from `slice/store-stock` (Joe's call), committed, NOT merged,
@@ -2915,6 +2969,14 @@ reds** as though the guard were blind. It was not; the break never landed. ⭐ *
 must check the build before it counts reds**, and a zero is read as "did it compile?" before it is
 read as "the guard is weak". The same session: `python open()` in text mode rewrote every LF file it
 touched as CRLF on Windows — pass `newline=""`.
+
+## ⛔ THE TRAP D421 NEARLY PAID FOR — A FLIP COUNTER CANNOT TELL BUSY FROM STUCK, AND THE FIX YOU REACH FOR MAY ALREADY EXIST
+
+Counting a villager's state changes per 40 ticks flagged the marketers first — 25–31 flips — and they
+were doing the most useful work in the village. ⭐ **Count what each flip MOVED** (goods lines paired
+with the transition's tile) before calling anything a loop. And the session then told Joe *"fetch
+needs hysteresis, firewood has the shape"* — food already had it (D372). **Grep the rule you are about
+to propose before you propose it.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
