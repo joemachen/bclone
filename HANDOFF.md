@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D417 IN §7. `main` = D416, NOT PUSHED (JOE PUSHES). `slice/market-stock` = D417, NOT MERGED — JOE PLAYS IT AND CALLS FOUR GUARDS. THEN: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D418 IN §7. `main` = D418, PUSHED. NEXT: EVERY STORAGE BUILDING SHOWS ITS STOCK (JOE, D418) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-26 (LAST) — AFTER D417, ON A BRANCH.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-27 — AFTER D418.**
+>
+> **State:** `main` = D417 + D418 merged from `slice/market-stock` and **pushed at Joe's word**.
+> Read D417/D418 in §7 and `storage-and-distribution.md §14.14`.
+>
+> **Joe's calls (D418):** *"markets look good!"*; the four held guards → *"accept"* (re-posed after
+> diagnosis — two were a dead premise and a wrong measurement, not chaos); *"push"*.
+>
+> **▶️ NEXT, HIS:** *"granaries, stockpiles, and warehouses should have the same 'market stock'
+> visibility — all storage buildings should."* `VillageMap.CratesOnTheStall` / `ShelfOf` are the
+> market's; generalise them. Later (visuals pass): goods seen arriving at and leaving each building.
+>
+> **⏸️ Also asked, answer given in chat, NOTHING BUILT:** should a stock limit count only what is in
+> storage (+ in transit), never what is in home larders? See the ⏸️ OPEN list.
+>
+> *(The D417 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-09-26 (LAST) — AFTER D417, ON A BRANCH.**
 >
 > **State:** `main` = D416 (not pushed — Joe pushes). **`slice/market-stock` = D417, committed, NOT
 > merged.** On the branch: **1245 passing, 4 failing, 4 skipped of 1253** — the four are ON PURPOSE,
@@ -2750,8 +2768,16 @@ One extra build per value; it is the cheapest honest classifier this project has
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **D417'S FOUR HELD GUARDS (on `slice/market-stock`).** Accept and re-pose, or hold and
-  investigate — the banner has them. And separately: `TheMarketKeepsLardersFromRunningDry`'s bar has
+- ⭐ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? (Joe, 2026-09-27 — thoughts asked, nothing built.)**
+  *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition to whatever is in
+  home larders."* ⭐ **It already excludes them** — `SimWorld.HeldAgainstItsLimit` (D409) counts the
+  stores (the market included), the heaps on the ground, and for anything edible the huts' buffers;
+  never a larder. The gaps against his wording: (1) **a load in someone's arms is not counted**, so a
+  limit overshoots by an armful per producer in flight; (2) **the market's shelf counts** — with 100 a
+  household (D417) that is up to 500 of a good that is "storage" to the rule but distribution to the
+  player (D199); (3) **a hut's buffer counts for food only** (D161). Recommendation given: count loads
+  headed TO storage (not fetches out of it), keep the buffers, and ask him about the market.
+- ✅ **D417'S FOUR HELD GUARDS — ANSWERED, *"accept"* (D418), re-posed.** Still open: `TheMarketKeepsLardersFromRunningDry`'s bar has
   been nudged five times since D363 (0 → 1 → 2 → a comparison → 2); it may be the wrong shape of guard
   for a number this small, not the wrong number.
 - ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*).** 130 is level over

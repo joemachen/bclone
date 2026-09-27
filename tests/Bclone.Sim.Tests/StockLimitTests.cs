@@ -954,8 +954,13 @@ public sealed class StockLimitTests
         // lives" half read 8 against 10 on the fixture seed once firewood stopped being split
         // without asking — two people in a village of ten over twelve years, which is when a
         // child happens to be born, not a price. The sum can tell noise from a cost.
+        // ⚠️ SIX SEEDS AND A COUPLE'S SLACK PER THREE SINCE D417 (Joe: *"accept"*). Stocking the market
+        // to 100 a household read 26 against 30 on three — two seeds a couple down each. Measured on
+        // these six at 40 / 99 / 100 / 101 the ambitious arm ran +2 / 0 / −4 / +2 against the content
+        // one: a couple either way, whichever seeds it lands on. The failure this guards was a village
+        // halved (ten alive down to four), which four of sixty still catches with room to spare.
         int heldWith = 0, heldWithout = 0, aliveWith = 0, aliveWithout = 0;
-        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL })
+        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 5UL })
         {
             SimConfig config = VillageFixtures.Village with { Seed = seed };
             int years = config.TicksPerYear * 12;
@@ -989,9 +994,9 @@ public sealed class StockLimitTests
         }
 
         // And the stockpile is a want, not a need: it must not be built out of the hands
-        // that keep everybody fed — asked of the three together, with a child's worth of slack.
+        // that keep everybody fed — asked of the six together, with a couple's slack per three.
         Assert.True(
-            aliveWith + 2 >= aliveWithout,
+            aliveWith + 4 >= aliveWithout,
             $"Stockpiling cost lives: {aliveWith} alive against {aliveWithout} in the same villages that never bothered.");
     }
 
