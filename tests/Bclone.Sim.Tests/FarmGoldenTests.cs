@@ -277,7 +277,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Was 3520429905368766944.
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 16478286618016232765.
     // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 836586678125485000.
-    private const ulong SeamGoldenHash = 14628176752370550354UL;
+    // RE-TAKEN (D424) — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Was 14628176752370550354.
+    private const ulong SeamGoldenHash = 10018167588382916202UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -337,7 +338,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D414) with it again: walkers keep to the paths, wear has a ceiling. Was 1600556099512445086.
     // RE-TAKEN (D417) with it again: the market is stocked to 100 a household, not 40. Was 13071203690319198168.
     // RE-TAKEN (D422) with it again: a top-up ends with the trip that fills the larder, food reads the larder's room, a housemate's load on its way home counts. Was 9971580707305620644.
-    private const ulong SeamBeforeAnybodyGotBetter = 13124005613803505895UL;
+    // RE-TAKEN (D424) with it again: a step treads every tile it passes over. Was 13124005613803505895.
+    private const ulong SeamBeforeAnybodyGotBetter = 17666849110764019097UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

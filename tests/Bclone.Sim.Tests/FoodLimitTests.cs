@@ -62,7 +62,12 @@ public sealed class FoodLimitTests
         // went thin (32 clearing ticks, under the premise's 50). Re-swept: 233 / 127 / 32 / 184 / 178 / 1
         // at years 4 / 6 / 8 / 10 / 12 / 15, the limit taking each live year to 3–14. **This pose
         // moves with every change to who fetches when — the premise assertion below is what says so.**
-        loop.Step(config.TicksPerYear * 10);
+        // ⚠️ AND YEAR FOUR SINCE D424 — a step treads every tile it passes over, the lanes wear
+        // differently, and the tenth year went thin (27). Re-swept: 333 / 216 / 15 / 27 / 46 / 9 at
+        // years 4 / 6 / 8 / 10 / 12 / 15, the limit taking the live years to 28 / 31. Three moves in
+        // three slices (D422, D423's branch, D424): the pose tracks who walks where, and the premise
+        // is what catches it each time.
+        loop.Step(config.TicksPerYear * 4);
 
         if (foodLimit > 0)
         {

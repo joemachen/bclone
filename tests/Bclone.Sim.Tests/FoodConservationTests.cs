@@ -50,7 +50,10 @@ public sealed class FoodConservationTests
     // to the unit in the dead ones too; the coverage half needs a village that lives. On Joe's list.
     // ⚠️ AND SEED 4 SINCE D414: walkers keeping to the lanes moved the half again — measured over
     // thirteen seeds, 5 live on main (2 7 8 10 11) and 5 on D414 (2 4 11 12 12345). Seed 7 died.
-    [InlineData(4UL, true)]
+    // ⚠️ AND SEED 10 SINCE D424: a step treads every tile it passes over, and the half moved again —
+    // swept over the same thirteen, 4 live with every source producing (2 16 alive, 10 19, 12 6,
+    // 11 3); seed 4 fished nothing and died.
+    [InlineData(10UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

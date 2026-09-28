@@ -187,6 +187,44 @@ public static class LineOfSight
     }
 
     /// <summary>
+    /// ⭐ Every tile a footstep from <paramref name="from"/> to <paramref name="to"/> ENTERS, in order
+    /// — never <paramref name="from"/>'s own tile, and through a grid corner only the diagonal tile
+    /// (D424).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"what's going on with these pathway segments? can they be a smooth path?"*</b> A step
+    /// trod only the tile it landed on, and a step on a worn lane is longer than a tile (clock B:
+    /// packed ground costs 8 of 10, so a step is 1.25 tiles). Every walker between the same two doors
+    /// walks the same leg in the same steps, so they all skipped <em>the same tiles</em>, every trip —
+    /// a straight packed lane with a tile nobody ever stood on (`o.## ###o###`, shipped 12345 at year
+    /// 30), drawn as dashes. A footstep marks the ground it passes over.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Not <see cref="TilesCrossed"/>'s corners.</b> That walk is conservative — a line through a
+    /// corner touches both tiles beside it, which is right for a wall and wrong for a foot: a 45° walk
+    /// would tread three tiles a step and wear a thick staircase (D414 names the same trap).
+    /// </para>
+    /// </remarks>
+    public static void Footprints(Point from, Point to, Action<GridPos> tread)
+    {
+        ArgumentNullException.ThrowIfNull(tread);
+        Walk(
+            from,
+            to,
+            (was, tile) =>
+            {
+                if (was != tile)
+                {
+                    tread(tile);
+                }
+
+                return true;
+            },
+            cornersTouchBoth: false);
+    }
+
+    /// <summary>
     /// The grid walk. <paramref name="visit"/> returns false to stop early.
     /// </summary>
     /// <remarks>
@@ -204,7 +242,11 @@ public static class LineOfSight
     /// </para>
     /// </remarks>
     private static void Walk(
-        Point from, Point to, Func<GridPos, GridPos, bool> visit, Func<GridPos, GridPos, bool>? alsoCrossed = null)
+        Point from,
+        Point to,
+        Func<GridPos, GridPos, bool> visit,
+        Func<GridPos, GridPos, bool>? alsoCrossed = null,
+        bool cornersTouchBoth = true)
     {
         GridPos tile = from.ToTile();
         GridPos last = to.ToTile();
@@ -236,6 +278,27 @@ public static class LineOfSight
             long numY = denY == 0 ? 0 : Math.Abs(NextLine(tile.Y, stepY) - y0);
 
             int order = denX == 0 ? 1 : denY == 0 ? -1 : Compare(numX, denX, numY, denY);
+
+            if (order == 0 && !cornersTouchBoth)
+            {
+                // A FOOTSTEP THROUGH A CORNER STEPS DIAGONALLY (D424) — it touches neither tile
+                // beside it. A step that ENDS on the corner ends in the tile the point floors to.
+                var besideTile = new GridPos(tile.X + stepX, tile.Y);
+                var aboveTile = new GridPos(tile.X, tile.Y + stepY);
+                if (besideTile == last || aboveTile == last)
+                {
+                    visit(tile, last);
+                    return;
+                }
+
+                tile = new GridPos(tile.X + stepX, tile.Y + stepY);
+                if (!visit(was, tile) || tile == last)
+                {
+                    return;
+                }
+
+                continue;
+            }
 
             if (order == 0)
             {

@@ -50,6 +50,47 @@ public sealed class LineOfSightTests
     private static List<GridPos> Crossed(GridPos a, GridPos b) =>
         LineOfSight.TilesCrossed(Point.CentreOf(a), Point.CentreOf(b));
 
+    /// <summary>
+    /// ⭐ A footstep marks every tile it ENTERS — a step longer than a tile included — and passes a
+    /// corner diagonally (D424, Joe's broken lane).
+    /// </summary>
+    /// <remarks>
+    /// A step on a worn lane is 1.25 tiles (packed ground costs 8 of 10); treading only the tile it
+    /// landed on skipped one tile in five, the same tile for every walker between two doors.
+    /// </remarks>
+    [Fact]
+    public void AFootprintIsEveryTileAStepEntersAndACornerIsCrossedDiagonally()
+    {
+        List<GridPos> Prints(Point from, Point to)
+        {
+            var tiles = new List<GridPos>();
+            LineOfSight.Footprints(from, to, tiles.Add);
+            return tiles;
+        }
+
+        // A step of 1.25 tiles along a row, from near a tile's far edge: it enters two tiles, and the
+        // tile it landed on is only the second of them.
+        var from = new Point(Fixed.FromRatio(9, 10), Fixed.FromRatio(1, 2));
+        var to = new Point(Fixed.FromRatio(215, 100), Fixed.FromRatio(1, 2));
+        Assert.Equal(new[] { new GridPos(1, 0), new GridPos(2, 0) }, Prints(from, to));
+        Assert.Equal(new GridPos(2, 0), to.ToTile());
+
+        // A 45° walk centre to centre goes through corners: the diagonals only, not the three a step
+        // the conservative walk lists for a wall.
+        List<GridPos> diagonal = Prints(Point.CentreOf(new GridPos(0, 0)), Point.CentreOf(new GridPos(3, 3)));
+        Assert.Equal(new[] { new GridPos(1, 1), new GridPos(2, 2), new GridPos(3, 3) }, diagonal);
+        Assert.True(Crossed(new GridPos(0, 0), new GridPos(3, 3)).Count > diagonal.Count + 1, "the wall's walk is no longer conservative at corners");
+
+        // A generic line enters |dx| + |dy| tiles — the staircase route's own count — never its own start.
+        var a = new Point(Fixed.FromRatio(3, 10), Fixed.FromRatio(2, 10));
+        var b = new Point(Fixed.FromRatio(47, 10), Fixed.FromRatio(19, 10));
+        List<GridPos> generic = Prints(a, b);
+        _output.WriteLine($"(0.3, 0.2) → (4.7, 1.9) enters {string.Join(" ", generic)}");
+        Assert.Equal(4 + 1, generic.Count);
+        Assert.DoesNotContain(a.ToTile(), generic);
+        Assert.Equal(b.ToTile(), generic[^1]);
+    }
+
     /// <summary>A line along a row touches exactly that row's tiles, in order.</summary>
     [Fact]
     public void ALineAlongARowTouchesExactlyThatRow()

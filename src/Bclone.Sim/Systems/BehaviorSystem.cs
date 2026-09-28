@@ -3442,11 +3442,16 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.LegStep++;
         bool legDone = villager.LegStep >= villager.LegSteps;
+        Point stepFrom = villager.Position;
         villager.WalkTo(AlongTheLeg(villager.LegFrom, villager.LegTo, villager.LegStep, villager.LegSteps));
 
-        // ⭐ EVERY STEP TREADS THE TILE UNDER IT (§2.6, D358) — the tile under the straight line,
-        // so a trail is worn where people actually walk, not along the staircase they no longer take.
-        world.Paths.Tread(villager.Tile, world.Config.PathWearPerStep);
+        // ⭐ EVERY STEP TREADS THE GROUND IT PASSES OVER (§2.6, D358; D424) — the tiles under the
+        // straight line, so a trail is worn where people actually walk, not along the staircase they
+        // no longer take. ⛔ It trod only the tile it LANDED on until D424, and a step on a worn lane
+        // is 1.25 tiles, so every walker between two doors skipped the same tiles every trip and the
+        // lane wore into dashes (Joe's broken lane). `LineOfSight.Footprints` has the whole story.
+        int wearPerStep = world.Config.PathWearPerStep;
+        LineOfSight.Footprints(stepFrom, villager.Position, tile => world.Paths.Tread(tile, wearPerStep));
 
         if (legDone)
         {
@@ -3578,33 +3583,31 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// How many of the footsteps a straight walk from <paramref name="from"/> to
-    /// <paramref name="to"/> would take land on grass — the tiles <c>Travel</c> would tread,
-    /// one a step, at a step a tile (D414).
+    /// How many of the tiles a straight walk from <paramref name="from"/> to <paramref name="to"/>
+    /// would tread are grass — the footprints <c>Travel</c> leaves (D414; D424).
     /// </summary>
     /// <remarks>
-    /// ⚠️ The footsteps, not the tiles the line touches: <see cref="LineOfSight"/> is conservative
-    /// at corners and lists both tiles beside every corner a diagonal passes through, so a 45° walk
-    /// "crosses" three tiles a step and would lose to its own staircase on bare grass. Grass is
-    /// what the cost field charges full price for, so a paved road later counts as off the grass
-    /// for free. Once per candidate waypoint per leg, never per tick.
+    /// ⚠️ The footprints, not the tiles the line touches: <see cref="LineOfSight.TilesCrossed"/> is
+    /// conservative at corners and lists both tiles beside every corner a diagonal passes through,
+    /// so a 45° walk "crosses" three tiles a step and would lose to its own staircase on bare grass.
+    /// <see cref="LineOfSight.Footprints"/> steps through a corner diagonally — and since D424 it is
+    /// what <c>Travel</c> treads, so this counts exactly the grass a walk would wear (it sampled one
+    /// point a step until then, which undercounted a chord and flattered a shortcut). A generic line
+    /// enters |dx| + |dy| tiles, the staircase route's own count, so on bare grass a straight walk
+    /// still never loses to the route it replaces. Grass is what the cost field charges full price
+    /// for, so a paved road later counts as off the grass for free. Once per candidate waypoint per
+    /// leg, never per tick.
     /// </remarks>
     internal static int GrassUnder(SimWorld world, Point from, Point to)
     {
-        int steps = (from.DistanceTo(to) + Fixed.FromRatio(1, 2)).ToInt();
-        if (steps < 1)
-        {
-            steps = 1;
-        }
-
         int grass = 0;
-        for (int step = 1; step <= steps; step++)
+        LineOfSight.Footprints(from, to, tile =>
         {
-            if (world.TravelCost.CostToEnter(AlongTheLeg(from, to, step, steps).ToTile()) == TravelCostField.BaseTileCost)
+            if (world.TravelCost.CostToEnter(tile) == TravelCostField.BaseTileCost)
             {
                 grass++;
             }
-        }
+        });
 
         return grass;
     }
@@ -3703,6 +3706,10 @@ public sealed class BehaviorSystem : ISimSystem
     /// be asserted without waiting for a household to happen to dip.</summary>
     internal static StoreBuilding? PlanFetchForTest(SimWorld world, Villager villager) =>
         PlanFetch(world, villager);
+
+    /// <summary>One step of a walk toward <paramref name="target"/>, exposed so a test can watch the ground a commute treads (D424).</summary>
+    internal static void TravelForTest(SimWorld world, Villager villager, GridPos target) =>
+        Travel(world, villager, target, VillagerState.Idle);
 
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);

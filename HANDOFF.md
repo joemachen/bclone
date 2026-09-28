@@ -1,6 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D423 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP) + D423 (JOE'S OTHER THREE D421 NOTES), COMMITTED, NOT MERGED, UNPLAYED → JOE PLAYS IT → THE WELL → TOOLS ON TICKS → THE QUARRY.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D424 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP) + D423 (JOE'S OTHER THREE D421 NOTES) + D424 (HIS BROKEN LANE), COMMITTED, NOT MERGED, UNPLAYED → JOE PLAYS IT → THE WELL → TOOLS ON TICKS → THE QUARRY.**
 
-> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-27 (END) — ALL FOUR D421 NOTES BUILT ON `slice/joe-d421`.**
+> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-28 — D424 (JOE'S BROKEN LANE) ADDED TO `slice/joe-d421`.**
+>
+> **State:** `main` = D421, pushed. **`slice/joe-d421` = D422 + D423 + D424, committed, NOT merged,
+> NOT pushed, unplayed.** D424: a step treads every tile it passes over (`LineOfSight.Footprints`),
+> not only the one it lands on — a step on a worn lane is 1.25 tiles, so a household's lane wore into
+> dashes. His call: the sim fix, goldens once. Survival up (414 → 440 alive over 55 villages). Numbers
+> in D424 and the commit.
+>
+> **▶️ FIRST, JOE PLAYS THE BRANCH** — the D423 banner below lists what to look at; add: a long lane
+> to an outlying house should draw as one path once it has worn in (a season or two into a new game;
+> an old save keeps its old wear). If it still reads bumpy after it is continuous, the next step is
+> smoothing the drawn chain — a view slice, his call. Then he merges and pushes.
+>
+> **Watch items:** `AFoodLimitKeepsForagersOnFood…` has moved its year three slices running (8 → 10 →
+> 4) — it may be the wrong shape of guard, like `TheMarketKeepsLardersFromRunningDry`; the every-source
+> conservation seed moved again (4 → 10). A separate session is auditing the season-stepper hole.
+>
+> *(The D423 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-27 (END) — ALL FOUR D421 NOTES BUILT ON `slice/joe-d421`.**
 >
 > **State:** `main` = D421, pushed. **`slice/joe-d421` = D422 (sim, the larder loop) + D423 (view:
 > the Stock limits panel, upright crates, the lodge card by good), both committed, NOT merged, NOT
@@ -3055,6 +3075,18 @@ a longhouse's 3×1 it scores. The same stretch: the card's first cut named two g
 the probe's cell measurement (with the real font) caught *"forage · others"* at 85 px in 81. ⭐ **Pose
 the case that distinguishes right from wrong — non-square, longest name, largest good not first in
 the catalogue — not the case the village happens to hand you.**
+
+## ⛔ THE TRAP D424 PAID FOR — THE PLAN'S MECHANISM WAS WRONG, AND A RED CHECK "BUILT" WHEN IT HAD NOT
+
+The approved plan said the dashes were wear split between tiles and proposed a view bridge. The first
+census showed the gap tiles had NEVER been trodden — a different mechanism (a step longer than a tile
+skipping the same tiles), a different fix, and so a different call for Joe. ⭐ **Measure the premise
+before the fix, and when it breaks the plan, stop and ask** — the plan said so and it was right.
+Two more on the way: (1) the first guard counted "untrodden gaps in a straight run" and scored zero —
+the skipped row of a diagonal is not a straight gap, and most straight gaps are fences; pose the
+case itself (a commute on a packed steep lane). (2) A mutation left a parameter unused, the build
+failed on `IDE0060`, and the script — grepping only `error CS` — reported "built" and zero reds.
+⭐ **Grep `: error [A-Z]+[0-9]+`, not `error CS`: this repo fails the build on IDE rules too.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

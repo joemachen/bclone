@@ -7,7 +7,9 @@ slice)**, D414 (walkers keep to the path; the wear ceiling). Follows `gridless.m
 **Status:** ✅ **BUILT, SIM AND VIEW (2026-09-11, D358); PLAYED BY JOE FIVE TIMES (D359, D360, D362,
 D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes and wear has a ceiling —
 and ✅ D415 — the view draws a two-wide corridor as one lane and fills a yard only at a packed 3×3
-junction — PLAYED BY JOE AND MERGED (D416: *"looks so much better. keep it at 130 for now"*).**
+junction — PLAYED BY JOE AND MERGED (D416: *"looks so much better. keep it at 130 for now"*).
+✅ D424 (2026-09-28, `slice/joe-d421`, unplayed) — a step treads every tile it passes over, not only
+the one it lands on (§3.1; Joe's broken lane).**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
 *Paths* overlay (P), an inspector sentence, a probe line. Paving (§2.6's *upgrade an emerged path*)
@@ -51,11 +53,25 @@ scar the map; daily housing↔granary churn should.**
 ## 3. The rules
 
 ### 3.1 Tread
-Every tick a travelling villager moves (`BehaviorSystem.Travel`, after `WalkTo`), the tile under
-their new position gains `path_wear_per_step` (**3** since D360 — a finer unit so the ratios Joe
-asked for fit in integers; it was 1). It is the tile **under the straight line**
-(`Villager.Tile`, the floor of the `Point`), not the route tile the staircase would have used —
-so a trail is worn where people actually walk. Wear stops at **`path_wear_ceiling` = 130** (D414);
+Every tick a travelling villager moves (`BehaviorSystem.Travel`, after `WalkTo`), **every tile the
+step entered** gains `path_wear_per_step` (**3** since D360 — a finer unit so the ratios Joe asked
+for fit in integers; it was 1) — the tiles **under the straight line** from where the step began to
+where it ended (`LineOfSight.Footprints`), not the route tiles the staircase would have used, so a
+trail is worn where people actually walk. The tile the step began on is not trodden again (it was
+entered by the step before), and a line through a grid corner steps diagonally — it treads neither
+tile beside the corner (a wall's walk, `TilesCrossed`, touches both).
+⛔ **Until D424 a step trod only the tile it LANDED on** (`Villager.Tile`), and a step on a worn lane
+is longer than a tile (§3.5: packed ground costs 8 of 10, so 1.25 tiles a step). Every walker
+between the same two doors walks the same leg in the same steps, so they all skipped *the same
+tiles* every trip: a household's steep lane to its store wore into dashes a column apart (Joe,
+2026-09-28: *"what's going on with these pathway segments? can they be a smooth path?"*), and the
+skipped tiles stayed grass to the routes too. Guard: `ACommuteAlongAPackedLaneLeavesNoBreak` (a
+packed steep lane walked end to end treads one unbroken chain — red with the old tread: 7 tiles, the
+chain broken after one). **Measured (D424):** five thirty-year villages, lane ends 13 → 7 and breaks
+with an untrodden gap 6 → 2; 55 fifty-year villages (D420's arms) alive 414 → 440, starved 122 → 113,
+dead villages 9 → 6 — shipped 169 → 169 (starved 103 → 91), fixture 148 → 143, every-source 97 → 128.
+⚠️ A village-wide census of "untrodden gaps in a straight run" was the first guard and scored ZERO:
+such a gap is mostly a fence or a building, and a skipped row on a diagonal is not a straight gap. Wear stops at **`path_wear_ceiling` = 130** (D414);
 it never wraps (a wrap would turn the main street into fresh grass identically on both machines —
 the D317 overflow argument).
 ⛔ **Until D414 it ran on to `ushort.MaxValue`**, and measured, hub tiles of a twenty-five-year
@@ -148,13 +164,16 @@ so on grass every staircase costs the same and any path tile in the walk's recta
 onto the lane, and `PlanLeg`'s string-pulling then drew the line to the furthest route tile *in
 sight* — on open ground, straight past the lane across the grass beside it. Every walker cut their own
 chord.
-**The rule:** while pulling the string, a leg is not extended to route tile *i* if the footsteps it
-would take on grass (the tiles `Travel` would tread, one a step — `BehaviorSystem.GrassUnder`) exceed
+**The rule:** while pulling the string, a leg is not extended to route tile *i* if the grass it would
+tread (the tiles `Travel` would tread — `BehaviorSystem.GrassUnder`, by `LineOfSight.Footprints` since
+D424; it sampled one point a step before, which undercounted a chord and flattered a shortcut) exceed
 the route's own grass tiles up to *i* by more than **`path_shortcut_grass_allowance` = 0**. Grass is
 what the field charges `BaseTileCost` for, so a paved road later counts as off the grass for free.
-⚠️ Footsteps, not the tiles the line touches: `LineOfSight` lists both tiles beside every corner, so
-a 45° line "crosses" three a step and would lose to its own staircase on bare grass. **On bare grass
-nothing changes** — a straight line treads no more tiles than the staircase — so the clock and the
+⚠️ Footprints, not the tiles the line touches: `TilesCrossed` lists both tiles beside every corner,
+so a 45° line "crosses" three a step and would lose to its own staircase on bare grass; a footprint
+steps through a corner diagonally. A generic line enters |dx| + |dy| tiles — the 4-connected route's
+own count — so **on bare grass nothing changes**: a straight line treads no more tiles than the
+staircase, and the clock and the
 Phase 0 pins are untouched by construction. Tick charging (§3.5) is unchanged. A leg to the route's
 first tile (a step off a building, D404) is never judged: it replaces no route.
 **Measured (shipped 12345, fixture 4, thirty years; 42 fifty-year villages):** block tiles (in any
