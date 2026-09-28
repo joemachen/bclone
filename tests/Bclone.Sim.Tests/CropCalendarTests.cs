@@ -59,7 +59,7 @@ public sealed class CropCalendarTests
         SimWorld world = loop.World;
         GridPos tile = SowOneTile(world);
 
-        StepToTheStartOf(loop, Season.Fall);
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
 
         _output.WriteLine(
             $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
@@ -82,7 +82,7 @@ public sealed class CropCalendarTests
         SimWorld world = loop.World;
         GridPos tile = SowOneTile(world);
 
-        StepToTheStartOf(loop, Season.Summer);
+        FarmFixtures.StepToTheStartOf(loop, Season.Summer);
 
         _output.WriteLine(
             $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
@@ -101,10 +101,10 @@ public sealed class CropCalendarTests
         SimWorld world = loop.World;
         GridPos tile = SowOneTile(world);
 
-        StepToTheStartOf(loop, Season.Fall);
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
         Assert.Equal(Terrain.Ripe, world.Map.TerrainAt(tile));
 
-        StepToTheStartOf(loop, Season.Winter);
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
 
         _output.WriteLine(
             $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
@@ -142,8 +142,8 @@ public sealed class CropCalendarTests
             world.Map.SetCrop(tile, 1);
         }
 
-        StepToTheStartOf(loop, Season.Fall);
-        StepToTheStartOf(loop, Season.Winter);
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
 
         int lines = 0;
         foreach (LogEntry entry in sink.Entries)
@@ -240,29 +240,5 @@ public sealed class CropCalendarTests
         world.Map.SetTerrain(tile, Terrain.Sown);
         world.Map.SetCrop(tile, 1);
         return tile;
-    }
-
-    /// <summary>Step until the given season has begun <em>and the systems have seen it</em>.</summary>
-    /// <remarks>
-    /// <b>⚠️ The extra step is not padding, and leaving it out is an off-by-one that reads as a
-    /// broken feature.</b> <see cref="SimLoop.StepOnce"/> runs the systems and *then* advances
-    /// the tick, so the moment <c>World.Clock</c> first reports the new season, no system has
-    /// run on it yet — the calendar has turned and nothing has answered. Stopping there had
-    /// three of these guards reporting a field that never ripened, when what had actually
-    /// happened is that <see cref="Systems.CropSystem"/> had not been given the tick.
-    /// </remarks>
-    private static void StepToTheStartOf(SimLoop loop, Season season)
-    {
-        for (int i = 0; i < loop.World.Config.TicksPerYear; i++)
-        {
-            loop.StepOnce();
-            if (loop.World.Clock.Season == season)
-            {
-                loop.StepOnce();
-                return;
-            }
-        }
-
-        throw new System.InvalidOperationException($"A whole year passed without reaching {season}.");
     }
 }

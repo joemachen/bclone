@@ -3056,6 +3056,24 @@ the probe's cell measurement (with the real font) caught *"forage · others"* at
 the case that distinguishes right from wrong — non-square, longest name, largest good not first in
 the catalogue — not the case the village happens to hand you.**
 
+## ⛔ THE TRAP D424 PAID FOR — "THE START OF" IS AN EDGE, AND A SLOW CLOCK IS COMPARED BACK TO BACK OR NOT AT ALL
+
+`StepToTheStartOf` now **throws** if called inside the season it is asked for, past that season's
+first tick (D424). If a guard you write trips it, the fix is *step through another season first* —
+not a new helper, and never a try/catch. ⚠️ **Tick 0 is the start of spring and must stay allowed**:
+a refusal that fired whenever the clock read the season asked for broke six farm guards that open
+with `StepToTheStartOf(Spring)` (7 reds), which is why the exemption exists — do not "simplify" it.
+⭐ **The cheap way to audit a helper's every call**: give it temporary `[CallerFilePath]` /
+`[CallerLineNumber]` / `[CallerMemberName]` optional parameters and append one line per call to a file
+(tick and season before and after); 103 calls sorted in 45 seconds, where reading 39 call sites
+could only guess. Revert with `git checkout` before touching anything else.
+Second: **the full suite read 5m31 against D422's 3m14, and it was not this change — nor only the
+session running its own suite in the main checkout at the same time.** Re-run alone it read 5m06, and
+the untouched D422 commit, in a throwaway `git worktree add --detach`, read **5m16** straight after.
+⭐ **A clock is only comparable back to back on the same machine that hour**: time the base commit
+beside yours before chasing it, and check `Get-CimInstance Win32_Process -Filter "Name='testhost.exe'"`
+for a testhost that is not under your worktree.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⭐ **THE EVERY-SOURCE FOUNDING UNDER D422: 154 → 97 ALIVE OVER 13 SEEDS — ACCEPTED BY HIS CALL (*"ship

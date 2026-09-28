@@ -181,9 +181,28 @@ internal static class FarmFixtures
     /// new season nothing has run on it yet — the calendar has turned and nothing has answered.
     /// Stopping there had three of the crop-calendar guards reporting a field that never
     /// ripened, and an off-by-one in a harness reads exactly like a broken feature.
+    /// <para>
+    /// <b>⛔ AND IT REFUSES TO BE CALLED FROM INSIDE THE SEASON IT IS ASKED FOR (D424).</b> Stepping
+    /// until <c>Clock.Season == season</c> is satisfied at once when it already is, so this used to
+    /// return two ticks later — and a loop calling <c>StepToTheStartOf(Winter)</c> once a "year"
+    /// read the first winter over and over. D422 found twelve "years" that were ticks 361–383, and
+    /// the claim they hid was false. <b>A season's first tick is still allowed</b>, because nothing
+    /// has run on it yet and that is the start being asked for — tick 0 is the start of the first
+    /// spring. Anywhere later in the season throws: walk through another season first.
+    /// </para>
     /// </remarks>
     internal static void StepToTheStartOf(SimLoop loop, Season season)
     {
+        SimWorld world = loop.World;
+        if (world.Clock.Season == season
+            && world.Tick > 0
+            && SimClock.FromTick(world.Tick - 1, world.Config).Season == season)
+        {
+            throw new System.InvalidOperationException(
+                $"Already inside {season} at tick {world.Tick} ({world.Clock}) — this would return two "
+                + $"ticks later in the same {season}, not at the next one. Step through another season first (D424).");
+        }
+
         for (int i = 0; i < loop.World.Config.TicksPerYear; i++)
         {
             loop.StepOnce();
