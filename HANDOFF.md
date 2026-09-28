@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D422 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP, ALL THREE RULES — JOE'S CALL), COMMITTED, NOT MERGED, UNPLAYED → HIS OTHER THREE D421 NOTES ON THE SAME BRANCH → THE WELL → TOOLS ON TICKS → THE QUARRY.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D423 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP) + D423 (JOE'S OTHER THREE D421 NOTES), COMMITTED, NOT MERGED, UNPLAYED → JOE PLAYS IT → THE WELL → TOOLS ON TICKS → THE QUARRY.**
 
-> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-27 (LATE NIGHT) — D422 COMMITTED ON `slice/joe-d421`.**
+> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-27 (END) — ALL FOUR D421 NOTES BUILT ON `slice/joe-d421`.**
+>
+> **State:** `main` = D421, pushed. **`slice/joe-d421` = D422 (sim, the larder loop) + D423 (view:
+> the Stock limits panel, upright crates, the lodge card by good), both committed, NOT merged, NOT
+> pushed, unplayed.** Joe: *"go ahead, ill play after"*. D423 moved no golden. Numbers in D423 and
+> the commit.
+>
+> **▶️ FIRST, JOE PLAYS THE BRANCH.** What to look at: a household far from its store makes two or
+> three full trips and stops (D422); the Stock limits panel is just rows of number + clear, with ⚠ on
+> FOOD only when the food rows would stop births; crates stand up in a turned granary or warehouse;
+> a lodge card reads *"10 · 8"* over *"meat · leather"* and *"2,700 it holds"*. Then he merges and
+> pushes; then re-read the frame skip.
+>
+> **Then the queue:** the well, slice C (`organic-housing.md §9.5` P6) → tools on ticks at 34 % →
+> the quarry, spec first → his design threads (⏸️ OPEN list). A separate session is auditing the
+> tests for the season-stepper hole (task chip taken by Joe) — check its result before relying on
+> any `StepToTheStartOf` loop.
+>
+> *(The D422 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-27 (LATE NIGHT) — D422 COMMITTED ON `slice/joe-d421`.**
 >
 > **State:** `main` = D421, pushed. **`slice/joe-d421` = D422, committed, NOT merged, NOT pushed,
 > unplayed.** Joe's call: *"ship all three parts"* (a top-up ends with the trip that fills the
@@ -3025,6 +3046,15 @@ after the first was re-taken. ⭐ Re-take, re-run the whole suite, and count aga
 golden list final. Fourth: **a season stepper returns at once inside its own season** —
 `StepToTheStartOf(Winter)` twelve times from winter is one winter, not twelve years
 (`AFarmWithAutumnToSpare…` never left its first winter; the claim it hid is false on main).
+
+## ⛔ THE TRAP D423 PAID FOR — POSE THE SHAPE THAT MAKES THE CLAIM BITE
+
+The upright-crates probe first posed the turn on the village's own first store — the cart, which is
+square — so a missing width/height swap could not show and that red check scored **zero**. Posed on
+a longhouse's 3×1 it scores. The same stretch: the card's first cut named two goods always, and only
+the probe's cell measurement (with the real font) caught *"forage · others"* at 85 px in 81. ⭐ **Pose
+the case that distinguishes right from wrong — non-square, longest name, largest good not first in
+the catalogue — not the case the village happens to hand you.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

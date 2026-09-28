@@ -871,8 +871,92 @@ public partial class Main
     /// a forager works a ring round the hut, a hunter the woods within a range, a fisher the water —
     /// and the card said *"no ground"* of all three, which read as a fault.
     /// </summary>
-    private static string HeldCaption(int capacity) =>
-        capacity != int.MaxValue ? $"of {capacity:N0} held here" : "held here";
+    /// <summary>
+    /// Whether a caption fits one of a card's three number cells — the cell derived as the probe
+    /// derives it (three ExpandFill cells, six apart, inside the panel's margins), from the card's
+    /// fixed width rather than its laid-out size, so the first frame is answered too (D422).
+    /// </summary>
+    private static bool FitsItsCell(Card card, Label label, string caption)
+    {
+        float inner = CardWidth - card.Panel.GetThemeStylebox("panel").GetMinimumSize().X;
+        float cell = (inner - (2 * 6f)) / 3f;
+        float wide = label.GetThemeFont("font").GetStringSize(caption, HorizontalAlignment.Left, -1, label.GetThemeFontSize("font_size")).X;
+        return wide <= cell + 1f;
+    }
+
+    /// <summary>A workplace's third cell: what its store holds at most — or, with no wall, its seats (D422).</summary>
+    private static (string Value, string Key) WallCell(int capacity, int places) =>
+        capacity != int.MaxValue
+            ? ($"{capacity:N0}", "it holds")
+            : ($"{places}", places == 1 ? "seat" : "seats");
+
+    /// <summary>
+    /// A buffer's goods for a card cell — <b>as many as fit, largest first</b>, the rest folded into
+    /// <em>others</em>, and never less than the largest (D422, Joe: the lodge should say *"10 meat · 8
+    /// leather"*). <paramref name="fits"/> measures a caption against the cell, so a long modded name
+    /// folds instead of clipping.
+    /// </summary>
+    internal static (string Amounts, string Names) WhatItHolds(SimWorld world, Stockpile store, Func<string, bool> fits)
+    {
+        var held = new List<(Goods Goods, int Amount)>();
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            if (store[(Goods)g] > 0)
+            {
+                held.Add(((Goods)g, store[(Goods)g]));
+            }
+        }
+
+        if (held.Count == 0)
+        {
+            return ("0", "held here");
+        }
+
+        // Largest first; a tie keeps catalogue order, so the card never flickers between two.
+        held.Sort((a, b) => a.Amount != b.Amount ? b.Amount.CompareTo(a.Amount) : a.Goods.CompareTo(b.Goods));
+
+        // Two names at most — a third of a card holds no more — then one and "others", then the
+        // largest alone with a count of the rest.
+        for (int named = Math.Min(2, held.Count); named >= 1; named--)
+        {
+            var amounts = new List<string>();
+            var names = new List<string>();
+            int rest = 0;
+            for (int i = 0; i < held.Count; i++)
+            {
+                if (i < named)
+                {
+                    amounts.Add($"{held[i].Amount:N0}");
+                    names.Add(world.GoodsCatalog.NameOf(held[i].Goods));
+                }
+                else
+                {
+                    rest += held[i].Amount;
+                }
+            }
+
+            if (rest > 0)
+            {
+                amounts.Add($"{rest:N0}");
+                names.Add("others");
+            }
+
+            string caption = string.Join(" · ", names);
+            if (fits(caption))
+            {
+                return (string.Join(" · ", amounts), caption);
+            }
+        }
+
+        int total = 0;
+        foreach ((Goods _, int amount) in held)
+        {
+            total += amount;
+        }
+
+        string first = world.GoodsCatalog.NameOf(held[0].Goods);
+        return ($"{total:N0}", held.Count > 1 ? $"{first} +{held.Count - 1}" : first);
+    }
 
     private static (string Value, string Key) WhereItWorks(JobKind kind, int ground, int ring, int huntingRange)
     {
@@ -977,23 +1061,26 @@ public partial class Main
             card.WorkersLabel.Text = ProfessionName(world, place.Kind) + "s";
             card.Workers.Text = $"{place.WorkerIds.Count} / {place.Places}";
 
-            int holding = 0;
-            for (int g = 0; g < world.GoodsCatalog.Count; g++)
-            {
-                holding += place.Store[(Goods)g];
-            }
-
-            // ⚠️ A BUFFER WITH NO WALL HAS NO "OF" (Joe: *"what is the 0 of 2,147,483 representative
-            // of?"*). A workplace without a store of its own is `int.MaxValue` wide — a sentinel for
-            // "no limit", and trap 115's number printed as if it were a size.
-            Number(card, 0, $"{holding:N0}", HeldCaption(place.Store.Capacity));
+            // ⭐ WHAT IT HOLDS, GOOD BY GOOD (D422, Joe's D421 note: the lodge read *"18 of 2,700 hel…"*,
+            // meat and hides summed and the caption cut off). The site card's shape — amounts over
+            // names, *"10 · 8"* over *"meat · leather"* — read from the store and named by the
+            // catalogue, so any workplace with a buffer says it the same way. The wall moved to the
+            // third cell (`WallCell`).
+            (string amounts, string names) = WhatItHolds(world, place.Store, caption => FitsItsCell(card, card.Keys[0], caption));
+            Number(card, 0, amounts, names);
             (string value, string key) reach = WhereItWorks(
                 place.Kind,
                 world.Zones.WorkGroundTiles(place.Id),
                 place.GatheringRadius,
                 world.BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0);
             Number(card, 1, reach.value, reach.key);
-            Number(card, 2, $"{place.Places}", place.Places == 1 ? "seat" : "seats");
+
+            // ⚠️ A BUFFER WITH NO WALL HAS NO "OF" (Joe: *"what is the 0 of 2,147,483 representative
+            // of?"*). A workplace without a store of its own is `int.MaxValue` wide — a sentinel for
+            // "no limit", and trap 115's number printed as if it were a size. Seats were here until
+            // D422; the Workers row above already says *"1 / 2"*.
+            (string wall, string wallKey) = WallCell(place.Store.Capacity, place.Places);
+            Number(card, 2, wall, wallKey);
         }
 
         card.PeopleScroll.Visible = false;
@@ -1446,7 +1533,8 @@ public partial class Main
 
             BuildingRow row = rows[id];
             tradesAsked++;
-            string held = HeldCaption(row.LocalStoreCap > 0 ? row.LocalStoreCap : int.MaxValue);
+            (string wallValue, string wallKey) = WallCell(row.LocalStoreCap > 0 ? row.LocalStoreCap : int.MaxValue, row.Seats ?? 1);
+            string held = $"{wallValue} {wallKey}";
             (string _, string where) = WhereItWorks(trade, 0, row.GatheringRadius, row.HuntingRadius);
             if (held.Contains("2,147", StringComparison.Ordinal))
             {
@@ -1518,6 +1606,42 @@ public partial class Main
                 if (valueWide > cell + 1f || keyWide > cell + 1f)
                 {
                     faults.Add($"a site's materials clip in their cell ({valueWide:F0} and {keyWide:F0} in {cell:F0})");
+                }
+
+                // ⭐ A BUFFER SAYS WHAT IT HOLDS BY GOOD, AND IT FITS (D422): the lodge posed (meat and
+                // leather: both named when they fit), then three goods from the catalogue's head with
+                // the LAST the largest, so the order is the amount's and not the catalogue's — measured
+                // in this same cell, the largest always named first.
+                float Wide(Label label, string text) =>
+                    label.GetThemeFont("font").GetStringSize(text, HorizontalAlignment.Left, -1, label.GetThemeFontSize("font_size")).X;
+                bool Fits(string caption) => Wide(key, caption) <= cell + 1f;
+                var lodge = new Stockpile(world.GoodsCatalog.Count);
+                lodge.Receive(Goods.Meat, 10);
+                lodge.Receive(Goods.Leather, 8);
+                (string lodgeAmounts, string lodgeNames) = WhatItHolds(world, lodge, Fits);
+                var three = new Stockpile(world.GoodsCatalog.Count);
+                three.Receive((Goods)0, 3);
+                three.Receive((Goods)1, 8);
+                three.Receive((Goods)2, 10);
+                (string threeAmounts, string threeNames) = WhatItHolds(world, three, Fits);
+                string both = $"{world.GoodsCatalog.NameOf(Goods.Meat)} · {world.GoodsCatalog.NameOf(Goods.Leather)}";
+                if (Fits(both) && lodgeNames != both)
+                {
+                    faults.Add($"a lodge of 10 meat and 8 leather reads \"{lodgeAmounts}\" over \"{lodgeNames}\" though \"{both}\" fits");
+                }
+
+                siteShape += $"; the lodge reads \"{lodgeAmounts}\" over \"{lodgeNames}\", three goods \"{threeAmounts}\" over \"{threeNames}\"";
+                foreach ((string a, string n, Goods largest) in new[] { (lodgeAmounts, lodgeNames, Goods.Meat), (threeAmounts, threeNames, (Goods)2) })
+                {
+                    if (!n.StartsWith(world.GoodsCatalog.NameOf(largest), StringComparison.Ordinal))
+                    {
+                        faults.Add($"a buffer's largest good is not named first (\"{a}\" over \"{n}\")");
+                    }
+
+                    if (Wide(value, a) > cell + 1f || Wide(key, n) > cell + 1f)
+                    {
+                        faults.Add($"a buffer's goods clip in their cell (\"{a}\" over \"{n}\" in {cell:F0})");
+                    }
                 }
             }
 

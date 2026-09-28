@@ -946,7 +946,7 @@ removed from each building."* The crates are the placeholder for that; the art p
 are seen arriving and leaving.
 
 **How it reads (D419).** Every store draws a crate per good it holds, on the same rule
-(`VillageMap.ShowsItsStock`, `ShelfOf`, `CratesIn`); a slot for every good its KIND may hold
+(`VillageMap.ShowsItsStock`, `ShelfOf`, `CratesIn`) — ⭐ **standing upright on screen at any facing since D423** (Joe: they lay on their side in a store sited at a quarter turn; the facing is snapped to the nearest quarter, width and height swapped when it is odd, so the floor is the footprint edge lowest on screen; probe poses a 3×1 at three turns, 2 of 2 reds) — a slot for every good its KIND may hold
 (`StoredBy(goods, kind)` — granary 4, warehouse 6, market 5, cart 9, pile 6 today). ⚠️ **Two
 measures:** a market's crate is its counter against the marketer's number for that good; a storage
 building has no number per good, so its crate is **that good's share of the building's capacity** —

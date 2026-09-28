@@ -2986,9 +2986,16 @@ public partial class VillageMap : Control
     /// the cart are small and hold many goods, and show their crates as the player zooms in.
     /// </para>
     /// <para>
-    /// ⚠️ <b>Inside the footprint and turned with it</b>, in the building's own frame like
-    /// <see cref="FootprintQuadAt"/> — so a crate cannot be mistaken for a heap, which lies OUTSIDE a
-    /// building at its door (D371).
+    /// ⚠️ <b>Inside the footprint and turned with it</b>, like <see cref="FootprintQuadAt"/> — so a
+    /// crate cannot be mistaken for a heap, which lies OUTSIDE a building at its door (D371).
+    /// </para>
+    /// <para>
+    /// ⭐ <b>AND UPRIGHT ON SCREEN (D422, Joe's D421 note: crates lay on their side in a store sited
+    /// at a quarter turn, D412).</b> The floor is the footprint edge lowest on screen: the facing is
+    /// snapped to the nearest quarter and what is left (never more than an eighth) turns the crates,
+    /// with the width and height swapped when the quarter is odd — the same rectangle, described from
+    /// the side that faces down. ⏳ When the camera turns (a design thread), its turn joins the facing
+    /// here.
     /// </para>
     /// <para>
     /// ⏳ <b>A placeholder for the art pass</b> (Joe, D419: *"when we get to visuals, i would like this
@@ -2996,7 +3003,19 @@ public partial class VillageMap : Control
     /// </para>
     /// </remarks>
     private List<(Goods Goods, Vector2[] Quad)> CratesIn(
-        StoreBuilding store, IReadOnlyList<(Goods Goods, int Held, int Measure)> shelf)
+        StoreBuilding store, IReadOnlyList<(Goods Goods, int Held, int Measure)> shelf) =>
+        CratesAt(ToScreen(store.Position), store.ExtentWidth, store.ExtentHeight, store.Facing.Raw, shelf);
+
+    /// <summary>A quarter turn in a facing's units (a full turn is 65,536).</summary>
+    private const int QuarterTurn = 16384;
+
+    /// <summary>The crates of a footprint anywhere, at any facing — the probe poses a turned store with it.</summary>
+    private List<(Goods Goods, Vector2[] Quad)> CratesAt(
+        Vector2 centre,
+        float extentWidth,
+        float extentHeight,
+        ushort facing,
+        IReadOnlyList<(Goods Goods, int Held, int Measure)> shelf)
     {
         var crates = new List<(Goods, Vector2[])>();
         if (shelf.Count == 0)
@@ -3004,13 +3023,18 @@ public partial class VillageMap : Control
             return crates;
         }
 
-        // The footprint's drawn size (0.8 of the extent, as `DrawStores` draws it), in pixels.
-        float width = store.ExtentWidth * 0.8f * _pixelsPerTile;
-        float height = store.ExtentHeight * 0.8f * _pixelsPerTile;
-        float radians = store.Facing.Raw * Mathf.Tau / 65536f;
+        // Snapped to the nearest quarter; the rest, within an eighth either way, turns the crates.
+        int quarters = (facing + (QuarterTurn / 2)) / QuarterTurn;
+        int rest = facing - (quarters * QuarterTurn);
+        bool sideways = (quarters & 1) == 1;
+
+        // The footprint's drawn size (0.8 of the extent, as `DrawStores` draws it), in pixels —
+        // seen from the side that faces down the screen.
+        float width = (sideways ? extentHeight : extentWidth) * 0.8f * _pixelsPerTile;
+        float height = (sideways ? extentWidth : extentHeight) * 0.8f * _pixelsPerTile;
+        float radians = rest * Mathf.Tau / 65536f;
         float cos = Mathf.Cos(radians);
         float sin = Mathf.Sin(radians);
-        Vector2 centre = ToScreen(store.Position);
 
         Vector2 Corner(float x, float y) =>
             centre + new Vector2((x * cos) - (y * sin), (x * sin) + (y * cos));
@@ -3128,6 +3152,43 @@ public partial class VillageMap : Control
                 return $"[widths] store stock: ⛔ {outside} crate corners lie outside the building — stock reads as a heap";
             }
 
+            // ⭐ TURNED, THE CRATES STILL STAND UP (D422): the same shelf on this footprint at a quarter,
+            // three quarters, and a quarter and a bit — every crate's floor-to-lid within an eighth of
+            // straight up the screen, and every corner inside the turned footprint. ⚠️ On a LONGHOUSE's
+            // 3×1, not the posed store's own extent: the probe's store is the square cart, where a
+            // missing width/height swap cannot show (that red check first scored zero).
+            const float longWidth = 3f;
+            const float longHeight = 1f;
+            int lying = 0;
+            int outsideTurned = 0;
+            foreach (int turn in new[] { QuarterTurn, 3 * QuarterTurn, QuarterTurn + 4000 })
+            {
+                ushort facing = (ushort)(posedOn.Facing.Raw + turn);
+                Vector2 at = ToScreen(posedOn.Position);
+                Vector2[] turnedFootprint = FootprintQuad(at, longWidth * 0.8f, longHeight * 0.8f, facing);
+                foreach ((Goods _, Vector2[] quad) in CratesAt(at, longWidth, longHeight, facing, posed))
+                {
+                    Vector2 up = quad[0] - quad[3];
+                    if (up.Y >= 0f || Mathf.Abs(up.X) > -up.Y)
+                    {
+                        lying++;
+                    }
+
+                    foreach (Vector2 corner in quad)
+                    {
+                        if (!Geometry2D.IsPointInPolygon(corner, turnedFootprint))
+                        {
+                            outsideTurned++;
+                        }
+                    }
+                }
+            }
+
+            if (lying > 0 || outsideTurned > 0)
+            {
+                return $"[widths] store stock: ⛔ turned a quarter, {lying} crates lie on their side and {outsideTurned} corners fall outside the building";
+            }
+
             // Every store, read: the rule the draw obeys, and a crate for every good it holds.
             var kinds = new SortedSet<string>();
             int held = 0;
@@ -3177,7 +3238,7 @@ public partial class VillageMap : Control
 
             return held == drawn && held > 0
                 ? $"[widths] store stock: ✅ posed, a full good stands {Tall(crates[0].Quad):F1}px, a tenth "
-                    + $"{Tall(crates[1].Quad):F1}px, an empty one draws nothing, all inside; every store draws its "
+                    + $"{Tall(crates[1].Quad):F1}px, an empty one draws nothing, all inside, upright at every quarter; every store draws its "
                     + $"stock ({string.Join(", ", kinds)}): {drawn} crates for {held} goods held; slots {string.Join(", ", slots)}"
                 : $"[widths] store stock: ⛔ the village's stores hold {held} goods and draw {drawn} crates";
         }
