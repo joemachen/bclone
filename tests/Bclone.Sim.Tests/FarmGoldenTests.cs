@@ -276,7 +276,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 6764057696688231654.
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Was 3520429905368766944.
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 16478286618016232765.
-    private const ulong SeamGoldenHash = 836586678125485000UL;
+    // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 836586678125485000.
+    private const ulong SeamGoldenHash = 14628176752370550354UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -335,7 +336,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D412) with it again: homes sited path-first at any angle; emptied stores stay closed (D413). Was 7359344035547708990.
     // RE-TAKEN (D414) with it again: walkers keep to the paths, wear has a ceiling. Was 1600556099512445086.
     // RE-TAKEN (D417) with it again: the market is stocked to 100 a household, not 40. Was 13071203690319198168.
-    private const ulong SeamBeforeAnybodyGotBetter = 9971580707305620644UL;
+    // RE-TAKEN (D422) with it again: a top-up ends with the trip that fills the larder, food reads the larder's room, a housemate's load on its way home counts. Was 9971580707305620644.
+    private const ulong SeamBeforeAnybodyGotBetter = 13124005613803505895UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

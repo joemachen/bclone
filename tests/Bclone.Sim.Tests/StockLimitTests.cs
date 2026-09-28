@@ -365,7 +365,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D412) — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413). Was 12200356494293742937.
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Was 3459576586681051924.
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 11240235022264512335.
-    private const ulong FixtureFiftyYearHash = 14044782459210154740UL;
+    // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 14044782459210154740.
+    private const ulong FixtureFiftyYearHash = 16869094493736697901UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -462,7 +463,8 @@ public sealed class StockLimitTests
     //   before homes were sited path-first at any angle (D412): 13929426755288217303 — homes are sited path-first at any angle (`organic-housing.md §9`, Joe: "organic housing, and NOT uniform rows of housing"): a house faces its path to the 1/64 turn, its yard is the turned house plus a hashed reach walled on tile edges, and the site is priced for its setback, its gap and the walk round its own yard; a finished house no longer teleports its family to the door; and an emptied store stays closed until the player opens it (D413).
     //   before walkers kept to the paths and wear had a ceiling (D414): 15592398038866525312 — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved.
     //   before the market was stocked to 100 a household (D417): 2961155205934716277 — it was 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved.
-    private const ulong ShippedFiftyYearHash = 11395883105451251724UL;
+    //   before a top-up ended with the trip that fills the larder (D422): 11395883105451251724 — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts").
+    private const ulong ShippedFiftyYearHash = 16636840873697647225UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

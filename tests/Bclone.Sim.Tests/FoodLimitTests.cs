@@ -52,12 +52,17 @@ public sealed class FoodLimitTests
 
         ColdStartTests.PlayTheOpening(world);
 
-        // ⚠️ YEAR EIGHT SINCE D417, NOT TEN — AND THE PREMISE IS ASSERTED NOW. With the market stocked
+        // ⚠️ YEAR EIGHT SINCE D417, NOT TEN (UNTIL D422, BELOW) — AND THE PREMISE IS ASSERTED NOW. With the market stocked
         // to 100 a household the tenth year became one where the unlimited village never meets its
         // own want: its foragers cleared 10 ticks, the limited arm ran byte-identical, and there was
         // nothing for a limit to change. Swept: the unlimited arm clears 203 / 142 / 125 / 10 / 111 / 6
         // at years 4 / 6 / 8 / 10 / 12 / 15, and wherever it clears the limit takes it to 3–21.
-        loop.Step(config.TicksPerYear * 8);
+        // ⚠️ BACK TO YEAR TEN SINCE D422. The larders stopped being over-filled by a housemate's
+        // second fetch, so the larders' share of the village's want is bigger and the eighth year
+        // went thin (32 clearing ticks, under the premise's 50). Re-swept: 233 / 127 / 32 / 184 / 178 / 1
+        // at years 4 / 6 / 8 / 10 / 12 / 15, the limit taking each live year to 3–14. **This pose
+        // moves with every change to who fetches when — the premise assertion below is what says so.**
+        loop.Step(config.TicksPerYear * 10);
 
         if (foodLimit > 0)
         {

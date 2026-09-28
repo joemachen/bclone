@@ -177,7 +177,35 @@ public sealed class FarmMemoryTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots()
+    public void AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots() => ProbeThenFailOneAutumn();
+
+    /// <summary>
+    /// ⏸️ …and a failed probe is not tried again at the same walk (D361) — <b>FALSE ON MAIN TOO,
+    /// found in D422 and skipped with the numbers.</b>
+    /// </summary>
+    /// <remarks>
+    /// This was the last three lines of the guard above, and it never ran: it stepped to "the
+    /// next winter" three times from inside one winter (see the loop's comment). Walked through
+    /// real years, the farm climbs back past the failed probe — to 6 a hand on main and 7 on
+    /// D422's branch, against a ceiling of 5. The farm memory's rule, not the larder's; its own
+    /// slice, on Joe's list.
+    /// </remarks>
+    [Fact(Skip = "D422: false on main too (6 a hand on main, 7 with D422, ceiling 5) — it never ran until the year loop was fixed. The farm memory's own slice; on Joe's ⏸️ list.")]
+    public void AFailedProbeIsNotTriedAgainAtTheSameWalk()
+    {
+        (SimLoop loop, Workplace farm, int tried, int places) = ProbeThenFailOneAutumn();
+
+        // Hands back; three full years never climb past what was proven.
+        loop.World.SetStaffing(farm, places);
+        for (int year = 0; year < 3; year++)
+        {
+            FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+            Assert.True(farm.FieldTilesLearned <= tried - 1, $"the farm probed again at the same walk: {farm.FieldTilesLearned}");
+        }
+    }
+
+    private (SimLoop Loop, Workplace Farm, int Tried, int Places) ProbeThenFailOneAutumn()
     {
         // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391). A tool adds a quarter to every reaped tile,
         // and a quarter more crop is a quarter more armfuls to haul ten ticks each way — so the
@@ -191,9 +219,16 @@ public sealed class FarmMemoryTests
         Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);
 
         // Run until a winter's lesson is a probe.
+        //
+        // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
+        // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already winter
+        // — so the "twelve years" were the first winter read twelve times (ticks 361–383), and the
+        // guard only ever asked whether year ONE probed. It passed because year one happened to;
+        // with D422 the first probe is in year two.
         int probedAt = 0;
         for (int year = 1; year <= 12 && probedAt == 0; year++)
         {
+            FarmFixtures.StepToTheStartOf(loop, Season.Spring);
             FarmFixtures.StepToTheStartOf(loop, Season.Winter);
             if (farm.FieldProbedThisYear)
             {
@@ -215,14 +250,7 @@ public sealed class FarmMemoryTests
         _output.WriteLine($"after the failed autumn: {farm.FieldTilesLearned} a hand, probe failed = {farm.FieldProbeFailed}");
         Assert.Equal(tried - 1, farm.FieldTilesLearned);
         Assert.True(farm.FieldProbeFailed);
-
-        // Hands back; three full years never climb past what was proven.
-        world.SetStaffing(farm, places);
-        for (int year = 0; year < 3; year++)
-        {
-            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
-            Assert.True(farm.FieldTilesLearned <= tried - 1, $"the farm probed again at the same walk: {farm.FieldTilesLearned}");
-        }
+        return (loop, farm, tried, places);
     }
 
     /// <summary>

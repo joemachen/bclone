@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), is BUILT (D372, 2026-09-15) — unplayed** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), BUILT on `slice/store-stock` — unplayed, not merged** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT on `slice/joe-d421` (D422), all three rules on Joe's call — unplayed, not merged** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -959,6 +959,79 @@ drawn). ⚠️ The shelf red **first scored zero**: "held" was counted from the 
 agreed with itself; fixed to count the store. ⚠️ The probe's unattended village builds only the
 cart, even twelve years in, so the read half covers one kind; the line prints each kind's slot
 count from the catalogue.
+
+### 14.15 ✅ A TOP-UP ENDS — Joe's larder loop (D421 note 1), built (D422, 2026-09-27) — unplayed
+
+**Joe:** *"villagers get stuck in loops and not doing their jobs until i manually shuffle their jobs
+… related to granary/market/home and picking stuff up for the home … their decisions are changing
+very rapidly."*
+
+**What it was — measured, and not the hypothesis D421 wrote down.** D421 guessed the larder's wall
+(D399): food target plus firewood over 400, so `held < wanted` for ever. **Ruled out:** across six
+fifteen-year villages no larder ever held a non-food good, and none was full when a top-up trip
+collected. Two mechanisms, both in §14.9's D372 rules:
+
+1. **The treadmill.** `CollectFromStore` took *exactly the shortfall it found at the counter*; the
+   family ate while the load was carried home (and the carrier ate from it — 4,807 of the 6,894
+   fetches in Joe's log); the larder landed a meal or two short — still past `WorthTheTrip`'s bar
+   (a quarter of an armful, 10) — so `ToppingUpFood`, cleared only **at** target, never cleared.
+   Bess (a family of three, target 285): fetch 40 → 30 → 10 → 10 → 16, back to back, until one
+   trip happened to land exactly on 285. Six villages: top-up runs of **54, 54, 53, 44, 29, 26**
+   trips; one closed a shortfall of 116 with 1,004 food in and 1,030 eaten on the way.
+2. **The second fetcher.** D372's one-fetcher rule let go the moment the fetcher turned for home;
+   a housemate read the larder without that armful in it and went for the same shortfall; the
+   second load did not fit and was walked back to storage — Joe's *"picking stuff up for the
+   home"*. Shipped 12345: **108 arrivals turned away holding 1,877 food** in fifteen years.
+
+Also found in passing: food ignored the larder's walls at the counter (firewood has read them
+since D407).
+
+**The rules (D422):**
+- **A top-up ends with the trip that fills the larder** — at the counter, when the trip carries all
+  the larder is short of, or all the room it has. An armful short of the whole keeps it going.
+  The next run starts where the first did, at `fetch_below_share_percent`. Firewood the same.
+  `BehaviorSystem.CollectFromStore`. *(§14.9.2's "back to target" still holds as the aim; what
+  changed is when the run is declared over.)*
+- **A load a housemate is walking home with counts as held** — in `PlanFetch`'s trigger and
+  top-up, and in the counter's shortfall and room (`HeldOnceHome`, `InHousematesArms`). ⚠️
+  **Counted, not blocked:** blocking the second pair of hands was tried first and made a family
+  25 ticks from the granary take six trips where it took four — a shortfall bigger than the armful
+  on the road still sends somebody.
+- **Food takes no more than the larder's room**, minus what housemates are carrying home.
+- ⚠️ Unchanged: the emergency restock (20 %), the trigger (50 %), `WorthTheTrip`, market-first.
+
+**Guards (all red-checked, every mutation compiled):** `TheTripThatFillsTheLarderEndsTheTopUp`
+(posed at the counter: 20 short → ends; 100 short → an armful, goes on; room for 10 → ends; the
+hearth's run the same) — 1 red with the food clear off, 1 with the firewood clear off, 2 with the
+room clamp off (with `AFetchTakesNoMoreFoodThanTheLarderHasRoomFor`); `ALoadOnItsWayHomeCountsAsHeld`
+— 1 red with the arms not counted. ⚠️ **A behavioural pose scored ZERO and was replaced:** from half a
+larder over a season, the fixture's couples and a posed family of four at 7 / 12 / 17 ticks never eat
+a trip's worth on the walk home, so the loop never forms there. The census below is the
+behavioural evidence.
+
+**Measured (six villages × fifteen years, the census; then the survival arms):**
+- Longest top-up run, village by village (shipped 1, 7, 12345; fixture 4, 5, 12345): 54 / 23 / 53 /
+  54 / 11 / 26 → 13 / 12 / 11 / 24 / **18** / 16 trips — fixture 5 got worse; mean run 134 / 98 /
+  142 / 101 / 49 / 136 → 68 / 97 / 75 / 78 / 48 / 90 ticks.
+- Loads walked back to storage 140 (2,563 food) → 5 (112). Empty trips 112 → 47. Fetches −10 %.
+- **Survival, 55 fifty-year villages (D420's arms; alive / starved):**
+
+  | | shipped (30) | fixture (12) | every-source (13) | loads walked back | fetches a household-year |
+  |---|---|---|---|---|---|
+  | main | 174 / 100 | 141 / 20 | 154 / 0 | 9,701 (180k food) | 13.21 |
+  | all three rules | 169 / 103 | **148 / 19** | **97** / 0 | **335** (14k) | **11.12** |
+  | without the in-transit count | 168 / 103 | 133 / **33** | 146 / 0 | 1,812 (38k) | 11.59 |
+
+  ⚠️ **The every-source drop is REAL, not drift** (D418's trap, checked): a ±1 nudge to every
+  stock limit on main moves that arm 154 → 148 / 148 and flips no village; the fix flips seeds 4,
+  9 and 12345 from growing to dying out. Ablated one rule at a time, **the in-transit count is the
+  whole of it** (146 without it). Mechanism, seed 12345: on main a small household's larder was
+  filled far past target by the double fetch (Thatcher: 340 food for two, target 190) — an
+  accidental buffer that carried a founding with every hand employed through its first fall;
+  with the count the larder sits at target, a job-holder spends ~100 ticks of that fall on four
+  food trips, the logs are not split before winter, and the founding freezes. The same rule
+  alone flips `AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots` (the farmer's autumn
+  fills with fetches). **Joe: *"ship all three parts"*** — the every-source loss accepted with the reason above.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

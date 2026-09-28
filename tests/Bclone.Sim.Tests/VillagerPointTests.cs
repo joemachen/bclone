@@ -288,8 +288,11 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D417), not for the clock: the market is stocked to 100 a household, not 40,
         // so the marketer's errands and the foragers' seats land differently — 52 trips, the
         // 1st/10th/50th at 10/199/1,929. Were 51 at 10/199/1,964.
-        Assert.Equal(52, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1929 }, at);
+        // ⚠️ RE-PINNED (D422), not for the clock: a top-up ends with the trip that fills the larder
+        // and a housemate's load on its way home counts, so fewer fetches and the seats land
+        // differently — 51 trips, the 1st/10th/50th at 10/199/1,934. Were 52 at 10/199/1,929.
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 10, 199, 1934 }, at);
     }
 
     /// <summary>

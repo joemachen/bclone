@@ -1,4 +1,35 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D421 IN §7. `main` = D421, PUSHED; NO BRANCH OPEN. NEXT: A FRESH BRANCH FOR JOE'S FOUR D421 NOTES (THE LARDER LOOP FIRST) → THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D422 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP, ALL THREE RULES — JOE'S CALL), COMMITTED, NOT MERGED, UNPLAYED → HIS OTHER THREE D421 NOTES ON THE SAME BRANCH → THE WELL → TOOLS ON TICKS → THE QUARRY.**
+
+> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-27 (LATE NIGHT) — D422 COMMITTED ON `slice/joe-d421`.**
+>
+> **State:** `main` = D421, pushed. **`slice/joe-d421` = D422, committed, NOT merged, NOT pushed,
+> unplayed.** Joe's call: *"ship all three parts"* (a top-up ends with the trip that fills the
+> larder; food takes no more than the larder's room; a housemate's load on its way home counts).
+> **1263 passing, 0 failing, 5 skipped of 1268, 3m14** (main 3m35 back to back); view 0 warnings; probe
+> green, bar height 161. Six goldens moved once (StockLimit ×2, FarmGolden
+> ×2 — the second hid behind the first's failing Assert — Skill ×2) and the walk pin 52 → 51.
+>
+> **▶️ NEXT, ON THE SAME BRANCH:** Joe's other three D421 notes, in order — (2) the Stock limits
+> panel keeps only its limits and buttons, a bare ⚠ on FOOD; (3) crates stand upright on a
+> quarter-turned store; (4) the lodge card by good. Details in the D421 banner below. Then Joe
+> plays the branch (the loop should be gone: watch a household far from its store — it should make
+> two or three full trips and stop) and merges; then re-read the frame skip.
+>
+> **⏸️ New on his list (in the OPEN list):** the every-source founding 154 → 97 under D422 (the
+> double fetch had been an accidental buffer — accepted by his call, recorded); and **D361's "a
+> failed probe is not retried at the same walk" is false on main too** — its guard never left the
+> first winter (skipped with the numbers). A task chip was offered to audit the other tests for the
+> same season-stepper hole.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/fa37b3a7-436a-4592-838e-28982015576b/scratchpad/`):** `census.py` (a game log's fetch census),
+> `ZzLarder.cs` (top-up episodes), `ZzSurvive.cs` (D420's 55-run arm + turned-away + fetches a
+> household-year; `EveryDiag`; `ZZ_BUMP` noise arm), `ZzFarm.cs` (a farm's autumns), `redcheck.py`
+> / `ablate.py` (mutate, check the build, count `[FAIL]` AND the summary). The `main` worktree used for the A/B has been removed. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`, **delete
+> before committing**. Godot at `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D421 banner, kept below — its note 1 is D422.)*
+>
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-27 (CLOSE) — AFTER D421, ALL MERGED.**
 >
@@ -2978,7 +3009,37 @@ with the transition's tile) before calling anything a loop. And the session then
 needs hysteresis, firewood has the shape"* — food already had it (D372). **Grep the rule you are about
 to propose before you propose it.**
 
+## ⛔ THE TRAP D422 PAID FOR — A RED COUNTER THAT READS THE WRONG FORMAT SCORES ZERO, AND AN OVERFILL CAN BE A BUFFER
+
+The red-check script counted `Failed <name>` lines; `dotnet test -v q` prints `<name> [FAIL]`. Four
+mutations that each broke a guard all read **0 reds** — with the build checked and green, so D420's
+fix did not catch it. ⭐ **Cross-check the per-test count against the summary's `Failed: N`**, and
+run one mutation by hand before trusting a script's zero. Second lesson: removing a bug can remove
+something the village was living on — the double fetch over-filled small larders, and that surplus
+carried whole foundings through their first fall. **When a fix costs survival, ablate it rule by
+rule and trace one village before calling it drift** — the noise arm said "real", the ablation
+named the rule, the trace named the mechanism.
+Third: **a failing golden hides the golden after it.** `AVillageThatFarmsAndClearsAtOnce…` asserts
+two hashes in a row; the first failed, so the count read five goldens and the sixth surfaced only
+after the first was re-taken. ⭐ Re-take, re-run the whole suite, and count again before calling the
+golden list final. Fourth: **a season stepper returns at once inside its own season** —
+`StepToTheStartOf(Winter)` twelve times from winter is one winter, not twelve years
+(`AFarmWithAutumnToSpare…` never left its first winter; the claim it hid is false on main).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE EVERY-SOURCE FOUNDING UNDER D422: 154 → 97 ALIVE OVER 13 SEEDS — ACCEPTED BY HIS CALL (*"ship
+  all three parts"*), RECORDED HERE SO IT IS NOT REDISCOVERED AS A REGRESSION.** Real, not drift (a ±1
+  limit arm on main flips nothing). The double fetch had over-filled small larders (340 for a family
+  wanting 190), which carried foundings with every hand employed through their first fall; with the
+  count, a job-holder spends that fall fetching and the logs are not split before winter. Same pose
+  that already killed half its villages on main (below). Fixing it would be about spare hands in a
+  founding, not about larders.
+- ⭐ **D361's "A FAILED PROBE IS NOT TRIED AGAIN AT THE SAME WALK" IS FALSE ON MAIN TOO (found D422).**
+  Its guard stepped `StepToTheStartOf(Winter)` from inside winter, so it never left the first winter.
+  Walked through real years the farm climbs back past a failed probe: 6 a hand on main, 7 with D422,
+  ceiling 5. `AFailedProbeIsNotTriedAgainAtTheSameWalk` is skipped with the numbers. The farm
+  memory's own slice; his order.
 
 - ✅ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? — ANSWERED AND BUILT (D420).** Joe: *"loads in transit
   should count and the market's shelf should count toward the limit too"*; (b) for the hide. Kept
