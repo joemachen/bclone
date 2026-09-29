@@ -126,12 +126,9 @@ public partial class Main
         public required VBoxContainer Box { get; init; }
         public required OptionButton Keep { get; init; }
         public required Label Job { get; init; }
-        public required Label Why { get; init; }
-        public required Label Note { get; init; }
         public required VBoxContainer ToolSection { get; init; }
         public required ProgressBar ToolBar { get; init; }
         public required Label ToolUses { get; init; }
-        public required Label ToolWorth { get; init; }
         public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
         public required VBoxContainer SkillsSection { get; init; }
         public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
@@ -148,6 +145,9 @@ public partial class Main
 
     /// <summary>A card's width in logical pixels — fixed, like every panel since D367.</summary>
     private const float CardWidth = 268f;
+
+    /// <summary>The room between a person's card's border and what it says (D432) — twice a panel's.</summary>
+    private const int PersonCardMargin = 12;
 
     /// <summary>How many people a home's list shows before it scrolls (Joe: *"a vertical scrollbar"*).</summary>
     private const int PeopleRowsShown = 4;
@@ -202,7 +202,7 @@ public partial class Main
         _selectedCard = card;
         for (int i = 0; i < _cards.Count; i++)
         {
-            _cards[i].Panel.AddThemeStyleboxOverride("panel", CardSkin(ReferenceEquals(_cards[i], card)));
+            _cards[i].Panel.AddThemeStyleboxOverride("panel", CardSkin(ReferenceEquals(_cards[i], card), _cards[i].Subject.Kind == CardKind.Villager));
         }
 
         card.Panel.MoveToFront();
@@ -270,11 +270,31 @@ public partial class Main
         }
     }
 
-    private static StyleBoxFlat CardSkin(bool selected)
+    /// <summary>
+    /// The card's frame, selected or not — and a person's with more room (D432, Joe: <i>"add
+    /// breathing room between elements and borders"</i>). ⚠️ A person's only: a building card's
+    /// three number cells are a third of what is inside the margin, and at twelve the lodge's
+    /// <i>"meat · leather"</i> (D423) no longer fit and read <i>"meat · others"</i>.
+    /// </summary>
+    private static StyleBoxFlat CardSkin(bool selected, bool roomy = false) =>
+        CardSkins[(selected ? 1 : 0) + (roomy ? 2 : 0)];
+
+    /// <summary>Made once — a card is re-skinned on every refresh, and a new box a frame is garbage for nothing.</summary>
+    private static readonly StyleBoxFlat[] CardSkins =
+    {
+        MakeCardSkin(false, false), MakeCardSkin(true, false), MakeCardSkin(false, true), MakeCardSkin(true, true),
+    };
+
+    private static StyleBoxFlat MakeCardSkin(bool selected, bool roomy)
     {
         StyleBoxFlat skin = PanelSkin(0.96f);
         skin.BorderWidthTop = skin.BorderWidthBottom = skin.BorderWidthLeft = skin.BorderWidthRight = 1;
         skin.BorderColor = selected ? CardSelectedEdge : new Color("#3a3f47");
+        if (roomy)
+        {
+            skin.SetContentMarginAll(PersonCardMargin);
+        }
+
         return skin;
     }
 
@@ -346,6 +366,7 @@ public partial class Main
         statusRow.AddChild(lightBox);
         Label status = Wrapped(Body(string.Empty));
         status.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        status.MouseFilter = MouseFilterEnum.Stop;
         statusRow.AddChild(status);
 
         // ---- a person's sections (D431) ----
@@ -607,6 +628,8 @@ public partial class Main
         // A person's card is sections, not the five parts (D431): per refresh, because a card is
         // retargeted from a building to a person and back.
         bool person = card.Subject.Kind == CardKind.Villager;
+        card.Status.TooltipText = string.Empty;
+        card.Panel.AddThemeStyleboxOverride("panel", CardSkin(ReferenceEquals(_selectedCard, card), person));
         card.Subtitle.Visible = person;
         card.Person.Box.Visible = person;
         card.Portrait.Visible = !person;
@@ -1271,16 +1294,23 @@ public partial class Main
         string doing = villager.DescribeState(job?.Name);
         Status(card, working: !hungry && !noted, hungry ? $"Hungry — {doing}." : Capitalise(doing) + ".");
 
+        // ⭐ A PROBLEM WITH THEIR WORK TURNS THE BANNER AMBER, AND THE REASON IS ITS TOOLTIP (D432,
+        // Joe: "way too wordy and crowded"). The note is the workplace's sentence and runs to three
+        // lines; printed, it pushed everything else down the card. It is one hover away, on the
+        // banner and on the job — ⛔ never dropped: why somebody is not working is §1.1's question.
+        card.Status.TooltipText = noted ? villager.WorkNote : string.Empty;
+
         // ---- WORK ----
+        // ⛔ No distances and no runner-up (D432, Joe: "remove all of the information about tiles …
+        // all of that needs to be removed from villager cards"). `JobReason` and `CommuteNote` still
+        // go to the audit log where they are written (`LabourAllocator.Assign`), which is where
+        // §2.2's "why this job, and who else" stays traceable.
         FillKeep(world, p, villager);
         p.Job.Text = job is not null ? $"{ProfessionName(world, job.Kind)} at {job.Name}"
-            : villager.CanWork ? "A laborer — spare hands, working wherever the village needs them"
+            : villager.CanWork ? "Laborer — goes where the village needs hands"
             : "A child — too young to work";
-        string why = string.Join("\n", new[] { villager.JobReason, villager.CommuteNote }.Where(line => !string.IsNullOrWhiteSpace(line)));
-        p.Why.Text = why;
-        p.Why.Visible = why.Length > 0;
-        p.Note.Text = villager.WorkNote;
-        p.Note.Visible = noted;
+        p.Job.Modulate = noted ? LightStopped : Colors.White;
+        p.Job.TooltipText = card.Status.TooltipText;
 
         // ---- TOOL (D391, D430) ----
         bool usesTool = job is not null && world.JobsCatalog.UsesTool(job.Kind);
@@ -1291,11 +1321,14 @@ public partial class Main
             p.ToolBar.MaxValue = Mathf.Max(1, Mathf.Max(world.Config.ToolUses, uses));
             p.ToolBar.Value = uses;
             p.ToolBar.Visible = uses > 0;
-            p.ToolUses.Text = uses > 0 ? $"{uses} of {world.Config.ToolUses} uses left" : "No tool — working at the plain pace";
-            p.ToolUses.Modulate = uses > 0 ? Colors.White : LightStopped;
+            p.ToolUses.Text = uses > 0 ? $"{uses} / {world.Config.ToolUses}" : "No tool — works slower";
+            p.ToolUses.Modulate = uses > 0 ? new Color(1, 1, 1, 0.7f) : LightStopped;
+
+            // What a tool does is one hover away (D432): the section says how much is left.
             string worth = WhatAToolIsWorth(world);
-            p.ToolWorth.Text = uses > 0 ? Capitalise(worth) + "." : $"A tool would make them {worth}.";
-            p.ToolWorth.Visible = worth.Length > 0;
+            p.ToolSection.TooltipText = uses > 0
+                ? $"{uses} of {world.Config.ToolUses} uses left. A tool makes them {worth}."
+                : $"No tool in any store. A tool would make them {worth}.";
         }
 
         // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
@@ -1357,7 +1390,7 @@ public partial class Main
             p.Keep.AddItem("The village decides");
             foreach (JobKind trade in System.Enum.GetValues<JobKind>())
             {
-                p.Keep.AddItem($"Keep on: {ProfessionName(world, trade)}");
+                p.Keep.AddItem($"Always {world.JobsCatalog.NameOf(trade)}");
                 p.KeepTrades.Add(trade);
             }
         }
@@ -1456,13 +1489,48 @@ public partial class Main
         return row;
     }
 
-    private static ProgressBar Bar() => new()
+    private static readonly StyleBoxFlat BarBack = BarSkin(new Color(1, 1, 1, 0.10f));
+    private static readonly StyleBoxFlat BarFill = BarSkin(LightWorking);
+
+    private static StyleBoxFlat BarSkin(Color colour)
     {
-        MinValue = 0,
-        ShowPercentage = false,
-        CustomMinimumSize = new Vector2(0, 6),
-        SizeFlagsHorizontal = SizeFlags.ExpandFill,
-    };
+        var skin = new StyleBoxFlat { BgColor = colour };
+        skin.SetCornerRadiusAll(3);
+        skin.SetContentMarginAll(0);
+        return skin;
+    }
+
+    /// <summary>A thin bar in the working green (D432 — the theme's grey fill read as empty).</summary>
+    private static ProgressBar Bar()
+    {
+        var bar = new ProgressBar
+        {
+            MinValue = 0,
+            ShowPercentage = false,
+            CustomMinimumSize = new Vector2(0, 6),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+        };
+        bar.AddThemeStyleboxOverride("background", BarBack);
+        bar.AddThemeStyleboxOverride("fill", BarFill);
+        return bar;
+    }
+
+    /// <summary>A section: its head and a column under it (D432's rhythm — 4 inside, 14 between).</summary>
+    private static VBoxContainer Section(string title)
+    {
+        var section = new VBoxContainer();
+        section.AddThemeConstantOverride("separation", 4);
+        section.AddChild(SectionHeader(title));
+        return section;
+    }
+
+    /// <summary>A control's text at the card's own size, not the theme's larger default (D432).</summary>
+    private static T AtRowSize<T>(T control) where T : Control
+    {
+        control.AddThemeFontSizeOverride("font_size", RowSize);
+        return control;
+    }
 
     /// <summary>One skill row, made when a person first needs it and reused after — never rebuilt per frame.</summary>
     private static void AddSkillRow(VillagerParts p)
@@ -1483,35 +1551,33 @@ public partial class Main
         p.Skills.Add((row, name, years, bar));
     }
 
-    /// <summary>A person's sections, built once with the card and hidden until it shows a villager (D431).</summary>
+    /// <summary>A person's sections, built once with the card and hidden until it shows a villager (D431, D432).</summary>
     private static VillagerParts BuildPersonParts()
     {
         var box = new VBoxContainer { Visible = false };
-        box.AddThemeConstantOverride("separation", 4);
+        box.AddThemeConstantOverride("separation", 14);
 
-        box.AddChild(SectionHeader("WORK"));
-        var keep = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FitToLongestItem = false };
-        box.AddChild(keep);
+        VBoxContainer work = Section("WORK");
         Label job = Wrapped(Body(string.Empty));
-        box.AddChild(job);
-        Label why = Wrapped(Muted(string.Empty));
-        box.AddChild(why);
-        Label note = Wrapped(Body(string.Empty));
-        note.Modulate = LightStopped;
-        box.AddChild(note);
+        job.MouseFilter = MouseFilterEnum.Stop;
+        work.AddChild(job);
+        OptionButton keep = AtRowSize(new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FitToLongestItem = false });
+        keep.GetPopup().AddThemeFontSizeOverride("font_size", RowSize);
+        work.AddChild(keep);
+        box.AddChild(work);
 
-        var toolSection = new VBoxContainer();
-        toolSection.AddThemeConstantOverride("separation", 2);
-        toolSection.AddChild(SectionHeader("TOOL"));
+        VBoxContainer toolSection = Section("TOOL");
+        toolSection.MouseFilter = MouseFilterEnum.Stop;
+        var toolRow = new HBoxContainer();
+        toolRow.AddThemeConstantOverride("separation", 8);
         ProgressBar toolBar = Bar();
-        toolSection.AddChild(toolBar);
-        Label toolUses = Wrapped(Body(string.Empty));
-        toolSection.AddChild(toolUses);
-        Label toolWorth = Wrapped(Muted(string.Empty));
-        toolSection.AddChild(toolWorth);
+        toolRow.AddChild(toolBar);
+        Label toolUses = Body(string.Empty);
+        toolRow.AddChild(toolUses);
+        toolSection.AddChild(toolRow);
         box.AddChild(toolSection);
 
-        box.AddChild(SectionHeader("NEEDS"));
+        VBoxContainer needsSection = Section("NEEDS");
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
         needsRow.AddThemeConstantOverride("v_separation", 4);
@@ -1525,22 +1591,21 @@ public partial class Main
             needs[i] = (pill, text);
         }
 
-        box.AddChild(needsRow);
+        needsSection.AddChild(needsRow);
+        box.AddChild(needsSection);
 
-        var skillsSection = new VBoxContainer();
-        skillsSection.AddThemeConstantOverride("separation", 4);
-        skillsSection.AddChild(SectionHeader("SKILLS"));
+        VBoxContainer skillsSection = Section("SKILLS");
+        skillsSection.AddThemeConstantOverride("separation", 6);
         box.AddChild(skillsSection);
 
-        box.AddChild(new HSeparator());
         var footer = new HBoxContainer();
         footer.AddThemeConstantOverride("separation", 6);
-        var find = new Button { Text = "Find", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Centre the view on them" };
-        var home = new Button { Text = "Home", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their household's card" };
-        var work = new Button { Text = "Workplace", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their workplace's card" };
+        Button find = AtRowSize(new Button { Text = "Find", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Centre the view on them" });
+        Button home = AtRowSize(new Button { Text = "Home", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their household's card" });
+        Button work2 = AtRowSize(new Button { Text = "Workplace", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their workplace's card" });
         footer.AddChild(find);
         footer.AddChild(home);
-        footer.AddChild(work);
+        footer.AddChild(work2);
         box.AddChild(footer);
 
         return new VillagerParts
@@ -1548,18 +1613,15 @@ public partial class Main
             Box = box,
             Keep = keep,
             Job = job,
-            Why = why,
-            Note = note,
             ToolSection = toolSection,
             ToolBar = toolBar,
             ToolUses = toolUses,
-            ToolWorth = toolWorth,
             Needs = needs,
             SkillsSection = skillsSection,
             Skills = new(),
             Find = find,
             Home = home,
-            Work = work,
+            Work = work2,
         };
     }
 
@@ -1877,14 +1939,9 @@ public partial class Main
         card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household";
         card.Status.Text = longest;
         p.Job.Text = $"Woodcutter at {new string('W', SimWorld.NameLengthLimit)}";
-        p.Why.Text = longest;
-        p.Why.Visible = true;
-        p.Note.Text = longest;
-        p.Note.Visible = true;
         p.ToolSection.Visible = true;
-        p.ToolUses.Text = "No tool — working at the plain pace";
-        p.ToolWorth.Text = $"A tool would make them {WhatAToolIsWorth(world)}.";
-        p.ToolWorth.Visible = true;
+        p.ToolBar.Visible = true;
+        p.ToolUses.Text = "No tool — works slower";
         foreach ((PanelContainer, Label) need in p.Needs)
         {
             SetNeed(need, false, "No roof", longest);
@@ -2105,6 +2162,14 @@ public partial class Main
                 if (Fits(both) && lodgeNames != both)
                 {
                     faults.Add($"a lodge of 10 meat and 8 leather reads \"{lodgeAmounts}\" over \"{lodgeNames}\" though \"{both}\" fits");
+                }
+
+                // ⛔ AND BOTH MUST FIT (D432). The line above passes whenever they do not, so a wider
+                // margin on every card (twelve, briefly) turned the lodge back into "meat · others"
+                // — D423's own complaint — with this line green. The cell is the budget; hold it.
+                if (!Fits(both))
+                {
+                    faults.Add($"a lodge's \"{both}\" no longer fits its {cell:F0}px cell — it reads \"{lodgeNames}\"");
                 }
 
                 siteShape += $"; the lodge reads \"{lodgeAmounts}\" over \"{lodgeNames}\", three goods \"{threeAmounts}\" over \"{threeNames}\"";

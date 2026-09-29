@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378, D379, D380, D431 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431) on `slice/tools-on-ticks`, unplayed.** Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378, D379, D380, D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) on `slice/tools-on-ticks`; D432 unplayed.** Owner: Joe + Claude Code.
 
 ---
 
@@ -104,14 +104,40 @@ years as grey prose.
 
 ⭐ **The five-parts rule is a building's.** A person is not staffed, holds nothing, and has no
 drawing, so their card is the same frame (268 wide, the head, one banner) with sections under it.
+
+**⭐ WHAT A PLAYER NEEDS FROM A PERSON'S CARD — the rule every line is held to (D432).** Joe, on
+D431: *"its better but way too wordy and crowded … whats important and what's not? what does the
+user need to know? remove all of the information about 'tiles'"*. In order of how often the
+question is asked:
+
+1. **Who is this?** — name; trade · age · household.
+2. **What are they doing, and is anything wrong?** — the banner, green or amber.
+3. **Where do they work, and can I change it?** — the job, and the one control.
+4. **Are they equipped?** — the tool: how much is left.
+5. **Are they all right?** — fed, warm, housed.
+6. **What are they good at?** — their trades and how near mastery.
+
+**What is NOT on the card, and where it lives:** the *why* of anything is one hover away, never
+printed — the workplace's note is the banner's and the job's tooltip, what a tool does is the tool
+section's; how they were assigned, the runner-up and the walk in tiles (`JobReason`,
+`CommuteNote`) are **off the card entirely** (Joe) and stay in the audit log, where §2.2's
+traceability is kept. ⛔ A line earns its place by answering one of the six questions at a glance;
+a sentence that explains an answer is a tooltip.
+
+**Room (D432, Joe: *"add breathing room between elements and borders"*):** twelve pixels inside the
+border (a building's card keeps six — at twelve the lodge's *"meat · leather"* no longer fits its
+cell, and the probe now says so), fourteen between sections, four inside one; the dropdown and the
+buttons at the card's text size; the bars in the working green (the theme's grey fill read as
+empty).
+
 Top to bottom:
 
 | Part | What it says | Where it comes from |
 |---|---|---|
 | **Subtitle** | *Forester · 35 · Thatcher household* | `TradeWordFor`, `AgeYears`, `HouseholdOf` |
-| **Banner** (the status row) | what they are doing **now** — green, or amber while hungry or while there is a note | `Villager.DescribeState` |
-| **WORK** | a dropdown — *The village decides* / *Keep on: {trade}* (Joe's call; one control for D51's pin, disabled for a child) · *"Forester at forester's hut 1"* · the job's reason and the commute · the **note**, amber, when there is one | `SetPinnedTrade`; `JobReason`, `CommuteNote`, `WorkNote` |
-| **TOOL** (a trade that carries one) | a bar of uses left, *"37 of 150 uses left"*, and *"34% quicker at each action and 25% more from it"* — or *"No tool — working at the plain pace"* in amber and what one would do | `ToolUses`, `tool_uses`, the two bonus dials (D430) |
+| **Banner** (the status row) | what they are doing **now** — green, or amber while hungry or while there is a note; **the note is its tooltip** (D432) | `Villager.DescribeState`, `WorkNote` |
+| **WORK** | *"Forester at forester's hut 1"* (amber, with the note as its tooltip, while there is one) · a dropdown — *The village decides* / *Always {trade}* (Joe's call; one control for D51's pin, disabled for a child). ⛔ No assignment reason, runner-up or distance (D432) | `SetPinnedTrade` |
+| **TOOL** (a trade that carries one) | one row: a bar and *"149 / 150"* — or *"No tool — works slower"* in amber; the tooltip says what a tool does (*"34% quicker at each action and 25% more from it"*) | `ToolUses`, `tool_uses`, the two bonus dials (D430) |
 | **NEEDS** | three pills, green or amber, the tooltip the reason: **Fed / Hungry** (`Hunger` against `eat_threshold`), **Warm / Cold** (`Cold` as a share of the way to freezing), **Housed / No roof** (the household's `HomePosition`) — Joe's call, *read from state that exists; no new mechanic* — morale and water join it when they exist | `Villager`, `SimConfig` |
 | **SKILLS** | a row per trade given a year, longest first: the trade, *"master"* or *"sixteen years"* (words, D174's register), a bar of the way to mastery; the tooltip is the old sentence | `TheirTrades` (was `DescribeTheirTrades`), `MasteryWorkFor` |
 | **Jumps** | *Find* (the camera to them) · *Home* · *Workplace* (their cards) | `VillageMap.CentreOn`, `OpenCard` |
@@ -146,6 +172,10 @@ character; a village where nobody renamed anything hashes as it did before renam
   fullest** (40-letter names, a three-line note and reason, no tool, all three needs wanting, six
   skills of 40 letters) it is still 268 wide and **no label on it may trim**. Red-checked: a clipping
   job line (*"1 label(s) on a person's card may trim"*), an unwrapped note (*"widens to 838"*).
+- **Probe `cards:` — the lodge's two names must FIT** (D432): the D423 check only failed when they
+  fit and were not both shown, so a wider margin on every card read *"meat · others"* with the line
+  green. Red-checked with every card at the person's margin: *"a lodge's "meat · leather" no longer
+  fits its 77px cell"*.
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 

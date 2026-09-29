@@ -2,6 +2,14 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (LATE NIGHT) — TOOLS ON TICKS AND A PERSON'S CARD, BOTH ON `slice/tools-on-ticks`.**
 >
+> **And then (D432, view only, UNPLAYED):** Joe played D431 — *"better but way too wordy and
+> crowded … remove all of the information about 'tiles'"*. The card now answers six questions
+> (who · doing/anything wrong · where they work · equipped · all right · good at — `the-cards.md
+> §2a`), every explanation is a tooltip, the assignment reason and distances are gone from it (the
+> audit log keeps them), and a person's card has twelve pixels of room. **Joe: look at a villager's
+> card again — hover the banner or the job when it is amber for why; hover the tool row for what a
+> tool does.**
+>
 > **Added since the paragraph below (D431, view only):** Joe called the villager card *"a UX
 > nightmare. copy off screen, no real hierarchy of information. nothing about tools"* (with
 > Foundation's villager panel). It is sections now — subtitle, a banner of what they are doing,
@@ -3326,6 +3334,12 @@ Read `git status` after staging, every time.
      label's `ClipText` / `TextOverrunBehavior` and what comes before it on the line. A person's
      card is guarded against trimming now (`villager card:`); buildings' number cells still clip by
      design.
+
+139. **⚠️ A GUARD THAT ONLY FIRES WHEN THE GOOD CASE IS POSSIBLE PASSES WHEN IT BECOMES IMPOSSIBLE
+     (D432).** The lodge check said *"both names fit and were not both shown"*; widening every
+     card's margin made them not fit, and it stayed green while the card read *"meat · others"*.
+     Assert the budget, not only the behaviour inside it. And a card margin is a width budget for
+     every card that shares the skin — change one kind's.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
