@@ -1,8 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D425 IN §7. `main` = D425, PUSHED. ONE UNMERGED BRANCH (THE SEASON-STEPPER AUDIT — ASK JOE, RENUMBER IT D426). NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D426 IN §7. `main` = D426, PUSHED; NO BRANCH OPEN. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 (CLOSE) — D422–D424 MERGED AND PUSHED (D425).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 (CLOSE) — D422–D426 MERGED AND PUSHED.**
 >
-> **State:** `main` = `6bf86fc` — `slice/joe-d421` merged (D422 the larder loop · D423 the Stock
+> **State:** `main` = `3611e14` — `slice/joe-d421` merged (D422 the larder loop · D423 the Stock
 > limits panel, upright crates, the lodge card by good · D424 a step treads every tile it passes
 > over) + D425's docs, **pushed at Joe's word** (*"played it - looks good. merge and push!"*). Suite on
 > the merged tree: **1266 passing, 0 failing, 5 skipped of 1271**, ~4m40 (the branch head read 4m55
@@ -14,18 +14,14 @@
 > save functionality yet"*). It is Phase 4.5's shell, unscheduled (§4). Every game is a new game —
 > never tell him an old save behaves differently.
 >
-> **⏸️ FIRST, ASK JOE — ONE UNMERGED BRANCH: `claude/priceless-antonelli-2a6dfd`** (worktree
-> `.claude/worktrees/priceless-antonelli-2a6dfd`, commit `1acbb4f`, from the task chip he started):
-> *"The season stepper cannot stand still: every caller audited, and it refuses."* It printed tick and
-> season round all 103 `StepToTheStartOf` calls (39 sites, 21 tests) — **no other claim was hiding**
-> — made `FarmFixtures.StepToTheStartOf` throw when called inside the season it asks for (past tick 0),
-> deleted `CropCalendarTests`' private copy, added `SeasonSteppingTests`. Test code only, no golden
-> moved. ⚠️ **Three things before it merges:** it was cut from D423 (`001dcbe`), before D424 and the
-> merge, so re-run all four checks on top of `main`; it calls itself **D424**, which is taken (the
-> tread) — **renumber it D426** in its DESIGN.md entry and commit message; and it edits `DESIGN.md` and
-> `HANDOFF.md`, so expect conflicts there (keep both entries, keep this banner on top).
+> **✅ THE SEASON-STEPPER AUDIT IS MERGED AND PUSHED (D426, `3611e14`, Joe: *"push and merge"*).** It
+> was numbered D424 on its own branch and renumbered at the merge; re-verified on top of D425 —
+> **1268 passing, 0 failing, 5 skipped of 1273, 3m14**; view 0 warnings; probe green, bar height 161; no
+> golden moved. What it means for you: `FarmFixtures.StepToTheStartOf` now **throws** if called inside
+> the season it asks for (past tick 0) — step through another season first (trap D426). Its worktree
+> `.claude/worktrees/priceless-antonelli-2a6dfd` and branch are merged and can go when Joe agrees.
 >
-> **▶️ THEN THE QUEUE (unchanged):** the well, slice C (`organic-housing.md §9.5` P6 — a placeable
+> **▶️ THE QUEUE (unchanged):** the well, slice C (`organic-housing.md §9.5` P6 — a placeable
 > well with no water mechanic yet, a destination paths wear toward and a term in the home score;
 > **measure before typing** — it lands on D414's lanes and D424's footprints, so count lane ends and
 > block tiles before and after) → tools on ticks at 34 % (reversing D391's yield axis) → the quarry,
