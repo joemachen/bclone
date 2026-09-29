@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well) not built.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): specced (D427, §9.12), being built on `slice/the-well`, not merged.** Owner:
 Joe + Claude Code.
 
 ---
@@ -606,3 +606,68 @@ no column on the rim, yards spread with ground between them, houses by worn path
 and ⚠️ **most houses in a freshly painted square still face square**, because nothing has worn a path
 there yet and a neighbour's lane is straight. Foundation's look needs the paths first; slice C (the
 well) is the lever that puts them there.
+
+### 9.12 Slice C, as specced (D427, 2026-09-28) — the well
+
+**Joe's calls, 2026-09-28:** a **water trip** is what walks there (*"daily water trip"*); the well
+costs **logs and a little stone**; and the trip's interval is **measured first, then his pick**.
+Why a trip at all: the sim wears the ground **only where a foot lands** (`BehaviorSystem.Travel`
+treads `LineOfSight.Footprints`, D358/D424) — a line in `TheDailyWalks` prices a route, it never
+wears one — and nothing in the game walks anywhere a well would be.
+
+⛔ **A day is four ticks** (`ticks_per_day`), and a walk to a well five tiles off and back is about
+twelve. *"Once a day"* read literally is somebody from every household walking to the well for
+ever. So the interval is a number, `water_trip_every_days`, and it is measured at 1, 5, 10 and 20
+before Joe picks it (§9.12e). *Measured arithmetic, not a guess:* a round trip treads each tile
+twice at `path_wear_per_step` 3, against `path_wear_decay_per_season` 4 and `path_worn_at` 30 — at
+three trips a season one household's lane wears through in about two seasons; at one a season it
+takes about four years.
+
+**a. The well is a building, data-driven.** `BuildingKind.Well = 16` (appended). A row column,
+**`draws_water`** — the sixth reason `ValidateBuildings` accepts for a building to exist (it stores
+nothing, employs nobody, houses nobody, keeps no records, shelves nothing: *people draw water
+there*). The shipped row: `well_logs` 10, `well_stone` 5 (`TECH-EXAMPLE.md` says 10 wood and 10 cut
+stone; half, because nobody cuts stone yet — D384), `well_work_ticks` 20, 1×1, not a singleton,
+unlocked from the start (`buildings-plan.md §4.5b`). A finished well is a `Well` in `SimWorld.Wells`
+— its own kind of thing, as the library is — and it **stands**: it blocks walking, can be clicked,
+moved and pulled down (a refund, like a workplace), exactly as every other building. Hashed
+sparsely: a village with no well hashes as it did before this slice.
+
+**b. The trip.** One adult (`CanWork`, never a child — the line every errand draws) per household
+with a home, at the moment they would **begin a rest spell at home** — the spot the rest spell's own
+comment reserved for *"a destination worth walking to"* (the pub, the church; the well is first).
+It fires when wells exist, a well is within `home_well_reach_tiles` by the cost field, the
+household's last trip was `water_trip_every_days` or more ago (`Household.WaterDrawnOnDay`, hashed
+when set), and no housemate is already on one. The claim is taken when they set off. They walk
+there (`WalkingToTheWell`), stand `well_draw_ticks` (`DrawingWater`), and walk home. Nothing is
+carried and nothing is drunk — the water mechanic is Phase 6. ⛔ **Hunger, cold and an emptied
+larder still come first by structure**: `TryEat`, `TrySeekWarmth` and the emergency restock run
+above the state switch in `ActOne`, and the trip only ever replaces a rest.
+
+**c. The siting term (P5).** `toWell` = the walk from the plot's front to the nearest well, capped
+at `home_well_reach_tiles`; a site with **no** well in reach pays the whole reach (§9.11's P1
+lesson: out of reach is not free). The term is `toWell × home_well_weight / 100`, in integers, added
+to the cheap half's floor and to the score. Never negative and read from the front only, so the
+best-first stop still holds. **With no well anywhere it is 0 and the sentence is unchanged**; with
+one, it reads *"8 tiles to work, 3 to the granary and 2 to the well"* or *"…; no well near"*.
+`TheDailyWalks` gains each home's walk to its nearest well in reach, so a new house faces the lane
+to the well before it has worn, and is not sited across it.
+
+**d. What must not move.** No golden poses a well, and with none: no trip is tried, the term is 0,
+`TheDailyWalks` is unchanged, nothing new is hashed. **Goldens: none move** — checked by the diff,
+not by a green suite.
+
+**e. The guards (each red-checked, the reds counted).** `HousesGatherRoundAWell` (door-to-well
+walk shorter than at weight 0) · `TheSentenceNamesTheWell` / no well, no clause ·
+`AHouseIsNotSitedOnTheWayToTheWell` · `OneTripPerHouseholdPerInterval` (and never two housemates) ·
+`TheTripIsHomeWellHome` · `HungerStillComesFirst` · `APathWearsToTheWell` · `NoWellNoTrip` · the
+well blocks, is clicked, moved and pulled down (the finders' and occupancy guards extended) · the
+validator takes `draws_water` · wells and the water day are hashed.
+
+**The arms (the merge gate):** D420's 55 fifty-year villages (30 shipped, 12 fixture, 13
+every-source) on main, on the branch with no well (hash-identical to main), with a well marked at
+year 3, and with a well at weight 0 (the trips' cost apart from the siting's); the interval swept at
+1, 5, 10, 20 days and the weight at 0, 25, 50, 100; lanes (ends, isolated worn tiles, worn tiles near
+the well); §9.8's layout numbers and the chooser's milliseconds with and without a well. ⭐ The
+table goes to Joe and **he picks the interval**. Shipped alive may not fall by more than the noise
+without his word.
