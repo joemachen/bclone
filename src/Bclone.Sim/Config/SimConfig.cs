@@ -1203,6 +1203,39 @@ public sealed record SimConfig
     [JsonPropertyName("forges_per_stint")]
     public int ForgesPerStint { get; init; } = 4;
 
+    /// <summary>Logs a well takes to raise — a timber head over the shaft (D427).</summary>
+    [JsonPropertyName("well_logs")]
+    public int WellLogs { get; init; } = 10;
+
+    /// <summary>Stone in a well's lining (D427).</summary>
+    /// <remarks>
+    /// <b>A little, on Joe's word</b> — `TECH-EXAMPLE.md` says ten cut stone, and this is half of it
+    /// because nobody cuts stone yet: a stone-hungry well would stand as a site on *"missing 10
+    /// stone"* in exactly the village D384 found waiting a century.
+    /// </remarks>
+    [JsonPropertyName("well_stone")]
+    public int WellStone { get; init; } = 5;
+
+    /// <summary>Ticks of a builder's work a well takes.</summary>
+    [JsonPropertyName("well_work_ticks")]
+    public int WellWorkTicks { get; init; } = 20;
+
+    /// <summary>Ticks somebody stands at the well drawing water before walking home (D427).</summary>
+    [JsonPropertyName("well_draw_ticks")]
+    public int WellDrawTicks { get; init; } = 2;
+
+    /// <summary>
+    /// How many days apart a household walks to its well (D427, `organic-housing.md §9.12`).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Not "daily", and that is arithmetic, not taste.</b> A day is <see cref="TicksPerDay"/>
+    /// — four ticks — and a walk to a well five tiles off and back is about twelve, so a trip a day
+    /// is somebody from every household at the well for ever. The number is Joe's, picked from the
+    /// measured table in §9.12.
+    /// </remarks>
+    [JsonPropertyName("water_trip_every_days")]
+    public int WaterTripEveryDays { get; init; } = 10;
+
     // ---------------------------------------------------------------
     //  Storage (D30, D32)
     // ---------------------------------------------------------------
@@ -1747,6 +1780,20 @@ public sealed record SimConfig
     /// <summary>How far a site looks for a path to face, in tiles (D411, P1). Beyond it, a house faces the village.</summary>
     [JsonPropertyName("home_path_search_tiles")]
     public int HomePathSearchTiles { get; init; } = 8;
+
+    /// <summary>
+    /// How much a tile of walk to the nearest well weighs against a tile of walk to work, in percent
+    /// (D427, P6) — so houses gather round the wells the player places.
+    /// </summary>
+    [JsonPropertyName("home_well_weight")]
+    public int HomeWellWeight { get; init; } = 50;
+
+    /// <summary>
+    /// How far a household will walk for water, in tiles (D427, P6). A site with no well this close
+    /// pays the whole reach in its score, and a household this far out makes no trip.
+    /// </summary>
+    [JsonPropertyName("home_well_reach_tiles")]
+    public int HomeWellReachTiles { get; init; } = 12;
 
     /// <summary>
     /// Whether the founders arrive to a village already built, or to an empty valley (D70).
@@ -2806,6 +2853,24 @@ public sealed record SimConfig
             // The footprint (D382, `specs/footprints.md §2`): a hut's, 2 across, 1 deep.
             ExtentWidth = 2,
             ExtentHeight = 1,
+        },
+
+        // ⭐ THE WELL (D427, `organic-housing.md §9.12`) — the focal point Joe placed by hand in the
+        // Foundation shot, and the destination a household's water trip wears a lane toward. No
+        // water mechanic yet (Phase 6): nothing is carried and nothing is drunk.
+        //
+        // ⛔ It costs something, or `Mark` reads *no materials and no work* as free and instant.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Well,
+            Name = "well",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WellLogs),
+                new MaterialCost(World.Goods.Stone, WellStone),
+            },
+            WorkTicks = WellWorkTicks,
+            DrawsWater = true,
         },
 
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
@@ -4075,6 +4140,14 @@ public sealed record SimConfig
             throw new SimConfigException($"home_path_search_tiles must be greater than zero (got {HomePathSearchTiles}).");
         }
 
+        if (HomeWellWeight < 0 || HomeWellReachTiles <= 0 || WellDrawTicks <= 0 || WaterTripEveryDays <= 0)
+        {
+            throw new SimConfigException(
+                "home_well_weight cannot be negative, and home_well_reach_tiles, well_draw_ticks and "
+                + $"water_trip_every_days must be greater than zero (got {HomeWellWeight}, "
+                + $"{HomeWellReachTiles}, {WellDrawTicks}, {WaterTripEveryDays}).");
+        }
+
         if (FounderAge < 0)
         {
             throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
@@ -4566,13 +4639,14 @@ public sealed record SimConfig
             // town hall holds no goods, employs nobody, houses nobody and shelves no techniques —
             // **so this guard refused it too**, correctly, before it had a column saying what it
             // was for. *Second building, second time; the validator is earning its keep.*
+            // ⭐ AND DRAWING WATER IS A SIXTH (D427) — the well, refused the same way, a third time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
-                && row.Shelves <= 0 && !row.Civic)
+                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "
-                    + "houses nobody, keeps no records and is not civic. The village would raise "
-                    + "it and it would do nothing for ever.");
+                    + "houses nobody, keeps no records, is not civic and nobody draws water there. "
+                    + "The village would raise it and it would do nothing for ever.");
             }
         }
 

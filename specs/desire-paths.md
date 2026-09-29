@@ -188,6 +188,15 @@ the field, not this. Measured it does not bite (the thirty-year runs walked *few
 because a worn lane is where straight walks already went. If a village ever shows walkers going the
 long way round on a lane, this is where to look.
 
+### 3.7 The well is a destination (D427, `organic-housing.md §9.12`)
+
+Nothing here changed: wear still comes only from feet (`BehaviorSystem.Travel`). What is new is a
+walk to wear it — a household's **water trip**, home → nearest well → home every
+`water_trip_every_days`. ⚠️ **Measured:** a well in the founding's own traffic is on worn ground
+already, and 30 trips against 2 move its ring 811 → 880; five to ten tiles out the same trips wear
+grass (0) into a path (104–282). A line in `TheDailyWalks` prices a route and wears nothing — one
+was tried for the well and taken out (§9.12c there).
+
 ## 4. Data model
 
 ### 4.1 `PathWear` (sim state, hashed)

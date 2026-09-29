@@ -39,6 +39,9 @@ public partial class Main
 
         /// <summary>The town hall (D396) — a singleton, Id 0.</summary>
         TownHall,
+
+        /// <summary>A well (D427) — its Id is its index in <see cref="SimWorld.Wells"/>, as a library's is.</summary>
+        Well,
     }
 
     private readonly record struct CardSubject(CardKind Kind, int Id);
@@ -204,8 +207,16 @@ public partial class Main
                 _selectedTile = world.TownHall?.Tile;
                 _selectedVillagerId = 0;
                 break;
+            case CardKind.Well:
+                _selectedTile = WellOf(subject)?.Tile;
+                _selectedVillagerId = 0;
+                break;
         }
     }
+
+    /// <summary>The well a card is about — by index, the library's rule (D396) and its caveat.</summary>
+    private Well? WellOf(CardSubject card) =>
+        card.Id >= 0 && card.Id < _loop.World.Wells.Count ? _loop.World.Wells[card.Id] : null;
 
     /// <summary>The library a card is about — by index, which is all a library has (D396).</summary>
     /// <remarks>
@@ -541,6 +552,7 @@ public partial class Main
             CardKind.Villager => world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager),
             CardKind.Library => LibraryOf(card.Subject) is Library library && ShowLibrary(world, card, library),
             CardKind.TownHall => world.TownHall is TownHall hall && ShowTownHall(world, card, hall),
+            CardKind.Well => WellOf(card.Subject) is Well well && ShowWell(world, card, well),
             _ => false,
         };
 
@@ -1365,6 +1377,53 @@ public partial class Main
         return true;
     }
 
+    /// <summary>How many households draw at each well, counted once a tick — the card refreshes every frame.</summary>
+    private readonly Dictionary<Well, int> _drawingAt = new();
+    private ulong _drawingAtTick = ulong.MaxValue;
+
+    /// <summary>The well card (D427): who walks here for water, and how often they have.</summary>
+    private bool ShowWell(SimWorld world, Card card, Well well)
+    {
+        if (_drawingAtTick != world.Tick)
+        {
+            _drawingAtTick = world.Tick;
+            _drawingAt.Clear();
+            for (int i = 0; i < world.Households.Count; i++)
+            {
+                if (world.Households[i].HomeTile is GridPos home && world.NearestWell(home, out _) is Well theirs)
+                {
+                    _drawingAt[theirs] = _drawingAt.GetValueOrDefault(theirs) + 1;
+                }
+            }
+        }
+
+        WriteWellCard(card, well.Name, _drawingAt.GetValueOrDefault(well), well.Draws,
+            world.Config.HomeWellReachTiles, well.ExtentWidth, well.ExtentHeight, well.Facing.Raw);
+        return true;
+    }
+
+    /// <summary>The well card from plain facts — so the probe can pose one where none stands.</summary>
+    private void WriteWellCard(Card card, string name, int households, int draws, int reach, int wide, int deep, ushort facing)
+    {
+        Title(card, name, renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+        card.PeopleScroll.Visible = false;
+
+        Status(
+            card,
+            working: households > 0,
+            households > 0
+                ? $"Where {households} {(households == 1 ? "household draws its" : "households draw their")} water."
+                : $"Nobody draws here yet — no house within {reach} tiles.");
+
+        Number(card, 0, $"{households}", households == 1 ? "household" : "households");
+        Number(card, 1, $"{draws:N0}", "trips made");
+        Number(card, 2, $"{reach}", "tiles it reaches");
+        card.Portrait.Show(VillageMap.WellColour, wide * 0.7f, deep * 0.7f, facing, null);
+    }
+
     /// <summary>The town hall card from plain facts — so the probe can pose one where none stands.</summary>
     private void WriteTownHallCard(Card card, string name, IReadOnlyList<(string Name, string Life)> founders, int raisedInYear, int wide, int deep, ushort facing)
     {
@@ -1782,6 +1841,29 @@ public partial class Main
             faults.Add("the hall's card offers no View records");
         }
 
+        // ⭐ AND A WELL (D427), posed the same way — a 40-letter name, a crowd of households and a
+        // lifetime of trips — and then the empty one, whose sentence is the longest.
+        WriteWellCard(posed, new string('W', SimWorld.NameLengthLimit), 1234, 12_345_678, world.Config.HomeWellReachTiles, 1, 1, 0);
+        ForceUpdateTransform();
+        float wellWidth = posed.Panel.GetCombinedMinimumSize().X;
+        if (wellWidth > CardWidth + 1f)
+        {
+            faults.Add($"a busy well with a 40-letter name widens a card's minimum to {wellWidth:F0}");
+        }
+
+        if (posed.Values[0].Text != "1234" || posed.Values[1].Text != "12,345,678")
+        {
+            faults.Add($"a well card reads {posed.Values[0].Text} households and {posed.Values[1].Text} trips, not 1234 and 12,345,678");
+        }
+
+        WriteWellCard(posed, "well 1", 0, 0, world.Config.HomeWellReachTiles, 1, 1, 0);
+        ForceUpdateTransform();
+        float emptyWell = posed.Panel.GetCombinedMinimumSize().X;
+        if (emptyWell > CardWidth + 1f)
+        {
+            faults.Add($"a well nobody draws at widens a card's minimum to {emptyWell:F0}");
+        }
+
         // Drag: move the selected card's panel and read it back.
         Card dragged = _cards[^1];
         Vector2 before = dragged.Panel.Position;
@@ -1828,7 +1910,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library and the hall posed, every workplace's numbers honest, a site {siteShape}, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every workplace's numbers honest, a site {siteShape}, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }

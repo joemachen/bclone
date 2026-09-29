@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): specced (D427, §9.12), being built on `slice/the-well`, not merged.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT on `slice/the-well` (D427, §9.12), NOT merged — the trip interval and the siting weight wait on Joe's pick from §9.12f.** Owner:
 Joe + Claude Code.
 
 ---
@@ -650,8 +650,12 @@ lesson: out of reach is not free). The term is `toWell × home_well_weight / 100
 to the cheap half's floor and to the score. Never negative and read from the front only, so the
 best-first stop still holds. **With no well anywhere it is 0 and the sentence is unchanged**; with
 one, it reads *"8 tiles to work, 3 to the granary and 2 to the well"* or *"…; no well near"*.
-`TheDailyWalks` gains each home's walk to its nearest well in reach, so a new house faces the lane
-to the well before it has worn, and is not sited across it.
+~~`TheDailyWalks` gains each home's walk to its nearest well in reach, so a new house faces the lane
+to the well before it has worn, and is not sited across it.~~ ⛔ **Built, measured, taken out:** in
+five poses (weights 50–300, the well four to eight tiles from a raised first house, twenty families)
+the walk to the well came out identical with and without it — one walker's detour never outweighs a
+site, and nothing was faced differently. An extra route per home for nothing. **The lane to the well
+comes from the feet**, which is what the trip is for.
 
 **d. What must not move.** No golden poses a well, and with none: no trip is tried, the term is 0,
 `TheDailyWalks` is unchanged, nothing new is hashed. **Goldens: none move** — checked by the diff,
@@ -659,7 +663,7 @@ not by a green suite.
 
 **e. The guards (each red-checked, the reds counted).** `HousesGatherRoundAWell` (door-to-well
 walk shorter than at weight 0) · `TheSentenceNamesTheWell` / no well, no clause ·
-`AHouseIsNotSitedOnTheWayToTheWell` · `OneTripPerHouseholdPerInterval` (and never two housemates) ·
+`OneTripPerHouseholdPerInterval` (and never two housemates) ·
 `TheTripIsHomeWellHome` · `HungerStillComesFirst` · `APathWearsToTheWell` · `NoWellNoTrip` · the
 well blocks, is clicked, moved and pulled down (the finders' and occupancy guards extended) · the
 validator takes `draws_water` · wells and the water day are hashed.
@@ -671,3 +675,36 @@ year 3, and with a well at weight 0 (the trips' cost apart from the siting's); t
 the well); §9.8's layout numbers and the chooser's milliseconds with and without a well. ⭐ The
 table goes to Joe and **he picks the interval**. Shipped alive may not fall by more than the noise
 without his word.
+
+**f. Measured (D427, 2026-09-29)** — D420's 55 fifty-year villages as played (30 shipped, 12 fixture,
+13 every-source), a well marked at year 3 on the first free grass five to nine tiles out from the
+founding (just past the opening's paint). Alive / starved:
+
+| arm | shipped | fixture | every-source | trips a household-year (shipped) |
+|---|---|---|---|---|
+| main (D426) | 169 / 91 | 143 / 18 | 128 / 4 | — |
+| branch, no well | 169 / 91 — **all 55 year-50 hashes equal main's** | 143 / 18 | 128 / 4 | — |
+| noise: main's limits +1 | 167 / 97 | 146 / 13 | 122 / 0 | — |
+| well, trips off (once each) | **176** / 101 | 140 / 27 | 124 / 2 | 0 |
+| well, every 20 days | 167 / 108 | 160 / 9 | 119 / 8 | 4.0 |
+| well, every 10 days | **148** / 118 | 139 / 28 | 130 / 0 | 7.2 |
+| well, every 5 days | 144 / 130 | 152 / 13 | 124 / 4 | 13.5 |
+| well, every day | 139 / 128 | 150 / 19 | 135 / 4 | 23.9 |
+| every 10, weight 0 / 100 / 200 / 300 | 147 / 160 / 153 / 151 | 138 / 139 / 143 / 140 | 128 / 130 / 128 / 128 | 7.2–7.5 |
+
+- ⭐ **The building costs nothing; the trips do, about in proportion to how often.** Every 10 days
+  is 21 shipped villagers below main — four times the noise — and every 20 is within it. An
+  ablation (the trip offered only at `Decide`'s rest, not `GoHome`'s) read the same (145), so it is
+  **not** the job-holder's idle moment; the mechanism is unproven (an adult off on a 20-tick walk
+  when work comes back is the hypothesis).
+- ⚠️ **Where the as-played well stands, the lane is mostly the village's own.** Worn tiles within
+  three of the well: 13.9 with the trips off, 14.2 at every 10 days. The trips wear a lane of their
+  own where the well stands on fresh ground (`APathWearsToTheWell`: 0 → 190 wear seven tiles out).
+- ⚠️ **The siting weight barely moves survival and barely moves houses below 200.** A step toward
+  a well away from the village costs a tile to work AND a tile to the granary, so at 50 or 100 the
+  well is out-pulled (door-to-well 13.0 at 0, 16.5 at 50, 15.8 at 100, 11.1 at 200, 9.0 at 300 on
+  `HousesGatherRoundAWell`'s pose). *"Houses gather round the well"* means a weight above 200 —
+  a household walking further to work to live by the water.
+- The suite's clock, back to back with main: 3m14 → 3m13. The chooser's cost: one cached
+  cost-field lookup per painted tile per well.
+

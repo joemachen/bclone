@@ -195,6 +195,10 @@ public partial class VillageMap : Control
     // *"which of those two blue squares is which?"* is never a question.
     internal static readonly Color TownHallColour = new("#b9b2a6");
 
+    // A well is a ring of stone round dark water (D427) — the rock's grey, a shade lighter so it
+    // reads as dressed stone rather than a boulder, with the fishery's water at its heart.
+    internal static readonly Color WellColour = new("#8d8577");
+
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
     /// Warm amber rather than red. A full store is not a disaster — it is usually a village
@@ -2338,6 +2342,7 @@ public partial class VillageMap : Control
         DrawStores();
         DrawLibraries();
         DrawTheTownHall();
+        DrawWells();
         DrawHomes();
 
         // ⚠️ Over the buildings, because a heap beside a full warehouse is the whole point:
@@ -2849,6 +2854,30 @@ public partial class VillageMap : Control
             hall.Facing.Raw,
             TownHallColour with { A = 0.9f },
             TownHallColour);
+    }
+
+    /// <summary>The wells (D427): a ring of stone with water at its heart.</summary>
+    /// <remarks>
+    /// ⛔ <b>Drawn in the same commit as the feature</b> — the library shipped built, tested and
+    /// invisible, because this view knew about two lists. Through the footprint like every other
+    /// building (D325), so a modder's wider well draws the day it is typed.
+    /// </remarks>
+    private void DrawWells()
+    {
+        SimWorld world = _world!;
+        for (int i = 0; i < world.Wells.Count; i++)
+        {
+            Well well = world.Wells[i];
+            Vector2 centre = ToScreen(well.Position);
+            DrawFootprint(
+                centre,
+                well.ExtentWidth * 0.7f,
+                well.ExtentHeight * 0.7f,
+                well.Facing.Raw,
+                WellColour with { A = 0.9f },
+                WellColour);
+            DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
+        }
     }
 
     private void DrawStores()
@@ -5333,6 +5362,8 @@ public partial class VillageMap : Control
 
     internal static Color StoneTone => RockColour;
 
+    internal static Color WellTone => WellColour;
+
     internal static Color IronTone => IronColour;
 
     /// <summary>
@@ -6168,6 +6199,11 @@ public partial class VillageMap : Control
         if (world.LibraryCovering(tile) is Library library)
         {
             return BoxOf(ToScreen(library.Position), 0.8f, 0.8f, 0);
+        }
+
+        if (world.WellCovering(tile) is Well well)
+        {
+            return BoxOf(ToScreen(well.Position), well.ExtentWidth * 0.7f, well.ExtentHeight * 0.7f, well.Facing.Raw);
         }
 
         return null;

@@ -120,7 +120,10 @@ public sealed class ModdedBuildingTests
         { "id": 12, "name": "fishing hut", "seats": 4, "must_touch": "Water", "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 3 } ]},
         { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 }, { "goods": "Stone", "amount": 12 } ] },
         { "id": 14, "name": "longhouse", "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "extent_height": 1, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
-        { "id": 15, "name": "smithy", "seats": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 12 } ] }
+        { "id": 15, "name": "smithy", "seats": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 12 } ] },
+
+        // ⭐ `draws_water` IS A COLUMN A MODDER CAN REACH (D427) — the well's reason to exist.
+        { "id": 16, "name": "well", "draws_water": true, "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 10 }, { "goods": "Stone", "amount": 5 } ] }
       ]
     }
     """;
@@ -176,9 +179,9 @@ public sealed class ModdedBuildingTests
 
         // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
-        // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391). The modder's boathouse
-        // sits inside the range, at the library's id, on purpose.
-        Assert.Equal(16, catalog.Count);
+        // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391); → 17 with the well (D427).
+        // The modder's boathouse sits inside the range, at the library's id, on purpose.
+        Assert.Equal(17, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -310,6 +313,7 @@ public sealed class ModdedBuildingTests
             { "id": 13, "name": "hunter's lodge", "seats": 3, "hunting_radius": 12,             "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
             { "id": 14, "name": "longhouse",      "stores": "Warehouse", "store_capacity": 900, "extent_width": 3, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 15, "name": "smithy",         "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
+            { "id": 16, "name": "well",           "draws_water": true,                            "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 10 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

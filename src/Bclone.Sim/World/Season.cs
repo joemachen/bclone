@@ -227,6 +227,18 @@ public enum VillagerState
 
     /// <summary>At the forge, one tool at a time — the stint (D391).</summary>
     Forging,
+
+    /// <summary>Walking to the household's nearest well for water (D427).</summary>
+    /// <remarks>
+    /// ⛔ Not <see cref="TravelingToWater"/>, which is the fisher's walk to the river. Its own state
+    /// rather than folded into <see cref="DrawingWater"/>, because a slower
+    /// <c>travel_ticks_per_unit</c> puts a wait on every step and a walk that shared the action's
+    /// state would finish the action mid-walk.
+    /// </remarks>
+    WalkingToTheWell,
+
+    /// <summary>At the well, drawing water — <c>well_draw_ticks</c>, then home (D427).</summary>
+    DrawingWater,
 }
 
 /// <summary>

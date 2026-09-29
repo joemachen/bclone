@@ -862,6 +862,18 @@
   "tools_per_forge": 1,
   "forges_per_stint": 4,
 
+  // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
+  // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
+  // No water mechanic: a household walks to its nearest well and back every
+  // water_trip_every_days, and the lane their feet wear is the point. NOT daily:
+  // a day is four ticks and the walk is about twelve, so a trip a day is somebody
+  // at the well for ever. Joe picks the interval from the measured table.
+  "well_logs": 10,
+  "well_stone": 5,
+  "well_work_ticks": 20,
+  "well_draw_ticks": 2,
+  "water_trip_every_days": 10,
+
   // DERIVED, like gather_yield. The stated target: heating every home
   // through winter must cost no more than HALF the hands the village can
   // spare once everyone is fed. The half is the margin, and it is the
@@ -1311,6 +1323,13 @@
 
   // How far a site looks for a path to face; beyond it, a house faces the village.
   "home_path_search_tiles": 8,
+
+  // P6, the well (D427): a tile of walk to the nearest well weighs this percent of a
+  // tile of walk to work, so houses gather round the wells the player places. A site
+  // with no well within home_well_reach_tiles pays the whole reach; a household that
+  // far out makes no water trip.
+  "home_well_weight": 50,
+  "home_well_reach_tiles": 12,
 
   // THE COLD START (D70). The founders arrive to an empty valley with a cart:
   // no granary, no warehouse, no market, no woodcutter's hut, no homes, and nothing

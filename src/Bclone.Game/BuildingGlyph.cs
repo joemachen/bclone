@@ -65,6 +65,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Home => VillageMap.DwellingColour,
         BuildingKind.Library => VillageMap.LibraryTone,
         BuildingKind.TownHall => VillageMap.CivicTone,
+        BuildingKind.Well => VillageMap.WellTone,
 
         // The workplaces, from the trade that works them.
         BuildingKind.BuilderHut => TradeGlyph.ColourOf(JobKind.Builder),
@@ -215,6 +216,15 @@ public sealed partial class BuildingGlyph : Control
                 }
 
                 DrawRect(new Rect2(s * 0.08f, s * 0.80f, s * 0.84f, s * 0.10f), ink);
+                break;
+
+            // A well: a little roof on two posts over a ring of stone, water inside (D427).
+            case BuildingKind.Well:
+                Roof(new Rect2(s * 0.18f, s * 0.08f, s * 0.64f, s * 0.20f), ink);
+                DrawRect(new Rect2(s * 0.24f, s * 0.28f, s * 0.07f, s * 0.34f), ink);
+                DrawRect(new Rect2(s * 0.69f, s * 0.28f, s * 0.07f, s * 0.34f), ink);
+                DrawRect(new Rect2(s * 0.14f, s * 0.60f, s * 0.72f, s * 0.28f), ink);
+                DrawRect(new Rect2(s * 0.26f, s * 0.64f, s * 0.48f, s * 0.10f), VillageMap.WaterTone);
                 break;
 
             // A built-in nobody has drawn yet — the same honest mark a modder's building gets.

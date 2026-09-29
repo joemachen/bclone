@@ -267,6 +267,12 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToSmithy => true,
         VillagerState.Forging => true,
 
+        // The water trip is a household's errand, not a trade (D427) — like the fetch, it grows
+        // nothing. ⚠️ The walk home after it is `TravelingHome`, which counts, exactly as the
+        // fetch's walk home always has.
+        VillagerState.WalkingToTheWell => false,
+        VillagerState.DrawingWater => false,
+
         // Only reachable by casting an integer that is not a state at all. Loud rather than
         // swallowed (METHODOLOGY §4), and the walking test above is what catches a real new
         // state long before this could.

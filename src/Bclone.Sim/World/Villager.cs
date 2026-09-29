@@ -698,6 +698,8 @@ public sealed class Villager
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "forging tools at the anvil",
+            VillagerState.WalkingToTheWell => "walking to the well",
+            VillagerState.DrawingWater => "drawing water at the well",
             _ => State.ToString(),
         };
     }

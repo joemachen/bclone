@@ -1983,7 +1983,8 @@ public partial class Main : Control
         bool carded = _selectedVillagerId != 0
             || (!_heapAsked && _selectedTile is GridPos at
                 && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null
-                    || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))));
+                    || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))
+                    || world.WellCovering(at) is not null));
         // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
         // furniture is shown (`h`) — this line used to override both every frame.
         _whatsHerePanel.Visible = _furnitureShown
@@ -2149,6 +2150,10 @@ public partial class Main : Control
         {
             OpenCard(new CardSubject(CardKind.TownHall, 0));
         }
+        else if (world.WellCovering(tile) is Well well)
+        {
+            OpenCard(new CardSubject(CardKind.Well, world.Wells.IndexOf(well)));
+        }
 
         RefreshInspector(world);
     }
@@ -2233,7 +2238,8 @@ public partial class Main : Control
 
         // ⭐ The library and the hall are cards now too (D396) — the fourth and fifth lists this
         // method used to describe (D221's finding, twice) have gone where the other three went.
-        if (world.LibraryCovering(tile) is not null || (world.TownHall is not null && world.TownHallCovers(tile)))
+        if (world.LibraryCovering(tile) is not null || (world.TownHall is not null && world.TownHallCovers(tile))
+            || world.WellCovering(tile) is not null)
         {
             return string.Empty;
         }
@@ -6186,6 +6192,10 @@ public partial class Main : Control
             // The hall is not a knowledge building with extras, and putting it under Knowledge
             // would say the opposite of what D251 settled.
             BuildingKind.TownHall => BuildCategory.Civic,
+
+            // ⭐ The well sits with the homes (D427): it is where a neighbourhood gathers, placed
+            // beside the paint the houses go into — not a store, not a trade.
+            BuildingKind.Well => BuildCategory.Homes,
 
             _ => BuildCategory.Other,
         };

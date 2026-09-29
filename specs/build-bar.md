@@ -58,7 +58,8 @@ buildings catalogue** instead of being ten hand-written buttons.
    §8.1` settled that it is *"a column the sim does not want … it is presentation"*, and this
    spec does not reopen it. The mapping lives in the view.
 3. **ALL is a category filter inside BUILD**, not a fourth tab: ALL / Works / Food / Resources /
-   Storage & trade / Knowledge / Civic / Homes / Other.
+   Storage & trade / Knowledge / Civic / Homes / Other. **The well sits in Homes** (D427), beside
+   *Paint land* — it is where a neighbourhood gathers, not a store or a trade.
 4. **One bar.** It replaces the control bar rather than sitting beside it — speed, tabs, strip
    and panel toggles are one piece of furniture.
 

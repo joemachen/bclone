@@ -60,7 +60,8 @@ villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowC
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
 *What's here*, for what has no card** (bare ground and heaps — the library and the town hall have
-cards since D396 — and since D397 they read at a glance: a library's shelf is two lines, the
+cards since D396, and a well since D427: *"Where 3 households draw their water"*, the households,
+the trips made and the tiles it reaches — and since D397 they read at a glance: a library's shelf is two lines, the
 technique and *"+10 % to foraging · Amos, Year 58"* (the row's own `yield_bonus_percent` on the
 skill's trade, the record's finder and year — `LibraryRecord.FoundInYear`, unhashed by D258's
 rule); the hall's founders are *name — 77 · 57 winters*, the name giving way and the numerals
