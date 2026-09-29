@@ -1,16 +1,17 @@
 # Spec: Tools that wear, and the smith's hut — Phase 5's first production chain
 
 **Decisions:** D391 (this document), D395 (Joe: the bonus goes on ticks), D429 (ticks at 34 %,
-stacked with mastery by multiplying). Neighbours: D17/D64 (tools arrive in the cart and nobody can
+stacked with mastery by multiplying, **beside** the yield bonus — ticks alone measured at half its worth). Neighbours: D17/D64 (tools arrive in the cart and nobody can
 replace them), D29 (the conversion workplace — the woodcutter's shape), D84/D90 (iron is a seam
 the laborers clear), D107 (the shape every profession shares), D109 (the player staffs), D139 (a
 met limit stops the work), D174/D187 (the novice floor; mastery bites in one seam), D196/D225 (a
 technique bites in one seam), D291 (the hash is sparse over goods), D353 (the shape settled: wear
 per use, slower without, never a break year), D378 (amber is the trade's quota).
-**Status:** ✅ **built (2026-09-18, D391) and played.** 🔨 **§3.4 REWRITTEN FOR D429 (2026-09-29): the
-bonus moves from yield to ticks, on Joe's call (D395).** Specced on `slice/tools-on-ticks` before the
-code, as METHODOLOGY §2 asks; not built as of this line. D391's yield build and its numbers are
-kept in §6 as the record. Owner: Joe + Claude Code.
+**Status:** ✅ **built (2026-09-18, D391) and played.** ✅ **§3.4 BUILT FOR D429 (2026-09-29) on
+`slice/tools-on-ticks`: a tool takes a third off the ticks AND keeps its quarter on the yield** —
+specced before the code as ticks-instead-of-yield, measured, and changed to both by Joe's call on
+the numbers (§6.1). `ToolsTests` fifteen guards; **unplayed by Joe as of this line.** Owner: Joe +
+Claude Code.
 
 ---
 
@@ -88,7 +89,12 @@ speeds its own action.
 When the last use goes the log says so at DEBUG (*"Hattie's tool is worn out"*) and Hattie works on
 at today's number.
 
-### 3.4 The bonus is on ticks — Joe's call (D395, D429)
+### 3.4 The bonus is on ticks AND on yield — Joe's calls (D395, D429)
+
+> ⭐ **What shipped, in one line:** a tool in hand takes 34 % off the ticks of the action it begins
+> (multiplied with mastery, rounded once) **and** adds 25 % to what the action brings in. This
+> section was written first as ticks *instead of* yield; §6.1's runs showed that at about half of
+> what tools had been worth, and Joe chose both. The reasoning below is kept as it was specced.
 
 Joe, 2026-09-19 (D395): ***"tool bonus on ticks (and eventually on yield when user unlocks upgrades
 for it)"***. D391 had built it on yield, and this section said so and called it *"the one call Joe
@@ -136,13 +142,17 @@ case, and the card should not promise otherwise.
 `mastery_speed_bonus_percent` is 50: 34 was tried first and found marginal (its remarks in
 `SimConfig`).
 
-**The yield dial stays, at 0.** `tool_yield_bonus_percent` and `SimWorld.WithTool` are kept for Joe's
-*"eventually on yield when user unlocks upgrades for it"*. The shipped dial is 0, so a tool adds
-nothing to what an action brings in. The six yield sites still call `WithTool` / `YieldFor`, so
-the upgrade is a number and not a code change.
+**~~The yield dial stays, at 0.~~ The yield dial stays at 25 (Joe, D429, on §6.1's numbers).** As
+specced, `tool_yield_bonus_percent` went to 0 and was kept for Joe's *"eventually on yield when user
+unlocks upgrades for it"*. Measured, ticks alone left tools worth about half of what they had been,
+because **a forager's trip is one gather between two walks**: 3 → 2 ticks saves one tick in about
+fifteen. Joe: ticks 34 % plus yield 25 %. The later upgrade becomes *more* yield, or iron tools
+(D395), rather than switching the yield on.
 
-**A tool wears faster now, and that is accepted (Joe, 2026-09-29).** Quicker actions mean more of
-them a year, and a tool is `tool_uses` actions. Joe: ***"keep 150 for default tools — there will be
+**A tool might wear faster, and that is accepted (Joe, 2026-09-29) — measured, it does not.**
+Quicker actions could mean more of them a year, and a tool is `tool_uses` actions. (§6.1: work is
+demand-gated, so a quicker hand is stood down sooner rather than working more; the wear rate did not
+move.) Joe: ***"keep 150 for default tools — there will be
 different tool types later with different durabilities (stone v iron for example)"*** — D395's
 smithy gift, where the village starts with stone tools and the smith makes iron ones. How long a
 tool lasts is that slice's number. §6 records the lifetime under ticks.
@@ -225,9 +235,9 @@ them yet"* to the reason: tools are upside above the floor (§3.4), so there is 
 
 | Key | Default | What |
 |---|---|---|
-| `tool_uses` | 150 (§6) | actions one tool lasts — kept at 150 under ticks by Joe's call, though it now lasts less time (§3.4); stone and iron tools will carry their own |
+| `tool_uses` | 150 (§6) | actions one tool lasts — kept at 150 under ticks by Joe's call; the wear rate did not move (§6.1); stone and iron tools will carry their own |
 | `tool_speed_bonus_percent` | 34 (§3.4, D429) | what a tool takes off an action's ticks — multiplied with mastery, rounded once |
-| `tool_yield_bonus_percent` | **0** (was 25, D391 → D429) | what a tool adds to an action's yield — the later upgrade's dial (D395) |
+| `tool_yield_bonus_percent` | 25 (§6, kept by D429's §6.1) | what a tool adds to an action's yield, technique counted — beside the ticks |
 | `smithy_logs` | 25 | a hut's timber |
 | `smithy_stone` | 12 | a forge is a hearth of stone |
 | `smithy_work_ticks` | 40 | as the huts |
@@ -302,9 +312,49 @@ market's business; §3.5 stands.
 
 ### 6.1 Measured under ticks (D429)
 
-*To be filled from the runs before the build merges:* the rigs (forager / fisher / hunter per hundred
-ticks worked), the farm, D420's 55 fifty-year villages against `main`, actions per hand-year, and a
-tool's life in years at 150 uses.
+`main` (yield 25, no ticks) run on a `git worktree` of `main`, never through a dial; the other three
+arms on the branch, through the two dials and `cart_tools` (a throwaway harness, deleted).
+
+**D420's 55 fifty-year villages** (30 shipped + 12 fixture + 13 every-source), alive / peak / starved:
+
+| Arm | Alive | Peak | Starved |
+|---|---|---|---|
+| no tools at all | 321 | 529 | 152 |
+| **ticks 34 %, yield 0 — as specced** | **380** | 587 | **159** |
+| yield 25 %, no ticks — `main` (D391) | 440 | 631 | 113 |
+| **ticks 34 % + yield 25 % — shipped (Joe)** | **444** | 628 | **122** |
+
+The shipped seeds alone read 96 / 112 / 169 / 181 alive in that order. Ticks alone kept about half of
+what tools are worth; **the reason is structural, not the number**: a forager's trip is one gather
+between two walks, a fisher's and a hunter's one cast or one hunt, so a third off the action is a
+tick or a few off a trip of fifteen-plus. No tick percentage mends that — the next step for a
+three-tick gather is 67 % (3 → 1).
+
+**The rigs** (food per hundred ticks worked, demand held open — trap 30): `main` forager 342, fisher
+761, hunter 1,484; ticks alone forager ~280 *(the rig read 188 — see below)*, fisher 589, hunter
+1,150 (−17 to −23 %); **both: forager 324, fisher 769, hunter 1,447.** The ladder's order and its
+ratios hold (~2.4× and ~1.9×).
+
+**Wear.** Twelve fixture seeds × twenty years: **10.6 actions and 0.19 tools taken a hand-year on
+`main`, 10.5 and 0.19 on the branch** — the rate did not move, because work is demand-gated (a
+quicker hand is stood down sooner, not kept busier). ⚠️ This count disagrees with §6's *~55 actions
+a hand-year* by about five times; the denominator here is every hand holding a tool-trade seat,
+idle or not, and the two are not reconciled.
+
+**Found on the way** (⛔, each in its own place):
+- **The forager rig counted trips as gather ticks ÷ `gather_ticks`** (`FishingTests.
+  WhatAForagerBringsInAYear`), so with a tool (2 ticks a gather) it counted two trips in three and
+  read 188 where the forager was near 280. It counts gathers begun now. ⚠️ Its red check scores
+  **zero**, written down: the old count only made the forager read low, and the guard asserts the
+  fisher out-earns it. It still prices a trip at the bare hut's number (a tool's quarter uncounted).
+- **Three guards that were really measuring food went red under ticks alone and green again under
+  both** — the builder behind a starved head (D414's open item: nobody took the builder's seat for
+  the whole year), the market stocked to its limit, the food limit's foragers. The labour quota puts
+  every hand on food while the village is short; they are not re-posed.
+- **The timber gate's guard was a coin** (`WoodTests.TimberGatesGrowthWithoutStoppingIt`): the
+  fixture dies out unattended on about half its seeds by year 120 with or without the gate (twelve
+  seeds, gated / free alive: `main` 43 / 28, branch 51 / 32), and 12345 came up 0. Re-posed on seed 6,
+  whose ungated village lives on both, with the table beside it.
 
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/ToolsTests.cs`
 
@@ -314,7 +364,12 @@ tool's life in years at 150 uses.
 - `AToolMakesTheActionItBeginsAThirdQuicker` — §3.4's table, trade by trade (D429).
 - `AMasterWithAToolMultipliesOnce` — 3 → 1 and 4 → 2; a master without one keeps 2 / 2 (D429).
 - `TheLastUseStillSpeedsItsOwnAction` — the ticks are read before the wear (D429).
-- `AToolAddsNothingToYieldAtTheShippedDial` — and a raised dial still adds (D429).
+- `AToolIsQuickerAndBringsInMoreAsShipped` — data and C# agree: 34 on ticks, 25 on yield (D429).
+
+Red-checked (D326), reds counted against each break: the tool's percent never read 4; the two
+**added** instead of multiplied 1; rounded **separately** 1; the wear **before** the read 1; the bonus
+on a bare hand 5; the yield dial at 0 in the data 1. The forager rig's trip count scores **zero**
+(§6.1).
 - `AToolIsFetchedFromAStoreNotConjured` — the cart 20 → 19; red: no store, no tool, and the
   note says so.
 - `ASmithForgesToolsFromIronAndFirewood`.

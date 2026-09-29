@@ -1244,7 +1244,14 @@ public partial class Main
                 : villager.ToolUses > 0 ? $" · a tool in hand, {villager.ToolUses} uses left"
                 : " · no tool";
             card.Caption.Text = reason + tool;
-            card.Caption.TooltipText = villager.JobReason + tool;
+
+            // And what the tool does, on the tooltip so the caption keeps its width (D429): read
+            // from the two dials, so a changed number is a changed sentence.
+            string worth = villager.ToolUses > 0 && world.JobsCatalog.UsesTool(job.Kind)
+                ? $" — {world.Config.ToolSpeedBonusPercent}% quicker at each action, "
+                    + $"{world.Config.ToolYieldBonusPercent}% more from it"
+                : string.Empty;
+            card.Caption.TooltipText = villager.JobReason + tool + worth;
         }
         else
         {

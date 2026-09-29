@@ -2853,32 +2853,61 @@ public sealed class SimWorld : IObstacles
     /// <b>Never below one tick.</b> An action that costs nothing is an action that happens
     /// infinitely often, which is a hang rather than a fast farmer.
     /// </para>
+    /// <para>
+    /// <b>⭐ THE TOOL IN HAND COUNTS HERE TOO (D429, `tools-and-the-smith.md §3.4`).</b> Joe moved
+    /// the tool's bonus onto the ticks (D395), and his call on stacking was <b>multiply, one
+    /// rounding</b>: ticks left = base × (1 − mastery) × (1 − tool), rounded once, so the order the
+    /// two are applied in cannot change the answer. A master's three ticks go to one with a tool;
+    /// a master's four stay at two. With no tool the product is exactly the mastery arithmetic it
+    /// always was, to the unit — so a village with no tools hashes as it did.
+    /// </para>
     /// </remarks>
     public int WorkTicksFor(Villager villager, JobKind trade, int baseTicks)
     {
         ArgumentNullException.ThrowIfNull(villager);
 
-        if (baseTicks <= 1 || Config.MasterySpeedBonusPercent <= 0)
+        if (baseTicks <= 1)
         {
             return baseTicks;
         }
 
-        SkillRow? skill = SkillGrownBy(trade);
-        if (skill is null)
+        // Each bonus as a percentage off; zero where it does not apply. Mastery is scaled by the
+        // share of the way there (hundredths of a percent, out of 10,000); the tool is whole.
+        long masteryOff = MasteryOffFor(villager, trade);
+        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade) ? Config.ToolSpeedBonusPercent : 0;
+
+        if (masteryOff <= 0 && toolOff <= 0)
         {
             return baseTicks;
+        }
+
+        // Integer throughout (D2), and ONE rounding: what is left is (10,000 − mastery) out of
+        // 10,000 times (100 − tool) out of 100, so the reduction is base × (1,000,000 − that) out of
+        // 1,000,000, rounded down. With no tool this is base × mastery / 10,000 — today's number.
+        // `long` because the product is where an int overflow would hide if the durations grew.
+        long left = (10000 - masteryOff) * (100 - toolOff);
+        long faster = (long)baseTicks * (1_000_000 - left) / 1_000_000;
+        int ticks = baseTicks - (int)faster;
+
+        return ticks < 1 ? 1 : ticks;
+    }
+
+    /// <summary>
+    /// Mastery's share of an action's ticks, in hundredths of a percent (0 to
+    /// <c>mastery_speed_bonus_percent</c> × 100) — linear in work up to mastery, then flat.
+    /// </summary>
+    private long MasteryOffFor(Villager villager, JobKind trade)
+    {
+        if (Config.MasterySpeedBonusPercent <= 0 || SkillGrownBy(trade) is not SkillRow skill)
+        {
+            return 0;
         }
 
         int mastery = Config.MasteryWorkFor(skill);
-        if (mastery <= 0)
-        {
-            return baseTicks;
-        }
-
-        SkillProgress? progress = villager.FindProgressIn(skill.Id);
+        SkillProgress? progress = mastery <= 0 ? null : villager.FindProgressIn(skill.Id);
         if (progress is null || progress.Work <= 0)
         {
-            return baseTicks;
+            return 0;
         }
 
         // Share of the way to mastery, 0–100. Capped rather than allowed to run on: a master
@@ -2889,13 +2918,7 @@ public sealed class SimWorld : IObstacles
             share = 100;
         }
 
-        // Integer throughout (D2). `long` for the product only — 4 × 34 × 100 is small, but the
-        // shape of this expression is exactly where an int overflow would hide if the durations
-        // or the bonus ever grew.
-        long faster = (long)baseTicks * Config.MasterySpeedBonusPercent * share / 10000;
-        int ticks = baseTicks - (int)faster;
-
-        return ticks < 1 ? 1 : ticks;
+        return Config.MasterySpeedBonusPercent * share;
     }
 
     /// <summary>
@@ -2918,6 +2941,10 @@ public sealed class SimWorld : IObstacles
     /// When the last use goes the log says so, and the villager works on at today's number: the
     /// slide back to the baseline is one use at a time and visible on the card (D353, no cliff).
     /// </para>
+    /// <para>
+    /// <b>⭐ The ticks are read BEFORE the wear (D429).</b> The tool that begins an action is the
+    /// tool that quickens it, so the last use speeds its own action and the next one is bare.
+    /// </para>
     /// </remarks>
     public int BeginWork(Villager villager, JobKind trade, int baseTicks)
     {
@@ -2930,6 +2957,8 @@ public sealed class SimWorld : IObstacles
 
         WorkActionsBegun[(int)trade]++;
 
+        int ticks = WorkTicksFor(villager, trade, baseTicks);
+
         if (villager.ToolUses > 0 && JobsCatalog.UsesTool(trade))
         {
             villager.ToolUses--;
@@ -2939,7 +2968,7 @@ public sealed class SimWorld : IObstacles
             }
         }
 
-        return WorkTicksFor(villager, trade, baseTicks);
+        return ticks;
     }
 
     /// <summary>
@@ -2955,11 +2984,9 @@ public sealed class SimWorld : IObstacles
     /// fisher's cast, the hunter's kill, the woodcutter's split, the smith's forge.
     /// </para>
     /// <para>
-    /// <b>⛔ On yield, not on ticks, and the rounding is why.</b> At three ticks a gather and
-    /// fifteen a hunt a percentage off the ticks is a step that helps one trade and not another by
-    /// an accident of duration (<see cref="WorkTicksFor"/>'s own remark); a percentage on yield is
-    /// the same bonus in every trade. Joe's *"slower without"* is the card's sentence, not the
-    /// arithmetic — his to overrule.
+    /// <b>⭐ Beside the ticks, not instead of them (D429).</b> D395 moved the tool's bonus to the
+    /// ticks (<see cref="WorkTicksFor"/>); measured, ticks alone were worth about half of this,
+    /// because a forager's trip is one gather between two walks. Joe kept both.
     /// </para>
     /// <para>
     /// <b>⛔ Nothing here reaches <see cref="VillageEconomy"/>.</b> No tool is today's number to

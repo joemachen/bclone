@@ -1140,18 +1140,47 @@ public sealed record SimConfig
     /// hands, and the founders' twenty are all in hands or worn out by the middle of the first
     /// fifty years — a gift that lasts a generation, not a run.
     /// </para>
+    /// <para>
+    /// <b>⚠️ Kept at 150 under ticks, by Joe's call (D429).</b> A tool that quickens its action
+    /// makes more actions a year, so a tool now lasts less time than the three years measured above
+    /// (§6.1 has the number). Joe: <i>"keep 150 for default tools — there will be different tool
+    /// types later with different durabilities (stone v iron for example)"</i>.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("tool_uses")]
     public int ToolUses { get; init; } = 150;
 
+    /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ON TICKS — JOE'S CALL (D395, D429):</b> <i>"tool bonus on ticks (and eventually on
+    /// yield when user unlocks upgrades for it)"</i>. Read in <c>SimWorld.WorkTicksFor</c>, beside
+    /// mastery, and <b>multiplied with it and rounded once</b> — base × (1 − mastery) × (1 − tool),
+    /// so the order cannot matter (`tools-and-the-smith.md §3.4`).
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 34 IS WHERE A THREE-TICK GATHER GETS A WHOLE TICK.</b> The reduction rounds down, so
+    /// at 25 % a gather gains nothing; at 34 % gather / sow / reap 3 → 2, fell / split / forge 4 → 3,
+    /// cast 10 → 7, hunt 15 → 10 — 1.33× to 1.5×, the four-tick trades least. D391's warning (a
+    /// percentage on ticks is a step, not a ramp) is still true, and the spec's table says so.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing here reaches <c>VillageEconomy</c>.</b> A worker without a tool works at
+    /// today's ticks to the unit; the tool is upside above the floor, exactly as mastery is.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_speed_bonus_percent")]
+    public int ToolSpeedBonusPercent { get; init; } = 34;
+
     /// <summary>What a tool adds to an action's yield, as a percentage of today's number.</summary>
     /// <remarks>
     /// <para>
-    /// <b>⛔ ON YIELD, NOT ON TICKS, AND THE ROUNDING IS WHY</b> (`tools-and-the-smith.md §3.4`).
-    /// A gather is three ticks and a hunt fifteen, so a percentage off the ticks buys a forager
-    /// nothing and a hunter half again — a tool that helps one trade by an accident of duration is
-    /// the illegible outcome §1.1 forbids. <see cref="TechniqueRow.YieldBonusPercent"/> already
-    /// applies an even percentage to what an action brings in; the tool stands beside it.
+    /// <b>⭐ KEPT AT 25, BESIDE THE TICKS — JOE'S CALL ON THE MEASUREMENT (D429).</b> D395 moved the
+    /// bonus to the ticks (<see cref="ToolSpeedBonusPercent"/>) with yield left for a later upgrade.
+    /// Measured first: <b>a forager's trip is one gather between two walks</b>, so 3 → 2 ticks saves
+    /// one tick in about fifteen, and ticks alone cost food per worker 17–23 % — 55 fifty-year
+    /// villages read <b>380 alive on ticks alone, 440 on yield alone, 321 with no tools, 444 with
+    /// both</b>. So both ship: a tool is visibly quicker AND brings in a quarter more.
     /// </para>
     /// <para>
     /// <b>⛔ Nothing here reaches <c>VillageEconomy</c>.</b> A worker without a tool works at
@@ -3832,11 +3861,14 @@ public sealed record SimConfig
 
         // A tool that lasts no uses is a tool that is worn out the moment it is picked up, which
         // reads as a fetch loop rather than as "no tools"; a bonus outside 0–100 is a typo.
-        if (ToolUses <= 0 || ToolYieldBonusPercent < 0 || ToolYieldBonusPercent > 100)
+        if (ToolUses <= 0
+            || ToolYieldBonusPercent < 0 || ToolYieldBonusPercent > 100
+            || ToolSpeedBonusPercent < 0 || ToolSpeedBonusPercent > 100)
         {
             throw new SimConfigException(
-                $"tool_uses must be greater than zero and tool_yield_bonus_percent 0–100 "
-                + $"(got {ToolUses}, {ToolYieldBonusPercent}).");
+                $"tool_uses must be greater than zero, and tool_yield_bonus_percent and "
+                + $"tool_speed_bonus_percent 0–100 "
+                + $"(got {ToolUses}, {ToolYieldBonusPercent}, {ToolSpeedBonusPercent}).");
         }
 
         if (IronPerTool <= 0 || FirewoodPerTool < 0 || ForgeTicks <= 0 || ToolsPerForge <= 0 || ForgesPerStint <= 0)

@@ -304,7 +304,10 @@ public sealed class ForesterHutTests
     [Fact]
     public void AFellIsPricedAsAFellEvenWithPlantingOn()
     {
-        SimConfig config = Config;
+        // ⚠️ POSED WITHOUT TOOLS (D429): an axe now takes a third off a fell (4 → 3), so with the
+        // founders' tools in hand the longest fell read 3. The claim is which price a fell is
+        // billed at — a fell's or a planting's — not what a tool does to it (`ToolsTests`).
+        SimConfig config = Config with { CartTools = 0 };
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 

@@ -294,8 +294,11 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D424), not for the clock: a step treads every tile it passes over, so the
         // lanes wear differently and the seats land differently — still 51 trips, the 1st/10th/50th
         // at 10/199/1,961. Were 10/199/1,934.
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 10, 199, 1961 }, at);
+        // ⚠️ RE-PINNED (D429), not for the clock: a tool in hand takes a gather from three ticks to
+        // two (and a fell, a split, a cast and a hunt a third quicker), so the seats land
+        // differently — 52 trips, the 1st/10th/50th at 10/195/1,955. Were 51 at 10/199/1,961.
+        Assert.Equal(52, entries);
+        Assert.Equal(new ulong[] { 10, 195, 1955 }, at);
     }
 
     /// <summary>
