@@ -271,11 +271,16 @@ public sealed class Household
             // beat every site beside one. The price rises with the distance and then holds.
             int reachQuarters = world.Config.HomePathSearchTiles * 4;
             int offTheLine = System.Math.Abs((onAPath ? offQuarters : reachQuarters) - setback) / 4;
+
+            // ⭐ P6, the well (D427): the walk to the nearest well, weighed against the walk to work.
+            // ⛔ Out of reach pays the whole reach — P1's lesson above, that out of reach is not
+            // free — and with no well in the valley the term is zero and the score is D412's.
+            (int toWell, int wellTerm) = TheWellTerm(world, front);
             bool reachable = toWork != int.MaxValue && toStore != int.MaxValue;
-            int floor = reachable ? toWork + toStore + offTheLine - world.Config.HomeCompanyTiles : int.MaxValue;
+            int floor = reachable ? toWork + toStore + offTheLine + wellTerm - world.Config.HomeCompanyTiles : int.MaxValue;
             cheap.Add(new Cheap(
                 front, toWork, toStore, offTheLine, FacingToward(dx, dy), onAPath, floor,
-                front.ManhattanDistanceTo(villageCentre), workAt));
+                front.ManhattanDistanceTo(villageCentre), workAt, toWell, wellTerm));
         }
 
         cheap.Sort(static (a, b) =>
@@ -402,7 +407,7 @@ public sealed class Household
                     int crowd = clear < gap ? (gap - clear) * world.Config.HomeCrowdTiles : 0;
                     int company = neighbour != 0 && clear >= gap ? world.Config.HomeCompanyTiles : 0;
                     int roundTheYard = RoundTheYard(world, plot, tile.WorkAt, householdId);
-                    int score = tile.ToWork + tile.ToStore + clipped + tile.OffTheLine + crowd + roundTheYard - company;
+                    int score = tile.ToWork + tile.ToStore + clipped + tile.OffTheLine + tile.WellTerm + crowd + roundTheYard - company;
 
                     // A detour is never negative: a facing no better than the best whole total so
                     // far cannot win, and is not stood for the sweep.
@@ -424,7 +429,7 @@ public sealed class Household
                     sited = true;
                     var site = new Candidate(
                         front, plot.Facing, score, tile.FromVillage, tile.ToWork, tile.ToStore, clipped,
-                        company > 0 || crowd > 0 ? neighbour : 0, tile.OnAPath, crowd, roundTheYard);
+                        company > 0 || crowd > 0 ? neighbour : 0, tile.OnAPath, crowd, roundTheYard, tile.ToWell);
 
                     if (bestByItsOwnWalks is not Candidate own || score < own.Score)
                     {
@@ -518,12 +523,12 @@ public sealed class Household
     /// <summary>A painted tile's cheap half of the score (D411): its walks, its setback, which way its path lies.</summary>
     private readonly record struct Cheap(
         GridPos Front, int ToWork, int ToStore, int OffTheLine, Angle Toward, bool OnAPath, int Floor, int FromVillage,
-        GridPos? WorkAt);
+        GridPos? WorkAt, int ToWell, int WellTerm);
 
     /// <summary>One plot the chooser could take, and the terms that scored it.</summary>
     private readonly record struct Candidate(
         GridPos Front, Angle Facing, int Score, int FromVillage,
-        int ToWork, int ToStore, int Clipped, int NeighbourId, bool FacesAPath, int Crowd, int RoundTheYard);
+        int ToWork, int ToStore, int Clipped, int NeighbourId, bool FacesAPath, int Crowd, int RoundTheYard, int ToWell);
 
     /// <summary>
     /// Whether a plot can be taken here (§3.1–3.2), and how much of its yard the paint, the water
@@ -944,8 +949,36 @@ public sealed class Household
         string yard = chosen.Clipped > 0 ? $"; {chosen.Clipped} of the yard clipped off" : "";
         string crowd = chosen.Crowd > 0 ? ", closer than the family would like" : "";
         string behind = chosen.RoundTheYard > 0 ? $"; the work lies behind it, {chosen.RoundTheYard} round the yard" : "";
-        return $"{chosen.ToWork} tiles to work and {chosen.ToStore} to the granary, "
-            + $"{toward}, {beside}{crowd}{yard}{behind}{road}.";
+
+        // ⭐ The well, only once the valley has one (D427) — with none, the sentence is D412's.
+        if (world.Wells.Count == 0)
+        {
+            return $"{chosen.ToWork} tiles to work and {chosen.ToStore} to the granary, "
+                + $"{toward}, {beside}{crowd}{yard}{behind}{road}.";
+        }
+
+        return chosen.ToWell != int.MaxValue
+            ? $"{chosen.ToWork} tiles to work, {chosen.ToStore} to the granary and {chosen.ToWell} to the well, "
+                + $"{toward}, {beside}{crowd}{yard}{behind}{road}."
+            : $"{chosen.ToWork} tiles to work and {chosen.ToStore} to the granary, "
+                + $"{toward}, {beside}{crowd}{yard}{behind}{road}; no well near.";
+    }
+
+    /// <summary>
+    /// P6's term (D427): the walk to the nearest well in reach — <c>int.MaxValue</c> when none is —
+    /// and what it costs the site, <c>min(walk, reach) × home_well_weight / 100</c>. Zero and
+    /// untouched while the valley has no well.
+    /// </summary>
+    private static (int ToWell, int Term) TheWellTerm(Core.SimWorld world, GridPos front)
+    {
+        if (world.Wells.Count == 0)
+        {
+            return (int.MaxValue, 0);
+        }
+
+        int reach = world.Config.HomeWellReachTiles;
+        int walk = world.NearestWell(front, out int tiles) is null ? int.MaxValue : tiles;
+        return (walk, System.Math.Min(walk, reach) * world.Config.HomeWellWeight / 100);
     }
 
     private static readonly string[] Compass =
@@ -1085,6 +1118,17 @@ public sealed class Household
 
     /// <summary>The same, for firewood.</summary>
     public bool ToppingUpFirewood { get; set; }
+
+    /// <summary>
+    /// The day somebody from this household last set off for the well — <see cref="SimWorld.Today"/>'s
+    /// count, <b>0 if never</b> (D427, `organic-housing.md §9.12`).
+    /// </summary>
+    /// <remarks>
+    /// Taken when they set off, not when they come home, so a housemate who reaches a rest a tick
+    /// later does not go too. Hashed once it is set: a village with no well never sets it, and
+    /// hashes as it did before wells existed.
+    /// </remarks>
+    public int WaterDrawnOnDay { get; set; }
 
     /// <summary>This household's food. Not the village's.</summary>
     public required Stockpile Stockpile { get; init; }

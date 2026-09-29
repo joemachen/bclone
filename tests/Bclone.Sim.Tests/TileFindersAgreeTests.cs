@@ -277,7 +277,7 @@ public sealed class TileFindersAgreeTests
     /// <c>WhatStandsUnder</c> cannot hide behind geometry.
     /// </para>
     /// <para>
-    /// ⚠️ <b>AND IT REPORTS WHICH KINDS IT COULD ACTUALLY POSE, BECAUSE ONE OF THE FIVE
+    /// ⚠️ <b>AND IT REPORTS WHICH KINDS IT COULD ACTUALLY POSE, BECAUSE ONE OF THE SIX (FIVE UNTIL THE WELL, D427)
     /// CANNOT BE FIXTURED CHEAPLY.</b> A library needs literacy, which needs a granary keeping
     /// counts for years (D32) — so it is **not covered here**, and saying so beats a green
     /// that quietly means four. *D326's rule: a guard that scores zero is kept and the zero is
@@ -299,6 +299,11 @@ public sealed class TileFindersAgreeTests
         Assert.True(world.Mark(BuildingKind.TownHall, hall).Allowed);
         FinishTheSiteAt(world, hall);
         Assert.NotNull(world.TownHall);
+
+        // And a well (D427), the sixth kind of thing a building can be.
+        GridPos well = SomewhereAWellFits(world);
+        Assert.True(world.Mark(BuildingKind.Well, well).Allowed);
+        FinishTheSiteAt(world, well);
 
         var posed = new System.Collections.Generic.List<string>();
 
@@ -336,6 +341,16 @@ public sealed class TileFindersAgreeTests
             world.TownHall.Footprint.Origin,
             world.FootprintOn(world.TownHall.Footprint.Origin.ToTile())?.Origin);
 
+        Found("a well", world.Wells.Count);
+        for (int i = 0; i < world.Wells.Count; i++)
+        {
+            Footprint shape = world.Wells[i].Footprint;
+            Assert.Equal(shape.Origin.ToTile(), world.WhatStandsUnder(shape.Origin));
+            Assert.Equal(shape.Origin, world.FootprintOn(shape.Origin.ToTile())?.Origin);
+            Assert.Equal(BuildingKind.Well, world.WhatStandsAt(shape.Origin.ToTile()));
+            Assert.Equal(world.Wells[i].Name, world.NameOnTheTile(shape.Origin.ToTile()));
+        }
+
         Found("a store", world.StoreBuildings.Count);
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
@@ -346,10 +361,10 @@ public sealed class TileFindersAgreeTests
 
         _output.WriteLine("posed: " + string.Join(", ", posed));
 
-        // ⛔ Four of five. The library is the one the fixture cannot reach, and it is named
+        // ⛔ Five of six. The library is the one the fixture cannot reach, and it is named
         // rather than counted — if a later session makes literacy cheap to fixture, raise
-        // this to five and delete the sentence in the remarks.
-        Assert.Equal(4, posed.Count);
+        // this to six and delete the sentence in the remarks. (Four of five until the well, D427.)
+        Assert.Equal(5, posed.Count);
         Assert.DoesNotContain("a library", posed);
 
         void Found(string kind, int how_many)
@@ -464,6 +479,27 @@ public sealed class TileFindersAgreeTests
         }
 
         throw new System.InvalidOperationException("Nowhere in the valley will take a town hall.");
+    }
+
+    private static GridPos SomewhereAWellFits(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 3; radius < 25; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.Map.TerrainAt(at) == Terrain.Grass && world.CanBuildAt(BuildingKind.Well, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("Nowhere near the founding will take a well.");
     }
 
     /// <summary>Deliver a site's materials and work it out, as a builder's crew would.</summary>

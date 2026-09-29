@@ -211,6 +211,14 @@ public static class StateHash
             // bit that decides whether somebody walks next tick, so it is state, not a reading.
             hash = MixUInt32(hash, (household.ToppingUpFood ? 1u : 0u) | (household.ToppingUpFirewood ? 2u : 0u));
 
+            // The day the household last went for water (D427) — it decides whether somebody walks
+            // to the well, so it is state. ⛔ Sparse: never set in a village with no well.
+            if (household.WaterDrawnOnDay != 0)
+            {
+                hash = MixByte(hash, 3);
+                hash = MixUInt32(hash, (uint)household.WaterDrawnOnDay);
+            }
+
             // The larder and what it has ever produced — the same loop MixStore uses, and
             // ⭐ SPARSE FOR THE SAME REASON (2026-09-03). This was the SECOND dense goods loop and
             // the one that hid: making `MixStore` sparse did not stop a new catalogue row moving
@@ -572,6 +580,24 @@ public static class StateHash
             hash = MixFixed(hash, townHall.Position.X);
             hash = MixFixed(hash, townHall.Position.Y);
             hash = MixAngle(hash, townHall.Facing);
+        }
+
+        // ---- The wells (D427) ----
+        // A place people walk to, so where it stands is sim state. ⛔ Sparse, the library's rule
+        // above: a village with no well hashes as it did before wells existed. `Draws` is history
+        // nothing reads, left out as the library's finder's name is.
+        if (world.Wells.Count > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.Wells.Count);
+        }
+
+        for (int i = 0; i < world.Wells.Count; i++)
+        {
+            Well well = world.Wells[i];
+            hash = MixFixed(hash, well.Position.X);
+            hash = MixFixed(hash, well.Position.Y);
+            hash = MixAngle(hash, well.Facing);
+            hash = MixUInt32(hash, (uint)well.Kind);
         }
 
         // ---- Goods on the ground (D96) ----

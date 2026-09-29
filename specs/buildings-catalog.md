@@ -193,6 +193,8 @@ BuildingRow
   GatheringRadius  int          the ring it gathers in. 0 = no ring
   LocalStoreCap    int          its own buffer. 0 = no buffer of its own
   HouseCapacity    int          souls who live in it. 0 = nobody lives here
+  DrawsWater       bool         households walk here for water (D427, `organic-housing.md §9.12`) —
+                                the sixth reason a row may exist; a finished one is a `Well`
 ```
 
 **Ids are appended, never renumbered.** ⚠️ **`BuildingKind` is NOT hashed today** — checked, not

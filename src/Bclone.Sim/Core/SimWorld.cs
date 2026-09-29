@@ -27,6 +27,16 @@ public sealed class SimWorld : IObstacles
     /// </summary>
     public ulong Tick { get; internal set; }
 
+    /// <summary>
+    /// Days elapsed, counting the first as 1 — so 0 can mean "never" in a day stamp (D427).
+    /// </summary>
+    /// <remarks>
+    /// Derived from <see cref="Tick"/>, never stored. ⚠️ A day is <c>ticks_per_day</c> — four
+    /// ticks — which is why nothing in the village can do a thing "every day" that takes longer
+    /// than a tile's walk.
+    /// </remarks>
+    public int Today => (int)(Tick / (ulong)Config.TicksPerDay) + 1;
+
     /// <summary>Seeded generator. Its state is part of world state.</summary>
     public DeterministicRandom Rng;
 
@@ -101,6 +111,13 @@ public sealed class SimWorld : IObstacles
     /// in.</em> See <see cref="TownHall"/> and `specs/town-hall.md`.
     /// </remarks>
     public TownHall? TownHall { get; internal set; }
+
+    /// <summary>The wells standing in the village (D427, `organic-housing.md §9.12`).</summary>
+    /// <remarks>
+    /// <b>Its own list, for the library's reason</b> — a well is not a store, a workplace or a home.
+    /// Placement order, hashed sparsely: a village with none hashes as it did before wells existed.
+    /// </remarks>
+    public List<Well> Wells { get; } = new();
 
     /// <summary>
     /// The tick the village's first granary began keeping count, or 0 if none ever has.
@@ -6153,6 +6170,14 @@ public sealed class SimWorld : IObstacles
             return true;
         }
 
+        if (WellCovering(from) is Well well)
+        {
+            well.MoveTo(to);
+            StandingChanged();
+            TravelCost.Forget();
+            return true;
+        }
+
         if (StandingWorkplaceCovering(from) is Workplace workplace)
         {
             workplace.MoveTo(to);
@@ -6326,6 +6351,11 @@ public sealed class SimWorld : IObstacles
             return hall.Facing;
         }
 
+        if (WellCovering(tile) is Well well)
+        {
+            return well.Facing;
+        }
+
         return StoreAt(tile) is StoreBuilding store ? store.Facing : Angle.Zero;
     }
 
@@ -6395,6 +6425,12 @@ public sealed class SimWorld : IObstacles
             return;
         }
 
+        if (WellCovering(tile) is Well well)
+        {
+            Demolish(well);
+            return;
+        }
+
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
             Demolish(workplace);
@@ -6453,6 +6489,11 @@ public sealed class SimWorld : IObstacles
             return BuildingKind.TownHall;
         }
 
+        if (WellCovering(tile) is Well well)
+        {
+            return well.Kind;
+        }
+
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
             return JobsCatalog.WorksAt(workplace.Kind);
@@ -6504,6 +6545,11 @@ public sealed class SimWorld : IObstacles
             return hall.Position;
         }
 
+        if (WellCovering(tile) is Well well)
+        {
+            return well.Position;
+        }
+
         return HouseholdAt(tile)?.HomePosition;
     }
 
@@ -6524,6 +6570,11 @@ public sealed class SimWorld : IObstacles
         if (TownHall is { } civic && TownHallCovers(tile))
         {
             return civic.Name;
+        }
+
+        if (WellCovering(tile) is Well well)
+        {
+            return well.Name;
         }
 
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
@@ -6621,6 +6672,53 @@ public sealed class SimWorld : IObstacles
     }
 
     public bool TownHallCovers(GridPos tile) => TownHall?.Footprint.Covers(tile) == true;
+
+    /// <summary>
+    /// The nearest well within <c>home_well_reach_tiles</c> of a tile, by the one cost field, and
+    /// how many tiles' walk it is — or null (D427).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>One answer for the trip, the siting term, the daily walks and the card</b>, so the
+    /// four cannot disagree about which well a household uses or whether it is in reach. Ties go
+    /// to the earlier-placed well: the list is walked in order and only a strictly shorter walk
+    /// replaces the best.
+    /// </remarks>
+    public Well? NearestWell(GridPos from, out int tiles)
+    {
+        Well? best = null;
+        tiles = int.MaxValue;
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            int cost = TravelCost.Cost(from, Wells[i].Tile);
+            if (cost == TravelCostField.Unreachable)
+            {
+                continue;
+            }
+
+            int walk = cost / TravelCostField.BaseTileCost;
+            if (walk <= Config.HomeWellReachTiles && walk < tiles)
+            {
+                tiles = walk;
+                best = Wells[i];
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>The well standing on a tile, or null (D427).</summary>
+    public Well? WellCovering(GridPos tile)
+    {
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            if (Wells[i].Footprint.Covers(tile))
+            {
+                return Wells[i];
+            }
+        }
+
+        return null;
+    }
 
     public StoreBuilding? StoreAt(GridPos tile)
     {
@@ -8189,6 +8287,30 @@ public sealed class SimWorld : IObstacles
             : $"{Capitalised(name)} was pulled down. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
+    /// <summary>Pull a well down and put a share of its materials back in store (D427).</summary>
+    /// <remarks>
+    /// The workplace's rule, not the library's: a library refunds nothing, which reads as an
+    /// oversight rather than a decision, and a well is timber and stone like any hut.
+    /// </remarks>
+    public void Demolish(Well well)
+    {
+        ArgumentNullException.ThrowIfNull(well);
+
+        StandingChanged();
+        if (!Wells.Remove(well))
+        {
+            throw new ArgumentException($"{well.Name} is not standing.", nameof(well));
+        }
+
+        IReadOnlyList<MaterialCost> back = RefundFor(BuildingRecipe.For(well.Kind, Config));
+        string recovered = ReturnToStore(well.Tile, back);
+
+        Narrate(back.Count > 0
+            ? $"{Capitalised(well.Name)} was pulled down — {recovered} recovered. "
+                + $"{Clock.SeasonAndYear()}."
+            : $"{Capitalised(well.Name)} was pulled down. {Clock.SeasonAndYear()}.", LogCategory.Building);
+    }
+
     /// <summary>What pulling a building down hands back — a share of every material (D213).</summary>
     /// <remarks>
     /// <b>Priced off the recipe rather than off what was delivered</b>, which is what demolition
@@ -8523,6 +8645,25 @@ public sealed class SimWorld : IObstacles
             Narrate($"{Capitalised(name)} stands. The founders' names are cut into the lintel, "
                 + $"and the village has somewhere to keep what it has been. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ A well is a sixth (D427) — somewhere households walk for water, and the far end of the
+        // lane their feet wear. No water yet (Phase 6); the walk is the point.
+        if (row.DrawsWater)
+        {
+            StandingChanged();
+            Wells.Add(new Well
+            {
+                Position = position,
+                Name = name,
+                Kind = kind,
+                Facing = facing,
+                ExtentWidth = row.ExtentWidth,
+                ExtentHeight = row.ExtentHeight,
+            });
+
+            Narrate($"{Capitalised(name)} stands. The households near it will walk there for "
+                + $"water. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
 
         if (BuildingsCatalog.EmployedBy(kind) is not JobKind trade)
@@ -10279,6 +10420,14 @@ public sealed class SimWorld : IObstacles
             return true;
         }
 
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            if (Wells[i].Footprint.Overlaps(shape))
+            {
+                return true;
+            }
+        }
+
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
             if (StoreBuildings[i].Footprint.Overlaps(shape))
@@ -10502,6 +10651,12 @@ public sealed class SimWorld : IObstacles
         if (TownHall is not null)
         {
             yield return (TownHall.Footprint, TownHall.Footprint.Origin.ToTile());
+        }
+
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            Footprint shape = Wells[i].Footprint;
+            yield return (shape, shape.Origin.ToTile());
         }
 
         for (int i = 0; i < StoreBuildings.Count; i++)

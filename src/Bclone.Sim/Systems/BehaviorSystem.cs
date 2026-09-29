@@ -128,6 +128,8 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Reaping => "reaping",
         VillagerState.HaulingToFarm => "carrying the harvest to the farm",
         VillagerState.StockingTheMarket => "stocking the market",
+        VillagerState.WalkingToTheWell => "walking to the well",
+        VillagerState.DrawingWater => "drawing water",
         _ => state.ToString(),
     };
 
@@ -393,6 +395,19 @@ public sealed class BehaviorSystem : ISimSystem
                 // To the store they set off for (D391) — fixed at departure, same rule.
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.FetchingATool);
+                return;
+
+            case VillagerState.WalkingToTheWell:
+                // To the well they set off for (D427), fixed at departure. Pulled down or moved
+                // on the way, and they turn for home — the claim is spent, which costs nothing
+                // while no water is carried.
+                if (world.WellCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is not Well toTheWell)
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, toTheWell.Position, VillagerState.DrawingWater);
                 return;
 
             case VillagerState.TravelingToSmithy:
@@ -2151,6 +2166,12 @@ public sealed class BehaviorSystem : ISimSystem
         // guard read 0 % in a spell. The spell is `Decide`'s own (`rest_ticks`).
         if (villager.Tile == world.RestingPlaceOf(villager))
         {
+            // ⭐ A rest at home is where the water trip is offered (D427) — see `TryDrawWater`.
+            if (TryDrawWater(world, villager))
+            {
+                return;
+            }
+
             villager.State = VillagerState.Resting;
             villager.ActionTicksRemaining = world.Config.RestTicks;
             return;
@@ -3017,6 +3038,15 @@ public sealed class BehaviorSystem : ISimSystem
         // attached; today the place is home, and a tavern or a church is the same span spent
         // somewhere worth walking to. **The social buildings need no new mechanism, only a
         // destination** — which is why doing this before them was the right order.
+        //
+        // ⭐⭐ AND THE WELL IS THE FIRST SUCH DESTINATION (D427). A rest spell about to begin at home
+        // is where a household's water trip is offered — never ahead of eating, warmth, a larder
+        // running empty or any work, because all of those were asked above this line.
+        if (TryDrawWater(world, villager))
+        {
+            return;
+        }
+
         villager.State = VillagerState.Resting;
 
         // ⭐⭐ EVERYBODY GETS THE SPELL, JOB OR NO JOB (Joe, 2026-09-02). *"I want villagers to
@@ -4435,6 +4465,22 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // At the well (D427): stand and draw, then `CompleteAction` sends them home.
+        if (onArrival == VillagerState.DrawingWater)
+        {
+            if (world.WellCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is null)
+            {
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
+                return;
+            }
+
+            villager.State = VillagerState.DrawingWater;
+            villager.ActionTicksRemaining = world.Config.WellDrawTicks;
+            return;
+        }
+
         if (onArrival == VillagerState.Forging)
         {
             BeginForging(world, villager);
@@ -4621,6 +4667,81 @@ public sealed class BehaviorSystem : ISimSystem
         villager.State = VillagerState.FetchingATool;
         Travel(world, villager, source.Position, VillagerState.FetchingATool);
         return true;
+    }
+
+    /// <summary>
+    /// Set off for the household's nearest well, if its water trip is due (D427,
+    /// `organic-housing.md §9.12`). False, touching nothing, when it is not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>Asked only where a rest at home would begin</b> (`GoHome`'s already-home arm and the
+    /// last line of <c>Decide</c>), so it never gets ahead of anything: eating, warmth and the
+    /// emergency restock run above the state switch in <c>ActOne</c>, and every trade and fetch was
+    /// asked before the rest. From home, so the lane it wears runs door to well.
+    /// </para>
+    /// <para>
+    /// <b>Who:</b> an adult with empty hands (<c>CanWork</c> — never a child, the line every errand
+    /// draws). <b>When:</b> the household's last trip was <c>water_trip_every_days</c> or more ago
+    /// and nobody from it is on one now. <b>The claim is taken on setting off</b>, so a housemate
+    /// who reaches a rest a tick later stays home.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The first test is <c>Wells.Count</c>, and nothing is read or written before it</b> — a
+    /// village with no well must run exactly as it did before wells existed (§9.12d; the goldens
+    /// are the check).
+    /// </para>
+    /// </remarks>
+    private static bool TryDrawWater(SimWorld world, Villager villager)
+    {
+        if (world.Wells.Count == 0 || !villager.CanWork || villager.IsCarrying)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        if (!household.HasHome || villager.Tile != world.RestingPlaceOf(villager))
+        {
+            return false;
+        }
+
+        int today = world.Today;
+        if (household.WaterDrawnOnDay != 0
+            && today - household.WaterDrawnOnDay < world.Config.WaterTripEveryDays)
+        {
+            return false;
+        }
+
+        if (AHousemateIsAtTheWell(world, household.Id)
+            || world.NearestWell(villager.Tile, out _) is not Well well)
+        {
+            return false;
+        }
+
+        household.WaterDrawnOnDay = today;
+        villager.ErrandX = well.Tile.X;
+        villager.ErrandY = well.Tile.Y;
+        villager.ActionTicksRemaining = 0;
+        villager.State = VillagerState.WalkingToTheWell;
+        Travel(world, villager, well.Position, VillagerState.DrawingWater);
+        return true;
+    }
+
+    /// <summary>Whether anybody from this household is walking to a well or drawing at one now.</summary>
+    /// <remarks>One pass over the villagers, and only when a trip is otherwise due (D422's warning about per-member lookups).</remarks>
+    private static bool AHousemateIsAtTheWell(SimWorld world, int householdId)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager v = world.Villagers[i];
+            if (v.HouseholdId == householdId
+                && v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>A tool out of the store's count and into their hands, then decide again.</summary>
@@ -4967,6 +5088,19 @@ public sealed class BehaviorSystem : ISimSystem
                 // produced, consumed or moved — which is the point: this is the one action in
                 // the game whose completion has no effect on the world.
                 Decide(world, villager);
+                return;
+
+            case VillagerState.DrawingWater:
+                // ⭐ Drawn, and home (D427). Nothing is carried yet — the water is Phase 6; the walk
+                // there and back, and the lane it wears, is what this slice is for.
+                if (world.WellCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is Well drawnAt)
+                {
+                    drawnAt.Draws++;
+                }
+
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
                 return;
 
             case VillagerState.Fishing:

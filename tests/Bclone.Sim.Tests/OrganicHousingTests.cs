@@ -24,9 +24,9 @@ public sealed class OrganicHousingTests
 
     private static SimConfig Config => VillageFixtures.Village;
 
-    private static SimWorld Bare()
+    private static SimWorld Bare(SimConfig? config = null)
     {
-        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(config ?? Config, new InMemoryLogSink()).World;
         ZoneMap zones = world.Zones;
         for (int i = 0; i < zones.Residential.Count; i++)
         {
@@ -369,9 +369,10 @@ public sealed class OrganicHousingTests
     /// best site where its yard hangs over unpainted ground, and the square facing that loses less
     /// of it is right to win — found by <c>AHouseFacesThePathInFrontOfIt</c>'s first run.
     /// </remarks>
-    private static (SimWorld World, GridPos Centre) ASquareWithAPath(Func<GridPos, IEnumerable<GridPos>> path)
+    private static (SimWorld World, GridPos Centre) ASquareWithAPath(
+        Func<GridPos, IEnumerable<GridPos>> path, SimConfig? config = null)
     {
-        SimWorld world = Bare();
+        SimWorld world = Bare(config);
         GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 6);
         Paint(world, centre, 8);
         foreach (GridPos tile in path(centre))
@@ -671,4 +672,84 @@ public sealed class OrganicHousingTests
         family.FencedTiles.RemoveAt(family.FencedTiles.Count - 1);
         Assert.NotEqual(before, StateHash.Compute(world));
     }
+
+    // -----------------------------------------------------------------
+    //  P6, the well (D427, §9.12)
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// A painted square with a well posed at its far side from the village, and families sited into
+    /// it — returning each door's walk to the well.
+    /// </summary>
+    private (SimWorld World, Well Well, List<int> Walks) FamiliesBesideAWell(SimConfig config, int families, int farSide = 6)
+    {
+        (SimWorld world, GridPos centre) = ASquareWithAPath(_ => Array.Empty<GridPos>(), config);
+
+        // The far side: the chooser's own pull is to the paint's edge nearest the village, so a
+        // well on the near side would agree with it and prove nothing (D423's lesson — pose the
+        // case that tells right from wrong).
+        GridPos founding = world.Map.FoundingSite;
+        int sx = System.Math.Sign(centre.X - founding.X);
+        int sy = System.Math.Sign(centre.Y - founding.Y);
+        var wellAt = new GridPos(centre.X + (sx * farSide), centre.Y + (sy * farSide));
+        var well = new Well { Position = Point.CentreOf(wellAt), Name = "well 1", Kind = BuildingKind.Well };
+        world.Wells.Add(well);
+        world.StandingChanged();
+
+        var walks = new List<int>();
+        foreach (HomeSite site in SiteFamilies(world, families))
+        {
+            int cost = world.TravelCost.Cost(site.Front, well.Tile);
+            walks.Add(cost / TravelCostField.BaseTileCost);
+        }
+
+        return (world, well, walks);
+    }
+
+    /// <summary>
+    /// ⭐⭐ Houses gather round the well the player places (§9.12c) — the doors of families sited
+    /// into a square with a well past its middle are nearer it than at <c>home_well_weight</c> 0.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Posed at 300, not at the shipped weight, and the reason is the finding.</b> A step
+    /// toward a well that lies away from the village costs a tile of walk to work AND a tile to the
+    /// granary, so below 200 the well cannot out-pull the two (measured on this pose: mean door to
+    /// well 13.0 at 0, 16.5 at 50, 15.8 at 100, 11.1 at 200, 9.0 at 300). This guards the term; the
+    /// shipped weight is Joe's, from §9.12's table.
+    /// </remarks>
+    [Fact]
+    public void HousesGatherRoundAWell()
+    {
+        (_, _, List<int> weighed) = FamiliesBesideAWell(Config with { HomeWellWeight = 300 }, 8, farSide: 3);
+        (_, _, List<int> ignored) = FamiliesBesideAWell(Config with { HomeWellWeight = 0 }, 8, farSide: 3);
+
+        double near = weighed.Average();
+        double far = ignored.Average();
+        _output.WriteLine($"door to well at 300: {string.Join(", ", weighed)} (mean {near:0.0}); "
+            + $"at 0: {string.Join(", ", ignored)} (mean {far:0.0})");
+        Assert.True(near + 2 <= far, $"the well drew the houses in by less than two tiles ({near:0.0} against {far:0.0})");
+        Assert.True(weighed.Count(w => w <= 6) >= ignored.Count(w => w <= 6) + 2,
+            "no more houses within six tiles of the well than with it ignored");
+    }
+
+    /// <summary>
+    /// ⭐ The card says the well once the valley has one, and not before (§9.12c).
+    /// </summary>
+    [Fact]
+    public void TheSentenceNamesTheWellOnlyWhenThereIsOne()
+    {
+        (SimWorld world, _, _) = FamiliesBesideAWell(Config, 4, farSide: 0);
+        List<string> said = world.Households.Where(h => h.Id >= 900).Select(h => h.WhyHere).ToList();
+        Assert.All(said, why => Assert.True(
+            why.Contains(" to the well,", StringComparison.Ordinal) || why.EndsWith("; no well near.", StringComparison.Ordinal),
+            $"no word of the well: {why}"));
+        Assert.Contains(said, why => why.Contains(" to the well,", StringComparison.Ordinal));
+
+        (SimWorld none, _) = ASquareWithAPath(_ => Array.Empty<GridPos>());
+        foreach (HomeSite site in SiteFamilies(none, 2))
+        {
+            Assert.DoesNotContain("well", site.WhyHere, StringComparison.Ordinal);
+        }
+    }
+
 }

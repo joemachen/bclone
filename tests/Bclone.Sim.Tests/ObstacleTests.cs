@@ -132,6 +132,18 @@ public sealed class ObstacleTests
                 world.MarkDemolition(store.Tile);
             }
 
+            // ⭐ A well raised at ten and pulled down at forty (D427), so the sixth kind of standing
+            // building is one the index has to follow both ways.
+            if (year == 10)
+            {
+                RaiseAWellNearTheFounding(world);
+            }
+
+            if (year == 40)
+            {
+                world.Demolish(world.Wells[0]);
+            }
+
             var expected = new HashSet<GridPos>();
             foreach (Household h in world.Households)
             {
@@ -142,6 +154,7 @@ public sealed class ObstacleTests
             foreach (StoreBuilding s in world.StoreBuildings) { expected.UnionWith(s.Footprint.CoveredTiles()); }
             foreach (Library l in world.Libraries) { expected.UnionWith(l.Footprint.CoveredTiles()); }
             if (world.TownHall is TownHall hall) { expected.UnionWith(hall.Footprint.CoveredTiles()); }
+            foreach (Well w in world.Wells) { expected.UnionWith(w.Footprint.CoveredTiles()); }
 
             int wrong = 0;
             for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
@@ -159,6 +172,49 @@ public sealed class ObstacleTests
             _output.WriteLine($"year {year}: {expected.Count} standing tiles, {wrong} disagreements");
             Assert.True(wrong == 0, $"year {year}: the index disagrees with the buildings on {wrong} tiles");
         }
+    }
+
+    /// <summary>Mark a well on bare grass near the founding and finish it at once (D427).</summary>
+    internal static Well RaiseAWellNearTheFounding(SimWorld world, int from = 3)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = from; radius < 30; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != radius)
+                    {
+                        continue;
+                    }
+
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.Map.TerrainAt(at) != Terrain.Grass || !world.CanBuildAt(BuildingKind.Well, at).Allowed)
+                    {
+                        continue;
+                    }
+
+                    Assert.True(world.Mark(BuildingKind.Well, at).Allowed);
+                    Workplace found = world.Workplaces.Last(w => w.Tile == at && w.IsSite);
+                    ConstructionSite plan = found.Construction!;
+                    foreach (MaterialCost owed in plan.Recipe.Materials)
+                    {
+                        plan.Deliver(owed.Goods, owed.Amount);
+                    }
+
+                    while (!plan.IsFinished)
+                    {
+                        plan.Work();
+                    }
+
+                    world.Complete(found);
+                    return world.Wells[^1];
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("Nowhere near the founding will take a well.");
     }
 
     /// <summary>

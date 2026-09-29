@@ -280,6 +280,15 @@ public enum BuildingKind
     /// <b>Appended at 15, never renumbered</b> — hashed by position like every kind above.
     /// </remarks>
     Smithy = 15,
+
+    /// <summary>
+    /// A well — where households walk for water (D427, `specs/organic-housing.md §9.12`).
+    /// </summary>
+    /// <remarks>
+    /// The focal point a neighbourhood gathers round: a term in where a household sites its home,
+    /// and the far end of the water trip that wears the lane to it. <b>Appended at 16.</b>
+    /// </remarks>
+    Well = 16,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

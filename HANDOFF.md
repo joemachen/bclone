@@ -1,6 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D426 IN §7. `main` = D426, PUSHED; NO BRANCH OPEN. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D427 IN §7. `main` = D426, PUSHED. `slice/the-well` = D427, BUILT, NUMBERS PICKED, NOT MERGED — JOE PLAYS IT NEXT. THEN: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 (CLOSE) — D422–D426 MERGED AND PUSHED.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 — THE WELL (D427) BUILT ON `slice/the-well`.**
+>
+> **State:** `main` = D426 (`06d8a81`), pushed. **`slice/the-well` = the spec commit + D427 (sim,
+> view, docs), NOT merged, NOT pushed, unplayed.** 1281 passing, 0 failing, 5 skipped of 1286,
+> 3m13 (main 3m14 back to back); view 0 warnings; probe green, bar height 161. **No golden moved**,
+> and with no well the village hashes as main's over all 55 fifty-year villages.
+> `slice/joe-d421` and the season-stepper audit's worktree/branch were already gone when Joe OK'd
+> deleting them (2026-09-28) — nothing to do.
+>
+> **✅ JOE PICKED THE NUMBERS (2026-09-29): every 20 days, weight 50** (§9.12g) — the interval is a
+> **placeholder for pathing**; in Phase 6 the household's water need drives the trip (DESIGN §4,
+> Phase 6's new *Water* line). Set in data and the C# defaults, four checks re-run.
+>
+> **▶️ NEXT: JOE PLAYS `slice/the-well`.** Place a well out in fresh paint and watch a lane wear to
+> it in a season or two (placed beside the busy middle, its ground is worn anyway); click it for its
+> card; houses sited after it lean toward it only lightly (weight 50 — his call). Then he merges
+> and pushes; then the queue: tools on ticks at 34 % → the quarry spec → his design threads.
+>
+> **Watch items (unchanged):** `AFoodLimitKeepsForagersOnFood…` year drift; the every-source
+> founding knife-edge (128 on main); `AFailedProbeIsNotTriedAgainAtTheSameWalk` skipped.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/c2741fda-196b-411e-b53a-fdaddd4355b0/scratchpad/`):**
+> `ZzWell.cs` (the 55 runs with `ZZ_WELL`, `ZZ_EVERY`, `ZZ_WEIGHT`, `ZZ_BUMP`, `ZZ_LABEL`; prints
+> trips, worn tiles near the well and the year-50 hash), `ZzBase.cs` (the same runs with no well —
+> compiles on main too, for the hash identity), `summ.py` (the table), `arm-*.txt` (every arm's
+> numbers), `simred.sh` (mutate, count `[FAIL]` AND the summary — ⚠️ it does not print theory
+> names, so the summary is the count), `main-wt/` (a detached worktree of main — remove with
+> `git worktree remove` when done). Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D426 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-28 (CLOSE) — D422–D426 MERGED AND PUSHED.**
 >
 > **State:** `main` = `3611e14` — `slice/joe-d421` merged (D422 the larder loop · D423 the Stock
 > limits panel, upright crates, the lodge card by good · D424 a step treads every tile it passes
@@ -20,6 +54,7 @@
 > golden moved. What it means for you: `FarmFixtures.StepToTheStartOf` now **throws** if called inside
 > the season it asks for (past tick 0) — step through another season first (trap D426). Its worktree
 > `.claude/worktrees/priceless-antonelli-2a6dfd` and branch are merged and can go when Joe agrees.
+> *(2026-09-29: both were already gone — checked with `git branch -a` and `git worktree list`.)*
 >
 > **▶️ THE QUEUE (unchanged):** the well, slice C (`organic-housing.md §9.5` P6 — a placeable
 > well with no water mechanic yet, a destination paths wear toward and a term in the home score;
@@ -3164,7 +3199,28 @@ the untouched D422 commit, in a throwaway `git worktree add --detach`, read **5m
 beside yours before chasing it, and check `Get-CimInstance Win32_Process -Filter "Name='testhost.exe'"`
 for a testhost that is not under your worktree.
 
+## ⛔ THE TRAP D427 PAID FOR — A DAY IS FOUR TICKS, A LINE IN THE DAILY WALKS WEARS NOTHING, AND A MARKED HOME HAS NO WALKS
+
+Three premises this slice's plan took for granted, each false and each found by measuring. (1)
+**"Daily" is four ticks** (`ticks_per_day`): a trip to a well and back is about twelve, so any
+errand "every day" longer than a tile's walk is somebody doing it for ever — read `SimClock` before
+promising a cadence. (2) **`TheDailyWalks` prices routes; it wears nothing.** Wear comes only from
+`BehaviorSystem.Travel`. (3) **`TheDailyWalks` reads `HomePosition`, which a MARKED home does not
+have** — a siting guard that only marks houses poses a village with no commutes at all; its first
+draft scored zero for that reason. And a pose inside the founding's own traffic cannot show a new
+walk's wear (811 → 880 with 30 trips against 2). ⭐ **Pose the new thing where nothing else
+reaches, and measure the building apart from the behaviour** (trips off: the well itself was free).
+And one that cost a commit: **git tracks `HANDOFF.md` in capitals, and on this case-insensitive
+disk `git add handoff.md` stages nothing and says nothing** — D427's handoff missed its own commit.
+Read `git status` after staging, every time.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE WELL TRIP'S SURVIVAL COST HAS NO PROVEN MECHANISM (D427, `organic-housing.md §9.12f`).**
+  Picked around, not explained: every 20 days (Joe's placeholder) is within the noise, every 10 cost
+  21 shipped alive. The `Decide`-only ablation read the same; the hypothesis is an adult away on a
+  twenty-tick walk when work comes back. **Trace it before Phase 6 makes water a need** — a
+  need-driven trip in a dry spell will fire more often than every 20 days.
 
 - ⭐ **THE EVERY-SOURCE FOUNDING UNDER D422: 154 → 97 ALIVE OVER 13 SEEDS — ACCEPTED BY HIS CALL (*"ship
   all three parts"*), RECORDED HERE SO IT IS NOT REDISCOVERED AS A REGRESSION.** Real, not drift (a ±1
@@ -3309,7 +3365,7 @@ for a testhost that is not under your worktree.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
 - ⭐⭐ **PER-STAGE RNG STREAMS, DEFERRED TO THE NEW-GAME SCREEN (D344, Joe's call).** Worldgen threads **one** generator through river → founding → soil → seams → woodland, so **draw order is the seed contract** and *every future map option that generates something — a lake, an island, a cliff — reshuffles every seed and re-takes every golden, once per option.* ⭐ One stream per stage fixes that for good. ⛔ **Build it with splitmix64 per-stage SEEDS, not `DeterministicRandom`'s `stream` parameter** — small adjacent ids correlate badly (measured: 6 dead valleys of 24 against 1). ⚠️ **And expect to re-pick the shipped seed**: the reshuffle put 12345 on a valley that starves.
 - ⚠️ **The stone and iron seams are still Manhattan diamonds, and D347 left them so on purpose** — the boulders hide the shape, and changing it changes ore. *Revisit only with the economy in view.* (Originally: left because they were the subject of the next slice (*"give the stone and iron deposits the same treatment we just gave forests and trees"*) and changing their shape changes how much ore a valley holds. *`InsideTheClump` is sitting there ready for them.*
-- ⛔⛔ **THE FOREST CLUMPS ARE MANHATTAN DIAMONDS AND ONLY THE GENERATOR CAN FIX IT (D342, measured by trying).** `PaintForest` drops diamonds of tiles; the new field renderer nibbles their edges by about a tile, which on a nine-tile diamond leaves a soft diamond. *The river is transformed by the same machinery because it is two tiles wide — the difference is the ratio of the jitter to the feature.* ⭐ **The fix is a few lines in `MapGenerator.PaintForest`** — a noisy disc instead of a Manhattan ball — **and it moves every golden** (D152: one commit, one stated reason). **Joe's call, and his since D337.**
+- ✅ **(RESOLVED BY D344 — the clumps are wobbling discs, `MapGenerator.InsideTheClump`; only the stone and iron seams stay diamonds, on purpose. Found stale 2026-09-29.)** ⛔⛔ **THE FOREST CLUMPS ARE MANHATTAN DIAMONDS AND ONLY THE GENERATOR CAN FIX IT (D342, measured by trying).** `PaintForest` drops diamonds of tiles; the new field renderer nibbles their edges by about a tile, which on a nine-tile diamond leaves a soft diamond. *The river is transformed by the same machinery because it is two tiles wide — the difference is the ratio of the jitter to the feature.* ⭐ **The fix is a few lines in `MapGenerator.PaintForest`** — a noisy disc instead of a Manhattan ball — **and it moves every golden** (D152: one commit, one stated reason). **Joe's call, and his since D337.**
 - ⭐⭐ **NEXT SLICE, ALREADY CHOSEN BY HIM (2026-09-10):** *"we should give the stone and iron deposits the same treatment we just gave forests and trees. including showing depletion over time. same with farming (and this default crop we're using now 'produce' — which we should change to wheat when we work on this)."* He deferred it explicitly in favour of the fixes and UI that became D338–D340. **Three parts: deposits get marks and visible depletion, farming gets the same, and `produce` → `wheat`.** ⚠️ *The rename touches `data/`, the specs and every sentence the village says — it is not a string swap.*
 - ⏸ **`gridless.md §8` slice 3 — villagers hold a `Point`** — is still unscheduled. Buildings are continuous; people still step tile to tile.
 - ⚠️ **`PaintForest` drops Manhattan DIAMONDS of tiles**, so a wood's outline is chunky *and* faintly diagonal, and **no amount of smoothing the render hides it** (D337). That is a generator question and it is his.

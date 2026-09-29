@@ -277,6 +277,20 @@ public sealed record BuildingRow
     public bool Singleton { get; init; }
 
     /// <summary>
+    /// Whether households walk here for water — <b>the sixth reason a building may exist</b> (D427,
+    /// `specs/organic-housing.md §9.12`).
+    /// </summary>
+    /// <remarks>
+    /// A well stores nothing, employs nobody, houses nobody, keeps no records and shelves nothing,
+    /// and <c>SimConfig.ValidateBuildings</c> refused it for that, as it refused the library and the
+    /// town hall before their columns existed. <b>Its output is people walking to it</b> — the lane
+    /// their feet wear, and the neighbourhood that gathers round. A meaning, never a name: a
+    /// modder's pump states <c>draws_water</c> and is a well to the sim.
+    /// </remarks>
+    [JsonPropertyName("draws_water")]
+    public bool DrawsWater { get; init; }
+
+    /// <summary>
     /// How many tiles across this building stands, before it is turned. <b>One by default.</b>
     /// </summary>
     /// <remarks>
