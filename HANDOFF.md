@@ -1,25 +1,55 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D425 IN §7. `main` = D425, PUSHED; NO BRANCH OPEN. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D425 IN §7. `main` = D425, PUSHED. ONE UNMERGED BRANCH (THE SEASON-STEPPER AUDIT — ASK JOE, RENUMBER IT D426). NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 — D422–D424 MERGED AND PUSHED (D425).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 (CLOSE) — D422–D424 MERGED AND PUSHED (D425).**
 >
-> **State:** `main` = `slice/joe-d421` merged (D422 the larder loop, D423 the limits panel / upright
-> crates / lodge card, D424 a step treads every tile it passes over) + D425's docs, **pushed at Joe's
-> word** (*"played it - looks good. merge and push!"*). No branch is open — cut a fresh one. 1266
-> passing, 0 failing, 5 skipped of 1271; view 0 warnings; probe green, bar height 161.
+> **State:** `main` = `6bf86fc` — `slice/joe-d421` merged (D422 the larder loop · D423 the Stock
+> limits panel, upright crates, the lodge card by good · D424 a step treads every tile it passes
+> over) + D425's docs, **pushed at Joe's word** (*"played it - looks good. merge and push!"*). Suite on
+> the merged tree: **1266 passing, 0 failing, 5 skipped of 1271**, ~4m40 (the branch head read 4m55
+> back to back — the machine was shared that day; compare back to back, never across the day); view
+> 0 warnings; probe green, bar height 161. `slice/joe-d421` is merged and still exists (delete it if
+> Joe agrees). **Cut a fresh branch for the next slice.**
 >
 > ⚠️ **There is no save/load** (Joe, correcting me: *"there are no old save files. we haven't built
-> save functionality yet"*). It is Phase 4.5's shell, unscheduled (§4). Never tell him an old save
-> behaves differently — every game is a new game.
+> save functionality yet"*). It is Phase 4.5's shell, unscheduled (§4). Every game is a new game —
+> never tell him an old save behaves differently.
 >
-> **▶️ NEXT:** the well, slice C (`organic-housing.md §9.5` P6 — a placeable well with no water
-> mechanic yet, a destination paths wear toward and a term in the home score; measure before typing,
-> and it lands on D414's lanes and D424's footprints) → tools on ticks at 34 % (reversing D391's yield
-> axis) → the quarry, spec first → his design threads (⏸️ OPEN list).
+> **⏸️ FIRST, ASK JOE — ONE UNMERGED BRANCH: `claude/priceless-antonelli-2a6dfd`** (worktree
+> `.claude/worktrees/priceless-antonelli-2a6dfd`, commit `1acbb4f`, from the task chip he started):
+> *"The season stepper cannot stand still: every caller audited, and it refuses."* It printed tick and
+> season round all 103 `StepToTheStartOf` calls (39 sites, 21 tests) — **no other claim was hiding**
+> — made `FarmFixtures.StepToTheStartOf` throw when called inside the season it asks for (past tick 0),
+> deleted `CropCalendarTests`' private copy, added `SeasonSteppingTests`. Test code only, no golden
+> moved. ⚠️ **Three things before it merges:** it was cut from D423 (`001dcbe`), before D424 and the
+> merge, so re-run all four checks on top of `main`; it calls itself **D424**, which is taken (the
+> tread) — **renumber it D426** in its DESIGN.md entry and commit message; and it edits `DESIGN.md` and
+> `HANDOFF.md`, so expect conflicts there (keep both entries, keep this banner on top).
 >
-> **Watch items:** `AFoodLimitKeepsForagersOnFood…` moved its year three slices running (8 → 10 → 4);
-> the every-source conservation seed moved again (4 → 10); the every-source founding is a knife-edge
-> (97 → 128 alive under D424). A separate session was auditing the season-stepper hole — check
-> whether it landed before trusting a `StepToTheStartOf` loop.
+> **▶️ THEN THE QUEUE (unchanged):** the well, slice C (`organic-housing.md §9.5` P6 — a placeable
+> well with no water mechanic yet, a destination paths wear toward and a term in the home score;
+> **measure before typing** — it lands on D414's lanes and D424's footprints, so count lane ends and
+> block tiles before and after) → tools on ticks at 34 % (reversing D391's yield axis) → the quarry,
+> spec first (`specs/quarry.md`) → his design threads (⏸️ OPEN list).
+>
+> **Watch items:** `AFoodLimitKeepsForagersOnFood…` moved its starting year three slices running
+> (8 → 10 → 4) — probably the wrong shape of guard for a number this sensitive, like
+> `TheMarketKeepsLardersFromRunningDry`; the every-source conservation seed moved again (4 → 10); the
+> every-source founding is a knife-edge (154 → 97 under D422, → 128 under D424) and on Joe's list;
+> `AFailedProbeIsNotTriedAgainAtTheSameWalk` is skipped — D361's claim is false on main (OPEN list).
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/fa37b3a7-436a-4592-838e-28982015576b/scratchpad/`):**
+> `census.py` — a game log's fetch census (sizes, chains, food walked back); `ZzLarder.cs` — top-up
+> episodes (trips per run, food in vs eaten); `ZzSurvive.cs` — D420's 55-run survival arm (30 shipped
+> + 12 fixture + 13 every-source, fifty years) plus loads turned away and fetches a household-year,
+> `EveryDiag` (a founding's first falls), `ZZ_BUMP` for a ±N stock-limit noise arm; `ZzLane.cs` — lane
+> ends, gaps, and a map (`ZZ_MAP=1`); `ZzFarm.cs` — a farm's autumns; `simred.sh` / `viewred.sh` —
+> mutate, check the build with `: error [A-Z]+[0-9]+` (not `error CS` — D424's trap), count `[FAIL]`
+> and the summary, restore; `surv*.txt` — the numbers in D422 and D424. A/B against a `git worktree
+> add <dir> <commit>`, never a C# dial. Copy a Zz file into `tests/Bclone.Sim.Tests/`, run with
+> `--filter`, **delete before committing**. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`
+> (`$GODOT` unset in the agent shell). ⚠️ Joe keeps a windowed game running — never kill it; only a
+> leftover headless probe is yours.
 >
 > *(The D424 banner, kept below.)*
 >
@@ -3111,6 +3141,15 @@ the skipped row of a diagonal is not a straight gap, and most straight gaps are 
 case itself (a commute on a packed steep lane). (2) A mutation left a parameter unused, the build
 failed on `IDE0060`, and the script — grepping only `error CS` — reported "built" and zero reds.
 ⭐ **Grep `: error [A-Z]+[0-9]+`, not `error CS`: this repo fails the build on IDE rules too.**
+
+## ⛔ THE TRAP D425 NEARLY PAID FOR — A SCRIPT THAT FAILS HALFWAY, AND A FEATURE THAT DOES NOT EXIST
+
+The docs script for D425 wrote its files, then tripped its own final check — and the `git commit` and
+`git push` after it ran anyway, because they were chained with `;`. The pushed commit happened to be
+right (the check was too broad), but it was luck. ⭐ **Chain anything that commits or pushes with `&&`,
+and read the pushed commit (`git show --stat HEAD`) before saying it landed.** The same stretch: I told
+Joe an "old save" would keep its old wear — there is no save/load. ⭐ **Check a feature exists before
+describing how it behaves** (§4 lists what the shell has not built).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
