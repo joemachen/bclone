@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT on `slice/the-well` (D427, §9.12), NOT merged — numbers picked (every 20 days, weight 50), awaiting Joe's play.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT, PLAYED AND MERGED (D427, D428, §9.12) — Joe: *"Looks good! merge and push"*; every 20 days, weight 50.** Owner:
 Joe + Claude Code.
 
 ---

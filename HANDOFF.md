@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D427 IN §7. `main` = D426, PUSHED. `slice/the-well` = D427, BUILT, NUMBERS PICKED, NOT MERGED — JOE PLAYS IT NEXT. THEN: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D428 IN §7. `main` = D428 (THE WELL), PUSHED; NO BRANCH OPEN. NEXT: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 — THE WELL (D427) BUILT ON `slice/the-well`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — THE WELL MERGED AND PUSHED.**
+>
+> **State:** `main` = `slice/the-well` merged (D427) + D428's docs, **pushed at Joe's word** (*"Looks
+> good! merge and push"*). No branch is open — **cut a fresh one for the next slice.**
+> `slice/the-well` is merged and still exists (delete it if Joe agrees). The merged tree is the
+> branch head the four checks ran on: 1281 passing, 0 failing, 5 skipped of 1286, ~3m15–3m25;
+> view 0 warnings; probe green, bar height 161; no golden moved.
+>
+> **▶️ THE QUEUE:** tools on ticks at 34 % (Joe's call, D395 — reversing D391's yield axis; one
+> seam, `WorkTicksFor` beside the mastery bonus, re-measured per trade) → the quarry, spec first
+> (`specs/quarry.md`) → his design threads (⏸️ OPEN list). ⚠️ **Before Phase 6 makes water a need,
+> trace why the well trip costs survival at higher frequencies** (OPEN list; §9.12f has the table).
+>
+> *(The D427 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-29 — THE WELL (D427) BUILT ON `slice/the-well`.**
 >
 > **State:** `main` = D426 (`06d8a81`), pushed. **`slice/the-well` = the spec commit + D427 (sim,
 > view, docs), NOT merged, NOT pushed, unplayed.** 1281 passing, 0 failing, 5 skipped of 1286,
