@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT on `slice/the-well` (D427, §9.12), NOT merged — the trip interval and the siting weight wait on Joe's pick from §9.12f.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT on `slice/the-well` (D427, §9.12), NOT merged — numbers picked (every 20 days, weight 50), awaiting Joe's play.** Owner:
 Joe + Claude Code.
 
 ---
@@ -708,3 +708,11 @@ founding (just past the opening's paint). Alive / starved:
 - The suite's clock, back to back with main: 3m14 → 3m13. The chooser's cost: one cached
   cost-field lookup per painted tile per well.
 
+**g. Joe's pick (2026-09-29): `water_trip_every_days` 20, `home_well_weight` 50.** The interval is
+a **placeholder for pathing**, in his words: *"the water function isnt even in the game yet - the
+household larder and home water needs will determine how often villagers go to the well, but this
+data (every 20 days) helps with that when the time comes. For now let's set it to 20 just to get the
+well functioning for pathing - and we'll hook up the water later."* ⭐ So in Phase 6 the trip
+stops being a clock: a household goes when its larder's water runs low, and §9.12f is the
+baseline that change is measured against. Every guard holds at 20 (the path guard: 18 trips in two
+years, wear beside the well 82 against 0; its no-trips mutation still scores).

@@ -1230,11 +1230,13 @@ public sealed record SimConfig
     /// <remarks>
     /// ⛔ <b>Not "daily", and that is arithmetic, not taste.</b> A day is <see cref="TicksPerDay"/>
     /// — four ticks — and a walk to a well five tiles off and back is about twelve, so a trip a day
-    /// is somebody from every household at the well for ever. The number is Joe's, picked from the
-    /// measured table in §9.12.
+    /// is somebody from every household at the well for ever. <b>Twenty is Joe's pick (D427), a
+    /// placeholder for pathing</b> — every ten days cost 21 shipped villagers of 169 over fifty years,
+    /// every twenty is within the noise (§9.12f). ⭐ In Phase 6 the household's water need decides when
+    /// somebody goes, and that table is the baseline it is measured against.
     /// </remarks>
     [JsonPropertyName("water_trip_every_days")]
-    public int WaterTripEveryDays { get; init; } = 10;
+    public int WaterTripEveryDays { get; init; } = 20;
 
     // ---------------------------------------------------------------
     //  Storage (D30, D32)
@@ -1785,6 +1787,10 @@ public sealed record SimConfig
     /// How much a tile of walk to the nearest well weighs against a tile of walk to work, in percent
     /// (D427, P6) — so houses gather round the wells the player places.
     /// </summary>
+    /// <remarks>
+    /// <b>Fifty, a light pull, on Joe's word.</b> Below two hundred it barely moves a house: a step
+    /// toward a well that lies away from the village costs a tile to work AND a tile to the granary.
+    /// </remarks>
     [JsonPropertyName("home_well_weight")]
     public int HomeWellWeight { get; init; } = 50;
 

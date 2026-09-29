@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D427 IN §7. `main` = D426, PUSHED. `slice/the-well` = D427, BUILT, NOT MERGED — JOE PICKS TWO NUMBERS, THEN PLAYS. THEN: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D427 IN §7. `main` = D426, PUSHED. `slice/the-well` = D427, BUILT, NUMBERS PICKED, NOT MERGED — JOE PLAYS IT NEXT. THEN: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 — THE WELL (D427) BUILT ON `slice/the-well`.**
 >
@@ -9,16 +9,14 @@
 > `slice/joe-d421` and the season-stepper audit's worktree/branch were already gone when Joe OK'd
 > deleting them (2026-09-28) — nothing to do.
 >
-> **▶️ FIRST, JOE PICKS TWO NUMBERS FROM `organic-housing.md §9.12f`** (the table is there):
-> 1. **`water_trip_every_days`** — shipped at 10 on the branch for now. Every 10 days costs 21
->    shipped villagers of 169 (noise 2–6); every 20 is within the noise; the building itself costs
->    nothing (trips off: 176). Recommended: **20**.
-> 2. **`home_well_weight`** — 50 on the branch. Below 200 the well barely draws houses (a step
->    toward it costs a tile to work and a tile to the granary); survival reads level across 0–300.
->    Whether houses should trade a longer commute to live by the water is his.
-> Then set them in `data/sim.config.json` AND the C# defaults (with the reasons), re-run the four
-> checks, and **Joe plays it**: place a well out in fresh paint and watch a lane wear to it in a
-> season or two; placed beside the busy middle, its ground is worn anyway.
+> **✅ JOE PICKED THE NUMBERS (2026-09-29): every 20 days, weight 50** (§9.12g) — the interval is a
+> **placeholder for pathing**; in Phase 6 the household's water need drives the trip (DESIGN §4,
+> Phase 6's new *Water* line). Set in data and the C# defaults, four checks re-run.
+>
+> **▶️ NEXT: JOE PLAYS `slice/the-well`.** Place a well out in fresh paint and watch a lane wear to
+> it in a season or two (placed beside the busy middle, its ground is worn anyway); click it for its
+> card; houses sited after it lean toward it only lightly (weight 50 — his call). Then he merges
+> and pushes; then the queue: tools on ticks at 34 % → the quarry spec → his design threads.
 >
 > **Watch items (unchanged):** `AFoodLimitKeepsForagersOnFood…` year drift; the every-source
 > founding knife-edge (128 on main); `AFailedProbeIsNotTriedAgainAtTheSameWalk` skipped.
@@ -3212,14 +3210,17 @@ have** — a siting guard that only marks houses poses a village with no commute
 draft scored zero for that reason. And a pose inside the founding's own traffic cannot show a new
 walk's wear (811 → 880 with 30 trips against 2). ⭐ **Pose the new thing where nothing else
 reaches, and measure the building apart from the behaviour** (trips off: the well itself was free).
+And one that cost a commit: **git tracks `HANDOFF.md` in capitals, and on this case-insensitive
+disk `git add handoff.md` stages nothing and says nothing** — D427's handoff missed its own commit.
+Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **THE WELL'S TWO NUMBERS (D427, `organic-housing.md §9.12f`)** — `water_trip_every_days`
-  (10 costs 21 shipped alive; 20 is within noise; recommended 20) and `home_well_weight` (below 200
-  the well hardly draws houses). The trips' survival cost has **no proven mechanism** — the
-  `Decide`-only ablation read the same; the hypothesis is an adult away on a twenty-tick walk when
-  work comes back. Worth a trace if he wants trips more often than every 20 days.
+- ⭐ **THE WELL TRIP'S SURVIVAL COST HAS NO PROVEN MECHANISM (D427, `organic-housing.md §9.12f`).**
+  Picked around, not explained: every 20 days (Joe's placeholder) is within the noise, every 10 cost
+  21 shipped alive. The `Decide`-only ablation read the same; the hypothesis is an adult away on a
+  twenty-tick walk when work comes back. **Trace it before Phase 6 makes water a need** — a
+  need-driven trip in a dry spell will fire more often than every 20 days.
 
 - ⭐ **THE EVERY-SOURCE FOUNDING UNDER D422: 154 → 97 ALIVE OVER 13 SEEDS — ACCEPTED BY HIS CALL (*"ship
   all three parts"*), RECORDED HERE SO IT IS NOT REDISCOVERED AS A REGRESSION.** Real, not drift (a ±1

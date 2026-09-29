@@ -867,12 +867,14 @@
   // No water mechanic: a household walks to its nearest well and back every
   // water_trip_every_days, and the lane their feet wear is the point. NOT daily:
   // a day is four ticks and the walk is about twelve, so a trip a day is somebody
-  // at the well for ever. Joe picks the interval from the measured table.
+  // at the well for ever. 20 is Joe's pick (D427), a PLACEHOLDER for pathing: every
+  // 10 days cost 21 shipped villagers of 169, every 20 is within the noise. In
+  // Phase 6 the household's water need decides when somebody goes, not a clock.
   "well_logs": 10,
   "well_stone": 5,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
-  "water_trip_every_days": 10,
+  "water_trip_every_days": 20,
 
   // DERIVED, like gather_yield. The stated target: heating every home
   // through winter must cost no more than HALF the hands the village can
@@ -1325,7 +1327,9 @@
   "home_path_search_tiles": 8,
 
   // P6, the well (D427): a tile of walk to the nearest well weighs this percent of a
-  // tile of walk to work, so houses gather round the wells the player places. A site
+  // tile of walk to work. 50 is Joe's call: a light pull. Below 200 it barely moves a
+  // house, because a step toward a well away from the village costs a tile to work AND
+  // a tile to the granary; survival read level from 0 to 300. A site
   // with no well within home_well_reach_tiles pays the whole reach; a household that
   // far out makes no water trip.
   "home_well_weight": 50,
