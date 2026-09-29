@@ -1,6 +1,58 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D428 IN §7. `main` = D428 (THE WELL), PUSHED; NO BRANCH OPEN. NEXT: CUT `slice/tools-on-ticks` FROM `main` AND START THERE, SPEC FIRST → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D430 IN §7. `main` = D428 (THE WELL), PUSHED. `slice/tools-on-ticks` = D429–D431 (TOOLS ON TICKS + A PERSON'S CARD IN SECTIONS), COMMITTED, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — THE WELL MERGED AND PUSHED.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (LATE NIGHT) — TOOLS ON TICKS AND A PERSON'S CARD, BOTH ON `slice/tools-on-ticks`.**
+>
+> **And then (D432, view only, UNPLAYED):** Joe played D431 — *"better but way too wordy and
+> crowded … remove all of the information about 'tiles'"*. The card now answers six questions
+> (who · doing/anything wrong · where they work · equipped · all right · good at — `the-cards.md
+> §2a`), every explanation is a tooltip, the assignment reason and distances are gone from it (the
+> audit log keeps them), and a person's card has twelve pixels of room. **Joe: look at a villager's
+> card again — hover the banner or the job when it is amber for why; hover the tool row for what a
+> tool does.**
+>
+> **Added since the paragraph below (D431, view only):** Joe called the villager card *"a UX
+> nightmare. copy off screen, no real hierarchy of information. nothing about tools"* (with
+> Foundation's villager panel). It is sections now — subtitle, a banner of what they are doing,
+> **WORK** (Kept-on dropdown, job, reason, note) · **TOOL** (uses left, what a tool does) · **NEEDS**
+> (Fed / Warm / Housed pills — his call, from existing state) · **SKILLS** (a bar to mastery) ·
+> *Find · Home · Workplace*. `the-cards.md §2a`. Probe `villager card:` poses it at its fullest and
+> fails on any trimming label. **For Joe to look at when he plays:** click any villager — the card
+> should read top to bottom with nothing cut off; the TOOL section is where D430 shows.
+>
+>
+> **State:** `main` = D428, pushed. **`slice/tools-on-ticks` = the spec commit (D429) + the build
+> (D430), committed, NOT merged, NOT pushed, unplayed.** 1285 passing, 0 failing, 5 skipped of 1290,
+> 3m20 (main 3m34 back to back); view 0 warnings; probe green, bar height 161; seven golden values
+> moved once, for the one reason. ⚠️ Joe's `art/` changes are his — never stage them.
+>
+> **What it is:** a tool in hand takes **34 %** off the ticks of the action it begins, **multiplied
+> with mastery and rounded once** (Joe; a master's 3 → 1, 4 → 2), **and keeps its 25 % on yield**.
+> The spec first had ticks *instead of* yield; measured, that left tools worth about half (55
+> fifty-year villages: no tools 321 alive, ticks alone 380, yield alone = `main` 440, both 444),
+> because a forager's trip is one gather between two walks. Joe, with the table: *"Ticks 34% +
+> yield 25%"*. `tool_uses` stays 150 (Joe: stone and iron tools will carry their own) — and the wear
+> rate turned out not to move. **⚠️ Mastery ships at 50 %, not the 34 % this banner's predecessor
+> said** (`MasterySpeedBonusPercent`'s C# default; the data file does not set it).
+>
+> **▶️ NEXT: JOE PLAYS THE BRANCH.** What to look at: foragers, fishers and hunters with the
+> founders' tools work visibly quicker at the action (a gather 3 → 2 ticks, a cast 10 → 7, a hunt
+> 15 → 10) — the walk is the same; the villager card's TOOL section reads *"34% quicker at each
+> action and 25% more from it"* (D431). Then he merges and pushes; then the quarry spec (`specs/quarry.md`,
+> D395: painted land like the forester's hut, more stone and iron, iron nodes ≥ 50), then his
+> design threads.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/2e124baf-40d9-4e3c-bd50-8c75d3f93933/scratchpad/`):**
+> `ZzBase-branch.cs` (D420's 55 villages with `ZZ_SPEED` / `ZZ_YIELD` / `ZZ_CART` dials), `ZzBase.cs`
+> (the same, no dials — compiles on main), `ZzTimber.cs` (the timber gate over twelve seeds),
+> `ZzWear.cs` (actions and tools taken a hand-year), `summ.py` (the table; run with the
+> **detailed console logger** — `-v n` does not print a passing test's output), `redcheck.py`
+> (mutate, build, count named `[FAIL]`s and the summary, restore **and touch** — trap 135),
+> `arm-*.txt` (the four arms), `main-wt/` (a detached worktree of main — `git worktree remove` it).
+>
+> *(The D428 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — THE WELL MERGED AND PUSHED.**
 >
 > **State:** `main` = `slice/the-well` merged (D427) + D428's docs, **pushed at Joe's word** (*"Looks
 > good! merge and push"*). **No branch is open.** `slice/the-well` was deleted on Joe's word
@@ -3253,6 +3305,42 @@ And one that cost a commit: **git tracks `HANDOFF.md` in capitals, and on this c
 disk `git add handoff.md` stages nothing and says nothing** — D427's handoff missed its own commit.
 Read `git status` after staging, every time.
 
+## ⛔ THE TRAP D430 PAID FOR — A BONUS ON AN ACTION IS A BONUS ON THE PART OF THE TRIP THAT IS THE ACTION
+
+134. **⚠️ MEASURE THE TRIP, NOT THE ACTION (D430).** Tools on ticks was specced from the action
+     table (3 → 2, 15 → 10: "a third quicker") and would have cost ~60 people over 55 villages: a
+     forager's trip is ONE gather between two walks, so a third off the gather is one tick in
+     fifteen. Before a percentage on any duration, find how many of that action a trip holds.
+     And a handoff's number is a claim: "mastery 34 %" was 50 in the code.
+135. **⛔ A RED-CHECK SCRIPT THAT RESTORES A FILE WITH ITS OLD TIMESTAMP LEAVES THE MUTANT'S DLL IN
+     PLACE (D430).** `shutil.copy` → mutate → build → `shutil.move(.bak)` gives the source an mtime
+     older than the DLL, so MSBuild calls it up to date and the NEXT run — here a data-file mutant —
+     ran on two breaks at once and counted six reds that were not its own. Touch every restored file
+     (`os.utime(path, None)`), and after the last mutant rebuild and confirm the guards are green
+     before believing anything.
+136. **⚠️ A RIG THAT DERIVES A COUNT FROM A DURATION BREAKS WHEN THE DURATION BECOMES PERSONAL
+     (D430).** `WhatAForagerBringsInAYear` counted trips as gather ticks ÷ `gather_ticks`; a tool
+     made a gather two ticks and the rig read 188 for ~280. Count the events. Its red check scores
+     zero (written down in the spec).
+137. **⚠️ WHEN THREE UNRELATED GUARDS GO RED AT ONCE, ASK WHAT THEY SHARE (D430).** The builder,
+     the market and the food limit all failed under ticks alone and all passed under both: each was
+     really asking "is the village short of food?", because the labour quota keeps every hand on
+     food while it is. Re-posing them one by one would have hidden the balance change.
+
+138. **⚠️ A SENTENCE PAST AN ELLIPSIS DOES NOT EXIST (D431).** D430 put the tool's text on the
+     end of a one-line, `TrimEllipsis` caption and its meaning in that caption's tooltip; the job
+     reason before it was already longer than the card, so Joe never saw either, and asking *"what
+     is a villager's tool line?"* was the bug report. Before saying "it's on the card", read the
+     label's `ClipText` / `TextOverrunBehavior` and what comes before it on the line. A person's
+     card is guarded against trimming now (`villager card:`); buildings' number cells still clip by
+     design.
+
+139. **⚠️ A GUARD THAT ONLY FIRES WHEN THE GOOD CASE IS POSSIBLE PASSES WHEN IT BECOMES IMPOSSIBLE
+     (D432).** The lodge check said *"both names fit and were not both shown"*; widening every
+     card's margin made them not fit, and it stayed green while the card read *"meat · others"*.
+     Assert the budget, not only the behaviour inside it. And a card margin is a width budget for
+     every card that shares the skin — change one kind's.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⭐ **THE WELL TRIP'S SURVIVAL COST HAS NO PROVEN MECHANISM (D427, `organic-housing.md §9.12f`).**
@@ -3304,7 +3392,10 @@ Read `git status` after staging, every time.
 - ⭐ **A BUILDER MOVED OFF A STOCKED SITE (found in D414, not fixed; on main too).** In
   `AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt`'s pose, the one builder put 37 work into a
   fully stocked warehouse, then the labour allocator moved her to foraging and nobody touched the
-  site for all of year two. Worth a look when builders next come up.
+  site for all of year two. Worth a look when builders next come up. ⚠️ **D430: under tools on
+  ticks alone NOBODY took the builder's seat for the whole year** (the labour quota keeps every hand
+  on food while the village is short, and the builder's hut staffed to 1 did not change it); with
+  the yield kept it passes again. The guard is one balance nudge from red.
 
 - ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
   *"I think it looks okay? there are some skips now and then."* The numbers from his play:
@@ -3327,7 +3418,7 @@ Read `git status` after staging, every time.
   the workshop — condition and maintenance, the D65 reversal, and the builder's hammer (D391 left
   the builder without a tool because a builder's bonus would fall on a site's ticks, a second
   seam). The order is his; a spec that poses them is the first move, as D391's was.
-- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** ✅ **CALLED BY JOE, 2026-09-19: ticks at 34 % — queue step 3 (D395).** Built on yield — a percentage off a three-tick
+- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** ✅ **BUILT AS BOTH (D430, on `slice/tools-on-ticks`, unplayed): ticks at 34 % multiplied with mastery, AND yield at 25 % — Joe's call on the measurement (ticks alone 380 alive of 55 villages against 440).** *Kept for the reasoning:* ✅ **CALLED BY JOE, 2026-09-19: ticks at 34 % — queue step 3 (D395).** Built on yield — a percentage off a three-tick
   gather rounds to nothing while the same off a fifteen-tick hunt is half again, and a tool that
   helps one trade by an accident of duration is the illegible outcome. His words were *"slower
   without"*. If he wants ticks, it is one seam (`WorkTicksFor` beside the mastery bonus) and the

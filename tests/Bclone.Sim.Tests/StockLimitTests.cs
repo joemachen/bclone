@@ -367,7 +367,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Was 11240235022264512335.
     // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 14044782459210154740.
     // RE-TAKEN (D424) — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Was 16869094493736697901.
-    private const ulong FixtureFiftyYearHash = 5415604316536691191UL;
+    // RE-TAKEN (D429) — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Was 5415604316536691191.
+    private const ulong FixtureFiftyYearHash = 10566009934355736869UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -466,7 +467,8 @@ public sealed class StockLimitTests
     //   before the market was stocked to 100 a household (D417): 2961155205934716277 — it was 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved.
     //   before a top-up ended with the trip that fills the larder (D422): 11395883105451251724 — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts").
     //   before a step trod every tile it passed over (D424): 16636840873697647225 — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?").
-    private const ulong ShippedFiftyYearHash = 5914827746782470837UL;
+    //   before tools went on ticks (D429): 5914827746782470837 — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship).
+    private const ulong ShippedFiftyYearHash = 1000118158579920504UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

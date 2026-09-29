@@ -1,14 +1,17 @@
 # Spec: Tools that wear, and the smith's hut — Phase 5's first production chain
 
-**Decisions:** D391 (this document). Neighbours: D17/D64 (tools arrive in the cart and nobody can
+**Decisions:** D391 (this document), D395 (Joe: the bonus goes on ticks), D429 (ticks at 34 %,
+stacked with mastery by multiplying, **beside** the yield bonus — ticks alone measured at half its worth). Neighbours: D17/D64 (tools arrive in the cart and nobody can
 replace them), D29 (the conversion workplace — the woodcutter's shape), D84/D90 (iron is a seam
 the laborers clear), D107 (the shape every profession shares), D109 (the player staffs), D139 (a
 met limit stops the work), D174/D187 (the novice floor; mastery bites in one seam), D196/D225 (a
 technique bites in one seam), D291 (the hash is sparse over goods), D353 (the shape settled: wear
 per use, slower without, never a break year), D378 (amber is the trade's quota).
-**Status:** ✅ **built (2026-09-18, D391)** — written before the code, as METHODOLOGY §2 asks; the
-numbers in §4 come from the runs in §6; `ToolsTests` (eleven guards, six red-checked, two zeros
-written down). **Unplayed by Joe as of this line.** Owner: Joe + Claude Code.
+**Status:** ✅ **built (2026-09-18, D391) and played.** ✅ **§3.4 BUILT FOR D429 (2026-09-29) on
+`slice/tools-on-ticks`: a tool takes a third off the ticks AND keeps its quarter on the yield** —
+specced before the code as ticks-instead-of-yield, measured, and changed to both by Joe's call on
+the numbers (§6.1). `ToolsTests` fifteen guards; **unplayed by Joe as of this line.** Owner: Joe +
+Claude Code.
 
 ---
 
@@ -27,7 +30,7 @@ What the code had before this spec, traced rather than remembered:
 | `Goods.Tools` (id 4) | 20 in the founders' cart (`cart_tools`); stored by warehouse, cart, pile; **consumed by nothing** — `VillageEconomy.StockFloor` returns 0 with a comment saying so |
 | `Goods.Iron` (id 5) | two seams a valley, 8 a tile, cleared by laborers under the harvest brush; **used by nothing** — *"reaching the iron is something the player chooses to do"*, for no payoff |
 | A conversion workplace | the woodcutter: input taken from a store, a timed action at the hut, output to a store, a refusal sentence naming the store, a stint (D29, D384) |
-| The bonus seams | `SimWorld.WorkTicksFor` (mastery, on ticks) and `SimWorld.YieldWithTechnique` (a technique, on yield) — **neither reaches `VillageEconomy`**: the survival floor is solved for a village that knows nothing, and every bonus is upside above it |
+| The bonus seams | `SimWorld.WorkTicksFor` (mastery, on ticks — **and the tool beside it since D429**) and `SimWorld.YieldWithTechnique` (a technique, on yield) — **neither reaches `VillageEconomy`**: the survival floor is solved for a village that knows nothing, and every bonus is upside above it |
 | D353's ruling | *tools wear per use; a worker without one works at today's baseline and a tool is the bonus; never a break year (a Year-4 break was a cliff on D122's floor); uses-per-tool measured on the twelve-seed arm before it is typed* |
 
 So the slice is two things that were each already half-decided: **give the tools something to do
@@ -76,34 +79,92 @@ is a decision and not an omission.
 
 A gather, a fell or a planting, a split, a cast, a hunt, a sown or a reaped tile, a forge. The
 eleven places an action begins all called `SimWorld.WorkTicksFor`; they call
-**`SimWorld.BeginWork(villager, trade, ticks)`** now, which wears the tool (`ToolUses` down by one
-when it is above zero, and only for a trade whose row says `UsesTool` — the tool in the hand and
-the action's trade, not the job held: a forager who helps clear painted ground swings the axe in
-their hands) and returns the ticks. `WorkTicksFor` stays the pure reader it is named as.
+**`SimWorld.BeginWork(villager, trade, ticks)`** now, which reads the ticks (`WorkTicksFor`, with
+the tool in hand counted — §3.4), **then** wears the tool (`ToolUses` down by one when it is above
+zero, and only for a trade whose row says `UsesTool` — the tool in the hand and the action's trade,
+not the job held: a forager who helps clear painted ground swings the axe in their hands), and
+returns the ticks. `WorkTicksFor` stays the pure reader it is named as. ⭐ **Read before the wear,
+on purpose (D429):** the tool that begins an action is the tool that quickens it, so the last use
+speeds its own action.
 When the last use goes the log says so at DEBUG (*"Hattie's tool is worn out"*) and Hattie works on
 at today's number.
 
-### 3.4 The bonus is on yield, not on ticks — ⭐ the one call Joe can overrule
+### 3.4 The bonus is on ticks AND on yield — Joe's calls (D395, D429)
 
-Joe's phrase is *"slower without"*, and read literally that is a bonus on the action's ticks.
-`WorkTicksFor`'s own remark is why it is not built that way: **at these durations a percentage on
-ticks is a step, not a ramp** — a gather is 3 ticks, a split 4, a cast 10, a hunt 15 — so a 25 %
-tool buys a forager nothing (0.75 of a tick rounds to none) while at 50 % a hunt goes 15 → 8 and
-a gather 3 → 2, a hunter half again as fast and a forager a third. *A tool that helps one trade
-and not another by an accident of duration is the illegible outcome §1.1 forbids.*
+> ⭐ **What shipped, in one line:** a tool in hand takes 34 % off the ticks of the action it begins
+> (multiplied with mastery, rounded once) **and** adds 25 % to what the action brings in. This
+> section was written first as ticks *instead of* yield; §6.1's runs showed that at about half of
+> what tools had been worth, and Joe chose both. The reasoning below is kept as it was specced.
 
-`YieldWithTechnique` already applies an even percentage to what an action brings in. The tool
-stands beside it: **`SimWorld.YieldFor(villager, trade, base)`** = the technique's yield, then
-**`WithTool`**: `+ amount × tool_yield_bonus_percent / 100` when `ToolUses > 0` and the trade's
-row says `UsesTool` — on the amount *with* the technique, integer, rounded down (D2), so a tool
-never invents a unit. The six yield sites call one or the other (the forager's trip and the farm's
-tile through `WithTool`, because `GatherYieldAt` and `CropYieldAt` fold the technique in before
-the villager is known and the cards quote them; the fell, the cast, the kill and the split through
-`YieldFor`). A smith with a tool forges more by the same line — one tool a forge at 25 % is still
-one tool.
+Joe, 2026-09-19 (D395): ***"tool bonus on ticks (and eventually on yield when user unlocks upgrades
+for it)"***. D391 had built it on yield, and this section said so and called it *"the one call Joe
+can overrule"*. He has. The D391 reasoning is kept at the end of this section, because what it
+warned about is still true and the number below was chosen with it in mind.
 
-⛔ **Nothing reaches `VillageEconomy`.** No tool = today's number to the unit — the D174 novice
-floor and D187's *nobody is ever worse than today*, guarded in §7.
+**The rule.** A tool in hand for a trade whose row says `UsesTool` takes
+**`tool_speed_bonus_percent`** (34) off the ticks of the action it begins, in
+`SimWorld.WorkTicksFor`, beside mastery. Integer (D2), and never below one tick.
+
+**Why 34, and what it does at these durations.** The reduction is rounded down, as mastery's is, so
+a percentage only matters once it amounts to a whole tick. 34 % is where a three-tick gather gets
+one:
+
+| Action | Base ticks | With a tool | Speed-up |
+|---|---|---|---|
+| gather, sow, reap | 3 | 2 | 1.5× |
+| fell / plant, split, forge | 4 | 3 | 1.33× |
+| cast | 10 | 7 | 1.43× |
+| hunt | 15 | 10 | 1.5× |
+
+⚠️ **This is not even across trades, and the table is the honest statement of it.** The four-tick
+trades gain a third where the rest gain close to a half. It is much closer than D391 feared, though.
+At 25 % the gather gains nothing and the hunt gains a third, but at 34 % every trade gains
+*something*, and the spread is 1.33–1.5×.
+
+**With mastery: multiplied, one rounding (Joe, 2026-09-29).** The ticks left are
+`base × (1 − mastery share × 50 %) × (1 − 34 %)`, rounded **once**, so the order the two are applied
+in cannot change the answer. In integers, where `m` is `mastery_speed_bonus_percent`, `share` is
+0–100 of the way to mastery, and `t` is the tool's percent when a tool is in hand (else 0):
+
+```
+faster = base × (1,000,000 − (10,000 − m·share) × (100 − t)) / 1,000,000     (rounded down)
+ticks  = max(1, base − faster)
+```
+
+With `t = 0` this is exactly today's `base·m·share / 10,000`, to the unit, so a village with no
+tools hashes as it did. For a master (base → novice with tool / master / master with tool):
+**3 → 2 / 2 / 1** and **4 → 3 / 2 / 2**. The fisher, the hunter and the smith have no skill row
+(§6), so they get the tool alone. ⚠️ *A master woodcutter or forester gains nothing from a tool,*
+because 4 × 0.33 = 1.32 ticks left rounds up to 2 (the reduction is rounded down). That follows from the rule rather than being a special
+case, and the card should not promise otherwise.
+
+**Mastery ships at 50 %, not 34 %.** The handoff that queued this slice said *"both 34 %"*.
+`mastery_speed_bonus_percent` is 50: 34 was tried first and found marginal (its remarks in
+`SimConfig`).
+
+**~~The yield dial stays, at 0.~~ The yield dial stays at 25 (Joe, D429, on §6.1's numbers).** As
+specced, `tool_yield_bonus_percent` went to 0 and was kept for Joe's *"eventually on yield when user
+unlocks upgrades for it"*. Measured, ticks alone left tools worth about half of what they had been,
+because **a forager's trip is one gather between two walks**: 3 → 2 ticks saves one tick in about
+fifteen. Joe: ticks 34 % plus yield 25 %. The later upgrade becomes *more* yield, or iron tools
+(D395), rather than switching the yield on.
+
+**A tool might wear faster, and that is accepted (Joe, 2026-09-29) — measured, it does not.**
+Quicker actions could mean more of them a year, and a tool is `tool_uses` actions. (§6.1: work is
+demand-gated, so a quicker hand is stood down sooner rather than working more; the wear rate did not
+move.) Joe: ***"keep 150 for default tools — there will be
+different tool types later with different durabilities (stone v iron for example)"*** — D395's
+smithy gift, where the village starts with stone tools and the smith makes iron ones. How long a
+tool lasts is that slice's number. §6 records the lifetime under ticks.
+
+⛔ **Nothing reaches `VillageEconomy`.** No tool = today's ticks to the unit — the D174 novice floor
+and D187's *nobody is ever worse than today*, guarded in §7.
+
+*D391's reasoning, kept:* *"at these durations a percentage on ticks is a step, not a ramp — a gather
+is 3 ticks, a split 4, a cast 10, a hunt 15 — so a 25 % tool buys a forager nothing (0.75 of a tick
+rounds to none) while at 50 % a hunt goes 15 → 8 and a gather 3 → 2."* That is still true. What it
+argued was that no percentage on ticks treats every trade alike. The table above shows the closest
+this one gets.
 
 ### 3.5 A tool is taken from a store, as an errand
 
@@ -174,8 +235,9 @@ them yet"* to the reason: tools are upside above the floor (§3.4), so there is 
 
 | Key | Default | What |
 |---|---|---|
-| `tool_uses` | 150 (§6) | actions one tool lasts — about three years of one pair of hands |
-| `tool_yield_bonus_percent` | 25 (§6) | what a tool adds to an action's yield, technique counted |
+| `tool_uses` | 150 (§6) | actions one tool lasts — kept at 150 under ticks by Joe's call; the wear rate did not move (§6.1); stone and iron tools will carry their own |
+| `tool_speed_bonus_percent` | 34 (§3.4, D429) | what a tool takes off an action's ticks — multiplied with mastery, rounded once |
+| `tool_yield_bonus_percent` | 25 (§6, kept by D429's §6.1) | what a tool adds to an action's yield, technique counted — beside the ticks |
 | `smithy_logs` | 25 | a hut's timber |
 | `smithy_stone` | 12 | a forge is a hearth of stone |
 | `smithy_work_ticks` | 40 | as the huts |
@@ -186,14 +248,19 @@ them yet"* to the reason: tools are upside above the floor (§3.4), so there is 
 | `tools_per_forge` | 1 | tools a forge makes |
 | `forges_per_stint` | 4 | a day's forging, as `splits_per_stint` |
 
-Validated at load: capacities and uses above zero, the bonus 0–100.
+Validated at load: capacities and uses above zero, both bonuses 0–100.
 
 ## 5. Failure modes designed against
 
 - **The gift is a cliff** (D353's refusal): no break year. Wear is per action, so a village that
   works harder wears faster, and the cards say how many uses are left.
 - **The bonus reaches the floor:** `AWorkerWithoutAToolWorksAtTodaysNumberToTheUnit`.
-- **A tool helps one trade and not another by rounding:** yield, not ticks (§3.4).
+- **A tool helps one trade and not another by rounding:** 34 % is chosen so every trade gains a
+  whole tick (1.33–1.5×, §3.4's table). The four-tick trades gain least, and a master woodcutter
+  gains nothing, and the spec says so instead of hiding it.
+- **Mastery and a tool compound into nothing, or into a four-times worker:** one product, one
+  rounding (§3.4). Rounding each separately would let the order decide; adding them would take a
+  four-tick split to one tick.
 - **The chain starves in the middle:** the firewood guard (§3.7 rule 3); iron is the player's
   choice to dig and the smith's refusal names it.
 - **A silent stall:** every reason the forge does not run is a `WorkNote` naming the store.
@@ -243,10 +310,66 @@ market's business; §3.5 stands.
   ✅ **The list is D392** (`founding_trades`, the same day); the three rows are the measured
   slice still filed in `handoff.md` — mastery would halve a cast and a hunt.
 
+### 6.1 Measured under ticks (D429)
+
+`main` (yield 25, no ticks) run on a `git worktree` of `main`, never through a dial; the other three
+arms on the branch, through the two dials and `cart_tools` (a throwaway harness, deleted).
+
+**D420's 55 fifty-year villages** (30 shipped + 12 fixture + 13 every-source), alive / peak / starved:
+
+| Arm | Alive | Peak | Starved |
+|---|---|---|---|
+| no tools at all | 321 | 529 | 152 |
+| **ticks 34 %, yield 0 — as specced** | **380** | 587 | **159** |
+| yield 25 %, no ticks — `main` (D391) | 440 | 631 | 113 |
+| **ticks 34 % + yield 25 % — shipped (Joe)** | **444** | 628 | **122** |
+
+The shipped seeds alone read 96 / 112 / 169 / 181 alive in that order. Ticks alone kept about half of
+what tools are worth; **the reason is structural, not the number**: a forager's trip is one gather
+between two walks, a fisher's and a hunter's one cast or one hunt, so a third off the action is a
+tick or a few off a trip of fifteen-plus. No tick percentage mends that — the next step for a
+three-tick gather is 67 % (3 → 1).
+
+**The rigs** (food per hundred ticks worked, demand held open — trap 30): `main` forager 342, fisher
+761, hunter 1,484; ticks alone forager ~280 *(the rig read 188 — see below)*, fisher 589, hunter
+1,150 (−17 to −23 %); **both: forager 324, fisher 769, hunter 1,447.** The ladder's order and its
+ratios hold (~2.4× and ~1.9×).
+
+**Wear.** Twelve fixture seeds × twenty years: **10.6 actions and 0.19 tools taken a hand-year on
+`main`, 10.5 and 0.19 on the branch** — the rate did not move, because work is demand-gated (a
+quicker hand is stood down sooner, not kept busier). ⚠️ This count disagrees with §6's *~55 actions
+a hand-year* by about five times; the denominator here is every hand holding a tool-trade seat,
+idle or not, and the two are not reconciled.
+
+**Found on the way** (⛔, each in its own place):
+- **The forager rig counted trips as gather ticks ÷ `gather_ticks`** (`FishingTests.
+  WhatAForagerBringsInAYear`), so with a tool (2 ticks a gather) it counted two trips in three and
+  read 188 where the forager was near 280. It counts gathers begun now. ⚠️ Its red check scores
+  **zero**, written down: the old count only made the forager read low, and the guard asserts the
+  fisher out-earns it. It still prices a trip at the bare hut's number (a tool's quarter uncounted).
+- **Three guards that were really measuring food went red under ticks alone and green again under
+  both** — the builder behind a starved head (D414's open item: nobody took the builder's seat for
+  the whole year), the market stocked to its limit, the food limit's foragers. The labour quota puts
+  every hand on food while the village is short; they are not re-posed.
+- **The timber gate's guard was a coin** (`WoodTests.TimberGatesGrowthWithoutStoppingIt`): the
+  fixture dies out unattended on about half its seeds by year 120 with or without the gate (twelve
+  seeds, gated / free alive: `main` 43 / 28, branch 51 / 32), and 12345 came up 0. Re-posed on seed 6,
+  whose ungated village lives on both, with the table beside it.
+
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/ToolsTests.cs`
 
 - `AToolWearsOncePerAction` — red with the wear off.
-- `AWorkerWithoutAToolWorksAtTodaysNumberToTheUnit` — red with the bonus handed to a bare hand.
+- `AWorkerWithoutAToolWorksAtTodaysNumberToTheUnit` — red with the bonus handed to a bare hand;
+  ticks and yield both (D429).
+- `AToolMakesTheActionItBeginsAThirdQuicker` — §3.4's table, trade by trade (D429).
+- `AMasterWithAToolMultipliesOnce` — 3 → 1 and 4 → 2; a master without one keeps 2 / 2 (D429).
+- `TheLastUseStillSpeedsItsOwnAction` — the ticks are read before the wear (D429).
+- `AToolIsQuickerAndBringsInMoreAsShipped` — data and C# agree: 34 on ticks, 25 on yield (D429).
+
+Red-checked (D326), reds counted against each break: the tool's percent never read 4; the two
+**added** instead of multiplied 1; rounded **separately** 1; the wear **before** the read 1; the bonus
+on a bare hand 5; the yield dial at 0 in the data 1. The forager rig's trip count scores **zero**
+(§6.1).
 - `AToolIsFetchedFromAStoreNotConjured` — the cart 20 → 19; red: no store, no tool, and the
   note says so.
 - `ASmithForgesToolsFromIronAndFirewood`.

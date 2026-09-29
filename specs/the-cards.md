@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378, D379, D380; §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** D380 unplayed. Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378, D379, D380, D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) on `slice/tools-on-ticks`; D432 unplayed.** Owner: Joe + Claude Code.
 
 ---
 
@@ -33,7 +33,7 @@ the title clips with an ellipsis, the status wraps), built once and rewritten ev
 | **Title** | the name; ✎ (**a building's card only** — not a person's, not a home's, D380) opens a `LineEdit` in place, Enter or focus-out commits; ⌖ pins; ✕ closes | `Name` (§3) |
 | **Status** | one sentence; a green light for *working*, amber and the sentence for the one reason it is not | `SimWorld.IdleNote` (workplace); full / emptying / *N of cap used* (store); the larder's share against `restock_emergency_percent` and cold (home); `Villager.WorkNote` else `DescribeState` (person) — ⚠️ the note is the trade's own and **is cleared where the job changes** (`LabourAllocator.Assign` to a different workplace, and `Release`), the way `CommuteNote` is (D410) |
 | **Workers** | *N / seats* with − and + — the same number the Professions panel edits from the other end (D109) | `SimWorld.SetStaffing` |
-| **Three numbers** | workplace: **what it holds, good by good** (*"10 · 8"* over *"meat · leather"*, largest first, as many names as fit the cell and the rest as *"others"* — D423, Joe: the lodge read *"18 of 2,700 hel…"*), **where it works** (painted ground for a forester or farm, *"tiles round it"* for a forager's ring, *"tiles of range"* for a hunter, *"the water"* for a fisher, *"at the building"* otherwise — D404, Joe: *"what does no ground mean?"*), **what its store holds at most** (*"2,700 it holds"*; seats only for a hut with no store of its own — the Workers row already says *"1 / 2"*, D423) · site: **every material** (*"40/40 · 0/5"* over *"logs · stone"*, and the status names what is still wanted — D404, Joe: *"stone doesn't show up as a requirement"*), work, sites queued · home: food/target, firewood/target, people · person: age, trade, household. ⛔ **A store has no three numbers since D393** — it has the storage list below | — |
+| **Three numbers** | workplace: **what it holds, good by good** (*"10 · 8"* over *"meat · leather"*, largest first, as many names as fit the cell and the rest as *"others"* — D423, Joe: the lodge read *"18 of 2,700 hel…"*), **where it works** (painted ground for a forester or farm, *"tiles round it"* for a forager's ring, *"tiles of range"* for a hunter, *"the water"* for a fisher, *"at the building"* otherwise — D404, Joe: *"what does no ground mean?"*), **what its store holds at most** (*"2,700 it holds"*; seats only for a hut with no store of its own — the Workers row already says *"1 / 2"*, D423) · site: **every material** (*"40/40 · 0/5"* over *"logs · stone"*, and the status names what is still wanted — D404, Joe: *"stone doesn't show up as a requirement"*), work, sites queued · home: food/target, firewood/target, people · ~~person: age, trade, household~~ **a person has no numbers since D431 (§2a)**. ⛔ **A store has no three numbers since D393** — it has the storage list below | — |
 | **Storage list** (stores, D393) | one row per good the store can hold, in catalogue order: chip · name · amount (*—* and dimmed when none) · **✓/✕ take toggle on the row** (`PlayerAllows`, D389). Every row adds up to the status line's *N of M used*. Joe, at a warehouse reading *714 used* over three numbers summing to 660 — the iron and tools were the missing 54: *"add a new line for each item that can go in a warehouse/granary/etc."*, with Foundation's warehouse card as the model. The *Takes:* row under Settings went with it — a good is described in one place (D139) | `StoreBuilding.CanEverHold`, `PlayerAllows`, `ToggleSelectedAccepts` |
 | **People** (homes) | *Name, age — trade* per living member, four rows tall, scrolling past four | `Household.MemberIds` |
 | **Picture** | `BuildingPortrait`: the footprint quad in the map's own colour, turned as it is turned, with its ring when the map would draw one; a caption — the workers, or the reason for the job | `VillageMap.FootprintQuadAt`, `VillageMap.ColourOf` |
@@ -56,7 +56,7 @@ structure?"*). **Open by default since D396** (Joe's QA pass — folded, it was 
 every card; the five parts still come first); it holds every control the docked panel used to: a store's *Stocking: Open / Closed / Emptying* (D389 — one
 three-state control; Emptying turns itself back to Open when the last armful leaves), *When full: Marker* and (a market's) *Keeps
 up to:* (*Takes:* moved onto the storage rows, D393); a workplace's idle marker, ground brush and felling mode, a site's build queue; a
-villager's *Kept on:* and the trades they have learned. Every row wraps (`HFlowContainer`), so the
+~~villager's *Kept on:* and the trades they have learned~~ (a person's card has no Settings fold since D431 — §2a). Every row wraps (`HFlowContainer`), so the
 card stays 268 wide with all of them open. Each control selects its card first and then calls the
 same "selected" handler the docked panel called — one rule, not two. **The docked panel is
 *What's here*, for what has no card** (bare ground and heaps — the library and the town hall have
@@ -92,6 +92,60 @@ panel. If a card wants more, the building is asking for a second card, not a lon
 store's storage list is not a fourth number** — it *replaces* the three (D393, Joe's call): a
 store's whole job is what it holds, and three of five was a card that lied.
 
+## 2a. A person's card is sections, not the five parts (D431)
+
+Joe, 2026-09-29, at Wendell's card with Foundation's villager panel beside it: ***"its a UX
+nightmare. copy off screen, no real hierarchy of information. nothing about tools."*** What it was:
+the status line carried the **workplace's** sentence (*"forester's hut 1 has stopped felling — you
+asked the village to keep 200 logs…"*); three clipped numbers; a **building footprint** as the
+picture of a person; a one-line caption holding the job reason *and* D430's tool text, cut off by
+an ellipsis before the tool; nine trade buttons and a two-line sentence for *Kept on*; the skill
+years as grey prose.
+
+⭐ **The five-parts rule is a building's.** A person is not staffed, holds nothing, and has no
+drawing, so their card is the same frame (268 wide, the head, one banner) with sections under it.
+
+**⭐ WHAT A PLAYER NEEDS FROM A PERSON'S CARD — the rule every line is held to (D432).** Joe, on
+D431: *"its better but way too wordy and crowded … whats important and what's not? what does the
+user need to know? remove all of the information about 'tiles'"*. In order of how often the
+question is asked:
+
+1. **Who is this?** — name; trade · age · household.
+2. **What are they doing, and is anything wrong?** — the banner, green or amber.
+3. **Where do they work, and can I change it?** — the job, and the one control.
+4. **Are they equipped?** — the tool: how much is left.
+5. **Are they all right?** — fed, warm, housed.
+6. **What are they good at?** — their trades and how near mastery.
+
+**What is NOT on the card, and where it lives:** the *why* of anything is one hover away, never
+printed — the workplace's note is the banner's and the job's tooltip, what a tool does is the tool
+section's; how they were assigned, the runner-up and the walk in tiles (`JobReason`,
+`CommuteNote`) are **off the card entirely** (Joe) and stay in the audit log, where §2.2's
+traceability is kept. ⛔ A line earns its place by answering one of the six questions at a glance;
+a sentence that explains an answer is a tooltip.
+
+**Room (D432, Joe: *"add breathing room between elements and borders"*):** twelve pixels inside the
+border (a building's card keeps six — at twelve the lodge's *"meat · leather"* no longer fits its
+cell, and the probe now says so), fourteen between sections, four inside one; the dropdown and the
+buttons at the card's text size; the bars in the working green (the theme's grey fill read as
+empty).
+
+Top to bottom:
+
+| Part | What it says | Where it comes from |
+|---|---|---|
+| **Subtitle** | *Forester · 35 · Thatcher household* | `TradeWordFor`, `AgeYears`, `HouseholdOf` |
+| **Banner** (the status row) | what they are doing **now** — green, or amber while hungry or while there is a note; **the note is its tooltip** (D432) | `Villager.DescribeState`, `WorkNote` |
+| **WORK** | *"Forester at forester's hut 1"* (amber, with the note as its tooltip, while there is one) · a dropdown — *The village decides* / *Always {trade}* (Joe's call; one control for D51's pin, disabled for a child). ⛔ No assignment reason, runner-up or distance (D432) | `SetPinnedTrade` |
+| **TOOL** (a trade that carries one) | one row: a bar and *"149 / 150"* — or *"No tool — works slower"* in amber; the tooltip says what a tool does (*"34% quicker at each action and 25% more from it"*) | `ToolUses`, `tool_uses`, the two bonus dials (D430) |
+| **NEEDS** | three pills, green or amber, the tooltip the reason: **Fed / Hungry** (`Hunger` against `eat_threshold`), **Warm / Cold** (`Cold` as a share of the way to freezing), **Housed / No roof** (the household's `HomePosition`) — Joe's call, *read from state that exists; no new mechanic* — morale and water join it when they exist | `Villager`, `SimConfig` |
+| **SKILLS** | a row per trade given a year, longest first: the trade, *"master"* or *"sixteen years"* (words, D174's register), a bar of the way to mastery; the tooltip is the old sentence | `TheirTrades` (was `DescribeTheirTrades`), `MasteryWorkFor` |
+| **Jumps** | *Find* (the camera to them) · *Home* · *Workplace* (their cards) | `VillageMap.CentreOn`, `OpenCard` |
+
+⛔ **Nothing on a person's card trims** (the title's ellipsis in the head excepted): every
+sentence wraps. The skill rows are made the first time a person needs them and reused, never
+rebuilt per frame.
+
 ## 3. Renaming — `SimWorld.Rename`
 
 ⚠️ **The view offers ✎ on a store's and a workplace's card only** (D380, Joe: *"only buildings should be
@@ -113,6 +167,15 @@ character; a village where nobody renamed anything hashes as it did before renam
   2 cards open"*), the title clip off (*"widens a card's minimum to 604"*), the rows as an `HBox`
   (*"with its settings open a card's minimum is 609"*), the hide rule off (*"a store showed two
   panels"*).
+- **Probe `villager card:`** (D431) — a person's card shows its sections and not a building's parts,
+  the dropdown offers the village plus every trade and reads the villager's pin, and **posed at its
+  fullest** (40-letter names, a three-line note and reason, no tool, all three needs wanting, six
+  skills of 40 letters) it is still 268 wide and **no label on it may trim**. Red-checked: a clipping
+  job line (*"1 label(s) on a person's card may trim"*), an unwrapped note (*"widens to 838"*).
+- **Probe `cards:` — the lodge's two names must FIT** (D432): the D423 check only failed when they
+  fit and were not both shown, so a wider margin on every card read *"meat · others"* with the line
+  green. Red-checked with every card at the person's margin: *"a lodge's "meat · leather" no longer
+  fits its 77px cell"*.
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
 - A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 

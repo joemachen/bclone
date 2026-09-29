@@ -913,7 +913,9 @@ public sealed class FishingTests
         loop.Step(config.TicksPerYear + 1);
 
         var gatherTicks = new Dictionary<int, int>();
+        var gathers = new Dictionary<int, int>();
         var jobTicks = new Dictionary<int, int>();
+        var was = new Dictionary<int, VillagerState>();
 
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
@@ -928,7 +930,13 @@ public sealed class FishingTests
                 if (villager.State == VillagerState.Gathering)
                 {
                     gatherTicks[villager.Id] = gatherTicks.GetValueOrDefault(villager.Id) + 1;
+                    if (was.GetValueOrDefault(villager.Id) != VillagerState.Gathering)
+                    {
+                        gathers[villager.Id] = gathers.GetValueOrDefault(villager.Id) + 1;
+                    }
                 }
+
+                was[villager.Id] = villager.State;
 
                 if (OnTheJob(villager.State))
                 {
@@ -953,7 +961,14 @@ public sealed class FishingTests
         }
 
         onTheJob = who == 0 ? 0 : jobTicks.GetValueOrDefault(who);
-        return best / config.GatherTicks * perTrip;
+
+        // ⚠️ GATHERS BEGUN, NOT GATHER TICKS ÷ `gather_ticks` (D429). A tool takes a gather from
+        // three ticks to two, so dividing by three counted two trips in three and read a forager
+        // with the founders' tools at 188 food per hundred ticks worked when it was about 280.
+        // ⚠️ STILL PRICED AT THE BARE HUT'S NUMBER: a forager holding a tool brings a quarter more
+        // a trip (D391), which this does not count — so the forager's side reads low, the side
+        // that makes this guard easier to pass. Known and left; measure delivered food to fix it.
+        return gathers.GetValueOrDefault(who) * perTrip;
     }
 
     /// <summary>

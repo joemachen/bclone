@@ -402,8 +402,18 @@ public sealed class StorageTests
         market.Store.Receive(Goods.Produce, 200);
         market.Store.Receive(Goods.Firewood, 200);
 
-        villager.Carried.TakeAll(Goods.Produce);
-        villager.Carried.TakeAll(Goods.Firewood);
+        // ⚠️ EVERY HOUSEMATE'S ARMS EMPTIED, NOT ONLY THIS VILLAGER'S (D429). Since D422 a load a
+        // housemate carries home already counts as in the larder, so emptying one pair of arms
+        // posed whoever happened to be walking home at the year's end. Under D429's quicker tools
+        // one was — Agnes, with 64 food — and this villager rightly took none.
+        foreach (Villager housemate in world.Villagers.Where(v => v.Alive && world.HouseholdOf(v) == home))
+        {
+            foreach (Goods good in System.Enum.GetValues<Goods>())
+            {
+                housemate.Carried.TakeAll(good);
+            }
+        }
+
         villager.Position = market.Position;
 
         BehaviorSystem.CollectForTest(world, villager);

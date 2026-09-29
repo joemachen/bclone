@@ -14,7 +14,8 @@ namespace Bclone.Sim.Tests;
 /// <remarks>
 /// <para>
 /// <b>The claims, in the spec's order:</b> a tool wears one use per action begun (§3.3); a worker
-/// without one works at today's number to the unit and a tool is the bonus (§3.4); a tool in a
+/// without one works at today's number to the unit and a tool is the bonus — a third off the
+/// action's ticks since D429, multiplied with mastery and rounded once (§3.4); a tool in a
 /// hand came out of a store's count (§3.5); the smith forges from iron and firewood, never the
 /// winter's firewood, and stops at the player's limit (§3.7); smiths are wanted when tools run
 /// short (§3.8); and a village with no tools plays as it did before tools existed (§3.1).
@@ -41,6 +42,9 @@ public sealed class ToolsTests
     public ToolsTests(ITestOutputHelper output) => _output = output;
 
     private static SimConfig Config => VillageFixtures.Village;
+
+    /// <summary>The fixture with no founder arriving skilled, so a hand is a novice at every trade.</summary>
+    private static SimConfig NoMasters => Config with { FoundingMasters = 0, FoundingJourneymen = 0 };
 
     // ---------------------------------------------------------------
     //  § Wear
@@ -75,8 +79,8 @@ public sealed class ToolsTests
             world.BeginWork(hand, JobKind.Woodcutter, Config.SplitTicks);
         }
 
-        // Twenty uses, forty splits: it wore to nothing and stayed there — and the ticks are the
-        // ticks either way, because the wear is not the bonus.
+        // Twenty uses, forty splits: it wore to nothing and stayed there — and with nothing in the
+        // hand the wear changes nothing: BeginWork's ticks are WorkTicksFor's.
         Assert.Equal(0, hand.ToolUses);
         Assert.Equal(
             world.WorkTicksFor(hand, JobKind.Woodcutter, Config.SplitTicks),
@@ -109,17 +113,147 @@ public sealed class ToolsTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⛔ A worker without a tool works at today's number to the unit; a tool adds the percentage
-    /// on top of the village's technique (§3.4). Red with the bonus handed to a bare hand.
+    /// ⭐ A tool takes a third off the action it begins, trade by trade — §3.4's table (D429).
+    /// </summary>
+    /// <remarks>
+    /// The base ticks are the shipped durations, passed in rather than read from the fixture, so
+    /// the table here is the table in the spec. 34 % is where a three-tick gather gets a whole tick;
+    /// the four-tick trades gain least. Red with the tool's percent never read.
+    /// </remarks>
+    [Fact]
+    public void AToolMakesTheActionItBeginsAThirdQuicker()
+    {
+        SimWorld world = SimFactory.CreatePhase0(NoMasters, new InMemoryLogSink()).World;
+        Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
+        Assert.Empty(hand.Skills);
+
+        (JobKind Trade, int Base, int WithATool)[] table =
+        {
+            (JobKind.Forager, 3, 2),
+            (JobKind.Farmer, 3, 2),
+            (JobKind.Forester, 4, 3),
+            (JobKind.Woodcutter, 4, 3),
+            (JobKind.Smith, 4, 3),
+            (JobKind.Fisher, 10, 7),
+            (JobKind.Hunter, 15, 10),
+        };
+
+        foreach ((JobKind trade, int baseTicks, int withATool) in table)
+        {
+            hand.ToolUses = 10;
+            int quick = world.WorkTicksFor(hand, trade, baseTicks);
+            hand.ToolUses = 0;
+            int bare = world.WorkTicksFor(hand, trade, baseTicks);
+            _output.WriteLine($"{trade,-11} {baseTicks,2} ticks bare, {quick,2} with a tool");
+
+            Assert.Equal(baseTicks, bare);
+            Assert.Equal(withATool, quick);
+        }
+
+        // A trade that carries no tool is not quickened by one in the hand.
+        hand.ToolUses = 10;
+        Assert.Equal(10, world.WorkTicksFor(hand, JobKind.Marketer, 10));
+    }
+
+    /// <summary>
+    /// ⭐ Mastery and a tool multiply, rounded once (Joe, D429): a master's three ticks go to one
+    /// with a tool, a master's four stay at two.
+    /// </summary>
+    /// <remarks>
+    /// Ticks left = base × (1 − 50 %) × (1 − 34 %), rounded once — so a master woodcutter gains
+    /// nothing from a tool, and the spec says so. Red with the two added (a split would go to one)
+    /// and with each rounded separately (a gather would stay at two).
+    /// </remarks>
+    [Fact]
+    public void AMasterWithAToolMultipliesOnce()
+    {
+        SimConfig config = NoMasters;
+        Assert.Equal(50, config.MasterySpeedBonusPercent);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        Villager master = world.Villagers.First(v => v.Alive && v.CanWork);
+        foreach (SkillRow skill in config.Skills)
+        {
+            master.ProgressIn(skill.Id).Work = config.MasteryWorkFor(skill);
+        }
+
+        (JobKind Trade, int Base, int Master, int MasterWithATool)[] table =
+        {
+            (JobKind.Forager, 3, 2, 1),
+            (JobKind.Farmer, 3, 2, 1),
+            (JobKind.Forester, 4, 2, 2),
+            (JobKind.Woodcutter, 4, 2, 2),
+            // No skill row (§6): the tool alone, master or not.
+            (JobKind.Fisher, 10, 10, 7),
+            (JobKind.Hunter, 15, 15, 10),
+        };
+
+        foreach ((JobKind trade, int baseTicks, int mastered, int both) in table)
+        {
+            master.ToolUses = 0;
+            int bare = world.WorkTicksFor(master, trade, baseTicks);
+            master.ToolUses = 10;
+            int withATool = world.WorkTicksFor(master, trade, baseTicks);
+            _output.WriteLine($"{trade,-11} {baseTicks,2} ticks: a master {bare,2}, with a tool {withATool,2}");
+
+            Assert.Equal(mastered, bare);
+            Assert.Equal(both, withATool);
+        }
+    }
+
+    /// <summary>
+    /// The tool that begins an action quickens it, even on its last use — the ticks are read
+    /// before the wear (D429). Red with the wear moved ahead of the read.
+    /// </summary>
+    [Fact]
+    public void TheLastUseStillSpeedsItsOwnAction()
+    {
+        SimWorld world = SimFactory.CreatePhase0(NoMasters, new InMemoryLogSink()).World;
+        Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
+
+        hand.ToolUses = 1;
+        Assert.Equal(10, world.BeginWork(hand, JobKind.Hunter, 15));
+        Assert.Equal(0, hand.ToolUses);
+        Assert.Equal(15, world.BeginWork(hand, JobKind.Hunter, 15));
+    }
+
+    /// <summary>
+    /// ⭐ A tool is both, as shipped (Joe, D429): a third off the ticks AND a quarter on the yield —
+    /// the data and the C# default agree. Ticks alone was measured at about half of what tools had
+    /// been worth, because a forager's trip is one gather between two walks.
+    /// </summary>
+    [Fact]
+    public void AToolIsQuickerAndBringsInMoreAsShipped()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        Assert.Equal(25, shipped.ToolYieldBonusPercent);
+        Assert.Equal(34, shipped.ToolSpeedBonusPercent);
+        Assert.Equal(new SimConfig().ToolYieldBonusPercent, shipped.ToolYieldBonusPercent);
+        Assert.Equal(new SimConfig().ToolSpeedBonusPercent, shipped.ToolSpeedBonusPercent);
+
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
+
+        hand.ToolUses = 10;
+        int withTechnique = world.YieldWithTechnique(JobKind.Forager, 123);
+        Assert.Equal(withTechnique + (withTechnique * 25 / 100), world.YieldFor(hand, JobKind.Forager, 123));
+        Assert.Equal(3 - 1, world.WorkTicksFor(hand, JobKind.Forager, 3));
+    }
+
+    /// <summary>
+    /// ⛔ A worker without a tool works at today's number to the unit — ticks and yield both — and
+    /// a tool adds its percentage on top of the village's technique (§3.4). Red with the bonus
+    /// handed to a bare hand.
     /// </summary>
     [Fact]
     public void AWorkerWithoutAToolWorksAtTodaysNumberToTheUnit()
     {
-        SimConfig config = Config with { ToolYieldBonusPercent = 25 };
+        SimConfig config = NoMasters;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
         Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
 
         hand.ToolUses = 0;
+        Assert.Equal(3, world.WorkTicksFor(hand, JobKind.Forager, 3));
+        Assert.Equal(15, world.BeginWork(hand, JobKind.Hunter, 15));
         Assert.Equal(world.YieldWithTechnique(JobKind.Forager, 123), world.YieldFor(hand, JobKind.Forager, 123));
         Assert.Equal(53, world.WithTool(hand, JobKind.Woodcutter, 53));
         Assert.Equal(world.YieldWithTechnique(JobKind.Forester, 40), world.YieldFor(null, JobKind.Forester, 40));
@@ -226,7 +360,10 @@ public sealed class ToolsTests
 
         Assert.True(forged > 0, "A staffed smithy with iron and firewood forged nothing.");
         Assert.Equal(forged * config.IronPerTool, ironSpent);
-        Assert.True(forgingTicks >= forged * config.ForgeTicks, "The tools came without the smith being seen at the anvil.");
+        // The quickest a forge can be is with a tool in hand (D429: 4 → 3); the smith has no skill
+        // row, so nothing else shortens it. Fewer ticks than that and a tool came from nowhere.
+        int quickestForge = config.ForgeTicks - (config.ForgeTicks * config.ToolSpeedBonusPercent / 100);
+        Assert.True(forgingTicks >= forged * quickestForge, "The tools came without the smith being seen at the anvil.");
     }
 
     /// <summary>
@@ -346,8 +483,8 @@ public sealed class ToolsTests
     [Fact]
     public void AVillageWithNoToolsPlaysAsItDidBeforeToolsExisted()
     {
-        SimConfig none = Config with { CartTools = 0, ToolYieldBonusPercent = 0 };
-        SimConfig bonus = Config with { CartTools = 0, ToolYieldBonusPercent = 90 };
+        SimConfig none = Config with { CartTools = 0, ToolYieldBonusPercent = 0, ToolSpeedBonusPercent = 0 };
+        SimConfig bonus = Config with { CartTools = 0, ToolYieldBonusPercent = 90, ToolSpeedBonusPercent = 90 };
 
         SimLoop a = SimFactory.CreatePhase0(none, new InMemoryLogSink());
         SimLoop b = SimFactory.CreatePhase0(bonus, new InMemoryLogSink());
