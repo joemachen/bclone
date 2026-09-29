@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT on `slice/joe-d421` (D422), all three rules on Joe's call — unplayed, not merged** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT (D422), all three rules on Joe's call — PLAYED AND MERGED (D425)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -461,7 +461,7 @@ be held to. *Measure household walking, not marketer walking.*
 > adjust the time/trigger for villagers to fetch from the market. it should be when larder items
 > get to 50% of their total maximum, not as soon as it is below 99%."*
 
-**Status: built 2026-09-15 (D372), unplayed.** Everything below is in, plus one rule Joe added
+**Status: built 2026-09-15 (D372), played since.** Everything below is in, plus one rule Joe added
 after the spec was written (§14.9.7); the per-market limits' control is a row on the market's
 inspector until the cards (`handoff.md` item 3) carry it. Read D14, D36, D161, D171, D199, D358(a),
 D362, D370 and D372 before touching it.
@@ -939,7 +939,7 @@ diagnosed first, and two of them were not the chaos the first read called them:
 - **The dry larders: a bar of three** (41 reads 3 too). ⏸️ Its fifth move since D363; whether one
   village can answer it at this size is on Joe's list.
 
-**✅ BUILT (D419), unplayed — JOE'S CALL (D418): every storage building shows its stock the same way** — *"granaries,
+**✅ BUILT (D419), played and merged (D421) — JOE'S CALL (D418): every storage building shows its stock the same way** — *"granaries,
 stockpiles, and warehouses should have the same 'market stock' visibility — all storage buildings
 should. When we get to visuals, I would like this to manifest as visual goods being added to /
 removed from each building."* The crates are the placeholder for that; the art pass is where goods
@@ -960,7 +960,7 @@ agreed with itself; fixed to count the store. ⚠️ The probe's unattended vill
 cart, even twelve years in, so the read half covers one kind; the line prints each kind's slot
 count from the catalogue.
 
-### 14.15 ✅ A TOP-UP ENDS — Joe's larder loop (D421 note 1), built (D422, 2026-09-27) — unplayed
+### 14.15 ✅ A TOP-UP ENDS — Joe's larder loop (D421 note 1), built (D422, 2026-09-27) — played and merged (D425)
 
 **Joe:** *"villagers get stuck in loops and not doing their jobs until i manually shuffle their jobs
 … related to granary/market/home and picking stuff up for the home … their decisions are changing

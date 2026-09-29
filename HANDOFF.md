@@ -1,6 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D424 IN §7. `main` = D421, PUSHED. `slice/joe-d421` = D422 (THE LARDER LOOP) + D423 (JOE'S OTHER THREE D421 NOTES) + D424 (HIS BROKEN LANE), COMMITTED, NOT MERGED, UNPLAYED → JOE PLAYS IT → THE WELL → TOOLS ON TICKS → THE QUARRY.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D425 IN §7. `main` = D425, PUSHED; NO BRANCH OPEN. NEXT: THE WELL (SLICE C) → TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE. WHERE THINGS ARE, 2026-09-28 — D424 (JOE'S BROKEN LANE) ADDED TO `slice/joe-d421`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-28 — D422–D424 MERGED AND PUSHED (D425).**
+>
+> **State:** `main` = `slice/joe-d421` merged (D422 the larder loop, D423 the limits panel / upright
+> crates / lodge card, D424 a step treads every tile it passes over) + D425's docs, **pushed at Joe's
+> word** (*"played it - looks good. merge and push!"*). No branch is open — cut a fresh one. 1266
+> passing, 0 failing, 5 skipped of 1271; view 0 warnings; probe green, bar height 161.
+>
+> ⚠️ **There is no save/load** (Joe, correcting me: *"there are no old save files. we haven't built
+> save functionality yet"*). It is Phase 4.5's shell, unscheduled (§4). Never tell him an old save
+> behaves differently — every game is a new game.
+>
+> **▶️ NEXT:** the well, slice C (`organic-housing.md §9.5` P6 — a placeable well with no water
+> mechanic yet, a destination paths wear toward and a term in the home score; measure before typing,
+> and it lands on D414's lanes and D424's footprints) → tools on ticks at 34 % (reversing D391's yield
+> axis) → the quarry, spec first → his design threads (⏸️ OPEN list).
+>
+> **Watch items:** `AFoodLimitKeepsForagersOnFood…` moved its year three slices running (8 → 10 → 4);
+> the every-source conservation seed moved again (4 → 10); the every-source founding is a knife-edge
+> (97 → 128 alive under D424). A separate session was auditing the season-stepper hole — check
+> whether it landed before trusting a `StepToTheStartOf` loop.
+>
+> *(The D424 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-28 — D424 (JOE'S BROKEN LANE) ADDED TO `slice/joe-d421`.**
 >
 > **State:** `main` = D421, pushed. **`slice/joe-d421` = D422 + D423 + D424, committed, NOT merged,
 > NOT pushed, unplayed.** D424: a step treads every tile it passes over (`LineOfSight.Footprints`),
@@ -9,8 +33,8 @@
 > in D424 and the commit.
 >
 > **▶️ FIRST, JOE PLAYS THE BRANCH** — the D423 banner below lists what to look at; add: a long lane
-> to an outlying house should draw as one path once it has worn in (a season or two into a new game;
-> an old save keeps its old wear). If it still reads bumpy after it is continuous, the next step is
+> to an outlying house should draw as one path once it has worn in (a season or two into a new game —
+> there is no save/load, D425). If it still reads bumpy after it is continuous, the next step is
 > smoothing the drawn chain — a view slice, his call. Then he merges and pushes.
 >
 > **Watch items:** `AFoodLimitKeepsForagersOnFood…` has moved its year three slices running (8 → 10 →

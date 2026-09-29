@@ -8,7 +8,7 @@ slice)**, D414 (walkers keep to the path; the wear ceiling). Follows `gridless.m
 D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes and wear has a ceiling —
 and ✅ D415 — the view draws a two-wide corridor as one lane and fills a yard only at a packed 3×3
 junction — PLAYED BY JOE AND MERGED (D416: *"looks so much better. keep it at 130 for now"*).
-✅ D424 (2026-09-28, `slice/joe-d421`, unplayed) — a step treads every tile it passes over, not only
+✅ D424 (2026-09-28) — PLAYED BY JOE AND MERGED (D425: *"looks good"*) — a step treads every tile it passes over, not only
 the one it lands on (§3.1; Joe's broken lane).**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
