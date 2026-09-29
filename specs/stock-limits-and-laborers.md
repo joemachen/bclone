@@ -321,9 +321,13 @@ is the game working.
   somewhere visible for the user in the UI"*), in a fixed slot so the bar never moves, with
   `SimWorld.WhyTheLimitIsMet` as its tooltip: *"At your limit of 200 logs (212 held) — the
   foresters have stopped, and ground painted for harvest in woodland is left standing. Raise it
-  under Stock limits."* The panel's row carries the same ⚠ and sentence. Amber still means *short*.
-- The panel is grouped **FOOD / MATERIALS / FUEL & GOODS**; the Food heading reads *"3,500 in all"*,
-  with ⚠ when that caps births.
+  under Stock limits."* Amber still means *short*.
+- The panel is grouped **FOOD / MATERIALS / FUEL & GOODS** and holds **only the limits and their
+  buttons** (D423, Joe: *"I want that whole section removed. only have the limits and the related
+  buttons on this pane"*) — each row is the good, its number and *clear*; the *"stop at · stored"*
+  column and the Food heading's *"3,500 in all"* are gone, and the top bar's ⚠ is where a met limit
+  is seen. The one thing only the panel said stays: a bare **⚠ on the FOOD heading** when the food
+  rows add up to less than the next child needs, with the births sentence as its tooltip.
 
 ---
 

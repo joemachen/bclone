@@ -1819,51 +1819,18 @@ public partial class Main : Control
         _onTheGround.TooltipText = string.Join("\n", whyOnTheGround);
         _onTheGroundLabel.TooltipText = _onTheGround.TooltipText;
 
-        // What each limited good actually stands at, beside the number the player set —
-        // so "nobody is splitting logs" and "you asked for 200 and there are 214" are the
-        // same glance rather than two.
-        for (int i = 0; i < _stockLimitReadouts.Count; i++)
-        {
-            (Goods goods, Label held) = _stockLimitReadouts[i];
+        // ⛔ THE ROWS NO LONGER SAY WHAT IS STORED (D421/D422, Joe: *"I want that whole section
+        // removed. only have the limits and the related buttons on this pane."*). The ⚠ per good
+        // is the top bar's (`WhyTheLimitIsMet`), which is where a met limit is seen from anywhere.
 
-            // ⭐ THE ROW SAYS WHETHER A LIMIT IS ACTUALLY IN FORCE (D139), and it did not.
-            //
-            // Joe: *"the woodcutter keeps making firewood way past the limit."* He was reading
-            // a spin box that said 200 beside a stock of 570 and concluding the sim ignored it.
-            // The sim was obeying perfectly — **there was no limit**. `SetStockLimit` is called
-            // from `ValueChanged`, so a row the player never touches shows its default number
-            // while the good is uncapped. He typed 2000 into Food, so Food bound; he left
-            // Firewood on its default, so Firewood was free.
-            //
-            // A number displayed as though it were a rule, which is not one, is the panel
-            // lying — and it is a regression I introduced removing the "village decides" tick,
-            // because that tick was the thing that used to say "this number is not in force".
-            // Read from the sim rather than from the widget: the label cannot drift from the
-            // state it describes.
-            int? limit = world.StockLimits.For(goods);
-            // ⭐ THE RULE'S OWN NUMBER (D409): `HeldAgainstItsLimit` — stores (the market too), heaps,
-            // the huts' buffers and the loads on their way to storage (D420), never a larder — for
-            // every good, so the row can never disagree with the stop it explains. "Stored", not
-            // "have" (D420): the village holds more than this, in its homes.
-            // It read the warehouses for firewood while the rule read the heaps too, which is how Joe
-            // saw *"stop at 400 · have 450"*. And a ⚠ where the limit is met, in the sim's words.
-            int have = world.HeldAgainstItsLimit(goods);
-            string? met = world.WhyTheLimitIsMet(goods);
-            held.Text = limit is null
-                ? $"no limit · stored {have.Grouped()}"
-                : $"{(met is null ? string.Empty : "⚠ ")}stop at {limit.Value.Grouped()} · stored {have.Grouped()}";
-            held.TooltipText = met ?? string.Empty;
-            held.MouseFilter = met is null ? MouseFilterEnum.Ignore : MouseFilterEnum.Pass;
-        }
-
-        // ⭐ THE FOOD HEADING (D409): the food rows added up, and a ⚠ when they sit below what the
-        // next child needs — with no food total, the rows can cap births and nothing else would say.
+        // ⭐ THE FOOD HEADING (D409): a ⚠ when the food rows add up to less than the next child
+        // needs — the one thing only this panel says, so it stayed when the totals went (D422).
         if (_foodCeiling is not null)
         {
             int? ceiling = world.FoodLimitsCeiling();
             int nextChild = world.FoodABirthNeeds(world.Population + 1);
             bool caps = ceiling is int c && c < nextChild;
-            _foodCeiling.Text = ceiling is int sum ? $"{(caps ? "⚠ " : string.Empty)}{sum.Grouped()} in all" : "no ceiling";
+            _foodCeiling.Text = caps ? "⚠" : string.Empty;
             _foodCeiling.TooltipText = caps
                 ? $"The food limits add up to {ceiling!.Value.Grouped()}, and a village of {world.Population + 1} needs {nextChild.Grouped()} held before another child is born — births stop here. Raise a food row."
                 : string.Empty;
@@ -3735,8 +3702,8 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// <b>Collapsible and left open by default</b> — they are standing orders, not a dialog you
-    /// dismiss, and the numbers beside them (*"200 · stored 214"*) are worth watching while the
-    /// year runs.
+    /// dismiss. ⚠️ The limits carry no readout of their own since D422 (Joe) — the top bar's ⚠ says
+    /// when one is met.
     /// </para>
     /// </remarks>
     private void BuildProfessionsPanel()
@@ -3932,7 +3899,7 @@ public partial class Main : Control
     }
 
     /// <summary>
-    /// The stock limits table — <b>resource, limit, clear, have</b>.
+    /// The stock limits table — <b>resource, limit, clear</b> (Joe, D422: only the limits and their buttons).
     /// </summary>
     /// <remarks>
     /// ⚠️ <b>Bounded by the ENUM where the overview's goods table is bounded by the CATALOGUE</b>,
@@ -3942,7 +3909,7 @@ public partial class Main : Control
     /// </remarks>
     private GridContainer BuildStockLimitTable()
     {
-        var table = new GridContainer { Columns = 5 };
+        var table = new GridContainer { Columns = 4 };
         table.AddThemeConstantOverride("h_separation", 6);
         table.AddThemeConstantOverride("v_separation", 1);
 
@@ -3950,7 +3917,6 @@ public partial class Main : Control
         table.AddChild(Muted("RESOURCE"));
         table.AddChild(Muted("LIMIT"));
         table.AddChild(new Control());
-        table.AddChild(Muted("HAVE"));
 
         // ⭐ GROUPED BY THE GOOD'S OWN CATEGORY (D409, Joe: *"group like categories together in the
         // stock limits menu"*). The heading a good sits under is its catalogue row's, so a modded
@@ -3963,12 +3929,12 @@ public partial class Main : Control
                 continue;
             }
 
-            // The total sits in the HAVE column, which wraps — nowhere else in the row can take it
-            // without widening the panel.
-            Label total = Wrapped(Muted(string.Empty));
+            // The FOOD heading's ⚠ sits in the LIMIT column, just past the heading's name.
+            Control limitCell = new Control();
             if (category == GoodCategory.Food)
             {
-                _foodCeiling = total;
+                _foodCeiling = Muted(string.Empty);
+                limitCell = _foodCeiling;
             }
 
             // ⚠️ THE HEADING IN A PLAIN CONTROL, WHICH TAKES NO SIZE FROM ITS CHILD. In the name
@@ -3980,9 +3946,8 @@ public partial class Main : Control
 
             table.AddChild(new Control());
             table.AddChild(heading);
+            table.AddChild(limitCell);
             table.AddChild(new Control());
-            table.AddChild(new Control());
-            table.AddChild(total);
 
             foreach (Goods goods in StockLimits.Kinds)
             {
@@ -5612,7 +5577,7 @@ public partial class Main : Control
         return roadmap;
     }
 
-    /// <summary>Five cells for one good's limit.</summary>
+    /// <summary>Four cells for one good's limit.</summary>
     /// <remarks>
     /// The controls are unchanged from the two-line rows this replaced — same <c>SpinBox</c>, same
     /// defaults, same <c>SetStockLimit</c> call, same clear button. **Only the layout moved.**
@@ -5625,7 +5590,7 @@ public partial class Main : Control
         _ => category.ToString(),
     };
 
-    /// <summary>The Food heading's sum of the food limits, and its ⚠ (D409).</summary>
+    /// <summary>The Food heading's ⚠ when the food limits would stop births (D409).</summary>
     private Label? _foodCeiling;
 
     private void AddStockLimitRow(GridContainer table, Goods goods)
@@ -5653,8 +5618,6 @@ public partial class Main : Control
 
         var clear = new Button { Text = "clear", Flat = true, Disabled = starts is null };
 
-        Label held = Wrapped(Muted(string.Empty));
-
         void Set(int? limit)
         {
             clear.Disabled = limit is null;
@@ -5666,12 +5629,8 @@ public partial class Main : Control
 
         table.AddChild(amount);
         table.AddChild(clear);
-        table.AddChild(held);
-
-        _stockLimitReadouts.Add((goods, held));
     }
 
-    private readonly List<(Goods Goods, Label Held)> _stockLimitReadouts = new();
     /// <summary>
     /// Two live cells per trade — <b>the max, and the notes</b>.
     /// </summary>

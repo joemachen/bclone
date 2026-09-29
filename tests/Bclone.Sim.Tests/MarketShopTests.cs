@@ -492,6 +492,188 @@ public sealed class MarketShopTests
         Assert.Equal(1, mostAtOnce);
     }
 
+    /// <summary>
+    /// ⭐⭐ A top-up ENDS with the trip that brings the larder back to target — or fills what room
+    /// it has — rather than chasing what the family eats while the last armful is carried home
+    /// (D422, Joe's loop). An armful short of the whole keeps it going.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe: *"villagers get stuck in loops and not doing their jobs until i manually shuffle
+    /// their jobs."* Measured in his own log and six villages: a fetch took exactly the shortfall
+    /// it found at the counter, the family ate on the walk home, and the larder landed a meal or
+    /// two short — still worth a trip, so D372's flag (cleared only AT target) never cleared. One
+    /// household made **54 trips** to close a shortfall of 116, bringing in about what it ate.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Posed at the counter, not over a season, and that is measured:</b> a run from half a
+    /// larder scored ZERO reds with this rule removed — the fixture's couples, and a posed family
+    /// of four at 7 / 12 / 17 ticks, never eat a trip's worth on the walk home, so the loop never
+    /// forms there. The six-village census in D422 is the behavioural evidence.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheTripThatFillsTheLarderEndsTheTopUp()
+    {
+        SimWorld world = Build(Config).World;
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        granary.Store.Receive(Goods.Produce, 1000);
+        Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+        Household home = world.HouseholdOf(villager);
+        int target = world.TargetFoodFor(home);
+
+        int Collect(int food, int firewoodOver)
+        {
+            villager.Carried.TryTake(Goods.Produce, villager.Carried[Goods.Produce]);
+            SetLarder(home, food);
+            home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+            if (firewoodOver > 0)
+            {
+                home.Stockpile.Receive(Goods.Firewood, firewoodOver);
+            }
+
+            home.ToppingUpFood = true;
+            villager.Position = granary.Position;
+            BehaviorSystem.CollectForTest(world, villager);
+            return world.FoodIn(villager.Carried);
+        }
+
+        // Twenty short: the trip carries the whole of it, and the run is over at the counter.
+        int small = Collect(target - 20, 0);
+        _output.WriteLine($"{home.Name} wants {target}: 20 short -> carried {small}, still topping up: {home.ToppingUpFood}");
+        Assert.Equal(20, small);
+        Assert.False(home.ToppingUpFood, "the trip that filled the larder left the top-up running — the treadmill");
+
+        // A hundred short: an armful is not the whole, so the run goes on.
+        int armful = Collect(target - 100, 0);
+        _output.WriteLine($"100 short -> carried {armful}, still topping up: {home.ToppingUpFood}");
+        Assert.Equal(Config.CarryCapacity, armful);
+        Assert.True(home.ToppingUpFood, "an armful short of the whole ended the top-up");
+
+        // A hundred short with room for only ten: all the room there is ends it too.
+        int wall = home.Stockpile.Capacity - (target - 100) - 10;
+        int roomed = Collect(target - 100, wall);
+        _output.WriteLine($"100 short, room for 10 -> carried {roomed}, still topping up: {home.ToppingUpFood}");
+        Assert.Equal(10, roomed);
+        Assert.False(home.ToppingUpFood, "a trip that filled the larder's last room left the top-up running");
+
+        // The hearth's run ends the same way: food at target, twenty firewood short, a counter with plenty.
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        market.Store.Receive(Goods.Firewood, 200);
+        int allowance = VillageEconomy.FirewoodStoreWantedPerHousehold(Config);
+        villager.Carried.TryTake(Goods.Produce, villager.Carried[Goods.Produce]);
+        SetLarder(home, target);
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+        home.Stockpile.Receive(Goods.Firewood, allowance - 20);
+        home.ToppingUpFirewood = true;
+        villager.Position = market.Position;
+        BehaviorSystem.CollectForTest(world, villager);
+        _output.WriteLine($"firewood 20 short of {allowance} -> carried {villager.Carried.Firewood}, still topping up: {home.ToppingUpFirewood}");
+        Assert.Equal(20, villager.Carried.Firewood);
+        Assert.False(home.ToppingUpFirewood, "the trip that filled the hearth's share left its top-up running");
+    }
+
+    /// <summary>
+    /// ⭐ A load a housemate is carrying home is already in the larder, for the sum (D422) —
+    /// nobody sets off for food that is on its way, and nobody picks it up twice at the counter.
+    /// </summary>
+    /// <remarks>
+    /// D372's one-fetcher rule lets go the moment the fetcher turns for home, and the next member
+    /// read the larder without that armful in it and went for the same shortfall; the second load
+    /// did not fit and was walked back to storage (shipped 12345: 108 arrivals turned away holding
+    /// 1,877 food in fifteen years). ⚠️ Counted rather than blocked — a shortfall bigger than the
+    /// armful on its way still sends a second pair of hands (the last half of this guard).
+    /// </remarks>
+    [Fact]
+    public void ALoadOnItsWayHomeCountsAsHeld()
+    {
+        SimWorld world = Build(Config with { GranaryX = 9, GranaryY = 7 }).World;
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        granary.Store.Receive(Goods.Produce, 1000);
+        Household home = world.Households.First(h => h.MemberIds.Count(id => world.FindVillager(id) is { Alive: true, CanWork: true }) >= 2);
+        var pair = home.MemberIds.Select(world.FindVillager).Where(v => v is { Alive: true, CanWork: true }).Take(2).ToList();
+        Villager carrier = pair[0]!, second = pair[1]!;
+        int target = world.TargetFoodFor(home);
+
+        // The first is on the road home with an armful; the larder is thirty short of target — and
+        // below the trigger once the armful is forgotten, so without the count a second trip fires.
+        SetLarder(home, target / 2);
+        carrier.State = VillagerState.TravelingHome;
+        carrier.Carried.Receive(Goods.Produce, target - target / 2 - 30);
+        home.ToppingUpFood = true;
+
+        StoreBuilding? planned = BehaviorSystem.PlanFetchForTest(world, second);
+        second.Position = granary.Position;
+        BehaviorSystem.CollectForTest(world, second);
+        int picked = world.FoodIn(second.Carried);
+        _output.WriteLine($"{home.Name} wants {target}, holds {target / 2}, {world.FoodIn(carrier.Carried)} on its way home: "
+            + $"the second plans {planned?.Name ?? "nothing"} and picks up {picked}");
+        Assert.True(picked <= 30, $"the second picked up {picked} with only 30 left to want — the armful on the road counted for nothing");
+
+        // And a shortfall bigger than the load on its way still sends somebody.
+        second.Carried.TryTake(Goods.Produce, picked);
+        carrier.Carried.TryTake(Goods.Produce, world.FoodIn(carrier.Carried));
+        carrier.Carried.Receive(Goods.Produce, 10);
+        home.ToppingUpFood = true;
+        Assert.NotNull(BehaviorSystem.PlanFetchForTest(world, second));
+    }
+
+    /// <summary>
+    /// ⭐ A fetch takes no more food than the larder has room for (D422) — food now reads the
+    /// walls the way firewood has since D407, so nothing is carried home to be carried back.
+    /// </summary>
+    [Fact]
+    public void AFetchTakesNoMoreFoodThanTheLarderHasRoomFor()
+    {
+        SimConfig config = Config with { GranaryX = 9, GranaryY = 7 };
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+        world.AnyStoreOf(StoreKind.Granary).Store.Receive(Goods.Produce, 1000);
+        foreach (JobKind kind in JobLimits.Kinds)
+        {
+            world.SetJobLimit(kind, 0);
+        }
+
+        Household home = world.Households.Where(h => world.LivingMembersOf(h) > 0)
+            .OrderByDescending(world.LivingMembersOf).First();
+        int target = world.TargetFoodFor(home);
+        Assert.True(home.Stockpile.Capacity != int.MaxValue, "the larder has no walls, so there is no room to respect");
+
+        // Half a larder of food, and firewood stacked past its allowance into the rest of the
+        // room: the trigger fires, and the room left is less than an armful and less than the shortfall.
+        SetLarder(home, target / 2);
+        int room = config.CarryCapacity / 2;
+        home.Stockpile.Receive(Goods.Firewood, home.Stockpile.FreeSpace - room);
+        Assert.True(room < target - target / 2, "the pose leaves more room than the shortfall, so the walls never bite");
+
+        int turnedAway = 0;
+        int mostHeld = 0;
+        var was = new Dictionary<int, VillagerState>();
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            mostHeld = System.Math.Max(mostHeld, home.Stockpile.Held);
+            foreach (int id in home.MemberIds)
+            {
+                if (world.FindVillager(id) is { Alive: true } member)
+                {
+                    if (was.TryGetValue(id, out VillagerState before) && before == VillagerState.TravelingHome
+                        && member.Tile == home.HomeTile && world.FoodIn(member.Carried) > 0)
+                    {
+                        turnedAway++;
+                    }
+
+                    was[id] = member.State;
+                }
+            }
+        }
+
+        _output.WriteLine($"{home.Name}: {room} room against a shortfall of {target - target / 2}; "
+            + $"{turnedAway} arrivals home still holding food; the larder peaked at {mostHeld} of {home.Stockpile.Capacity}");
+        Assert.True(mostHeld > 0, "nothing happened (D7)");
+        Assert.Equal(0, turnedAway);
+    }
+
     private static void SetLarder(Household home, int food)
     {
         home.Stockpile.TryTake(Goods.Produce, home.Stockpile[Goods.Produce]);

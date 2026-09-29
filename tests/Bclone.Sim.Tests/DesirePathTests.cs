@@ -597,6 +597,171 @@ public sealed class DesirePathTests
     /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in tenths of the corner-cutting village's block.</summary>
     private const int BlockBarTenths = 7;
 
+    /// <summary>
+    /// ⭐⭐ A commute along a packed lane treads every tile it passes over — <b>no break in the
+    /// lane</b> (D424, Joe: *"what's going on with these pathway segments? can they be a smooth
+    /// path?"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A step on packed ground is 1.25 tiles (clock B, 8 of 10), and a step trod only the tile it
+    /// landed on — so one household walking the same steep lane to its store skipped the same rows
+    /// every trip, and the lane wore into dashes a column apart (his screenshot). Posed as that:
+    /// a steep lane already packed, one villager walking it end to end, and the ground they mark
+    /// must be one unbroken 8-connected chain from the first tile to the last.
+    /// </para>
+    /// <para>
+    /// ⚠️ Worn to just past packed and under the ceiling, so a footstep shows as wear; and the
+    /// premise asserted — the walk takes fewer steps than it crosses rows, or nothing is skipped.
+    /// ⚠️ A village-wide census was tried first and scored ZERO: an untrodden gap in a straight run is
+    /// mostly a fence or a building, and a skipped row on a diagonal is not a straight-run gap.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ACommuteAlongAPackedLaneLeavesNoBreak()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        const int across = 3;
+        const int down = 9;
+
+        GridPos? start = ClearStretch(world, across, down);
+        Assert.True(start is not null, "no clear stretch of ground near the founding to pose a lane on");
+        GridPos from = start!.Value;
+        var to = new GridPos(from.X + across, from.Y + down);
+
+        // The lane, packed: every tile within a tile of the straight line, worn just past packed.
+        var lane = new HashSet<GridPos>();
+        LineOfSight.Footprints(Point.CentreOf(from), Point.CentreOf(to), t =>
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                lane.Add(new GridPos(t.X + dx, t.Y));
+            }
+        });
+        lane.Add(from);
+        int packed = world.Config.PathPackedAt + 5;
+        Assert.True(packed + world.Config.PathWearPerStep <= world.Config.PathWearCeiling, "the pose sits at the ceiling, where a footstep cannot show");
+        foreach (GridPos t in lane)
+        {
+            world.Paths.Tread(t, packed);
+        }
+
+        world.Paths.Decay(0);
+
+        Villager walker = world.Villagers.First(v => v.Alive && v.CanWork);
+        walker.StandAt(Point.CentreOf(from));
+        walker.LegSteps = 0;
+        var before = lane.ToDictionary(t => t, t => world.Paths.At(t));
+        int steps = 0;
+        while (steps < 100 && !(walker.Tile == to && walker.LegSteps == 0))
+        {
+            BehaviorSystem.TravelForTest(world, walker, to);
+            steps++;
+        }
+
+        Assert.Equal(to, walker.Tile);
+        var trodden = new HashSet<GridPos>();
+        foreach (GridPos t in world.Paths.Tiles.Select((_, i) => world.Paths.PositionOf(i)))
+        {
+            int was = before.TryGetValue(t, out int w) ? w : 0;
+            if (world.Paths.At(t) > was)
+            {
+                trodden.Add(t);
+            }
+        }
+
+        // One 8-connected chain from the first tile stepped on to the destination.
+        var reached = new HashSet<GridPos>();
+        var queue = new Queue<GridPos>(trodden.Where(t => Math.Max(Math.Abs(t.X - from.X), Math.Abs(t.Y - from.Y)) == 1).Take(1));
+        foreach (GridPos t in queue) { reached.Add(t); }
+        while (queue.Count > 0)
+        {
+            GridPos t = queue.Dequeue();
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    var n = new GridPos(t.X + dx, t.Y + dy);
+                    if (trodden.Contains(n) && reached.Add(n))
+                    {
+                        queue.Enqueue(n);
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"a lane {across} across and {down} down, packed: {steps} steps, {trodden.Count} tiles trodden, "
+            + $"{reached.Count} of them in one chain from the start; the destination {(reached.Contains(to) ? "joined" : "cut off")}");
+        Assert.True(steps - 1 < down, $"the walk took {steps} steps for {down} rows — no step is longer than a tile, so nothing could be skipped");
+        Assert.Contains(to, reached);
+        Assert.Equal(trodden.Count, reached.Count);
+    }
+
+    /// <summary>
+    /// ⭐ The shortcut rule's count is the grass a walk would TREAD (D414; D424) — on open grass the
+    /// tiles it enters, on a packed lane none.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Asked directly because the rule's own guard (<see cref="AWalkerKeepsToTheLaneTheRouteTakes"/>)
+    /// judges legs with this same function and so agrees with it whatever it says: made to count
+    /// nothing, the desire-path tests stayed green (D424's red check, D419's trap).
+    /// </remarks>
+    [Fact]
+    public void GrassUnderCountsTheGrassAWalkWouldTread()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        GridPos from = ClearStretch(world, 3, 5) ?? throw new InvalidOperationException("no clear ground");
+        var to = new GridPos(from.X + 3, from.Y + 5);
+        Point a = Point.CentreOf(from) + new Point(Fixed.FromRatio(1, 10), Fixed.FromRatio(-2, 10));
+        Point b = Point.CentreOf(to);
+
+        var entered = new List<GridPos>();
+        LineOfSight.Footprints(a, b, entered.Add);
+        Assert.Equal(3 + 5, entered.Count);
+        Assert.Equal(entered.Count, BehaviorSystem.GrassUnder(world, a, b));
+
+        foreach (GridPos t in entered)
+        {
+            world.Paths.Tread(t, world.Config.PathPackedAt + 5);
+        }
+
+        world.Paths.Decay(0);
+        Assert.Equal(0, BehaviorSystem.GrassUnder(world, a, b));
+    }
+
+    /// <summary>The nearest stretch of open ground to the founding — passable, unbuilt, unfenced — with a tile of margin.</summary>
+    private static GridPos? ClearStretch(SimWorld world, int across, int down)
+    {
+        bool Open(GridPos t) =>
+            world.Map.Contains(t) && TerrainRules.IsPassable(world.Map.TerrainAt(t))
+            && world.FootprintCovering(t).Count == 0 && world.Zones.WallsOn(t) == 0;
+        for (int r = 0; r < 20; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    var a = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + dy);
+                    bool clear = true;
+                    for (int y = -1; y <= down + 1 && clear; y++)
+                    {
+                        for (int x = -1; x <= across + 1 && clear; x++)
+                        {
+                            clear = Open(new GridPos(a.X + x, a.Y + y));
+                        }
+                    }
+
+                    if (clear)
+                    {
+                        return a;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static (int Block, int Paths) BlockTilesAfter(SimConfig config, int years)
     {
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());

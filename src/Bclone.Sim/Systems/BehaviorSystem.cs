@@ -1061,6 +1061,43 @@ public sealed class BehaviorSystem : ISimSystem
         return false;
     }
 
+    /// <summary>
+    /// What a household's larder will hold once the loads housemates are walking home with are in
+    /// — the larder's own count of <paramref name="held"/>, plus what is in their arms (D422).
+    /// </summary>
+    /// <remarks>
+    /// D372's one-fetcher rule lets go the moment the fetcher turns for home, and until D422 the
+    /// next member read the larder without that armful in it and went for the same shortfall; the
+    /// second load did not fit and was walked back to storage (shipped 12345: 108 arrivals turned
+    /// away holding 1,877 food in fifteen years). ⚠️ Counted, not blocked: a far household whose
+    /// shortfall is bigger than the armful on its way still sends a second pair of hands — measured,
+    /// blocking them made a family 25 ticks from the granary take six trips where it took four.
+    /// </remarks>
+    private static int HeldOnceHome(
+        SimWorld world, Household household, Villager villager, Func<Stockpile, int> held) =>
+        held(household.Stockpile) + InHousematesArms(world, household, villager, held);
+
+    /// <summary>What housemates walking home are carrying, as <paramref name="held"/> counts it (D422).</summary>
+    private static int InHousematesArms(
+        SimWorld world, Household household, Villager villager, Func<Stockpile, int> held)
+    {
+        // ⚠️ One pass over the villagers, not `FindVillager` per member: that is a scan of everyone
+        // who ever lived, and this is asked up to five times a fetch decision (D422's clock).
+        int total = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager housemate = world.Villagers[i];
+            if (housemate is { Alive: true, State: VillagerState.TravelingHome }
+                && housemate.HouseholdId == household.Id
+                && housemate.Id != villager.Id)
+            {
+                total += held(housemate.Carried);
+            }
+        }
+
+        return total;
+    }
+
     private static bool SomebodyElseIsFetching(
         SimWorld world, Household household, Villager villager)
     {
@@ -1230,7 +1267,7 @@ public sealed class BehaviorSystem : ISimSystem
         // birth gate reads the village's food now, not the larder's (`HouseholdSystem`), and the
         // topping-up is what keeps a larder near target between trips rather than at the floor.
         int foodWanted = world.TargetFoodFor(household);
-        int atHome = world.FoodIn(household.Stockpile);
+        int atHome = HeldOnceHome(world, household, villager, world.FoodIn);
         household.ToppingUpFood = StillShort(config, atHome, foodWanted, household.ToppingUpFood);
         if (household.ToppingUpFood)
         {
@@ -1252,12 +1289,13 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         int firewoodFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
+        int firewoodAtHome = HeldOnceHome(world, household, villager, larder => larder.Firewood);
         household.ToppingUpFirewood = StillShort(
-            config, household.Stockpile.Firewood, firewoodFloor, household.ToppingUpFirewood);
+            config, firewoodAtHome, firewoodFloor, household.ToppingUpFirewood);
 
         return household.ToppingUpFirewood
             ? NearestShopHolding(
-                world, villager.Tile, ATripsWorth(config, firewoodFloor - household.Stockpile.Firewood),
+                world, villager.Tile, ATripsWorth(config, firewoodFloor - firewoodAtHome),
                 (store, atLeast) => store.Accepts(Goods.Firewood) && HeldOf(store.Store, Goods.Firewood) >= atLeast)
             : null;
     }
@@ -3404,11 +3442,16 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.LegStep++;
         bool legDone = villager.LegStep >= villager.LegSteps;
+        Point stepFrom = villager.Position;
         villager.WalkTo(AlongTheLeg(villager.LegFrom, villager.LegTo, villager.LegStep, villager.LegSteps));
 
-        // ⭐ EVERY STEP TREADS THE TILE UNDER IT (§2.6, D358) — the tile under the straight line,
-        // so a trail is worn where people actually walk, not along the staircase they no longer take.
-        world.Paths.Tread(villager.Tile, world.Config.PathWearPerStep);
+        // ⭐ EVERY STEP TREADS THE GROUND IT PASSES OVER (§2.6, D358; D424) — the tiles under the
+        // straight line, so a trail is worn where people actually walk, not along the staircase they
+        // no longer take. ⛔ It trod only the tile it LANDED on until D424, and a step on a worn lane
+        // is 1.25 tiles, so every walker between two doors skipped the same tiles every trip and the
+        // lane wore into dashes (Joe's broken lane). `LineOfSight.Footprints` has the whole story.
+        int wearPerStep = world.Config.PathWearPerStep;
+        LineOfSight.Footprints(stepFrom, villager.Position, tile => world.Paths.Tread(tile, wearPerStep));
 
         if (legDone)
         {
@@ -3540,33 +3583,31 @@ public sealed class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// How many of the footsteps a straight walk from <paramref name="from"/> to
-    /// <paramref name="to"/> would take land on grass — the tiles <c>Travel</c> would tread,
-    /// one a step, at a step a tile (D414).
+    /// How many of the tiles a straight walk from <paramref name="from"/> to <paramref name="to"/>
+    /// would tread are grass — the footprints <c>Travel</c> leaves (D414; D424).
     /// </summary>
     /// <remarks>
-    /// ⚠️ The footsteps, not the tiles the line touches: <see cref="LineOfSight"/> is conservative
-    /// at corners and lists both tiles beside every corner a diagonal passes through, so a 45° walk
-    /// "crosses" three tiles a step and would lose to its own staircase on bare grass. Grass is
-    /// what the cost field charges full price for, so a paved road later counts as off the grass
-    /// for free. Once per candidate waypoint per leg, never per tick.
+    /// ⚠️ The footprints, not the tiles the line touches: <see cref="LineOfSight.TilesCrossed"/> is
+    /// conservative at corners and lists both tiles beside every corner a diagonal passes through,
+    /// so a 45° walk "crosses" three tiles a step and would lose to its own staircase on bare grass.
+    /// <see cref="LineOfSight.Footprints"/> steps through a corner diagonally — and since D424 it is
+    /// what <c>Travel</c> treads, so this counts exactly the grass a walk would wear (it sampled one
+    /// point a step until then, which undercounted a chord and flattered a shortcut). A generic line
+    /// enters |dx| + |dy| tiles, the staircase route's own count, so on bare grass a straight walk
+    /// still never loses to the route it replaces. Grass is what the cost field charges full price
+    /// for, so a paved road later counts as off the grass for free. Once per candidate waypoint per
+    /// leg, never per tick.
     /// </remarks>
     internal static int GrassUnder(SimWorld world, Point from, Point to)
     {
-        int steps = (from.DistanceTo(to) + Fixed.FromRatio(1, 2)).ToInt();
-        if (steps < 1)
-        {
-            steps = 1;
-        }
-
         int grass = 0;
-        for (int step = 1; step <= steps; step++)
+        LineOfSight.Footprints(from, to, tile =>
         {
-            if (world.TravelCost.CostToEnter(AlongTheLeg(from, to, step, steps).ToTile()) == TravelCostField.BaseTileCost)
+            if (world.TravelCost.CostToEnter(tile) == TravelCostField.BaseTileCost)
             {
                 grass++;
             }
-        }
+        });
 
         return grass;
     }
@@ -3665,6 +3706,10 @@ public sealed class BehaviorSystem : ISimSystem
     /// be asserted without waiting for a household to happen to dip.</summary>
     internal static StoreBuilding? PlanFetchForTest(SimWorld world, Villager villager) =>
         PlanFetch(world, villager);
+
+    /// <summary>One step of a walk toward <paramref name="target"/>, exposed so a test can watch the ground a commute treads (D424).</summary>
+    internal static void TravelForTest(SimWorld world, Villager villager, GridPos target) =>
+        Travel(world, villager, target, VillagerState.Idle);
 
     internal static void CollectForTest(SimWorld world, Villager villager) =>
         CollectFromStore(world, villager);
@@ -3791,9 +3836,29 @@ public sealed class BehaviorSystem : ISimSystem
         // Priority and exclusivity are different rules and only one of them was wanted. That is
         // D142's shape exactly — a rule that reached some of its call sites — and the fix is
         // the same: both halves in one place, with the second reading what the first left.
-        int foodShort = world.TargetFoodFor(household) - world.FoodIn(household.Stockpile);
-        int foodTaken = world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, load));
+        //
+        // ⚠️ AND NO MORE FOOD THAN THE LARDER HAS ROOM FOR (D422) — firewood has read the walls
+        // since D407 and food did not, so an armful bigger than the room was carried home and
+        // walked back to storage.
+        //
+        // ⚠️ AND A LOAD A HOUSEMATE IS CARRYING HOME IS ALREADY IN THE LARDER, FOR THIS SUM (D422).
+        int foodShort = world.TargetFoodFor(household) - HeldOnceHome(world, household, villager, world.FoodIn);
+        int foodRoom = household.Stockpile.FreeSpace
+            - InHousematesArms(world, household, villager, load => world.FoodIn(load) + load.Firewood);
+        int foodTaken = world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, foodRoom));
         load -= foodTaken;
+
+        // ⭐⭐ A TOP-UP ENDS WITH THE TRIP THAT FILLS THE LARDER (D422, Joe's loop). This trip
+        // carries all the larder was short of — or all it has room for — so the run of trips is
+        // over, here at the counter, not when the load lands. D372 cleared the flag only at
+        // target, and a trip sized to the shortfall never gets there: the family eats while it is
+        // carried home, lands a meal or two short, and that is worth another trip — one household
+        // made 54 of them to close 116, bringing in about what it ate on the way. The next run
+        // starts where the first did, at half a larder.
+        if (foodTaken >= foodShort || foodTaken >= foodRoom)
+        {
+            household.ToppingUpFood = false;
+        }
 
         // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
         // to carry and this does nothing — the second trip is then carry capacity doing its
@@ -3804,8 +3869,8 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        int firewoodShort =
-            VillageEconomy.FirewoodStoreWantedPerHousehold(config) - household.Stockpile.Firewood;
+        int firewoodShort = VillageEconomy.FirewoodStoreWantedPerHousehold(config)
+            - HeldOnceHome(world, household, villager, larder => larder.Firewood);
 
         // ⚠️ NO MORE THAN THE LARDER HAS ROOM FOR (D407). A larder's walls are shared by food and
         // firewood (D399), and a fetch took what the hearth wanted whether or not it would fit once
@@ -3813,11 +3878,17 @@ public sealed class BehaviorSystem : ISimSystem
         // destroyed), went foraging with them, and was set down at the granary, which takes no
         // firewood. Found by `AVillageWithRoomNeverSetsAnythingDown` once homes fetched firewood in
         // earnest (the last logs burn now).
-        int room = household.Stockpile.FreeSpace - foodTaken;
+        int room = foodRoom - foodTaken;
         int firewood = Smallest(firewoodShort, load, Smallest(target.Store.Firewood, room, room));
         if (firewood > 0 && target.Store.TryTake(Goods.Firewood, firewood))
         {
             villager.Carried.Receive(Goods.Firewood, firewood);
+        }
+
+        // The same end for the hearth's run (D422): all it was short of, or all there was room for.
+        if (firewood >= firewoodShort || firewood >= room)
+        {
+            household.ToppingUpFirewood = false;
         }
     }
 

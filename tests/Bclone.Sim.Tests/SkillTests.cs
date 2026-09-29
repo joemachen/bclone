@@ -322,8 +322,10 @@ public sealed class SkillTests
     // RE-TAKEN (D414) — walkers keep to the path the route takes (a shortcut may not put more feet on grass than the route it cuts) and wear stops at path_wear_ceiling 130 (`desire-paths.md §3.6`, Joe: "thinner walked paths"): the walks and the wear moved. Were 15636651256834973744 (fixture) and 11682607479568112513 (shipped).
     // RE-TAKEN (D417) — the market is stocked to 100 a household, not 40 (`market_stock_per_household`, Joe: "I want markets that visibly carry more stock"): the marketer's errands and the seats moved. Were 15694792062086194684 (fixture) and 14012360185614587487 (shipped).
     // RE-TAKEN (D420), THE SHIPPED ONE ONLY — a stock limit counts a load on its way to storage (HaulingToStore / HaulingToFarm, never a fetch, a restock or the dead) and every good in a hut's buffer, and the hide goes into the lodge with the meat (`stock-limits-and-laborers.md §4.5`, Joe: "loads in transit should count"). The fixture sets no limits and has no lodge, and did not move. Was 6377524262115766935 (shipped).
-    [InlineData(false, 6080727105567841863UL)]
-    [InlineData(true, 11736680872473445797UL)]
+    // RE-TAKEN (D422), BOTH — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Were 6080727105567841863 (fixture) and 11736680872473445797 (shipped).
+    // RE-TAKEN (D424), BOTH — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Were 15520529702523037520 (fixture) and 8108069699564212788 (shipped).
+    [InlineData(false, 11654469485471921697UL)]
+    [InlineData(true, 13070721559064917869UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
