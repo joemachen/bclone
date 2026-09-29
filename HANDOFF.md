@@ -1,6 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D430 IN §7. `main` = D428 (THE WELL), PUSHED. `slice/tools-on-ticks` = D429–D430, COMMITTED, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D430 IN §7. `main` = D428 (THE WELL), PUSHED. `slice/tools-on-ticks` = D429–D431 (TOOLS ON TICKS + A PERSON'S CARD IN SECTIONS), COMMITTED, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (NIGHT) — TOOLS ON TICKS BUILT ON `slice/tools-on-ticks`.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (LATE NIGHT) — TOOLS ON TICKS AND A PERSON'S CARD, BOTH ON `slice/tools-on-ticks`.**
+>
+> **Added since the paragraph below (D431, view only):** Joe called the villager card *"a UX
+> nightmare. copy off screen, no real hierarchy of information. nothing about tools"* (with
+> Foundation's villager panel). It is sections now — subtitle, a banner of what they are doing,
+> **WORK** (Kept-on dropdown, job, reason, note) · **TOOL** (uses left, what a tool does) · **NEEDS**
+> (Fed / Warm / Housed pills — his call, from existing state) · **SKILLS** (a bar to mastery) ·
+> *Find · Home · Workplace*. `the-cards.md §2a`. Probe `villager card:` poses it at its fullest and
+> fails on any trimming label. **For Joe to look at when he plays:** click any villager — the card
+> should read top to bottom with nothing cut off; the TOOL section is where D430 shows.
+>
 >
 > **State:** `main` = D428, pushed. **`slice/tools-on-ticks` = the spec commit (D429) + the build
 > (D430), committed, NOT merged, NOT pushed, unplayed.** 1285 passing, 0 failing, 5 skipped of 1290,
@@ -18,8 +28,8 @@
 >
 > **▶️ NEXT: JOE PLAYS THE BRANCH.** What to look at: foragers, fishers and hunters with the
 > founders' tools work visibly quicker at the action (a gather 3 → 2 ticks, a cast 10 → 7, a hunt
-> 15 → 10) — the walk is the same; the villager card's tool tooltip reads *"34% quicker at each
-> action, 25% more from it"*. Then he merges and pushes; then the quarry spec (`specs/quarry.md`,
+> 15 → 10) — the walk is the same; the villager card's TOOL section reads *"34% quicker at each
+> action and 25% more from it"* (D431). Then he merges and pushes; then the quarry spec (`specs/quarry.md`,
 > D395: painted land like the forester's hut, more stone and iron, iron nodes ≥ 50), then his
 > design threads.
 >
@@ -3308,6 +3318,14 @@ Read `git status` after staging, every time.
      the market and the food limit all failed under ticks alone and all passed under both: each was
      really asking "is the village short of food?", because the labour quota keeps every hand on
      food while it is. Re-posing them one by one would have hidden the balance change.
+
+138. **⚠️ A SENTENCE PAST AN ELLIPSIS DOES NOT EXIST (D431).** D430 put the tool's text on the
+     end of a one-line, `TrimEllipsis` caption and its meaning in that caption's tooltip; the job
+     reason before it was already longer than the card, so Joe never saw either, and asking *"what
+     is a villager's tool line?"* was the bug report. Before saying "it's on the card", read the
+     label's `ClipText` / `TextOverrunBehavior` and what comes before it on the line. A person's
+     card is guarded against trimming now (`villager card:`); buildings' number cells still clip by
+     design.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

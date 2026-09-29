@@ -286,6 +286,7 @@ public partial class Main : Control
 
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
+        GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
         GD.Print(AMetLimitIsMarkedOnTheBar());
 
@@ -2056,36 +2057,6 @@ public partial class Main : Control
         return _loop.World.StandingWorkplaceCovering(tile) ?? _loop.World.WorkplaceCovering(tile);
     }
 
-    /// <summary>Nudge the selected workplace's staffing, or clear the number you set.</summary>
-    /// <remarks>
-    /// Buttons rather than a spinner, because the numbers are small and a click is
-    /// cheaper to reach for than a text field.
-    /// <para>
-    /// <b>⛔ There is no way back to "untouched" and that is deliberate</b> (Joe, 2026-08-16).
-    /// The row briefly carried a "Village decides" button and then a "Clear" one; both are
-    /// gone, because the whole idea is. An untouched building is staffed by everyone who fits
-    /// — a fact about the building — and the moment the player states a number, that number is
-    /// the answer from then on.
-    /// </para>
-    /// </remarks>
-    /// <summary>Keep the selected villager on a trade, or hand them back.</summary>
-    /// <remarks>
-    /// <b>Pressing the trade they are already kept on hands them back</b>, which is why there is
-    /// no separate "release" control: one button per trade, and the pressed one is the answer to
-    /// *"what is this person kept on?"*. ⚠️ The sim owns the decision — this only asks.
-    /// </remarks>
-    private void TogglePin(JobKind trade)
-    {
-        Villager? villager = _loop.World.FindVillager(_selectedVillagerId);
-        if (villager is null)
-        {
-            return;
-        }
-
-        _loop.World.SetPinnedTrade(villager, villager.PinnedTrade == trade ? null : trade);
-        RefreshInspector(_loop.World);
-    }
-
     /// <summary>A bare right-click (D390): <i>What's here</i> for the tile, or closed again on the same tile.</summary>
     private void OnWhatsHereAsked(GridPos tile)
     {
@@ -2384,12 +2355,13 @@ public partial class Main : Control
     /// cannot yet be asked.
     /// </para>
     /// </remarks>
-    private static void DescribeTheirTrades(SimWorld world, Villager villager, List<string> lines)
+    private static List<(SkillRow Skill, SkillProgress Progress, int Years, string Sentence)> TheirTrades(SimWorld world, Villager villager)
     {
+        var trades = new List<(SkillRow, SkillProgress, int, string)>();
         int ticksPerYear = world.Config.TicksPerYear;
         if (ticksPerYear <= 0)
         {
-            return;
+            return trades;
         }
 
         // Longest first. Copied rather than sorted in place: `Villager.Skills` is kept in id
@@ -2415,10 +2387,12 @@ public partial class Main : Control
                 ? skill.YearsPhrase
                 : $"at {skill.Name}";
 
-            lines.Add(progress.Mastered
+            trades.Add((skill, progress, years, progress.Mastered
                 ? $"{Years(years)} {phrase} — a master of the work."
-                : $"{Years(years)} {phrase}.");
+                : $"{Years(years)} {phrase}."));
         }
+
+        return trades;
     }
 
     /// <summary>"Nineteen years", spelled out — a life is counted, not measured.</summary>

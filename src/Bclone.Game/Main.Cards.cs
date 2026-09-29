@@ -51,6 +51,12 @@ public partial class Main
     {
         public required PanelContainer Panel { get; init; }
         public required CardSubject Subject { get; set; }
+
+        /// <summary>A person's line under the name — trade · age · household (D431). Hidden on buildings.</summary>
+        public required Label Subtitle { get; init; }
+
+        /// <summary>A person's sections — work, tool, needs, skills, the jumps (D431). Hidden on buildings.</summary>
+        public required VillagerParts Person { get; init; }
         public bool Pinned { get; set; }
         public required Label Title { get; init; }
         public required LineEdit Rename { get; init; }
@@ -105,10 +111,36 @@ public partial class Main
         public Button? Mode { get; set; }
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
-        public VBoxContainer? PinRow { get; set; }
-        public Label? PinLabel { get; set; }
-        public List<(JobKind Trade, Button Button)> Pins { get; } = new();
-        public Label? Knows { get; set; }
+    }
+
+    /// <summary>
+    /// A person's card, in sections (D431, Joe with Foundation's villager panel: <i>"a UX
+    /// nightmare. copy off screen, no real hierarchy of information. nothing about tools"</i>).
+    /// </summary>
+    /// <remarks>
+    /// Built once with the card and shown only while the card is about a villager. Every sentence
+    /// wraps — nothing on a person's card ends in an ellipsis, which is the complaint this answers.
+    /// </remarks>
+    private sealed class VillagerParts
+    {
+        public required VBoxContainer Box { get; init; }
+        public required OptionButton Keep { get; init; }
+        public required Label Job { get; init; }
+        public required Label Why { get; init; }
+        public required Label Note { get; init; }
+        public required VBoxContainer ToolSection { get; init; }
+        public required ProgressBar ToolBar { get; init; }
+        public required Label ToolUses { get; init; }
+        public required Label ToolWorth { get; init; }
+        public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
+        public required VBoxContainer SkillsSection { get; init; }
+        public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
+        public required Button Find { get; init; }
+        public required Button Home { get; init; }
+        public required Button Work { get; init; }
+
+        /// <summary>The dropdown's trades, by item index — item 0 is <i>the village decides</i>.</summary>
+        public List<JobKind> KeepTrades { get; } = new();
     }
 
     private readonly List<Card> _cards = new();
@@ -298,6 +330,11 @@ public partial class Main
         var close = new Button { Text = "✕", Flat = true, TooltipText = "Close" };
         head.AddChild(close);
 
+        // ---- a person's subtitle (D431) ----
+        Label subtitle = Wrapped(Muted(string.Empty));
+        subtitle.Visible = false;
+        column.AddChild(subtitle);
+
         // ---- status ----
         var statusRow = new HBoxContainer();
         statusRow.AddThemeConstantOverride("separation", 8);
@@ -310,6 +347,10 @@ public partial class Main
         Label status = Wrapped(Body(string.Empty));
         status.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         statusRow.AddChild(status);
+
+        // ---- a person's sections (D431) ----
+        VillagerParts person = BuildPersonParts();
+        column.AddChild(person.Box);
 
         // ---- workers ----
         var workersRow = new HBoxContainer();
@@ -403,6 +444,8 @@ public partial class Main
         {
             Panel = panel,
             Subject = subject,
+            Subtitle = subtitle,
+            Person = person,
             Title = title,
             Rename = rename,
             Edit = edit,
@@ -446,6 +489,10 @@ public partial class Main
         };
         rename.TextSubmitted += _ => CommitRename(card);
         rename.FocusExited += () => CommitRename(card);
+        person.Keep.ItemSelected += index => KeepFromTheCard(card, (int)index);
+        person.Find.Pressed += () => JumpFromThePerson(card, PersonJump.Find);
+        person.Home.Pressed += () => JumpFromThePerson(card, PersonJump.Home);
+        person.Work.Pressed += () => JumpFromThePerson(card, PersonJump.Work);
         fewer.Pressed += () => ChangeStaffingOf(card, -1);
         more.Pressed += () => ChangeStaffingOf(card, +1);
         settingsToggle.Toggled += open =>
@@ -487,6 +534,18 @@ public partial class Main
         RefreshInspector(world);
     }
 
+    /// <summary>Nudge a workplace's staffing from its card's − and +.</summary>
+    /// <remarks>
+    /// Buttons rather than a spinner, because the numbers are small and a click is
+    /// cheaper to reach for than a text field.
+    /// <para>
+    /// <b>⛔ There is no way back to "untouched" and that is deliberate</b> (Joe, 2026-08-16).
+    /// The row briefly carried a "Village decides" button and then a "Clear" one; both are
+    /// gone, because the whole idea is. An untouched building is staffed by everyone who fits
+    /// — a fact about the building — and the moment the player states a number, that number is
+    /// the answer from then on.
+    /// </para>
+    /// </remarks>
     private void ChangeStaffingOf(Card card, int delta)
     {
         if (card.Subject.Kind != CardKind.Workplace
@@ -544,6 +603,15 @@ public partial class Main
         }
 
         card.Records.Visible = false;
+
+        // A person's card is sections, not the five parts (D431): per refresh, because a card is
+        // retargeted from a building to a person and back.
+        bool person = card.Subject.Kind == CardKind.Villager;
+        card.Subtitle.Visible = person;
+        card.Person.Box.Visible = person;
+        card.Portrait.Visible = !person;
+        card.Caption.Visible = !person;
+
         bool shown = card.Subject.Kind switch
         {
             CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(card, store),
@@ -720,27 +788,6 @@ public partial class Main
                 break;
             }
 
-            case CardKind.Villager:
-            {
-                // Keeping a named villager on a trade (Joe, 2026-08-22) — a button per trade;
-                // pressing the pressed one hands them back.
-                c.PinLabel = Muted("Kept on:");
-                (c.PinRow, HFlowContainer pinControls) = InspectorRow(body, c.PinLabel);
-                foreach (JobKind trade in System.Enum.GetValues<JobKind>())
-                {
-                    JobKind captured = trade;
-                    var button = new Button { ToggleMode = true };
-                    button.Pressed += () => Act(card, () => TogglePin(captured));
-                    pinControls.AddChild(button);
-                    c.Pins.Add((captured, button));
-                }
-
-                // What they have learned (D174) — the one thing the card has no other room for.
-                c.Knows = Wrapped(Muted(string.Empty));
-                body.AddChild(c.Knows);
-                break;
-            }
-
             default:
                 break;
         }
@@ -849,26 +896,6 @@ public partial class Main
                     c.QueueLabel!.Text = $"Build queue — {world.QueuePositionOf(place)} of {world.BuildQueue().Count}:";
                 }
 
-                break;
-            }
-
-            case CardKind.Villager when world.FindVillager(card.Subject.Id) is { Alive: true } villager:
-            {
-                c.PinRow!.Visible = true;
-                c.PinLabel!.Text = villager.PinnedTrade is JobKind kept
-                    ? $"Kept on {world.JobsCatalog.NameOf(kept)} — press it again to hand them back:"
-                    : $"Kept on: (the village decides where {villager.Name} works)";
-                foreach ((JobKind trade, Button button) in c.Pins)
-                {
-                    button.Text = ProfessionName(world, trade);
-                    button.SetPressedNoSignal(villager.PinnedTrade == trade);
-                    button.Disabled = !villager.CanWork;
-                }
-
-                var lines = new List<string>();
-                DescribeTheirTrades(world, villager, lines);
-                c.Knows!.Text = string.Join("\n", lines);
-                c.Knows.Visible = lines.Count > 0;
                 break;
             }
 
@@ -1204,6 +1231,23 @@ public partial class Main
         return true;
     }
 
+    /// <summary>
+    /// A person's card (D431): who they are, what they are doing now, then WORK · TOOL · NEEDS ·
+    /// SKILLS and three jumps — Joe, with Foundation's villager panel: <i>"a UX nightmare. copy off
+    /// screen, no real hierarchy of information. nothing about tools."</i>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The banner is the person, now; the workplace's reason sits under WORK.</b> The status
+    /// line used to be <see cref="Villager.WorkNote"/> — a building's sentence (<i>"forester's hut 1
+    /// has stopped felling…"</i>) in the person's headline. It is <see cref="Villager.DescribeState"/>
+    /// now, amber while hungry or while there is a note, and the note is read beside the job.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Nothing here clips</b>: every sentence wraps, and the probe's <c>villager card:</c> line
+    /// fails if a label on this card is set to trim.
+    /// </para>
+    /// </remarks>
     private bool ShowVillager(SimWorld world, Card card, Villager villager)
     {
         if (!villager.Alive)
@@ -1212,55 +1256,311 @@ public partial class Main
         }
 
         Title(card, villager.Name, renamable: false);
-        card.Numbers.Visible = true;
+        card.Numbers.Visible = false;
         card.Storage.Visible = false;
-
-        Workplace? job = world.FindWorkplace(villager.WorkplaceId);
-        bool hungry = villager.Hunger >= world.Config.EatThreshold;
-        string doing = villager.DescribeState(job?.Name);
-        bool stopped = hungry || !string.IsNullOrWhiteSpace(villager.WorkNote);
-        Status(
-            card,
-            working: !stopped,
-            hungry ? $"Hungry — {doing}."
-                : !string.IsNullOrWhiteSpace(villager.WorkNote) ? villager.WorkNote
-                : Capitalise(doing) + ".");
-
         card.WorkersRow.Visible = false;
         card.PeopleScroll.Visible = false;
 
-        Number(card, 0, $"{villager.AgeYears}", villager.LifeStage.ToString().ToLowerInvariant());
-        Number(card, 1, TradeWordFor(world, villager), job is null ? "no workplace" : job.Name);
-        Number(card, 2, world.HouseholdOf(villager).Name, "household");
+        VillagerParts p = card.Person;
+        Workplace? job = world.FindWorkplace(villager.WorkplaceId);
+        Household home = world.HouseholdOf(villager);
+        card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household";
 
-        if (job is not null)
+        bool hungry = villager.Hunger >= world.Config.EatThreshold;
+        bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
+        string doing = villager.DescribeState(job?.Name);
+        Status(card, working: !hungry && !noted, hungry ? $"Hungry — {doing}." : Capitalise(doing) + ".");
+
+        // ---- WORK ----
+        FillKeep(world, p, villager);
+        p.Job.Text = job is not null ? $"{ProfessionName(world, job.Kind)} at {job.Name}"
+            : villager.CanWork ? "A laborer — spare hands, working wherever the village needs them"
+            : "A child — too young to work";
+        string why = string.Join("\n", new[] { villager.JobReason, villager.CommuteNote }.Where(line => !string.IsNullOrWhiteSpace(line)));
+        p.Why.Text = why;
+        p.Why.Visible = why.Length > 0;
+        p.Note.Text = villager.WorkNote;
+        p.Note.Visible = noted;
+
+        // ---- TOOL (D391, D430) ----
+        bool usesTool = job is not null && world.JobsCatalog.UsesTool(job.Kind);
+        p.ToolSection.Visible = usesTool;
+        if (usesTool)
         {
-            card.Portrait.Show(TradeGlyph.ColourOf(job.Kind), job.ExtentWidth * 0.8f, job.ExtentHeight * 0.8f, job.Facing.Raw, null);
-            string reason = string.IsNullOrWhiteSpace(villager.JobReason) ? $"works at {job.Name}" : villager.JobReason;
-
-            // ⭐ The tool in their hands (D391): a trade that carries one says how much is left
-            // of it, and says when there is none — the fade the founders' twenty are on.
-            string tool = !world.JobsCatalog.UsesTool(job.Kind) ? string.Empty
-                : villager.ToolUses > 0 ? $" · a tool in hand, {villager.ToolUses} uses left"
-                : " · no tool";
-            card.Caption.Text = reason + tool;
-
-            // And what the tool does, on the tooltip so the caption keeps its width (D429): read
-            // from the two dials, so a changed number is a changed sentence.
-            string worth = villager.ToolUses > 0 && world.JobsCatalog.UsesTool(job.Kind)
-                ? $" — {world.Config.ToolSpeedBonusPercent}% quicker at each action, "
-                    + $"{world.Config.ToolYieldBonusPercent}% more from it"
-                : string.Empty;
-            card.Caption.TooltipText = villager.JobReason + tool + worth;
+            int uses = villager.ToolUses;
+            p.ToolBar.MaxValue = Mathf.Max(1, Mathf.Max(world.Config.ToolUses, uses));
+            p.ToolBar.Value = uses;
+            p.ToolBar.Visible = uses > 0;
+            p.ToolUses.Text = uses > 0 ? $"{uses} of {world.Config.ToolUses} uses left" : "No tool — working at the plain pace";
+            p.ToolUses.Modulate = uses > 0 ? Colors.White : LightStopped;
+            string worth = WhatAToolIsWorth(world);
+            p.ToolWorth.Text = uses > 0 ? Capitalise(worth) + "." : $"A tool would make them {worth}.";
+            p.ToolWorth.Visible = worth.Length > 0;
         }
-        else
+
+        // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
+        SetNeed(p.Needs[0], !hungry, hungry ? "Hungry" : "Fed",
+            hungry ? $"{villager.Name} is hungry and will stop to eat." : $"{villager.Name} has eaten.");
+        int threshold = world.Config.ExposureThreshold;
+        int cold = threshold > 0 ? villager.Cold * 100 / threshold : 0;
+        SetNeed(p.Needs[1], villager.Cold == 0, villager.Cold == 0 ? "Warm" : "Cold",
+            villager.Cold == 0 ? $"{villager.Name} is warm." : $"{cold}% of the way to freezing — a hearth warms them, a roof slows the cold.");
+        bool housed = home.HomePosition is not null;
+        SetNeed(p.Needs[2], housed, housed ? "Housed" : "No roof",
+            housed ? $"Lives with the {home.Name} household." : $"The {home.Name} household has no home yet.");
+
+        // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
+        var trades = TheirTrades(world, villager);
+        p.SkillsSection.Visible = trades.Count > 0;
+        while (p.Skills.Count < trades.Count)
         {
-            card.Portrait.Show(VillageMap.HomeColour, 0.62f, 0.62f, 0, null);
-            card.Caption.Text = string.IsNullOrWhiteSpace(villager.JobReason) ? "a laborer — spare hands" : villager.JobReason;
-            card.Caption.TooltipText = villager.JobReason;
+            AddSkillRow(p);
         }
 
+        for (int i = 0; i < p.Skills.Count; i++)
+        {
+            (VBoxContainer row, Label name, Label years, ProgressBar bar) = p.Skills[i];
+            row.Visible = i < trades.Count;
+            if (!row.Visible)
+            {
+                continue;
+            }
+
+            (SkillRow skill, SkillProgress progress, int held, string sentence) = trades[i];
+            int mastery = world.Config.MasteryWorkFor(skill);
+            name.Text = Capitalise(skill.Name);
+            years.Text = progress.Mastered ? "master" : Years(held).ToLowerInvariant();
+            bar.MaxValue = Mathf.Max(1, mastery);
+            bar.Value = Mathf.Min(progress.Work, mastery);
+            row.TooltipText = sentence;
+        }
+
+        p.Work.Disabled = job is null;
         return true;
+    }
+
+    /// <summary>What a tool does, from the two dials — <i>"34% quicker at each action and 25% more from it"</i>.</summary>
+    private static string WhatAToolIsWorth(SimWorld world)
+    {
+        int speed = world.Config.ToolSpeedBonusPercent;
+        int yield = world.Config.ToolYieldBonusPercent;
+        string quicker = speed > 0 ? $"{speed}% quicker at each action" : string.Empty;
+        string more = yield > 0 ? $"{yield}% more from it" : string.Empty;
+        return quicker.Length > 0 && more.Length > 0 ? $"{quicker} and {more}" : quicker + more;
+    }
+
+    /// <summary>The Kept-on dropdown: the village decides, or one trade (Joe, 2026-08-22; a dropdown since D431).</summary>
+    private static void FillKeep(SimWorld world, VillagerParts p, Villager villager)
+    {
+        if (p.KeepTrades.Count == 0)
+        {
+            p.Keep.AddItem("The village decides");
+            foreach (JobKind trade in System.Enum.GetValues<JobKind>())
+            {
+                p.Keep.AddItem($"Keep on: {ProfessionName(world, trade)}");
+                p.KeepTrades.Add(trade);
+            }
+        }
+
+        int selected = villager.PinnedTrade is JobKind kept ? p.KeepTrades.IndexOf(kept) + 1 : 0;
+        if (p.Keep.Selected != selected)
+        {
+            p.Keep.Select(selected);
+        }
+
+        p.Keep.Disabled = !villager.CanWork;
+        p.Keep.TooltipText = villager.PinnedTrade is null
+            ? $"The village decides where {villager.Name} works — pick a trade to keep them on it."
+            : $"{villager.Name} is kept on {world.JobsCatalog.NameOf(villager.PinnedTrade.Value)} — pick \"The village decides\" to hand them back.";
+    }
+
+    /// <summary>The player chose from the dropdown: keep them on a trade, or hand them back. The sim owns the decision.</summary>
+    private void KeepFromTheCard(Card card, int index)
+    {
+        if (_loop.World.FindVillager(card.Subject.Id) is not Villager villager)
+        {
+            return;
+        }
+
+        JobKind? wanted = index >= 1 && index <= card.Person.KeepTrades.Count ? card.Person.KeepTrades[index - 1] : null;
+        Act(card, () =>
+        {
+            _loop.World.SetPinnedTrade(villager, wanted);
+            RefreshInspector(_loop.World);
+        });
+    }
+
+    private enum PersonJump
+    {
+        Find,
+        Home,
+        Work,
+    }
+
+    /// <summary>The card's three jumps: the camera to them, their home's card, their workplace's card.</summary>
+    private void JumpFromThePerson(Card card, PersonJump jump)
+    {
+        SimWorld world = _loop.World;
+        if (world.FindVillager(card.Subject.Id) is not Villager villager)
+        {
+            return;
+        }
+
+        switch (jump)
+        {
+            case PersonJump.Find:
+                _map.CentreOn(new Vector2(villager.Tile.X + 0.5f, villager.Tile.Y + 0.5f));
+                break;
+            case PersonJump.Home:
+                OpenCard(new CardSubject(CardKind.Household, world.HouseholdOf(villager).Id));
+                break;
+            case PersonJump.Work when world.FindWorkplace(villager.WorkplaceId) is Workplace job:
+                OpenCard(new CardSubject(CardKind.Workplace, job.Id));
+                break;
+        }
+    }
+
+    private static readonly StyleBoxFlat PillFine = Pill(LightWorking);
+    private static readonly StyleBoxFlat PillWanting = Pill(LightStopped);
+
+    private static StyleBoxFlat Pill(Color colour)
+    {
+        var skin = new StyleBoxFlat
+        {
+            BgColor = colour with { A = 0.18f },
+            BorderColor = colour with { A = 0.7f },
+        };
+
+        skin.SetBorderWidthAll(1);
+        skin.SetCornerRadiusAll(9);
+        skin.ContentMarginLeft = skin.ContentMarginRight = 8;
+        skin.ContentMarginTop = skin.ContentMarginBottom = 1;
+        return skin;
+    }
+
+    private static void SetNeed((PanelContainer Pill, Label Text) need, bool fine, string text, string why)
+    {
+        need.Text.Text = text;
+        need.Text.Modulate = fine ? LightWorking : LightStopped;
+        need.Pill.TooltipText = why;
+        need.Pill.AddThemeStyleboxOverride("panel", fine ? PillFine : PillWanting);
+    }
+
+    /// <summary>A section's head: a small caps word and a rule (D431).</summary>
+    private static HBoxContainer SectionHeader(string text)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 6);
+        row.AddChild(Muted(text));
+        row.AddChild(new HSeparator { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter });
+        return row;
+    }
+
+    private static ProgressBar Bar() => new()
+    {
+        MinValue = 0,
+        ShowPercentage = false,
+        CustomMinimumSize = new Vector2(0, 6),
+        SizeFlagsHorizontal = SizeFlags.ExpandFill,
+    };
+
+    /// <summary>One skill row, made when a person first needs it and reused after — never rebuilt per frame.</summary>
+    private static void AddSkillRow(VillagerParts p)
+    {
+        var row = new VBoxContainer { MouseFilter = MouseFilterEnum.Stop };
+        row.AddThemeConstantOverride("separation", 1);
+        var line = new HBoxContainer();
+        line.AddThemeConstantOverride("separation", 6);
+        Label name = Wrapped(Body(string.Empty));
+        Label years = Muted(string.Empty);
+        years.SizeFlagsHorizontal = SizeFlags.ShrinkEnd;
+        line.AddChild(name);
+        line.AddChild(years);
+        row.AddChild(line);
+        ProgressBar bar = Bar();
+        row.AddChild(bar);
+        p.SkillsSection.AddChild(row);
+        p.Skills.Add((row, name, years, bar));
+    }
+
+    /// <summary>A person's sections, built once with the card and hidden until it shows a villager (D431).</summary>
+    private static VillagerParts BuildPersonParts()
+    {
+        var box = new VBoxContainer { Visible = false };
+        box.AddThemeConstantOverride("separation", 4);
+
+        box.AddChild(SectionHeader("WORK"));
+        var keep = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FitToLongestItem = false };
+        box.AddChild(keep);
+        Label job = Wrapped(Body(string.Empty));
+        box.AddChild(job);
+        Label why = Wrapped(Muted(string.Empty));
+        box.AddChild(why);
+        Label note = Wrapped(Body(string.Empty));
+        note.Modulate = LightStopped;
+        box.AddChild(note);
+
+        var toolSection = new VBoxContainer();
+        toolSection.AddThemeConstantOverride("separation", 2);
+        toolSection.AddChild(SectionHeader("TOOL"));
+        ProgressBar toolBar = Bar();
+        toolSection.AddChild(toolBar);
+        Label toolUses = Wrapped(Body(string.Empty));
+        toolSection.AddChild(toolUses);
+        Label toolWorth = Wrapped(Muted(string.Empty));
+        toolSection.AddChild(toolWorth);
+        box.AddChild(toolSection);
+
+        box.AddChild(SectionHeader("NEEDS"));
+        var needsRow = new HFlowContainer();
+        needsRow.AddThemeConstantOverride("h_separation", 6);
+        needsRow.AddThemeConstantOverride("v_separation", 4);
+        var needs = new (PanelContainer, Label)[3];
+        for (int i = 0; i < needs.Length; i++)
+        {
+            var pill = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
+            Label text = Body(string.Empty);
+            pill.AddChild(text);
+            needsRow.AddChild(pill);
+            needs[i] = (pill, text);
+        }
+
+        box.AddChild(needsRow);
+
+        var skillsSection = new VBoxContainer();
+        skillsSection.AddThemeConstantOverride("separation", 4);
+        skillsSection.AddChild(SectionHeader("SKILLS"));
+        box.AddChild(skillsSection);
+
+        box.AddChild(new HSeparator());
+        var footer = new HBoxContainer();
+        footer.AddThemeConstantOverride("separation", 6);
+        var find = new Button { Text = "Find", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Centre the view on them" };
+        var home = new Button { Text = "Home", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their household's card" };
+        var work = new Button { Text = "Workplace", SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Open their workplace's card" };
+        footer.AddChild(find);
+        footer.AddChild(home);
+        footer.AddChild(work);
+        box.AddChild(footer);
+
+        return new VillagerParts
+        {
+            Box = box,
+            Keep = keep,
+            Job = job,
+            Why = why,
+            Note = note,
+            ToolSection = toolSection,
+            ToolBar = toolBar,
+            ToolUses = toolUses,
+            ToolWorth = toolWorth,
+            Needs = needs,
+            SkillsSection = skillsSection,
+            Skills = new(),
+            Find = find,
+            Home = home,
+            Work = work,
+        };
     }
 
     /// <summary>What a library says when you click it — its shelves, and what is on them (D396, a card since).</summary>
@@ -1532,6 +1832,117 @@ public partial class Main
     // ---------------------------------------------------------------
 
     /// <summary>
+    /// A person's card at its fullest holds 268, clips nothing, and has every section — <b>a probe
+    /// line</b> (D431, Joe: <i>"copy off screen, no real hierarchy of information. nothing about tools"</i>).
+    /// </summary>
+    /// <remarks>
+    /// Posed on the labels, as the building cards are, so the sim is not touched: a note three
+    /// lines long, a worn tool, all three needs wanting, six skills with forty-letter names. Then
+    /// every label on the card is asked whether it may trim — a person's card may not.
+    /// </remarks>
+    private string ThePersonsCardHoldsItsShape()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Villager villager = world.Villagers.First(v => v.Alive);
+        OpenCard(new CardSubject(CardKind.Villager, villager.Id));
+        Card card = _selectedCard!;
+        VillagerParts p = card.Person;
+
+        if (!p.Box.Visible || card.Portrait.Visible || card.Numbers.Visible)
+        {
+            faults.Add("a person's card shows a building's parts, or not its own sections");
+        }
+
+        if (card.Subtitle.Text.Length == 0 || card.Status.Text.Length == 0)
+        {
+            faults.Add("a person's card has no subtitle or no status");
+        }
+
+        int trades = System.Enum.GetValues<JobKind>().Length;
+        if (p.Keep.ItemCount != trades + 1)
+        {
+            faults.Add($"the Kept-on dropdown offers {p.Keep.ItemCount} items, not the village plus {trades} trades");
+        }
+
+        int kept = villager.PinnedTrade is JobKind pinned ? p.KeepTrades.IndexOf(pinned) + 1 : 0;
+        if (p.Keep.Selected != kept)
+        {
+            faults.Add($"the dropdown reads item {p.Keep.Selected} for a villager kept on item {kept}");
+        }
+
+        // The fullest a person's card can be.
+        string longest = "A status line that runs on for a good deal longer than any the sim writes, to see that it wraps inside the card rather than widening it.";
+        card.Title.Text = new string('W', SimWorld.NameLengthLimit);
+        card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household";
+        card.Status.Text = longest;
+        p.Job.Text = $"Woodcutter at {new string('W', SimWorld.NameLengthLimit)}";
+        p.Why.Text = longest;
+        p.Why.Visible = true;
+        p.Note.Text = longest;
+        p.Note.Visible = true;
+        p.ToolSection.Visible = true;
+        p.ToolUses.Text = "No tool — working at the plain pace";
+        p.ToolWorth.Text = $"A tool would make them {WhatAToolIsWorth(world)}.";
+        p.ToolWorth.Visible = true;
+        foreach ((PanelContainer, Label) need in p.Needs)
+        {
+            SetNeed(need, false, "No roof", longest);
+        }
+
+        p.SkillsSection.Visible = true;
+        while (p.Skills.Count < 6)
+        {
+            AddSkillRow(p);
+        }
+
+        foreach ((VBoxContainer row, Label name, Label years, ProgressBar _) in p.Skills)
+        {
+            row.Visible = true;
+            name.Text = new string('W', SimWorld.NameLengthLimit);
+            years.Text = "seventy-seven years";
+        }
+
+        ForceUpdateTransform();
+        float wide = card.Panel.GetCombinedMinimumSize().X;
+        if (wide > CardWidth + 1f)
+        {
+            faults.Add($"a person's card at its fullest widens to {wide:F0}");
+        }
+
+        // ⛔ Nothing on a person's card trims (Joe: "copy off screen").
+        var clipping = new List<string>();
+        void Look(Node node)
+        {
+            if (node is Label label && label.IsVisibleInTree()
+                && (label.ClipText || label.TextOverrunBehavior != TextServer.OverrunBehavior.NoTrimming)
+                && !ReferenceEquals(label, card.Title))
+            {
+                clipping.Add($"\"{(label.Text.Length > 24 ? label.Text[..24] + "…" : label.Text)}\"");
+            }
+
+            foreach (Node child in node.GetChildren())
+            {
+                Look(child);
+            }
+        }
+
+        Look(card.Panel);
+        if (clipping.Count > 0)
+        {
+            faults.Add($"{clipping.Count} label(s) on a person's card may trim: {string.Join(", ", clipping)}");
+        }
+
+        float tall = card.Panel.GetCombinedMinimumSize().Y;
+        CloseCard(card);
+        RefreshCards(world);
+
+        return faults.Count == 0
+            ? $"[widths] villager card: ✅ subtitle, a banner, WORK with a {p.Keep.ItemCount}-item dropdown, TOOL, NEEDS, six SKILLS and the jumps; at its fullest {wide:F0} wide and {tall:F0} tall; no label trims (the title's ellipsis is the head's)"
+            : $"[widths] villager card: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
     /// A card of every kind opens, holds its width, drags, pins and is replaced — <b>a probe line</b> (D376).
     /// </summary>
     private string TheCardsHoldTheirShape()
@@ -1731,9 +2142,11 @@ public partial class Main
         {
             widest = Mathf.Max(widest, card.Panel.Size.X);
             tallest = Mathf.Max(tallest, card.Panel.Size.Y);
-            if (card.Status.Text.Length == 0 || card.Values[0].Text.Length == 0)
+            // A person's card has no numbers since D431 — its subtitle is the line that must read.
+            string firstLine = card.Subject.Kind == CardKind.Villager ? card.Subtitle.Text : card.Values[0].Text;
+            if (card.Status.Text.Length == 0 || firstLine.Length == 0)
             {
-                faults.Add($"the {card.Subject.Kind} card has an empty status or first number");
+                faults.Add($"the {card.Subject.Kind} card has an empty status or first line");
             }
         }
 
