@@ -1,17 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D428 IN §7. `main` = D428 (THE WELL), PUSHED; NO BRANCH OPEN. NEXT: TOOLS ON TICKS AT 34 % → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D428 IN §7. `main` = D428 (THE WELL), PUSHED; NO BRANCH OPEN. NEXT: CUT `slice/tools-on-ticks` FROM `main` AND START THERE, SPEC FIRST → THE QUARRY SPEC → HIS DESIGN THREADS.**
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — THE WELL MERGED AND PUSHED.**
 >
 > **State:** `main` = `slice/the-well` merged (D427) + D428's docs, **pushed at Joe's word** (*"Looks
-> good! merge and push"*). No branch is open — **cut a fresh one for the next slice.**
-> `slice/the-well` is merged and still exists (delete it if Joe agrees). The merged tree is the
-> branch head the four checks ran on: 1281 passing, 0 failing, 5 skipped of 1286, ~3m15–3m25;
-> view 0 warnings; probe green, bar height 161; no golden moved.
+> good! merge and push"*). **No branch is open.** `slice/the-well` was deleted on Joe's word
+> (2026-09-29; it was never on the remote), and the scratch worktree of main is gone. The tree on
+> `main` is the one the four checks ran on: 1281 passing, 0 failing, 5 skipped of 1286,
+> ~3m15–3m25; view 0 warnings; probe green, bar height 161; no golden moved. ⚠️ Joe has
+> uncommitted changes under `art/` (images) — **his; never stage them** (`git add` paths by name,
+> then read `git status`).
 >
-> **▶️ THE QUEUE:** tools on ticks at 34 % (Joe's call, D395 — reversing D391's yield axis; one
-> seam, `WorkTicksFor` beside the mastery bonus, re-measured per trade) → the quarry, spec first
-> (`specs/quarry.md`) → his design threads (⏸️ OPEN list). ⚠️ **Before Phase 6 makes water a need,
-> trace why the well trip costs survival at higher frequencies** (OPEN list; §9.12f has the table).
+> **▶️ NEXT SESSION, FIRST THING: `git checkout main && git pull && git checkout -b
+> slice/tools-on-ticks`, then write the spec before any code.** Joe (D395): *"tool bonus on ticks
+> (and eventually on yield when user unlocks upgrades for it)"* — **tools on ticks at 34 %**,
+> reversing D391's yield axis; the yield dial stays, at 0, for the later upgrade.
+> - **The spec to rewrite:** `specs/tools-and-the-smith.md §3.4` (*"The bonus is on yield, not on
+>   ticks — the one call Joe can overrule"* — he has), its status line, and the seam table (~line
+>   30). Record D395's words there.
+> - **The seams, in `SimWorld`:** `WorkTicksFor` (~2857, mastery's speed-up, integer, floored at 1)
+>   and `BeginWork` (~2925 — where every trade's action starts, the tool's use is spent, and the
+>   ticks come back); `WithTool` (~2982) is the yield side that goes to 0. Config:
+>   `tool_yield_bonus_percent` 25 → 0 (kept as the upgrade's dial), a new
+>   `tool_speed_bonus_percent` 34 — data AND the C# default, with the reason beside each.
+> - ⭐ **Ask Joe before typing: how does a tool stack with mastery** (both 34 %)? Added (68 % off for
+>   a master with a tool) or one after the other (1 − 0.66 × 0.66 ≈ 56 % off)? Measure both on a
+>   master first, and show him the three-tick gather's rounding either way — D391 chose yield
+>   *because* a percentage off three ticks rounds to a whole step (3 → 2 at 34 %).
+> - **Re-measure per trade** (D391's own warning): the rigs (forager / fisher / hunter per hundred
+>   ticks worked, trap 30), the farm (a tool made a ten-tick farm hauling-bound under yield —
+>   `AFarmWithAutumnToSpare…` is posed without tools for it), and D420's 55 fifty-year villages
+>   (`ZzWell.cs` / `ZzBase.cs` in the D427 scratchpad below — drop the well arms, keep the runs).
+>   **Goldens will move once**, for the one stated reason; read `ToolsTests` first.
+> - Then the quarry, spec first (`specs/quarry.md`: *"it should be painted land like the forester's
+>   hut"*, more stone and iron on the map, iron nodes ≥ 50 — D395), then his design threads.
+> - ⚠️ **Before Phase 6 makes water a need, trace why the well trip costs survival at higher
+>   frequencies** (OPEN list; `organic-housing.md §9.12f` has the table).
 >
 > *(The D427 banner, kept below.)*
 >
