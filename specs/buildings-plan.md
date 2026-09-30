@@ -34,6 +34,12 @@ Trees, soil, game, fish. **Spatial, exhaustible, recoverable.** They have a loca
 
 ### 2.2 Subsurface resources are finite in effort
 
+> ⛔ **SUPERSEDED BY D84 (2026-08-02) — found still unmarked 2026-09-29 while specifying the quarry
+> (D434).** Joe's rule replaced this one: **a *deposit* is finite, a *building* is not**
+> (`mutable-terrain.md §5.2`). Seams are cleared tile by tile and the ground goes back to grass;
+> a quarry (`quarry.md`) and a mine never run out and never get harder. The text below is kept for
+> the reasoning, and every row that cites *"effort-limited per §2.2"* means D84's rule instead.
+
 Ore, stone, coal, clay. **The seam does not empty. It gets harder.**
 
 Yield per worker-year decays toward a floor as the workings deepen — longer haul to the face, water ingress, more shoring. A mine is never abandoned, because it is never dead; it is only worse than it was. The player's answers are to *invest in it* (drainage, pit props, deep shafts — all tech nodes) or to *open another one*.

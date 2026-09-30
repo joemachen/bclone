@@ -1,6 +1,46 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D433 IN §7. `main` = D433 (TOOLS ON TICKS + A PERSON'S CARD), PUSHED; NO BRANCH OPEN. NEXT: CUT `slice/quarry` FROM `main`, THE QUARRY SPEC FIRST (`specs/quarry.md`), JOE'S QUESTIONS BEFORE ANY CODE.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D434 IN §7. `main` = D433, PUSHED. `slice/quarry` = THE QUARRY SPEC (D434), NOT BUILT. NEXT: BUILD IT, ONE COMMIT A PART, FROM `specs/quarry.md` AND `tools-and-the-smith.md §9`.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — TOOLS ON TICKS AND A PERSON'S CARD MERGED AND PUSHED.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (NIGHT) — THE QUARRY IS SPECCED ON `slice/quarry`.**
+>
+> **State:** `main` = D433, pushed. **`slice/quarry` = the spec commit (D434), not built, not
+> pushed.** `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
+> tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,
+> `seeded-map-generation.md §6`), DESIGN §4/§5/§6/§7. No code, no golden moved. ⚠️ Joe's `art/`
+> changes are his — never stage them; stage this file as **`HANDOFF.md`** and read `git status`.
+>
+> **Every call is Joe's and on record in D434 and `quarry.md §1`** — do not re-ask: rock-only,
+> never runs out; quarry only (iron mine next); unlock at 100 stone dug by hand; hashed seams, no
+> draws (four diagonals + a second stone ring + two iron, iron grown to ≥ 50); smithy gift after
+> 50 iron; stone tools = today's tool, iron stronger (250 / 50 % / 35 %, to re-measure with the
+> gift in place); stone tool = 2 stone + 1 log; the smithy's card chooses the kind, stone by
+> default, a dropdown; digs 4 ticks × 10 stone, stint of 4, 2 seats, 6 faces a quarrier; the word
+> *quarrier*; **building stone prices ×3.**
+>
+> **▶️ NEXT: BUILD, ONE COMMIT A PART, all four checks green at each, goldens moved only where the
+> part says:** (1) the generator — hashed seams + iron growth (goldens move: map); (2)
+> `StoneEverDug` / `IronEverDug` + the last-rock brush warning + `Villager.cs:685`'s *"clearing
+> trees"* for stone/iron + `VillageEconomy.cs:1542`'s stale *"nothing spends it yet"*; (3) the
+> quarry (the smithy D391 `22b9fd8` is the wiring checklist; `quarry.md §3`) with one sim gate
+> `SimWorld.IsUnlocked` that `EarnedYet` reads; (4) stone prices ×3 (data AND C# defaults;
+> goldens move); (5) the smithy gift; (6) stone vs iron tools (a tool's numbers become columns on
+> its good's row; `Goods.Tools` id 4 is the stone tool; `Goods.IronTools` new — `ModdedGoodTests`
+> bumps). Re-run the 55 villages after (1), (3), (4) and (6) against a `main` worktree.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/fb4e5d1a-3a90-4a1e-86ee-0472a8d6b6b0/scratchpad/`):**
+> `ZzSeams.cs` (64 valleys: seam tiles, reach by BFS from the founding, arms via `ZZ_ARM` =
+> `today` / `grow` / `grow-diag` / `grow-diag-ring-iron4`; it paints arms post hoc, so re-measure
+> on the real generator once built) + `seamsumm.py`; `ZzBase.cs` (D420's 55 villages with
+> `ZZ_SPEED` / `ZZ_YIELD` / `ZZ_USES` / `ZZ_CART` / `ZZ_STONEX` (tenths) / `ZZ_PAINT` (rock tiles
+> painted at year 3); prints unfinished sites) + `summ2.py`; `arm-*.txt`, `price-*.txt`,
+> `seams-*.txt` — every number in D434. Copy a Zz file into `tests/Bclone.Sim.Tests/`, run with
+> `--filter` and the detailed console logger, **delete before committing**. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> *(The D433 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-29 (CLOSE) — TOOLS ON TICKS AND A PERSON'S CARD MERGED AND PUSHED.**
 >
 > **State:** `main` = `fe6506f` — `slice/tools-on-ticks` merged `--no-ff` (D429 spec · D430 tools on
 > ticks AND yield · D431 a person's card in sections · D432 the card cut down) + D433's docs,
@@ -3394,8 +3434,22 @@ Read `git status` after staging, every time.
      Assert the budget, not only the behaviour inside it. And a card margin is a width budget for
      every card that shares the skin — change one kind's.
 
+## ⛔ THE TRAP D434 NEARLY PAID FOR — A NUMBER IN A DESIGN SENTENCE IS A CLAIM ABOUT THE GENERATOR
+
+140. **⚠️ MEASURE A DESIGN SENTENCE'S NUMBER AGAINST THE CODE BEFORE BUILDING WHAT IT GATES
+     (D434).** *"After 50 iron mined — each node holds at least 50"* read like a fact about the
+     valley; measured, **no iron seam in 64 valleys held 50** (radius-1 diamonds, 40 at best, some
+     clipped by the river). The smithy gift would have been built behind a trigger that could
+     never fire. The same measuring found stone too cheap for a quarry to matter (a village's core
+     ~100 stone, one seam ~156). Both were said to Joe before any code, and both changed the spec.
+     And a seam across the river is unreachable until bridges — count what the village can WALK
+     to, not what the map holds.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⚠️ **`ForesterSeatsWithGroundToPlant` COUNTS A FORESTER'S PAINTED ROCK AND SAPLING TILES AS GROUND
+  TO PLANT (found D434, not fixed).** `NextGroundToWork` never plants on them, so a forester's hut
+  whose paint covers a seam keeps asking for planting seats nobody can use. Small; its own commit.
 - ⭐ **THE WELL TRIP'S SURVIVAL COST HAS NO PROVEN MECHANISM (D427, `organic-housing.md §9.12f`).**
   Picked around, not explained: every 20 days (Joe's placeholder) is within the noise, every 10 cost
   21 shipped alive. The `Decide`-only ablation read the same; the hypothesis is an adult away on a

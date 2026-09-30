@@ -87,6 +87,12 @@ GeneratedMap
 - **Draw order is the contract.** Adding a draw in the middle shifts every subsequent value and silently invalidates every saved seed and golden test — the same hazard `SimWorld.FoundVillage` already carries a warning about.
 - The generator must be **pure**: same seed and same config ⇒ byte-identical map. Tested directly, not inferred from the sim's determinism test.
 - Retries (§3) consume draws and that is fine, as long as the retry rule is itself deterministic.
+- ⭐ **Ask "can this be a hash instead of a draw?" before adding generated content** (D344). The
+  river's width, the clumps' outlines and — from D434 (`quarry.md §3.1`) — every stone and iron
+  seam past the first four and two, and every seam's growth, take no draws: their jitter hashes
+  the generator's stream state *read, not advanced*. So the woodland after them reads the same
+  numbers and every seed keeps its forests. The goldens still move (the map changed); the valleys
+  stay recognisable.
 
 ---
 
