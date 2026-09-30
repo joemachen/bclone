@@ -10,7 +10,7 @@ per use, slower without, never a break year), D378 (amber is the trade's quota).
 **Status:** ✅ **built (2026-09-18, D391) and played.** ✅ **§3.4 BUILT FOR D429 (2026-09-29) on
 `slice/tools-on-ticks`: a tool takes a third off the ticks AND keeps its quarter on the yield** —
 specced before the code as ticks-instead-of-yield, measured, and changed to both by Joe's call on
-the numbers (§6.1). `ToolsTests` fifteen guards; **unplayed by Joe as of this line.** Owner: Joe +
+the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D433).** Owner: Joe +
 Claude Code.
 
 ---

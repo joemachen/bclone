@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
 **Decisions:** D376 (this document), D377, D378, D379, D380, D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) on `slice/tools-on-ticks`; D432 unplayed.** Owner: Joe + Claude Code.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) — played (*"villager cards are perfect for now"*) and merged (D433).** Owner: Joe + Claude Code.
 
 ---
 

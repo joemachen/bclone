@@ -1,6 +1,59 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D430 IN §7. `main` = D428 (THE WELL), PUSHED. `slice/tools-on-ticks` = D429–D431 (TOOLS ON TICKS + A PERSON'S CARD IN SECTIONS), COMMITTED, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT → MERGE ON HIS WORD → THE QUARRY SPEC → HIS DESIGN THREADS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D433 IN §7. `main` = D433 (TOOLS ON TICKS + A PERSON'S CARD), PUSHED; NO BRANCH OPEN. NEXT: CUT `slice/quarry` FROM `main`, THE QUARRY SPEC FIRST (`specs/quarry.md`), JOE'S QUESTIONS BEFORE ANY CODE.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (LATE NIGHT) — TOOLS ON TICKS AND A PERSON'S CARD, BOTH ON `slice/tools-on-ticks`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-09-29 (CLOSE) — TOOLS ON TICKS AND A PERSON'S CARD MERGED AND PUSHED.**
+>
+> **State:** `main` = `fe6506f` — `slice/tools-on-ticks` merged `--no-ff` (D429 spec · D430 tools on
+> ticks AND yield · D431 a person's card in sections · D432 the card cut down) + D433's docs,
+> **pushed at Joe's word** (*"villager cards are perfect for now. merge and push."*). The merged tree
+> is byte-identical to the branch head the four checks ran on: **1285 passing, 0 failing, 5 skipped
+> of 1290, ~3m11–3m20; view 0 warnings; probe green, bar height 161.** `slice/tools-on-ticks` still
+> exists locally (never pushed) — delete it when Joe says so. The scratch worktree of main is gone.
+> ⚠️ Joe has uncommitted changes under `art/` (images) — **his; never stage them**; and git tracks
+> this file as **`HANDOFF.md`** (trap in D427's section) — stage it by that name, then read `git status`.
+>
+> **▶️ NEXT SESSION, FIRST THING: `git checkout main && git pull && git checkout -b slice/quarry`,
+> then write `specs/quarry.md` before any code.** It is the queue's next item since D395. What the
+> spec has to start from:
+> - **Joe's words (D395):** *"it should be painted land like the forester's hut"*; **more stone and
+>   iron on the map**; **iron nodes ≥ 50** (so the first node cleared unlocks the smithy gift —
+>   `DESIGN.md §5`, *"the smithy is a village gift … after 50 iron mined"*, and the village starts
+>   with stone tools; neither is built).
+> - **Joe's rule (D84, `mutable-terrain.md §5.2`): a DEPOSIT is finite, a BUILDING is not** —
+>   laborers clear surface stone and iron (finite, the early game); a quarry and a mine are placed
+>   and do not run out. ⚠️ D84's own warning: with quarries infinite, §2.3's expansion pressure rests
+>   on the deposits and the trees, so **the quarry wants to sit far enough up the tree that clearing
+>   deposits is genuinely the early game** — how it is gated is a question for Joe.
+> - **The painted-ground machinery already exists** — the forester's hut: `SimWorld.KeepsWorkGround`,
+>   `Zones.WorkGroundTiles`, `WorkGroundAllowanceFor`, `OverstretchedNote`, the card's *Give ground /
+>   Take back* (`Main.Cards.cs` Settings, Workplace branch). Reuse it; do not build a second brush.
+> - ⛔ **"More stone and iron on the map" is a GENERATOR change, and the generator's draw order is a
+>   seed contract (D344, D392):** add a draw and every seed's valley moves, and every golden with a
+>   map in it. Measure it on D420's 55 villages, move the goldens once, for that reason only — or ask
+>   Joe whether per-stage seeds (D344's ambition, also what would let ground quality's dead soil draw
+>   go, D395) come first.
+> - **Ask Joe before typing** (with numbers, as D429–D430 did): what ground may be painted (rock only,
+>   or any?); what one quarry tile yields and how fast (measure the TRIP, not the action — trap 134);
+>   whether the quarry and an iron mine are one building or two; the gate (a gift, a technique, a
+>   population); and whether the mason's yard (which gates the stone cottage, D206) is in or out.
+>
+> **Then:** Joe's design threads (the ⏸️ OPEN list). ⚠️ **Before Phase 6 makes water a need, trace
+> why the well trip costs survival at higher frequencies** (OPEN list; `organic-housing.md §9.12f`).
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/2e124baf-40d9-4e3c-bd50-8c75d3f93933/scratchpad/`):**
+> `ZzBase-branch.cs` (D420's 55 fifty-year villages with `ZZ_SPEED` / `ZZ_YIELD` / `ZZ_CART`
+> dials — add a dial for whatever the quarry changes), `ZzBase.cs` (no dials; compiles on main),
+> `ZzTimber.cs`, `ZzWear.cs`, `summ.py` (run the harness with `--logger "console;verbosity=detailed"`
+> — `-v n` prints nothing for a passing test), `redcheck.py` (mutate, build, count named `[FAIL]`s,
+> restore **and touch** — trap 135). A/B against `git worktree add --detach <dir> main`, never a C#
+> dial for `main` itself. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running (`Godot_v4.7.1-stable_mono_win64.exe --path src/Bclone.Game`,
+> no `--headless`) — never kill it; only a leftover `_console.exe --headless` is yours.
+>
+> *(The D430–D432 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-29 (LATE NIGHT) — TOOLS ON TICKS AND A PERSON'S CARD, BOTH ON `slice/tools-on-ticks`.**
 >
 > **And then (D432, view only, UNPLAYED):** Joe played D431 — *"better but way too wordy and
 > crowded … remove all of the information about 'tiles'"*. The card now answers six questions
@@ -3418,7 +3471,7 @@ Read `git status` after staging, every time.
   the workshop — condition and maintenance, the D65 reversal, and the builder's hammer (D391 left
   the builder without a tool because a builder's bonus would fall on a site's ticks, a second
   seam). The order is his; a spec that poses them is the first move, as D391's was.
-- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** ✅ **BUILT AS BOTH (D430, on `slice/tools-on-ticks`, unplayed): ticks at 34 % multiplied with mastery, AND yield at 25 % — Joe's call on the measurement (ticks alone 380 alive of 55 villages against 440).** *Kept for the reasoning:* ✅ **CALLED BY JOE, 2026-09-19: ticks at 34 % — queue step 3 (D395).** Built on yield — a percentage off a three-tick
+- ⭐ **THE TOOL'S BONUS: YIELD OR TICKS (D391).** ✅ **BUILT AS BOTH, PLAYED, MERGED (D430, D433): ticks at 34 % multiplied with mastery, AND yield at 25 % — Joe's call on the measurement (ticks alone 380 alive of 55 villages against 440).** *Kept for the reasoning:* ✅ **CALLED BY JOE, 2026-09-19: ticks at 34 % — queue step 3 (D395).** Built on yield — a percentage off a three-tick
   gather rounds to nothing while the same off a fifteen-tick hunt is half again, and a tool that
   helps one trade by an accident of duration is the illegible outcome. His words were *"slower
   without"*. If he wants ticks, it is one seam (`WorkTicksFor` beside the mastery bonus) and the
