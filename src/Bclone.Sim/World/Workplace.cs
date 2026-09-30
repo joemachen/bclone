@@ -144,6 +144,13 @@ public enum JobKind
     /// <see cref="Hunter"/> and <see cref="Forester"/> both carry.
     /// </remarks>
     Smith = 8,
+
+    /// <summary>
+    /// Cut stone from a quarry's painted rock (D434, `specs/quarry.md §3.5`) — a stint at the
+    /// face until the arms are full, then to a store; the face is never spent.
+    /// </summary>
+    /// <remarks>⛔ Appended at 9, never inserted — hashed by position.</remarks>
+    Quarrier = 9,
 }
 
 /// <summary>

@@ -9,7 +9,8 @@ from nowhere but the brush), D237 (a site waiting on a material says so), D344 (
 can be draw-neutral — hash, don't draw), D347 (a seam has boulders; depletion is the seam getting
 smaller), D385 (every load to a store), D430 (a tool: 34 % off ticks, 25 % on yield).
 **Status:** 🔨 **§3.1 BUILT (D436, part 1 of six): the seams. §3.2 and §3.8's warning BUILT (D437,
-part 2): the ever-dug counters and the last-rock warning.** The rest specced, not built
+part 2): the ever-dug counters and the last-rock warning. §3.3–§3.7 BUILT (D438, part 3): the
+quarry — with the worked-face look deferred and the stone amber dropped (§3.4, §3.6 say why).** The rest specced, not built
 (2026-09-29, `slice/quarry`). Every number is measured and
 called by Joe (§1, §6); §9 holds what is left. The smithy gift and stone-versus-iron tools ride in the same
 slice and are specified in `tools-and-the-smith.md §9`. Owner: Joe + Claude Code.
@@ -127,11 +128,15 @@ and it never needs to count again once the quarry is unlocked.
 ### 3.3 The unlock
 
 The quarry is **hidden from the build bar and refused by `Mark`** until `StoneEverDug ≥
-quarry_unlock_stone`. One rule in the sim (`SimWorld.IsUnlocked(BuildingKind)`), read by the
-view's `EarnedYet` — the library and town hall move onto it as well, so there is one gate, not
-a view switch. When it unlocks, the village log says so once (*"The village has dug 100 stone by
-hand. Somebody has worked out how to cut a quarry."*) and the button carries the new-building
-highlight. **It is an unlock, not a gift:** its materials are paid.
+quarry_unlock_stone`. One rule in the sim — `SimWorld.WhyNotYet(BuildingKind)` / `IsUnlocked` —
+read by `Mark` (*"Nobody knows how to cut a quarry yet — the village has dug 40 of the 100 stone
+by hand it takes to learn."*) and by the view's `EarnedYet`, through a flag the strip is rebuilt on
+when it changes (the library button's shape). When it unlocks, the village log says so once as a
+discovery (*"The village has dug 100 stone by hand, and somebody has worked out how to cut a quarry
+into a seam."*). **It is an unlock, not a gift:** its materials are paid. ⚠️ *Built narrower than
+specced (D438):* the library and the town hall stay gated in the view (`_literacy`,
+`_foundersGone`); moving them onto `WhyNotYet` is its own change. ⚠️ `Mark` asks it, `CanBuildAt`
+does not — so moving a quarry, and fixtures that raise one, are not gated.
 
 ### 3.4 A quarry's ground is rock
 
@@ -144,8 +149,11 @@ highlight. **It is an unlock, not a gift:** its materials are paid.
 - **Laborers never clear a tile a quarry holds.** `NearestHarvest` skips it, and painting the
   harvest brush over a quarry's ground is refused: *"That rock is the quarry's."* Taking the
   ground back (the card's *Take back*) returns it to a seam laborers may clear.
-- **The look:** a quarry face draws as worked rock — the seam's boulders cut down and a pale
-  floor — derived from *rock + held by a quarry*, with no new state (D347's `LumpOn` pattern).
+- **The look — ⏸️ DEFERRED (D438).** Specced as a worked face (boulders cut down, a pale floor),
+  derived from *rock + held by a quarry*. The seams' boulders are meshed in chunks rebuilt only when
+  the terrain changes (`VillageMap.Meshes`), and a face changes by *ownership*, not terrain — so the
+  look needs the chunk rebuild keyed on work-ground edits too, which is a view slice of its own.
+  **Until then a face shows as the quarry's outlined ground**, the way every owned ground shows.
 
 ### 3.5 The work: a stint at the face, carried to a store
 
@@ -164,12 +172,15 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
   overstretched warning read it (a quarry branch in `OverstretchedNote`: *"…enough for 6. The
   rest will stand idle."*).
 - **Seats:** `quarry_capacity`, player-staffed like every trade (D109).
-- **Demand:** `LabourQuota.QuarriersWanted` — every seat while the stone limit is not met *and*
-  either a site waits on stone no store holds (`waitedOn`'s test, D237) or stores hold less than
-  the limit; zeroed while food comes first. The job row's `limited_by: Stone` makes a met limit
-  stop the work (D139), through the general `StoppedByItsOwnLimit`.
-- **Stone goes amber** on the bar when a quarry exists and quarriers are wanted but not seated —
-  D378's rule (*amber is the trade's quota*), now that stone has a trade.
+- **Demand:** `LabourQuota.QuarriersWanted` — every seat of every standing quarry that has rock
+  painted, while the stone limit is not met; zeroed while food comes first. Taken after the smith
+  and before the builders (`KindsInOrder`: woodcutter, smith, **quarrier**, marketer, builder). The
+  job row's `limited_by: Stone` makes a met limit stop the work (D139), and `WhyTheQuarryIsIdle`
+  says so on the card.
+- ⏸️ **Stone does not go amber — DROPPED from this slice (D438).** Specced as *amber while quarriers
+  are wanted*; with a 200 stone limit that is nearly always, which is noise rather than a shortage.
+  The honest amber is *a site waits on stone no store holds*, and that already speaks on the site's
+  own card (D237). A bar signal for it is Joe's call if play asks.
 
 ### 3.7 The quarrier uses a tool
 
@@ -291,20 +302,23 @@ says nothing about how it feels. That is Joe's play. The houses cost no stone an
 
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/QuarryTests.cs`, `SeamsTests.cs`
 
-- `TheWoodlandReadsTheSameDrawsItDidBefore` — every clump centre, over twelve seeds, is where it was
-  (red: the hashed seams drawing their jitter).
-- `EveryIronSeamHoldsFifty` — over the seed arm, every iron seam ≥ `iron_seam_min_iron`.
-- `EveryValleyKeepsRockInReach` — ≥ 3 reachable stone seams in every valley of the arm.
-- `StoneDugByHandIsCounted` / `AQuarrysDigsAreNotHandDug`.
-- `NoQuarryBeforeTheVillageHasDugTheStone` — `Mark` refuses; after the count, it accepts.
-- `AQuarryPaintsRockAndRefusesGrassInWords`.
-- `AQuarriedTileIsStillRock` — after many digs.
-- `ALaborerNeverClearsAQuarrysFace`.
-- `AMetStoneLimitStopsTheQuarriers`.
-- `AQuarrierDigsAStintAndCarriesItToAStore` — the rig of §6.2, counting digs.
-- `TheLastRockNearTheVillageIsWarnedAbout`.
+Red-checked (D326), the reds counted against each break:
 
-Every guard red-checked and its reds counted (D326); a zero is written here.
+| Guard | Break | Reds |
+|---|---|---|
+| `TheQuarrysSeamsMovedNoForest` (4 seeds) | a draw only the extra seams make | 4 + the map golden |
+| — | an unconditional draw | **0** — it moves both arms alike; the map golden's job (D436) |
+| `EveryIronSeamHoldsFifty` (64 valleys) | no growth | 1 |
+| `EveryValleyKeepsThreeStoneSeamsInReach` (64 valleys) | four extra seams, not eight | 1 |
+| `StoneAndIronDugByHandAreCounted` | stone not counted | 1 |
+| `WhatTheVillageDugIsInItsFingerprint` | stone's tag as iron's / either amount unhashed | 1 / 1 / 1 (the iron amount scored **0** on the first draft) |
+| `TheLastRockTheVillageCanReachIsWarnedAbout` | no warning / marked rock counted as left | 1 / 1 |
+| `NoQuarryBeforeTheVillageHasDugTheStone` | no gate | 1 |
+| `AQuarryPaintsRockAndRefusesOtherGroundInWords` | any ground but water | 1 |
+| `AQuarryCutsStoneAndItsFacesStayRock` (the §6.2 rig: 99 stone per 100 ticks worked) | the face spent / the quarry's digs counted as hand-dug / no `ErrandKind` arm | 1 / 1 / 1 |
+| `ALaborerNeverClearsAQuarrysFace` | laborers not skipping faces / the brush marking them | 1 / 1 |
+| `AMetStoneLimitStopsTheQuarriers` | the limit ignored | 1 |
+| `QuarriersAreWantedWhileTheVillageWantsStone` | want nought / limit ignored / no ground needed | 1 / 1 / 1 — ⚠️ **written because a want of nought scored 0 against every other guard**: they set a job limit, and the player's number staffs a trade whatever the village wants (D51) |
 
 ## 8. Definition of Done
 

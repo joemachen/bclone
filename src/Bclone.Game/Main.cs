@@ -1341,6 +1341,26 @@ public partial class Main : Control
     /// rather than a second bug. <b>Ask what this bar looks like in year sixty.</b>
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Show the quarry once the village has dug its stone by hand (D434, `quarry.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// The library button's shape: a flag the strip is rebuilt on when it changes, read from the
+    /// sim's one gate (<c>SimWorld.IsUnlocked</c>) so the button and <c>Mark</c> agree. Not a gift
+    /// — no tint, no star; the discovery is said in the village log.
+    /// </remarks>
+    private void RefreshTheQuarryButton(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.Quarry);
+        if (_quarryKnown != known)
+        {
+            _quarryKnown = known;
+            RefreshTheStrip();
+        }
+    }
+
+    private bool _quarryKnown;
+
     private void RefreshTheTownHallButton(SimWorld world)
     {
         if (_foundersGone != world.SaidTheFoundersAreGone)
@@ -1694,6 +1714,7 @@ public partial class Main : Control
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
+        RefreshTheQuarryButton(world);
 
         RefreshCards(world);
 
@@ -5419,7 +5440,9 @@ public partial class Main : Control
         // it names the gap while it is a gap, and then it goes away.
         ("Herdsman", "no livestock"),
         ("Miner", "iron is on the map; nothing digs it"),
-        ("Stonecutter", "stone is on the map; nothing quarries it"),
+
+        // ⭐ The stonecutter moved OFF this list with the quarry (D434) — the trade ships as the
+        // quarrier; cutting stone into blocks is the mason's yard's, and that is not built.
 
         // ⭐ The blacksmith moved OFF this list with the smithy (D391) — and sat here for a day
         // after, which Joe's QA pass caught (D396): the row is deleted the day its trade ships.
@@ -6151,7 +6174,8 @@ public partial class Main : Control
             BuildingKind.GathererHut or BuildingKind.Farmhouse
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,
 
-            BuildingKind.ForesterHut or BuildingKind.WoodcutterHut => BuildCategory.Resources,
+            BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
+                or BuildingKind.Quarry => BuildCategory.Resources,
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
@@ -6266,6 +6290,10 @@ public partial class Main : Control
     {
         BuildingKind.Library => _literacy,
         BuildingKind.TownHall => _foundersGone,
+
+        // ⭐ The sim's one gate (D434, `quarry.md §3.3`) — the same answer `Mark` gives, so the
+        // button cannot offer what the placement would refuse.
+        BuildingKind.Quarry => _quarryKnown,
         _ => true,
     };
 

@@ -1232,6 +1232,51 @@ public sealed record SimConfig
     [JsonPropertyName("forges_per_stint")]
     public int ForgesPerStint { get; init; } = 4;
 
+    // ---------------------------------------------------------------
+    //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
+    // ---------------------------------------------------------------
+
+    /// <summary>Stone the village must dig by hand before anybody knows how to cut a quarry (`quarry.md §3.3`).</summary>
+    /// <remarks>
+    /// Joe's call, 2026-09-29: about eight seam tiles, most of one seam — so clearing deposits is
+    /// the early game (D84's warning) and the quarry arrives as the village's core goes up.
+    /// </remarks>
+    [JsonPropertyName("quarry_unlock_stone")]
+    public int QuarryUnlockStone { get; init; } = 100;
+
+    /// <summary>A quarry's timber — sheds and a crane at the face.</summary>
+    [JsonPropertyName("quarry_logs")]
+    public int QuarryLogs { get; init; } = 25;
+
+    /// <summary>A quarry's stone — none: it is cut into rock, not built of it.</summary>
+    [JsonPropertyName("quarry_stone")]
+    public int QuarryStone { get; init; }
+
+    /// <summary>Work to raise a quarry — as the huts.</summary>
+    [JsonPropertyName("quarry_work_ticks")]
+    public int QuarryWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats in a quarry (Joe: two).</summary>
+    [JsonPropertyName("quarry_capacity")]
+    public int QuarryCapacity { get; init; } = 2;
+
+    /// <summary>Faces one quarrier keeps (`quarry.md §3.6`) — a face never empties, so a few are enough.</summary>
+    [JsonPropertyName("quarry_tiles_per_worker")]
+    public int QuarryTilesPerWorker { get; init; } = 6;
+
+    /// <summary>Ticks one dig at the face takes — a laborer's clearing (Joe: four).</summary>
+    [JsonPropertyName("quarry_dig_ticks")]
+    public int QuarryDigTicks { get; init; } = 4;
+
+    /// <summary>Stone one dig brings (Joe: ten — a stint of four fills an armful of forty).</summary>
+    /// <remarks>Measured as the trip (trap 134, `quarry.md §6.2`): about 100 stone per hundred ticks worked against a laborer's 43.</remarks>
+    [JsonPropertyName("stone_per_dig")]
+    public int StonePerDig { get; init; } = 10;
+
+    /// <summary>Digs in one stint before the quarrier carries the stone off — as <c>forges_per_stint</c>.</summary>
+    [JsonPropertyName("digs_per_stint")]
+    public int DigsPerStint { get; init; } = 4;
+
     /// <summary>Logs a well takes to raise — a timber head over the shaft (D427).</summary>
     [JsonPropertyName("well_logs")]
     public int WellLogs { get; init; } = 10;
@@ -2572,6 +2617,18 @@ public sealed record SimConfig
             LimitedBy = World.Goods.Tools,
             UsesTool = true,
         },
+        new JobRow
+        {
+            Id = (int)JobKind.Quarrier,
+            Name = "quarrier",
+            Plural = "quarriers",
+            Doing = "cutting stone",
+            WorksAt = BuildingKind.Quarry,
+
+            // A met stone limit stops the cutting (D139), as a met tools limit stops the forge.
+            LimitedBy = World.Goods.Stone,
+            UsesTool = true,
+        },
     };
 
     /// <summary>
@@ -2941,6 +2998,23 @@ public sealed record SimConfig
             },
             WorkTicks = WellWorkTicks,
             DrawsWater = true,
+        },
+
+        // ⭐ THE QUARRY (D434, `specs/quarry.md`) — a hut beside its own painted rock. Timber
+        // only: it is cut into the rock, not built of it. Unlocked by stone dug by hand.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Quarry,
+            Name = "quarry",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, QuarryLogs),
+                new MaterialCost(World.Goods.Stone, QuarryStone),
+            },
+            WorkTicks = QuarryWorkTicks,
+            Seats = QuarryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
         },
 
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
@@ -3912,6 +3986,16 @@ public sealed record SimConfig
                 "iron_per_tool, forge_ticks, tools_per_forge and forges_per_stint must be greater "
                 + $"than zero and firewood_per_tool at least zero (got {IronPerTool}, {FirewoodPerTool}, "
                 + $"{ForgeTicks}, {ToolsPerForge}, {ForgesPerStint}).");
+        }
+
+        if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0
+            || QuarryDigTicks <= 0 || StonePerDig <= 0 || DigsPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "quarry_capacity, quarry_tiles_per_worker, quarry_dig_ticks, stone_per_dig and "
+                + "digs_per_stint must be greater than zero and quarry_unlock_stone at least zero "
+                + $"(got {QuarryCapacity}, {QuarryTilesPerWorker}, {QuarryDigTicks}, {StonePerDig}, "
+                + $"{DigsPerStint}, {QuarryUnlockStone}).");
         }
 
         if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)

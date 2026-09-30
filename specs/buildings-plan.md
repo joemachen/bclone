@@ -134,7 +134,7 @@ Earned by practice, or by the village simply being a village.
 | **Butcher** | Placed | Founding | — | Livestock → meat, hides, tallow. Feeds the tannery. |
 | **Brewery** | Placed | By doing | ✓ | Barley → ale. Honey → mead. |
 | **Herbalist's cottage** | Placed | By knowledge | ✓ | Herb garden and treatment of ailments. The early, one-person form of medicine. |
-| **Quarry** | Placed | Civic | — | Stone. Effort-limited per §2.2. |
+| **Quarry** | Placed | By doing (100 stone dug by hand) | — | Stone. **Never runs out** — D84 replaced §2.2's effort limit. ✅ Built (D438, `quarry.md`). |
 | **Clay pit** | Placed | By doing | — | Clay. Effort-limited. |
 | **Kiln** | Placed | By doing | ✓ | Bricks, and crocks — which are what preservation is stored in. |
 | **Mason's yard** | Placed | By knowledge | ✓ | Stone → blocks. Gates every durable building. |

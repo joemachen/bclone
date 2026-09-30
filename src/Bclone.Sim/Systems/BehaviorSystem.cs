@@ -123,6 +123,8 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.FetchingATool => "fetching a tool from a store",
         VillagerState.TravelingToSmithy => "walking to the smithy",
         VillagerState.Forging => "forging tools",
+        VillagerState.TravelingToQuarry => "walking to the quarry face",
+        VillagerState.Quarrying => "cutting stone",
         VillagerState.TravelingToField => "walking out to the field",
         VillagerState.Sowing => "sowing",
         VillagerState.Reaping => "reaping",
@@ -410,6 +412,13 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, toTheWell.Position, VillagerState.DrawingWater);
                 return;
 
+            case VillagerState.TravelingToQuarry:
+                // To the face they set off for (D434), fixed at departure — re-deciding mid-walk
+                // would shuttle between two faces and cut neither.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.Quarrying);
+                return;
+
             case VillagerState.TravelingToSmithy:
                 if (WorkplaceOf(world, villager) is not Workplace forge)
                 {
@@ -525,6 +534,9 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsForging(VillagerState state) =>
         state is VillagerState.TravelingToSmithy or VillagerState.Forging;
 
+    private static bool IsQuarrying(VillagerState state) =>
+        state is VillagerState.TravelingToQuarry or VillagerState.Quarrying;
+
     private static bool IsTrading(VillagerState state) =>
         state is VillagerState.CollectingForMarket
             or VillagerState.StockingTheMarket;
@@ -539,7 +551,7 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state);
+        || IsForging(state) || IsQuarrying(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -594,6 +606,12 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsForging(state))
         {
             return JobKind.Smith;
+        }
+
+        // ⛔ D281, a fourth time: without this arm a quarrier is recalled home every tick.
+        if (IsQuarrying(state))
+        {
+            return JobKind.Quarrier;
         }
 
         return IsSplitting(state) ? JobKind.Woodcutter : null;
@@ -2535,6 +2553,43 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.State = VillagerState.TravelingToSmithy;
                 Travel(world, villager, job.Position, VillagerState.Forging);
+            }
+
+            return;
+        }
+
+        // ⭐ THE QUARRIER (D434, `quarry.md §3.5`) — the forester's walk to its own ground and the
+        // smith's stint, joined: to the cheapest face on the quarry's rock, digging where they
+        // stand until the next block would not fit their arms, then to a store. The face is
+        // never spent. `WhyTheQuarryIsIdle` is the one place the reasons not to live.
+        if (villager.CanWork && job?.Kind == JobKind.Quarrier)
+        {
+            GridPos? face = world.WhyTheQuarryIsIdle(job) is null
+                ? world.NextFaceToQuarry(job, villager.Tile)
+                : null;
+            if (face is not GridPos at)
+            {
+                villager.WorkNote = world.WhyTheQuarryIsIdle(job)
+                    ?? $"No rock {job.Name} can reach — its ground is not rock, or nobody can walk to it.";
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            villager.WorkNote = string.Empty;
+            villager.ErrandX = at.X;
+            villager.ErrandY = at.Y;
+            if (villager.Tile == at)
+            {
+                BeginQuarrying(world, villager);
+            }
+            else
+            {
+                villager.State = VillagerState.TravelingToQuarry;
+                Travel(world, villager, at, VillagerState.Quarrying);
             }
 
             return;
@@ -4487,6 +4542,12 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.Quarrying)
+        {
+            BeginQuarrying(world, villager);
+            return;
+        }
+
         if (onArrival == VillagerState.FetchingMaterials)
         {
             LoadMaterials(world, villager);
@@ -4630,6 +4691,25 @@ public sealed class BehaviorSystem : ISimSystem
         villager.State = VillagerState.MakingFirewood;
         villager.ActionTicksRemaining =
             world.BeginWork(villager, JobKind.Woodcutter, world.Config.SplitTicks);
+    }
+
+    /// <summary>The first dig of a stint at the quarry face (D434).</summary>
+    private static void BeginQuarrying(SimWorld world, Villager villager)
+    {
+        villager.DigsThisStint = 0;
+        villager.State = VillagerState.Quarrying;
+        villager.ActionTicksRemaining =
+            world.BeginWork(villager, JobKind.Quarrier, world.Config.QuarryDigTicks);
+    }
+
+    /// <summary>
+    /// Stone one dig brings this quarrier — the tool's quarter counted, vigour scaling it as it
+    /// scales a gather (the face survives, so a tired hand simply cuts less).
+    /// </summary>
+    private static int StoneFromADig(SimWorld world, Villager villager)
+    {
+        int dug = world.YieldFor(villager, JobKind.Quarrier, world.Config.StonePerDig) * villager.Vigour / 100;
+        return dug < 1 ? 1 : dug;
     }
 
     /// <summary>The first forge of a stint at the smithy (D391).</summary>
@@ -5632,6 +5712,43 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.SplitsThisStint = 0;
                 villager.State = VillagerState.TravelingHome;
                 return;
+
+            case VillagerState.Quarrying:
+            {
+                // ⭐ A QUARRY FACE NEVER RUNS OUT (D84, D434) — the stone comes off the face and the
+                // face stays rock: no `Harvest`, no `SetTerrain`. Dig again where they stand while
+                // the next block fits their arms, the stint has digs left and the quarry still has
+                // a reason to cut; then carry the lot to a store (D385).
+                int cut = StoneFromADig(world, villager);
+                villager.Carried.Receive(Goods.Stone, cut);
+                villager.DigsThisStint++;
+
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} cut {cut} stone at ({villager.ErrandX}, {villager.ErrandY}) — {world.Clock}.");
+                }
+
+                Workplace? quarry = WorkplaceOf(world, villager);
+                bool anotherFits = villager.Carried[Goods.Stone] + StoneFromADig(world, villager)
+                    <= world.Config.CarryCapacity;
+                if (quarry is not null
+                    && anotherFits
+                    && villager.DigsThisStint < world.Config.DigsPerStint
+                    && world.WhyTheQuarryIsIdle(quarry) is null)
+                {
+                    villager.ActionTicksRemaining =
+                        world.BeginWork(villager, JobKind.Quarrier, world.Config.QuarryDigTicks);
+                    return;
+                }
+
+                villager.DigsThisStint = 0;
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                villager.State = VillagerState.HaulingToStore;
+                HaulOrSetDown(world, villager);
+                return;
+            }
 
             case VillagerState.Forging:
                 // The woodcutter's arm, one good over (D391): the iron and the firewood out of

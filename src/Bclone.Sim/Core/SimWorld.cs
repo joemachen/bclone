@@ -2270,6 +2270,7 @@ public sealed class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
+            JobKind.Quarrier => WhyTheQuarryIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
             JobKind.Forager => ForagerIdleNote(workplace),
             JobKind.Farmer => FarmIdleNote(workplace),
 
@@ -3553,6 +3554,105 @@ public sealed class SimWorld : IObstacles
             : null;
     }
 
+    // ---------------------------------------------------------------
+    //  The quarry (D434, `specs/quarry.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Whether this tile is rock a quarry holds — a face, never cleared (`quarry.md §3.4`).</summary>
+    public bool IsQuarryFace(GridPos tile) =>
+        Map.Contains(tile)
+        && Map.TerrainAt(tile) == Terrain.Rock
+        && Zones.WorkGroundOwner(tile) is int owner and not 0
+        && FindWorkplace(owner) is { Kind: JobKind.Quarrier };
+
+    /// <summary>Why the player may not mark this building yet — or null when they may (`quarry.md §3.3`).</summary>
+    /// <remarks>
+    /// <b>One rule in the sim, read by the view's build bar and by <see cref="Mark(BuildingKind, Point, Angle)"/></b>,
+    /// so the button and the placement cannot disagree. The quarry waits on stone dug by hand
+    /// (D434). ⚠️ The library and the town hall are still gated in the view (`Main.EarnedYet`) —
+    /// moving them here is their own change, not this one's.
+    /// </remarks>
+    public string? WhyNotYet(BuildingKind kind) => kind switch
+    {
+        BuildingKind.Quarry when StoneEverDug < Config.QuarryUnlockStone =>
+            $"Nobody knows how to cut a quarry yet — the village has dug {StoneEverDug} of the "
+            + $"{Config.QuarryUnlockStone} stone by hand it takes to learn.",
+        _ => null,
+    };
+
+    /// <summary>Whether the player may mark this building — see <see cref="WhyNotYet"/>.</summary>
+    public bool IsUnlocked(BuildingKind kind) => WhyNotYet(kind) is null;
+
+    /// <summary>
+    /// The face a quarrier walks to next: the cheapest rock tile on the quarry's own ground, or
+    /// null (`quarry.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="NextGroundToWork"/> shape — the building's own tiles from the owner index,
+    /// never a scan of the valley; lowest travel cost; map order breaks ties; never an
+    /// <c>Rng</c> draw.
+    /// </remarks>
+    public GridPos? NextFaceToQuarry(Workplace quarry, GridPos from)
+    {
+        ArgumentNullException.ThrowIfNull(quarry);
+
+        GridPos? best = null;
+        int cheapest = int.MaxValue;
+        IReadOnlyList<int> ground = Zones.WorkGroundOf(quarry.Id);
+        for (int i = 0; i < ground.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(ground[i]);
+            if (Map.TerrainAt(at) != Terrain.Rock)
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, at);
+            if (cost != TravelCostField.Unreachable && cost < cheapest)
+            {
+                cheapest = cost;
+                best = at;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Why the quarry is not cutting, in a sentence the player can act on — or null when it can
+    /// cut. <b>One copy</b>, read by the quarrier before the walk and after every dig, and by the
+    /// card (D76's lesson).
+    /// </summary>
+    public string? WhyTheQuarryIsIdle(Workplace quarry)
+    {
+        ArgumentNullException.ThrowIfNull(quarry);
+
+        if (LimitIsMet(Goods.Stone))
+        {
+            return $"Nothing to cut — you asked the village to keep {StockLimits.For(Goods.Stone)} "
+                + $"stone and it has {HeldAgainstItsLimit(Goods.Stone)} stored.";
+        }
+
+        if (Zones.WorkGroundTiles(quarry.Id) == 0)
+        {
+            return "No rock painted for it — give it ground on a stone seam.";
+        }
+
+        return null;
+    }
+
+    /// <summary>The ground a tile is, in a word a sentence can hold.</summary>
+    private static string Describe(Terrain terrain) => terrain switch
+    {
+        Terrain.Grass => "grass",
+        Terrain.Forest => "woodland",
+        Terrain.Rock => "rock",
+        Terrain.IronDeposit => "an iron seam",
+        Terrain.Sapling => "a young tree",
+        Terrain.Field or Terrain.Sown or Terrain.Ripe => "a field",
+        _ => terrain.ToString().ToLowerInvariant(),
+    };
+
     private string? SmithyIdleNote(Workplace smithy) =>
         WhyTheForgeIsCold(smithy) is string cold ? $"{smithy.Name}: {cold}" : null;
 
@@ -4660,9 +4760,14 @@ public sealed class SimWorld : IObstacles
     /// happening, which is D148's bug and D139's.
     /// </para>
     /// </remarks>
-    public int TilesOneWorkerKeeps(JobKind kind) => kind == JobKind.Farmer
-        ? VillageEconomy.FieldTilesOneFarmerKeeps(Config)
-        : Config.WorkGroundTilesPerWorker;
+    public int TilesOneWorkerKeeps(JobKind kind) => kind switch
+    {
+        JobKind.Farmer => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
+
+        // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
+        JobKind.Quarrier => Config.QuarryTilesPerWorker,
+        _ => Config.WorkGroundTilesPerWorker,
+    };
 
     /// <summary>
     /// Whether this kind of work is done on ground the player paints for it.
@@ -4685,7 +4790,7 @@ public sealed class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public static bool KeepsWorkGround(JobKind kind) =>
-        kind is JobKind.Forester or JobKind.Farmer;
+        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
@@ -4750,6 +4855,16 @@ public sealed class SimWorld : IObstacles
                   + "put another farmer on, or paint a smaller field.";
         }
 
+        if (workplace.Kind == JobKind.Quarrier)
+        {
+            return hands == 0
+                ? $"{name} has {tiles} tiles of rock and nobody cutting it. Put a quarrier on — "
+                  + $"one pair of hands keeps {TilesOneWorkerKeeps(workplace.Kind)} faces."
+                : $"{name} has {tiles} tiles of rock and {Hands(hands)} to cut them — enough for "
+                  + $"{allowance}. The other {tiles - allowance} will stand idle — put another "
+                  + "quarrier on, or paint less.";
+        }
+
         return hands == 0
             ? $"{name} has {tiles} tiles and nobody working it, so none of it will be kept. "
               + $"Put a forester on, or paint less — one pair of hands keeps "
@@ -4804,6 +4919,13 @@ public sealed class SimWorld : IObstacles
         if (Map.TerrainAt(tile) == Terrain.Water)
         {
             return PlacementVerdict.No("Nobody can work the water.");
+        }
+
+        // ⭐ A QUARRY IS CUT INTO ROCK (Joe, D434) — and only rock takes its paint, said in words so
+        // the player learns the rule from the brush rather than from an idle quarry.
+        if (workplace.Kind == JobKind.Quarrier && Map.TerrainAt(tile) != Terrain.Rock)
+        {
+            return PlacementVerdict.No($"A quarry works rock — this is {Describe(Map.TerrainAt(tile))}.");
         }
 
         int owner = Zones.WorkGroundOwner(tile);
@@ -5035,6 +5157,11 @@ public sealed class SimWorld : IObstacles
         if (standing is null)
         {
             return PlacementVerdict.No("There is nothing standing there to take.");
+        }
+
+        if (IsQuarryFace(tile))
+        {
+            return PlacementVerdict.No("That rock is the quarry's — it is cut there, never cleared.");
         }
 
         Goods? takes = WhatTheBrushTakes(brush);
@@ -5388,6 +5515,13 @@ public sealed class SimWorld : IObstacles
                 continue;
             }
 
+            // ⛔ NEVER A QUARRY'S FACE (D434, `quarry.md §3.4`): clearing it would spend the rock the
+            // quarry cuts for ever. Painted before the quarry claimed it, the paint waits.
+            if (IsQuarryFace(at))
+            {
+                continue;
+            }
+
             // ⭐ AND IT IS LEFT STANDING WHEN THE VILLAGE HAS ENOUGH (D212). Skipped, never
             // un-painted — the rule D127 wrote three paragraphs up: the paint is a standing
             // instruction, so a seam the village is currently full of is *work that is waiting*
@@ -5580,7 +5714,15 @@ public sealed class SimWorld : IObstacles
         {
             // ⭐ Dug by hand, the whole tile (`quarry.md §3.2`, D434) — what the quarry's unlock
             // counts. A quarry's own digs never come through here: its face is not spent.
+            bool knewHow = IsUnlocked(BuildingKind.Quarry);
             StoneEverDug += amount;
+            if (!knewHow && IsUnlocked(BuildingKind.Quarry))
+            {
+                Narrate(
+                    $"The village has dug {StoneEverDug} stone by hand, and somebody has worked out "
+                    + $"how to cut a quarry into a seam. {Clock.SeasonAndYear()}.",
+                    LogCategory.Discovery);
+            }
         }
         else if (yields.Value == Goods.Iron)
         {
@@ -7644,6 +7786,11 @@ public sealed class SimWorld : IObstacles
     public PlacementVerdict Mark(BuildingKind kind, Point where, Angle facing)
     {
         GridPos position = where.ToTile();
+        if (WhyNotYet(kind) is string locked)
+        {
+            return PlacementVerdict.No(locked);
+        }
+
         PlacementVerdict verdict = CanBuildAt(kind, where, facing: facing);
         if (!verdict.Allowed)
         {

@@ -289,6 +289,16 @@ public enum BuildingKind
     /// and the far end of the water trip that wears the lane to it. <b>Appended at 16.</b>
     /// </remarks>
     Well = 16,
+
+    /// <summary>
+    /// A quarry — painted rock that never runs out (D434, `specs/quarry.md`).
+    /// </summary>
+    /// <remarks>
+    /// D84's other half: a seam is a deposit and is cleared for good, a quarry is a building and
+    /// its faces never empty. It keeps work ground like the forester's hut, but only rock takes
+    /// its paint. Unlocked by stone dug by hand (<c>quarry_unlock_stone</c>). <b>Appended at 17.</b>
+    /// </remarks>
+    Quarry = 17,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

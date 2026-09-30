@@ -871,6 +871,24 @@
   "tools_per_forge": 1,
   "forges_per_stint": 4,
 
+  // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
+  // Painted rock that never runs out: a hut beside its own rock, which only
+  // rock takes the paint of. Unlocked after 100 stone dug by hand (most of one
+  // seam), so clearing deposits stays the early game (D84). Timber only -- it
+  // is cut into rock, not built of it. Two seats; six faces a quarrier, since
+  // a face never empties. A dig is a laborer's four ticks for ten stone, four
+  // to a stint (an armful of 40): about 100 stone per 100 ticks worked against
+  // a laborer's 43, measured as the TRIP (trap 134, quarry.md 6.2).
+  "quarry_unlock_stone": 100,
+  "quarry_logs": 25,
+  "quarry_stone": 0,
+  "quarry_work_ticks": 40,
+  "quarry_capacity": 2,
+  "quarry_tiles_per_worker": 6,
+  "quarry_dig_ticks": 4,
+  "stone_per_dig": 10,
+  "digs_per_stint": 4,
+
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
   // No water mechanic: a household walks to its nearest well and back every

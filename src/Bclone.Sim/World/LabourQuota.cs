@@ -46,7 +46,8 @@ public readonly record struct LabourQuota
         int[]? needed = null,
         int fishers = 0,
         int hunters = 0,
-        int smiths = 0)
+        int smiths = 0,
+        int quarriers = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -66,6 +67,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Fisher] = fishers;
         _byJob[(int)JobKind.Hunter] = hunters;
         _byJob[(int)JobKind.Smith] = smiths;
+        _byJob[(int)JobKind.Quarrier] = quarriers;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -152,6 +154,9 @@ public readonly record struct LabourQuota
 
     /// <summary>Hands the village wants forging tools (D391).</summary>
     public int Smiths => _byJob[(int)JobKind.Smith];
+
+    /// <summary>Quarriers the village wants (D434).</summary>
+    public int Quarriers => _byJob[(int)JobKind.Quarrier];
 
     /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
     public int Builders => _byJob[(int)JobKind.Builder];
@@ -274,6 +279,7 @@ public readonly record struct LabourQuota
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
         int smithsWanted = SmithsWanted(world);
+        int quarriersWanted = QuarriersWanted(world);
 
         // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
         // here is the last moment it is unqualified — before the food floor zeroes four trades
@@ -285,6 +291,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
         needed[(int)JobKind.Marketer] = marketersWanted;
         needed[(int)JobKind.Smith] = smithsWanted;
+        needed[(int)JobKind.Quarrier] = quarriersWanted;
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -336,6 +343,7 @@ public readonly record struct LabourQuota
             marketersWanted = 0;
             buildersWanted = 0;
             smithsWanted = 0;
+            quarriersWanted = 0;
         }
 
         // ---- Survival first, in the order things kill you -------------
@@ -548,6 +556,11 @@ public readonly record struct LabourQuota
         // above, which is why it is asked before the builders and the stall.
         int smiths = Take(ref free, Cap(smithsWanted, TotalCapacityFor(world, JobKind.Smith)));
 
+        // Stone, after tools and before building (D434): discretionary like the smith's, and the
+        // builders it feeds come next — a quarry the village cannot spare hands for is a quarry
+        // whose sites wait, which the site's own note says (D237).
+        int quarriers = Take(ref free, Cap(quarriersWanted, TotalCapacityFor(world, JobKind.Quarrier)));
+
         // And the market, last of all, out of hands nobody else needs (D14).
         //
         // Deliberately the LOWEST priority of every job, which is the mechanical form
@@ -695,6 +708,7 @@ public readonly record struct LabourQuota
         fishers = Asked(world, JobKind.Fisher, fishers, hands);
         hunters = Asked(world, JobKind.Hunter, hunters, hands);
         smiths = Asked(world, JobKind.Smith, smiths, hands);
+        quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -716,10 +730,12 @@ public readonly record struct LabourQuota
         fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
         hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
         smiths = AtLeastPinned(world, JobKind.Smith, smiths);
+        quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths);
+            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
+            quarriers: quarriers);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1217,6 +1233,36 @@ public readonly record struct LabourQuota
 
         int shortfall = (hands * 2) - world.InStores(Goods.Tools) - inHands;
         return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>
+    /// Quarriers the village wants (D434, `quarry.md §3.6`): every seat at a quarry that has rock
+    /// painted, while the stone limit is not met — none otherwise.
+    /// </summary>
+    /// <remarks>
+    /// The player's limit is the ceiling (D62) and the seats are the player's staffing (D109); a
+    /// quarry with no rock painted wants nobody, because there is nothing for a hand to cut.
+    /// </remarks>
+    public static int QuarriersWanted(SimWorld world)
+    {
+        if (world.LimitIsMet(Goods.Stone))
+        {
+            return 0;
+        }
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace quarry = world.Workplaces[i];
+            if (quarry.Kind == JobKind.Quarrier
+                && quarry.Construction is null or { IsFinished: true }
+                && world.Zones.WorkGroundTiles(quarry.Id) > 0)
+            {
+                seats += quarry.Capacity;
+            }
+        }
+
+        return seats;
     }
 
     public static int SmithsWanted(SimWorld world) =>

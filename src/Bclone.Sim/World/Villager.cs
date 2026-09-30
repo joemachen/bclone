@@ -501,6 +501,9 @@ public sealed class Villager
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
 
+    /// <summary>Digs at the quarry face since this quarrier last walked to it — the stint (D434).</summary>
+    public int DigsThisStint { get; set; }
+
     /// <summary>
     /// Ticks this villager still has to wait before their working life begins — <b>a seeded
     /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
@@ -700,6 +703,10 @@ public sealed class Villager
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "forging tools at the anvil",
+            VillagerState.TravelingToQuarry => $"walking to the face at {where}",
+            VillagerState.Quarrying => DigsThisStint > 0
+                ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
+                : "cutting stone at the quarry face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
             _ => State.ToString(),
