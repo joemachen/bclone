@@ -6,8 +6,8 @@
 > ticks AND yield · D431 a person's card in sections · D432 the card cut down) + D433's docs,
 > **pushed at Joe's word** (*"villager cards are perfect for now. merge and push."*). The merged tree
 > is byte-identical to the branch head the four checks ran on: **1285 passing, 0 failing, 5 skipped
-> of 1290, ~3m11–3m20; view 0 warnings; probe green, bar height 161.** `slice/tools-on-ticks` still
-> exists locally (never pushed) — delete it when Joe says so. The scratch worktree of main is gone.
+> of 1290, ~3m11–3m20; view 0 warnings; probe green, bar height 161.** `slice/tools-on-ticks` was
+> deleted on Joe's word (2026-09-29; it was never on the remote). The scratch worktree of main is gone.
 > ⚠️ Joe has uncommitted changes under `art/` (images) — **his; never stage them**; and git tracks
 > this file as **`HANDOFF.md`** (trap in D427's section) — stage it by that name, then read `git status`.
 >
