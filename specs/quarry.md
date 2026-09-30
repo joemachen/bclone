@@ -102,6 +102,10 @@ What the code had before this spec, traced rather than remembered:
 - **Over grass only, as today.** Woodland is painted after the seams and still never over them.
 - ⭐ **The woodland reads the same draws it read before**, so every forest clump sits where it
   sat; only tiles that became rock are not forest. A guard says so (§7).
+- ⚠️ **D435, found building this:** the generator passes its stream by value, so today a draw in
+  `PaintSeams` would not have moved the woodland either, and every drawn seam shares one jitter.
+  The hash is still the right shape — it stays right once per-stage seeds fix the stream — and it
+  gives each new seam its own offset, which the drawn four do not have.
 
 ### 3.2 The ever-dug counters
 

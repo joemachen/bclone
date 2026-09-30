@@ -93,6 +93,10 @@ GeneratedMap
   the generator's stream state *read, not advanced*. So the woodland after them reads the same
   numbers and every seed keeps its forests. The goldens still move (the map changed); the valleys
   stay recognisable.
+- ⛔ **But today no stage's draws can shift another's (D435):** `DeterministicRandom` is a
+  `struct` and `MapGenerator` passes it to every helper **by value**, so each draws on a copy — the
+  seams share one jitter, the river and the soil start from the same numbers. The rule above is
+  about the design this section describes; the code does not keep it yet. Per-stage seeds fix it.
 
 ---
 

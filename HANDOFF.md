@@ -8,6 +8,10 @@
 > `seeded-map-generation.md §6`), DESIGN §4/§5/§6/§7. No code, no golden moved. ⚠️ Joe's `art/`
 > changes are his — never stage them; stage this file as **`HANDOFF.md`** and read `git status`.
 >
+> ⛔ **D435: the generator passes its RNG by value** (every seam in a valley shares one jitter) —
+> filed, fixed later by per-stage seeds (Joe). Hashed seams are unaffected; never expect a draw in a
+> generator helper to advance anything.
+>
 > **Every call is Joe's and on record in D434 and `quarry.md §1`** — do not re-ask: rock-only,
 > never runs out; quarry only (iron mine next); unlock at 100 stone dug by hand; hashed seams, no
 > draws (four diagonals + a second stone ring + two iron, iron grown to ≥ 50); smithy gift after
@@ -3444,6 +3448,13 @@ Read `git status` after staging, every time.
      ~100 stone, one seam ~156). Both were said to Joe before any code, and both changed the spec.
      And a seam across the river is unreachable until bridges — count what the village can WALK
      to, not what the map holds.
+141. **⛔ A `struct` RNG PASSED BY VALUE DRAWS ON A COPY, AND THE CALLER NEVER ADVANCES (D435).**
+     `MapGenerator` had done it since the generator was written, under comments saying *"draw
+     order is the contract"*: every seam in a valley shares one jitter, the river and the soil
+     start from the same numbers. Found only because the quarry spec reasoned about what a new
+     draw would shift, and a parameter list said nothing would. **Before reasoning about draw
+     order, read how the stream is passed.** And I had already told Joe the wrong consequence
+     (D434) — correct it to him at once, as D435 did.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
@@ -3600,6 +3611,7 @@ Read `git status` after staging, every time.
 
 - ~~⭐ **NEXT: A FIELD LOOKS LIKE A FIELD (Commit L of the wheat plan).**~~ ✅ D349. Bare/furrowed `Field`, sparse green `Sown`, dense gold `Ripe` — marks from a hash like the trees, **not** overhanging (a field's edge is a fence line). Ripe stalks in the wheat chip's colour so map and Overview agree. View only.
 - ~~⭐⭐ **NEXT: WHEAT AS THE FIRST REAL FOOD, NOT A RENAME (Joe, 2026-09-11: "option 2").**~~ ✅ D348, **confirmed in play by Joe the same day** (D350). `Goods.Produce` is the food umbrella (index 0, hashed since D82, 56 call sites) and `food-catalog.md §` already has Wheat as a *Grain* with a chain (→ flour → bread; → beer). **The farm's crop becomes a real new good; `Produce` stays what foragers fill.** A proper slice: goods catalog row, farm/crop system, stores, sentences, goldens move. Read `food-catalog.md` and `goods-catalog.md` first.
+- ⛔⛔ **THE GENERATOR PASSES ITS STREAM BY VALUE, SO EVERY STAGE DRAWS FROM A COPY (found D435, 2026-09-29, filed by Joe's call).** `DeterministicRandom` is a `struct`, and `MapGenerator` hands it to `CarveRiver`, `DrawJitter`, `DrawRingPosition`, `PaintSeams` and `PaintWoodland` **by value**, so a helper's draws never advance the caller's stream. Only the soil loop draws on `Generate`'s own copy. Measured on twelve seeds: **every seam in a valley sits at the same offset from its slot, and the iron offsets are always on the diagonal** ((1,1), (0,0), (−1,−1)); the founding jitter's x and y come from one draw; the river's wander and the soil start from the same numbers; the seams' jitter is the woodland's first draw. Still deterministic — not a P0 — but *"draw order is the seed contract"* is not what the code does: **no stage's draws can shift another's today.** ⭐ **Fixed by the per-stage seeds slice** (each stage its own splitmix64-seeded stream, passed by `ref` or held as a local), which reshuffles every valley once anyway — two reshuffles become one. Until then: never add a draw expecting it to advance anything past the helper that makes it.
 - ⭐⭐ **PER-STAGE RNG STREAMS, DEFERRED TO THE NEW-GAME SCREEN (D344, Joe's call).** Worldgen threads **one** generator through river → founding → soil → seams → woodland, so **draw order is the seed contract** and *every future map option that generates something — a lake, an island, a cliff — reshuffles every seed and re-takes every golden, once per option.* ⭐ One stream per stage fixes that for good. ⛔ **Build it with splitmix64 per-stage SEEDS, not `DeterministicRandom`'s `stream` parameter** — small adjacent ids correlate badly (measured: 6 dead valleys of 24 against 1). ⚠️ **And expect to re-pick the shipped seed**: the reshuffle put 12345 on a valley that starves.
 - ⚠️ **The stone and iron seams are still Manhattan diamonds, and D347 left them so on purpose** — the boulders hide the shape, and changing it changes ore. *Revisit only with the economy in view.* (Originally: left because they were the subject of the next slice (*"give the stone and iron deposits the same treatment we just gave forests and trees"*) and changing their shape changes how much ore a valley holds. *`InsideTheClump` is sitting there ready for them.*
 - ✅ **(RESOLVED BY D344 — the clumps are wobbling discs, `MapGenerator.InsideTheClump`; only the stone and iron seams stay diamonds, on purpose. Found stale 2026-09-29.)** ⛔⛔ **THE FOREST CLUMPS ARE MANHATTAN DIAMONDS AND ONLY THE GENERATOR CAN FIX IT (D342, measured by trying).** `PaintForest` drops diamonds of tiles; the new field renderer nibbles their edges by about a tile, which on a nine-tile diamond leaves a soft diamond. *The river is transformed by the same machinery because it is two tiles wide — the difference is the ratio of the jitter to the feature.* ⭐ **The fix is a few lines in `MapGenerator.PaintForest`** — a noisy disc instead of a Manhattan ball — **and it moves every golden** (D152: one commit, one stated reason). **Joe's call, and his since D337.**
