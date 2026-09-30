@@ -682,7 +682,9 @@ public sealed class Villager
             VillagerState.CollectingForMarket => "collecting goods for the market",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
-            VillagerState.Clearing => "clearing trees the village marked",
+            // Trees, stone or iron — the state does not know which, and "trees" was wrong for a
+            // laborer at a seam (found by D434).
+            VillagerState.Clearing => "clearing ground the village marked",
             VillagerState.TidyingGround => "fetching a load left on the ground",
             VillagerState.ClearingABuffer => "carrying food out of a hut to a store",
             VillagerState.ClearingAStore => "carrying goods out of a store being cleared",

@@ -8,7 +8,8 @@ priced in workers), D67 (seams, never a roll), D213–D215 (stone is spent on bu
 from nowhere but the brush), D237 (a site waiting on a material says so), D344 (a worldgen change
 can be draw-neutral — hash, don't draw), D347 (a seam has boulders; depletion is the seam getting
 smaller), D385 (every load to a store), D430 (a tool: 34 % off ticks, 25 % on yield).
-**Status:** 🔨 **§3.1 BUILT (D436, part 1 of six): the seams.** The rest specced, not built
+**Status:** 🔨 **§3.1 BUILT (D436, part 1 of six): the seams. §3.2 and §3.8's warning BUILT (D437,
+part 2): the ever-dug counters and the last-rock warning.** The rest specced, not built
 (2026-09-29, `slice/quarry`). Every number is measured and
 called by Joe (§1, §6); §9 holds what is left. The smithy gift and stone-versus-iron tools ride in the same
 slice and are specified in `tools-and-the-smith.md §9`. Owner: Joe + Claude Code.
@@ -181,10 +182,14 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
 - **Enough rock, measured** (§6.1): with the hashed seams, every valley measured keeps at least
   three reachable stone seams, and rock within the reach threshold after the nearest two are
   cleared.
-- **The brush warns** once a stroke when the harvest paint would take the last unpainted rock
-  within `stone_reach_warn_tiles` of the founding site: *"This is the last rock near the
-  village. A quarry can only be cut into rock."* — a warning, not a refusal (D86's pattern: a
-  player who clears it anyway has decided).
+- **The brush warns** once a stroke when the harvest paint marks the last unmarked rock **the
+  village can walk to** (`SimWorld.WithTheLastRockWarning`): *"This is the last rock the village
+  can reach. Cleared, it is gone for good — and a quarry can only be cut into rock."* — a warning,
+  not a refusal (D86's pattern: a player who clears it anyway has decided). Built as *reachable*
+  rather than *within N tiles* (D437): the stranding question is whether any rock is left to
+  quarry, not whether it is near, so `stone_reach_warn_tiles` was never added. Reach is one cached
+  flow field toward the founding site; asked at the stroke, only for a rock tile, stopping at the
+  first other rock it finds.
 
 ## 4. Data
 
@@ -203,7 +208,6 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
 | `quarry_dig_ticks` | **4** | a laborer's clearing |
 | `stone_per_dig` | **10** | a stint of four fills an armful |
 | `digs_per_stint` | 4 | as `splits_per_stint` |
-| `stone_reach_warn_tiles` | 20 | the last-rock warning's reach |
 | every building's `*_stone` | **×3** | §6.3's table — data AND the C# defaults |
 
 Validated at load: counts ≥ 0, capacities and yields above zero.

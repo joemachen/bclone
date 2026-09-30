@@ -3,8 +3,9 @@
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (NIGHT) — THE QUARRY IS SPECCED ON `slice/quarry`.**
 >
 > **State:** `main` = D433, pushed. **`slice/quarry` = the spec (D434), the RNG finding (D435)
-> and PART 1 BUILT (D436 — the seams: hashed, never nearer the village than their ring; iron ≥
-> 50), not pushed, unplayed.** 1291 / 0 / 5 of 1296, 3m12; view 0 warnings; probe green. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
+> and PARTS 1–2 BUILT (D436 — the seams: hashed, never nearer the village than their ring; iron ≥
+> 50. D437 — `StoneEverDug` / `IronEverDug`, hashed; the last-rock warning), not pushed,
+> unplayed.** 1294 / 0 / 5 of 1299, 3m09; view 0 warnings; probe green. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
 > tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,
 > `seeded-map-generation.md §6`), DESIGN §4/§5/§6/§7. No code, no golden moved. ⚠️ Joe's `art/`
 > changes are his — never stage them; stage this file as **`HANDOFF.md`** and read `git status`.
@@ -23,7 +24,7 @@
 >
 > **▶️ NEXT: BUILD, ONE COMMIT A PART, all four checks green at each, goldens moved only where the
 > part says:** ~~(1) the generator~~ ✅ D436 — ⚠️ its seams sit on the second ring, not the first's
-> diagonals (those are at (7, 7), in the village's plots): tell Joe if he has not heard; (2)
+> diagonals (those are at (7, 7), in the village's plots): tell Joe if he has not heard; ~~(2)~~ ✅ D437 —
 > `StoneEverDug` / `IronEverDug` + the last-rock brush warning + `Villager.cs:685`'s *"clearing
 > trees"* for stone/iron + `VillageEconomy.cs:1542`'s stale *"nothing spends it yet"*; (3) the
 > quarry (the smithy D391 `22b9fd8` is the wiring checklist; `quarry.md §3`) with one sim gate

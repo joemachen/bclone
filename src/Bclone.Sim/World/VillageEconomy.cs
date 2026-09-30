@@ -1540,10 +1540,12 @@ public static class VillageEconomy
                 return forFirewood + config.LogsPerHouse;
 
             case Goods.Stone:
-                // No floor, because nothing spends it yet — a survival floor is
-                // derived from consumption, and stone has none. Named rather than left
-                // to the default so that the day stone becomes what a building costs,
-                // this is the line that is obviously wrong instead of quietly right.
+                // No floor, and not because nothing spends it: buildings have cost stone since
+                // D213 (and three times as much since D434). A survival floor is what the
+                // village must hold not to DIE, and nobody starves or freezes for want of a
+                // granary's stone — a site waits and says so (D237). The quarry is supply above
+                // this line (`quarry.md §2`), never a floor. (Found stale by D434: this said
+                // "nothing spends it yet" two slices after buildings began to.)
                 return 0;
 
             case Goods.Tools:

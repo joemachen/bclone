@@ -5063,7 +5063,7 @@ public sealed class SimWorld : IObstacles
         }
 
         Zones.SetHarvest(tile, true);
-        return verdict;
+        return WithTheLastRockWarning(verdict, tile);
     }
 
     /// <summary>
@@ -5084,7 +5084,57 @@ public sealed class SimWorld : IObstacles
         }
 
         Zones.SetHarvest(at, true);
-        return verdict;
+        return WithTheLastRockWarning(verdict, at.Tile);
+    }
+
+    /// <summary>
+    /// ⭐ The stroke that marks the last rock the village can walk to says so (`quarry.md §3.8`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A quarry is cut only into rock (D434) and a laborer clears rock for good (D84), so a valley
+    /// whose reachable rock is all marked is a valley that can never quarry. **A warning, never a
+    /// refusal** — D86's shape: a player who clears it anyway has decided, and now knows.
+    /// </para>
+    /// <para>
+    /// ⛔ Asked only when the tile is rock, and it stops at the first other rock it finds — so a
+    /// stroke over trees costs nothing and a valley with rock left pays for a handful of tiles.
+    /// Reach is one cached field toward the founding site (<c>Cost(rock, founding)</c>), never a
+    /// field per tile. It is asked at the stroke, never per tick.
+    /// </para>
+    /// </remarks>
+    private PlacementVerdict WithTheLastRockWarning(PlacementVerdict verdict, GridPos tile)
+    {
+        if (Map.TerrainAt(tile) != Terrain.Rock || AnyOtherRockLeftToReach(tile))
+        {
+            return verdict;
+        }
+
+        return PlacementVerdict.Yes(
+            "This is the last rock the village can reach. Cleared, it is gone for good — and a quarry "
+            + "can only be cut into rock.");
+    }
+
+    /// <summary>Whether any rock the village can walk to is left unmarked, besides this tile.</summary>
+    private bool AnyOtherRockLeftToReach(GridPos except)
+    {
+        for (int i = 0; i < Map.Tiles.Count; i++)
+        {
+            if (Map.Tiles[i] != Terrain.Rock)
+            {
+                continue;
+            }
+
+            GridPos at = Zones.PositionOf(i);
+            if (at != except
+                && !Zones.IsHarvest(at)
+                && TravelCost.Cost(at, Map.FoundingSite) != TravelCostField.Unreachable)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The good a brush setting will accept, or null for "anything".</summary>
@@ -5525,6 +5575,17 @@ public sealed class SimWorld : IObstacles
             // Counted at the stump — the whole tile's timber, whether it is carried off or set
             // down beside it (D382; see `LogsEverFelled`).
             LogsEverFelled += amount;
+        }
+        else if (yields.Value == Goods.Stone)
+        {
+            // ⭐ Dug by hand, the whole tile (`quarry.md §3.2`, D434) — what the quarry's unlock
+            // counts. A quarry's own digs never come through here: its face is not spent.
+            StoneEverDug += amount;
+        }
+        else if (yields.Value == Goods.Iron)
+        {
+            // The smithy gift's count (`tools-and-the-smith.md §9.1`).
+            IronEverDug += amount;
         }
 
         return (yields.Value, amount);
@@ -9436,6 +9497,18 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>Logs ever taken from a yard to be split — counted at the block (D382).</summary>
     public int LogsEverSplit { get; internal set; }
+
+    /// <summary>Stone ever dug out of a seam by hand — the whole tile's, carried or left (`quarry.md §3.2`).</summary>
+    /// <remarks>
+    /// ⛔ <b>State, not a statistic, and hashed</b> — unlike <see cref="LogsEverFelled"/> beside it:
+    /// the quarry's unlock reads it (D434), so two villages that differ here differ in what the
+    /// player may build. Sparsely, so a village that never dug stone hashes as it did.
+    /// </remarks>
+    public int StoneEverDug { get; internal set; }
+
+    /// <summary>Iron ever dug out of a seam by hand — what the smithy gift counts (D395, D434).</summary>
+    /// <remarks>Hashed sparsely, for <see cref="StoneEverDug"/>'s reason.</remarks>
+    public int IronEverDug { get; internal set; }
 
     /// <summary>Tools ever forged at a smithy — counted at the anvil (D391). A statistic, not hashed.</summary>
     public int ToolsEverForged { get; internal set; }

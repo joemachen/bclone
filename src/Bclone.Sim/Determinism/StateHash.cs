@@ -518,6 +518,21 @@ public static class StateHash
             hash = MixByte(hash, 1);
         }
 
+        // ---- What the village has dug by hand (`quarry.md §3.2`, D434) ----
+        // The quarry's unlock and the smithy gift read these, so they are state. Sparsely, under a
+        // tag each, so a village that never dug hashes as it did and stone cannot read as iron.
+        if (world.StoneEverDug != 0)
+        {
+            hash = MixByte(hash, 0x51);
+            hash = MixUInt32(hash, (uint)world.StoneEverDug);
+        }
+
+        if (world.IronEverDug != 0)
+        {
+            hash = MixByte(hash, 0x1E);
+            hash = MixUInt32(hash, (uint)world.IronEverDug);
+        }
+
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
         //
         // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs
