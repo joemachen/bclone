@@ -475,7 +475,17 @@ public sealed class ShippedConfigTests
         // code and this. This guard had been passing at exactly its bar. The builders idling on
         // sites nobody can pay for is filed for Joe (`handoff.md`, OPEN); what is guarded here
         // is the claim in the comment above, which needs the buildings to be buildable.
-        ColdStartTests.PaintTheNearestSeam(world);
+        //
+        // ⚠️ AND AS MANY TILES AS THE FOUR COST, derived from their recipes (D439). Four tiles paid
+        // for them until Joe tripled stone (`quarry.md §6.3`); the four cost 93 now, and in the
+        // guard's eighty years they were never raised — the pose had stopped meaning what this
+        // comment says it means.
+        int stoneTheyCost = new[]
+            {
+                BuildingKind.Granary, BuildingKind.Warehouse, BuildingKind.Market, BuildingKind.WoodcutterHut,
+            }.Sum(k => BuildingRecipe.For(k, config).Of(Goods.Stone));
+        int aTile = world.GoodsCatalog.YieldPerTileOf(Goods.Stone);
+        SeamFixtures.PaintNearest(world, Terrain.Rock, (stoneTheyCost + aTile - 1) / aTile);
 
         int marked = 0;
         foreach (BuildingKind kind in new[]

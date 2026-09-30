@@ -64,28 +64,75 @@ public sealed class StoneCostsTests
         Assert.Equal(Goods.Stone, recipe.Materials[1].Goods);
     }
 
-    /// <summary>⭐ A hut costs a nominal amount of stone (Joe, D214).</summary>
+    /// <summary>
+    /// ⭐ Stone is priced at three times D214's, in the data AND the C# defaults (Joe, D439).
+    /// </summary>
     /// <remarks>
-    /// <b>Nominal against 25 logs, and one seam tile is 12 stone</b> — so clearing a single rock
-    /// buys four huts. Measured over fifty years of the shipped opening: the village holds
-    /// <b>24 either way</b>, and a founding that never paints a seam simply builds <em>fewer</em>
-    /// huts (1 gatherer and 1 woodcutter against 2 and 2). A pressure you can read and recover
-    /// from, which is `DESIGN.md §0.1`.
+    /// `quarry.md §6.3`: at the old prices a village's core cost ~100 stone against ~156 in one
+    /// seam, so a quarry would have had nothing to do. Every price the tripling touched is asserted
+    /// against the number Joe chose and against the default a modder's file falls back to — the
+    /// two agreeing is CLAUDE.md's rule, and a key forgotten in one place is the drift METHODOLOGY
+    /// §3 names.
+    /// </remarks>
+    [Fact]
+    public void StoneIsPricedAtThreeTimesWhatItWasAsShipped()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        var fallback = new SimConfig();
+        (string Key, int Shipped, int Default, int Joes)[] prices =
+        {
+            ("granary_stone", shipped.GranaryStone, fallback.GranaryStone, 30),
+            ("warehouse_stone", shipped.WarehouseStone, fallback.WarehouseStone, 24),
+            ("market_stone", shipped.MarketStone, fallback.MarketStone, 30),
+            ("hut_stone", shipped.HutStone, fallback.HutStone, 9),
+            ("gatherer_hut_stone", shipped.GathererHutStone, fallback.GathererHutStone, 9),
+            ("forester_hut_stone", shipped.ForesterHutStone, fallback.ForesterHutStone, 9),
+            ("farmhouse_stone", shipped.FarmhouseStone, fallback.FarmhouseStone, 9),
+            ("fishing hut", shipped.FishingHutStone, fallback.FishingHutStone, 9),
+            ("hunter's lodge", shipped.HunterLodgeStone, fallback.HunterLodgeStone, 36),
+            ("smithy_stone", shipped.SmithyStone, fallback.SmithyStone, 36),
+            ("well_stone", shipped.WellStone, fallback.WellStone, 15),
+            ("library", shipped.LibraryStone, fallback.LibraryStone, 36),
+            ("town hall", shipped.TownHallStone, fallback.TownHallStone, 120),
+        };
+
+        foreach ((string key, int inData, int inCode, int joes) in prices)
+        {
+            _output.WriteLine($"{key}: {inData} shipped, {inCode} default, {joes} Joe's");
+            Assert.True(inData == joes && inCode == joes, $"{key} is {inData} shipped and {inCode} by default; Joe's is {joes}.");
+        }
+    }
+
+    /// <summary>⭐ A hut still costs less stone than one rock tile holds (Joe, D214 → D439).</summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>RE-POSED BY JOE'S CALL, NOT RE-TUNED (D439).</b> This asserted D214's <em>nominal</em>
+    /// — stone × 4 ≤ logs, so one seam tile bought four huts. Joe tripled every building's stone
+    /// (`quarry.md §6.3`: a village's core cost ~100 stone against ~156 in one seam, so a quarry
+    /// would have had nothing to do), and a hut is 9 stone against 25 logs now.
+    /// </para>
+    /// <para>
+    /// <b>What is still worth holding is the opening:</b> the founding's first huts must stay
+    /// payable by clearing a single rock tile, or a village that paints one tile of its first seam
+    /// cannot raise its first hut — the cold start D214 measured, one tile over.
+    /// </para>
     /// </remarks>
     [Theory]
     [InlineData(BuildingKind.GathererHut)]
     [InlineData(BuildingKind.WoodcutterHut)]
     [InlineData(BuildingKind.ForesterHut)]
     [InlineData(BuildingKind.Farmhouse)]
-    public void AHutCostsANominalAmountOfStone(BuildingKind kind)
+    public void AHutCostsLessStoneThanOneRockTileHolds(BuildingKind kind)
     {
-        BuildingRecipe recipe = BuildingRecipe.For(kind, VillageFixtures.Village);
+        SimConfig config = VillageFixtures.Village;
+        BuildingRecipe recipe = BuildingRecipe.For(kind, config);
+        int aTile = new GoodsCatalog(config.GoodsCatalog).YieldPerTileOf(Goods.Stone);
 
         Assert.True(recipe.Of(Goods.Stone) > 0, $"A {kind} is meant to cost some stone.");
         Assert.True(
-            recipe.Of(Goods.Stone) * 4 <= recipe.Of(Goods.Logs),
-            $"A {kind} costs {recipe.Of(Goods.Stone)} stone against {recipe.Of(Goods.Logs)} logs, "
-            + "which is not nominal any more.");
+            recipe.Of(Goods.Stone) <= aTile,
+            $"A {kind} costs {recipe.Of(Goods.Stone)} stone, more than one rock tile's {aTile} — "
+            + "the first hut is no longer one cleared tile away.");
     }
 
     /// <summary>

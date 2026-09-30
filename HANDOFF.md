@@ -5,8 +5,8 @@
 > **State:** `main` = D433, pushed. **`slice/quarry` = the spec (D434), the RNG finding (D435)
 > and PARTS 1–3 BUILT (D436 — the seams: hashed, never nearer the village than their ring; iron ≥
 > 50. D437 — `StoneEverDug` / `IronEverDug`, hashed; the last-rock warning. D438 — THE QUARRY:
-> unlocked at 100 stone, rock-only ground, 99 stone per 100 ticks worked, faces never spent), not
-> pushed, unplayed.** 1300 / 0 / 5 of 1305, 3m01; view 0 warnings; probe green. ⚠️ Deferred from
+> unlocked at 100 stone, rock-only ground, 99 stone per 100 ticks worked, faces never spent. D439 —
+> stone prices ×3), not pushed, unplayed.** 1301 / 0 / 5 of 1306, 3m18; view 0 warnings; probe green. ⚠️ Deferred from
 > part 3, written in `quarry.md`: the worked-face look (a view slice), the stone amber (dropped).
 > **To see a quarry in play:** clear ~8 seam tiles by hand (the log says when), build it beside a
 > seam, *Give ground* on rock. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
@@ -28,7 +28,7 @@
 >
 > **▶️ NEXT: BUILD, ONE COMMIT A PART, all four checks green at each, goldens moved only where the
 > part says:** ~~(1) the generator~~ ✅ D436 — ⚠️ its seams sit on the second ring, not the first's
-> diagonals (those are at (7, 7), in the village's plots): tell Joe if he has not heard; ~~(2)~~ ✅ D437; ~~(3)~~ ✅ D438 —
+> diagonals (those are at (7, 7), in the village's plots): tell Joe if he has not heard; ~~(2)~~ ✅ D437; ~~(3)~~ ✅ D438; ~~(4) prices~~ ✅ D439 —
 > `StoneEverDug` / `IronEverDug` + the last-rock brush warning + `Villager.cs:685`'s *"clearing
 > trees"* for stone/iron + `VillageEconomy.cs:1542`'s stale *"nothing spends it yet"*; (3) the
 > quarry (the smithy D391 `22b9fd8` is the wiring checklist; `quarry.md §3`) with one sim gate
@@ -3602,6 +3602,13 @@ Read `git status` after staging, every time.
   rots. The guard's bar is two thirds now with the reason written; the accounting is a farm
   slice's, not this one's.
 
+- ⭐⭐ **D439 MADE THE ITEM BELOW UNIVERSAL IN THE UNATTENDED ARM.** With stone ×3, D420's 55 villages
+  (the opening paints four rock tiles) leave **every one** with a site unfinished at year 50 (was 8
+  of 55): the granary and warehouse the harness marks at year 3 cost 54 stone against the ~30 left.
+  They starve LESS (122 → 28) because they grow smaller (peak 628 → 582). With twelve more rock
+  tiles painted it is noise (448 / 636 / 110). His calls: whether the builders' hut should stand its
+  hands down on a site whose stone nobody is cutting (option (a) below), and whether the unattended
+  arm should paint enough stone to stay a measure of the economy rather than of this stall.
 - ⭐ **THREE OF TWELVE HANDS WAIT A CENTURY ON STONE NOBODY QUARRIES (found D384, 2026-09-16).**
   The shipped established village, asked to build a granary, a warehouse, a market and a
   woodcutter's hut with no seam painted, keeps three builders in the hut from year 15 to year

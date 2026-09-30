@@ -862,7 +862,7 @@
   // only while the sheds hold the winter's share (LabourQuota.FirewoodShortfall
   // reads zero). A stint is a day's four forges, as the woodcutter's split is.
   "smithy_logs": 25,
-  "smithy_stone": 12,
+  "smithy_stone": 36,
   "smithy_work_ticks": 40,
   "smithy_capacity": 2,
   "iron_per_tool": 4,
@@ -898,7 +898,7 @@
   // 10 days cost 21 shipped villagers of 169, every 20 is within the noise. In
   // Phase 6 the household's water need decides when somebody goes, not a clock.
   "well_logs": 10,
-  "well_stone": 5,
+  "well_stone": 15,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
   "water_trip_every_days": 20,
@@ -1210,18 +1210,22 @@
   // see the block above granary_stone in SimConfig.cs for the fifty-year
   // numbers. A village that never marks a store never needs stone; one that
   // marks a granary it cannot pay for keeps running and is told what it wants.
-  "granary_stone": 10,
-  "warehouse_stone": 8,
-  "market_stone": 10,
+  // ⛔ STONE PRICES TRIPLED (Joe, D434/D439, `quarry.md §6.3`): a village's core cost ~100
+  // stone against ~156 in ONE seam, so hand-clearing covered a whole game and a quarry would
+  // have had nothing to do. x3 makes the core ~300 -- two seams by hand -- which is where a
+  // quarry earns its keep. Measured over 55 villages (x1/x2/x3: 453/461/454 alive) -- noise.
+  "granary_stone": 30,
+  "warehouse_stone": 24,
+  "market_stone": 30,
 
   // And a nominal amount on the huts (Joe, D214). One seam tile is 12 stone,
   // so clearing a single rock buys four huts. Measured over fifty years: the
   // village holds 24 either way, and a founding that never paints a seam simply
   // builds FEWER huts -- a pressure you can read and recover from, not a death.
-  "hut_stone": 3,
-  "gatherer_hut_stone": 3,
-  "forester_hut_stone": 3,
-  "farmhouse_stone": 3,
+  "hut_stone": 9,
+  "gatherer_hut_stone": 9,
+  "forester_hut_stone": 9,
+  "farmhouse_stone": 9,
 
   // construction_site_capacity is GONE (D108). A site had three seats and
   // people were assigned to it; builders hold their job at the hut now and

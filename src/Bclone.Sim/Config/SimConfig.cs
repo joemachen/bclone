@@ -581,7 +581,7 @@ public sealed record SimConfig
 
     /// <summary>Stone a fishing hut costs.</summary>
     [JsonPropertyName("fishing_hut_stone")]
-    public int FishingHutStone { get; init; } = 3;
+    public int FishingHutStone { get; init; } = 9;
 
     /// <summary>Work a fishing hut takes to raise.</summary>
     [JsonPropertyName("fishing_hut_work_ticks")]
@@ -709,7 +709,7 @@ public sealed record SimConfig
 
     /// <summary>Stone in a hunter's lodge.</summary>
     [JsonPropertyName("hunter_lodge_stone")]
-    public int HunterLodgeStone { get; init; } = 12;
+    public int HunterLodgeStone { get; init; } = 36;
 
     /// <summary>Ticks of a builder's work a hunter's lodge takes.</summary>
     [JsonPropertyName("hunter_lodge_work_ticks")]
@@ -1196,7 +1196,7 @@ public sealed record SimConfig
 
     /// <summary>Stone in a smithy — a forge is a hearth of stone, so more than a hut's three.</summary>
     [JsonPropertyName("smithy_stone")]
-    public int SmithyStone { get; init; } = 12;
+    public int SmithyStone { get; init; } = 36;
 
     /// <summary>Ticks of a builder's work a smithy takes.</summary>
     [JsonPropertyName("smithy_work_ticks")]
@@ -1288,7 +1288,7 @@ public sealed record SimConfig
     /// stone"* in exactly the village D384 found waiting a century.
     /// </remarks>
     [JsonPropertyName("well_stone")]
-    public int WellStone { get; init; } = 5;
+    public int WellStone { get; init; } = 15;
 
     /// <summary>Ticks of a builder's work a well takes.</summary>
     [JsonPropertyName("well_work_ticks")]
@@ -1568,31 +1568,31 @@ public sealed record SimConfig
 
     /// <summary>Stone a granary takes to build.</summary>
     [JsonPropertyName("granary_stone")]
-    public int GranaryStone { get; init; } = 10;
+    public int GranaryStone { get; init; } = 30;
 
     /// <summary>Stone a warehouse takes to build.</summary>
     [JsonPropertyName("warehouse_stone")]
-    public int WarehouseStone { get; init; } = 8;
+    public int WarehouseStone { get; init; } = 24;
 
     /// <summary>Stone a market takes to build.</summary>
     [JsonPropertyName("market_stone")]
-    public int MarketStone { get; init; } = 10;
+    public int MarketStone { get; init; } = 30;
 
     /// <summary>Stone a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_stone")]
-    public int HutStone { get; init; } = 3;
+    public int HutStone { get; init; } = 9;
 
     /// <summary>Stone a gatherer's hut takes to build.</summary>
     [JsonPropertyName("gatherer_hut_stone")]
-    public int GathererHutStone { get; init; } = 3;
+    public int GathererHutStone { get; init; } = 9;
 
     /// <summary>Stone a forester's hut takes to build.</summary>
     [JsonPropertyName("forester_hut_stone")]
-    public int ForesterHutStone { get; init; } = 3;
+    public int ForesterHutStone { get; init; } = 9;
 
     /// <summary>Stone a farmhouse takes to build.</summary>
     [JsonPropertyName("farmhouse_stone")]
-    public int FarmhouseStone { get; init; } = 3;
+    public int FarmhouseStone { get; init; } = 9;
 
     /// <summary>
     /// Stone a house takes to raise.
@@ -3174,7 +3174,7 @@ public sealed record SimConfig
     /// much that it is only ever a late-game monument.
     /// </remarks>
     [JsonPropertyName("library_stone")]
-    public int LibraryStone { get; init; } = 12;
+    public int LibraryStone { get; init; } = 36;
 
     /// <summary>Ticks of work a library takes, once the materials are on site.</summary>
     [JsonPropertyName("library_work_ticks")]
@@ -3225,7 +3225,7 @@ public sealed record SimConfig
 
     /// <summary>Stone a town hall takes to build. See <see cref="TownHallLogs"/> — a placeholder.</summary>
     [JsonPropertyName("town_hall_stone")]
-    public int TownHallStone { get; init; } = 40;
+    public int TownHallStone { get; init; } = 120;
 
     /// <summary>
     /// Ticks of work a town hall takes, once the materials are on site.
