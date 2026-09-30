@@ -8,7 +8,8 @@ priced in workers), D67 (seams, never a roll), D213–D215 (stone is spent on bu
 from nowhere but the brush), D237 (a site waiting on a material says so), D344 (a worldgen change
 can be draw-neutral — hash, don't draw), D347 (a seam has boulders; depletion is the seam getting
 smaller), D385 (every load to a store), D430 (a tool: 34 % off ticks, 25 % on yield).
-**Status:** 📝 **specced, not built (2026-09-29, `slice/quarry`).** Every number is measured and
+**Status:** 🔨 **§3.1 BUILT (D436, part 1 of six): the seams.** The rest specced, not built
+(2026-09-29, `slice/quarry`). Every number is measured and
 called by Joe (§1, §6); §9 holds what is left. The smithy gift and stone-versus-iron tools ride in the same
 slice and are specified in `tools-and-the-smith.md §9`. Owner: Joe + Claude Code.
 
@@ -43,8 +44,10 @@ limited and spent on buildings, while the quarry and the mason do not exist"*).
 
 **And the numbers, put to him with §6's tables (the same day):**
 
-7. **Seams:** the four diagonals and a second ring of stone, and two more iron seams — every
-   valley measured has an iron seam of 50 in reach.
+7. **Seams:** eight more stone seams and two more iron seams — every valley measured has an iron
+   seam of 50 in reach. ⚠️ *Picked as "the four diagonals and a second ring"; built as the second
+   ring's cardinals and diagonals, because the first ring's diagonals sit at (7, 7) in the
+   village's plots (§3.1) — the count is his, the placement was the suite's.*
 8. **The unlock at 100 stone dug by hand** — about eight seam tiles, most of one seam.
 9. **The pace: four-tick digs of ten stone**, a stint of four to an armful (about 100 stone per
    hundred ticks worked against a laborer's 43); two seats; six faces a quarrier.
@@ -93,7 +96,12 @@ What the code had before this spec, traced rather than remembered:
 - **Seams beyond them take their jitter from a hash, not the stream:** `SeamJitter(valley, kind,
   index)`, where `valley` is the generator's stream state *read, not advanced*, at the start of
   step 6 (so it is per seed, and it is a value already decided). Their slots continue
-  `RingSlot`'s order: stone's four diagonals at ring 14, then a second ring (§6.1's arm).
+  `RingSlot`'s order, **never nearer the village than the ring itself** (`MapGenerator.SeamSlots`):
+  for stone, the second ring's four cardinals (21) and four diagonals (14, 14). ⛔ *Specced as the
+  first ring's diagonals, and the suite said no:* `RingSlot` halves a diagonal, so those sit at
+  (7, 7) — inside the founding's house plots — and eight housing guards lost their ground, rock
+  lay under the first building sites, and five food and timber guards went red. Moved out a ring,
+  every behavioural guard is green; told to Joe (§1, call 7).
   `stone_seam_count` / `iron_seam_count` keep meaning *drawn* seams;
   `extra_stone_seams` / `extra_iron_seams` are the hashed ones.
 - **An iron seam grows until it holds `iron_seam_min_iron`** (50): painted at
@@ -184,7 +192,7 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
 
 | Key | Default | What |
 |---|---|---|
-| `extra_stone_seams` | **8** | hashed stone seams: four diagonals, four on the second ring |
+| `extra_stone_seams` | **8** | hashed stone seams: the second ring's four cardinals and four diagonals |
 | `extra_iron_seams` | **2** | hashed iron seams at ring 26, south and north |
 | `iron_seam_min_iron` | 50 | an iron seam grows until it holds this (D395) |
 | `quarry_unlock_stone` | **100** | stone dug by hand before the quarry appears |
@@ -225,7 +233,12 @@ unreachable). Steps are tiles walked.
 | today | 13 / 28 / 39 | 12 | 16 (some valleys have no third) | **0 of 64** | 10 |
 | iron grown to ≥ 50 | 13 / 28 / 39 | 12 | 16 | 63 of 64 | 26 |
 | + 4 diagonal stone | 26 / 54 / 88 | 10 | 12 | 63 of 64 | 26 |
-| **+ a second stone ring + 2 more iron** | **40 / 81 / 127** | 10 | 12 (max 18) | **64 of 64** (≥ 1 in every valley; median 3) | 39 |
+| + a second stone ring + 2 more iron | 40 / 81 / 127 | 10 | 12 (max 18) | 64 of 64 (≥ 1 in every valley; median 3) | 39 |
+| **✅ BUILT (D436): the second ring's cardinals + diagonals, 2 more iron, iron grown** | **53 / 84 / 106** | **12 — as today** | 16 (max 24) | **64 of 64** (median 3) | 38 |
+
+The arms above were painted by the harness after the fact; the last row is the real generator. The
+built placement keeps the nearest stone where it always was (12 steps) — the first ring's
+diagonals, which the arms used, sat at 10.
 
 ### 6.2 The trip
 

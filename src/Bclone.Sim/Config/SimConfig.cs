@@ -1693,6 +1693,41 @@ public sealed record SimConfig
     [JsonPropertyName("iron_seam_radius_tiles")]
     public int IronSeamRadiusTiles { get; init; } = 1;
 
+    /// <summary>Stone seams laid past <see cref="StoneSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Hashed, never drawn.</b> Their offsets come from the generator's stream state read and
+    /// not advanced, so adding them takes no draws and every seed keeps its river, its soil and its
+    /// woods. They continue <see cref="MapGenerator.RingSlot"/>'s order but never nearer the village
+    /// than their ring (<see cref="MapGenerator.SeamSlots"/>): for stone, the second ring's four
+    /// cardinals and four diagonals — the first ring's diagonals sit in the founding's house plots.
+    /// </para>
+    /// <para>
+    /// <b>Why eight (Joe, 2026-09-29):</b> a quarry is cut only into rock and laborers clear rock
+    /// for good, so a valley must keep seams to quarry after its first are cleared. Measured over
+    /// 64 valleys: with eight, every one has at least three stone seams a villager can walk to.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("extra_stone_seams")]
+    public int ExtraStoneSeams { get; init; } = 8;
+
+    /// <summary>Iron seams laid past <see cref="IronSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// Two more on the iron ring, so every valley measured has an iron seam of
+    /// <see cref="IronSeamMinIron"/> it can walk to — the river cuts the first two off in some.
+    /// </remarks>
+    [JsonPropertyName("extra_iron_seams")]
+    public int ExtraIronSeams { get; init; } = 2;
+
+    /// <summary>Iron an iron seam holds at least: it grows a ring at a time until it does (D395, D434).</summary>
+    /// <remarks>
+    /// Joe: <em>"iron nodes ≥ 50"</em>, so the first seam cleared unlocks the smithy gift. Before
+    /// this no seam in 64 valleys held 50 — five tiles at 8 a tile, clipped by the river.
+    /// Growing costs no draws.
+    /// </remarks>
+    [JsonPropertyName("iron_seam_min_iron")]
+    public int IronSeamMinIron { get; init; } = 50;
+
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
     /// A village founded with no residential zone could never build a house, so the
@@ -4038,6 +4073,13 @@ public sealed record SimConfig
         // the answer is now `forest_coverage_percent`, which has its own guard below, and a
         // hut the player has to build. **The valley owes the village trees; it no longer
         // owes it jobs.**
+        if (ExtraStoneSeams < 0 || ExtraIronSeams < 0 || IronSeamMinIron < 0)
+        {
+            throw new SimConfigException(
+                $"extra_stone_seams, extra_iron_seams and iron_seam_min_iron cannot be negative "
+                + $"(got {ExtraStoneSeams}, {ExtraIronSeams}, {IronSeamMinIron}).");
+        }
+
         if (SiteJitterTiles < 0)
         {
             throw new SimConfigException(

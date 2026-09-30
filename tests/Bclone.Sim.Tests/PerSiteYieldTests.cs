@@ -63,9 +63,10 @@ public sealed class PerSiteYieldTests
     // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
     // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
     // keeps its founding site, soil and seams. See `MapGenerationTests.GoldenMapHash`.
-    [InlineData(12345UL, 15952633197866446646UL, 420, 2667, 49, 10)]
-    [InlineData(2UL, 2161594585396026524UL, 410, 2731, 49, 10)]
-    [InlineData(42UL, 17795302869166625743UL, 425, 2691, 39, 4)]
+    // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
+    [InlineData(12345UL, 9492872349874793864UL, 420, 2640, 141, 52)]
+    [InlineData(2UL, 17624964258198066199UL, 410, 2673, 150, 52)]
+    [InlineData(42UL, 9190696535150768213UL, 425, 2626, 127, 43)]
     public void MakingSoilRegionalMovedNoOtherTileInTheValley(
         ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
     {

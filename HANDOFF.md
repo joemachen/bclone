@@ -2,8 +2,9 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (NIGHT) — THE QUARRY IS SPECCED ON `slice/quarry`.**
 >
-> **State:** `main` = D433, pushed. **`slice/quarry` = the spec commit (D434), not built, not
-> pushed.** `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
+> **State:** `main` = D433, pushed. **`slice/quarry` = the spec (D434), the RNG finding (D435)
+> and PART 1 BUILT (D436 — the seams: hashed, never nearer the village than their ring; iron ≥
+> 50), not pushed, unplayed.** 1291 / 0 / 5 of 1296, 3m12; view 0 warnings; probe green. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
 > tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,
 > `seeded-map-generation.md §6`), DESIGN §4/§5/§6/§7. No code, no golden moved. ⚠️ Joe's `art/`
 > changes are his — never stage them; stage this file as **`HANDOFF.md`** and read `git status`.
@@ -21,7 +22,8 @@
 > *quarrier*; **building stone prices ×3.**
 >
 > **▶️ NEXT: BUILD, ONE COMMIT A PART, all four checks green at each, goldens moved only where the
-> part says:** (1) the generator — hashed seams + iron growth (goldens move: map); (2)
+> part says:** ~~(1) the generator~~ ✅ D436 — ⚠️ its seams sit on the second ring, not the first's
+> diagonals (those are at (7, 7), in the village's plots): tell Joe if he has not heard; (2)
 > `StoneEverDug` / `IronEverDug` + the last-rock brush warning + `Villager.cs:685`'s *"clearing
 > trees"* for stone/iron + `VillageEconomy.cs:1542`'s stale *"nothing spends it yet"*; (3) the
 > quarry (the smithy D391 `22b9fd8` is the wiring checklist; `quarry.md §3`) with one sim gate
@@ -3455,6 +3457,12 @@ Read `git status` after staging, every time.
      draw would shift, and a parameter list said nothing would. **Before reasoning about draw
      order, read how the stream is passed.** And I had already told Joe the wrong consequence
      (D434) — correct it to him at once, as D435 did.
+142. **⚠️ A RING SLOT IS MANHATTAN-ROUND, SO ITS DIAGONAL IS HALF AS FAR OUT AS ITS NAME (D436).**
+     `MapGenerator.RingSlot(i, 14)` puts the diagonals at (7, 7). The spec said "the four
+     diagonals at ring 14" and meant fourteen out; laid there, the seams sat in the founding's
+     house plots and turned thirteen guards red. Ask where a slot lands before putting anything on
+     it. And when a guard's pose needs *bare ground near the founding*, content that adds terrain
+     will take it — pose it on the valley it was written for and say why.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
