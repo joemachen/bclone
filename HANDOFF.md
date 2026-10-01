@@ -14,7 +14,8 @@
 > MAP (what can be unlocked and what it needs, fog over later nodes) — two screens, §8's roster stays
 > the town hall's; first version = what exists + a fogged horizon. ✅ D442 (the unlock stops the
 > village) and ✅ D443 (the map: `specs/tech-tree-map.md`, `TechTree.cs`, `TechTreeView.cs`, a *Tree*
-> button) are built. **Next: the smithy gift (D444) → stone vs iron tools.**
+> button) and ✅ D444 (the smithy gift after 50 iron) are built. **Next: stone vs iron tools
+> (`tools-and-the-smith.md §9.2–9.4`) — re-measure the 55 villages and the rigs.**
 > **To see a quarry in play:** clear ~8 seam tiles by hand (the log says when), build it beside a
 > seam, *Give ground* on rock. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
 > tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,

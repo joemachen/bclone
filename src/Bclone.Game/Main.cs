@@ -1234,6 +1234,7 @@ public partial class Main : Control
     private Button? _libraryButton;
     private Button? _townHallButton;
     private Button? _quarryButton;
+    private Button? _smithyButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
@@ -1386,6 +1387,31 @@ public partial class Main : Control
 
     private bool _quarryKnown;
     private bool _quarryTried;
+    private bool _smithyKnown;
+
+    /// <summary>
+    /// Show the smithy once the village has dug its iron, gold and ★ while the gift is unplaced
+    /// (D444) — the library button's three rules, one gift over.
+    /// </summary>
+    private void RefreshTheSmithyButton(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.Smithy);
+        if (_smithyKnown != known)
+        {
+            _smithyKnown = known;
+            RefreshTheStrip();
+        }
+
+        if (_smithyButton is null)
+        {
+            return;
+        }
+
+        _smithyButton.Modulate = world.AFreeSmithyIsOwed ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+        _smithyButton.Text = world.AFreeSmithyIsOwed
+            ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
+            : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy));
+    }
 
     private Button? _treeButton;
     private Button? _seeTheTree;
@@ -1881,6 +1907,7 @@ public partial class Main : Control
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
         RefreshTheQuarryButton(world);
+        RefreshTheSmithyButton(world);
         RefreshTheTree(world);
 
         RefreshCards(world);
@@ -6250,6 +6277,10 @@ public partial class Main : Control
             {
                 _quarryButton = button;
             }
+            else if (kind == BuildingKind.Smithy)
+            {
+                _smithyButton = button;
+            }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
             _stripRow.AddChild(button);
@@ -6472,6 +6503,7 @@ public partial class Main : Control
         // ⭐ The sim's one gate (D434, `quarry.md §3.3`) — the same answer `Mark` gives, so the
         // button cannot offer what the placement would refuse.
         BuildingKind.Quarry => _quarryKnown,
+        BuildingKind.Smithy => _smithyKnown,
         _ => true,
     };
 

@@ -396,7 +396,7 @@ the blacksmith to create iron tools (and stone tools)"* — after 50 iron mined,
 holding at least 50, and **the village starts with stone tools**. Specced with the quarry
 (`quarry.md`), on `slice/quarry`, with his calls of 2026-09-29.
 
-### 9.1 The smithy is a gift, after 50 iron dug
+### 9.1 The smithy is a gift, after 50 iron dug — ✅ BUILT (D444, 2026-09-30), unplayed
 
 - The smithy is **hidden from the build bar and refused by `Mark`** until `IronEverDug ≥
   smithy_unlock_iron` (50) — the counter and the one gate are `quarry.md §3.2–3.3`'s.

@@ -500,6 +500,12 @@ public static class StateHash
             hash = MixByte(hash, 1);
         }
 
+        // The smithy's gift (D444), for the library's reason — sparse, under its own tag.
+        if (world.AFreeSmithyIsOwed)
+        {
+            hash = MixByte(hash, 0x5F);
+        }
+
         // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
         // sparse, so a valley nobody has walked mixes nothing. It is state because it decides
         // where people go and how long they take; a fingerprint that skipped it would stay green

@@ -7,9 +7,8 @@ nodes; a *Tree* button on the control bar). Neighbours: D176 / `tech-tree.md §8
 screen — *who knows what* — stays the town hall's tab: **amended, not reversed**), §2.7 (unlocks are
 diegetic: by people, by doing, by scale — never research points), D232 / D252 (the gifts and their
 moment), D434 / D442 (the quarry's unlock and its stop), `tools-and-the-smith.md §9.1` (the smithy's).
-**Status:** 🔨 **BUILT (D443, 2026-09-30, `slice/quarry`), unplayed.** The smithy's node reads
-`smithy_unlock_iron`, whose gate lands with the smithy gift (`tools-and-the-smith.md §9.1`, D444);
-until then the smithy is in the menu while its node can read *in sight*. Owner: Joe + Claude Code.
+**Status:** 🔨 **BUILT (D443, 2026-09-30, `slice/quarry`), unplayed.** The smithy's node and its
+gate (D444) read the one key, `smithy_unlock_iron`. Owner: Joe + Claude Code.
 
 ---
 

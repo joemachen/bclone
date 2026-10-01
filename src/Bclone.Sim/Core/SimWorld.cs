@@ -360,6 +360,12 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public bool AFreeLibraryIsOwed { get; internal set; }
 
+    /// <summary>
+    /// Whether the village has been given a smithy it has not yet put anywhere (D395, D444) — the
+    /// library's gift, one building over: materials free, work owed, the player's spot, exactly one.
+    /// </summary>
+    public bool AFreeSmithyIsOwed { get; internal set; }
+
     /// <summary>Whether the village log has already said the first path wore through (D358). Once, ever.</summary>
     /// <remarks>Hashed sparsely: a village whose grass is still whole mixes nothing.</remarks>
     public bool AFirstPathHasWorn { get; internal set; }
@@ -3577,6 +3583,11 @@ public sealed class SimWorld : IObstacles
         BuildingKind.Quarry when StoneEverDug < Config.QuarryUnlockStone =>
             $"Nobody knows how to cut a quarry yet — the village has dug {StoneEverDug} of the "
             + $"{Config.QuarryUnlockStone} stone by hand it takes to learn.",
+
+        // ⭐ THE SMITHY IS A GIFT AFTER 50 IRON DUG (Joe, D395; `tools-and-the-smith.md §9.1`).
+        BuildingKind.Smithy when IronEverDug < Config.SmithyUnlockIron =>
+            $"The smith's craft has not come to the village yet — it has dug {IronEverDug} of the "
+            + $"{Config.SmithyUnlockIron} iron by hand it takes.",
         _ => null,
     };
 
@@ -5755,7 +5766,20 @@ public sealed class SimWorld : IObstacles
         else if (yields.Value == Goods.Iron)
         {
             // The smithy gift's count (`tools-and-the-smith.md §9.1`).
+            bool hadTheSmith = IsUnlocked(BuildingKind.Smithy);
             IronEverDug += amount;
+            if (!hadTheSmith && IsUnlocked(BuildingKind.Smithy))
+            {
+                // ⭐ A GIFT, IN THE LIBRARY'S SHAPE (D395, D444): the materials free, the work owed,
+                // the spot the player's, exactly one. And it may be the first thing learned by doing,
+                // in which case it introduces the tree (D440).
+                AFreeSmithyIsOwed = true;
+                LearnedByDoing(
+                    "The smith's craft comes to the village",
+                    $"The village has dug {IronEverDug} iron by hand, and somebody knows what to do with "
+                    + "it. They have gathered the timber and stone for a smithy — put it wherever you "
+                    + $"like, and it will cost you nothing. {Clock.SeasonAndYear()}.");
+            }
         }
 
         return (yields.Value, amount);
@@ -7835,6 +7859,16 @@ public sealed class SimWorld : IObstacles
             AFreeLibraryIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ AND THE SMITHY'S (D444): the third gift, the same two rules — asked of the ROW (the trade
+        // it employs), like the two around it, so a modder's forge can be the gift too.
+        if (AFreeSmithyIsOwed && BuildingsCatalog.EmployedBy(kind) == JobKind.Smith)
+        {
+            AFreeSmithyIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate("The timber and stone for the smithy were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 

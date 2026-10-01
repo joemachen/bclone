@@ -568,6 +568,10 @@ public sealed class ToolsTests
         }
 
         Assert.NotNull(at);
+
+        // The smith's craft is learned by digging iron since D444; these guards are about the forge,
+        // so the village is lent the iron it takes to know how (paid — no gift is owed).
+        world.IronEverDug = Math.Max(world.IronEverDug, world.Config.SmithyUnlockIron);
         world.Mark(BuildingKind.Smithy, at!.Value);
         Workplace plan = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Smithy);
         BuildFixtures.StockTheSite(plan);
