@@ -8,6 +8,12 @@
 > unlocked at 100 stone, rock-only ground, 99 stone per 100 ticks worked, faces never spent. D439 —
 > stone prices ×3), not pushed, unplayed.** 1301 / 0 / 5 of 1306, 3m18; view 0 warnings; probe green. ⚠️ Deferred from
 > part 3, written in `quarry.md`: the worked-face look (a view slice), the stone amber (dropped).
+> **D441 (view): a walked staircase draws as one lane — Joe's segmented paths.** Joe's calls on
+> 2026-09-30 (D440, to log with Step B): the quarry stays PAID; the first "doing unlocks a building"
+> moment (quarry or smithy, whichever first) is announced like a gift AND introduces a NEW tech-tree
+> MAP (what can be unlocked and what it needs, fog over later nodes) — two screens, §8's roster stays
+> the town hall's; first version = what exists + a fogged horizon. **Order now: unlock moment + map
+> spec → map → smithy gift → tools** (the plan file).
 > **To see a quarry in play:** clear ~8 seam tiles by hand (the log says when), build it beside a
 > seam, *Give ground* on rock. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
 > tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,
@@ -3473,6 +3479,11 @@ Read `git status` after staging, every time.
      would have asked for (D51) — so `QuarriersWanted` returning nought scored ZERO against all of
      them. Pose the derived number on its own. And a mutant that does not compile scores zero for
      a different reason (dead-code analyzers): replace it, never count it.
+144. **⚠️ A RULE WRITTEN FOR ONE BEND MEETS THE SHAPE THAT IS ALL BENDS (D441).** D359's L-corner
+     rule was posed on a four-tile staircase with one corner; a long staircase — what every diagonal
+     walk treads — is nothing but corners, and drew as two offset chains. Pose the long version of a
+     shape. And **a view red-check must decode Godot's output as UTF-8**: in cp1252 every ⛔ reads
+     as `?` and every mutant scores zero (`viewred.py` in the D441 scratchpad does it right).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

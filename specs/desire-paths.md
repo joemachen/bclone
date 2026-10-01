@@ -345,6 +345,21 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   the midline)"*; the junction rule back to any full 2×2 → *"a packed 3×3 junction draws as a square
   … 19 block tiles"* (the corridor filled and joined the yard). ⚠️ The draw-once rule has no guard —
   written down, not claimed.
+- [x] ⛔⛔ **D441 — a staircase is one lane** (Joe, 2026-09-30, at Year 35: *"there are still a few
+  instances of the segmented lines"*). Measured first: over five played villages at year 35 the sim's
+  grades had one one-tile gap in all (every graded tile touches another), so the dashes were the
+  drawing's. A diagonal walk treads a **staircase** — (0,0) (1,0) (1,1) (2,1)… — and in a long one
+  every tile is the corner of exactly one L, so D359's rule pulled every tile to its corner and dropped
+  every straight step: **two interleaved chains, on y = x and y = x − 1, that never met** — short
+  offset pieces at play zoom. The probe's four-tile staircase has one corner and could not show it.
+  **The rule:** a *staircase corner* (an L-corner one of whose arms is itself an L-corner with it for an
+  arm) draws halfway between its centre and its corner — which puts every staircase tile on the
+  staircase's own centre line — joins its straight neighbours (neither the arm rule nor the rung rule
+  drops them), and no diagonal skips across it. A lone L keeps D359's corner exactly. **Probe:** a
+  posed twelve-tile staircase is one chain on its centre line. **Red-checked, one each:** the halfway
+  point off (*"10 tiles off its centre line"*), the straight steps dropped, the diagonal skip kept.
+  ⚠️ The first count scored zero for all three — the red-check script read Godot's output in the
+  Windows code page and every ⛔ came back as `?` (trap D422, one tool over).
 - [x] ⛔⛔ **D366 — the trails are a mesh, built with the collection.** Slices D358–D360 collected
   once a season and then drew a `DrawCircle` per worn tile and a `DrawPolyline` per joined pair
   **every frame**, with the L-corner and joining rules recomputed per tile per frame — the D338
