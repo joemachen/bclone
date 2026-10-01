@@ -1219,6 +1219,7 @@ public partial class Main : Control
     /// </remarks>
     private Button? _libraryButton;
     private Button? _townHallButton;
+    private Button? _quarryButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
@@ -1357,9 +1358,20 @@ public partial class Main : Control
             _quarryKnown = known;
             RefreshTheStrip();
         }
+
+        // ⭐ Lit like a gift until the first quarry is marked (Joe, D440) — something new to find on
+        // the bar — but no ★ and no free timber: it is paid for. ⛔ Latched, not asked every frame
+        // (CLAUDE.md): the scan of the workplaces runs only between the unlock and the first quarry
+        // marked, and never again once one has been.
+        if (_quarryButton is not null && known && !_quarryTried)
+        {
+            _quarryTried = world.Workplaces.Exists(w => w.Kind == JobKind.Quarrier || w.Construction?.Kind == BuildingKind.Quarry);
+            _quarryButton.Modulate = _quarryTried ? Colors.White : new Color(1f, 0.85f, 0.4f);
+        }
     }
 
     private bool _quarryKnown;
+    private bool _quarryTried;
 
     private void RefreshTheTownHallButton(SimWorld world)
     {
@@ -6071,6 +6083,10 @@ public partial class Main : Control
             else if (kind == BuildingKind.TownHall)
             {
                 _townHallButton = button;
+            }
+            else if (kind == BuildingKind.Quarry)
+            {
+                _quarryButton = button;
             }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));

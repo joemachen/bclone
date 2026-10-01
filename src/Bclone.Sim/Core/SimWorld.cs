@@ -5718,10 +5718,15 @@ public sealed class SimWorld : IObstacles
             StoneEverDug += amount;
             if (!knewHow && IsUnlocked(BuildingKind.Quarry))
             {
-                Narrate(
-                    $"The village has dug {StoneEverDug} stone by hand, and somebody has worked out "
-                    + $"how to cut a quarry into a seam. {Clock.SeasonAndYear()}.",
-                    LogCategory.Discovery);
+                // ⭐ A STOP, NOT A LOG LINE (Joe, D440: *"i did miss the log announcing the quarry …
+                // slowing down the game to 1x and a pop-up modal"*). The gifts' moment — the view
+                // slows to 1× and holds the panel until it is dismissed — but no gift: the quarry is
+                // paid for, by his call.
+                RaiseMoment(
+                    "The village learned to quarry",
+                    $"The village has dug {StoneEverDug} stone by hand, and somebody has worked out how "
+                    + "to cut a quarry into a seam. Build one beside the rock and give it the seam — a "
+                    + $"quarry's face never runs out. {Clock.SeasonAndYear()}.");
             }
         }
         else if (yields.Value == Goods.Iron)

@@ -160,6 +160,32 @@ public sealed class QuarryTests
         Assert.True(world.Mark(BuildingKind.Quarry, site).Allowed);
     }
 
+    /// <summary>
+    /// ⭐ Learning to quarry stops the village, once — the gifts' modal, not a log line (Joe, D440).
+    /// </summary>
+    /// <remarks>
+    /// Joe, at Year 35: *"i did miss the log announcing the quarry — there has to be a better UX way
+    /// to announce it — slowing down the game to 1x and a pop-up modal."* A moment that waits to be
+    /// dismissed is exactly that (`Main.ShowAnyMoment`); the crossing raises one, and only the
+    /// crossing.
+    /// </remarks>
+    [Fact]
+    public void LearningToQuarryStopsTheVillageOnce()
+    {
+        SimWorld world = AVillage();
+        world.StoneEverDug = world.Config.QuarryUnlockStone - 1;
+        world.Moments.Clear();
+
+        GridPos first = FirstOf(world, Terrain.Rock);
+        world.Harvest(first);
+        world.Harvest(FirstOf(world, Terrain.Rock));
+
+        Moment learned = Assert.Single(world.Moments);
+        _output.WriteLine($"{learned.Title}: {learned.Body}");
+        Assert.True(learned.WaitsToBeDismissed, "Learning to quarry was a passing banner, not a stop.");
+        Assert.Contains("quarry", learned.Body, StringComparison.Ordinal);
+    }
+
     /// <summary>⭐ Only rock takes a quarry's paint, and the refusal is in words (§3.4).</summary>
     [Fact]
     public void AQuarryPaintsRockAndRefusesOtherGroundInWords()

@@ -132,9 +132,10 @@ The quarry is **hidden from the build bar and refused by `Mark`** until `StoneEv
 quarry_unlock_stone`. One rule in the sim — `SimWorld.WhyNotYet(BuildingKind)` / `IsUnlocked` —
 read by `Mark` (*"Nobody knows how to cut a quarry yet — the village has dug 40 of the 100 stone
 by hand it takes to learn."*) and by the view's `EarnedYet`, through a flag the strip is rebuilt on
-when it changes (the library button's shape). When it unlocks, the village log says so once as a
-discovery (*"The village has dug 100 stone by hand, and somebody has worked out how to cut a quarry
-into a seam."*). **It is an unlock, not a gift:** its materials are paid. ⚠️ *Built narrower than
+when it changes (the library button's shape). When it unlocks, **the village stops for it** (D442,
+Joe's D440: *"slowing down the game to 1x and a pop-up modal"*) — a moment that waits to be
+dismissed, *"The village learned to quarry"* — and the button is lit gold until the first quarry is
+marked. The first such unlock will introduce the tech-tree map (`tech-tree-map.md`, D440). **It is an unlock, not a gift:** its materials are paid. ⚠️ *Built narrower than
 specced (D438):* the library and the town hall stay gated in the view (`_literacy`,
 `_foundersGone`); moving them onto `WhyNotYet` is its own change. ⚠️ `Mark` asks it, `CanBuildAt`
 does not — so moving a quarry, and fixtures that raise one, are not gated.
