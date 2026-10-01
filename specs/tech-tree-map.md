@@ -7,7 +7,9 @@ nodes; a *Tree* button on the control bar). Neighbours: D176 / `tech-tree.md §8
 screen — *who knows what* — stays the town hall's tab: **amended, not reversed**), §2.7 (unlocks are
 diegetic: by people, by doing, by scale — never research points), D232 / D252 (the gifts and their
 moment), D434 / D442 (the quarry's unlock and its stop), `tools-and-the-smith.md §9.1` (the smithy's).
-**Status:** 📝 **specced, not built (2026-09-30, `slice/quarry`).** Owner: Joe + Claude Code.
+**Status:** 🔨 **BUILT (D443, 2026-09-30, `slice/quarry`), unplayed.** The smithy's node reads
+`smithy_unlock_iron`, whose gate lands with the smithy gift (`tools-and-the-smith.md §9.1`, D444);
+until then the smithy is in the menu while its node can read *in sight*. Owner: Joe + Claude Code.
 
 ---
 
@@ -43,15 +45,16 @@ with nothing to plan against.
 
 ### 3.1 Nodes are rows
 
-`tech_nodes` in `SimConfig` defaults and `data/sim.config.json`, so a modder adds a node in data:
+`tech_nodes` — `TechTree.DefaultNodes()` unless a config file gives its own list (the buildings
+catalogue's shape), so a modder adds a node in data:
 
 | Column | What |
 |---|---|
 | `id` | a stable string (`"quarry"`) |
 | `name` | as the player reads it (*"The quarry"*) |
 | `unlocks` | a building kind, or none (a horizon node) |
-| `condition` | `stone_dug` · `iron_dug` · `kept_granary_years` · `founders_gone` · `not_yet` (horizon) |
-| `amount` | the condition's number (100, 50, 15) — read from the same config key the sim gates on, never a second copy |
+| `condition` | `StoneDug` · `IronDug` · `KeptGranaryYears` · `FoundersGone` · `NotYet` (horizon) — by name, the loader's global enum converter |
+| *(no amount column)* | the condition's number is read from the key the sim gates on (`quarry_unlock_stone`, `smithy_unlock_iron`, `literacy_years`) — never a second copy, so the map and `Mark` cannot disagree |
 | `requires` | ids of the nodes it hangs from — the map's edges |
 | `says` | one sentence: what it takes, in the village's words |
 
@@ -107,8 +110,7 @@ what each will take."* Every later unlock is its moment without the line.
 ## 4. Data
 
 `tech_nodes` as §3.1, with the seven rows of §3.4. Validated at load: ids unique, every `requires`
-names a node, no cycles, a building's `unlocks` names a real kind, and a condition's `amount`
-matches the key it mirrors.
+names a node, no cycles, and a node unlocks a building exactly when it is not on the horizon.
 
 ## 5. Failure modes designed against
 
@@ -133,6 +135,15 @@ matches the key it mirrors.
 - **Probe:** `tech tree:` poses the panel at full width and fails on trimming; the bar height stays
   161 with the button shown.
 - Red-checked, and the reds counted.
+
+**Built, and red-checked (D443):** `TheQuarrysNodeReadsTheQuarrysGate` (red 1 with *known* at
+`>` not `>=`, which also reddens the fog guard — 2), `FogLiftsANodeAtATime` (1 with the parent rule
+off), `TheFirstThingLearnedByDoingIntroducesTheTree` (1 with the flag inverted),
+`BeingShownTheTreeIsInTheFingerprint` (1 unhashed), `ABrokenTreeIsRefusedAtLoad` — ⚠️ with cycle
+detection off the test host **dies of a stack overflow** rather than failing by name: red, loudly,
+written down rather than counted. Probe `tech tree:` red 1 with the cards 128 tall (*"a card needs
+176×154"* — the first build's real overflow, which is why they are 160) and 1 with labels allowed to
+trim (*"24 label(s) may trim"*). The bar probe poses the *Tree* button: 161 holds.
 
 ## 7. Definition of Done
 

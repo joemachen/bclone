@@ -287,6 +287,7 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(ThePersonsCardHoldsItsShape());
+        GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
         GD.Print(AMetLimitIsMarkedOnTheBar());
 
@@ -699,6 +700,14 @@ public partial class Main : Control
             _recordsButton.Visible = true;
         }
 
+        // And the Tree (D440): hidden until the village learns by doing, posed here so the bar is
+        // measured as it will be in year ten.
+        bool treeWas = _treeButton?.Visible ?? false;
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = true;
+        }
+
         // Every child of the filter row AND the tab note at once — wider than any real tab,
         // which is the deliberate over-estimate this probe exists to make.
         bool filterWas = _filterRow.Visible;
@@ -770,6 +779,11 @@ public partial class Main : Control
         if (_recordsButton is not null)
         {
             _recordsButton.Visible = recordsWas;
+        }
+
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = treeWas;
         }
 
         _filterRow.Visible = filterWas;
@@ -1373,6 +1387,135 @@ public partial class Main : Control
     private bool _quarryKnown;
     private bool _quarryTried;
 
+    private Button? _treeButton;
+    private Button? _seeTheTree;
+    private PanelContainer _treePanel = null!;
+    private TechTreeView _treeView = null!;
+    private bool _treeEverOpened;
+    private ulong _treeSeason = ulong.MaxValue;
+
+    /// <summary>
+    /// ⭐ The tech-tree map's window (`tech-tree-map.md §3.6`, D440) — hidden and unticked until the
+    /// player opens it, like Stock limits.
+    /// </summary>
+    /// <summary>
+    /// The tech-tree map at its fullest fits its window and trims nothing — <b>a probe line</b>
+    /// (`tech-tree-map.md §6`; traps 138/139: assert the budget, not only the behaviour inside it).
+    /// </summary>
+    private string TheTreeHoldsItsShape()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+
+        // Posed with every node IN SIGHT, one short of its bar — the longest text a card carries
+        // (a progress line and a bar under the sentence). Posed in the view, never written to the sim.
+        _treePanel.Visible = true;
+        _treeView.Show(world, node =>
+        {
+            (int _, int of) = TechTree.ProgressOf(world, node.Condition);
+            return (TechState.InSight, Math.Max(0, of - 1), of);
+        });
+        ForceUpdateTransform();
+
+        int cards = 0;
+        float tallest = 0f;
+        foreach (Node child in _treeView.GetChildren())
+        {
+            if (child is PanelContainer card && !card.IsQueuedForDeletion())
+            {
+                cards++;
+                Vector2 needs = card.GetCombinedMinimumSize();
+                tallest = Mathf.Max(tallest, needs.Y);
+                if (needs.X > TechTreeView.CardWidth + 1f || needs.Y > TechTreeView.CardHeight + 1f)
+                {
+                    faults.Add($"a card needs {needs.X:F0}×{needs.Y:F0}, more than its {TechTreeView.CardWidth:F0}×{TechTreeView.CardHeight:F0}");
+                }
+            }
+        }
+
+        float wide = _treePanel.GetCombinedMinimumSize().X;
+        if (wide > TreeWidth + 1f)
+        {
+            faults.Add($"the window widens to {wide:F0} against {TreeWidth:F0}");
+        }
+
+        int trimming = _treeView.Labels().Count(l => l.ClipText || l.TextOverrunBehavior != TextServer.OverrunBehavior.NoTrimming);
+        if (trimming > 0)
+        {
+            faults.Add($"{trimming} label(s) may trim");
+        }
+
+        if (cards != world.Config.TechNodeRows.Count)
+        {
+            faults.Add($"{cards} cards for {world.Config.TechNodeRows.Count} nodes");
+        }
+
+        _treePanel.Visible = false;
+
+        return faults.Count == 0
+            ? $"[widths] tech tree: ✅ {cards} cards, the tallest {tallest:F0} of {TechTreeView.CardHeight:F0}; the window {wide:F0} of {TreeWidth:F0}; no label trims"
+            : $"[widths] tech tree: ⛔ {string.Join("; ", faults)}";
+    }
+
+    private void BuildTheTreePanel()
+    {
+        VBoxContainer body = Floating(
+            Edge + DefaultPanelWidth + 16f, Edge + 40f, TreeWidth, 0f, Corner.TopLeft, "Tree", startOpen: true);
+
+        _treePanel = _panels[^1];
+        _treePanel.Visible = false;
+        _windows[^1].Wanted = false;
+
+        body.AddChild(Caption("What the village may yet learn, and what each will take. Nothing here is "
+            + "clicked — it is done."));
+        _treeView = new TechTreeView();
+        body.AddChild(_treeView);
+    }
+
+    /// <summary>The tree's window width — three columns of cards and the gaps between them.</summary>
+    private const float TreeWidth = 640f;
+
+    /// <summary>The button follows the sim's flag; an open tree is re-read once a season, never per frame.</summary>
+    private void RefreshTheTree(SimWorld world)
+    {
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = world.ShownTheTechTree;
+        }
+
+        ulong season = world.Tick / (ulong)world.Config.TicksPerSeason;
+        if (_treePanel.Visible && season != _treeSeason)
+        {
+            _treeSeason = season;
+            _treeView.Show(world);
+        }
+    }
+
+    private void ToggleTheTree()
+    {
+        if (_treePanel.Visible)
+        {
+            CloseTheWindow(_treePanel);
+            return;
+        }
+
+        OpenTheTree();
+    }
+
+    private void OpenTheTree()
+    {
+        _treeEverOpened = true;
+        if (WindowOf(_treePanel) is ShellWindow window)
+        {
+            window.Wanted = true;
+            window.Tick?.SetPressedNoSignal(true);
+        }
+
+        _treePanel.Visible = true;
+        _treeSeason = _loop.World.Tick / (ulong)_loop.World.Config.TicksPerSeason;
+        _treeView.Show(_loop.World);
+    }
+
     private void RefreshTheTownHallButton(SimWorld world)
     {
         if (_foundersGone != world.SaidTheFoundersAreGone)
@@ -1550,6 +1693,7 @@ public partial class Main : Control
 
             _momentTitle.Text = moment.Title;
             _momentBody.Text = moment.Body;
+            _seeTheTree!.Visible = world.ShownTheTechTree && !_treeEverOpened;
 
             // ⭐⭐ SLOWED TO 1×, NOT PAUSED (Joe, 2026-08-30). See `_speedBeforeTheAlert`.
             //
@@ -1641,6 +1785,16 @@ public partial class Main : Control
         go.Pressed += DismissTheMoment;
         box.AddChild(go);
 
+        // ⭐ The introduction's second door (D440): shown on the first stop after the village has
+        // learned something by doing, until the tree has been opened once.
+        _seeTheTree = new Button { Text = "See the tree", Visible = false };
+        _seeTheTree.Pressed += () =>
+        {
+            DismissTheMoment();
+            OpenTheTree();
+        };
+        box.AddChild(_seeTheTree);
+
         panel.AddChild(box);
         AddChild(panel);
         _momentPanel = panel;
@@ -1727,6 +1881,7 @@ public partial class Main : Control
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
         RefreshTheQuarryButton(world);
+        RefreshTheTree(world);
 
         RefreshCards(world);
 
@@ -2756,6 +2911,7 @@ public partial class Main : Control
         BuildRosterPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
+        BuildTheTreePanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
         // screenshot has it — above the log, so the two things you glance at are together.
@@ -4064,6 +4220,12 @@ public partial class Main : Control
         _recordsButton = new Button { Text = "Records", Visible = false };
         _recordsButton.Pressed += OpenTheRecords;
         controls.AddChild(_recordsButton);
+
+        // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
+        // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
+        _treeButton = new Button { Text = "Tree", Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
+        _treeButton.Pressed += ToggleTheTree;
+        controls.AddChild(_treeButton);
 
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
         // the whole point: *"give me more room to see the game map"* (D305) was answered by

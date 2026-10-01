@@ -1232,6 +1232,15 @@ public sealed record SimConfig
     [JsonPropertyName("forges_per_stint")]
     public int ForgesPerStint { get; init; } = 4;
 
+    /// <summary>Iron the village must dig by hand before the smith's craft comes to it (Joe, D395).</summary>
+    /// <remarks>
+    /// *"After 50 iron mined"* — every iron seam holds at least this (D436), so the first seam
+    /// cleared brings it. Read by the smithy's gate (`tools-and-the-smith.md §9.1`) and by the
+    /// tech-tree map's smithy node — one key, so the two cannot disagree.
+    /// </remarks>
+    [JsonPropertyName("smithy_unlock_iron")]
+    public int SmithyUnlockIron { get; init; } = 50;
+
     // ---------------------------------------------------------------
     //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
     // ---------------------------------------------------------------
@@ -2658,6 +2667,14 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("buildings")]
     public IReadOnlyList<BuildingRow>? Buildings { get; init; }
+
+    /// <summary>The tech-tree map's nodes (`tech-tree-map.md`, D440) — a file's own list, or the built-in ones.</summary>
+    [JsonPropertyName("tech_nodes")]
+    public IReadOnlyList<TechNodeRow>? TechNodes { get; init; }
+
+    /// <summary>The nodes this config describes — its own list, or <see cref="TechTree.DefaultNodes"/>.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<TechNodeRow> TechNodeRows => TechNodes ?? TechTree.DefaultNodes();
 
     /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
     public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
@@ -4321,6 +4338,11 @@ public sealed record SimConfig
         ValidateCrops();
         ValidateJobs();
         ValidateBuildings();
+        TechTree.Validate(TechNodeRows);
+        if (SmithyUnlockIron < 0)
+        {
+            throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
+        }
         ValidateSkills();
         ValidateTechniques();
     }

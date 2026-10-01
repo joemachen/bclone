@@ -871,6 +871,11 @@
   "tools_per_forge": 1,
   "forges_per_stint": 4,
 
+  // THE SMITHY IS A GIFT AFTER 50 IRON DUG BY HAND (Joe, D395; tools-and-the-
+  // smith.md 9.1). Every iron seam holds at least this (D436), so the first seam
+  // cleared brings it. Read by the smithy's gate and the tech-tree map alike.
+  "smithy_unlock_iron": 50,
+
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only
   // rock takes the paint of. Unlocked after 100 stone dug by hand (most of one

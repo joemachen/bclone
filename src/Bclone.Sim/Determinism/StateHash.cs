@@ -533,6 +533,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.IronEverDug);
         }
 
+        // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
+        // learned by doing mixes nothing.
+        if (world.ShownTheTechTree)
+        {
+            hash = MixByte(hash, 0x7E);
+        }
+
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
         //
         // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs

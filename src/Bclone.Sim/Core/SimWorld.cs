@@ -3580,6 +3580,29 @@ public sealed class SimWorld : IObstacles
         _ => null,
     };
 
+    /// <summary>
+    /// Whether the village has been shown the tech-tree map — set by the first building it learns
+    /// by doing with its hands (Joe, D440; `tech-tree-map.md §3.5`). Hashed sparsely.
+    /// </summary>
+    public bool ShownTheTechTree { get; internal set; }
+
+    /// <summary>
+    /// ⭐ A building learned by doing stops the village (D442) — and the first such moment introduces
+    /// the tech-tree map (D440). The library and the town hall raise their own moments and never
+    /// come through here, so they never introduce it (Joe).
+    /// </summary>
+    private void LearnedByDoing(string title, string body)
+    {
+        if (!ShownTheTechTree)
+        {
+            ShownTheTechTree = true;
+            body += " It is the first thing this village has learned by doing — the Tree shows what "
+                + "else it may, and what each will take.";
+        }
+
+        RaiseMoment(title, body);
+    }
+
     /// <summary>Whether the player may mark this building — see <see cref="WhyNotYet"/>.</summary>
     public bool IsUnlocked(BuildingKind kind) => WhyNotYet(kind) is null;
 
@@ -5722,7 +5745,7 @@ public sealed class SimWorld : IObstacles
                 // slowing down the game to 1x and a pop-up modal"*). The gifts' moment — the view
                 // slows to 1× and holds the panel until it is dismissed — but no gift: the quarry is
                 // paid for, by his call.
-                RaiseMoment(
+                LearnedByDoing(
                     "The village learned to quarry",
                     $"The village has dug {StoneEverDug} stone by hand, and somebody has worked out how "
                     + "to cut a quarry into a seam. Build one beside the rock and give it the seam — a "

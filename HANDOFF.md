@@ -12,8 +12,9 @@
 > 2026-09-30 (D440, to log with Step B): the quarry stays PAID; the first "doing unlocks a building"
 > moment (quarry or smithy, whichever first) is announced like a gift AND introduces a NEW tech-tree
 > MAP (what can be unlocked and what it needs, fog over later nodes) — two screens, §8's roster stays
-> the town hall's; first version = what exists + a fogged horizon. **Order now: unlock moment + map
-> spec → map → smithy gift → tools** (the plan file).
+> the town hall's; first version = what exists + a fogged horizon. ✅ D442 (the unlock stops the
+> village) and ✅ D443 (the map: `specs/tech-tree-map.md`, `TechTree.cs`, `TechTreeView.cs`, a *Tree*
+> button) are built. **Next: the smithy gift (D444) → stone vs iron tools.**
 > **To see a quarry in play:** clear ~8 seam tiles by hand (the log says when), build it beside a
 > seam, *Give ground* on rock. `specs/quarry.md` (new), `tools-and-the-smith.md §9` (the smithy gift and two kinds of
 > tool), stale docs fixed (`buildings-plan.md §2.2` superseded note, `mutable-terrain.md §5.2`,
