@@ -287,6 +287,13 @@ shelf capacity, decay and fire. Applied to a **record of what happened**, it bre
 
 ## 8. Legibility: the knowledge screen
 
+> ⚠️ **AMENDED BY D440 (2026-09-30), NOT REVERSED.** Joe asked for a *map of what can be unlocked and
+> what it requires, with fog over the later nodes*, introduced by the first building the village
+> unlocks by doing — years before any town hall. **It is a second screen** (`tech-tree-map.md`): the
+> map shows *what may be unlocked and what it takes*; this screen stays the town hall's tab and shows
+> *who knows what*. *"Not a graph of icons to click"* still holds for both: nothing on the map is
+> clicked to unlock.
+
 **The tree is not a graph of icons to click.** It is a roster of what the village knows and who knows it. If the tree and the population pyramid are the same object, the interface should make that literally true.
 
 > **⭐ THIS SCREEN IS THE TOWN HALL'S INTERIOR (§7f, D176), and it is reachable only once one stands.** Before that the village log carries the same information as it happens, one line per event on its edge — so **nothing is ever hidden, it is simply not yet collected**. *Anecdote → archive.* ⚠️ **The at-risk line (below) is the exception and must narrate from day one**, town hall or no town hall: §2.1 requires knowledge-at-risk to be *visible and actionable*, and a warning nobody can see is the funeral surprise this design refuses.
