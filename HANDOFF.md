@@ -1,6 +1,83 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D404–D434 IN §7. `main` = D433, PUSHED. `slice/quarry` = THE QUARRY SPEC (D434), NOT BUILT. NEXT: BUILD IT, ONE COMMIT A PART, FROM `specs/quarry.md` AND `tools-and-the-smith.md §9`.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D445 IN §7. `main` = D433, PUSHED. `slice/quarry` = D434–D445, PLAYED BY JOE (*"everything looks good"*), NOT MERGED, NOT PUSHED. NEXT: STEP E — STONE TOOLS AND IRON TOOLS, ON `slice/quarry`.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-09-29 (NIGHT) — THE QUARRY IS SPECCED ON `slice/quarry`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 — `slice/quarry` PLAYED; STEP E IS NEXT.**
+>
+> **State:** `main` = D433, pushed. **`slice/quarry` = D434–D444 plus this handoff (D445), committed,
+> NOT merged, NOT pushed.** Joe played it on 2026-10-01: *"everything looks good. with lanes and the
+> quarry."* At the last code commit (D444): **1311 passing, 0 failing, 5 skipped of 1316, 3m56; view
+> 0 warnings; probe green, bar height 161.** ⚠️ Joe's `art/` changes are his — never stage them;
+> stage this file as **`HANDOFF.md`** and read `git status`.
+>
+> **What the branch holds** (all in §7): D434 the quarry spec · D435 the generator passes its RNG by
+> value (filed for per-stage seeds) · D436 more stone and iron by hash, every iron seam ≥ 50 · D437
+> `StoneEverDug` / `IronEverDug` + the last-rock warning · D438 the quarry · D439 stone prices ×3 ·
+> D440 Joe's calls (paid quarry; the first thing learned by doing introduces a tech-tree MAP) · D441
+> a walked staircase draws as one lane · D442 the quarry's unlock stops the village · D443 the
+> tech-tree map (`specs/tech-tree-map.md`, *Tree* button) · D444 the smithy is a gift after 50 iron.
+>
+> **⭐ JOE'S CALL, 2026-10-01 (D445): THE UNATTENDED TEST VILLAGES PAINT MORE STONE.** Asked after D439
+> found that with stone ×3 every one of D420's 55 villages leaves its granary and warehouse unbuilt
+> (the opening paints four rock tiles, 48 stone; the two cost 54): *"those test villages should paint
+> more stone"* — **not** builders standing down on unfunded sites (closed for now). **Do it as the
+> first commit of Step E:** the scratch arm `ZzBase.cs` paints at year 3 as many rock tiles as the
+> granary and warehouse it marks cost, derived from their recipes (the shape
+> `ShippedConfigTests.TheShippedVillageSurvivesBeingAskedToBuild` uses since D439), and re-take the
+> baseline — the "before" every Step E number is read against. ⚠️ **Whether the suite's own opening
+> (`ColdStartTests.PaintTheNearestSeam`, four tiles) follows is measured first and put to Joe** — many
+> guards use it.
+>
+> **▶️ STEP E — STONE TOOLS AND IRON TOOLS (`tools-and-the-smith.md §9.2–§9.4`; every call already
+> Joe's, D434 — do not re-ask):**
+> 1. **A tool's numbers become columns on its good's row** — `tool_uses`, `tool_speed_bonus_percent`,
+>    `tool_yield_bonus_percent` (0 = not a tool). The three global keys stay and price the STONE row,
+>    as the buildings' keys price their rows. ⭐ **Stone tools are today's tool to the unit**, so a
+>    village with only stone tools must hash and play exactly as now — guard that.
+> 2. **`Goods.Tools` (id 4) is the stone tool.** ⚠️ Renaming its row to *"stone tools"* breaks every
+>    name-keyed thing — `starting_stock_limits` (`"tools": 200`), fixtures, the bar's chip, card text.
+>    Grep `"tools"` and `Goods.Tools` first; keeping the name *tools* and calling the new one *iron
+>    tools* is the cheap path — say which to Joe.
+> 3. **`Goods.IronTools`**, the next free id: 250 uses, 50 % off ticks, 35 % on yield (keys
+>    `iron_tool_uses` …). `ModdedGoodTests`' fixture id bumps (trap D348). A stock limit row.
+> 4. **`Villager.ToolGood`** — which kind is in their hands — hashed sparsely **as a difference from
+>    stone**, so the founders' stone tools mix nothing new. `WorkTicksFor`, `BeginWork`, `WithTool`
+>    (SimWorld ~2877 / ~2962 / ~3011) read the held good's row, not `Config.Tool*`.
+> 5. **Fetching takes the best tool in reach** — iron before stone, then the nearest (`FetchingATool`,
+>    BehaviorSystem ~4651 / ~4760); a hand holding a tool does not trade it in early.
+> 6. **The smith forges what the smithy's card says — stone by default, a dropdown** (Joe):
+>    `Workplace.ForgeGood` (hashed sparsely), a player-intent setter like `SetMode`. Stone tool = **2
+>    stone + 1 log**, no fire; iron tool = 4 iron + 4 firewood, never the winter's firewood (§3.7).
+>    `WhyTheForgeIsCold` and `NearestStoreForTheForge` per kind; the smith never switches on their own.
+> 7. **The quota** (`LabourQuota.ToolShortfall`) counts both kinds held and in hands.
+> 8. **The card's TOOL row names the kind** (*"Iron tools — 212 / 250"*); the smithy's card gets the
+>    dropdown (`Main.Cards.cs`; the Kept-on dropdown is the pattern). The probe's `villager card:` and
+>    cards lines stay green — trap 139: assert the budget.
+> 9. **Re-measure** (§9.4): the 55 villages with D445's painting (stone-only must equal the new
+>    baseline to the person); an arm where a smithy forges iron tools; the rigs (forager / fisher /
+>    hunter per hundred ticks worked — trap 30; count events — trap 136). A golden moves only if the
+>    stone-only identity fails, and that would be the bug.
+> 10. **Docs in the same commits:** `tools-and-the-smith.md §9` status lines, DESIGN §4/§5/§6/§7, this
+>    file. Then Joe plays; then he merges and pushes.
+>
+> **Tools (scratchpad `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/fb4e5d1a-3a90-4a1e-86ee-0472a8d6b6b0/scratchpad/`):**
+> `ZzBase.cs` + `summ2.py` (the 55 villages; dials `ZZ_SPEED` / `ZZ_YIELD` / `ZZ_USES` / `ZZ_CART` /
+> `ZZ_STONEX` / `ZZ_PAINT`), `ZzSeams.cs` + `seamsumm.py`, `ZzLane.cs` (D424's lane census; `ZZ_DUMP`
+> writes a village's wear), `redcheck.py` (sim mutants — **single-line only**, the tree is CRLF),
+> `viewred.py` (view mutants — runs the probe and decodes UTF-8; run with `PYTHONIOENCODING=utf-8`).
+> Copy a Zz file into `tests/Bclone.Sim.Tests/`, run with `--filter` and the detailed console logger,
+> **delete before committing**. ⚠️ **Write long or quote-heavy edits as a script file with the file
+> tools, never a bash heredoc** — bash mangled `\n` in C# and cut heredocs short four times in the
+> D434–D445 session. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> **Still open and Joe's** (the ⏸️ list): the worked-face look for quarry faces (a view slice); the
+> iron mine (the slice after this one); the mason's yard; per-stage seeds (which also fix D435);
+> `ForesterSeatsWithGroundToPlant` counting painted rock.
+>
+> *(The 2026-09-29 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS ARE, 2026-09-29 (NIGHT) — THE QUARRY ON `slice/quarry`.**
 >
 > **State:** `main` = D433, pushed. **`slice/quarry` = the spec (D434), the RNG finding (D435)
 > and PARTS 1–3 BUILT (D436 — the seams: hashed, never nearer the village than their ring; iron ≥
@@ -3615,6 +3692,9 @@ Read `git status` after staging, every time.
   rots. The guard's bar is two thirds now with the reason written; the accounting is a farm
   slice's, not this one's.
 
+- ✅ **ANSWERED BY JOE, 2026-10-01 (D445): *"those test villages should paint more stone"*** — the
+  unattended arm paints what its buildings cost; builders do NOT stand down on unfunded sites (closed
+  for now). Kept below for the numbers.
 - ⭐⭐ **D439 MADE THE ITEM BELOW UNIVERSAL IN THE UNATTENDED ARM.** With stone ×3, D420's 55 villages
   (the opening paints four rock tiles) leave **every one** with a site unfinished at year 50 (was 8
   of 55): the granary and warehouse the harness marks at year 3 cost 54 stone against the ~30 left.
