@@ -1317,6 +1317,52 @@ public sealed record SimConfig
     [JsonPropertyName("digs_per_stint")]
     public int DigsPerStint { get; init; } = 4;
 
+    // ---------------------------------------------------------------
+    //  The iron mine (D449, `specs/iron-mine.md`) — painted iron that never runs out
+    // ---------------------------------------------------------------
+
+    /// <summary>Iron tools the smith must forge before anybody knows how to sink a mine (`iron-mine.md §3.4`).</summary>
+    /// <remarks>
+    /// Joe's call, 2026-10-01: *the first iron tool* — dig iron, the smithy gift, the smith works
+    /// iron, the village learns to mine. It spends about one seam by hand (the smithy's 50), leaving
+    /// the rest as mine sites (§0.1). Read by the gate and by the tree's mine node — one key.
+    /// </remarks>
+    [JsonPropertyName("mine_unlock_iron_tools")]
+    public int MineUnlockIronTools { get; init; } = 1;
+
+    /// <summary>A mine's timber — shoring and a headframe.</summary>
+    [JsonPropertyName("mine_logs")]
+    public int MineLogs { get; init; } = 30;
+
+    /// <summary>A mine's stone — a lined shaft head.</summary>
+    [JsonPropertyName("mine_stone")]
+    public int MineStone { get; init; } = 15;
+
+    /// <summary>Work to raise a mine — as the quarry.</summary>
+    [JsonPropertyName("mine_work_ticks")]
+    public int MineWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats in a mine — as the quarry.</summary>
+    [JsonPropertyName("mine_capacity")]
+    public int MineCapacity { get; init; } = 2;
+
+    /// <summary>Faces one miner keeps — an iron seam is about seven tiles, so two miners hold most of one.</summary>
+    [JsonPropertyName("mine_tiles_per_worker")]
+    public int MineTilesPerWorker { get; init; } = 3;
+
+    /// <summary>Ticks one dig at an iron face takes (`iron-mine.md §6`, Joe: slower than the quarry).</summary>
+    [JsonPropertyName("mine_dig_ticks")]
+    public int MineDigTicks { get; init; } = 6;
+
+    /// <summary>Iron one dig brings — eight digs fill an armful of forty.</summary>
+    /// <remarks>Measured as the trip (trap 134, §6): about 40 iron per hundred ticks worked, 47 with an iron tool, against a laborer's 14.</remarks>
+    [JsonPropertyName("iron_per_dig")]
+    public int IronPerDig { get; init; } = 5;
+
+    /// <summary>Digs in one stint before the miner carries the iron off.</summary>
+    [JsonPropertyName("mine_digs_per_stint")]
+    public int MineDigsPerStint { get; init; } = 8;
+
     /// <summary>Logs a well takes to raise — a timber head over the shaft (D427).</summary>
     [JsonPropertyName("well_logs")]
     public int WellLogs { get; init; } = 10;
@@ -2448,6 +2494,12 @@ public sealed record SimConfig
             SourceName = "a stone seam",
             YieldPerTile = 12,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // A quarry face's pace (D449: a face's pace is the good's row), priced from the keys
+            // that priced it in D434 — so the quarry plays exactly as before.
+            FaceDigTicks = QuarryDigTicks,
+            FacePerDig = StonePerDig,
+            FaceDigsPerStint = DigsPerStint,
         },
         new GoodRow
         {
@@ -2476,6 +2528,11 @@ public sealed record SimConfig
             SourceName = "an iron seam",
             YieldPerTile = 8,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // A mine face's pace (`iron-mine.md §6`, Joe: slower than the quarry).
+            FaceDigTicks = MineDigTicks,
+            FacePerDig = IronPerDig,
+            FaceDigsPerStint = MineDigsPerStint,
         },
         new GoodRow
         {
@@ -2719,6 +2776,24 @@ public sealed record SimConfig
             // A met stone limit stops the cutting (D139), as a met tools limit stops the forge.
             LimitedBy = World.Goods.Stone,
             UsesTool = true,
+
+            // ⭐ A face trade (D449): its ground must be rock, and the pace is stone's row.
+            WorksFace = Terrain.Rock,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Miner,
+            Name = "miner",
+            Plural = "miners",
+            Doing = "digging iron",
+            WorksAt = BuildingKind.Mine,
+
+            // A met iron limit stops the digging (D139), as a met stone limit stops the cutting.
+            LimitedBy = World.Goods.Iron,
+            UsesTool = true,
+
+            // The quarrier's face on an iron seam; the pace is iron's row (`iron-mine.md §3.1`).
+            WorksFace = Terrain.IronDeposit,
         },
     };
 
@@ -3112,6 +3187,23 @@ public sealed record SimConfig
             },
             WorkTicks = QuarryWorkTicks,
             Seats = QuarryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ THE IRON MINE (D449, `specs/iron-mine.md`) — the quarry's twin beside its own painted
+        // iron. Shoring timber and a stone-lined shaft head. Unlocked by the smith's first iron tool.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Mine,
+            Name = "iron mine",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MineLogs),
+                new MaterialCost(World.Goods.Stone, MineStone),
+            },
+            WorkTicks = MineWorkTicks,
+            Seats = MineCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
         },
@@ -4116,6 +4208,16 @@ public sealed record SimConfig
                 + $"{DigsPerStint}, {QuarryUnlockStone}).");
         }
 
+        if (MineUnlockIronTools < 0 || MineCapacity <= 0 || MineTilesPerWorker <= 0
+            || MineDigTicks <= 0 || IronPerDig <= 0 || MineDigsPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "mine_capacity, mine_tiles_per_worker, mine_dig_ticks, iron_per_dig and "
+                + "mine_digs_per_stint must be greater than zero and mine_unlock_iron_tools at least zero "
+                + $"(got {MineCapacity}, {MineTilesPerWorker}, {MineDigTicks}, {IronPerDig}, "
+                + $"{MineDigsPerStint}, {MineUnlockIronTools}).");
+        }
+
         if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)
         {
             throw new SimConfigException(
@@ -4821,6 +4923,26 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"jobs[{i}] (id {job.Id}) needs both a name and a plural — they are different "
                     + "words for a reason (D188), so neither may be left blank.");
+            }
+
+            // ⭐ A FACE TRADE'S SEAM MUST GIVE UP A GOOD WITH A PACE (D449) — or its first dig would
+            // throw deep in the behaviour system rather than here.
+            if (job.WorksFace is World.Terrain face)
+            {
+                World.Goods? good = World.TerrainRules.Yields(face);
+                IReadOnlyList<World.GoodRow> goods = GoodsCatalog;
+                World.GoodRow? row = null;
+                for (int g = 0; g < goods.Count; g++)
+                {
+                    row = good is World.Goods yielded && goods[g].Id == (int)yielded ? goods[g] : row;
+                }
+
+                if (row is null || row.FaceDigTicks <= 0 || row.FacePerDig <= 0 || row.FaceDigsPerStint <= 0)
+                {
+                    throw new SimConfigException(
+                        $"jobs[{i}] (id {job.Id}) works {face} as a face, but that seam gives up no good "
+                        + "whose row states face_dig_ticks, face_per_dig and face_digs_per_stint above zero.");
+                }
             }
         }
 

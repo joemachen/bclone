@@ -114,6 +114,19 @@ public sealed record JobRow
     /// </remarks>
     [JsonPropertyName("uses_tool")]
     public bool UsesTool { get; init; }
+
+    /// <summary>
+    /// The seam this trade works as a face that never runs out — <c>Rock</c> for the quarrier,
+    /// <c>IronDeposit</c> for the miner — or null for every trade that works no face
+    /// (`iron-mine.md §3.1`, D449).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>One face code path, two trades.</b> The good is the terrain's yield and the pace is
+    /// that good's row (<see cref="GoodRow.FaceDigTicks"/>), so the quarry and the mine read the same
+    /// rules and a modder's face trade is a row. Its painted ground must be this terrain.
+    /// </remarks>
+    [JsonPropertyName("works_face")]
+    public Terrain? WorksFace { get; init; }
 }
 
 /// <summary>
@@ -183,4 +196,8 @@ public sealed class JobsCatalog
 
     /// <summary>Whether a hand in this trade carries a tool (D391).</summary>
     public bool UsesTool(JobKind kind) => _rows[(int)kind].UsesTool;
+
+    /// <summary>The seam this trade works as a face, or null (D449).</summary>
+    public Terrain? FaceOf(JobKind kind) =>
+        (int)kind >= 0 && (int)kind < _rows.Length ? _rows[(int)kind]?.WorksFace : null;
 }

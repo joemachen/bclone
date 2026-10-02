@@ -220,6 +220,28 @@ public sealed record GoodRow
     [JsonPropertyName("forged_from")]
     public IReadOnlyList<MaterialCost> ForgedFrom { get; init; } = new List<MaterialCost>();
 
+    /// <summary>
+    /// Ticks one dig at a worked face of this good's seam takes — <b>zero for anything no face
+    /// trade digs</b> (`iron-mine.md §3.1`, D449).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A face's pace is the good's, not the trade's</b>, the way a tool's numbers are: the
+    /// built-in rows are priced from <c>quarry_dig_ticks</c> / <c>stone_per_dig</c> /
+    /// <c>digs_per_stint</c> (stone) and <c>mine_dig_ticks</c> / <c>iron_per_dig</c> /
+    /// <c>mine_digs_per_stint</c> (iron) in <c>SimConfig.DefaultGoods</c>, so a quarry and a mine
+    /// are one code path and a modder's copper face is a row.
+    /// </remarks>
+    [JsonPropertyName("face_dig_ticks")]
+    public int FaceDigTicks { get; init; }
+
+    /// <summary>What one dig at a face brings in, before the tool and vigour (§3.2).</summary>
+    [JsonPropertyName("face_per_dig")]
+    public int FacePerDig { get; init; }
+
+    /// <summary>The most digs a stint at a face makes before the load is carried (§3.2).</summary>
+    [JsonPropertyName("face_digs_per_stint")]
+    public int FaceDigsPerStint { get; init; }
+
     /// <summary>Whether this is a tool a hand can hold. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool IsTool => ToolUses > 0;

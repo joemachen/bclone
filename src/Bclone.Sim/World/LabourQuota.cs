@@ -47,7 +47,8 @@ public readonly record struct LabourQuota
         int fishers = 0,
         int hunters = 0,
         int smiths = 0,
-        int quarriers = 0)
+        int quarriers = 0,
+        int miners = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -68,6 +69,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Hunter] = hunters;
         _byJob[(int)JobKind.Smith] = smiths;
         _byJob[(int)JobKind.Quarrier] = quarriers;
+        _byJob[(int)JobKind.Miner] = miners;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -157,6 +159,9 @@ public readonly record struct LabourQuota
 
     /// <summary>Quarriers the village wants (D434).</summary>
     public int Quarriers => _byJob[(int)JobKind.Quarrier];
+
+    /// <summary>Miners the village wants (D449).</summary>
+    public int Miners => _byJob[(int)JobKind.Miner];
 
     /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
     public int Builders => _byJob[(int)JobKind.Builder];
@@ -280,6 +285,7 @@ public readonly record struct LabourQuota
         int buildersWanted = BuildersWanted(world);
         int smithsWanted = SmithsWanted(world);
         int quarriersWanted = QuarriersWanted(world);
+        int minersWanted = MinersWanted(world);
 
         // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
         // here is the last moment it is unqualified — before the food floor zeroes four trades
@@ -292,6 +298,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Marketer] = marketersWanted;
         needed[(int)JobKind.Smith] = smithsWanted;
         needed[(int)JobKind.Quarrier] = quarriersWanted;
+        needed[(int)JobKind.Miner] = minersWanted;
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -344,6 +351,7 @@ public readonly record struct LabourQuota
             buildersWanted = 0;
             smithsWanted = 0;
             quarriersWanted = 0;
+            minersWanted = 0;
         }
 
         // ---- Survival first, in the order things kill you -------------
@@ -561,6 +569,9 @@ public readonly record struct LabourQuota
         // whose sites wait, which the site's own note says (D237).
         int quarriers = Take(ref free, Cap(quarriersWanted, TotalCapacityFor(world, JobKind.Quarrier)));
 
+        // Iron, after stone (D449): the mine's twin of the quarry's reasoning, one rung on.
+        int miners = Take(ref free, Cap(minersWanted, TotalCapacityFor(world, JobKind.Miner)));
+
         // And the market, last of all, out of hands nobody else needs (D14).
         //
         // Deliberately the LOWEST priority of every job, which is the mechanical form
@@ -709,6 +720,7 @@ public readonly record struct LabourQuota
         hunters = Asked(world, JobKind.Hunter, hunters, hands);
         smiths = Asked(world, JobKind.Smith, smiths, hands);
         quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
+        miners = Asked(world, JobKind.Miner, miners, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -731,11 +743,12 @@ public readonly record struct LabourQuota
         hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
         smiths = AtLeastPinned(world, JobKind.Smith, smiths);
         quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
+        miners = AtLeastPinned(world, JobKind.Miner, miners);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
-            quarriers: quarriers);
+            quarriers: quarriers, miners: miners);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1303,9 +1316,24 @@ public readonly record struct LabourQuota
     /// The player's limit is the ceiling (D62) and the seats are the player's staffing (D109); a
     /// quarry with no rock painted wants nobody, because there is nothing for a hand to cut.
     /// </remarks>
-    public static int QuarriersWanted(SimWorld world)
+    public static int QuarriersWanted(SimWorld world) => FaceSeatsWanted(world, JobKind.Quarrier);
+
+    /// <summary>
+    /// Miners the village wants (D449, `iron-mine.md §3.3`): every seat at a mine that has iron
+    /// painted, while the iron limit is not met — the quarry's rule on iron.
+    /// </summary>
+    public static int MinersWanted(SimWorld world) => FaceSeatsWanted(world, JobKind.Miner);
+
+    /// <summary>
+    /// Every seat of every standing workplace of a face trade that has ground painted, while the
+    /// limit on the good its face gives up is not met (D434, D449) — one rule for the quarry and
+    /// the mine.
+    /// </summary>
+    private static int FaceSeatsWanted(SimWorld world, JobKind trade)
     {
-        if (world.LimitIsMet(Goods.Stone))
+        if (world.JobsCatalog.FaceOf(trade) is not Terrain face
+            || TerrainRules.Yields(face) is not Goods good
+            || world.LimitIsMet(good))
         {
             return 0;
         }
@@ -1313,12 +1341,12 @@ public readonly record struct LabourQuota
         int seats = 0;
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
-            Workplace quarry = world.Workplaces[i];
-            if (quarry.Kind == JobKind.Quarrier
-                && quarry.Construction is null or { IsFinished: true }
-                && world.Zones.WorkGroundTiles(quarry.Id) > 0)
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == trade
+                && workplace.Construction is null or { IsFinished: true }
+                && world.Zones.WorkGroundTiles(workplace.Id) > 0)
             {
-                seats += quarry.Capacity;
+                seats += workplace.Capacity;
             }
         }
 
