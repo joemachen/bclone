@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D447 IN §7. `main` = `slice/quarry` (D434–D447) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: JOE PICKS THE NEXT SLICE (THE IRON MINE IS QUEUED).**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D447 IN §7. `main` = `slice/quarry` (D434–D447) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: THE IRON MINE, SPEC FIRST (D448), THEN THE SMALL FIXES.**
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 (NIGHT) — THE QUARRY SLICE MERGED AND PUSHED.**
 >
@@ -18,7 +18,14 @@
 > shipped fifty-year golden re-taken for that alone, proven by D420's 55 villages reading village for
 > village as at 200.
 >
-> **▶️ NEXT SESSION: ask Joe which slice.** Queued and his: **the iron mine** (named as *"the slice
+> **▶️ JOE PICKED (D448, 2026-10-01): THE IRON MINE, THEN THE SMALL FIXES ONE COMMIT EACH, THEN THE
+> STUTTER.** Spec first: `specs/iron-mine.md`, its calls put to him before code (as D434 did for the
+> quarry). The small fixes: forester seats counting rock/saplings · the builder moved off a stocked
+> site · the over-painted farm's cap · a demolition's facing recorded · **refuse a building on the
+> lane in front of a gate** (his call) · **re-pose `TheMarketKeepsLardersFromRunningDry` as the
+> longest dry spell** (his handed to me). Names/surnames/birthdays (D395) wait on his slot. His other
+> calls are in D448 and annotated on the ⏸️ list.
+> *(Before D448:)* Queued and his: **the iron mine** (named as *"the slice
 > after this one"* since D434 — the iron counterpart of the quarry; `quarry.md` and D84's *a deposit
 > is finite, a building is not*), the worked-face look for quarry faces (a view slice), the mason's
 > yard (gates the stone cottage, D206), per-stage seeds (also fixes D435), and the ⏸️ list below.
@@ -3718,7 +3725,7 @@ Read `git status` after staging, every time.
 - ✅ **DOES A STOCK LIMIT EXCLUDE THE LARDERS? — ANSWERED AND BUILT (D420).** Joe: *"loads in transit
   should count and the market's shelf should count toward the limit too"*; (b) for the hide. Kept
   open for him only: the survival read in D420 (drift, diagnosed), and whether "stored" is the word
-  he wants. *(The original entry, kept:)* **(Joe, 2026-09-27 — thoughts given, TWO CALLS ASKED.)** *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition
+  he wants — ✅ **it is (D448).** *(The original entry, kept:)* **(Joe, 2026-09-27 — thoughts given, TWO CALLS ASKED.)** *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition
   to whatever is in home larders. a limit of 400 logs means 400 logs in storage in addition to
   whatever is in home larders. Same for everything else."* ⭐ **It already excludes them** —
   `SimWorld.HeldAgainstItsLimit` (D409) counts every store that accepts the good (the market, cart
@@ -3736,10 +3743,13 @@ Read `git status` after staging, every time.
   4. **The risk under his rule, named to him:** the limit is no longer the village's total — ten
      homes' larders hold up to 4,000 more (walls at 400, D399). Whatever ships, the bar and the
      stock-limits panel must say **"in storage"**.
+- ✅ **D448 — JOE HANDED THE GUARD BELOW TO ME (*"you'd know better than me"*):** re-pose it as the
+  longest dry spell while the stores hold food, bounded by a marketer's round trip (a bank run is a
+  duration, not a rate). In the small-fixes pass, red-checked.
 - ✅ **D417'S FOUR HELD GUARDS — ANSWERED, *"accept"* (D418), re-posed.** Still open: `TheMarketKeepsLardersFromRunningDry`'s bar has
   been nudged five times since D363 (0 → 1 → 2 → a comparison → 2); it may be the wrong shape of guard
   for a number this small, not the wrong number.
-- ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*).** 130 is level over
+- ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*; again D448: *"keep it for now. revisit later."*).** 130 is level over
   42 fifty-year villages (330 alive vs 337, starved 100 vs 108) and an abandoned hub path is grass in
   eight years. 104 — the nearest to the spec's "six seasons" — cost 26 people. His to revisit.
 - ⭐ **A BUILDER MOVED OFF A STOCKED SITE (found in D414, not fixed; on main too).** In
@@ -3750,6 +3760,7 @@ Read `git status` after staging, every time.
   on food while the village is short, and the builder's hut staffed to 1 did not change it); with
   the yield kept it passes again. The guard is one balance nudge from red.
 
+- ✅ **D448 — JOE: *"YES. Worth a slice. i hate it."*** Queued after the small fixes. Measure first (below).
 - ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
   *"I think it looks okay? there are some skips now and then."* The numbers from his play:
   **catch-up 3 frames of 12,059 (0.0 %), worst 2 ticks, slowest step 51.2 ms** — so the frame
@@ -3799,6 +3810,7 @@ Read `git status` after staging, every time.
   seed. Pre-existing; skipped with the numbers; its own slice, and the order is his.
 - ~~⏸️⏸️ **FENCES AS WALLS — §9.1, THE TRADE (D404).**~~ ✅ Merged (D406): *"let longer walks be
   the price of fences."*
+- ✅ **D448 — JOE: REFUSE IT.** A small fix, in the small-fixes pass.
 - ⏸️ **A BUILDING ON THE LANE IN FRONT OF A GATE (D404, spec §9.3)** is allowed and shuts the yard.
   Harmless until the kitchen garden needs a yard entered; refusing it is one more lane tile the
   player may not build on. His call.
@@ -3807,6 +3819,7 @@ Read `git status` after staging, every time.
   `TravelCostField` honoured by every flow field and by `LineOfSight`, the door's lane edge open as
   the gate, the D383 wall-off refusal extended to *"would fence somebody in"*, and then lanes
   matter for real. `tech-tree.md §9.6` — *fences are walls the cost field routes around*.
+- ✅ **D448 — JOE: *"yes, the yards read as yards."*** The three numbers stand.
 - ⭐ **THE PLOT'S THREE NUMBERS, ONCE HE HAS SEEN THE ROWS (D386, 2026-09-17).** `plot_width` 3,
   `plot_depth` 2, `plot_apart_tiles` 2 are stated, measured and shipped, and the *apart* term
   barely bites at 2 (18 → 22 of ~68 houses beside a neighbour over twelve seeds). Whether the
@@ -3851,6 +3864,8 @@ Read `git status` after staging, every time.
   game — leave it; *(b)* a household topping up above the trigger yields the granary's last armful
   to one at the emergency line (tried once, changed nothing on three seeds — the villages were
   simply short); *(c)* the trigger sits higher than 50 in scarcity. His number; measured either way.
+- ⏸️ **D448 — STILL HIS, AND HE IS THINKING:** *"i want the paths to look 'more organic' — maybe i
+  have to wait until we get to art direction for that."* Do not re-ask until art direction.
 - ⭐⭐ **JOE PLAYS DESIRE PATHS (D358).** Three things only he can call: *(1)* **the look** — are the trails the right width and colour, should packed read darker or lighter, do they still read at the zoomed-out view; *(2)* **the balance** — six shipped seeds over fifty years carry 139 people against 118 and walk 6.8% less; is a quicker village what he wants, or should the discount (9/8 against 10) be gentler; *(3)* **paving** — §2.6's player half (dirt → gravel → cobble) is unspecified and is the natural next slice on top of this table, or it waits for the shell.
 - ⭐⭐ **THE ROADMAP IS WRITTEN — `DESIGN.md §4` "Master Roadmap", D353 (2026-09-11). PHASE 4.5 IS CURRENT; SLICES 3 AND 4 AND DESIRE PATHS ARE BUILT (D354, D356, D358); CLOCK B AND THE SHELL ARE NEXT.** Slice 4 = string-pulled paths **with the waypoint** — the state a fractional walk needs, which slice 3 deliberately did not add (`gridless.md §8` says why: the tile a villager is on cannot say whether they are leaving it or arriving at it); then desire paths, then the shell in §4's order. ⛔ Not spatial hashing — §4 says why. ⚠️ Slice 4 is where movement genuinely changes for the first time; read `gridless.md §8` and §10 and the `VillagerPointTests` timing pins (20 and 41) before starting it — those pins are the economy's, and slice 4 must either keep them or move them deliberately with a stated reason.
 
@@ -3867,6 +3882,9 @@ Read `git status` after staging, every time.
   decision: `crops-and-orchards.md §5.1` wanted use-it-or-lose-it to *"punish inattention rather
   than obedience"*, and unreaped crop now rots at winter. **He accepted the rot** and floated a
   future tech unlock letting crops stand into winter.
+  - ✅ **CLOSED BY JOE, D448:** *"if the farm's crop's limit is reached during harvest time, the
+    farmer does not continue harvesting that crop. just like all resources that have hit their set
+    limit."* That is what ships (`SimWorld.MayReap`). Gate neither is not built. *(Kept:)*
   - **⏸️ THE THIRD OPTION, RESTATED FOR HIM ON 2026-09-06 AND STILL HIS: GATE NEITHER.** Farmers
     sow in spring *and* reap in autumn regardless of the cap. ⭐ **For it:** the limit already stops
     foragers, fishers and hunters through `foodIsEnough`, so a farm finishing what it *started* is
