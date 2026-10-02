@@ -279,7 +279,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 836586678125485000.
     // RE-TAKEN (D424) — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Was 14628176752370550354.
     // RE-TAKEN (D429) — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Was 10018167588382916202.
-    private const ulong SeamGoldenHash = 16882118816047759725UL;
+    // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Was 16882118816047759725.
+    private const ulong SeamGoldenHash = 16212385272777087401UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -341,7 +342,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D422) with it again: a top-up ends with the trip that fills the larder, food reads the larder's room, a housemate's load on its way home counts. Was 9971580707305620644.
     // RE-TAKEN (D424) with it again: a step treads every tile it passes over. Was 13124005613803505895.
     // RE-TAKEN (D429) with it again: a tool takes a third off the action it begins, beside its quarter on yield. Was 17666849110764019097.
-    private const ulong SeamBeforeAnybodyGotBetter = 2012008122364773033UL;
+    // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`): the valley has more rock and iron; no draw added. Was 2012008122364773033.
+    private const ulong SeamBeforeAnybodyGotBetter = 3968343926408457749UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

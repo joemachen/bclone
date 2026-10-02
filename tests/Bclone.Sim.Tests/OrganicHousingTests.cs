@@ -22,7 +22,16 @@ public sealed class OrganicHousingTests
 
     public OrganicHousingTests(ITestOutputHelper output) => _output = output;
 
-    private static SimConfig Config => VillageFixtures.Village;
+    /// <summary>The village fixture's valley <b>without the quarry's extra seams</b> (D434).</summary>
+    /// <remarks>
+    /// ⚠️ Re-posed, not re-tuned: these guards are about houses, and each finds a bare square of
+    /// grass beside the founding to site them in. With 35 % woodland such squares are scarce, and
+    /// the eight stone seams the quarry added took the one they had been landing on — widening the
+    /// search moved three of them onto ground twenty tiles out, where a house faces the village for
+    /// other reasons. So the valley they pose is the one they were written against. Ore has its
+    /// own guards (<c>SeamsTests</c>).
+    /// </remarks>
+    private static SimConfig Config => VillageFixtures.Village with { ExtraStoneSeams = 0, ExtraIronSeams = 0 };
 
     private static SimWorld Bare(SimConfig? config = null)
     {

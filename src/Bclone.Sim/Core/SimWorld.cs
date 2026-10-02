@@ -360,6 +360,12 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public bool AFreeLibraryIsOwed { get; internal set; }
 
+    /// <summary>
+    /// Whether the village has been given a smithy it has not yet put anywhere (D395, D444) — the
+    /// library's gift, one building over: materials free, work owed, the player's spot, exactly one.
+    /// </summary>
+    public bool AFreeSmithyIsOwed { get; internal set; }
+
     /// <summary>Whether the village log has already said the first path wore through (D358). Once, ever.</summary>
     /// <remarks>Hashed sparsely: a village whose grass is still whole mixes nothing.</remarks>
     public bool AFirstPathHasWorn { get; internal set; }
@@ -1999,7 +2005,8 @@ public sealed class SimWorld : IObstacles
         var stopped = new List<string>();
         for (int id = 0; id < JobsCatalog.Count; id++)
         {
-            if (JobsCatalog.LimitedBy((JobKind)id) == goods)
+            // The smith's good is what the smithies are set to forge (§9.3), not the row's alone.
+            if (LabourQuota.GoodTheTradeMakes(this, (JobKind)id) == goods)
             {
                 stopped.Add(JobsCatalog.PluralOf((JobKind)id));
             }
@@ -2270,6 +2277,7 @@ public sealed class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
+            JobKind.Quarrier => WhyTheQuarryIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
             JobKind.Forager => ForagerIdleNote(workplace),
             JobKind.Farmer => FarmIdleNote(workplace),
 
@@ -2874,7 +2882,9 @@ public sealed class SimWorld : IObstacles
         // Each bonus as a percentage off; zero where it does not apply. Mastery is scaled by the
         // share of the way there (hundredths of a percent, out of 10,000); the tool is whole.
         long masteryOff = MasteryOffFor(villager, trade);
-        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade) ? Config.ToolSpeedBonusPercent : 0;
+        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade)
+            ? GoodsCatalog[villager.ToolGood].ToolSpeedBonusPercent
+            : 0;
 
         if (masteryOff <= 0 && toolOff <= 0)
         {
@@ -3013,7 +3023,8 @@ public sealed class SimWorld : IObstacles
             return amount;
         }
 
-        int bonus = Config.ToolYieldBonusPercent;
+        // The held tool's own row (`tools-and-the-smith.md §9.2`) — stone is today's number.
+        int bonus = GoodsCatalog[villager.ToolGood].ToolYieldBonusPercent;
         return bonus <= 0 ? amount : amount + (amount * bonus / 100);
     }
     /// <summary>Remember who holds a technique, so the village can name them when it is lost.</summary>
@@ -3553,6 +3564,133 @@ public sealed class SimWorld : IObstacles
             : null;
     }
 
+    // ---------------------------------------------------------------
+    //  The quarry (D434, `specs/quarry.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Whether this tile is rock a quarry holds — a face, never cleared (`quarry.md §3.4`).</summary>
+    public bool IsQuarryFace(GridPos tile) =>
+        Map.Contains(tile)
+        && Map.TerrainAt(tile) == Terrain.Rock
+        && Zones.WorkGroundOwner(tile) is int owner and not 0
+        && FindWorkplace(owner) is { Kind: JobKind.Quarrier };
+
+    /// <summary>Why the player may not mark this building yet — or null when they may (`quarry.md §3.3`).</summary>
+    /// <remarks>
+    /// <b>One rule in the sim, read by the view's build bar and by <see cref="Mark(BuildingKind, Point, Angle)"/></b>,
+    /// so the button and the placement cannot disagree. The quarry waits on stone dug by hand
+    /// (D434). ⚠️ The library and the town hall are still gated in the view (`Main.EarnedYet`) —
+    /// moving them here is their own change, not this one's.
+    /// </remarks>
+    public string? WhyNotYet(BuildingKind kind) => kind switch
+    {
+        BuildingKind.Quarry when StoneEverDug < Config.QuarryUnlockStone =>
+            $"Nobody knows how to cut a quarry yet — the village has dug {StoneEverDug} of the "
+            + $"{Config.QuarryUnlockStone} stone by hand it takes to learn.",
+
+        // ⭐ THE SMITHY IS A GIFT AFTER 50 IRON DUG (Joe, D395; `tools-and-the-smith.md §9.1`).
+        BuildingKind.Smithy when IronEverDug < Config.SmithyUnlockIron =>
+            $"The smith's craft has not come to the village yet — it has dug {IronEverDug} of the "
+            + $"{Config.SmithyUnlockIron} iron by hand it takes.",
+        _ => null,
+    };
+
+    /// <summary>
+    /// Whether the village has been shown the tech-tree map — set by the first building it learns
+    /// by doing with its hands (Joe, D440; `tech-tree-map.md §3.5`). Hashed sparsely.
+    /// </summary>
+    public bool ShownTheTechTree { get; internal set; }
+
+    /// <summary>
+    /// ⭐ A building learned by doing stops the village (D442) — and the first such moment introduces
+    /// the tech-tree map (D440). The library and the town hall raise their own moments and never
+    /// come through here, so they never introduce it (Joe).
+    /// </summary>
+    private void LearnedByDoing(string title, string body)
+    {
+        if (!ShownTheTechTree)
+        {
+            ShownTheTechTree = true;
+            body += " It is the first thing this village has learned by doing — the Tree shows what "
+                + "else it may, and what each will take.";
+        }
+
+        RaiseMoment(title, body);
+    }
+
+    /// <summary>Whether the player may mark this building — see <see cref="WhyNotYet"/>.</summary>
+    public bool IsUnlocked(BuildingKind kind) => WhyNotYet(kind) is null;
+
+    /// <summary>
+    /// The face a quarrier walks to next: the cheapest rock tile on the quarry's own ground, or
+    /// null (`quarry.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="NextGroundToWork"/> shape — the building's own tiles from the owner index,
+    /// never a scan of the valley; lowest travel cost; map order breaks ties; never an
+    /// <c>Rng</c> draw.
+    /// </remarks>
+    public GridPos? NextFaceToQuarry(Workplace quarry, GridPos from)
+    {
+        ArgumentNullException.ThrowIfNull(quarry);
+
+        GridPos? best = null;
+        int cheapest = int.MaxValue;
+        IReadOnlyList<int> ground = Zones.WorkGroundOf(quarry.Id);
+        for (int i = 0; i < ground.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(ground[i]);
+            if (Map.TerrainAt(at) != Terrain.Rock)
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, at);
+            if (cost != TravelCostField.Unreachable && cost < cheapest)
+            {
+                cheapest = cost;
+                best = at;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Why the quarry is not cutting, in a sentence the player can act on — or null when it can
+    /// cut. <b>One copy</b>, read by the quarrier before the walk and after every dig, and by the
+    /// card (D76's lesson).
+    /// </summary>
+    public string? WhyTheQuarryIsIdle(Workplace quarry)
+    {
+        ArgumentNullException.ThrowIfNull(quarry);
+
+        if (LimitIsMet(Goods.Stone))
+        {
+            return $"Nothing to cut — you asked the village to keep {StockLimits.For(Goods.Stone)} "
+                + $"stone and it has {HeldAgainstItsLimit(Goods.Stone)} stored.";
+        }
+
+        if (Zones.WorkGroundTiles(quarry.Id) == 0)
+        {
+            return "No rock painted for it — give it ground on a stone seam.";
+        }
+
+        return null;
+    }
+
+    /// <summary>The ground a tile is, in a word a sentence can hold.</summary>
+    private static string Describe(Terrain terrain) => terrain switch
+    {
+        Terrain.Grass => "grass",
+        Terrain.Forest => "woodland",
+        Terrain.Rock => "rock",
+        Terrain.IronDeposit => "an iron seam",
+        Terrain.Sapling => "a young tree",
+        Terrain.Field or Terrain.Sown or Terrain.Ripe => "a field",
+        _ => terrain.ToString().ToLowerInvariant(),
+    };
+
     private string? SmithyIdleNote(Workplace smithy) =>
         WhyTheForgeIsCold(smithy) is string cold ? $"{smithy.Name}: {cold}" : null;
 
@@ -3571,38 +3709,128 @@ public sealed class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(smithy);
 
-        int held = HeldAgainstItsLimit(Goods.Tools);
-        if (LimitIsMet(Goods.Tools))
+        // What the card says to forge (`tools-and-the-smith.md §9.3`) — its own limit and recipe.
+        Goods tool = smithy.ForgeGood;
+        GoodRow row = GoodsCatalog[tool];
+        int held = HeldAgainstItsLimit(tool);
+        if (LimitIsMet(tool))
         {
             return $"Nothing to forge — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Tools)} tools and it has {held} stored.";
+                + $"{StockLimits.For(tool)} {row.Name} and it has {held} stored.";
         }
 
-        if (Config.FirewoodPerTool > 0 && LabourQuota.FirewoodShortfall(this) > 0)
+        if (row.ForgedFrom.Count == 0)
+        {
+            return $"Nothing to forge — {row.Name} are not made at a forge.";
+        }
+
+        // ⛔ Only a recipe with fire in it asks after the winter's firewood (§3.7): a stone tool
+        // takes none, so it never waits on the homes' woodpile.
+        if (TakesFirewood(row) && LabourQuota.FirewoodShortfall(this) > 0)
         {
             return "Nothing to forge — the village needs its firewood for the winter.";
         }
 
-        if (NearestStoreForTheForge(smithy.Tile) is null)
+        if (NearestStoreForTheForge(smithy.Tile, tool) is null)
         {
             return $"Nothing to forge — no store within reach of {smithy.Name} has the "
-                + $"{Config.IronPerTool} iron and {Config.FirewoodPerTool} firewood a tool takes.";
+                + $"{DescribeRecipe(row.ForgedFrom)} a forge of {row.Name} takes.";
         }
 
         return null;
     }
 
+    /// <summary>Whether one forge of this tool burns firewood.</summary>
+    private static bool TakesFirewood(GoodRow row)
+    {
+        for (int i = 0; i < row.ForgedFrom.Count; i++)
+        {
+            if (row.ForgedFrom[i].Goods == Goods.Firewood)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary><em>"4 iron and 4 firewood"</em> — a recipe in the village's words.</summary>
+    private string DescribeRecipe(IReadOnlyList<MaterialCost> recipe)
+    {
+        var parts = new List<string>(recipe.Count);
+        for (int i = 0; i < recipe.Count; i++)
+        {
+            parts.Add($"{recipe[i].Amount} {GoodsCatalog.NameOf(recipe[i].Goods)}");
+        }
+
+        return parts.Count <= 1
+            ? string.Concat(parts)
+            : string.Join(", ", parts.GetRange(0, parts.Count - 1)) + " and " + parts[^1];
+    }
+
     /// <summary>
-    /// The nearest store holding a forge's iron and its firewood both — the woodyard's question
-    /// asked of two goods at once, because a forge that found its iron in one store and its
+    /// The nearest store holding everything one forge of this tool takes — the woodyard's question
+    /// asked of the whole recipe at once, because a forge that found its iron in one store and its
     /// firewood in another would be two walks the stint does not price.
     /// </summary>
-    public StoreBuilding? NearestStoreForTheForge(GridPos from) =>
-        NearestStoreAccepting(
+    /// <remarks>Null for a good with no recipe: nothing forges it.</remarks>
+    public StoreBuilding? NearestStoreForTheForge(GridPos from, Goods tool)
+    {
+        IReadOnlyList<MaterialCost> recipe = GoodsCatalog[tool].ForgedFrom;
+        if (recipe.Count == 0)
+        {
+            return null;
+        }
+
+        return NearestStoreAccepting(
             from,
-            Goods.Iron,
-            store => store.Store[Goods.Iron] >= Config.IronPerTool
-                && store.Store[Goods.Firewood] >= Config.FirewoodPerTool);
+            recipe[0].Goods,
+            store =>
+            {
+                for (int i = 0; i < recipe.Count; i++)
+                {
+                    if (store.Store[recipe[i].Goods] < recipe[i].Amount)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+    }
+
+    /// <summary>
+    /// Set what a smithy forges (`tools-and-the-smith.md §9.3`) — refused, in a sentence, for
+    /// anything that is not a smithy or a good no forge makes.
+    /// </summary>
+    public PlacementVerdict SetForgeGood(Workplace smithy, Goods tool)
+    {
+        ArgumentNullException.ThrowIfNull(smithy);
+
+        if (smithy.Kind != JobKind.Smith)
+        {
+            return PlacementVerdict.No($"{smithy.Name} is not a smithy; nothing is forged there.");
+        }
+
+        // A recipe is what makes a good forgeable, and the config refuses one on anything that is not
+        // a tool — so this one test refuses stone, leather and a tool nobody forges alike.
+        if ((int)tool < 0 || (int)tool >= GoodsCatalog.Count || GoodsCatalog[tool] is not { } row
+            || row.ForgedFrom.Count == 0)
+        {
+            return PlacementVerdict.No("A smithy forges tools, and only tools a forge can make.");
+        }
+
+        if (smithy.ForgeGood != tool)
+        {
+            smithy.ForgeGood = tool;
+            if (Logs(LogLevel.Info))
+            {
+                Log(LogLevel.Info, "labour", $"{smithy.Name} is set to forge {row.Name} — {Clock}.");
+            }
+        }
+
+        return PlacementVerdict.Fine;
+    }
 
     private string? ForagerIdleNote(Workplace hut)
     {
@@ -4660,9 +4888,14 @@ public sealed class SimWorld : IObstacles
     /// happening, which is D148's bug and D139's.
     /// </para>
     /// </remarks>
-    public int TilesOneWorkerKeeps(JobKind kind) => kind == JobKind.Farmer
-        ? VillageEconomy.FieldTilesOneFarmerKeeps(Config)
-        : Config.WorkGroundTilesPerWorker;
+    public int TilesOneWorkerKeeps(JobKind kind) => kind switch
+    {
+        JobKind.Farmer => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
+
+        // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
+        JobKind.Quarrier => Config.QuarryTilesPerWorker,
+        _ => Config.WorkGroundTilesPerWorker,
+    };
 
     /// <summary>
     /// Whether this kind of work is done on ground the player paints for it.
@@ -4685,7 +4918,7 @@ public sealed class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public static bool KeepsWorkGround(JobKind kind) =>
-        kind is JobKind.Forester or JobKind.Farmer;
+        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
@@ -4750,6 +4983,16 @@ public sealed class SimWorld : IObstacles
                   + "put another farmer on, or paint a smaller field.";
         }
 
+        if (workplace.Kind == JobKind.Quarrier)
+        {
+            return hands == 0
+                ? $"{name} has {tiles} tiles of rock and nobody cutting it. Put a quarrier on — "
+                  + $"one pair of hands keeps {TilesOneWorkerKeeps(workplace.Kind)} faces."
+                : $"{name} has {tiles} tiles of rock and {Hands(hands)} to cut them — enough for "
+                  + $"{allowance}. The other {tiles - allowance} will stand idle — put another "
+                  + "quarrier on, or paint less.";
+        }
+
         return hands == 0
             ? $"{name} has {tiles} tiles and nobody working it, so none of it will be kept. "
               + $"Put a forester on, or paint less — one pair of hands keeps "
@@ -4804,6 +5047,13 @@ public sealed class SimWorld : IObstacles
         if (Map.TerrainAt(tile) == Terrain.Water)
         {
             return PlacementVerdict.No("Nobody can work the water.");
+        }
+
+        // ⭐ A QUARRY IS CUT INTO ROCK (Joe, D434) — and only rock takes its paint, said in words so
+        // the player learns the rule from the brush rather than from an idle quarry.
+        if (workplace.Kind == JobKind.Quarrier && Map.TerrainAt(tile) != Terrain.Rock)
+        {
+            return PlacementVerdict.No($"A quarry works rock — this is {Describe(Map.TerrainAt(tile))}.");
         }
 
         int owner = Zones.WorkGroundOwner(tile);
@@ -5037,6 +5287,11 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing standing there to take.");
         }
 
+        if (IsQuarryFace(tile))
+        {
+            return PlacementVerdict.No("That rock is the quarry's — it is cut there, never cleared.");
+        }
+
         Goods? takes = WhatTheBrushTakes(brush);
         return takes is not null && standing.Value != takes.Value
             ? PlacementVerdict.No(
@@ -5063,7 +5318,7 @@ public sealed class SimWorld : IObstacles
         }
 
         Zones.SetHarvest(tile, true);
-        return verdict;
+        return WithTheLastRockWarning(verdict, tile);
     }
 
     /// <summary>
@@ -5084,7 +5339,57 @@ public sealed class SimWorld : IObstacles
         }
 
         Zones.SetHarvest(at, true);
-        return verdict;
+        return WithTheLastRockWarning(verdict, at.Tile);
+    }
+
+    /// <summary>
+    /// ⭐ The stroke that marks the last rock the village can walk to says so (`quarry.md §3.8`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A quarry is cut only into rock (D434) and a laborer clears rock for good (D84), so a valley
+    /// whose reachable rock is all marked is a valley that can never quarry. **A warning, never a
+    /// refusal** — D86's shape: a player who clears it anyway has decided, and now knows.
+    /// </para>
+    /// <para>
+    /// ⛔ Asked only when the tile is rock, and it stops at the first other rock it finds — so a
+    /// stroke over trees costs nothing and a valley with rock left pays for a handful of tiles.
+    /// Reach is one cached field toward the founding site (<c>Cost(rock, founding)</c>), never a
+    /// field per tile. It is asked at the stroke, never per tick.
+    /// </para>
+    /// </remarks>
+    private PlacementVerdict WithTheLastRockWarning(PlacementVerdict verdict, GridPos tile)
+    {
+        if (Map.TerrainAt(tile) != Terrain.Rock || AnyOtherRockLeftToReach(tile))
+        {
+            return verdict;
+        }
+
+        return PlacementVerdict.Yes(
+            "This is the last rock the village can reach. Cleared, it is gone for good — and a quarry "
+            + "can only be cut into rock.");
+    }
+
+    /// <summary>Whether any rock the village can walk to is left unmarked, besides this tile.</summary>
+    private bool AnyOtherRockLeftToReach(GridPos except)
+    {
+        for (int i = 0; i < Map.Tiles.Count; i++)
+        {
+            if (Map.Tiles[i] != Terrain.Rock)
+            {
+                continue;
+            }
+
+            GridPos at = Zones.PositionOf(i);
+            if (at != except
+                && !Zones.IsHarvest(at)
+                && TravelCost.Cost(at, Map.FoundingSite) != TravelCostField.Unreachable)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The good a brush setting will accept, or null for "anything".</summary>
@@ -5338,6 +5643,13 @@ public sealed class SimWorld : IObstacles
                 continue;
             }
 
+            // ⛔ NEVER A QUARRY'S FACE (D434, `quarry.md §3.4`): clearing it would spend the rock the
+            // quarry cuts for ever. Painted before the quarry claimed it, the paint waits.
+            if (IsQuarryFace(at))
+            {
+                continue;
+            }
+
             // ⭐ AND IT IS LEFT STANDING WHEN THE VILLAGE HAS ENOUGH (D212). Skipped, never
             // un-painted — the rule D127 wrote three paragraphs up: the paint is a standing
             // instruction, so a seam the village is currently full of is *work that is waiting*
@@ -5525,6 +5837,43 @@ public sealed class SimWorld : IObstacles
             // Counted at the stump — the whole tile's timber, whether it is carried off or set
             // down beside it (D382; see `LogsEverFelled`).
             LogsEverFelled += amount;
+        }
+        else if (yields.Value == Goods.Stone)
+        {
+            // ⭐ Dug by hand, the whole tile (`quarry.md §3.2`, D434) — what the quarry's unlock
+            // counts. A quarry's own digs never come through here: its face is not spent.
+            bool knewHow = IsUnlocked(BuildingKind.Quarry);
+            StoneEverDug += amount;
+            if (!knewHow && IsUnlocked(BuildingKind.Quarry))
+            {
+                // ⭐ A STOP, NOT A LOG LINE (Joe, D440: *"i did miss the log announcing the quarry …
+                // slowing down the game to 1x and a pop-up modal"*). The gifts' moment — the view
+                // slows to 1× and holds the panel until it is dismissed — but no gift: the quarry is
+                // paid for, by his call.
+                LearnedByDoing(
+                    "The village learned to quarry",
+                    $"The village has dug {StoneEverDug} stone by hand, and somebody has worked out how "
+                    + "to cut a quarry into a seam. Build one beside the rock and give it the seam — a "
+                    + $"quarry's face never runs out. {Clock.SeasonAndYear()}.");
+            }
+        }
+        else if (yields.Value == Goods.Iron)
+        {
+            // The smithy gift's count (`tools-and-the-smith.md §9.1`).
+            bool hadTheSmith = IsUnlocked(BuildingKind.Smithy);
+            IronEverDug += amount;
+            if (!hadTheSmith && IsUnlocked(BuildingKind.Smithy))
+            {
+                // ⭐ A GIFT, IN THE LIBRARY'S SHAPE (D395, D444): the materials free, the work owed,
+                // the spot the player's, exactly one. And it may be the first thing learned by doing,
+                // in which case it introduces the tree (D440).
+                AFreeSmithyIsOwed = true;
+                LearnedByDoing(
+                    "The smith's craft comes to the village",
+                    $"The village has dug {IronEverDug} iron by hand, and somebody knows what to do with "
+                    + "it. They have gathered the timber and stone for a smithy — put it wherever you "
+                    + $"like, and it will cost you nothing. {Clock.SeasonAndYear()}.");
+            }
         }
 
         return (yields.Value, amount);
@@ -7583,6 +7932,11 @@ public sealed class SimWorld : IObstacles
     public PlacementVerdict Mark(BuildingKind kind, Point where, Angle facing)
     {
         GridPos position = where.ToTile();
+        if (WhyNotYet(kind) is string locked)
+        {
+            return PlacementVerdict.No(locked);
+        }
+
         PlacementVerdict verdict = CanBuildAt(kind, where, facing: facing);
         if (!verdict.Allowed)
         {
@@ -7599,6 +7953,16 @@ public sealed class SimWorld : IObstacles
             AFreeLibraryIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ AND THE SMITHY'S (D444): the third gift, the same two rules — asked of the ROW (the trade
+        // it employs), like the two around it, so a modder's forge can be the gift too.
+        if (AFreeSmithyIsOwed && BuildingsCatalog.EmployedBy(kind) == JobKind.Smith)
+        {
+            AFreeSmithyIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate("The timber and stone for the smithy were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
@@ -9436,6 +9800,18 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>Logs ever taken from a yard to be split — counted at the block (D382).</summary>
     public int LogsEverSplit { get; internal set; }
+
+    /// <summary>Stone ever dug out of a seam by hand — the whole tile's, carried or left (`quarry.md §3.2`).</summary>
+    /// <remarks>
+    /// ⛔ <b>State, not a statistic, and hashed</b> — unlike <see cref="LogsEverFelled"/> beside it:
+    /// the quarry's unlock reads it (D434), so two villages that differ here differ in what the
+    /// player may build. Sparsely, so a village that never dug stone hashes as it did.
+    /// </remarks>
+    public int StoneEverDug { get; internal set; }
+
+    /// <summary>Iron ever dug out of a seam by hand — what the smithy gift counts (D395, D434).</summary>
+    /// <remarks>Hashed sparsely, for <see cref="StoneEverDug"/>'s reason.</remarks>
+    public int IronEverDug { get; internal set; }
 
     /// <summary>Tools ever forged at a smithy — counted at the anvil (D391). A statistic, not hashed.</summary>
     public int ToolsEverForged { get; internal set; }

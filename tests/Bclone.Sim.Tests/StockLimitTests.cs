@@ -368,7 +368,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D422) — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Was 14044782459210154740.
     // RE-TAKEN (D424) — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Was 16869094493736697901.
     // RE-TAKEN (D429) — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Was 5415604316536691191.
-    private const ulong FixtureFiftyYearHash = 10566009934355736869UL;
+    // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Was 10566009934355736869.
+    private const ulong FixtureFiftyYearHash = 12867089049702086509UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -468,7 +469,8 @@ public sealed class StockLimitTests
     //   before a top-up ended with the trip that fills the larder (D422): 11395883105451251724 — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts").
     //   before a step trod every tile it passed over (D424): 16636840873697647225 — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?").
     //   before tools went on ticks (D429): 5914827746782470837 — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship).
-    private const ulong ShippedFiftyYearHash = 1000118158579920504UL;
+    //   before the quarry's seams (D434): 1000118158579920504 — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`).
+    private const ulong ShippedFiftyYearHash = 2671496196542856502UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

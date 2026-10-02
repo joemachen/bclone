@@ -498,8 +498,22 @@ public sealed class Villager
     /// </remarks>
     public int ToolUses { get; set; }
 
+    /// <summary>
+    /// Which kind of tool is in their hands — the good it was taken as (`tools-and-the-smith.md
+    /// §9.2`). Meaningless while <see cref="ToolUses"/> is zero.
+    /// </summary>
+    /// <remarks>
+    /// <b>The stone tool by default</b>, so every hand that took a tool before iron existed held
+    /// stone, and the hash mixes this only as a difference from it — a village with only stone tools
+    /// hashes as it did before this field existed. The tool's numbers are read off this good's row.
+    /// </remarks>
+    public Goods ToolGood { get; set; } = Goods.Tools;
+
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
+
+    /// <summary>Digs at the quarry face since this quarrier last walked to it — the stint (D434).</summary>
+    public int DigsThisStint { get; set; }
 
     /// <summary>
     /// Ticks this villager still has to wait before their working life begins — <b>a seeded
@@ -682,7 +696,9 @@ public sealed class Villager
             VillagerState.CollectingForMarket => "collecting goods for the market",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
-            VillagerState.Clearing => "clearing trees the village marked",
+            // Trees, stone or iron — the state does not know which, and "trees" was wrong for a
+            // laborer at a seam (found by D434).
+            VillagerState.Clearing => "clearing ground the village marked",
             VillagerState.TidyingGround => "fetching a load left on the ground",
             VillagerState.ClearingABuffer => "carrying food out of a hut to a store",
             VillagerState.ClearingAStore => "carrying goods out of a store being cleared",
@@ -698,6 +714,10 @@ public sealed class Villager
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "forging tools at the anvil",
+            VillagerState.TravelingToQuarry => $"walking to the face at {where}",
+            VillagerState.Quarrying => DigsThisStint > 0
+                ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
+                : "cutting stone at the quarry face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
             _ => State.ToString(),

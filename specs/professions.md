@@ -166,7 +166,8 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
 
 **Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — herdsman,
-quarry worker, miner, brewer, teacher, physician, cleric (the blacksmith is the smith above, D391) — and each lands on §3's
+miner, brewer, teacher, physician, cleric (the blacksmith is the smith above, D391; the quarry
+worker shipped as the **quarrier**, D438) — and each lands on §3's
 shape or argues why not.
 
 ### 4.1 New goods

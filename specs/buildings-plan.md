@@ -34,6 +34,12 @@ Trees, soil, game, fish. **Spatial, exhaustible, recoverable.** They have a loca
 
 ### 2.2 Subsurface resources are finite in effort
 
+> ⛔ **SUPERSEDED BY D84 (2026-08-02) — found still unmarked 2026-09-29 while specifying the quarry
+> (D434).** Joe's rule replaced this one: **a *deposit* is finite, a *building* is not**
+> (`mutable-terrain.md §5.2`). Seams are cleared tile by tile and the ground goes back to grass;
+> a quarry (`quarry.md`) and a mine never run out and never get harder. The text below is kept for
+> the reasoning, and every row that cites *"effort-limited per §2.2"* means D84's rule instead.
+
 Ore, stone, coal, clay. **The seam does not empty. It gets harder.**
 
 Yield per worker-year decays toward a floor as the workings deepen — longer haul to the face, water ingress, more shoring. A mine is never abandoned, because it is never dead; it is only worse than it was. The player's answers are to *invest in it* (drainage, pit props, deep shafts — all tech nodes) or to *open another one*.
@@ -128,7 +134,7 @@ Earned by practice, or by the village simply being a village.
 | **Butcher** | Placed | Founding | — | Livestock → meat, hides, tallow. Feeds the tannery. |
 | **Brewery** | Placed | By doing | ✓ | Barley → ale. Honey → mead. |
 | **Herbalist's cottage** | Placed | By knowledge | ✓ | Herb garden and treatment of ailments. The early, one-person form of medicine. |
-| **Quarry** | Placed | Civic | — | Stone. Effort-limited per §2.2. |
+| **Quarry** | Placed | By doing (100 stone dug by hand) | — | Stone. **Never runs out** — D84 replaced §2.2's effort limit. ✅ Built (D438, `quarry.md`). |
 | **Clay pit** | Placed | By doing | — | Clay. Effort-limited. |
 | **Kiln** | Placed | By doing | ✓ | Bricks, and crocks — which are what preservation is stored in. |
 | **Mason's yard** | Placed | By knowledge | ✓ | Stone → blocks. Gates every durable building. |

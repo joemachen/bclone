@@ -128,14 +128,26 @@ public static class MapGenerator
         // is a thing the player chooses to do, and a valley whose ore sits in the far woods
         // plays differently from one where it is on the doorstep (§2.5's argument for
         // seeded maps).
+        //
+        // ⭐ AND THE QUARRY'S SEAMS ARE HASHED, NEVER DRAWN (`quarry.md §3.1`, D434). Past the
+        // drawn four and two, a seam's offset hashes the stream's state — read here, never
+        // advanced — with its kind and its index, so the new rock costs no draws and every seed
+        // keeps its woods. ⚠️ D435: `rng` reaches every helper BY VALUE (it is a struct), so a
+        // helper's draws advance only its copy; per-stage seeds are the fix. The hash is right
+        // either way.
+        ulong valley = rng.State;
+        int ironTiles = TilesToHold(config, Goods.Iron, config.IronSeamMinIron);
+
         PaintSeams(
             config, rng, terrain, Terrain.Rock,
-            config.StoneSeamCount, config.StoneSeamRingTiles, config.StoneSeamRadiusTiles,
+            config.StoneSeamCount, config.ExtraStoneSeams, config.StoneSeamRingTiles,
+            config.StoneSeamRadiusTiles, 0, valley,
             width, height, minX, minY);
 
         PaintSeams(
             config, rng, terrain, Terrain.IronDeposit,
-            config.IronSeamCount, config.IronSeamRingTiles, config.IronSeamRadiusTiles,
+            config.IronSeamCount, config.ExtraIronSeams, config.IronSeamRingTiles,
+            config.IronSeamRadiusTiles, ironTiles, valley,
             width, height, minX, minY);
 
         // ---- 7. Woodland across the whole valley ---------------------
@@ -449,43 +461,165 @@ public static class MapGenerator
         DeterministicRandom rng,
         Terrain[] terrain,
         Terrain kind,
-        int count,
+        int drawn,
+        int hashed,
         int ringTiles,
         int radius,
+        int leastTiles,
+        ulong valley,
         int width,
         int height,
         int minX,
         int minY)
     {
-        for (int i = 0; i < count; i++)
+        // ⭐ A seam grows no further than this, so a seam the river has nearly drowned cannot
+        // spread across the valley looking for dry ground. Three rings is a radius-1 iron seam
+        // grown to 25 tiles — measured enough for every iron seam in 64 valleys (`quarry.md §6.1`).
+        const int MostGrowth = 3;
+
+        IReadOnlyList<int> slots = SeamSlots(drawn, hashed, ringTiles);
+        for (int n = 0; n < slots.Count; n++)
         {
+            int i = slots[n];
+            GridPos slot = RingSlot(i, ringTiles);
             GridPos centre = ClampInside(
-                DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i), config);
+                n < drawn
+                    ? DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i)
+                    : new GridPos(
+                        slot.X + HashJitter(valley, kind, i, 0, config.SiteJitterTiles),
+                        slot.Y + HashJitter(valley, kind, i, 1, config.SiteJitterTiles)),
+                config);
 
-            for (int dy = -radius; dy <= radius; dy++)
+            int r = radius;
+            int held = PaintDiamond(terrain, kind, centre, r, width, height, minX, minY);
+            while (held < leastTiles && r < radius + MostGrowth)
             {
-                for (int dx = -radius; dx <= radius; dx++)
+                r++;
+                held = PaintDiamond(terrain, kind, centre, r, width, height, minX, minY);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Which <see cref="RingSlot"/>s a kind of seam is laid at: the drawn ones first, in order,
+    /// then the hashed ones — <b>never nearer the village than the ring itself</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>Found by the suite, not reasoned (D434):</b> <see cref="RingSlot"/> halves a diagonal
+    /// so the ring is Manhattan-round, which puts the first ring's diagonals at (7, 7) — inside
+    /// the founding's house plots. Laid there, four seams took the ground eight housing guards
+    /// needed and put rock under the first building sites. So a hashed seam skips any slot whose
+    /// larger coordinate is short of the ring: the first ring's diagonals are passed over and the
+    /// second ring's cardinals (21) and diagonals (14, 14) are used instead.
+    /// </para>
+    /// <para>
+    /// Public and draw-free, so a guard asks the generator's own rule rather than restating it.
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<int> SeamSlots(int drawn, int hashed, int ringTiles)
+    {
+        var slots = new List<int>(drawn + hashed);
+        for (int i = 0; i < drawn; i++)
+        {
+            slots.Add(i);
+        }
+
+        for (int i = drawn; slots.Count < drawn + hashed; i++)
+        {
+            GridPos at = RingSlot(i, ringTiles);
+            if (Math.Max(Math.Abs(at.X), Math.Abs(at.Y)) >= ringTiles)
+            {
+                slots.Add(i);
+            }
+        }
+
+        return slots;
+    }
+
+    /// <summary>
+    /// Paint a Manhattan diamond of <paramref name="kind"/> over open grass, and say how many of
+    /// its tiles are that kind afterwards.
+    /// </summary>
+    private static int PaintDiamond(
+        Terrain[] terrain, Terrain kind, GridPos centre, int radius, int width, int height, int minX, int minY)
+    {
+        int held = 0;
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (Math.Abs(dx) + Math.Abs(dy) > radius)
                 {
-                    if (Math.Abs(dx) + Math.Abs(dy) > radius)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    int x = centre.X + dx - minX;
-                    int row = centre.Y + dy - minY;
-                    if (x < 0 || x >= width || row < 0 || row >= height)
-                    {
-                        continue;
-                    }
+                int x = centre.X + dx - minX;
+                int row = centre.Y + dy - minY;
+                if (x < 0 || x >= width || row < 0 || row >= height)
+                {
+                    continue;
+                }
 
-                    int index = (row * width) + x;
-                    if (terrain[index] == Terrain.Grass)
-                    {
-                        terrain[index] = kind;
-                    }
+                int index = (row * width) + x;
+                if (terrain[index] == Terrain.Grass)
+                {
+                    terrain[index] = kind;
+                }
+
+                if (terrain[index] == kind)
+                {
+                    held++;
                 }
             }
         }
+
+        return held;
+    }
+
+    /// <summary>
+    /// A seam's offset from its slot, from a hash — the draw-free twin of <see cref="DrawJitter"/>.
+    /// </summary>
+    /// <remarks>
+    /// splitmix64's finaliser over the valley's stream state, the seam's kind, its index and the
+    /// axis — well spread even for adjacent indices, which is the property D344 measured
+    /// <c>DeterministicRandom</c>'s stream parameter lacking.
+    /// </remarks>
+    private static int HashJitter(ulong valley, Terrain kind, int index, int axis, int jitter)
+    {
+        if (jitter <= 0)
+        {
+            return 0;
+        }
+
+        unchecked
+        {
+            ulong z = valley + (0x9E3779B97F4A7C15UL * (ulong)((((int)kind * 64) + index) * 2 + axis + 1));
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+            z ^= z >> 31;
+            return (int)(z % (ulong)((2 * jitter) + 1)) - jitter;
+        }
+    }
+
+    /// <summary>Tiles of a seam it takes to hold <paramref name="least"/> of a good — its row's yield a tile.</summary>
+    private static int TilesToHold(SimConfig config, Goods goods, int least)
+    {
+        if (least <= 0)
+        {
+            return 0;
+        }
+
+        int perTile = 0;
+        foreach (GoodRow row in config.GoodsCatalog)
+        {
+            if (row.Id == (int)goods)
+            {
+                perTile = row.YieldPerTile;
+            }
+        }
+
+        return perTile <= 0 ? 0 : (least + perTile - 1) / perTile;
     }
 
     /// <summary>

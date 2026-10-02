@@ -581,7 +581,7 @@ public sealed record SimConfig
 
     /// <summary>Stone a fishing hut costs.</summary>
     [JsonPropertyName("fishing_hut_stone")]
-    public int FishingHutStone { get; init; } = 3;
+    public int FishingHutStone { get; init; } = 9;
 
     /// <summary>Work a fishing hut takes to raise.</summary>
     [JsonPropertyName("fishing_hut_work_ticks")]
@@ -709,7 +709,7 @@ public sealed record SimConfig
 
     /// <summary>Stone in a hunter's lodge.</summary>
     [JsonPropertyName("hunter_lodge_stone")]
-    public int HunterLodgeStone { get; init; } = 12;
+    public int HunterLodgeStone { get; init; } = 36;
 
     /// <summary>Ticks of a builder's work a hunter's lodge takes.</summary>
     [JsonPropertyName("hunter_lodge_work_ticks")]
@@ -1190,13 +1190,44 @@ public sealed record SimConfig
     [JsonPropertyName("tool_yield_bonus_percent")]
     public int ToolYieldBonusPercent { get; init; } = 25;
 
+    /// <summary>Work actions an iron tool lasts (`tools-and-the-smith.md §9.2`).</summary>
+    /// <remarks>
+    /// <b>⚠️ The stone tool's three keys above price the STONE row</b> since iron tools came
+    /// (D446) — a tool's numbers are columns on its good's row, and these three price the iron one.
+    /// Joe's order of magnitude (D434): <i>"stone = today's, iron stronger"</i>; §9.4 has the
+    /// measured upper bound (every tool at these numbers: 504 alive of D420's 55 villages against
+    /// 444).
+    /// </remarks>
+    [JsonPropertyName("iron_tool_uses")]
+    public int IronToolUses { get; init; } = 250;
+
+    /// <summary>What an iron tool takes off an action's ticks, as a percentage — multiplied with mastery, rounded once.</summary>
+    /// <remarks>
+    /// At 50 % a gather stays 3 → 2 (a whole tick is all three ticks can give), a fell or a split
+    /// 4 → 2, a cast 10 → 5, a hunt 15 → 8 — so iron's ticks bite hardest on the long actions.
+    /// </remarks>
+    [JsonPropertyName("iron_tool_speed_bonus_percent")]
+    public int IronToolSpeedBonusPercent { get; init; } = 50;
+
+    /// <summary>What an iron tool adds to an action's yield, as a percentage.</summary>
+    [JsonPropertyName("iron_tool_yield_bonus_percent")]
+    public int IronToolYieldBonusPercent { get; init; } = 35;
+
+    /// <summary>Stone one stone tool takes to make (Joe, D434: two stone and a log, no fire).</summary>
+    [JsonPropertyName("stone_per_stone_tool")]
+    public int StonePerStoneTool { get; init; } = 2;
+
+    /// <summary>Logs one stone tool takes to make — the haft.</summary>
+    [JsonPropertyName("logs_per_stone_tool")]
+    public int LogsPerStoneTool { get; init; } = 1;
+
     /// <summary>Logs a smithy takes to raise — a hut's.</summary>
     [JsonPropertyName("smithy_logs")]
     public int SmithyLogs { get; init; } = 25;
 
     /// <summary>Stone in a smithy — a forge is a hearth of stone, so more than a hut's three.</summary>
     [JsonPropertyName("smithy_stone")]
-    public int SmithyStone { get; init; } = 12;
+    public int SmithyStone { get; init; } = 36;
 
     /// <summary>Ticks of a builder's work a smithy takes.</summary>
     [JsonPropertyName("smithy_work_ticks")]
@@ -1232,6 +1263,60 @@ public sealed record SimConfig
     [JsonPropertyName("forges_per_stint")]
     public int ForgesPerStint { get; init; } = 4;
 
+    /// <summary>Iron the village must dig by hand before the smith's craft comes to it (Joe, D395).</summary>
+    /// <remarks>
+    /// *"After 50 iron mined"* — every iron seam holds at least this (D436), so the first seam
+    /// cleared brings it. Read by the smithy's gate (`tools-and-the-smith.md §9.1`) and by the
+    /// tech-tree map's smithy node — one key, so the two cannot disagree.
+    /// </remarks>
+    [JsonPropertyName("smithy_unlock_iron")]
+    public int SmithyUnlockIron { get; init; } = 50;
+
+    // ---------------------------------------------------------------
+    //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
+    // ---------------------------------------------------------------
+
+    /// <summary>Stone the village must dig by hand before anybody knows how to cut a quarry (`quarry.md §3.3`).</summary>
+    /// <remarks>
+    /// Joe's call, 2026-09-29: about eight seam tiles, most of one seam — so clearing deposits is
+    /// the early game (D84's warning) and the quarry arrives as the village's core goes up.
+    /// </remarks>
+    [JsonPropertyName("quarry_unlock_stone")]
+    public int QuarryUnlockStone { get; init; } = 100;
+
+    /// <summary>A quarry's timber — sheds and a crane at the face.</summary>
+    [JsonPropertyName("quarry_logs")]
+    public int QuarryLogs { get; init; } = 25;
+
+    /// <summary>A quarry's stone — none: it is cut into rock, not built of it.</summary>
+    [JsonPropertyName("quarry_stone")]
+    public int QuarryStone { get; init; }
+
+    /// <summary>Work to raise a quarry — as the huts.</summary>
+    [JsonPropertyName("quarry_work_ticks")]
+    public int QuarryWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats in a quarry (Joe: two).</summary>
+    [JsonPropertyName("quarry_capacity")]
+    public int QuarryCapacity { get; init; } = 2;
+
+    /// <summary>Faces one quarrier keeps (`quarry.md §3.6`) — a face never empties, so a few are enough.</summary>
+    [JsonPropertyName("quarry_tiles_per_worker")]
+    public int QuarryTilesPerWorker { get; init; } = 6;
+
+    /// <summary>Ticks one dig at the face takes — a laborer's clearing (Joe: four).</summary>
+    [JsonPropertyName("quarry_dig_ticks")]
+    public int QuarryDigTicks { get; init; } = 4;
+
+    /// <summary>Stone one dig brings (Joe: ten — a stint of four fills an armful of forty).</summary>
+    /// <remarks>Measured as the trip (trap 134, `quarry.md §6.2`): about 100 stone per hundred ticks worked against a laborer's 43.</remarks>
+    [JsonPropertyName("stone_per_dig")]
+    public int StonePerDig { get; init; } = 10;
+
+    /// <summary>Digs in one stint before the quarrier carries the stone off — as <c>forges_per_stint</c>.</summary>
+    [JsonPropertyName("digs_per_stint")]
+    public int DigsPerStint { get; init; } = 4;
+
     /// <summary>Logs a well takes to raise — a timber head over the shaft (D427).</summary>
     [JsonPropertyName("well_logs")]
     public int WellLogs { get; init; } = 10;
@@ -1243,7 +1328,7 @@ public sealed record SimConfig
     /// stone"* in exactly the village D384 found waiting a century.
     /// </remarks>
     [JsonPropertyName("well_stone")]
-    public int WellStone { get; init; } = 5;
+    public int WellStone { get; init; } = 15;
 
     /// <summary>Ticks of a builder's work a well takes.</summary>
     [JsonPropertyName("well_work_ticks")]
@@ -1523,31 +1608,31 @@ public sealed record SimConfig
 
     /// <summary>Stone a granary takes to build.</summary>
     [JsonPropertyName("granary_stone")]
-    public int GranaryStone { get; init; } = 10;
+    public int GranaryStone { get; init; } = 30;
 
     /// <summary>Stone a warehouse takes to build.</summary>
     [JsonPropertyName("warehouse_stone")]
-    public int WarehouseStone { get; init; } = 8;
+    public int WarehouseStone { get; init; } = 24;
 
     /// <summary>Stone a market takes to build.</summary>
     [JsonPropertyName("market_stone")]
-    public int MarketStone { get; init; } = 10;
+    public int MarketStone { get; init; } = 30;
 
     /// <summary>Stone a woodcutter's hut takes to build.</summary>
     [JsonPropertyName("hut_stone")]
-    public int HutStone { get; init; } = 3;
+    public int HutStone { get; init; } = 9;
 
     /// <summary>Stone a gatherer's hut takes to build.</summary>
     [JsonPropertyName("gatherer_hut_stone")]
-    public int GathererHutStone { get; init; } = 3;
+    public int GathererHutStone { get; init; } = 9;
 
     /// <summary>Stone a forester's hut takes to build.</summary>
     [JsonPropertyName("forester_hut_stone")]
-    public int ForesterHutStone { get; init; } = 3;
+    public int ForesterHutStone { get; init; } = 9;
 
     /// <summary>Stone a farmhouse takes to build.</summary>
     [JsonPropertyName("farmhouse_stone")]
-    public int FarmhouseStone { get; init; } = 3;
+    public int FarmhouseStone { get; init; } = 9;
 
     /// <summary>
     /// Stone a house takes to raise.
@@ -1692,6 +1777,41 @@ public sealed record SimConfig
     /// <summary>How wide one iron seam is.</summary>
     [JsonPropertyName("iron_seam_radius_tiles")]
     public int IronSeamRadiusTiles { get; init; } = 1;
+
+    /// <summary>Stone seams laid past <see cref="StoneSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Hashed, never drawn.</b> Their offsets come from the generator's stream state read and
+    /// not advanced, so adding them takes no draws and every seed keeps its river, its soil and its
+    /// woods. They continue <see cref="MapGenerator.RingSlot"/>'s order but never nearer the village
+    /// than their ring (<see cref="MapGenerator.SeamSlots"/>): for stone, the second ring's four
+    /// cardinals and four diagonals — the first ring's diagonals sit in the founding's house plots.
+    /// </para>
+    /// <para>
+    /// <b>Why eight (Joe, 2026-09-29):</b> a quarry is cut only into rock and laborers clear rock
+    /// for good, so a valley must keep seams to quarry after its first are cleared. Measured over
+    /// 64 valleys: with eight, every one has at least three stone seams a villager can walk to.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("extra_stone_seams")]
+    public int ExtraStoneSeams { get; init; } = 8;
+
+    /// <summary>Iron seams laid past <see cref="IronSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// Two more on the iron ring, so every valley measured has an iron seam of
+    /// <see cref="IronSeamMinIron"/> it can walk to — the river cuts the first two off in some.
+    /// </remarks>
+    [JsonPropertyName("extra_iron_seams")]
+    public int ExtraIronSeams { get; init; } = 2;
+
+    /// <summary>Iron an iron seam holds at least: it grows a ring at a time until it does (D395, D434).</summary>
+    /// <remarks>
+    /// Joe: <em>"iron nodes ≥ 50"</em>, so the first seam cleared unlocks the smithy gift. Before
+    /// this no seam in 64 valleys held 50 — five tiles at 8 a tile, clipped by the river.
+    /// Growing costs no draws.
+    /// </remarks>
+    [JsonPropertyName("iron_seam_min_iron")]
+    public int IronSeamMinIron { get; init; } = 50;
 
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
@@ -2255,9 +2375,32 @@ public sealed record SimConfig
     /// `data/sim.config.json` as well would recreate exactly the fixture-versus-shipped drift
     /// METHODOLOGY §3 warns about, which has already produced D48, D49 and D50.
     /// </para>
+    /// <para>
+    /// <b>⭐ NULL BY DEFAULT SINCE STONE AND IRON TOOLS (D446, `tools-and-the-smith.md §9.2`), the
+    /// shape <see cref="Buildings"/> already has and for its reason:</b> a tool's numbers are columns
+    /// on its row, and the built-in tool rows are priced from <c>tool_uses</c>,
+    /// <c>tool_speed_bonus_percent</c>, <c>iron_tool_uses</c> and the rest — keys a property
+    /// initialiser cannot read. Null means <em>"the built-in rows, priced from this config"</em>; see
+    /// <see cref="GoodsCatalog"/>. ⚠️ A file that states its own list states its tools' columns too.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("goods")]
-    public IReadOnlyList<GoodRow> GoodsCatalog { get; init; } = new[]
+    public IReadOnlyList<GoodRow>? GoodsList { get; init; }
+
+    /// <summary>The goods this config describes — its own list, or the built-in rows priced from its keys.</summary>
+    /// <remarks>
+    /// ⚠️ Built on every read, as <see cref="BuildingRows"/> is: read it once into a local where it
+    /// is walked. Nothing reads it per tick — the world builds its <c>GoodsCatalog</c> once.
+    /// </remarks>
+    [JsonIgnore]
+    public IReadOnlyList<GoodRow> GoodsCatalog => GoodsList ?? DefaultGoods();
+
+    /// <summary>A forge recipe from keys, leaving out an input a key has set to nothing.</summary>
+    /// <remarks><c>firewood_per_tool</c> 0 is allowed (a forge with no fire), and a row's recipe never lists a zero.</remarks>
+    private static IReadOnlyList<MaterialCost> Recipe(params MaterialCost[] inputs) =>
+        System.Array.FindAll(inputs, static input => input.Amount > 0);
+
+    private IReadOnlyList<GoodRow> DefaultGoods() => new[]
     {
         new GoodRow
         {
@@ -2310,8 +2453,20 @@ public sealed record SimConfig
         {
             Id = (int)World.Goods.Tools,
             Category = World.GoodCategory.FuelAndGoods,
-            Name = "tools",
+
+            // ⭐ "STONE TOOLS" (Joe, 2026-10-01): the founders' tool, and today's tool to the unit —
+            // priced from the three keys that priced every tool before iron (§9.2), so a village
+            // with only stone tools plays and hashes exactly as before.
+            Name = "stone tools",
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = ToolUses,
+            ToolSpeedBonusPercent = ToolSpeedBonusPercent,
+            ToolYieldBonusPercent = ToolYieldBonusPercent,
+
+            // Two stone and a log, no fire (Joe, D434).
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Stone, StonePerStoneTool),
+                new MaterialCost(World.Goods.Logs, LogsPerStoneTool)),
         },
         new GoodRow
         {
@@ -2374,6 +2529,22 @@ public sealed record SimConfig
 
             // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
             Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.IronTools,
+            Category = World.GoodCategory.FuelAndGoods,
+            Name = "iron tools",
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = IronToolUses,
+            ToolSpeedBonusPercent = IronToolSpeedBonusPercent,
+            ToolYieldBonusPercent = IronToolYieldBonusPercent,
+
+            // Iron and firewood, as every tool was forged before stone tools (§3.7): never the
+            // winter's firewood.
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Iron, IronPerTool),
+                new MaterialCost(World.Goods.Firewood, FirewoodPerTool)),
         },
     };
 
@@ -2537,6 +2708,18 @@ public sealed record SimConfig
             LimitedBy = World.Goods.Tools,
             UsesTool = true,
         },
+        new JobRow
+        {
+            Id = (int)JobKind.Quarrier,
+            Name = "quarrier",
+            Plural = "quarriers",
+            Doing = "cutting stone",
+            WorksAt = BuildingKind.Quarry,
+
+            // A met stone limit stops the cutting (D139), as a met tools limit stops the forge.
+            LimitedBy = World.Goods.Stone,
+            UsesTool = true,
+        },
     };
 
     /// <summary>
@@ -2566,6 +2749,14 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("buildings")]
     public IReadOnlyList<BuildingRow>? Buildings { get; init; }
+
+    /// <summary>The tech-tree map's nodes (`tech-tree-map.md`, D440) — a file's own list, or the built-in ones.</summary>
+    [JsonPropertyName("tech_nodes")]
+    public IReadOnlyList<TechNodeRow>? TechNodes { get; init; }
+
+    /// <summary>The nodes this config describes — its own list, or <see cref="TechTree.DefaultNodes"/>.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<TechNodeRow> TechNodeRows => TechNodes ?? TechTree.DefaultNodes();
 
     /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
     public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
@@ -2908,6 +3099,23 @@ public sealed record SimConfig
             DrawsWater = true,
         },
 
+        // ⭐ THE QUARRY (D434, `specs/quarry.md`) — a hut beside its own painted rock. Timber
+        // only: it is cut into the rock, not built of it. Unlocked by stone dug by hand.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Quarry,
+            Name = "quarry",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, QuarryLogs),
+                new MaterialCost(World.Goods.Stone, QuarryStone),
+            },
+            WorkTicks = QuarryWorkTicks,
+            Seats = QuarryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
         // Three tiles by one, and it exists so that extent and facing are content the player can
         // place rather than machinery with nothing behind it. Everything else is 1×1, so until
@@ -3065,7 +3273,7 @@ public sealed record SimConfig
     /// much that it is only ever a late-game monument.
     /// </remarks>
     [JsonPropertyName("library_stone")]
-    public int LibraryStone { get; init; } = 12;
+    public int LibraryStone { get; init; } = 36;
 
     /// <summary>Ticks of work a library takes, once the materials are on site.</summary>
     [JsonPropertyName("library_work_ticks")]
@@ -3116,7 +3324,7 @@ public sealed record SimConfig
 
     /// <summary>Stone a town hall takes to build. See <see cref="TownHallLogs"/> — a placeholder.</summary>
     [JsonPropertyName("town_hall_stone")]
-    public int TownHallStone { get; init; } = 40;
+    public int TownHallStone { get; init; } = 120;
 
     /// <summary>
     /// Ticks of work a town hall takes, once the materials are on site.
@@ -3871,12 +4079,41 @@ public sealed record SimConfig
                 + $"(got {ToolUses}, {ToolYieldBonusPercent}, {ToolSpeedBonusPercent}).");
         }
 
+        if (IronToolUses <= 0
+            || IronToolYieldBonusPercent < 0 || IronToolYieldBonusPercent > 100
+            || IronToolSpeedBonusPercent < 0 || IronToolSpeedBonusPercent > 100)
+        {
+            throw new SimConfigException(
+                $"iron_tool_uses must be greater than zero, and iron_tool_yield_bonus_percent and "
+                + $"iron_tool_speed_bonus_percent 0–100 "
+                + $"(got {IronToolUses}, {IronToolYieldBonusPercent}, {IronToolSpeedBonusPercent}).");
+        }
+
+        // ⛔ A stone tool that costs nothing is a tool from nowhere — the forge would make them for
+        // free until the limit stopped it.
+        if (StonePerStoneTool < 0 || LogsPerStoneTool < 0 || StonePerStoneTool + LogsPerStoneTool <= 0)
+        {
+            throw new SimConfigException(
+                "stone_per_stone_tool and logs_per_stone_tool must be zero or more and not both zero "
+                + $"(got {StonePerStoneTool}, {LogsPerStoneTool}).");
+        }
+
         if (IronPerTool <= 0 || FirewoodPerTool < 0 || ForgeTicks <= 0 || ToolsPerForge <= 0 || ForgesPerStint <= 0)
         {
             throw new SimConfigException(
                 "iron_per_tool, forge_ticks, tools_per_forge and forges_per_stint must be greater "
                 + $"than zero and firewood_per_tool at least zero (got {IronPerTool}, {FirewoodPerTool}, "
                 + $"{ForgeTicks}, {ToolsPerForge}, {ForgesPerStint}).");
+        }
+
+        if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0
+            || QuarryDigTicks <= 0 || StonePerDig <= 0 || DigsPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "quarry_capacity, quarry_tiles_per_worker, quarry_dig_ticks, stone_per_dig and "
+                + "digs_per_stint must be greater than zero and quarry_unlock_stone at least zero "
+                + $"(got {QuarryCapacity}, {QuarryTilesPerWorker}, {QuarryDigTicks}, {StonePerDig}, "
+                + $"{DigsPerStint}, {QuarryUnlockStone}).");
         }
 
         if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)
@@ -4038,6 +4275,13 @@ public sealed record SimConfig
         // the answer is now `forest_coverage_percent`, which has its own guard below, and a
         // hut the player has to build. **The valley owes the village trees; it no longer
         // owes it jobs.**
+        if (ExtraStoneSeams < 0 || ExtraIronSeams < 0 || IronSeamMinIron < 0)
+        {
+            throw new SimConfigException(
+                $"extra_stone_seams, extra_iron_seams and iron_seam_min_iron cannot be negative "
+                + $"(got {ExtraStoneSeams}, {ExtraIronSeams}, {IronSeamMinIron}).");
+        }
+
         if (SiteJitterTiles < 0)
         {
             throw new SimConfigException(
@@ -4195,6 +4439,11 @@ public sealed record SimConfig
         ValidateCrops();
         ValidateJobs();
         ValidateBuildings();
+        TechTree.Validate(TechNodeRows);
+        if (SmithyUnlockIron < 0)
+        {
+            throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
+        }
         ValidateSkills();
         ValidateTechniques();
     }
@@ -4347,17 +4596,15 @@ public sealed record SimConfig
 
     private void ValidateGoods()
     {
-        if (GoodsCatalog is null)
-        {
-            throw new SimConfigException("goods must be a list, not null.");
-        }
+        // Built on every read (it is priced from this config's keys) — read once.
+        IReadOnlyList<GoodRow> goodsCatalog = GoodsCatalog;
 
         var seen = new HashSet<int>();
         int builtIn = System.Enum.GetValues<World.Goods>().Length;
 
-        for (int i = 0; i < GoodsCatalog.Count; i++)
+        for (int i = 0; i < goodsCatalog.Count; i++)
         {
-            World.GoodRow good = GoodsCatalog[i];
+            World.GoodRow good = goodsCatalog[i];
 
             if (good.Id < 0)
             {
@@ -4411,6 +4658,36 @@ public sealed record SimConfig
                     $"goods[{i}] ('{good.Name}') can be eaten and is filed under {good.Category}. "
                     + "Anything edible sits under Food, where the stock limits add the foods up.");
             }
+
+            // A tool's numbers are its row's (`tools-and-the-smith.md §9.2`): uses at least nothing,
+            // each bonus a percentage, and only a tool can be forged — a smith making a good nobody
+            // can hold would make it for ever.
+            if (good.ToolUses < 0
+                || good.ToolSpeedBonusPercent < 0 || good.ToolSpeedBonusPercent > 100
+                || good.ToolYieldBonusPercent < 0 || good.ToolYieldBonusPercent > 100)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has tool_uses {good.ToolUses}, "
+                    + $"tool_speed_bonus_percent {good.ToolSpeedBonusPercent} and tool_yield_bonus_percent "
+                    + $"{good.ToolYieldBonusPercent}; uses are zero or more and each bonus is 0 to 100.");
+            }
+
+            if (good.ForgedFrom.Count > 0 && !good.IsTool)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has a forged_from recipe but no tool_uses. Only a tool "
+                    + "is forged; give it uses, or take the recipe away.");
+            }
+
+            for (int k = 0; k < good.ForgedFrom.Count; k++)
+            {
+                if (good.ForgedFrom[k].Amount <= 0)
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') forges from {good.ForgedFrom[k].Amount} of "
+                        + $"good {(int)good.ForgedFrom[k].Goods}; every input is more than nothing.");
+                }
+            }
         }
 
         // ⛔ A starting limit names a good the catalogue has (D409). A misspelt key would be a limit
@@ -4423,9 +4700,9 @@ public sealed record SimConfig
         foreach (KeyValuePair<string, int> limit in StartingStockLimits)
         {
             bool named = false;
-            for (int i = 0; i < GoodsCatalog.Count; i++)
+            for (int i = 0; i < goodsCatalog.Count; i++)
             {
-                named |= string.Equals(GoodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
+                named |= string.Equals(goodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
             }
 
             if (!named)
@@ -4454,23 +4731,23 @@ public sealed record SimConfig
         // rather than letting a village quietly starve against a floor solved for a diet it is not
         // eating — which is D48, D49 and D50's shape, and each of those was a village that died.
         int worth = 0;
-        for (int i = 0; i < GoodsCatalog.Count; i++)
+        for (int i = 0; i < goodsCatalog.Count; i++)
         {
-            if (GoodsCatalog[i].Nutrition <= 0)
+            if (goodsCatalog[i].Nutrition <= 0)
             {
                 continue;
             }
 
             if (worth == 0)
             {
-                worth = GoodsCatalog[i].Nutrition;
+                worth = goodsCatalog[i].Nutrition;
                 continue;
             }
 
-            if (GoodsCatalog[i].Nutrition != worth)
+            if (goodsCatalog[i].Nutrition != worth)
             {
                 throw new SimConfigException(
-                    $"goods[{i}] ('{GoodsCatalog[i].Name}') is worth {GoodsCatalog[i].Nutrition} to a hungry "
+                    $"goods[{i}] ('{goodsCatalog[i].Name}') is worth {goodsCatalog[i].Nutrition} to a hungry "
                     + $"villager where another edible good is worth {worth}. Every edible good "
                     + "must be worth the same until the survival floor is re-derived against a "
                     + "diet rather than against one food (see GoodRow.Nutrition).");

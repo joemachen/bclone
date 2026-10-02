@@ -325,8 +325,11 @@ public sealed class SkillTests
     // RE-TAKEN (D422), BOTH — a top-up ends with the trip that fills the larder, a fetch takes no more food than the larder's room, and a load a housemate is carrying home counts as held (`storage-and-distribution.md §14.15`, Joe's larder loop: "ship all three parts"). Were 6080727105567841863 (fixture) and 11736680872473445797 (shipped).
     // RE-TAKEN (D424), BOTH — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Were 15520529702523037520 (fixture) and 8108069699564212788 (shipped).
     // RE-TAKEN (D429), BOTH — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Were 11654469485471921697 (fixture) and 13070721559064917869 (shipped).
-    [InlineData(false, 7256592977692245281UL)]
-    [InlineData(true, 8002305187504967384UL)]
+    // RE-TAKEN (D434), BOTH — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Were 7256592977692245281 (fixture) and 8002305187504967384 (shipped).
+    [InlineData(false, 1080427782552529441UL)]
+    // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
+    // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
+    [InlineData(true, 2125978012891394948UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

@@ -852,9 +852,24 @@
   // alone was measured: a forager's trip is one gather between two walks, so
   // 3 -> 2 ticks saves one tick in about fifteen -- 55 fifty-year villages read
   // 380 alive against 440 on yield alone and 321 with no tools. Both: 444.
+  //
+  // THESE THREE PRICE THE STONE TOOL since iron tools came (D446; Joe:
+  // "stone = today's, iron stronger"). A tool's numbers are columns on its
+  // good's row, and the built-in rows read these keys -- so the founders' stone
+  // tools are today's tool to the unit, and a village with only stone tools
+  // plays and hashes exactly as before.
   "tool_uses": 150,
   "tool_speed_bonus_percent": 34,
   "tool_yield_bonus_percent": 25,
+
+  // THE IRON TOOL (tools-and-the-smith.md 9.2, Joe's order of magnitude, D434):
+  // lasts 250 uses, takes half off an action's ticks (a gather still 3 -> 2, a
+  // split 4 -> 2, a cast 10 -> 5, a hunt 15 -> 8) and brings in 35% more.
+  // Measured as an upper bound before it was built (every tool in the valley at
+  // these numbers): 504 alive over D420's 55 villages against 444.
+  "iron_tool_uses": 250,
+  "iron_tool_speed_bonus_percent": 50,
+  "iron_tool_yield_bonus_percent": 35,
 
   // The smithy: a hut's timber and a forge's worth of stone; two seats
   // (TECH-EXAMPLE's forge). One forge takes half a seam tile of iron and a
@@ -862,14 +877,43 @@
   // only while the sheds hold the winter's share (LabourQuota.FirewoodShortfall
   // reads zero). A stint is a day's four forges, as the woodcutter's split is.
   "smithy_logs": 25,
-  "smithy_stone": 12,
+  "smithy_stone": 36,
   "smithy_work_ticks": 40,
   "smithy_capacity": 2,
+  // What a forge takes, by kind (9.3) -- the smithy's card says which, stone by
+  // default. An IRON tool: half a seam tile of ore and a batch of firewood.
   "iron_per_tool": 4,
   "firewood_per_tool": 4,
+  // A STONE tool: two stone and a log for the haft, and no fire -- so a stone
+  // forge never asks after the winter's firewood (Joe, D434).
+  "stone_per_stone_tool": 2,
+  "logs_per_stone_tool": 1,
   "forge_ticks": 4,
   "tools_per_forge": 1,
   "forges_per_stint": 4,
+
+  // THE SMITHY IS A GIFT AFTER 50 IRON DUG BY HAND (Joe, D395; tools-and-the-
+  // smith.md 9.1). Every iron seam holds at least this (D436), so the first seam
+  // cleared brings it. Read by the smithy's gate and the tech-tree map alike.
+  "smithy_unlock_iron": 50,
+
+  // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
+  // Painted rock that never runs out: a hut beside its own rock, which only
+  // rock takes the paint of. Unlocked after 100 stone dug by hand (most of one
+  // seam), so clearing deposits stays the early game (D84). Timber only -- it
+  // is cut into rock, not built of it. Two seats; six faces a quarrier, since
+  // a face never empties. A dig is a laborer's four ticks for ten stone, four
+  // to a stint (an armful of 40): about 100 stone per 100 ticks worked against
+  // a laborer's 43, measured as the TRIP (trap 134, quarry.md 6.2).
+  "quarry_unlock_stone": 100,
+  "quarry_logs": 25,
+  "quarry_stone": 0,
+  "quarry_work_ticks": 40,
+  "quarry_capacity": 2,
+  "quarry_tiles_per_worker": 6,
+  "quarry_dig_ticks": 4,
+  "stone_per_dig": 10,
+  "digs_per_stint": 4,
 
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
@@ -880,7 +924,7 @@
   // 10 days cost 21 shipped villagers of 169, every 20 is within the noise. In
   // Phase 6 the household's water need decides when somebody goes, not a clock.
   "well_logs": 10,
-  "well_stone": 5,
+  "well_stone": 15,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
   "water_trip_every_days": 20,
@@ -1192,18 +1236,22 @@
   // see the block above granary_stone in SimConfig.cs for the fifty-year
   // numbers. A village that never marks a store never needs stone; one that
   // marks a granary it cannot pay for keeps running and is told what it wants.
-  "granary_stone": 10,
-  "warehouse_stone": 8,
-  "market_stone": 10,
+  // ⛔ STONE PRICES TRIPLED (Joe, D434/D439, `quarry.md §6.3`): a village's core cost ~100
+  // stone against ~156 in ONE seam, so hand-clearing covered a whole game and a quarry would
+  // have had nothing to do. x3 makes the core ~300 -- two seams by hand -- which is where a
+  // quarry earns its keep. Measured over 55 villages (x1/x2/x3: 453/461/454 alive) -- noise.
+  "granary_stone": 30,
+  "warehouse_stone": 24,
+  "market_stone": 30,
 
   // And a nominal amount on the huts (Joe, D214). One seam tile is 12 stone,
   // so clearing a single rock buys four huts. Measured over fifty years: the
   // village holds 24 either way, and a founding that never paints a seam simply
   // builds FEWER huts -- a pressure you can read and recover from, not a death.
-  "hut_stone": 3,
-  "gatherer_hut_stone": 3,
-  "forester_hut_stone": 3,
-  "farmhouse_stone": 3,
+  "hut_stone": 9,
+  "gatherer_hut_stone": 9,
+  "forester_hut_stone": 9,
+  "farmhouse_stone": 9,
 
   // construction_site_capacity is GONE (D108). A site had three seats and
   // people were assigned to it; builders hold their job at the hut now and
@@ -1272,6 +1320,20 @@
   "iron_seam_count": 2,
   "iron_seam_ring_tiles": 26,
   "iron_seam_radius_tiles": 1,
+
+  // MORE STONE AND IRON FOR THE QUARRY (quarry.md §3.1, D434, Joe's calls).
+  // Placed by HASH, never drawn, so every seed keeps its river, soil and
+  // woods. Eight more stone seams on the SECOND ring (its four cardinals at
+  // 21, its four diagonals at 14,14) -- never nearer the village than the
+  // first ring, whose diagonals sit in the founding's house plots: a quarry
+  // is cut only into rock and laborers clear rock for good, so a valley must
+  // keep rock to quarry -- with these, every one of 64 measured has three
+  // stone seams in reach. Two more iron seams, and every iron seam grows until
+  // it holds 50 ("iron nodes >= 50": the first cleared unlocks the smithy).
+  // Before this no iron seam in 64 valleys held 50.
+  "extra_stone_seams": 8,
+  "extra_iron_seams": 2,
+  "iron_seam_min_iron": 50,
 
   // The land the exiles arrive having already chosen to live on (D42).
   // A village founded with nothing painted could never build a house,
@@ -1397,6 +1459,8 @@
   // was measured: births need 95 food a head held, and in a cold start forage is
   // the only food, so 1000 capped every village at about ten people. There is no
   // food total any more -- each food stops its own trade. Keys are goods' names.
+  // TOOLS: 25 each, stone and iron (Joe, 2026-10-01, D447): "its going to take a
+  // few years to have more than 25 people who need tools at once."
   "starting_stock_limits": {
     "forage": 2000,
     "wheat": 1000,
@@ -1405,7 +1469,8 @@
     "logs": 200,
     "firewood": 400,
     "stone": 200,
-    "tools": 200,
+    "stone tools": 25,
+    "iron tools": 25,
     "iron": 200,
     "leather": 200,
   },

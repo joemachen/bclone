@@ -354,6 +354,15 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.Mode);
             }
 
+            // What a smithy forges (`tools-and-the-smith.md §9.3`) — the same silence for the same
+            // reason: a smithy left on stone mixes nothing. A tag goes in first, because the mode
+            // above mixes a bare small number and a forge kind is one too (D291).
+            if (workplace.ForgeGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 0xF0u);
+                hash = MixUInt32(hash, (uint)workplace.ForgeGood);
+            }
+
             // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
             // It decides how much ground the farm commits every spring, so two runs of one
             // seed that differ in it are different runs and must hash differently.
@@ -500,6 +509,12 @@ public static class StateHash
             hash = MixByte(hash, 1);
         }
 
+        // The smithy's gift (D444), for the library's reason — sparse, under its own tag.
+        if (world.AFreeSmithyIsOwed)
+        {
+            hash = MixByte(hash, 0x5F);
+        }
+
         // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
         // sparse, so a valley nobody has walked mixes nothing. It is state because it decides
         // where people go and how long they take; a fingerprint that skipped it would stay green
@@ -516,6 +531,28 @@ public static class StateHash
         if (world.AFirstPathHasWorn)
         {
             hash = MixByte(hash, 1);
+        }
+
+        // ---- What the village has dug by hand (`quarry.md §3.2`, D434) ----
+        // The quarry's unlock and the smithy gift read these, so they are state. Sparsely, under a
+        // tag each, so a village that never dug hashes as it did and stone cannot read as iron.
+        if (world.StoneEverDug != 0)
+        {
+            hash = MixByte(hash, 0x51);
+            hash = MixUInt32(hash, (uint)world.StoneEverDug);
+        }
+
+        if (world.IronEverDug != 0)
+        {
+            hash = MixByte(hash, 0x1E);
+            hash = MixUInt32(hash, (uint)world.IronEverDug);
+        }
+
+        // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
+        // learned by doing mixes nothing.
+        if (world.ShownTheTechTree)
+        {
+            hash = MixByte(hash, 0x7E);
         }
 
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
@@ -843,12 +880,27 @@ public static class StateHash
         {
             hash = MixUInt32(hash, 1u);
             hash = MixUInt32(hash, (uint)villager.ToolUses);
+
+            // WHICH KIND (`tools-and-the-smith.md §9.2`) — as a difference from stone, so the
+            // founders' stone tools mix nothing new and a village with only stone tools hashes as
+            // it did before iron tools existed. Its own tag, after the uses it qualifies.
+            if (villager.ToolGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 4u);
+                hash = MixUInt32(hash, (uint)villager.ToolGood);
+            }
         }
 
         if (villager.ForgesThisStint != 0)
         {
             hash = MixUInt32(hash, 2u);
             hash = MixUInt32(hash, (uint)villager.ForgesThisStint);
+        }
+
+        if (villager.DigsThisStint != 0)
+        {
+            hash = MixUInt32(hash, 3u);
+            hash = MixUInt32(hash, (uint)villager.DigsThisStint);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

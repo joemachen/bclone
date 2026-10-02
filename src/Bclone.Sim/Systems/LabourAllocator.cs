@@ -1142,7 +1142,7 @@ internal static class LabourAllocator
     private static readonly JobKind[] KindsInOrder =
     {
         JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
-        JobKind.Woodcutter, JobKind.Smith, JobKind.Marketer, JobKind.Builder,
+        JobKind.Woodcutter, JobKind.Smith, JobKind.Quarrier, JobKind.Marketer, JobKind.Builder,
     };
 
     private static int CountHolding(SimWorld world, JobKind kind)

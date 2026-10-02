@@ -4466,11 +4466,39 @@ public partial class VillageMap : Control
 
         if (LCornerOf(tile) is (GridPos armA, GridPos armC))
         {
-            return new Vector2((armA.X + armC.X) / 2f, (armA.Y + armC.Y) / 2f);
+            var corner = new Vector2((armA.X + armC.X) / 2f, (armA.Y + armC.Y) / 2f);
+
+            // ⭐⭐ A STAIRCASE IS ONE LANE, NOT TWO (Joe's dashed lanes, 2026-09-30). A diagonal walk
+            // treads a staircase — (0,0) (1,0) (1,1) (2,1)… — and every tile of a long one is the
+            // corner of exactly one L, so D359's rule pulled every tile to its corner and dropped every
+            // straight step: two interleaved chains on y = x and y = x − 1 that never met, drawn as
+            // short offset pieces. Halfway between its centre and its corner puts every staircase
+            // tile on the staircase's own centre line (y = x − ½ here), and its straight steps join
+            // them into one band. A lone L — one bend — keeps D359's corner exactly.
+            if (IsStaircaseCorner(tile))
+            {
+                return (new Vector2(tile.X, tile.Y) + corner) / 2f;
+            }
+
+            return corner;
         }
 
         return new Vector2(tile.X, tile.Y);
     }
+
+    /// <summary>
+    /// Whether this tile is the corner of an L one of whose arms is itself the corner of an L that
+    /// has this tile for an arm — the inside of a STAIRCASE, which is how a diagonal walk is trodden.
+    /// </summary>
+    private bool IsStaircaseCorner(GridPos tile) =>
+        LCornerOf(tile) is (GridPos a, GridPos c)
+        && ((LCornerOf(a) is (GridPos a1, GridPos a2) && (a1 == tile || a2 == tile))
+            || (LCornerOf(c) is (GridPos c1, GridPos c2) && (c1 == tile || c2 == tile)));
+
+    /// <summary>Whether a straight step is a step along a staircase — one end a staircase corner, the other its arm.</summary>
+    private bool IsAStaircaseStep(GridPos a, GridPos b) =>
+        (IsStaircaseCorner(a) && LCornerOf(a) is (GridPos p, GridPos q) && (p == b || q == b))
+        || (IsStaircaseCorner(b) && LCornerOf(b) is (GridPos r, GridPos t) && (r == a || t == a));
 
     /// <summary>
     /// The two arms if <paramref name="tile"/> is the corner of exactly one L of worn tiles — two
@@ -4654,6 +4682,14 @@ public partial class VillageMap : Control
             // same direction, so the straight step between them is not a walk anybody took.
             // ⚠️ Not beside a yard: every tile of a block continues diagonally into it, so the
             // rule would cut every lane off at the yard's edge.
+            // ⭐ But a staircase's straight steps ARE the walk (see `TrailPointOf`): its tiles sit on
+            // one centre line, and these steps are what join them — so neither the arm rule nor the
+            // rung rule below may drop them.
+            if (IsAStaircaseStep(tile, neighbour))
+            {
+                return true;
+            }
+
             if (IsAnArm(tile, neighbour))
             {
                 return false;
@@ -4680,6 +4716,13 @@ public partial class VillageMap : Control
         }
 
         if (wornB && !IsCornerBetween(offB, tile, neighbour))
+        {
+            return false;
+        }
+
+        // ⭐ And not across a staircase's corner: its straight steps carry the lane through it, and a
+        // diagonal skipping it as well is the second, offset chain Joe saw as dashes.
+        if ((wornA && IsStaircaseCorner(offA)) || (wornB && IsStaircaseCorner(offB)))
         {
             return false;
         }
@@ -4897,10 +4940,56 @@ public partial class VillageMap : Control
                 }
             }
 
+            // ⭐ And a LONG staircase off to the side — what a diagonal walk treads since D424 —
+            // so the staircase rule is exercised (Joe's dashed lanes, 2026-09-30): every tile of it
+            // the corner of one L, which D359 alone drew as two offset chains.
+            for (int k = 0; k < 6; k++)
+            {
+                world.Paths.Tread(new GridPos(from.X + 12 + k, from.Y + k), world.Config.PathWornAt);
+                world.Paths.Tread(new GridPos(from.X + 13 + k, from.Y + k), world.Config.PathWornAt);
+            }
+
             world.Paths.Decay(0);
         }
 
         CollectTheTrailsIfTheyMoved(world);
+
+        // The long staircase is ONE chain on its own centre line: every tile but the two ends joins
+        // exactly its two neighbours along the stair, and every point lies on y = x − ½ (from the
+        // staircase's first tile). Asked only of the pose — a real valley has no staircase here.
+        int stairOffLine = 0;
+        int stairBroken = 0;
+        int stairChecked = 0;
+        var stairStart = new GridPos(world.Map.FoundingSite.X + 12, world.Map.FoundingSite.Y);
+        Span<GridPos> stairJoins = stackalloc GridPos[8];
+        for (int k = 0; k < 12; k++)
+        {
+            var step = new GridPos(stairStart.X + ((k + 1) / 2), stairStart.Y + (k / 2));
+            if (TrailGradeAt(step) == 0)
+            {
+                break;
+            }
+
+            stairChecked++;
+            Vector2 at = TrailPointOf(step) - new Vector2(stairStart.X, stairStart.Y);
+            if (Mathf.Abs(at.Y - (at.X - 0.5f)) > 0.01f && k > 0 && k < 11)
+            {
+                stairOffLine++;
+            }
+
+            var next = new GridPos(stairStart.X + ((k + 2) / 2), stairStart.Y + ((k + 1) / 2));
+            int n = JoinedNeighbours(step, stairJoins);
+            bool joinsNext = false;
+            for (int q = 0; q < n; q++)
+            {
+                joinsNext |= stairJoins[q] == next;
+            }
+
+            if (k < 11 && (!joinsNext || n > 2))
+            {
+                stairBroken++;
+            }
+        }
 
         // The clipped corner draws at the square's shared corner, on the line; the row draws at centres.
         GridPos corner = new(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 4);
@@ -4950,6 +5039,12 @@ public partial class VillageMap : Control
         if (broken > 0)
         {
             return $"[widths] trails: ⛔ the posed row breaks {broken} times — a lane people walk is drawn in pieces";
+        }
+
+        if (stairChecked < 12 || stairOffLine > 0 || stairBroken > 0)
+        {
+            return $"[widths] trails: ⛔ a long staircase ({stairChecked} of 12 tiles found) draws {stairOffLine} tiles off its centre line and breaks "
+                + $"{stairBroken} times — a diagonal lane drawn as two offset chains of dashes (Joe, 2026-09-30)";
         }
 
         // The block: nine tiles, filled as one patch of about nine MINUS its four cut corners (D374:
@@ -5008,12 +5103,29 @@ public partial class VillageMap : Control
         return adrift == 0
             ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
                 + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain, a staircase's clipped corner draws on the line, "
-                + $"a packed 3×3 junction is one yard of {TrailBlockAreaWorn:F1} tiles, and a 2×5 worn corridor is one lane down its middle; "
+                + $"a long staircase is one chain on its centre line, a packed 3×3 junction is one yard of {TrailBlockAreaWorn:F1} tiles, and a 2×5 worn corridor is one lane down its middle; "
                 + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";
     }
 
+    /// <summary>
+    /// ⭐ The lanes the village actually walked draw whole — <b>a probe line over the real valley</b>,
+    /// not a posed shape (Joe, 2026-09-30: *"there are still a few instances of the segmented
+    /// lines"*).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="TheTrailsLieOnTheGround"/> poses its shapes only when nothing has been walked, so
+    /// the lanes of a real twelve-year valley were never asked about. This asks two things of every
+    /// pair of graded tiles that touch (eight-way), using the drawing's own join rule:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>One-sided joins</b> — each tile lays its own half of a step, a band to the midway,
+    /// so a join one tile makes and its neighbour refuses draws half a step and a gap: a dash.</item>
+    /// <item><b>Pieces</b> — tiles that touch on the ground but fall in different drawn pieces.</item>
+    /// </list>
+    /// </remarks>
     /// <summary>
     /// ⭐⭐ Ground the village has WORKED — <b>a farm's field is its paint, filled along the
     /// paint's own curve</b> (D342, D352).

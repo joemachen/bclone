@@ -208,6 +208,196 @@ public sealed class SeamsTests
             shipped.IronSeamRingTiles > shipped.StoneSeamRingTiles,
             "Iron is meant to sit further out than stone — reaching it is the decision.");
     }
+
+    /// <summary>
+    /// ⭐ The seams the quarry added moved no forest (`quarry.md §3.1`, D434).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The extra seams take their offsets from a hash, never a draw, so the woodland painted
+    /// after them sits where it sat: every tree in the valley without them is a tree with them,
+    /// or a tile the new rock took; no tree appears that was not there. The river, the soil and
+    /// the founding site are untouched.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>What it cannot catch (D435):</b> the generator passes its stream by value, so a draw
+    /// made <em>inside</em> <c>PaintSeams</c> advances only a copy and would move nothing either.
+    /// It catches a draw on <c>Generate</c>'s own stream, and seams laid after the woodland.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(7UL)]
+    [InlineData(2024UL)]
+    [InlineData(12345UL)]
+    public void TheQuarrysSeamsMovedNoForest(ulong seed)
+    {
+        SimConfig with = ShippedConfig.Load() with { Seed = seed };
+        SimConfig without = with with { ExtraStoneSeams = 0, ExtraIronSeams = 0 };
+        Assert.True(with.ExtraStoneSeams > 0 && with.ExtraIronSeams > 0, "Nothing to compare.");
+
+        GeneratedMap a = MapGenerator.Generate(without, new DeterministicRandom(seed));
+        GeneratedMap b = MapGenerator.Generate(with, new DeterministicRandom(seed));
+
+        int took = 0;
+        for (int i = 0; i < a.Tiles.Count; i++)
+        {
+            Terrain before = a.Tiles[i];
+            Terrain after = b.Tiles[i];
+            if (before == Terrain.Forest && after != Terrain.Forest)
+            {
+                Assert.True(after is Terrain.Rock or Terrain.IronDeposit, $"Tile {i}: forest became {after}.");
+                took++;
+            }
+
+            if (after == Terrain.Forest)
+            {
+                Assert.Equal(Terrain.Forest, before);
+            }
+
+            if (before == Terrain.Water || after == Terrain.Water)
+            {
+                Assert.Equal(before, after);
+            }
+        }
+
+        _output.WriteLine($"seed {seed}: the new seams took {took} tiles the woods would have had");
+        Assert.Equal(a.FoundingSite, b.FoundingSite);
+        Assert.Equal(a.Soil, b.Soil);
+    }
+
+    /// <summary>
+    /// ⭐ Every iron seam holds 50 iron — so the first one cleared unlocks the smithy (D395, D434).
+    /// </summary>
+    /// <remarks>
+    /// Before the quarry spec no iron seam in 64 valleys held 50: radius-1 diamonds of five tiles
+    /// at 8 a tile, clipped by the river. A seam now grows a ring at a time until it does. Counted
+    /// around each iron slot, because the river can cut one seam in two and a player still sees one
+    /// seam there.
+    /// </remarks>
+    [Fact]
+    public void EveryIronSeamHoldsFifty()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        int perTile = new GoodsCatalog(shipped.GoodsCatalog).YieldPerTileOf(Goods.Iron);
+        int least = int.MaxValue;
+
+        for (ulong seed = 1; seed <= 64; seed++)
+        {
+            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, new DeterministicRandom(seed));
+            foreach (int i in MapGenerator.SeamSlots(shipped.IronSeamCount, shipped.ExtraIronSeams, shipped.IronSeamRingTiles))
+            {
+                GridPos slot = MapGenerator.RingSlot(i, shipped.IronSeamRingTiles);
+                int iron = CountNear(map, slot, Terrain.IronDeposit, 8) * perTile;
+                least = Math.Min(least, iron);
+                Assert.True(
+                    iron >= shipped.IronSeamMinIron,
+                    $"Seed {seed}'s iron seam at slot {i} holds {iron}, short of {shipped.IronSeamMinIron}.");
+            }
+        }
+
+        _output.WriteLine($"the leanest iron seam in 64 valleys holds {least}");
+    }
+
+    /// <summary>
+    /// ⭐ Nobody is stranded: every valley keeps three stone seams it can walk to (§0.1, D434).
+    /// </summary>
+    /// <remarks>
+    /// A quarry is cut only into rock, and laborers clear rock for good — so a valley whose
+    /// reachable seams are all cleared can never quarry. With the extra seams, three are within
+    /// reach in every one of 64 valleys (the river cuts some off; there are no bridges yet).
+    /// </remarks>
+    [Fact]
+    public void EveryValleyKeepsThreeStoneSeamsInReach()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        int fewest = int.MaxValue;
+
+        for (ulong seed = 1; seed <= 64; seed++)
+        {
+            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, new DeterministicRandom(seed));
+            bool[] reach = Reachable(map, map.FoundingSite);
+            int seams = 0;
+            foreach (int i in MapGenerator.SeamSlots(shipped.StoneSeamCount, shipped.ExtraStoneSeams, shipped.StoneSeamRingTiles))
+            {
+                if (ReachableNear(map, reach, MapGenerator.RingSlot(i, shipped.StoneSeamRingTiles), Terrain.Rock, 3) >= 5)
+                {
+                    seams++;
+                }
+            }
+
+            fewest = Math.Min(fewest, seams);
+            Assert.True(seams >= 3, $"Seed {seed} has only {seams} stone seams a villager can walk to.");
+        }
+
+        _output.WriteLine($"the fewest reachable stone seams in 64 valleys: {fewest}");
+    }
+
+    private static int CountNear(GeneratedMap map, GridPos at, Terrain kind, int within)
+    {
+        int n = 0;
+        for (int dy = -within; dy <= within; dy++)
+        {
+            for (int dx = -within; dx <= within; dx++)
+            {
+                var p = new GridPos(at.X + dx, at.Y + dy);
+                if (Math.Abs(dx) + Math.Abs(dy) <= within && map.Contains(p) && map.TerrainAt(p) == kind)
+                {
+                    n++;
+                }
+            }
+        }
+
+        return n;
+    }
+
+    private static int ReachableNear(GeneratedMap map, bool[] reach, GridPos at, Terrain kind, int within)
+    {
+        int n = 0;
+        for (int dy = -within; dy <= within; dy++)
+        {
+            for (int dx = -within; dx <= within; dx++)
+            {
+                var p = new GridPos(at.X + dx, at.Y + dy);
+                if (Math.Abs(dx) + Math.Abs(dy) <= within && map.Contains(p) && map.TerrainAt(p) == kind
+                    && reach[Index(map, p)])
+                {
+                    n++;
+                }
+            }
+        }
+
+        return n;
+    }
+
+    private static int Index(GeneratedMap map, GridPos p) => ((p.Y - map.MinY) * map.Width) + (p.X - map.MinX);
+
+    /// <summary>Every tile a villager could walk to from here — water is the only wall today.</summary>
+    private static bool[] Reachable(GeneratedMap map, GridPos from)
+    {
+        var seen = new bool[map.Tiles.Count];
+        var queue = new Queue<GridPos>();
+        seen[Index(map, from)] = true;
+        queue.Enqueue(from);
+        while (queue.Count > 0)
+        {
+            GridPos p = queue.Dequeue();
+            foreach (GridPos next in new[]
+            {
+                new GridPos(p.X + 1, p.Y), new GridPos(p.X - 1, p.Y),
+                new GridPos(p.X, p.Y + 1), new GridPos(p.X, p.Y - 1),
+            })
+            {
+                if (map.Contains(next) && !seen[Index(map, next)] && TerrainRules.IsPassable(map.TerrainAt(next)))
+                {
+                    seen[Index(map, next)] = true;
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        return seen;
+    }
 }
 
 /// <summary>

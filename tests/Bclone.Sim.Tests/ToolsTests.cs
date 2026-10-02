@@ -343,9 +343,12 @@ public sealed class ToolsTests
         StoreBuilding warehouse = TheWarehouse(world);
         KeepTheVillageWarmAndFed(world);
         OnlyASmithWorks(world);
+
+        // An iron forge, set on the card — a smithy forges stone tools until told otherwise (§9.3).
+        Assert.True(world.SetForgeGood(smithy, Goods.IronTools).Allowed);
         warehouse.Store.Add(Goods.Iron, 40);
         int ironBefore = warehouse.Store[Goods.Iron];
-        int toolsBefore = world.InStores(Goods.Tools);
+        int toolsBefore = world.InStores(Goods.IronTools);
 
         int forgingTicks = 0;
         for (int tick = 0; tick < config.TicksPerSeason * 2 && world.ToolsEverForged < 4; tick++)
@@ -356,7 +359,7 @@ public sealed class ToolsTests
 
         int forged = world.ToolsEverForged;
         int ironSpent = ironBefore - warehouse.Store[Goods.Iron];
-        _output.WriteLine($"{forged} tools forged from {ironSpent} iron; {world.InStores(Goods.Tools) - toolsBefore} more on the shelves; {forgingTicks} villager-ticks at the anvil");
+        _output.WriteLine($"{forged} tools forged from {ironSpent} iron; {world.InStores(Goods.IronTools) - toolsBefore} more on the shelves; {forgingTicks} villager-ticks at the anvil");
 
         Assert.True(forged > 0, "A staffed smithy with iron and firewood forged nothing.");
         Assert.Equal(forged * config.IronPerTool, ironSpent);
@@ -380,6 +383,7 @@ public sealed class ToolsTests
         Workplace smithy = RaiseASmithy(world);
         StoreBuilding warehouse = TheWarehouse(world);
         OnlyASmithWorks(world);
+        Assert.True(world.SetForgeGood(smithy, Goods.IronTools).Allowed);
         foreach (Household household in world.Households)
         {
             household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
@@ -422,7 +426,11 @@ public sealed class ToolsTests
         KeepTheVillageWarmAndFed(world);
         OnlyASmithWorks(world);
         warehouse.Store.Add(Goods.Iron, 40);
-        Assert.True(world.SetStockLimit(Goods.Tools, 1).Allowed);
+        Assert.True(world.SetForgeGood(smithy, Goods.IronTools).Allowed);
+        // ⚠️ A limit of NOUGHT, not one on a tool set on the shelf: a hand takes the best kind in
+        // reach (§9.2), so an iron tool on the shelf goes into the smith's own hands and the limit
+        // reads unmet again.
+        Assert.True(world.SetStockLimit(Goods.IronTools, 0).Allowed);
 
         loop.Step(config.TicksPerSeason);
 
@@ -431,7 +439,7 @@ public sealed class ToolsTests
 
         Assert.NotNull(smith);
         Assert.Equal(0, world.ToolsEverForged);
-        Assert.Contains("asked the village to keep 1 tools", smith!.WorkNote, StringComparison.Ordinal);
+        Assert.Contains("asked the village to keep 0 iron tools", smith!.WorkNote, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------
@@ -526,7 +534,7 @@ public sealed class ToolsTests
         + world.Villagers.Sum(v => v.Carried[Goods.Firewood]);
 
     /// <summary>Everyone fed, the sheds holding the winter and more, so nothing outranks the forge.</summary>
-    private static void KeepTheVillageWarmAndFed(SimWorld world)
+    internal static void KeepTheVillageWarmAndFed(SimWorld world)
     {
         foreach (Household household in world.Households)
         {
@@ -539,7 +547,7 @@ public sealed class ToolsTests
     }
 
     /// <summary>One smith and nobody else, so the only trade at work is the one being watched.</summary>
-    private static void OnlyASmithWorks(SimWorld world)
+    internal static void OnlyASmithWorks(SimWorld world)
     {
         Assert.True(world.SetStockLimit(Goods.Produce, 1).Allowed);
         foreach (JobKind kind in JobLimits.Kinds)
@@ -548,7 +556,7 @@ public sealed class ToolsTests
         }
     }
 
-    private static Workplace RaiseASmithy(SimWorld world)
+    internal static Workplace RaiseASmithy(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
         GridPos? at = null;
@@ -568,6 +576,10 @@ public sealed class ToolsTests
         }
 
         Assert.NotNull(at);
+
+        // The smith's craft is learned by digging iron since D444; these guards are about the forge,
+        // so the village is lent the iron it takes to know how (paid — no gift is owed).
+        world.IronEverDug = Math.Max(world.IronEverDug, world.Config.SmithyUnlockIron);
         world.Mark(BuildingKind.Smithy, at!.Value);
         Workplace plan = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Smithy);
         BuildFixtures.StockTheSite(plan);

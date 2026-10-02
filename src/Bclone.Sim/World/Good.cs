@@ -184,6 +184,45 @@ public sealed record GoodRow
     /// </remarks>
     [JsonPropertyName("category")]
     public GoodCategory Category { get; init; }
+
+    /// <summary>
+    /// Work actions one of these lasts in a pair of hands — <b>0 for anything that is not a tool</b>
+    /// (`tools-and-the-smith.md §9.2`, D434).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>A tool's numbers are columns on its good's row</b>, so a stone tool and an iron tool are
+    /// two rows and a modder's bronze tool is a third, with nothing in the sim naming any of them.
+    /// The built-in rows are priced from the config's keys (<c>SimConfig.DefaultGoods</c>) — the
+    /// stone row from <c>tool_uses</c> and its two bonuses, which is why a stone tool is today's tool
+    /// to the unit.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_uses")]
+    public int ToolUses { get; init; }
+
+    /// <summary>What this tool takes off the ticks of the action it begins, as a percentage (§3.4).</summary>
+    [JsonPropertyName("tool_speed_bonus_percent")]
+    public int ToolSpeedBonusPercent { get; init; }
+
+    /// <summary>What this tool adds to what the action brings in, as a percentage (§3.4).</summary>
+    [JsonPropertyName("tool_yield_bonus_percent")]
+    public int ToolYieldBonusPercent { get; init; }
+
+    /// <summary>
+    /// What one forge of it takes from a store — <b>empty for anything no smith makes</b> (§9.3).
+    /// </summary>
+    /// <remarks>
+    /// A stone tool is two stone and a log, with no fire; an iron tool is iron and firewood, and
+    /// so never the winter's firewood (§3.7). The recipe is the row's, so the forge reads it rather
+    /// than a pair of config keys per kind.
+    /// </remarks>
+    [JsonPropertyName("forged_from")]
+    public IReadOnlyList<MaterialCost> ForgedFrom { get; init; } = new List<MaterialCost>();
+
+    /// <summary>Whether this is a tool a hand can hold. Derived, so there is one fact and not two.</summary>
+    [JsonIgnore]
+    public bool IsTool => ToolUses > 0;
 }
 
 /// <summary>The stock-limit headings, in the order the panel shows them (D409).</summary>
@@ -269,6 +308,27 @@ public sealed class GoodsCatalog
         }
 
         EdibleGoods = edible;
+
+        // ⭐ The tools, best first, built once — see `ToolsBestFirst`.
+        var tools = new List<Goods>();
+        for (int id = 0; id < _rows.Length; id++)
+        {
+            if (_rows[id] is { IsTool: true })
+            {
+                tools.Add((Goods)id);
+            }
+        }
+
+        tools.Sort((a, b) =>
+        {
+            GoodRow x = _rows[(int)a];
+            GoodRow y = _rows[(int)b];
+            int c = y.ToolSpeedBonusPercent.CompareTo(x.ToolSpeedBonusPercent);
+            c = c != 0 ? c : y.ToolYieldBonusPercent.CompareTo(x.ToolYieldBonusPercent);
+            c = c != 0 ? c : y.ToolUses.CompareTo(x.ToolUses);
+            return c != 0 ? c : ((int)a).CompareTo((int)b);
+        });
+        ToolsBestFirst = tools;
     }
 
     /// <summary>How many goods exist.</summary>
@@ -342,4 +402,23 @@ public sealed class GoodsCatalog
     /// </para>
     /// </remarks>
     public IReadOnlyList<Goods> EdibleGoods { get; }
+
+    /// <summary>Whether a hand can hold it as a tool (`tools-and-the-smith.md §9.2`).</summary>
+    public bool IsTool(Goods goods) => (int)goods >= 0 && (int)goods < _rows.Length && _rows[(int)goods] is { IsTool: true };
+
+    /// <summary>
+    /// Every tool, <b>best first</b> — the order a hand with empty hands looks for one in (§9.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>Ordered by the row's numbers, never by its name:</b> speed, then yield, then uses (each
+    /// higher first), then id. Iron comes before stone because its numbers are higher, and a
+    /// modder's bronze tool lands wherever its numbers put it.
+    /// </para>
+    /// <para>
+    /// Built once, like <see cref="EdibleGoods"/>, and in a fixed order for the same reason: the
+    /// fetch walks it and writes to the world.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<Goods> ToolsBestFirst { get; }
 }

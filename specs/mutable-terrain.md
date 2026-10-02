@@ -112,8 +112,8 @@ a quarry both yield stone and are not the same object.
 | Surface stone deposit | deposit | **Yes** | laborer |
 | Iron deposit | deposit | **Yes** | laborer |
 | Gem deposit | deposit | **Yes** (D67: visible seams, never a roll) | laborer |
-| Quarry | building | **No** | quarry worker |
-| Iron mine | building | **No** | miner |
+| Quarry | building | **No** — painted over rock, a face never empties (`quarry.md`, D434: specced) | quarrier |
+| Iron mine | building | **No** — the slice after the quarry (D434) | miner |
 | Berries, mushrooms, herbs | gatherer site | **No** | gatherer |
 
 **It is case by case on purpose** and the table is the record, so a new resource is a row
@@ -128,7 +128,8 @@ somebody has to fill in rather than a default it inherits silently.
   building is what you place when you are tired of moving.
 - **⚠️ Watch:** with quarries and mines infinite, all of §2.3's pressure rests on deposits and
   trees. The quarry must therefore sit far enough up the tree that clearing deposits is
-  genuinely the early game.
+  genuinely the early game. **Answered for the quarry by D434:** it unlocks after 100 stone dug by
+  hand, and it may only be cut into rock, so a seam cleared by hand is a quarry site spent.
 
 ### 5.1 ✅ The harvest-brush conflict — resolved by D86, and the brush moved
 

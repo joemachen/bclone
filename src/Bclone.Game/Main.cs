@@ -287,6 +287,7 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(ThePersonsCardHoldsItsShape());
+        GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
         GD.Print(AMetLimitIsMarkedOnTheBar());
 
@@ -699,6 +700,14 @@ public partial class Main : Control
             _recordsButton.Visible = true;
         }
 
+        // And the Tree (D440): hidden until the village learns by doing, posed here so the bar is
+        // measured as it will be in year ten.
+        bool treeWas = _treeButton?.Visible ?? false;
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = true;
+        }
+
         // Every child of the filter row AND the tab note at once — wider than any real tab,
         // which is the deliberate over-estimate this probe exists to make.
         bool filterWas = _filterRow.Visible;
@@ -770,6 +779,11 @@ public partial class Main : Control
         if (_recordsButton is not null)
         {
             _recordsButton.Visible = recordsWas;
+        }
+
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = treeWas;
         }
 
         _filterRow.Visible = filterWas;
@@ -1219,6 +1233,8 @@ public partial class Main : Control
     /// </remarks>
     private Button? _libraryButton;
     private Button? _townHallButton;
+    private Button? _quarryButton;
+    private Button? _smithyButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
@@ -1341,6 +1357,191 @@ public partial class Main : Control
     /// rather than a second bug. <b>Ask what this bar looks like in year sixty.</b>
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Show the quarry once the village has dug its stone by hand (D434, `quarry.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// The library button's shape: a flag the strip is rebuilt on when it changes, read from the
+    /// sim's one gate (<c>SimWorld.IsUnlocked</c>) so the button and <c>Mark</c> agree. Not a gift
+    /// — no tint, no star; the discovery is said in the village log.
+    /// </remarks>
+    private void RefreshTheQuarryButton(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.Quarry);
+        if (_quarryKnown != known)
+        {
+            _quarryKnown = known;
+            RefreshTheStrip();
+        }
+
+        // ⭐ Lit like a gift until the first quarry is marked (Joe, D440) — something new to find on
+        // the bar — but no ★ and no free timber: it is paid for. ⛔ Latched, not asked every frame
+        // (CLAUDE.md): the scan of the workplaces runs only between the unlock and the first quarry
+        // marked, and never again once one has been.
+        if (_quarryButton is not null && known && !_quarryTried)
+        {
+            _quarryTried = world.Workplaces.Exists(w => w.Kind == JobKind.Quarrier || w.Construction?.Kind == BuildingKind.Quarry);
+            _quarryButton.Modulate = _quarryTried ? Colors.White : new Color(1f, 0.85f, 0.4f);
+        }
+    }
+
+    private bool _quarryKnown;
+    private bool _quarryTried;
+    private bool _smithyKnown;
+
+    /// <summary>
+    /// Show the smithy once the village has dug its iron, gold and ★ while the gift is unplaced
+    /// (D444) — the library button's three rules, one gift over.
+    /// </summary>
+    private void RefreshTheSmithyButton(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.Smithy);
+        if (_smithyKnown != known)
+        {
+            _smithyKnown = known;
+            RefreshTheStrip();
+        }
+
+        if (_smithyButton is null)
+        {
+            return;
+        }
+
+        _smithyButton.Modulate = world.AFreeSmithyIsOwed ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+        _smithyButton.Text = world.AFreeSmithyIsOwed
+            ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
+            : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy));
+    }
+
+    private Button? _treeButton;
+    private Button? _seeTheTree;
+    private PanelContainer _treePanel = null!;
+    private TechTreeView _treeView = null!;
+    private bool _treeEverOpened;
+    private ulong _treeSeason = ulong.MaxValue;
+
+    /// <summary>
+    /// ⭐ The tech-tree map's window (`tech-tree-map.md §3.6`, D440) — hidden and unticked until the
+    /// player opens it, like Stock limits.
+    /// </summary>
+    /// <summary>
+    /// The tech-tree map at its fullest fits its window and trims nothing — <b>a probe line</b>
+    /// (`tech-tree-map.md §6`; traps 138/139: assert the budget, not only the behaviour inside it).
+    /// </summary>
+    private string TheTreeHoldsItsShape()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+
+        // Posed with every node IN SIGHT, one short of its bar — the longest text a card carries
+        // (a progress line and a bar under the sentence). Posed in the view, never written to the sim.
+        _treePanel.Visible = true;
+        _treeView.Show(world, node =>
+        {
+            (int _, int of) = TechTree.ProgressOf(world, node.Condition);
+            return (TechState.InSight, Math.Max(0, of - 1), of);
+        });
+        ForceUpdateTransform();
+
+        int cards = 0;
+        float tallest = 0f;
+        foreach (Node child in _treeView.GetChildren())
+        {
+            if (child is PanelContainer card && !card.IsQueuedForDeletion())
+            {
+                cards++;
+                Vector2 needs = card.GetCombinedMinimumSize();
+                tallest = Mathf.Max(tallest, needs.Y);
+                if (needs.X > TechTreeView.CardWidth + 1f || needs.Y > TechTreeView.CardHeight + 1f)
+                {
+                    faults.Add($"a card needs {needs.X:F0}×{needs.Y:F0}, more than its {TechTreeView.CardWidth:F0}×{TechTreeView.CardHeight:F0}");
+                }
+            }
+        }
+
+        float wide = _treePanel.GetCombinedMinimumSize().X;
+        if (wide > TreeWidth + 1f)
+        {
+            faults.Add($"the window widens to {wide:F0} against {TreeWidth:F0}");
+        }
+
+        int trimming = _treeView.Labels().Count(l => l.ClipText || l.TextOverrunBehavior != TextServer.OverrunBehavior.NoTrimming);
+        if (trimming > 0)
+        {
+            faults.Add($"{trimming} label(s) may trim");
+        }
+
+        if (cards != world.Config.TechNodeRows.Count)
+        {
+            faults.Add($"{cards} cards for {world.Config.TechNodeRows.Count} nodes");
+        }
+
+        _treePanel.Visible = false;
+
+        return faults.Count == 0
+            ? $"[widths] tech tree: ✅ {cards} cards, the tallest {tallest:F0} of {TechTreeView.CardHeight:F0}; the window {wide:F0} of {TreeWidth:F0}; no label trims"
+            : $"[widths] tech tree: ⛔ {string.Join("; ", faults)}";
+    }
+
+    private void BuildTheTreePanel()
+    {
+        VBoxContainer body = Floating(
+            Edge + DefaultPanelWidth + 16f, Edge + 40f, TreeWidth, 0f, Corner.TopLeft, "Tree", startOpen: true);
+
+        _treePanel = _panels[^1];
+        _treePanel.Visible = false;
+        _windows[^1].Wanted = false;
+
+        body.AddChild(Caption("What the village may yet learn, and what each will take. Nothing here is "
+            + "clicked — it is done."));
+        _treeView = new TechTreeView();
+        body.AddChild(_treeView);
+    }
+
+    /// <summary>The tree's window width — three columns of cards and the gaps between them.</summary>
+    private const float TreeWidth = 640f;
+
+    /// <summary>The button follows the sim's flag; an open tree is re-read once a season, never per frame.</summary>
+    private void RefreshTheTree(SimWorld world)
+    {
+        if (_treeButton is not null)
+        {
+            _treeButton.Visible = world.ShownTheTechTree;
+        }
+
+        ulong season = world.Tick / (ulong)world.Config.TicksPerSeason;
+        if (_treePanel.Visible && season != _treeSeason)
+        {
+            _treeSeason = season;
+            _treeView.Show(world);
+        }
+    }
+
+    private void ToggleTheTree()
+    {
+        if (_treePanel.Visible)
+        {
+            CloseTheWindow(_treePanel);
+            return;
+        }
+
+        OpenTheTree();
+    }
+
+    private void OpenTheTree()
+    {
+        _treeEverOpened = true;
+        if (WindowOf(_treePanel) is ShellWindow window)
+        {
+            window.Wanted = true;
+            window.Tick?.SetPressedNoSignal(true);
+        }
+
+        _treePanel.Visible = true;
+        _treeSeason = _loop.World.Tick / (ulong)_loop.World.Config.TicksPerSeason;
+        _treeView.Show(_loop.World);
+    }
+
     private void RefreshTheTownHallButton(SimWorld world)
     {
         if (_foundersGone != world.SaidTheFoundersAreGone)
@@ -1518,6 +1719,7 @@ public partial class Main : Control
 
             _momentTitle.Text = moment.Title;
             _momentBody.Text = moment.Body;
+            _seeTheTree!.Visible = world.ShownTheTechTree && !_treeEverOpened;
 
             // ⭐⭐ SLOWED TO 1×, NOT PAUSED (Joe, 2026-08-30). See `_speedBeforeTheAlert`.
             //
@@ -1609,6 +1811,16 @@ public partial class Main : Control
         go.Pressed += DismissTheMoment;
         box.AddChild(go);
 
+        // ⭐ The introduction's second door (D440): shown on the first stop after the village has
+        // learned something by doing, until the tree has been opened once.
+        _seeTheTree = new Button { Text = "See the tree", Visible = false };
+        _seeTheTree.Pressed += () =>
+        {
+            DismissTheMoment();
+            OpenTheTree();
+        };
+        box.AddChild(_seeTheTree);
+
         panel.AddChild(box);
         AddChild(panel);
         _momentPanel = panel;
@@ -1694,6 +1906,9 @@ public partial class Main : Control
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
+        RefreshTheQuarryButton(world);
+        RefreshTheSmithyButton(world);
+        RefreshTheTree(world);
 
         RefreshCards(world);
 
@@ -2723,6 +2938,7 @@ public partial class Main : Control
         BuildRosterPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
+        BuildTheTreePanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
         // screenshot has it — above the log, so the two things you glance at are together.
@@ -3639,6 +3855,20 @@ public partial class Main : Control
     }
 
     /// <summary>Switch a forester's hut between taking trees down and putting them back.</summary>
+    /// <summary>Set what the selected smithy forges, from its card's dropdown (D446, `tools-and-the-smith.md §9.3`).</summary>
+    private void SetSelectedForgeGood(int index)
+    {
+        if (SelectedWorkplace() is not { IsSite: false, Kind: JobKind.Smith } smithy
+            || _selectedCard?.Controls.ForgeGoods is not { } goods
+            || index < 0 || index >= goods.Count)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetForgeGood(smithy, goods[index]));
+        RefreshInspector(_loop.World);
+    }
+
     private void ToggleSelectedMode()
     {
         if (SelectedWorkplace() is not { IsSite: false } workplace)
@@ -4031,6 +4261,12 @@ public partial class Main : Control
         _recordsButton = new Button { Text = "Records", Visible = false };
         _recordsButton.Pressed += OpenTheRecords;
         controls.AddChild(_recordsButton);
+
+        // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
+        // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
+        _treeButton = new Button { Text = "Tree", Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
+        _treeButton.Pressed += ToggleTheTree;
+        controls.AddChild(_treeButton);
 
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
         // the whole point: *"give me more room to see the game map"* (D305) was answered by
@@ -5419,7 +5655,9 @@ public partial class Main : Control
         // it names the gap while it is a gap, and then it goes away.
         ("Herdsman", "no livestock"),
         ("Miner", "iron is on the map; nothing digs it"),
-        ("Stonecutter", "stone is on the map; nothing quarries it"),
+
+        // ⭐ The stonecutter moved OFF this list with the quarry (D434) — the trade ships as the
+        // quarrier; cutting stone into blocks is the mason's yard's, and that is not built.
 
         // ⭐ The blacksmith moved OFF this list with the smithy (D391) — and sat here for a day
         // after, which Joe's QA pass caught (D396): the row is deleted the day its trade ships.
@@ -6049,6 +6287,14 @@ public partial class Main : Control
             {
                 _townHallButton = button;
             }
+            else if (kind == BuildingKind.Quarry)
+            {
+                _quarryButton = button;
+            }
+            else if (kind == BuildingKind.Smithy)
+            {
+                _smithyButton = button;
+            }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
             _stripRow.AddChild(button);
@@ -6151,7 +6397,8 @@ public partial class Main : Control
             BuildingKind.GathererHut or BuildingKind.Farmhouse
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,
 
-            BuildingKind.ForesterHut or BuildingKind.WoodcutterHut => BuildCategory.Resources,
+            BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
+                or BuildingKind.Quarry => BuildCategory.Resources,
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
@@ -6266,6 +6513,11 @@ public partial class Main : Control
     {
         BuildingKind.Library => _literacy,
         BuildingKind.TownHall => _foundersGone,
+
+        // ⭐ The sim's one gate (D434, `quarry.md §3.3`) — the same answer `Mark` gives, so the
+        // button cannot offer what the placement would refuse.
+        BuildingKind.Quarry => _quarryKnown,
+        BuildingKind.Smithy => _smithyKnown,
         _ => true,
     };
 

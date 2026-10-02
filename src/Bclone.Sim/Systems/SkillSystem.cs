@@ -267,6 +267,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToSmithy => true,
         VillagerState.Forging => true,
 
+        // The walk to the face and the stint at it are a quarrier out on their trade (D434).
+        VillagerState.TravelingToQuarry => true,
+        VillagerState.Quarrying => true,
+
         // The water trip is a household's errand, not a trade (D427) — like the fetch, it grows
         // nothing. ⚠️ The walk home after it is `TravelingHome`, which counts, exactly as the
         // fetch's walk home always has.

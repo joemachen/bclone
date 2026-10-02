@@ -144,6 +144,13 @@ public enum JobKind
     /// <see cref="Hunter"/> and <see cref="Forester"/> both carry.
     /// </remarks>
     Smith = 8,
+
+    /// <summary>
+    /// Cut stone from a quarry's painted rock (D434, `specs/quarry.md §3.5`) — a stint at the
+    /// face until the arms are full, then to a store; the face is never spent.
+    /// </summary>
+    /// <remarks>⛔ Appended at 9, never inserted — hashed by position.</remarks>
+    Quarrier = 9,
 }
 
 /// <summary>
@@ -391,6 +398,17 @@ public sealed class Workplace
     /// </para>
     /// </remarks>
     public WorkMode Mode { get; set; } = DefaultMode;
+
+    /// <summary>
+    /// What a smithy forges — the player's choice on its card, <b>stone tools unless they say
+    /// otherwise</b> (Joe, D434; `tools-and-the-smith.md §9.3`). Ignored by every other workplace.
+    /// </summary>
+    /// <remarks>
+    /// Set through <c>SimWorld.SetForgeGood</c>, which refuses a good no smith can make. The smith
+    /// never switches kind on their own: a smithy set to iron with no iron says so and waits. Hashed
+    /// sparsely, against the default, so a smithy nobody has touched mixes nothing.
+    /// </remarks>
+    public Goods ForgeGood { get; set; } = Goods.Tools;
 
     /// <summary>
     /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>

@@ -139,7 +139,12 @@ public sealed class MapGenerationTests
     // without it the same number of clumps would have laid a fifth more woodland in every valley,
     // which is a balance change hiding inside a worldgen change. **Measured: forest 2662 →
     // 2667 on the shipped seed.** Water is the honest mover: 240 → 420.
-    private const ulong GoldenMapHash = 10984246327142560906UL;
+    //
+    // RE-TAKEN ONCE, DELIBERATELY (D434, `quarry.md §3.1`): eight more stone seams and two more
+    // iron seams placed by hash, and every iron seam grown until it holds 50. No draw was added —
+    // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
+    // 10984246327142560906.
+    private const ulong GoldenMapHash = 8294284479965600006UL;
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`

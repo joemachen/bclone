@@ -10,8 +10,10 @@ per use, slower without, never a break year), D378 (amber is the trade's quota).
 **Status:** ✅ **built (2026-09-18, D391) and played.** ✅ **§3.4 BUILT FOR D429 (2026-09-29) on
 `slice/tools-on-ticks`: a tool takes a third off the ticks AND keeps its quarter on the yield** —
 specced before the code as ticks-instead-of-yield, measured, and changed to both by Joe's call on
-the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D433).** Owner: Joe +
-Claude Code.
+the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D433).** ✅ **§9 — the
+smithy as a gift after 50 iron (D444) and stone tools and iron tools (D446, 2026-10-01) — BUILT,
+played by Joe (*"the smithy works great. both tool types were created and used"*) and merged
+(D447).** Owner: Joe + Claude Code.
 
 ---
 
@@ -247,6 +249,14 @@ them yet"* to the reason: tools are upside above the floor (§3.4), so there is 
 | `forge_ticks` | 4 | a day, as a split |
 | `tools_per_forge` | 1 | tools a forge makes |
 | `forges_per_stint` | 4 | a day's forging, as `splits_per_stint` |
+| `iron_tool_uses` | 250 (§9.2, D446) | actions an iron tool lasts — the iron row's column |
+| `iron_tool_speed_bonus_percent` | 50 | off an action's ticks: gather 3 → 2, split 4 → 2, cast 10 → 5, hunt 15 → 8 |
+| `iron_tool_yield_bonus_percent` | 35 | on an action's yield |
+| `stone_per_stone_tool` | 2 (§9.3) | a stone tool's forge — no fire |
+| `logs_per_stone_tool` | 1 | the haft |
+
+⚠️ Since D446 the first three keys price the **stone** row and `iron_per_tool` /
+`firewood_per_tool` the **iron** row's recipe (§9.2–§9.3).
 
 Validated at load: capacities and uses above zero, both bonuses 0–100.
 
@@ -387,3 +397,172 @@ founders' tools wear out on the cards; the tools chip goes amber; a village with
 exactly as today once its tools are gone; `DESIGN.md §4` Phase 5's tools bullet, §5's tools entry,
 §6 and D391 in §7; `professions.md §4` true (the fisher and the hunter shipped a phase ago and its
 table still said *new*); `wood-fuel-and-tools.md §7`'s deferral spent; `handoff.md`.
+
+## 9. The smithy gift, and stone tools and iron tools (D434 — ✅ built, D444 and D446)
+
+Joe, 2026-09-19 (D395): *"the gift is the building (smithy appears in the menu) which then allows
+the blacksmith to create iron tools (and stone tools)"* — after 50 iron mined, each iron node
+holding at least 50, and **the village starts with stone tools**. Specced with the quarry
+(`quarry.md`), on `slice/quarry`, with his calls of 2026-09-29.
+
+### 9.1 The smithy is a gift, after 50 iron dug — ✅ BUILT (D444, 2026-09-30), played (D445, D447)
+
+- The smithy is **hidden from the build bar and refused by `Mark`** until `IronEverDug ≥
+  smithy_unlock_iron` (50) — the counter and the one gate are `quarry.md §3.2–3.3`'s.
+- When it unlocks, **the first smithy is a gift** in the library's shape (D232, `town-hall.md §4`):
+  `AFreeSmithyIsOwed`; materials free, work still owed, the player chooses the spot, exactly one
+  free; the ★ and the gold tint on the bar; the log says so once (*"The village has dug 50 iron.
+  The smith's craft is a gift to the village: the first smithy costs nothing to build."*).
+- ⭐ **Every iron seam holds ≥ 50** (`quarry.md §3.1`), so the first node cleared unlocks it, as
+  Joe asked. Measured over 64 valleys: every one has such a seam in reach (`quarry.md §6.1`).
+- Fixtures that raise a smithy directly (`RaiseFreeBuilding`, the test helpers) are not gated —
+  the gate is on the player's `Mark`, as the library's is.
+
+### 9.2 Two kinds of tool, and a tool's numbers live on its good's row — ✅ BUILT (D446, 2026-10-01), played (D447)
+
+- **`Goods.Tools` (id 4) is the stone tool** — its row renamed *"stone tools"*, its numbers
+  **today's, unchanged** (Joe: *"stone = today's, iron stronger"*): 150 uses, 34 % off ticks, 25 %
+  on yield. The founders' cart carries 20 of them, as today, so **the founding's tuned floor does
+  not move** (444 alive over D420's 55 villages, §6.1).
+- **`Goods.IronTools`** (the next free id — `ModdedGoodTests`' fixture bumps, trap D348) — *"iron
+  tools"*: **250 uses, 50 % off ticks, 35 % on yield** (Joe's order of magnitude; §9.4 is the
+  measured upper bound).
+- A tool's numbers become **columns on the good's row** — `tool_uses`,
+  `tool_speed_bonus_percent`, `tool_yield_bonus_percent`; a good with `tool_uses` 0 is not a tool.
+  The three global keys become the stone row's (read from the same `data` keys, so the data file
+  keeps its reasons). A modder's bronze tool is a row.
+  - **How (built):** the goods list follows the buildings' shape — `goods` in a file is the whole
+    list; left out, `SimConfig.DefaultGoods()` builds the built-in rows **priced from this config's
+    keys**, as `BuildingRows` prices the buildings from `granary_logs` and the rest. So the stone
+    row reads `tool_uses` / `tool_speed_bonus_percent` / `tool_yield_bonus_percent` and the iron
+    row `iron_tool_uses` / `iron_tool_speed_bonus_percent` / `iron_tool_yield_bonus_percent`, and
+    every `Config with { ToolUses = … }` in the suite still means what it says. ⚠️ A file that
+    states its own `goods` states its tools' columns too — a row that leaves them out is not a tool.
+  - Validated at load: uses ≥ 0, both bonuses 0–100, and a good with a forge recipe must be a tool.
+  - **Best first, by the row, never by name:** `GoodsCatalog.ToolsBestFirst` orders the tool rows by
+    speed, then yield, then uses (each higher first), then id — iron before stone because its
+    numbers are higher, and a modder's bronze tool lands where its numbers put it.
+- **`Villager.ToolGood`** — which kind is in their hands (hashed sparsely beside `ToolUses`, so a
+  village with no tools still hashes as before). `WorkTicksFor`, `BeginWork` and `WithTool` read the
+  held good's row instead of the config.
+  - ⭐ **Hashed as a difference from stone:** a tag and the id only while a tool is in hand AND it is
+    not the stone row (id 4), so the founders' stone tools mix nothing new and **a village with only
+    stone tools hashes as it did before this section existed — every golden is the check.**
+- **Fetching (§3.5) takes the best tool in reach** — iron before stone, then the nearest; a hand
+  holding a stone tool does not trade it in early (one rule: a tool is fetched when the hands are
+  empty). The errand keeps only the store's tile, so on arrival the hand takes **the best kind that
+  store still holds** (the `TryTake` read, D96) — a store emptied of iron on the way hands over its
+  stone.
+- The card's TOOL section names the kind: *"Stone tools — 37 of 150 uses left"*.
+- **The name (Joe, 2026-10-01): row 4 is *"stone tools"*.** The stock-limit key follows, and the
+  new row has its own — **25 each** (Joe, D447, after playing it: *"its going to take a few years to
+  have more than 25 people who need tools at once"*; they shipped at 200 in D446).
+
+### 9.3 The smith forges either, and the card says which — ✅ BUILT (D446), played (D447)
+
+- **Stone tools: 2 stone + 1 log** (Joe) — no fire. **Iron tools: 4 iron + 4 firewood**, as today,
+  never the winter's firewood (§3.7).
+- **A setting on the smithy's card, stone by default** (Joe: *"stone as default and a dropdown with
+  the other option(s)"*): `Workplace.ForgeGood` (hashed sparsely; the default mixes nothing), a
+  dropdown of every tool row. A smith with no stock for the chosen kind says which store and good
+  are short (`WhyTheForgeIsCold`) and does not switch kind on their own.
+- **The quota** (§3.8) counts every tool held and wanted across kinds; a limit is per good, as
+  every limit is. ⚠️ **And the smith is stood down by the limit of what the smithies are SET to
+  forge** (`LabourQuota.EverySmithyIsAtItsLimit`), not by the row's `limited_by` alone — the smith's
+  row names the stone tool, and a met stone limit says nothing to a smithy on iron. The sentences
+  that name the trade's good read the same (`LabourQuota.GoodTheTradeMakes`).
+- **How (built):** a forge's recipe is a column on the tool's row — `forged_from`, a list of
+  `{goods, amount}` (empty: nothing forges it) — priced in `DefaultGoods()` from
+  `stone_per_stone_tool` (2) and `logs_per_stone_tool` (1) for stone, and the existing
+  `iron_per_tool` / `firewood_per_tool` for iron. `Workplace.ForgeGood` (default the stone row,
+  hashed sparsely under a tag); `SimWorld.SetForgeGood` refuses a good with no recipe in a sentence.
+  `WhyTheForgeIsCold` reads the chosen kind's limit and recipe; the winter-firewood refusal applies
+  only when the recipe takes firewood, so a stone forge (no fire) never asks it; the input refusal
+  names the recipe (*"…the 2 stone and 1 logs a stone tool takes"*). The `Forging` arm takes the
+  recipe from the one store holding all of it and racks the chosen good.
+
+### 9.4 Measured before typed
+
+D420's 55 fifty-year villages, dials through a throwaway harness (every tool in the valley given
+the arm's numbers — so an **upper bound** for iron, which only arrives after the gift):
+
+| Every tool is… | Alive | Peak | Starved |
+|---|---|---|---|
+| today's (150 uses, 34 % / 25 %) — the control, = D430's 444 | 444 | 628 | 122 |
+| 100 uses | 427 | 609 | 130 |
+| 20 % / 15 % | 434 | 605 | 117 |
+| 100 uses and 20 % / 15 % | 418 | 591 | 140 |
+| 200 uses, 40 % / 30 % | 475 | 660 | 117 |
+| **250 uses, 50 % / 35 % — the iron proposal** | **504** | 670 | 104 |
+
+✅ **Re-measured on the built slice (D446, 2026-10-01).** The baseline first, by Joe's D445 call: the
+unattended arm paints at year 3 as many rock tiles as the granary and warehouse it marks cost, from
+their recipes (5 tiles), so it measures the economy rather than D439's stone stall. Then three arms
+that raise a smithy at year 5 beside 16 tiles of the nearest iron seam painted for clearing:
+
+| D420's 55 villages, 50 years (D445 painting) | Alive | Peak | Starved | Smiths forged | Hands holding iron at year 50 |
+|---|---|---|---|---|---|
+| **the baseline — D445's painting, before this slice** | **473** | 648 | 110 | — | — |
+| **this slice, no smithy (stone only)** | **473** | 648 | 110 | — | — |
+| iron painted and a smithy raised, **no smith** | 421 | 605 | 120 | 0 | 0 |
+| …the smithy left on **stone** (the default) | 437 | 613 | 119 | 303 | 0 |
+| …the smithy set to **iron** | 445 | 622 | 114 | 333 | 120 |
+
+- ⭐ **Stone-only is the baseline to the person**, village by village (55 of 55 lines identical) —
+  the identity §9.2 promised. Only the shipped arm's hash differs, by the iron-tools starting limit.
+- **The arm's own cost dominates:** clearing 16 tiles of a far iron seam costs the unattended
+  villages ~52 people (473 → 421) before a single tool is forged — D406's open item (*painting the
+  valley for clearing nearly wipes an unattended village out*) on iron. Not this slice's; named.
+- **A forge earns it back in part:** stone tools +16 over the idle smithy, iron tools +24 (iron over
+  stone **+8 alive, −5 starved**). ⚠️ The **shipped** cold starts never staff the smithy in either
+  arm (forged 0: the labour quota keeps their few hands on food), so all of the gain is the fixture
+  and every-source villages; a player staffs it by hand (D109).
+- §9.4's upper bound (every tool in the valley iron from the start: 504) is not approached — iron
+  arrives at year 5 at the earliest and only reaches the hands a forge can supply.
+
+**The rigs** (food per hundred ticks worked, demand held open — trap 30; the stone row given iron's
+numbers for the run, the method of the table above, then restored): **stone — forager 324, fisher
+769, hunter 1,447** (= §6.1, to the unit); **iron — forager 334 (+3 %), fisher 844 (+10 %), hunter
+1,664 (+15 %).** The ladder's order holds (fisher ~2.5× a forager, hunter ~2.0× a fisher). ⚠️ **Iron
+barely helps a forager:** at 50 % a three-tick gather still goes 3 → 2, as stone's 34 % does, so all
+the forager gains is the yield's ten points on a trip that is mostly walk — trap 134 again, and the
+reason iron's worth is uneven by trade. **Joe (D447): *"thats fine for now"*.** And the
+unattended villages' cost of clearing iron: *"sounds like your tests suck at the game. i didnt lose
+any people"* — a harness measure, not a design problem.
+
+### 9.5 Tested — `ToolsTests.cs`, `SmithyGiftTests.cs`, `ToolKindsTests.cs` (D446)
+
+- `NoSmithyBeforeFiftyIronIsDug` / `TheFirstSmithyIsAGiftAndOnlyTheFirst` / … (D444).
+- `TheFoundersCartCarriesStoneToolsAtTodaysNumbers` — the stone row priced from the three keys,
+  under a shipped, a fixture and an odd config alike.
+- `TheIronToolAndBothRecipesAreAsShipped` — data and C# defaults; best-first is iron, stone.
+- `ABadToolRowIsRefusedAtLoad` — a bonus over 100; a recipe on a good that is not a tool; a stone
+  tool costing nothing.
+- `AnIronToolIsQuickerAndRicherThanAStoneOne` — the ticks table and the yield, kind by kind.
+- `AHandTakesIronBeforeStone` — **with the iron further out than the stone**;
+  `AtAShelfOfBothKindsTheHandTakesIron`; `AHandHoldingAStoneToolDoesNotTradeItIn`.
+- `TheKindInHandIsInTheFingerprint` — iron ≠ stone; stone and an empty hand mix nothing new.
+- `TheSmithForgesWhatTheCardSays` — stone from 2 stone and a log by default; iron when set.
+- `ASmithWithNothingForTheChosenKindSaysWhatIsShort`; `AStoneForgeDoesNotWaitOnTheWintersFirewood`;
+  `WhatASmithyForgesIsTheCardsAndInTheFingerprint`; `AMetLimitOnTheChosenKindStopsTheForge`;
+  `ASmithIsStoodDownByTheLimitOfWhatTheSmithyForges`; `TheToolShortfallCountsBothKinds`.
+- `ToolsTests`' three iron-forge guards are posed with the card set to iron — a smithy forges stone
+  until told otherwise — and the met-limit one at a limit of **nought** (an iron tool on the shelf
+  goes into the smith's own hands, best first).
+
+**Red-checked (D326), reds counted per break:** the ticks read off the stone row 1; the yield off it
+1; the fetch looking for stone first 1 (**0 on the first pose**, both kinds on one shelf — the take
+on arrival is best-first too, so the iron was taken anyway; re-posed with the iron further out);
+the take worst-first 1 (**0 until `AtAShelfOfBothKindsTheHandTakesIron` was written**); a full hand
+fetching 3; a taken iron tool given stone's uses 1; the kind unhashed 1; the forge ignoring the card
+2; the recipe left untaken 2; the firewood guard asked of every recipe 1; the forge kind unhashed 1;
+the refusal naming the stone recipe 1; the shortfall counting stone only 1; the iron uses wrong in
+the data 1 and in the C# default 1; the stone row unpriced by its keys 1; the bonus check gone 1; the
+recipe check gone 1; the setter accepting a good with no recipe 1 (**0 at first** — its `IsTool`
+clause was redundant with the recipe check, and was removed); the smith stood down by the row 1
+(**0 at first** — the guard asserted only *"not the stone sentence"*; it asserts *"not stood down"*
+now); the smith's good named off the row 1. **View (`viewred.py`):** the dropdown left empty 1, an
+item too long for the card 1.
+- Determinism green. **One golden moved, for one stated reason:** the shipped fifty-year village in
+  `SkillTests` mixes the new `"iron tools": 200` starting limit — proven the only reason by running
+  it with that line out of the data, when the old value passes.

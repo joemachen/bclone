@@ -239,6 +239,17 @@ public enum VillagerState
 
     /// <summary>At the well, drawing water — <c>well_draw_ticks</c>, then home (D427).</summary>
     DrawingWater,
+
+    /// <summary>Walking to a face on the quarry's ground (D434).</summary>
+    /// <remarks>
+    /// ⛔ Its own state, not <see cref="TravelingToTrees"/> reused — that one is read as a
+    /// forester's by <c>ErrandKind</c>, and a quarrier classified as a forester is recalled home
+    /// every tick for ever (D281's lesson, a fourth time).
+    /// </remarks>
+    TravelingToQuarry,
+
+    /// <summary>At the face, cutting stone — the stint (D434, `quarry.md §3.5`).</summary>
+    Quarrying,
 }
 
 /// <summary>
