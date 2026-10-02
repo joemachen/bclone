@@ -1,6 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D446 IN §7. `main` = D433, PUSHED. `slice/quarry` = D434–D446, ALL SIX PARTS BUILT; PARTS 1–5 PLAYED BY JOE; PART 6 (STONE TOOLS AND IRON TOOLS, D446) BUILT, UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS PART 6, THEN MERGES AND PUSHES.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D447 IN §7. `main` = `slice/quarry` (D434–D447) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: JOE PICKS THE NEXT SLICE (THE IRON MINE IS QUEUED).**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 (EVENING) — STEP E BUILT ON `slice/quarry`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 (NIGHT) — THE QUARRY SLICE MERGED AND PUSHED.**
+>
+> **State:** `main` = `slice/quarry` merged `--no-ff` (D434–D446) + D447 (Joe's calls, both tool
+> limits at 25), **pushed at Joe's word** (*"merge and push"*). **No branch is open.**
+> `slice/quarry` is not deleted — ask Joe before deleting it (it was never on the remote).
+> ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`** and read
+> `git status`.
+>
+> **Joe played part 6 (D446):** *"the smithy works great. both tool types were created and used."*
+> His calls on its four questions (D447): the suite's opening keeps four rock tiles (*"ok"*); iron
+> barely helping a forager is *"fine for now"*; the unattended villages' losses to clearing far iron
+> — ***"sounds like your tests suck at the game. i didnt lose any people"*** (a harness measure, not a
+> design problem — don't bring him one without a played run beside it); **both tool limits start at
+> 25** (*"its going to take a few years to have more than 25 people who need tools at once"*) — the
+> shipped fifty-year golden re-taken for that alone, proven by D420's 55 villages reading village for
+> village as at 200.
+>
+> **▶️ NEXT SESSION: ask Joe which slice.** Queued and his: **the iron mine** (named as *"the slice
+> after this one"* since D434 — the iron counterpart of the quarry; `quarry.md` and D84's *a deposit
+> is finite, a building is not*), the worked-face look for quarry faces (a view slice), the mason's
+> yard (gates the stone cottage, D206), per-stage seeds (also fixes D435), and the ⏸️ list below.
+> **Spec first** for whichever he picks.
+>
+> **Tools:** this session's scratchpad (`C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/6534a275-575d-4bbf-ad69-b0fe3ac188b9/scratchpad/`)
+> holds `ZzBase.cs` (D445 painting by default; `ZZ_SMITHY` arms), `summ2.py`, `redcheck.py`,
+> `runreds.sh`, `viewred.py` and every arm file — see the D446 banner below.
+>
+> *(The D446 banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-01 (EVENING) — STEP E BUILT ON `slice/quarry` (✅ played and merged, D447).**
 >
 > **State:** `main` = D433, pushed. **`slice/quarry` = D434–D446, committed, NOT merged, NOT pushed.**
 > D446 (stone tools and iron tools — the quarry spec's part 6) is **built and unplayed**. At D446:
@@ -3642,9 +3672,19 @@ Read `git status` after staging, every time.
      their `'\n'` literals and broke the red-check script. Edits go in a script file written with
      the file tools, as the D434 banner already said — this time for the scripts that edit, too.
 
+## ⛔ THE TRAP D447 PAID FOR — A HARNESS IS NOT A PLAYER
+
+149. **⚠️ AN UNATTENDED VILLAGE'S DEATHS ARE A MEASURE OF THE HARNESS BEFORE THEY ARE A DESIGN
+     QUESTION (D447).** D446 put *"clearing a far iron seam costs ~52 people"* to Joe as one of four
+     questions; he had played the same thing and lost nobody: *"sounds like your tests suck at the
+     game."* The harness paints and marks blindly. Keep its numbers in the spec, compare ARMS with it
+     (stone forge against iron forge is still a fair reading), but bring Joe a survival cost only
+     with a played or player-like run beside it. And a spec's status line rots between sessions:
+     `quarry.md` still read *"the rest specced, not built"* two parts after it was all built (D159).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **D446'S FOUR, FOR JOE (2026-10-01):** *(1)* the suite's opening (`ColdStartTests.PaintTheNearestSeam`)
+- ✅ **D446'S FOUR — ANSWERED BY JOE (D447): (1) *"ok"*; (2) *"thats fine for now"*; (3) *"sounds like your tests suck at the game. i didnt lose any people"*; (4) both tool limits 25. Kept for the numbers:** *(1)* the suite's opening (`ColdStartTests.PaintTheNearestSeam`)
   was left at four tiles — it already pays for what it marks (18 of 48 stone), so D445's rule would
   paint fewer; *(2)* iron barely helps a forager (+3 % against +10 % / +15 %), because a three-tick
   gather rounds to 3 → 2 at 34 % and 50 % alike; *(3)* clearing 16 far iron tiles costs the unattended

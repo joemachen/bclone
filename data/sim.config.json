@@ -1459,6 +1459,8 @@
   // was measured: births need 95 food a head held, and in a cold start forage is
   // the only food, so 1000 capped every village at about ten people. There is no
   // food total any more -- each food stops its own trade. Keys are goods' names.
+  // TOOLS: 25 each, stone and iron (Joe, 2026-10-01, D447): "its going to take a
+  // few years to have more than 25 people who need tools at once."
   "starting_stock_limits": {
     "forage": 2000,
     "wheat": 1000,
@@ -1467,8 +1469,8 @@
     "logs": 200,
     "firewood": 400,
     "stone": 200,
-    "stone tools": 200,
-    "iron tools": 200,
+    "stone tools": 25,
+    "iron tools": 25,
     "iron": 200,
     "leather": 200,
   },

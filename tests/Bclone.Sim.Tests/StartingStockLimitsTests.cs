@@ -45,8 +45,8 @@ public sealed class StartingStockLimitsTests
             [Goods.Logs] = 200,
             [Goods.Firewood] = 400,
             [Goods.Stone] = 200,
-            [Goods.Tools] = 200,
-            [Goods.IronTools] = 200,
+            [Goods.Tools] = 25,
+            [Goods.IronTools] = 25,
             [Goods.Iron] = 200,
             [Goods.Leather] = 200,
         };

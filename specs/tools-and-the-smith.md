@@ -11,8 +11,9 @@ per use, slower without, never a break year), D378 (amber is the trade's quota).
 `slice/tools-on-ticks`: a tool takes a third off the ticks AND keeps its quarter on the yield** —
 specced before the code as ticks-instead-of-yield, measured, and changed to both by Joe's call on
 the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D433).** ✅ **§9 — the
-smithy as a gift after 50 iron (D444) and stone tools and iron tools (D446, 2026-10-01) — BUILT on
-`slice/quarry`, unplayed.** Owner: Joe + Claude Code.
+smithy as a gift after 50 iron (D444) and stone tools and iron tools (D446, 2026-10-01) — BUILT,
+played by Joe (*"the smithy works great. both tool types were created and used"*) and merged
+(D447).** Owner: Joe + Claude Code.
 
 ---
 
@@ -404,7 +405,7 @@ the blacksmith to create iron tools (and stone tools)"* — after 50 iron mined,
 holding at least 50, and **the village starts with stone tools**. Specced with the quarry
 (`quarry.md`), on `slice/quarry`, with his calls of 2026-09-29.
 
-### 9.1 The smithy is a gift, after 50 iron dug — ✅ BUILT (D444, 2026-09-30), unplayed
+### 9.1 The smithy is a gift, after 50 iron dug — ✅ BUILT (D444, 2026-09-30), played (D445, D447)
 
 - The smithy is **hidden from the build bar and refused by `Mark`** until `IronEverDug ≥
   smithy_unlock_iron` (50) — the counter and the one gate are `quarry.md §3.2–3.3`'s.
@@ -417,7 +418,7 @@ holding at least 50, and **the village starts with stone tools**. Specced with t
 - Fixtures that raise a smithy directly (`RaiseFreeBuilding`, the test helpers) are not gated —
   the gate is on the player's `Mark`, as the library's is.
 
-### 9.2 Two kinds of tool, and a tool's numbers live on its good's row — ✅ BUILT (D446, 2026-10-01), unplayed
+### 9.2 Two kinds of tool, and a tool's numbers live on its good's row — ✅ BUILT (D446, 2026-10-01), played (D447)
 
 - **`Goods.Tools` (id 4) is the stone tool** — its row renamed *"stone tools"*, its numbers
   **today's, unchanged** (Joe: *"stone = today's, iron stronger"*): 150 uses, 34 % off ticks, 25 %
@@ -453,10 +454,11 @@ holding at least 50, and **the village starts with stone tools**. Specced with t
   store still holds** (the `TryTake` read, D96) — a store emptied of iron on the way hands over its
   stone.
 - The card's TOOL section names the kind: *"Stone tools — 37 of 150 uses left"*.
-- **The name (Joe, 2026-10-01): row 4 is *"stone tools"*.** The stock-limit key follows
-  (`"stone tools": 200`), and the new row has its own (`"iron tools": 200`).
+- **The name (Joe, 2026-10-01): row 4 is *"stone tools"*.** The stock-limit key follows, and the
+  new row has its own — **25 each** (Joe, D447, after playing it: *"its going to take a few years to
+  have more than 25 people who need tools at once"*; they shipped at 200 in D446).
 
-### 9.3 The smith forges either, and the card says which — ✅ BUILT (D446), unplayed
+### 9.3 The smith forges either, and the card says which — ✅ BUILT (D446), played (D447)
 
 - **Stone tools: 2 stone + 1 log** (Joe) — no fire. **Iron tools: 4 iron + 4 firewood**, as today,
   never the winter's firewood (§3.7).
@@ -524,7 +526,9 @@ numbers for the run, the method of the table above, then restored): **stone — 
 1,664 (+15 %).** The ladder's order holds (fisher ~2.5× a forager, hunter ~2.0× a fisher). ⚠️ **Iron
 barely helps a forager:** at 50 % a three-tick gather still goes 3 → 2, as stone's 34 % does, so all
 the forager gains is the yield's ten points on a trip that is mostly walk — trap 134 again, and the
-reason iron's worth is uneven by trade. Joe's to call if he wants it otherwise.
+reason iron's worth is uneven by trade. **Joe (D447): *"thats fine for now"*.** And the
+unattended villages' cost of clearing iron: *"sounds like your tests suck at the game. i didnt lose
+any people"* — a harness measure, not a design problem.
 
 ### 9.5 Tested — `ToolsTests.cs`, `SmithyGiftTests.cs`, `ToolKindsTests.cs` (D446)
 

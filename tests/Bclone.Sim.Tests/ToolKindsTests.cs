@@ -79,9 +79,10 @@ public sealed class ToolKindsTests
             Assert.Equal(new[] { Goods.IronTools, Goods.Tools }, goods.ToolsBestFirst);
         }
 
-        // Each kind has its own starting limit, under its own name.
-        Assert.Equal(200, shipped.StartingStockLimits["stone tools"]);
-        Assert.Equal(200, shipped.StartingStockLimits["iron tools"]);
+        // Each kind has its own starting limit, under its own name — 25 each (Joe, D447: "its going
+        // to take a few years to have more than 25 people who need tools at once").
+        Assert.Equal(25, shipped.StartingStockLimits["stone tools"]);
+        Assert.Equal(25, shipped.StartingStockLimits["iron tools"]);
     }
 
     /// <summary>A tool's numbers are validated as a row's: a bonus over 100, or a recipe on a good nobody can hold, is refused at load.</summary>

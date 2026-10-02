@@ -8,11 +8,12 @@ priced in workers), D67 (seams, never a roll), D213–D215 (stone is spent on bu
 from nowhere but the brush), D237 (a site waiting on a material says so), D344 (a worldgen change
 can be draw-neutral — hash, don't draw), D347 (a seam has boulders; depletion is the seam getting
 smaller), D385 (every load to a store), D430 (a tool: 34 % off ticks, 25 % on yield).
-**Status:** 🔨 **§3.1 BUILT (D436, part 1 of six): the seams. §3.2 and §3.8's warning BUILT (D437,
+**Status:** ✅ **ALL SIX PARTS BUILT, PLAYED BY JOE AND MERGED (D447, 2026-10-01)** — the smithy gift
+(D444) and stone-versus-iron tools (D446) in `tools-and-the-smith.md §9`. *The record, part by part:*
+**§3.1 BUILT (D436, part 1 of six): the seams. §3.2 and §3.8's warning BUILT (D437,
 part 2): the ever-dug counters and the last-rock warning. §3.3–§3.7 BUILT (D438, part 3): the
 quarry — with the worked-face look deferred and the stone amber dropped (§3.4, §3.6 say why).
-§6.3's prices ×3 BUILT (D439).** The rest specced, not built
-(2026-09-29, `slice/quarry`). Every number is measured and
+§6.3's prices ×3 BUILT (D439).** Parts 5 and 6 built in D444 and D446. Every number is measured and
 called by Joe (§1, §6); §9 holds what is left. The smithy gift and stone-versus-iron tools ride in the same
 slice and are specified in `tools-and-the-smith.md §9`. Owner: Joe + Claude Code.
 
