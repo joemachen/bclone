@@ -400,6 +400,17 @@ public sealed class Workplace
     public WorkMode Mode { get; set; } = DefaultMode;
 
     /// <summary>
+    /// What a smithy forges — the player's choice on its card, <b>stone tools unless they say
+    /// otherwise</b> (Joe, D434; `tools-and-the-smith.md §9.3`). Ignored by every other workplace.
+    /// </summary>
+    /// <remarks>
+    /// Set through <c>SimWorld.SetForgeGood</c>, which refuses a good no smith can make. The smith
+    /// never switches kind on their own: a smithy set to iron with no iron says so and waits. Hashed
+    /// sparsely, against the default, so a smithy nobody has touched mixes nothing.
+    /// </remarks>
+    public Goods ForgeGood { get; set; } = Goods.Tools;
+
+    /// <summary>
     /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>
     /// tests against this rather than against a named mode, so that changing the default cannot
     /// silently move every golden in the suite — which is a trap that was walked into and out

@@ -1190,6 +1190,37 @@ public sealed record SimConfig
     [JsonPropertyName("tool_yield_bonus_percent")]
     public int ToolYieldBonusPercent { get; init; } = 25;
 
+    /// <summary>Work actions an iron tool lasts (`tools-and-the-smith.md §9.2`).</summary>
+    /// <remarks>
+    /// <b>⚠️ The stone tool's three keys above price the STONE row</b> since iron tools came
+    /// (D446) — a tool's numbers are columns on its good's row, and these three price the iron one.
+    /// Joe's order of magnitude (D434): <i>"stone = today's, iron stronger"</i>; §9.4 has the
+    /// measured upper bound (every tool at these numbers: 504 alive of D420's 55 villages against
+    /// 444).
+    /// </remarks>
+    [JsonPropertyName("iron_tool_uses")]
+    public int IronToolUses { get; init; } = 250;
+
+    /// <summary>What an iron tool takes off an action's ticks, as a percentage — multiplied with mastery, rounded once.</summary>
+    /// <remarks>
+    /// At 50 % a gather stays 3 → 2 (a whole tick is all three ticks can give), a fell or a split
+    /// 4 → 2, a cast 10 → 5, a hunt 15 → 8 — so iron's ticks bite hardest on the long actions.
+    /// </remarks>
+    [JsonPropertyName("iron_tool_speed_bonus_percent")]
+    public int IronToolSpeedBonusPercent { get; init; } = 50;
+
+    /// <summary>What an iron tool adds to an action's yield, as a percentage.</summary>
+    [JsonPropertyName("iron_tool_yield_bonus_percent")]
+    public int IronToolYieldBonusPercent { get; init; } = 35;
+
+    /// <summary>Stone one stone tool takes to make (Joe, D434: two stone and a log, no fire).</summary>
+    [JsonPropertyName("stone_per_stone_tool")]
+    public int StonePerStoneTool { get; init; } = 2;
+
+    /// <summary>Logs one stone tool takes to make — the haft.</summary>
+    [JsonPropertyName("logs_per_stone_tool")]
+    public int LogsPerStoneTool { get; init; } = 1;
+
     /// <summary>Logs a smithy takes to raise — a hut's.</summary>
     [JsonPropertyName("smithy_logs")]
     public int SmithyLogs { get; init; } = 25;
@@ -2344,9 +2375,32 @@ public sealed record SimConfig
     /// `data/sim.config.json` as well would recreate exactly the fixture-versus-shipped drift
     /// METHODOLOGY §3 warns about, which has already produced D48, D49 and D50.
     /// </para>
+    /// <para>
+    /// <b>⭐ NULL BY DEFAULT SINCE STONE AND IRON TOOLS (D446, `tools-and-the-smith.md §9.2`), the
+    /// shape <see cref="Buildings"/> already has and for its reason:</b> a tool's numbers are columns
+    /// on its row, and the built-in tool rows are priced from <c>tool_uses</c>,
+    /// <c>tool_speed_bonus_percent</c>, <c>iron_tool_uses</c> and the rest — keys a property
+    /// initialiser cannot read. Null means <em>"the built-in rows, priced from this config"</em>; see
+    /// <see cref="GoodsCatalog"/>. ⚠️ A file that states its own list states its tools' columns too.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("goods")]
-    public IReadOnlyList<GoodRow> GoodsCatalog { get; init; } = new[]
+    public IReadOnlyList<GoodRow>? GoodsList { get; init; }
+
+    /// <summary>The goods this config describes — its own list, or the built-in rows priced from its keys.</summary>
+    /// <remarks>
+    /// ⚠️ Built on every read, as <see cref="BuildingRows"/> is: read it once into a local where it
+    /// is walked. Nothing reads it per tick — the world builds its <c>GoodsCatalog</c> once.
+    /// </remarks>
+    [JsonIgnore]
+    public IReadOnlyList<GoodRow> GoodsCatalog => GoodsList ?? DefaultGoods();
+
+    /// <summary>A forge recipe from keys, leaving out an input a key has set to nothing.</summary>
+    /// <remarks><c>firewood_per_tool</c> 0 is allowed (a forge with no fire), and a row's recipe never lists a zero.</remarks>
+    private static IReadOnlyList<MaterialCost> Recipe(params MaterialCost[] inputs) =>
+        System.Array.FindAll(inputs, static input => input.Amount > 0);
+
+    private IReadOnlyList<GoodRow> DefaultGoods() => new[]
     {
         new GoodRow
         {
@@ -2399,8 +2453,20 @@ public sealed record SimConfig
         {
             Id = (int)World.Goods.Tools,
             Category = World.GoodCategory.FuelAndGoods,
-            Name = "tools",
+
+            // ⭐ "STONE TOOLS" (Joe, 2026-10-01): the founders' tool, and today's tool to the unit —
+            // priced from the three keys that priced every tool before iron (§9.2), so a village
+            // with only stone tools plays and hashes exactly as before.
+            Name = "stone tools",
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = ToolUses,
+            ToolSpeedBonusPercent = ToolSpeedBonusPercent,
+            ToolYieldBonusPercent = ToolYieldBonusPercent,
+
+            // Two stone and a log, no fire (Joe, D434).
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Stone, StonePerStoneTool),
+                new MaterialCost(World.Goods.Logs, LogsPerStoneTool)),
         },
         new GoodRow
         {
@@ -2463,6 +2529,22 @@ public sealed record SimConfig
 
             // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
             Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.IronTools,
+            Category = World.GoodCategory.FuelAndGoods,
+            Name = "iron tools",
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = IronToolUses,
+            ToolSpeedBonusPercent = IronToolSpeedBonusPercent,
+            ToolYieldBonusPercent = IronToolYieldBonusPercent,
+
+            // Iron and firewood, as every tool was forged before stone tools (§3.7): never the
+            // winter's firewood.
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Iron, IronPerTool),
+                new MaterialCost(World.Goods.Firewood, FirewoodPerTool)),
         },
     };
 
@@ -3997,6 +4079,25 @@ public sealed record SimConfig
                 + $"(got {ToolUses}, {ToolYieldBonusPercent}, {ToolSpeedBonusPercent}).");
         }
 
+        if (IronToolUses <= 0
+            || IronToolYieldBonusPercent < 0 || IronToolYieldBonusPercent > 100
+            || IronToolSpeedBonusPercent < 0 || IronToolSpeedBonusPercent > 100)
+        {
+            throw new SimConfigException(
+                $"iron_tool_uses must be greater than zero, and iron_tool_yield_bonus_percent and "
+                + $"iron_tool_speed_bonus_percent 0–100 "
+                + $"(got {IronToolUses}, {IronToolYieldBonusPercent}, {IronToolSpeedBonusPercent}).");
+        }
+
+        // ⛔ A stone tool that costs nothing is a tool from nowhere — the forge would make them for
+        // free until the limit stopped it.
+        if (StonePerStoneTool < 0 || LogsPerStoneTool < 0 || StonePerStoneTool + LogsPerStoneTool <= 0)
+        {
+            throw new SimConfigException(
+                "stone_per_stone_tool and logs_per_stone_tool must be zero or more and not both zero "
+                + $"(got {StonePerStoneTool}, {LogsPerStoneTool}).");
+        }
+
         if (IronPerTool <= 0 || FirewoodPerTool < 0 || ForgeTicks <= 0 || ToolsPerForge <= 0 || ForgesPerStint <= 0)
         {
             throw new SimConfigException(
@@ -4495,17 +4596,15 @@ public sealed record SimConfig
 
     private void ValidateGoods()
     {
-        if (GoodsCatalog is null)
-        {
-            throw new SimConfigException("goods must be a list, not null.");
-        }
+        // Built on every read (it is priced from this config's keys) — read once.
+        IReadOnlyList<GoodRow> goodsCatalog = GoodsCatalog;
 
         var seen = new HashSet<int>();
         int builtIn = System.Enum.GetValues<World.Goods>().Length;
 
-        for (int i = 0; i < GoodsCatalog.Count; i++)
+        for (int i = 0; i < goodsCatalog.Count; i++)
         {
-            World.GoodRow good = GoodsCatalog[i];
+            World.GoodRow good = goodsCatalog[i];
 
             if (good.Id < 0)
             {
@@ -4559,6 +4658,36 @@ public sealed record SimConfig
                     $"goods[{i}] ('{good.Name}') can be eaten and is filed under {good.Category}. "
                     + "Anything edible sits under Food, where the stock limits add the foods up.");
             }
+
+            // A tool's numbers are its row's (`tools-and-the-smith.md §9.2`): uses at least nothing,
+            // each bonus a percentage, and only a tool can be forged — a smith making a good nobody
+            // can hold would make it for ever.
+            if (good.ToolUses < 0
+                || good.ToolSpeedBonusPercent < 0 || good.ToolSpeedBonusPercent > 100
+                || good.ToolYieldBonusPercent < 0 || good.ToolYieldBonusPercent > 100)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has tool_uses {good.ToolUses}, "
+                    + $"tool_speed_bonus_percent {good.ToolSpeedBonusPercent} and tool_yield_bonus_percent "
+                    + $"{good.ToolYieldBonusPercent}; uses are zero or more and each bonus is 0 to 100.");
+            }
+
+            if (good.ForgedFrom.Count > 0 && !good.IsTool)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has a forged_from recipe but no tool_uses. Only a tool "
+                    + "is forged; give it uses, or take the recipe away.");
+            }
+
+            for (int k = 0; k < good.ForgedFrom.Count; k++)
+            {
+                if (good.ForgedFrom[k].Amount <= 0)
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') forges from {good.ForgedFrom[k].Amount} of "
+                        + $"good {(int)good.ForgedFrom[k].Goods}; every input is more than nothing.");
+                }
+            }
         }
 
         // ⛔ A starting limit names a good the catalogue has (D409). A misspelt key would be a limit
@@ -4571,9 +4700,9 @@ public sealed record SimConfig
         foreach (KeyValuePair<string, int> limit in StartingStockLimits)
         {
             bool named = false;
-            for (int i = 0; i < GoodsCatalog.Count; i++)
+            for (int i = 0; i < goodsCatalog.Count; i++)
             {
-                named |= string.Equals(GoodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
+                named |= string.Equals(goodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
             }
 
             if (!named)
@@ -4602,23 +4731,23 @@ public sealed record SimConfig
         // rather than letting a village quietly starve against a floor solved for a diet it is not
         // eating — which is D48, D49 and D50's shape, and each of those was a village that died.
         int worth = 0;
-        for (int i = 0; i < GoodsCatalog.Count; i++)
+        for (int i = 0; i < goodsCatalog.Count; i++)
         {
-            if (GoodsCatalog[i].Nutrition <= 0)
+            if (goodsCatalog[i].Nutrition <= 0)
             {
                 continue;
             }
 
             if (worth == 0)
             {
-                worth = GoodsCatalog[i].Nutrition;
+                worth = goodsCatalog[i].Nutrition;
                 continue;
             }
 
-            if (GoodsCatalog[i].Nutrition != worth)
+            if (goodsCatalog[i].Nutrition != worth)
             {
                 throw new SimConfigException(
-                    $"goods[{i}] ('{GoodsCatalog[i].Name}') is worth {GoodsCatalog[i].Nutrition} to a hungry "
+                    $"goods[{i}] ('{goodsCatalog[i].Name}') is worth {goodsCatalog[i].Nutrition} to a hungry "
                     + $"villager where another edible good is worth {worth}. Every edible good "
                     + "must be worth the same until the survival floor is re-derived against a "
                     + "diet rather than against one food (see GoodRow.Nutrition).");

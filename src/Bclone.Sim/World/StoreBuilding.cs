@@ -571,7 +571,10 @@ public enum Goods
     Stone = 3,
 
     /// <summary>
-    /// What the founders brought and nobody can yet replace (D17, D64).
+    /// <b>The stone tool</b> — what the founders brought (D17, D64), and since D391 what a smith
+    /// makes. Its row has been called <em>"stone tools"</em> since iron tools came (Joe,
+    /// 2026-10-01, `tools-and-the-smith.md §9.2`); the enum keeps <c>Tools</c> because id 4 is what
+    /// every golden is pinned to and the player never sees this word.
     /// </summary>
     Tools = 4,
 
@@ -639,4 +642,15 @@ public enum Goods
     /// </para>
     /// </remarks>
     Wheat = 9,
+
+    /// <summary>
+    /// ⭐ <b>The iron tool</b> — quicker, richer and longer-lasting than the stone one, forged from
+    /// iron and firewood once the smithy is known (`tools-and-the-smith.md §9`, D434).
+    /// </summary>
+    /// <remarks>
+    /// Appended, never renumbered. Its numbers are its row's (<c>GoodRow.ToolUses</c> and the two
+    /// bonuses), priced from <c>iron_tool_*</c> keys — nothing in the sim names it but the default
+    /// row and the default forge recipe.
+    /// </remarks>
+    IronTools = 10,
 }

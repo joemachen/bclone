@@ -46,6 +46,7 @@ public sealed class StartingStockLimitsTests
             [Goods.Firewood] = 400,
             [Goods.Stone] = 200,
             [Goods.Tools] = 200,
+            [Goods.IronTools] = 200,
             [Goods.Iron] = 200,
             [Goods.Leather] = 200,
         };
@@ -81,12 +82,12 @@ public sealed class StartingStockLimitsTests
         GoodRow[] rows = config.GoodsCatalog.ToArray();
 
         rows[(int)Goods.Stone] = rows[(int)Goods.Stone] with { Category = GoodCategory.Unset };
-        SimConfigException unset = Assert.Throws<SimConfigException>(() => (config with { GoodsCatalog = rows }).Validate());
+        SimConfigException unset = Assert.Throws<SimConfigException>(() => (config with { GoodsList = rows }).Validate());
         Assert.Contains("names no category", unset.Message, StringComparison.Ordinal);
 
         rows = config.GoodsCatalog.ToArray();
         rows[(int)Goods.Fish] = rows[(int)Goods.Fish] with { Category = GoodCategory.Materials };
-        SimConfigException misfiled = Assert.Throws<SimConfigException>(() => (config with { GoodsCatalog = rows }).Validate());
+        SimConfigException misfiled = Assert.Throws<SimConfigException>(() => (config with { GoodsList = rows }).Validate());
         Assert.Contains("can be eaten", misfiled.Message, StringComparison.Ordinal);
     }
 

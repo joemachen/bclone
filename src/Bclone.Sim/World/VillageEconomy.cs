@@ -1549,7 +1549,8 @@ public static class VillageEconomy
                 return 0;
 
             case Goods.Tools:
-                // ⭐ No floor, AND THAT IS THE DESIGN rather than a gap (D391,
+            case Goods.IronTools:
+                // ⭐ No floor for any kind of tool, AND THAT IS THE DESIGN rather than a gap (D391,
                 // `tools-and-the-smith.md §3.9`): a worker without a tool works at today's
                 // number and the tool is the bonus, so nothing about survival depends on
                 // holding one. The quota asks for smiths when tools run short

@@ -327,7 +327,8 @@ public sealed class SkillTests
     // RE-TAKEN (D429), BOTH — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Were 11654469485471921697 (fixture) and 13070721559064917869 (shipped).
     // RE-TAKEN (D434), BOTH — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Were 7256592977692245281 (fixture) and 8002305187504967384 (shipped).
     [InlineData(false, 1080427782552529441UL)]
-    [InlineData(true, 12410617450677179378UL)]
+    // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
+    [InlineData(true, 13441693335877048572UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

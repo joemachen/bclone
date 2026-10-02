@@ -852,9 +852,24 @@
   // alone was measured: a forager's trip is one gather between two walks, so
   // 3 -> 2 ticks saves one tick in about fifteen -- 55 fifty-year villages read
   // 380 alive against 440 on yield alone and 321 with no tools. Both: 444.
+  //
+  // THESE THREE PRICE THE STONE TOOL since iron tools came (D446; Joe:
+  // "stone = today's, iron stronger"). A tool's numbers are columns on its
+  // good's row, and the built-in rows read these keys -- so the founders' stone
+  // tools are today's tool to the unit, and a village with only stone tools
+  // plays and hashes exactly as before.
   "tool_uses": 150,
   "tool_speed_bonus_percent": 34,
   "tool_yield_bonus_percent": 25,
+
+  // THE IRON TOOL (tools-and-the-smith.md 9.2, Joe's order of magnitude, D434):
+  // lasts 250 uses, takes half off an action's ticks (a gather still 3 -> 2, a
+  // split 4 -> 2, a cast 10 -> 5, a hunt 15 -> 8) and brings in 35% more.
+  // Measured as an upper bound before it was built (every tool in the valley at
+  // these numbers): 504 alive over D420's 55 villages against 444.
+  "iron_tool_uses": 250,
+  "iron_tool_speed_bonus_percent": 50,
+  "iron_tool_yield_bonus_percent": 35,
 
   // The smithy: a hut's timber and a forge's worth of stone; two seats
   // (TECH-EXAMPLE's forge). One forge takes half a seam tile of iron and a
@@ -865,8 +880,14 @@
   "smithy_stone": 36,
   "smithy_work_ticks": 40,
   "smithy_capacity": 2,
+  // What a forge takes, by kind (9.3) -- the smithy's card says which, stone by
+  // default. An IRON tool: half a seam tile of ore and a batch of firewood.
   "iron_per_tool": 4,
   "firewood_per_tool": 4,
+  // A STONE tool: two stone and a log for the haft, and no fire -- so a stone
+  // forge never asks after the winter's firewood (Joe, D434).
+  "stone_per_stone_tool": 2,
+  "logs_per_stone_tool": 1,
   "forge_ticks": 4,
   "tools_per_forge": 1,
   "forges_per_stint": 4,
@@ -1446,7 +1467,8 @@
     "logs": 200,
     "firewood": 400,
     "stone": 200,
-    "tools": 200,
+    "stone tools": 200,
+    "iron tools": 200,
     "iron": 200,
     "leather": 200,
   },

@@ -61,7 +61,7 @@ public sealed class EdibleGoodsTests
             }
         }
 
-        SimConfig edibleLogs = config with { GoodsCatalog = rows };
+        SimConfig edibleLogs = config with { GoodsList = rows };
         SimWorld world = SimFactory.CreatePhase0(edibleLogs, new InMemoryLogSink()).World;
 
         // Produce, fish, meat and wheat ship edible (D348); the posed logs make five.
@@ -100,7 +100,7 @@ public sealed class EdibleGoodsTests
         }
 
         SimConfigException blew =
-            Assert.Throws<SimConfigException>(() => (config with { GoodsCatalog = rows }).Validate());
+            Assert.Throws<SimConfigException>(() => (config with { GoodsList = rows }).Validate());
 
         _output.WriteLine(blew.Message);
         Assert.Contains("worth the same", blew.Message, System.StringComparison.Ordinal);

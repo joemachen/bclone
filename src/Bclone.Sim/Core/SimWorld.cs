@@ -2005,7 +2005,8 @@ public sealed class SimWorld : IObstacles
         var stopped = new List<string>();
         for (int id = 0; id < JobsCatalog.Count; id++)
         {
-            if (JobsCatalog.LimitedBy((JobKind)id) == goods)
+            // The smith's good is what the smithies are set to forge (§9.3), not the row's alone.
+            if (LabourQuota.GoodTheTradeMakes(this, (JobKind)id) == goods)
             {
                 stopped.Add(JobsCatalog.PluralOf((JobKind)id));
             }
@@ -2881,7 +2882,9 @@ public sealed class SimWorld : IObstacles
         // Each bonus as a percentage off; zero where it does not apply. Mastery is scaled by the
         // share of the way there (hundredths of a percent, out of 10,000); the tool is whole.
         long masteryOff = MasteryOffFor(villager, trade);
-        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade) ? Config.ToolSpeedBonusPercent : 0;
+        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade)
+            ? GoodsCatalog[villager.ToolGood].ToolSpeedBonusPercent
+            : 0;
 
         if (masteryOff <= 0 && toolOff <= 0)
         {
@@ -3020,7 +3023,8 @@ public sealed class SimWorld : IObstacles
             return amount;
         }
 
-        int bonus = Config.ToolYieldBonusPercent;
+        // The held tool's own row (`tools-and-the-smith.md §9.2`) — stone is today's number.
+        int bonus = GoodsCatalog[villager.ToolGood].ToolYieldBonusPercent;
         return bonus <= 0 ? amount : amount + (amount * bonus / 100);
     }
     /// <summary>Remember who holds a technique, so the village can name them when it is lost.</summary>
@@ -3705,38 +3709,128 @@ public sealed class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(smithy);
 
-        int held = HeldAgainstItsLimit(Goods.Tools);
-        if (LimitIsMet(Goods.Tools))
+        // What the card says to forge (`tools-and-the-smith.md §9.3`) — its own limit and recipe.
+        Goods tool = smithy.ForgeGood;
+        GoodRow row = GoodsCatalog[tool];
+        int held = HeldAgainstItsLimit(tool);
+        if (LimitIsMet(tool))
         {
             return $"Nothing to forge — you asked the village to keep "
-                + $"{StockLimits.For(Goods.Tools)} tools and it has {held} stored.";
+                + $"{StockLimits.For(tool)} {row.Name} and it has {held} stored.";
         }
 
-        if (Config.FirewoodPerTool > 0 && LabourQuota.FirewoodShortfall(this) > 0)
+        if (row.ForgedFrom.Count == 0)
+        {
+            return $"Nothing to forge — {row.Name} are not made at a forge.";
+        }
+
+        // ⛔ Only a recipe with fire in it asks after the winter's firewood (§3.7): a stone tool
+        // takes none, so it never waits on the homes' woodpile.
+        if (TakesFirewood(row) && LabourQuota.FirewoodShortfall(this) > 0)
         {
             return "Nothing to forge — the village needs its firewood for the winter.";
         }
 
-        if (NearestStoreForTheForge(smithy.Tile) is null)
+        if (NearestStoreForTheForge(smithy.Tile, tool) is null)
         {
             return $"Nothing to forge — no store within reach of {smithy.Name} has the "
-                + $"{Config.IronPerTool} iron and {Config.FirewoodPerTool} firewood a tool takes.";
+                + $"{DescribeRecipe(row.ForgedFrom)} a forge of {row.Name} takes.";
         }
 
         return null;
     }
 
+    /// <summary>Whether one forge of this tool burns firewood.</summary>
+    private static bool TakesFirewood(GoodRow row)
+    {
+        for (int i = 0; i < row.ForgedFrom.Count; i++)
+        {
+            if (row.ForgedFrom[i].Goods == Goods.Firewood)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary><em>"4 iron and 4 firewood"</em> — a recipe in the village's words.</summary>
+    private string DescribeRecipe(IReadOnlyList<MaterialCost> recipe)
+    {
+        var parts = new List<string>(recipe.Count);
+        for (int i = 0; i < recipe.Count; i++)
+        {
+            parts.Add($"{recipe[i].Amount} {GoodsCatalog.NameOf(recipe[i].Goods)}");
+        }
+
+        return parts.Count <= 1
+            ? string.Concat(parts)
+            : string.Join(", ", parts.GetRange(0, parts.Count - 1)) + " and " + parts[^1];
+    }
+
     /// <summary>
-    /// The nearest store holding a forge's iron and its firewood both — the woodyard's question
-    /// asked of two goods at once, because a forge that found its iron in one store and its
+    /// The nearest store holding everything one forge of this tool takes — the woodyard's question
+    /// asked of the whole recipe at once, because a forge that found its iron in one store and its
     /// firewood in another would be two walks the stint does not price.
     /// </summary>
-    public StoreBuilding? NearestStoreForTheForge(GridPos from) =>
-        NearestStoreAccepting(
+    /// <remarks>Null for a good with no recipe: nothing forges it.</remarks>
+    public StoreBuilding? NearestStoreForTheForge(GridPos from, Goods tool)
+    {
+        IReadOnlyList<MaterialCost> recipe = GoodsCatalog[tool].ForgedFrom;
+        if (recipe.Count == 0)
+        {
+            return null;
+        }
+
+        return NearestStoreAccepting(
             from,
-            Goods.Iron,
-            store => store.Store[Goods.Iron] >= Config.IronPerTool
-                && store.Store[Goods.Firewood] >= Config.FirewoodPerTool);
+            recipe[0].Goods,
+            store =>
+            {
+                for (int i = 0; i < recipe.Count; i++)
+                {
+                    if (store.Store[recipe[i].Goods] < recipe[i].Amount)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+    }
+
+    /// <summary>
+    /// Set what a smithy forges (`tools-and-the-smith.md §9.3`) — refused, in a sentence, for
+    /// anything that is not a smithy or a good no forge makes.
+    /// </summary>
+    public PlacementVerdict SetForgeGood(Workplace smithy, Goods tool)
+    {
+        ArgumentNullException.ThrowIfNull(smithy);
+
+        if (smithy.Kind != JobKind.Smith)
+        {
+            return PlacementVerdict.No($"{smithy.Name} is not a smithy; nothing is forged there.");
+        }
+
+        // A recipe is what makes a good forgeable, and the config refuses one on anything that is not
+        // a tool — so this one test refuses stone, leather and a tool nobody forges alike.
+        if ((int)tool < 0 || (int)tool >= GoodsCatalog.Count || GoodsCatalog[tool] is not { } row
+            || row.ForgedFrom.Count == 0)
+        {
+            return PlacementVerdict.No("A smithy forges tools, and only tools a forge can make.");
+        }
+
+        if (smithy.ForgeGood != tool)
+        {
+            smithy.ForgeGood = tool;
+            if (Logs(LogLevel.Info))
+            {
+                Log(LogLevel.Info, "labour", $"{smithy.Name} is set to forge {row.Name} — {Clock}.");
+            }
+        }
+
+        return PlacementVerdict.Fine;
+    }
 
     private string? ForagerIdleNote(Workplace hut)
     {

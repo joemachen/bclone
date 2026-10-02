@@ -4734,7 +4734,15 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        StoreBuilding? source = NearestStoreHolding(world, villager.Tile, Goods.Tools);
+        // ⭐ The best kind in reach, then the nearest store holding it (`tools-and-the-smith.md §9.2`):
+        // iron before stone, because its row's numbers are higher — never by name.
+        StoreBuilding? source = null;
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; i < tools.Count && source is null; i++)
+        {
+            source = NearestStoreHolding(world, villager.Tile, tools[i]);
+        }
+
         if (source is null)
         {
             villager.WorkNote = "Working without a tool — none in any store.";
@@ -4826,24 +4834,40 @@ public sealed class BehaviorSystem : ISimSystem
 
     /// <summary>A tool out of the store's count and into their hands, then decide again.</summary>
     /// <remarks>
+    /// <para>
     /// ⛔ <b>The return of <c>TryTake</c> is read</b> (D96, D144): a store emptied between
     /// departure and arrival hands over nothing, and the villager decides again with empty
     /// hands rather than with a tool that came from nowhere.
+    /// </para>
+    /// <para>
+    /// <b>The best kind this store still holds</b> (§9.2): the errand keeps only the store's tile,
+    /// so a store whose iron went on the way hands over its stone rather than nothing.
+    /// </para>
     /// </remarks>
     private static void TakeATool(SimWorld world, Villager villager)
     {
         StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
         villager.ErrandX = 0;
         villager.ErrandY = 0;
-        if (store is not null && store.Store.TryTake(Goods.Tools, 1))
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; store is not null && i < tools.Count; i++)
         {
-            villager.ToolUses = world.Config.ToolUses;
+            Goods kind = tools[i];
+            if (!store.Store.TryTake(kind, 1))
+            {
+                continue;
+            }
+
+            villager.ToolGood = kind;
+            villager.ToolUses = world.GoodsCatalog[kind].ToolUses;
             world.ToolsEverTaken++;
             if (world.Logs(LogLevel.Debug))
             {
                 world.Log(LogLevel.Debug, "behavior",
-                    $"{villager.Name} took a tool from {store.Name} — {world.Clock}.");
+                    $"{villager.Name} took {world.GoodsCatalog.NameOf(kind)} from {store.Name} — {world.Clock}.");
             }
+
+            break;
         }
 
         villager.State = VillagerState.Idle;
@@ -5751,9 +5775,10 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             case VillagerState.Forging:
-                // The woodcutter's arm, one good over (D391): the iron and the firewood out of
-                // the one store that holds both, the tools into the nearest store that takes
-                // them, the rest on the ground; then again while the reason to forge holds, up
+                // The woodcutter's arm, one good over (D391): the recipe out of the one store
+                // that holds all of it (iron and firewood for an iron tool, stone and a log for a
+                // stone one — §9.3), the tools into the nearest store that takes them, the rest
+                // on the ground; then again while the reason to forge holds, up
                 // to a day's stint. `WhyTheForgeIsCold` is the one place the reasons live, so a
                 // stint ends for exactly the reasons it would not have started.
                 if (WorkplaceOf(world, villager) is not Workplace smithy
@@ -5764,11 +5789,17 @@ public sealed class BehaviorSystem : ISimSystem
                     return;
                 }
 
-                StoreBuilding? ironmonger = world.NearestStoreForTheForge(villager.Tile);
-                if (ironmonger is null
-                    || !ironmonger.Store.TryTake(Goods.Iron, world.Config.IronPerTool)
-                    || (world.Config.FirewoodPerTool > 0
-                        && !ironmonger.Store.TryTake(Goods.Firewood, world.Config.FirewoodPerTool)))
+                // What the card says to forge, and its row's recipe (`tools-and-the-smith.md §9.3`).
+                Goods made = smithy.ForgeGood;
+                IReadOnlyList<MaterialCost> recipe = world.GoodsCatalog[made].ForgedFrom;
+                StoreBuilding? ironmonger = world.NearestStoreForTheForge(villager.Tile, made);
+                bool tookItAll = ironmonger is not null;
+                for (int i = 0; tookItAll && i < recipe.Count; i++)
+                {
+                    tookItAll = ironmonger!.Store.TryTake(recipe[i].Goods, recipe[i].Amount);
+                }
+
+                if (!tookItAll)
                 {
                     // Unreachable in practice — `WhyTheForgeIsCold` just re-found the store, and
                     // nothing moves between that line and this one — but the returns are read
@@ -5785,14 +5816,14 @@ public sealed class BehaviorSystem : ISimSystem
                     tools = 1;
                 }
 
-                StoreBuilding? rack = ironmonger.HasRoomFor(Goods.Tools) && ironmonger.Accepts(Goods.Tools)
+                StoreBuilding? rack = ironmonger!.HasRoomFor(made) && ironmonger.Accepts(made)
                     ? ironmonger
                     : world.NearestStoreAccepting(
-                        villager.Tile, Goods.Tools, static store => store.HasRoomFor(Goods.Tools));
-                int racked = rack?.Put(Goods.Tools, tools) ?? 0;
+                        villager.Tile, made, store => store.HasRoomFor(made));
+                int racked = rack?.Put(made, tools) ?? 0;
                 if (racked < tools)
                 {
-                    world.SetDown(villager.Tile, Goods.Tools, tools - racked);
+                    world.SetDown(villager.Tile, made, tools - racked);
                 }
 
                 world.ToolsEverForged += tools;
@@ -5800,7 +5831,7 @@ public sealed class BehaviorSystem : ISimSystem
                 if (world.Logs(LogLevel.Debug))
                 {
                     world.Log(LogLevel.Debug, "behavior",
-                        $"{villager.Name} forged {tools} tools — "
+                        $"{villager.Name} forged {tools} {world.GoodsCatalog.NameOf(made)} — "
                         + (racked > 0 ? $"{racked} into {rack!.Name}" : "no store would take them")
                         + (racked < tools ? $", {tools - racked} set down" : string.Empty)
                         + $" — {world.Clock}.");

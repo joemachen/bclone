@@ -498,6 +498,17 @@ public sealed class Villager
     /// </remarks>
     public int ToolUses { get; set; }
 
+    /// <summary>
+    /// Which kind of tool is in their hands — the good it was taken as (`tools-and-the-smith.md
+    /// §9.2`). Meaningless while <see cref="ToolUses"/> is zero.
+    /// </summary>
+    /// <remarks>
+    /// <b>The stone tool by default</b>, so every hand that took a tool before iron existed held
+    /// stone, and the hash mixes this only as a difference from it — a village with only stone tools
+    /// hashes as it did before this field existed. The tool's numbers are read off this good's row.
+    /// </remarks>
+    public Goods ToolGood { get; set; } = Goods.Tools;
+
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
 

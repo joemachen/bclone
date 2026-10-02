@@ -1,6 +1,60 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D445 IN §7. `main` = D433, PUSHED. `slice/quarry` = D434–D445, PLAYED BY JOE (*"everything looks good"*), NOT MERGED, NOT PUSHED. NEXT: STEP E — STONE TOOLS AND IRON TOOLS, ON `slice/quarry`.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D446 IN §7. `main` = D433, PUSHED. `slice/quarry` = D434–D446, ALL SIX PARTS BUILT; PARTS 1–5 PLAYED BY JOE; PART 6 (STONE TOOLS AND IRON TOOLS, D446) BUILT, UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS PART 6, THEN MERGES AND PUSHES.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 — `slice/quarry` PLAYED; STEP E IS NEXT.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 (EVENING) — STEP E BUILT ON `slice/quarry`.**
+>
+> **State:** `main` = D433, pushed. **`slice/quarry` = D434–D446, committed, NOT merged, NOT pushed.**
+> D446 (stone tools and iron tools — the quarry spec's part 6) is **built and unplayed**. At D446:
+> **1326 passing, 0 failing, 5 skipped of 1331, 3m30; view 0 warnings; probe green, bar height 161.**
+> ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`** and read
+> `git status`.
+>
+> **What D446 is** (`tools-and-the-smith.md §9.2–§9.5`, DESIGN D446): a tool's numbers are columns on
+> its good's row (`tool_uses`, the two bonuses, `forged_from`); row 4 is **"stone tools"** (Joe's call
+> this session) and is today's tool to the unit, priced from the three old keys; **`Goods.IronTools`
+> = 10**, 250 uses / 50 % / 35 %; `Villager.ToolGood`; a hand takes the best kind in reach;
+> **`Workplace.ForgeGood`** — a smithy's card has a **Forges:** dropdown, stone by default (2 stone +
+> 1 log, no fire), iron (4 iron + 4 firewood, never the winter's); the smith is stood down by the
+> limit of what the smithies are set to forge; the quota counts both kinds. ⚠️ **The goods list now
+> has the buildings' shape** — `SimConfig.GoodsList` is a file's list (or null) and `GoodsCatalog` is
+> computed (`DefaultGoods()`); write `with { GoodsList = … }`, never `GoodsCatalog`.
+>
+> **▶️ NEXT: JOE PLAYS PART 6.** What to look at: click any villager in a tool trade — the TOOL row
+> reads *"Stone tools — 37 / 150"*; raise a smithy (dig 50 iron first — or it is the gift), open its
+> card, Settings → **Forges:** — switch to iron with iron and firewood in a store and watch hands
+> come back with *"Iron tools — 250 / 250"*. Then he merges and pushes.
+>
+> **⏸️ For Joe, from this session (also in the ⏸️ list below):**
+> 1. **The suite's own opening was NOT changed for D445** — it paints four rock tiles (48 stone) and
+>    marks 18 stone of buildings, so "paint what its buildings cost" would mean *fewer* tiles. Left
+>    alone; say if you want it otherwise.
+> 2. **Iron barely helps a forager** (+3 % per hour worked, against +10 % a fisher and +15 % a hunter):
+>    at 50 % a three-tick gather is 3 → 2, the same as stone's 34 %. Trap 134 again. Your call whether
+>    that is the shape you want.
+> 3. **Clearing a far iron seam costs an unattended village dearly** — 16 tiles: 473 → 421 alive over
+>    the 55 villages before a tool is forged (D406's open item, now on iron). And the shipped cold
+>    starts never staff a smithy unprompted (the labour quota keeps hands on food).
+> 4. **One golden moved** (`SkillTests`' shipped fifty-year village) because the shipped game now starts
+>    with an `"iron tools": 200` limit and a set limit is hashed — proven the only reason (it passes
+>    with that line out). If you would rather iron tools start with no limit, the golden goes back.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/6534a275-575d-4bbf-ad69-b0fe3ac188b9/scratchpad/`):**
+> `ZzBase.cs` (the 55 villages; D445 painting by default, `ZZ_PAINT` overrides; `ZZ_SMITHY` = `stone` /
+> `iron` / `idle` raises a smithy at year 5 beside `ZZ_IRON` (16) painted iron tiles) + `summ2.py`;
+> `redcheck.py` (D446's 22 sim mutants; single-line only) + `runreds.sh`; `viewred.py`; the arm files
+> `base-d445.txt`, `e-control.txt`, `e-stone.txt`, `e-iron.txt`, `e-idle.txt`, `rig-control.txt`,
+> `rig-iron.txt`. Copy a Zz file into `tests/Bclone.Sim.Tests/`, run with `--filter` and the detailed
+> console logger, **delete before committing**. Godot at
+> `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+> ⚠️ Joe keeps a windowed game running — never kill it.
+>
+> **Still open and Joe's** (the ⏸️ list): the worked-face look for quarry faces (a view slice); the
+> iron mine (the slice after this one); the mason's yard; per-stage seeds (which also fix D435);
+> `ForesterSeatsWithGroundToPlant` counting painted rock; the four items above.
+>
+> *(The 2026-10-01 morning banner, kept below.)*
+>
+
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-01 (MORNING) — `slice/quarry` PLAYED; STEP E WAS NEXT (✅ BUILT, D446).**
 >
 > **State:** `main` = D433, pushed. **`slice/quarry` = D434–D444 plus this handoff (D445), committed,
 > NOT merged, NOT pushed.** Joe played it on 2026-10-01: *"everything looks good. with lanes and the
@@ -3564,7 +3618,39 @@ Read `git status` after staging, every time.
      shape. And **a view red-check must decode Godot's output as UTF-8**: in cp1252 every ⛔ reads
      as `?` and every mutant scores zero (`viewred.py` in the D441 scratchpad does it right).
 
+## ⛔ THE TRAPS D446 PAID FOR — A BEST-FIRST TAKE HIDES A FETCH'S ORDER, AND A WEAK ASSERTION SCORES ZERO
+
+145. **⚠️ WHEN TWO STEPS OBEY THE SAME RULE, ONE OF THEM CAN HIDE A BREAK IN THE OTHER (D446).** The
+     fetch goes to the store holding the best kind, and the take on arrival is best-first too — so
+     with stone and iron on ONE shelf, a fetch broken to look for stone first still came back with
+     iron, and `AHandTakesIronBeforeStone` scored zero. Re-posed with the iron in a store further out
+     than the stone; the take got its own guard (`AtAShelfOfBothKindsTheHandTakesIron`), which then
+     scored one where it had scored zero. **Pose each step where only it can decide.**
+146. **⚠️ "NOT THE WRONG ANSWER" IS NOT "THE RIGHT ANSWER" (D446).** The smith's stand-down guard said
+     *"on iron, the sentence is not the stone one"*; the break (smith read off the row) produced a
+     different wrong sentence and passed. Assert what it should be (`Null` — not stood down). And a
+     clause that is redundant with another scores zero by construction (`SetForgeGood`'s `IsTool`
+     beside the recipe check) — delete it rather than count it.
+147. **⚠️ A NEW STARTING STOCK LIMIT MOVES EVERY GOLDEN THAT LOADS THE SHIPPED LIMITS, THOUGH NOTHING
+     PLAYS DIFFERENTLY (D446).** A set limit is hashed (`StateHash`, the limits loop), so
+     `"iron tools": 200` moved the shipped fifty-year golden. **Prove it is the only reason** before
+     re-taking: run the golden with that data line out — the old value passed. And the 55 villages
+     compared per village (55 of 55 lines identical) say the same thing at the person level.
+148. **⚠️ GIT BASH'S `sed -i` WRITES LF OVER A CRLF FILE, AND HEREDOCS STILL MANGLE `\n` (D446).** A
+     one-line `sed -i` turned `SimConfig.cs` LF in the working tree (harmless under `autocrlf`, but
+     every line reads as changed to a tool that is not git); two heredoc-written Python edits lost
+     their `'\n'` literals and broke the red-check script. Edits go in a script file written with
+     the file tools, as the D434 banner already said — this time for the scripts that edit, too.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **D446'S FOUR, FOR JOE (2026-10-01):** *(1)* the suite's opening (`ColdStartTests.PaintTheNearestSeam`)
+  was left at four tiles — it already pays for what it marks (18 of 48 stone), so D445's rule would
+  paint fewer; *(2)* iron barely helps a forager (+3 % against +10 % / +15 %), because a three-tick
+  gather rounds to 3 → 2 at 34 % and 50 % alike; *(3)* clearing 16 far iron tiles costs the unattended
+  villages ~52 people (473 → 421) and the shipped cold starts never staff a smithy unprompted;
+  *(4)* the shipped fifty-year golden moved only for the `"iron tools": 200` starting limit — drop the
+  limit and it goes back. `tools-and-the-smith.md §9.4` has the table.
 
 - ⚠️ **`ForesterSeatsWithGroundToPlant` COUNTS A FORESTER'S PAINTED ROCK AND SAPLING TILES AS GROUND
   TO PLANT (found D434, not fixed).** `NextGroundToWork` never plants on them, so a forester's hut

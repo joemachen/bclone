@@ -865,6 +865,11 @@ public readonly record struct LabourQuota
         JobKind.Farmer => StoppedByItsOwnLimit(world, kind)
             && world.FarmerSeatsWithGroundToWork() == 0,
 
+        // ⭐ AND A SMITH BY WHAT THE SMITHIES ARE SET TO FORGE (`tools-and-the-smith.md §9.3`).
+        // The row's `limited_by` is the stone tool, and a met stone limit says nothing to a smithy
+        // the player set to iron.
+        JobKind.Smith => EverySmithyIsAtItsLimit(world),
+
         // ⭐ ANYTHING ELSE — INCLUDING A TRADE A MOD ADDED — IS STOPPED BY ITS ROW'S LIMIT IF IT
         // NAMES ONE, AND NEVER OTHERWISE (D218). This arm used to be a flat `false`, which meant
         // a trade the sim had not been taught about could not be capped at all: the player sets a
@@ -885,6 +890,53 @@ public readonly record struct LabourQuota
     /// </summary>
     private static bool StoppedByItsOwnLimit(SimWorld world, JobKind kind) =>
         world.JobsCatalog.LimitedBy(kind) is Goods limited && world.LimitIsMet(limited);
+
+    /// <summary>
+    /// Whether every standing smithy's chosen kind is at its limit — the row's limit when none
+    /// stands yet (§9.3).
+    /// </summary>
+    private static bool EverySmithyIsAtItsLimit(SimWorld world)
+    {
+        bool anyStanding = false;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace smithy = world.Workplaces[i];
+            if (smithy.Kind != JobKind.Smith || smithy.IsSite)
+            {
+                continue;
+            }
+
+            anyStanding = true;
+            if (!world.LimitIsMet(smithy.ForgeGood))
+            {
+                return false;
+            }
+        }
+
+        return anyStanding || StoppedByItsOwnLimit(world, JobKind.Smith);
+    }
+
+    /// <summary>
+    /// The good a trade's limit is read against, for the sentence that names it: the row's
+    /// <c>limited_by</c>, except a smith's, which is what the first standing smithy is set to (§9.3).
+    /// </summary>
+    public static Goods? GoodTheTradeMakes(SimWorld world, JobKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        if (kind == JobKind.Smith)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                if (world.Workplaces[i] is { Kind: JobKind.Smith, IsSite: false } smithy)
+                {
+                    return smithy.ForgeGood;
+                }
+            }
+        }
+
+        return world.JobsCatalog.LimitedBy(kind);
+    }
 
     /// <summary>
     /// Why the village is asking for nobody on this work — <b>a clause, not a sentence</b>.
@@ -941,7 +993,7 @@ public readonly record struct LabourQuota
         // 4. A limit the player set, met. ⭐ Asked of the same method the quota asks, so a
         //    forester with bare ground to plant is correctly NOT reported as capped (D146).
         if (StoppedByAStockLimit(world, kind)
-            && world.JobsCatalog.LimitedBy(kind) is Goods limited)
+            && GoodTheTradeMakes(world, kind) is Goods limited)
         {
             string good = world.GoodsCatalog.NameOf(limited);
             return world.StockLimits.For(limited) is int stop
@@ -1231,7 +1283,15 @@ public readonly record struct LabourQuota
             }
         }
 
-        int shortfall = (hands * 2) - world.InStores(Goods.Tools) - inHands;
+        // Every kind on the shelves (`tools-and-the-smith.md §9.3`): a hand takes whichever is best.
+        int onShelves = 0;
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; i < tools.Count; i++)
+        {
+            onShelves += world.InStores(tools[i]);
+        }
+
+        int shortfall = (hands * 2) - onShelves - inHands;
         return shortfall <= 0 ? 0 : shortfall;
     }
 

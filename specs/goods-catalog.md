@@ -80,7 +80,18 @@ GoodRow
   Nutrition     int      0 for anything nobody eats (D277)
   Category      enum     the stock-limit heading: Food | Materials | FuelAndGoods (D409).
                          Unset fails at load; anything edible must be Food
+  ToolUses      int      actions one lasts in a pair of hands; 0 = not a tool (D446)
+  ToolSpeedBonusPercent / ToolYieldBonusPercent
+                int      what the tool takes off an action's ticks / adds to its yield (D446)
+  ForgedFrom    list     {goods, amount} one forge takes; empty = no smith makes it. Only a
+                         tool may have one (validated)
 ```
+
+**A tool's numbers are columns on its good's row** (`tools-and-the-smith.md §9.2`, D446): id 4 is
+*"stone tools"* and id 10 *"iron tools"*. ⚠️ **Since D446 the built-in list is built per config,
+as the buildings' is** (`SimConfig.GoodsList` is the file's own list or null; `GoodsCatalog` is
+that list or `DefaultGoods()`, which prices the tool rows from `tool_uses`, `iron_tool_uses` and the
+rest). A file that states its own `goods` states its tools' columns too.
 
 **Id 0 is called "forage"** since D409 (Joe: *"I no longer want it to be called Produce"*); the
 enum keeps `Goods.Produce`, which the player never sees.

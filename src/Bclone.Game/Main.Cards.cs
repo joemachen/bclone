@@ -109,6 +109,12 @@ public partial class Main
         public Label? GroundLabel { get; set; }
         public Label? GroundNote { get; set; }
         public Button? Mode { get; set; }
+        public VBoxContainer? ForgeRow { get; set; }
+        public Label? ForgeLabel { get; set; }
+        public OptionButton? Forge { get; set; }
+
+        /// <summary>The dropdown's items, in order — every tool a forge makes (D446).</summary>
+        public List<Goods> ForgeGoods { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
     }
@@ -799,6 +805,15 @@ public partial class Main
                 c.GroundNote.Visible = false;
                 c.GroundRow.AddChild(c.GroundNote);
 
+                // ⭐ What a smithy forges (Joe, D434: "stone as default and a dropdown with the other
+                // option(s)"; `tools-and-the-smith.md §9.3`) — the Kept-on dropdown's shape, every
+                // tool row a forge makes, best last so stone (the default) reads first.
+                c.ForgeLabel = Muted("Forges:");
+                (c.ForgeRow, HFlowContainer forgeControls) = InspectorRow(body, c.ForgeLabel);
+                c.Forge = new OptionButton { FitToLongestItem = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+                c.Forge.ItemSelected += index => Act(card, () => SetSelectedForgeGood((int)index));
+                forgeControls.AddChild(c.Forge);
+
                 // The build queue, for a site.
                 c.QueueLabel = Muted("Build queue:");
                 (c.QueueRow, HFlowContainer queueControls) = InspectorRow(body, c.QueueLabel);
@@ -913,6 +928,12 @@ public partial class Main
                     }
                 }
 
+                c.ForgeRow!.Visible = built && place.Kind == JobKind.Smith;
+                if (c.ForgeRow.Visible)
+                {
+                    FillForge(world, c, place);
+                }
+
                 c.QueueRow!.Visible = place.IsSite;
                 if (place.IsSite)
                 {
@@ -924,6 +945,38 @@ public partial class Main
 
             default:
                 break;
+        }
+    }
+
+    /// <summary>The smithy's dropdown: every tool a forge makes, stone first; the item this smithy is set to selected (D446).</summary>
+    private static void FillForge(SimWorld world, CardControls c, Workplace smithy)
+    {
+        AddForgeItems(world, c);
+        int selected = c.ForgeGoods.IndexOf(smithy.ForgeGood);
+        if (c.Forge!.Selected != selected)
+        {
+            c.Forge.Select(selected);
+        }
+    }
+
+    /// <summary>The dropdown's items, once: every tool row with a recipe, worst first so stone (the default) leads.</summary>
+    private static void AddForgeItems(SimWorld world, CardControls c)
+    {
+        if (c.ForgeGoods.Count == 0)
+        {
+            IReadOnlyList<Goods> best = world.GoodsCatalog.ToolsBestFirst;
+            for (int i = best.Count - 1; i >= 0; i--)
+            {
+                GoodRow row = world.GoodsCatalog[best[i]];
+                if (row.ForgedFrom.Count == 0)
+                {
+                    continue;
+                }
+
+                c.Forge!.AddItem(Capitalise(row.Name));
+                c.Forge.SetItemTooltip(c.Forge.ItemCount - 1, $"{Capitalise(row.Name)}: {row.ToolUses} uses, {WhatAToolIsWorth(row)}.");
+                c.ForgeGoods.Add(best[i]);
+            }
         }
     }
 
@@ -1317,18 +1370,19 @@ public partial class Main
         p.ToolSection.Visible = usesTool;
         if (usesTool)
         {
+            // ⭐ WHICH KIND, off the held good's row (`tools-and-the-smith.md §9.2`): "Iron tools — 212 / 250".
             int uses = villager.ToolUses;
-            p.ToolBar.MaxValue = Mathf.Max(1, Mathf.Max(world.Config.ToolUses, uses));
+            GoodRow held = world.GoodsCatalog[villager.ToolGood];
+            p.ToolBar.MaxValue = Mathf.Max(1, Mathf.Max(held.ToolUses, uses));
             p.ToolBar.Value = uses;
             p.ToolBar.Visible = uses > 0;
-            p.ToolUses.Text = uses > 0 ? $"{uses} / {world.Config.ToolUses}" : "No tool — works slower";
+            p.ToolUses.Text = uses > 0 ? $"{Capitalise(held.Name)} — {uses} / {held.ToolUses}" : "No tool — works slower";
             p.ToolUses.Modulate = uses > 0 ? new Color(1, 1, 1, 0.7f) : LightStopped;
 
             // What a tool does is one hover away (D432): the section says how much is left.
-            string worth = WhatAToolIsWorth(world);
             p.ToolSection.TooltipText = uses > 0
-                ? $"{uses} of {world.Config.ToolUses} uses left. A tool makes them {worth}."
-                : $"No tool in any store. A tool would make them {worth}.";
+                ? $"{uses} of {held.ToolUses} uses left. {Capitalise(held.Name)} make them {WhatAToolIsWorth(held)}."
+                : $"No tool in hand or on a shelf they can reach. {WhatEachToolIsWorth(world)}";
         }
 
         // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
@@ -1372,11 +1426,24 @@ public partial class Main
         return true;
     }
 
-    /// <summary>What a tool does, from the two dials — <i>"34% quicker at each action and 25% more from it"</i>.</summary>
-    private static string WhatAToolIsWorth(SimWorld world)
+    /// <summary>Every kind, best first, in one sentence each — <i>"Iron tools would make them 50% quicker…"</i>.</summary>
+    private static string WhatEachToolIsWorth(SimWorld world)
     {
-        int speed = world.Config.ToolSpeedBonusPercent;
-        int yield = world.Config.ToolYieldBonusPercent;
+        var sentences = new List<string>();
+        foreach (Goods tool in world.GoodsCatalog.ToolsBestFirst)
+        {
+            GoodRow row = world.GoodsCatalog[tool];
+            sentences.Add($"{Capitalise(row.Name)} would make them {WhatAToolIsWorth(row)}.");
+        }
+
+        return string.Join(" ", sentences);
+    }
+
+    /// <summary>What a tool does, from its row's two numbers — <i>"34% quicker at each action and 25% more from it"</i>.</summary>
+    private static string WhatAToolIsWorth(GoodRow tool)
+    {
+        int speed = tool.ToolSpeedBonusPercent;
+        int yield = tool.ToolYieldBonusPercent;
         string quicker = speed > 0 ? $"{speed}% quicker at each action" : string.Empty;
         string more = yield > 0 ? $"{yield}% more from it" : string.Empty;
         return quicker.Length > 0 && more.Length > 0 ? $"{quicker} and {more}" : quicker + more;
@@ -1941,7 +2008,16 @@ public partial class Main
         p.Job.Text = $"Woodcutter at {new string('W', SimWorld.NameLengthLimit)}";
         p.ToolSection.Visible = true;
         p.ToolBar.Visible = true;
-        p.ToolUses.Text = "No tool — works slower";
+        // ⚠️ The longest the row can read (D446): every kind's name and its full uses, or no tool.
+        string longestTool = "No tool — works slower";
+        foreach (Goods tool in world.GoodsCatalog.ToolsBestFirst)
+        {
+            GoodRow row = world.GoodsCatalog[tool];
+            string text = $"{Capitalise(row.Name)} — {row.ToolUses} / {row.ToolUses}";
+            longestTool = text.Length > longestTool.Length ? text : longestTool;
+        }
+
+        p.ToolUses.Text = longestTool;
         foreach ((PanelContainer, Label) need in p.Needs)
         {
             SetNeed(need, false, "No roof", longest);
@@ -2244,6 +2320,36 @@ public partial class Main
             }
 
             if (c.LimitRow is not null) c.LimitRow.Visible = true;
+
+            // ⭐ The smithy's Forges dropdown (D446), with every kind a forge makes — and its budget
+            // asserted (trap 139): the longest item must fit the card, since the button does not
+            // widen to it (FitToLongestItem off) and would trim the kind's name instead.
+            if (c.ForgeRow is not null)
+            {
+                c.ForgeRow.Visible = true;
+                AddForgeItems(world, c);
+                int forgeable = 0;
+                foreach (Goods tool in world.GoodsCatalog.ToolsBestFirst)
+                {
+                    forgeable += world.GoodsCatalog[tool].ForgedFrom.Count > 0 ? 1 : 0;
+                }
+
+                if (c.Forge!.ItemCount != forgeable || forgeable < 2)
+                {
+                    faults.Add($"the smithy's dropdown offers {c.Forge.ItemCount} kinds of {forgeable} a forge makes");
+                }
+
+                float inner = CardWidth - card.Panel.GetThemeStylebox("panel").GetMinimumSize().X;
+                for (int i = 0; i < c.Forge.ItemCount; i++)
+                {
+                    float wide = c.Forge.GetThemeFont("font").GetStringSize(c.Forge.GetItemText(i), HorizontalAlignment.Left, -1, c.Forge.GetThemeFontSize("font_size")).X
+                        + c.Forge.GetThemeIcon("arrow").GetWidth() + 24f;
+                    if (wide > inner)
+                    {
+                        faults.Add($"the smithy's dropdown item '{c.Forge.GetItemText(i)}' needs {wide:F0} of the card's {inner:F0}");
+                    }
+                }
+            }
         }
 
         ForceUpdateTransform();
@@ -2395,7 +2501,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every workplace's numbers honest, a site {siteShape}, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every workplace's numbers honest, a site {siteShape}, the smithy's Forges dropdown offering every kind a forge makes and fitting, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }

@@ -137,10 +137,15 @@ Top to bottom:
 | **Subtitle** | *Forester · 35 · Thatcher household* | `TradeWordFor`, `AgeYears`, `HouseholdOf` |
 | **Banner** (the status row) | what they are doing **now** — green, or amber while hungry or while there is a note; **the note is its tooltip** (D432) | `Villager.DescribeState`, `WorkNote` |
 | **WORK** | *"Forester at forester's hut 1"* (amber, with the note as its tooltip, while there is one) · a dropdown — *The village decides* / *Always {trade}* (Joe's call; one control for D51's pin, disabled for a child). ⛔ No assignment reason, runner-up or distance (D432) | `SetPinnedTrade` |
-| **TOOL** (a trade that carries one) | one row: a bar and *"149 / 150"* — or *"No tool — works slower"* in amber; the tooltip says what a tool does (*"34% quicker at each action and 25% more from it"*) | `ToolUses`, `tool_uses`, the two bonus dials (D430) |
+| **TOOL** (a trade that carries one) | one row: a bar and **the kind** — *"Iron tools — 212 / 250"* (D446) — or *"No tool — works slower"* in amber; the tooltip says what that kind does (*"34% quicker at each action and 25% more from it"*), or with none, what each kind would | `ToolUses`, `ToolGood`, the held good's row (D430, D446) |
 | **NEEDS** | three pills, green or amber, the tooltip the reason: **Fed / Hungry** (`Hunger` against `eat_threshold`), **Warm / Cold** (`Cold` as a share of the way to freezing), **Housed / No roof** (the household's `HomePosition`) — Joe's call, *read from state that exists; no new mechanic* — morale and water join it when they exist | `Villager`, `SimConfig` |
 | **SKILLS** | a row per trade given a year, longest first: the trade, *"master"* or *"sixteen years"* (words, D174's register), a bar of the way to mastery; the tooltip is the old sentence | `TheirTrades` (was `DescribeTheirTrades`), `MasteryWorkFor` |
 | **Jumps** | *Find* (the camera to them) · *Home* · *Workplace* (their cards) | `VillageMap.CentreOn`, `OpenCard` |
+
+**A smithy's card** (D446, `tools-and-the-smith.md §9.3`) has a **Forges:** row in its Settings:
+a dropdown of every tool a forge makes, stone first (the default), each item's tooltip its uses
+and bonuses → `SimWorld.SetForgeGood`. The probe's `cards:` line poses it with every kind and
+asserts each item fits the card (trap 139 — the button does not widen to its items).
 
 ⛔ **Nothing on a person's card trims** (the title's ellipsis in the head excepted): every
 sentence wraps. The skill rows are made the first time a person needs them and reused, never

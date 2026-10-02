@@ -50,7 +50,9 @@ public sealed class ModdedGoodTests
     // ⚠️ AND 9 STOPPED BEING FREE THE DAY WHEAT SHIPPED (D348). The loader said so —
     // *"crop 'wheat' yields pitch, which nobody can eat"* — which is the crop validator
     // reading the modded catalogue and finding tar where the grain should be.
-    private const int PitchId = 10;
+    // ⚠️ AND 10 STOPPED BEING FREE THE DAY IRON TOOLS SHIPPED (D446) — the third time, so the
+    // validator's "missing id" sentence is what bumps it, not a test going quietly wrong.
+    private const int PitchId = 11;
 
     private static Goods Pitch => (Goods)PitchId;
 
@@ -70,15 +72,20 @@ public sealed class ModdedGoodTests
         { "id": 1, "name": "logs", "category": "Materials",     "source_name": "woodland",     "yield_per_tile": 12, "stored_by": ["Warehouse"] },
         { "id": 2, "name": "firewood", "category": "FuelAndGoods", "stored_by": ["Warehouse", "Market", "Cart"] },
         { "id": 3, "name": "stone", "category": "Materials",    "source_name": "a stone seam", "yield_per_tile": 12, "stored_by": ["Warehouse", "Cart"] },
-        { "id": 4, "name": "tools", "category": "FuelAndGoods",    "stored_by": ["Warehouse", "Cart"] },
+        { "id": 4, "name": "stone tools", "category": "FuelAndGoods", "stored_by": ["Warehouse", "Cart"],
+          "tool_uses": 150, "tool_speed_bonus_percent": 34, "tool_yield_bonus_percent": 25,
+          "forged_from": [{ "goods": "Stone", "amount": 2 }, { "goods": "Logs", "amount": 1 }] },
         { "id": 5, "name": "iron", "category": "Materials",     "source_name": "an iron seam", "yield_per_tile": 8,  "stored_by": ["Warehouse", "Cart"] },
         { "id": 6, "name": "fish", "category": "Food",     "source_name": "the river",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 7, "name": "meat", "category": "Food",     "source_name": "the woods",    "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
         { "id": 8, "name": "leather", "category": "Materials",  "source_name": "the woods",    "stored_by": ["Warehouse", "Cart"] },
         { "id": 9, "name": "wheat", "category": "Food",    "source_name": "the fields",   "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 10, "name": "iron tools", "category": "FuelAndGoods", "stored_by": ["Warehouse", "Cart"],
+          "tool_uses": 250, "tool_speed_bonus_percent": 50, "tool_yield_bonus_percent": 35,
+          "forged_from": [{ "goods": "Iron", "amount": 4 }, { "goods": "Firewood", "amount": 4 }] },
 
         // The modder's own good, above every built-in. Nothing in the sim has heard of it.
-        { "id": 10, "name": "pitch", "category": "Materials",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
+        { "id": 11, "name": "pitch", "category": "Materials",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
       ]
     }
     """;
@@ -128,7 +135,7 @@ public sealed class ModdedGoodTests
         SimConfig config = ConfigWithPitch();
         var catalog = new GoodsCatalog(config.GoodsCatalog);
 
-        Assert.Equal(11, catalog.Count);
+        Assert.Equal(12, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a good no switch
         // has ever named.
@@ -165,10 +172,10 @@ public sealed class ModdedGoodTests
 
         // Every stockpile in the run is sized from the catalogue, so the seventh has a slot —
         // this is the six-good ceiling, gone.
-        Assert.Equal(11, world.Households[0].Stockpile.Slots);
+        Assert.Equal(12, world.Households[0].Stockpile.Slots);
 
         StoreBuilding warehouse = FindWarehouse(world);
-        Assert.Equal(11, warehouse.Store.Slots);
+        Assert.Equal(12, warehouse.Store.Slots);
 
         // ⭐ The warehouse takes it because the ROW says so — `stored_by: ["Warehouse"]` — not because
         // anything in the sim was taught about pitch.
@@ -261,7 +268,7 @@ public sealed class ModdedGoodTests
             StoredBy = new[] { StoreKind.Warehouse },
         };
 
-        SimConfig withPitch = plain with { GoodsCatalog = grown };
+        SimConfig withPitch = plain with { GoodsList = grown };
 
         SimLoop a = SimFactory.CreatePhase0(plain, new InMemoryLogSink());
         SimLoop b = SimFactory.CreatePhase0(withPitch, new InMemoryLogSink());
@@ -312,7 +319,7 @@ public sealed class ModdedGoodTests
         // returned -1 and `Set` answered **false** — *the player sets a limit, the control reports
         // no change, and nothing anywhere says why.* Silent refusal is the worst of the three
         // possible failures, because there is nothing to read.
-        Assert.Equal(11, world.StockLimits.Slots);
+        Assert.Equal(12, world.StockLimits.Slots);
 
         Assert.True(world.StockLimits.Set(Pitch, 120), "a modded good can be limited");
         Assert.Equal(120, world.StockLimits.For(Pitch));
@@ -382,7 +389,7 @@ public sealed class ModdedGoodTests
     public void TwoGoodsSharingAnIdAreRefusedAtLoad()
     {
         string duplicated = JsonWithPitch.Replace(
-            """{ "id": 10, "name": "pitch",""",
+            """{ "id": 11, "name": "pitch",""",
             """{ "id": 5, "name": "pitch",""");
 
         SimConfigException error = Assert.Throws<SimConfigException>(
@@ -401,7 +408,7 @@ public sealed class ModdedGoodTests
         // rather than a bare config — it has households, stores and a founding site.
         SimConfig config = VillageFixtures.Village with
         {
-            GoodsCatalog = ConfigWithPitch().GoodsCatalog,
+            GoodsList = ConfigWithPitch().GoodsCatalog,
         };
 
         return SimFactory.CreatePhase0(config, new InMemoryLogSink(), 42UL).World;

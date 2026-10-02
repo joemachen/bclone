@@ -3855,6 +3855,20 @@ public partial class Main : Control
     }
 
     /// <summary>Switch a forester's hut between taking trees down and putting them back.</summary>
+    /// <summary>Set what the selected smithy forges, from its card's dropdown (D446, `tools-and-the-smith.md §9.3`).</summary>
+    private void SetSelectedForgeGood(int index)
+    {
+        if (SelectedWorkplace() is not { IsSite: false, Kind: JobKind.Smith } smithy
+            || _selectedCard?.Controls.ForgeGoods is not { } goods
+            || index < 0 || index >= goods.Count)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetForgeGood(smithy, goods[index]));
+        RefreshInspector(_loop.World);
+    }
+
     private void ToggleSelectedMode()
     {
         if (SelectedWorkplace() is not { IsSite: false } workplace)

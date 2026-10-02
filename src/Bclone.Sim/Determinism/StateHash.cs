@@ -354,6 +354,15 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.Mode);
             }
 
+            // What a smithy forges (`tools-and-the-smith.md §9.3`) — the same silence for the same
+            // reason: a smithy left on stone mixes nothing. A tag goes in first, because the mode
+            // above mixes a bare small number and a forge kind is one too (D291).
+            if (workplace.ForgeGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 0xF0u);
+                hash = MixUInt32(hash, (uint)workplace.ForgeGood);
+            }
+
             // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
             // It decides how much ground the farm commits every spring, so two runs of one
             // seed that differ in it are different runs and must hash differently.
@@ -871,6 +880,15 @@ public static class StateHash
         {
             hash = MixUInt32(hash, 1u);
             hash = MixUInt32(hash, (uint)villager.ToolUses);
+
+            // WHICH KIND (`tools-and-the-smith.md §9.2`) — as a difference from stone, so the
+            // founders' stone tools mix nothing new and a village with only stone tools hashes as
+            // it did before iron tools existed. Its own tag, after the uses it qualifies.
+            if (villager.ToolGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 4u);
+                hash = MixUInt32(hash, (uint)villager.ToolGood);
+            }
         }
 
         if (villager.ForgesThisStint != 0)
