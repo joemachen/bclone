@@ -4,7 +4,8 @@
 >
 > **State:** `main` = `slice/quarry` merged `--no-ff` (D434–D446) + D447 (Joe's calls, both tool
 > limits at 25), **pushed at Joe's word** (*"merge and push"*). **No branch is open.**
-> `slice/quarry` is not deleted — ask Joe before deleting it (it was never on the remote).
+> `slice/quarry` **deleted at Joe's word (2026-10-01)** — tip `25b5576`, 0 commits not on `main`,
+> never on the remote.
 > ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`** and read
 > `git status`.
 >
@@ -4078,7 +4079,8 @@ and every document in the repo said #3 for a day before anyone checked.
 **Merged slice branches are deleted on Joe's standing preference**, each after checking it had
 **0 commits not on `main`**. Tips if ever wanted back: `phase/3-skill-and-apprenticeship`
 `028f4fc`, `phase/2-wood-fuel-and-tools` `9b9f410`, `slice/per-site-yield` `b2cb718`,
-`slice/faster-cost-field` `daec8fd`, `slice/the-market-that-never-gets-staffed` `48ab7e5`.
+`slice/faster-cost-field` `daec8fd`, `slice/the-market-that-never-gets-staffed` `48ab7e5`,
+`slice/quarry` `25b5576`.
 
 ⛔ **ONE BRANCH IS GENUINELY UNMERGED: `slice/work-from-the-steading` (`e12b20f`, 1 commit).** ✅ **DECIDED 2026-09-11 (D355): Joe chose the look; it is a Phase 5 REBUILD on `RestingPoint`, and the branch stays as the record of the measurement — do not merge it.**
 Farmhands staying at the farm through the working seasons — **an economic no-op that costs ~13%
