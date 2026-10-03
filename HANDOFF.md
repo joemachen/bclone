@@ -1,6 +1,39 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D462 IN §7. `slice/small-fixes` (D452–D461) PLAYED, MERGED AND PUSHED (D462). NO SLICE OPEN. NEXT: THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D463 IN §7. THE STUTTER IS BUILT ON `slice/the-stutter` (D463) — UNPLAYED, NOT MERGED; ITS PRICE IS JOE'S TO CALL.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — THE SMALL FIXES MERGED AND PUSHED (D462).**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (NIGHT) — THE STUTTER, BUILT AS STEADY PACE (D463).**
+>
+> **State:** `main` = `b4f3a5e` (D462), pushed. **`slice/the-stutter`** = one commit, D463, **NOT merged, NOT pushed,
+> UNPLAYED.** At D463: **1345 passing, 0 failing, 5 skipped of 1350, 3m31; six goldens and three walk pins moved once,
+> for the clock, on purpose (diffed); view 0 warnings; probe green, bar height 161, tile centres ✅.** ⚠️ Joe's `art/`
+> changes are his — never stage them; stage this file as **`HANDOFF.md`**.
+>
+> **What it turned out to be (trap 151 again — the filed suspect was the smaller half):** 17–23 % of walking ticks moved
+> a villager more than √2 tiles, which the view draws as a hop and a freeze. Mostly **clock B's rounding** (a leg in
+> whole ticks, so 0.55–2.8 tiles a tick), then **`Arrive`'s jump** onto a building's point. Joe chose **steady pace**: a
+> walker spends one tick of an unrounded leg a tick and carries the rest; the last leg ends on the place they stand. It
+> exposed and fixed two more: the **step off a building was free** (priced now from the route's own tiles) and **two
+> journeys in one tick** each got a full tick of walk (`PacedOnTick`/`PaceLeft`, unhashed). After: **0 strides over
+> 1.25** in four villages × 20–30 years. D463 has every number.
+>
+> **▶️ NEXT: JOE PLAYS `slice/the-stutter`, AND CALLS ITS PRICE.** What to look at, at 1× and 2×: walkers on lanes glide
+> without hop-and-freeze; a villager reaching the market, the granary or home walks onto it rather than appearing on it.
+> **The price (⏸️ list, first item):** the half-tile onto a door and the step off it are walked now — walks a tick or two
+> longer; unattended villages 469 → 390 alive (55) and 528 → 488 (100 more seeds; villages alive 76 and 76). Accept, or
+> ask for it to be bought back elsewhere — never by jumping the door again. If he still sees a small hop **at a doorstep
+> with people standing on it**, that is `FanOffset` re-fanning a crowded tile (view-only, the ⏸️ item says where).
+> Then he merges and pushes. **Names, surnames and birthdays (D395)** wait on his slot — they could go next.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/f7ed9bd0-40f2-4f39-b9a6-08058d3adbc3/scratchpad/`):**
+> `ZzStride.cs` (the before-census, classified by leg — compiles on `main` only), `ZzPace.cs` (strides by position only,
+> compiles on both), `ZzFounder.cs` (the founder's walks tick by tick), `ZzSeeds.cs` (the every-source sweep), `ZzBase.cs`
+> + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` runs shipped seeds 200–299), `mut_d463.py` / `mut_d463b.py` (the eight
+> mutants; the second is CRLF-safe — multi-line targets need `
+` here) with `redcheck.py`. Run with
+> **`PYTHONIOENCODING=utf-8`**. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`, **delete before committing**.
+>
+> *(The 2026-10-03 morning banner — the small fixes merged — kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-03 — THE SMALL FIXES MERGED AND PUSHED (D462).**
 >
 > **State:** `main` = `slice/small-fixes` (D452–D461) merged `--no-ff` + D462, **pushed at Joe's word**: *"stone
 > seam looks good now. so does iron. professions panel looks good at new game. merge and push."* **No slice is
@@ -3965,8 +3998,28 @@ Read `git status` after staging, every time.
      follow the paint's curve; a per-tile square under a smooth outline is the bug, whatever its size.** Grep
      `_fieldFills` / `ZoneOutline.Fill` before drawing ground per tile. One round of Joe's play was spent on it.
 
+## ⛔ THE TRAP D463 PAID FOR — A ROUNDING HIDES WHAT IT ROUNDS, AND A POSE CAN REST ON A YEAR OF HISTORY
+
+157. **⚠️ REMOVE A ROUNDING AND EXPECT TO MEET WHAT IT WAS COVERING (D463).** Clock B's *never fewer than one tick a leg*
+     had hidden, for three weeks, that **the step off a building cost nothing** (the field prices a footprint tile as its
+     cheapest neighbour, D383) and that **an arrival could start the next walk in the same tick with a fresh tick of
+     pace**. Both showed only as two-tile strides once the rounding went, and only in long runs (one first appeared in
+     year 19). **Census the thing the fix is about (here: every stride, every tick, several villages, twenty years)
+     after the fix as well as before** — and print the outliers with their state, not just the count. Also: **a guard's
+     pose that waits for the sim to reach a state is a pose of the whole history before it** — `PoseABegunSite` waited for
+     a quota drop that came from the woodpile running low a year in, and on `main` it won its race by one tick. Pose the
+     state outright (empty the firewood) instead of waiting for history to produce it.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE STEADY PACE'S PRICE (D463) — JOE'S CALL.** The stutter is gone on `slice/the-stutter` (no stride over
+  1.25 tiles; 17–23 % of walking ticks were teleports). But the half-tile onto a door and the step off it, free since
+  D354/D361, are walked now: walks are a tick or two longer; D420's 55 villages 469 → 390 alive at fifty, 100 more
+  shipped seeds 528 → 488 (villages alive 76 and 76); unattended-harness numbers, to be read beside his play. **Accept
+  the honest clock**, or ask for it to be bought back elsewhere (a pace dial, re-derived budgets) — never by jumping
+  the door again, which is the stutter. **Also left, view-only and unmeasured on screen:** a crowded tile re-fans its
+  occupants (`FanOffset`, 0.3 tiles) the moment anyone joins or leaves it — ~4,000–6,000 such pops in twenty years of
+  a village. If Joe still sees a small hop at a doorstep, that is the next suspect, and its fix is the view's.
 - ✅ **BUILT (D460, D461; D459 played — *"looks like steps"* — and superseded), PLAYED AND MERGED (D462) — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
   quarry's painted faces read as a grid (D450's `FaceHalf` 0.46 seams); (2) Smith, Quarrier and Miner show in the
   Professions panel before the village has learned them — hide a trade until it is unlocked, *"don't want to
@@ -4043,7 +4096,7 @@ Read `git status` after staging, every time.
   on food while the village is short, and the builder's hut staffed to 1 did not change it); with
   the yield kept it passes again. The guard is one balance nudge from red.
 
-- ✅ **D448 — JOE: *"YES. Worth a slice. i hate it."*** Queued after the small fixes. Measure first (below).
+- ✅ **BUILT (D463), UNPLAYED — steady pace on `slice/the-stutter`; the remainder below was measured and was mostly NOT `Arrive` (see D463).** D448 — JOE: *"YES. Worth a slice. i hate it."*
 - ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
   *"I think it looks okay? there are some skips now and then."* The numbers from his play:
   **catch-up 3 frames of 12,059 (0.0 %), worst 2 ticks, slowest step 51.2 ms** — so the frame

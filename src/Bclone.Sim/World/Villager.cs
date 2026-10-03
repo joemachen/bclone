@@ -324,8 +324,8 @@ public sealed class Villager
         set
         {
             _position = value;
-            LegSteps = 0;
-            LegStep = 0;
+            LegTicks = Fixed.Zero;
+            LegWalked = Fixed.Zero;
         }
     }
 
@@ -344,28 +344,43 @@ public sealed class Villager
     // ⭐⭐ THIS IS THE STATE SLICE 3 REFUSED TO INVENT IMPLICITLY. A villager walking a straight
     // line across the cost field's staircase must know where the line ENDS — mid-leg, the tile
     // they are on cannot say whether they are leaving it or arriving. So the leg is written down:
-    // where it started, where it ends (a route tile's centre), how many tile steps the staircase
-    // would have taken to get there, and how many of those have been walked.
+    // where it started, where it ends (a route tile's centre, or the place they will stand), what it
+    // costs in ticks, and how much of that has been walked.
     //
-    // ⛔ CLOCK A (Joe, 2026-09-11): a leg of `LegSteps` route tiles takes `LegSteps` ticks,
-    // whatever its straight length. That is what keeps every economy number where it was.
+    // ⭐⭐ STEADY PACE (D463, `gridless.md §8` slice 6): the cost is a `Fixed`, never rounded, and a
+    // walker spends exactly one tick of it a tick — a leg that ends mid-tick hands the rest of the
+    // tick to the next. Until D463 it was `round(length × cost)` whole ticks, so a short leg strode
+    // anything from 0.55 to 2.8 tiles a tick and the view drew the long ones as teleports.
     //
-    // All four are hashed. `LegSteps == 0` means no leg in progress.
+    // All five are hashed. `LegTicks == 0` means no leg in progress.
 
     /// <summary>Where the current leg began — the point the line is drawn from.</summary>
     public Point LegFrom { get; set; }
 
-    /// <summary>Where the current leg ends — a route tile's centre, or the target tile's.</summary>
+    /// <summary>Where the current leg ends — a route tile's centre, or the place they will stand on arriving.</summary>
     public Point LegTo { get; set; }
 
     /// <summary>The tile the whole journey is toward, so a change of mind can be seen.</summary>
     public GridPos LegTarget { get; set; }
 
-    /// <summary>How many tile steps of the route this leg covers — and therefore how many ticks it takes.</summary>
-    public int LegSteps { get; set; }
+    /// <summary>What the leg costs, in ticks of walking — its length times the ground's price, unrounded (D463).</summary>
+    public Fixed LegTicks { get; set; }
 
-    /// <summary>How many of those ticks have been walked.</summary>
-    public int LegStep { get; set; }
+    /// <summary>How much of <see cref="LegTicks"/> has been walked.</summary>
+    public Fixed LegWalked { get; set; }
+
+    /// <summary>The tick <see cref="PaceLeft"/> belongs to (D463).</summary>
+    /// <remarks>
+    /// ⭐ One tick's walk is the VILLAGER's, not one journey's: an arrival can start the next errand in
+    /// the same tick, and a second <c>Travel</c> handed a fresh tick of pace strode two tiles at once
+    /// (measured — leaving home, putting a tool down, a heap tidied). ⚠️ <b>Not hashed, on purpose:</b>
+    /// it never outlives its tick — on the next one <see cref="PacedOnTick"/> is stale and the pace is
+    /// a whole tick again whatever it says — so it is not a fact about the village between ticks.
+    /// </remarks>
+    internal ulong PacedOnTick { get; set; } = ulong.MaxValue;
+
+    /// <summary>How much of this tick's walk is left, once <see cref="PacedOnTick"/> is this tick.</summary>
+    internal Fixed PaceLeft { get; set; }
 
     /// <summary>Put them somewhere outright — a new door, a finished house — and forget any walk in progress.</summary>
     public void StandAt(Point where) => Position = where;

@@ -860,7 +860,6 @@ public sealed class HousesAreBuiltTests
         // to fetch for the head or to work the warehouse.
         world.SetTerrain(head.Tile, Terrain.Grass);
         world.SetTerrain(begun.Tile, Terrain.Grass);
-        BuildFixtures.StockTheSite(begun);
 
         for (int g = 0; headCanBeFetchedFor && g < world.GoodsCatalog.Count; g++)
         {
@@ -874,15 +873,23 @@ public sealed class HousesAreBuiltTests
             }
         }
 
+        BuildFixtures.StockTheSite(begun);
         if (headCanBeFetchedFor)
         {
             return (loop, head, begun);
         }
 
-        // To the first tick a fed village rounds its builders to nobody with the site stocked.
-        for (int wait = 0; wait < config.TicksPerSeason && LabourQuota.For(world).Builders > 0; wait++)
+        // ⭐ THE SPARE HAND GOES TO THE WOODPILE, AND THE VILLAGE ROUNDS ITS BUILDERS TO NOBODY. A
+        // four-hand village with two foraging has two spare, which halve to one builder; with no
+        // firewood in store it wants a cutter, which leaves one, and `free / 2` is nobody.
+        // ⚠️ Posed, not waited for (D463). This used to wait for the first tick the quota rounded
+        // down by itself — on `main` the wait's 11th, when the woodpile ran low a year into the run.
+        // Steady pace moved every walk of that year, the woodpile never ran low within the season,
+        // and the builder began the warehouse first (after which D453's own hand kept them there).
+        // A pose that rests on a year of history is a pose of that history.
+        foreach (Stockpile store in world.AllStores())
         {
-            loop.StepOnce();
+            store.TryTake(Goods.Firewood, store[Goods.Firewood]);
         }
 
         Assert.Equal(0, begun.Construction!.WorkDone);

@@ -53,7 +53,11 @@ public sealed class FoodConservationTests
     // ⚠️ AND SEED 10 SINCE D424: a step treads every tile it passes over, and the half moved again —
     // swept over the same thirteen, 4 live with every source producing (2 16 alive, 10 19, 12 6,
     // 11 3); seed 4 fished nothing and died.
-    [InlineData(10UL, true)]
+    // ⚠️ AND SEED 6 SINCE D463: steady pace, and the half moved again — the other way. Swept over
+    // seventeen (1–16 and 12345): 5 villages alive at fifty on main (32 people) against 9 on D463
+    // (90 people); seed 10 fell to one survivor who never fished. Seed 6 lives with 15 and every
+    // source producing (fish 23,198, meat 29,046, wheat 18,496).
+    [InlineData(6UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

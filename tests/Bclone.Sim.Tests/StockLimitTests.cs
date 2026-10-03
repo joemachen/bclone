@@ -369,7 +369,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D424) — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?"). Was 16869094493736697901.
     // RE-TAKEN (D429) — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Was 5415604316536691191.
     // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Was 10566009934355736869.
-    private const ulong FixtureFiftyYearHash = 12867089049702086509UL;
+    // RE-TAKEN (D463) — steady pace, the stutter (`gridless.md §8` slice 6, Joe: "A: steady pace"): a walker spends one tick of a leg's unrounded cost a tick and carries the rest into the next leg, the last leg ends on the place they will stand, a leg is priced by its own route tiles' entry costs (the step off a building had cost nothing), and one tick's walk is shared by every journey begun in it. Was 12867089049702086509.
+    private const ulong FixtureFiftyYearHash = 15302089214904952785UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -470,7 +471,8 @@ public sealed class StockLimitTests
     //   before a step trod every tile it passed over (D424): 16636840873697647225 — a step treads every tile it passes over, not only the one it lands on (`desire-paths.md §3.1`, Joe's broken lane: "can they be a smooth path?").
     //   before tools went on ticks (D429): 5914827746782470837 — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship).
     //   before the quarry's seams (D434): 1000118158579920504 — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`).
-    private const ulong ShippedFiftyYearHash = 2671496196542856502UL;
+    //   before steady pace (D463): 2671496196542856502 — steady pace, the stutter (`gridless.md §8` slice 6, Joe: "A: steady pace"): a walker spends one tick of a leg's unrounded cost a tick and carries the rest into the next leg, the last leg ends on the place they will stand, a leg is priced by its own route tiles' entry costs (the step off a building had cost nothing), and one tick's walk is shared by every journey begun in it.
+    private const ulong ShippedFiftyYearHash = 278741809528563068UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

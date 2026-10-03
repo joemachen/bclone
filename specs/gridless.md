@@ -4,6 +4,7 @@
 > `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
+> **Clock B is built (D361, slice 5). 🔨 Slice 6, steady pace — the stutter — is BUILT on `slice/the-stutter` (D463), red-checked, UNPLAYED and NOT MERGED; its price (walks a tick or two longer) is Joe's to call.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -321,6 +322,34 @@ expensive inference in this project.*
    straight walk is never longer than its staircase, so every budget stays a true upper bound.
    What clock B changes is how much slack sits under those budgets — measured, and Joe's to spend
    (§9 slice 5). D122's rule holds: a price is not changed quietly.
+6. 🔨 **Steady pace — the stutter (D463, 2026-10-03; Joe: *"A: steady pace"*). BUILT on
+   `slice/the-stutter`; unplayed, not merged.** ⛔ **Measured before it was designed:** on the shipped village and a played
+   opening, **17–21 % of walking ticks moved a villager more than √2 tiles** — the view's teleport
+   line (`VillageMap.DrawnCentre`), so they were drawn as a hop and a freeze. Two causes, both this
+   section's: *(a)* **slice 5's rounding** — a leg took `round(length × cost)` ticks, never below one,
+   so a short leg strode anything from **0.55 to 2.8 tiles a tick** where the ground allows at most
+   1.25 (packed, 8 of 10); *(b)* **slice 3's arrival** — the last step landed on the tile centre and
+   arrival put the villager on the building's point (0.5 or 0.71 away) **in the same tick**, the
+   *"fraction of a tile a tick"* this section deferred. **The rule:**
+   - **A walker spends one tick of pace a tick, and the leftover carries.** A leg costs
+     `length × the route's average cost ⁄ base` ticks as a `Fixed` — **unrounded** — and the walk
+     advances one tick of it; a leg that ends mid-tick hands the rest of the tick to the next leg,
+     planned there and then. So every walking tick covers exactly the ground's stride (1, 1.11 or
+     1.25 tiles), turning at a waypoint where it falls inside the tick. `LegSteps`/`LegStep` (ints)
+     become **`LegTicks`/`LegWalked`** (`Fixed`), hashed as raw bits; *no leg* is `LegTicks == 0`.
+   - **The last leg ends where the villager will stand** — the building's point (`standAt`, else
+     `StandingPlaceAt`), if it is on the target tile and in sight; otherwise the tile centre, and a
+     short leg inside the tile from there. Arrival moves nobody; it only changes what they do.
+   - **The clock:** a journey takes the rounded-UP sum of its legs, where it took the sum of each leg
+     rounded to nearest. Unbiased up to that last part-tick; measured (§9 slice 6), not assumed.
+   - ⚠️ Unchanged: `travel_ticks_per_unit > 1` still moves then waits; a change of mind re-plans from
+     where they stand; treading is the footprints of every segment walked, waypoint to waypoint.
+   - ⛔ **Found by the unrounded clock, and fixed with it:** a leg is priced from **its own route
+     tiles' entry costs**, not `cost[from] − cost[waypoint]` — the field prices a building's tile as
+     its cheapest neighbour (`StepOff`, D383), so the step off a door cost nothing and a leg out of a
+     house strode two tiles; and **one tick's walk is the villager's** (`PacedOnTick`/`PaceLeft`, not
+     hashed — it never outlives its tick), because an arrival can begin the next errand in the same
+     tick and a second `Travel` handed a fresh tick of pace strode two tiles at once.
 
 ⚠️ **Each slice ships playable** (`DESIGN.md §4`). ⛔ **Slice 1 is not a spike** — if Q32.32 is not
 provably deterministic the whole direction is wrong and it is worth learning in week one.
@@ -328,6 +357,18 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 6 — 🔨 BUILT, UNPLAYED (D463): steady pace, the stutter
+
+| # | Item | State |
+|---|---|---|
+| 1 | No walking tick strides further than the ground allows (1.25 tiles, packed), arrival included | ✅ `NoWalkingTickStridesFurtherThanTheGroundAllows` — twenty years of the shipped village, longest 1.25; the census read 0 over 1.25 in four villages × 20–30 years, against 17–23 % of walking ticks over √2 before |
+| 2 | A walk to a building ends standing on its point, glided onto, never jumped | ✅ the last leg ends on `PlaceToStand`; `Arrive` deleted; `AVillagerStandsOnTheBuildingTheyArriveAt`, `AVillagerAtHomeStandsOnTheDoorstep` hold |
+| 3 | The leg is still hashed (`LegTicks`, `LegWalked`) | ✅ `TheLegIsHashed` (red with `LegWalked` unhashed) |
+| 4 | The first-gather pins | ⛔ **moved, for the clock, deliberately**: 37 / 91 → 39 / 100 — traced, the founder's walks to and from the 2×2 store are a tick longer each way (the half-tile onto its corner and the doorstep is walked); the valley pin 52 trips → 51 |
+| 5 | Journey times and the villages measured before and after; goldens move once | ✅ walking 1.3–2.5 points more of villager time; D420's 55 villages 469 → 390 alive at fifty, 100 more shipped seeds 528 → 488 (76 villages alive in both); six goldens moved once — **the price is Joe's to call** (D122) |
+| 6 | Red checks | ✅ eight mutants, all red (D463); the stride guard scored zero against a fresh pace per call at five years and was lengthened to twenty |
+| 7 | The view needed nothing | ✅ every stride is under `DrawnCentre`'s √2 snap |
 
 ### Slice 5 — ✅ MET (2026-09-12, D361): clock B, a leg costs the distance it is
 
