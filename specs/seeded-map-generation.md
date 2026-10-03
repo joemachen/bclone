@@ -146,6 +146,12 @@ This is the best fit for the design the project has found: it lands on four pill
 - **This needs actual pathfinding, and that is its own slice.** `TravelCostField.Cost` is Manhattan distance and `GridPos.StepToward` walks straight; neither knows terrain exists. The field is read by labour catchment, market errands and the economy's distance budget — the things that decide who eats — and §2.6 will later layer trample costs onto it. See §11.
 - **Until bridges exist the generator must not cut the village off from its work.** A constraint on generation, not a hope, and it folds naturally into the budget in §3.
 
+⭐ **Kept on dry ground (D472).** The founding is chosen on the biggest land mass and, within it,
+where no water lies inside the starter zone's diamond (`starting_residential_radius`) — the river
+bank had been the founding on any valley whose river runs near the middle, half the starter zone
+across water. Measured on the old generator: D420's 55 villages 429 → 495 alive, 100 shipped
+seeds 450 → 487; guarded by `MapGenerationTests.TheFoundersSettleOnDryGround`.
+
 ### 10.2 Who chooses the founding site? ✅ **The generator, for now.** Revisit when placement lands; choosing where to settle is a real decision but it belongs with the placement UI rather than blocking worldgen.
 
 ### 10.3 One archetype or several biomes? ✅ **One valley archetype**, built so a second can be added without restructuring. Three shallow biomes are worse than one properly habitable valley.

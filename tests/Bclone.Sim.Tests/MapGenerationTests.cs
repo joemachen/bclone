@@ -498,6 +498,54 @@ public sealed class MapGenerationTests
     }
 
     /// <summary>
+    /// ⭐ The founders settle on dry ground: no water inside their starter zone's diamond (D472).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Spec §10.1: until bridges exist the generator must not cut the village off from its
+    /// work.</b> The founding used to be the nearest tile on the biggest land mass to a jittered
+    /// spot, which on a valley whose river runs near the middle is the river bank — half the
+    /// starter zone across water nobody can cross. Found by the per-stage reshuffle (seeds 99 and
+    /// 24); present on the old generator too, where moving the founding off the bank took D420's
+    /// 55 villages 429 → 495 alive and 100 shipped seeds 450 → 487.
+    /// </para>
+    /// <para>
+    /// Asked of the fixture and the shipped valley over fifty seeds each — the radius is the
+    /// starter zone's, and the shipped game paints its own, but the bank is the bank either way.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheFoundersSettleOnDryGround(bool shipped)
+    {
+        SimConfig config = shipped ? ShippedConfig.Load() : Config;
+        int dry = config.StartingResidentialRadius;
+        Assert.True(dry > 0, "No starter zone, so nothing to keep dry.");
+
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(config, seed);
+            GridPos f = map.FoundingSite;
+
+            for (int dy = -dry; dy <= dry; dy++)
+            {
+                for (int dx = -dry; dx <= dry; dx++)
+                {
+                    int away = Math.Abs(dx) + Math.Abs(dy);
+                    var at = new GridPos(f.X + dx, f.Y + dy);
+                    if (away <= dry && map.Contains(at) && map.TerrainAt(at) == Terrain.Water)
+                    {
+                        Assert.Fail(
+                            $"Seed {seed}: water {away} tiles from the founding site {f}, inside the "
+                            + $"starter zone's {dry} — the founders settled on the river bank.");
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Every valley leaves the village inside the walk its economy budgets for.
     /// </summary>
     /// <remarks>

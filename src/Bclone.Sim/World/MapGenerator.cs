@@ -86,7 +86,7 @@ public static class MapGenerator
         // (spec §6), so the founding site moves to the reachable side rather than the
         // map being redrawn. Costs no random draws, so the seed contract is untouched.
         GridPos founding = ChooseFoundingSite(
-            terrain, wanted, width, height, minX, minY);
+            terrain, wanted, config.StartingResidentialRadius, width, height, minX, minY);
 
         // ---- 5. Soil ------------------------------------------------
         // ⭐⭐ GROUND THAT IS WORTH GOING TO (`specs/per-site-yield.md`, D178). Soil was
@@ -867,6 +867,16 @@ public static class MapGenerator
     /// </para>
     /// </para>
     /// <para>
+    /// ⭐ <b>And on dry ground, not on the bank (D472).</b> Within the largest piece, a tile with
+    /// no water within <paramref name="dryRadius"/> — the starter zone's own diamond
+    /// (<c>starting_residential_radius</c>) — beats one on the river's edge. Found by the
+    /// per-stage reshuffle: on seed 99 the river ran a tile from the founding, half the starter
+    /// zone lay across water nobody can cross, and the warm start had nowhere to put a house; on
+    /// seed 24 the founding's work sat across it. Spec §10.1: *until bridges exist the generator
+    /// must not cut the village off from its work.* A valley with no dry tile anywhere falls
+    /// back to the old rule.
+    /// </para>
+    /// <para>
     /// Ties go to the tile nearest the wanted spot, then to the lower y and then the
     /// lower x — a total order, because "whichever the scan found first" would make the
     /// whole world depend on iteration order.
@@ -875,6 +885,7 @@ public static class MapGenerator
     private static GridPos ChooseFoundingSite(
         Terrain[] terrain,
         GridPos wanted,
+        int dryRadius,
         int width,
         int height,
         int minX,
@@ -905,8 +916,11 @@ public static class MapGenerator
             }
         }
 
+        int[] toWater = StepsToWater(terrain, width, height);
+
         GridPos best = wanted;
         int bestRoom = -1;
+        bool bestDry = false;
         int bestDistance = int.MaxValue;
 
         for (int y = 0; y < height; y++)
@@ -922,22 +936,66 @@ public static class MapGenerator
                 int room = tilesPerComponent.GetValueOrDefault(component[index]);
                 var here = new GridPos(x + minX, y + minY);
                 int distance = here.ManhattanDistanceTo(wanted);
+                bool dry = toWater[index] > dryRadius;
 
-                // Ties to the tile nearest the spot the generator wanted, then by scan
-                // order — a total order, as before, so no two runs can disagree.
+                // The biggest ground, then dry ground, then the tile nearest the spot the
+                // generator wanted, then scan order — a total order, so no two runs can disagree.
                 bool better = room > bestRoom
-                    || (room == bestRoom && distance < bestDistance);
+                    || (room == bestRoom && dry && !bestDry)
+                    || (room == bestRoom && dry == bestDry && distance < bestDistance);
 
                 if (better)
                 {
                     best = here;
                     bestRoom = room;
+                    bestDry = dry;
                     bestDistance = distance;
                 }
             }
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// How many steps each tile is from the nearest water — Manhattan, through anything — or
+    /// <see cref="int.MaxValue"/> in a valley with none (D472).
+    /// </summary>
+    /// <remarks>
+    /// One breadth-first sweep out from every water tile at once, so the whole valley costs one
+    /// pass rather than a search per candidate. Four neighbours, the cost field's own steps.
+    /// </remarks>
+    private static int[] StepsToWater(Terrain[] terrain, int width, int height)
+    {
+        var steps = new int[terrain.Length];
+        var frontier = new Queue<int>();
+        for (int i = 0; i < terrain.Length; i++)
+        {
+            if (terrain[i] == Terrain.Water)
+            {
+                steps[i] = 0;
+                frontier.Enqueue(i);
+            }
+            else
+            {
+                steps[i] = int.MaxValue;
+            }
+        }
+
+        while (frontier.Count > 0)
+        {
+            int i = frontier.Dequeue();
+            int x = i % width;
+            int y = i / width;
+            int next = steps[i] + 1;
+
+            if (x + 1 < width && steps[i + 1] > next) { steps[i + 1] = next; frontier.Enqueue(i + 1); }
+            if (x > 0 && steps[i - 1] > next) { steps[i - 1] = next; frontier.Enqueue(i - 1); }
+            if (y + 1 < height && steps[i + width] > next) { steps[i + width] = next; frontier.Enqueue(i + width); }
+            if (y > 0 && steps[i - width] > next) { steps[i - width] = next; frontier.Enqueue(i - width); }
+        }
+
+        return steps;
     }
 
     /// <summary>Label each walkable tile with the land mass it belongs to. -1 is water.</summary>
