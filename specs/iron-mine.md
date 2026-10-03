@@ -128,16 +128,20 @@ reach check, keyed on the tile's terrain; never per tick.
 - **A face** — a seam tile held by its face trade — draws **worked**: the seam's lumps cut down
   (fewer and lower, from the same stateless hash, so nothing flickers) on a **pale floor**
   (spoil-coloured: stone faces paler grey, iron faces rust-pale). The rest of the seam is unchanged.
-  **The floor covers the whole tile, so neighbouring faces' floors meet** (D459, Joe: *"it shows the
-  grid underneath"* — at 0.46 of a half-tile every pair of faces had a strip of dark rock between them).
-- **Built in `VillageMap.Meshes`' chunk cache**, not per frame: a face set (`bool[]` per tile) is
+  ⭐ **The floor is the face workplace's paint, traced and filled along its curve — the farm's field
+  shape (D352), drawn under the lumps** (D461). It was a square per face: at 0.46 of a half-tile a grid
+  (Joe: *"it shows the grid underneath"*, D459), at 0.5 a staircase round a round brush stroke (*"looks
+  like steps"*). Now it is the workplace's sub-tile cells on its own seam, in `TraceTheZonesIfTheyMoved`
+  on the same counters, so it meets the work-ground outline exactly.
+- **The cut lumps are built in `VillageMap.Meshes`' chunk cache**, not per frame: a face set (`bool[]` per tile) is
   re-derived from the face workplaces' `Zones.WorkGroundOf` lists **only when `Zones.Edits`,
   `TerrainGeneration` or `BuildingGeneration` moves**, diffed against the last one, and the chunks
   whose tiles changed are rebuilt — exactly as a felled tile rebuilds one chunk today.
-- **The far view** (below `TreeZoomFloor`, the baked valley texture) is unchanged: faces read as the
-  seam's grain under the owner's outline. ⏸️ Baking faces into the texture is a later view pass.
+- **The far view** (below `TreeZoomFloor`) shows the floor too since D461 — a traced fill draws at every
+  zoom, as a field does; the lumps are near view only.
 - **Probe:** a `faces:` line — mark a quarry face and assert exactly one chunk rebuilds and the
-  tile's lumps are the cut-down set; release it and assert it reverts.
+  tile's lumps are the cut-down set (one 36-vertex lump fewer since D461); release it and assert it
+  reverts. ⚠️ The traced floor is not in the chunk and cannot be seen headless (D340).
 
 ### 3.7 The rest of the view
 
@@ -251,5 +255,5 @@ before (the counter is sparse). Any golden that moves is a bug in this slice.
 - ~~**Iron on the resources bar** (§3.7).~~ ✅ Joe: *yes* (D449). Second row: logs, firewood, stone,
   **iron**, stone tools; the bar's cell gap 9 → 7 so it still clears the right column at 75 %.
 - **Skill rows for the face trades** — beside the fisher's, hunter's and smith's (D391's open item).
-- **The far view's faces** — baked into the valley texture, later.
+- ~~**The far view's faces** — baked into the valley texture, later.~~ ✅ The traced floor draws far too (D461).
 - **The smelter** — `tech-tree.md §9.4`; iron goes to the smith raw until then.

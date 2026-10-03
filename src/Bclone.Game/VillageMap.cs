@@ -3728,6 +3728,29 @@ public partial class VillageMap : Control
                 KeepStage(traced, field, sown, Terrain.Sown, field.Count);
                 KeepStage(traced, field, ripe, Terrain.Ripe, field.Count);
             }
+
+            // ⭐⭐ A WORKED FACE'S FLOOR IS ITS PAINT, FILLED ALONG THE SAME CURVE (D461) — the farm's
+            // answer, one trade over. Joe, after D459 drew the floor one square per face: *"zoomed in
+            // quarry given ground looks like steps. the issue doesn't occur when painting stone for
+            // regular harvesting."* D352's complaint about fields, word for word. The floor is the
+            // workplace's cells on its own seam, traced and filled like the wash, drawn under the
+            // lumps — so it meets the work-ground outline exactly, near and far.
+            if (_world.FindWorkplace(owners[i]) is { IsSite: false } face && _world.FaceOf(face) is Terrain seam)
+            {
+                var worked = new HashSet<Vector2I>();
+                foreach (Vector2I cell in byOwner[owners[i]])
+                {
+                    if (_world.Map.TerrainAt(new SubTile(cell.X, cell.Y).Tile) == seam)
+                    {
+                        worked.Add(cell);
+                    }
+                }
+
+                if (worked.Count > 0)
+                {
+                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile), worked), seam);
+                }
+            }
         }
 
         void KeepTraced(Vector2[] traced, Terrain stage)
@@ -5159,7 +5182,7 @@ public partial class VillageMap : Control
                 onScreen[p] = ToScreen(triangles[p]);
             }
 
-            DrawTriangles(onScreen, ColourOf(stage));
+            DrawTriangles(onScreen, FillColourOf(stage));
         }
 
         if (_pixelsPerTile < TreeZoomFloor)
@@ -5193,6 +5216,14 @@ public partial class VillageMap : Control
             }
         }
     }
+
+    /// <summary>A worked-ground fill's colour — a field by its stage, a worked face by its spoil (D461).</summary>
+    private static Color FillColourOf(Terrain stage) => stage switch
+    {
+        Terrain.Rock => QuarryFloor,
+        Terrain.IronDeposit => MineFloor,
+        _ => ColourOf(stage),
+    };
 
     /// <summary>Every one of a tile's sixteen quarters, as the mask <see cref="PaintedQuartersOf"/> returns.</summary>
     private const ushort AllQuarters = 0xFFFF;

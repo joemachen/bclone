@@ -439,15 +439,18 @@ public partial class VillageMap
     }
 
     /// <summary>
-    /// A worked face — the seam's lumps cut down on a pale floor of spoil (`quarry.md §3.4`,
-    /// `iron-mine.md §3.6`). The same stateless scatter as <see cref="Lumps"/>, one lump fewer and
-    /// each cut low, so a tile changes look once, when it is claimed, and never flickers.
+    /// A worked face — the seam's lumps cut down (`quarry.md §3.4`, `iron-mine.md §3.6`). The same
+    /// stateless scatter as <see cref="Lumps"/>, one lump fewer and each cut low, so a tile changes
+    /// look once, when it is claimed, and never flickers.
     /// </summary>
+    /// <remarks>
+    /// ⛔ <b>No floor here.</b> The pale floor was a square per face — at 0.46 a grid (D459), at 0.5 a
+    /// staircase round a round brush stroke (Joe: *"looks like steps"*). It is the face workplace's
+    /// paint, traced and filled along its curve with the farms' fields now (D461,
+    /// <c>TraceTheZonesIfTheyMoved</c>), and drawn under these lumps.
+    /// </remarks>
     private static void WorkedFace(MeshBuilder into, GridPos tile, bool stone)
     {
-        Color floor = stone ? QuarryFloor : MineFloor;
-        into.Band(new Vector2(tile.X - FaceHalf, tile.Y), new Vector2(tile.X + FaceHalf, tile.Y), FaceHalf, floor);
-
         Color base_ = stone ? Boulder : OreLump;
         int lumps = LumpsOn(tile, stone) - 1;
         for (int i = 0; i < lumps; i++)
@@ -457,19 +460,10 @@ public partial class VillageMap
         }
     }
 
-    /// <summary>Half a face's floor, in tiles — <b>the whole tile, so neighbouring floors meet</b> (D459).</summary>
-    /// <remarks>
-    /// ⛔ It was 0.46, *"just inside the tile, so neighbouring faces read as cut blocks"* — and a
-    /// 0.08-tile strip of dark rock between every pair of faces made a worked patch a grid of pale
-    /// squares. Joe: *"when I 'give ground' on the quarry now, it shows the grid underneath."* D333's
-    /// lesson again: exact tiling beats a fudge. The cut-down lumps alone say a tile is worked.
-    /// </remarks>
-    private const float FaceHalf = 0.5f;
-
     /// <summary>How much of a lump is left on a worked face.</summary>
     private const float FaceCut = 0.6f;
 
-    /// <summary>A quarry face's floor — pale stone spoil, lighter than the boulders.</summary>
+    /// <summary>A quarry face's floor — pale stone spoil, lighter than the boulders (drawn as a traced fill, D461).</summary>
     private static readonly Color QuarryFloor = new("#a39b8e");
 
     /// <summary>A mine face's floor — rust-pale spoil, lighter and warmer than the ore.</summary>
@@ -608,7 +602,7 @@ public partial class VillageMap
     /// One rock tile is posed as a face (the probe's village has no quarry, so the face set is handed
     /// in rather than derived — <see cref="TheWorkedFaces"/> is the sim's <c>IsFace</c> rule over the
     /// owner index, guarded in <c>MineTests</c>). Exactly one chunk must rebuild, lighter by one
-    /// lump less a floor; handed back, it must return to the same count.
+    /// lump (the floor is a traced fill since D461); handed back, it must return to the same count.
     /// </remarks>
     public string TheFacesAreWorked()
     {
@@ -642,8 +636,9 @@ public partial class VillageMap
         RefreshTheScenery(world, facesForTheProbe: TheWorkedFaces(world));
         int restored = _scenery[chunk].StandingVertices;
 
-        // A face is one lump fewer (a disc, 36 vertices) and a floor (a quad, 6).
-        const int expectedDrop = 36 - 6;
+        // A face is one lump fewer (a disc, 36 vertices). Its floor is not in the chunk: it is the
+        // workplace's paint, traced with the fields (D461), which drawing headless cannot see (D340).
+        const int expectedDrop = 36;
         if (rebuilt != 1 || before - after != expectedDrop || restored != before)
         {
             return $"[widths] faces: ⛔ working one rock tile rebuilt {rebuilt} chunks and its chunk went "
@@ -652,7 +647,7 @@ public partial class VillageMap
         }
 
         return $"[widths] faces: ✅ a worked face rebuilds one chunk ({before} → {after} vertices: a lump "
-            + "fewer, cut low, on a floor) and comes back when released";
+            + "fewer, the rest cut low; the floor is the traced paint) and comes back when released";
     }
 
     // ---------------------------------------------------------------
