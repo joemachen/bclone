@@ -1,6 +1,37 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D476 IN §7. PER-STAGE SEEDS (D470–D475) PLAYED, MERGED AND PUSHED. NO SLICE OPEN. NEXT: THE NEW-GAME SCREEN, SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D477 IN §7. THE NEW-GAME SCREEN IS SPECCED (D477) ON `slice/new-game-screen`. NEXT: ITS SIM HALF, NO GOLDEN MOVING.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (NIGHT) — PER-STAGE SEEDS MERGED AND PUSHED (D476).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN SPECCED (D477).**
+>
+> **State:** `main` = `6533f35` (D476), pushed. **`slice/per-stage-seeds` deleted at Joe's word** (fully merged, never
+> on the remote). **`slice/new-game-screen`** = the spec commit (D477), **not merged, not pushed.** ⚠️ Joe's
+> uncommitted edits — never stage them: his `art/` files and **`data/sim.config.json` `"seed": 41219`** (committed:
+> 12345). If a checkout refuses, `git stash push -- data/sim.config.json`, pop after. Stage this file as **`HANDOFF.md`**.
+>
+> **What Joe decided (D477 — `specs/new-game-screen.md §2`):** one archetype (*River valley*); six rows — river
+> width, **river direction** (W–E · N–S · two diagonals · Any), forest cover, stone, iron, seam scatter — **each a data
+> row** (`new_game_options`), *"space for more to be added"*; any-text seed, dice roll words, the screen opens on a
+> fresh roll; stats under the preview; editable village name; the settings in the share code; a Default settings
+> button. ⏸️ **Hills / height / mesas / buttes: after the whole shell** — the sim has no height; it is its own spec.
+>
+> **▶️ NEXT — the spec's §9, in order:**
+> 1. **The sim half**, no golden moving (`git diff` the goldens): `SeedText.ToSeed` (a plain number stays that
+>    number — 12345 and 41219 keep their valleys), `seed_words`, `village_name`, `new_game_options` applied as key
+>    overrides over the loaded file through `SimConfig.Validate`, the share code, `river_course` (W–E untouched; `any`
+>    by hash, never a draw). Guards §8.1–8.8, red-checked.
+> 2. **Measure every row's ends** (§7) on D420's harness, one row at a time, and type the ranges with their tables.
+> 3. **The view**: the screen at launch, the preview (real `SimWorld.Create` — 1.3 ms — under the real
+>    `ValleyTexture`; **measure the bake first**), the share code in the header; probe `new game:`; bar height 151.
+> 4. Joe plays it.
+>
+> **Tools:** the previous session's scratchpad (`…/1ab6508a-2be9-4bfc-b38f-988b499deba8/scratchpad/`) has `ZzBase.cs`,
+> `summ2.py`, `mut.py` and the D475 baselines (`base-d475.txt`, `wide-d475.txt`, `fix50-d475.txt`) — copy what you
+> need; run with **`PYTHONIOENCODING=utf-8`**; delete Zz files before committing.
+>
+> *(The banner as D476 left it — kept below.)*
+>
+> **(superseded by the banner above)**
+
+> **WHERE THINGS WERE, 2026-10-03 (NIGHT) — PER-STAGE SEEDS MERGED AND PUSHED (D476).**
 >
 > **State:** `main` = `5392216` — `slice/per-stage-seeds` (D470–D475) merged `--no-ff` and **pushed at Joe's word**
 > (*"merge and push"*), after he played it: *"everything else looks good"*, and the seams note D475 answered. **No slice
