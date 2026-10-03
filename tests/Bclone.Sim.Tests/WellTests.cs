@@ -149,7 +149,7 @@ public sealed class WellTests
     // -----------------------------------------------------------------
 
     /// <summary>One water trip, as the ticks saw it.</summary>
-    private sealed record Trip(int VillagerId, int HouseholdId, int Day, bool LeftFromHome, bool DrewAtTheWell, int DrawTicks, bool WentHome);
+    private sealed record Trip(int VillagerId, int HouseholdId, int Day, bool LeftFromHome, bool DrewAtTheWell, int DrawTicks, bool WentHome, bool BrokeOffForShelter = false);
 
     /// <summary>
     /// A fixture village with a well raised near the founding, run for some years, and every trip
@@ -214,7 +214,11 @@ public sealed class WellTests
                     else if (now != VillagerState.WalkingToTheWell)
                     {
                         open.Remove(v.Id);
-                        trips.Add(trip with { WentHome = now is VillagerState.TravelingHome or VillagerState.Resting });
+                        trips.Add(trip with
+                        {
+                            WentHome = now is VillagerState.TravelingHome or VillagerState.Resting,
+                            BrokeOffForShelter = now == VillagerState.SeekingShelter,
+                        });
                     }
                 }
             }
@@ -241,15 +245,19 @@ public sealed class WellTests
         Assert.True(trips.Count >= 10, $"only {trips.Count} trips in two years");
         Assert.All(trips, t => Assert.True(t.LeftFromHome, $"villager {t.VillagerId} set off from somewhere that is not home"));
 
-        // Every trip that got as far as the well drew for the whole spell there and went home.
-        List<Trip> drawn = trips.Where(t => t.DrawTicks > 0).ToList();
+        // Every trip that got as far as the well drew for the whole spell there and went home —
+        // ⚠️ unless the cold broke it off (D475): exposure outranks an errand (D45), and a drawer who
+        // turns dangerously cold mid-spell goes for shelter. Under the scattered seams the fixture's
+        // second winter did that once (1 tick drawn, then `SeekingShelter`). Such a trip is counted
+        // and drawn, and must have gone for shelter — nowhere else.
+        List<Trip> drawn = trips.Where(t => t.DrawTicks > 0 && !t.BrokeOffForShelter).ToList();
         Assert.NotEmpty(drawn);
         Assert.All(drawn, t => Assert.True(t.DrewAtTheWell, "drew somewhere that is not the well"));
         // At least the spell — a meal taken at the well holds the count for a tick, because eating
         // runs above the action's clock (`ActOne`), which is the order `HungerStillComesFirst` guards.
         Assert.All(drawn, t => Assert.InRange(t.DrawTicks, world.Config.WellDrawTicks, world.Config.WellDrawTicks + 1));
         Assert.All(drawn, t => Assert.True(t.WentHome, "left the well for somewhere that is not home"));
-        Assert.Equal(drawn.Count, well.Draws);
+        Assert.Equal(drawn.Count, well.Draws); // a spell the cold broke off is not a draw
     }
 
     /// <summary>

@@ -77,7 +77,9 @@ public static class Phase0Fixtures
         // fixture that moved things a tile each seed would put noise in the one place
         // the project most needs none. The village fixture is where varied valleys get
         // exercised.
-        SiteJitterTiles = 0,
+        SeamAngleScatterPercent = 0,
+        SeamReachScatterPercent = 0,
+        SeamSizeScatterPercent = 0,
         FoundingJitterTiles = 0,
         RiverWidthTiles = 0,
 

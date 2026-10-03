@@ -374,7 +374,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D468) — birthdays (`names-and-birthdays.md §5`, D468): a villager is a year older on their own birthday, not at New Year — founders born at a hashed point in the year before the founding, so they come of age, slow and die of old age on their own days — and the fingerprint mixes the birth tick and no longer the age it is derived from. ⭐ PROVEN TO BE THE ONLY REASON: with New-Year ageing, no founder offset and the old (age, birth year) mix put back, the old value passes. Was 4226460949732486368.
     // RE-TAKEN (D469) — each household tries for a child on a day of its own (`names-and-birthdays.md §5`, D469, Joe: "spread births through the year - each household has its own day"), so the village's children arrive across the year rather than all at its turn. ⭐ PROVEN TO BE THE ONLY REASON: with every household asked at New Year again, the old value passes. Was 17228729670400968405.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 15384670967182429752.
-    private const ulong FixtureFiftyYearHash = 6756984149169340031UL;
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6756984149169340031.
+    private const ulong FixtureFiftyYearHash = 8205114029936109547UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -480,7 +481,8 @@ public sealed class StockLimitTests
     //   before birthdays (D468): 876533963824228445 — birthdays (`names-and-birthdays.md §5`, D468): a villager is a year older on their own birthday, not at New Year — founders born at a hashed point in the year before the founding, so they come of age, slow and die of old age on their own days — and the fingerprint mixes the birth tick and no longer the age it is derived from. ⭐ PROVEN TO BE THE ONLY REASON: with New-Year ageing, no founder offset and the old (age, birth year) mix put back, the old value passes.
     //   before births spread through the year (D469): 7515754048192480943 — each household tries for a child on a day of its own (`names-and-birthdays.md §5`, D469, Joe: "spread births through the year - each household has its own day"), so the village's children arrive across the year rather than all at its turn. ⭐ PROVEN TO BE THE ONLY REASON: with every household asked at New Year again, the old value passes.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 6805272437520323772.
-    private const ulong ShippedFiftyYearHash = 1113605318073682364UL;
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 1113605318073682364.
+    private const ulong ShippedFiftyYearHash = 1021202375279885574UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

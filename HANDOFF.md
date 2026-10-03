@@ -2,10 +2,13 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (EVENING) — PER-STAGE SEEDS BUILT ON A BRANCH (D470–D473).**
 >
-> **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = six commits, **NOT merged, NOT pushed,
-> UNPLAYED:** `4425e87` the spec, `5f10827` ground quality removed (D470), `935833d` the founding hut bounded by walking
-> (D471), `e6b032e` the founders settle on dry ground (D472), `4230254` per-stage seeds (D473), and Joe's two calls
-> (D474: the hunter guard re-posed above foraging; armful 80 queued). At D473: **1354 passing, 0
+> **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = seven commits, **NOT merged, NOT pushed:**
+> `4425e87` the spec, `5f10827` ground quality removed (D470), `935833d` the founding hut bounded by walking
+> (D471), `e6b032e` the founders settle on dry ground (D472), `4230254` per-stage seeds (D473), `64c44e8` Joe's two
+> calls (D474: the hunter guard re-posed above foraging; armful 80 queued), and **the seams found, not placed (D475)**.
+> **Joe played D470–D474** on three seeds: *"everything else looks good"*, one note — *"stone and iron nodes look
+> planned and symmetrical"* — which D475 answers. ⚠️ **The control bar is 151 tall now, not 161** — the hint line
+> lost *"g ground ·"* and stopped wrapping at 1280 (proven: put the words back, 161). CLAUDE.md says so. At D473: **1354 passing, 0
 > failing, 6 skipped of 1360; 3m46 back to back against D472's 4m31; view 0 warnings; probe green, bar height 161,
 > tile centres ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`**.
 >
@@ -16,7 +19,13 @@
 > *"take it, do it right"*: two were latent generator faults, fixed first on the old generator (D471, D472 — D472
 > alone took 55 villages 429 → 495), and the other 39 were one-village poses, re-posed with reasons (D473 lists them).
 >
-> **▶️ NEXT: JOE PLAYS `slice/per-stage-seeds`.** His two calls are made (D474, committed on the branch): fishing
+> **▶️ NEXT: JOE LOOKS AT THE SEAMS (D475), THEN MERGES.** What he will see: no cross on the minimap; stone
+> and iron as outcrops of different sizes and outlines, scattered round the village at their own angles and a
+> little further or nearer out; iron still out in the far woods; *"g ground"* gone from the hint line. The shipped
+> seed's unattended village reads 17 alive, 0 starved at fifty. If they look found rather than placed: merge and
+> push, then the new-game screen, spec first.
+>
+> *(The play-test checklist he was given for D470–D474, kept:)* His two calls are made (D474, committed on the branch): fishing
 > above hunting on food is fine (*"hunting also produces leather"*), and armful 80 / eat every four days is the first
 > D395 thread after the shell. **The play-test checklist he was given:**
 > 1. **A new valley on a familiar seed** — the seed is `"seed"` in `data/sim.config.json` (no new-game screen yet);
@@ -4179,6 +4188,21 @@ Read `git status` after staging, every time.
 - **A wiped field is a field brought in (D406), and it bit again** — a pose that clears a field the
   farmhands sowed in spring teaches the memory that the year was a full one. Keep the seats empty
   through spring when the year is to be thin.
+
+## ⛔ THE TRAPS D475 PAID FOR — A FIXED POSE ON A COIN FLIPS AGAIN, AND A HINT IS LAYOUT
+
+- **A guard re-posed onto one walk flipped again the next slice.** The farm probe went 10 → 9 (D470) and 9
+  flipped (D475): whether a farm probes is a coin over walks and valleys. **Choose the first pose, from a
+  stated list, on which the PREMISE holds** (the probe happened), and test the claim on it — not a walk
+  re-picked every slice.
+- **A measured comparison whose sign flips on an unrelated change is noise, and a bar on it is a coin.**
+  The shipped build ledger: marked starved 52 against 27 unmarked, then 48 against 60 with the stone at its
+  ring's distance. The assertion went; the numbers stay printed; the control runs in the test.
+- **Removing words from a hint line moved the bar.** `bar height` 161 → 151 because the hint stopped wrapping
+  at 1280. A sentinel number is a regression check, not a law: prove the cause (put the words back) and move
+  the number with the reason, CLAUDE.md included.
+- **"No soil anywhere" missed one** — the hint string *"g ground · "*. Grep the view for the KEY, not only for
+  the word: a hint names keys.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

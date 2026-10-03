@@ -379,7 +379,7 @@ public sealed class OrganicHousingTests
     /// of it is right to win — found by <c>AHouseFacesThePathInFrontOfIt</c>'s first run.
     /// </remarks>
     private static (SimWorld World, GridPos Centre) ASquareWithAPath(
-        Func<GridPos, IEnumerable<GridPos>> path, SimConfig? config = null)
+        Func<GridPos, IEnumerable<GridPos>> path, SimConfig? config = null, int bareHalf = 6)
     {
         SimWorld world = Bare(config);
 
@@ -389,10 +389,11 @@ public sealed class OrganicHousingTests
         // "faced the path to the north", the Weavers' lane, and none of these guards was reading
         // the path it had laid. Far from the village's walks means nothing stands within the paint
         // and a lane of it.
-        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 6);
+        // `bareHalf`: how far out from the centre the ground must be bare grass — see the yard guard.
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, bareHalf);
         for (int away = 14; NothingStandsWithin(world, centre, 12) is false; away += 2)
         {
-            centre = ABareSquareAtLeast(world, world.Map.FoundingSite, away, 6);
+            centre = ABareSquareAtLeast(world, world.Map.FoundingSite, away, bareHalf);
         }
 
         Paint(world, centre, 8);
@@ -610,8 +611,13 @@ public sealed class OrganicHousingTests
     [Fact]
     public void EveryHouseHasAYardWhereThereIsRoom()
     {
-        (SimWorld world, _) = ASquareWithAPath(c =>
-            Enumerable.Range(-6, 13).Select(k => new GridPos(c.X + k, c.Y + k)));
+        // ⚠️ BARE AS FAR AS IT IS PAINTED, EIGHT, NOT SIX (D475): with the seams scattered, rock lay
+        // inside the paint's last two tiles and a house there lost its yard to the stone ("1 tile of
+        // yard") — which is not "where there is room". The other guards keep six: moving their square
+        // turns a house on the paint's edge (a yard facing the village would lose half its ground, so
+        // D411 turns it), a different premise from the one each asks about.
+        (SimWorld world, _) = ASquareWithAPath(
+            c => Enumerable.Range(-6, 13).Select(k => new GridPos(c.X + k, c.Y + k)), bareHalf: 8);
 
         SiteFamilies(world, 6);
         foreach (Household household in world.Households)

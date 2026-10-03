@@ -214,6 +214,39 @@ public sealed class FarmMemoryTests
         }
     }
 
+    /// <summary>
+    /// The first farm, over three valleys and seven walks in a stated order, whose winter's lesson
+    /// is a probe — run to that winter (see <see cref="ProbeThenFailOneAutumn"/>, D475).
+    /// </summary>
+    private static (SimLoop Loop, Workplace Farm, int Walk, int ProbedAt) TheFirstFarmThatProbes()
+    {
+        foreach (ulong seed in new ulong[] { 12345UL, 1UL, 2UL })
+        {
+            foreach (int away in new[] { 9, 10, 11, 12, 8, 7, 6 })
+            {
+                SimLoop loop = Loop(Config with { CartTools = 0, Seed = seed });
+                Workplace farm = FarmTestGround.SiteAFarm(loop.World, walkAway: away, out int walk);
+                Assert.True(FarmFixtures.GiveItGround(loop.World, farm, reach: 3) > 13);
+
+                // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
+                // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already
+                // winter — so the "twelve years" were the first winter read twelve times.
+                for (int year = 1; year <= 12; year++)
+                {
+                    FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+                    FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+                    if (farm.FieldProbedThisYear)
+                    {
+                        return (loop, farm, walk, year);
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException(
+            "no farm in three valleys and seven walks ever had autumn enough to spare to try one more field");
+    }
+
     private (SimLoop Loop, Workplace Farm, int Tried, int Places) ProbeThenFailOneAutumn()
     {
         // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391). A tool adds a quarter to every reaped tile,
@@ -230,32 +263,21 @@ public sealed class FarmMemoryTests
         // out and not at 8 or 10 — 10 was a flat spot under the soil too, the soil's draw on this
         // seed simply landing it on the probing side. Proven: the soil term put back at the reap
         // passes this guard at ten again.
-        SimLoop loop = Loop(Config with { CartTools = 0 });
-        SimWorld world = loop.World;
-        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 9, out int walk);
-        Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);
-
-        // Run until a winter's lesson is a probe.
         //
-        // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
-        // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already winter
-        // — so the "twelve years" were the first winter read twelve times (ticks 361–383), and the
-        // guard only ever asked whether year ONE probed. It passed because year one happened to;
-        // with D422 the first probe is in year two.
-        int probedAt = 0;
-        for (int year = 1; year <= 12 && probedAt == 0; year++)
-        {
-            FarmFixtures.StepToTheStartOf(loop, Season.Spring);
-            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
-            if (farm.FieldProbedThisYear)
-            {
-                probedAt = year;
-            }
-        }
+        // ⭐ THE FIRST POSE THAT PROBES, FROM A STATED LIST (D475) — NOT ONE WALK RE-PICKED EACH SLICE.
+        // Whether a farm probes is a coin over walks and valleys: under the scattered seams the shipped
+        // seed's farm probed at 4, 5, 8 and 11 ticks out and not at 6, 7, 9, 10 or 12, seed 1 at 9–12,
+        // seed 2 at 6–9, 11 and 12 (14 of 27 poses) — and a near farm does not probe at all, because
+        // it reaches the derived cap straight from its high-water mark, and the probe only fires below
+        // it. This guard was re-posed 10 → 9 in D470 and 9 flipped in D475. The claim has two halves:
+        // a farm with autumn to spare tries one more field — which some of these must — and a probe
+        // that rots steps back, asked of the first farm that probed. Chosen on the premise, the probe
+        // happening; the step back is what is under test.
+        (SimLoop loop, Workplace farm, int walk, int probedAt) = TheFirstFarmThatProbes();
+        SimWorld world = loop.World;
 
         int tried = farm.FieldTilesLearned;
         _output.WriteLine($"{walk} ticks out: the farm probed in year {probedAt}, trying {tried} a hand");
-        Assert.True(probedAt > 0, "twelve years and the farm never had autumn enough to spare to try one more field");
 
         // The probe year: sow, then take the hands away for the autumn so nothing comes in.
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);

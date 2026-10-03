@@ -145,7 +145,8 @@ public sealed class MapGenerationTests
     // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
     // 10984246327142560906.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 8294284479965600006.
-    private const ulong GoldenMapHash = 6546559622498121930UL;
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6546559622498121930.
+    private const ulong GoldenMapHash = 4985353537107002683UL;
 
     /// <summary>
     /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
@@ -169,9 +170,10 @@ public sealed class MapGenerationTests
     // keeps its founding site, soil and seams. See `GoldenMapHash`.
     // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Every kind moves, as it should. Were 9492872349874793864 (420 / 2640 / 141 / 52), 17624964258198066199 (410 / 2673 / 150 / 52), 9190696535150768213 (425 / 2626 / 127 / 43).
-    [InlineData(12345UL, 17700436842626828916UL, 410, 2489, 143, 45)]
-    [InlineData(2UL, 9700739267172670076UL, 415, 2722, 156, 52)]
-    [InlineData(42UL, 1092681087056102210UL, 410, 2650, 141, 51)]
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. ⭐ Water holds on all three — the river is another stage. Were 17700436842626828916 (410 / 2489 / 143 / 45), 9700739267172670076 (415 / 2722 / 156 / 52), 1092681087056102210 (410 / 2650 / 141 / 51).
+    [InlineData(12345UL, 10571714027248664497UL, 410, 2523, 134, 40)]
+    [InlineData(2UL, 12027232115351811171UL, 415, 2729, 127, 59)]
+    [InlineData(42UL, 13978094359002128344UL, 410, 2651, 121, 45)]
     public void EachSeedsTerrainIsWhatItWas(
         ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
     {
@@ -1112,7 +1114,45 @@ public sealed class MapGenerationTests
             }
         }
 
-        Assert.True(exact > 0, "no walk at all was the straight line — the field goes the long way round everywhere");
+        // ⚠️ AND THE "EXACTLY STRAIGHT" HALF IS ASKED OF OPEN GROUND (D475). It was asked of the
+        // founders' walks, and needed one of them to leave a house facing its work — on seed 1's valley
+        // once the seams were scattered, the house faces away from all five and every walk goes round
+        // its own fenced yard, inside the bound above and never exact. The claim was always that the
+        // field does not go the long way round where nothing is in the way, so it is asked where
+        // nothing is: a run of open tiles along a row, end to end.
+        if (exact == 0)
+        {
+            (GridPos a, GridPos b) = AnOpenRun(world, 8);
+            int open = world.TravelCost.Cost(a, b);
+            _output.WriteLine($"open ground {a} to {b}: {open} against {a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost}");
+            Assert.Equal(a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost, open);
+        }
+    }
+
+    /// <summary>The first row run of <paramref name="length"/> + 1 tiles with nothing standing on it and no water.</summary>
+    private static (GridPos From, GridPos To) AnOpenRun(SimWorld world, int length)
+    {
+        GeneratedMap map = world.Map;
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x + length < map.MinX + map.Width; x++)
+            {
+                bool clear = true;
+                for (int k = 0; k <= length && clear; k++)
+                {
+                    var at = new GridPos(x + k, y);
+                    clear = map.TerrainAt(at) != Terrain.Water && !world.SomethingStandsAt(at)
+                        && world.Zones.WallsOn(at) == 0;
+                }
+
+                if (clear)
+                {
+                    return (new GridPos(x, y), new GridPos(x + length, y));
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No open run of ground anywhere in the valley.");
     }
 
     [Fact]

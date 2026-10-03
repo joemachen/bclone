@@ -166,95 +166,107 @@ public sealed class SeamsTests
     }
 
     /// <summary>
-    /// ⭐ Two drawn seams of a kind do not share one offset from their slots (D435, D473).
+    /// ⭐ The seams are not laid on the compass — Joe: <em>"stone and iron nodes look planned and
+    /// symmetrical"</em> (D475).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>D435's measured defect, as a rate.</b> The seams' stream was handed to each helper by
-    /// value, so every drawn seam drew the same jitter: on twelve shipped seeds every stone seam
-    /// in a valley sat at one offset from its slot. With the stone stage's stream passed by
-    /// <c>ref</c>, the four drawn seams take four draws each of x and y, and four of nine offsets
-    /// all coinciding is about one valley in 729.
+    /// They sat on eight compass slots (E, W, S, N, then the diagonals) with a tile of jitter, so
+    /// every one of them was within a few degrees of a compass bearing and the valley read as a
+    /// stamped cross. Seams scattered at random fall within ±5° of one of the eight bearings about
+    /// one time in four and a half (80° of 360); the bar is fewer than half.
     /// </para>
     /// <para>
-    /// <b>Read off the map, not re-drawn</b> — a guard that drew the jitters itself would agree
-    /// with whatever the generator does (D419). Each drawn seam's offset is the one jitter whose
-    /// diamond holds all of the seam's rock; a seam the river clips so that two offsets fit is
-    /// skipped rather than guessed.
+    /// Asked of <see cref="MapGenerator.SeamsOf"/> — the generator's own answer — over 24 valleys.
     /// </para>
     /// </remarks>
     [Fact]
-    public void TwoDrawnSeamsDoNotShareAnOffset()
+    public void TheSeamsAreNotLaidOnTheCompass()
     {
         SimConfig shipped = ShippedConfig.Load();
-        int jitter = shipped.SiteJitterTiles;
-        int radius = shipped.StoneSeamRadiusTiles;
-        Assert.True(jitter > 0 && shipped.StoneSeamCount >= 2, "Nothing to compare.");
-
-        int asked = 0;
-        int shared = 0;
+        int seams = 0;
+        int onTheCompass = 0;
         for (ulong seed = 1; seed <= 24; seed++)
         {
-            // Stone only, no woods, so every rock tile near a slot is that slot's seam.
-            SimConfig config = shipped with
+            foreach (Terrain kind in new[] { Terrain.Rock, Terrain.IronDeposit })
             {
-                Seed = seed, ExtraStoneSeams = 0, IronSeamCount = 0, ExtraIronSeams = 0, ForestCoveragePercent = 0,
-            };
-            GeneratedMap map = MapGenerator.Generate(config, seed);
-
-            var offsets = new List<(int X, int Y)>();
-            for (int i = 0; i < config.StoneSeamCount; i++)
-            {
-                GridPos slot = MapGenerator.RingSlot(i, config.StoneSeamRingTiles);
-                var rock = new List<GridPos>();
-                for (int dy = -radius - jitter; dy <= radius + jitter; dy++)
+                foreach (MapGenerator.Seam seam in MapGenerator.SeamsOf(shipped with { Seed = seed }, seed, kind))
                 {
-                    for (int dx = -radius - jitter; dx <= radius + jitter; dx++)
+                    double bearing = Math.Atan2(seam.Centre.Y, seam.Centre.X) * 180 / Math.PI;
+                    double off = Math.Abs(bearing - (Math.Round(bearing / 45) * 45));
+                    seams++;
+                    if (off <= 5)
                     {
-                        var at = new GridPos(slot.X + dx, slot.Y + dy);
-                        if (map.Contains(at) && map.TerrainAt(at) == Terrain.Rock)
-                        {
-                            rock.Add(at);
-                        }
+                        onTheCompass++;
                     }
-                }
-
-                var fits = new List<(int X, int Y)>();
-                for (int oy = -jitter; oy <= jitter; oy++)
-                {
-                    for (int ox = -jitter; ox <= jitter; ox++)
-                    {
-                        if (rock.Count > 0 && rock.TrueForAll(t =>
-                            Math.Abs(t.X - (slot.X + ox)) + Math.Abs(t.Y - (slot.Y + oy)) <= radius))
-                        {
-                            fits.Add((ox, oy));
-                        }
-                    }
-                }
-
-                if (fits.Count == 1)
-                {
-                    offsets.Add(fits[0]);
-                }
-            }
-
-            if (offsets.Count >= 2)
-            {
-                asked++;
-                if (offsets.TrueForAll(o => o == offsets[0]))
-                {
-                    shared++;
-                    _output.WriteLine($"seed {seed}: {offsets.Count} seams all at {offsets[0]}");
                 }
             }
         }
 
-        _output.WriteLine($"{shared} of {asked} valleys have every drawn stone seam at one offset");
-        Assert.True(asked >= 20, $"Only {asked} valleys had two seams whose offset could be read.");
+        _output.WriteLine($"{onTheCompass} of {seams} seams within 5° of a compass bearing");
+        Assert.True(seams > 0, "No seams, so nothing to read.");
         Assert.True(
-            shared <= 1,
-            $"{shared} of {asked} valleys put every drawn seam at one offset from its slot — the "
-            + "seams are drawing on a copy of their stream (D435).");
+            onTheCompass * 2 < seams,
+            $"{onTheCompass} of {seams} seams lie on the compass — the valley is a stamped cross again.");
+    }
+
+    /// <summary>
+    /// ⭐ And still spread (D24): every quarter of the valley round the village holds a stone seam.
+    /// </summary>
+    /// <remarks>
+    /// Scattering must not undo the guarantee the compass slots were for — four seams in one corner
+    /// is a resource half the village cannot reach, the layout that starved a village once. Each
+    /// seam keeps a sector of its own; the second ring's eight sectors, each swinging at most 18°,
+    /// leave no gap as wide as a quarter turn.
+    /// </remarks>
+    [Fact]
+    public void EveryQuarterOfTheValleyHasStone()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            var quarters = new bool[4];
+            foreach (MapGenerator.Seam seam in MapGenerator.SeamsOf(shipped with { Seed = seed }, seed, Terrain.Rock))
+            {
+                quarters[(seam.Centre.X >= 0 ? 0 : 1) + (seam.Centre.Y >= 0 ? 0 : 2)] = true;
+            }
+
+            Assert.True(quarters.All(q => q), $"Seed {seed}: a quarter of the valley has no stone seam.");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Outcrops, not stamps: a valley's stone seams are not all one shape and size (D475).
+    /// </summary>
+    /// <remarks>
+    /// They were Manhattan diamonds of one radius — thirteen tiles each wherever the river let them
+    /// be. Each is now a wobbling outline (the forests' rule) on a size it drew. Read off the map:
+    /// the rock tiles within four of each centre.
+    /// </remarks>
+    [Fact]
+    public void StoneOutcropsAreNotAllOneShape()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        int varied = 0;
+        const int Seeds = 24;
+        for (ulong seed = 1; seed <= Seeds; seed++)
+        {
+            SimConfig config = shipped with { Seed = seed };
+            GeneratedMap map = MapGenerator.Generate(config, seed);
+            var sizes = new HashSet<int>();
+            foreach (MapGenerator.Seam seam in MapGenerator.SeamsOf(config, seed, Terrain.Rock))
+            {
+                sizes.Add(CountNear(map, seam.Centre, Terrain.Rock, 4));
+            }
+
+            if (sizes.Count >= 3)
+            {
+                varied++;
+            }
+        }
+
+        _output.WriteLine($"{varied} of {Seeds} valleys have three or more outcrop sizes among their stone seams");
+        Assert.True(varied * 10 >= Seeds * 9, $"Only {varied} of {Seeds} valleys vary their outcrops.");
     }
 
     /// <summary>Ore can be walked over — you have to stand on a seam to clear it.</summary>
@@ -398,8 +410,8 @@ public sealed class SeamsTests
     /// <remarks>
     /// Before the quarry spec no iron seam in 64 valleys held 50: radius-1 diamonds of five tiles
     /// at 8 a tile, clipped by the river. A seam now grows a ring at a time until it does. Counted
-    /// around each iron slot, because the river can cut one seam in two and a player still sees one
-    /// seam there.
+    /// around each seam's centre (<see cref="MapGenerator.SeamsOf"/>, D475), because the river can cut
+    /// one seam in two and a player still sees one seam there.
     /// </remarks>
     [Fact]
     public void EveryIronSeamHoldsFifty()
@@ -411,14 +423,13 @@ public sealed class SeamsTests
         for (ulong seed = 1; seed <= 64; seed++)
         {
             GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, seed);
-            foreach (int i in MapGenerator.SeamSlots(shipped.IronSeamCount, shipped.ExtraIronSeams, shipped.IronSeamRingTiles))
+            foreach (MapGenerator.Seam seam in MapGenerator.SeamsOf(shipped with { Seed = seed }, seed, Terrain.IronDeposit))
             {
-                GridPos slot = MapGenerator.RingSlot(i, shipped.IronSeamRingTiles);
-                int iron = CountNear(map, slot, Terrain.IronDeposit, 8) * perTile;
+                int iron = CountNear(map, seam.Centre, Terrain.IronDeposit, 8) * perTile;
                 least = Math.Min(least, iron);
                 Assert.True(
                     iron >= shipped.IronSeamMinIron,
-                    $"Seed {seed}'s iron seam at slot {i} holds {iron}, short of {shipped.IronSeamMinIron}.");
+                    $"Seed {seed}'s iron seam at {seam.Centre} holds {iron}, short of {shipped.IronSeamMinIron}.");
             }
         }
 
@@ -444,9 +455,9 @@ public sealed class SeamsTests
             GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, seed);
             bool[] reach = Reachable(map, map.FoundingSite);
             int seams = 0;
-            foreach (int i in MapGenerator.SeamSlots(shipped.StoneSeamCount, shipped.ExtraStoneSeams, shipped.StoneSeamRingTiles))
+            foreach (MapGenerator.Seam seam in MapGenerator.SeamsOf(shipped with { Seed = seed }, seed, Terrain.Rock))
             {
-                if (ReachableNear(map, reach, MapGenerator.RingSlot(i, shipped.StoneSeamRingTiles), Terrain.Rock, 3) >= 5)
+                if (ReachableNear(map, reach, seam.Centre, Terrain.Rock, 3) >= 5)
                 {
                     seams++;
                 }

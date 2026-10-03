@@ -365,14 +365,17 @@
   // See forest_coverage_percent and gatherer_hut_ring_tiles below: those
   // two are what the food economy is made of now.
 
-  // EVERY TILE OF THIS IS PAID FOR BY THE WHOLE ECONOMY. The food
-  // budget assumes the worst case - a site jittered directly away from
-  // the home that needs it, costing twice this in Manhattan distance -
-  // so generosity here makes every villager in every valley work
-  // harder, including on the seeds where the sites land close. One tile
-  // buys visibly different valleys; two pushed the required gather
-  // yield up by two thirds.
-  "site_jitter_tiles": 1,
+  // STONE AND IRON, FOUND RATHER THAN PLACED (D475; Joe: "stone and iron
+  // nodes look planned and symmetrical"). A kind's seams take one equal
+  // sector of their ring each, so they stay spread (D24), but the ring
+  // draws a phase and each seam swings within its sector (angle), lies up
+  // to this much further out than its ring, never nearer (reach), and is
+  // an outcrop this much bigger or smaller than its kind's radius (size).
+  // These replaced site_jitter_tiles: a tile of jitter off eight compass
+  // slots, which read as a stamped cross.
+  "seam_angle_scatter_percent": 80,
+  "seam_reach_scatter_percent": 30,
+  "seam_size_scatter_percent": 40,
   "founding_jitter_tiles": 2,
 
   // WATER IS IMPASSABLE (D40, D41), so a river is load-bearing rather

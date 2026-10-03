@@ -326,8 +326,11 @@ public sealed class VillagerPointTests
         // and this valley's four founders gather half as often — 25 trips in two thousand ticks, so
         // there is no 50th and the milestones are the 1st / 10th / 20th: 14 / 544 / 1,452. Were 51 at
         // 9/210/1,959 (1st/10th/50th).
-        Assert.Equal(25, entries);
-        Assert.Equal(new ulong[] { 14, 544, 1452 }, at);
+        // ⚠️ RE-PINNED (D475), not for the clock: the seams are found, not placed, and the woods round
+        // the founders' gatherer's hut grow differently — 53 trips, the 1st/10th/20th at 7 / 223 / 512.
+        // Were 25 at 14 / 544 / 1,452.
+        Assert.Equal(53, entries);
+        Assert.Equal(new ulong[] { 7, 223, 512 }, at);
     }
 
     /// <summary>

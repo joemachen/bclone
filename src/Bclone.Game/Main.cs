@@ -4386,7 +4386,6 @@ public partial class Main : Control
 
         body.AddChild(Wrapped(Muted(
             "space to pause · 1-4 speed · WASD pan · wheel zoom · r turn · tab routes · "
-            + "g ground · "
             + "home recentre · c fold panels · h hide them")));
     }
 

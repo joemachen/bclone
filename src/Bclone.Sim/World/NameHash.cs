@@ -38,7 +38,7 @@ public static class NameHash
 
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
-    /// <c>MapGenerator.HashJitter</c>'s shape, well spread even for adjacent ids.
+    /// <c>SplitMix64.Fold</c>, well spread even for adjacent ids.
     /// </summary>
     public static ulong Mix(ulong seed, int id, int salt, int attempt)
     {

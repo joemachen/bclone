@@ -2,7 +2,8 @@
 
 > Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
 > §13, per-stage seeds (the shell's first step, D473), is ✅ BUILT on `slice/per-stage-seeds` —
-> NOT merged, NOT pushed, unplayed by Joe; §13.5 has what building it found.** · Owner: Joe + Claude Code
+> NOT merged, NOT pushed; played by Joe (*"everything else looks good"*) with one note, the seams,
+> answered in §13.6 (D475).** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
@@ -305,3 +306,22 @@ the new-game screen → settings persistence → save/load → title and pause. 
   `TwoDrawnSeamsDoNotShareAnOffset` (1: the seams drawing on a copy), `EveryStageHasASeedOfItsOwn`
   (1: `StageSeed` returning the seed), `TheWoodlandChangesNothingButTrees` (2: woods over anything).
 
+### 13.6 Seams found, not placed (D475)
+
+Joe, playing the branch: *"stone and iron nodes look planned and symmetrical - they do not look
+organically placed."* They sat on eight compass slots with a tile of jitter, as Manhattan diamonds of
+one size — a stamped cross. With per-stage seeds a seam may draw freely without moving anything but
+its own stage (and the trees that grow round it), so:
+
+- `MapGenerator.SeamsOf(config, seed, kind)` — public, pure, the one answer to where a kind's seams
+  lie: ring `k` holds up to `4k` seams at `1 + (k−1)/2` times the ring, each in a sector of its own
+  (D24), the ring turned by a drawn phase, each seam swung within its sector and pushed out, never in,
+  through `Angle`/`Point` integer trig (D2, D318).
+- `PaintOutcrop` paints each as the forests' wobbling outline (`Wobble`, shared with
+  `InsideTheClump`, forests byte-identical) on a size it drew; iron still grows until it holds 50.
+- `site_jitter_tiles`, `RingSlot`, `SeamSlots`, `HashJitter` and `PaintDiamond` are deleted;
+  `seam_angle_scatter_percent` (80), `seam_reach_scatter_percent` (30) and `seam_size_scatter_percent`
+  (40) are the new rules.
+- **Guards:** `TheSeamsAreNotLaidOnTheCompass` (fewer than half within 5° of a compass bearing — 82
+  of 384, random would be about one in four and a half), `EveryQuarterOfTheValleyHasStone` (D24),
+  `StoneOutcropsAreNotAllOneShape`; `TwoDrawnSeamsDoNotShareAnOffset` is retired with the slots it read.

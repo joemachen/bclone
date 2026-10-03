@@ -465,45 +465,52 @@ public sealed class ShippedConfigTests
         // peaks 91 marked, 32 / 60 / 0 / 87 unmarked — building costs about a death a village and
         // buys a little growth. Five of those valleys, run side by side (each world is its own;
         // nothing in the sim is shared), cost one village's wall-clock rather than five.
+        //
+        // ⛔ AND "MORE OF OLD AGE THAN STARVED" IS NO LONGER ASSERTED (D475) — it measured luck, not
+        // building. With the seams scattered, seven valleys read 52 starved marked against 27 unmarked;
+        // with the same seams at their ring's distance (reach scatter 0), 48 against 60 — the sign
+        // flips on where the stone lies. An unattended century starves or does not on a coin, and a
+        // bar on it is one (D447: the harness is not a player). The numbers stay printed. What the
+        // four buildings must not do is asked of the SAME valleys with nothing marked, run here.
         ulong[] seeds = { 12345UL, 1UL, 2UL, 3UL, 4UL };
-        var villages = new (int Marked, int Peak, int Froze, int Starved, int Aged, int Granaries, int Warehouses)[seeds.Length];
-        System.Threading.Tasks.Parallel.For(0, seeds.Length, i => villages[i] = AskedToBuild(seeds[i]));
+        var villages = new (int Marked, int Peak, int Froze, int Starved, int Aged, int Granaries, int Warehouses)[seeds.Length * 2];
+        System.Threading.Tasks.Parallel.For(0, villages.Length, i => villages[i] = AskedToBuild(seeds[i / 2], mark: i % 2 == 0));
 
-        for (int i = 0; i < seeds.Length; i++)
+        for (int i = 0; i < villages.Length; i++)
         {
             var v = villages[i];
             _output.WriteLine(
-                $"seed {seeds[i]}: {v.Marked} marked; a century later peak {v.Peak}, {v.Granaries} granaries, "
+                $"seed {seeds[i / 2]}, {(i % 2 == 0 ? "marked" : "nothing marked")}: peak {v.Peak}, {v.Granaries} granaries, "
                 + $"{v.Warehouses} warehouses; {v.Froze} froze, {v.Starved} starved, {v.Aged} of old age.");
-            Assert.Equal(4, v.Marked);
+            if (i % 2 == 0)
+            {
+                Assert.Equal(4, v.Marked);
 
-            // ⚠️ D143'S SHAPE (D387): an unattended village ages out, so nobody need be alive at
-            // the end. What the four buildings must not do is the claim: they get built, the
-            // village still grows, and nobody freezes or starves for the hands and logs they took.
-            Assert.True(v.Granaries >= 2 && v.Warehouses >= 2,
-                $"Seed {seeds[i]}: the buildings the player marked were never raised.");
+                // ⚠️ D143'S SHAPE (D387): an unattended village ages out, so nobody need be alive at
+                // the end. What the four buildings must not do is the claim: they get built, the
+                // village still grows, and nobody freezes for the hands and logs they took.
+                Assert.True(v.Granaries >= 2 && v.Warehouses >= 2,
+                    $"Seed {seeds[i / 2]}: the buildings the player marked were never raised.");
+            }
         }
 
-        int peaks = villages.Sum(v => v.Peak);
-        int starved = villages.Sum(v => v.Starved);
-        int aged = villages.Sum(v => v.Aged);
+        var marked = villages.Where((_, i) => i % 2 == 0).ToList();
+        var unmarked = villages.Where((_, i) => i % 2 == 1).ToList();
+        _output.WriteLine(
+            $"five valleys: marked {marked.Sum(v => v.Starved)} starved / {marked.Sum(v => v.Aged)} aged / peaks {marked.Sum(v => v.Peak)}; "
+            + $"nothing marked {unmarked.Sum(v => v.Starved)} / {unmarked.Sum(v => v.Aged)} / {unmarked.Sum(v => v.Peak)}");
 
         Assert.Equal(0, villages.Sum(v => v.Froze));
-
-        // The same five valleys with nothing marked peak at 60 together (16 / 12 / 10 / 10 / 12),
-        // measured — marking four buildings must not leave the villages smaller than that.
-        Assert.True(peaks >= 60,
-            $"Marking four buildings stalled the villages — they peaked at {peaks} together, against "
-            + "60 for the same valleys with nothing marked.");
-        Assert.True(aged > starved,
-            $"{starved} starved against {aged} of old age across five valleys — building cost the villages their food.");
+        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak),
+            $"Marking four buildings stalled the villages — they peaked at {marked.Sum(v => v.Peak)} together, "
+            + $"against {unmarked.Sum(v => v.Peak)} for the same valleys with nothing marked.");
     }
 
     /// <summary>
     /// Fifteen years unattended, then four buildings marked at once and a century more — what one
     /// valley makes of it.
     /// </summary>
-    private static (int Marked, int Peak, int Froze, int Starved, int Aged, int Granaries, int Warehouses) AskedToBuild(ulong seed)
+    private static (int Marked, int Peak, int Froze, int Starved, int Aged, int Granaries, int Warehouses) AskedToBuild(ulong seed, bool mark)
     {
         SimConfig config = Shipped with { Seed = seed };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
@@ -532,11 +539,10 @@ public sealed class ShippedConfigTests
         SeamFixtures.PaintNearest(world, Terrain.Rock, (stoneTheyCost + aTile - 1) / aTile);
 
         int marked = 0;
-        foreach (BuildingKind kind in new[]
-                 {
-                     BuildingKind.Granary, BuildingKind.Warehouse,
-                     BuildingKind.Market, BuildingKind.WoodcutterHut,
-                 })
+        BuildingKind[] asked = mark
+            ? new[] { BuildingKind.Granary, BuildingKind.Warehouse, BuildingKind.Market, BuildingKind.WoodcutterHut }
+            : Array.Empty<BuildingKind>();
+        foreach (BuildingKind kind in asked)
         {
             for (int radius = 2; radius < 10 && marked < 4; radius++)
             {
