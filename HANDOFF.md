@@ -1,6 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D457 IN §7. `slice/small-fixes` (D452–D457) PLAYED BY JOE — *"everything else looks good"* — NOT MERGED, NOT PUSHED. NEXT: HIS TWO NEW NOTES ON THE BRANCH (THE QUARRY'S GRID, HIDE LOCKED PROFESSIONS), THEN HE MERGES, THEN THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D460 IN §7. `slice/small-fixes` (D452–D460) — JOE'S TWO NOTES BUILT (D459, D460), UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS THEM AND MERGES, THEN THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (LATE NIGHT) — JOE PLAYED THE SMALL FIXES.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (NEAR MIDNIGHT) — JOE'S TWO NOTES BUILT.**
+>
+> **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = D452–D458 (played by Joe) + **D459 and D460
+> (his two notes, built this session, UNPLAYED)** + this handoff — **NOT merged, NOT pushed.** At D460: **1344
+> passing, 0 failing, 5 skipped of 1349, 3m24; no golden moved (diffed); view 0 warnings; probe green, bar height
+> 161, `faces:` ✅, new `trades:` ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this file as
+> **`HANDOFF.md`**.
+>
+> **What the two notes turned out to be — both as filed (trap 151 checked):**
+> 1. **D459 — the quarry's grid.** `VillageMap.Meshes.cs` `FaceHalf` 0.46 → **0.5**: a face's pale floor now
+>    covers its whole tile, so neighbouring floors meet and a worked patch is one floor with cut-down lumps on it.
+>    Vertex counts unchanged (`faces:` still 5364 → 5334). ⚠️ **The patch's outer edge is square** on a rock bake
+>    whose edge wanders — square by intent, as fields are. If Joe wants it soft, that is a traced-region floor
+>    like the zone wash: a bigger view change, his call. **No guard can see this** (D340) — his eyes are the check.
+> 2. **D460 — locked trades hidden.** A professions row (glyph, name, stepper) shows when its `works_at` building
+>    is `Main.EarnedYet` — the build bar's own latched gate — asked at build and from `RefreshTheStrip`, never per
+>    frame. Smith, Quarrier, Miner are hidden at the founding; the panel's open height 1613 → 1517. Probe
+>    `trades:` red-checked **2 of 3**; the third (the build-time call) scores 0 because `BuildControlPanel`
+>    refreshes the strip afterwards — kept, written down in D460.
+>
+> **▶️ NEXT: JOE PLAYS D459–D460.** What he can see: give ground to a quarry or a mine over a patch of seam — one
+> pale floor, no grid; open Professions in a new village — no Smith, Quarrier or Miner; dig the stone by hand
+> until the quarry is learned — the Quarrier row appears with the button. **Then he merges and pushes
+> `slice/small-fixes`, then the stutter** (D403's remainder — measure the per-tick distance distribution first;
+> the suspect is `Arrive` snapping onto a building's standing place). Names, surnames and birthdays (D395) still
+> wait on his slot.
+>
+> **Tools (this session's scratchpad,
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/c9541c9c-8232-4dda-be19-d3c055349924/scratchpad/`):**
+> `redtrades.py` (D460's three view mutants: apply, build the game, run the probe, read the `trades:` line,
+> restore in a `finally`) — run it with **`PYTHONIOENCODING=utf-8`** (trap 155).
+>
+> *(The 2026-10-02 late-night banner — Joe's two notes as filed — kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 (LATE NIGHT) — JOE PLAYED THE SMALL FIXES (✅ his two notes built, D459–D460).**
 >
 > **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = D452–D457 + this handoff, **played by Joe,
 > NOT merged, NOT pushed — he did not say merge.** His words: *"everything else looks good"* — after two notes,
@@ -3879,9 +3913,18 @@ Read `git status` after staging, every time.
      red with both. That is an outcome guard doing its job: write the zeros down with the reason, and knock out
      both.
 
+## ⛔ THE TRAP D460 PAID FOR — A RED-CHECK SCRIPT THAT CANNOT PRINT ITS OWN VERDICT
+
+155. **⚠️ PYTHON ON THIS MACHINE PRINTS IN CP1252, AND EVERY PROBE VERDICT HAS A ⛔ IN IT (D460).** The first run of
+     `redtrades.py` built mutant (a), ran the probe, got the red line — and crashed with `UnicodeEncodeError` printing
+     it, before counting anything. The `finally` put `Main.cs` back, which is the only reason the working tree was
+     not left holding a mutant. **Run red-check scripts with `PYTHONIOENCODING=utf-8`, restore in a `finally`, and
+     `grep -c` the mutated text after the run** to prove it is gone. A script that dies on its first red reports
+     nothing, and nothing looks like a guard that never fired.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES, BOTH TO BUILD — see the top banner.** (1) the
+- ✅ **BUILT (D459, D460), UNPLAYED — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
   quarry's painted faces read as a grid (D450's `FaceHalf` 0.46 seams); (2) Smith, Quarrier and Miner show in the
   Professions panel before the village has learned them — hide a trade until it is unlocked, *"don't want to
   spoil the surprise."*
