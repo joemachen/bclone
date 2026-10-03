@@ -487,9 +487,11 @@ public sealed class HouseholdSystem : ISimSystem
             return;
         }
 
-        // Draw order is part of the seed contract: name, then lifespan, then rhythm. Same
-        // order as founding, so there is one rule rather than two.
-        string name = world.DrawUnusedName();
+        // Draw order is part of the seed contract: lifespan, then rhythm. Same order as
+        // founding, so there is one rule rather than two. The name is no draw — a hash of the
+        // seed and the child's id (D465).
+        int id = NextVillagerId(world);
+        string name = world.NameFor(id);
 
         int lifespan = config.LifespanYearsBase;
         if (config.LifespanYearsVariance > 0)
@@ -505,7 +507,7 @@ public sealed class HouseholdSystem : ISimSystem
 
         var child = new Villager
         {
-            Id = NextVillagerId(world),
+            Id = id,
             Name = name,
             LifespanYears = lifespan,
             Rhythm = rhythm,

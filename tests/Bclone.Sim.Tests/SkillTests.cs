@@ -327,11 +327,12 @@ public sealed class SkillTests
     // RE-TAKEN (D429), BOTH — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Were 11654469485471921697 (fixture) and 13070721559064917869 (shipped).
     // RE-TAKEN (D434), BOTH — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Were 7256592977692245281 (fixture) and 8002305187504967384 (shipped).
     // RE-TAKEN (D463), BOTH — steady pace, the stutter (`gridless.md §8` slice 6, Joe: "A: steady pace"): a walker spends one tick of a leg's unrounded cost a tick and carries the rest into the next leg, the last leg ends on the place they will stand, a leg is priced by its own route tiles' entry costs (the step off a building had cost nothing), and one tick's walk is shared by every journey begun in it. Were 1080427782552529441 (fixture) and 3492199827419521576 (shipped).
-    [InlineData(false, 12938037463957999415UL)]
+    // RE-TAKEN (D466), BOTH — naming stopped taking a draw (`names-and-birthdays.md §3`, D465): a first name is hashed from the seed and the villager's id, so every founder's and every child's lifespan and rhythm come from a different place in the stream, and a founding household's rhythm is drawn once and stepped per adult. ⭐ PROVEN TO BE THE ONLY REASON: with the name's draw and the old per-adult rhythm put back, the old value passes. Were 12938037463957999415 (fixture) and 10244113423920988382 (shipped).
+    [InlineData(false, 14446605380492219727UL)]
     // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
     // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
     // RE-TAKEN (D452), THE SHIPPED ONE ONLY — a forester's planting seats count grass only (`SimWorld.IsGroundToPlant`), so a hut whose ground is all saplings stops holding hands it cannot use (found D434). ⭐ PROVEN TO BE THE ONLY REASON: with that one line back on the old rule the old value passes. The fixture did not move. Was 2125978012891394948 (shipped).
-    [InlineData(true, 10244113423920988382UL)]
+    [InlineData(true, 6648986105753894609UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -624,12 +625,17 @@ public sealed class SkillTests
     {
         SimConfig config = ShippedConfig.Established();
         SimLoop loop = Loop(config);
+        int marketer = SkillIdFor(config, JobKind.Marketer);
 
-        Villager villager = loop.World.Villagers.First(person => person.Alive);
+        // ⚠️ Somebody who holds no record of the trade, asked of the list itself rather than of the
+        // readers under test — the first founder was that until D465 moved the founding's draws
+        // and made the first founder the village's master trader (9,600 ticks in it).
+        Villager villager = loop.World.Villagers.First(
+            person => person.Alive && person.Skills.TrueForAll(progress => progress.SkillId != marketer));
         int before = villager.Skills.Count;
 
-        Assert.Equal(0, villager.TicksIn(SkillIdFor(config, JobKind.Marketer)));
-        Assert.Null(villager.FindProgressIn(SkillIdFor(config, JobKind.Marketer)));
+        Assert.Equal(0, villager.TicksIn(marketer));
+        Assert.Null(villager.FindProgressIn(marketer));
         Assert.Equal(before, villager.Skills.Count);
     }
 
@@ -1231,6 +1237,34 @@ public sealed class SkillTests
     // ---------------------------------------------------------------
     //  ⭐⭐ Landing 3 — the mixed founding and the seeded rhythm (D28)
     // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔ <b>No two founders of one household share a rhythm — on any seed</b> (D465). Asked of the
+    /// founding directly, over two hundred seeds and both configs, because the guarantee used to
+    /// be the stream's luck: <c>(draw + a)</c> separated two adults only while their draws were
+    /// equal, and taking the name's draw out of the founding's stride broke it on the very seed
+    /// the lockstep guard runs.
+    /// </summary>
+    [Fact]
+    public void FoundersOfOneHouseholdNeverShareARhythm()
+    {
+        int households = 0;
+        foreach (SimConfig config in new[] { ShippedConfig.Load(), VillageFixtures.Village })
+        {
+            for (ulong seed = 1; seed <= 100; seed++)
+            {
+                SimWorld world = SimFactory.CreatePhase0(config with { Seed = seed }, new InMemoryLogSink()).World;
+                foreach (Household household in world.Households)
+                {
+                    List<int> rhythms = household.MemberIds.Select(id => world.Villagers[id - 1].Rhythm).ToList();
+                    Assert.Equal(rhythms.Count, rhythms.Distinct().Count());
+                    households++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{households} founding households, no two adults of one in step");
+    }
 
     /// <summary>
     /// ⭐⭐ <b>Two adults of one household stop running the same program</b> — D28, measured at

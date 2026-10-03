@@ -433,27 +433,32 @@ public sealed class Phase0SimTests
         // Locks the shipped tuning against silent behavioural drift. If this fails
         // after an intentional balance change, re-read the life log, confirm the new
         // story is the one you wanted, then update these numbers deliberately.
+        //
+        // ⚠️ RE-TAKEN (D466): naming takes no draw (`names-and-birthdays.md §3`), so seed 12345's
+        // one founder is named by hash — Flintbrook, not Dorcas — and their lifespan is the stream's
+        // first draw rather than its second: 48 years, not 45 (11,521 ticks, not 10,801). The same
+        // life otherwise — old age, a winter survived for every year lived.
         var (loop, sink) = Phase0Fixtures.Build(Config, seed: 12345UL);
         int ticks = Phase0Fixtures.RunUntilDeath(loop);
 
         Villager villager = loop.World.Villager;
 
-        Assert.Equal("Dorcas", villager.Name);
-        Assert.Equal(45, villager.LifespanYears);
-        Assert.Equal(45, villager.AgeYears);
+        Assert.Equal("Flintbrook", villager.Name);
+        Assert.Equal(48, villager.LifespanYears);
+        Assert.Equal(48, villager.AgeYears);
         Assert.Equal(CauseOfDeath.OldAge, villager.CauseOfDeath);
-        Assert.Equal(10_801, ticks);
-        Assert.Equal(45, villager.WintersSurvived);
+        Assert.Equal(11_521, ticks);
+        Assert.Equal(48, villager.WintersSurvived);
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
-        Assert.Equal("Dorcas begins. Spring, Year 1, no food stored.", log[0]);
+        Assert.Equal("Flintbrook begins. Spring, Year 1, no food stored.", log[0]);
         // ⚠️ THE ENDING, NOT THE LAST LINE — the third guard to want this, and all three for one
-        // cause. Dorcas masters foraging inside her forty-five years, so her death is followed by
+        // cause. Flintbrook masters foraging inside their forty-eight years, so the death is followed by
         // a line saying what went with her (`KnowledgeSystem` runs after `MortalitySystem`, by
         // design). **`log[^1]` quietly meant "the death" across this suite and now means "the
         // consequence"** — which is worth knowing before the next system appends anything.
         Assert.Contains(
-            "died of old age at 45",
+            "died of old age at 48",
             string.Join(" | ", log.TakeLast(3)),
             StringComparison.Ordinal);
     }

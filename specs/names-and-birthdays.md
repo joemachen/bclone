@@ -7,8 +7,8 @@ villager naming plan?"*), D465 (Joe, 2026-10-03: the slot; his prefix, suffix an
 couple carries **the older partner's** surname). Neighbours: D344/D392 (*a list content can grow is
 not a list a draw may range over*), D335 (a derived value is never hashed), D376 (renaming), D252
 (`Founder`, never hashed), D190 (rhythm, drawn at birth).
-**Status:** 📝 **SPECCED (D465), NOT STARTED.** Three commits on `slice/names-and-birthdays`: first
-names (§3), surnames (§4), birthdays (§5). Owner: Joe + Claude Code.
+**Status:** 🔨 **§3 FIRST NAMES BUILT (D466)**; §4 surnames and §5 birthdays not started. Three
+commits on `slice/names-and-birthdays`. Unplayed. Owner: Joe + Claude Code.
 
 ---
 
@@ -61,7 +61,10 @@ holds**. Plain concatenation — *Ag + nes* is Agnes, *Mab + bel* is Mabbel; it 
 **⚠️ What it costs: one `Rng` draw fewer per founder and per birth.** The stream shifts, so **every
 seed replays as a different valley's history** — every golden moves once, and Joe's familiar seeds
 will not play as he remembers them. That is the price of *never a draw* and D395 accepted it. It is
-measured (§7) to show it is a reshuffle, not a change in kind.
+measured (§7) to show it is a reshuffle, not a change in kind. **Built (D466): 55 villages 390 → 453
+alive, 100 seeds 488 → 473 — opposite signs.** ⚠️ It also exposed that the founders' anti-lockstep
+rotation, `(draw + a)`, guaranteed nothing — it held only while the stream happened to repeat its
+draws; a household's rhythm is now drawn once and each adult a step on from it (D466).
 
 **Not hashed.** `Villager.Name` is not in `StateHash` today and stays out: it is a function of the
 seed, the id and who is alive, all of which are.
