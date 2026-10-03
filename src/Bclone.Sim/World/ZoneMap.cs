@@ -785,13 +785,19 @@ public sealed class ZoneMap
     private void RaiseTheFence(
         int ownerId, IReadOnlyList<GridPos> tiles, IReadOnlyList<GridPos> lane, IReadOnlyList<GridPos> house)
     {
-        List<(GridPos From, GridPos To)> edges = FenceEdges(tiles, lane, house, out _);
+        List<(GridPos From, GridPos To)> edges = FenceEdges(
+            tiles, lane, house, out (GridPos Yard, GridPos Lane)? gate);
         for (int e = 0; e < edges.Count; e++)
         {
             Wall(edges[e].From, edges[e].To, up: true);
         }
 
         _fenceByOwner[ownerId] = edges;
+        if (gate is (_, GridPos front))
+        {
+            _gateFrontByOwner[ownerId] = front;
+            _gateFronts[front] = _gateFronts.GetValueOrDefault(front) + 1;
+        }
     }
 
     /// <summary>
@@ -874,6 +880,40 @@ public sealed class ZoneMap
     /// <summary>Each plot's fence edges, as raised — so it can be taken down exactly (D404). Derived, never hashed.</summary>
     private readonly Dictionary<int, List<(GridPos From, GridPos To)>> _fenceByOwner = new();
 
+    /// <summary>The lane tile outside each plot's gate (D456). Derived, never hashed (D335).</summary>
+    private readonly Dictionary<int, GridPos> _gateFrontByOwner = new();
+
+    /// <summary>How many gates open onto each lane tile — kept where the fences go up and come down (D456).</summary>
+    private readonly Dictionary<GridPos, int> _gateFronts = new();
+
+    /// <summary>
+    /// The household whose gate opens onto this lane tile, or 0 (D456, `fences-as-walls.md §9.3`).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe, D448: a building there is refused.</b> It used to be allowed and shut the yard behind
+    /// it. Read from an index kept beside the fences — placement asks it of every tile a ghost
+    /// covers, every frame, so it is a lookup and never a walk over the plots. The owner is found by
+    /// a walk only on a hit, to name the family; the lowest id when two gates share a tile.
+    /// </remarks>
+    public int GateOwnerFacing(GridPos lane)
+    {
+        if (!_gateFronts.ContainsKey(lane))
+        {
+            return 0;
+        }
+
+        int owner = 0;
+        foreach ((int id, GridPos front) in _gateFrontByOwner)
+        {
+            if (front == lane && (owner == 0 || id < owner))
+            {
+                owner = id;
+            }
+        }
+
+        return owner;
+    }
+
     /// <summary>Take a plot's walls off the edges it put them on — and put back any a neighbour still holds.</summary>
     /// <remarks>
     /// ⚠️ Two plots back to back share an edge and each raised it (§5). The layer is a union
@@ -884,6 +924,19 @@ public sealed class ZoneMap
     /// </remarks>
     private void PullTheFenceDown(int ownerId)
     {
+        if (_gateFrontByOwner.Remove(ownerId, out GridPos front))
+        {
+            int left = _gateFronts[front] - 1;
+            if (left == 0)
+            {
+                _gateFronts.Remove(front);
+            }
+            else
+            {
+                _gateFronts[front] = left;
+            }
+        }
+
         if (!_fenceByOwner.Remove(ownerId, out List<(GridPos From, GridPos To)>? edges))
         {
             return;
@@ -972,6 +1025,11 @@ public sealed class ZoneMap
         if (_fenceByOwner.Remove(fromOwnerId, out List<(GridPos From, GridPos To)>? fence))
         {
             _fenceByOwner[toOwnerId] = fence;
+        }
+
+        if (_gateFrontByOwner.Remove(fromOwnerId, out GridPos gateFront))
+        {
+            _gateFrontByOwner[toOwnerId] = gateFront;
         }
 
         Edits++;

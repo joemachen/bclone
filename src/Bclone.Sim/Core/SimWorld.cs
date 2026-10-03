@@ -7669,6 +7669,15 @@ public sealed class SimWorld : IObstacles
             {
                 return PlacementVerdict.No($"That is {yard} yard.");
             }
+
+            // ⛔ NOR ON THE LANE IN FRONT OF A GATE (Joe, D448 — `fences-as-walls.md §9.3`). It was
+            // allowed and shut the yard behind it; nothing entered a yard then, and the kitchen
+            // garden will. One more lane tile the player may not build on, said in words.
+            if (Zones.GateOwnerFacing(onTheGround[i]) is int gated and not 0)
+            {
+                string whose = FindHousehold(gated) is Household family ? $"the {family.Name}s'" : "a family's";
+                return PlacementVerdict.No($"That is the lane in front of {whose} gate — it would shut their yard.");
+            }
         }
 
         // ⛔⛔ AND EVERY OTHER TILE THE BUILDING WILL COVER (D321). The three checks above ask

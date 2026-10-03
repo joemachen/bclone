@@ -161,7 +161,7 @@ The fence is drawn (D386/D388). Two things follow from it becoming a wall:
 | A house handed on (D381) | The fence's edges move to the heir with the plot, so the heir's release takes them down (D404 — the branch left them with the dead family, standing for ever). |
 | A building on a yard | Refused by name (§3.3a). A building against a fence carries the yard's wall on its own side of the edge, and a route off it cannot step through (`StepOff`). |
 | A gate onto a building, or a yard the clip cuts in two | That facing does not fit (§3.3a). |
-| ⏸️ A building put on the lane tile in front of a standing gate | **Allowed**, and the yard behind it is shut. Nothing enters a yard today; §9.3. |
+| ✅ A building put on the lane tile in front of a standing gate | **Refused, in words** (Joe, D448; built D456): *"That is the lane in front of the Thatchers' gate — it would shut their yard."* `ZoneMap.GateOwnerFacing`, an index kept where the fences go up, come down and change hands; §9.3. |
 
 ⛔⛔ **The failure that ends a village, named before it happens: a neighbourhood that packs plots
 until somebody's door is unreachable.** D383's sweep is the guard, and §6 measures how often it
@@ -245,7 +245,7 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
   tiles to their hut against main's ~6, *"let longer walks be the price of fences"*; and on
   pricing the yard walk into the economy, *"i no longer care about a forager feeding a family or
   a farmer keeping 13 tiles."* The facing stays D388's, the derivations stay as they are.
-- ✅ **§9.3 A building on the lane in front of a gate — ALLOWED** (Joe, 2026-09-26: *"no i dont
+- ✅ **§9.3 A building on the lane in front of a gate — REFUSED (Joe, D448, reversing the call below; built D456).** *(Was:)* **ALLOWED** (Joe, 2026-09-26: *"no i dont
   think we want to block it"*). It shuts the yard; nothing needs to enter one until the kitchen
   garden, and that slice asks again.
 - **§9.4 The facing and the walk.** D388 chose facings for variety (*"this isn't supposed to be
