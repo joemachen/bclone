@@ -2,7 +2,7 @@
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS MERGED AND PUSHED (D469).**
 >
-> **State:** `slice/names-and-birthdays` (D465–D469) merged `--no-ff` into `main` and **pushed at Joe's word**: *"looks
+> **State:** `main` = `6420e7a` — `slice/names-and-birthdays` (D465–D469) merged `--no-ff` and **pushed at Joe's word**: *"looks
 > great after playing … spread births through the year - each household has its own day … then merge and push."*
 > **No slice is open.** The branch is kept until Joe says to delete it (never on the remote). At the merge: **1362
 > passing, 0 failing, 5 skipped of 1367, 3m13; view 0 warnings; probe green, bar height 161.** ⚠️ Joe played D465–D468;
