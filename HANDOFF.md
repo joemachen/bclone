@@ -1,6 +1,63 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D473 IN §7. `slice/per-stage-seeds` (D470–D473) BUILT, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D476 IN §7. PER-STAGE SEEDS (D470–D475) PLAYED, MERGED AND PUSHED. NO SLICE OPEN. NEXT: THE NEW-GAME SCREEN, SPEC FIRST.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (EVENING) — PER-STAGE SEEDS BUILT ON A BRANCH (D470–D473).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (NIGHT) — PER-STAGE SEEDS MERGED AND PUSHED (D476).**
+>
+> **State:** `main` = `5392216` — `slice/per-stage-seeds` (D470–D475) merged `--no-ff` and **pushed at Joe's word**
+> (*"merge and push"*), after he played it: *"everything else looks good"*, and the seams note D475 answered. **No slice
+> is open.** The branch is kept until Joe says to delete it (never on the remote). At the merge: **1357 passing, 0
+> failing, 5 skipped of 1362; view 0 warnings; probe green, bar height 151 (not 161 — see below), tile centres ✅.**
+>
+> ⚠️ **Joe's uncommitted edits — never stage them:** his `art/` files, and **`data/sim.config.json` `"seed": 41219`**
+> (he changed it to play-test; the committed seed is 12345). If a checkout refuses over it,
+> `git stash push -- data/sim.config.json`, then pop it after. Stage this file as **`HANDOFF.md`**.
+>
+> **What landed in the slice (one line each — §7 has the reasoning):**
+> - **D470** — ground quality removed (D395's call, approved 09-19 and never built): every tile reaps the same; no
+>   overlay, no `G`, no Ground button, no ground line. **D473** removed the rest (draw, array, hash, config keys), and
+>   **D475** the last trace, *"g ground"* in the hint line.
+> - **D471 / D472** — two latent generator faults, fixed on `main`'s generator first: the founding hut is bounded by
+>   walking, not a ruler; **the founders settle on dry ground** (55 villages 429 → 495 alive).
+> - **D473** — **per-stage seeds**: five stages with stated ids never renumbered (river 1, founding 2, stone 3, iron 4,
+>   woodland 5), each its own splitmix64-seeded stream (`SplitMix64.Fold`), passed by `ref`;
+>   `MapGenerator.Generate(config, seed)` is pure; `SimWorld.Rng` never meets worldgen. **A new stage appends an id
+>   and moves no other stage's draws.**
+> - **D474** — Joe: fishing above hunting on food is fine (*"hunting also produces leather"*); the guard is hunting
+>   above foraging. **Armful 80, eat every four days** — confirmed, NOT built: the first D395 thread after the shell.
+> - **D475** — Joe: *"stone and iron nodes look planned and symmetrical."* `MapGenerator.SeamsOf` draws each seam into
+>   a sector (D24's spread kept) with a ring phase, an angle, a reach out and a size; `PaintOutcrop` paints the forests'
+>   wobbling outline. Survival rose in every arm (100 seeds 479 → 533). **The control bar is 151 tall** — the hint
+>   stopped wrapping at 1280 once *"g ground ·"* went (proven by putting it back); CLAUDE.md's sentinel says 151.
+>
+> **▶️ NEXT: THE NEW-GAME SCREEN — SPEC FIRST** (`DESIGN.md §4`, Phase 4.5's shell, in order: ✅ error boundary →
+> ✅ per-stage seeds → **the new-game screen** → settings persistence → save/load → title and pause; then the D395
+> threads, armful 80 first). **What §4 and D344 ask of it:** archetype, sliders, **a seed string**, and a **live
+> preview from the pure `MapGenerator.Generate` and `ValleyTexture`**. What the shell now gives it:
+> - **Generation is pure and per-stage** — the preview can call `Generate(config, seed)` freely; a slider that only
+>   changes config values moves no golden. **A new map option that GENERATES something (a lake, an island) is a new
+>   stage with the next id** — it moves only itself and the woods that grow round it.
+> - **The sliders already exist as config** — `river_width_tiles`, `river_width_wander_tiles`,
+>   `forest_coverage_percent`, the seam counts and the three `seam_*_scatter_percent` keys (the D344 remark in
+>   `SimConfig` calls the river two "ready to be sliders"). The spec says which are offered and their ranges — **ask
+>   Joe**, with a mockup.
+> - **Today the seed comes only from `data/sim.config.json`.** A seed string needs a stated hash to a `ulong`
+>   (splitmix64 over the bytes, D466's shape) — the same string must give the same valley on every machine.
+> - ⚠️ **Questions for Joe before the spec is written:** what an "archetype" is (the generator has ONE valley,
+>   `seeded-map-generation.md §10.3` — a second is real work); which sliders; whether the screen shows stats (stone,
+>   iron, wood) beside the preview; whether the shipped seed stays the default.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/1ab6508a-2be9-4bfc-b38f-988b499deba8/scratchpad/`):**
+> `ZzBase.cs` + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` 100 shipped seeds; `ZZ_FIX=1` 50 fresh fixture valleys),
+> `mut.py` (counts a Theory's cases separately; `--show` prints `ZZ` and `ticks out` lines), the `mut_d47*.py` sets,
+> baselines `base-d475.txt` / `wide-d475.txt` / `fix50-d475.txt` (the numbers at the merge). Run with
+> **`PYTHONIOENCODING=utf-8`**. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`, **delete before
+> committing**. To compare with an older commit: `git worktree add <scratchpad>/old-gen <sha>`, remove it after.
+> **Compare suite clocks back to back only** — a lone 5m35 this session was the machine (3m46 vs 4m31 side by side).
+>
+> *(The banner as D475 left it — the branch built, unmerged — kept below.)*
+>
+> **(superseded by the banner above)**
+
+> **WHERE THINGS WERE, 2026-10-03 (EVENING) — PER-STAGE SEEDS BUILT ON A BRANCH (D470–D475).**
 >
 > **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = seven commits, **NOT merged, NOT pushed:**
 > `4425e87` the spec, `5f10827` ground quality removed (D470), `935833d` the founding hut bounded by walking
