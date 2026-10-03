@@ -135,8 +135,10 @@ public sealed class VillagerPointTests
     // stream starts one step earlier — rhythm 1 → 3 (and lifespan 45 → 48), and a rhythm is a start
     // that many ticks late. +2 at both paces, which is the rhythm and not the walk; proven by putting
     // the name's draw back, when 39 / 100 return. Were 39 / 100.
-    private const int FirstGatherAtPace1 = 41;
-    private const int FirstGatherAtPace3 = 102;
+    // ⚠️ RE-PINNED (D473), not for the clock: per-stage seeds generate the fixture's valley anew, so the
+    // founder's walks to food and to the store are different walks — 40 / 95. Were 41 / 102.
+    private const int FirstGatherAtPace1 = 40;
+    private const int FirstGatherAtPace3 = 95;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -274,7 +276,7 @@ public sealed class VillagerPointTests
                 if (villager.State == VillagerState.Gathering && before != VillagerState.Gathering)
                 {
                     entries++;
-                    if (entries is 1 or 10 or 50)
+                    if (entries is 1 or 10 or 20)
                     {
                         at.Add(world.Tick);
                     }
@@ -284,7 +286,7 @@ public sealed class VillagerPointTests
             }
         }
 
-        _output.WriteLine($"{entries} gathering trips began; the 1st at {at[0]}, the 10th at {at[1]}, the 50th at {at[2]}");
+        _output.WriteLine($"{entries} gathering trips began; the 1st, 10th and 20th at {string.Join(" / ", at)}");
         // ⚠️ RE-PINNED (D406), not for the clock: fences are walls and the walks go round the
         // yards — 50 trips, the 1st/10th/50th at 10/199/1,975. Were 51 at 10/143/1,929.
         // ⚠️ RE-PINNED (D407), not for the clock: firewood is split only for what the homes want and
@@ -320,8 +322,15 @@ public sealed class VillagerPointTests
         // late on — 51 trips, the 1st/10th/50th at 9/210/1,959; the first ten untouched. Proven the
         // only reason: with every household asked at New Year again, 50 at 9/210/1,936 return.
         // Were 50 at 9/210/1,936.
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 9, 210, 1959 }, at);
+        // ⚠️ RE-PINNED (D473), not for the clock: per-stage seeds generate the fixture's valley anew,
+        // and this valley's four founders gather half as often — 25 trips in two thousand ticks, so
+        // there is no 50th and the milestones are the 1st / 10th / 20th: 14 / 544 / 1,452. Were 51 at
+        // 9/210/1,959 (1st/10th/50th).
+        // ⚠️ RE-PINNED (D475), not for the clock: the seams are found, not placed, and the woods round
+        // the founders' gatherer's hut grow differently — 53 trips, the 1st/10th/20th at 7 / 223 / 512.
+        // Were 25 at 14 / 544 / 1,452.
+        Assert.Equal(53, entries);
+        Assert.Equal(new ulong[] { 7, 223, 512 }, at);
     }
 
     /// <summary>

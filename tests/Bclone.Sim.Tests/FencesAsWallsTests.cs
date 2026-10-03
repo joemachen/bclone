@@ -408,7 +408,9 @@ public sealed class FencesAsWallsTests
     /// </remarks>
     [Theory]
     [InlineData(true, 12345UL)]
-    [InlineData(false, 2UL)]
+    // ⚠️ 4, NOT 2, SINCE PER-STAGE SEEDS (D473): seed 2's new valley built almost nothing; 4 is
+    // the lowest whose opening-only village lives (8 alive at fifty, measured over seeds 1–24).
+    [InlineData(false, 4UL)]
     public void TheSiteChooserNeverProposesAPlotThatWallsAnythingOff(bool shipped, ulong seed)
     {
         SimConfig config = (shipped ? ShippedConfig.Load() : Config) with { Seed = seed };
@@ -476,8 +478,10 @@ public sealed class FencesAsWallsTests
     [Fact]
     public void TheWallsAreMaintainedNotRebuilt()
     {
-        // Fixture seed 2: a village that builds (see the chooser's guard above for why not 12345).
-        SimConfig config = Config with { Seed = 2 };
+        // Fixture seed 4: a village that builds (see the chooser's guard above for why not 12345).
+        // ⚠️ 4 SINCE PER-STAGE SEEDS (D473): seed 2's new valley builds nothing in thirty years;
+        // 4 is the lowest whose opening-only village lives (8 alive at fifty, measured over 1–24).
+        SimConfig config = Config with { Seed = 4 };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);

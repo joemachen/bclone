@@ -51,7 +51,7 @@ public sealed class DesirePathTests
             }
         }
 
-        return new GeneratedMap(width, height, 0, 0, terrain, new byte[width * height], new GridPos(0, 0));
+        return new GeneratedMap(width, height, 0, 0, terrain, new GridPos(0, 0));
     }
 
     // ---------------------------------------------------------------

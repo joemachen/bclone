@@ -1755,100 +1755,26 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// What one tile of crop is worth <b>on this ground</b> — the farm's half of per-site
-    /// yield (`specs/per-site-yield.md §4.1`, D178).
+    /// What one tile of crop is worth — <c>crop_yield_per_tile</c>, with the village's technique.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐ THE SIBLING OF <see cref="GatherYieldAt"/>, AND DELIBERATELY THE SAME SHAPE.</b> A
-    /// gatherer's hut has been worth what the trees around it are worth since D112; this is the
-    /// farm finally getting the same treatment, on the axis a field actually varies by. Two
-    /// buildings, one idea: **what a site produces depends on where it is.**
+    /// ⛔ <b>THE SAME ON EVERY TILE OF THE VALLEY (D395, built in D470).</b> Joe: <em>"remove the
+    /// 'ground' quality functionality from the game entirely — it's going to complicate things too
+    /// much."</em> It was the farm's half of per-site yield (D178): a multiplier on the soil byte
+    /// around a reference, so a field on rich ground reaped more. The overlay, the <c>G</c> key,
+    /// the inspector's ground sentence and the soil term here went together; a farm's place still
+    /// matters through the walk, which is the half of D58 that was always legible.
     /// </para>
     /// <para>
-    /// <b>⛔ <c>crop_yield_per_tile</c> IS LOCKED AND THIS DOES NOT TOUCH IT.</b> Soil is a
-    /// multiplier <em>around</em> <see cref="VillageEconomy.ReferenceSoil"/>, so a field on
-    /// average ground yields exactly what it yielded before this existed. The locked number is
-    /// unchanged and now means something precise: **the yield on average ground.**
-    /// </para>
-    /// <para>
-    /// <b>Never zero.</b> Poor ground is poor, not barren — a farm the player sited badly should
-    /// disappoint them, not fail silently and look broken. That is the same call `GatherYieldAt`
-    /// deliberately made the *other* way, and the difference is the point: **a bald ring has no
-    /// trees in it, while thin soil still grows something.**
+    /// <see cref="GatherYieldAt"/> keeps its per-site shape — a gatherer's hut is worth the trees
+    /// in its ring, which the player can see.
     /// </para>
     /// </remarks>
-    public int CropYieldAt(GridPos tile)
-    {
-        int reference = VillageEconomy.ReferenceSoil(Config);
-        if (reference <= 0)
-        {
-            return Config.CropYieldPerTile;
-        }
-
-        int yield = Config.CropYieldPerTile * Map.SoilAt(tile) / reference;
-
-        // Crop rotation, if anybody alive knows to rest a field (Phase 4). DESIGN.md 2.7 own
-        // worked example, arriving as content at last. It is applied to the per-tile figure, so
-        // the soil overlay and the harvest agree about what a field is worth.
-        yield = YieldWithTechnique(JobKind.Farmer, yield);
-        return yield < 1 ? 1 : yield;
-    }
-
-    /// <summary>
-    /// What one tile of this ground is worth against ordinary ground, as a percentage.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ THE NUMBER BEHIND THE SENTENCE THE PLAYER READS.</b> Joe, walking the shipped
-    /// build: <em>"I can't really tell which areas are good or bad."</em> Until this existed
-    /// the soil overlay's wash was the <b>only</b> channel the game had for saying so — no
-    /// panel, no log line, no sentence anywhere stated a tile's soil in words — and a wash is
-    /// a thing you compare, not a thing you read.
-    /// </para>
-    /// <para>
-    /// <b>Derived from <see cref="CropYieldAt"/> rather than from <c>SoilAt</c> directly</b>,
-    /// so the number the player is shown is the number the farm actually reaps — the never-zero
-    /// floor included. A panel that quoted the raw soil byte could disagree with the harvest,
-    /// and D147's rule is that the marker and the panel must not be able to.
-    /// </para>
-    /// <para>
-    /// 100 is ordinary — <c>crop_yield_per_tile</c> is locked and means <em>the yield on
-    /// average ground</em> (D178).
-    /// </para>
-    /// </remarks>
-    public int SoilShareAt(GridPos tile) =>
-        Config.CropYieldPerTile <= 0 ? 100 : CropYieldAt(tile) * 100 / Config.CropYieldPerTile;
-
-    /// <summary>
-    /// What a farm's own ground is worth against ordinary, averaged over the tiles it holds —
-    /// or 0 if it has been given none.
-    /// </summary>
-    /// <remarks>
-    /// <b>Averaged over what it actually works</b>, not sampled at the farmhouse: soil is
-    /// regional at lattice 8 (`per-site-yield.md §3.1`) and a farm's ground can straddle two
-    /// regions, so the doorstep tile is not the answer to <em>"is this a good farm?"</em>.
-    /// Reads <see cref="ZoneMap.WorkGroundOf"/>, which is already indexed by owner, rather
-    /// than walking the valley.
-    /// </remarks>
-    public int FarmGroundShare(Workplace workplace)
-    {
-        ArgumentNullException.ThrowIfNull(workplace);
-
-        IReadOnlyList<int> ground = Zones.WorkGroundOf(workplace.Id);
-        if (ground.Count == 0)
-        {
-            return 0;
-        }
-
-        int total = 0;
-        for (int i = 0; i < ground.Count; i++)
-        {
-            total += SoilShareAt(Zones.PositionOf(ground[i]));
-        }
-
-        return total / ground.Count;
-    }
+    public int CropYield() =>
+        // Crop rotation, if anybody alive knows to rest a field (Phase 4) — DESIGN.md §2.7's own
+        // worked example.
+        YieldWithTechnique(JobKind.Farmer, Config.CropYieldPerTile);
 
     /// <summary>
     /// A tile of this workplace's own ground for it to work next, or null if there is none.
@@ -3011,7 +2937,7 @@ public sealed class SimWorld : IObstacles
     /// <summary>
     /// The tool's share alone, on an amount the technique is already counted in — for the two
     /// sites whose base number folds the technique in before the villager is known
-    /// (<see cref="GatherYieldAt"/>, <see cref="CropYieldAt"/>, which the panels quote).
+    /// (<see cref="GatherYieldAt"/>, <see cref="CropYield"/>, which the panels quote).
     /// </summary>
     /// <remarks>
     /// So the tool is a percentage of what the action brings in <em>with</em> the village's
@@ -9543,9 +9469,9 @@ public sealed class SimWorld : IObstacles
     /// special case the game itself does not have.
     /// </para>
     /// <para>
-    /// <b>Bounded by the economy's own budget</b>, so the hut cannot wander off to the finest
-    /// wood in the valley and leave the homes beyond the walk the food economy is derived
-    /// against. Deterministic and draw-free: a full scan with ties broken by distance and then
+    /// <b>Bounded by the economy's own budget, walked</b> (D471), so the hut cannot wander off to
+    /// the finest wood in the valley — or sit across a river a ruler says is near — and leave the
+    /// homes beyond the walk the food economy is derived against. Deterministic and draw-free: a full scan with ties broken by distance and then
     /// by position, so two runs of one seed cannot disagree (D15).
     /// </para>
     /// </remarks>
@@ -9585,6 +9511,22 @@ public sealed class SimWorld : IObstacles
                     || Map.TerrainAt(at) == Terrain.Water
                     || SomethingStandsAt(at)
                     || !TravelCost.CanReach(at, origin))
+                {
+                    continue;
+                }
+
+                // ⛔ AND BY WALKING, NOT WITH A RULER — THE FOURTH SITE OF D111's BUG (D471). A
+                // ruler inside the budget said nothing about the river: on a valley whose river
+                // runs a tile from the founding, a hut "nine tiles" off sat across the water, and
+                // the families walked 25 round to it (`EveryValleyMeetsTheEconomysDistanceBudget`,
+                // seed 24 under per-stage seeds). Open ground is four-neighbour at one base cost a
+                // step, so on dry ground with nothing in the way the walk IS the Manhattan
+                // distance and nothing moves; it refuses exactly the tiles the ruler lied about.
+                // One flow field, to the founding site, answers every candidate. ⚠️ Its red check
+                // scores ZERO since D472 keeps the founding off the bank: no valley of the guard's
+                // thirty puts a hut across water now. Kept; the zero is written down (D326).
+                distance = TravelCost.Cost(at, origin) / TravelCostField.BaseTileCost;
+                if (distance > reach)
                 {
                     continue;
                 }
@@ -10220,13 +10162,13 @@ public sealed class SimWorld : IObstacles
         Rng = new DeterministicRandom(seed);
         Tick = 0UL;
 
-        // THE WORLD IS GENERATED FIRST, and from the run's own seeded stream (D18).
+        // THE WORLD IS GENERATED FIRST, from the run's seed (D18).
         //
-        // Before anything else draws, because draw order is the seed contract: the
-        // map, then the villagers' names and lifespans. Generating later — or from a
-        // second RNG — would mean the seed no longer reproduced the world, which is
-        // the entire point of tying worldgen to the sim's seed rather than its own.
-        Map = MapGenerator.Generate(config, Rng);
+        // ⭐ Each stage of the valley draws on a stream of its own, seeded from this seed
+        // (D473, `MapGenerator.Stage`) — never on `Rng`, which is the founding's and the
+        // village's. One number still reproduces the whole run, world included. (Before D473
+        // the generator was handed `Rng` by value, so the sim's first draws were the river's.)
+        Map = MapGenerator.Generate(config, seed);
 
         // The cost field needs the terrain, so it is built after the valley — a route
         // now goes ROUND the river rather than over it (D40), and catchment, market

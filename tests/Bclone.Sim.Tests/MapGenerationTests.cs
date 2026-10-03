@@ -21,7 +21,7 @@ public sealed class MapGenerationTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static GeneratedMap Generate(SimConfig config, ulong seed) =>
-        MapGenerator.Generate(config, new DeterministicRandom(seed));
+        MapGenerator.Generate(config, seed);
 
     [Fact]
     public void SameSeedGivesTheSameValley()
@@ -116,7 +116,7 @@ public sealed class MapGenerationTests
     // written down; only the soil bytes differ, and `MixMap` hashes them.
     //
     // ⚠️ THAT CLAIM IS GUARDED RATHER THAN ASSERTED —
-    // `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` pins terrain
+    // `MapGenerationTests.EachSeedsTerrainIsWhatItWas` pins terrain
     // fingerprints taken from `main` BEFORE the change, across three seeds. **That guard is
     // what licenses this hash to move alone.**
     //
@@ -144,7 +144,71 @@ public sealed class MapGenerationTests
     // iron seams placed by hash, and every iron seam grown until it holds 50. No draw was added —
     // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
     // 10984246327142560906.
-    private const ulong GoldenMapHash = 8294284479965600006UL;
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 8294284479965600006.
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6546559622498121930.
+    private const ulong GoldenMapHash = 4985353537107002683UL;
+
+    /// <summary>
+    /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="GoldenMapHash"/> says only <em>"the map changed"</em>. These say <b>which</b> of
+    /// a valley's tiles did: a change that moves only trees moves the forest count and the print
+    /// but not the water, stone or iron. It licensed D178's soil regions to move the map golden
+    /// alone (no tile of terrain moved), and it is the guard that says so for any change that
+    /// claims to touch one kind of ground.
+    /// </para>
+    /// <para>
+    /// Moved here from <c>PerSiteYieldTests</c> when ground quality was removed (D395, built in
+    /// D470) — it was always a map guard, kept beside the soil it was written to clear.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
+    // keeps its founding site, soil and seams. See `GoldenMapHash`.
+    // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Every kind moves, as it should. Were 9492872349874793864 (420 / 2640 / 141 / 52), 17624964258198066199 (410 / 2673 / 150 / 52), 9190696535150768213 (425 / 2626 / 127 / 43).
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. ⭐ Water holds on all three — the river is another stage. Were 17700436842626828916 (410 / 2489 / 143 / 45), 9700739267172670076 (415 / 2722 / 156 / 52), 1092681087056102210 (410 / 2650 / 141 / 51).
+    [InlineData(12345UL, 10571714027248664497UL, 410, 2523, 134, 40)]
+    [InlineData(2UL, 12027232115351811171UL, 415, 2729, 127, 59)]
+    [InlineData(42UL, 13978094359002128344UL, 410, 2651, 121, 45)]
+    public void EachSeedsTerrainIsWhatItWas(
+        ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
+    {
+        GeneratedMap map = SimFactory.CreatePhase0(
+            ShippedConfig.Established() with { Seed = seed }, new InMemoryLogSink()).World.Map;
+
+        ulong actual = 1469598103934665603UL;
+        int sawWater = 0;
+        int sawForest = 0;
+        int sawStone = 0;
+        int sawIron = 0;
+
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            actual = (actual ^ (byte)map.Tiles[i]) * 1099511628211UL;
+            switch (map.Tiles[i])
+            {
+                case Terrain.Water: sawWater++; break;
+                case Terrain.Forest: sawForest++; break;
+                case Terrain.Rock: sawStone++; break;
+                case Terrain.IronDeposit: sawIron++; break;
+                default: break;
+            }
+        }
+
+        _output.WriteLine(
+            $"seed {seed}: terrain {actual}, water {sawWater}, forest {sawForest}, "
+            + $"stone {sawStone}, iron {sawIron}");
+
+        Assert.Equal(terrainPrint, actual);
+        Assert.Equal(water, sawWater);
+        Assert.Equal(forest, sawForest);
+        Assert.Equal(stone, sawStone);
+        Assert.Equal(iron, sawIron);
+    }
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`
@@ -202,28 +266,71 @@ public sealed class MapGenerationTests
     }
 
     /// <summary>
-    /// ⭐ The woodland was appended to the draw order, so no seed's valley moved for it.
+    /// ⭐ The woodland changes nothing but trees: with none at all, every other tile of the
+    /// valley and its founding site are where they were.
     /// </summary>
     /// <remarks>
-    /// <b>The same guard the seams got (D91), and for the same reason.</b> Draw order is the
-    /// seed contract: a draw inserted in the middle shifts every subsequent value, so the
-    /// river, the sites, the stands, the founding site and the soil would all move for every
-    /// seed anybody has written down. Proved by generating the same seed with the coverage set
-    /// to zero and asserting everything except the trees is identical.
+    /// <para>
+    /// The woodland is the last stage and paints over open grass only, so a bare valley and a
+    /// wooded one differ by grass that became forest and nothing else. Under per-stage seeds
+    /// (D473) its stream is its own; this guard is what says it also paints nothing it should
+    /// not — over the river, over a seam, over the founders' glade's neighbours' rock.
+    /// </para>
+    /// <para>
+    /// It was <c>TheWoodlandWasAppendedToTheDrawOrder</c> under one shared stream, and asserted
+    /// the founding site and the soil; the soil is gone (D470), and this asks every tile.
+    /// </para>
     /// </remarks>
     [Theory]
     [InlineData(1UL)]
     [InlineData(12345UL)]
-    public void TheWoodlandWasAppendedToTheDrawOrder(ulong seed)
+    public void TheWoodlandChangesNothingButTrees(ulong seed)
     {
         SimConfig config = Config;
 
-        SimWorld wooded = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
-        SimWorld bare = SimFactory.CreatePhase0(
-            config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), seed).World;
+        GeneratedMap wooded = Generate(config, seed);
+        GeneratedMap bare = Generate(config with { ForestCoveragePercent = 0 }, seed);
 
-        Assert.Equal(bare.Map.FoundingSite, wooded.Map.FoundingSite);
-        Assert.Equal(bare.Map.Soil, wooded.Map.Soil);
+        Assert.Equal(bare.FoundingSite, wooded.FoundingSite);
+
+        int grew = 0;
+        for (int i = 0; i < wooded.Tiles.Count; i++)
+        {
+            if (wooded.Tiles[i] == bare.Tiles[i])
+            {
+                continue;
+            }
+
+            Assert.True(
+                bare.Tiles[i] == Terrain.Grass && wooded.Tiles[i] == Terrain.Forest,
+                $"Seed {seed}, tile {i}: the woodland turned {bare.Tiles[i]} into {wooded.Tiles[i]}.");
+            grew++;
+        }
+
+        Assert.True(grew > 0, "The woodland grew nothing, so this guard proves nothing.");
+    }
+
+    /// <summary>
+    /// ⭐ Every stage has a seed of its own, and none of them is the run's seed (D473).
+    /// </summary>
+    /// <remarks>
+    /// Two stages on one seed draw the same numbers — the river's wander and the founding
+    /// jitter in lockstep — which is D435's defect by another route; a stage on the run's own
+    /// seed draws what the village's <c>Rng</c> draws. Asked across a spread of seeds including
+    /// the small ones, where D344 found <c>DeterministicRandom</c>'s stream parameter failing.
+    /// </remarks>
+    [Fact]
+    public void EveryStageHasASeedOfItsOwn()
+    {
+        foreach (ulong seed in new ulong[] { 0, 1, 2, 3, 42, 12345, ulong.MaxValue })
+        {
+            var seen = new HashSet<ulong> { seed };
+            foreach (MapGenerator.Stage stage in Enum.GetValues<MapGenerator.Stage>())
+            {
+                ulong stageSeed = MapGenerator.StageSeed(seed, stage);
+                Assert.True(seen.Add(stageSeed), $"Seed {seed}: the {stage} stage shares a seed.");
+            }
+        }
     }
 
     /// <summary>Woodland never takes the stone and iron back out of the valley.</summary>
@@ -434,6 +541,54 @@ public sealed class MapGenerationTests
 
             Assert.True(east > 0 && west > 0, $"Seed {seed}: wood is all on one side ({west}W/{east}E).");
             Assert.True(north > 0 && south > 0, $"Seed {seed}: wood is all on one side ({north}N/{south}S).");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The founders settle on dry ground: no water inside their starter zone's diamond (D472).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Spec §10.1: until bridges exist the generator must not cut the village off from its
+    /// work.</b> The founding used to be the nearest tile on the biggest land mass to a jittered
+    /// spot, which on a valley whose river runs near the middle is the river bank — half the
+    /// starter zone across water nobody can cross. Found by the per-stage reshuffle (seeds 99 and
+    /// 24); present on the old generator too, where moving the founding off the bank took D420's
+    /// 55 villages 429 → 495 alive and 100 shipped seeds 450 → 487.
+    /// </para>
+    /// <para>
+    /// Asked of the fixture and the shipped valley over fifty seeds each — the radius is the
+    /// starter zone's, and the shipped game paints its own, but the bank is the bank either way.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheFoundersSettleOnDryGround(bool shipped)
+    {
+        SimConfig config = shipped ? ShippedConfig.Load() : Config;
+        int dry = config.StartingResidentialRadius;
+        Assert.True(dry > 0, "No starter zone, so nothing to keep dry.");
+
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(config, seed);
+            GridPos f = map.FoundingSite;
+
+            for (int dy = -dry; dy <= dry; dy++)
+            {
+                for (int dx = -dry; dx <= dry; dx++)
+                {
+                    int away = Math.Abs(dx) + Math.Abs(dy);
+                    var at = new GridPos(f.X + dx, f.Y + dy);
+                    if (away <= dry && map.Contains(at) && map.TerrainAt(at) == Terrain.Water)
+                    {
+                        Assert.Fail(
+                            $"Seed {seed}: water {away} tiles from the founding site {f}, inside the "
+                            + $"starter zone's {dry} — the founders settled on the river bank.");
+                    }
+                }
+            }
         }
     }
 
@@ -959,7 +1114,45 @@ public sealed class MapGenerationTests
             }
         }
 
-        Assert.True(exact > 0, "no walk at all was the straight line — the field goes the long way round everywhere");
+        // ⚠️ AND THE "EXACTLY STRAIGHT" HALF IS ASKED OF OPEN GROUND (D475). It was asked of the
+        // founders' walks, and needed one of them to leave a house facing its work — on seed 1's valley
+        // once the seams were scattered, the house faces away from all five and every walk goes round
+        // its own fenced yard, inside the bound above and never exact. The claim was always that the
+        // field does not go the long way round where nothing is in the way, so it is asked where
+        // nothing is: a run of open tiles along a row, end to end.
+        if (exact == 0)
+        {
+            (GridPos a, GridPos b) = AnOpenRun(world, 8);
+            int open = world.TravelCost.Cost(a, b);
+            _output.WriteLine($"open ground {a} to {b}: {open} against {a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost}");
+            Assert.Equal(a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost, open);
+        }
+    }
+
+    /// <summary>The first row run of <paramref name="length"/> + 1 tiles with nothing standing on it and no water.</summary>
+    private static (GridPos From, GridPos To) AnOpenRun(SimWorld world, int length)
+    {
+        GeneratedMap map = world.Map;
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x + length < map.MinX + map.Width; x++)
+            {
+                bool clear = true;
+                for (int k = 0; k <= length && clear; k++)
+                {
+                    var at = new GridPos(x + k, y);
+                    clear = map.TerrainAt(at) != Terrain.Water && !world.SomethingStandsAt(at)
+                        && world.Zones.WallsOn(at) == 0;
+                }
+
+                if (clear)
+                {
+                    return (new GridPos(x, y), new GridPos(x + length, y));
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No open run of ground anywhere in the valley.");
     }
 
     [Fact]

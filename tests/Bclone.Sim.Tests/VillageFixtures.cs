@@ -97,7 +97,10 @@ public static class VillageFixtures
                 // sites in woodland, and the woodland is painted across the whole valley
                 // — so what is left of the generator's rules is the jitter that makes two
                 // seeds two places, and a river wide enough to be in the way.
-                SiteJitterTiles = 1,
+                // The seams' scatter is the shipped one (D475), stated so the fixture cannot drift.
+                SeamAngleScatterPercent = 80,
+                SeamReachScatterPercent = 30,
+                SeamSizeScatterPercent = 40,
                 FoundingJitterTiles = 2,
                 RiverWidthTiles = 2,
 

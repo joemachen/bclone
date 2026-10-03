@@ -68,7 +68,13 @@ public sealed class PinnedTradeTests
         SimWorld world = loop.World;
 
         ColdStartTests.PlayTheOpening(world);
-        loop.Step((config.TicksPerYear * 10) + (config.TicksPerSeason / 2));
+
+        // ⚠️ PINNED IN YEAR TWO, NOT YEAR ELEVEN (D473). The nine years after the pin are what
+        // cross the three-yearly reshuffles; on the fixture's per-stage valley this unattended
+        // village holds six people for ten years and starves from year twelve, so a pin at 10.5
+        // sampled one year of a dying village (held 367 of 427 — the wait for the first pass,
+        // diluted over nothing) and proved nothing about the reshuffle.
+        loop.Step(config.TicksPerYear + (config.TicksPerSeason / 2));
 
         // ⛔⛔⛔ THIS GUARD MEASURED **0 OF 4,311 TICKS** THROUGH FOUR SEPARATE FIXES, AND THE
         // FIRST TWO DIAGNOSES WERE BOTH WRONG. Worth writing down in full, because each wrong
@@ -147,6 +153,14 @@ public sealed class PinnedTradeTests
                 continue;
             }
 
+            // ⚠️ COUNTED FROM THE TICK THEY ARE FIRST PLACED (D473). A pin is honoured at the
+            // allocator's next pass, so the ticks before it are the wait, not a leak — the
+            // claim below is that they are KEPT there.
+            if (sampled == 0 && TradeOf(world, mover) != wanted)
+            {
+                continue;
+            }
+
             sampled++;
             if (TradeOf(world, mover) == wanted)
             {
@@ -158,7 +172,10 @@ public sealed class PinnedTradeTests
         _output.WriteLine($"  reason: {mover.JobReason}");
         _output.WriteLine($"  pinned: {mover.PinnedTrade}, workplace {mover.WorkplaceId}, trade {TradeOf(world, mover)}");
 
-        Assert.True(sampled > 0, "Nobody was alive to sample, so this measures nothing.");
+        Assert.True(
+            sampled >= config.TicksPerYear * 2,
+            $"Only {sampled} ticks held to sample — the pinned villager died or was never placed, "
+            + "so this cannot cross the reshuffles a pin has to beat.");
 
         // Not 100%: a pinned villager still has to be matched to a seat, and there is a tick or
         // two after each reshuffle before the allocator has placed everybody. The claim is that

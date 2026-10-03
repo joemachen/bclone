@@ -44,7 +44,7 @@ public sealed class LineOfSightTests
             }
         }
 
-        return new GeneratedMap(width, height, minX: 0, minY: 0, terrain, new byte[width * height], new GridPos(0, 0));
+        return new GeneratedMap(width, height, minX: 0, minY: 0, terrain, new GridPos(0, 0));
     }
 
     private static List<GridPos> Crossed(GridPos a, GridPos b) =>

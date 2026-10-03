@@ -293,13 +293,6 @@ public partial class VillageMap : Control
     /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
     private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
 
-    /// <summary>Ground better than ordinary, on the soil overlay (D178).</summary>
-    /// <remarks>
-    /// <b>Green for rich and brown for thin</b> — the one place in this palette where the
-    /// obvious colours are the right ones, because they are what soil actually looks like.
-    /// Both are keyed off <see cref="VillageEconomy.ReferenceSoil"/>, so the eye reads
-    /// *distance from ordinary* rather than an absolute nobody could calibrate.
-    /// </remarks>
     /// <summary>Grass worn through to earth where people walk — a footpath (D358).</summary>
     private static readonly Color WornPath = new("#5b4b38", 0.60f);
 
@@ -308,11 +301,6 @@ public partial class VillageMap : Control
 
     /// <summary>The wear overlay's wash — how trodden a tile is, whether or not it reads as a path yet (D358).</summary>
     private static readonly Color WearWash = new("#e0a868", 0.70f);
-
-    private static readonly Color RichGround = new("#6fbf5f", 0.55f);
-
-    /// <summary>Ground worse than ordinary, on the soil overlay (D178).</summary>
-    private static readonly Color ThinGround = new("#9a7448", 0.55f);
 
     private static readonly Color GhostFine = new("#7fd48a");
     private static readonly Color GhostWarned = new("#e0b755");
@@ -2008,7 +1996,7 @@ public partial class VillageMap : Control
     /// grid draws it.</b> Get this wrong and **every building on the map shifts by half a tile**,
     /// which reads as a drawing bug rather than as a units bug. *One conversion, one place, one
     /// comment — the alternative was moving the view's convention, which would have touched
-    /// terrain, soil, the grid lines and the minimap to save this subtraction.*
+    /// terrain, the grid lines and the minimap to save this subtraction.*
     /// </para>
     /// <para>
     /// ⚠️ <b>The float appears HERE and never travels the other way.</b> Fixed-point to float is
@@ -3364,10 +3352,9 @@ public partial class VillageMap : Control
         DrawTheTrees(minX, maxX, minY, maxY);
         _treesNow = Since(started);
 
-        // Under the zone washes, because soil is a property of the ground while the zones
-        // are instructions about it (D178).
+        // Under the zone washes, because wear is a property of the ground while the zones are
+        // instructions about it.
         started = System.Diagnostics.Stopwatch.GetTimestamp();
-        DrawSoil(minX, maxX, minY, maxY);
         DrawWear(minX, maxX, minY, maxY);
         DrawResidentialLand();
         _zonesNow += Since(started);
@@ -3410,72 +3397,6 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// How good the ground is — <b>the overlay that turns per-site yield from a lottery into a
-    /// decision</b> (`specs/per-site-yield.md §5`, D178).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⛔ WITHOUT THIS THE WHOLE SLICE IS AN INVISIBLE MULTIPLIER.</b> A farm on good ground
-    /// out-yields one on thin ground by two to one, and if the player cannot see which is which
-    /// then siting a farm is a lottery — which is precisely what D67 refused for ore
-    /// (*"you can see a seam, so going after it is a decision rather than a lottery"*) and what
-    /// §1.1 refuses in general. **This project has rejected an invisible number three times**
-    /// (D37's spoilage, the seasonal yield curve, `skills-catalog.md §7`); shipping the yield
-    /// without the overlay would be the fourth.
-    /// </para>
-    /// <para>
-    /// <b>Off by default and behind its own control</b>, because it is a question the player
-    /// asks occasionally — *where is the good ground?* — rather than something to look at all
-    /// the time. An always-on wash over the whole valley is the standing alert D42 and D123
-    /// deleted, in a different medium.
-    /// </para>
-    /// <para>
-    /// <b>Green for rich, bare for thin</b>, keyed on
-    /// <see cref="VillageEconomy.ReferenceSoil"/> so the midpoint is *"ordinary"* and the eye
-    /// reads distance from it rather than an absolute. Under the zone washes, because soil is a
-    /// property of the ground while the zones are instructions about it.
-    /// </para>
-    /// </remarks>
-    private void DrawSoil(int minX, int maxX, int minY, int maxY)
-    {
-        if (!_showSoil)
-        {
-            return;
-        }
-
-        SimWorld world = _world!;
-        int reference = VillageEconomy.ReferenceSoil(world.Config);
-        if (reference <= 0)
-        {
-            return;
-        }
-
-
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                var tile = new GridPos(x, y);
-                if (!world.Map.Contains(tile) || world.Map.TerrainAt(tile) == Terrain.Water)
-                {
-                    continue;
-                }
-
-                // How far from ordinary, as a share. Clamped so a config with a wild soil
-                // range cannot drive the alpha out of its own bounds.
-                int soil = world.Map.SoilAt(tile);
-                float away = Mathf.Clamp((soil - reference) / (float)reference, -1f, 1f);
-
-                Color wash = away >= 0f
-                    ? RichGround with { A = RichGround.A * away }
-                    : ThinGround with { A = ThinGround.A * -away };
-
-                DrawRect(TileRect(tile), wash);
-            }
-        }
-    }
-
-    /// <summary>
     /// Where the player has said the village may live (D42).
     /// </summary>
     /// <remarks>
@@ -3501,8 +3422,8 @@ public partial class VillageMap : Control
     /// once per brush stroke rather than once per frame**, which is the trade the counter buys.
     /// </para>
     /// <para>
-    /// ⭐ Cheaper than what it sits beside: the visible window is already walked **six times a
-    /// frame** by the terrain, soil, zone and woods passes with no caching at all.
+    /// ⭐ Cheaper than what it sits beside: the visible window was walked **six times a
+    /// frame** by the terrain, soil (gone since D470), zone and woods passes with no caching at all.
     /// </para>
     /// </remarks>
     private void TraceTheZonesIfTheyMoved(ZoneMap zones)
@@ -4851,22 +4772,20 @@ public partial class VillageMap : Control
     private int _trailsCollectedAt = -1;
 
     /// <summary>
-    /// How trodden every tile is — <b>the wear overlay</b> (D358), the diagnostic beside the soil
-    /// overlay.
+    /// How trodden every tile is — <b>the wear overlay</b> (D358).
     /// </summary>
     /// <remarks>
     /// <para>
     /// The trails show what has become a path; this shows what is on the way to becoming one — a
     /// wash on every trodden tile, brighter the more it is walked, live rather than cached because
-    /// it is off by default and answers an occasional question (*where does everybody go?*), the
-    /// same shape as <see cref="DrawSoil"/>. It draws sim state and only sim state: a tile's wear
+    /// it is off by default and answers an occasional question (*where does everybody go?*). It draws sim state and only sim state: a tile's wear
     /// count is hashed, so a wash here is a fact about the village, never a heatmap of a number
     /// the sim does not hold (D357's rule for overlays).
     /// </para>
     /// <para>
     /// Alpha scales to `path_packed_at`, so a tile at the packed threshold is the full wash and a
     /// lone forager's once-a-season footprint is a whisper. Over the trails and under the zone
-    /// washes, like the soil.
+    /// washes.
     /// </para>
     /// </remarks>
     private void DrawWear(int minX, int maxX, int minY, int maxY)
@@ -4903,7 +4822,7 @@ public partial class VillageMap : Control
     /// <summary>Whether the wear overlay is being drawn (D358).</summary>
     public bool WearShown => _showWear;
 
-    /// <summary>Show or hide the wear overlay — off by default, like the soil's.</summary>
+    /// <summary>Show or hide the wear overlay — off by default.</summary>
     public void ShowWear(bool shown)
     {
         _showWear = shown;
@@ -5875,28 +5794,6 @@ public partial class VillageMap : Control
         _showHarvest = on;
         QueueRedraw();
     }
-
-    /// <summary>Whether the soil overlay is being drawn (D178).</summary>
-    public bool SoilShown => _showSoil;
-
-    /// <summary>Show or hide the soil overlay.</summary>
-    /// <remarks>
-    /// <b>Off by default</b> — it answers a question the player asks occasionally (*where is
-    /// the good ground?*) rather than one they want answered continuously, and a permanent
-    /// wash over the whole valley is the standing alert D42 and D123 deleted in another medium.
-    /// </remarks>
-    public void ShowSoil(bool shown)
-    {
-        _showSoil = shown;
-
-        // ⚠️ Redrawn here rather than relying on `Present` coming round next frame. It would
-        // — `Main._Process` calls it every frame, paused or not — but that is an accident of
-        // the frame loop rather than a decision, and every sibling toggle on this class
-        // (`ShowIdleMarkers`, `ShowFullMarkers`, `ToggleFullMarker`) queues its own.
-        QueueRedraw();
-    }
-
-    private bool _showSoil;
 
     private void DrawHomes()
     {

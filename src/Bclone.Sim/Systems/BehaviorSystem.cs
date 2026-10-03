@@ -5664,13 +5664,9 @@ public sealed class BehaviorSystem : ISimSystem
                 // Vigour scales what a day's work brings home, the same way it scales a gather
                 // and a fell — so a farm run by an ageing household feeds fewer people, which
                 // is D12 arriving in the newest food source rather than being forgotten by it.
-                //
-                // ⭐ AND THE GROUND SCALES IT TOO (D178). `CropYieldAt` is the farm's half of
-                // per-site yield — the sibling of `GatherYieldAt`, which has made a gatherer's
-                // hut worth what the trees around it are worth since D112. **Asked of the tile
-                // that was reaped, not of the farm**, because a field can span better and worse
-                // ground and the player should be able to see that on the map.
-                int crop = world.WithTool(villager, JobKind.Farmer, world.CropYieldAt(reaped))
+                // ⛔ The ground does not (D395, built in D470): a tile of crop is worth the same
+                // everywhere in the valley.
+                int crop = world.WithTool(villager, JobKind.Farmer, world.CropYield())
                     * villager.Vigour / 100;
 
                 // ⭐ AND THE PAINT SCALES IT (D352). A farm works every tile it has any paint on

@@ -140,7 +140,7 @@ public sealed class TravelCostFieldTests
             }
         }
 
-        var map = new GeneratedMap(width, height, 0, 0, terrain, new byte[width * height], new GridPos(0, 0));
+        var map = new GeneratedMap(width, height, 0, 0, terrain, new GridPos(0, 0));
         var field = new TravelCostField(1, map);
 
         List<GridPos> round = field.RouteFrom(new GridPos(0, 2), new GridPos(4, 2));

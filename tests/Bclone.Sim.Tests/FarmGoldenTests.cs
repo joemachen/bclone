@@ -284,7 +284,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D466) — naming stopped taking a draw (`names-and-birthdays.md §3`, D465): a first name is hashed from the seed and the villager's id, so every founder's and every child's lifespan and rhythm come from a different place in the stream, and a founding household's rhythm is drawn once and stepped per adult. ⭐ PROVEN TO BE THE ONLY REASON: with the name's draw and the old per-adult rhythm put back, the old value passes. Was 8602382882784936742.
     // RE-TAKEN (D468) — birthdays (`names-and-birthdays.md §5`, D468): a villager is a year older on their own birthday, not at New Year — founders born at a hashed point in the year before the founding, so they come of age, slow and die of old age on their own days — and the fingerprint mixes the birth tick and no longer the age it is derived from. ⭐ PROVEN TO BE THE ONLY REASON: with New-Year ageing, no founder offset and the old (age, birth year) mix put back, the old value passes. Was 14240505925748272487.
     // RE-TAKEN (D469) — each household tries for a child on a day of its own (`names-and-birthdays.md §5`, D469, Joe: "spread births through the year - each household has its own day"), so the village's children arrive across the year rather than all at its turn. ⭐ PROVEN TO BE THE ONLY REASON: with every household asked at New Year again, the old value passes. Was 5674066082552419964.
-    private const ulong SeamGoldenHash = 7465599573486248760UL;
+    // RE-TAKEN (D470) — ground quality removed (D395, Joe: "remove the 'ground' quality functionality from the game entirely"): a tile of crop reaps `crop_yield_per_tile` everywhere, the soil under a field no longer scales it. The only golden in the suite that reaches a farm, so the only one that moved. ⭐ PROVEN TO BE THE ONLY REASON: with the soil term put back at the reap, the old value passes. Was 7465599573486248760.
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 2163965788719030807.
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 13124465361264696566.
+    private const ulong SeamGoldenHash = 6162009344269948841UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -351,7 +354,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D466) with it again: naming takes no draw, so the founders' lifespans and rhythms come from elsewhere in the stream. Was 17889511511956252039.
     // RE-TAKEN (D468) with it again: a year older on one's own birthday, and the birth tick hashed in the age's place. Was 11896695966416757587.
     // RE-TAKEN (D469) with it again: each household tries for a child on a day of its own. Was 4735495286403371521.
-    private const ulong SeamBeforeAnybodyGotBetter = 4462969067628441091UL;
+    // RE-TAKEN (D470) — ground quality removed (D395): a tile of crop reaps `crop_yield_per_tile` everywhere. The same village as `SeamGoldenHash`, so it moved with it. ⭐ PROVEN: with the soil term put back at the reap, the old value passes. Was 4462969067628441091.
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): every valley generated anew, and the soil no longer drawn or hashed (D470). The same village as `SeamGoldenHash`. Was 4805834385522930014.
+    // RE-TAKEN (D475) — the seams found, not placed (Joe: "stone and iron nodes look planned and symmetrical"): the same village as `SeamGoldenHash`. Was 2806896355272201745.
+    private const ulong SeamBeforeAnybodyGotBetter = 8900799605716253735UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -613,8 +619,7 @@ public sealed class FarmGoldenTests
             }
 
             // ⚠️ Or a farmer standing in their own field with nothing in their arms (D385): a
-            // tile of thin soil reaps to nothing, and the reaper is pre-empted the same tick by
-            // a fetch (the village fetches before it works). The seam this file is about leaves
+            // reaper can be pre-empted the same tick by a fetch (the village fetches before it works). The seam this file is about leaves
             // a LABORER in `Clearing`, which is counted separately; a farmer beside their rows is
             // not it.
             if (villager.Alive && villager.Tile.ManhattanDistanceTo(farm.Tile) <= 4)

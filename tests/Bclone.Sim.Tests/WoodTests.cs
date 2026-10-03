@@ -277,8 +277,12 @@ public sealed class WoodTests
         // main 43 / 28 (7 gated dead), D429 51 / 32 (6 dead) — the gate kills nothing. Posed on a
         // seed whose ungated village lives both before and after (main 10 / 5, D429 10 / 9), so a
         // gated death here would be the gate's doing and not the valley's.
-        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 6);
-        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 6);
+        // ⚠️ SEED 1 SINCE PER-STAGE SEEDS (D473), BY THE SAME RULE. The table again, alive at 120,
+        // gated / free over seeds 1–12: 36 / 28 (6 gated dead, 7 free) — the gate still kills
+        // nothing — but seed 6's ungated village now dies (5 / 0). Seed 1 is the lowest whose
+        // ungated village lives (3 / 9).
+        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 1);
+        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 1);
 
         gated.Step(Config.TicksPerYear * 120);
         free.Step(Config.TicksPerYear * 120);

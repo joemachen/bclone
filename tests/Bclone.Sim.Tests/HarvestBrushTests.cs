@@ -52,6 +52,32 @@ public sealed class HarvestBrushTests
         throw new Xunit.Sdk.XunitException($"The generated valley has no {terrain} at all.");
     }
 
+    /// <summary>
+    /// The first tile of <paramref name="terrain"/> in scan order that the village can walk to.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Reachable, and that was always the premise</b> (D473). Under per-stage seeds the
+    /// first forest in scan order on the fixture's valley is on the far bank, and
+    /// <c>NearestHarvest</c> rightly sends nobody across water nobody can cross.
+    /// </remarks>
+    private static GridPos FindReachable(SimWorld world, Terrain terrain)
+    {
+        GeneratedMap map = world.Map;
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x < map.MinX + map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (map.TerrainAt(at) == terrain && world.TravelCost.CanReach(at, map.FoundingSite))
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"The village can walk to no {terrain} at all.");
+    }
+
     // ---------------------------------------------------------------
     //  Painting
     // ---------------------------------------------------------------
@@ -172,7 +198,9 @@ public sealed class HarvestBrushTests
             for (int x = map.MinX; x < map.MinX + map.Width && painted.Count < 6; x++)
             {
                 var at = new GridPos(x, y);
-                if (map.TerrainAt(at) == Terrain.Forest && world.PaintHarvest(at).Allowed)
+                // Reachable, as `FindReachable` says why (D473).
+                if (map.TerrainAt(at) == Terrain.Forest && world.TravelCost.CanReach(at, from)
+                    && world.PaintHarvest(at).Allowed)
                 {
                     painted.Add(at);
                 }
@@ -218,7 +246,7 @@ public sealed class HarvestBrushTests
     public void PaintOverBareGroundWaitsRatherThanBecomingAnErrand()
     {
         SimWorld world = Build();
-        GridPos forest = FindTile(world, Terrain.Forest);
+        GridPos forest = FindReachable(world, Terrain.Forest);
 
         world.PaintHarvest(forest);
         Assert.Equal(1, world.Zones.HarvestTiles);

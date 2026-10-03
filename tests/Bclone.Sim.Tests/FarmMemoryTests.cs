@@ -144,11 +144,20 @@ public sealed class FarmMemoryTests
 
         // Then three deliberately miserable years — a single tile each, which is the shape of a
         // farm that lost its hands or sat under a met stock limit.
+        //
+        // ⚠️ NOBODY SOWS IN SPRING (D473, D406's lesson one guard over). The memory reads
+        // `sown − standing`, so a field the farmhands sowed in spring and this pose wiped in summer
+        // is a field BROUGHT IN — on the fixture's per-stage valley the farm has a hand in spring,
+        // and "three one-tile years" taught it 3 → 6. The seats are empty through spring, the one
+        // tile is the year's whole sowing, and the hands come back to reap it.
+        int places = farm.Places;
         for (int year = 0; year < 3; year++)
         {
+            world.SetStaffing(farm, 0);
             FarmFixtures.StepToTheStartOf(loop, Season.Summer);
             ClearTheField(world, farm);
             SowExactly(world, farm, 1);
+            world.SetStaffing(farm, places);
             FarmFixtures.StepToTheStartOf(loop, Season.Winter);
         }
 
@@ -205,6 +214,39 @@ public sealed class FarmMemoryTests
         }
     }
 
+    /// <summary>
+    /// The first farm, over three valleys and seven walks in a stated order, whose winter's lesson
+    /// is a probe — run to that winter (see <see cref="ProbeThenFailOneAutumn"/>, D475).
+    /// </summary>
+    private static (SimLoop Loop, Workplace Farm, int Walk, int ProbedAt) TheFirstFarmThatProbes()
+    {
+        foreach (ulong seed in new ulong[] { 12345UL, 1UL, 2UL })
+        {
+            foreach (int away in new[] { 9, 10, 11, 12, 8, 7, 6 })
+            {
+                SimLoop loop = Loop(Config with { CartTools = 0, Seed = seed });
+                Workplace farm = FarmTestGround.SiteAFarm(loop.World, walkAway: away, out int walk);
+                Assert.True(FarmFixtures.GiveItGround(loop.World, farm, reach: 3) > 13);
+
+                // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
+                // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already
+                // winter — so the "twelve years" were the first winter read twelve times.
+                for (int year = 1; year <= 12; year++)
+                {
+                    FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+                    FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+                    if (farm.FieldProbedThisYear)
+                    {
+                        return (loop, farm, walk, year);
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException(
+            "no farm in three valleys and seven walks ever had autumn enough to spare to try one more field");
+    }
+
     private (SimLoop Loop, Workplace Farm, int Tried, int Places) ProbeThenFailOneAutumn()
     {
         // ⚠️ POSED WITHOUT THE FOUNDERS' TOOLS (D391). A tool adds a quarter to every reaped tile,
@@ -213,32 +255,29 @@ public sealed class FarmMemoryTests
         // never probes in twelve years. That is the cap being hauling-bound, not the probe being
         // broken (filed in `handoff.md` beside the over-painted farm); the claim here is the
         // probe's shape, so the tools stay in the cart.
-        SimLoop loop = Loop(Config with { CartTools = 0 });
-        SimWorld world = loop.World;
-        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
-        Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);
-
-        // Run until a winter's lesson is a probe.
         //
-        // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
-        // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already winter
-        // — so the "twelve years" were the first winter read twelve times (ticks 361–383), and the
-        // guard only ever asked whether year ONE probed. It passed because year one happened to;
-        // with D422 the first probe is in year two.
-        int probedAt = 0;
-        for (int year = 1; year <= 12 && probedAt == 0; year++)
-        {
-            FarmFixtures.StepToTheStartOf(loop, Season.Spring);
-            FarmFixtures.StepToTheStartOf(loop, Season.Winter);
-            if (farm.FieldProbedThisYear)
-            {
-                probedAt = year;
-            }
-        }
+        // ⚠️ NINE TICKS OUT, NOT TEN (D470). With ground quality removed (D395) every tile reaps
+        // `crop_yield_per_tile`, and the farm ten ticks out turned hauling-bound the same way a
+        // tool's quarter made it: it learned 5 → 6 a hand and never had autumn to spare in twelve
+        // years. Measured across walks with no tools: the probe fires at 6, 7, 9, 11 and 12 ticks
+        // out and not at 8 or 10 — 10 was a flat spot under the soil too, the soil's draw on this
+        // seed simply landing it on the probing side. Proven: the soil term put back at the reap
+        // passes this guard at ten again.
+        //
+        // ⭐ THE FIRST POSE THAT PROBES, FROM A STATED LIST (D475) — NOT ONE WALK RE-PICKED EACH SLICE.
+        // Whether a farm probes is a coin over walks and valleys: under the scattered seams the shipped
+        // seed's farm probed at 4, 5, 8 and 11 ticks out and not at 6, 7, 9, 10 or 12, seed 1 at 9–12,
+        // seed 2 at 6–9, 11 and 12 (14 of 27 poses) — and a near farm does not probe at all, because
+        // it reaches the derived cap straight from its high-water mark, and the probe only fires below
+        // it. This guard was re-posed 10 → 9 in D470 and 9 flipped in D475. The claim has two halves:
+        // a farm with autumn to spare tries one more field — which some of these must — and a probe
+        // that rots steps back, asked of the first farm that probed. Chosen on the premise, the probe
+        // happening; the step back is what is under test.
+        (SimLoop loop, Workplace farm, int walk, int probedAt) = TheFirstFarmThatProbes();
+        SimWorld world = loop.World;
 
         int tried = farm.FieldTilesLearned;
         _output.WriteLine($"{walk} ticks out: the farm probed in year {probedAt}, trying {tried} a hand");
-        Assert.True(probedAt > 0, "twelve years and the farm never had autumn enough to spare to try one more field");
 
         // The probe year: sow, then take the hands away for the autumn so nothing comes in.
         FarmFixtures.StepToTheStartOf(loop, Season.Fall);
@@ -482,27 +521,40 @@ public sealed class FarmMemoryTests
     [Fact]
     public void AndItBringsInMoreThanThePredictionEverLetIt()
     {
-        int reaped = FarmTestGround.TilesReapedOverTenYears(Config, walkAway: 10, out int walk, out int broughtIn);
+        // ⭐ A LEDGER OVER SIX VALLEYS, NOT ONE (D473). The prediction produced 51 tiles over ten
+        // years at this distance, measured — in the village that fed a family of four by foraging.
+        // At D363's floor (foraging feeds a couple) the same farm on the prediction alone brought
+        // in 38; D382's 2×2 farmhouse made it 27 against 35 with memory and probe — all on the
+        // shipped seed's ONE valley. Under per-stage seeds that valley's village barely works its
+        // farm (22 against 21: a dying village, not a farm memory), as do three of twelve others,
+        // so one village could not say anything. Measured with `LearnFromTheAutumn` stubbed, the
+        // prediction alone reaps **207** over seeds 1–6 (31 / 54 / 5 / 6 / 58 / 53); with memory
+        // and probe, **229** (36 / 60 / 5 / 6 / 64 / 58).
+        int reaped = 0;
+        int sown = 0;
+        int walk = 0;
+        for (ulong seed = 1; seed <= 6; seed++)
+        {
+            int here = FarmTestGround.TilesReapedOverTenYears(
+                Config with { Seed = seed }, walkAway: 10, out walk, out int broughtIn);
+            reaped += here;
+            sown += broughtIn == 0 ? 0 : here * 100 / broughtIn;
+            _output.WriteLine($"seed {seed}, {walk} ticks out: {here} tiles reaped, {broughtIn}% brought in");
+        }
 
-        _output.WriteLine($"{walk} ticks out: {reaped} tiles reaped, {broughtIn}% brought in");
+        int broughtInAll = sown == 0 ? 0 : reaped * 100 / sown;
+        _output.WriteLine($"six valleys: {reaped} tiles reaped, {broughtInAll}% brought in");
 
-        // The prediction produced 51 tiles over ten years at this distance, measured — in the
-        // village that fed a family of four by foraging. At D363's floor (foraging feeds a couple)
-        // the same farm on the prediction alone — memory and probe switched off, measured —
-        // brings in 38; with them, 46. ⚠️ Re-measured for D382: the farmhouse is 2×2 and takes
-        // four of the 7×7 tiles painted round it, so the field is 45 tiles, not 48 — the
-        // prediction alone (`LearnFromTheAutumn` stubbed) brings in 27 now; with memory and
-        // probe, 35.
         Assert.True(
-            reaped > 27,
-            $"A farm {walk} ticks out reaped {reaped} tiles in ten years. The prediction it "
-            + "replaced manages 27 at this floor, and the ledger says the ground is there for more.");
+            reaped > 207,
+            $"Six farms {walk} ticks out reaped {reaped} tiles in ten years. The prediction they "
+            + "replaced manages 207 over the same valleys, and the ledger says the ground is there for more.");
 
         // ⛔ AND THE ROT LINE STAYS HONEST (D167). Bringing in more by sowing far more and
         // losing the difference to winter is the bug this slice's ancestor fixed.
         Assert.True(
-            broughtIn >= 75,
-            $"The farm brought in only {broughtIn}% of what it sowed. Rot every year by "
+            broughtInAll >= 75,
+            $"The farms brought in only {broughtInAll}% of what they sowed. Rot every year by "
             + "construction is weather, and the player cannot act on weather (D167).");
     }
 

@@ -365,14 +365,17 @@
   // See forest_coverage_percent and gatherer_hut_ring_tiles below: those
   // two are what the food economy is made of now.
 
-  // EVERY TILE OF THIS IS PAID FOR BY THE WHOLE ECONOMY. The food
-  // budget assumes the worst case - a site jittered directly away from
-  // the home that needs it, costing twice this in Manhattan distance -
-  // so generosity here makes every villager in every valley work
-  // harder, including on the seeds where the sites land close. One tile
-  // buys visibly different valleys; two pushed the required gather
-  // yield up by two thirds.
-  "site_jitter_tiles": 1,
+  // STONE AND IRON, FOUND RATHER THAN PLACED (D475; Joe: "stone and iron
+  // nodes look planned and symmetrical"). A kind's seams take one equal
+  // sector of their ring each, so they stay spread (D24), but the ring
+  // draws a phase and each seam swings within its sector (angle), lies up
+  // to this much further out than its ring, never nearer (reach), and is
+  // an outcrop this much bigger or smaller than its kind's radius (size).
+  // These replaced site_jitter_tiles: a tile of jitter off eight compass
+  // slots, which read as a stamped cross.
+  "seam_angle_scatter_percent": 80,
+  "seam_reach_scatter_percent": 30,
+  "seam_size_scatter_percent": 40,
   "founding_jitter_tiles": 2,
 
   // WATER IS IMPASSABLE (D40, D41), so a river is load-bearing rather
@@ -390,13 +393,6 @@
   // a frayed edge. Both are ready to be sliders on a new-game screen.
   "river_width_tiles": 3,
   "river_width_wander_tiles": 1,
-
-  // Reserved for soil depletion (DESIGN.md §2.3). Generated and hashed,
-  // read by nothing - it is here so that when depletion lands it does
-  // not have to change the generator's DRAW ORDER, which would
-  // invalidate every seed anyone had written down.
-  "soil_quality_min": 40,
-  "soil_quality_max": 200,
 
   // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
@@ -1342,8 +1338,8 @@
   "iron_seam_radius_tiles": 1,
 
   // MORE STONE AND IRON FOR THE QUARRY (quarry.md §3.1, D434, Joe's calls).
-  // Placed by HASH, never drawn, so every seed keeps its river, soil and
-  // woods. Eight more stone seams on the SECOND ring (its four cardinals at
+  // Placed by HASH, never drawn: the stone and iron stages' streams are
+  // spent only on the first four and two (D473). Eight more stone seams on the SECOND ring (its four cardinals at
   // 21, its four diagonals at 14,14) -- never nearer the village than the
   // first ring, whose diagonals sit in the founding's house plots: a quarry
   // is cut only into rock and laborers clear rock for good, so a valley must

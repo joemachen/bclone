@@ -18,6 +18,13 @@ game existing in the forest, moving around. I want a visual representation of th
 
 So the totem pole Joe has stated, bottom to top: **foraging → fishing → hunting.**
 
+> ⭐ **Revised by Joe (D474, 2026-10-03):** over six valleys a fisher out-earns a hunter on food per tick
+> worked (886 against 1,299 on `main`; a hunter walks to game, a fisher casts beside the hut). Joe: *"i think
+> its fine because hunting also produces leather whereas fishing only produces food."* **On food alone the
+> ladder is foraging → hunting → fishing; the lodge's leather is what puts hunting level.** Guarded:
+> `AHunterOutEarnsAForagerPerTickWorked` (700 against 401 over six valleys) and
+> `FishingTests.AFisherOutEarnsAForagerPerTickWorked`.
+
 ---
 
 ## 2. Why this is not content

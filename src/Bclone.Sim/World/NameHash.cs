@@ -1,3 +1,5 @@
+using Bclone.Sim.Determinism;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -36,13 +38,13 @@ public static class NameHash
 
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
-    /// <c>MapGenerator.HashJitter</c>'s shape, well spread even for adjacent ids.
+    /// <c>SplitMix64.Fold</c>, well spread even for adjacent ids.
     /// </summary>
     public static ulong Mix(ulong seed, int id, int salt, int attempt)
     {
-        ulong z = Fold(seed, (ulong)(uint)id);
-        z = Fold(z, (ulong)(uint)salt);
-        return Fold(z, (ulong)(uint)attempt);
+        ulong z = SplitMix64.Fold(seed, (ulong)(uint)id);
+        z = SplitMix64.Fold(z, (ulong)(uint)salt);
+        return SplitMix64.Fold(z, (ulong)(uint)attempt);
     }
 
     /// <summary>The <paramref name="attempt"/>th candidate first name for villager <paramref name="id"/>.</summary>
@@ -72,15 +74,4 @@ public static class NameHash
     /// </summary>
     public static int DayForAChild(ulong seed, int householdId, int daysPerYear) =>
         (int)(Mix(seed, householdId, ChildDaySalt, 0) % (ulong)daysPerYear);
-
-    private static ulong Fold(ulong state, ulong value)
-    {
-        unchecked
-        {
-            ulong z = state + (0x9E3779B97F4A7C15UL * (value + 1));
-            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
-            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-            return z ^ (z >> 31);
-        }
-    }
 }

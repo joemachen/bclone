@@ -371,13 +371,16 @@ public sealed class HuntingTests
     }
 
     /// <summary>
-    /// ⭐⭐ A hunter <b>out-earns a fisher per tick worked</b> — the top of Joe's totem pole.
+    /// ⭐⭐ A hunter <b>out-earns a forager per tick worked</b> — foraging is the foot of Joe's ladder.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>Joe:</b> *"Hunting ultimately yields more food… foraging is bottom of the totem pole."*
-    /// So the order is <b>hunting → fishing → foraging</b>, and this measures the top two against
-    /// each other <b>in one village, on the same tick, with demand held open</b>.
+    /// The order was <b>hunting → fishing → foraging</b>, and this measured the top two. ⭐ <b>Re-posed
+    /// by Joe's call (D474):</b> over six valleys a fisher out-earns a hunter on food, and *"hunting
+    /// also produces leather whereas fishing only produces food"* — so the claim held here is that a
+    /// hunter beats the trade at the foot, <b>in one village, on the same ticks, with demand held
+    /// open</b>. Fishing above foraging is <c>FishingTests.AFisherOutEarnsAForagerPerTickWorked</c>.
     /// </para>
     /// <para>
     /// ⛔⛔ <b>PER HOUR WORKED, NEVER PER LOAD — AND THAT COMPARISON HAS BEEN WRONG TWICE.</b>
@@ -394,99 +397,119 @@ public sealed class HuntingTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void AHunterOutEarnsAFisherPerTickWorked()
+    public void AHunterOutEarnsAForagerPerTickWorked()
     {
-        SimConfig config = Config with { StockpileTarget = 100_000 };
+        // ⭐ RE-POSED BY JOE'S CALL (D474): *"i think its fine because hunting also produces leather
+        // whereas fishing only produces food."* This asked hunting to out-earn FISHING per tick
+        // worked, and over six valleys it does not — 886 against 1,299 on `main`, 700 against 1,069
+        // under per-stage seeds (D473): a hunter walks to game in the woods while a fisher casts
+        // beside the hut. Fishing above hunting on food is accepted; the lodge's leather is what
+        // makes up the difference. What still holds the ladder at its foot is that a hunter beats a
+        // FORAGER, asked here of the same village in the same year, six valleys together.
+        long meat = 0;
+        long huntTicks = 0;
+        long forage = 0;
+        long forageTicks = 0;
+        for (ulong seed = 1; seed <= 6; seed++)
+        {
+            (int m, int h, int f, int t) = HuntAndForageForAYear(Config with { StockpileTarget = 100_000, Seed = seed });
+            _output.WriteLine($"seed {seed}: hunters {m} over {h} ticks, foragers {f} over {t}");
+            meat += m;
+            huntTicks += h;
+            forage += f;
+            forageTicks += t;
+        }
+
+        long meatRate = huntTicks == 0 ? 0 : meat * 100 / huntTicks;
+        long forageRate = forageTicks == 0 ? 0 : forage * 100 / forageTicks;
+
+        _output.WriteLine(
+            $"six valleys: hunters brought {meat} over {huntTicks} ticks on the job = {meatRate} per 100 "
+            + $"worked; foragers {forage} over {forageTicks} = {forageRate} per 100 worked");
+
+        Assert.True(huntTicks > 0, "The hunters never worked, so this measures nothing.");
+        Assert.True(forageTicks > 0, "Nobody foraged, so there is nothing to compare to.");
+        Assert.True(
+            meatRate > forageRate,
+            $"A hunter made {meatRate} food per 100 ticks worked against a forager's {forageRate}. "
+            + "Foraging is the bottom of Joe's ladder, so a lodge has to beat a gatherer's hut per "
+            + "worker — measured over hours worked, never per load.");
+    }
+
+    /// <summary>
+    /// One valley's year with a lodge raised: the meat its hunters brought in and the ticks they
+    /// worked, and the food the village's foragers gathered and the ticks they worked.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ THE BUILDING, NOT THE PERSON (D417): whoever is posted at the lodge, tick by tick, and what
+    /// they carry. ⚠️ AND THE LODGE STARTS EMPTY, so the hunters measure the hunt and not the haul
+    /// out of a full shed (the D417 trace: 212 against 647 at a full shed).
+    /// </para>
+    /// <para>
+    /// The forager's side is <b>each gather begun, at what that hand brings</b> —
+    /// <see cref="SimWorld.GatherYieldAt"/> with the tool's share (<see cref="SimWorld.WithTool"/>), as
+    /// the sim pays it — and not the bare hut's number, which reads a tool-holding forager low and
+    /// would make this guard easy to pass.
+    /// </para>
+    /// </remarks>
+    private static (int Meat, int HuntTicks, int Forage, int ForageTicks) HuntAndForageForAYear(SimConfig config)
+    {
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
         Workplace lodge = RaiseALodge(world);
         loop.Step(config.TicksPerYear + 1);
 
-        Villager? hunter = world.Villagers.FirstOrDefault(
-            v => v.Alive && v.WorkplaceId == lodge.Id);
-
         Assert.True(
-            hunter is not null, "Nobody was posted to the lodge, so this measures nothing.");
+            world.Villagers.Any(v => v.Alive && v.WorkplaceId == lodge.Id),
+            "Nobody was posted to the lodge, so this measures nothing.");
 
-        // ⛔⛔ THE FISHER COMES FROM HIS OWN VILLAGE, AND THE FIRST DRAFT PROVED WHY.
-        // Raising both in one valley left NOBODY AT THE FISHERY — hunting is asked first, so it
-        // takes the hands and the rival never gets staffed. **That is the ranking working**, and
-        // it makes a same-village comparison impossible rather than merely awkward.
-        //
-        // ⚠️ It is also D286's rule: a baseline that moves with the thing it is guarding is not
-        // a baseline. The fishery's rate must not depend on what the lodge is doing.
-        SimLoop rival = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        Workplace fishery = RaiseAFisheryBeside(rival.World);
-        rival.Step(config.TicksPerYear + 1);
-
-        Villager? fisher = rival.World.Villagers.FirstOrDefault(
-            v => v.Alive && v.WorkplaceId == fishery.Id);
-
-        Assert.True(
-            fisher is not null, "Nobody was posted to the fishery, so there is no rival.");
-
-        // ⛔ THE BUILDING, NOT THE PERSON (D417, Joe: *"accept"*). This followed the first hunter
-        // posted, and the labour allocator is free to move a hunter: stocking the market to 100 a
-        // household sent that one to woodcutting part-way through the year, and the guard went on
-        // timing a woodcutter — 357 against 725. The claim is *a lodge beats a fishery per hour
-        // worked*, so both sides count whoever is posted there, tick by tick, and what they carry.
-        // ⚠️ AND BOTH BUFFERS START EMPTY. Traced: after a year of this four-founder village the lodge
-        // stands at 2,460–2,700 of its 2,700, so its hunters spend the measured year carrying meat
-        // OUT of a full shed — which measures the haul, not the hunt (212 against 647 at 100; 1,237
-        // against 440 at 40, on the same shed). Emptied, each trade has room to show what it brings:
-        // 1,616 / 1,697 / 805 / 805 against 657 / 772 / 772 / 772 at 40 / 99 / 100 / 101. ⚠️ THIN AT
-        // 100: the emptied lodge fills back to its 2,700 and nobody carries it off, so the hunters
-        // stop for room — a shed nobody empties, which is this pose's limit, not hunting's.
         lodge.Store.TakeAll(Goods.Meat);
-        fishery.Store.TakeAll(Goods.Fish);
         int meat = 0;
-        int fish = 0;
         int huntTicks = 0;
-        int fishTicks = 0;
+        int forage = 0;
+        int forageTicks = 0;
         int meatHeld = lodge.Store[Goods.Meat] + CarriedBy(world, lodge, Goods.Meat);
-        int fishHeld = fishery.Store[Goods.Fish] + CarriedBy(rival.World, fishery, Goods.Fish);
+        var was = new Dictionary<int, VillagerState>();
 
         for (int tick = 0; tick < config.TicksPerYear; tick++)
         {
             loop.StepOnce();
-            rival.StepOnce();
 
             huntTicks += OnTheJobAt(world, lodge);
-            fishTicks += OnTheJobAt(rival.World, fishery);
-
             int meatNow = lodge.Store[Goods.Meat] + CarriedBy(world, lodge, Goods.Meat);
-            int fishNow = fishery.Store[Goods.Fish] + CarriedBy(rival.World, fishery, Goods.Fish);
-
             if (meatNow > meatHeld)
             {
                 meat += meatNow - meatHeld;
             }
 
-            if (fishNow > fishHeld)
-            {
-                fish += fishNow - fishHeld;
-            }
-
             meatHeld = meatNow;
-            fishHeld = fishNow;
+
+            foreach (Villager villager in world.Villagers)
+            {
+                Workplace? hut = villager.Alive
+                    ? world.Workplaces.FirstOrDefault(w => w.Id == villager.WorkplaceId && w.Kind == JobKind.Forager)
+                    : null;
+                if (hut is not null)
+                {
+                    if (villager.State is VillagerState.Gathering or VillagerState.TravelingToFood or VillagerState.HaulingToStore)
+                    {
+                        forageTicks++;
+                    }
+
+                    if (villager.State == VillagerState.Gathering
+                        && was.GetValueOrDefault(villager.Id) != VillagerState.Gathering)
+                    {
+                        forage += world.WithTool(villager, JobKind.Forager, world.GatherYieldAt(hut));
+                    }
+                }
+
+                was[villager.Id] = villager.State;
+            }
         }
 
-        int meatRate = huntTicks == 0 ? 0 : meat * 100 / huntTicks;
-        int fishRate = fishTicks == 0 ? 0 : fish * 100 / fishTicks;
-
-        _output.WriteLine(
-            $"a hunter brought {meat} over {huntTicks} ticks on the job = {meatRate} per 100 "
-            + $"worked; a fisher in his own village brought {fish} over {fishTicks} ticks = "
-            + $"{fishRate} per 100 worked");
-
-        Assert.True(huntTicks > 0, "The hunter never worked, so this measures nothing.");
-        Assert.True(fishTicks > 0, "The fisher never worked, so there is nothing to compare to.");
-        Assert.True(
-            meatRate > fishRate,
-            $"A hunter made {meatRate} food per 100 ticks worked against a fisher's {fishRate}. "
-            + "Joe's ranking is hunting above fishing above foraging, so a lodge has to beat a "
-            + "fishery per worker — measured over hours worked, never per load.");
+        return (meat, huntTicks, forage, forageTicks);
     }
 
     /// <summary>How many of the people posted at a workplace are on the job this tick.</summary>
@@ -502,43 +525,7 @@ public sealed class HuntingTests
         state is VillagerState.Hunting
             or VillagerState.TravelingToGame
             or VillagerState.HaulingToFarm // the catch carried back to the lodge (D384)
-            or VillagerState.Fishing
-            or VillagerState.TravelingToWater
             or VillagerState.HaulingToStore;
-
-    private static Workplace RaiseAFisheryBeside(SimWorld world)
-    {
-        GridPos bank = default;
-        bool found = false;
-        for (int radius = 1; radius < 60 && !found; radius++)
-        {
-            for (int dy = -radius; dy <= radius && !found; dy++)
-            {
-                for (int dx = -radius; dx <= radius && !found; dx++)
-                {
-                    var at = new GridPos(
-                        world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + dy);
-                    if (world.CanBuildAt(BuildingKind.FishingHut, at).Allowed)
-                    {
-                        bank = at;
-                        found = true;
-                    }
-                }
-            }
-        }
-
-        world.Mark(BuildingKind.FishingHut, bank);
-        Workplace site = world.Workplaces.Single(
-            w => w.Construction?.Kind == BuildingKind.FishingHut);
-        BuildFixtures.StockTheSite(site);
-        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
-        {
-            site.Construction.Work();
-        }
-
-        world.Complete(site);
-        return world.Workplaces.Single(w => w.Kind == JobKind.Fisher && !w.IsSite);
-    }
 
     // ---------------------------------------------------------------
     //  § The woodland is the resource — Joe, 2026-09-05

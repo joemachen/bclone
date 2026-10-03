@@ -379,10 +379,23 @@ public sealed class OrganicHousingTests
     /// of it is right to win — found by <c>AHouseFacesThePathInFrontOfIt</c>'s first run.
     /// </remarks>
     private static (SimWorld World, GridPos Centre) ASquareWithAPath(
-        Func<GridPos, IEnumerable<GridPos>> path, SimConfig? config = null)
+        Func<GridPos, IEnumerable<GridPos>> path, SimConfig? config = null, int bareHalf = 6)
     {
         SimWorld world = Bare(config);
-        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, 6);
+
+        // ⚠️ CLEAR OF EVERY BUILDING BY THE PAINT AND A LANE, NOT TWELVE FROM THE FOUNDING (D473).
+        // The square is painted eight wide, so twelve from the founding site could put its edge
+        // beside the founders' houses — and on the fixture's per-stage valley it did: every family
+        // "faced the path to the north", the Weavers' lane, and none of these guards was reading
+        // the path it had laid. Far from the village's walks means nothing stands within the paint
+        // and a lane of it.
+        // `bareHalf`: how far out from the centre the ground must be bare grass — see the yard guard.
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 12, bareHalf);
+        for (int away = 14; NothingStandsWithin(world, centre, 12) is false; away += 2)
+        {
+            centre = ABareSquareAtLeast(world, world.Map.FoundingSite, away, bareHalf);
+        }
+
         Paint(world, centre, 8);
         foreach (GridPos tile in path(centre))
         {
@@ -390,6 +403,23 @@ public sealed class OrganicHousingTests
         }
 
         return (world, centre);
+    }
+
+    /// <summary>Whether no building stands within <paramref name="reach"/> tiles (each way) of a centre.</summary>
+    private static bool NothingStandsWithin(SimWorld world, GridPos centre, int reach)
+    {
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                if (world.SomethingStandsAt(new GridPos(centre.X + dx, centre.Y + dy)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Site this many families one after another, as a growing village would.</summary>
@@ -485,15 +515,23 @@ public sealed class OrganicHousingTests
     [Fact]
     public void HousesAlongABendTurnWithIt()
     {
+        // ⚠️ THE BEND ON THE VILLAGE'S SIDE OF THE SQUARE (D473). The chooser fills a painted square
+        // from the side nearest the village, and the arc bulges into one half of it; on the fixture's
+        // per-stage valley the village lay opposite, the dozen houses filled the far corner facing
+        // each other's lanes (five facings, six to the west) and never met the bend. Mirrored so the
+        // bulge points at the village, the houses are sited along it — which is the question.
+        GridPos village = MapGenerator.Generate(Config, Config.Seed).FoundingSite;
         (SimWorld world, _) = ASquareWithAPath(c =>
         {
+            int fx = village.X < c.X ? -1 : 1;
+            int fy = village.Y < c.Y ? -1 : 1;
             var arc = new List<GridPos>();
             for (int step = 0; step <= 24; step++)
             {
                 double at = step * System.Math.PI / 48;
                 arc.Add(new GridPos(
-                    c.X - 6 + (int)System.Math.Round(10 * System.Math.Sin(at)),
-                    c.Y + 6 - (int)System.Math.Round(10 * (1 - System.Math.Cos(at)))));
+                    c.X + (fx * (-6 + (int)System.Math.Round(10 * System.Math.Sin(at)))),
+                    c.Y + (fy * (6 - (int)System.Math.Round(10 * (1 - System.Math.Cos(at)))))));
             }
 
             return arc;
@@ -573,8 +611,13 @@ public sealed class OrganicHousingTests
     [Fact]
     public void EveryHouseHasAYardWhereThereIsRoom()
     {
-        (SimWorld world, _) = ASquareWithAPath(c =>
-            Enumerable.Range(-6, 13).Select(k => new GridPos(c.X + k, c.Y + k)));
+        // ⚠️ BARE AS FAR AS IT IS PAINTED, EIGHT, NOT SIX (D475): with the seams scattered, rock lay
+        // inside the paint's last two tiles and a house there lost its yard to the stone ("1 tile of
+        // yard") — which is not "where there is room". The other guards keep six: moving their square
+        // turns a house on the paint's edge (a yard facing the village would lose half its ground, so
+        // D411 turns it), a different premise from the one each asks about.
+        (SimWorld world, _) = ASquareWithAPath(
+            c => Enumerable.Range(-6, 13).Select(k => new GridPos(c.X + k, c.Y + k)), bareHalf: 8);
 
         SiteFamilies(world, 6);
         foreach (Household household in world.Households)

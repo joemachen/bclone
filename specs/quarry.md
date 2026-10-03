@@ -95,6 +95,17 @@ What the code had before this spec, traced rather than remembered:
 
 ### 3.1 More stone and iron, placed by hash
 
+> ⭐ **SUPERSEDED BY D475 (2026-10-03, Joe: *"stone and iron nodes look planned and symmetrical"*).** The
+> hash and the slots below are gone. Every seam is drawn from its kind's own stage stream (D473 made that
+> free) by `MapGenerator.SeamsOf`: a ring of up to `4k` seams at `1 + (k−1)/2` times the kind's ring (the
+> layout below to the seam — stone four at 14 and eight at 21, iron four at 26), each in a sector of its
+> own (D24's spread), the ring turned by a drawn phase, each seam swung inside its sector
+> (`seam_angle_scatter_percent` 80), pushed out from its ring, never in (`seam_reach_scatter_percent`
+> 30), and painted as an outcrop — the forests' wobbling outline on a size it drew
+> (`seam_size_scatter_percent` 40) — not a Manhattan diamond. `extra_…_seams` are summed with the counts.
+> Measured over 64 valleys: stone 145 → 139 tiles a valley (min 120 → 112), iron 49 → 48; the leanest
+> iron seam holds 56; every valley keeps five stone seams in reach. *The section below is history.*
+
 - **The first four stone seams and two iron seams are drawn exactly as today** — the same draws,
   in the same order, at the same slots.
 - **Seams beyond them take their jitter from a hash, not the stream:** `SeamJitter(valley, kind,

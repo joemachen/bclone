@@ -1,4 +1,5 @@
 using Bclone.Sim.Config;
+using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 
 namespace Bclone.Sim.World;
@@ -8,12 +9,23 @@ namespace Bclone.Sim.World;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Draw order is the contract.</b> Every value comes from the run's one
-/// <see cref="DeterministicRandom"/>, in the order written here, and inserting a draw
-/// in the middle shifts every subsequent value — silently invalidating every seed
-/// anybody has written down and every golden test. It is the same hazard D5 names for
-/// system execution order, and it deserves the same treatment: reordering is a
-/// behavioural change, never a tidy-up.
+/// <b>⭐ Each stage draws on a stream of its own (D473, `seeded-map-generation.md §13`).</b> The
+/// valley is generated in <see cref="Stage"/>s — the river, the founding site, the stone seams,
+/// the iron seams, the woodland — and each stage's <see cref="DeterministicRandom"/> is seeded
+/// from the run's seed and the stage's stated id through <see cref="SplitMix64"/>, then handed to
+/// its helpers <b>by <c>ref</c></b>. So a draw added inside a stage moves that stage's numbers
+/// and no other's, and a new stage — a lake, an island, a cliff from the new-game screen —
+/// appends an id and moves no other stage's draws. (A later stage that paints only over grass
+/// still sees an earlier stage's ground: a new river shape moves trees. What it never moves is
+/// another stage's <em>numbers</em>.)
+/// </para>
+/// <para>
+/// ⛔ <b>What this replaced (D435):</b> one stream, passed to every helper <em>by value</em>, so
+/// each helper drew on a copy and the caller's stream never moved — every drawn seam shared one
+/// offset, the founding jitter's x and y were one draw, the river and the soil began on the same
+/// numbers. "Draw order is the contract" was the design's sentence; the code never kept it.
+/// ⚠️ <c>DeterministicRandom</c> is a <c>struct</c>: a helper that takes one by value draws on
+/// a copy. Pass it by <c>ref</c>.
 /// </para>
 /// <para>
 /// <b>The generator is bounded rather than checked.</b> The economy is derived from how
@@ -28,11 +40,33 @@ namespace Bclone.Sim.World;
 /// </remarks>
 public static class MapGenerator
 {
+    /// <summary>
+    /// The stages of the valley, each with a stated id that is <b>never renumbered</b> (D473).
+    /// </summary>
+    /// <remarks>
+    /// The id is the stage's seed: renumbering one reshuffles that stage for every seed anyone
+    /// has written down. A new stage takes the next id.
+    /// </remarks>
+    internal enum Stage
+    {
+        River = 1,
+        Founding = 2,
+        StoneSeams = 3,
+        IronSeams = 4,
+        Woodland = 5,
+    }
+
+    /// <summary>A stage's seed: the run's seed and the stage's id through splitmix64 (D473).</summary>
+    /// <remarks>
+    /// ⛔ Never <see cref="DeterministicRandom"/>'s <c>stream</c> parameter: D344 measured small
+    /// adjacent stream ids six times deadlier (6 dead valleys of 24 against 1).
+    /// </remarks>
+    internal static ulong StageSeed(ulong seed, Stage stage) => SplitMix64.Fold(seed, (ulong)stage);
+
     /// <summary>Build the valley. Same seed and config ⇒ byte-identical map.</summary>
-    public static GeneratedMap Generate(SimConfig config, DeterministicRandom rng)
+    public static GeneratedMap Generate(SimConfig config, ulong seed)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(rng);
 
         int width = config.MapWidth;
         int height = config.MapHeight;
@@ -40,39 +74,24 @@ public static class MapGenerator
         int minY = config.MapMinY;
 
         var terrain = new Terrain[width * height];
-        var soil = new byte[width * height];
 
         // ---- 1. The river ------------------------------------------
-        CarveRiver(config, rng, terrain, width, height);
+        var riverRng = new DeterministicRandom(StageSeed(seed, Stage.River));
+        CarveRiver(config, ref riverRng, terrain, width, height);
 
-        // ---- 2 and 3. THE STANDS AND THE BERRY PATCHES ARE GONE ------
-        //
-        // ⭐ Two ring-drawn tree stands and six ring-drawn forage sites used to be laid here,
-        // and with them went the last placeholder in the economy: food was a **fact of the
-        // map** rather than a decision (`forests-and-gathering.md`, Joe). The valley is
-        // wooded across its whole area now (step 7), the player sites a gatherer's hut in it,
-        // and *the trees in that hut's ring decide what a trip is worth.* **Timber and food
-        // compete for the same trees**, which is the whole point.
-        //
-        // ⚠️ THIS MOVES EVERY SEED AND THAT IS UNAVOIDABLE. Those two loops consumed random
-        // draws, so deleting them shifts every subsequent value: the founding site, the soil,
-        // both seams and the woodland are all different now for every seed ever written down.
-        // Draw order is the seed contract (§1) and this is the one kind of change that is
-        // allowed to break it — a slice that removes generated content rather than adding it.
-        // All three goldens are re-taken here, once, with the old values kept beside them.
-        //
-        // The nudge-out-of-water pass went with them. It existed because berries do not grow
-        // in the river; woodland is painted tile by tile over open grass and never needs it.
+        // ⭐ The two ring-drawn tree stands and six ring-drawn forage sites that once followed
+        // are gone (`forests-and-gathering.md` slice 5): the valley is wooded across its whole
+        // area (step 5), the player sites a gatherer's hut in it, and *the trees in that hut's
+        // ring decide what a trip is worth.* **Timber and food compete for the same trees.**
 
-        // ---- 4. The founding site ----------------------------------
+        // ---- 2. The founding site ----------------------------------
         // Where the first homes and the village's buildings go. Kept near the middle
         // of the ring of sites, because the economy's distance budget is derived from
-        // a village that sits inside that ring rather than off to one side.
-        GridPos wanted = ClampInside(
-            new GridPos(
-                DrawJitter(rng, config.FoundingJitterTiles),
-                DrawJitter(rng, config.FoundingJitterTiles)),
-            config);
+        // a village that sits inside that ring rather than off to one side. x is drawn, then y.
+        var foundingRng = new DeterministicRandom(StageSeed(seed, Stage.Founding));
+        int jitterX = DrawJitter(ref foundingRng, config.FoundingJitterTiles);
+        int jitterY = DrawJitter(ref foundingRng, config.FoundingJitterTiles);
+        GridPos wanted = ClampInside(new GridPos(jitterX, jitterY), config);
 
         // AND ON THE SAME SIDE OF THE RIVER AS ITS WORK.
         //
@@ -84,152 +103,53 @@ public static class MapGenerator
         //
         // Until bridges exist the generator owes the village a valley it can live in
         // (spec §6), so the founding site moves to the reachable side rather than the
-        // map being redrawn. Costs no random draws, so the seed contract is untouched.
+        // map being redrawn. It takes no draws.
         GridPos founding = ChooseFoundingSite(
-            terrain, wanted, width, height, minX, minY);
+            terrain, wanted, config.StartingResidentialRadius, width, height, minX, minY);
 
-        // ---- 5. Soil ------------------------------------------------
-        // ⭐⭐ GROUND THAT IS WORTH GOING TO (`specs/per-site-yield.md`, D178). Soil was
-        // laid down here — generated, hashed, read by nothing — precisely so that the day
-        // something read it, the DRAW ORDER would not have to move. **This is that day, and
-        // the foresight paid for itself: the draw count below is unchanged, so the river,
-        // the woodland, the forage sites, the founding site, the stone and the iron are all
-        // byte-identical for every seed ever written down.** Only the soil VALUES differ.
-        //
-        // ⛔ AND PER-TILE NOISE IS THE WRONG SHAPE, WHICH IS D67'S OWN ARGUMENT ABOUT ORE:
-        // *"seams, not scatter — you can see a seam, so going after it is a decision rather
-        // than a lottery. Scattered ore would be texture."* A field is thirteen tiles, and
-        // thirteen uniform samples average to the same thing everywhere, so scattered soil
-        // gives per-TILE variance and almost no per-SITE variance — which is the one thing
-        // per-site yield needs.
-        for (int i = 0; i < soil.Length; i++)
-        {
-            soil[i] = (byte)rng.NextInt(config.SoilQualityMin, config.SoilQualityMax + 1);
-        }
+        // ⛔ GROUND QUALITY IS GONE (D395, built D470; its draw deleted in D473). Joe: *"remove
+        // the 'ground' quality functionality from the game entirely."* If it ever returns, it is a
+        // new stage, which moves no other stage's draws.
 
-        // ⭐ Regions, from the draws already made. See `MakeSoilRegional`.
-        MakeSoilRegional(soil, width, height, config.SoilRegionScale);
-
-        // ⭐ And the founders settle for safety, not for richness. See `CapFoundingGround`.
-        CapFoundingGround(config, soil, founding, width, height, minX, minY);
-
-        // ---- 6. Stone and iron --------------------------------------
-        // ⭐ APPENDED AFTER EVERY EXISTING DRAW, AND THAT IS THE WHOLE OF THE CARE HERE.
-        // Draw order is the contract (§1 of this file): inserting these anywhere earlier
-        // would shift every subsequent value, so the river, the stands, the forage sites,
-        // the founding site and the soil would all move for every seed ever written down.
-        // Added at the end, all of those are byte-identical and only the new tiles differ.
-        //
-        // SEAMS, NOT SCATTER — the same argument the forest stands are built on, and D67's
-        // reason for refusing a percentage roll: you can see a seam, so going after it is a
-        // decision rather than a lottery. Scattered ore would be texture.
+        // ---- 3 and 4. Stone and iron --------------------------------
+        // SEAMS, NOT SCATTER — D67's reason for refusing a percentage roll: you can see a seam,
+        // so going after it is a decision rather than a lottery. Scattered ore would be texture.
         //
         // STONE NEAR, IRON FAR. That is the design rather than flavour: reaching the iron
         // is a thing the player chooses to do, and a valley whose ore sits in the far woods
         // plays differently from one where it is on the doorstep (§2.5's argument for
         // seeded maps).
         //
-        // ⭐ AND THE QUARRY'S SEAMS ARE HASHED, NEVER DRAWN (`quarry.md §3.1`, D434). Past the
-        // drawn four and two, a seam's offset hashes the stream's state — read here, never
-        // advanced — with its kind and its index, so the new rock costs no draws and every seed
-        // keeps its woods. ⚠️ D435: `rng` reaches every helper BY VALUE (it is a struct), so a
-        // helper's draws advance only its copy; per-stage seeds are the fix. The hash is right
-        // either way.
-        ulong valley = rng.State;
+        // ⭐ FOUND, NOT PLACED (D475, Joe: *"stone and iron nodes look planned and symmetrical"*).
+        // Each seam takes a sector of its ring, a phase the ring draws, an angle and a reach inside
+        // it, and an outcrop's wobbling outline — see `SeamsOf`. Stone first, so iron never lands
+        // on rock.
         int ironTiles = TilesToHold(config, Goods.Iron, config.IronSeamMinIron);
 
-        PaintSeams(
-            config, rng, terrain, Terrain.Rock,
-            config.StoneSeamCount, config.ExtraStoneSeams, config.StoneSeamRingTiles,
-            config.StoneSeamRadiusTiles, 0, valley,
-            width, height, minX, minY);
+        foreach (Seam seam in SeamsOf(config, seed, Terrain.Rock))
+        {
+            PaintOutcrop(terrain, Terrain.Rock, seam, 0, width, height, minX, minY);
+        }
 
-        PaintSeams(
-            config, rng, terrain, Terrain.IronDeposit,
-            config.IronSeamCount, config.ExtraIronSeams, config.IronSeamRingTiles,
-            config.IronSeamRadiusTiles, ironTiles, valley,
-            width, height, minX, minY);
+        foreach (Seam seam in SeamsOf(config, seed, Terrain.IronDeposit))
+        {
+            PaintOutcrop(terrain, Terrain.IronDeposit, seam, ironTiles, width, height, minX, minY);
+        }
 
-        // ---- 7. Woodland across the whole valley ---------------------
-        // ⭐ THE VALLEY IS WOODED NOW, NOT DOTTED WITH TWO STANDS (Joe,
+        // ---- 5. Woodland across the whole valley ---------------------
+        // ⭐ THE VALLEY IS WOODED, NOT DOTTED WITH TWO STANDS (Joe,
         // `specs/forests-and-gathering.md`). "There should be generated forests on the map
         // naturally, just like stone, iron, water — lots of them, actually", so that a
         // gatherer's hut can be sited in woodland from the first year.
         //
-        // ⚠️ APPENDED AFTER EVERY EXISTING DRAW, for the reason §1 of this file gives and
-        // D91 already had to take care over: inserting these draws anywhere earlier would
-        // shift every subsequent value, and the river, the stands, the forage sites, the
-        // founding site, the soil and both seams would move for every seed ever written
-        // down. Added last, all of those are byte-identical and only trees differ.
-        //
-        // OVER OPEN GRASS ONLY, which is the same rule `PaintSeams` follows and here it
+        // OVER OPEN GRASS ONLY, which is the same rule `PaintOutcrop` follows and here it
         // matters in the other direction: woodland drawn over the seams would quietly take
-        // the stone and iron back out of the valley a slice after they were put in.
-        PaintWoodland(config, rng, terrain, founding, width, height, minX, minY);
+        // the stone and iron back out of the valley a slice after they were put in. So it is
+        // painted last, and a change to any stage before it can move trees.
+        var woodlandRng = new DeterministicRandom(StageSeed(seed, Stage.Woodland));
+        PaintWoodland(config, ref woodlandRng, terrain, founding, width, height, minX, minY);
 
-        return new GeneratedMap(width, height, minX, minY, terrain, soil, founding);
-    }
-
-    /// <summary>
-    /// A position on a ring around the origin, one slot per site, plus a little jitter.
-    /// </summary>
-    /// <remarks>
-    /// Evenly spaced slots rather than free angles, because "spread" is a requirement
-    /// (D24) and not an average. Drawing angles at random would sometimes put four
-    /// sites in one quadrant, which is the layout that starved the village once
-    /// already. Jitter makes each valley different; the slots make every valley
-    /// habitable.
-    /// </remarks>
-    private static GridPos DrawRingPosition(
-        DeterministicRandom rng, int radius, int jitter, int index)
-    {
-        GridPos slot = RingSlot(index, radius);
-        return new GridPos(slot.X + DrawJitter(rng, jitter), slot.Y + DrawJitter(rng, jitter));
-    }
-
-    /// <summary>
-    /// Where the nth site sits before any jitter — the <b>canonical</b> valley.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Public and RNG-free on purpose. <see cref="VillageEconomy"/> derives the food
-    /// economy from how far the worst-placed home is from its nearest site, and it has
-    /// to be able to ask that question <em>without</em> generating a world — otherwise
-    /// the economy becomes a property of the seed and two runs have different physics.
-    /// So the economy budgets against this layout plus the worst jitter the generator
-    /// may add, and every seed lands inside that budget by construction.
-    /// </para>
-    /// <para>
-    /// Evenly spaced slots rather than free angles, because "spread" is a requirement
-    /// (D24) and not an average. Drawing angles at random would sometimes put four
-    /// sites in one quadrant, which is precisely the layout that starved the village
-    /// once already — central homes idle beside a full thicket while the outskirts had
-    /// nothing in reach.
-    /// </para>
-    /// </remarks>
-    public static GridPos RingSlot(int index, int radius)
-    {
-        // Eight compass slots walked in order, so the arithmetic stays integer — a
-        // trigonometric ring would put floats in worldgen, against D2.
-        (int X, int Y)[] directions =
-        {
-            (1, 0), (-1, 0), (0, 1), (0, -1),
-            (1, 1), (-1, -1), (1, -1), (-1, 1),
-        };
-
-        (int X, int Y) direction = directions[index % directions.Length];
-
-        // Diagonals are longer in Manhattan terms, so halve them — otherwise the
-        // corner sites sit twice as far out as the cardinal ones and the ring is a
-        // star.
-        bool diagonal = direction.X != 0 && direction.Y != 0;
-        int reach = diagonal ? (radius + 1) / 2 : radius;
-
-        // Later rings step outward, so more sites than slots still spreads.
-        int ringsOut = index / directions.Length;
-        reach += ringsOut * radius / 2;
-
-        return new GridPos(direction.X * reach, direction.Y * reach);
+        return new GeneratedMap(width, height, minX, minY, terrain, founding);
     }
 
     // `CanonicalForageSites` and `CanonicalTreeStands` are deleted with the things they
@@ -238,141 +158,8 @@ public static class MapGenerator
     // physics. **The bound is the gatherer hut's ring now** — a number, not a layout — which
     // does the same job without needing a canonical map to consult.
 
-    private static int DrawJitter(DeterministicRandom rng, int jitter) =>
+    private static int DrawJitter(ref DeterministicRandom rng, int jitter) =>
         jitter <= 0 ? 0 : rng.NextInt(-jitter, jitter + 1);
-
-    /// <summary>
-    /// Turn per-tile soil noise into <b>regions</b> — good ground and poor ground you can
-    /// point at — without drawing a single extra value.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ VALUE NOISE: sample the already-drawn array on a coarse lattice and interpolate
-    /// between the samples.</b> Lattice points keep the full drawn amplitude, and the
-    /// interpolation supplies the structure. It reads the array it is about to overwrite, so
-    /// the lattice is copied out first.
-    /// </para>
-    /// <para>
-    /// <b>⛔ THE FIRST ALGORITHM THIS SLICE PROPOSED WAS SMOOTHING, AND THE PROBE KILLED IT
-    /// BEFORE A LINE SHIPPED</b> (`per-site-yield.md §3.1`, METHODOLOGY §3). Averaging noise
-    /// regresses everything toward the mean: it <em>destroys</em> amplitude rather than
-    /// creating structure. Measured across 104 candidate thirteen-tile fields on the shipped
-    /// valley — <b>p90÷p10 of 134% raw, 113% after eight smoothing passes, and 200% under
-    /// value noise at lattice 8.</b> The mechanism intended to raise site-to-site variance
-    /// was reducing it, and only a measurement could have said so.
-    /// </para>
-    /// <para>
-    /// <b>Scale 8 is measured, not picked</b> (D16): 4 averages out across a thirteen-tile
-    /// field, 24 leaves too few distinct regions, and 8 is a couple of fields across — which
-    /// is a region a player can see and choose to walk to. That is D67's <em>seam</em> rather
-    /// than its <em>scatter</em>.
-    /// </para>
-    /// <para>
-    /// <b>Integer bilinear throughout</b> (D2). One divide per tile; no floats anywhere near
-    /// sim-critical state.
-    /// </para>
-    /// </remarks>
-    private static void MakeSoilRegional(byte[] soil, int width, int height, int scale)
-    {
-        if (scale < 2)
-        {
-            // A scale of one is "no regions at all", and is the honest way to switch this
-            // off in config rather than a special case anybody has to remember.
-            return;
-        }
-
-        // The lattice, read out before anything is overwritten.
-        byte[] lattice = (byte[])soil.Clone();
-
-        for (int y = 0; y < height; y++)
-        {
-            int y0 = y / scale * scale;
-            int y1 = Math.Min(y0 + scale, height - 1);
-            int fy = y - y0;
-
-            for (int x = 0; x < width; x++)
-            {
-                int x0 = x / scale * scale;
-                int x1 = Math.Min(x0 + scale, width - 1);
-                int fx = x - x0;
-
-                int topLeft = lattice[(y0 * width) + x0];
-                int topRight = lattice[(y0 * width) + x1];
-                int bottomLeft = lattice[(y1 * width) + x0];
-                int bottomRight = lattice[(y1 * width) + x1];
-
-                int top = (topLeft * (scale - fx)) + (topRight * fx);
-                int bottom = (bottomLeft * (scale - fx)) + (bottomRight * fx);
-
-                soil[(y * width) + x] = (byte)(((top * (scale - fy)) + (bottom * fy))
-                    / (scale * scale));
-            }
-        }
-    }
-
-    /// <summary>
-    /// The founders settled where they could live through the first winter, not where the
-    /// ground was best — so the ground they settled is <b>ordinary at best</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⛔ THIS IS REQUIRED RATHER THAN DECORATIVE, AND ONLY A MEASUREMENT SAID SO.</b>
-    /// <see cref="ChooseFoundingSite"/> runs at step 4 and soil at step 5, so the founding
-    /// site is picked with **no knowledge of soil whatsoever** — from which this slice first
-    /// inferred that the founding ground was therefore already unremarkable. **It is not.**
-    /// Chosen without knowledge means the percentile is *uniformly random*: across eight
-    /// seeds the founding ground came out at the **99th, 93rd, 91st and 83rd** percentile in
-    /// four of them. **Half of all games would have had the valley's best ground on the
-    /// doorstep**, which deletes the entire point of ground being worth going to (D58's
-    /// *frontier homestead beside a rich patch*).
-    /// </para>
-    /// <para>
-    /// <b>⭐ It is a CAP, and the cap is the reference itself</b>
-    /// (<see cref="VillageEconomy.ReferenceSoil"/>). So it can only ever take away, never add:
-    /// ground that is already poor is untouched, and this can never quietly make a hard seed
-    /// easier. And it gives the opening a property worth having — <b>the founders' fields
-    /// yield at most exactly <c>crop_yield_per_tile</c></b>, which is the locked number and is
-    /// defined as the yield on average ground. **The opening can never be better than the one
-    /// that was measured and played.**
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>It does not promise the opening is unchanged.</b> A seed whose founding ground was
-    /// below the mean now farms below-reference ground and has a harder time of it, which is
-    /// why `per-site-yield.md §9.5` re-measures the cold start from a run rather than asserting
-    /// it — and why the cap gains a floor if that measurement asks for one.
-    /// </para>
-    /// </remarks>
-    private static void CapFoundingGround(
-        SimConfig config, byte[] soil, GridPos founding, int width, int height, int minX, int minY)
-    {
-        int radius = config.FoundingOrdinaryRadiusTiles;
-        if (radius <= 0)
-        {
-            return;
-        }
-
-        var cap = (byte)VillageEconomy.ReferenceSoil(config);
-
-        for (int dy = -radius; dy <= radius; dy++)
-        {
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                int x = founding.X - minX + dx;
-                int y = founding.Y - minY + dy;
-
-                if (x < 0 || y < 0 || x >= width || y >= height)
-                {
-                    continue;
-                }
-
-                int index = (y * width) + x;
-                if (soil[index] > cap)
-                {
-                    soil[index] = cap;
-                }
-            }
-        }
-    }
 
     /// <summary>
     /// Cut a river along the valley's long axis, wandering as it goes.
@@ -383,7 +170,7 @@ public static class MapGenerator
     /// shape is a watercourse rather than a canal.
     /// </remarks>
     private static void CarveRiver(
-        SimConfig config, DeterministicRandom rng, Terrain[] terrain, int width, int height)
+        SimConfig config, ref DeterministicRandom rng, Terrain[] terrain, int width, int height)
     {
         if (config.RiverWidthTiles <= 0)
         {
@@ -397,13 +184,12 @@ public static class MapGenerator
 
         // ⭐⭐ THE WIDTH WANDERS AS WELL AS THE COURSE (D344, Joe: *"let's widen it by
         // ~50% with some variation"*).
-        // ⛔ **HASHED FROM THE COLUMN, NOT DRAWN — AND THAT IS THE WHOLE CARE IN IT.**
-        // Draw order is the seed contract (§1): one extra `rng` call per column would shift
-        // every value after it, so the founding site, the soil, the seams and the woodland would
-        // all move for every seed ever written down — and a first attempt at this slice did
-        // exactly that, which put the SHIPPED valley (seed 12345) on ground where the village
-        // stores no food in ten years. *A stateless hash costs the stream nothing, so the river
-        // changes shape and nothing else in the valley moves at all.*
+        // ⛔ **HASHED FROM THE COLUMN, NOT DRAWN.** Under one shared stream (before D473) one extra
+        // `rng` call per column would have shifted every value after it — and a first attempt at
+        // this did exactly that, which put the SHIPPED valley (seed 12345) on ground where the
+        // village stores no food in ten years. The river has its own stream now, so a draw here
+        // would move only the river (and the trees that grow round it); the hash still keeps its
+        // course where it is.
         // ⚠️ **A width drawn fresh each column would be noise, not variation** —
         // the banks would fray a tile in and out every step and read as a ragged hose. Hashing
         // the column in BLOCKS holds a width for several columns, so a reach reads as a pool or
@@ -438,118 +224,135 @@ public static class MapGenerator
         }
     }
 
+    /// <summary>One seam: where its outcrop is centred and how big it is, in hundredths of a tile².</summary>
+    public readonly record struct Seam(GridPos Centre, int ReachHundredths);
+
     /// <summary>
-    /// Lay seams of one kind of deposit around a ring, clumped rather than scattered.
+    /// Where a kind's seams lie and how big each is — <b>drawn from that kind's own stage</b>, and the
+    /// one place the answer is decided (D475).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Only ever over open grass.</b> Not water, for the obvious reason, and <b>not
-    /// forest</b> — because overwriting trees would quietly take timber out of the valley
-    /// and the whole food-and-fuel economy is derived against how much wood a village can
-    /// reach. A seam that costs the village a stand is a balance change hiding inside a
-    /// worldgen change.
+    /// <b>Spread, then scattered.</b> D24's guarantee stands: a ring's seams take one equal sector
+    /// each, so four never land in one quadrant — the layout that once starved a village. But the
+    /// ring draws a phase, so its sectors do not sit on the compass, and each seam draws an angle
+    /// inside its sector (<c>seam_angle_scatter_percent</c> of it) and a reach out from the ring
+    /// (up to <c>seam_reach_scatter_percent</c> further, never nearer — D434 found seams nearer than
+    /// the ring take the founders' house plots). It was eight compass slots with a tile of jitter,
+    /// and Joe saw a cross: <em>"they do not look organically placed."</em>
     /// </para>
     /// <para>
-    /// <b>The ring-and-jitter shape is copied from the forage sites deliberately</b>
-    /// (D24): drawing angles at random clusters things, and a valley whose four stone
-    /// seams all landed in one corner is a valley where the resource may as well not
-    /// exist for half the village.
+    /// <b>Rings fill four, then eight.</b> Ring <c>k</c> holds up to <c>4k</c> seams at
+    /// <c>1 + (k − 1)/2</c> times the kind's ring — the shipped layout to the seam (stone four at
+    /// 14 and eight at 21, iron four at 26), so the economy measured against it stands.
+    /// <c>…_seam_count</c> and <c>extra_…_seams</c> are summed; the split was the hash's, gone with it.
+    /// </para>
+    /// <para>
+    /// <b>Public and pure</b>, so a guard asks the generator rather than restating it. Integer
+    /// throughout: positions turn through <see cref="Angle"/>'s table (D2, D318).
     /// </para>
     /// </remarks>
-    private static void PaintSeams(
-        SimConfig config,
-        DeterministicRandom rng,
-        Terrain[] terrain,
-        Terrain kind,
-        int drawn,
-        int hashed,
-        int ringTiles,
-        int radius,
-        int leastTiles,
-        ulong valley,
-        int width,
-        int height,
-        int minX,
-        int minY)
+    public static IReadOnlyList<Seam> SeamsOf(SimConfig config, ulong seed, Terrain kind)
     {
-        // ⭐ A seam grows no further than this, so a seam the river has nearly drowned cannot
-        // spread across the valley looking for dry ground. Three rings is a radius-1 iron seam
-        // grown to 25 tiles — measured enough for every iron seam in 64 valleys (`quarry.md §6.1`).
+        ArgumentNullException.ThrowIfNull(config);
+
+        bool stone = kind == Terrain.Rock;
+        int total = stone
+            ? config.StoneSeamCount + config.ExtraStoneSeams
+            : config.IronSeamCount + config.ExtraIronSeams;
+        int ring = stone ? config.StoneSeamRingTiles : config.IronSeamRingTiles;
+        int radius = stone ? config.StoneSeamRadiusTiles : config.IronSeamRadiusTiles;
+
+        var rng = new DeterministicRandom(StageSeed(seed, stone ? Stage.StoneSeams : Stage.IronSeams));
+        var seams = new List<Seam>(total);
+        for (int k = 1; seams.Count < total; k++)
+        {
+            int here = Math.Min(4 * k, total - seams.Count);
+            int reach = ring + ((k - 1) * ring / 2);
+            int sector = 65536 / here;
+            int swing = sector * config.SeamAngleScatterPercent / 200;
+            int phase = rng.NextInt(0, 65536);
+
+            for (int i = 0; i < here; i++)
+            {
+                int turn = phase + (i * sector) + (swing <= 0 ? 0 : rng.NextInt(-swing, swing + 1));
+                int further = reach * config.SeamReachScatterPercent / 100;
+                int far = reach + (further <= 0 ? 0 : rng.NextInt(0, further + 1));
+
+                Point at = new Point(Fixed.FromInt(far), Fixed.Zero)
+                    .RotatedBy(Angle.FromRaw(unchecked((ushort)turn)));
+                GridPos centre = ClampInside(at.ToTile(), config);
+
+                int size = 100 * radius * radius;
+                int vary = size * config.SeamSizeScatterPercent / 100;
+                if (vary > 0)
+                {
+                    size += rng.NextInt(-vary, vary + 1);
+                }
+
+                seams.Add(new Seam(centre, size < 50 ? 50 : size));
+            }
+        }
+
+        return seams;
+    }
+
+    /// <summary>
+    /// Paint one outcrop of <paramref name="kind"/> over open grass — growing it until it holds
+    /// <paramref name="leastTiles"/> — and say how many of its tiles are that kind.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Only ever over open grass.</b> Not water, for the obvious reason, and never over another
+    /// seam; the woodland is painted after, round it.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>An outcrop, not a stamp</b> (D475): the forests' wobbling outline (<see cref="Wobble"/>)
+    /// on a size the seam drew, where it was a Manhattan diamond of one size for every seam — the
+    /// shape D347 left "until the economy is in view". A seam grows a size step at a time, at most
+    /// three, so one the river has nearly drowned cannot spread across the valley looking for dry
+    /// ground — enough for every iron seam in 64 valleys to hold its 50 (`quarry.md §6.1`).
+    /// </para>
+    /// </remarks>
+    private static int PaintOutcrop(
+        Terrain[] terrain, Terrain kind, Seam seam, int leastTiles, int width, int height, int minX, int minY)
+    {
         const int MostGrowth = 3;
 
-        IReadOnlyList<int> slots = SeamSlots(drawn, hashed, ringTiles);
-        for (int n = 0; n < slots.Count; n++)
+        int reach = seam.ReachHundredths;
+        int held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);
+        for (int grown = 0; held < leastTiles && grown < MostGrowth; grown++)
         {
-            int i = slots[n];
-            GridPos slot = RingSlot(i, ringTiles);
-            GridPos centre = ClampInside(
-                n < drawn
-                    ? DrawRingPosition(rng, ringTiles, config.SiteJitterTiles, i)
-                    : new GridPos(
-                        slot.X + HashJitter(valley, kind, i, 0, config.SiteJitterTiles),
-                        slot.Y + HashJitter(valley, kind, i, 1, config.SiteJitterTiles)),
-                config);
-
-            int r = radius;
-            int held = PaintDiamond(terrain, kind, centre, r, width, height, minX, minY);
-            while (held < leastTiles && r < radius + MostGrowth)
+            // A ring a step: the radius one tile wider, as the diamond grew. Integer (D2).
+            int radius = 0;
+            while ((radius + 1) * (radius + 1) * 100 <= reach)
             {
-                r++;
-                held = PaintDiamond(terrain, kind, centre, r, width, height, minX, minY);
+                radius++;
             }
+
+            reach += 100 * ((2 * radius) + 1);
+            held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);
         }
+
+        return held;
     }
 
-    /// <summary>
-    /// Which <see cref="RingSlot"/>s a kind of seam is laid at: the drawn ones first, in order,
-    /// then the hashed ones — <b>never nearer the village than the ring itself</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// ⛔ <b>Found by the suite, not reasoned (D434):</b> <see cref="RingSlot"/> halves a diagonal
-    /// so the ring is Manhattan-round, which puts the first ring's diagonals at (7, 7) — inside
-    /// the founding's house plots. Laid there, four seams took the ground eight housing guards
-    /// needed and put rock under the first building sites. So a hashed seam skips any slot whose
-    /// larger coordinate is short of the ring: the first ring's diagonals are passed over and the
-    /// second ring's cardinals (21) and diagonals (14, 14) are used instead.
-    /// </para>
-    /// <para>
-    /// Public and draw-free, so a guard asks the generator's own rule rather than restating it.
-    /// </para>
-    /// </remarks>
-    public static IReadOnlyList<int> SeamSlots(int drawn, int hashed, int ringTiles)
+    private static int PaintOutcropAt(
+        Terrain[] terrain, Terrain kind, GridPos centre, int reachHundredths, int width, int height, int minX, int minY)
     {
-        var slots = new List<int>(drawn + hashed);
-        for (int i = 0; i < drawn; i++)
+        int bound = 2;
+        while (bound * bound * 100 < reachHundredths * 7 / 5)
         {
-            slots.Add(i);
+            bound++;
         }
 
-        for (int i = drawn; slots.Count < drawn + hashed; i++)
-        {
-            GridPos at = RingSlot(i, ringTiles);
-            if (Math.Max(Math.Abs(at.X), Math.Abs(at.Y)) >= ringTiles)
-            {
-                slots.Add(i);
-            }
-        }
-
-        return slots;
-    }
-
-    /// <summary>
-    /// Paint a Manhattan diamond of <paramref name="kind"/> over open grass, and say how many of
-    /// its tiles are that kind afterwards.
-    /// </summary>
-    private static int PaintDiamond(
-        Terrain[] terrain, Terrain kind, GridPos centre, int radius, int width, int height, int minX, int minY)
-    {
         int held = 0;
-        for (int dy = -radius; dy <= radius; dy++)
+        for (int dy = -bound; dy <= bound; dy++)
         {
-            for (int dx = -radius; dx <= radius; dx++)
+            for (int dx = -bound; dx <= bound; dx++)
             {
-                if (Math.Abs(dx) + Math.Abs(dy) > radius)
+                int away = 100 * ((dx * dx) + (dy * dy));
+                if (away > reachHundredths + (reachHundredths * Wobble(centre, dx, dy) / 50))
                 {
                     continue;
                 }
@@ -575,31 +378,6 @@ public static class MapGenerator
         }
 
         return held;
-    }
-
-    /// <summary>
-    /// A seam's offset from its slot, from a hash — the draw-free twin of <see cref="DrawJitter"/>.
-    /// </summary>
-    /// <remarks>
-    /// splitmix64's finaliser over the valley's stream state, the seam's kind, its index and the
-    /// axis — well spread even for adjacent indices, which is the property D344 measured
-    /// <c>DeterministicRandom</c>'s stream parameter lacking.
-    /// </remarks>
-    private static int HashJitter(ulong valley, Terrain kind, int index, int axis, int jitter)
-    {
-        if (jitter <= 0)
-        {
-            return 0;
-        }
-
-        unchecked
-        {
-            ulong z = valley + (0x9E3779B97F4A7C15UL * (ulong)((((int)kind * 64) + index) * 2 + axis + 1));
-            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
-            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-            z ^= z >> 31;
-            return (int)(z % (ulong)((2 * jitter) + 1)) - jitter;
-        }
     }
 
     /// <summary>Tiles of a seam it takes to hold <paramref name="least"/> of a good — its row's yield a tile.</summary>
@@ -671,19 +449,27 @@ public static class MapGenerator
     private static bool InsideTheClump(GridPos centre, int dx, int dy, int radius)
     {
         int away = (dx * dx) + (dy * dy);
+        int reach = radius * radius;
+        return away <= reach + (reach * Wobble(centre, dx, dy) / 50);
+    }
 
-        // Eight sectors round the clump, each with its own reach. The joins are left unblended
-        // on purpose — the renderer's field smooths them far better than arithmetic would.
+    /// <summary>
+    /// How much this direction's reach swells or shrinks, −20 to +20 fiftieths — the wobble a
+    /// forest clump and a seam's outcrop share (D344, D475).
+    /// </summary>
+    /// <remarks>
+    /// Eight sectors round the centre, each with its own reach, hashed from the centre — so each has
+    /// its own lopsided outline and the same one is the same shape for ever. The joins are left
+    /// unblended on purpose: the renderer's field smooths them far better than arithmetic would.
+    /// </remarks>
+    private static int Wobble(GridPos centre, int dx, int dy)
+    {
         int sector = ((dx >= 0 ? 1 : 0) * 4)
             + ((dy >= 0 ? 1 : 0) * 2)
             + (Math.Abs(dx) > Math.Abs(dy) ? 1 : 0);
 
         uint spin = Scramble(centre.X + (sector * 7919), centre.Y - (sector * 104729));
-
-        int reach = radius * radius;
-        int wobble = (int)(spin % 41) - 20;
-
-        return away <= reach + (reach * wobble / 50);
+        return (int)(spin % 41) - 20;
     }
 
     /// <summary>A stateless hash of two coordinates — shape, and never a draw.</summary>
@@ -703,7 +489,7 @@ public static class MapGenerator
     /// <remarks>
     /// ⛔⛔ <b>THIS HAD TO MOVE WITH THE SHAPE, AND FORGETTING IT WOULD HAVE BEEN A
     /// BALANCE CHANGE HIDING INSIDE A WORLDGEN CHANGE</b> (D344) — which is the exact thing
-    /// <see cref="PaintSeams"/>'s own remarks warn about. It returned the area of a Manhattan
+    /// the seams' painting (then `PaintSeams`) warned about. It returned the area of a Manhattan
     /// diamond, <c>2r² + 2r + 1</c> = **41 tiles at radius 4**;
     /// <see cref="InsideTheClump"/> now paints a wobbling circle, which averages
     /// <c>πr²</c> ≈ **50**. Left alone, the generator would have dropped the same
@@ -729,7 +515,7 @@ public static class MapGenerator
     /// </remarks>
     private static void PaintWoodland(
         SimConfig config,
-        DeterministicRandom rng,
+        ref DeterministicRandom rng,
         Terrain[] terrain,
         GridPos founding,
         int width,
@@ -867,6 +653,16 @@ public static class MapGenerator
     /// </para>
     /// </para>
     /// <para>
+    /// ⭐ <b>And on dry ground, not on the bank (D472).</b> Within the largest piece, a tile with
+    /// no water within <paramref name="dryRadius"/> — the starter zone's own diamond
+    /// (<c>starting_residential_radius</c>) — beats one on the river's edge. Found by the
+    /// per-stage reshuffle: on seed 99 the river ran a tile from the founding, half the starter
+    /// zone lay across water nobody can cross, and the warm start had nowhere to put a house; on
+    /// seed 24 the founding's work sat across it. Spec §10.1: *until bridges exist the generator
+    /// must not cut the village off from its work.* A valley with no dry tile anywhere falls
+    /// back to the old rule.
+    /// </para>
+    /// <para>
     /// Ties go to the tile nearest the wanted spot, then to the lower y and then the
     /// lower x — a total order, because "whichever the scan found first" would make the
     /// whole world depend on iteration order.
@@ -875,6 +671,7 @@ public static class MapGenerator
     private static GridPos ChooseFoundingSite(
         Terrain[] terrain,
         GridPos wanted,
+        int dryRadius,
         int width,
         int height,
         int minX,
@@ -905,8 +702,11 @@ public static class MapGenerator
             }
         }
 
+        int[] toWater = StepsToWater(terrain, width, height);
+
         GridPos best = wanted;
         int bestRoom = -1;
+        bool bestDry = false;
         int bestDistance = int.MaxValue;
 
         for (int y = 0; y < height; y++)
@@ -922,22 +722,66 @@ public static class MapGenerator
                 int room = tilesPerComponent.GetValueOrDefault(component[index]);
                 var here = new GridPos(x + minX, y + minY);
                 int distance = here.ManhattanDistanceTo(wanted);
+                bool dry = toWater[index] > dryRadius;
 
-                // Ties to the tile nearest the spot the generator wanted, then by scan
-                // order — a total order, as before, so no two runs can disagree.
+                // The biggest ground, then dry ground, then the tile nearest the spot the
+                // generator wanted, then scan order — a total order, so no two runs can disagree.
                 bool better = room > bestRoom
-                    || (room == bestRoom && distance < bestDistance);
+                    || (room == bestRoom && dry && !bestDry)
+                    || (room == bestRoom && dry == bestDry && distance < bestDistance);
 
                 if (better)
                 {
                     best = here;
                     bestRoom = room;
+                    bestDry = dry;
                     bestDistance = distance;
                 }
             }
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// How many steps each tile is from the nearest water — Manhattan, through anything — or
+    /// <see cref="int.MaxValue"/> in a valley with none (D472).
+    /// </summary>
+    /// <remarks>
+    /// One breadth-first sweep out from every water tile at once, so the whole valley costs one
+    /// pass rather than a search per candidate. Four neighbours, the cost field's own steps.
+    /// </remarks>
+    private static int[] StepsToWater(Terrain[] terrain, int width, int height)
+    {
+        var steps = new int[terrain.Length];
+        var frontier = new Queue<int>();
+        for (int i = 0; i < terrain.Length; i++)
+        {
+            if (terrain[i] == Terrain.Water)
+            {
+                steps[i] = 0;
+                frontier.Enqueue(i);
+            }
+            else
+            {
+                steps[i] = int.MaxValue;
+            }
+        }
+
+        while (frontier.Count > 0)
+        {
+            int i = frontier.Dequeue();
+            int x = i % width;
+            int y = i / width;
+            int next = steps[i] + 1;
+
+            if (x + 1 < width && steps[i + 1] > next) { steps[i + 1] = next; frontier.Enqueue(i + 1); }
+            if (x > 0 && steps[i - 1] > next) { steps[i - 1] = next; frontier.Enqueue(i - 1); }
+            if (y + 1 < height && steps[i + width] > next) { steps[i + width] = next; frontier.Enqueue(i + width); }
+            if (y > 0 && steps[i - width] > next) { steps[i - width] = next; frontier.Enqueue(i - width); }
+        }
+
+        return steps;
     }
 
     /// <summary>Label each walkable tile with the land mass it belongs to. -1 is water.</summary>

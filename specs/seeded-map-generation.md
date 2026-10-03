@@ -1,6 +1,9 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started** · Owner: Joe + Claude Code
+> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
+> §13, per-stage seeds (the shell's first step, D473), is ✅ BUILT on `slice/per-stage-seeds` —
+> NOT merged, NOT pushed; played by Joe (*"everything else looks good"*) with one note, the seams,
+> answered in §13.6 (D475).** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
@@ -51,13 +54,13 @@ The budget is not a new number: it is `VillageEconomy.RoundTripTicks` and its si
 
 ## 4. What gets generated
 
-In draw order, which is part of the seed contract:
+In the order generated (⚠️ *the draw-order contract below is superseded by per-stage seeds, §13*):
 
 1. **The river.** One watercourse along the valley's long axis, wandering. Water is the first terrain that is not merely decoration — see §10.1.
 2. **Forest stands.** Clusters, not scatter — a stand is a place you go to, and `JobKind.Logger` already assumes one.
 3. **Forage sites.** Spread the way D24 requires: a ring at roughly settlement width plus a couple further out. **This is a constraint the generator inherits, not a free choice** — D24 is a record of what happens when sites cluster in one place.
 4. **The founding site** — where the first homes, granary and warehouse go. Chosen by the generator as a spot that meets the budget in §3.
-5. **Soil quality** — named here so the field exists in the data model, unused until §2.3's soil depletion lands.
+5. ~~**Soil quality**~~ — ⛔ removed (D395, built D470; its draw deleted D473). Not a stage.
 
 **Not generated yet:** biome variety. One valley archetype, generated differently each time. See §10.3.
 
@@ -67,14 +70,13 @@ In draw order, which is part of the seed contract:
 
 ```
 MapGenerator
-    Generate(SimConfig, DeterministicRandom) -> GeneratedMap
+    Generate(SimConfig, ulong seed) -> GeneratedMap      // per-stage streams, §13
 
 GeneratedMap
     Terrain      : Terrain[width * height]     // Grass | Water | Forest
     ForageSites  : GridPos[]
     TreeStands   : GridPos[]
     FoundingSite : GridPos
-    SoilQuality  : byte[]                      // reserved, unused
 ```
 
 `SimWorld` takes a `GeneratedMap` instead of reading coordinates from config. The config keys those coordinates live in today (`food_source_x`, `extra_forage_sites`, `tree_stand_x`, …) become **generator parameters** — how many sites, how far out, how big a stand — which is the honest data-driven form and keeps a modder in control of the *rules* rather than the *outcomes*.
@@ -96,7 +98,8 @@ GeneratedMap
 - ⛔ **But today no stage's draws can shift another's (D435):** `DeterministicRandom` is a
   `struct` and `MapGenerator` passes it to every helper **by value**, so each draws on a copy — the
   seams share one jitter, the river and the soil start from the same numbers. The rule above is
-  about the design this section describes; the code does not keep it yet. Per-stage seeds fix it.
+  about the design this section describes; the code does not keep it yet. Per-stage seeds fix it
+  — **§13 replaces "draw order is the contract" with "a stage's draws are its own".**
 
 ---
 
@@ -142,6 +145,12 @@ This is the best fit for the design the project has found: it lands on four pill
 
 - **This needs actual pathfinding, and that is its own slice.** `TravelCostField.Cost` is Manhattan distance and `GridPos.StepToward` walks straight; neither knows terrain exists. The field is read by labour catchment, market errands and the economy's distance budget — the things that decide who eats — and §2.6 will later layer trample costs onto it. See §11.
 - **Until bridges exist the generator must not cut the village off from its work.** A constraint on generation, not a hope, and it folds naturally into the budget in §3.
+
+⭐ **Kept on dry ground (D472).** The founding is chosen on the biggest land mass and, within it,
+where no water lies inside the starter zone's diamond (`starting_residential_radius`) — the river
+bank had been the founding on any valley whose river runs near the middle, half the starter zone
+across water. Measured on the old generator: D420's 55 villages 429 → 495 alive, 100 shipped
+seeds 450 → 487; guarded by `MapGenerationTests.TheFoundersSettleOnDryGround`.
 
 ### 10.2 Who chooses the founding site? ✅ **The generator, for now.** Revisit when placement lands; choosing where to settle is a real decision but it belongs with the placement UI rather than blocking worldgen.
 
@@ -196,3 +205,123 @@ With one full berry patch and a tree stand the village wanted nobody at, three i
 ### 12.3 Noted for slice 2
 
 On some seeds the river runs straight through the settlement. Harmless today, since nothing reads water — and **exactly the case the generator will have to guarantee against** once it is impassable and before bridges exist (§10.1).
+
+---
+
+## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D473)
+
+*The shell's first unbuilt step (DESIGN §4, Phase 4.5): error boundary ✅ → **per-stage seeds** →
+the new-game screen → settings persistence → save/load → title and pause. Joe, 2026-10-03:
+"shell first, then D395 threads."*
+
+### 13.1 Why
+
+1. **The contract §6 states is not what the code does (D435).** `DeterministicRandom` is a
+   `struct`, and `MapGenerator` hands it to `CarveRiver`, `DrawJitter`, `DrawRingPosition`,
+   `PaintSeams` and `PaintWoodland` **by value**. Each helper draws on a copy, so the caller's
+   stream never moves: every drawn seam in a valley sits at the same offset from its slot (iron's
+   always on the diagonal), the founding jitter's x and y are one draw, the river's wander and
+   the soil start on the same numbers, and the seams' jitter is the woodland's first draw.
+2. **The sim's stream mirrors the river.** `SimWorld` passes its own `Rng` by value too, so the
+   first numbers the founding draws (names before D466, rhythms, lifespans) are the numbers the
+   river drew. Harmless, but not independent.
+3. **The new-game screen wants options that generate things** (a lake, an island, a cliff —
+   Joe's D344 ambition). With one stream, each option would reshuffle every seed and every golden
+   once. With a stream per stage, a new stage moves **no other stage's valley**.
+4. **D466 already reshuffled every seed** (names), so this reshuffle costs Joe no valley he still
+   remembers.
+
+### 13.2 The rule
+
+- The valley is generated in **stages**, each with a stated id that is **never renumbered**:
+
+  | Id | Stage | Draws |
+  |---|---|---|
+  | 1 | River | its start row, then −1/0/+1 a column |
+  | 2 | Founding | the founding jitter's x, then y |
+  | 3 | Stone seams | x, y jitter per drawn seam; its seed keys the hashed seams |
+  | 4 | Iron seams | the same, for iron |
+  | 5 | Woodland | x, y per clump |
+
+  ⛔ **Soil is not a stage.** Ground quality is removed (D395, built as D470); the
+  soil draw, its array, its regions, the founders' cap and its three config keys go with this.
+- A stage's stream is `new DeterministicRandom(StageSeed(seed, id))`, held as a local in
+  `Generate` and handed to helpers **by `ref`**, so draws within a stage advance that stage.
+- `StageSeed(seed, id)` = splitmix64's finaliser over `seed + 0x9E3779B97F4A7C15 × (id + 1)` — the
+  same fold `HashJitter` and `NameHash` already use, in one shared `SplitMix64.Fold`.
+  ⛔ **Never `DeterministicRandom`'s `stream` parameter**: D344 measured small adjacent stream ids
+  six times deadlier (6 dead valleys of 24 against 1).
+- **A new stage appends a new id.** Draws added *inside* a stage still move that stage (and
+  whatever later reads its terrain — woodland paints only over grass, so a new river shape moves
+  trees), but never another stage's draws.
+- The hashed seams (`quarry.md §3.1`) key their jitter on **their own stage's seed** rather than
+  on `rng.State` read mid-generation.
+- `MapGenerator.Generate(SimConfig, ulong seed)` takes the seed, not a stream. `SimWorld.Rng`
+  stays `new DeterministicRandom(seed)` and worldgen never touches it, so the sim's own draws are
+  unchanged by this slice; only the valley moves.
+
+### 13.3 What it costs, and how it is measured
+
+- **Every golden with a map in it moves once**, in one commit, for this reason alone — proven by
+  putting the shared stream back and getting the old hashes.
+- **Measured before any golden is re-taken**, against the commit before it: the dead-valley rate
+  on the 24-seed survival guards, D420's 55 villages and the 100 shipped seeds (`ZzBase`,
+  `ZZ_WIDE=1`). D344's splitmix arm read 2 dead of 24 against 1; that is the number to beat or
+  explain.
+- ⚠️ **The shipped seed (12345) may land on a valley that starves** (D344's first attempt did
+  exactly that). If it does, the work stops and Joe picks a new one from three or four
+  candidates with their numbers — it is his to choose.
+
+### 13.4 Guards (each red-checked, the reds counted — D326)
+
+1. **Two drawn seams of one kind do not share an offset from their slots** across a sample of
+   seeds (red: hand the stream to the seams by value again).
+2. **Changing one stage's config moves no earlier stage's tiles**: woodland coverage changed ⇒
+   river, founding and seams byte-identical; seam counts changed ⇒ river and founding identical
+   (red: let woodland draw on the river's stream).
+3. **Stage seeds are pairwise distinct and none is the run's seed** (red: `StageSeed` returning
+   `seed`).
+4. The golden map hash and the per-seed terrain fingerprints, re-taken once.
+
+### 13.5 What building it found (D471–D473)
+
+- **The first reshuffle broke 101 tests, and two of them were the generator's own faults, latent
+  on `main` and fixed there first** (each its own commit on the old generator, no golden moved):
+  the founding's gatherer hut was bounded by a ruler, so on a valley whose river runs beside the
+  founding it sat across the water, 25 tiles walked against a budget of 9 (**D471**); and the
+  founding site was the river bank on any valley whose river runs near the middle, half the
+  starter zone across water (**D472** — the founders now settle with no water inside the starter
+  zone's diamond; D420's 55 villages 429 → 495 alive, 100 shipped seeds 450 → 487).
+- **Survival is level** — measured against D472, before any golden was re-taken: 100 shipped
+  seeds 487 → 479 alive (dead valleys 28 → 30); 50 fresh fixture valleys 475 → 490 (dead 9 → 7).
+  The fixture's own seeds 1–12 read 164 → 97 — thirteen valleys' luck, which the fifty fresh ones
+  show is not the generator. **The shipped seed 12345 is not re-picked**: 19 alive, 0 starved at
+  fifty, against 8 alive and 7 starved.
+- **The remaining 39 were one-village poses** whose premise rested on the old valleys — re-posed
+  one at a time, each with its reason and its numbers in the test (D473 lists them); the goldens
+  and walk pins re-taken once. One guard is **false on `main` too**: hunting does not out-earn
+  fishing per tick worked (886 against 1,299 over six valleys) — Joe: fine, the lodge's leather
+  levels it (D474); re-posed to hunting above foraging.
+- **Guards:** `TheSeamsMoveNoOtherStagesDraws` (3 reds: the woodland on the stone stage's stream),
+  `TwoDrawnSeamsDoNotShareAnOffset` (1: the seams drawing on a copy), `EveryStageHasASeedOfItsOwn`
+  (1: `StageSeed` returning the seed), `TheWoodlandChangesNothingButTrees` (2: woods over anything).
+
+### 13.6 Seams found, not placed (D475)
+
+Joe, playing the branch: *"stone and iron nodes look planned and symmetrical - they do not look
+organically placed."* They sat on eight compass slots with a tile of jitter, as Manhattan diamonds of
+one size — a stamped cross. With per-stage seeds a seam may draw freely without moving anything but
+its own stage (and the trees that grow round it), so:
+
+- `MapGenerator.SeamsOf(config, seed, kind)` — public, pure, the one answer to where a kind's seams
+  lie: ring `k` holds up to `4k` seams at `1 + (k−1)/2` times the ring, each in a sector of its own
+  (D24), the ring turned by a drawn phase, each seam swung within its sector and pushed out, never in,
+  through `Angle`/`Point` integer trig (D2, D318).
+- `PaintOutcrop` paints each as the forests' wobbling outline (`Wobble`, shared with
+  `InsideTheClump`, forests byte-identical) on a size it drew; iron still grows until it holds 50.
+- `site_jitter_tiles`, `RingSlot`, `SeamSlots`, `HashJitter` and `PaintDiamond` are deleted;
+  `seam_angle_scatter_percent` (80), `seam_reach_scatter_percent` (30) and `seam_size_scatter_percent`
+  (40) are the new rules.
+- **Guards:** `TheSeamsAreNotLaidOnTheCompass` (fewer than half within 5° of a compass bearing — 82
+  of 384, random would be about one in four and a half), `EveryQuarterOfTheValleyHasStone` (D24),
+  `StoneOutcropsAreNotAllOneShape`; `TwoDrawnSeamsDoNotShareAnOffset` is retired with the slots it read.

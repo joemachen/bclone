@@ -373,7 +373,7 @@ public sealed record SimConfig
     // map is seeded (D18)". They have. Deleted rather than left in place, because a
     // config key nobody reads is a trap: a modder edits it, nothing happens, and there
     // is no way to tell from the file that it is decoration. The rules that replaced
-    // them are forage_site_count / forage_site_ring_tiles / site_jitter_tiles.
+    // them were forage_site_count / forage_site_ring_tiles / site_jitter_tiles, all since retired.
 
     // ---------------------------------------------------------------
     //  Life
@@ -1824,14 +1824,13 @@ public sealed record SimConfig
     [JsonPropertyName("iron_seam_radius_tiles")]
     public int IronSeamRadiusTiles { get; init; } = 1;
 
-    /// <summary>Stone seams laid past <see cref="StoneSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <summary>Stone seams laid past <see cref="StoneSeamCount"/> (`quarry.md §3.1`, D434).</summary>
     /// <remarks>
     /// <para>
-    /// <b>Hashed, never drawn.</b> Their offsets come from the generator's stream state read and
-    /// not advanced, so adding them takes no draws and every seed keeps its river, its soil and its
-    /// woods. They continue <see cref="MapGenerator.RingSlot"/>'s order but never nearer the village
-    /// than their ring (<see cref="MapGenerator.SeamSlots"/>): for stone, the second ring's four
-    /// cardinals and four diagonals — the first ring's diagonals sit in the founding's house plots.
+    /// <b>Summed with the count since D475</b> — the two keys were the hash's split between drawn
+    /// and hashed seams, and every seam is drawn from its stage's stream now
+    /// (<see cref="MapGenerator.SeamsOf"/>). Ring <c>k</c> holds up to <c>4k</c> seams, so twelve
+    /// stone seams are four on the ring and eight half again further out — the D434 layout, spread.
     /// </para>
     /// <para>
     /// <b>Why eight (Joe, 2026-09-29):</b> a quarry is cut only into rock and laborers clear rock
@@ -2215,19 +2214,28 @@ public sealed record SimConfig
     // without also deciding where the village's food comes from.
 
     /// <summary>
-    /// How far a site or stand may wander off its slot. What makes one valley differ
-    /// from another.
+    /// How much of its sector a seam may swing through, as a percentage (D475).
     /// </summary>
     /// <remarks>
-    /// <b>Every tile of this is paid for up front by the whole economy.</b> The food
-    /// budget assumes the worst case — a site jittered directly away from the home that
-    /// needs it, which costs twice this in Manhattan distance — so generosity here
-    /// makes every villager in every valley work harder, including on the seeds where
-    /// the sites happen to land close. One tile buys visibly different valleys; two
-    /// pushed the required gather yield up by two thirds.
+    /// A ring's seams take one equal sector each (D24's spread), and the ring draws a phase, so
+    /// no sector sits on the compass. 0 puts every seam at its sector's centre — a regular star —
+    /// and 100 lets it reach the sector's edges, where two neighbours could touch. Replaced
+    /// <c>site_jitter_tiles</c>, which moved a seam a tile off one of eight compass slots and left
+    /// the valley a stamped cross (Joe: <em>"planned and symmetrical"</em>).
     /// </remarks>
-    [JsonPropertyName("site_jitter_tiles")]
-    public int SiteJitterTiles { get; init; } = 1;
+    [JsonPropertyName("seam_angle_scatter_percent")]
+    public int SeamAngleScatterPercent { get; init; } = 80;
+
+    /// <summary>How much further than its ring a seam may lie, as a percentage of the ring (D475).</summary>
+    /// <remarks>
+    /// Out only, never in: D434 found a seam nearer than its ring takes the founders' house plots.
+    /// </remarks>
+    [JsonPropertyName("seam_reach_scatter_percent")]
+    public int SeamReachScatterPercent { get; init; } = 30;
+
+    /// <summary>How much a seam's outcrop may be bigger or smaller than its kind's radius, as a percentage of its area (D475).</summary>
+    [JsonPropertyName("seam_size_scatter_percent")]
+    public int SeamSizeScatterPercent { get; init; } = 40;
 
     // `tree_stand_count`, `tree_stand_ring_tiles` and `tree_stand_radius_tiles` are deleted
     // with the stands. Timber comes off ground a forester's hut was given, and the woodland
@@ -2275,53 +2283,6 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("river_width_wander_tiles")]
     public int RiverWidthWanderTiles { get; init; } = 1;
-
-    /// <summary>Poorest ground the generator will produce, 0–255.</summary>
-    /// <remarks>
-    /// <b>No longer "reserved"</b> — a farm's yield reads the ground under its field
-    /// (`specs/per-site-yield.md §4.1`). ⚠️ **This pair is the tuning lever for how much
-    /// siting a farm matters**, and at the shipped values a well-sited field is worth about
-    /// twice a badly-sited one. The algorithm is not the lever; these are.
-    /// </remarks>
-    [JsonPropertyName("soil_quality_min")]
-    public int SoilQualityMin { get; init; } = 40;
-
-    /// <summary>Best ground the generator will produce, 0–255.</summary>
-    [JsonPropertyName("soil_quality_max")]
-    public int SoilQualityMax { get; init; } = 200;
-
-    /// <summary>
-    /// How many tiles across a patch of comparable ground is — <b>the size of a soil region</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ Measured, not picked</b> (D16, `per-site-yield.md §3.1`). Across 104 candidate
-    /// thirteen-tile fields: scale 4 averages out over a field, scale 24 leaves too few
-    /// distinct regions, and <b>scale 8 gives a p90÷p10 of 200%</b> — a genuine two-to-one
-    /// between good ground and poor. Eight tiles is a couple of fields across, which is a
-    /// region a player can see and choose to walk to rather than a lottery per tile (D67).
-    /// </para>
-    /// <para>
-    /// <b>1 switches regions off</b> and returns the per-tile noise this replaced, which is
-    /// the honest way to disable it rather than a special case somebody has to remember.
-    /// </para>
-    /// </remarks>
-    [JsonPropertyName("soil_region_scale")]
-    public int SoilRegionScale { get; init; } = 8;
-
-    /// <summary>
-    /// How far around the founding site the ground is capped at ordinary
-    /// (<see cref="World.VillageEconomy.ReferenceSoil"/>). 0 switches it off.
-    /// </summary>
-    /// <remarks>
-    /// <b>The founders settled for safety, not for richness.</b> Without this the founding
-    /// ground's quality is a coin flip — measured at the 99th, 93rd, 91st and 83rd percentile
-    /// in four seeds of eight — and half of all games would start on the best ground in the
-    /// valley, which deletes the reason to go anywhere (`per-site-yield.md §3.2`). It only
-    /// ever caps, so it cannot make a poor start poorer.
-    /// </remarks>
-    [JsonPropertyName("founding_ordinary_radius_tiles")]
-    public int FoundingOrdinaryRadiusTiles { get; init; } = 10;
 
     /// <summary>
     /// Years between the village sharing out its work again from scratch.
@@ -4457,10 +4418,13 @@ public sealed record SimConfig
                 + $"(got {ExtraStoneSeams}, {ExtraIronSeams}, {IronSeamMinIron}).");
         }
 
-        if (SiteJitterTiles < 0)
+        if (SeamAngleScatterPercent is < 0 or > 100 || SeamReachScatterPercent < 0
+            || SeamSizeScatterPercent is < 0 or > 99)
         {
             throw new SimConfigException(
-                $"site_jitter_tiles cannot be negative (got {SiteJitterTiles}).");
+                $"seam_angle_scatter_percent must be 0-100, seam_reach_scatter_percent not negative and "
+                + $"seam_size_scatter_percent 0-99 (got {SeamAngleScatterPercent}, {SeamReachScatterPercent}, "
+                + $"{SeamSizeScatterPercent}).");
         }
 
         if (MapWidth <= 0 || MapHeight <= 0)
