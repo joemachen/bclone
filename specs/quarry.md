@@ -153,7 +153,7 @@ does not — so moving a quarry, and fixtures that raise one, are not gated.
   harvest brush over a quarry's ground is refused: *"That rock is the quarry's."* Taking the
   ground back (the card's *Take back*) returns it to a seam laborers may clear.
 - **The look — ✅ BUILT WITH THE IRON MINE (D449, `iron-mine.md §3.6`), after being deferred here
-  (D438).** A worked face (the seam's lumps cut down, a pale floor), derived from *a seam + held by
+  (D438).** A worked face (the seam's lumps cut down, a pale floor that meets its neighbours' — D459), derived from *a seam + held by
   the trade that works it*. The scenery chunks now also rebuild on a face set re-derived only when
   `Zones.Edits`, `TerrainGeneration` or `BuildingGeneration` moves; the `faces:` probe line asserts
   one chunk. The far view (the baked texture) still shows a face as seam under the outline.

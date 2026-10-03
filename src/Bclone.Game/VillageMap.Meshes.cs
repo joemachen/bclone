@@ -457,8 +457,14 @@ public partial class VillageMap
         }
     }
 
-    /// <summary>Half a face's floor, in tiles — just inside the tile, so neighbouring faces read as cut blocks.</summary>
-    private const float FaceHalf = 0.46f;
+    /// <summary>Half a face's floor, in tiles — <b>the whole tile, so neighbouring floors meet</b> (D459).</summary>
+    /// <remarks>
+    /// ⛔ It was 0.46, *"just inside the tile, so neighbouring faces read as cut blocks"* — and a
+    /// 0.08-tile strip of dark rock between every pair of faces made a worked patch a grid of pale
+    /// squares. Joe: *"when I 'give ground' on the quarry now, it shows the grid underneath."* D333's
+    /// lesson again: exact tiling beats a fudge. The cut-down lumps alone say a tile is worked.
+    /// </remarks>
+    private const float FaceHalf = 0.5f;
 
     /// <summary>How much of a lump is left on a worked face.</summary>
     private const float FaceCut = 0.6f;

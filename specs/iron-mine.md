@@ -128,6 +128,8 @@ reach check, keyed on the tile's terrain; never per tick.
 - **A face** — a seam tile held by its face trade — draws **worked**: the seam's lumps cut down
   (fewer and lower, from the same stateless hash, so nothing flickers) on a **pale floor**
   (spoil-coloured: stone faces paler grey, iron faces rust-pale). The rest of the seam is unchanged.
+  **The floor covers the whole tile, so neighbouring faces' floors meet** (D459, Joe: *"it shows the
+  grid underneath"* — at 0.46 of a half-tile every pair of faces had a strip of dark rock between them).
 - **Built in `VillageMap.Meshes`' chunk cache**, not per frame: a face set (`bool[]` per tile) is
   re-derived from the face workplaces' `Zones.WorkGroundOf` lists **only when `Zones.Edits`,
   `TerrainGeneration` or `BuildingGeneration` moves**, diffed against the last one, and the chunks
