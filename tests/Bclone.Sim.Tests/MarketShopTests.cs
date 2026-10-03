@@ -214,6 +214,21 @@ public sealed class MarketShopTests
         market.Store.TryTake(Goods.Firewood, market.Store.Firewood);
         warehouse.Store.Receive(Goods.Firewood, 1000 - warehouse.Store.Firewood);
 
+        // ⚠️ AND THE MARKETER'S SEASON IS FIREWOOD'S ALONE (D448's first small fix moved it).
+        // The guard read a season's restocking as the firewood limit's, which held only while the
+        // stores happened to hold no food: once forester hands stopped idling on saplings, this
+        // village banked food, the one marketer spent half the spring topping up produce
+        // (7 → 193), and the firewood stopped at 148. The counter's other goods are held at 0 for
+        // the run, so how much food the village has banked cannot decide a firewood guard.
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            var other = (Goods)g;
+            if (other != Goods.Firewood && market.CanEverHold(other))
+            {
+                Assert.True(world.SetMarketLimit(market, other, 0).Allowed);
+            }
+        }
+
         Assert.True(world.SetMarketLimit(market, Goods.Firewood, 200).Allowed);
         int most = RunASeason();
         _output.WriteLine($"limited to 200: the counter peaked at {most} firewood, ends at {market.Store.Firewood}");

@@ -3969,6 +3969,16 @@ public sealed class SimWorld : IObstacles
         return seats;
     }
 
+    /// <summary>Whether a forester could put a sapling on this ground.</summary>
+    /// <remarks>
+    /// <b>Grass only — asked once, so the seats and the errand cannot drift (D448's small fix).</b>
+    /// The planting demand used to count every owned tile that was not woodland, while the
+    /// errand only ever planted grass: a hut whose paint covered a seam, or whose ground was
+    /// already planted and growing, asked for seats nobody could use (found D434). Rock, iron,
+    /// water and a sapling are not bare ground, and <see cref="Plant"/> keeps the same restraint.
+    /// </remarks>
+    public static bool IsGroundToPlant(Terrain terrain) => terrain == Terrain.Grass;
+
     public int ForesterSeatsWithGroundToPlant()
     {
         int seats = 0;
@@ -3984,7 +3994,7 @@ public sealed class SimWorld : IObstacles
             IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
             for (int t = 0; t < owned.Count; t++)
             {
-                if (Map.TerrainAt(Zones.PositionOf(owned[t])) != Terrain.Forest)
+                if (IsGroundToPlant(Map.TerrainAt(Zones.PositionOf(owned[t]))))
                 {
                     seats += workplace.Places;
                     break;
@@ -4041,7 +4051,7 @@ public sealed class SimWorld : IObstacles
 
             // Planting needs bare ground, and rock or water is not bare ground — it is
             // ground nothing will ever grow on.
-            if (!wantsTrees && Map.TerrainAt(at) != Terrain.Grass)
+            if (!wantsTrees && !IsGroundToPlant(Map.TerrainAt(at)))
             {
                 continue;
             }
@@ -4342,7 +4352,7 @@ public sealed class SimWorld : IObstacles
         // A planted tile now grows up on the same clock as one that came back by itself —
         // *"sapling for the first six months, mature tree after a year"* — so the two kinds
         // of recovery cost the same time and only differ in who started them.
-        if (Map.TerrainAt(tile) != Terrain.Grass || !SetTerrain(tile, Terrain.Sapling))
+        if (!IsGroundToPlant(Map.TerrainAt(tile)) || !SetTerrain(tile, Terrain.Sapling))
         {
             return false;
         }

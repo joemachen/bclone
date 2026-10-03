@@ -204,7 +204,10 @@ Each leaves the suite green and is measured against the cold start's five ticks.
      tile-picker, the action's duration and its outcome cannot disagree. A capped hut
      **replants** until its painted ground is wooded again and only then becomes spare hands
      (Joe's ordering); the demand that keeps it staffed is `ForesterSeatsWithGroundToPlant`,
-     because a staffing number is a ceiling and not a summons. **Fell-only is deleted** — that
+     because a staffing number is a ceiling and not a summons. ⚠️ **It counts grass only**
+     (`SimWorld.IsGroundToPlant`, the one predicate the errand and `Plant` read too — D452): it
+     used to count any tile that was not woodland, so a hut whose ground was saplings or a seam
+     held hands for planting nobody could do (found D434; `RockAndSaplingsAreNotGroundToPlant`). **Fell-only is deleted** — that
      is what the harvest brush is for (D87), and a forester's ground is a managed wood.
    - **⚠️ PLANTING IS AN ERRAND, NOT A MODE, AND THREE PLACES HAVE TO AGREE ABOUT THAT
      (D137, corrected by D142).** A forester **tends**: trees first while any stand on their
