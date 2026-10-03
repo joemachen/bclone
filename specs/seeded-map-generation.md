@@ -1,7 +1,7 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
 > Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
-> §13, per-stage seeds (the shell's first step, D471), is specced and 🔨 being built on
+> §13, per-stage seeds (the shell's first step, D473), is specced and 🔨 being built on
 > `slice/per-stage-seeds` — not on `main`.** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
@@ -202,7 +202,7 @@ On some seeds the river runs straight through the settlement. Harmless today, si
 
 ---
 
-## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D471)
+## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D473)
 
 *The shell's first unbuilt step (DESIGN §4, Phase 4.5): error boundary ✅ → **per-stage seeds** →
 the new-game screen → settings persistence → save/load → title and pause. Joe, 2026-10-03:

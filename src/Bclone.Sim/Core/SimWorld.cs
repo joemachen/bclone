@@ -9469,9 +9469,9 @@ public sealed class SimWorld : IObstacles
     /// special case the game itself does not have.
     /// </para>
     /// <para>
-    /// <b>Bounded by the economy's own budget</b>, so the hut cannot wander off to the finest
-    /// wood in the valley and leave the homes beyond the walk the food economy is derived
-    /// against. Deterministic and draw-free: a full scan with ties broken by distance and then
+    /// <b>Bounded by the economy's own budget, walked</b> (D471), so the hut cannot wander off to
+    /// the finest wood in the valley — or sit across a river a ruler says is near — and leave the
+    /// homes beyond the walk the food economy is derived against. Deterministic and draw-free: a full scan with ties broken by distance and then
     /// by position, so two runs of one seed cannot disagree (D15).
     /// </para>
     /// </remarks>
@@ -9511,6 +9511,20 @@ public sealed class SimWorld : IObstacles
                     || Map.TerrainAt(at) == Terrain.Water
                     || SomethingStandsAt(at)
                     || !TravelCost.CanReach(at, origin))
+                {
+                    continue;
+                }
+
+                // ⛔ AND BY WALKING, NOT WITH A RULER — THE FOURTH SITE OF D111's BUG (D471). A
+                // ruler inside the budget said nothing about the river: on a valley whose river
+                // runs a tile from the founding, a hut "nine tiles" off sat across the water, and
+                // the families walked 25 round to it (`EveryValleyMeetsTheEconomysDistanceBudget`,
+                // seed 24 under per-stage seeds). Open ground is four-neighbour at one base cost a
+                // step, so on dry ground with nothing in the way the walk IS the Manhattan
+                // distance and nothing moves; it refuses exactly the tiles the ruler lied about.
+                // One flow field, to the founding site, answers every candidate.
+                distance = TravelCost.Cost(at, origin) / TravelCostField.BaseTileCost;
+                if (distance > reach)
                 {
                     continue;
                 }
