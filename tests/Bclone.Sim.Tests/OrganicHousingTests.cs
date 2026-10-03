@@ -93,7 +93,7 @@ public sealed class OrganicHousingTests
         {
             Stockpile = world.NewStockpile(),
             Id = 900 + world.Households.Count,
-            Name = name,
+            Surname = name,
         };
         world.Households.Add(family);
         return family;
@@ -300,7 +300,7 @@ public sealed class OrganicHousingTests
         // is what was FENCED (D388), not the proposal's rectangle — since D411 a turned yard is
         // clipped by the founding's buildings more often than a square one was, and this guard
         // walked the rectangle.
-        var heir = new Household { Stockpile = world.NewStockpile(), Id = 900, Name = "Heir" };
+        var heir = new Household { Stockpile = world.NewStockpile(), Id = 900, Surname = "Heir" };
         world.Zones.HandPlotOn(family.Id, heir.Id);
         foreach (GridPos tile in family.FencedTiles)
         {

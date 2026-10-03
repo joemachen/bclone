@@ -71,7 +71,7 @@ public sealed class VillageTests
         var founders = new List<Villager>();
         foreach (Villager villager in loop.World.Villagers)
         {
-            if (villager.BirthYear <= 0)
+            if (villager.Founder)
             {
                 founders.Add(villager);
             }
@@ -268,7 +268,7 @@ public sealed class VillageTests
         Villager? homegrown = null;
         foreach (Villager villager in loop.World.Villagers)
         {
-            if (villager.BirthYear > 0 && villager.AgeYears >= GrowingVillage.AdultAge)
+            if (!villager.Founder && villager.AgeYears >= GrowingVillage.AdultAge)
             {
                 homegrown = villager;
                 break;

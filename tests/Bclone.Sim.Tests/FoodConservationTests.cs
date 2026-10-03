@@ -57,7 +57,12 @@ public sealed class FoodConservationTests
     // seventeen (1–16 and 12345): 5 villages alive at fifty on main (32 people) against 9 on D463
     // (90 people); seed 10 fell to one survivor who never fished. Seed 6 lives with 15 and every
     // source producing (fish 23,198, meat 29,046, wheat 18,496).
-    [InlineData(6UL, true)]
+    // ⚠️ AND SEED 4 SINCE D469: each household has its own day for a child, and the half moved
+    // again. Swept over the same seventeen: the ledger held to the unit in all of them; 10 villages
+    // are alive at fifty (D463: 9), 8 of them with every source producing (2 4 8 10 11 12 13 16 —
+    // 3 and 15 fished nothing); seed 6 died with no fish. Seed 4 lives with 14 (fish 25,905, meat
+    // 14,570, wheat 35,158).
+    [InlineData(4UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

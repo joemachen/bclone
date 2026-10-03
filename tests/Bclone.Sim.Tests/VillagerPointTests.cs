@@ -131,8 +131,12 @@ public sealed class VillagerPointTests
     // where it was jumped, and a walk ends on the tick its last fraction is spent. The tool fetch (2)
     // and the walk to food (10) did not move. Pace 3 charges each of those three extra walking ticks
     // three times. Were 37 / 91.
-    private const int FirstGatherAtPace1 = 39;
-    private const int FirstGatherAtPace3 = 100;
+    // ⚠️ RE-PINNED (D466), not for the clock: naming stopped taking a draw (D465), so the founder's
+    // stream starts one step earlier — rhythm 1 → 3 (and lifespan 45 → 48), and a rhythm is a start
+    // that many ticks late. +2 at both paces, which is the rhythm and not the walk; proven by putting
+    // the name's draw back, when 39 / 100 return. Were 39 / 100.
+    private const int FirstGatherAtPace1 = 41;
+    private const int FirstGatherAtPace3 = 102;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -307,8 +311,17 @@ public sealed class VillagerPointTests
         // tile onto a building where arrival jumped it, prices the step off a building, and ends a
         // walk on the tick its last part is spent — 51 trips, the 1st/10th/50th at 11/204/1,959.
         // Were 52 at 10/195/1,955.
+        // ⚠️ RE-PINNED (D466), not for the clock: naming stopped taking a draw (D465), so every
+        // founder's lifespan and rhythm come from a different place in the stream and the seats land
+        // differently — 50 trips, the 1st/10th/50th at 9/210/1,936. Proven the only reason: with the
+        // name's draw put back, 51 at 11/204/1,959 return. Were 51 at 11/204/1,959.
+        // ⚠️ RE-PINNED (D469), not for the clock: each household tries for a child on a day of its
+        // own, so the first child arrives in the founders' first year and the seats land differently
+        // late on — 51 trips, the 1st/10th/50th at 9/210/1,959; the first ten untouched. Proven the
+        // only reason: with every household asked at New Year again, 50 at 9/210/1,936 return.
+        // Were 50 at 9/210/1,936.
         Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 11, 204, 1959 }, at);
+        Assert.Equal(new ulong[] { 9, 210, 1959 }, at);
     }
 
     /// <summary>

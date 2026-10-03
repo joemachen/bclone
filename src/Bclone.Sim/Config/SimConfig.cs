@@ -3899,11 +3899,26 @@ public sealed record SimConfig
     [JsonPropertyName("adults_per_household")]
     public int AdultsPerHousehold { get; init; } = 2;
 
-    /// <summary>Family names for founding households.</summary>
+    /// <summary>The surnames a founding household may carry — Joe's sixty (D467).</summary>
+    /// <remarks>
+    /// Picked by a hash of the seed and the household's id (<see cref="World.NameHash.Surname"/>),
+    /// the first no living household carries — never a draw. Only the founding picks from it: every
+    /// later household is a couple and carries <b>the older partner's</b> surname, which is what
+    /// makes a family's name something the village inherits rather than something it rolls.
+    /// </remarks>
     [JsonPropertyName("household_names")]
     public IReadOnlyList<string> HouseholdNames { get; init; } = new[]
     {
-        "Thatcher", "Fletcher", "Cooper", "Mason", "Weaver", "Chandler",
+        "Thatcher", "Cooper", "Mason", "Weaver", "Chandler", "Fletcher",
+        "Smith", "Miller", "Carpenter", "Wright", "Tanner", "Fuller",
+        "Forester", "Baker", "Brewer", "Hayward", "Pinder", "Sawyer",
+        "Wainwright", "Potter", "Carter", "Skinner", "Draper", "Clark",
+        "Hill", "Wood", "Brook", "Ford", "Hall", "Field",
+        "Marsh", "Dale", "Ridge", "Vale", "Holt", "Croft",
+        "Hurst", "Mead", "Pond", "Stone", "Well", "Grove",
+        "Atwood", "Oakes", "Underwood", "Rivers", "Meadows", "Bramble",
+        "Winter", "Frost", "Day", "Short", "Swift", "Strong",
+        "Young", "White", "Brown", "Green", "Stout", "Sharp",
     };
 
     /// <summary>Names a valley can be settled under, one of which the seed picks.</summary>
@@ -3911,7 +3926,7 @@ public sealed record SimConfig
     /// <b>A pool, not a name</b>, and the seed indexes it arithmetically — see
     /// <see cref="Core.SimWorld.Name"/> for why it must never be a draw. Content, so a
     /// modder can swap the whole list for their own without touching code, exactly like
-    /// <see cref="HouseholdNames"/> and <see cref="VillagerNames"/>.
+    /// <see cref="HouseholdNames"/> and <see cref="FirstNamePrefixes"/>.
     /// </remarks>
     [JsonPropertyName("town_names")]
     public IReadOnlyList<string> TownNames { get; init; } = new[]
@@ -3965,17 +3980,77 @@ public sealed record SimConfig
     public int LifespanYearsVariance { get; init; } = 5;
 
     /// <summary>
-    /// Names to draw from. A villager is "Mabel", never "Villager_01" — the
+    /// The first half of a first name. A villager is "Agnes", never "Villager_01" — the
     /// people-not-spreadsheets non-negotiable starts here (DESIGN.md §1.4).
     /// </summary>
-    [JsonPropertyName("villager_names")]
-    public IReadOnlyList<string> VillagerNames { get; init; } = new[]
+    /// <remarks>
+    /// <b>Joe's list (D465).</b> A first name is a prefix and a suffix, each picked by a hash of
+    /// the seed and the villager's id (<see cref="World.NameHash"/>) — ⛔ never an <c>Rng</c>
+    /// draw, so the lists may grow without reshuffling a seed (D392). <i>Ag + nes</i> is Agnes,
+    /// <i>Wen + dell</i> Wendell: the eight names the game shipped with are in it by construction.
+    /// A list may not repeat an entry — a repeat weights one name double without anybody
+    /// deciding it (his had <i>Val</i> twice; the second is gone).
+    /// </remarks>
+    [JsonPropertyName("first_name_prefixes")]
+    public IReadOnlyList<string> FirstNamePrefixes { get; init; } = new[]
     {
-        "Mabel", "Otto", "Bess", "Silas", "Agnes", "Wendell", "Hattie", "Amos",
-        "Edith", "Cyrus", "Marta", "Josiah", "Lena", "Ambrose", "Clara", "Ansel",
-        "Ruth", "Elias", "Nell", "Barnaby", "Ida", "Gideon", "Prudence", "Ezra",
-        "Winifred", "Alden", "Tabitha", "Rufus", "Dorcas", "Hollis", "Verity", "Caleb",
+        "Ag", "Wen", "Hat", "Ot", "Am", "Mab", "Sil", "Fern", "Eld", "Ash",
+        "Bran", "Cor", "Dav", "El", "Glen", "Hol", "Kael", "Bram", "Val", "Mor",
+        "Nor", "Ran", "Wyn", "Cal", "Sol", "Tor", "Dov", "Ren", "Bel", "Bryn",
+        "Cyp", "Dar", "Fen", "Gale", "Hal", "Is", "Jes", "Kar", "Lark", "Mer",
+        "Nym", "Or", "Pen", "Quin", "Row", "Syl", "Tan", "Ul", "Ver", "Wes",
+        "Yan", "Zeph", "Ar", "Ber", "Cad", "Dor", "Ev", "Fay", "Gar", "Hed",
+        "Ir", "Jor", "Ken", "Lin", "Mar", "Ned", "Oak", "Per", "Quel", "Rhos",
+        "Styr", "Tar", "Vor", "Wren", "Yven", "Ald", "Birch", "Ced", "Dusk", "Em",
+        "Flint", "Hav", "Iv", "Jasp", "Mos", "Pin", "Red", "Sage", "Thorn", "Umb",
+        "Wil", "Yar", "Ast", "Cael", "Lor", "Teth", "Vael", "Zev", "Kyn",
     };
+
+    /// <summary>The second half of a first name — see <see cref="FirstNamePrefixes"/>.</summary>
+    /// <remarks>Joe's list (D465); his had <i>tis</i> twice, and the second is gone.</remarks>
+    [JsonPropertyName("first_name_suffixes")]
+    public IReadOnlyList<string> FirstNameSuffixes { get; init; } = new[]
+    {
+        "nes", "dell", "tie", "to", "os", "bel", "as", "low", "ric", "gard",
+        "win", "ley", "ford", "mere", "wood", "mont", "ren", "is", "en", "or",
+        "el", "ic", "ald", "yn", "ton", "den", "mar", "ridge", "vail", "brook",
+        "field", "wyld", "burn", "dale", "fell", "holt", "lock", "moor", "shaw", "stead",
+        "thorpe", "wick", "worth", "an", "ar", "et", "in", "on", "us", "lyn",
+        "myr", "ryn", "tyr", "wyn", "dorn", "fast", "helm", "land", "mark", "reach",
+        "stone", "vale", "ward", "well", "wind", "yth", "eth", "oth", "ath", "ith",
+        "ael", "iel", "th", "lan", "ret", "ron", "tis", "ver", "tris", "dyl",
+        "fin", "gan", "his", "kin", "lis", "mir", "nis", "pris", "ris",
+        "van", "wis", "xis", "yan", "zis", "bert", "dram", "frith", "mund", "red",
+    };
+
+    /// <summary>
+    /// A name list must hold something, hold no blank, and hold nothing twice (D465).
+    /// </summary>
+    /// <remarks>
+    /// Empty divides by zero at the first birth; blank is a villager with no name; a repeat is a
+    /// name weighted double that nobody chose to weight. Refused here, by key, where the mistake is.
+    /// </remarks>
+    private static void RequireANameList(IReadOnlyList<string>? names, string key)
+    {
+        if (names is null || names.Count == 0)
+        {
+            throw new SimConfigException($"{key} must contain at least one name.");
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string name in names)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new SimConfigException($"{key} has a blank entry.");
+            }
+
+            if (!seen.Add(name))
+            {
+                throw new SimConfigException($"{key} lists \"{name}\" twice.");
+            }
+        }
+    }
 
     /// <summary>
     /// Fail loudly on nonsense values rather than letting them cause a baffling
@@ -4118,10 +4193,8 @@ public sealed record SimConfig
                 $"lifespan_years_variance must be in 0..lifespan_years_base-1 (got {LifespanYearsVariance}).");
         }
 
-        if (VillagerNames is null || VillagerNames.Count == 0)
-        {
-            throw new SimConfigException("villager_names must contain at least one name.");
-        }
+        RequireANameList(FirstNamePrefixes, "first_name_prefixes");
+        RequireANameList(FirstNameSuffixes, "first_name_suffixes");
 
         if (CutYield <= 0)
         {
@@ -4475,10 +4548,7 @@ public sealed record SimConfig
             throw new SimConfigException($"adults_per_household must be greater than zero (got {AdultsPerHousehold}).");
         }
 
-        if (HouseholdNames is null || HouseholdNames.Count == 0)
-        {
-            throw new SimConfigException("household_names must contain at least one name.");
-        }
+        RequireANameList(HouseholdNames, "household_names");
 
         // An empty pool would divide by zero when the seed picks a name, and it would do it
         // at the first frame that drew the header rather than here — METHODOLOGY §4's

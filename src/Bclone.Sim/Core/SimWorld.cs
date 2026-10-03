@@ -10625,7 +10625,8 @@ public sealed class SimWorld : IObstacles
             {
                 Stockpile = NewLarder(),
                 Id = h + 1,
-                Name = config.HouseholdNames[h % config.HouseholdNames.Count],
+                Surname = FoundingSurnameFor(h + 1),
+                DayForAChild = NameHash.DayForAChild(Seed, h + 1, config.DaysPerSeason * 4),
                 HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
                 HomeFacing = home?.Facing ?? Angle.Zero,
                 WhyHere = home?.WhyHere ?? "",
@@ -10645,9 +10646,15 @@ public sealed class SimWorld : IObstacles
             StandingChanged();
             Households.Add(household);
 
+            // The household's rhythm, drawn once when its first adult is — see below.
+            int householdRhythm = 0;
+
             for (int a = 0; a < config.AdultsPerHousehold; a++)
             {
-                string name = DrawUnusedName();
+                // Named by a hash of the seed and their id, not a draw (D465) — so the stream
+                // below starts at the lifespan.
+                int id = nextVillagerId++;
+                string name = NameFor(id);
 
                 int lifespan = config.LifespanYearsBase;
                 if (config.LifespanYearsVariance > 0)
@@ -10655,37 +10662,40 @@ public sealed class SimWorld : IObstacles
                     lifespan += Rng.NextInt(-config.LifespanYearsVariance, config.LifespanYearsVariance + 1);
                 }
 
-                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
-                // D190). `HouseholdSystem.TryBirth` draws the same three in the same order, so
-                // there is one rule rather than two; that comment has stood over the birth path
-                // since D71 and this keeps it true.
-                // ⭐ AND THEIR RHYTHM, THIRD IN THE DRAW ORDER — name, lifespan, rhythm (§3.5,
-                // D190), ROTATED BY THEIR PLACE IN THE HOUSEHOLD.
+                // ⭐ AND THEIR RHYTHM (§3.5, D190): DRAWN ONCE A HOUSEHOLD, EACH ADULT A STEP ON
+                // FROM IT. `HouseholdSystem.TryBirth` draws lifespan then rhythm in the same order.
                 //
-                // ⛔⛔ THE ROTATION IS NOT BELT AND BRACES — WITHOUT IT THE FIX DID NOTHING, AND
-                // THE MEASUREMENT IS WORTH THE PARAGRAPH. The founding draws four small-range
-                // numbers at a fixed stride at the very start of the stream, and at that stride
-                // the first four come out **1, 1, 2, 2** — so both adults of household 1 got the
-                // same rhythm, both of household 2 got the same rhythm, and two people who were
-                // meant to stop moving in lockstep were handed identical staggers.
+                // ⛔⛔ THE STEP IS THE GUARANTEE, AND THE OLD ROTATION WAS NOT ONE (D465). The
+                // founding draws small-range numbers at a fixed stride at the very start of the
+                // stream, and at that stride they correlate: until D465 the first four came out
+                // **1, 1, 2, 2**, so both adults of a household drew alike. The fix then was
+                // `(draw + a) % ticks_per_day` — which separates two adults only while their two
+                // draws are EQUAL. **D465 took the name's draw out of the stride and the draws came
+                // out one apart, so `(r + 0)` and `(r − 1 + 1)` handed household 1 one rhythm**
+                // (`TwoAdultsOfOneHouseholdStopMovingInLockstep`: identical hunger 0 % → 50 %).
                 //
                 // ⚠️ THE RNG IS NOT AT FAULT AND THAT MATTERS. Forty raw `NextInt(0, 4)` draws
-                // come out 9/11/8/12 — well distributed. **It is a short-range correlation at a
-                // fixed stride, showing at the start of the stream**, and the founding is
-                // exactly four such draws. *A generator can be sound and still be the wrong tool
-                // for four draws that must differ from each other.*
-                //
-                // So the draw supplies the seeded part and the rotation supplies the guarantee:
-                // no two adults of one household can share a rhythm while a household holds no
-                // more people than a day holds ticks.
-                int rhythm = config.SeededRhythm && config.TicksPerDay > 1
-                    ? (Rng.NextInt(0, config.TicksPerDay) + a) % config.TicksPerDay
-                    : 0;
+                // come out 9/11/8/12 — well distributed. *A generator can be sound and still be the
+                // wrong tool for draws that must differ from each other.* So the draw supplies the
+                // seeded part and the step supplies the guarantee, whatever the stream does: no two
+                // adults of one household share a rhythm while it holds no more people than a day
+                // holds ticks.
+                int rhythm = 0;
+                if (config.SeededRhythm && config.TicksPerDay > 1)
+                {
+                    if (a == 0)
+                    {
+                        householdRhythm = Rng.NextInt(0, config.TicksPerDay);
+                    }
+
+                    rhythm = (householdRhythm + a) % config.TicksPerDay;
+                }
 
                 var villager = new Villager
                 {
-                    Id = nextVillagerId++,
+                    Id = id,
                     Name = name,
+                    Surname = household.Surname,
                     LifespanYears = lifespan,
                     Rhythm = rhythm,
 
@@ -10708,11 +10718,12 @@ public sealed class SimWorld : IObstacles
                     Position = household.HomePosition ?? Point.CentreOf(origin),
                     HouseholdId = household.Id,
 
-                    // Year 1 is the first year, so someone aged N at founding was
-                    // born in year 1-N. Deriving it this way means ClockSystem's
-                    // per-tick recalculation reproduces the founding age rather
-                    // than resetting every founder to zero on the first tick.
-                    BirthYear = 1 - config.FounderAge,
+                    // ⭐ A BIRTHDAY OF THEIR OWN (D468): `founder_age` years before the first
+                    // tick and a hash further into the year before that, so every founder is
+                    // `founder_age` on the first tick and turns a year older on their own day in
+                    // Year 1 rather than all four together at New Year.
+                    BirthTick = -((long)config.FounderAge * config.TicksPerYear)
+                        - NameHash.BirthdayOffset(Seed, id, config.TicksPerYear),
                     AgeYears = config.FounderAge,
                     LifeStage = LifeStage.Adult,
 
@@ -10845,35 +10856,82 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// Draw a name nobody in the village is already using.
+    /// The first name villager <paramref name="id"/> is given — one nobody living is using.
     /// </summary>
     /// <remarks>
     /// Two villagers called Bess is a small thing that undercuts a large one: this
     /// game is defined against fungible labour units (§1.4), and you cannot tell a
-    /// story about someone whose name is not theirs. Drawing with replacement from a
-    /// short list produced twins-by-accident within two years.
+    /// story about someone whose name is not theirs.
     /// <para>
-    /// Deterministic: pick an index from the seeded RNG, then walk forward to the
-    /// first unused name. Walking is a fixed rule, so the same seed still yields the
-    /// same village. If every name is taken, reuse is allowed rather than failing -
-    /// a repeated name is a blemish, a crash is a bug.
+    /// ⛔ <b>A hash, never a draw</b> (D395, D465, <c>specs/names-and-birthdays.md §3</c>): attempt
+    /// 0, 1, 2, … of <see cref="NameHash.FirstName"/> until one is free. Until D465 this took an
+    /// index from the seeded RNG, so the length of a name list was part of every seed and naming
+    /// spent a draw the economy's stream then lacked. If every attempt is taken, the first is
+    /// reused rather than failing — a repeated name is a blemish, a crash is a bug.
     /// </para>
     /// </remarks>
-    internal string DrawUnusedName()
+    internal string NameFor(int id)
     {
-        IReadOnlyList<string> pool = Config.VillagerNames;
-        int start = (int)Rng.NextUInt((uint)pool.Count);
+        IReadOnlyList<string> prefixes = Config.FirstNamePrefixes;
+        IReadOnlyList<string> suffixes = Config.FirstNameSuffixes;
+        int attempts = prefixes.Count * suffixes.Count;
 
-        for (int offset = 0; offset < pool.Count; offset++)
+        for (int attempt = 0; attempt < attempts; attempt++)
         {
-            string candidate = pool[(start + offset) % pool.Count];
+            string candidate = NameHash.FirstName(Seed, id, attempt, prefixes, suffixes);
             if (!IsNameInUse(candidate))
             {
                 return candidate;
             }
         }
 
-        return pool[start];
+        return NameHash.FirstName(Seed, id, 0, prefixes, suffixes);
+    }
+
+    /// <summary>
+    /// The day <paramref name="villager"/> was born, in words: <i>"Day 20, Fall, Year 10"</i> — or,
+    /// for a founder born before the valley was, <i>"Day 12, Summer, 20 years before the founding"</i>
+    /// (D468), so no negative year ever reaches the screen.
+    /// </summary>
+    public string BirthdayOf(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        if (villager.BirthTick >= 0)
+        {
+            return SimClock.FromTick((ulong)villager.BirthTick, Config).ToString();
+        }
+
+        long ticksPerYear = Config.TicksPerYear;
+        long before = -villager.BirthTick;
+        long years = before / ticksPerYear;
+        SimClock day = SimClock.FromTick((ulong)((ticksPerYear - (before % ticksPerYear)) % ticksPerYear), Config);
+        string ago = years == 1 ? "a year" : $"{years} years";
+        return $"Day {day.DayOfSeason}, {day.Season}, {ago} before the founding";
+    }
+
+    /// <summary>
+    /// The surname founding household <paramref name="householdId"/> carries — one no other
+    /// household with anybody living in it already does (D467).
+    /// </summary>
+    /// <remarks>
+    /// The founding is the only place a surname comes from the list; every later household is a
+    /// couple and carries the older partner's (<c>HouseholdSystem</c>). Past every attempt the first
+    /// is reused — a blemish, not a crash.
+    /// </remarks>
+    private string FoundingSurnameFor(int householdId)
+    {
+        IReadOnlyList<string> surnames = Config.HouseholdNames;
+
+        for (int attempt = 0; attempt < surnames.Count * 4; attempt++)
+        {
+            string candidate = NameHash.Surname(Seed, householdId, attempt, surnames);
+            if (!Households.Exists(h => LivingMembersOf(h) > 0 && h.Surname == candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return NameHash.Surname(Seed, householdId, 0, surnames);
     }
 
     private bool IsNameInUse(string name)

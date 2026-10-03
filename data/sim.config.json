@@ -1495,8 +1495,10 @@
     "leather": 200,
   },
 
-  "villager_names": [
-    "Mabel", "Otto", "Bess", "Silas",
-    "Agnes", "Wendell", "Hattie", "Amos",
-  ],
+  // Names (D465, specs/names-and-birthdays.md): a first name is a prefix and a suffix
+  // picked by a hash of the seed and the villager's id -- never a draw, so these lists
+  // may grow without reshuffling a seed. Joe's lists are the defaults in
+  // `SimConfig.FirstNamePrefixes` / `FirstNameSuffixes` / `HouseholdNames`, the way
+  // `town_names` is; a "first_name_prefixes", "first_name_suffixes" or
+  // "household_names" array here replaces one wholesale. No list may repeat an entry.
 }

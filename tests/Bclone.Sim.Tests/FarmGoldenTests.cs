@@ -281,7 +281,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D429) — a tool takes a third off the action it begins, multiplied with mastery and rounded once, beside the quarter on yield it already added (`tools-and-the-smith.md §3.4`, Joe: "tool bonus on ticks"; measured, ticks alone was half of yield alone, so both ship). Was 10018167588382916202.
     // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Was 16882118816047759725.
     // RE-TAKEN (D463) — steady pace, the stutter (`gridless.md §8` slice 6, Joe: "A: steady pace"): a walker spends one tick of a leg's unrounded cost a tick and carries the rest into the next leg, the last leg ends on the place they will stand, a leg is priced by its own route tiles' entry costs (the step off a building had cost nothing), and one tick's walk is shared by every journey begun in it. Was 16212385272777087401.
-    private const ulong SeamGoldenHash = 8602382882784936742UL;
+    // RE-TAKEN (D466) — naming stopped taking a draw (`names-and-birthdays.md §3`, D465): a first name is hashed from the seed and the villager's id, so every founder's and every child's lifespan and rhythm come from a different place in the stream, and a founding household's rhythm is drawn once and stepped per adult. ⭐ PROVEN TO BE THE ONLY REASON: with the name's draw and the old per-adult rhythm put back, the old value passes. Was 8602382882784936742.
+    // RE-TAKEN (D468) — birthdays (`names-and-birthdays.md §5`, D468): a villager is a year older on their own birthday, not at New Year — founders born at a hashed point in the year before the founding, so they come of age, slow and die of old age on their own days — and the fingerprint mixes the birth tick and no longer the age it is derived from. ⭐ PROVEN TO BE THE ONLY REASON: with New-Year ageing, no founder offset and the old (age, birth year) mix put back, the old value passes. Was 14240505925748272487.
+    // RE-TAKEN (D469) — each household tries for a child on a day of its own (`names-and-birthdays.md §5`, D469, Joe: "spread births through the year - each household has its own day"), so the village's children arrive across the year rather than all at its turn. ⭐ PROVEN TO BE THE ONLY REASON: with every household asked at New Year again, the old value passes. Was 5674066082552419964.
+    private const ulong SeamGoldenHash = 7465599573486248760UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -345,7 +348,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D429) with it again: a tool takes a third off the action it begins, beside its quarter on yield. Was 17666849110764019097.
     // RE-TAKEN (D434) — the quarry's seams (`quarry.md §3.1`): the valley has more rock and iron; no draw added. Was 2012008122364773033.
     // RE-TAKEN (D463) with it again: steady pace — a walk spends one tick of an unrounded leg a tick, ends on the place it stands, and prices the step off a building. Was 3968343926408457749.
-    private const ulong SeamBeforeAnybodyGotBetter = 17889511511956252039UL;
+    // RE-TAKEN (D466) with it again: naming takes no draw, so the founders' lifespans and rhythms come from elsewhere in the stream. Was 17889511511956252039.
+    // RE-TAKEN (D468) with it again: a year older on one's own birthday, and the birth tick hashed in the age's place. Was 11896695966416757587.
+    // RE-TAKEN (D469) with it again: each household tries for a child on a day of its own. Was 4735495286403371521.
+    private const ulong SeamBeforeAnybodyGotBetter = 4462969067628441091UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

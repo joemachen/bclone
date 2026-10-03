@@ -355,10 +355,13 @@ public sealed class ColdStartTests
         // logs, unable to see them because the fetch read warehouses and the timber was in the
         // cart. Nothing was tuned to get here — the cart still holds what it held when the
         // village was dying, which is the point: it was never a difficulty problem.
+        // ⚠️ RE-POSED (D469): counted as `population == starting population`, which stopped meaning
+        // "nobody died" the day a household could have a child in its first year (each tries on a
+        // day of its own; until D469 nobody was born before Year 2's turn). Nobody dead is the claim.
+        int died = world.Villagers.Count(v => !v.Alive);
         Assert.True(
-            world.Population == config.StartingPopulation,
-            $"{config.StartingPopulation - world.Population} founders died in a played "
-            + $"opening; {frozen} of them froze.");
+            died == 0,
+            $"{died} died in a played opening; {frozen} of them froze.");
     }
 
     /// <summary>
@@ -436,10 +439,12 @@ public sealed class ColdStartTests
             $"Joe's opening on the shipped config: {world.Population} alive, {frozen} frozen, "
             + $"{world.FirewoodInWarehouses()} firewood in stores");
 
+        // ⚠️ RE-POSED (D469) — nobody dead, not `population == starting population`: a founding
+        // household may have a child in its first year now.
+        int died = world.Villagers.Count(v => !v.Alive);
         Assert.True(
-            world.Population == config.StartingPopulation,
-            $"{config.StartingPopulation - world.Population} founders died playing the "
-            + $"opening as designed; {frozen} froze.");
+            died == 0,
+            $"{died} died playing the opening as designed; {frozen} froze.");
     }
 
     /// <summary>
@@ -758,7 +763,9 @@ public sealed class ColdStartTests
         int founders = 0;
         foreach (Villager villager in world.Villagers)
         {
-            if (villager.Alive && villager.BirthYear == 0)
+            // The marker, not a birth year (D468): this read `BirthYear == 0`, which no founder ever
+            // had (theirs was 1 − founder_age), so the line always said "0 of the founders left".
+            if (villager.Alive && villager.Founder)
             {
                 founders++;
             }

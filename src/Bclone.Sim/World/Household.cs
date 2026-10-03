@@ -23,25 +23,50 @@ public sealed class Household
     public required int Id { get; init; }
 
 
-    private string _name = string.Empty;
+    private string _surname = string.Empty;
 
     /// <summary>
-    /// What the village calls it. Born with a place name; the player may give it another
-    /// (D376) — ⛔ only through <c>SimWorld.Rename</c>, which validates and logs.
+    /// The family's name — what its members are called after their first name, and what a child
+    /// born here carries (D467, <c>specs/names-and-birthdays.md §4</c>).
     /// </summary>
-    public required string Name
+    /// <remarks>
+    /// Set at the founding from a hash of the seed and the id, and for a couple from <b>the older
+    /// partner's</b> surname (Joe). It changes once in a household's life at most: when a couple
+    /// takes over a dead family's house, the house becomes theirs (<see cref="BecomeTheFamilyOf"/>).
+    /// <b>Not hashed</b>, like a villager's name — a function of the seed, the ids and the pairing
+    /// rule, all of which are.
+    /// </remarks>
+    public required string Surname
     {
-        get => _name;
-        init { _name = value; BornAs = value; }
+        get => _surname;
+        init => _surname = value;
     }
 
-    /// <summary>The name it was founded with — what a blank rename hands back.</summary>
-    public string BornAs { get; private set; } = string.Empty;
+    /// <summary>
+    /// What the village calls it: the player's name for it if they gave one (D376), otherwise the
+    /// surname. ⛔ A rename is the household's label, never anybody's surname (D467) — the rename
+    /// box is free text, and a villager called <i>Ren the Ashfords</i> would be a bug.
+    /// </summary>
+    public string Name => GivenName ?? _surname;
 
-    /// <summary>The player's name for it, or null while it carries the one it was born with — hashed sparsely.</summary>
-    public string? GivenName => _name == BornAs ? null : _name;
+    /// <summary>What a blank rename hands back — the surname.</summary>
+    public string BornAs => _surname;
 
-    internal void Rename(string? given) => _name = given ?? BornAs;
+    /// <summary>The player's name for it, or null while it goes by its surname — hashed sparsely.</summary>
+    public string? GivenName { get; private set; }
+
+    internal void Rename(string? given) => GivenName = given == _surname ? null : given;
+
+    /// <summary>
+    /// A couple has taken this house over: it carries their surname and forgets any name the
+    /// player gave the family that lived here (D467). The house is the same building; the
+    /// household is a new family.
+    /// </summary>
+    internal void BecomeTheFamilyOf(string surname)
+    {
+        _surname = surname;
+        GivenName = null;
+    }
 
     /// <summary>
     /// Where this family's house stands, or <c>null</c> if they have not got one yet.
@@ -1104,6 +1129,19 @@ public sealed class Household
 
     /// <summary>In-game year of the household's most recent birth. Zero if never.</summary>
     public int LastBirthYear { get; set; }
+
+    /// <summary>
+    /// The day of the year this household tries for a child, counted from Day 1 of Spring (D469,
+    /// Joe: <i>"spread births through the year - each household has its own day"</i>).
+    /// </summary>
+    /// <remarks>
+    /// Until D469 every household was asked at the year's turn, so every villager born in the valley
+    /// had New Year's Day for a birthday (D468). A hash of the seed and the id
+    /// (<see cref="NameHash.DayForAChild"/>), set once when the household is made — never re-asked
+    /// per tick — and <b>not hashed</b>: it is a function of the seed and the id, both of which are.
+    /// Once a year still, so <c>birth_interval_years</c> means what it said.
+    /// </remarks>
+    public int DayForAChild { get; init; }
 
     /// <summary>
     /// The household is fetching food back up to target — set when the larder reaches

@@ -134,6 +134,7 @@ Top to bottom:
 
 | Part | What it says | Where it comes from |
 |---|---|---|
+| **Title** | *Agnes Cooper* — the full name (D467); the probe's `villager card:` line poses the widest the lists can make (*Thornthorpe Underwood*) untrimmed and fails if it widens the card | `Villager.FullName` |
 | **Subtitle** | *Forester · 35 · Thatcher household* | `TradeWordFor`, `AgeYears`, `HouseholdOf` |
 | **Banner** (the status row) | what they are doing **now** — green, or amber while hungry or while there is a note; **the note is its tooltip** (D432) | `Villager.DescribeState`, `WorkNote` |
 | **WORK** | *"Forester at forester's hut 1"* (amber, with the note as its tooltip, while there is one) · a dropdown — *The village decides* / *Always {trade}* (Joe's call; one control for D51's pin, disabled for a child). ⛔ No assignment reason, runner-up or distance (D432) | `SetPinnedTrade` |

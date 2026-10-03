@@ -49,7 +49,7 @@ public sealed class KnowledgeAtRiskTests
         SimWorld world = loop.World;
         SkillRow skill = Config.Skills[0];
 
-        Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+        Villager elder = MakeThemAMaster(world, AFrailElderWhoMasteredNothing(loop), skill);
 
         // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
         // as a master, a journeyman and two novices (D175), and which elder the years produce
@@ -86,7 +86,7 @@ public sealed class KnowledgeAtRiskTests
         SimWorld world = loop.World;
         SkillRow skill = Config.Skills[0];
 
-        Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+        Villager elder = MakeThemAMaster(world, AFrailElderWhoMasteredNothing(loop), skill);
 
         // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
         // as a master, a journeyman and two novices (D175), and which elder the years produce
@@ -124,7 +124,7 @@ public sealed class KnowledgeAtRiskTests
     public void AndNotAboutAnElderWhoNeverMasteredAnything()
     {
         SimLoop loop = Loop(Config);
-        Villager elder = StepUntilSomebodyIsFrail(loop);
+        Villager elder = AFrailElderWhoMasteredNothing(loop);
 
         Assert.Null(loop.World.KnowledgeAtRiskNote(elder));
     }
@@ -148,20 +148,21 @@ public sealed class KnowledgeAtRiskTests
         SimWorld world = loop.World;
 
         SkillRow skill = config.Skills[0];
-        Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+        Villager elder = MakeThemAMaster(world, AFrailElderWhoMasteredNothing(loop), skill);
 
         // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
         // as a master, a journeyman and two novices (D175), and which elder the years produce
         // first moves with any change to the village's walks — the day the stores grew to 2×2,
         // the elder found was not the only master of this skill and the note was rightly null.
         LeaveOnlyOneMasterOf(world, skill, elder);
+        int posedAt = sink.Entries.Count;
 
         for (int i = 0; i < config.TicksPerYear * 4; i++)
         {
             loop.StepOnce();
         }
 
-        int said = CountWarnings(sink, elder);
+        int said = CountWarnings(sink, elder, posedAt);
         _output.WriteLine($"warned {said} times over four years");
         Assert.Equal(1, said);
     }
@@ -185,19 +186,20 @@ public sealed class KnowledgeAtRiskTests
         SimWorld world = loop.World;
 
         SkillRow skill = config.Skills[0];
-        Villager elder = MakeThemAMaster(world, StepUntilSomebodyIsFrail(loop), skill);
+        Villager elder = MakeThemAMaster(world, AFrailElderWhoMasteredNothing(loop), skill);
 
         // ⚠️ Posed as the ONLY master, not left to the fixture's luck (D382): the founders arrive
         // as a master, a journeyman and two novices (D175), and which elder the years produce
         // first moves with any change to the village's walks — the day the stores grew to 2×2,
         // the elder found was not the only master of this skill and the note was rightly null.
         LeaveOnlyOneMasterOf(world, skill, elder);
+        int posedAt = sink.Entries.Count;
         Villager second = MakeThemAMaster(
             world, world.Villagers.First(v => v.Alive && v.Id != elder.Id), skill);
 
         // A year with two masters: nothing to say.
         StepAYear(loop, config);
-        Assert.Equal(0, CountWarnings(sink, elder));
+        Assert.Equal(0, CountWarnings(sink, elder, posedAt));
 
         // The second master dies. Now the elder is the last.
         //
@@ -206,7 +208,7 @@ public sealed class KnowledgeAtRiskTests
         // a third that nobody in this test had heard of, the condition was correctly false, and
         // the guard failed for the feature working.
         StepToTheNextSweep(loop, config, skill, elder);
-        Assert.Equal(1, CountWarnings(sink, elder));
+        Assert.Equal(1, CountWarnings(sink, elder, posedAt));
 
         // Somebody else masters it — the warning stands down.
         Villager third = MakeThemAMaster(
@@ -214,12 +216,12 @@ public sealed class KnowledgeAtRiskTests
             world.Villagers.First(v => v.Alive && v.Id != elder.Id && v.Id != second.Id),
             skill);
         StepAYear(loop, config);
-        Assert.Equal(1, CountWarnings(sink, elder));
+        Assert.Equal(1, CountWarnings(sink, elder, posedAt));
 
         // …and dies. The village must hear it a second time.
         StepToTheNextSweep(loop, config, skill, elder);
 
-        int said = CountWarnings(sink, elder);
+        int said = CountWarnings(sink, elder, posedAt);
         _output.WriteLine($"warned {said} times across two separate at-risk spells");
         Assert.Equal(2, said);
     }
@@ -277,18 +279,38 @@ public sealed class KnowledgeAtRiskTests
     // ---------------------------------------------------------------
 
     /// <summary>
+    /// The frail elder <see cref="StepUntilSomebodyIsFrail"/> finds, posed as master of nothing.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Posed, not left to the stream's luck (D465, D382's shape).</b> The founders arrive as
+    /// a master, a journeyman and two novices (D175), and the first villager the years make frail
+    /// is usually a founder — so whether that elder is already the sole master of some trade is
+    /// decided by the founding's draws. When naming stopped taking a draw (D465) the elder these
+    /// guards found was the village's only master trader, and every one of them read a warning
+    /// about trading as a warning about the skill it posed. Each guard says what the elder
+    /// masters; this makes it the only thing they do.
+    /// </remarks>
+    private static Villager AFrailElderWhoMasteredNothing(SimLoop loop)
+    {
+        Villager elder = StepUntilSomebodyIsFrail(loop);
+        elder.Skills.RemoveAll(progress => progress.Mastered);
+        return elder;
+    }
+
+    /// <summary>
     /// Step until somebody in the village is genuinely frail, and hand them back.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>⛔⛔ AN ELDER CANNOT BE POSED, AND TWO DRAFTS OF THIS FILE TRIED.</b> Writing
     /// <see cref="LifeStage.Elder"/> lasts one tick — <see cref="Systems.AgeingSystem"/>
-    /// recomputes the stage from vigour on every one. Writing <c>AgeYears</c> lasts one tick too,
-    /// because <see cref="Systems.ClockSystem"/> recomputes it as <c>year - BirthYear</c>; the
+    /// recomputes the stage from vigour on every one. Writing <c>AgeYears</c> lasted one tick too,
+    /// because <see cref="Systems.ClockSystem"/> recomputed it as <c>year - BirthYear</c>; the
     /// guard watched a 51-year-old turn 21 between the first tick and the second and read the
-    /// resulting silence as a broken sweep. And <c>BirthYear</c> is <c>init</c>-only, which is
-    /// the model telling you the truth: <b>age is derived, and the only honest way to have an
-    /// old villager is to let one get old.</b>
+    /// resulting silence as a broken sweep. (Since D468 it is kept, one year added on each
+    /// birthday — but posed by hand it would disagree with <c>BirthTick</c>, which is
+    /// <c>init</c>-only.) That is the model telling you the truth: <b>age is derived, and the only
+    /// honest way to have an old villager is to let one get old.</b>
     /// </para>
     /// <para>
     /// A few thousand ticks, which is cheap — and it makes these guards run against the ageing
@@ -408,8 +430,15 @@ public sealed class KnowledgeAtRiskTests
         }
     }
 
-    private static int CountWarnings(InMemoryLogSink sink, Villager about) =>
-        sink.Entries.Count(e =>
+    /// <summary>Warnings about <paramref name="about"/> said since entry <paramref name="from"/>.</summary>
+    /// <remarks>
+    /// ⚠️ <b>Since the pose, not since the founding (D465).</b> The annual sweep can speak on the
+    /// very tick <see cref="StepUntilSomebodyIsFrail"/> hands the elder back — about whatever the
+    /// founding made them before the guard posed anything — and a count from the start of the
+    /// log reads that as the posed trade being warned about twice.
+    /// </remarks>
+    private static int CountWarnings(InMemoryLogSink sink, Villager about, int from) =>
+        sink.Entries.Skip(from).Count(e =>
             e.Message.Contains("the only soul in the village", System.StringComparison.Ordinal)
             && e.Message.Contains(about.Name, System.StringComparison.Ordinal));
 }

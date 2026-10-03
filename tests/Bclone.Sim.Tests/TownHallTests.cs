@@ -54,7 +54,7 @@ public sealed class TownHallTests
     /// <summary>The four who arrive with the cart are marked, and nobody born here is.</summary>
     /// <remarks>
     /// <b>⭐ The claim `specs/town-hall.md §3` rests on.</b> A founder is marked rather than
-    /// derived from <c>BirthYear</c>, so this is what says the marking actually happened — and
+    /// derived from <c>BirthTick</c>, so this is what says the marking actually happened — and
     /// running it a century deep is what says <c>HouseholdSystem</c> never sets it on a child.
     /// </remarks>
     [Fact]
@@ -224,7 +224,7 @@ public sealed class TownHallTests
             Name = "Nobody's Founder",
             LifespanYears = 60,
             Carried = new Stockpile(world.GoodsCatalog.Count),
-            BirthYear = 1,
+            BirthTick = 0,
             AgeYears = 20,
             HouseholdId = home.Id,
             Position = home.HomePosition ?? anywhere,

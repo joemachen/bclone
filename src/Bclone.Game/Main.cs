@@ -2247,7 +2247,7 @@ public partial class Main : Control
             string work = villager.IsLaborer ? "laborer"
                 : villager.HasJob ? TradeOf(villager)
                 : "not working yet";
-            int index = _roster.AddItem($"{villager.Name}, {villager.AgeYears} ({stage}) — {work}");
+            int index = _roster.AddItem($"{villager.FullName}, {villager.AgeYears} ({stage}) — {work}");
             _roster.SetItemMetadata(index, villager.Id);
 
             if (villager.Id == previousSelection)

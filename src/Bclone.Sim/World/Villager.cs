@@ -45,6 +45,20 @@ public sealed class Villager
     /// <summary>"Mabel", never "Villager_01". The story depends on this.</summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Their family name: their household's surname when they were born or founded it, and the
+    /// new household's when they move in with a partner (D467, <c>names-and-birthdays.md §4</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Stored, not read through the household</b> — the dead stay in their household's
+    /// member list, and a couple taking over the house renames it; read through the household, a
+    /// dead Thatcher would become a Cooper after death. Not hashed, like <see cref="Name"/>.
+    /// </remarks>
+    public string Surname { get; internal set; } = string.Empty;
+
+    /// <summary>"Agnes Cooper" — the first name alone where nobody has given them a surname.</summary>
+    public string FullName => Surname.Length == 0 ? Name : $"{Name} {Surname}";
+
     /// <summary>The year they would die of old age, drawn once at birth.</summary>
     public required int LifespanYears { get; init; }
 
@@ -224,10 +238,16 @@ public sealed class Villager
     public string CommuteNote { get; set; } = string.Empty;
 
     /// <summary>
-    /// The in-game year they were born. Zero for founders, who arrive already grown
-    /// and whose age therefore tracks the calendar directly.
+    /// The tick they were born on — their birthday (D468, <c>names-and-birthdays.md §5</c>).
     /// </summary>
-    public int BirthYear { get; init; }
+    /// <remarks>
+    /// <b>Negative for a founder</b>, who was born before the valley was: <c>founder_age</c> years
+    /// before the first tick, and a hash of the seed and their id further into the year before
+    /// that, so each founder is <c>founder_age</c> on the first tick and has a birthday of their own
+    /// in Year 1. A child's is the tick they are born on. Hashed; <see cref="AgeYears"/> is
+    /// derived from it.
+    /// </remarks>
+    public long BirthTick { get; init; }
 
     /// <summary>
     /// Whether they are one of the people the village was founded by — <b>the four who arrived
@@ -236,7 +256,7 @@ public sealed class Villager
     /// <remarks>
     /// <para>
     /// <b>⭐⭐ MARKED, NOT DERIVED, AND THAT IS THE DECISION RATHER THAN THE DETAIL.</b> A founder
-    /// is arithmetically visible — <c>BirthYear</c> is <c>1 - founder_age</c> and nobody born here
+    /// is arithmetically visible — <c>BirthTick</c> is negative and nobody born here
     /// has a negative one — but D195 is the standing warning about deriving state you then cannot
     /// pose, and the derivation is a coincidence of two config keys rather than a fact about a
     /// person. <b>It is also what lets the tribute NAME them</b>, which is the whole point:
@@ -252,7 +272,12 @@ public sealed class Villager
     /// </remarks>
     public bool Founder { get; init; }
 
-    /// <summary>Years lived. Advances on the new-year boundary.</summary>
+    /// <summary>
+    /// Years lived — one more on each birthday, not at New Year (D468). Maintained where it changes
+    /// (<c>ClockSystem</c>, on the tick a year since <see cref="BirthTick"/> completes), never
+    /// recomputed per tick; derived from <see cref="BirthTick"/>, so not hashed (D335). It stops at
+    /// death.
+    /// </summary>
     public int AgeYears { get; set; }
 
     /// <summary>

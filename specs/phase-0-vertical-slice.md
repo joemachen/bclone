@@ -111,7 +111,7 @@ travel_ticks_per_unit= 1      // abstract movement cost
 food_per_meal        = 5      // stockpile consumed per eat
 lifespan_years       = 50     // + small seeded variance for a natural feel
 seed                 = 12345
-villager_names       = ["Mabel", "Otto", "Bess", ...]
+villager_names       = ["Mabel", "Otto", "Bess", ...]   // ⚠️ superseded (D466): first_name_prefixes × first_name_suffixes, hashed from (seed, id) — names-and-birthdays.md
 ```
 
 ---
@@ -127,7 +127,7 @@ Every tick, in this exact order:
 5. **Emit life-log events** — for anything notable this tick (season change, first gather of the day, hunger critical, death, etc.).
 6. *(Render, decoupled, interpolates between ticks — never mutates sim state.)*
 
-RNG: a single seeded generator, used only where variance is wanted (lifespan variance, name pick). No wall-clock, no unseeded randomness, no iteration-order-dependent behavior anywhere in steps 1–5.
+RNG: a single seeded generator, used only where variance is wanted (lifespan variance; ~~name pick~~ — a name is a hash of the seed and the id since D466, never a draw). No wall-clock, no unseeded randomness, no iteration-order-dependent behavior anywhere in steps 1–5.
 
 ---
 

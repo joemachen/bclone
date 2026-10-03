@@ -1331,7 +1331,7 @@ public partial class Main
             return false;
         }
 
-        Title(card, villager.Name, renamable: false);
+        Title(card, villager.FullName, renamable: false);
         card.Numbers.Visible = false;
         card.Storage.Visible = false;
         card.WorkersRow.Visible = false;
@@ -1340,7 +1340,9 @@ public partial class Main
         VillagerParts p = card.Person;
         Workplace? job = world.FindWorkplace(villager.WorkplaceId);
         Household home = world.HouseholdOf(villager);
-        card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household";
+        // ⭐ And their birthday, on its own line (D468) — the day they turn a year older.
+        card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household"
+            + $"\nBorn {world.BirthdayOf(villager)}";
 
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
@@ -1805,7 +1807,7 @@ public partial class Main
             // this card from being a stat block is the same one D195's at-risk line uses.
             // Short numerals on the card (D397, Joe: *"inscrutable. word wrap and use less words"*);
             // the spelled-out register stays in the log, where it has the room.
-            founders.Add((founder.Name, $"{founder.AgeYears} · {founder.WintersSurvived} winters"));
+            founders.Add((founder.FullName, $"{founder.AgeYears} · {founder.WintersSurvived} winters"));
         }
 
         int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
@@ -2000,10 +2002,32 @@ public partial class Main
             faults.Add($"the dropdown reads item {p.Keep.Selected} for a villager kept on item {kept}");
         }
 
+        // ⭐ THE WIDEST FULL NAME THE LISTS CAN MAKE FITS THE HEAD WITHOUT ITS ELLIPSIS (D467). The
+        // head may trim a player's forty-letter rename; it must never trim a person's own name.
+        // Widths add, so the widest prefix, suffix and surname make the widest name; asked the way
+        // every other label on the card is — untrimmed, does the card widen?
+        Font titleFont = card.Title.GetThemeFont("font");
+        int titleSize = card.Title.GetThemeFontSize("font_size");
+        float Measure(string text) => titleFont.GetStringSize(text, HorizontalAlignment.Left, -1, titleSize).X;
+        string widestName = world.Config.FirstNamePrefixes.MaxBy(Measure)
+            + world.Config.FirstNameSuffixes.MaxBy(Measure) + " " + world.Config.HouseholdNames.MaxBy(Measure);
+        card.Title.Text = widestName;
+        card.Title.ClipText = false;
+        card.Title.TextOverrunBehavior = TextServer.OverrunBehavior.NoTrimming;
+        ForceUpdateTransform();
+        float namedWide = card.Panel.GetCombinedMinimumSize().X;
+        card.Title.ClipText = true;
+        card.Title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        if (namedWide > CardWidth + 1f)
+        {
+            faults.Add($"the widest full name, {widestName}, widens the card to {namedWide:F0} — the head would cut it");
+        }
+
         // The fullest a person's card can be.
         string longest = "A status line that runs on for a good deal longer than any the sim writes, to see that it wraps inside the card rather than widening it.";
         card.Title.Text = new string('W', SimWorld.NameLengthLimit);
-        card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household";
+        card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household"
+            + "\nBorn Day 30, Summer, 88 years before the founding";
         card.Status.Text = longest;
         p.Job.Text = $"Woodcutter at {new string('W', SimWorld.NameLengthLimit)}";
         p.ToolSection.Visible = true;
@@ -2071,7 +2095,7 @@ public partial class Main
         RefreshCards(world);
 
         return faults.Count == 0
-            ? $"[widths] villager card: ✅ subtitle, a banner, WORK with a {p.Keep.ItemCount}-item dropdown, TOOL, NEEDS, six SKILLS and the jumps; at its fullest {wide:F0} wide and {tall:F0} tall; no label trims (the title's ellipsis is the head's)"
+            ? $"[widths] villager card: ✅ subtitle, a banner, WORK with a {p.Keep.ItemCount}-item dropdown, TOOL, NEEDS, six SKILLS and the jumps; at its fullest {wide:F0} wide and {tall:F0} tall; no label trims (the title's ellipsis is the head's); the widest full name, {widestName}, whole in the head ({namedWide:F0} wide)"
             : $"[widths] villager card: ⛔ {string.Join("; ", faults)}";
     }
 
