@@ -27,8 +27,8 @@
 >    the learning moment (`LearnedByDoing` / the tree's known state already raises one), **never per frame**
 >    (CLAUDE.md's rule). ⚠️ Ask the tree (`TechTree.StateOf` known) or `WhyNotYet` — one question, so the build
 >    bar, the tree and the panel cannot disagree; do not type a list of three trades. Check the bar probe still
->    reads 161 and the professions panel's `fold:` line. And say it to him if the *"Not hired yet"* list (Tailor,
->    Herdsman…) is the same spoiler in another form — it names trades the village has not met; his call.
+>    reads 161 and the professions panel's `fold:` line. ✅ **The *"Not hired yet"* list is already DELETED (D458, Joe: *"its just a
+>    dev list"*)** — do not bring it back as a hidden roadmap.
 >
 > Then Joe plays both and merges `slice/small-fixes` with them; **then the stutter** (D403's remainder). Names,
 > surnames and birthdays (D395) still wait on his slot.

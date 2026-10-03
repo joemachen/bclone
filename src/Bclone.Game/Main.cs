@@ -3980,7 +3980,6 @@ public partial class Main : Control
         body.AddChild(Caption("Laborers are the spare hands: clearing ground, hauling and tidying."));
 
         body.AddChild(BuildProfessionsTable());
-        body.AddChild(BuildTheNotHiredYet());
     }
 
     /// <summary>
@@ -5657,36 +5656,6 @@ public partial class Main : Control
     /// <summary>How narrow a wrapped sentence may be asked to get.</summary>
     private const float WrappedTextMinWidth = 120f;
 
-    /// <summary>
-    /// The professions this village cannot hire yet. <b>Delete a row when it ships.</b>
-    /// </summary>
-    /// <remarks>
-    /// Hand-written and meant to be, because the whole point of a row here is that there is no
-    /// <see cref="JobKind"/> to read it off. Taken from <c>specs/professions.md §4</c> so the
-    /// panel and the spec say the same thing; the reason names what would have to be built, so
-    /// the row deletes itself the day that lands rather than going quietly stale.
-    /// </remarks>
-    private static readonly (string Name, string Reason)[] ProfessionsNotYetHired =
-    {
-        ("Tailor", "waiting on the hunter for leather"),
-
-        // ⭐ The farmer moved OFF this list and into the real rows above
-        // (`specs/crops-and-orchards.md`, D161) — this is what a greyed roadmap entry is for:
-        // it names the gap while it is a gap, and then it goes away.
-        ("Herdsman", "no livestock"),
-
-        // ⭐ The miner moved OFF this list with the iron mine (D449).
-
-        // ⭐ The stonecutter moved OFF this list with the quarry (D434) — the trade ships as the
-        // quarrier; cutting stone into blocks is the mason's yard's, and that is not built.
-
-        // ⭐ The blacksmith moved OFF this list with the smithy (D391) — and sat here for a day
-        // after, which Joe's QA pass caught (D396): the row is deleted the day its trade ships.
-        ("Brewer", "no barley"),
-        ("Teacher", "no school"),
-        ("Physician", "illness is not modelled"),
-    };
-
     /// <summary>Show the sim's own warning — in the village log, since D396.</summary>
     private void Warn(PlacementVerdict verdict)
     {
@@ -5783,39 +5752,6 @@ public partial class Main : Control
     }
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
-    /// <summary>
-    /// The trades that do not exist yet, and what each is waiting on.
-    /// </summary>
-    /// <remarks>
-    /// ⭐ Kept through the redesign because it earns its place: it answers *"where is the miner?"*
-    /// before the player has to ask, and a row deletes itself the day its trade ships — which is
-    /// how "Fisherman" and "Hunter" were caught still sitting in it two commits ago.
-    /// </remarks>
-    private Control BuildTheNotHiredYet()
-    {
-        VBoxContainer inside = Foldaway(
-            $"Not hired yet — {ProfessionsNotYetHired.Length} more, and why",
-            out VBoxContainer roadmap);
-
-        var table = new GridContainer { Columns = 2 };
-        table.AddThemeConstantOverride("h_separation", 8);
-        table.AddThemeConstantOverride("v_separation", 2);
-
-        foreach ((string name, string reason) in ProfessionsNotYetHired)
-        {
-            Label label = Muted(name);
-            label.Modulate = new Color(1, 1, 1, 0.3f);
-            table.AddChild(label);
-
-            Label why = Wrapped(Muted(reason));
-            why.Modulate = new Color(1, 1, 1, 0.3f);
-            table.AddChild(why);
-        }
-
-        inside.AddChild(table);
-        return roadmap;
-    }
-
     /// <summary>Four cells for one good's limit.</summary>
     /// <remarks>
     /// The controls are unchanged from the two-line rows this replaced — same <c>SpinBox</c>, same
