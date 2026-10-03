@@ -809,7 +809,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.Id);
         hash = MixUInt32(hash, (uint)villager.HouseholdId);
         hash = MixByte(hash, (byte)villager.LifeStage);
-        hash = MixUInt32(hash, (uint)villager.AgeYears);
+        // ⛔ `AgeYears` is not mixed (D468): it is derived from `BirthTick`, which is (D335).
         hash = MixUInt32(hash, (uint)villager.Hunger);
         hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
         hash = MixUInt32(hash, (uint)villager.Cold);
@@ -842,7 +842,7 @@ public static class StateHash
         hash = MixUInt32(hash, (uint)villager.Vigour);
         hash = MixByte(hash, (byte)villager.Stage);
         hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
-        hash = MixUInt32(hash, (uint)villager.BirthYear);
+        hash = MixUInt64(hash, unchecked((ulong)villager.BirthTick));
         hash = MixUInt32(hash, (uint)villager.PartnerId);
         hash = MixUInt32(hash, (uint)villager.WorkplaceId);
 

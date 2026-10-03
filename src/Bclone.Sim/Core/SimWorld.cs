@@ -10652,7 +10652,8 @@ public sealed class SimWorld : IObstacles
             {
                 // Named by a hash of the seed and their id, not a draw (D465) — so the stream
                 // below starts at the lifespan.
-                string name = NameFor(nextVillagerId);
+                int id = nextVillagerId++;
+                string name = NameFor(id);
 
                 int lifespan = config.LifespanYearsBase;
                 if (config.LifespanYearsVariance > 0)
@@ -10691,7 +10692,7 @@ public sealed class SimWorld : IObstacles
 
                 var villager = new Villager
                 {
-                    Id = nextVillagerId++,
+                    Id = id,
                     Name = name,
                     Surname = household.Surname,
                     LifespanYears = lifespan,
@@ -10716,11 +10717,12 @@ public sealed class SimWorld : IObstacles
                     Position = household.HomePosition ?? Point.CentreOf(origin),
                     HouseholdId = household.Id,
 
-                    // Year 1 is the first year, so someone aged N at founding was
-                    // born in year 1-N. Deriving it this way means ClockSystem's
-                    // per-tick recalculation reproduces the founding age rather
-                    // than resetting every founder to zero on the first tick.
-                    BirthYear = 1 - config.FounderAge,
+                    // ⭐ A BIRTHDAY OF THEIR OWN (D468): `founder_age` years before the first
+                    // tick and a hash further into the year before that, so every founder is
+                    // `founder_age` on the first tick and turns a year older on their own day in
+                    // Year 1 rather than all four together at New Year.
+                    BirthTick = -((long)config.FounderAge * config.TicksPerYear)
+                        - NameHash.BirthdayOffset(Seed, id, config.TicksPerYear),
                     AgeYears = config.FounderAge,
                     LifeStage = LifeStage.Adult,
 
@@ -10883,6 +10885,27 @@ public sealed class SimWorld : IObstacles
         }
 
         return NameHash.FirstName(Seed, id, 0, prefixes, suffixes);
+    }
+
+    /// <summary>
+    /// The day <paramref name="villager"/> was born, in words: <i>"Day 20, Fall, Year 10"</i> — or,
+    /// for a founder born before the valley was, <i>"Day 12, Summer, 20 years before the founding"</i>
+    /// (D468), so no negative year ever reaches the screen.
+    /// </summary>
+    public string BirthdayOf(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        if (villager.BirthTick >= 0)
+        {
+            return SimClock.FromTick((ulong)villager.BirthTick, Config).ToString();
+        }
+
+        long ticksPerYear = Config.TicksPerYear;
+        long before = -villager.BirthTick;
+        long years = before / ticksPerYear;
+        SimClock day = SimClock.FromTick((ulong)((ticksPerYear - (before % ticksPerYear)) % ticksPerYear), Config);
+        string ago = years == 1 ? "a year" : $"{years} years";
+        return $"Day {day.DayOfSeason}, {day.Season}, {ago} before the founding";
     }
 
     /// <summary>

@@ -44,7 +44,7 @@ public sealed class SurnameTests
     }
 
     /// <summary>
-    /// ⭐ A couple carries <b>the older partner's</b> surname (Joe, D467) — the earlier birth, the
+    /// ⭐ A couple carries <b>the older partner's</b> surname (Joe, D467) — the earlier birth tick, the
     /// lower id on a tie — checked on every pairing a village makes, against the surnames both
     /// partners carried the day before.
     /// </summary>
@@ -181,8 +181,8 @@ public sealed class SurnameTests
                 }
 
                 // The older, worked out here rather than asked of the code under test.
-                Villager elder = a.BirthYear != b.BirthYear
-                    ? (a.BirthYear < b.BirthYear ? a : b)
+                Villager elder = a.BirthTick != b.BirthTick
+                    ? (a.BirthTick < b.BirthTick ? a : b)
                     : (a.Id < b.Id ? a : b);
                 Villager younger = ReferenceEquals(elder, a) ? b : a;
                 check(elder, younger, yesterday[elder.Id].Surname, yesterday[younger.Id].Surname, world.HouseholdOf(a));

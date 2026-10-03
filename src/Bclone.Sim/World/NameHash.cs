@@ -28,6 +28,9 @@ public static class NameHash
     /// <summary>What a founding household's surname is picked by (keyed on the household's id).</summary>
     public const int SurnameSalt = 3;
 
+    /// <summary>What a founder's birthday is picked by (D468).</summary>
+    public const int BirthdaySalt = 4;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>MapGenerator.HashJitter</c>'s shape, well spread even for adjacent ids.
@@ -51,6 +54,14 @@ public static class NameHash
     /// <summary>The <paramref name="attempt"/>th candidate surname for founding household <paramref name="householdId"/>.</summary>
     public static string Surname(ulong seed, int householdId, int attempt, IReadOnlyList<string> surnames) =>
         surnames[(int)(Mix(seed, householdId, SurnameSalt, attempt) % (ulong)surnames.Count)];
+
+    /// <summary>
+    /// How far into the year before the founding founder <paramref name="id"/> was born, in ticks —
+    /// <c>[0, ticksPerYear)</c>. ⛔ A hash, never a draw (D468): a birthday is as cosmetic to the
+    /// stream as a name, and the founding's draws stay where D466 left them.
+    /// </summary>
+    public static long BirthdayOffset(ulong seed, int id, int ticksPerYear) =>
+        (long)(Mix(seed, id, BirthdaySalt, 0) % (ulong)ticksPerYear);
 
     private static ulong Fold(ulong state, ulong value)
     {

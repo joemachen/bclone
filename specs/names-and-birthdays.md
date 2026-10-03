@@ -7,8 +7,9 @@ villager naming plan?"*), D465 (Joe, 2026-10-03: the slot; his prefix, suffix an
 couple carries **the older partner's** surname). Neighbours: D344/D392 (*a list content can grow is
 not a list a draw may range over*), D335 (a derived value is never hashed), D376 (renaming), D252
 (`Founder`, never hashed), D190 (rhythm, drawn at birth).
-**Status:** 🔨 **§3 FIRST NAMES BUILT (D466); §4 SURNAMES BUILT (D467)**; §5 birthdays not started.
-Three commits on `slice/names-and-birthdays`. Unplayed. Owner: Joe + Claude Code.
+**Status:** 🔨 **ALL THREE BUILT — §3 FIRST NAMES (D466), §4 SURNAMES (D467), §5 BIRTHDAYS (D468)** on
+`slice/names-and-birthdays`. **Unplayed, not merged.** ⏸️ §5's finding (every child born on Day 1 of
+Spring) is Joe's call. Owner: Joe + Claude Code.
 
 ---
 
@@ -130,6 +131,14 @@ the valley was.
 
 **On the card:** *born Day 20, Fall, Year 10* (`SimClock.ToString()` of the birth tick). A founder:
 *born Day 12, Summer — 20 years before the founding* — no negative years on screen.
+
+**⛔ FOUND WHILE BUILDING (D468): EVERY CHILD IS BORN ON DAY 1 OF SPRING.** `HouseholdSystem` decides
+births once a year, at the year's turn, so the birth tick of everybody born in the village is a New
+Year — only the founders' birthdays are spread. The mechanism above is true (a birth tick is the tick
+the child appeared), and the founders' first fifty years read differently for it; but a village born
+here still comes of age and dies of old age on Day 1 of Spring. **Spreading births through the year —
+each household trying for a child on a day of its own, say — changes *when* the village has children,
+which is a mechanic and Joe's call (`HANDOFF.md` ⏸️ OPEN).** Not built.
 
 **⚠️ What it costs:** every golden moves a second time (`BirthTick` hashed, `AgeYears` not), and a
 year's old-age deaths and comings-of-age move within the year. Measured (§7); the year-boundary age

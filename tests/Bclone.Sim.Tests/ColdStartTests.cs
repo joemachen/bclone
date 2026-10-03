@@ -758,7 +758,9 @@ public sealed class ColdStartTests
         int founders = 0;
         foreach (Villager villager in world.Villagers)
         {
-            if (villager.Alive && villager.BirthYear == 0)
+            // The marker, not a birth year (D468): this read `BirthYear == 0`, which no founder ever
+            // had (theirs was 1 − founder_age), so the line always said "0 of the founders left".
+            if (villager.Alive && villager.Founder)
             {
                 founders++;
             }

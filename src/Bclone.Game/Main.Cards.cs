@@ -1340,7 +1340,9 @@ public partial class Main
         VillagerParts p = card.Person;
         Workplace? job = world.FindWorkplace(villager.WorkplaceId);
         Household home = world.HouseholdOf(villager);
-        card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household";
+        // ⭐ And their birthday, on its own line (D468) — the day they turn a year older.
+        card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household"
+            + $"\nBorn {world.BirthdayOf(villager)}";
 
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
@@ -2024,7 +2026,8 @@ public partial class Main
         // The fullest a person's card can be.
         string longest = "A status line that runs on for a good deal longer than any the sim writes, to see that it wraps inside the card rather than widening it.";
         card.Title.Text = new string('W', SimWorld.NameLengthLimit);
-        card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household";
+        card.Subtitle.Text = $"Woodcutter · 88 · {new string('H', SimWorld.NameLengthLimit)} household"
+            + "\nBorn Day 30, Summer, 88 years before the founding";
         card.Status.Text = longest;
         p.Job.Text = $"Woodcutter at {new string('W', SimWorld.NameLengthLimit)}";
         p.ToolSection.Visible = true;

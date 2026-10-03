@@ -64,18 +64,24 @@ public sealed class Phase0SimTests
     }
 
     [Fact]
-    public void VillagerAges_OnTheYearBoundary()
+    public void VillagerAges_OnTheirBirthday()
     {
-        // Year 1 is 240 ticks. Systems run for tick N and then the counter
-        // increments, so the tick that first *computes* Year 2 is the 241st step.
+        // ⚠️ RE-POSED (D468): this was `VillagerAges_OnTheYearBoundary`, and the year boundary is
+        // exactly what stopped being the rule — a villager is a year older on their own birthday
+        // (`names-and-birthdays.md §5`). The founder is born `founder_age` (here 0) years and a
+        // hashed part of a year before the first tick, so the birthday falls inside Year 1.
+        // Systems run for tick N and then the counter increments, so the step that first
+        // processes the birthday tick is the one after the clock reads it.
         var (loop, _) = Phase0Fixtures.Build(Config);
+        Villager villager = loop.World.Villager;
+        long birthday = villager.BirthTick + Config.TicksPerYear;
+        Assert.InRange(birthday, 1L, Config.TicksPerYear);
 
-        loop.Step(240);
-        Assert.Equal(0, loop.World.Villager.AgeYears);
+        loop.Step((int)birthday);
+        Assert.Equal(0, villager.AgeYears);
 
         loop.StepOnce();
-        Assert.Equal(1, loop.World.Villager.AgeYears);
-        Assert.Equal(2, loop.World.Clock.Year);
+        Assert.Equal(1, villager.AgeYears);
     }
 
     // ---------------------------------------------------------------
@@ -438,6 +444,9 @@ public sealed class Phase0SimTests
         // one founder is named by hash — Flintbrook, not Dorcas — and their lifespan is the stream's
         // first draw rather than its second: 48 years, not 45 (11,521 ticks, not 10,801). The same
         // life otherwise — old age, a winter survived for every year lived.
+        // ⚠️ RE-TAKEN (D468): and they die on their own birthday, not at New Year — born 213 ticks
+        // before the first (a hash of the seed and their id), so 48 years ends at 11,308, not 11,521 —
+        // Day 8 of Spring in Year 48, with 47 winters behind them where the New-Year death had 48.
         var (loop, sink) = Phase0Fixtures.Build(Config, seed: 12345UL);
         int ticks = Phase0Fixtures.RunUntilDeath(loop);
 
@@ -447,8 +456,8 @@ public sealed class Phase0SimTests
         Assert.Equal(48, villager.LifespanYears);
         Assert.Equal(48, villager.AgeYears);
         Assert.Equal(CauseOfDeath.OldAge, villager.CauseOfDeath);
-        Assert.Equal(11_521, ticks);
-        Assert.Equal(48, villager.WintersSurvived);
+        Assert.Equal(11_308, ticks);
+        Assert.Equal(47, villager.WintersSurvived);
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
         Assert.Equal("Flintbrook begins. Spring, Year 1, no food stored.", log[0]);

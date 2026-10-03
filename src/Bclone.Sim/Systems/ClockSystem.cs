@@ -26,8 +26,13 @@ public sealed class ClockSystem : ISimSystem
         SimClock current = world.Clock;
         SimClock previous = SimClock.FromTick(world.Tick - 1UL, world.Config);
 
-        // Age everyone every tick rather than only on the year boundary, so age can
-        // never disagree with the year on screen. Born in Year 1 at age 0.
+        // ⭐ ONE YEAR OLDER ON THEIR BIRTHDAY, NOT AT NEW YEAR (D468, `names-and-birthdays.md §5`).
+        // Until D468 everybody's age was recomputed every tick as `year − BirthYear`, so the whole
+        // village had its birthday on Day 1 of Spring and every old-age death of a run fell on it.
+        // Maintained where it changes — the tick a whole year since their birth completes — never
+        // recomputed (CLAUDE.md); coming of age and old age follow, because they read this.
+        long now = (long)world.Tick;
+        long ticksPerYear = world.Config.TicksPerYear;
         int foragedThisSeason = 0;
         int livingCount = 0;
 
@@ -40,7 +45,11 @@ public sealed class ClockSystem : ISimSystem
             }
 
             livingCount++;
-            villager.AgeYears = current.Year - villager.BirthYear;
+            long lived = now - villager.BirthTick;
+            if (lived > 0 && lived % ticksPerYear == 0)
+            {
+                villager.AgeYears++;
+            }
 
             foragedThisSeason += villager.GathersThisSeason;
         }

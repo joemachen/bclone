@@ -484,14 +484,14 @@ public sealed class HouseholdSystem : ISimSystem
     }
 
     /// <summary>
-    /// The older of a couple — the earlier birth, the lower id on a tie — whose surname their
+    /// The older of a couple — the earlier birth tick, the lower id on a tie — whose surname their
     /// household carries (D467, Joe: <i>"the older partner's"</i>).
     /// </summary>
     internal static Villager TheElderOf(Villager a, Villager b)
     {
-        if (a.BirthYear != b.BirthYear)
+        if (a.BirthTick != b.BirthTick)
         {
-            return a.BirthYear < b.BirthYear ? a : b;
+            return a.BirthTick < b.BirthTick ? a : b;
         }
 
         return a.Id < b.Id ? a : b;
@@ -548,7 +548,7 @@ public sealed class HouseholdSystem : ISimSystem
             // ⭐ And their hunger a little apart — see the founding path for why the action
             // stagger alone leaves two siblings eating on the same tick for ever.
             Hunger = rhythm,
-            BirthYear = year,
+            BirthTick = (long)world.Tick,
             AgeYears = 0,
             LifeStage = LifeStage.Child,
             HouseholdId = household.Id,

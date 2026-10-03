@@ -304,12 +304,13 @@ public sealed class KnowledgeAtRiskTests
     /// <para>
     /// <b>⛔⛔ AN ELDER CANNOT BE POSED, AND TWO DRAFTS OF THIS FILE TRIED.</b> Writing
     /// <see cref="LifeStage.Elder"/> lasts one tick — <see cref="Systems.AgeingSystem"/>
-    /// recomputes the stage from vigour on every one. Writing <c>AgeYears</c> lasts one tick too,
-    /// because <see cref="Systems.ClockSystem"/> recomputes it as <c>year - BirthYear</c>; the
+    /// recomputes the stage from vigour on every one. Writing <c>AgeYears</c> lasted one tick too,
+    /// because <see cref="Systems.ClockSystem"/> recomputed it as <c>year - BirthYear</c>; the
     /// guard watched a 51-year-old turn 21 between the first tick and the second and read the
-    /// resulting silence as a broken sweep. And <c>BirthYear</c> is <c>init</c>-only, which is
-    /// the model telling you the truth: <b>age is derived, and the only honest way to have an
-    /// old villager is to let one get old.</b>
+    /// resulting silence as a broken sweep. (Since D468 it is kept, one year added on each
+    /// birthday — but posed by hand it would disagree with <c>BirthTick</c>, which is
+    /// <c>init</c>-only.) That is the model telling you the truth: <b>age is derived, and the only
+    /// honest way to have an old villager is to let one get old.</b>
     /// </para>
     /// <para>
     /// A few thousand ticks, which is cheap — and it makes these guards run against the ageing
