@@ -1466,6 +1466,18 @@ public sealed class BehaviorSystem : ISimSystem
             site = standing.Construction!;
         }
 
+        // ⭐ BUT A SITE ALREADY BEGUN AND PAID FOR IS FINISHED FIRST (D453), by an empty-handed
+        // builder — one carrying a load takes it where it was fetched for. It moves no timber, so
+        // the queue above still decides where materials go; and it is the work the quota keeps a
+        // hand for when half the spare hands rounds to nobody (`SimWorld.BegunSiteWithWhatItNeeds`).
+        if (!site.HasMaterials
+            && !CarryingSomethingFor(site, villager)
+            && world.BegunSiteWithWhatItNeeds() is Workplace begun)
+        {
+            standing = begun;
+            site = standing.Construction!;
+        }
+
         // Carrying something the site wants, or the site already has what it needs: head there.
         //
         // ⚠️ IT ASKED `CarriedLogs > 0` (D213). Once a recipe can want two things, an armful of

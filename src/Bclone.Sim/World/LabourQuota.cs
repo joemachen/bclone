@@ -620,6 +620,18 @@ public readonly record struct LabourQuota
         // steady state rather than at the founding. Both have to move together, and the
         // seed-11 arm is the guard that says whether they moved correctly.
         int buildersAfforded = Math.Min(buildersWanted, free / 2);
+
+        // ⭐ EXCEPT THAT ONE SPARE HAND FINISHES A SITE ALREADY BEGUN AND PAID FOR (D453). Not
+        // D103's narrowing, which kept a builder for any marked site and fetched for the head
+        // for ever: a begun site with everything delivered owes only its work, so this hand costs
+        // that and goes back. Never over the food gate — `buildersWanted` is zero when food
+        // comes first. Measured: a fed four-hand village left a warehouse at 43 of 45 for two years.
+        if (buildersAfforded == 0 && buildersWanted > 0 && free > 0
+            && world.BegunSiteWithWhatItNeeds() is not null)
+        {
+            buildersAfforded = 1;
+        }
+
         int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
 
         // ⭐ AND A LOG LIMIT SET ABOVE WHAT THE VILLAGE SPENDS IS AN AMBITION (D130). Joe:

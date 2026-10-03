@@ -8404,6 +8404,54 @@ public sealed class SimWorld : IObstacles
         return best;
     }
 
+    /// <summary>
+    /// The first site, in queue order, that is paid for and already begun — work owed and
+    /// nothing else (D453).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A builder finishes what was started before fetching for anything else</b>, and the
+    /// quota keeps one hand for it when <c>free / 2</c> would round the builders to nobody.
+    /// Found in D414 and measured in D453: a warehouse stood at <b>43 of 45 work for two years</b>
+    /// in a fed village, because four hands less food and fuel left one spare and half of one is
+    /// none. Its materials were already spent; only two ticks of a pair of hands were owed.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ BEGUN, NOT MERELY STOCKED, and that is what keeps it from being D103's rule.</b>
+    /// "Never round a willing hand down to nobody" killed seed 11 of eleven — a builder kept for
+    /// any marked site fetches for the head for ever. A begun site needs no fetching, so the hand
+    /// it keeps costs the work it owes and then goes back. Finishing it moves no timber, so
+    /// D102's queue still decides where scarce materials go.
+    /// </para>
+    /// </remarks>
+    public Workplace? BegunSiteWithWhatItNeeds()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false, HasMaterials: true } plan
+                || plan.WorkDone == 0
+                || !GroundIsClearAt(candidate.Tile)
+                || !TravelCost.CanReach(village, candidate.Tile))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextBuildableSite()
     {
         Workplace? best = null;
