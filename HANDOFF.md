@@ -1,6 +1,39 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D420–D447 IN §7. `main` = `slice/quarry` (D434–D447) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: THE IRON MINE, SPEC FIRST (D448), THEN THE SMALL FIXES.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D440–D450 IN §7. `main` = D448 (Joe's calls); **`slice/iron-mine` = D449–D450, BUILT, UNPLAYED, NOT MERGED, NOT PUSHED.** NEXT: JOE PLAYS THE IRON MINE; THEN THE SMALL FIXES (D448).**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-01 (NIGHT) — THE QUARRY SLICE MERGED AND PUSHED.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 — THE IRON MINE BUILT ON `slice/iron-mine`.**
+>
+> **State:** `main` = `ad351f5` (the quarry merge) + `d6e2050` (slice/quarry deleted) + `869a15b`
+> (D448, Joe's calls on the ⏸️ list and his order) — **`main` is 2 commits ahead of `origin/main`,
+> NOT pushed** (docs only). **`slice/iron-mine`** = D449 (the spec, Joe's four calls) + D450 (the
+> build), **committed, NOT merged, NOT pushed, UNPLAYED.** At D450: **1336 passing, 0 failing, 5
+> skipped of 1341, 3m23; no golden moved (`git diff`); view 0 warnings; probe green, bar height 161,
+> `faces:` ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this file as
+> **`HANDOFF.md`**.
+>
+> **What the slice is** (`specs/iron-mine.md`, DESIGN D449–D450): the quarry's twin on an iron seam,
+> **unlocked by the smith's first iron tool** (`IronToolsEverForged`, hashed); one face code path for
+> both (`JobRow.WorksFace`; a face's pace on the good's row — `IsFace` / `NextFace` /
+> `WhyTheFaceIsIdle`); 6-tick digs of 5 iron, 8 a stint (45 iron per 100 ticks between deliveries,
+> measured); 30 logs + 15 stone, 2 seats, 3 faces a miner; **iron on the resources bar** (cell gap
+> 9 → 7); **worked faces** drawn for the quarry and the mine (near view only).
+>
+> **▶️ NEXT: JOE PLAYS IT.** What to look at: dig 50 iron (the smithy gift), set the smithy's card to
+> **Forges: iron tools** with iron and firewood in a store — on the first iron tool the village stops:
+> *"The village learned to mine"*; the **Tree** shows the mine node known; the mine button is lit gold
+> under Resources; mark it beside an iron seam, paint the seam (rock and grass are refused in words),
+> staff it — iron arrives on the bar, the faces turn pale and cut down, and never shrink. The quarry's
+> faces look worked too now. Then he merges and pushes (and `main`'s two docs commits go with it).
+> **Then the small fixes, one commit each (D448)**, then the stutter.
+>
+> **Tools (this session's scratchpad,
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/98332860-2de0-4250-a4bf-afe77712e656/scratchpad/`):**
+> `redcheck.py` (D450's 13 sim mutants; multi-line targets work, written with the file tools — trap
+> 148), the `edit_*.py` scripts the slice was applied with. The rig breakdown was a scratch test
+> (`ZzMineRig`), deleted.
+>
+> *(The 2026-10-01 night banner, kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-01 (NIGHT) — THE QUARRY SLICE MERGED AND PUSHED.**
 >
 > **State:** `main` = `slice/quarry` merged `--no-ff` (D434–D446) + D447 (Joe's calls, both tool
 > limits at 25), **pushed at Joe's word** (*"merge and push"*). **No branch is open.**
@@ -3689,6 +3722,16 @@ Read `git status` after staging, every time.
      (stone forge against iron forge is still a fair reading), but bring Joe a survival cost only
      with a played or player-like run beside it. And a spec's status line rots between sessions:
      `quarry.md` still read *"the rest specced, not built"* two parts after it was all built (D159).
+
+## ⛔ THE TRAP D450 PAID FOR — A MUTANT THAT DOES NOT BUILD
+
+150. **⚠️ A RED CHECK THAT DOES NOT COMPILE SCORES ZERO, AND ZERO LOOKS LIKE A BLIND GUARD (D450).**
+     Five of thirteen mutants (`if (false)`, `=> 0`, a dropped `return`) failed to *build* — CS0162
+     unreachable code and IDE0060 an unused parameter, because the analyzers are errors here — so the
+     script printed *"0 red"* for guards that were fine. Re-posed as conditions that never hold
+     (`&& at.X < -9999`, `* 0`, `made == Goods.Logs`) all five went red. **Read the build line before
+     the count.** And a rig's rate over a fixed window is not the rate: the mine guard printed 31 per
+     100 ticks where deliveries ran at 45, because the window held the first walk out and half a trip.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

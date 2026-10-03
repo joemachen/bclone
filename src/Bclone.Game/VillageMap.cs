@@ -6662,6 +6662,10 @@ public partial class VillageMap : Control
         // ⭐ The river's own colour, lightened — a fishing hut should read as belonging to the
         // water it has to stand against, which is the one thing that decides where it can go.
         JobKind.Fisher => FisheryColour,
+
+        // ⭐ The smith, the quarrier and the miner take their trade's own colour (D449) — they fell
+        // to the market's until the mine, so a quarry drew as a stall.
+        JobKind.Smith or JobKind.Quarrier or JobKind.Miner => TradeGlyph.ColourOf(kind),
         _ => MarketColour,
     };
 

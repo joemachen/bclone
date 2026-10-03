@@ -7,8 +7,9 @@ nodes; a *Tree* button on the control bar). Neighbours: D176 / `tech-tree.md §8
 screen — *who knows what* — stays the town hall's tab: **amended, not reversed**), §2.7 (unlocks are
 diegetic: by people, by doing, by scale — never research points), D232 / D252 (the gifts and their
 moment), D434 / D442 (the quarry's unlock and its stop), `tools-and-the-smith.md §9.1` (the smithy's).
-**Status:** 🔨 **BUILT (D443, 2026-09-30, `slice/quarry`), unplayed.** The smithy's node and its
-gate (D444) read the one key, `smithy_unlock_iron`. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (D443, 2026-09-30), played and merged with `slice/quarry` (D445, D447).** The
+smithy's node and its gate (D444) read the one key, `smithy_unlock_iron`; **the iron mine's node is
+real since D449** (`iron_tools_forged` against `mine_unlock_iron_tools`, `specs/iron-mine.md §3.4`). Owner: Joe + Claude Code.
 
 ---
 
@@ -76,12 +77,13 @@ A horizon node (`not_yet`) can be in sight, never known: *"Nobody in this valley
 | `iron_dug` | `IronEverDug` | `smithy_unlock_iron` |
 | `kept_granary_years` | years since `FirstGranaryTick` (0 with no granary) | `literacy_years` |
 | `founders_gone` | founders dead | founders |
+| `iron_tools_forged` (D449) | `IronToolsEverForged` | `mine_unlock_iron_tools` |
 
 ### 3.4 The first version's nodes (Joe: what exists, plus a fogged horizon)
 
 ```
   stone dug ──► Quarry ──► Mason's yard ··· ──► Stone cottage ···
-  iron dug ───► Smithy ──► Iron mine ···
+  iron dug ───► Smithy ──► Iron mine (an iron tool forged, D449)
   a kept granary ► Library ──► School ···
   the founders gone ► Town hall
 ```
@@ -92,7 +94,7 @@ known in this version.
 ### 3.5 The introduction
 
 `SimWorld.ShownTheTechTree` is hashed sparsely. The first crossing of a `stone_dug` or `iron_dug`
-node (never `kept_granary_years` or `founders_gone` — Joe) sets it, and that moment's body ends:
+node (or, since D449, `iron_tools_forged` — never `kept_granary_years` or `founders_gone` — Joe) sets it, and that moment's body ends:
 *"…It is the first thing this village has learned by doing — the Tree shows what else it may, and
 what each will take."* Every later unlock is its moment without the line.
 

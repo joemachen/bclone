@@ -7,8 +7,9 @@ and D446 (`tools-and-the-smith.md §9` — the smithy gift and iron tools, which
 D281 (every trade walks in states of its own), D326 (red-check every guard), D385 (every load to a
 store), D430 (a tool: off ticks and on yield), D442/D443 (a learned unlock stops the village; the
 tech-tree map).
-**Status:** 📝 **SPECCED (D449), NOT BUILT.** The numbers in §4 are §6's arithmetic, put to Joe
-before they are typed; the rig re-reads them on the built slice. Owner: Joe + Claude Code.
+**Status:** 🔨 **BUILT ON `slice/iron-mine` (D450, 2026-10-02), UNPLAYED.** §4's numbers were put to
+Joe with §6 and set by him (D449); the built rig reads 45 iron per 100 ticks between deliveries (§6).
+Every guard in §7 red-checked; no golden moved. Owner: Joe + Claude Code.
 
 ---
 
@@ -143,8 +144,8 @@ The bar button (Resources group, beside the quarry), the gold "new" tint, `Trade
 professions panel's not-hired *Miner* row deleted (the trade now has a building), the map's
 `ColourOf(JobKind)` given miner — and quarrier and smith, which silently fall to the market's colour
 today — arms, and `Describe(JobKind)`. ⚠️ **Iron is not on the resources bar** — a miner's output is
-invisible except on store cards; adding it is a bar change (bar height 161 is the guard), decided
-while building and said in §8 either way.
+invisible except on store cards; ✅ **added (Joe, D449)** — the probe's `bars:` line caught the bar
+running 7px under the right column, so the cells sit 7 apart, not 9 (bar height stays 161).
 
 ## 4. Data
 
@@ -194,25 +195,39 @@ Validated at load: capacities, tiles, ticks, per-dig and per-stint above zero; t
 | *A quarrier, for comparison (stone, ring 14)* | 12 + 16 + 12 = 40 | 40 | *100* |
 
 Inside Joe's 40–50. An iron tool (4 iron) costs about ten ticks of a tooled miner's work.
-*(Re-read on the built rig — trap 136: count digs, not ticks ÷ dig ticks.)*
+
+**Re-read on the built rig (D450):** the fixture's nearest iron is 24 tiles from the warehouse (cost
+260). With the founders' stone tool in hand a miner delivers **36 iron a trip, 108 iron in 240 ticks
+between the first delivery and the last — 45 per 100 ticks**, against §6's 47 with a tool.
+`AMineDigsIronAndItsFacesStayIron` prints **31** over its two seasons because it counts the first
+walk out and the unfinished last trip; that guard asserts the face, not the rate. *(Counted as
+deliveries into the store — trap 136.)*
 
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/MineTests.cs`
 
-Each red-checked (D326), the reds counted and written here when built:
+Red-checked (D326) — thirteen sim mutants run against `MineTests`, `QuarryTests` and
+`TechTreeTests`, the reds counted; **every mutant scored at least one**:
 
-| Guard | Break it must catch |
+| Break | Reds |
 |---|---|
-| `NoMineBeforeTheSmithHasWorkedIron` | no gate / a stone tool counted |
-| `TheFirstIronToolTeachesTheVillageToMineOnce` | no moment / a moment per tool |
-| `IronToolsForgedAreInTheFingerprint` | the counter unhashed |
-| `AMinePaintsIronAndRefusesOtherGroundInWords` | any ground taken |
-| `AMineDigsIronAndItsFacesStayIron` (the §6 rig) | the face spent / digs counted as hand-dug / no `ErrandKind` arm |
-| `ALaborerNeverClearsAMinesFace` | laborers not skipping / the brush marking |
-| `AMetIronLimitStopsTheMiners` | the limit ignored |
-| `MinersAreWantedWhileTheVillageWantsIron` | want nought / limit ignored / no ground needed |
-| `TheLastIronTheVillageCanReachIsWarnedAbout` | no warning |
-| `TheTreesMineNodeIsKnownOnceIronIsForged` | the node left `NotYet` |
-| **All of `QuarryTests`, unchanged** | the generalisation |
+| no mine gate | 3 — `NoMine…`, `TheFirstIronTool…`, `TheTreesMineNode…` |
+| stone tools counted as iron | 1 — `TheFirstIronToolTeachesTheVillageToMineOnce` |
+| a moment on every iron tool | 1 — the same |
+| the counter unhashed | 1 — `IronToolsForgedAreInTheFingerprint` |
+| any ground but water takes a face's paint | 2 — the mine's and the quarry's paint guards |
+| no `ErrandKind` arm for the miner | 1 — `AMineDigsIronAndItsFacesStayIron` |
+| a dig spends the face | 2 — the mine's and the quarry's rigs |
+| laborers do not skip faces / the brush marks them | 2 / 2 — `ALaborerNeverClears…` (mine, quarry) |
+| want nought miners | 1 — `MinersAreWantedWhileTheVillageWantsIron` |
+| a met limit ignored | 2 — the mine's and the quarry's limit guards |
+| the last-seam warning on rock only | 1 — `TheLastIronTheVillageCanReachIsWarnedAbout` |
+| the tree's node left `NotYet` | 1 — `TheTreesMineNodeReadsTheMinesGate` |
+
+⚠️ Five mutants first failed to **compile** (CS0162 unreachable code, IDE0060 an unused parameter)
+and so scored nothing; re-posed as conditions that never hold, all five went red. *A mutant that
+does not build is not a red check* — read the build line, not only the count.
+**View:** the `faces:` probe line, with the face diff broken (`faces[i] && !faces[i]`): *"working
+one rock tile rebuilt 0 chunks … a face is not following its owner"* — red.
 
 **Goldens:** none should move — no map change, a village that never forges iron tools hashes as
 before (the counter is sparse). Any golden that moves is a bug in this slice.
@@ -231,7 +246,8 @@ before (the counter is sparse). Any golden that moves is a bug in this slice.
 ## 9. Open, and Joe's to call
 
 - **The numbers in §4** — put to him with §6 before they are typed.
-- **Iron on the resources bar** (§3.7).
+- ~~**Iron on the resources bar** (§3.7).~~ ✅ Joe: *yes* (D449). Second row: logs, firewood, stone,
+  **iron**, stone tools; the bar's cell gap 9 → 7 so it still clears the right column at 75 %.
 - **Skill rows for the face trades** — beside the fisher's, hunter's and smith's (D391's open item).
 - **The far view's faces** — baked into the valley texture, later.
 - **The smelter** — `tech-tree.md §9.4`; iron goes to the smith raw until then.

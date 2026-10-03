@@ -77,6 +77,10 @@ public sealed partial class TradeGlyph : Control
         // smith's iron, lighter than the builder's tools.
         JobKind.Quarrier => new Color(0.66f, 0.62f, 0.54f),
 
+        // The miner takes the rust of the iron seam they dig (D449) — the ore's own colour, lifted
+        // so it reads on the dark bar beside the smith's grey.
+        JobKind.Miner => new Color(0.64f, 0.40f, 0.28f),
+
         // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
         // same answer `GoodsPalette` gives a good nobody has chosen a colour for.
         _ => new Color(0.70f, 0.70f, 0.70f),
@@ -176,6 +180,14 @@ public sealed partial class TradeGlyph : Control
             // A pick over a block (D434): the head, the haft, and the stone it strikes.
             case JobKind.Quarrier:
                 DrawRect(new Rect2(s * 0.20f, s * 0.62f, s * 0.44f, s * 0.24f), ink);
+                DrawLine(new Vector2(s * 0.32f, s * 0.56f), new Vector2(s * 0.76f, s * 0.14f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.56f, s * 0.12f), new Vector2(s * 0.88f, s * 0.28f), ink, 1.8f);
+                break;
+
+            // A pick over a lump of ore (D449): the quarrier's pick, struck into a round of iron
+            // rather than a dressed block.
+            case JobKind.Miner:
+                DrawCircle(new Vector2(s * 0.40f, s * 0.72f), s * 0.18f, ink);
                 DrawLine(new Vector2(s * 0.32f, s * 0.56f), new Vector2(s * 0.76f, s * 0.14f), ink, 1.8f);
                 DrawLine(new Vector2(s * 0.56f, s * 0.12f), new Vector2(s * 0.88f, s * 0.28f), ink, 1.8f);
                 break;

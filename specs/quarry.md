@@ -152,11 +152,17 @@ does not — so moving a quarry, and fixtures that raise one, are not gated.
 - **Laborers never clear a tile a quarry holds.** `NearestHarvest` skips it, and painting the
   harvest brush over a quarry's ground is refused: *"That rock is the quarry's."* Taking the
   ground back (the card's *Take back*) returns it to a seam laborers may clear.
-- **The look — ⏸️ DEFERRED (D438).** Specced as a worked face (boulders cut down, a pale floor),
-  derived from *rock + held by a quarry*. The seams' boulders are meshed in chunks rebuilt only when
-  the terrain changes (`VillageMap.Meshes`), and a face changes by *ownership*, not terrain — so the
-  look needs the chunk rebuild keyed on work-ground edits too, which is a view slice of its own.
-  **Until then a face shows as the quarry's outlined ground**, the way every owned ground shows.
+- **The look — ✅ BUILT WITH THE IRON MINE (D449, `iron-mine.md §3.6`), after being deferred here
+  (D438).** A worked face (the seam's lumps cut down, a pale floor), derived from *a seam + held by
+  the trade that works it*. The scenery chunks now also rebuild on a face set re-derived only when
+  `Zones.Edits`, `TerrainGeneration` or `BuildingGeneration` moves; the `faces:` probe line asserts
+  one chunk. The far view (the baked texture) still shows a face as seam under the outline.
+- ⭐ **Since D449 the face rules are one path for the quarry and the mine:** `IsQuarryFace` is
+  `IsFace`, `NextFaceToQuarry` is `NextFace`, `WhyTheQuarryIsIdle` is `WhyTheFaceIsIdle`, and the
+  pace below is stone's good row (`face_dig_ticks`, `face_per_dig`, `face_digs_per_stint`, priced from
+  the same keys). Three of the quarry's sentences moved a word: *"Nothing to cut"* is *"Nothing to
+  dig"*, the brush's *"it is cut there"* is *"it is worked there"*, and the overstretched note says
+  *"nobody working it"*. *"No rock painted for it — give it ground on a stone seam"* is unchanged.
 
 ### 3.5 The work: a stint at the face, carried to a store
 
@@ -178,7 +184,7 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
 - **Demand:** `LabourQuota.QuarriersWanted` — every seat of every standing quarry that has rock
   painted, while the stone limit is not met; zeroed while food comes first. Taken after the smith
   and before the builders (`KindsInOrder`: woodcutter, smith, **quarrier**, marketer, builder). The
-  job row's `limited_by: Stone` makes a met limit stop the work (D139), and `WhyTheQuarryIsIdle`
+  job row's `limited_by: Stone` makes a met limit stop the work (D139), and `WhyTheFaceIsIdle` (D449; was `WhyTheQuarryIsIdle`)
   says so on the card.
 - ⏸️ **Stone does not go amber — DROPPED from this slice (D438).** Specced as *amber while quarriers
   are wanted*; with a 200 stone limit that is nearly always, which is noise rather than a shortage.

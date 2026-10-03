@@ -147,6 +147,20 @@ public partial class VillageMap
 
     private SceneryChunk[] _scenery = System.Array.Empty<SceneryChunk>();
     private Terrain[] _sceneryShadow = System.Array.Empty<Terrain>();
+
+    /// <summary>
+    /// Which tiles are worked faces — a seam held by the quarry or mine that works it (D449,
+    /// `iron-mine.md §3.6`). Re-derived only when <see cref="_facesAt"/> moves, from the face
+    /// workplaces' own ground lists, never a scan of the valley.
+    /// </summary>
+    private bool[] _faceShadow = System.Array.Empty<bool>();
+
+    /// <summary>
+    /// The three counters a face can change on: work ground painted or released
+    /// (<c>Zones.Edits</c>), a seam cleared (<c>TerrainGeneration</c>), and a site becoming a quarry
+    /// or a building coming down (<c>BuildingGeneration</c>) — the <c>TraceTheZonesIfTheyMoved</c> rule.
+    /// </summary>
+    private (int Edits, int Terrain, int Buildings) _facesAt = (-1, -1, -1);
     private GeneratedMap? _sceneryOf;
     private int _sceneryAtGeneration = -1;
     private float _berryRadiusBuilt = -1f;
@@ -174,17 +188,22 @@ public partial class VillageMap
     /// The whole valley on the first sight of a map; afterwards only the chunks whose tiles the
     /// shadow copy says changed. Berries alone are rebuilt when their zoom-floored radius moves.
     /// </remarks>
-    private void RefreshTheScenery(SimWorld world, int generation = -1)
+    private void RefreshTheScenery(SimWorld world, int generation = -1, bool[]? facesForTheProbe = null)
     {
         GeneratedMap map = world.Map;
         float berryRadius = BerryRadiusTiles();
         int now = generation < 0 ? world.TerrainGeneration : generation;
 
         bool fresh = !ReferenceEquals(map, _sceneryOf);
-        if (!fresh && now == _sceneryAtGeneration && berryRadius == _berryRadiusBuilt)
+        (int, int, int) facesNow = (world.Zones.Edits, world.TerrainGeneration, world.BuildingGeneration);
+        bool facesMoved = facesNow != _facesAt || facesForTheProbe is not null;
+        if (!fresh && now == _sceneryAtGeneration && berryRadius == _berryRadiusBuilt && !facesMoved)
         {
             return;
         }
+
+        bool[] faces = facesForTheProbe ?? (facesMoved || fresh ? TheWorkedFaces(world) : _faceShadow);
+        _facesAt = facesNow;
 
         long started = Stopwatch.GetTimestamp();
         int built = 0;
@@ -206,6 +225,7 @@ public partial class VillageMap
                 _sceneryShadow[i] = map.Tiles[i];
             }
 
+            _faceShadow = faces;
             for (int i = 0; i < _scenery.Length; i++)
             {
                 BuildChunk(map, i, standing: true, berries: true, berryRadius);
@@ -230,6 +250,21 @@ public partial class VillageMap
                     _sceneryShadow[i] = tiles[i];
                     dirty[ChunkOf(i % map.Width, i / map.Width)] = true;
                 }
+            }
+
+            // ⭐ A face changes by OWNERSHIP, not terrain (`quarry.md §3.4`) — so the chunks whose
+            // tiles became or stopped being faces are dirty too, found by diffing the face set.
+            if (!ReferenceEquals(faces, _faceShadow))
+            {
+                for (int i = 0; i < faces.Length; i++)
+                {
+                    if (faces[i] != _faceShadow[i])
+                    {
+                        dirty[ChunkOf(i % map.Width, i / map.Width)] = true;
+                    }
+                }
+
+                _faceShadow = faces;
             }
 
             for (int i = 0; i < _scenery.Length; i++)
@@ -287,7 +322,15 @@ public partial class VillageMap
                     Terrain terrain = map.TerrainAt(tile);
                     if (terrain is Terrain.Rock or Terrain.IronDeposit)
                     {
-                        Lumps(_standing, tile, stone: terrain == Terrain.Rock);
+                        int index = ((y - map.MinY) * map.Width) + (x - map.MinX);
+                        if (_faceShadow.Length > index && _faceShadow[index])
+                        {
+                            WorkedFace(_standing, tile, stone: terrain == Terrain.Rock);
+                        }
+                        else
+                        {
+                            Lumps(_standing, tile, stone: terrain == Terrain.Rock);
+                        }
                     }
                 }
             }
@@ -364,6 +407,67 @@ public partial class VillageMap
             into.Disc(where, radius * shade, trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade });
         }
     }
+
+    /// <summary>
+    /// Every tile a quarry or a mine works as a face, by index — from each face workplace's own
+    /// ground list (D449). Called only when <see cref="_facesAt"/> moves.
+    /// </summary>
+    private static bool[] TheWorkedFaces(SimWorld world)
+    {
+        GeneratedMap map = world.Map;
+        var faces = new bool[map.Width * map.Height];
+        for (int w = 0; w < world.Workplaces.Count; w++)
+        {
+            Workplace workplace = world.Workplaces[w];
+            if (workplace.IsSite || world.FaceOf(workplace) is not Terrain seam)
+            {
+                continue;
+            }
+
+            System.Collections.Generic.IReadOnlyList<int> ground = world.Zones.WorkGroundOf(workplace.Id);
+            for (int i = 0; i < ground.Count; i++)
+            {
+                int index = ground[i];
+                if (index >= 0 && index < faces.Length && map.Tiles[index] == seam)
+                {
+                    faces[index] = true;
+                }
+            }
+        }
+
+        return faces;
+    }
+
+    /// <summary>
+    /// A worked face — the seam's lumps cut down on a pale floor of spoil (`quarry.md §3.4`,
+    /// `iron-mine.md §3.6`). The same stateless scatter as <see cref="Lumps"/>, one lump fewer and
+    /// each cut low, so a tile changes look once, when it is claimed, and never flickers.
+    /// </summary>
+    private static void WorkedFace(MeshBuilder into, GridPos tile, bool stone)
+    {
+        Color floor = stone ? QuarryFloor : MineFloor;
+        into.Band(new Vector2(tile.X - FaceHalf, tile.Y), new Vector2(tile.X + FaceHalf, tile.Y), FaceHalf, floor);
+
+        Color base_ = stone ? Boulder : OreLump;
+        int lumps = LumpsOn(tile, stone) - 1;
+        for (int i = 0; i < lumps; i++)
+        {
+            (Vector2 where, float size, float shade) = LumpOn(tile, i);
+            into.Disc(where, size * FaceCut, base_ with { R = base_.R * shade, G = base_.G * shade, B = base_.B * shade });
+        }
+    }
+
+    /// <summary>Half a face's floor, in tiles — just inside the tile, so neighbouring faces read as cut blocks.</summary>
+    private const float FaceHalf = 0.46f;
+
+    /// <summary>How much of a lump is left on a worked face.</summary>
+    private const float FaceCut = 0.6f;
+
+    /// <summary>A quarry face's floor — pale stone spoil, lighter than the boulders.</summary>
+    private static readonly Color QuarryFloor = new("#a39b8e");
+
+    /// <summary>A mine face's floor — rust-pale spoil, lighter and warmer than the ore.</summary>
+    private static readonly Color MineFloor = new("#9a6a52");
 
     /// <summary>The lumps on one seam tile, and the ones spilling off it — into the mesh.</summary>
     private static void Lumps(MeshBuilder into, GridPos tile, bool stone)
@@ -489,6 +593,60 @@ public partial class VillageMap
             + $"{whole:F1}ms once ({chunksBuilt} chunks), the busiest chunk alone {one:F2}ms "
             + $"({busiest} vertices; {first:F2}ms the first time, warming up); a felled tile "
             + $"rebuilds one chunk and takes {expectedDrop} vertices with it";
+    }
+
+    /// <summary>
+    /// A worked face rebuilds its own chunk only, and draws cut down — <b>a probe line</b> (D449).
+    /// </summary>
+    /// <remarks>
+    /// One rock tile is posed as a face (the probe's village has no quarry, so the face set is handed
+    /// in rather than derived — <see cref="TheWorkedFaces"/> is the sim's <c>IsFace</c> rule over the
+    /// owner index, guarded in <c>MineTests</c>). Exactly one chunk must rebuild, lighter by one
+    /// lump less a floor; handed back, it must return to the same count.
+    /// </remarks>
+    public string TheFacesAreWorked()
+    {
+        SimWorld world = _world!;
+        RefreshTheScenery(world);
+
+        GridPos rock = default;
+        int index = -1;
+        for (int i = 0; i < world.Map.Tiles.Count && index < 0; i++)
+        {
+            if (world.Map.Tiles[i] == Terrain.Rock)
+            {
+                index = i;
+                rock = new GridPos(world.Map.MinX + (i % world.Map.Width), world.Map.MinY + (i / world.Map.Width));
+            }
+        }
+
+        if (index < 0)
+        {
+            return "[widths] faces: ⛔ no rock in this valley — the worked face has checked nothing";
+        }
+
+        int chunk = ChunkOf(rock.X - world.Map.MinX, rock.Y - world.Map.MinY);
+        int before = _scenery[chunk].StandingVertices;
+        bool[] withAFace = (bool[])_faceShadow.Clone();
+        withAFace[index] = true;
+        RefreshTheScenery(world, facesForTheProbe: withAFace);
+        int rebuilt = LastSceneryChunksBuilt;
+        int after = _scenery[chunk].StandingVertices;
+
+        RefreshTheScenery(world, facesForTheProbe: TheWorkedFaces(world));
+        int restored = _scenery[chunk].StandingVertices;
+
+        // A face is one lump fewer (a disc, 36 vertices) and a floor (a quad, 6).
+        const int expectedDrop = 36 - 6;
+        if (rebuilt != 1 || before - after != expectedDrop || restored != before)
+        {
+            return $"[widths] faces: ⛔ working one rock tile rebuilt {rebuilt} chunks and its chunk went "
+                + $"{before} → {after} → {restored} vertices (wanted one chunk, a drop of {expectedDrop}, and back) "
+                + "— a face is not following its owner";
+        }
+
+        return $"[widths] faces: ✅ a worked face rebuilds one chunk ({before} → {after} vertices: a lump "
+            + "fewer, cut low, on a floor) and comes back when released";
     }
 
     // ---------------------------------------------------------------

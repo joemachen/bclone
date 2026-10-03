@@ -77,6 +77,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.HunterLodge => TradeGlyph.ColourOf(JobKind.Hunter),
         BuildingKind.Smithy => TradeGlyph.ColourOf(JobKind.Smith),
         BuildingKind.Quarry => TradeGlyph.ColourOf(JobKind.Quarrier),
+        BuildingKind.Mine => TradeGlyph.ColourOf(JobKind.Miner),
 
         _ => Unchosen,
     };
@@ -194,6 +195,15 @@ public sealed partial class BuildingGlyph : Control
                 DrawLine(new Vector2(s * 0.24f, s * 0.58f), new Vector2(s * 0.24f, s * 0.14f), ink, 1.8f);
                 DrawLine(new Vector2(s * 0.24f, s * 0.14f), new Vector2(s * 0.74f, s * 0.24f), ink, 1.6f);
                 DrawLine(new Vector2(s * 0.70f, s * 0.24f), new Vector2(s * 0.70f, s * 0.46f), ink, 1.0f);
+                break;
+
+            // A headframe over the shaft (D449): two legs, the beam, the wheel, and the ore below.
+            case BuildingKind.Mine:
+                DrawLine(new Vector2(s * 0.24f, s * 0.80f), new Vector2(s * 0.42f, s * 0.20f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.76f, s * 0.80f), new Vector2(s * 0.58f, s * 0.20f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.34f, s * 0.48f), new Vector2(s * 0.66f, s * 0.48f), ink, 1.4f);
+                DrawArc(new Vector2(s * 0.50f, s * 0.20f), s * 0.12f, 0f, Mathf.Tau, 12, ink, 1.6f);
+                DrawRect(new Rect2(s * 0.16f, s * 0.80f, s * 0.68f, s * 0.08f), ink);
                 break;
 
             // A low lodge under a drawn bow.
