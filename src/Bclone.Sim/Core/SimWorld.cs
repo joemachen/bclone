@@ -2277,7 +2277,8 @@ public sealed class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
-            JobKind.Quarrier => WhyTheQuarryIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
+            JobKind.Quarrier or JobKind.Miner =>
+                WhyTheFaceIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
             JobKind.Forager => ForagerIdleNote(workplace),
             JobKind.Farmer => FarmIdleNote(workplace),
 
@@ -3568,12 +3569,49 @@ public sealed class SimWorld : IObstacles
     //  The quarry (D434, `specs/quarry.md`)
     // ---------------------------------------------------------------
 
-    /// <summary>Whether this tile is rock a quarry holds — a face, never cleared (`quarry.md §3.4`).</summary>
-    public bool IsQuarryFace(GridPos tile) =>
+    /// <summary>
+    /// Whether this tile is a face — a seam held by the trade that works it, never cleared
+    /// (`quarry.md §3.4`; D449 made it one rule for the quarry and the mine).
+    /// </summary>
+    /// <remarks>
+    /// The terrain is asked first, so the owner lookup (a walk over the workplaces) is paid only on
+    /// a held seam tile.
+    /// </remarks>
+    public bool IsFace(GridPos tile) =>
         Map.Contains(tile)
-        && Map.TerrainAt(tile) == Terrain.Rock
+        && TerrainRules.Yields(Map.TerrainAt(tile)) is not null
         && Zones.WorkGroundOwner(tile) is int owner and not 0
-        && FindWorkplace(owner) is { Kind: JobKind.Quarrier };
+        && FindWorkplace(owner) is Workplace holder
+        && JobsCatalog.FaceOf(holder.Kind) == Map.TerrainAt(tile);
+
+    /// <summary>The seam this workplace works as a face, or null (D449).</summary>
+    public Terrain? FaceOf(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        return JobsCatalog.FaceOf(workplace.Kind);
+    }
+
+    /// <summary>The good a face of this seam gives up — stone for rock, iron for an iron seam.</summary>
+    private static Goods GoodOfTheFace(Terrain face) =>
+        TerrainRules.Yields(face)
+        ?? throw new InvalidOperationException($"{face} is worked as a face and yields nothing.");
+
+    /// <summary>A face's seam in a word a sentence can hold — "rock", "iron".</summary>
+    private string FaceWord(Terrain face) =>
+        face == Terrain.Rock ? "rock" : GoodsCatalog.NameOf(GoodOfTheFace(face));
+
+    /// <summary>The name of the building a trade works at — "quarry", "iron mine".</summary>
+    private string BuildingNameFor(JobKind kind) =>
+        JobsCatalog.WorksAt(kind) is BuildingKind building
+            ? BuildingsCatalog.NameOf(building)
+            : JobsCatalog.NameOf(kind);
+
+    /// <summary>A trade's building with its article — "a quarry", "an iron mine".</summary>
+    private string ABuildingFor(JobKind kind)
+    {
+        string name = BuildingNameFor(kind);
+        return ("aeiou".Contains(name[0], StringComparison.Ordinal) ? "an " : "a ") + name;
+    }
 
     /// <summary>Why the player may not mark this building yet — or null when they may (`quarry.md §3.3`).</summary>
     /// <remarks>
@@ -3592,6 +3630,11 @@ public sealed class SimWorld : IObstacles
         BuildingKind.Smithy when IronEverDug < Config.SmithyUnlockIron =>
             $"The smith's craft has not come to the village yet — it has dug {IronEverDug} of the "
             + $"{Config.SmithyUnlockIron} iron by hand it takes.",
+
+        // ⭐ THE MINE WAITS ON THE SMITH'S FIRST IRON TOOL (Joe, D449; `iron-mine.md §3.4`).
+        BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
+            "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
+            + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
         _ => null,
     };
 
@@ -3622,25 +3665,29 @@ public sealed class SimWorld : IObstacles
     public bool IsUnlocked(BuildingKind kind) => WhyNotYet(kind) is null;
 
     /// <summary>
-    /// The face a quarrier walks to next: the cheapest rock tile on the quarry's own ground, or
-    /// null (`quarry.md §3.5`).
+    /// The face a quarrier or miner walks to next: the cheapest tile of its seam on the workplace's
+    /// own ground, or null (`quarry.md §3.5`, `iron-mine.md §3.2`).
     /// </summary>
     /// <remarks>
     /// The <see cref="NextGroundToWork"/> shape — the building's own tiles from the owner index,
     /// never a scan of the valley; lowest travel cost; map order breaks ties; never an
     /// <c>Rng</c> draw.
     /// </remarks>
-    public GridPos? NextFaceToQuarry(Workplace quarry, GridPos from)
+    public GridPos? NextFace(Workplace workplace, GridPos from)
     {
-        ArgumentNullException.ThrowIfNull(quarry);
+        ArgumentNullException.ThrowIfNull(workplace);
+        if (FaceOf(workplace) is not Terrain face)
+        {
+            return null;
+        }
 
         GridPos? best = null;
         int cheapest = int.MaxValue;
-        IReadOnlyList<int> ground = Zones.WorkGroundOf(quarry.Id);
+        IReadOnlyList<int> ground = Zones.WorkGroundOf(workplace.Id);
         for (int i = 0; i < ground.Count; i++)
         {
             GridPos at = Zones.PositionOf(ground[i]);
-            if (Map.TerrainAt(at) != Terrain.Rock)
+            if (Map.TerrainAt(at) != face)
             {
                 continue;
             }
@@ -3657,23 +3704,29 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// Why the quarry is not cutting, in a sentence the player can act on — or null when it can
-    /// cut. <b>One copy</b>, read by the quarrier before the walk and after every dig, and by the
-    /// card (D76's lesson).
+    /// Why a quarry or a mine is not working its face, in a sentence the player can act on — or
+    /// null when it can. <b>One copy</b>, read by the hand before the walk and after every dig, and
+    /// by the card (D76's lesson).
     /// </summary>
-    public string? WhyTheQuarryIsIdle(Workplace quarry)
+    public string? WhyTheFaceIsIdle(Workplace workplace)
     {
-        ArgumentNullException.ThrowIfNull(quarry);
-
-        if (LimitIsMet(Goods.Stone))
+        ArgumentNullException.ThrowIfNull(workplace);
+        if (FaceOf(workplace) is not Terrain face)
         {
-            return $"Nothing to cut — you asked the village to keep {StockLimits.For(Goods.Stone)} "
-                + $"stone and it has {HeldAgainstItsLimit(Goods.Stone)} stored.";
+            return null;
         }
 
-        if (Zones.WorkGroundTiles(quarry.Id) == 0)
+        Goods good = GoodOfTheFace(face);
+        if (LimitIsMet(good))
         {
-            return "No rock painted for it — give it ground on a stone seam.";
+            return $"Nothing to dig — you asked the village to keep {StockLimits.For(good)} "
+                + $"{GoodsCatalog.NameOf(good)} and it has {HeldAgainstItsLimit(good)} stored.";
+        }
+
+        if (Zones.WorkGroundTiles(workplace.Id) == 0)
+        {
+            return $"No {FaceWord(face)} painted for it — give it ground on "
+                + $"{GoodsCatalog.SourceNameOf(good)}.";
         }
 
         return null;
@@ -4894,6 +4947,9 @@ public sealed class SimWorld : IObstacles
 
         // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
         JobKind.Quarrier => Config.QuarryTilesPerWorker,
+
+        // An iron seam is about seven tiles; two miners hold most of one (D449).
+        JobKind.Miner => Config.MineTilesPerWorker,
         _ => Config.WorkGroundTilesPerWorker,
     };
 
@@ -4918,7 +4974,7 @@ public sealed class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public static bool KeepsWorkGround(JobKind kind) =>
-        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier;
+        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier or JobKind.Miner;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
@@ -4983,14 +5039,16 @@ public sealed class SimWorld : IObstacles
                   + "put another farmer on, or paint a smaller field.";
         }
 
-        if (workplace.Kind == JobKind.Quarrier)
+        if (FaceOf(workplace) is Terrain face)
         {
+            string seam = FaceWord(face);
+            string trade = JobsCatalog.NameOf(workplace.Kind);
             return hands == 0
-                ? $"{name} has {tiles} tiles of rock and nobody cutting it. Put a quarrier on — "
+                ? $"{name} has {tiles} tiles of {seam} and nobody working it. Put a {trade} on — "
                   + $"one pair of hands keeps {TilesOneWorkerKeeps(workplace.Kind)} faces."
-                : $"{name} has {tiles} tiles of rock and {Hands(hands)} to cut them — enough for "
+                : $"{name} has {tiles} tiles of {seam} and {Hands(hands)} to work them — enough for "
                   + $"{allowance}. The other {tiles - allowance} will stand idle — put another "
-                  + "quarrier on, or paint less.";
+                  + $"{trade} on, or paint less.";
         }
 
         return hands == 0
@@ -5049,11 +5107,15 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No("Nobody can work the water.");
         }
 
-        // ⭐ A QUARRY IS CUT INTO ROCK (Joe, D434) — and only rock takes its paint, said in words so
-        // the player learns the rule from the brush rather than from an idle quarry.
-        if (workplace.Kind == JobKind.Quarrier && Map.TerrainAt(tile) != Terrain.Rock)
+        // ⭐ A QUARRY IS CUT INTO ROCK (Joe, D434), A MINE INTO AN IRON SEAM (D449) — and only its
+        // seam takes its paint, said in words so the player learns the rule from the brush rather
+        // than from an idle building.
+        if (FaceOf(workplace) is Terrain face && Map.TerrainAt(tile) != face)
         {
-            return PlacementVerdict.No($"A quarry works rock — this is {Describe(Map.TerrainAt(tile))}.");
+            string building = ABuildingFor(workplace.Kind);
+            return PlacementVerdict.No(
+                $"{char.ToUpperInvariant(building[0])}{building[1..]} works {Describe(face)} — this is "
+                + $"{Describe(Map.TerrainAt(tile))}.");
         }
 
         int owner = Zones.WorkGroundOwner(tile);
@@ -5287,9 +5349,12 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing standing there to take.");
         }
 
-        if (IsQuarryFace(tile))
+        if (IsFace(tile))
         {
-            return PlacementVerdict.No("That rock is the quarry's — it is cut there, never cleared.");
+            Workplace holder = FindWorkplace(Zones.WorkGroundOwner(tile))!;
+            return PlacementVerdict.No(
+                $"That {FaceWord(Map.TerrainAt(tile))} is the {BuildingNameFor(holder.Kind)}'s — it is "
+                + "worked there, never cleared.");
         }
 
         Goods? takes = WhatTheBrushTakes(brush);
@@ -5360,22 +5425,39 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     private PlacementVerdict WithTheLastRockWarning(PlacementVerdict verdict, GridPos tile)
     {
-        if (Map.TerrainAt(tile) != Terrain.Rock || AnyOtherRockLeftToReach(tile))
+        // ⭐ ROCK AND IRON ALIKE SINCE D449 (`iron-mine.md §3.5`): any seam a trade works as a face
+        // is a seam a valley can strand itself out of.
+        Terrain seam = Map.TerrainAt(tile);
+        if (TheTradeThatWorks(seam) is not JobKind trade || AnyOtherSeamLeftToReach(tile, seam))
         {
             return verdict;
         }
 
         return PlacementVerdict.Yes(
-            "This is the last rock the village can reach. Cleared, it is gone for good — and a quarry "
-            + "can only be cut into rock.");
+            $"This is the last {FaceWord(seam)} the village can reach. Cleared, it is gone for good — "
+            + $"and {ABuildingFor(trade)} can only be cut into {Describe(seam)}.");
     }
 
-    /// <summary>Whether any rock the village can walk to is left unmarked, besides this tile.</summary>
-    private bool AnyOtherRockLeftToReach(GridPos except)
+    /// <summary>The trade that works this seam as a face, or null — the first by id.</summary>
+    private JobKind? TheTradeThatWorks(Terrain seam)
+    {
+        for (int id = 0; id < JobsCatalog.Count; id++)
+        {
+            if (JobsCatalog.FaceOf((JobKind)id) == seam)
+            {
+                return (JobKind)id;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether any of this seam the village can walk to is left unmarked, besides this tile.</summary>
+    private bool AnyOtherSeamLeftToReach(GridPos except, Terrain seam)
     {
         for (int i = 0; i < Map.Tiles.Count; i++)
         {
-            if (Map.Tiles[i] != Terrain.Rock)
+            if (Map.Tiles[i] != seam)
             {
                 continue;
             }
@@ -5643,9 +5725,9 @@ public sealed class SimWorld : IObstacles
                 continue;
             }
 
-            // ⛔ NEVER A QUARRY'S FACE (D434, `quarry.md §3.4`): clearing it would spend the rock the
-            // quarry cuts for ever. Painted before the quarry claimed it, the paint waits.
-            if (IsQuarryFace(at))
+            // ⛔ NEVER A FACE (D434, D449): clearing it would spend the seam a quarry or a mine works
+            // for ever. Painted before the building claimed it, the paint waits.
+            if (IsFace(at))
             {
                 continue;
             }
@@ -9815,6 +9897,38 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>Tools ever forged at a smithy — counted at the anvil (D391). A statistic, not hashed.</summary>
     public int ToolsEverForged { get; internal set; }
+
+    /// <summary>Iron tools ever forged — what the mine's unlock counts (D449, `iron-mine.md §3.4`).</summary>
+    /// <remarks>
+    /// ⛔ <b>State, and hashed sparsely</b> — unlike <see cref="ToolsEverForged"/> beside it: it decides
+    /// what the player may build. A village that never forged iron hashes as it did.
+    /// </remarks>
+    public int IronToolsEverForged { get; internal set; }
+
+    /// <summary>
+    /// The smith has forged <paramref name="tools"/> of <paramref name="made"/> — counted at the anvil,
+    /// and the mine learned on the first iron tool (D449, `iron-mine.md §3.4`).
+    /// </summary>
+    internal void Forged(Goods made, int tools)
+    {
+        ToolsEverForged += tools;
+        if (made != Goods.IronTools)
+        {
+            return;
+        }
+
+        bool knewHow = IsUnlocked(BuildingKind.Mine);
+        IronToolsEverForged += tools;
+        if (!knewHow && IsUnlocked(BuildingKind.Mine))
+        {
+            // ⭐ A STOP, LIKE THE QUARRY'S (D442) — learned by doing, paid for, no gift.
+            LearnedByDoing(
+                "The village learned to mine",
+                "The smith has worked iron, and the village knows good ore when it sees it. Build an "
+                + "iron mine beside an iron seam and give it the seam — a mine's face never runs out. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+    }
 
     /// <summary>Tools ever taken out of a store into somebody's hands (D391). A statistic, not hashed.</summary>
     public int ToolsEverTaken { get; internal set; }

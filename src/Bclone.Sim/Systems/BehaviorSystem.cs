@@ -125,6 +125,8 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.Forging => "forging tools",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
         VillagerState.Quarrying => "cutting stone",
+        VillagerState.TravelingToMine => "walking to the mine face",
+        VillagerState.Mining => "digging iron",
         VillagerState.TravelingToField => "walking out to the field",
         VillagerState.Sowing => "sowing",
         VillagerState.Reaping => "reaping",
@@ -413,10 +415,13 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingToQuarry:
-                // To the face they set off for (D434), fixed at departure — re-deciding mid-walk
-                // would shuttle between two faces and cut neither.
+            case VillagerState.TravelingToMine:
+                // To the face they set off for (D434, D449), fixed at departure — re-deciding
+                // mid-walk would shuttle between two faces and work neither.
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
-                    VillagerState.Quarrying);
+                    villager.State == VillagerState.TravelingToMine
+                        ? VillagerState.Mining
+                        : VillagerState.Quarrying);
                 return;
 
             case VillagerState.TravelingToSmithy:
@@ -537,6 +542,9 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsQuarrying(VillagerState state) =>
         state is VillagerState.TravelingToQuarry or VillagerState.Quarrying;
 
+    private static bool IsMining(VillagerState state) =>
+        state is VillagerState.TravelingToMine or VillagerState.Mining;
+
     private static bool IsTrading(VillagerState state) =>
         state is VillagerState.CollectingForMarket
             or VillagerState.StockingTheMarket;
@@ -551,7 +559,7 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state);
+        || IsForging(state) || IsQuarrying(state) || IsMining(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -612,6 +620,12 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsQuarrying(state))
         {
             return JobKind.Quarrier;
+        }
+
+        // ⛔ D281, a fifth time (D449): without this arm a miner is recalled home every tick.
+        if (IsMining(state))
+        {
+            return JobKind.Miner;
         }
 
         return IsSplitting(state) ? JobKind.Woodcutter : null;
@@ -2558,19 +2572,20 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        // ⭐ THE QUARRIER (D434, `quarry.md §3.5`) — the forester's walk to its own ground and the
-        // smith's stint, joined: to the cheapest face on the quarry's rock, digging where they
-        // stand until the next block would not fit their arms, then to a store. The face is
-        // never spent. `WhyTheQuarryIsIdle` is the one place the reasons not to live.
-        if (villager.CanWork && job?.Kind == JobKind.Quarrier)
+        // ⭐ THE QUARRIER AND THE MINER (D434, D449; `quarry.md §3.5`, `iron-mine.md §3.2`) — the
+        // forester's walk to its own ground and the smith's stint, joined: to the cheapest face on
+        // the workplace's seam, digging where they stand until the next dig would not fit their
+        // arms, then to a store. The face is never spent. `WhyTheFaceIsIdle` is the one place the
+        // reasons not to live.
+        if (villager.CanWork && job is not null && world.FaceOf(job) is not null)
         {
-            GridPos? face = world.WhyTheQuarryIsIdle(job) is null
-                ? world.NextFaceToQuarry(job, villager.Tile)
+            GridPos? face = world.WhyTheFaceIsIdle(job) is null
+                ? world.NextFace(job, villager.Tile)
                 : null;
             if (face is not GridPos at)
             {
-                villager.WorkNote = world.WhyTheQuarryIsIdle(job)
-                    ?? $"No rock {job.Name} can reach — its ground is not rock, or nobody can walk to it.";
+                villager.WorkNote = world.WhyTheFaceIsIdle(job)
+                    ?? $"No face {job.Name} can reach — its ground is not its seam, or nobody can walk to it.";
                 if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
                 {
                     GoHome(world, villager);
@@ -2579,17 +2594,18 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
             }
 
+            (VillagerState walk, VillagerState dig) = FaceStates(job.Kind);
             villager.WorkNote = string.Empty;
             villager.ErrandX = at.X;
             villager.ErrandY = at.Y;
             if (villager.Tile == at)
             {
-                BeginQuarrying(world, villager);
+                BeginDigging(world, villager, dig);
             }
             else
             {
-                villager.State = VillagerState.TravelingToQuarry;
-                Travel(world, villager, at, VillagerState.Quarrying);
+                villager.State = walk;
+                Travel(world, villager, at, dig);
             }
 
             return;
@@ -4542,9 +4558,9 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (onArrival == VillagerState.Quarrying)
+        if (onArrival is VillagerState.Quarrying or VillagerState.Mining)
         {
-            BeginQuarrying(world, villager);
+            BeginDigging(world, villager, onArrival);
             return;
         }
 
@@ -4693,22 +4709,43 @@ public sealed class BehaviorSystem : ISimSystem
             world.BeginWork(villager, JobKind.Woodcutter, world.Config.SplitTicks);
     }
 
-    /// <summary>The first dig of a stint at the quarry face (D434).</summary>
-    private static void BeginQuarrying(SimWorld world, Villager villager)
+    /// <summary>
+    /// The walk and the dig states of a face trade — the quarrier's and the miner's own (D281: a
+    /// shared walk state misclassifies the errand). A face trade a mod adds walks as a quarrier.
+    /// </summary>
+    private static (VillagerState Walk, VillagerState Dig) FaceStates(JobKind trade) =>
+        trade == JobKind.Miner
+            ? (VillagerState.TravelingToMine, VillagerState.Mining)
+            : (VillagerState.TravelingToQuarry, VillagerState.Quarrying);
+
+    /// <summary>The trade a dig state belongs to.</summary>
+    private static JobKind FaceTradeOf(VillagerState dig) =>
+        dig == VillagerState.Mining ? JobKind.Miner : JobKind.Quarrier;
+
+    /// <summary>
+    /// The good a face trade digs, and the row that holds its pace (D449: a face's pace is the
+    /// good's — <c>face_dig_ticks</c>, <c>face_per_dig</c>, <c>face_digs_per_stint</c>).
+    /// </summary>
+    private static GoodRow FaceRow(SimWorld world, JobKind trade) =>
+        world.GoodsCatalog[TerrainRules.Yields(world.JobsCatalog.FaceOf(trade)!.Value)!.Value];
+
+    /// <summary>The first dig of a stint at a face (D434, D449).</summary>
+    private static void BeginDigging(SimWorld world, Villager villager, VillagerState dig)
     {
+        JobKind trade = FaceTradeOf(dig);
         villager.DigsThisStint = 0;
-        villager.State = VillagerState.Quarrying;
+        villager.State = dig;
         villager.ActionTicksRemaining =
-            world.BeginWork(villager, JobKind.Quarrier, world.Config.QuarryDigTicks);
+            world.BeginWork(villager, trade, FaceRow(world, trade).FaceDigTicks);
     }
 
     /// <summary>
-    /// Stone one dig brings this quarrier — the tool's quarter counted, vigour scaling it as it
-    /// scales a gather (the face survives, so a tired hand simply cuts less).
+    /// What one dig brings this hand — the tool counted, vigour scaling it as it scales a gather
+    /// (the face survives, so a tired hand simply digs less).
     /// </summary>
-    private static int StoneFromADig(SimWorld world, Villager villager)
+    private static int OneDig(SimWorld world, Villager villager, JobKind trade)
     {
-        int dug = world.YieldFor(villager, JobKind.Quarrier, world.Config.StonePerDig) * villager.Vigour / 100;
+        int dug = world.YieldFor(villager, trade, FaceRow(world, trade).FacePerDig) * villager.Vigour / 100;
         return dug < 1 ? 1 : dug;
     }
 
@@ -5738,31 +5775,35 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.Quarrying:
+            case VillagerState.Mining:
             {
-                // ⭐ A QUARRY FACE NEVER RUNS OUT (D84, D434) — the stone comes off the face and the
-                // face stays rock: no `Harvest`, no `SetTerrain`. Dig again where they stand while
-                // the next block fits their arms, the stint has digs left and the quarry still has
-                // a reason to cut; then carry the lot to a store (D385).
-                int cut = StoneFromADig(world, villager);
-                villager.Carried.Receive(Goods.Stone, cut);
+                // ⭐ A FACE NEVER RUNS OUT (D84, D434, D449) — the stone or iron comes off the face
+                // and the face stays its seam: no `Harvest`, no `SetTerrain`. Dig again where they
+                // stand while the next dig fits their arms, the stint has digs left and the building
+                // still has a reason to dig; then carry the lot to a store (D385).
+                JobKind trade = FaceTradeOf(villager.State);
+                GoodRow pace = FaceRow(world, trade);
+                Goods good = (Goods)pace.Id;
+                int cut = OneDig(world, villager, trade);
+                villager.Carried.Receive(good, cut);
                 villager.DigsThisStint++;
 
                 if (world.Logs(LogLevel.Debug))
                 {
                     world.Log(LogLevel.Debug, "behavior",
-                        $"{villager.Name} cut {cut} stone at ({villager.ErrandX}, {villager.ErrandY}) — {world.Clock}.");
+                        $"{villager.Name} dug {cut} {pace.Name} at ({villager.ErrandX}, {villager.ErrandY}) — {world.Clock}.");
                 }
 
-                Workplace? quarry = WorkplaceOf(world, villager);
-                bool anotherFits = villager.Carried[Goods.Stone] + StoneFromADig(world, villager)
+                Workplace? face = WorkplaceOf(world, villager);
+                bool anotherFits = villager.Carried[good] + OneDig(world, villager, trade)
                     <= world.Config.CarryCapacity;
-                if (quarry is not null
+                if (face is not null
                     && anotherFits
-                    && villager.DigsThisStint < world.Config.DigsPerStint
-                    && world.WhyTheQuarryIsIdle(quarry) is null)
+                    && villager.DigsThisStint < pace.FaceDigsPerStint
+                    && world.WhyTheFaceIsIdle(face) is null)
                 {
                     villager.ActionTicksRemaining =
-                        world.BeginWork(villager, JobKind.Quarrier, world.Config.QuarryDigTicks);
+                        world.BeginWork(villager, trade, pace.FaceDigTicks);
                     return;
                 }
 
@@ -5826,7 +5867,7 @@ public sealed class BehaviorSystem : ISimSystem
                     world.SetDown(villager.Tile, made, tools - racked);
                 }
 
-                world.ToolsEverForged += tools;
+                world.Forged(made, tools);
 
                 if (world.Logs(LogLevel.Debug))
                 {

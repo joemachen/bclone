@@ -915,6 +915,26 @@
   "stone_per_dig": 10,
   "digs_per_stint": 4,
 
+  // THE IRON MINE (iron-mine.md, D449 -- Joe's calls before a line was
+  // written). The quarry's twin on an iron seam: painted iron that never runs
+  // out, which only an iron seam takes the paint of. Unlocked by the smith's
+  // FIRST IRON TOOL -- dig iron, the smithy gift, the smith works iron, the
+  // village learns to mine -- so about one seam is spent by hand and the rest
+  // stay mine sites. Shoring timber and a stone-lined shaft head. Two seats;
+  // three faces a miner (an iron seam is about seven tiles). SLOWER THAN THE
+  // QUARRY (Joe): six-tick digs of five iron, eight to a stint (an armful of
+  // 40) -- about 40 iron per 100 ticks worked, 47 with an iron tool, against a
+  // laborer's 14 clearing iron by hand, measured as the TRIP (iron-mine.md 6).
+  "mine_unlock_iron_tools": 1,
+  "mine_logs": 30,
+  "mine_stone": 15,
+  "mine_work_ticks": 40,
+  "mine_capacity": 2,
+  "mine_tiles_per_worker": 3,
+  "mine_dig_ticks": 6,
+  "iron_per_dig": 5,
+  "mine_digs_per_stint": 8,
+
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
   // No water mechanic: a household walks to its nearest well and back every

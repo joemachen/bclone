@@ -317,6 +317,7 @@ public partial class Main : Control
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
+        GD.Print(_map.TheFacesAreWorked());
         GD.Print(_map.AHeapAtADoorIsSeen());
         GD.Print(_map.EveryStoreShowsItsStock());
         GD.Print(_map.TheFieldsStayInsideTheirFences());
@@ -1234,6 +1235,7 @@ public partial class Main : Control
     private Button? _libraryButton;
     private Button? _townHallButton;
     private Button? _quarryButton;
+    private Button? _mineButton;
     private Button? _smithyButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
@@ -1367,26 +1369,38 @@ public partial class Main : Control
     /// </remarks>
     private void RefreshTheQuarryButton(SimWorld world)
     {
-        bool known = world.IsUnlocked(BuildingKind.Quarry);
-        if (_quarryKnown != known)
+        RefreshALearnedButton(world, BuildingKind.Quarry, JobKind.Quarrier, _quarryButton, ref _quarryKnown, ref _quarryTried);
+
+        // The mine is the quarry's twin, learned from the smith's first iron tool (D449).
+        RefreshALearnedButton(world, BuildingKind.Mine, JobKind.Miner, _mineButton, ref _mineKnown, ref _mineTried);
+    }
+
+    /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
+    private void RefreshALearnedButton(
+        SimWorld world, BuildingKind kind, JobKind trade, Button? button, ref bool knownSoFar, ref bool tried)
+    {
+        bool known = world.IsUnlocked(kind);
+        if (knownSoFar != known)
         {
-            _quarryKnown = known;
+            knownSoFar = known;
             RefreshTheStrip();
         }
 
-        // ⭐ Lit like a gift until the first quarry is marked (Joe, D440) — something new to find on
+        // ⭐ Lit like a gift until the first one is marked (Joe, D440) — something new to find on
         // the bar — but no ★ and no free timber: it is paid for. ⛔ Latched, not asked every frame
-        // (CLAUDE.md): the scan of the workplaces runs only between the unlock and the first quarry
+        // (CLAUDE.md): the scan of the workplaces runs only between the unlock and the first one
         // marked, and never again once one has been.
-        if (_quarryButton is not null && known && !_quarryTried)
+        if (button is not null && known && !tried)
         {
-            _quarryTried = world.Workplaces.Exists(w => w.Kind == JobKind.Quarrier || w.Construction?.Kind == BuildingKind.Quarry);
-            _quarryButton.Modulate = _quarryTried ? Colors.White : new Color(1f, 0.85f, 0.4f);
+            tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind);
+            button.Modulate = tried ? Colors.White : new Color(1f, 0.85f, 0.4f);
         }
     }
 
     private bool _quarryKnown;
     private bool _quarryTried;
+    private bool _mineKnown;
+    private bool _mineTried;
     private bool _smithyKnown;
 
     /// <summary>
@@ -2695,6 +2709,8 @@ public partial class Main : Control
         // The HUT, not the site — a site describes itself and never reaches this (D108).
         JobKind.Builder => "the village's builders work from here",
         JobKind.Farmer => "the fields around it are sown and reaped from here",
+        JobKind.Quarrier => "stone is cut from its rock here",
+        JobKind.Miner => "iron is dug from its seam here",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -3042,7 +3058,9 @@ public partial class Main : Control
     private static readonly Goods[][] BarRows =
     {
         new[] { Goods.Produce, Goods.Wheat, Goods.Fish, Goods.Meat },
-        new[] { Goods.Logs, Goods.Firewood, Goods.Stone, Goods.Tools },
+        // ⭐ Iron beside stone since the mine (Joe, D449): a miner's output was otherwise on store
+        // cards only. Nine on the front now.
+        new[] { Goods.Logs, Goods.Firewood, Goods.Stone, Goods.Iron, Goods.Tools },
     };
 
     private PanelContainer BuildResourcesBox()
@@ -3077,8 +3095,10 @@ public partial class Main : Control
 
     private static HBoxContainer BarRow()
     {
+        // 7 between cells, not 9, since iron joined the second row (D449): nine wide there ran the
+        // bar 7px under the right column at 75 %, which the probe's `bars:` line caught.
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 9);
+        row.AddThemeConstantOverride("separation", 7);
         return row;
     }
 
@@ -5654,7 +5674,8 @@ public partial class Main : Control
         // (`specs/crops-and-orchards.md`, D161) — this is what a greyed roadmap entry is for:
         // it names the gap while it is a gap, and then it goes away.
         ("Herdsman", "no livestock"),
-        ("Miner", "iron is on the map; nothing digs it"),
+
+        // ⭐ The miner moved OFF this list with the iron mine (D449).
 
         // ⭐ The stonecutter moved OFF this list with the quarry (D434) — the trade ships as the
         // quarrier; cutting stone into blocks is the mason's yard's, and that is not built.
@@ -6291,6 +6312,10 @@ public partial class Main : Control
             {
                 _quarryButton = button;
             }
+            else if (kind == BuildingKind.Mine)
+            {
+                _mineButton = button;
+            }
             else if (kind == BuildingKind.Smithy)
             {
                 _smithyButton = button;
@@ -6398,7 +6423,7 @@ public partial class Main : Control
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,
 
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
-                or BuildingKind.Quarry => BuildCategory.Resources,
+                or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
@@ -6517,6 +6542,7 @@ public partial class Main : Control
         // ⭐ The sim's one gate (D434, `quarry.md §3.3`) — the same answer `Mark` gives, so the
         // button cannot offer what the placement would refuse.
         BuildingKind.Quarry => _quarryKnown,
+        BuildingKind.Mine => _mineKnown,
         BuildingKind.Smithy => _smithyKnown,
         _ => true,
     };

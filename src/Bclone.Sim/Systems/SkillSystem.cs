@@ -271,6 +271,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToQuarry => true,
         VillagerState.Quarrying => true,
 
+        // And the miner's, the quarrier's twin (D449).
+        VillagerState.TravelingToMine => true,
+        VillagerState.Mining => true,
+
         // The water trip is a household's errand, not a trade (D427) — like the fetch, it grows
         // nothing. ⚠️ The walk home after it is `TravelingHome`, which counts, exactly as the
         // fetch's walk home always has.

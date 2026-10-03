@@ -718,6 +718,10 @@ public sealed class Villager
             VillagerState.Quarrying => DigsThisStint > 0
                 ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
                 : "cutting stone at the quarry face",
+            VillagerState.TravelingToMine => $"walking to the face at {where}",
+            VillagerState.Mining => DigsThisStint > 0
+                ? $"digging iron, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} dig of the stint"
+                : "digging iron at the mine face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
             _ => State.ToString(),

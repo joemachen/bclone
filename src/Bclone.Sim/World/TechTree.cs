@@ -22,6 +22,9 @@ public enum TechCondition
 
     /// <summary>The horizon: nobody in this valley knows how yet. In sight, never known.</summary>
     NotYet,
+
+    /// <summary>Iron tools forged — <see cref="SimWorld.IronToolsEverForged"/> against <c>mine_unlock_iron_tools</c> (D449).</summary>
+    IronToolsForged,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -117,8 +120,10 @@ public static class TechTree
         },
         new TechNodeRow
         {
-            Id = "mine", Name = "The iron mine", Condition = TechCondition.NotYet, Requires = new[] { "smithy" },
-            Says = "A shaft into the ore, that never runs out as a seam does.",
+            Id = "mine", Name = "The iron mine", Unlocks = BuildingKind.Mine, Condition = TechCondition.IronToolsForged,
+            Requires = new[] { "smithy" },
+            Says = "Let the smith work iron, and the village learns good ore when it sees it — a mine "
+                + "that never runs out as a seam does.",
         },
         new TechNodeRow
         {
@@ -178,6 +183,8 @@ public static class TechTree
                 return (world.StoneEverDug, world.Config.QuarryUnlockStone);
             case TechCondition.IronDug:
                 return (world.IronEverDug, world.Config.SmithyUnlockIron);
+            case TechCondition.IronToolsForged:
+                return (world.IronToolsEverForged, world.Config.MineUnlockIronTools);
             case TechCondition.KeptGranaryYears:
                 int years = world.FirstGranaryTick == 0 || world.Tick < world.FirstGranaryTick
                     ? 0
@@ -206,7 +213,7 @@ public static class TechTree
 
     /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
     public static bool IntroducesTheMap(TechCondition condition) =>
-        condition is TechCondition.StoneDug or TechCondition.IronDug;
+        condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

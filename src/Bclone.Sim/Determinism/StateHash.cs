@@ -548,6 +548,14 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.IronEverDug);
         }
 
+        // The iron tools the smith has forged — the mine's unlock reads it (D449), so it is state.
+        // Sparse, under its own tag: a village that never forged iron hashes as it did.
+        if (world.IronToolsEverForged != 0)
+        {
+            hash = MixByte(hash, 0x2F);
+            hash = MixUInt32(hash, (uint)world.IronToolsEverForged);
+        }
+
         // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
         // learned by doing mixes nothing.
         if (world.ShownTheTechTree)

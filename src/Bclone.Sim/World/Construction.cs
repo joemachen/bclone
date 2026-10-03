@@ -299,6 +299,16 @@ public enum BuildingKind
     /// its paint. Unlocked by stone dug by hand (<c>quarry_unlock_stone</c>). <b>Appended at 17.</b>
     /// </remarks>
     Quarry = 17,
+
+    /// <summary>
+    /// An iron mine — painted iron that never runs out (D449, `specs/iron-mine.md`).
+    /// </summary>
+    /// <remarks>
+    /// The quarry's twin on an iron seam: it keeps work ground, only an iron seam takes its paint,
+    /// and its faces never empty. Unlocked by the smith's first iron tool
+    /// (<c>mine_unlock_iron_tools</c>). <b>Appended at 18.</b>
+    /// </remarks>
+    Mine = 18,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

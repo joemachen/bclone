@@ -250,6 +250,13 @@ public enum VillagerState
 
     /// <summary>At the face, cutting stone — the stint (D434, `quarry.md §3.5`).</summary>
     Quarrying,
+
+    /// <summary>Walking to a face on the mine's ground (D449).</summary>
+    /// <remarks>⛔ Its own state, not <see cref="TravelingToQuarry"/> reused — D281's lesson a fifth time.</remarks>
+    TravelingToMine,
+
+    /// <summary>At the face, digging iron — the stint (D449, `iron-mine.md §3.2`).</summary>
+    Mining,
 }
 
 /// <summary>

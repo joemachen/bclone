@@ -299,7 +299,7 @@ public sealed class QuarryTests
             cutting += world.Villagers.Count(v => v.State == VillagerState.Quarrying);
         }
 
-        string? why = world.WhyTheQuarryIsIdle(quarry);
+        string? why = world.WhyTheFaceIsIdle(quarry);
         _output.WriteLine(why ?? "(no reason)");
         Assert.Equal(0, cutting);
         Assert.NotNull(why);

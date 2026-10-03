@@ -151,6 +151,13 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 9, never inserted — hashed by position.</remarks>
     Quarrier = 9,
+
+    /// <summary>
+    /// Dig iron from a mine's painted seam (D449, `specs/iron-mine.md §3.2`) — the quarrier's
+    /// stint on iron; the face is never spent.
+    /// </summary>
+    /// <remarks>⛔ Appended at 10, never inserted — hashed by position.</remarks>
+    Miner = 10,
 }
 
 /// <summary>
