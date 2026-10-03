@@ -1,6 +1,41 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D464 IN §7. THE STUTTER (STEADY PACE, D463) PLAYED, ITS PRICE ACCEPTED, MERGED AND PUSHED (D464). NO SLICE OPEN. NEXT: JOE'S SLOT.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D468 IN §7. NAMES, SURNAMES AND BIRTHDAYS (D465–D468) BUILT ON `slice/names-and-birthdays` — UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS IT AND CALLS THE NEW-YEAR BIRTHS.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE STUTTER MERGED AND PUSHED (D464).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS BUILT (D465–D468).**
+>
+> **State:** `main` = `033482e` (D464), pushed. `slice/the-stutter` **deleted at Joe's word** (`d449f30`, fully merged,
+> never on the remote). **`slice/names-and-birthdays`** = four commits on `main`, **NOT merged, NOT pushed, UNPLAYED:**
+> `794fc66` the spec (D465), `6004548` first names (D466), `33cb229` surnames (D467), `acb0c89` birthdays (D468). At
+> D468: **1361 passing, 0 failing, 5 skipped of 1366, 3m16; view 0 warnings; probe green, bar height 161, tile centres
+> ✅, the villager card poses the widest full name (*Thornthorpe Underwood*) whole.** ⚠️ Joe's `art/` changes are his —
+> never stage them; stage this file as **`HANDOFF.md`**.
+>
+> **What it is (`specs/names-and-birthdays.md`):** first names are Joe's prefix + suffix lists (99 × 99 after his two
+> repeats, *Val* and *tis*, were dropped), **hashed from (seed, id), never drawn**, unique among the living; surnames are
+> his sixty for the founding, **the older partner's for a couple** (his call), a taken-over house becomes the couple's,
+> a player's rename is a label and never a surname, and the dead keep theirs (`Villager.Surname` is stored); a person
+> is a year older on **their own birthday** (`BirthTick`), founders' spread by hash.
+>
+> **The prices, each measured and each proven the only reason its goldens moved:** D466 (no name draw) reshuffles every
+> seed — six goldens, three walk pins; 55 villages 390 → 453 alive, 100 seeds 488 → 473 (opposite signs). D468 —
+> five goldens; 453 → 427, 473 → 463 (inside the noise). **Joe's familiar seeds will not play as he remembers them.**
+> Two real faults found on the way and fixed: the founders' anti-lockstep rotation guaranteed nothing (D466), and a
+> cold-start guard's founder count had always printed zero (D468).
+>
+> **▶️ NEXT: JOE PLAYS `slice/names-and-birthdays`.** What to look at: the roster and a person's card (full names; the
+> *Born …* line, a founder's reading *"… 20 years before the founding"*); the life log when a couple pairs (*"(Agnes's
+> name, as the elder)"*); a couple taking over an empty house; a renamed household's next child. **Then his call on
+> the ⏸️ OPEN item below — every child is born on Day 1 of Spring** — then merge and push at his word.
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/e870f38f-fd62-4a9b-b0c5-90d72f2d2ce2/scratchpad/`):**
+> `ZzBase.cs` + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` the 100 shipped seeds), `mut.py` (one mutant at a time,
+> several replacements in one file allowed, `--show` prints `ZZ` lines; builds each and says DID NOT BUILD), the
+> `mut_*.py` mutant sets for every guard of D466–D468, `proof3.py` (D468's put-it-back proof across three files).
+> Run with **`PYTHONIOENCODING=utf-8`**. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`, **delete before committing**.
+>
+> *(The 2026-10-03 late-night banner — the stutter merged — kept below.)*
+>
+> **(superseded by the banner above)**
+> **⭐⭐ WHERE THINGS WERE, 2026-10-03 (LATE NIGHT) — THE STUTTER MERGED AND PUSHED (D464).**
 >
 > **State:** `main` = `7237e0f`, `slice/the-stutter` (D463 + D464's docs) merged `--no-ff`, **pushed at Joe's word**: *"that looks so much
 > better. accept the cost. merge and push."* **No slice is open.** `slice/the-stutter` is kept until Joe says to delete
@@ -4031,7 +4066,35 @@ Read `git status` after staging, every time.
      a quota drop that came from the woodpile running low a year in, and on `main` it won its race by one tick. Pose the
      state outright (empty the firewood) instead of waiting for history to produce it.
 
+158. **⛔ A GUARANTEE THAT RESTS ON THE STREAM'S STRIDE IS THE STREAM'S LUCK (D466).** The founders' rhythm was
+     `(draw + a) % ticks_per_day`, written to make two adults of a household differ — and it does only while their two
+     draws are EQUAL, which they were, by the stride of the founding's draws (1, 1, 2, 2). Removing one draw (the name)
+     made them one apart and the rotation produced the very lockstep it was written against. **When code says "this
+     guarantees X", check it guarantees X for every input, not for the inputs the stream happens to hand it today** —
+     and guard the guarantee directly over many seeds (`FoundersOfOneHouseholdNeverShareARhythm`), not through one
+     village's behaviour.
+159. **⚠️ A GUARD THAT READS ITS SUBJECT'S OWN FIELD TO KNOW WHEN TO LOOK MOVES WITH A BUG IN THAT FIELD (D468).** The
+     coming-of-age guard computed the tick to watch from `child.BirthTick`, so a birth tick that lied by one moved the
+     guard's clock by one and it stayed green (red check: zero). Hold the field against something the guard observed
+     itself — here, the tick the child appeared on.
+160. **⭐ "WHY DID THE GOLDEN MOVE?" HAS A CHEAP EXACT ANSWER: PUT THE OLD BEHAVIOUR BACK AND WATCH IT RETURN (D466, D468).**
+     A removed `Rng` draw can be put back as `NextUInt(8)` — one step, because a power-of-two bound never rejects — and
+     every golden returned to its old value to the digit; D468's proof put three files back at once (`proof3.py`). A
+     golden re-pinned with that proof beside it is re-pinned for a reason, not for a hope.
+161. **⚠️ BEFORE PROMISING A THING SPREADS ACROSS THE YEAR, CHECK HOW OFTEN THE EVENT THAT MAKES IT CAN HAPPEN (D468).**
+     Birthdays on the exact day were specced as *"a year's old-age deaths spread across its days"* — true for the four
+     founders and for nobody else, because births are decided once a year at its turn. The first run of the guard's
+     printout said *"born Day 1, Spring, Year 2"*; read the printout of a new guard, not only its colour.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **EVERY CHILD IS BORN ON DAY 1 OF SPRING (D468) — JOE'S CALL.** Birthdays are real since D468 (a year older on
+  one's own day; the founders' spread by hash), but `HouseholdSystem` decides births once a year at its turn, so every
+  villager born in the valley shares New Year's Day as a birthday and comes of age and dies of old age on it. The fix
+  that suggests itself — **each household tries for a child on a day of its own** (a hash of the seed and the household,
+  the birth gates read as they are) — changes *when* the village has children (a midwinter birth, a harvest read later
+  in the year), so it is a mechanic, measured before it ships. Options: (a) that; (b) leave births at the year's turn;
+  (c) something else he prefers.
 
 - ✅ **DECIDED (D464) — JOE ACCEPTED THE COST: *"accept the cost. merge and push."* Kept for the doorstep note at its end.** ~~THE STEADY PACE'S PRICE (D463) — JOE'S CALL.~~ The stutter is gone on `slice/the-stutter` (no stride over
   1.25 tiles; 17–23 % of walking ticks were teleports). But the half-tile onto a door and the step off it, free since
