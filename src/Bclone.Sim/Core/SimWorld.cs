@@ -10626,6 +10626,7 @@ public sealed class SimWorld : IObstacles
                 Stockpile = NewLarder(),
                 Id = h + 1,
                 Surname = FoundingSurnameFor(h + 1),
+                DayForAChild = NameHash.DayForAChild(Seed, h + 1, config.DaysPerSeason * 4),
                 HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
                 HomeFacing = home?.Facing ?? Angle.Zero,
                 WhyHere = home?.WhyHere ?? "",

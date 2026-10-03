@@ -85,6 +85,60 @@ public sealed class BirthdayTests
         _output.WriteLine(string.Join(", ", founders.Select(v => $"{v.FullName} at tick {turned.GetValueOrDefault(v.Id)} ({world.BirthdayOf(v)})")));
     }
 
+    /// <summary>
+    /// ⭐ Each household tries for a child on a day of its own (D469, Joe: <i>"spread births through
+    /// the year - each household has its own day"</i>): every child of a forty-year village is born on
+    /// the first tick of their household's day, a household's children are whole years apart and at
+    /// least <c>birth_interval_years</c>, and the village's children are not all born at New Year.
+    /// </summary>
+    [Fact]
+    public void EachHouseholdTriesForAChildOnItsOwnDay()
+    {
+        SimConfig config = VillageFixtures.Village with { StartingHouseholds = 3 };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        long year = config.TicksPerYear;
+        var births = new List<(Household Home, long Tick)>();
+
+        for (int day = 0; day < config.TicksPerYear / config.TicksPerDay * 40; day++)
+        {
+            int known = world.Villagers.Count;
+            loop.Step(config.TicksPerDay);
+            for (int i = known; i < world.Villagers.Count; i++)
+            {
+                births.Add((world.HouseholdOf(world.Villagers[i]), world.Villagers[i].BirthTick));
+            }
+        }
+
+        Assert.True(births.Count >= 6, $"only {births.Count} births in forty years");
+        Assert.All(births, b => Assert.Equal(b.Home.DayForAChild * (long)config.TicksPerDay, b.Tick % year));
+        foreach (IGrouping<Household, (Household Home, long Tick)> family in births.GroupBy(b => b.Home))
+        {
+            List<long> ticks = family.Select(b => b.Tick).Order().ToList();
+            for (int i = 1; i < ticks.Count; i++)
+            {
+                long apart = ticks[i] - ticks[i - 1];
+                Assert.Equal(0, apart % year);
+                Assert.True(apart >= config.BirthIntervalYears * year, $"the {family.Key.Name} household's children {apart} ticks apart");
+            }
+        }
+
+        // And the day is the household's own — the founding's and every couple's — not a default every
+        // household falls back to. (Without this the guard scored zero for a household made with no
+        // day: day 0 is a day, and a household on it is consistent with itself, D469.)
+        Assert.Contains(world.Households, h => h.Id > config.StartingHouseholds);
+        Assert.All(world.Households, h => Assert.Equal(
+            NameHash.DayForAChild(world.Seed, h.Id, config.DaysPerSeason * 4), h.DayForAChild));
+
+        List<long> days = births.Select(b => b.Tick % year / config.TicksPerDay).Distinct().ToList();
+        Assert.True(days.Count > 1 && days.Any(d => d != 0), "the village's children are all born on one day");
+        _output.WriteLine($"{births.Count} births in forty years on {days.Count} days of the year: " +
+                          string.Join(", ", births.Take(6).Select(b => world.BirthdayOf(new Villager
+                          {
+                              Id = 0, Name = "", LifespanYears = 1, Carried = world.NewStockpile(), BirthTick = b.Tick,
+                          }))));
+    }
+
     /// <summary>A child becomes an adult on the tick of their <c>adult_age</c>-th birthday — not before, not at New Year.</summary>
     [Fact]
     public void AChildComesOfAgeOnTheirBirthday()

@@ -31,6 +31,9 @@ public static class NameHash
     /// <summary>What a founder's birthday is picked by (D468).</summary>
     public const int BirthdaySalt = 4;
 
+    /// <summary>What a household's day for a child is picked by (D469, keyed on the household's id).</summary>
+    public const int ChildDaySalt = 5;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>MapGenerator.HashJitter</c>'s shape, well spread even for adjacent ids.
@@ -62,6 +65,13 @@ public static class NameHash
     /// </summary>
     public static long BirthdayOffset(ulong seed, int id, int ticksPerYear) =>
         (long)(Mix(seed, id, BirthdaySalt, 0) % (ulong)ticksPerYear);
+
+    /// <summary>
+    /// The day of the year — <c>[0, daysPerYear)</c> — on which household <paramref name="householdId"/>
+    /// tries for a child (D469). ⛔ A hash, never a draw, like a name and a birthday.
+    /// </summary>
+    public static int DayForAChild(ulong seed, int householdId, int daysPerYear) =>
+        (int)(Mix(seed, householdId, ChildDaySalt, 0) % (ulong)daysPerYear);
 
     private static ulong Fold(ulong state, ulong value)
     {

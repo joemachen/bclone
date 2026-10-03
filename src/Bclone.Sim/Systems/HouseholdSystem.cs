@@ -52,29 +52,39 @@ public sealed class HouseholdSystem : ISimSystem
         //
         // Cheap to run: it walks the households and leaves immediately once they all have
         // roofs, which is every tick of an established village.
-        if (world.Tick % (ulong)config.TicksPerDay == 0UL)
-        {
-            HouseTheRoofless(world);
-        }
-
-        if (world.Tick % (ulong)config.TicksPerYear != 0UL)
+        if (world.Tick % (ulong)config.TicksPerDay != 0UL)
         {
             return;
         }
 
-        int year = world.Clock.Year;
+        HouseTheRoofless(world);
 
-        // Formation next: a couple who move out this year get their own house
+        // Formation at the year's turn: a couple who move out this year get their own house
         // before anyone considers having children in it.
-        FormNewHouseholds(world, config);
+        if (world.Tick % (ulong)config.TicksPerYear == 0UL)
+        {
+            FormNewHouseholds(world, config);
+        }
 
-        // Snapshot the count: newborns are appended, and a baby must not be
-        // considered for parenthood on the tick it is born.
+        // ⭐ EACH HOUSEHOLD TRIES FOR A CHILD ON A DAY OF ITS OWN (D469, Joe: "spread births
+        // through the year - each household has its own day"). Until D469 every household was asked
+        // at the year's turn, so every villager born in the valley shared New Year's Day as a
+        // birthday and came of age and died of old age on it (D468). Still once a year a household,
+        // so `birth_interval_years` means what it said; the gates read the village as it stands on
+        // the day — a household whose day is in autumn asks of an autumn granary.
+        //
+        // A couple formed at the year's turn is asked on its own day that same year, once it has a
+        // roof (the gates refuse a household without one, D71).
+        int year = world.Clock.Year;
+        int today = (int)(world.Tick % (ulong)config.TicksPerYear / (ulong)config.TicksPerDay);
         int householdCount = world.Households.Count;
 
         for (int i = 0; i < householdCount; i++)
         {
-            TryBirth(world, world.Households[i], config, year);
+            if (world.Households[i].DayForAChild == today)
+            {
+                TryBirth(world, world.Households[i], config, year);
+            }
         }
     }
 
@@ -383,6 +393,7 @@ public sealed class HouseholdSystem : ISimSystem
             // whose; a rule the player can read off two cards. A list of surnames is only ever for
             // the founding.
             Surname = TheElderOf(a, b).Surname,
+            DayForAChild = NameHash.DayForAChild(world.Seed, id, config.DaysPerSeason * 4),
 
             // ⭐ NO ROOF YET (D102). The house is marked out below and somebody has to build
             // it; until then this couple is homeless, which is a state the sim has had since

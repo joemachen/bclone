@@ -7,9 +7,9 @@ villager naming plan?"*), D465 (Joe, 2026-10-03: the slot; his prefix, suffix an
 couple carries **the older partner's** surname). Neighbours: D344/D392 (*a list content can grow is
 not a list a draw may range over*), D335 (a derived value is never hashed), D376 (renaming), D252
 (`Founder`, never hashed), D190 (rhythm, drawn at birth).
-**Status:** 🔨 **ALL THREE BUILT — §3 FIRST NAMES (D466), §4 SURNAMES (D467), §5 BIRTHDAYS (D468)** on
-`slice/names-and-birthdays`. **Unplayed, not merged.** ⏸️ §5's finding (every child born on Day 1 of
-Spring) is Joe's call. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT — §3 FIRST NAMES (D466), §4 SURNAMES (D467), §5 BIRTHDAYS (D468) AND EACH
+HOUSEHOLD'S OWN DAY FOR A CHILD (D469)**; D466–D468 played by Joe (*"looks great after playing"*);
+merged to `main` and pushed at his word (D469). Owner: Joe + Claude Code.
 
 ---
 
@@ -132,13 +132,18 @@ the valley was.
 **On the card:** *born Day 20, Fall, Year 10* (`SimClock.ToString()` of the birth tick). A founder:
 *born Day 12, Summer — 20 years before the founding* — no negative years on screen.
 
-**⛔ FOUND WHILE BUILDING (D468): EVERY CHILD IS BORN ON DAY 1 OF SPRING.** `HouseholdSystem` decides
-births once a year, at the year's turn, so the birth tick of everybody born in the village is a New
-Year — only the founders' birthdays are spread. The mechanism above is true (a birth tick is the tick
-the child appeared), and the founders' first fifty years read differently for it; but a village born
-here still comes of age and dies of old age on Day 1 of Spring. **Spreading births through the year —
-each household trying for a child on a day of its own, say — changes *when* the village has children,
-which is a mechanic and Joe's call (`HANDOFF.md` ⏸️ OPEN).** Not built.
+**⛔ FOUND WHILE BUILDING (D468): EVERY CHILD WAS BORN ON DAY 1 OF SPRING** — `HouseholdSystem` decided
+births once a year, at its turn, so only the founders' birthdays were spread.
+
+**✅ EACH HOUSEHOLD TRIES FOR A CHILD ON A DAY OF ITS OWN (D469, Joe: *"spread births through the year -
+each household has its own day"*).** `Household.DayForAChild` is a hash of the seed and the household's
+id (`NameHash.DayForAChild`, never a draw), set once when the household is made — at the founding or
+when a couple pairs — and not hashed (a function of hashed things). On the first tick of that day each
+year, and only then, the household is asked the same questions as before (`IsReadyForAChild`: room, a
+roof, the interval, the village's food, the harvest, a fertile couple) — read as the village stands on
+that day. Still once a year, so `birth_interval_years` means what it said and a household's children
+are whole years apart. Pairing stays at the year's turn. ⚠️ A founding household may now have a child
+in its first year (nobody was born before Year 2's turn until D469).
 
 **⚠️ What it costs:** every golden moves a second time (`BirthTick` hashed, `AgeYears` not), and a
 year's old-age deaths and comings-of-age move within the year. Measured (§7); the year-boundary age
@@ -162,6 +167,7 @@ guards are re-posed, each with its reason.
 | `AVillagerAgesOnTheirBirthdayNotAtNewYear` | the year turns nobody older but whose day it is |
 | `AChildComesOfAgeOnTheirBirthday` | `LifeStage` flips on the birthday tick |
 | `TheBirthTickIsInTheFingerprint` | hashed; and `AgeYears` posed alone does not move the hash |
+| `EachHouseholdTriesForAChildOnItsOwnDay` | every birth on its household's hashed day; siblings whole years apart, at least the interval; not all at New Year (D469) |
 
 Every guard red-checked and the reds counted (D326).
 

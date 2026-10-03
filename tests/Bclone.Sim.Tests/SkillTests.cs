@@ -329,11 +329,12 @@ public sealed class SkillTests
     // RE-TAKEN (D463), BOTH — steady pace, the stutter (`gridless.md §8` slice 6, Joe: "A: steady pace"): a walker spends one tick of a leg's unrounded cost a tick and carries the rest into the next leg, the last leg ends on the place they will stand, a leg is priced by its own route tiles' entry costs (the step off a building had cost nothing), and one tick's walk is shared by every journey begun in it. Were 1080427782552529441 (fixture) and 3492199827419521576 (shipped).
     // RE-TAKEN (D466), BOTH — naming stopped taking a draw (`names-and-birthdays.md §3`, D465): a first name is hashed from the seed and the villager's id, so every founder's and every child's lifespan and rhythm come from a different place in the stream, and a founding household's rhythm is drawn once and stepped per adult. ⭐ PROVEN TO BE THE ONLY REASON: with the name's draw and the old per-adult rhythm put back, the old value passes. Were 12938037463957999415 (fixture) and 10244113423920988382 (shipped).
     // RE-TAKEN (D468), BOTH — birthdays (`names-and-birthdays.md §5`, D468): a villager is a year older on their own birthday, not at New Year — founders born at a hashed point in the year before the founding, so they come of age, slow and die of old age on their own days — and the fingerprint mixes the birth tick and no longer the age it is derived from. ⭐ PROVEN TO BE THE ONLY REASON: with New-Year ageing, no founder offset and the old (age, birth year) mix put back, the old value passes. Were 14446605380492219727 (fixture) and 6648986105753894609 (shipped).
-    [InlineData(false, 1734166937922415853UL)]
+    // RE-TAKEN (D469), BOTH — each household tries for a child on a day of its own (`names-and-birthdays.md §5`, D469, Joe: "spread births through the year - each household has its own day"), so the village's children arrive across the year rather than all at its turn. ⭐ PROVEN TO BE THE ONLY REASON: with every household asked at New Year again, the old value passes. Were 1734166937922415853 (fixture) and 10745482797088886237 (shipped).
+    [InlineData(false, 17706551394846564939UL)]
     // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
     // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
     // RE-TAKEN (D452), THE SHIPPED ONE ONLY — a forester's planting seats count grass only (`SimWorld.IsGroundToPlant`), so a hut whose ground is all saplings stops holding hands it cannot use (found D434). ⭐ PROVEN TO BE THE ONLY REASON: with that one line back on the old rule the old value passes. The fixture did not move. Was 2125978012891394948 (shipped).
-    [InlineData(true, 10745482797088886237UL)]
+    [InlineData(true, 14668937530557764166UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
@@ -1385,12 +1386,17 @@ public sealed class SkillTests
             FoundingJourneymen = 0,
         };
 
-        long withRhythm = TripsMadeInFiftyYears(config);
-        long without = TripsMadeInFiftyYears(config with { SeededRhythm = false });
+        // ⚠️ RE-POSED (D469): trips PER HUNDRED ADULT-YEARS, not trips. Switching the rhythm off
+        // takes its draws out of the stream, so the two arms are two different histories — and on
+        // D469's stream they were two different sizes of village (348 adult-years against 450), which
+        // read as "the rhythm moved production 20 %" while each adult produced within 3 % (208
+        // against 202; seeds 1–5 within 3 % too). What a person produces is the claim.
+        long withRhythm = TripsPerHundredAdultYears(config);
+        long without = TripsPerHundredAdultYears(config with { SeededRhythm = false });
 
         long drift = Math.Abs(withRhythm - without) * 100 / Math.Max(1, without);
         _output.WriteLine(
-            $"50 years: {withRhythm} trips with the rhythm, {without} without — {drift}% apart");
+            $"50 years: {withRhythm} trips per hundred adult-years with the rhythm, {without} without — {drift}% apart");
 
         Assert.True(
             drift <= 15,
@@ -1585,10 +1591,21 @@ public sealed class SkillTests
     /// and a lifetime of work does not stop counting because its owner did.
     /// </para>
     /// </remarks>
-    private static long TripsMadeInFiftyYears(SimConfig config)
+    private static long TripsPerHundredAdultYears(SimConfig config)
     {
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        loop.Step(config.TicksPerYear * 50);
+        long adultTicks = 0;
+        for (int t = 0; t < config.TicksPerYear * 50; t++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in loop.World.Villagers)
+            {
+                if (villager.Alive && villager.CanWork)
+                {
+                    adultTicks++;
+                }
+            }
+        }
 
         long trips = 0;
         foreach (Villager villager in loop.World.Villagers)
@@ -1596,7 +1613,7 @@ public sealed class SkillTests
             trips += villager.TotalGathers;
         }
 
-        return trips;
+        return trips * 100 * config.TicksPerYear / Math.Max(1, adultTicks);
     }
 
     private static List<string> MasteryLines(InMemoryLogSink sink, string name) =>

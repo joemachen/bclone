@@ -366,13 +366,20 @@ public sealed class ShelterAndExposureTests
             Assert.NotEqual(CauseOfDeath.Cold, villager.CauseOfDeath);
         }
 
-        _output.WriteLine($"{loop.World.Population} alive at year 100 with cold switched off.");
+        int winters = loop.World.Villagers.Sum(v => v.WintersSurvived);
+        _output.WriteLine($"{loop.World.Population} alive at year 100 with cold switched off; {winters} winters lived.");
 
         // ⚠️ STILL THE FOUNDERS, NOT MORE THAN THEM (D407). The claim is the loop above: with outdoor
         // cold off, nobody dies of it. This second line asked the unattended fixture to have GROWN
         // by year 100 — 10 on main, and 4 once firewood stopped being split without asking and the
         // walks went round the yards (D406). D143: an unattended village is allowed to shrink.
-        Assert.True(loop.World.Population >= clothed.StartingPopulation);
+        // ⚠️ RE-POSED (D469): the anti-vacuity is WINTERS WATCHED, not who is left at year 100. The
+        // line above it exists so the loop sees people living through winters with cold off; asked as
+        // "the founders' number is standing at a hundred", it was a coin flip that had already moved
+        // seed once (D414) and flipped again when each household got its own day for a child (seed 5:
+        // 0 alive at 100 after 509 villager-winters; seeds 1, 2, 3, 12345 read 595–926). D143: an
+        // unattended village is allowed to end.
+        Assert.True(winters >= 200, $"only {winters} villager-winters with cold off — the loop watched almost nobody");
     }
 
     [Fact]

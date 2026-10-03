@@ -1131,6 +1131,19 @@ public sealed class Household
     public int LastBirthYear { get; set; }
 
     /// <summary>
+    /// The day of the year this household tries for a child, counted from Day 1 of Spring (D469,
+    /// Joe: <i>"spread births through the year - each household has its own day"</i>).
+    /// </summary>
+    /// <remarks>
+    /// Until D469 every household was asked at the year's turn, so every villager born in the valley
+    /// had New Year's Day for a birthday (D468). A hash of the seed and the id
+    /// (<see cref="NameHash.DayForAChild"/>), set once when the household is made — never re-asked
+    /// per tick — and <b>not hashed</b>: it is a function of the seed and the id, both of which are.
+    /// Once a year still, so <c>birth_interval_years</c> means what it said.
+    /// </remarks>
+    public int DayForAChild { get; init; }
+
+    /// <summary>
     /// The household is fetching food back up to target — set when the larder reaches
     /// <c>fetch_below_share_percent</c>, cleared when it is at target again (D372).
     /// </summary>

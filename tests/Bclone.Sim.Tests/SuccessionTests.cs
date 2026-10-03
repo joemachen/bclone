@@ -35,6 +35,18 @@ public sealed class SuccessionTests
         // player keeps foraging to three hands, so of the fixture's four adults one is a laborer
         // (all four forage otherwise, and nobody is free to inherit anything).
         Assert.True(world.SetJobLimit(JobKind.Forager, 3).Allowed);
+
+        // ⚠️ AND EVERY OTHER TRADE AT NONE (D469), so the free hand's only seat is the dead forager's.
+        // The premise used to be the fixture's history: with births at the year's turn nobody wanted
+        // firewood yet; once a household has its own day for a child, two children in the second
+        // year want it, and the free hand went to the woodcutter's — rightly, and with nothing to say.
+        foreach (JobKind other in Enum.GetValues<JobKind>())
+        {
+            if (other != JobKind.Forager)
+            {
+                world.SetJobLimit(other, 0);
+            }
+        }
         void Hungry()
         {
             foreach (StoreBuilding store in world.StoreBuildings)

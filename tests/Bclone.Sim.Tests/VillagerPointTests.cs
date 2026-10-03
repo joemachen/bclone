@@ -315,8 +315,13 @@ public sealed class VillagerPointTests
         // founder's lifespan and rhythm come from a different place in the stream and the seats land
         // differently — 50 trips, the 1st/10th/50th at 9/210/1,936. Proven the only reason: with the
         // name's draw put back, 51 at 11/204/1,959 return. Were 51 at 11/204/1,959.
-        Assert.Equal(50, entries);
-        Assert.Equal(new ulong[] { 9, 210, 1936 }, at);
+        // ⚠️ RE-PINNED (D469), not for the clock: each household tries for a child on a day of its
+        // own, so the first child arrives in the founders' first year and the seats land differently
+        // late on — 51 trips, the 1st/10th/50th at 9/210/1,959; the first ten untouched. Proven the
+        // only reason: with every household asked at New Year again, 50 at 9/210/1,936 return.
+        // Were 50 at 9/210/1,936.
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 9, 210, 1959 }, at);
     }
 
     /// <summary>
