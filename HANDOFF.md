@@ -4,13 +4,15 @@
 >
 > **State:** `main` = `slice/small-fixes` (D452–D461) merged `--no-ff` + D462, **pushed at Joe's word**: *"stone
 > seam looks good now. so does iron. professions panel looks good at new game. merge and push."* **No slice is
-> open.** `slice/small-fixes` is still there locally (never on the remote) — **not deleted; ask Joe**, as the
-> last two branches were deleted at his word. At the merge: **1344 passing, 0 failing, 5 skipped of 1349, 3m32;
+> open.** `slice/small-fixes` **deleted at Joe's word (2026-10-03)** — tip `dfc2a53`, 0 commits not on `main`,
+> never on the remote. At the merge: **1344 passing, 0 failing, 5 skipped of 1349, 3m32;
 > no golden moved; view 0 warnings; probe green, bar height 161, `faces:` ✅, `trades:` ✅** (the merged tree is
 > the verified branch tip — `main` had not moved). ⚠️ Joe's `art/` changes are his — never stage them; stage this
 > file as **`HANDOFF.md`**.
 >
-> **▶️ NEXT: THE STUTTER** (D403's remainder; Joe: *"YES. Worth a slice. i hate it."*). **Measure first** — the
+> **▶️ NEXT: THE STUTTER — Joe starts it next session** (*"next session ill start the stutter"*; D403's
+> remainder; earlier: *"YES. Worth a slice. i hate it."*). Branch it (`slice/the-stutter` or similar) off `main`
+> = `a8e404c` + this handoff commit. **Measure first** — the
 > per-tick distance distribution of a villager's drawn step; the suspect is `Arrive` snapping onto a building's
 > standing place. Trap 151 applies: the filed suspect is a hypothesis. **Names, surnames and birthdays (D395)**
 > wait on Joe's slot — tell him where they could go once the stutter is in.
