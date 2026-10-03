@@ -1,6 +1,8 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started** · Owner: Joe + Claude Code
+> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
+> §13, per-stage seeds (the shell's first step, D470), is specced and 🔨 being built on
+> `slice/per-stage-seeds` — not on `main`.** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
@@ -96,7 +98,8 @@ GeneratedMap
 - ⛔ **But today no stage's draws can shift another's (D435):** `DeterministicRandom` is a
   `struct` and `MapGenerator` passes it to every helper **by value**, so each draws on a copy — the
   seams share one jitter, the river and the soil start from the same numbers. The rule above is
-  about the design this section describes; the code does not keep it yet. Per-stage seeds fix it.
+  about the design this section describes; the code does not keep it yet. Per-stage seeds fix it
+  — **§13 replaces "draw order is the contract" with "a stage's draws are its own".**
 
 ---
 
@@ -196,3 +199,80 @@ With one full berry patch and a tree stand the village wanted nobody at, three i
 ### 12.3 Noted for slice 2
 
 On some seeds the river runs straight through the settlement. Harmless today, since nothing reads water — and **exactly the case the generator will have to guarantee against** once it is impassable and before bridges exist (§10.1).
+
+---
+
+## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D470)
+
+*The shell's first unbuilt step (DESIGN §4, Phase 4.5): error boundary ✅ → **per-stage seeds** →
+the new-game screen → settings persistence → save/load → title and pause. Joe, 2026-10-03:
+"shell first, then D395 threads."*
+
+### 13.1 Why
+
+1. **The contract §6 states is not what the code does (D435).** `DeterministicRandom` is a
+   `struct`, and `MapGenerator` hands it to `CarveRiver`, `DrawJitter`, `DrawRingPosition`,
+   `PaintSeams` and `PaintWoodland` **by value**. Each helper draws on a copy, so the caller's
+   stream never moves: every drawn seam in a valley sits at the same offset from its slot (iron's
+   always on the diagonal), the founding jitter's x and y are one draw, the river's wander and
+   the soil start on the same numbers, and the seams' jitter is the woodland's first draw.
+2. **The sim's stream mirrors the river.** `SimWorld` passes its own `Rng` by value too, so the
+   first numbers the founding draws (names before D466, rhythms, lifespans) are the numbers the
+   river drew. Harmless, but not independent.
+3. **The new-game screen wants options that generate things** (a lake, an island, a cliff —
+   Joe's D344 ambition). With one stream, each option would reshuffle every seed and every golden
+   once. With a stream per stage, a new stage moves **no other stage's valley**.
+4. **D466 already reshuffled every seed** (names), so this reshuffle costs Joe no valley he still
+   remembers.
+
+### 13.2 The rule
+
+- The valley is generated in **stages**, each with a stated id that is **never renumbered**:
+
+  | Id | Stage | Draws |
+  |---|---|---|
+  | 1 | River | its start row, then −1/0/+1 a column |
+  | 2 | Founding | the founding jitter's x, then y |
+  | 3 | Stone seams | x, y jitter per drawn seam; its seed keys the hashed seams |
+  | 4 | Iron seams | the same, for iron |
+  | 5 | Woodland | x, y per clump |
+
+  ⛔ **Soil is not a stage.** Ground quality is removed (D395, built as D470's first commit); the
+  soil draw, its array, its regions, the founders' cap and its three config keys go with this.
+- A stage's stream is `new DeterministicRandom(StageSeed(seed, id))`, held as a local in
+  `Generate` and handed to helpers **by `ref`**, so draws within a stage advance that stage.
+- `StageSeed(seed, id)` = splitmix64's finaliser over `seed + 0x9E3779B97F4A7C15 × id` — the
+  same mix `HashJitter` and `NameHash` already use, in one shared `SplitMix64.Mix`.
+  ⛔ **Never `DeterministicRandom`'s `stream` parameter**: D344 measured small adjacent stream ids
+  six times deadlier (6 dead valleys of 24 against 1).
+- **A new stage appends a new id.** Draws added *inside* a stage still move that stage (and
+  whatever later reads its terrain — woodland paints only over grass, so a new river shape moves
+  trees), but never another stage's draws.
+- The hashed seams (`quarry.md §3.1`) key their jitter on **their own stage's seed** rather than
+  on `rng.State` read mid-generation.
+- `MapGenerator.Generate(SimConfig, ulong seed)` takes the seed, not a stream. `SimWorld.Rng`
+  stays `new DeterministicRandom(seed)` and worldgen never touches it, so the sim's own draws are
+  unchanged by this slice; only the valley moves.
+
+### 13.3 What it costs, and how it is measured
+
+- **Every golden with a map in it moves once**, in one commit, for this reason alone — proven by
+  putting the shared stream back and getting the old hashes.
+- **Measured before any golden is re-taken**, against the commit before it: the dead-valley rate
+  on the 24-seed survival guards, D420's 55 villages and the 100 shipped seeds (`ZzBase`,
+  `ZZ_WIDE=1`). D344's splitmix arm read 2 dead of 24 against 1; that is the number to beat or
+  explain.
+- ⚠️ **The shipped seed (12345) may land on a valley that starves** (D344's first attempt did
+  exactly that). If it does, the work stops and Joe picks a new one from three or four
+  candidates with their numbers — it is his to choose.
+
+### 13.4 Guards (each red-checked, the reds counted — D326)
+
+1. **Two drawn seams of one kind do not share an offset from their slots** across a sample of
+   seeds (red: hand the stream to the seams by value again).
+2. **Changing one stage's config moves no earlier stage's tiles**: woodland coverage changed ⇒
+   river, founding and seams byte-identical; seam counts changed ⇒ river and founding identical
+   (red: let woodland draw on the river's stream).
+3. **Stage seeds are pairwise distinct and none is the run's seed** (red: `StageSeed` returning
+   `seed`).
+4. The golden map hash and the per-seed terrain fingerprints, re-taken once.
