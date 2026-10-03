@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D477 IN §7. THE NEW-GAME SCREEN IS SPECCED (D477) ON `slice/new-game-screen`. NEXT: ITS SIM HALF, NO GOLDEN MOVING.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D478 IN §7. THE NEW-GAME SCREEN: SPECCED (D477), SIM HALF BUILT (D478) ON `slice/new-game-screen`. NEXT: MEASURE THE ROWS' RANGES, THEN THE VIEW.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN SPECCED (D477).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN'S SIM HALF BUILT (D478).**
+>
+> **State:** `slice/new-game-screen` = the spec (D477) + **the sim half (D478)**, not merged, not pushed. At D478:
+> **1401 passing, 0 failing, 5 skipped of 1406; no golden moved; 4m16 against `main`'s 4m04 back to back; view 0
+> warnings; probe green, bar height 151.** ⚠️ Joe's `data/sim.config.json` `"seed": 41219` is uncommitted — set it aside
+> (`git stash push -- data/sim.config.json`) before a suite run and before staging that file, and pop it after.
+>
+> **What is built:** `SeedText` (Sim/Config), `NewGame` + `NewGameRow` (the rows, `Apply`, `ShareCode`, `TryRead`),
+> `village_name`, `seed_words`, `river_course` (`MapGenerator.CourseOf`, `CarveStraightRiver`, `CarveDiagonalRiver`).
+> **▶️ NEXT:** (2) **measure each row's ends** (`specs/new-game-screen.md §7`) — `ZzBase.cs` / `summ2.py` /
+> `mut.py` / `mut_d477.py` and the D475 baselines are in this session's scratchpad
+> (`…/a18806d2-fa2a-4c61-8716-978cc1511a51/scratchpad/`); the candidate ranges are in `NewGame.DefaultRows`; then
+> (3) **the view** (§3, probe `new game:`), then (4) Joe plays it.
+>
+> *(The D477 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN SPECCED (D477).**
 >
 > **State:** `main` = `6533f35` (D476), pushed. **`slice/per-stage-seeds` deleted at Joe's word** (fully merged, never
 > on the remote). **`slice/new-game-screen`** = the spec commit (D477), **not merged, not pushed.** ⚠️ Joe's
@@ -4291,6 +4307,19 @@ Read `git status` after staging, every time.
   the number with the reason, CLAUDE.md included.
 - **"No soil anywhere" missed one** — the hint string *"g ground · "*. Grep the view for the KEY, not only for
   the word: a hint names keys.
+
+## ⛔ THE TRAPS D478 PAID FOR — A "DOES IT LOAD?" GUARD IS AS STRONG AS THE VALIDATOR, AND A CORNER IS NOT A GAP
+
+- **A guard that asks "does every row's end load?" scored zero twice** — `SimConfig.Validate` bounded neither
+  `forest_coverage_percent` nor the river widths (150 % and −1 loaded silently), under a comment that said forest
+  cover *"has its own guard below."* It had none. **Red-check a validation guard with a value the validator
+  should refuse; a zero is a finding about the validator, not the guard.** Bounded now.
+- **A mutant aimed at a "ford" in a diagonal river (one missing line across it) scored zero, correctly.** Land
+  either side of one missing anti-diagonal meets only at corners, and neither the route field (four-way) nor
+  `LineOfSight` passes a corner. Two missing lines make a ford (2 reds). Aim the mutant at the real failure.
+- **A width guard posed on total water read 0.90× for a diagonal that is as wide as a straight river** — a 45°
+  river crosses a 120 × 80 valley along ~113 tiles, not 120. Measure width *across the course*.
+- **The tests read `data/sim.config.json` — Joe's uncommitted seed included.** Stash it around a suite run.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

@@ -7,7 +7,10 @@ id and moves no other stage's draws), D475 (`MapGenerator.SeamsOf`), **D477 (Joe
 screen, 2026-10-03 — §2)**. Neighbours: D18 (*quoting one seed reproduces the whole run*), §10.3 of
 `seeded-map-generation.md` (one valley archetype), §10.4 (*all seeds survivable, none equally
 comfortable*), D335 (a derived value is never hashed), D466 (splitmix64 over a name).
-**Status:** ✍️ **SPECCED (D477), NOT BUILT.** Owner: Joe + Claude Code.
+**Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF BUILT (D478)** — seed text, the rows, the share code, the village
+name, the river's four directions, guards §8.1–8.8 red-checked; no golden moved. ⏳ **Not yet:** §7's
+measurements (the ranges in `NewGame.DefaultRows` are still candidates) and the view (§3, guard §8.9).
+Owner: Joe + Claude Code.
 
 ---
 
@@ -95,7 +98,9 @@ changes nothing that happens.
 
 ## 5. The rows, and the share code
 
-**A row is data** — `new_game_options` in `data/sim.config.json`, one entry per row:
+**A row is data** — `new_game_options`, a config list (`NewGameRow`): the code's defaults are the six
+below (`NewGame.DefaultRows`), and a json's list replaces them wholesale, as `town_names` does. One
+entry per row:
 
 | id | label | kind | what it sets | default |
 |---|---|---|---|---|
@@ -107,10 +112,12 @@ changes nothing that happens.
 | `scatter` | Seam scatter | range, % | the three `seam_*_scatter_percent` keys, scaled together; 100 % = shipped | 100 |
 
 - A row names **config keys**, a range (min, max, step) or its levels, and nothing else. Applying the
-  screen is **overriding those keys over the loaded config file and loading it** — the same path and
-  the same `SimConfig.Validate` as any config, so a modder's row and a shipped row are one mechanism.
-  ⚠️ Measure the apply (json round-trip) against the bake; if it is not small beside it, cache the
-  parsed document and override in place.
+  screen is **overriding those keys on the loaded config serialised to json, and loading the result**
+  (`NewGame.Apply` → `SimConfigLoader.Parse`) — the same `SimConfig.Validate` as any config, so a
+  modder's row and a shipped row are one mechanism. ⛔ **A row naming a key the config does not have
+  is refused** at validation (the serialiser ignores an unknown key, so it would be a slider that
+  moves nothing). A `levels` row whose levels all differ from the config reads `custom` and sets
+  nothing. ⚠️ Measure the apply against the bake in the view slice.
 - **Default settings** puts every row back to the value in the loaded config file — *the shipped
   valley* is the defaults plus whatever seed is in the box.
 - ⛔ **The ranges and levels are measured, never typed** (§7). §10.4's rule binds every end of every
@@ -175,6 +182,8 @@ against the shipped settings at fifty years:
 
 ## 8. Guards (each red-checked, the reds counted — D326)
 
+*Built (D478) in `NewGameScreenTests` (44 cases); the reds are at the foot of this section.*
+
 1. **Seeds are forever:** a stated list of texts → pinned `ulong`s (`"mossy-lantern-41"`, `"Joe"`,
    `"  joe "` equal to `"joe"`, `"12345"` → 12345, a multi-byte UTF-8 name). Red: drop the lower-casing;
    drop the length fold; parse digits as text.
@@ -196,10 +205,24 @@ against the shipped settings at fifty years:
    longest error sentence showing), the preview is baked and non-empty, and the screen is skipped
    into a default founding so every existing probe line still runs. `bar height` stays 151.
 
+**The reds (D478), one mutant at a time:** §8.1 no lower-casing **4**, no length fold **6**, digits
+hashed as text **5**; §8.2 a row's default from the code instead of the config **3**; §8.3 one extra
+draw in the west–east carve **4** (`DrawOrderIsTheContract` and three terrain fingerprints — guard 3
+*is* the existing goldens); §8.4 a gap of **one** line across a diagonal **0** — *written down: a
+one-line gap is not a ford; the land either side meets only at corners, which neither the route
+field nor `LineOfSight` will pass* — and a gap of two lines **2**; §8.5 the dry rank removed **3**;
+§8.6 `any` spending a draw **1**; §8.7 an unknown id ignored **1**, the range unchecked **2**, the
+code dropping rows at their default **1**; §8.8 a river row reaching −1 **0** and a forest row
+reaching 150 % **1** — ⛔ **both loaded without a word: `SimConfig.Validate` bounded neither key**,
+though a comment above the seam checks said forest cover *"has its own guard below"* and it had none.
+Bounded now (forest 0–100, river widths not negative; zero stays legal, the generator tests' bare and
+riverless controls): **1** and **2**. Also: a key the config lacks allowed **1**, the typed name
+ignored **1**, the scale row ignored **1**.
+
 ## 9. Order of work
 
-1. **This spec** (D477).
-2. **The sim half** — `SeedText`, `seed_words`, `village_name`, `new_game_options`, the share code,
+1. ✅ **This spec** (D477).
+2. ✅ **The sim half** (D478) — `SeedText`, `seed_words`, `village_name`, `new_game_options`, the share code,
    `river_course` (W–E untouched), guards 1–8. **No golden should move**; `git diff` says so.
 3. **The measurements** (§7), the ranges typed with their tables.
 4. **The view** — the screen at launch, the preview, the header's share code, guard 9.

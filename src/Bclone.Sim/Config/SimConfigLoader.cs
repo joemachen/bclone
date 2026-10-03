@@ -27,6 +27,12 @@ public static class SimConfigLoader
         Converters = { new JsonStringEnumConverter() },
     };
 
+    /// <summary>
+    /// The options the loader reads with, for writing a config back out the same way — the
+    /// new-game screen overrides keys on a config serialised with these (D477, <see cref="NewGame"/>).
+    /// </summary>
+    internal static JsonSerializerOptions SerializerOptions => Options;
+
     /// <summary>Load and validate config from a file.</summary>
     /// <exception cref="SimConfigException">
     /// If the file is missing, unparseable, or contains out-of-range values.

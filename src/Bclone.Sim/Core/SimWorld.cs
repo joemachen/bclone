@@ -10122,9 +10122,15 @@ public sealed class SimWorld : IObstacles
     /// Not hashed, for the same reason: it is a pure function of the seed, and the seed is
     /// already what identifies a run. Two worlds that hash alike cannot be called differently.
     /// </para>
+    /// <para>
+    /// ⭐ <b>Or the name the player typed on the new-game screen</b> (<c>village_name</c>, D477) — a
+    /// label like a household's rename (D376), still never hashed: it changes nothing that happens.
+    /// </para>
     /// </remarks>
     public string Name =>
-        Config.TownNames[(int)(Seed % (ulong)Config.TownNames.Count)];
+        Config.VillageName?.Trim() is { Length: > 0 } typed
+            ? typed
+            : Config.TownNames[(int)(Seed % (ulong)Config.TownNames.Count)];
 
     private SimWorld(SimConfig config, ISimLogger logger, ulong seed)
     {
