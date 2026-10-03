@@ -384,7 +384,10 @@ public sealed class MarketTests
         // marketer is for.
         _output.WriteLine(
             $"household-time on an empty larder while stores held food, per 10,000: " +
-            $"{withMarket.DryPerTenThousand} with a market, {without.DryPerTenThousand} without.");
+            $"{withMarket.DryPerTenThousand} with a market, {without.DryPerTenThousand} without; " +
+            $"{withMarket.DrySpells} spells with a market, the worst {withMarket.WorstSpell} ticks " +
+            $"against a round trip of {withMarket.WorstSpellsRoundTrip} ({without.DrySpells} without, " +
+            $"worst {without.WorstSpell} against {without.WorstSpellsRoundTrip}).");
 
         // AN ABSOLUTE BAR, NOT A COMPARISON — and the reason is a measurement (D79).
         //
@@ -418,11 +421,23 @@ public sealed class MarketTests
         // ⚠️ THREE SINCE D417, and measured as noise before it was moved: stocking the market to 100 a
         // household read 3 against 1 — and so did 41, a value that changes nothing but the seat
         // timing. Three in ten thousand is still a marketer's walk, not a bank run. Joe: *"accept."*
-        // ⏸️ This bar has moved five times since D363; the open question (handoff) is whether a
-        // single village can answer it at all at this size.
+        // ⭐⭐ A DURATION, NOT A RATE (D457 — Joe handed it over in D448: *"you'd know better than
+        // me"*). The bar above moved five times since D363 because a few household-ticks in ten
+        // thousand is not a bank run — it is somebody's walk, and every change to a walk moved it.
+        // **A bank run is goods that exist and have not reached you for longer than it takes to go
+        // and get them.** So each dry spell — a living household's larder empty while a store
+        // holds food — is held to twice its own round trip to the nearest store with food, read
+        // when the spell begins. Measured at D457: six spells in a century, 39 household-ticks in
+        // all; the worst two are the founders' first days (23 ticks against a 22-tick round trip,
+        // 6 against 4) and every later one is 1–5 ticks against round trips of 12–18. A real bank
+        // run is a season against twenty ticks. Reported, never asserted: the old rate.
+        Assert.True(withMarket.DrySpells > 0 || withMarket.DryHouseholdTicks == 0,
+            "Dry household-ticks were counted and no spell was, so the spells measure nothing.");
         Assert.True(
-            withMarket.DryPerTenThousand <= 3 || withMarket.DryPerTenThousand < without.DryPerTenThousand,
-            $"{withMarket.DryPerTenThousand} per 10,000 of household-time on an empty larder while the stores held food, against {without.DryPerTenThousand} without a market — a bank run the market exists to stop.");
+            withMarket.WorstSpell <= 2 * withMarket.WorstSpellsRoundTrip,
+            $"A family sat {withMarket.WorstSpell} ticks on an empty larder while the stores held food, "
+            + $"against a round trip of {withMarket.WorstSpellsRoundTrip} to fetch it — a bank run, "
+            + "which the market and the households' own fetching exist to stop.");
     }
 
     /// <summary>Fetching done by households over a run, and the village that did it.</summary>
@@ -434,9 +449,12 @@ public sealed class MarketTests
     /// <param name="PeakPopulation">The largest the village ever got.</param>
     /// <param name="LostToHungerOrCold">Deaths from starvation or exposure over the run — the
     /// only currency §14.4 says a village without a market may never be charged in.</param>
+    /// <param name="DrySpells">How many separate dry spells there were.</param>
+    /// <param name="WorstSpell">The dry spell furthest over twice its round trip — or the longest, if none is over.</param>
+    /// <param name="WorstSpellsRoundTrip">That spell's round trip to the nearest store with food, at its start.</param>
     private readonly record struct Fetching(
         long Steps, long PersonTicks, int Ticks, long DryHouseholdTicks, long HouseholdTicks,
-        int PeakPopulation, int LostToHungerOrCold)
+        int PeakPopulation, int LostToHungerOrCold, int DrySpells, int WorstSpell, int WorstSpellsRoundTrip)
     {
         /// <summary>
         /// Share of household-time spent with an empty larder while the stores held food.
@@ -479,6 +497,23 @@ public sealed class MarketTests
         int peak = 0;
         int ticks = config.TicksPerYear * 100;
 
+        // The spells (D457): each household's current run of dry ticks and its round trip when
+        // the run began; the worst is the one furthest over twice its trip.
+        var running = new Dictionary<int, (int Length, int RoundTrip)>();
+        int spells = 0;
+        int worst = 0;
+        int worstTrip = 0;
+
+        void Close((int Length, int RoundTrip) spell)
+        {
+            spells++;
+            if (spell.Length - (2 * spell.RoundTrip) > worst - (2 * worstTrip) || spells == 1)
+            {
+                worst = spell.Length;
+                worstTrip = spell.RoundTrip;
+            }
+        }
+
         for (int i = 0; i < ticks; i++)
         {
             loop.StepOnce();
@@ -507,7 +542,7 @@ public sealed class MarketTests
             bool storesHaveFood = false;
             foreach (StoreBuilding store in loop.World.StoreBuildings)
             {
-                if (store.Store[Goods.Produce] > 0)
+                if (loop.World.FoodIn(store.Store) > 0)
                 {
                     storesHaveFood = true;
                     break;
@@ -522,11 +557,24 @@ public sealed class MarketTests
                 }
 
                 householdTicks++;
-                if (storesHaveFood && household.Stockpile[Goods.Produce] == 0)
+                if (storesHaveFood && loop.World.FoodIn(household.Stockpile) == 0)
                 {
                     dry++;
+                    (int length, int trip) = running.TryGetValue(household.Id, out var open)
+                        ? open
+                        : (0, RoundTripToFood(loop.World, household));
+                    running[household.Id] = (length + 1, trip);
+                }
+                else if (running.Remove(household.Id, out var ended))
+                {
+                    Close(ended);
                 }
             }
+        }
+
+        foreach (var open in running.Values)
+        {
+            Close(open);
         }
 
         int lost = 0;
@@ -539,7 +587,27 @@ public sealed class MarketTests
             }
         }
 
-        return new Fetching(steps, personTicks, ticks, dry, householdTicks, peak, lost);
+        return new Fetching(steps, personTicks, ticks, dry, householdTicks, peak, lost, spells, worst, worstTrip);
+    }
+
+    /// <summary>There and back from a household's home to the nearest store holding food, in ticks.</summary>
+    private static int RoundTripToFood(SimWorld world, Household household)
+    {
+        if (household.HomeTile is not GridPos home)
+        {
+            return int.MaxValue / 4;
+        }
+
+        int best = int.MaxValue / 4;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (world.FoodIn(store.Store) > 0)
+            {
+                best = System.Math.Min(best, 2 * world.TravelCost.TicksBetween(home, store.Tile));
+            }
+        }
+
+        return best;
     }
 
     [Fact]
