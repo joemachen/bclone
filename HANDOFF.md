@@ -1,6 +1,41 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D457 IN §7. THE SIX SMALL FIXES (D448) ARE BUILT ON `slice/small-fixes` (D452–D457), ONE COMMIT EACH — NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT, THEN THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D457 IN §7. `slice/small-fixes` (D452–D457) PLAYED BY JOE — *"everything else looks good"* — NOT MERGED, NOT PUSHED. NEXT: HIS TWO NEW NOTES ON THE BRANCH (THE QUARRY'S GRID, HIDE LOCKED PROFESSIONS), THEN HE MERGES, THEN THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (NIGHT) — THE SIX SMALL FIXES BUILT.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (LATE NIGHT) — JOE PLAYED THE SMALL FIXES.**
+>
+> **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = D452–D457 + this handoff, **played by Joe,
+> NOT merged, NOT pushed — he did not say merge.** His words: *"everything else looks good"* — after two notes,
+> below. ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`**.
+>
+> **▶️ NEXT: JOE'S TWO NOTES, ON `slice/small-fixes`, ONE COMMIT EACH — then he plays them and merges.**
+>
+> 1. **⛔ "When I 'give ground' on the quarry now, it shows the grid underneath."** His screenshots (Year 5–6): the
+>    painted rock under a quarry reads as a tiled grid of pale squares — while giving ground and after. **Found,
+>    not fixed:** it is D450's worked-face floor, not this branch. `VillageMap.Meshes.cs` `WorkedFace` draws each
+>    face's pale floor as a square `FaceHalf = 0.46f` from the tile centre — *"just inside the tile, so
+>    neighbouring faces read as cut blocks"* — so every pair of neighbouring faces has a 0.08-tile dark seam
+>    between them, and a patch of faces is a grid. The probe's `faces:` line checks the chunk rebuild, not the
+>    look. **The fix is the look's, so pose it to him or keep it obvious:** a floor that meets its neighbours
+>    (0.5, or a soft continuous wash over the face set as the zone wash does) with the cut lumps alone saying
+>    "worked". It is the same for the iron mine's faces. Re-run the probe; the vertex counts in `faces:` will move.
+> 2. **⛔ "The professions that are 'unlocked' shouldn't show in the professions menu until they are unlocked —
+>    don't want to spoil the surprise."** He underlined **Smith, Quarrier, Miner** in a village that had learned
+>    none of them (Smith 0/0, Miner 0/0; Quarrier 0/2 because he had a quarry). **Found:** `Main.cs`
+>    `BuildProfessionsTable` adds a row for every `JobLimits.Kinds` when the panel is built (`AddProfessionRow`, ~line
+>    4042), with no unlock question. **The shape:** a trade whose building is still refused by
+>    `SimWorld.WhyNotYet` (the quarry's stone, the smithy's iron, the mine's first iron tool) and of which none
+>    stands gets no row; the row appears when the village learns it. ⚠️ The table is built once — so rebuild it on
+>    the learning moment (`LearnedByDoing` / the tree's known state already raises one), **never per frame**
+>    (CLAUDE.md's rule). ⚠️ Ask the tree (`TechTree.StateOf` known) or `WhyNotYet` — one question, so the build
+>    bar, the tree and the panel cannot disagree; do not type a list of three trades. Check the bar probe still
+>    reads 161 and the professions panel's `fold:` line. And say it to him if the *"Not hired yet"* list (Tailor,
+>    Herdsman…) is the same spoiler in another form — it names trades the village has not met; his call.
+>
+> Then Joe plays both and merges `slice/small-fixes` with them; **then the stutter** (D403's remainder). Names,
+> surnames and birthdays (D395) still wait on his slot.
+>
+> *(The 2026-10-02 night banner — what the six fixes were — kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 (NIGHT) — THE SIX SMALL FIXES BUILT.**
 >
 > **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = six commits, one per fix, **NOT merged, NOT
 > pushed, UNPLAYED.** At the last commit: **1344 passing, 0 failing, 5 skipped of 1349, 3m54**, **no golden moved except one, for
@@ -31,7 +66,7 @@
 >    round trip. Measured: six spells a century, the worst the founders' first days. The market no longer changes
 >    dryness — households fetch for themselves.
 >
-> **▶️ NEXT: JOE PLAYS THE BRANCH.** What he can see: hover a building over the lane outside a yard's gate
+> **▶️ (DONE — he played it) NEXT: JOE PLAYS THE BRANCH.** What he can see: hover a building over the lane outside a yard's gate
 > (refused, naming the family); raise a longhouse, turn it, pull it down or move it (it stays a three-long
 > longhouse at its angle); a forester's hut on saplings no longer holds hands; a nearly finished site gets
 > finished. The rest are guards. Then he merges and pushes, **then the stutter** (D403's remainder — measure the
@@ -3845,6 +3880,11 @@ Read `git status` after staging, every time.
      both.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES, BOTH TO BUILD — see the top banner.** (1) the
+  quarry's painted faces read as a grid (D450's `FaceHalf` 0.46 seams); (2) Smith, Quarrier and Miner show in the
+  Professions panel before the village has learned them — hide a trade until it is unlocked, *"don't want to
+  spoil the surprise."*
 
 - ✅ **D446'S FOUR — ANSWERED BY JOE (D447): (1) *"ok"*; (2) *"thats fine for now"*; (3) *"sounds like your tests suck at the game. i didnt lose any people"*; (4) both tool limits 25. Kept for the numbers:** *(1)* the suite's opening (`ColdStartTests.PaintTheNearestSeam`)
   was left at four tiles — it already pays for what it marks (18 of 48 stone), so D445's rule would
