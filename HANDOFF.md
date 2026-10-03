@@ -1,6 +1,23 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D461 IN §7. `slice/small-fixes` (D452–D461) — JOE'S TWO NOTES BUILT (D460, D461 — D459 PLAYED AND SUPERSEDED), UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS THEM AND MERGES, THEN THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D462 IN §7. `slice/small-fixes` (D452–D461) PLAYED, MERGED AND PUSHED (D462). NO SLICE OPEN. NEXT: THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (MIDNIGHT) — THE QUARRY FLOOR TRACED (D461).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — THE SMALL FIXES MERGED AND PUSHED (D462).**
+>
+> **State:** `main` = `slice/small-fixes` (D452–D461) merged `--no-ff` + D462, **pushed at Joe's word**: *"stone
+> seam looks good now. so does iron. professions panel looks good at new game. merge and push."* **No slice is
+> open.** `slice/small-fixes` is still there locally (never on the remote) — **not deleted; ask Joe**, as the
+> last two branches were deleted at his word. At the merge: **1344 passing, 0 failing, 5 skipped of 1349, 3m32;
+> no golden moved; view 0 warnings; probe green, bar height 161, `faces:` ✅, `trades:` ✅** (the merged tree is
+> the verified branch tip — `main` had not moved). ⚠️ Joe's `art/` changes are his — never stage them; stage this
+> file as **`HANDOFF.md`**.
+>
+> **▶️ NEXT: THE STUTTER** (D403's remainder; Joe: *"YES. Worth a slice. i hate it."*). **Measure first** — the
+> per-tick distance distribution of a villager's drawn step; the suspect is `Arrive` snapping onto a building's
+> standing place. Trap 151 applies: the filed suspect is a hypothesis. **Names, surnames and birthdays (D395)**
+> wait on Joe's slot — tell him where they could go once the stutter is in.
+>
+> *(The 2026-10-02 midnight banner — D461 — kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 (MIDNIGHT) — THE QUARRY FLOOR TRACED (D461) (✅ played and merged, D462).**
 >
 > **Joe played D459:** the grid was gone, but zoomed in *"quarry given ground looks like steps. the issue doesn't
 > occur when painting stone for regular harvesting."* The floor was still one square per face, so a round brush
@@ -3948,7 +3965,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ✅ **BUILT (D460, D461; D459 played — *"looks like steps"* — and superseded), UNPLAYED — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
+- ✅ **BUILT (D460, D461; D459 played — *"looks like steps"* — and superseded), PLAYED AND MERGED (D462) — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
   quarry's painted faces read as a grid (D450's `FaceHalf` 0.46 seams); (2) Smith, Quarrier and Miner show in the
   Professions panel before the village has learned them — hide a trade until it is unlocked, *"don't want to
   spoil the surprise."*
