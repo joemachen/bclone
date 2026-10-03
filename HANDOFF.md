@@ -2,7 +2,7 @@
 
 > **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE STUTTER MERGED AND PUSHED (D464).**
 >
-> **State:** `main` = `slice/the-stutter` (D463) merged `--no-ff` + D464, **pushed at Joe's word**: *"that looks so much
+> **State:** `main` = `7237e0f`, `slice/the-stutter` (D463 + D464's docs) merged `--no-ff`, **pushed at Joe's word**: *"that looks so much
 > better. accept the cost. merge and push."* **No slice is open.** `slice/the-stutter` is kept until Joe says to delete
 > it (0 commits not on `main`, never on the remote). At the merge: **1345 passing, 0 failing, 5 skipped of 1350, 3m31;
 > six goldens and three walk pins moved once in D463, for the clock; view 0 warnings; probe green, bar height 161** (the
