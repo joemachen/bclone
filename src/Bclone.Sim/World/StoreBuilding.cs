@@ -188,6 +188,17 @@ public sealed class StoreBuilding
     /// <summary>Which way this store is turned (gridless 2b, D320).</summary>
     public Angle Facing { get; init; }
 
+    /// <summary>
+    /// The building it was raised as, or null for the founders' stores and the cart (D455).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A STORE KIND IS NOT A BUILDING.</b> A longhouse stores as a warehouse, and three places
+    /// asked the catalogue for <em>the</em> building of a store kind — which answers the first row,
+    /// the warehouse — so a longhouse being pulled down was a 2×2 warehouse site and a moved one
+    /// would have been rebuilt a warehouse. Read through <c>SimWorld.BuildingKindOf</c>.
+    /// </remarks>
+    public BuildingKind? RaisedAs { get; init; }
+
     /// <summary>How many tiles across, before turning — from the building's row.</summary>
     public int ExtentWidth { get; init; } = 1;
 

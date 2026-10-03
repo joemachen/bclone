@@ -400,6 +400,103 @@ public sealed class FootprintTests
     }
 
     /// <summary>
+    /// ⭐ A DEMOLITION SITE KEEPS THE ANGLE OF THE BUILDING IT IS TAKING DOWN (D325, guarded D455).
+    /// </summary>
+    /// <remarks>
+    /// The fourth picture of one building, and the one nothing guarded. D325 made
+    /// <c>MarkDemolition</c> read the standing building's facing <b>before</b> it is gone and
+    /// write it onto the site — and the order is the whole fix: read it after the building is
+    /// pulled down and it silently answers zero, a longhouse drawn the wrong way round for the
+    /// years it takes to come down. This holds the site to the building's angle and its ground.
+    /// </remarks>
+    [Fact]
+    public void ADemolitionSiteKeepsTheAngleOfWhatItTakesDown()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        Angle turned = Angle.FromTurnFraction(1, 4);
+        GridPos anchor = RaiseALonghouse(world, turned);
+        Assert.True(config.DemolitionWorkPercent > 0, "A demolition with no work leaves no site to look at.");
+
+        Assert.True(world.MarkDemolition(anchor).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { Demolishing: true });
+
+        _output.WriteLine($"demolition site: {site.Construction!.Kind} {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}");
+        Assert.Equal(turned, site.Facing);
+
+        // ⛔ AND ITS SHAPE (D455) — the guard's first run found the site 2×2: a longhouse stores as
+        // a warehouse, and the store was asked for its building through its store kind.
+        Assert.Equal(BuildingKind.Longhouse, site.Construction.Kind);
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y - 1)));
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y + 1)));
+        Assert.False(site.Footprint.Covers(new GridPos(anchor.X + 1, anchor.Y)));
+    }
+
+    /// <summary>⛔ A moved longhouse is put back a longhouse, at its angle (D455).</summary>
+    /// <remarks>
+    /// The same guess one door down (D328's lesson): a move asked <c>WhatStandsAt</c>, which
+    /// answered a store by its store kind — the warehouse — so the site at the far end was a
+    /// warehouse's footprint and recipe for a building that had been three tiles long.
+    /// </remarks>
+    [Fact]
+    public void AMovedLonghouseIsPutBackALonghouse()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        Angle turned = Angle.FromTurnFraction(1, 4);
+        GridPos from = RaiseALonghouse(world, turned);
+        GridPos to = SomewhereBuildable(world);
+
+        Assert.True(world.MarkRelocation(from, to).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { IsFinished: false, Demolishing: false });
+
+        _output.WriteLine($"moving site: {site.Construction!.Kind} {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}");
+        Assert.Equal(BuildingKind.Longhouse, site.Construction.Kind);
+        Assert.Equal(3, site.ExtentWidth);
+        Assert.Equal(turned, site.Facing);
+    }
+
+    /// <summary>
+    /// The building a store was raised as is in the fingerprint — and only when it is not the
+    /// row its store kind names, so no village without a longhouse moved (D455).
+    /// </summary>
+    [Fact]
+    public void TheBuildingAStoreWasRaisedAsIsInTheFingerprint()
+    {
+        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        GridPos anchor = RaiseALonghouse(world, Angle.Zero);
+        StoreBuilding longhouse = world.StoreAt(anchor)!;
+        System.Reflection.PropertyInfo raisedAs = typeof(StoreBuilding).GetProperty(nameof(StoreBuilding.RaisedAs))!;
+
+        ulong asALonghouse = Bclone.Sim.Determinism.StateHash.Compute(world);
+        raisedAs.SetValue(longhouse, BuildingKind.Warehouse);
+        ulong asAWarehouse = Bclone.Sim.Determinism.StateHash.Compute(world);
+        raisedAs.SetValue(longhouse, null);
+        ulong neverRaised = Bclone.Sim.Determinism.StateHash.Compute(world);
+
+        Assert.NotEqual(asALonghouse, asAWarehouse);
+        Assert.Equal(neverRaised, asAWarehouse);
+    }
+
+    /// <summary>A finished longhouse, turned as asked, standing somewhere it fits.</summary>
+    private static GridPos RaiseALonghouse(SimWorld world, Angle turned)
+    {
+        GridPos anchor = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor, turned).Allowed);
+
+        Workplace raising = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(raising);
+        for (int i = 0; i <= raising.Construction!.Recipe.WorkTicks; i++)
+        {
+            raising.Construction.Work();
+        }
+
+        world.Complete(raising);
+        Assert.Equal(BuildingKind.Longhouse, world.WhatStandsAt(anchor));
+        Assert.Equal(turned, world.FacingOfWhatStandsAt(anchor));
+        return anchor;
+    }
+
+    /// <summary>
     /// ⭐⭐ EVERY BUILDING CLASS HONOURS ITS ROW'S EXTENT — not just the two that were needed.
     /// </summary>
     /// <remarks>

@@ -431,6 +431,17 @@ public static class StateHash
                 hash = MixByte(hash, (byte)world.StoreBuildings[i].Stocking);
             }
 
+            // And the building it was raised as, when that is not the row its store kind names
+            // (D455) — a longhouse stores as a warehouse, and it decides the shape a demolition or a
+            // move puts back. Sparse in the same shape: every granary, warehouse and market is the
+            // row of its kind, so a village that never raised a longhouse mixes nothing here.
+            StoreBuilding raised = world.StoreBuildings[i];
+            if (raised.RaisedAs is BuildingKind raisedAs
+                && raisedAs != world.BuildingsCatalog.ThatStores(raised.Kind))
+            {
+                hash = MixUInt32(hash, (uint)raisedAs);
+            }
+
             // And the player's limits at this counter (D372) — the village stock limits' shape
             // exactly: sparse, null and zero diverging, silent for every market nobody has typed
             // at. A market's stock is what the marketer keeps there, so the number that says how

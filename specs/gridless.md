@@ -463,6 +463,14 @@ buildings gaining an extent and a facing is the change that moves them, with one
    building. *Asking the rectangle first and the tile second can only add a hit.*
    - ⛔ **AND THE HIGHLIGHT HAD TO LEARN THE SAME THING, ONE COMMIT LATER** (D341, Joe again): *"it looks off visually, because the building's square is outlined, which doesn't align with the building itself."* **Teaching the click and not the outline left the mismatch on screen**, which is worse than not fixing either. *When a rule about geometry changes, every reader of that geometry changes with it — the click, the highlight, and whatever asks next.*
 
+6. ✅ **A DEMOLITION OR A MOVE PUTS BACK THE BUILDING THAT STOOD, AT ITS ANGLE (D325, guarded D455).**
+   The site records the facing read while the building stood, so nothing after needs it. ⛔ The
+   guard's first run found the KIND wrong: a store was asked for its building through its store
+   kind, which answers the first row — a longhouse being pulled down was a 2×2 warehouse site, and a
+   moved one went back a warehouse. A store now records what it was raised as
+   (`StoreBuilding.RaisedAs`, read through `SimWorld.BuildingKindOf`; hashed sparsely, only when it
+   is not its kind's own row). `FootprintTests`: the demolition, the move, the fingerprint.
+
 5. ⛔ **The locale guard scored ZERO on its red check and is kept anyway — knowingly.**
    `FixedTests.TheLocaleCannotChangeWhatAFixedLooksLike` stays green when every
    `InvariantCulture` in `Fixed.ToString` is swapped for `CurrentCulture`, because the

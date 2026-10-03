@@ -6743,9 +6743,10 @@ public sealed class SimWorld : IObstacles
             // ⭐ A DEMOLITION DRAINS THE SAME SHAPE IT WILL LEAVE BEHIND (D324). The site inherits
             // the extent so pulling down a three-tile longhouse empties three tiles rather than
             // one — *"reverse construction" is only legible if it reverses the same picture.*
-            // ⚠️ Facing is not carried: nothing records which way a STANDING building was turned
-            // once it becomes a demolition site, and inventing a default here would draw the
-            // wrong angle confidently. Named rather than guessed.
+            // ⭐ And the facing, read above while the building still stood (D325) and recorded here
+            // on the site, so nothing after this needs the building to answer. Guarded since D455
+            // (`ADemolitionSiteKeepsTheAngleOfWhatItTakesDown`), whose first run found the kind
+            // wrong too: a store is asked for its building through `BuildingKindOf`.
             ExtentWidth = BuildingsCatalog[kind.Value]?.ExtentWidth ?? 1,
             ExtentHeight = BuildingsCatalog[kind.Value]?.ExtentHeight ?? 1,
             Facing = facing,
@@ -6944,7 +6945,7 @@ public sealed class SimWorld : IObstacles
     {
         if (StoreAt(tile) is StoreBuilding store)
         {
-            return BuildingsCatalog.ThatStores(store.Kind);
+            return BuildingKindOf(store);
         }
 
         if (LibraryCovering(tile) is not null)
@@ -6968,6 +6969,17 @@ public sealed class SimWorld : IObstacles
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The building a store was raised as — <see cref="StoreBuilding.RaisedAs"/>, or, for the
+    /// founders' stores that were never raised, the row that stores its kind (D455).
+    /// </summary>
+    public BuildingKind? BuildingKindOf(StoreBuilding store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        return store.RaisedAs ?? BuildingsCatalog.ThatStores(store.Kind);
     }
 
     /// <summary>What the building on a tile is called, or "it".</summary>
@@ -8727,7 +8739,7 @@ public sealed class SimWorld : IObstacles
         // buildings nobody paid for: nothing.
         BuildingKind kind = building.Kind == StoreKind.Cart
             ? BuildingKind.Pile
-            : BuildingsCatalog.ThatStores(building.Kind)
+            : BuildingKindOf(building)
                 ?? throw new ArgumentOutOfRangeException(
                     nameof(building), building.Kind, "That kind of store has no refund.");
 
@@ -9085,6 +9097,7 @@ public sealed class SimWorld : IObstacles
             Facing = facing,
             ExtentWidth = row?.ExtentWidth ?? 1,
             ExtentHeight = row?.ExtentHeight ?? 1,
+            RaisedAs = kind,
         };
 
         StandingChanged();
