@@ -1,6 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D463 IN §7. THE STUTTER IS BUILT ON `slice/the-stutter` (D463) — UNPLAYED, NOT MERGED; ITS PRICE IS JOE'S TO CALL.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D464 IN §7. THE STUTTER (STEADY PACE, D463) PLAYED, ITS PRICE ACCEPTED, MERGED AND PUSHED (D464). NO SLICE OPEN. NEXT: JOE'S SLOT.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (NIGHT) — THE STUTTER, BUILT AS STEADY PACE (D463).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE STUTTER MERGED AND PUSHED (D464).**
+>
+> **State:** `main` = `slice/the-stutter` (D463) merged `--no-ff` + D464, **pushed at Joe's word**: *"that looks so much
+> better. accept the cost. merge and push."* **No slice is open.** `slice/the-stutter` is kept until Joe says to delete
+> it (0 commits not on `main`, never on the remote). At the merge: **1345 passing, 0 failing, 5 skipped of 1350, 3m31;
+> six goldens and three walk pins moved once in D463, for the clock; view 0 warnings; probe green, bar height 161** (the
+> merged tree is the verified branch tip plus docs — `main` had not moved). ⚠️ Joe's `art/` changes are his — never stage
+> them; stage this file as **`HANDOFF.md`**.
+>
+> **Settled — do not re-open:** steady pace is the walk (a leg's unrounded cost spent a tick at a time, the last leg ends
+> on the place they stand, a leg priced from its own route tiles, one tick's walk shared by every journey begun in it).
+> **Joe accepted its price** (walks a tick or two longer; the harness 469 → 390 and 528 → 488 alive at fifty). ⛔ Never buy
+> it back by jumping the door — that jump is the stutter. If time must come back, it is a pace dial or re-derived budgets,
+> and his call.
+>
+> **▶️ NEXT: JOE'S SLOT.** Ask him what is next. **Names, surnames and birthdays (D395)** are approved and unscheduled —
+> the obvious candidate (prefix + suffix hashed from (seed, villager id), never an `Rng` draw; `Household.Surname`;
+> `Villager.BirthTick`, its own golden-moving commit). The ⏸️ list below holds the rest. **If he reports a small hop at a
+> busy doorstep**, the suspect is `FanOffset` re-fanning a crowded tile — view-only (⏸️ list).
+>
+> *(The 2026-10-03 night banner — the stutter as built — kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-03 (NIGHT) — THE STUTTER, BUILT AS STEADY PACE (D463) (✅ played and merged, D464).**
 >
 > **State:** `main` = `b4f3a5e` (D462), pushed. **`slice/the-stutter`** = one commit, D463, **NOT merged, NOT pushed,
 > UNPLAYED.** At D463: **1345 passing, 0 failing, 5 skipped of 1350, 3m31; six goldens and three walk pins moved once,
@@ -27,8 +49,7 @@
 > `ZzStride.cs` (the before-census, classified by leg — compiles on `main` only), `ZzPace.cs` (strides by position only,
 > compiles on both), `ZzFounder.cs` (the founder's walks tick by tick), `ZzSeeds.cs` (the every-source sweep), `ZzBase.cs`
 > + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` runs shipped seeds 200–299), `mut_d463.py` / `mut_d463b.py` (the eight
-> mutants; the second is CRLF-safe — multi-line targets need `
-` here) with `redcheck.py`. Run with
+> mutants; the second is CRLF-safe — multi-line targets need CRLF line ends here) with `redcheck.py`. Run with
 > **`PYTHONIOENCODING=utf-8`**. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`, **delete before committing**.
 >
 > *(The 2026-10-03 morning banner — the small fixes merged — kept below.)*
@@ -4012,7 +4033,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE STEADY PACE'S PRICE (D463) — JOE'S CALL.** The stutter is gone on `slice/the-stutter` (no stride over
+- ✅ **DECIDED (D464) — JOE ACCEPTED THE COST: *"accept the cost. merge and push."* Kept for the doorstep note at its end.** ~~THE STEADY PACE'S PRICE (D463) — JOE'S CALL.~~ The stutter is gone on `slice/the-stutter` (no stride over
   1.25 tiles; 17–23 % of walking ticks were teleports). But the half-tile onto a door and the step off it, free since
   D354/D361, are walked now: walks are a tick or two longer; D420's 55 villages 469 → 390 alive at fifty, 100 more
   shipped seeds 528 → 488 (villages alive 76 and 76); unattended-harness numbers, to be read beside his play. **Accept
@@ -4096,7 +4117,7 @@ Read `git status` after staging, every time.
   on food while the village is short, and the builder's hut staffed to 1 did not change it); with
   the yield kept it passes again. The guard is one balance nudge from red.
 
-- ✅ **BUILT (D463), UNPLAYED — steady pace on `slice/the-stutter`; the remainder below was measured and was mostly NOT `Arrive` (see D463).** D448 — JOE: *"YES. Worth a slice. i hate it."*
+- ✅ **BUILT (D463), PLAYED AND MERGED (D464) — steady pace; the remainder below was measured and was mostly NOT `Arrive` (see D463).** D448 — JOE: *"YES. Worth a slice. i hate it."*
 - ⭐ **THE SKIP'S REMAINDER, WITH THE DRIVER RULED OUT (D403).** Joe, on the instrumented build:
   *"I think it looks okay? there are some skips now and then."* The numbers from his play:
   **catch-up 3 frames of 12,059 (0.0 %), worst 2 ticks, slowest step 51.2 ms** — so the frame

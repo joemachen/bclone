@@ -4,7 +4,7 @@
 > `Fixed` (Q32.32) and `Angle` (16-bit BAM) with deterministic trigonometry. **No behaviour in
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
-> **Clock B is built (D361, slice 5). 🔨 Slice 6, steady pace — the stutter — is BUILT on `slice/the-stutter` (D463), red-checked, UNPLAYED and NOT MERGED; its price (walks a tick or two longer) is Joe's to call.**
+> **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -322,8 +322,8 @@ expensive inference in this project.*
    straight walk is never longer than its staircase, so every budget stays a true upper bound.
    What clock B changes is how much slack sits under those budgets — measured, and Joe's to spend
    (§9 slice 5). D122's rule holds: a price is not changed quietly.
-6. 🔨 **Steady pace — the stutter (D463, 2026-10-03; Joe: *"A: steady pace"*). BUILT on
-   `slice/the-stutter`; unplayed, not merged.** ⛔ **Measured before it was designed:** on the shipped village and a played
+6. ✅ **Steady pace — the stutter (D463, 2026-10-03; Joe: *"A: steady pace"*). BUILT, PLAYED
+   (*"that looks so much better"*), price accepted, merged (D464).** ⛔ **Measured before it was designed:** on the shipped village and a played
    opening, **17–21 % of walking ticks moved a villager more than √2 tiles** — the view's teleport
    line (`VillageMap.DrawnCentre`), so they were drawn as a hop and a freeze. Two causes, both this
    section's: *(a)* **slice 5's rounding** — a leg took `round(length × cost)` ticks, never below one,
@@ -358,7 +358,7 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 
 ## 9. Definition of Done
 
-### Slice 6 — 🔨 BUILT, UNPLAYED (D463): steady pace, the stutter
+### Slice 6 — ✅ MET (2026-10-03, D463; played and merged D464): steady pace, the stutter
 
 | # | Item | State |
 |---|---|---|
@@ -366,7 +366,7 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 | 2 | A walk to a building ends standing on its point, glided onto, never jumped | ✅ the last leg ends on `PlaceToStand`; `Arrive` deleted; `AVillagerStandsOnTheBuildingTheyArriveAt`, `AVillagerAtHomeStandsOnTheDoorstep` hold |
 | 3 | The leg is still hashed (`LegTicks`, `LegWalked`) | ✅ `TheLegIsHashed` (red with `LegWalked` unhashed) |
 | 4 | The first-gather pins | ⛔ **moved, for the clock, deliberately**: 37 / 91 → 39 / 100 — traced, the founder's walks to and from the 2×2 store are a tick longer each way (the half-tile onto its corner and the doorstep is walked); the valley pin 52 trips → 51 |
-| 5 | Journey times and the villages measured before and after; goldens move once | ✅ walking 1.3–2.5 points more of villager time; D420's 55 villages 469 → 390 alive at fifty, 100 more shipped seeds 528 → 488 (76 villages alive in both); six goldens moved once — **the price is Joe's to call** (D122) |
+| 5 | Journey times and the villages measured before and after; goldens move once | ✅ walking 1.3–2.5 points more of villager time; D420's 55 villages 469 → 390 alive at fifty, 100 more shipped seeds 528 → 488 (76 villages alive in both); six goldens moved once — **the price accepted by Joe** (D464: *"accept the cost"*) |
 | 6 | Red checks | ✅ eight mutants, all red (D463); the stride guard scored zero against a fresh pace per call at five years and was lengthened to twenty |
 | 7 | The view needed nothing | ✅ every stride is under `DrawnCentre`'s √2 snap |
 
