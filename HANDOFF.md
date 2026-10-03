@@ -1,6 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D460 IN §7. `slice/small-fixes` (D452–D460) — JOE'S TWO NOTES BUILT (D459, D460), UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS THEM AND MERGES, THEN THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D461 IN §7. `slice/small-fixes` (D452–D461) — JOE'S TWO NOTES BUILT (D460, D461 — D459 PLAYED AND SUPERSEDED), UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS THEM AND MERGES, THEN THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (NEAR MIDNIGHT) — JOE'S TWO NOTES BUILT.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (MIDNIGHT) — THE QUARRY FLOOR TRACED (D461).**
+>
+> **Joe played D459:** the grid was gone, but zoomed in *"quarry given ground looks like steps. the issue doesn't
+> occur when painting stone for regular harvesting."* The floor was still one square per face, so a round brush
+> stroke drew a stepped cross past the smooth outline. **D461:** the floor is now the face workplace's paint,
+> traced and filled along its curve — **the farm's field path (D352), the same complaint fixed the same way** —
+> cached with the zone trace, drawn under the cut-down lumps, near and far (the far view shows worked faces for
+> the first time). `WorkedFace` draws lumps only; `FaceHalf` deleted; probe `faces:` drop 30 → 36, red-checked
+> 1 of 1. **1344 passing, 0 failing, 5 skipped of 1349, 3m32; no golden moved; view 0 warnings; probe green, bar
+> height 161, `trades:` ✅.** D460 (locked trades hidden) is unchanged and still unplayed by Joe as far as he has
+> said. **▶️ NEXT: Joe plays D460–D461 — a round brush over a seam, zoomed in and out — then merges, then the
+> stutter.** Tools: `redfaces.py` beside `redtrades.py` in this session's scratchpad.
+>
+> *(The banner below is the same session, one play earlier — D459 is superseded by D461.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 (NEAR MIDNIGHT) — JOE'S TWO NOTES BUILT.**
 >
 > **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = D452–D458 (played by Joe) + **D459 and D460
 > (his two notes, built this session, UNPLAYED)** + this handoff — **NOT merged, NOT pushed.** At D460: **1344
@@ -3922,9 +3937,18 @@ Read `git status` after staging, every time.
      `grep -c` the mutated text after the run** to prove it is gone. A script that dies on its first red reports
      nothing, and nothing looks like a guard that never fired.
 
+## ⛔ THE TRAP D461 PAID FOR — THE VIEW HAD ALREADY SOLVED THIS ONCE
+
+156. **⚠️ BEFORE TUNING A SQUARE-PER-TILE LOOK, ASK WHETHER THE VIEW ALREADY HAS A TRACED VERSION OF IT (D459 → D461).**
+     D459 widened the face floor's squares to close a grid and shipped a staircase instead — Joe's next words were
+     D352's complaint about farm fields, almost verbatim, and D352 had built the answer a month earlier: trace the
+     paint's sub-tiles and fill along the curve, cached on `Zones.Edits`. **Anything drawn on painted ground should
+     follow the paint's curve; a per-tile square under a smooth outline is the bug, whatever its size.** Grep
+     `_fieldFills` / `ZoneOutline.Fill` before drawing ground per tile. One round of Joe's play was spent on it.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ✅ **BUILT (D459, D460), UNPLAYED — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
+- ✅ **BUILT (D460, D461; D459 played — *"looks like steps"* — and superseded), UNPLAYED — JOE, PLAYING `slice/small-fixes` (2026-10-02): TWO NOTES — see the top banner.** (1) the
   quarry's painted faces read as a grid (D450's `FaceHalf` 0.46 seams); (2) Smith, Quarrier and Miner show in the
   Professions panel before the village has learned them — hide a trade until it is unlocked, *"don't want to
   spoil the surprise."*
