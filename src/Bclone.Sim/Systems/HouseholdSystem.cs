@@ -378,7 +378,11 @@ public sealed class HouseholdSystem : ISimSystem
         {
             Stockpile = world.NewLarder(),
             Id = id,
-            Name = config.HouseholdNames[world.Households.Count % config.HouseholdNames.Count],
+
+            // ⭐ THE OLDER PARTNER'S NAME (D467, Joe) — the sim has no gender, so nothing else says
+            // whose; a rule the player can read off two cards. A list of surnames is only ever for
+            // the founding.
+            Surname = TheElderOf(a, b).Surname,
 
             // ⭐ NO ROOF YET (D102). The house is marked out below and somebody has to build
             // it; until then this couple is homeless, which is a state the sim has had since
@@ -397,6 +401,16 @@ public sealed class HouseholdSystem : ISimSystem
     {
         Household oldHome = world.HouseholdOf(a);
         Household partnerHome = world.HouseholdOf(b);
+        Villager elder = TheElderOf(a, b);
+
+        // Who they were before the move makes them both the elder's (D467).
+        string aWas = a.FullName;
+        string bWas = b.FullName;
+
+        // A house that stood empty becomes this couple's: their name, not the dead family's — and not
+        // whatever the player called the dead family either (D467).
+        string houseWas = household.Name;
+        household.BecomeTheFamilyOf(elder.Surname);
 
         // A house if there is one — a couple taking over one standing empty — and null if
         // theirs is still being built (D102). Homeless is a real state, not an error.
@@ -420,13 +434,15 @@ public sealed class HouseholdSystem : ISimSystem
         // `SimWorld.MoveFood` uses `Receive`, so this is still goods changing hands rather
         // than goods produced.
 
+        // ⭐ AND THE LINE SAYS WHOSE NAME, AND WHY — the rule is only legible if it is said (§1.1).
+        string couple = $"{aWas} of the {oldHome.Name} household and {bWas} of the {partnerHome.Name}";
+        string whose = $"{elder.Name}'s name, as the elder";
         world.Narrate(home is null
-            ? $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-              $"started the {household.Name} household - {world.Clock.SeasonAndYear()}. " +
+            ? $"{couple} started the {household.Name} household ({whose}) - {world.Clock.SeasonAndYear()}. " +
               $"{dowry} food between them, and a house being raised for them."
-            : $"{a.Name} of the {oldHome.Name} household and {b.Name} of the {partnerHome.Name} " +
-              $"took over the empty {household.Name} house - {world.Clock.SeasonAndYear()}. " +
-              $"{dowry} food between them, and no trees felled for it.", LogCategory.Life);
+            : $"{couple} took over the empty {houseWas} house - the {household.Name} household now " +
+              $"({whose}), {world.Clock.SeasonAndYear()}. {dowry} food between them, and no trees felled for it.",
+              LogCategory.Life);
     }
 
     /// <summary>
@@ -455,6 +471,7 @@ public sealed class HouseholdSystem : ISimSystem
     {
         world.HouseholdOf(villager).RemoveMember(villager.Id);
         villager.HouseholdId = household.Id;
+        villager.Surname = household.Surname;
 
         // Only if there is a door to stand at. A couple whose house is still being built
         // stays where they are and rests wherever RestingPlaceOf sends them (D102).
@@ -464,6 +481,20 @@ public sealed class HouseholdSystem : ISimSystem
         }
 
         household.AddMember(villager.Id);
+    }
+
+    /// <summary>
+    /// The older of a couple — the earlier birth, the lower id on a tie — whose surname their
+    /// household carries (D467, Joe: <i>"the older partner's"</i>).
+    /// </summary>
+    internal static Villager TheElderOf(Villager a, Villager b)
+    {
+        if (a.BirthYear != b.BirthYear)
+        {
+            return a.BirthYear < b.BirthYear ? a : b;
+        }
+
+        return a.Id < b.Id ? a : b;
     }
 
     private static int NextHouseholdId(SimWorld world)
@@ -509,6 +540,7 @@ public sealed class HouseholdSystem : ISimSystem
         {
             Id = id,
             Name = name,
+            Surname = household.Surname,
             LifespanYears = lifespan,
             Rhythm = rhythm,
             Carried = world.NewStockpile(),
@@ -533,7 +565,7 @@ public sealed class HouseholdSystem : ISimSystem
         world.Villagers.Add(child);
 
         world.Narrate(
-            $"{name} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
+            $"{child.FullName} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
             $"The village is now {world.Population}.", LogCategory.Life);
     }
 

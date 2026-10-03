@@ -45,6 +45,20 @@ public sealed class Villager
     /// <summary>"Mabel", never "Villager_01". The story depends on this.</summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Their family name: their household's surname when they were born or founded it, and the
+    /// new household's when they move in with a partner (D467, <c>names-and-birthdays.md §4</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Stored, not read through the household</b> — the dead stay in their household's
+    /// member list, and a couple taking over the house renames it; read through the household, a
+    /// dead Thatcher would become a Cooper after death. Not hashed, like <see cref="Name"/>.
+    /// </remarks>
+    public string Surname { get; internal set; } = string.Empty;
+
+    /// <summary>"Agnes Cooper" — the first name alone where nobody has given them a surname.</summary>
+    public string FullName => Surname.Length == 0 ? Name : $"{Name} {Surname}";
+
     /// <summary>The year they would die of old age, drawn once at birth.</summary>
     public required int LifespanYears { get; init; }
 

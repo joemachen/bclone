@@ -25,6 +25,9 @@ public static class NameHash
     /// <summary>What a first name's second half is picked by.</summary>
     public const int SuffixSalt = 2;
 
+    /// <summary>What a founding household's surname is picked by (keyed on the household's id).</summary>
+    public const int SurnameSalt = 3;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>MapGenerator.HashJitter</c>'s shape, well spread even for adjacent ids.
@@ -44,6 +47,10 @@ public static class NameHash
         string suffix = suffixes[(int)(Mix(seed, id, SuffixSalt, attempt) % (ulong)suffixes.Count)];
         return prefix + suffix;
     }
+
+    /// <summary>The <paramref name="attempt"/>th candidate surname for founding household <paramref name="householdId"/>.</summary>
+    public static string Surname(ulong seed, int householdId, int attempt, IReadOnlyList<string> surnames) =>
+        surnames[(int)(Mix(seed, householdId, SurnameSalt, attempt) % (ulong)surnames.Count)];
 
     private static ulong Fold(ulong state, ulong value)
     {

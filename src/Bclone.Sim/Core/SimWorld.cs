@@ -10625,7 +10625,7 @@ public sealed class SimWorld : IObstacles
             {
                 Stockpile = NewLarder(),
                 Id = h + 1,
-                Name = config.HouseholdNames[h % config.HouseholdNames.Count],
+                Surname = FoundingSurnameFor(h + 1),
                 HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
                 HomeFacing = home?.Facing ?? Angle.Zero,
                 WhyHere = home?.WhyHere ?? "",
@@ -10693,6 +10693,7 @@ public sealed class SimWorld : IObstacles
                 {
                     Id = nextVillagerId++,
                     Name = name,
+                    Surname = household.Surname,
                     LifespanYears = lifespan,
                     Rhythm = rhythm,
 
@@ -10882,6 +10883,31 @@ public sealed class SimWorld : IObstacles
         }
 
         return NameHash.FirstName(Seed, id, 0, prefixes, suffixes);
+    }
+
+    /// <summary>
+    /// The surname founding household <paramref name="householdId"/> carries — one no other
+    /// household with anybody living in it already does (D467).
+    /// </summary>
+    /// <remarks>
+    /// The founding is the only place a surname comes from the list; every later household is a
+    /// couple and carries the older partner's (<c>HouseholdSystem</c>). Past every attempt the first
+    /// is reused — a blemish, not a crash.
+    /// </remarks>
+    private string FoundingSurnameFor(int householdId)
+    {
+        IReadOnlyList<string> surnames = Config.HouseholdNames;
+
+        for (int attempt = 0; attempt < surnames.Count * 4; attempt++)
+        {
+            string candidate = NameHash.Surname(Seed, householdId, attempt, surnames);
+            if (!Households.Exists(h => LivingMembersOf(h) > 0 && h.Surname == candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return NameHash.Surname(Seed, householdId, 0, surnames);
     }
 
     private bool IsNameInUse(string name)

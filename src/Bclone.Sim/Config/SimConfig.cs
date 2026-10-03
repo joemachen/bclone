@@ -3899,11 +3899,26 @@ public sealed record SimConfig
     [JsonPropertyName("adults_per_household")]
     public int AdultsPerHousehold { get; init; } = 2;
 
-    /// <summary>Family names for founding households.</summary>
+    /// <summary>The surnames a founding household may carry — Joe's sixty (D467).</summary>
+    /// <remarks>
+    /// Picked by a hash of the seed and the household's id (<see cref="World.NameHash.Surname"/>),
+    /// the first no living household carries — never a draw. Only the founding picks from it: every
+    /// later household is a couple and carries <b>the older partner's</b> surname, which is what
+    /// makes a family's name something the village inherits rather than something it rolls.
+    /// </remarks>
     [JsonPropertyName("household_names")]
     public IReadOnlyList<string> HouseholdNames { get; init; } = new[]
     {
-        "Thatcher", "Fletcher", "Cooper", "Mason", "Weaver", "Chandler",
+        "Thatcher", "Cooper", "Mason", "Weaver", "Chandler", "Fletcher",
+        "Smith", "Miller", "Carpenter", "Wright", "Tanner", "Fuller",
+        "Forester", "Baker", "Brewer", "Hayward", "Pinder", "Sawyer",
+        "Wainwright", "Potter", "Carter", "Skinner", "Draper", "Clark",
+        "Hill", "Wood", "Brook", "Ford", "Hall", "Field",
+        "Marsh", "Dale", "Ridge", "Vale", "Holt", "Croft",
+        "Hurst", "Mead", "Pond", "Stone", "Well", "Grove",
+        "Atwood", "Oakes", "Underwood", "Rivers", "Meadows", "Bramble",
+        "Winter", "Frost", "Day", "Short", "Swift", "Strong",
+        "Young", "White", "Brown", "Green", "Stout", "Sharp",
     };
 
     /// <summary>Names a valley can be settled under, one of which the seed picks.</summary>

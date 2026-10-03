@@ -89,12 +89,12 @@ public sealed class MortalitySystem : ISimSystem
         string epitaph = cause switch
         {
             CauseOfDeath.OldAge =>
-                $"{villager.Name} died of old age at {villager.AgeYears}, " +
+                $"{villager.FullName} died of old age at {villager.AgeYears}, " +
                 $"having survived {villager.WintersSurvived} winters and gathered " +
                 $"{world.HouseholdOf(villager).Stockpile.LifetimeFood(world.GoodsCatalog.EdibleGoods).Grouped()} food across a full life.",
 
             CauseOfDeath.Starvation =>
-                $"{villager.Name} starved to death at {villager.AgeYears}, " +
+                $"{villager.FullName} starved to death at {villager.AgeYears}, " +
                 $"{world.Clock}. They had survived {villager.WintersSurvived} winters." +
                 AndAlso(world, villager, CauseOfDeath.Starvation),
 
@@ -104,12 +104,12 @@ public sealed class MortalitySystem : ISimSystem
             // frozen on the walk back from a tree stand with a full woodpile at home.
             // Where they were standing when it killed them is the fact that explains it.
             CauseOfDeath.Cold =>
-                $"{villager.Name} froze to death at {villager.AgeYears}, {world.Clock}, " +
+                $"{villager.FullName} froze to death at {villager.AgeYears}, {world.Clock}, " +
                 $"{WhereTheyWere(world, villager)}. " +
                 $"They had survived {villager.WintersSurvived} winters." +
                 AndAlso(world, villager, CauseOfDeath.Cold),
 
-            _ => $"{villager.Name} died.",
+            _ => $"{villager.FullName} died.",
         };
 
         world.Narrate(epitaph, LogCategory.Death);
@@ -135,7 +135,7 @@ public sealed class MortalitySystem : ISimSystem
         {
             world.RaiseMoment(
                 $"{world.Name} is empty",
-                $"The last of {world.Name} is gone — {villager.Name} {LastWords(cause)} {world.Clock}. "
+                $"The last of {world.Name} is gone — {villager.FullName} {LastWords(cause)} {world.Clock}. "
                 + "The valley keeps its buildings and its stores for now, and the woods will "
                 + "take them back if nobody comes.",
                 stops: false,

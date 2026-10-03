@@ -718,7 +718,7 @@ public sealed class FencesAsWallsTests
 
         for (int house = 0; house < 6; house++)
         {
-            var family = new Household { Stockpile = world.NewStockpile(), Id = 950 + house, Name = "Crowd" + house };
+            var family = new Household { Stockpile = world.NewStockpile(), Id = 950 + house, Surname = "Crowd" + house };
             world.Households.Add(family);
             world.MarkHome(family.Id, Household.ChooseSite(world, site, family.Id));
         }

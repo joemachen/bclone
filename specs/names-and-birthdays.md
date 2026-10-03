@@ -7,8 +7,8 @@ villager naming plan?"*), D465 (Joe, 2026-10-03: the slot; his prefix, suffix an
 couple carries **the older partner's** surname). Neighbours: D344/D392 (*a list content can grow is
 not a list a draw may range over*), D335 (a derived value is never hashed), D376 (renaming), D252
 (`Founder`, never hashed), D190 (rhythm, drawn at birth).
-**Status:** 🔨 **§3 FIRST NAMES BUILT (D466)**; §4 surnames and §5 birthdays not started. Three
-commits on `slice/names-and-birthdays`. Unplayed. Owner: Joe + Claude Code.
+**Status:** 🔨 **§3 FIRST NAMES BUILT (D466); §4 SURNAMES BUILT (D467)**; §5 birthdays not started.
+Three commits on `slice/names-and-birthdays`. Unplayed. Owner: Joe + Claude Code.
 
 ---
 
@@ -101,6 +101,12 @@ the first name (a season line is not a census).
 
 *"Agnes Cooper of the Cooper household and Ren Mason of the Mason household started the Cooper
 household — Agnes's name, as the elder."*
+
+**Built (D467)** as written, with the pairing line reading *"Agnes Cooper of the Cooper household and
+Ren Mason of the Mason household started the Cooper household (Agnes's name, as the elder)"* and a
+takeover *"… took over the empty Ashfords house - the Cooper household now (Agnes's name, as the
+elder)"*. No golden moved. The guards are `SurnameTests` (the table in §6, the takeover and the dead
+keeping theirs as one guard), red-checked under eight mutants.
 
 **Out of scope:** a lineage *map*. Parent ids belong with the town hall's records (`town-hall.md`),
 where Joe put *"some version of mappable lineage"*.
