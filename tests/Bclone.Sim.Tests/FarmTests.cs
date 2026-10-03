@@ -882,8 +882,16 @@ public sealed class FarmTests
         // derived thirteen a hand and reaps nine or ten of them; the third that rots is the
         // D361 probe not stepping back from the derived cap, filed for its own slice. "Most"
         // still holds at two thirds, and the guard fires on the half the sentence is about.
+        // ⭐ BACK TO THREE QUARTERS (D454, small fix 3 of D448). Measured before touching the farm:
+        // this reads 91% today (166 sown, 152 reaped) — the third that rotted at D386 is gone, and
+        // year by year the one hand reaps 11 to 16 of 13 to 16 sown at the learned thirteen. No
+        // code was owed; the bar was. ⚠️ RED CHECK SCORED ZERO, KEPT AND WRITTEN DOWN (D326): a
+        // spring allowed twice or half again the learned tiles reads the same here, because one
+        // hand can only sow about sixteen tiles in a spring — the season binds before the cap.
+        // The cap is held by `AFarmsHarvestFallsOffWithDistanceFromItsStore` and two in
+        // `FarmMemoryTests` (3 red under each mutant); this guards the outcome.
         Assert.True(
-            broughtIn >= 66,
+            broughtIn >= 75,
             $"Only {broughtIn}% of what the farm sowed was ever reaped. A spring that commits "
             + "ground the autumn cannot take turns use-it-or-lose-it from a consequence into "
             + "weather, and the player cannot act on weather.");
