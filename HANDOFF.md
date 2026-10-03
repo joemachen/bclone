@@ -1,6 +1,56 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D440–D451 IN §7. `main` = `slice/iron-mine` (D449–D451) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: THE SMALL FIXES, ONE COMMIT EACH (D448), THEN THE STUTTER.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D457 IN §7. THE SIX SMALL FIXES (D448) ARE BUILT ON `slice/small-fixes` (D452–D457), ONE COMMIT EACH — NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT, THEN THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (LATER) — THE IRON MINE PLAYED, MERGED AND PUSHED.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (NIGHT) — THE SIX SMALL FIXES BUILT.**
+>
+> **State:** `main` = `a630cfd`, pushed. **`slice/small-fixes`** = six commits, one per fix, **NOT merged, NOT
+> pushed, UNPLAYED.** At the last commit: **1344 passing, 0 failing, 5 skipped of 1349, 3m54**, **no golden moved except one, for
+> one proven reason (D452)**; view 0 warnings; probe green, bar height 161. ⚠️ Joe's `art/` changes are his —
+> never stage them; stage this file as **`HANDOFF.md`** and read `git status`.
+>
+> **What each fix turned out to be — ⚠️ three of the six were not what was filed, so read §7 before re-opening any:**
+> 1. **D452 — forester seats count grass only.** As filed. One predicate (`SimWorld.IsGroundToPlant`) for the
+>    seats, the errand and `Plant`. In the shipped established village a hut of 12 saplings held ~1.6 hands a tick
+>    idle. **The shipped fifty-year golden in `SkillTests` moved for this alone** (proven: the old seat line passes
+>    the old value). `AMarketIsStockedToItsOwnLimit` re-posed (the freed hands banked food and its one marketer
+>    spent spring on produce) — the counter's other goods are held at 0 for its run.
+> 2. **D453 — a site begun and paid for is finished first.** ⚠️ **The filed cause was false:** the village in
+>    `AStarvedHeadOfQueue…` is never short of food; its pose drains timber, so the fuel chain holds every spare hand
+>    (correct — fuel outranks building). The real case it hid: a fed four-hand village has one hand spare in summer
+>    and `free / 2` makes it nobody (a warehouse sat at 43 of 45 for two years). Fix: one spare hand kept for a
+>    *begun* stocked site (not merely stocked — that is D103's narrowing, which killed seed 11), and an
+>    empty-handed builder works it before fetching. 55 villages level (484 → 480 alive, 106 → 103 starved).
+> 3. **D454 — the over-painted farm: nothing to fix.** The third that rotted at D386 is gone (91 % today). The
+>    guard's bar is back at three quarters; its red check scores **zero** on its own (one hand's spring binds
+>    before the cap) and that is written down — three other farm guards hold the cap.
+> 4. **D455 — a demolition's facing was already recorded; nothing guarded it.** The new guard's first run found a
+>    **real bug beside it**: a store was asked for its building through its store kind, so a longhouse pulled down
+>    or moved came back a **2×2 warehouse**. `StoreBuilding.RaisedAs` (hashed sparsely) + `SimWorld.BuildingKindOf`.
+> 5. **D456 — nothing built on the lane in front of a gate**, refused in words. `ZoneMap.GateOwnerFacing`, an index
+>    kept where fences go up, come down and change hands.
+> 6. **D457 — `TheMarketKeepsLardersFromRunningDry` asserts a duration**: every dry spell within twice its own
+>    round trip. Measured: six spells a century, the worst the founders' first days. The market no longer changes
+>    dryness — households fetch for themselves.
+>
+> **▶️ NEXT: JOE PLAYS THE BRANCH.** What he can see: hover a building over the lane outside a yard's gate
+> (refused, naming the family); raise a longhouse, turn it, pull it down or move it (it stays a three-long
+> longhouse at its angle); a forester's hut on saplings no longer holds hands; a nearly finished site gets
+> finished. The rest are guards. Then he merges and pushes, **then the stutter** (D403's remainder — measure the
+> per-tick distance distribution first). **Names, surnames and birthdays (D395)** still wait on his slot.
+>
+> ⚠️ **The suite's clock reads ~5m25–5m47 today against 3m11–3m23 yesterday, and it is the machine:** compared
+> back to back (D426's rule), 5m47 with D453 and 5m44 without — and the last commit's suite ran 3m54. Do not chase it into a commit.
+>
+> **Tools (this session's scratchpad,
+> `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/20a20711-8072-46a0-a290-65eeae980e0b/scratchpad/`):**
+> `redcheck.py` (builds each mutant before counting — trap 150 — and a mutant may change several places:
+> `(name, [(path, old, new), …])`), `mut1.py`–`mut7.py` (this session's mutants), `ZzBase.cs` + `summ2.py`
+> (D420's 55 villages, copied from the D446 scratchpad), `ZzDryProbe.cs` (D457's spell distribution), and the
+> baselines `base-fix1.txt` / `fix2-both.txt`. Copy a Zz file into `tests/Bclone.Sim.Tests/`, run with
+> `--filter` and the detailed console logger, **delete before committing**.
+>
+> *(The 2026-10-02 later banner, kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 (LATER) — THE IRON MINE PLAYED, MERGED AND PUSHED.**
 >
 > **State:** `main` = `5be7eda`, `slice/iron-mine` (D449–D450) merged `--no-ff` + D451, **pushed at
 > Joe's word** (*"everything seems to work perfectly. merge and push."*). **No branch is open.**
@@ -3772,6 +3822,28 @@ Read `git status` after staging, every time.
      the count.** And a rig's rate over a fixed window is not the rate: the mine guard printed 31 per
      100 ticks where deliveries ran at 45, because the window held the first walk out and half a trip.
 
+## ⛔ THE TRAPS D452–D457 PAID FOR — A FILED FINDING IS A HYPOTHESIS, AND A GUARD SEES WHAT IS BESIDE IT
+
+151. **⚠️ MEASURE THE FILED FINDING BEFORE FIXING IT — THREE OF SIX WERE NOT WHAT THEY SAID (D453, D454, D455).**
+     *"The quota keeps every hand on food while the village is short"* — measured, the village was never short; the
+     guard's own pose (timber drained every tick) held two hands on fuel. *"A third rots"* — 91 % brought in today.
+     *"Nothing records a demolition's facing"* — the site has recorded it since D325, under a comment saying it did
+     not. Each would have been "fixed" by reasoning, and the first would have bent food priority for a test
+     artefact. **Put a probe on the claim, per season or per year, before writing the fix.**
+152. **⚠️ A GUARD POSED FOR ONE THING FINDS THE BUG NEXT TO IT — LET IT (D455).** The facing guard's first run said
+     2×2 for a 3×1 longhouse: a store was asked for its building through its STORE KIND, which answers the first
+     row. *A store kind is not a building.* When a new guard fails on a different line than the one it was written
+     for, that is a finding, not a bad pose.
+153. **⚠️ TWO HALVES OF ONE FIX MAY NOT SHARE A POSE (D453).** The quota half needed one spare hand; the behaviour
+     half needed a head whose materials were in a store — and putting them there fed the fuel chain, so one spare
+     hand became two and `free / 2` gave a builder anyway. Three of four mutants scored zero on the shared pose.
+     Each half got its own, and all four went red. *(Trap 145 from the other side: a pose that serves both halves
+     may serve neither.)*
+154. **⚠️ A RED CHECK THAT SCORES ZERO BECAUSE A SECOND ROUTE COVERS THE FIRST IS THE CLAIM WORKING (D457).** The
+     household top-up and the emergency restock each kept larders fed with the other knocked out — 0 red each, 1
+     red with both. That is an outcome guard doing its job: write the zeros down with the reason, and knock out
+     both.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **D446'S FOUR — ANSWERED BY JOE (D447): (1) *"ok"*; (2) *"thats fine for now"*; (3) *"sounds like your tests suck at the game. i didnt lose any people"*; (4) both tool limits 25. Kept for the numbers:** *(1)* the suite's opening (`ColdStartTests.PaintTheNearestSeam`)
@@ -3782,6 +3854,7 @@ Read `git status` after staging, every time.
   *(4)* the shipped fifty-year golden moved only for the `"iron tools": 200` starting limit — drop the
   limit and it goes back. `tools-and-the-smith.md §9.4` has the table.
 
+- ✅ **FIXED ON `slice/small-fixes` (D452) — grass only, one predicate; one golden moved for it, proven.** *(The entry, kept:)*
 - ⚠️ **`ForesterSeatsWithGroundToPlant` COUNTS A FORESTER'S PAINTED ROCK AND SAPLING TILES AS GROUND
   TO PLANT (found D434, not fixed).** `NextGroundToWork` never plants on them, so a forester's hut
   whose paint covers a seam keeps asking for planting seats nobody can use. Small; its own commit.
@@ -3825,6 +3898,7 @@ Read `git status` after staging, every time.
   4. **The risk under his rule, named to him:** the limit is no longer the village's total — ten
      homes' larders hold up to 4,000 more (walls at 400, D399). Whatever ships, the bar and the
      stock-limits panel must say **"in storage"**.
+- ✅ **RE-POSED ON `slice/small-fixes` (D457): every dry spell within twice its own round trip; the rate is reported only.**
 - ✅ **D448 — JOE HANDED THE GUARD BELOW TO ME (*"you'd know better than me"*):** re-pose it as the
   longest dry spell while the stores hold food, bounded by a marketer's round trip (a bank run is a
   duration, not a rate). In the small-fixes pass, red-checked.
@@ -3834,6 +3908,7 @@ Read `git status` after staging, every time.
 - ⭐ **THE WEAR CEILING'S NUMBER (D414; Joe, D416: *"keep it at 130 for now"*; again D448: *"keep it for now. revisit later."*).** 130 is level over
   42 fifty-year villages (330 alive vs 337, starved 100 vs 108) and an abandoned hub path is grass in
   eight years. 104 — the nearest to the spec's "six seasons" — cost 26 people. His to revisit.
+- ✅ **FIXED ON `slice/small-fixes` (D453) — and the cause below was wrong when measured:** the guard's village is never short of food; its drained timber holds the fuel chain. The real case (one spare hand rounded to nobody) is fixed: a begun, paid-for site keeps one hand and is finished before fetching. *(The entry, kept:)*
 - ⭐ **A BUILDER MOVED OFF A STOCKED SITE (found in D414, not fixed; on main too).** In
   `AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt`'s pose, the one builder put 37 work into a
   fully stocked warehouse, then the labour allocator moved her to foraging and nobody touched the
@@ -3892,7 +3967,7 @@ Read `git status` after staging, every time.
   seed. Pre-existing; skipped with the numbers; its own slice, and the order is his.
 - ~~⏸️⏸️ **FENCES AS WALLS — §9.1, THE TRADE (D404).**~~ ✅ Merged (D406): *"let longer walks be
   the price of fences."*
-- ✅ **D448 — JOE: REFUSE IT.** A small fix, in the small-fixes pass.
+- ✅ **D448 — JOE: REFUSE IT.** A small fix, in the small-fixes pass. ✅ **Built on `slice/small-fixes` (D456).**
 - ⏸️ **A BUILDING ON THE LANE IN FRONT OF A GATE (D404, spec §9.3)** is allowed and shuts the yard.
   Harmless until the kitchen garden needs a yard entered; refusing it is one more lane tile the
   player may not build on. His call.
@@ -3908,6 +3983,7 @@ Read `git status` after staging, every time.
   yards read as yards, the lanes as lanes and the rows as rows is the picture, and the picture is
   the spec (D352). The well as the lane's focal point and the kitchen garden in the yard are the
   two things the plot was sized for and are not built.
+- ✅ **NO LONGER TRUE (D454): the guard reads 91 % today; its bar is back at three quarters.** *(The entry, kept:)*
 - ⚠️ **THE FARM'S LEARNED CAP SITS AT THE DERIVED THIRTEEN WHILE AN OVER-PAINTED FARM REAPS TWO
   THIRDS OF WHAT IT SOWS (found D386).** `AFarmBringsInMostOfWhatItSows` read 76 % before and 68 %
   after the lane tile; the probe (D361) climbs to the cap and does not step back though a third
@@ -3978,6 +4054,7 @@ Read `git status` after staging, every time.
 - **`gathers_per_thinned_tile` stays 0 for ever** (D297) but is kept as a modder dial.
 - **`ApprenticeshipTests` stays skipped** (D287, his explicit call). *Do not "fix" it* — restoring
   it means reversing D227.
+- ✅ **GUARDED ON `slice/small-fixes` (D455): the facing was recorded on the site all along; the guard found a longhouse came back a warehouse, and that is fixed.** *(The entry, kept:)*
 - ⛔ **THE DEMOLITION OF A ROTATED BUILDING DRAWS AT THE RIGHT ANGLE NOW (D325), BUT ONLY BECAUSE
   IT IS ASKED WHILE THE BUILDING STILL STANDS.** Nothing records a facing once a building has
   become a demolition site, so if that lookup ever moves later in the sequence it silently draws
