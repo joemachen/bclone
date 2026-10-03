@@ -21,7 +21,7 @@ public sealed class MapGenerationTests
     private static SimConfig Config => VillageFixtures.Village;
 
     private static GeneratedMap Generate(SimConfig config, ulong seed) =>
-        MapGenerator.Generate(config, new DeterministicRandom(seed));
+        MapGenerator.Generate(config, seed);
 
     [Fact]
     public void SameSeedGivesTheSameValley()
@@ -144,7 +144,8 @@ public sealed class MapGenerationTests
     // iron seams placed by hash, and every iron seam grown until it holds 50. No draw was added —
     // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
     // 10984246327142560906.
-    private const ulong GoldenMapHash = 8294284479965600006UL;
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 8294284479965600006.
+    private const ulong GoldenMapHash = 6546559622498121930UL;
 
     /// <summary>
     /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
@@ -167,9 +168,10 @@ public sealed class MapGenerationTests
     // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
     // keeps its founding site, soil and seams. See `GoldenMapHash`.
     // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
-    [InlineData(12345UL, 9492872349874793864UL, 420, 2640, 141, 52)]
-    [InlineData(2UL, 17624964258198066199UL, 410, 2673, 150, 52)]
-    [InlineData(42UL, 9190696535150768213UL, 425, 2626, 127, 43)]
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Every kind moves, as it should. Were 9492872349874793864 (420 / 2640 / 141 / 52), 17624964258198066199 (410 / 2673 / 150 / 52), 9190696535150768213 (425 / 2626 / 127 / 43).
+    [InlineData(12345UL, 17700436842626828916UL, 410, 2489, 143, 45)]
+    [InlineData(2UL, 9700739267172670076UL, 415, 2722, 156, 52)]
+    [InlineData(42UL, 1092681087056102210UL, 410, 2650, 141, 51)]
     public void EachSeedsTerrainIsWhatItWas(
         ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
     {
@@ -262,28 +264,71 @@ public sealed class MapGenerationTests
     }
 
     /// <summary>
-    /// ⭐ The woodland was appended to the draw order, so no seed's valley moved for it.
+    /// ⭐ The woodland changes nothing but trees: with none at all, every other tile of the
+    /// valley and its founding site are where they were.
     /// </summary>
     /// <remarks>
-    /// <b>The same guard the seams got (D91), and for the same reason.</b> Draw order is the
-    /// seed contract: a draw inserted in the middle shifts every subsequent value, so the
-    /// river, the sites, the stands, the founding site and the soil would all move for every
-    /// seed anybody has written down. Proved by generating the same seed with the coverage set
-    /// to zero and asserting everything except the trees is identical.
+    /// <para>
+    /// The woodland is the last stage and paints over open grass only, so a bare valley and a
+    /// wooded one differ by grass that became forest and nothing else. Under per-stage seeds
+    /// (D473) its stream is its own; this guard is what says it also paints nothing it should
+    /// not — over the river, over a seam, over the founders' glade's neighbours' rock.
+    /// </para>
+    /// <para>
+    /// It was <c>TheWoodlandWasAppendedToTheDrawOrder</c> under one shared stream, and asserted
+    /// the founding site and the soil; the soil is gone (D470), and this asks every tile.
+    /// </para>
     /// </remarks>
     [Theory]
     [InlineData(1UL)]
     [InlineData(12345UL)]
-    public void TheWoodlandWasAppendedToTheDrawOrder(ulong seed)
+    public void TheWoodlandChangesNothingButTrees(ulong seed)
     {
         SimConfig config = Config;
 
-        SimWorld wooded = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
-        SimWorld bare = SimFactory.CreatePhase0(
-            config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), seed).World;
+        GeneratedMap wooded = Generate(config, seed);
+        GeneratedMap bare = Generate(config with { ForestCoveragePercent = 0 }, seed);
 
-        Assert.Equal(bare.Map.FoundingSite, wooded.Map.FoundingSite);
-        Assert.Equal(bare.Map.Soil, wooded.Map.Soil);
+        Assert.Equal(bare.FoundingSite, wooded.FoundingSite);
+
+        int grew = 0;
+        for (int i = 0; i < wooded.Tiles.Count; i++)
+        {
+            if (wooded.Tiles[i] == bare.Tiles[i])
+            {
+                continue;
+            }
+
+            Assert.True(
+                bare.Tiles[i] == Terrain.Grass && wooded.Tiles[i] == Terrain.Forest,
+                $"Seed {seed}, tile {i}: the woodland turned {bare.Tiles[i]} into {wooded.Tiles[i]}.");
+            grew++;
+        }
+
+        Assert.True(grew > 0, "The woodland grew nothing, so this guard proves nothing.");
+    }
+
+    /// <summary>
+    /// ⭐ Every stage has a seed of its own, and none of them is the run's seed (D473).
+    /// </summary>
+    /// <remarks>
+    /// Two stages on one seed draw the same numbers — the river's wander and the founding
+    /// jitter in lockstep — which is D435's defect by another route; a stage on the run's own
+    /// seed draws what the village's <c>Rng</c> draws. Asked across a spread of seeds including
+    /// the small ones, where D344 found <c>DeterministicRandom</c>'s stream parameter failing.
+    /// </remarks>
+    [Fact]
+    public void EveryStageHasASeedOfItsOwn()
+    {
+        foreach (ulong seed in new ulong[] { 0, 1, 2, 3, 42, 12345, ulong.MaxValue })
+        {
+            var seen = new HashSet<ulong> { seed };
+            foreach (MapGenerator.Stage stage in Enum.GetValues<MapGenerator.Stage>())
+            {
+                ulong stageSeed = MapGenerator.StageSeed(seed, stage);
+                Assert.True(seen.Add(stageSeed), $"Seed {seed}: the {stage} stage shares a seed.");
+            }
+        }
     }
 
     /// <summary>Woodland never takes the stone and iron back out of the valley.</summary>

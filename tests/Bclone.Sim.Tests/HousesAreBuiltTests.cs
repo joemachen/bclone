@@ -773,6 +773,16 @@ public sealed class HousesAreBuiltTests
         SimWorld world = loop.World;
         SimConfig config = world.Config;
 
+        // ⚠️ THE LARDERS STOCKED (D473). On the fixture's per-stage valley the builder's home is
+        // ten tiles from the store, and an armful of 40 fetched twenty ticks each way is about what
+        // the household eats on the walk: the builder spent 89 of the season's 120 ticks fetching the
+        // family's food and 28 building, and the warehouse stood at 20 of 45. The claim is which
+        // site a builder works, not how far the family lives from its food (D395's armful-80 thread).
+        foreach (Household home in world.Households)
+        {
+            home.Stockpile.Add(Goods.Produce, 200);
+        }
+
         begun.Construction!.Work();
         Assert.Equal(head.Id, world.NextSiteToServe()?.Id);
 

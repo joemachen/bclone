@@ -106,28 +106,155 @@ public sealed class SeamsTests
         Assert.Equal(Count(withoutOre, Terrain.Water), Count(withOre, Terrain.Water));
     }
 
-    /// <summary>⭐ Adding the seams moved nothing that was already in the valley.</summary>
+    /// <summary>
+    /// ⭐ The seams move no other stage's draws (D473): with no seams at all, the river and the
+    /// founding site are where they were and the woods grow where they grew.
+    /// </summary>
     /// <remarks>
-    /// <b>The draw order is the contract</b>, and this is what says the new draws were
-    /// APPENDED rather than inserted. Anywhere earlier and every subsequent random value
-    /// shifts, so the river, the stands, the sites, the founding and the soil all move for
-    /// every seed anybody has written down — a save-breaking change wearing the clothes of
-    /// a worldgen feature.
+    /// <para>
+    /// <b>Each stage of the valley draws on a stream of its own</b> (`seeded-map-generation.md
+    /// §13`). So a valley with its seams taken out keeps its water and its founding site to the
+    /// tile, and every wooded tile of the valley with seams is wooded without them too — the
+    /// woodland's clumps fall in the same places, and the only trees that differ are the ones
+    /// that grow on grass the seams no longer take.
+    /// </para>
+    /// <para>
+    /// It was <c>TheSeamsWereAppendedToTheDrawOrder</c> under one shared stream, where the seams
+    /// had to come after everything they must not move. Under per-stage seeds the order is not
+    /// what protects the other stages; their own streams are.
+    /// </para>
     /// </remarks>
     [Theory]
     [InlineData(12345UL)]
     [InlineData(7UL)]
     [InlineData(2024UL)]
-    public void TheSeamsWereAppendedToTheDrawOrder(ulong seed)
+    public void TheSeamsMoveNoOtherStagesDraws(ulong seed)
     {
-        SimConfig config = VillageFixtures.Village with { Seed = seed };
+        SimConfig with = VillageFixtures.Village with { Seed = seed };
+        SimConfig without = with with { StoneSeamCount = 0, IronSeamCount = 0, ExtraStoneSeams = 0, ExtraIronSeams = 0 };
 
-        SimWorld withOre = Build(seed);
-        SimWorld withoutOre = SimFactory.CreatePhase0(
-            config with { StoneSeamCount = 0, IronSeamCount = 0 }, new InMemoryLogSink()).World;
+        GeneratedMap withOre = MapGenerator.Generate(with, seed);
+        GeneratedMap withoutOre = MapGenerator.Generate(without, seed);
 
-        Assert.Equal(withoutOre.Map.FoundingSite, withOre.Map.FoundingSite);
-        Assert.Equal(withoutOre.Map.Soil, withOre.Map.Soil);
+        Assert.Equal(withoutOre.FoundingSite, withOre.FoundingSite);
+
+        int woodsOnRock = 0;
+        for (int i = 0; i < withOre.Tiles.Count; i++)
+        {
+            Terrain ore = withOre.Tiles[i];
+            Terrain none = withoutOre.Tiles[i];
+
+            Assert.True(
+                (ore == Terrain.Water) == (none == Terrain.Water),
+                $"Seed {seed}, tile {i}: the river moved with the seams ({none} → {ore}).");
+
+            if (ore == Terrain.Forest)
+            {
+                Assert.True(
+                    none == Terrain.Forest,
+                    $"Seed {seed}, tile {i}: a wood stands here with the seams and not without — "
+                    + "the woodland's clumps moved, so the seams drew on its stream.");
+            }
+
+            if (ore is Terrain.Rock or Terrain.IronDeposit && none == Terrain.Forest)
+            {
+                woodsOnRock++;
+            }
+        }
+
+        _output.WriteLine($"seed {seed}: without the seams, woods grow on {woodsOnRock} tiles they took");
+    }
+
+    /// <summary>
+    /// ⭐ Two drawn seams of a kind do not share one offset from their slots (D435, D473).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>D435's measured defect, as a rate.</b> The seams' stream was handed to each helper by
+    /// value, so every drawn seam drew the same jitter: on twelve shipped seeds every stone seam
+    /// in a valley sat at one offset from its slot. With the stone stage's stream passed by
+    /// <c>ref</c>, the four drawn seams take four draws each of x and y, and four of nine offsets
+    /// all coinciding is about one valley in 729.
+    /// </para>
+    /// <para>
+    /// <b>Read off the map, not re-drawn</b> — a guard that drew the jitters itself would agree
+    /// with whatever the generator does (D419). Each drawn seam's offset is the one jitter whose
+    /// diamond holds all of the seam's rock; a seam the river clips so that two offsets fit is
+    /// skipped rather than guessed.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TwoDrawnSeamsDoNotShareAnOffset()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        int jitter = shipped.SiteJitterTiles;
+        int radius = shipped.StoneSeamRadiusTiles;
+        Assert.True(jitter > 0 && shipped.StoneSeamCount >= 2, "Nothing to compare.");
+
+        int asked = 0;
+        int shared = 0;
+        for (ulong seed = 1; seed <= 24; seed++)
+        {
+            // Stone only, no woods, so every rock tile near a slot is that slot's seam.
+            SimConfig config = shipped with
+            {
+                Seed = seed, ExtraStoneSeams = 0, IronSeamCount = 0, ExtraIronSeams = 0, ForestCoveragePercent = 0,
+            };
+            GeneratedMap map = MapGenerator.Generate(config, seed);
+
+            var offsets = new List<(int X, int Y)>();
+            for (int i = 0; i < config.StoneSeamCount; i++)
+            {
+                GridPos slot = MapGenerator.RingSlot(i, config.StoneSeamRingTiles);
+                var rock = new List<GridPos>();
+                for (int dy = -radius - jitter; dy <= radius + jitter; dy++)
+                {
+                    for (int dx = -radius - jitter; dx <= radius + jitter; dx++)
+                    {
+                        var at = new GridPos(slot.X + dx, slot.Y + dy);
+                        if (map.Contains(at) && map.TerrainAt(at) == Terrain.Rock)
+                        {
+                            rock.Add(at);
+                        }
+                    }
+                }
+
+                var fits = new List<(int X, int Y)>();
+                for (int oy = -jitter; oy <= jitter; oy++)
+                {
+                    for (int ox = -jitter; ox <= jitter; ox++)
+                    {
+                        if (rock.Count > 0 && rock.TrueForAll(t =>
+                            Math.Abs(t.X - (slot.X + ox)) + Math.Abs(t.Y - (slot.Y + oy)) <= radius))
+                        {
+                            fits.Add((ox, oy));
+                        }
+                    }
+                }
+
+                if (fits.Count == 1)
+                {
+                    offsets.Add(fits[0]);
+                }
+            }
+
+            if (offsets.Count >= 2)
+            {
+                asked++;
+                if (offsets.TrueForAll(o => o == offsets[0]))
+                {
+                    shared++;
+                    _output.WriteLine($"seed {seed}: {offsets.Count} seams all at {offsets[0]}");
+                }
+            }
+        }
+
+        _output.WriteLine($"{shared} of {asked} valleys have every drawn stone seam at one offset");
+        Assert.True(asked >= 20, $"Only {asked} valleys had two seams whose offset could be read.");
+        Assert.True(
+            shared <= 1,
+            $"{shared} of {asked} valleys put every drawn seam at one offset from its slot — the "
+            + "seams are drawing on a copy of their stream (D435).");
     }
 
     /// <summary>Ore can be walked over — you have to stand on a seam to clear it.</summary>
@@ -216,8 +343,8 @@ public sealed class SeamsTests
     /// <para>
     /// The extra seams take their offsets from a hash, never a draw, so the woodland painted
     /// after them sits where it sat: every tree in the valley without them is a tree with them,
-    /// or a tile the new rock took; no tree appears that was not there. The river, the soil and
-    /// the founding site are untouched.
+    /// or a tile the new rock took; no tree appears that was not there. The river and the
+    /// founding site are untouched.
     /// </para>
     /// <para>
     /// ⚠️ <b>What it cannot catch (D435):</b> the generator passes its stream by value, so a draw
@@ -236,8 +363,8 @@ public sealed class SeamsTests
         SimConfig without = with with { ExtraStoneSeams = 0, ExtraIronSeams = 0 };
         Assert.True(with.ExtraStoneSeams > 0 && with.ExtraIronSeams > 0, "Nothing to compare.");
 
-        GeneratedMap a = MapGenerator.Generate(without, new DeterministicRandom(seed));
-        GeneratedMap b = MapGenerator.Generate(with, new DeterministicRandom(seed));
+        GeneratedMap a = MapGenerator.Generate(without, seed);
+        GeneratedMap b = MapGenerator.Generate(with, seed);
 
         int took = 0;
         for (int i = 0; i < a.Tiles.Count; i++)
@@ -263,7 +390,6 @@ public sealed class SeamsTests
 
         _output.WriteLine($"seed {seed}: the new seams took {took} tiles the woods would have had");
         Assert.Equal(a.FoundingSite, b.FoundingSite);
-        Assert.Equal(a.Soil, b.Soil);
     }
 
     /// <summary>
@@ -284,7 +410,7 @@ public sealed class SeamsTests
 
         for (ulong seed = 1; seed <= 64; seed++)
         {
-            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, new DeterministicRandom(seed));
+            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, seed);
             foreach (int i in MapGenerator.SeamSlots(shipped.IronSeamCount, shipped.ExtraIronSeams, shipped.IronSeamRingTiles))
             {
                 GridPos slot = MapGenerator.RingSlot(i, shipped.IronSeamRingTiles);
@@ -315,7 +441,7 @@ public sealed class SeamsTests
 
         for (ulong seed = 1; seed <= 64; seed++)
         {
-            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, new DeterministicRandom(seed));
+            GeneratedMap map = MapGenerator.Generate(shipped with { Seed = seed }, seed);
             bool[] reach = Reachable(map, map.FoundingSite);
             int seams = 0;
             foreach (int i in MapGenerator.SeamSlots(shipped.StoneSeamCount, shipped.ExtraStoneSeams, shipped.StoneSeamRingTiles))

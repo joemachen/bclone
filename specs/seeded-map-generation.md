@@ -1,8 +1,8 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
 > Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
-> §13, per-stage seeds (the shell's first step, D473), is specced and 🔨 being built on
-> `slice/per-stage-seeds` — not on `main`.** · Owner: Joe + Claude Code
+> §13, per-stage seeds (the shell's first step, D473), is ✅ BUILT on `slice/per-stage-seeds` —
+> NOT merged, NOT pushed, unplayed by Joe; §13.5 has what building it found.** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
 > Format per `METHODOLOGY.md §2`. Implements decision **D18**.
@@ -53,13 +53,13 @@ The budget is not a new number: it is `VillageEconomy.RoundTripTicks` and its si
 
 ## 4. What gets generated
 
-In draw order, which is part of the seed contract:
+In the order generated (⚠️ *the draw-order contract below is superseded by per-stage seeds, §13*):
 
 1. **The river.** One watercourse along the valley's long axis, wandering. Water is the first terrain that is not merely decoration — see §10.1.
 2. **Forest stands.** Clusters, not scatter — a stand is a place you go to, and `JobKind.Logger` already assumes one.
 3. **Forage sites.** Spread the way D24 requires: a ring at roughly settlement width plus a couple further out. **This is a constraint the generator inherits, not a free choice** — D24 is a record of what happens when sites cluster in one place.
 4. **The founding site** — where the first homes, granary and warehouse go. Chosen by the generator as a spot that meets the budget in §3.
-5. **Soil quality** — named here so the field exists in the data model, unused until §2.3's soil depletion lands.
+5. ~~**Soil quality**~~ — ⛔ removed (D395, built D470; its draw deleted D473). Not a stage.
 
 **Not generated yet:** biome variety. One valley archetype, generated differently each time. See §10.3.
 
@@ -69,14 +69,13 @@ In draw order, which is part of the seed contract:
 
 ```
 MapGenerator
-    Generate(SimConfig, DeterministicRandom) -> GeneratedMap
+    Generate(SimConfig, ulong seed) -> GeneratedMap      // per-stage streams, §13
 
 GeneratedMap
     Terrain      : Terrain[width * height]     // Grass | Water | Forest
     ForageSites  : GridPos[]
     TreeStands   : GridPos[]
     FoundingSite : GridPos
-    SoilQuality  : byte[]                      // reserved, unused
 ```
 
 `SimWorld` takes a `GeneratedMap` instead of reading coordinates from config. The config keys those coordinates live in today (`food_source_x`, `extra_forage_sites`, `tree_stand_x`, …) become **generator parameters** — how many sites, how far out, how big a stand — which is the honest data-driven form and keeps a modder in control of the *rules* rather than the *outcomes*.
@@ -282,3 +281,26 @@ the new-game screen → settings persistence → save/load → title and pause. 
 3. **Stage seeds are pairwise distinct and none is the run's seed** (red: `StageSeed` returning
    `seed`).
 4. The golden map hash and the per-seed terrain fingerprints, re-taken once.
+
+### 13.5 What building it found (D471–D473)
+
+- **The first reshuffle broke 101 tests, and two of them were the generator's own faults, latent
+  on `main` and fixed there first** (each its own commit on the old generator, no golden moved):
+  the founding's gatherer hut was bounded by a ruler, so on a valley whose river runs beside the
+  founding it sat across the water, 25 tiles walked against a budget of 9 (**D471**); and the
+  founding site was the river bank on any valley whose river runs near the middle, half the
+  starter zone across water (**D472** — the founders now settle with no water inside the starter
+  zone's diamond; D420's 55 villages 429 → 495 alive, 100 shipped seeds 450 → 487).
+- **Survival is level** — measured against D472, before any golden was re-taken: 100 shipped
+  seeds 487 → 479 alive (dead valleys 28 → 30); 50 fresh fixture valleys 475 → 490 (dead 9 → 7).
+  The fixture's own seeds 1–12 read 164 → 97 — thirteen valleys' luck, which the fifty fresh ones
+  show is not the generator. **The shipped seed 12345 is not re-picked**: 19 alive, 0 starved at
+  fifty, against 8 alive and 7 starved.
+- **The remaining 39 were one-village poses** whose premise rested on the old valleys — re-posed
+  one at a time, each with its reason and its numbers in the test (D473 lists them); the goldens
+  and walk pins re-taken once. One guard is **false on `main` too** and is skipped with its numbers
+  for Joe: hunting does not out-earn fishing per tick worked (886 against 1,299 over six valleys).
+- **Guards:** `TheSeamsMoveNoOtherStagesDraws` (3 reds: the woodland on the stone stage's stream),
+  `TwoDrawnSeamsDoNotShareAnOffset` (1: the seams drawing on a copy), `EveryStageHasASeedOfItsOwn`
+  (1: `StageSeed` returning the seed), `TheWoodlandChangesNothingButTrees` (2: woods over anything).
+

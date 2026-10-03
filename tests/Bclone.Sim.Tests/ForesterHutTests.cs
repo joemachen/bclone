@@ -62,6 +62,31 @@ public sealed class ForesterHutTests
     }
 
     /// <summary>A buildable, bare tile near the village.</summary>
+    /// <summary>
+    /// Staff the hut under test, and make sure somebody actually works it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>A PIN AND THE FOUNDING'S OWN HUT SHUT (D473).</b> <c>SetStaffing</c> is a ceiling,
+    /// not a summons. On the fixture's per-stage valley the village is four hands — two on food,
+    /// a woodcutter, and the founding's forester hut takes the one forester the quota wants — so
+    /// the hut under test was never worked ("nobody ever worked the hut") and every claim about
+    /// what a worked hut does was vacuous. The guards are about the hut, not the allocator, so the
+    /// village is told plainly: the founding hut takes nobody, and one adult is kept on forestry.
+    /// </remarks>
+    private static void KeepAForesterAt(SimWorld world, Workplace hut)
+    {
+        foreach (Workplace other in world.Workplaces)
+        {
+            if (other.Kind == JobKind.Forester && other.Id != hut.Id && !other.IsSite)
+            {
+                world.SetStaffing(other, 0);
+            }
+        }
+
+        world.SetStaffing(hut, hut.Capacity);
+        world.SetPinnedTrade(world.Villagers.First(v => v.Alive && v.CanWork), JobKind.Forester);
+    }
+
     private static GridPos ClearGroundNear(SimWorld world)
     {
         GridPos site = world.Map.FoundingSite;
@@ -179,7 +204,7 @@ public sealed class ForesterHutTests
         Assert.True(given > 0, "The hut was given no woodland, so nothing was tested.");
 
         int woodedBefore = CountOwnedForest(world, hut);
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         // ⚠️ THE LOW-WATER MARK, NOT THE COUNT AT THE END, AND D126 IS WHY. This read the
         // owned woodland after three years and asked whether it had shrunk — which was the
@@ -231,7 +256,7 @@ public sealed class ForesterHutTests
         Assert.True(given > 0, "The hut was given no bare ground, so nothing was tested.");
 
         int woodedBefore = CountOwnedForest(world, hut);
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         loop.Step(config.TicksPerYear * 5);
 
@@ -258,7 +283,7 @@ public sealed class ForesterHutTests
 
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
         GiveGround(world, hut, 5, wooded: false);
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         // ⚠️ HALF A YEAR, NOT A YEAR, AND D137 IS WHY. The claim is that *the planting errand*
         // yields nothing, and it still holds — but a tending forester now fells whatever is
@@ -314,7 +339,7 @@ public sealed class ForesterHutTests
         Workplace hut = RaiseAHut(world, ClearGroundNear(world));
         Assert.Equal(WorkMode.FellAndPlant, hut.Mode);
         Assert.True(GiveGround(world, hut, 5, wooded: true) > 0, "The hut was given no woodland.");
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         // Anti-vacuity (D7): if the two prices were the same this guard could not fail.
         Assert.True(VillageEconomy.PlantTicks(config) > config.CutTicks);
@@ -392,7 +417,7 @@ public sealed class ForesterHutTests
         int bare = GiveGround(world, hut, 5, wooded: false);
         Assert.True(wooded > 0, "The hut was given no woodland, so nothing was tested.");
         Assert.True(bare > 0, "The hut was given no bare ground, so nobody will work it.");
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         int woodedAtTheStart = CountOwnedForest(world, hut);
         int lowest = woodedAtTheStart;
@@ -457,7 +482,7 @@ public sealed class ForesterHutTests
         Assert.False(world.MayFell(hut), "A met log limit must stop the felling.");
 
         int woodedBefore = CountOwnedForest(world, hut);
-        world.SetStaffing(hut, hut.Capacity);
+        KeepAForesterAt(world, hut);
 
         int everStaffed = 0;
         for (int tick = 0; tick < config.TicksPerYear * 5; tick++)

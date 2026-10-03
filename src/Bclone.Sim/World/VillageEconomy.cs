@@ -954,36 +954,6 @@ public static class VillageEconomy
         return (settled < 1 ? 1 : settled) * config.TravelTicksPerUnit * 2;
     }
 
-    /// <summary>
-    /// The ground <c>crop_yield_per_tile</c> describes — <b>average ground</b>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ THIS IS WHAT LETS SOIL MATTER WITHOUT RE-DERIVING ANYTHING</b>
-    /// (`specs/per-site-yield.md §4.1`). <c>crop_yield_per_tile</c> is on Joe's locked list, so
-    /// soil is a multiplier <em>around</em> it rather than a replacement: a field on average
-    /// ground yields exactly what it yields today, better ground yields more and worse ground
-    /// less. **The locked 67 is untouched and acquires a precise meaning it never had — it is
-    /// the yield on average ground.**
-    /// </para>
-    /// <para>
-    /// <b>Derived from the generator's own range, never typed</b> (D16). A second number here
-    /// would be one that could drift away from the soil the map actually contains, which is the
-    /// two-sources-of-truth shape D76 and D148 both record.
-    /// </para>
-    /// <para>
-    /// It is the same device <c>skills-catalog.md §3.2</c> uses one system over, and for the
-    /// same reason: <b>a multiplier that averages to one leaves every derived number standing</b>,
-    /// where one that averages above it silently inflates the whole economy.
-    /// </para>
-    /// </remarks>
-    public static int ReferenceSoil(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        return (config.SoilQualityMin + config.SoilQualityMax) / 2;
-    }
-
     public static int RequiredCropYield(SimConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);

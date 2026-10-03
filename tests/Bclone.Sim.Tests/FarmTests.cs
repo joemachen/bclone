@@ -128,7 +128,7 @@ public sealed class FarmTests
         // A quarter, to within the floor of an integer division and a farmer's vigour.
         Assert.InRange(perTileQuarter, (perTileWhole / 4) - 1.5, (perTileWhole / 4) + 1.5);
 
-        // And the whole-tile arm is the crop the config promises, scaled by soil and vigour only
+        // And the whole-tile arm is the crop the config promises, scaled by vigour only
         // — not a sixteenth less.
         Assert.True(perTileWhole > Config.CropYieldPerTile * 0.5,
             $"A whole tile brought in {perTileWhole:F1} against a yield of {Config.CropYieldPerTile}.");
@@ -420,6 +420,18 @@ public sealed class FarmTests
 
         Assert.All(slivers, at => Assert.Equal(SubTile.PerTile, world.Zones.WorkGroundSubTilesOn(at)));
         FarmFixtures.PinAFarmhand(world, farm);
+
+        // ⚠️ THE LARDERS STOCKED FIRST (D473). The founding's first spring is every household
+        // filling an empty larder: on the fixture's per-stage valley both farmhands spent 53 of
+        // its 120 ticks walking home from the store and sowed 20 of 31 slivers. The question is
+        // how a sliver is charged, asked of a spring the farm's hands can spend at the farm.
+        // ⚠️ RED-CHECKED (D473): charging the cap a whole tile for each standing sliver → 1 red; a
+        // sliver taking a whole tile's sowing TICKS scores ZERO here (two hands sow 31 slivers in a
+        // stocked spring at whole-tile time) — kept, the zero written down (D326).
+        foreach (Household home in world.Households)
+        {
+            home.Stockpile.Add(Goods.Produce, 200);
+        }
 
         FarmFixtures.StepToTheStartOf(loop, Season.Spring);
 
@@ -830,7 +842,52 @@ public sealed class FarmTests
     [Fact]
     public void AFarmBringsInMostOfWhatItSows()
     {
-        SimConfig config = Config;
+        // ⭐ A LEDGER OVER SIX VALLEYS, NOT ONE (D473). On the fixture's per-stage valley this pose
+        // — empty stores, one of four hands pinned to a farm that yields nothing until autumn —
+        // starves the whole village in year one (25 sown in ten years against 166 on the old
+        // valley), and a dead village's farm measures nothing. Six valleys put the farm in front of
+        // villages that live and villages that do not, and the claim is about what is sown.
+        int sown = 0;
+        int reaped = 0;
+        for (ulong seed = 1; seed <= 6; seed++)
+        {
+            (int sownHere, int reapedHere) = SowAndReapForTenYears(Config with { Seed = seed });
+            sown += sownHere;
+            reaped += reapedHere;
+        }
+
+        int broughtIn = sown == 0 ? 0 : reaped * 100 / sown;
+        _output.WriteLine($"over 10 years in six valleys: sown {sown}, reaped {reaped} — {broughtIn}% brought in");
+
+        Assert.True(sown > 0, "Nothing was sown, so the guard measures nothing.");
+
+        // ⚠️ TWO THIRDS, NOT THREE QUARTERS (D386). This read 76 against 75 the day before the
+        // founders' houses moved into plots — a guard passing by its bar (trap 87) — and 68 the
+        // day after, with the farmhand's walk a lane longer each way. The farm sows the
+        // derived thirteen a hand and reaps nine or ten of them; the third that rots is the
+        // D361 probe not stepping back from the derived cap, filed for its own slice. "Most"
+        // still holds at two thirds, and the guard fires on the half the sentence is about.
+        // ⭐ BACK TO THREE QUARTERS (D454, small fix 3 of D448). Measured before touching the farm:
+        // this reads 91% today (166 sown, 152 reaped) — the third that rotted at D386 is gone, and
+        // year by year the one hand reaps 11 to 16 of 13 to 16 sown at the learned thirteen. No
+        // code was owed; the bar was. ⚠️ RED CHECK SCORED ZERO, KEPT AND WRITTEN DOWN (D326): a
+        // spring allowed twice or half again the learned tiles reads the same here, because one
+        // hand can only sow about sixteen tiles in a spring — the season binds before the cap.
+        // The cap is held by `AFarmsHarvestFallsOffWithDistanceFromItsStore` and two in
+        // `FarmMemoryTests` (3 red under each mutant); this guards the outcome.
+        Assert.True(
+            broughtIn >= 75,
+            $"Only {broughtIn}% of what the farm sowed was ever reaped. A spring that commits "
+            + "ground the autumn cannot take turns use-it-or-lose-it from a consequence into "
+            + "weather, and the player cannot act on weather.");
+    }
+
+    /// <summary>
+    /// Ten years of one pinned farmhand on over-painted ground in a village with nothing in the
+    /// stores: what was sown and what was reaped (see <see cref="AFarmBringsInMostOfWhatItSows"/>).
+    /// </summary>
+    private (int Sown, int Reaped) SowAndReapForTenYears(SimConfig config)
+    {
         SimLoop loop = FarmFixtures.WithNothingInTheStores(Loop(config));
         SimWorld world = loop.World;
         Workplace farm = FarmFixtures.RaiseAFarm(world);
@@ -869,32 +926,8 @@ public sealed class FarmTests
             }
         }
 
-        int broughtIn = sown == 0 ? 0 : reaped * 100 / sown;
-        _output.WriteLine(
-            $"over {Years} years on {painted} painted tiles: sown {sown}, reaped {reaped} "
-            + $"— {broughtIn}% brought in");
-
-        Assert.True(sown > 0, "Nothing was sown, so the guard measures nothing.");
-
-        // ⚠️ TWO THIRDS, NOT THREE QUARTERS (D386). This read 76 against 75 the day before the
-        // founders' houses moved into plots — a guard passing by its bar (trap 87) — and 68 the
-        // day after, with the farmhand's walk a lane longer each way. The farm sows the
-        // derived thirteen a hand and reaps nine or ten of them; the third that rots is the
-        // D361 probe not stepping back from the derived cap, filed for its own slice. "Most"
-        // still holds at two thirds, and the guard fires on the half the sentence is about.
-        // ⭐ BACK TO THREE QUARTERS (D454, small fix 3 of D448). Measured before touching the farm:
-        // this reads 91% today (166 sown, 152 reaped) — the third that rotted at D386 is gone, and
-        // year by year the one hand reaps 11 to 16 of 13 to 16 sown at the learned thirteen. No
-        // code was owed; the bar was. ⚠️ RED CHECK SCORED ZERO, KEPT AND WRITTEN DOWN (D326): a
-        // spring allowed twice or half again the learned tiles reads the same here, because one
-        // hand can only sow about sixteen tiles in a spring — the season binds before the cap.
-        // The cap is held by `AFarmsHarvestFallsOffWithDistanceFromItsStore` and two in
-        // `FarmMemoryTests` (3 red under each mutant); this guards the outcome.
-        Assert.True(
-            broughtIn >= 75,
-            $"Only {broughtIn}% of what the farm sowed was ever reaped. A spring that commits "
-            + "ground the autumn cannot take turns use-it-or-lose-it from a consequence into "
-            + "weather, and the player cannot act on weather.");
+        _output.WriteLine($"seed {config.Seed}: {painted} painted tiles, sown {sown}, reaped {reaped}");
+        return (sown, reaped);
     }
 
     /// <summary>

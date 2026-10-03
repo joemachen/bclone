@@ -741,7 +741,7 @@ public static class StateHash
         return hash;
     }
 
-    /// <summary>Fingerprint a generated valley — terrain, soil, and everything on it.</summary>
+    /// <summary>Fingerprint a generated valley — its terrain and everything on it.</summary>
     public static ulong MixMap(ulong hash, GeneratedMap map)
     {
         ArgumentNullException.ThrowIfNull(map);
@@ -756,16 +756,11 @@ public static class StateHash
             hash = MixByte(hash, (byte)map.Tiles[i]);
         }
 
-        for (int i = 0; i < map.Soil.Count; i++)
-        {
-            hash = MixByte(hash, map.Soil[i]);
-        }
-
         // What is sown where (D161). ⭐ SPARSE, AND WITH NO COUNT ALONGSIDE — the same shape as
         // the harvest zone above and for exactly the reason stated there: a village that has
         // never sown a field mixes *nothing at all*, so this layer is invisible to every run
-        // that does not farm and neither golden moves for its existing. A full pass like
-        // `Soil` above would mix a fresh zero per tile into every village in the game.
+        // that does not farm and neither golden moves for its existing. A full pass would
+        // mix a fresh zero per tile into every village in the game.
         //
         // The index alone determines the set, so the count was only ever belt and braces —
         // and here it would be the belt that moved the hashes.

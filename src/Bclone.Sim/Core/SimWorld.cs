@@ -9522,7 +9522,9 @@ public sealed class SimWorld : IObstacles
                 // seed 24 under per-stage seeds). Open ground is four-neighbour at one base cost a
                 // step, so on dry ground with nothing in the way the walk IS the Manhattan
                 // distance and nothing moves; it refuses exactly the tiles the ruler lied about.
-                // One flow field, to the founding site, answers every candidate.
+                // One flow field, to the founding site, answers every candidate. ⚠️ Its red check
+                // scores ZERO since D472 keeps the founding off the bank: no valley of the guard's
+                // thirty puts a hut across water now. Kept; the zero is written down (D326).
                 distance = TravelCost.Cost(at, origin) / TravelCostField.BaseTileCost;
                 if (distance > reach)
                 {
@@ -10160,13 +10162,13 @@ public sealed class SimWorld : IObstacles
         Rng = new DeterministicRandom(seed);
         Tick = 0UL;
 
-        // THE WORLD IS GENERATED FIRST, and from the run's own seeded stream (D18).
+        // THE WORLD IS GENERATED FIRST, from the run's seed (D18).
         //
-        // Before anything else draws, because draw order is the seed contract: the
-        // map, then the villagers' names and lifespans. Generating later — or from a
-        // second RNG — would mean the seed no longer reproduced the world, which is
-        // the entire point of tying worldgen to the sim's seed rather than its own.
-        Map = MapGenerator.Generate(config, Rng);
+        // ⭐ Each stage of the valley draws on a stream of its own, seeded from this seed
+        // (D473, `MapGenerator.Stage`) — never on `Rng`, which is the founding's and the
+        // village's. One number still reproduces the whole run, world included. (Before D473
+        // the generator was handed `Rng` by value, so the sim's first draws were the river's.)
+        Map = MapGenerator.Generate(config, seed);
 
         // The cost field needs the terrain, so it is built after the valley — a route
         // now goes ROUND the river rather than over it (D40), and catchment, market

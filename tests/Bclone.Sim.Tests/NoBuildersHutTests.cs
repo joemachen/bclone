@@ -45,6 +45,35 @@ public sealed class NoBuildersHutTests
     private static GridPos Nearby(SimWorld world) =>
         new(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
 
+    /// <summary>
+    /// The nearest tile to the founding a building of this kind can stand on with nothing to clear.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Not <see cref="Nearby"/> for a hut that must STAND (D473).</b> On the fixture's per-stage
+    /// valley founding + (3, 3) is wood: marking there paints the ground for clearing first (the
+    /// instant-pile rule) and no hut stands until the trees are down.
+    /// </remarks>
+    private static GridPos ClearGroundNearby(SimWorld world, BuildingKind kind)
+    {
+        GridPos founding = world.Map.FoundingSite;
+        for (int radius = 2; radius < 12; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(founding.X + dx, founding.Y + dy);
+                    if (!world.HasSomethingToHarvest(at) && world.CanBuildAt(kind, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("Nowhere clear near the founding site.");
+    }
+
     /// <summary>⛔ The sentence that sent Joe looking for the wrong bug.</summary>
     [Fact]
     public void WithSomethingMarkedAndNoHutTheVillageNamesTheHutAndNotTheMarking()
@@ -131,7 +160,7 @@ public sealed class NoBuildersHutTests
     public void OnceAHutStandsNothingWarns()
     {
         SimWorld world = ColdValley();
-        Assert.True(world.Mark(BuildingKind.BuilderHut, Nearby(world)).Allowed);
+        Assert.True(world.Mark(BuildingKind.BuilderHut, ClearGroundNearby(world, BuildingKind.BuilderHut)).Allowed);
         Assert.True(world.HasABuildersHut());
 
         PlacementVerdict verdict = world.CanBuildAt(

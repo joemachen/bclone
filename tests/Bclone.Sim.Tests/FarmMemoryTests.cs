@@ -144,11 +144,20 @@ public sealed class FarmMemoryTests
 
         // Then three deliberately miserable years — a single tile each, which is the shape of a
         // farm that lost its hands or sat under a met stock limit.
+        //
+        // ⚠️ NOBODY SOWS IN SPRING (D473, D406's lesson one guard over). The memory reads
+        // `sown − standing`, so a field the farmhands sowed in spring and this pose wiped in summer
+        // is a field BROUGHT IN — on the fixture's per-stage valley the farm has a hand in spring,
+        // and "three one-tile years" taught it 3 → 6. The seats are empty through spring, the one
+        // tile is the year's whole sowing, and the hands come back to reap it.
+        int places = farm.Places;
         for (int year = 0; year < 3; year++)
         {
+            world.SetStaffing(farm, 0);
             FarmFixtures.StepToTheStartOf(loop, Season.Summer);
             ClearTheField(world, farm);
             SowExactly(world, farm, 1);
+            world.SetStaffing(farm, places);
             FarmFixtures.StepToTheStartOf(loop, Season.Winter);
         }
 
@@ -490,27 +499,40 @@ public sealed class FarmMemoryTests
     [Fact]
     public void AndItBringsInMoreThanThePredictionEverLetIt()
     {
-        int reaped = FarmTestGround.TilesReapedOverTenYears(Config, walkAway: 10, out int walk, out int broughtIn);
+        // ⭐ A LEDGER OVER SIX VALLEYS, NOT ONE (D473). The prediction produced 51 tiles over ten
+        // years at this distance, measured — in the village that fed a family of four by foraging.
+        // At D363's floor (foraging feeds a couple) the same farm on the prediction alone brought
+        // in 38; D382's 2×2 farmhouse made it 27 against 35 with memory and probe — all on the
+        // shipped seed's ONE valley. Under per-stage seeds that valley's village barely works its
+        // farm (22 against 21: a dying village, not a farm memory), as do three of twelve others,
+        // so one village could not say anything. Measured with `LearnFromTheAutumn` stubbed, the
+        // prediction alone reaps **207** over seeds 1–6 (31 / 54 / 5 / 6 / 58 / 53); with memory
+        // and probe, **229** (36 / 60 / 5 / 6 / 64 / 58).
+        int reaped = 0;
+        int sown = 0;
+        int walk = 0;
+        for (ulong seed = 1; seed <= 6; seed++)
+        {
+            int here = FarmTestGround.TilesReapedOverTenYears(
+                Config with { Seed = seed }, walkAway: 10, out walk, out int broughtIn);
+            reaped += here;
+            sown += broughtIn == 0 ? 0 : here * 100 / broughtIn;
+            _output.WriteLine($"seed {seed}, {walk} ticks out: {here} tiles reaped, {broughtIn}% brought in");
+        }
 
-        _output.WriteLine($"{walk} ticks out: {reaped} tiles reaped, {broughtIn}% brought in");
+        int broughtInAll = sown == 0 ? 0 : reaped * 100 / sown;
+        _output.WriteLine($"six valleys: {reaped} tiles reaped, {broughtInAll}% brought in");
 
-        // The prediction produced 51 tiles over ten years at this distance, measured — in the
-        // village that fed a family of four by foraging. At D363's floor (foraging feeds a couple)
-        // the same farm on the prediction alone — memory and probe switched off, measured —
-        // brings in 38; with them, 46. ⚠️ Re-measured for D382: the farmhouse is 2×2 and takes
-        // four of the 7×7 tiles painted round it, so the field is 45 tiles, not 48 — the
-        // prediction alone (`LearnFromTheAutumn` stubbed) brings in 27 now; with memory and
-        // probe, 35.
         Assert.True(
-            reaped > 27,
-            $"A farm {walk} ticks out reaped {reaped} tiles in ten years. The prediction it "
-            + "replaced manages 27 at this floor, and the ledger says the ground is there for more.");
+            reaped > 207,
+            $"Six farms {walk} ticks out reaped {reaped} tiles in ten years. The prediction they "
+            + "replaced manages 207 over the same valleys, and the ledger says the ground is there for more.");
 
         // ⛔ AND THE ROT LINE STAYS HONEST (D167). Bringing in more by sowing far more and
         // losing the difference to winter is the bug this slice's ancestor fixed.
         Assert.True(
-            broughtIn >= 75,
-            $"The farm brought in only {broughtIn}% of what it sowed. Rot every year by "
+            broughtInAll >= 75,
+            $"The farms brought in only {broughtInAll}% of what they sowed. Rot every year by "
             + "construction is weather, and the player cannot act on weather (D167).");
     }
 

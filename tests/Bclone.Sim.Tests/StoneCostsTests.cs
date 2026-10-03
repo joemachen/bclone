@@ -180,33 +180,47 @@ public sealed class StoneCostsTests
         // a 2× bar cannot tell noise from a price, and the sum can.
         int alive = 0;
         int withStone = 0;
-        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 11UL })
+        // ⚠️ SIX VALLEYS WHOSE CONTROL LIVES (D473). Per-stage seeds gave seeds 12345 / 2 / 7 / 1 /
+        // 3 / 11 new valleys, and their seam-painted controls read 1 / 2 / 0 / 1 / 0 / 2 at fifty —
+        // the premise below refused to compare dead with dead, as it should. These are the six
+        // lowest seeds whose CONTROL has grown past its founders at fifty (8 / 15 / 9 / 11 / 8 / 11,
+        // measured over seeds 1–24): chosen on the control arm, never on the arm under test. ⚠️ The
+        // opening-only village is fragile on either generator — over 25 seeds 134 alive (6 dead) on
+        // the old, 100 (9 dead) on the new, per-seed 0–15: inside its own noise.
+        // ⛔⛔ AGAINST THE SAME FOUNDING THAT DID PAINT A SEAM, NOT AGAINST A REMEMBERED
+        // NUMBER (D262). This asserted `alive >= 15` and went red at 12 the day a gathering hut
+        // stopped seating seven — not because stone had cost anybody their life, but because
+        // **every** village in the suite is smaller now. A flat bar cannot tell those two apart,
+        // and it is the difference this guard exists to measure.
+        // Twelve independent worlds, run side by side (D473) — nothing in the sim is shared between
+        // them, and six living valleys run one at a time took 51 seconds.
+        ulong[] seeds = { 4UL, 6UL, 9UL, 12UL, 13UL, 18UL };
+        var runs = new (int Here, int There, int Food)[seeds.Length];
+        System.Threading.Tasks.Parallel.For(0, seeds.Length * 2, i =>
         {
-            SimConfig config = VillageFixtures.Village with { Seed = seed };
+            SimConfig config = VillageFixtures.Village with { Seed = seeds[i / 2] };
             SimLoop loop = Loop(config);
-            SimWorld world = loop.World;
-
-            ColdStartTests.PlayTheOpening(world, paintASeam: false);
+            ColdStartTests.PlayTheOpening(loop.World, paintASeam: i % 2 == 1);
             loop.Step(config.TicksPerYear * 50);
+            if (i % 2 == 0)
+            {
+                runs[i / 2].Here = CountAlive(loop.World);
+                runs[i / 2].Food = loop.World.TotalFood();
+            }
+            else
+            {
+                runs[i / 2].There = CountAlive(loop.World);
+            }
+        });
 
-            // ⛔⛔ AGAINST THE SAME FOUNDING THAT DID PAINT A SEAM, NOT AGAINST A REMEMBERED
-            // NUMBER (D262). This asserted `alive >= 15` and went red at 12 the day a gathering hut
-            // stopped seating seven — not because stone had cost anybody their life, but because
-            // **every** village in the suite is smaller now. A flat bar cannot tell those two apart,
-            // and it is the difference this guard exists to measure.
-            SimLoop control = Loop(config);
-            ColdStartTests.PlayTheOpening(control.World, paintASeam: true);
-            control.Step(config.TicksPerYear * 50);
-
-            int here = CountAlive(world);
-            int there = CountAlive(control.World);
-            alive += here;
-            withStone += there;
-
+        for (int i = 0; i < seeds.Length; i++)
+        {
+            alive += runs[i].Here;
+            withStone += runs[i].There;
             _output.WriteLine(
-                $"seed {seed}, no seam ever painted, huts priced at {config.GathererHutStone} stone: "
-                + $"{here} alive after 50 years, {world.TotalFood()} food "
-                + $"(the same founding WITH a seam painted: {there} alive)");
+                $"seed {seeds[i]}, no seam ever painted, huts priced at {VillageFixtures.Village.GathererHutStone} stone: "
+                + $"{runs[i].Here} alive after 50 years, {runs[i].Food} food "
+                + $"(the same founding WITH a seam painted: {runs[i].There} alive)");
         }
 
         SimConfig anyConfig = VillageFixtures.Village;
@@ -258,7 +272,11 @@ public sealed class StoneCostsTests
     [Fact]
     public void AStoreWithNoStoneWaitsRatherThanKillingTheVillage()
     {
-        SimConfig config = VillageFixtures.Village;
+        // ⚠️ SEED 4, NOT THE FIXTURE'S 12345 (D473). Under per-stage seeds 12345's opening-only
+        // village dies whether a granary is marked or not, so "the granary killed it" could not be
+        // asked of it. Seed 4 is the lowest whose no-seam opening LIVES — 9 alive at fifty in
+        // `AFoundingThatPaintsNoSeamStillLives` — chosen on that control, not on this guard.
+        SimConfig config = VillageFixtures.Village with { Seed = 4UL };
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
 

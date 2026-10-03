@@ -1,6 +1,39 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D469 IN §7. NAMES, SURNAMES AND BIRTHDAYS (D465–D469) PLAYED, MERGED AND PUSHED. NO SLICE OPEN. NEXT: JOE'S SLOT.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D473 IN §7. `slice/per-stage-seeds` (D470–D473) BUILT, NOT MERGED, NOT PUSHED, UNPLAYED. NEXT: JOE PLAYS IT.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS MERGED AND PUSHED (D469).**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (EVENING) — PER-STAGE SEEDS BUILT ON A BRANCH (D470–D473).**
+>
+> **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = five commits, **NOT merged, NOT pushed,
+> UNPLAYED:** `4425e87` the spec, `5f10827` ground quality removed (D470), `935833d` the founding hut bounded by walking
+> (D471), `e6b032e` the founders settle on dry ground (D472), and per-stage seeds (D473). At D473: **1354 passing, 0
+> failing, 6 skipped of 1360; 3m46 back to back against D472's 4m31; view 0 warnings; probe green, bar height 161,
+> tile centres ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`**.
+>
+> **What Joe asked and what it became:** *"Shell first then D395 threads."* The shell's first step is per-stage seeds
+> (`seeded-map-generation.md §13`). Mid-slice: *"didn't we remove soil effects from the game? i want to remove its
+> function, all references to it, and the map/view of it"* — **it had been approved (D395) and never built**; it is
+> gone now (D470 the function and the view; D473 the draw, the array, the hash, the config keys). On 101 reds he chose
+> *"take it, do it right"*: two were latent generator faults, fixed first on the old generator (D471, D472 — D472
+> alone took 55 villages 429 → 495), and the other 39 were one-village poses, re-posed with reasons (D473 lists them).
+>
+> **▶️ NEXT: JOE PLAYS `slice/per-stage-seeds`.** What he will see: **every seed is a new valley** (his familiar ones
+> too — the shipped 12345 is kept: 19 alive, 0 starved at fifty, unattended); **no Ground button, no `G`, no "rich /
+> thin ground" line**, and a farm reaps the same anywhere; the founders never settle on a river bank. Then he merges
+> and pushes, and **the new-game screen** is the next shell step (spec first). **Two calls are his on the ⏸️ list
+> below:** hunting does not out-earn fishing per tick worked — on `main` too; and the household that fetches as fast
+> as it eats (D395's armful-80 thread).
+>
+> **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/1ab6508a-2be9-4bfc-b38f-988b499deba8/scratchpad/`):**
+> `ZzBase.cs` + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` 100 shipped seeds; **`ZZ_FIX=1` 50 fresh fixture valleys,
+> new**), `mut.py` (now counts a Theory's cases separately and `--show` prints `ticks out` lines), `mut_d473.py` /
+> `mut_d473b.py` / `mut_dry.py` / `mut_probe.py` / `mut_pred.py`, the per-arm baselines `base-*.txt` / `wide-*.txt` /
+> `fix50-*.txt`. Run with **`PYTHONIOENCODING=utf-8`**. Copy a Zz file into `tests/Bclone.Sim.Tests/`, `--filter`,
+> **delete before committing**. To compare against an older commit, `git worktree add <scratchpad>/old-gen <sha>`
+> and remove it after.
+>
+> *(The banner as D469 left it — kept below.)*
+
+
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS MERGED AND PUSHED (D469).**
 >
 > **State:** `main` = `6420e7a` — `slice/names-and-birthdays` (D465–D469) merged `--no-ff` and **pushed at Joe's word**: *"looks
 > great after playing … spread births through the year - each household has its own day … then merge and push."*
@@ -4112,7 +4145,53 @@ Read `git status` after staging, every time.
      timing of an event moves, grep the guards for counts that stand in for the claim** (`Population ==`, totals rather
      than rates, one seed's history as a pose) and ask each for its claim directly.
 
+## ⛔ THE TRAPS D470–D473 PAID FOR — A RESHUFFLE IS A FREE SAMPLE OF VALLEYS, AND A ONE-VALLEY GUARD IS A COIN
+
+- **An approved decision with no slice is not a removed feature.** D395 said *"remove ground quality"*
+  on 2026-09-19 and §5 ticked it; the soil term scaled every harvest and the overlay was live for two
+  weeks. Joe asked *"didn't we remove soil?"* — check the code, not the checkbox.
+- **101 reds after a reshuffle are not 101 problems — read the two that are the generator's first.**
+  Seeds 24 and 99 broke a *generator guarantee*, and both faults were latent on `main` (D471 a hut
+  across the river by ruler; D472 a founding on the bank). Fixed first, on the old generator, each its
+  own commit: the reds fell to 39 and D472 alone took 55 villages 429 → 495. **Fix the rule before
+  re-posing the guards, or every re-pose is posed against a broken generator.**
+- **Before re-posing, ask whether the drop is the valley or the generator — with fifty fresh ones.**
+  The fixture's seeds 1–12 fell 164 → 97; fifty fresh fixture valleys read 475 → 490. The thirteen
+  were luck. Without the fresh fifty that drop would have read as a regression, or been shopped away.
+- **Choose a seed on the CONTROL arm, never on the arm under test, and write the table down.**
+  "The lowest seed whose ungated / seam-painted / unlimited village lives" is a premise; "a seed where
+  the guard passes" is a lie. Every re-pose in D473 names its rule and the numbers it chose from.
+- **A one-valley balance guard is a coin: ask six valleys.** The hunter ladder had passed for weeks on
+  805 against 772; six valleys say 886 against 1,299 on `main`. The farm memory, the brings-in rate and
+  the shipped build guard are ledgers now; run the worlds side by side (`Parallel.For` — nothing in the
+  sim is shared) or the suite's clock pays for it (51 s → 7 s for one guard).
+- **"Nobody ever worked it" means the village had no hand to spare, not that the building is broken.**
+  Four-hand fixture villages hold every hand on food; `SetStaffing` is a ceiling. Pose the worker
+  (a pin, the founding's own hut shut) or stock the larders, and say why in the test.
+- **A wiped field is a field brought in (D406), and it bit again** — a pose that clears a field the
+  farmhands sowed in spring teaches the memory that the year was a full one. Keep the seats empty
+  through spring when the year is to be thin.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐⭐ **HUNTING DOES NOT OUT-EARN FISHING PER TICK WORKED — FALSE ON `main` TOO (found D473).**
+  Your ladder is hunting above fishing above foraging. `HuntingTests.AHunterOutEarnsAFisherPerTickWorked`
+  had only ever asked one valley (the fixture's, 805 against 772 — thin). Asked of six valleys: **on
+  the old generator hunters make 886 per 100 ticks worked against fishers' 1,299 (the fisher ahead
+  in 5 of 6); under per-stage seeds 700 against 1,069.** A hunter walks to game in the woods round
+  the lodge (D384) while a fisher casts beside the hut, so the walk eats the hunt. The guard is
+  skipped with those numbers. **Your call:** raise the hunt's yield (`hunt_yield` / ticks) until the
+  ladder holds over valleys, accept fishing above hunting, or something else. Measured either way.
+- ⭐ **A HOUSEHOLD TEN TILES FROM ITS STORE FETCHES ABOUT AS FAST AS IT EATS (found D473).** Traced in
+  the fixture's per-stage valley: an armful of 40, twenty ticks each way, and the family eats ~16 of
+  it on the walk home — the larder climbs ~8 a trip, and one adult spent 89 of a season's 120 ticks
+  fetching food (28 building). It is the armful, not a bug: **D395's approved, unbuilt "armful 40 → 80,
+  eat once every four days"** is the answer, and it is a D16 re-derivation. Two guards stock the
+  larders now so this does not stand in front of what they test.
+- ⚠️ **THE OPENING-ONLY FIXTURE VILLAGE IS FRAGILE ON EITHER GENERATOR (D473), named, not chased.**
+  Played opening, nothing marked, fifty years, 25 seeds: 134 alive (6 dead) on the old generator,
+  100 (9 dead) on the new; per-seed 0–15, so a gap of about one standard deviation. With a granary
+  marked at year three it is level over fifty fresh valleys (475 → 490). Harness, not player (D447).
 
 - ✅ **DECIDED AND BUILT (D469) — Joe: *"spread births through the year - each household has its own day."* Kept for the reasoning.** ~~EVERY CHILD IS BORN ON DAY 1 OF SPRING (D468) — JOE'S CALL.~~ Birthdays are real since D468 (a year older on
   one's own day; the founders' spread by hash), but `HouseholdSystem` decides births once a year at its turn, so every

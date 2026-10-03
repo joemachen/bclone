@@ -46,7 +46,14 @@ public sealed class FoodLimitTests
 
     private static Tally RunAForagingYear(int foodLimit, ITestOutputHelper output)
     {
-        SimConfig config = VillageFixtures.Village;
+        // ⚠️ SEED 6, AND CHOSEN SO THE YEAR NEED NOT BE SWEPT AGAIN (D473). Under per-stage seeds
+        // the fixture's 12345 opening-only village holds no food at all here (417 gathering ticks,
+        // 0 clearing, 0 held), and the year below had already been re-swept three times (D417,
+        // D422, D424). Swept over seeds 4 / 6 / 9 × years 4–12, unlimited clearing → limited:
+        // seed 4 is thin (56, 28, 50, 191, 0), seed 6 is live in EVERY year (352→41, 439→186,
+        // 439→301, 579→228, 545→272) and holds 1,328 → 2,055 at year four. Chosen on the
+        // unlimited arm, the premise, never on the limited one.
+        SimConfig config = VillageFixtures.Village with { Seed = 6UL };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 

@@ -391,12 +391,6 @@
   "river_width_tiles": 3,
   "river_width_wander_tiles": 1,
 
-  // DEAD DATA since ground quality was removed (D395, built D470): generated
-  // and hashed, read by nothing. It stays only so this commit moves no seed;
-  // per-stage seeds (D473) delete the draw, the array and these keys.
-  "soil_quality_min": 40,
-  "soil_quality_max": 200,
-
   // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
   // The first was how many hands fit at one berry patch, and there are
@@ -1341,8 +1335,8 @@
   "iron_seam_radius_tiles": 1,
 
   // MORE STONE AND IRON FOR THE QUARRY (quarry.md §3.1, D434, Joe's calls).
-  // Placed by HASH, never drawn, so every seed keeps its river, soil and
-  // woods. Eight more stone seams on the SECOND ring (its four cardinals at
+  // Placed by HASH, never drawn: the stone and iron stages' streams are
+  // spent only on the first four and two (D473). Eight more stone seams on the SECOND ring (its four cardinals at
   // 21, its four diagonals at 14,14) -- never nearer the village than the
   // first ring, whose diagonals sit in the founding's house plots: a quarry
   // is cut only into rock and laborers clear rock for good, so a valley must

@@ -249,7 +249,7 @@ public sealed class Workplace
 
     /// <summary>Which tile this building is filed under — derived, never stored.</summary>
     /// <remarks>
-    /// ⛔ <b>Everything that asks the cost field or the map asks THIS.</b> Terrain, soil, zones and
+    /// ⛔ <b>Everything that asks the cost field or the map asks THIS.</b> Terrain, zones and
     /// travel cost stay tile-indexed for ever and deliberately (`specs/gridless.md §10.2`, Joe's
     /// call), so the grid did not go away — it stopped being where things ARE and became what the
     /// ground is like. <b>Derived rather than stored, or it is a second copy to keep in step</b>,

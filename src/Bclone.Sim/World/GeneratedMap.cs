@@ -201,7 +201,6 @@ public enum HarvestBrush
 public sealed class GeneratedMap
 {
     private readonly Terrain[] _terrain;
-    private readonly byte[] _soil;
 
     // Which crop is sown where (D161). Not a generator output — the valley arrives with none,
     // and it only ever becomes non-zero where a farmer sows. That is what lets it be hashed
@@ -217,18 +216,15 @@ public sealed class GeneratedMap
         int minX,
         int minY,
         Terrain[] terrain,
-        byte[] soilQuality,
         GridPos foundingSite)
     {
         ArgumentNullException.ThrowIfNull(terrain);
-        ArgumentNullException.ThrowIfNull(soilQuality);
 
         Width = width;
         Height = height;
         MinX = minX;
         MinY = minY;
         _terrain = terrain;
-        _soil = soilQuality;
         _crop = new byte[terrain.Length];
         _youngSapling = new bool[terrain.Length];
         FoundingSite = foundingSite;
@@ -269,36 +265,6 @@ public sealed class GeneratedMap
         int index = IndexOf(position);
         return index < 0 ? Terrain.Grass : _terrain[index];
     }
-
-    /// <summary>
-    /// How good the ground is on a tile, 0–255 — <b>what makes one site worth more than
-    /// another</b> (`specs/per-site-yield.md`).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Off the map returns <see cref="World.VillageEconomy.ReferenceSoil"/>'s own anchor
-    /// rather than zero, for the reason <see cref="TerrainAt"/> returns <c>Grass</c>: a
-    /// query about somewhere that does not exist should answer *ordinary*, not *ruinous*, or
-    /// every off-map read becomes a silent penalty. **Callers that care about the edge should
-    /// ask <see cref="Contains"/>**, which is the same contract terrain has.
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>The value is regional, not per-tile</b> (`per-site-yield.md §3.1`) — neighbouring
-    /// tiles are alike, so a field's soil is a property of *where the field is* rather than a
-    /// thirteen-sample average that comes out the same everywhere.
-    /// </para>
-    /// </remarks>
-    public int SoilAt(GridPos position)
-    {
-        int index = IndexOf(position);
-        return index < 0 ? DefaultSoil : _soil[index];
-    }
-
-    /// <summary>
-    /// What an off-map soil query answers. The midpoint of a byte, which is what
-    /// <see cref="World.VillageEconomy.ReferenceSoil"/> lands on for any symmetric config.
-    /// </summary>
-    private const int DefaultSoil = 120;
 
     /// <summary>
     /// Which crop is sown on a tile, or <c>0</c> for none (D161).
@@ -493,16 +459,6 @@ public sealed class GeneratedMap
 
     /// <summary>Every tile, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<Terrain> Tiles => _terrain;
-
-    /// <summary>Soil, in the same order as <see cref="Tiles"/>.</summary>
-    /// <remarks>
-    /// <b>⚠️ Generated, hashed, and read by nothing in the sim</b> — deliberately. It is in the
-    /// draw order early so that when soil depletion lands (§2.3, `crops-and-orchards.md §7`) it
-    /// does not have to *change* the draw order, which would move the founding site, both seams
-    /// and every seed anybody has written down. **Fertility is waiting for a reader, not for a
-    /// design.**
-    /// </remarks>
-    public IReadOnlyList<byte> Soil => _soil;
 
     /// <summary>Crops, in the same order as <see cref="Tiles"/>. Zero means nothing sown.</summary>
     public IReadOnlyList<byte> Crops => _crop;

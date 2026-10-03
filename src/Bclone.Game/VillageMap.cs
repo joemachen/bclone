@@ -1996,7 +1996,7 @@ public partial class VillageMap : Control
     /// grid draws it.</b> Get this wrong and **every building on the map shifts by half a tile**,
     /// which reads as a drawing bug rather than as a units bug. *One conversion, one place, one
     /// comment — the alternative was moving the view's convention, which would have touched
-    /// terrain, soil, the grid lines and the minimap to save this subtraction.*
+    /// terrain, the grid lines and the minimap to save this subtraction.*
     /// </para>
     /// <para>
     /// ⚠️ <b>The float appears HERE and never travels the other way.</b> Fixed-point to float is

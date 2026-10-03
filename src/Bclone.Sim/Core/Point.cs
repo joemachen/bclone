@@ -8,7 +8,7 @@ namespace Bclone.Sim.Core;
 /// <remarks>
 /// <para>
 /// <b>⭐⭐ THIS IS THE TYPE OPTION C TURNS ON.</b> `specs/gridless.md §7.3` chose *"the grid becomes
-/// an index, not a constraint"*: terrain, soil and the cost field stay tile-indexed, while things
+/// an index, not a constraint"*: terrain and the cost field stay tile-indexed, while things
 /// that are <em>placed</em> and things that <em>move</em> get real coordinates. <see cref="GridPos"/>
 /// does not go away — it becomes the answer to *"which tile is this?"* rather than *"where is
 /// this?"*, and <see cref="ToTile"/> is the conversion between the two.
