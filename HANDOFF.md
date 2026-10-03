@@ -4,7 +4,8 @@
 >
 > **State:** `main` = `5be7eda`, `slice/iron-mine` (D449–D450) merged `--no-ff` + D451, **pushed at
 > Joe's word** (*"everything seems to work perfectly. merge and push."*). **No branch is open.**
-> `slice/iron-mine` is not deleted — ask Joe (it was never on the remote; tip `ab442ce`). At the
+> `slice/iron-mine` **deleted at Joe's word (2026-10-02)** — tip `ab442ce`, 0 commits not on `main`,
+> never on the remote. At the
 > merge: **1336 passing, 0 failing, 5 skipped of 1341, 3m23; no golden moved; view 0 warnings; probe
 > green, bar height 161, `faces:` ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this
 > file as **`HANDOFF.md`** and read `git status`.
@@ -4179,7 +4180,7 @@ and every document in the repo said #3 for a day before anyone checked.
 **0 commits not on `main`**. Tips if ever wanted back: `phase/3-skill-and-apprenticeship`
 `028f4fc`, `phase/2-wood-fuel-and-tools` `9b9f410`, `slice/per-site-yield` `b2cb718`,
 `slice/faster-cost-field` `daec8fd`, `slice/the-market-that-never-gets-staffed` `48ab7e5`,
-`slice/quarry` `25b5576`.
+`slice/quarry` `25b5576`, `slice/iron-mine` `ab442ce`.
 
 ⛔ **ONE BRANCH IS GENUINELY UNMERGED: `slice/work-from-the-steading` (`e12b20f`, 1 commit).** ✅ **DECIDED 2026-09-11 (D355): Joe chose the look; it is a Phase 5 REBUILD on `RestingPoint`, and the branch stays as the record of the measurement — do not merge it.**
 Farmhands staying at the farm through the working seasons — **an economic no-op that costs ~13%
