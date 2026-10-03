@@ -1,6 +1,44 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D440–D450 IN §7. `main` = D448 (Joe's calls); **`slice/iron-mine` = D449–D450, BUILT, UNPLAYED, NOT MERGED, NOT PUSHED.** NEXT: JOE PLAYS THE IRON MINE; THEN THE SMALL FIXES (D448).**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D440–D451 IN §7. `main` = `slice/iron-mine` (D449–D451) MERGED AND PUSHED. NO BRANCH OPEN. NEXT: THE SMALL FIXES, ONE COMMIT EACH (D448), THEN THE STUTTER.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 — THE IRON MINE BUILT ON `slice/iron-mine`.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-02 (LATER) — THE IRON MINE PLAYED, MERGED AND PUSHED.**
+>
+> **State:** `main` = `5be7eda`, `slice/iron-mine` (D449–D450) merged `--no-ff` + D451, **pushed at
+> Joe's word** (*"everything seems to work perfectly. merge and push."*). **No branch is open.**
+> `slice/iron-mine` is not deleted — ask Joe (it was never on the remote; tip `ab442ce`). At the
+> merge: **1336 passing, 0 failing, 5 skipped of 1341, 3m23; no golden moved; view 0 warnings; probe
+> green, bar height 161, `faces:` ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this
+> file as **`HANDOFF.md`** and read `git status`.
+>
+> **▶️ NEXT: THE SMALL FIXES, ONE COMMIT EACH, IN JOE'S ORDER (D448) — then the stutter slice.** Each
+> is on the ⏸️ list below with its finding; spec line first where one exists, red-check every guard
+> and **read the build line before the red count (trap 150)**:
+> 1. **`ForesterSeatsWithGroundToPlant` counts a forester's painted rock and sapling tiles** as ground
+>    to plant (found D434) — `NextGroundToWork` never plants on them, so the hut asks for seats
+>    nobody can use.
+> 2. **A builder moved off a fully stocked site** (D414, D430) — the labour quota keeps every hand on
+>    food while the village is short; `AStarvedHeadOfQueueDoesNotStopTheBuildersBehindIt` is one
+>    balance nudge from red.
+> 3. **The over-painted farm's learned cap** (D386) — the probe climbs to the cap and never steps
+>    back though a third rots; `AFarmBringsInMostOfWhatItSows` sits at two thirds.
+> 4. **A demolition's facing recorded** (D325) — drawn right only because it is asked while the
+>    building still stands.
+> 5. **Refuse a building on the lane in front of a gate** (Joe's call, D448; `fences-as-walls.md §9.3`)
+>    — in words, at `CanBuildAt`.
+> 6. **Re-pose `TheMarketKeepsLardersFromRunningDry`** (handed to me, D448): assert the **longest dry
+>    spell** while the stores hold food, bounded by a marketer's round trip, instead of a rate per
+>    10,000 that has moved five times.
+> Then **the stutter** (D403's remainder; Joe: *"YES. Worth a slice. i hate it."*) — measure the
+> per-tick distance distribution first; the suspect is `Arrive` snapping onto a building's standing
+> place. **Names, surnames and birthdays (D395)** wait on Joe's slot — he asked when; tell him where
+> they could go once the stutter is in.
+>
+> **Joe's other D448 calls** (all annotated on the ⏸️ list): gate neither is closed (the crop's limit
+> stops the harvest, as shipped); wear ceiling stays 130; the yards read as yards; desire paths' look
+> waits on art direction; *"stored"* is the word.
+>
+> *(The 2026-10-02 build banner, kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ WHERE THINGS WERE, 2026-10-02 — THE IRON MINE BUILT ON `slice/iron-mine` (✅ played and merged, D451).**
 >
 > **State:** `main` = `ad351f5` (the quarry merge) + `d6e2050` (slice/quarry deleted) + `869a15b`
 > (D448, Joe's calls on the ⏸️ list and his order) — **`main` is 2 commits ahead of `origin/main`,

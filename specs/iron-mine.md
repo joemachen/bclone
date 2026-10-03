@@ -7,7 +7,7 @@ and D446 (`tools-and-the-smith.md §9` — the smithy gift and iron tools, which
 D281 (every trade walks in states of its own), D326 (red-check every guard), D385 (every load to a
 store), D430 (a tool: off ticks and on yield), D442/D443 (a learned unlock stops the village; the
 tech-tree map).
-**Status:** 🔨 **BUILT ON `slice/iron-mine` (D450, 2026-10-02), UNPLAYED.** §4's numbers were put to
+**Status:** ✅ **BUILT (D450), PLAYED BY JOE AND MERGED (D451, 2026-10-02).** §4's numbers were put to
 Joe with §6 and set by him (D449); the built rig reads 45 iron per 100 ticks between deliveries (§6).
 Every guard in §7 red-checked; no golden moved. Owner: Joe + Claude Code.
 
