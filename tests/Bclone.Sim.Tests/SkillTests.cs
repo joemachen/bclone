@@ -234,7 +234,7 @@ public sealed class SkillTests
     /// substrate makes somebody walk somewhere different, this goes red and names the half.
     /// </para>
     /// <para>
-    /// ⚠️ <b>It is the same device `PerSiteYieldTests` uses one system over</b> — a fingerprint
+    /// ⚠️ <b>It is the same device `MapGenerationTests.EachSeedsTerrainIsWhatItWas` uses one system over</b> — a fingerprint
     /// that deliberately excludes the thing under test, so the guard says *which* half moved
     /// rather than only *that* something did.
     /// </para>

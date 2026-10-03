@@ -116,7 +116,7 @@ public sealed class MapGenerationTests
     // written down; only the soil bytes differ, and `MixMap` hashes them.
     //
     // ⚠️ THAT CLAIM IS GUARDED RATHER THAN ASSERTED —
-    // `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` pins terrain
+    // `MapGenerationTests.EachSeedsTerrainIsWhatItWas` pins terrain
     // fingerprints taken from `main` BEFORE the change, across three seeds. **That guard is
     // what licenses this hash to move alone.**
     //
@@ -145,6 +145,66 @@ public sealed class MapGenerationTests
     // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
     // 10984246327142560906.
     private const ulong GoldenMapHash = 8294284479965600006UL;
+
+    /// <summary>
+    /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="GoldenMapHash"/> says only <em>"the map changed"</em>. These say <b>which</b> of
+    /// a valley's tiles did: a change that moves only trees moves the forest count and the print
+    /// but not the water, stone or iron. It licensed D178's soil regions to move the map golden
+    /// alone (no tile of terrain moved), and it is the guard that says so for any change that
+    /// claims to touch one kind of ground.
+    /// </para>
+    /// <para>
+    /// Moved here from <c>PerSiteYieldTests</c> when ground quality was removed (D395, built in
+    /// D470) — it was always a map guard, kept beside the soil it was written to clear.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
+    // keeps its founding site, soil and seams. See `GoldenMapHash`.
+    // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
+    [InlineData(12345UL, 9492872349874793864UL, 420, 2640, 141, 52)]
+    [InlineData(2UL, 17624964258198066199UL, 410, 2673, 150, 52)]
+    [InlineData(42UL, 9190696535150768213UL, 425, 2626, 127, 43)]
+    public void EachSeedsTerrainIsWhatItWas(
+        ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
+    {
+        GeneratedMap map = SimFactory.CreatePhase0(
+            ShippedConfig.Established() with { Seed = seed }, new InMemoryLogSink()).World.Map;
+
+        ulong actual = 1469598103934665603UL;
+        int sawWater = 0;
+        int sawForest = 0;
+        int sawStone = 0;
+        int sawIron = 0;
+
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            actual = (actual ^ (byte)map.Tiles[i]) * 1099511628211UL;
+            switch (map.Tiles[i])
+            {
+                case Terrain.Water: sawWater++; break;
+                case Terrain.Forest: sawForest++; break;
+                case Terrain.Rock: sawStone++; break;
+                case Terrain.IronDeposit: sawIron++; break;
+                default: break;
+            }
+        }
+
+        _output.WriteLine(
+            $"seed {seed}: terrain {actual}, water {sawWater}, forest {sawForest}, "
+            + $"stone {sawStone}, iron {sawIron}");
+
+        Assert.Equal(terrainPrint, actual);
+        Assert.Equal(water, sawWater);
+        Assert.Equal(forest, sawForest);
+        Assert.Equal(stone, sawStone);
+        Assert.Equal(iron, sawIron);
+    }
 
     // ---------------------------------------------------------------
     //  Woodland — `specs/forests-and-gathering.md`

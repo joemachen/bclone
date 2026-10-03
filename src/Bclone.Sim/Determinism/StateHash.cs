@@ -56,7 +56,7 @@ public static class StateHash
     /// clothing, and this is the guard that can say so.
     /// </para>
     /// <para>
-    /// ⚠️ Precedent: `PerSiteYieldTests.MakingSoilRegionalMovedNoOtherTileInTheValley` computes a
+    /// ⚠️ Precedent: `MapGenerationTests.EachSeedsTerrainIsWhatItWas` computes a
     /// terrain-only fingerprint for exactly this reason — *"including it would make this guard
     /// say only 'the map changed', which is what the map golden already says and is not the
     /// question."*

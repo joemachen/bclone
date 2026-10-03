@@ -213,9 +213,17 @@ public sealed class FarmMemoryTests
         // never probes in twelve years. That is the cap being hauling-bound, not the probe being
         // broken (filed in `handoff.md` beside the over-painted farm); the claim here is the
         // probe's shape, so the tools stay in the cart.
+        //
+        // ⚠️ NINE TICKS OUT, NOT TEN (D470). With ground quality removed (D395) every tile reaps
+        // `crop_yield_per_tile`, and the farm ten ticks out turned hauling-bound the same way a
+        // tool's quarter made it: it learned 5 → 6 a hand and never had autumn to spare in twelve
+        // years. Measured across walks with no tools: the probe fires at 6, 7, 9, 11 and 12 ticks
+        // out and not at 8 or 10 — 10 was a flat spot under the soil too, the soil's draw on this
+        // seed simply landing it on the probing side. Proven: the soil term put back at the reap
+        // passes this guard at ten again.
         SimLoop loop = Loop(Config with { CartTools = 0 });
         SimWorld world = loop.World;
-        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 10, out int walk);
+        Workplace farm = FarmTestGround.SiteAFarm(world, walkAway: 9, out int walk);
         Assert.True(FarmFixtures.GiveItGround(world, farm, reach: 3) > 13);
 
         // Run until a winter's lesson is a probe.

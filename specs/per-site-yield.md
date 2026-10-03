@@ -8,7 +8,13 @@ bug), D152 (goldens last).
 Neighbours: `crops-and-orchards.md` (the farm this changes), `seeded-map-generation.md` (the draw
 order, which is the seed contract), `forests-and-gathering.md §3.2` (where the bound became a
 budget), `environment-and-seasons.md` (soil depletion's eventual home).
-**Status:** ✅ **BUILT and merged to `main`** (D178), **and its visibility half repaired** (D180).
+**Status:** ⛔ **THE SOIL HALF IS REMOVED (D395, Joe: *"remove the 'ground' quality functionality
+from the game entirely"*; built as D470).** A tile of crop reaps `crop_yield_per_tile` everywhere;
+the soil overlay, the `G` key, the inspector's ground sentence and `PerSiteYieldTests` are gone
+(its terrain fingerprint lives on as `MapGenerationTests.EachSeedsTerrainIsWhatItWas`). **What
+stands:** the gatherer's half (D112, `GatherYieldAt`) and the farm's walk — §4.2a's memory and
+§4.3's haul. The sections on soil below are history.
+*(Was:)* ✅ **BUILT and merged to `main`** (D178), **and its visibility half repaired** (D180).
 Soil is regional and read by the farm; the sowing cap asks each farm's own haul; the player can
 see the ground **and now read it in words**. **644 passing, 0 failing, 2 skipped of 646**, all
 four goldens unmoved by D180. Proved by `PerSiteYieldTests` and

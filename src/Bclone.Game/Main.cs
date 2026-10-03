@@ -72,7 +72,6 @@ public partial class Main : Control
     private VillageMap _map = null!;
 
     private Button _detailButton = null!;
-    private Button _soilButton = null!;
     private Button _wearButton = null!;
 
     private int _renderedLogEntries;
@@ -1172,7 +1171,6 @@ public partial class Main : Control
             case Key.Key3: SetSpeed(4.0); break;
             case Key.Key4: SetSpeed(10.0); break;
             case Key.Tab: CycleDetail(); break;
-            case Key.G: ToggleSoil(); break;
             case Key.P: ToggleWear(); break;
 
             // ⭐ R TURNS WHAT IS IN YOUR HAND (gridless 2b, D320). Without a key, facing would be
@@ -1235,30 +1233,13 @@ public partial class Main : Control
         };
     }
 
-    /// <summary>Switch the soil overlay, and say so on the button that switched it.</summary>
+    /// <summary>Switch the wear overlay (D358), and say so on the button that switched it.</summary>
     /// <remarks>
-    /// <b>⛔ THE LABEL USED TO BE WRITTEN IN <see cref="CycleDetail"/>, WHICH IS THE *ROUTES*
-    /// BUTTON'S HANDLER</b>, so pressing Ground flipped the overlay and left the button
-    /// insisting <em>"Ground: off"</em> until the player happened to press Routes or Tab.
-    /// Joe: <em>"it stays as 'off' regardless."</em> The overlay had been working the whole
-    /// time; the only feedback the control had contradicted what it did.
-    /// <para>
-    /// The fix is the rule <see cref="CycleDetail"/>'s own comment already states — one place
-    /// writes the text, and every caller goes through it — so the label cannot drift from the
-    /// thing it describes again.
-    /// </para>
+    /// <b>⛔ ONE PLACE WRITES THE LABEL.</b> The Ground overlay's label was once written in
+    /// <see cref="CycleDetail"/>, the Routes button's handler, so pressing Ground flipped the
+    /// overlay and left the button insisting <em>"Ground: off"</em> (Joe: <em>"it stays as 'off'
+    /// regardless"</em>). Ground is gone (D395, built in D470); the rule stays with Paths.
     /// </remarks>
-    private void ToggleSoil()
-    {
-        _map.ShowSoil(!_map.SoilShown);
-        RefreshSoilButton();
-    }
-
-    /// <summary>The one place the ground button's text is written.</summary>
-    private void RefreshSoilButton() =>
-        _soilButton.Text = _map.SoilShown ? "Ground: ON" : "Ground: off";
-
-    /// <summary>Switch the wear overlay (D358), the same shape as <see cref="ToggleSoil"/> for the same reason.</summary>
     private void ToggleWear()
     {
         _map.ShowWear(!_map.WearShown);
@@ -2573,21 +2554,8 @@ public partial class Main : Control
 
         lines.Add(ground);
 
-        // ⭐ WHAT THE GROUND IS WORTH, IN WORDS. Until this line existed the soil overlay's
-        // wash was the *only* channel the game had for saying so — no panel, no log, no
-        // sentence anywhere stated a tile's soil — and Joe walked the shipped build and said
-        // he could not tell good ground from bad. A wash is a thing you compare; this is a
-        // thing you read, and D67's rule is that going after a site should be a decision
-        // rather than a lottery.
-        //
-        // Not on the river, which grows nothing and is not ground.
-        if (world.Map.TerrainAt(tile) != Terrain.Water)
-        {
-            lines.Add(DescribeSoil(world.SoilShareAt(tile)));
-        }
-
         // ⭐ AND WHETHER PEOPLE WALK HERE (D358). The trail on the map is a thing you compare; this
-        // is a thing you read — the same reason the soil got its sentence. Only where it is true:
+        // is a thing you read. Only where it is true:
         // "nobody walks here" on nine thousand tiles would be noise.
         int wear = world.Paths.At(tile);
         if (wear >= world.Config.PathPackedAt)
@@ -2713,41 +2681,6 @@ public partial class Main : Control
 
         return $"{char.ToUpperInvariant(word[0])}{word[1..]} years";
     }
-
-    /// <summary>Ground worth this share of ordinary, said the way the rest of the game says it.</summary>
-    /// <remarks>
-    /// <para>
-    /// <b>⭐ THE BANDS COME FROM A RUN, NOT FROM THE RANGE IN THE CONFIG</b>
-    /// (`PerSiteYieldTests.TheValleysSoilSpreadIsWideEnoughToName`). Measured on seed 12345 over
-    /// 9,360 dry tiles: <b>p10 70%, median 101%, p90 135%, min 32%, max 165%</b> — so at 115/85
-    /// the valley is <b>31% rich, 44% ordinary, 25% thin</b>, and each word names ground the
-    /// player can actually walk to.
-    /// </para>
-    /// <para>
-    /// <b>⚠️ The reasoning that preceded the probe was wrong, which is why the probe exists.</b>
-    /// `MakeSoilRegional` bilinearly interpolates between lattice draws, and the obvious
-    /// inference — that blending four draws would regress the typical tile toward the middle and
-    /// leave the wash faint everywhere but the region cores — is not what the valley does. Same
-    /// finding D178 got when smoothing turned out to *destroy* the amplitude it was meant to
-    /// create: **when a spec and a measurement disagree, the spec is the one that is wrong.**
-    /// </para>
-    /// <para>
-    /// <b>The share, not the soil byte.</b> 100 is ordinary because <c>crop_yield_per_tile</c> is
-    /// locked and means *the yield on average ground* (D178) — so the number the panel quotes is
-    /// the number the farm reaps, and the panel and the harvest cannot disagree.
-    /// </para>
-    /// <para>
-    /// ⚠️ <b>115 and 85 are duplicated in `PerSiteYieldTests` on purpose.</b> `Bclone.Game` is
-    /// outside `bclone.sln` (D11) so the suite cannot reference it; that guard is the only thing
-    /// that can say these bands are bands the valley contains. Move one, move both.
-    /// </para>
-    /// </remarks>
-    private static string DescribeSoil(int share) => share switch
-    {
-        >= 115 => $"Rich ground — a field here reaps {share}% of what ordinary ground gives.",
-        <= 85 => $"Thin ground — a field here reaps {share}% of what ordinary ground gives.",
-        _ => "Ordinary ground — a field here reaps about what average ground gives.",
-    };
 
     /// <summary>A good's name as a player would say it.</summary>
     private static string Describe(JobKind kind) => kind switch
@@ -5455,32 +5388,22 @@ public partial class Main : Control
         // one annoying you.
         body.AddChild(Muted("On the map"));
 
-        // ⭐ ROUTES AND GROUND, MOVED OFF THE CONTROL BAR (Joe, 2026-09-06). They sit at the top
-        // of this group because they are the two that change what the whole valley looks like,
-        // where the four below them each add or remove one mark.
-        // ⚠️ Buttons, not checkboxes, and deliberately: Routes cycles through three detail
-        // levels and Ground carries its own state in its label. **A checkbox that cycles is a
+        // ⭐ ROUTES, MOVED OFF THE CONTROL BAR (Joe, 2026-09-06), with Ground, which is gone
+        // (D395, built in D470). It sits at the top of this group because it changes what the
+        // whole valley looks like, where the ones below it each add or remove one mark.
+        // ⚠️ A button, not a checkbox, and deliberately: Routes cycles through three detail
+        // levels. **A checkbox that cycles is a
         // control that lies about what it will do next.**
         _detailButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
         _detailButton.AddThemeFontSizeOverride("font_size", 12);
         _detailButton.Pressed += CycleDetail;
         body.AddChild(_detailButton);
 
-        // ⭐ WHERE THE GOOD GROUND IS (D178). Without it, per-site yield is an invisible
-        // multiplier and siting a farm is a lottery — which is what D67 refused for ore and
-        // what §1.1 refuses in general. Off by default: it answers a question the player asks
-        // occasionally, and a permanent wash over the valley is D42's standing alert in
-        // another medium.
-        _soilButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
-        _soilButton.AddThemeFontSizeOverride("font_size", 12);
-        _soilButton.Pressed += ToggleSoil;
-        body.AddChild(_soilButton);
-        RefreshSoilButton();
-
         // ⭐ WHERE EVERYBODY WALKS (D358). The trails on the map show what has become a path; this
         // shows every trodden tile on its way to becoming one — the diagnostic §2.6 needs for its
         // own tuning (*lock-in* or *no paths*) and the only heatmap the game allows, because a
-        // tile's wear is sim state and hashed (D357). Off by default, like Ground, for the same reason.
+        // tile's wear is sim state and hashed (D357). Off by default: it answers a question the
+        // player asks occasionally, and a permanent wash is D42's standing alert in another medium.
         _wearButton = new Button { Flat = true, Alignment = HorizontalAlignment.Left };
         _wearButton.AddThemeFontSizeOverride("font_size", 12);
         _wearButton.Pressed += ToggleWear;

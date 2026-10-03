@@ -1,7 +1,7 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
 > Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES and is not started.
-> §13, per-stage seeds (the shell's first step, D470), is specced and 🔨 being built on
+> §13, per-stage seeds (the shell's first step, D471), is specced and 🔨 being built on
 > `slice/per-stage-seeds` — not on `main`.** · Owner: Joe + Claude Code
 >
 > ⚠️ *Corrected 2026-08-28: this said the third slice was "the harvest brush", which contradicted its own §11 (bridges) and was doubly wrong because the harvest brush shipped anyway (D87, D112–D130).*
@@ -202,7 +202,7 @@ On some seeds the river runs straight through the settlement. Harmless today, si
 
 ---
 
-## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D470)
+## 13. Per-stage seeds — each stage of the valley draws on a stream of its own (D471)
 
 *The shell's first unbuilt step (DESIGN §4, Phase 4.5): error boundary ✅ → **per-stage seeds** →
 the new-game screen → settings persistence → save/load → title and pause. Joe, 2026-10-03:
@@ -237,12 +237,12 @@ the new-game screen → settings persistence → save/load → title and pause. 
   | 4 | Iron seams | the same, for iron |
   | 5 | Woodland | x, y per clump |
 
-  ⛔ **Soil is not a stage.** Ground quality is removed (D395, built as D470's first commit); the
+  ⛔ **Soil is not a stage.** Ground quality is removed (D395, built as D470); the
   soil draw, its array, its regions, the founders' cap and its three config keys go with this.
 - A stage's stream is `new DeterministicRandom(StageSeed(seed, id))`, held as a local in
   `Generate` and handed to helpers **by `ref`**, so draws within a stage advance that stage.
-- `StageSeed(seed, id)` = splitmix64's finaliser over `seed + 0x9E3779B97F4A7C15 × id` — the
-  same mix `HashJitter` and `NameHash` already use, in one shared `SplitMix64.Mix`.
+- `StageSeed(seed, id)` = splitmix64's finaliser over `seed + 0x9E3779B97F4A7C15 × (id + 1)` — the
+  same fold `HashJitter` and `NameHash` already use, in one shared `SplitMix64.Fold`.
   ⛔ **Never `DeterministicRandom`'s `stream` parameter**: D344 measured small adjacent stream ids
   six times deadlier (6 dead valleys of 24 against 1).
 - **A new stage appends a new id.** Draws added *inside* a stage still move that stage (and

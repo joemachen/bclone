@@ -391,10 +391,9 @@
   "river_width_tiles": 3,
   "river_width_wander_tiles": 1,
 
-  // Reserved for soil depletion (DESIGN.md §2.3). Generated and hashed,
-  // read by nothing - it is here so that when depletion lands it does
-  // not have to change the generator's DRAW ORDER, which would
-  // invalidate every seed anyone had written down.
+  // DEAD DATA since ground quality was removed (D395, built D470): generated
+  // and hashed, read by nothing. It stays only so this commit moves no seed;
+  // per-stage seeds (D471) delete the draw, the array and these keys.
   "soil_quality_min": 40,
   "soil_quality_max": 200,
 
