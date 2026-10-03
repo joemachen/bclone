@@ -829,8 +829,9 @@ public static class StateHash
         hash = MixFixed(hash, villager.LegTo.Y);
         hash = MixUInt32(hash, (uint)villager.LegTarget.X);
         hash = MixUInt32(hash, (uint)villager.LegTarget.Y);
-        hash = MixUInt32(hash, (uint)villager.LegSteps);
-        hash = MixUInt32(hash, (uint)villager.LegStep);
+        // Its cost and how much is walked are `Fixed` since steady pace (D463), raw bits like the rest.
+        hash = MixFixed(hash, villager.LegTicks);
+        hash = MixFixed(hash, villager.LegWalked);
         hash = MixUInt32(hash, (uint)villager.ActionTicksRemaining);
         hash = MixByte(hash, villager.Alive ? (byte)1 : (byte)0);
         hash = MixByte(hash, (byte)villager.CauseOfDeath);

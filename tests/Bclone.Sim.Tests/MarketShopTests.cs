@@ -672,7 +672,11 @@ public sealed class MarketShopTests
             {
                 if (world.FindVillager(id) is { Alive: true } member)
                 {
+                    // An ARRIVAL home — the walk over, not merely the home tile reached: since steady
+                    // pace (D463) the last fraction of a tile to the door is walked, so somebody can
+                    // stand on the home tile still travelling, food in arms, a tick from the larder.
                     if (was.TryGetValue(id, out VillagerState before) && before == VillagerState.TravelingHome
+                        && member.State != VillagerState.TravelingHome
                         && member.Tile == home.HomeTile && world.FoodIn(member.Carried) > 0)
                     {
                         turnedAway++;

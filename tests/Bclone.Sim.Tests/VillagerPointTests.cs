@@ -125,8 +125,14 @@ public sealed class VillagerPointTests
     // round the yard. Joe chose that: *"let longer walks be the price of fences."* (The branch's
     // first draft read 27 / 73 only because its villagers still walked through their own fence.)
     // Were 26 / 70.
-    private const int FirstGatherAtPace1 = 37;
-    private const int FirstGatherAtPace3 = 91;
+    // ⛔ RE-PINNED (D463) — FOR THE CLOCK, deliberately: steady pace. Traced tick by tick on both
+    // trees: the founder's walk from home to the 2×2 store took 10 ticks and is 11, the walk back 12
+    // and is 13 — the last half-tile onto the store's corner and onto the doorstep is walked now
+    // where it was jumped, and a walk ends on the tick its last fraction is spent. The tool fetch (2)
+    // and the walk to food (10) did not move. Pace 3 charges each of those three extra walking ticks
+    // three times. Were 37 / 91.
+    private const int FirstGatherAtPace1 = 39;
+    private const int FirstGatherAtPace3 = 100;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -297,8 +303,12 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D429), not for the clock: a tool in hand takes a gather from three ticks to
         // two (and a fell, a split, a cast and a hunt a third quicker), so the seats land
         // differently — 52 trips, the 1st/10th/50th at 10/195/1,955. Were 51 at 10/199/1,961.
-        Assert.Equal(52, entries);
-        Assert.Equal(new ulong[] { 10, 195, 1955 }, at);
+        // ⛔ RE-PINNED (D463) — FOR THE CLOCK, deliberately: steady pace walks the last fraction of a
+        // tile onto a building where arrival jumped it, prices the step off a building, and ends a
+        // walk on the tick its last part is spent — 51 trips, the 1st/10th/50th at 11/204/1,959.
+        // Were 52 at 10/195/1,955.
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 11, 204, 1959 }, at);
     }
 
     /// <summary>
@@ -308,8 +318,8 @@ public sealed class VillagerPointTests
     /// <remarks>
     /// <para>
     /// Every leg planned in the village's first year — before any ground is worn, so every tile
-    /// costs the base — must cost <c>round(|LegTo − LegFrom|)</c> ticks: on a row that is the
-    /// tile count (clock A and B agree, which is why the Phase 0 pins hold), and on a diagonal it
+    /// costs the base — must cost exactly <c>|LegTo − LegFrom|</c> ticks, unrounded since steady
+    /// pace (D463): on a row that is the tile count (clock A and B agree, which is why the Phase 0 pins hold), and on a diagonal it
     /// is strictly less than the staircase's Manhattan steps. Anti-vacuity: the fixture must plan
     /// legs with a diagonal in them, or the second half is never tested.
     /// </para>
@@ -336,7 +346,7 @@ public sealed class VillagerPointTests
             loop.StepOnce();
             foreach (Villager villager in world.Villagers)
             {
-                if (villager.LegSteps == 0 || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
+                if (villager.LegTicks == Fixed.Zero || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
                 {
                     continue;
                 }
@@ -345,7 +355,6 @@ public sealed class VillagerPointTests
                 legs++;
 
                 Fixed length = villager.LegFrom.DistanceTo(villager.LegTo);
-                int expected = (length + Fixed.FromRatio(1, 2)).ToInt();
 
                 // ⚠️ ON FRESH GRASS ONLY (D386). A leg's ticks follow the ground (D358 §3.5): a
                 // worn tile under it costs less than grass, and the first year wears one now
@@ -364,12 +373,12 @@ public sealed class VillagerPointTests
 
                 if (overWornGround)
                 {
-                    Assert.True(villager.LegSteps <= (expected < 1 ? 1 : expected),
-                        $"a leg over worn ground took {villager.LegSteps} steps for {length} tiles — dearer than grass");
+                    Assert.True(villager.LegTicks <= length,
+                        $"a leg over worn ground cost {villager.LegTicks} ticks for {length} tiles — dearer than grass");
                 }
                 else
                 {
-                    Assert.Equal(expected < 1 ? 1 : expected, villager.LegSteps);
+                    Assert.Equal(length, villager.LegTicks);
                 }
 
                 // ⚠️ The staircase is measured between the POINTS, not their tiles (D382). A 2×2
@@ -384,7 +393,7 @@ public sealed class VillagerPointTests
                 if (dx >= Fixed.FromInt(1) && dy >= Fixed.FromInt(1))
                 {
                     diagonals++;
-                    if (Fixed.FromInt(villager.LegSteps) < manhattan)
+                    if (villager.LegTicks < manhattan)
                     {
                         shorterThanTheStairs++;
                     }
@@ -446,7 +455,7 @@ public sealed class VillagerPointTests
                 // ⛔ With no leg in progress and nothing to stand on, a villager is on a tile
                 // centre EXACTLY — a leg lands on its waypoint, not a crumb short of it, or arrival
                 // (`Position == centre`) would never be recognised.
-                if (villager.LegSteps == 0 && world.StandingPlaceAt(villager.Tile) is null)
+                if (villager.LegTicks == Fixed.Zero && world.StandingPlaceAt(villager.Tile) is null)
                 {
                     Assert.Equal(centre, now);
                     atRest++;
@@ -509,12 +518,12 @@ public sealed class VillagerPointTests
 
         // Walk until a leg is in progress toward food.
         int guard = 0;
-        while ((villager.State != VillagerState.TravelingToFood || villager.LegSteps == 0) && guard++ < 400)
+        while ((villager.State != VillagerState.TravelingToFood || villager.LegTicks == Fixed.Zero) && guard++ < 400)
         {
             loop.StepOnce();
         }
 
-        Assert.True(villager.LegSteps > 0, "never caught the villager mid-leg toward food");
+        Assert.True(villager.LegTicks > Fixed.Zero, "never caught the villager mid-leg toward food");
         GridPos foodLegTarget = villager.LegTarget;
 
         // Send them home from wherever they are.
@@ -532,14 +541,14 @@ public sealed class VillagerPointTests
         var (loop, _) = Phase0Fixtures.Build(Phase0Fixtures.Plenty);
         Villager villager = loop.World.Villager;
         int guard = 0;
-        while (villager.LegSteps < 2 && guard++ < 600)
+        while (villager.LegTicks < Fixed.FromInt(2) && guard++ < 600)
         {
             loop.StepOnce();
         }
 
-        Assert.True(villager.LegSteps >= 2, "never caught a leg two steps long");
+        Assert.True(villager.LegTicks >= Fixed.FromInt(2), "never caught a leg two ticks long");
         ulong before = StateHash.Compute(loop.World);
-        villager.LegStep = villager.LegStep == 0 ? 1 : 0;
+        villager.LegWalked = villager.LegWalked == Fixed.Zero ? Fixed.One : Fixed.Zero;
         ulong after = StateHash.Compute(loop.World);
         Assert.NotEqual(before, after);
     }
@@ -551,8 +560,8 @@ public sealed class VillagerPointTests
     /// <remarks>
     /// Since D330 a hut can stand at (3.3, 7.6); until this slice its forager stood at (3.5, 7.5),
     /// the anchor tile's centre, half a tile from the door. The route is still the cost field's,
-    /// tile by tile, to the anchor tile; the last thing arrival does is step to where the building
-    /// actually is. Zero extra ticks — the tile was already paid for.
+    /// tile by tile, to the anchor tile; the last leg ends where the building actually is, walked
+    /// rather than jumped since steady pace (D463).
     /// </remarks>
     [Fact]
     public void AVillagerStandsOnTheBuildingTheyArriveAt()
@@ -601,6 +610,81 @@ public sealed class VillagerPointTests
 
         Assert.Equal(hut.Position, there.Position);
         Assert.Equal(anchor, there.Tile);
+    }
+
+    /// <summary>
+    /// ⛔⭐⭐ THE STUTTER — <b>no walking tick strides further than the ground allows</b>, arrival
+    /// included (D463, `gridless.md §8` slice 6).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The ground's longest stride is a tick on packed path: base ⁄ packed cost, 1.25 tiles. Until
+    /// D463 a leg took <c>round(length × cost)</c> whole ticks, so a short one strode up to 2.8 tiles
+    /// in a tick or crawled 0.55, and arrival put a villager on the building's point (0.5 or 0.71
+    /// from the tile centre) on top of the last step. Measured on this village: 17–21 % of walking
+    /// ticks over √2 — the line past which the view draws a move as a teleport, a hop and a freeze.
+    /// That was Joe's skip (D395, D403, D448).
+    /// </para>
+    /// <para>
+    /// The shipped village, not the fixture, because it is the one with markets, granaries, 2×2
+    /// stores and worn lanes — every way a tick could be long. Anti-vacuity: lanes were walked (a
+    /// stride over a tile) and somebody walked onto a building's own point.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoWalkingTickStridesFurtherThanTheGroundAllows()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+
+        Fixed longest = Fixed.FromRatio(TravelCostField.BaseTileCost, config.PathPackedTileCost);
+        Fixed allowed = longest + Fixed.FromRatio(1, 1024);
+        var was = world.Villagers.Where(v => v.Alive).ToDictionary(v => v.Id, v => v.Position);
+        int walking = 0;
+        int overATile = 0;
+        int ontoABuilding = 0;
+        Fixed worst = Fixed.Zero;
+
+        // ⚠️ Twenty years, not five: the second journey begun in an arrival's own tick (a fresh tick of
+        // pace for every `Travel`) first strode two tiles in year 19 of the measurement, and a five-year
+        // run scored zero against it (D463's red check). Twenty years of this village is under a second.
+        for (int i = 0; i < config.TicksPerYear * 20; i++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                if (was.TryGetValue(villager.Id, out Point before) && before != villager.Position)
+                {
+                    Fixed stride = before.DistanceTo(villager.Position);
+                    walking++;
+                    overATile += stride > Fixed.One ? 1 : 0;
+                    worst = stride > worst ? stride : worst;
+                    Assert.True(
+                        stride <= allowed,
+                        $"tick {world.Tick}: {villager.Name} (#{villager.Id}, {villager.State}) moved {stride} tiles "
+                        + $"from {before} to {villager.Position} — the ground allows {longest}");
+
+                    if (world.StandingPlaceAt(villager.Tile) is Point place
+                        && place == villager.Position
+                        && place != Point.CentreOf(villager.Tile))
+                    {
+                        ontoABuilding++;
+                    }
+                }
+
+                was[villager.Id] = villager.Position;
+            }
+        }
+
+        _output.WriteLine($"{walking} walking ticks, {overATile} over a tile, {ontoABuilding} onto a building's own point; longest {worst}");
+        Assert.True(overATile > 0, "nobody ever strode more than a tile — no worn lane was walked, so the bound was never tested");
+        Assert.True(ontoABuilding > 0, "nobody ever walked onto a building's own point, so arrival was never tested");
     }
 
     /// <summary>A villager at home stands on the doorstep — the home's own <c>Point</c>.</summary>

@@ -532,7 +532,7 @@ public sealed class DesirePathTests
 
             foreach (Villager villager in world.Villagers)
             {
-                if (!villager.Alive || villager.LegSteps == 0 || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
+                if (!villager.Alive || villager.LegTicks == Fixed.Zero || seen.GetValueOrDefault(villager.Id) == (villager.LegFrom, villager.LegTo))
                 {
                     continue;
                 }
@@ -650,10 +650,9 @@ public sealed class DesirePathTests
 
         Villager walker = world.Villagers.First(v => v.Alive && v.CanWork);
         walker.StandAt(Point.CentreOf(from));
-        walker.LegSteps = 0;
         var before = lane.ToDictionary(t => t, t => world.Paths.At(t));
         int steps = 0;
-        while (steps < 100 && !(walker.Tile == to && walker.LegSteps == 0))
+        while (steps < 100 && !(walker.Tile == to && walker.LegTicks == Fixed.Zero))
         {
             BehaviorSystem.TravelForTest(world, walker, to);
             steps++;
