@@ -477,6 +477,44 @@ public sealed class ForesterHutTests
             + "ground back.");
     }
 
+    /// <summary>
+    /// Rock and saplings are not ground to plant, so a hut owning only those asks for no seats.
+    /// </summary>
+    /// <remarks>
+    /// <b>Found in D434, fixed in the small-fixes pass (D448).</b> The planting demand counted
+    /// every owned tile that was not woodland, while <see cref="SimWorld.NextGroundToWork"/> only
+    /// ever plants on grass — so a hut whose paint covered a seam, or whose ground was already
+    /// planted and growing, kept asking for seats nobody could use. Posed on the derived number
+    /// alone (trap 143): a staffing guard would be pinned by the player's number. The last half
+    /// holds the two readers to one answer: a single grass tile is both a seat and the errand.
+    /// </remarks>
+    [Fact]
+    public void RockAndSaplingsAreNotGroundToPlant()
+    {
+        SimWorld world = Loop(Config).World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        int given = GiveGround(world, hut, 2, wooded: false);
+        Assert.True(given > 1, "The hut was given too little bare ground to pose rock and saplings.");
+        world.SetStockLimit(Goods.Logs, 0);
+
+        IReadOnlyList<int> owned = world.Zones.WorkGroundOf(hut.Id);
+        for (int i = 0; i < owned.Count; i++)
+        {
+            Assert.True(world.SetTerrain(
+                world.Zones.PositionOf(owned[i]), i % 2 == 0 ? Terrain.Rock : Terrain.Sapling));
+        }
+
+        Assert.Equal(0, world.ForesterSeatsWithGroundToPlant());
+        Assert.Null(world.NextGroundToWork(hut, hut.Tile));
+
+        GridPos bare = world.Zones.PositionOf(owned[0]);
+        Assert.True(world.SetTerrain(bare, Terrain.Grass));
+
+        Assert.Equal(hut.Places, world.ForesterSeatsWithGroundToPlant());
+        Assert.Equal(bare, world.NextGroundToWork(hut, hut.Tile));
+    }
+
     // ---------------------------------------------------------------
     //  It changes nothing until somebody uses it
     // ---------------------------------------------------------------

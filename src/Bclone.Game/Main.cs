@@ -641,6 +641,56 @@ public partial class Main : Control
             + (wants > given ? "  ⚠️ TOO WIDE" : string.Empty));
 
         PrintWidths(_professionsPanel, "prof", 0);
+        GD.Print(OnlyTheKnownTradesHaveRows());
+    }
+
+    /// <summary>
+    /// ⭐ A trade the village has not learned has no row, and gains one when it learns — <b>a probe
+    /// line</b> (D460).
+    /// </summary>
+    /// <remarks>
+    /// At the founding nothing gated is known, so the hidden rows must be exactly the trades whose
+    /// building the bar does not offer. Then the quarry's flag is posed known and the strip refreshed
+    /// — the path every real unlock takes — and the Quarrier's row must come back; put back after.
+    /// </remarks>
+    private string OnlyTheKnownTradesHaveRows()
+    {
+        SimWorld world = _loop.World;
+        var hidden = new List<string>();
+        var wrong = new List<string>();
+        foreach ((JobKind kind, Control[] cells) in _professionRows)
+        {
+            bool known = EarnedYet(world.JobsCatalog.WorksAt(kind));
+            if (!cells[0].Visible)
+            {
+                hidden.Add(world.JobsCatalog.NameOf(kind));
+            }
+
+            if (System.Array.Exists(cells, c => c.Visible != known))
+            {
+                wrong.Add(world.JobsCatalog.NameOf(kind));
+            }
+        }
+
+        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || hidden.Count == 0)
+        {
+            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; hidden: "
+                + $"{string.Join(", ", hidden)}; disagreeing with the bar: {string.Join(", ", wrong)} "
+                + "— a trade not yet learned must have no row, and every learned one a whole row";
+        }
+
+        bool quarryWas = _quarryKnown;
+        _quarryKnown = true;
+        RefreshTheStrip();
+        (JobKind _, Control[] quarrier) = _professionRows.Find(r => r.Kind == JobKind.Quarrier);
+        bool cameBack = System.Array.TrueForAll(quarrier, c => c.Visible);
+        _quarryKnown = quarryWas;
+        RefreshTheStrip();
+
+        return cameBack
+            ? $"[widths] trades: ✅ at the founding the rows not yet learned are hidden ({string.Join(", ", hidden)}), "
+                + "every row agrees with the bar, and the quarrier's row appears when the quarry is learned"
+            : "[widths] trades: ⛔ the quarry learned and the strip refreshed, and the quarrier still has no row";
     }
 
     private void ProbeTheControlBar()
@@ -3980,7 +4030,6 @@ public partial class Main : Control
         body.AddChild(Caption("Laborers are the spare hands: clearing ground, hauling and tidying."));
 
         body.AddChild(BuildProfessionsTable());
-        body.AddChild(BuildTheNotHiredYet());
     }
 
     /// <summary>
@@ -4044,13 +4093,50 @@ public partial class Main : Control
             AddProfessionRow(table, kind);
         }
 
+        ShowTheKnownTrades();
         return table;
+    }
+
+    /// <summary>
+    /// ⭐ A trade the village has not learned has no row (D460, Joe: *"The professions that are
+    /// 'unlocked' shouldn't show in the professions menu until they are unlocked — don't want to
+    /// spoil the surprise."*).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Asked of the bar's own question, never of a list of trades.</b> A row shows when its
+    /// building is <see cref="EarnedYet"/> — the latched flags the build bar reads, set from the sim's
+    /// one gate (<c>SimWorld.IsUnlocked</c>) — so the bar, the tree and this panel cannot disagree,
+    /// and a modded gated building hides its trade with no line here. ⛔ <b>Not per frame</b>
+    /// (CLAUDE.md): called when the table is built and from <see cref="RefreshTheStrip"/>, which is
+    /// where every one of those flags lands when it flips. The gates are monotonic, so a row appears
+    /// once and stays. <c>GridContainer</c> lays out only visible children, so a row hidden whole is
+    /// gone from the table rather than a gap in it.
+    /// </remarks>
+    private void ShowTheKnownTrades()
+    {
+        // The strip is refreshed while the bar is being built, before this panel exists.
+        if (_professionRows.Count == 0)
+        {
+            return;
+        }
+
+        SimWorld world = _loop.World;
+        for (int i = 0; i < _professionRows.Count; i++)
+        {
+            (JobKind kind, Control[] cells) = _professionRows[i];
+            bool known = EarnedYet(world.JobsCatalog.WorksAt(kind));
+            foreach (Control cell in cells)
+            {
+                cell.Visible = known;
+            }
+        }
     }
 
     /// <summary>Three cells for one trade.</summary>
     private void AddProfessionRow(GridContainer table, JobKind kind)
     {
-        table.AddChild(new TradeGlyph(kind));
+        var glyph = new TradeGlyph(kind);
+        table.AddChild(glyph);
 
         // ⚠️ A Label ignores the mouse unless told otherwise, and a tooltip needs the mouse.
         //
@@ -4125,6 +4211,7 @@ public partial class Main : Control
         table.AddChild(stepper);
 
         _professionReadouts.Add((kind, seats, name));
+        _professionRows.Add((kind, new Control[] { glyph, name, stepper }));
         Apply();
     }
 
@@ -5657,36 +5744,6 @@ public partial class Main : Control
     /// <summary>How narrow a wrapped sentence may be asked to get.</summary>
     private const float WrappedTextMinWidth = 120f;
 
-    /// <summary>
-    /// The professions this village cannot hire yet. <b>Delete a row when it ships.</b>
-    /// </summary>
-    /// <remarks>
-    /// Hand-written and meant to be, because the whole point of a row here is that there is no
-    /// <see cref="JobKind"/> to read it off. Taken from <c>specs/professions.md §4</c> so the
-    /// panel and the spec say the same thing; the reason names what would have to be built, so
-    /// the row deletes itself the day that lands rather than going quietly stale.
-    /// </remarks>
-    private static readonly (string Name, string Reason)[] ProfessionsNotYetHired =
-    {
-        ("Tailor", "waiting on the hunter for leather"),
-
-        // ⭐ The farmer moved OFF this list and into the real rows above
-        // (`specs/crops-and-orchards.md`, D161) — this is what a greyed roadmap entry is for:
-        // it names the gap while it is a gap, and then it goes away.
-        ("Herdsman", "no livestock"),
-
-        // ⭐ The miner moved OFF this list with the iron mine (D449).
-
-        // ⭐ The stonecutter moved OFF this list with the quarry (D434) — the trade ships as the
-        // quarrier; cutting stone into blocks is the mason's yard's, and that is not built.
-
-        // ⭐ The blacksmith moved OFF this list with the smithy (D391) — and sat here for a day
-        // after, which Joe's QA pass caught (D396): the row is deleted the day its trade ships.
-        ("Brewer", "no barley"),
-        ("Teacher", "no school"),
-        ("Physician", "illness is not modelled"),
-    };
-
     /// <summary>Show the sim's own warning — in the village log, since D396.</summary>
     private void Warn(PlacementVerdict verdict)
     {
@@ -5783,39 +5840,6 @@ public partial class Main : Control
     }
 
     /// <summary>The "have N" labels, refreshed with everything else.</summary>
-    /// <summary>
-    /// The trades that do not exist yet, and what each is waiting on.
-    /// </summary>
-    /// <remarks>
-    /// ⭐ Kept through the redesign because it earns its place: it answers *"where is the miner?"*
-    /// before the player has to ask, and a row deletes itself the day its trade ships — which is
-    /// how "Fisherman" and "Hunter" were caught still sitting in it two commits ago.
-    /// </remarks>
-    private Control BuildTheNotHiredYet()
-    {
-        VBoxContainer inside = Foldaway(
-            $"Not hired yet — {ProfessionsNotYetHired.Length} more, and why",
-            out VBoxContainer roadmap);
-
-        var table = new GridContainer { Columns = 2 };
-        table.AddThemeConstantOverride("h_separation", 8);
-        table.AddThemeConstantOverride("v_separation", 2);
-
-        foreach ((string name, string reason) in ProfessionsNotYetHired)
-        {
-            Label label = Muted(name);
-            label.Modulate = new Color(1, 1, 1, 0.3f);
-            table.AddChild(label);
-
-            Label why = Wrapped(Muted(reason));
-            why.Modulate = new Color(1, 1, 1, 0.3f);
-            table.AddChild(why);
-        }
-
-        inside.AddChild(table);
-        return roadmap;
-    }
-
     /// <summary>Four cells for one good's limit.</summary>
     /// <remarks>
     /// The controls are unchanged from the two-line rows this replaced — same <c>SpinBox</c>, same
@@ -5879,6 +5903,9 @@ public partial class Main : Control
     /// cannot be written once at construction.
     /// </remarks>
     private readonly List<(JobKind Kind, Label Seats, Label Name)> _professionReadouts = new();
+
+    /// <summary>Each trade's three cells — glyph, name, stepper — so a row not yet learned can be hidden whole (D460).</summary>
+    private readonly List<(JobKind Kind, Control[] Cells)> _professionRows = new();
 
     /// <summary>The trade name's column, wide enough for "Woodcutter ⚠" and no wider for anything (D374).</summary>
     private const float ProfessionNameWidth = 110f;
@@ -6491,6 +6518,9 @@ public partial class Main : Control
             bool pastTheFilter = _tab != BuildTab.Build || _filter is null || _filter == entry.Category;
             entry.Button.Visible = onThisTab && pastTheFilter && EarnedYet(entry.Kind);
         }
+
+        // The professions panel asks the same question of the same flags (D460).
+        ShowTheKnownTrades();
 
         // ⚠️ NO-SIGNAL, OR THIS METHOD CALLS ITSELF. Every one of these buttons is in toggle
         // mode and every one of them re-enters here when pressed, so writing `ButtonPressed`

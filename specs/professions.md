@@ -77,6 +77,15 @@ already runs off-cadence — so the seat fills or the surplus is shed before a t
 Still a ceiling, not a summons (D146). Guards: `LabourCadenceTests.TheVillageObeysTheSameCall`,
 `AWorkplacesNumberLandsTheSameCall`; no golden moved.
 
+**⭐ A trade the village has not learned has no row (D460).** Joe: *"The professions that are
+'unlocked' shouldn't show in the professions menu until they are unlocked — don't want to spoil the
+surprise."* A row (glyph, name, stepper) shows when its `works_at` building is offered on the build
+bar — the bar's own question (`Main.EarnedYet`, latched from `SimWorld.IsUnlocked`), so the two
+cannot disagree, asked when the table is built and whenever the strip refreshes, never per frame.
+Today that hides the **smith** (50 iron dug), the **quarrier** (stone dug by hand) and the **miner**
+(the smith's first iron tool); the gates are monotonic, so a row appears once and stays. Probe:
+`trades:`.
+
 **⚠️ The panel's warnings (D367, D374).** A row shows ` ⚠` on its name, coloured, with the sentence
 as a tooltip — never a notes column, and the name is a fixed 110 px so the ⚠ cannot widen the
 table. Two sentences exist: *"you asked for N, the village wants none — why"* (needs the player to

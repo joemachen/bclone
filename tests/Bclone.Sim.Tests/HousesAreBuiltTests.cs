@@ -728,7 +728,11 @@ public sealed class HousesAreBuiltTests
         // on main it finished on tick 448 of 480. When walkers began keeping to the lanes the day
         // shifted and the one builder reached the site at ~400 and put 37 of its work in by the
         // year's end — then the labour allocator moved her to foraging for all of year two, which
-        // is its own behaviour and not this guard's. D135's bug was builders who never TOUCHED a
+        // is its own behaviour and not this guard's. ⚠️ MEASURED IN D453, AND IT IS THIS POSE'S:
+        // the village is never short of food here; draining every log every tick holds a forester
+        // AND a woodcutter on the fuel chain for good, so with two foragers no hand is spare at
+        // all and fuel rightly outranks building. D453's rule (one spare hand finishes a begun,
+        // paid-for site) cannot fire with none spare — `ASiteBegunAndPaidForIsFinished…` is its guard. D135's bug was builders who never TOUCHED a
         // stocked site behind a starved head; that is what is asked. ⚠️ RED CHECK SCORED ZERO,
         // kept and written down (D326): with D135's branch in `WorkTheSite` (`NextBuildableSite`)
         // cut out, the builder still reaches the stocked site — AND SO DID MAIN'S version of this
@@ -739,5 +743,163 @@ public sealed class HousesAreBuiltTests
             "A warehouse with every log it needs went untouched for a year because the site ahead of "
             + "it in the queue was waiting on timber that does not exist. The queue is meant to "
             + "decide where materials go, not to stop a pair of hands working.");
+    }
+
+    /// <summary>
+    /// ⭐ One spare hand finishes a site already begun and paid for, before fetching for the head (D453).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The rounding, measured.</b> A fed founding of four hands has one spare after food and
+    /// fuel in summer, and <c>free / 2</c> makes that no builder at all. Measured in D453 on a
+    /// fed village: a warehouse stood at 43 of 45 work for two years. Its materials were spent;
+    /// only the work was owed.
+    /// </para>
+    /// <para>
+    /// <b>Two halves, each posed where only it decides</b> (trap 145) — and they cannot share a
+    /// pose: a head whose materials sit in a store feeds the fuel chain too, and the spare hand
+    /// becomes two. The quota (<see cref="OneSpareHandIsKeptForASiteBegunAndPaidFor"/>): with
+    /// the warehouse stocked and cleared but untouched the village wants no builder — so a stocked
+    /// site alone is not the rule, which would be D103's — and one tick of work in it, it wants
+    /// one. The behaviour (here): the granary is the head and every material it wants is in a
+    /// store, so a builder asking only the queue fetches for it; nothing may reach it until the
+    /// warehouse is finished.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ASiteBegunAndPaidForIsFinishedBeforeAnythingIsFetched()
+    {
+        (SimLoop loop, Workplace head, Workplace begun) = PoseABegunSite(headCanBeFetchedFor: true);
+        SimWorld world = loop.World;
+        SimConfig config = world.Config;
+
+        begun.Construction!.Work();
+        Assert.Equal(head.Id, world.NextSiteToServe()?.Id);
+
+        int owedAtTheHead = StillOwed(head);
+        int tick = 0;
+        for (; tick < config.TicksPerSeason && !begun.Construction.IsFinished; tick++)
+        {
+            loop.StepOnce();
+            Assert.Equal(owedAtTheHead, StillOwed(head));
+        }
+
+        _output.WriteLine(
+            $"the begun warehouse: {(begun.Construction.IsFinished ? $"finished on tick {tick}" : $"{begun.Construction.WorkDone} work after a season")}; "
+            + $"the granary at the head still owed {StillOwed(head)} of its materials");
+        Assert.True(begun.Construction.IsFinished,
+            "A warehouse with every log it needs and its work begun was not finished in a season.");
+    }
+
+    /// <summary>⭐ The quota half: a site begun and paid for keeps the one spare hand (D453).</summary>
+    [Fact]
+    public void OneSpareHandIsKeptForASiteBegunAndPaidFor()
+    {
+        (SimLoop loop, _, Workplace begun) = PoseABegunSite(headCanBeFetchedFor: false);
+        SimWorld world = loop.World;
+
+        Assert.Equal(0, LabourQuota.For(world).Builders);
+        begun.Construction!.Work();
+        Assert.Equal(1, LabourQuota.For(world).Builders);
+    }
+
+    /// <summary>⛔ And never over the food gate: a hungry village keeps nobody for it (D453).</summary>
+    [Fact]
+    public void ABegunSiteKeepsNoBuilderWhileFoodComesFirst()
+    {
+        (SimLoop loop, _, Workplace begun) = PoseABegunSite(headCanBeFetchedFor: false);
+        SimWorld world = loop.World;
+
+        begun.Construction!.Work();
+        Assert.Equal(1, LabourQuota.For(world).Builders);
+
+        foreach (Stockpile store in world.AllStores())
+        {
+            foreach (Goods food in world.GoodsCatalog.EdibleGoods)
+            {
+                store.TryTake(food, store[food]);
+            }
+        }
+
+        Assert.True(LabourQuota.VillageIsShortOfFood(world), "The pose wants a hungry village.");
+        Assert.Equal(0, LabourQuota.For(world).Builders);
+    }
+
+    /// <summary>
+    /// A fed summer founding with a builder's hut, a granary at the head of the queue and a
+    /// warehouse behind it stocked and cleared. With <paramref name="headCanBeFetchedFor"/> every
+    /// material the granary wants is put in a store; without it, the pose waits for the first
+    /// tick the village rounds its builders to nobody.
+    /// </summary>
+    private static (SimLoop Loop, Workplace Head, Workplace Begun) PoseABegunSite(bool headCanBeFetchedFor)
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        PaintHomeGround(world);
+        MarkABuildersHut(world);
+        loop.Step(config.TicksPerYear);
+
+        // Summer, when the patches take their share: spring leaves two hands spare, and two
+        // halve to one builder without any help.
+        while (world.Clock.Season != Season.Summer)
+        {
+            loop.StepOnce();
+        }
+
+        MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 4);
+        MarkSomewhereNear(world, BuildingKind.Warehouse, world.Map.FoundingSite, 6);
+        Workplace head = Assert.Single(
+            world.Workplaces, p => p.Construction is { IsFinished: false, Kind: BuildingKind.Granary });
+        Workplace begun = Assert.Single(
+            world.Workplaces, p => p.Construction is { IsFinished: false, Kind: BuildingKind.Warehouse });
+        Assert.True(head.EffectiveQueueRank < begun.EffectiveQueueRank, "The granary is not the head.");
+
+        // Both grounds cleared, as a builder clears them first — so a builder's only choices are
+        // to fetch for the head or to work the warehouse.
+        world.SetTerrain(head.Tile, Terrain.Grass);
+        world.SetTerrain(begun.Tile, Terrain.Grass);
+        BuildFixtures.StockTheSite(begun);
+
+        for (int g = 0; headCanBeFetchedFor && g < world.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            int owed = head.Construction!.StillNeeded(goods);
+            if (owed > 0)
+            {
+                StoreBuilding store = world.NearestStoreAccepting(head.Tile, goods, _ => true)
+                    ?? throw new Xunit.Sdk.XunitException($"No store takes {goods}.");
+                Assert.Equal(owed, store.Store.Receive(goods, owed));
+            }
+        }
+
+        if (headCanBeFetchedFor)
+        {
+            return (loop, head, begun);
+        }
+
+        // To the first tick a fed village rounds its builders to nobody with the site stocked.
+        for (int wait = 0; wait < config.TicksPerSeason && LabourQuota.For(world).Builders > 0; wait++)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.Equal(0, begun.Construction!.WorkDone);
+        Assert.False(LabourQuota.VillageIsShortOfFood(world), "The pose wants a fed village.");
+        Assert.Equal(0, LabourQuota.For(world).Builders);
+
+        return (loop, head, begun);
+    }
+
+    private static int StillOwed(Workplace site)
+    {
+        int owed = 0;
+        for (int g = 0; g < Enum.GetValues<Goods>().Length; g++)
+        {
+            owed += site.Construction!.StillNeeded((Goods)g);
+        }
+
+        return owed;
     }
 }

@@ -186,6 +186,15 @@ holds.
 - ⭐ **Asked by `WorkTheSite` and `LoadMaterials` both**, so the site somebody walks to a store for
   and the site they carry the load back to cannot disagree — D157's rule that two orderings over
   one list is the shape of half the bugs in this project.
+- ✅ **A site already begun and paid for is finished first (D453).** `SimWorld.BegunSiteWithWhatItNeeds`
+  — every material delivered and at least a tick of work in it — is where an empty-handed builder
+  goes before fetching for anything else, and `LabourQuota` keeps **one** spare hand for it when
+  `free / 2` would round the builders to nobody (never over the food gate). Begun, not merely
+  stocked: a builder kept for any stocked site would fetch for the head for ever, which is D103's
+  narrowing that killed seed 11. It moves no timber, so the queue above still decides where
+  materials go. Measured: a fed four-hand village left a warehouse at 43 of 45 work for two years;
+  D420's 55 villages read level (484 → 480 alive, 106 → 103 starved, 40 of 55 identical). Guards
+  in `HousesAreBuiltTests` (the quota, the behaviour and the food gate, each posed alone).
 
 ---
 

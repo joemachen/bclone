@@ -3969,6 +3969,16 @@ public sealed class SimWorld : IObstacles
         return seats;
     }
 
+    /// <summary>Whether a forester could put a sapling on this ground.</summary>
+    /// <remarks>
+    /// <b>Grass only — asked once, so the seats and the errand cannot drift (D448's small fix).</b>
+    /// The planting demand used to count every owned tile that was not woodland, while the
+    /// errand only ever planted grass: a hut whose paint covered a seam, or whose ground was
+    /// already planted and growing, asked for seats nobody could use (found D434). Rock, iron,
+    /// water and a sapling are not bare ground, and <see cref="Plant"/> keeps the same restraint.
+    /// </remarks>
+    public static bool IsGroundToPlant(Terrain terrain) => terrain == Terrain.Grass;
+
     public int ForesterSeatsWithGroundToPlant()
     {
         int seats = 0;
@@ -3984,7 +3994,7 @@ public sealed class SimWorld : IObstacles
             IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
             for (int t = 0; t < owned.Count; t++)
             {
-                if (Map.TerrainAt(Zones.PositionOf(owned[t])) != Terrain.Forest)
+                if (IsGroundToPlant(Map.TerrainAt(Zones.PositionOf(owned[t]))))
                 {
                     seats += workplace.Places;
                     break;
@@ -4041,7 +4051,7 @@ public sealed class SimWorld : IObstacles
 
             // Planting needs bare ground, and rock or water is not bare ground — it is
             // ground nothing will ever grow on.
-            if (!wantsTrees && Map.TerrainAt(at) != Terrain.Grass)
+            if (!wantsTrees && !IsGroundToPlant(Map.TerrainAt(at)))
             {
                 continue;
             }
@@ -4342,7 +4352,7 @@ public sealed class SimWorld : IObstacles
         // A planted tile now grows up on the same clock as one that came back by itself —
         // *"sapling for the first six months, mature tree after a year"* — so the two kinds
         // of recovery cost the same time and only differ in who started them.
-        if (Map.TerrainAt(tile) != Terrain.Grass || !SetTerrain(tile, Terrain.Sapling))
+        if (!IsGroundToPlant(Map.TerrainAt(tile)) || !SetTerrain(tile, Terrain.Sapling))
         {
             return false;
         }
@@ -6733,9 +6743,10 @@ public sealed class SimWorld : IObstacles
             // ⭐ A DEMOLITION DRAINS THE SAME SHAPE IT WILL LEAVE BEHIND (D324). The site inherits
             // the extent so pulling down a three-tile longhouse empties three tiles rather than
             // one — *"reverse construction" is only legible if it reverses the same picture.*
-            // ⚠️ Facing is not carried: nothing records which way a STANDING building was turned
-            // once it becomes a demolition site, and inventing a default here would draw the
-            // wrong angle confidently. Named rather than guessed.
+            // ⭐ And the facing, read above while the building still stood (D325) and recorded here
+            // on the site, so nothing after this needs the building to answer. Guarded since D455
+            // (`ADemolitionSiteKeepsTheAngleOfWhatItTakesDown`), whose first run found the kind
+            // wrong too: a store is asked for its building through `BuildingKindOf`.
             ExtentWidth = BuildingsCatalog[kind.Value]?.ExtentWidth ?? 1,
             ExtentHeight = BuildingsCatalog[kind.Value]?.ExtentHeight ?? 1,
             Facing = facing,
@@ -6934,7 +6945,7 @@ public sealed class SimWorld : IObstacles
     {
         if (StoreAt(tile) is StoreBuilding store)
         {
-            return BuildingsCatalog.ThatStores(store.Kind);
+            return BuildingKindOf(store);
         }
 
         if (LibraryCovering(tile) is not null)
@@ -6958,6 +6969,17 @@ public sealed class SimWorld : IObstacles
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The building a store was raised as — <see cref="StoreBuilding.RaisedAs"/>, or, for the
+    /// founders' stores that were never raised, the row that stores its kind (D455).
+    /// </summary>
+    public BuildingKind? BuildingKindOf(StoreBuilding store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        return store.RaisedAs ?? BuildingsCatalog.ThatStores(store.Kind);
     }
 
     /// <summary>What the building on a tile is called, or "it".</summary>
@@ -7646,6 +7668,15 @@ public sealed class SimWorld : IObstacles
             if (WhoseYard(onTheGround[i]) is string yard)
             {
                 return PlacementVerdict.No($"That is {yard} yard.");
+            }
+
+            // ⛔ NOR ON THE LANE IN FRONT OF A GATE (Joe, D448 — `fences-as-walls.md §9.3`). It was
+            // allowed and shut the yard behind it; nothing entered a yard then, and the kitchen
+            // garden will. One more lane tile the player may not build on, said in words.
+            if (Zones.GateOwnerFacing(onTheGround[i]) is int gated and not 0)
+            {
+                string whose = FindHousehold(gated) is Household family ? $"the {family.Name}s'" : "a family's";
+                return PlacementVerdict.No($"That is the lane in front of {whose} gate — it would shut their yard.");
             }
         }
 
@@ -8394,6 +8425,54 @@ public sealed class SimWorld : IObstacles
         return best;
     }
 
+    /// <summary>
+    /// The first site, in queue order, that is paid for and already begun — work owed and
+    /// nothing else (D453).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A builder finishes what was started before fetching for anything else</b>, and the
+    /// quota keeps one hand for it when <c>free / 2</c> would round the builders to nobody.
+    /// Found in D414 and measured in D453: a warehouse stood at <b>43 of 45 work for two years</b>
+    /// in a fed village, because four hands less food and fuel left one spare and half of one is
+    /// none. Its materials were already spent; only two ticks of a pair of hands were owed.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ BEGUN, NOT MERELY STOCKED, and that is what keeps it from being D103's rule.</b>
+    /// "Never round a willing hand down to nobody" killed seed 11 of eleven — a builder kept for
+    /// any marked site fetches for the head for ever. A begun site needs no fetching, so the hand
+    /// it keeps costs the work it owes and then goes back. Finishing it moves no timber, so
+    /// D102's queue still decides where scarce materials go.
+    /// </para>
+    /// </remarks>
+    public Workplace? BegunSiteWithWhatItNeeds()
+    {
+        Workplace? best = null;
+        GridPos village = FirstHomeOrFoundingSite();
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace candidate = Workplaces[i];
+            if (candidate.Construction is not { IsFinished: false, HasMaterials: true } plan
+                || plan.WorkDone == 0
+                || !GroundIsClearAt(candidate.Tile)
+                || !TravelCost.CanReach(village, candidate.Tile))
+            {
+                continue;
+            }
+
+            if (best is null
+                || candidate.EffectiveQueueRank < best.EffectiveQueueRank
+                || (candidate.EffectiveQueueRank == best.EffectiveQueueRank
+                    && candidate.Id < best.Id))
+            {
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
     public Workplace? NextBuildableSite()
     {
         Workplace? best = null;
@@ -8669,7 +8748,7 @@ public sealed class SimWorld : IObstacles
         // buildings nobody paid for: nothing.
         BuildingKind kind = building.Kind == StoreKind.Cart
             ? BuildingKind.Pile
-            : BuildingsCatalog.ThatStores(building.Kind)
+            : BuildingKindOf(building)
                 ?? throw new ArgumentOutOfRangeException(
                     nameof(building), building.Kind, "That kind of store has no refund.");
 
@@ -9027,6 +9106,7 @@ public sealed class SimWorld : IObstacles
             Facing = facing,
             ExtentWidth = row?.ExtentWidth ?? 1,
             ExtentHeight = row?.ExtentHeight ?? 1,
+            RaisedAs = kind,
         };
 
         StandingChanged();

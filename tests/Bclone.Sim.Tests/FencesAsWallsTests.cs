@@ -184,6 +184,69 @@ public sealed class FencesAsWallsTests
     }
 
     /// <summary>
+    /// ⛔ Nothing is built on the lane in front of a gate — refused in words (Joe, D448; D456).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§9.3 was <em>allowed</em> (2026-09-26) and Joe reversed it (D448): *refuse it*.</b> A
+    /// building there shuts the yard behind it. The gate is found the way <see cref="AGateIsTheOneWayIn"/>
+    /// finds it — by the walls, the open edge onto the lane — so the index the refusal reads is
+    /// held to the fence itself rather than to its own record.
+    /// </para>
+    /// <para>
+    /// And the index follows the plot: handed on with it to an heir, and gone when it is released.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NothingIsBuiltOnTheLaneInFrontOfAGate()
+    {
+        SimWorld world = Founded();
+        Household? posed = null;
+        GridPos front = default;
+
+        foreach (Household family in world.Households)
+        {
+            if (family.HomeTile is null)
+            {
+                continue;
+            }
+
+            var fenced = new HashSet<GridPos>(family.FencedTiles);
+            foreach (GridPos tile in YardOf(world, family))
+            {
+                foreach ((int dx, int dy) in Steps)
+                {
+                    var beyond = new GridPos(tile.X + dx, tile.Y + dy);
+                    if (fenced.Contains(beyond) || CrossesAWall(world.Zones, tile, beyond))
+                    {
+                        continue;
+                    }
+
+                    Assert.Equal(family.Id, world.Zones.GateOwnerFacing(beyond));
+
+                    PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Pile, beyond);
+                    _output.WriteLine($"the {family.Name}s' gate opens onto {beyond}: {verdict.Reason}");
+                    Assert.False(verdict.Allowed, $"A pile was allowed in front of the {family.Name}s' gate.");
+                    if (verdict.Reason.Contains("gate", System.StringComparison.Ordinal))
+                    {
+                        posed ??= family;
+                        front = posed == family ? beyond : front;
+                    }
+                }
+            }
+        }
+
+        Assert.True(posed is not null, "No gate's lane was refused for being a gate's, so nothing was posed.");
+        Assert.Contains($"the {posed!.Name}s' gate", world.CanBuildAt(BuildingKind.Pile, front).Reason);
+
+        world.Zones.HandPlotOn(posed.Id, 99_999);
+        Assert.Equal(99_999, world.Zones.GateOwnerFacing(front));
+
+        world.Zones.ReleasePlot(99_999);
+        Assert.Equal(0, world.Zones.GateOwnerFacing(front));
+    }
+
+    /// <summary>
     /// ⭐ A straight leg may not cross a fence (§3.4), so the drawing agrees with the routing
     /// (D356's string-pulled leg) — and a leg beside it that crosses none is still clear.
     /// </summary>

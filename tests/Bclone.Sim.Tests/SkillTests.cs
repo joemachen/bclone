@@ -329,7 +329,8 @@ public sealed class SkillTests
     [InlineData(false, 1080427782552529441UL)]
     // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
     // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
-    [InlineData(true, 2125978012891394948UL)]
+    // RE-TAKEN (D452), THE SHIPPED ONE ONLY — a forester's planting seats count grass only (`SimWorld.IsGroundToPlant`), so a hut whose ground is all saplings stops holding hands it cannot use (found D434). ⭐ PROVEN TO BE THE ONLY REASON: with that one line back on the old rule the old value passes. The fixture did not move. Was 2125978012891394948 (shipped).
+    [InlineData(true, 3492199827419521576UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

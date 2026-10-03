@@ -545,6 +545,10 @@ player sets on THAT market, per good** — the same shape as the village stock l
   by being *near and stocked*, not by delivering — pose a stocked market beside the homes and a
   granary far away; assert the dry-larder rate (D363's bar, ≤ 1 per 10,000) and that no villager
   is ever in `DeliveringToHome`.
+  ⭐ **Re-posed again by D457 as a DURATION:** a bank run is goods that exist and have not reached
+  you for longer than it takes to fetch them, so every dry spell (a living household's larder
+  empty of every food while a store holds some) is held to twice its own round trip to the nearest
+  store with food. The rate is reported, no longer asserted — its bar had moved five times.
 - **`AHouseholdFetchesAtHalfALarder`:** a larder at 60 % of target sends nobody; at 50 % somebody
   goes and comes back with the larder at target. Red today (a fetch fires at the first dip).
 - **`AMarketIsStockedToItsOwnLimit`:** a market limited to 200 firewood beside a warehouse of 1,000
