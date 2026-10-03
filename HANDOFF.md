@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D468 IN §7. NAMES, SURNAMES AND BIRTHDAYS (D465–D468) BUILT ON `slice/names-and-birthdays` — UNPLAYED, NOT MERGED, NOT PUSHED. NEXT: JOE PLAYS IT AND CALLS THE NEW-YEAR BIRTHS.**
+# Handoff — bclone: **▶️ PHASE 5 — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D448–D469 IN §7. NAMES, SURNAMES AND BIRTHDAYS (D465–D469) PLAYED, MERGED AND PUSHED. NO SLICE OPEN. NEXT: JOE'S SLOT.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS BUILT (D465–D468).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS MERGED AND PUSHED (D469).**
+>
+> **State:** `slice/names-and-birthdays` (D465–D469) merged `--no-ff` into `main` and **pushed at Joe's word**: *"looks
+> great after playing … spread births through the year - each household has its own day … then merge and push."*
+> **No slice is open.** The branch is kept until Joe says to delete it (never on the remote). At the merge: **1362
+> passing, 0 failing, 5 skipped of 1367, 3m13; view 0 warnings; probe green, bar height 161.** ⚠️ Joe played D465–D468;
+> **D469 (each household's own day for a child) is merged at his word and unplayed** — if he reports something about
+> births, that is where to look. ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`**.
+>
+> **D469, in one line:** `Household.DayForAChild` (a hash of seed and id, set when the household is made, not hashed);
+> each household is asked for a child on that day only, once a year; pairing stays at the year's turn; a founding
+> household may now have a child in Year 1. 55 villages 427 → 439, 100 seeds 463 → 450; five goldens and the valley
+> pin moved, proven by putting New-Year births back. Five guards re-posed (D469 names each, and why).
+>
+> **▶️ NEXT: JOE'S SLOT.** Ask him what is next; the ⏸️ list below holds the rest.
+>
+> *(The banner as D468 left it — the slice built, unplayed — kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 — NAMES, SURNAMES AND BIRTHDAYS BUILT (D465–D468).**
 >
 > **State:** `main` = `033482e` (D464), pushed. `slice/the-stutter` **deleted at Joe's word** (`d449f30`, fully merged,
 > never on the remote). **`slice/names-and-birthdays`** = four commits on `main`, **NOT merged, NOT pushed, UNPLAYED:**
@@ -4086,9 +4104,17 @@ Read `git status` after staging, every time.
      founders and for nobody else, because births are decided once a year at its turn. The first run of the guard's
      printout said *"born Day 1, Spring, Year 2"*; read the printout of a new guard, not only its colour.
 
+162. **⚠️ "NOTHING CAN HAPPEN BEFORE X" IS A PREMISE, AND A CHANGE TO WHEN THINGS HAPPEN BREAKS EVERY GUARD THAT LEANED ON
+     IT (D469).** Births at the year's turn meant nobody was born in Year 1, so two cold-start guards wrote *"nobody
+     died"* as `population == starting population` — and read a first-year child as −1 founders dead. A one-village
+     comparison of rhythm on and off read a different-sized village as a 20 % production cost (2 % per adult-year). An
+     heir guard's free hand went to the woodcutter's because two children wanted firewood a year earlier. **When the
+     timing of an event moves, grep the guards for counts that stand in for the claim** (`Population ==`, totals rather
+     than rates, one seed's history as a pose) and ask each for its claim directly.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **EVERY CHILD IS BORN ON DAY 1 OF SPRING (D468) — JOE'S CALL.** Birthdays are real since D468 (a year older on
+- ✅ **DECIDED AND BUILT (D469) — Joe: *"spread births through the year - each household has its own day."* Kept for the reasoning.** ~~EVERY CHILD IS BORN ON DAY 1 OF SPRING (D468) — JOE'S CALL.~~ Birthdays are real since D468 (a year older on
   one's own day; the founders' spread by hash), but `HouseholdSystem` decides births once a year at its turn, so every
   villager born in the valley shares New Year's Day as a birthday and comes of age and dies of old age on it. The fix
   that suggests itself — **each household tries for a child on a day of its own** (a hash of the seed and the household,
