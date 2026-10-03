@@ -298,8 +298,9 @@ the new-game screen → settings persistence → save/load → title and pause. 
   fifty, against 8 alive and 7 starved.
 - **The remaining 39 were one-village poses** whose premise rested on the old valleys — re-posed
   one at a time, each with its reason and its numbers in the test (D473 lists them); the goldens
-  and walk pins re-taken once. One guard is **false on `main` too** and is skipped with its numbers
-  for Joe: hunting does not out-earn fishing per tick worked (886 against 1,299 over six valleys).
+  and walk pins re-taken once. One guard is **false on `main` too**: hunting does not out-earn
+  fishing per tick worked (886 against 1,299 over six valleys) — Joe: fine, the lodge's leather
+  levels it (D474); re-posed to hunting above foraging.
 - **Guards:** `TheSeamsMoveNoOtherStagesDraws` (3 reds: the woodland on the stone stage's stream),
   `TwoDrawnSeamsDoNotShareAnOffset` (1: the seams drawing on a copy), `EveryStageHasASeedOfItsOwn`
   (1: `StageSeed` returning the seed), `TheWoodlandChangesNothingButTrees` (2: woods over anything).

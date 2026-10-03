@@ -2,9 +2,10 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-03 (EVENING) — PER-STAGE SEEDS BUILT ON A BRANCH (D470–D473).**
 >
-> **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = five commits, **NOT merged, NOT pushed,
+> **State:** `main` = `e870979` (D469), pushed. **`slice/per-stage-seeds`** = six commits, **NOT merged, NOT pushed,
 > UNPLAYED:** `4425e87` the spec, `5f10827` ground quality removed (D470), `935833d` the founding hut bounded by walking
-> (D471), `e6b032e` the founders settle on dry ground (D472), and per-stage seeds (D473). At D473: **1354 passing, 0
+> (D471), `e6b032e` the founders settle on dry ground (D472), `4230254` per-stage seeds (D473), and Joe's two calls
+> (D474: the hunter guard re-posed above foraging; armful 80 queued). At D473: **1354 passing, 0
 > failing, 6 skipped of 1360; 3m46 back to back against D472's 4m31; view 0 warnings; probe green, bar height 161,
 > tile centres ✅.** ⚠️ Joe's `art/` changes are his — never stage them; stage this file as **`HANDOFF.md`**.
 >
@@ -15,12 +16,19 @@
 > *"take it, do it right"*: two were latent generator faults, fixed first on the old generator (D471, D472 — D472
 > alone took 55 villages 429 → 495), and the other 39 were one-village poses, re-posed with reasons (D473 lists them).
 >
-> **▶️ NEXT: JOE PLAYS `slice/per-stage-seeds`.** What he will see: **every seed is a new valley** (his familiar ones
-> too — the shipped 12345 is kept: 19 alive, 0 starved at fifty, unattended); **no Ground button, no `G`, no "rich /
-> thin ground" line**, and a farm reaps the same anywhere; the founders never settle on a river bank. Then he merges
-> and pushes, and **the new-game screen** is the next shell step (spec first). **Two calls are his on the ⏸️ list
-> below:** hunting does not out-earn fishing per tick worked — on `main` too; and the household that fetches as fast
-> as it eats (D395's armful-80 thread).
+> **▶️ NEXT: JOE PLAYS `slice/per-stage-seeds`.** His two calls are made (D474, committed on the branch): fishing
+> above hunting on food is fine (*"hunting also produces leather"*), and armful 80 / eat every four days is the first
+> D395 thread after the shell. **The play-test checklist he was given:**
+> 1. **A new valley on a familiar seed** — the seed is `"seed"` in `data/sim.config.json` (no new-game screen yet);
+>    12345 first, then two or three others. The unattended 12345 reads 19 alive, 0 starved at fifty.
+> 2. **The founders are never on a river bank** (D472) — the starting ground wholly on one side, water 7+ tiles off.
+> 3. **No soil anywhere** — no Ground button in Settings, `G` does nothing, no "Rich / Thin / Ordinary ground" line
+>    on a tile, and a farm reaps the same per tile wherever it stands.
+> 4. **The seams look scattered, not stamped** — the first stone and iron seams each at their own small offset.
+> 5. **The valley still reads well** — woods on every side, stone near, iron far, no cut-off pocket.
+> 6. **A generator fault to report** if he sees one: a village that cannot reach wood or stone, a seam under water,
+>    a founding hemmed in.
+> Then he merges and pushes, and **the new-game screen** is the next shell step (spec first).
 >
 > **Tools (this session's scratchpad, `C:/Users/joema/AppData/Local/Temp/claude/D--Projects-bclone/1ab6508a-2be9-4bfc-b38f-988b499deba8/scratchpad/`):**
 > `ZzBase.cs` + `summ2.py` (D420's 55 villages; `ZZ_WIDE=1` 100 shipped seeds; **`ZZ_FIX=1` 50 fresh fixture valleys,
@@ -4174,7 +4182,8 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐⭐ **HUNTING DOES NOT OUT-EARN FISHING PER TICK WORKED — FALSE ON `main` TOO (found D473).**
+- ✅ **DECIDED (D474) — Joe: *"i think its fine because hunting also produces leather whereas fishing only produces food."* The guard is re-posed to hunting above FORAGING (700 against 401 over six valleys, 2 of 2 reds). Kept for the numbers:**
+- ~~⭐⭐ **HUNTING DOES NOT OUT-EARN FISHING PER TICK WORKED — FALSE ON `main` TOO (found D473).**~~
   Your ladder is hunting above fishing above foraging. `HuntingTests.AHunterOutEarnsAFisherPerTickWorked`
   had only ever asked one valley (the fixture's, 805 against 772 — thin). Asked of six valleys: **on
   the old generator hunters make 886 per 100 ticks worked against fishers' 1,299 (the fisher ahead
@@ -4182,7 +4191,8 @@ Read `git status` after staging, every time.
   the lodge (D384) while a fisher casts beside the hut, so the walk eats the hunt. The guard is
   skipped with those numbers. **Your call:** raise the hunt's yield (`hunt_yield` / ticks) until the
   ladder holds over valleys, accept fishing above hunting, or something else. Measured either way.
-- ⭐ **A HOUSEHOLD TEN TILES FROM ITS STORE FETCHES ABOUT AS FAST AS IT EATS (found D473).** Traced in
+- ✅ **DECIDED (D474) — Joe: *"armful 80, eat every four days sounds good."* NOT BUILT: the first of the D395 threads, after the shell (his order). A D16 re-derivation — measure on the arms. Kept:**
+- ~~⭐ **A HOUSEHOLD TEN TILES FROM ITS STORE FETCHES ABOUT AS FAST AS IT EATS (found D473).**~~ Traced in
   the fixture's per-stage valley: an armful of 40, twenty ticks each way, and the family eats ~16 of
   it on the walk home — the larder climbs ~8 a trip, and one adult spent 89 of a season's 120 ticks
   fetching food (28 building). It is the armful, not a bug: **D395's approved, unbuilt "armful 40 → 80,
