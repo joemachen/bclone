@@ -1,14 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN'S PLAY NOTES ARE BUILT (D481) AND PUSHED ON `slice/new-game-screen`; JOE PLAYS IT AGAIN AND MERGES; THE CLOUD SESSION TAKES QUEUE B.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE STILL REPLAYS D481; THE CLOUD SESSION TAKES QUEUE B.**
 
 > **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
 >
-> **State:** `main` = `6533f35` (D476). **`slice/new-game-screen`** = D477–D481 + this handoff, **pushed to `origin`
-> (2026-10-04, at Joe's word: "get this project in position for a cloud session"), NOT merged.** At D481: **1421 passing, 0 failing, 5 skipped of 1426, 3m32**;
+> **State:** **`main` = `slice/new-game-screen` merged `--no-ff` and pushed (D482, 2026-10-04)** — at Joe's word, *ahead
+> of his replay of D481*, because a cloud session opens on `main` and the first one read D476's handoff and re-asked
+> D477's questions. **No slice is open.** `slice/new-game-screen` is kept until he says to delete it. At D481 (the merged
+> tree is byte-identical): **1421 passing, 0 failing, 5 skipped of 1426, 3m32**;
 > no golden moved; view 0 warnings; probe green on Windows (`new game:` ✅ column 400 of 400, bake ~355 ms; bar height 151; tile centres ✅).
 >
 > **☁️ IF YOU ARE A CLOUD SESSION:** `.claude/hooks/cloud-setup.sh` ran at start (its last line says what it found) —
 > .NET 8 in `~/.dotnet`, Godot 4.7.1 .NET Linux in `~/godot`, `$GODOT` exported. ⚠️ **The Linux probe has never been
-> run** — the first cloud session runs CLAUDE.md's four lines on a clean `slice/new-game-screen` checkout BEFORE changing
+> run** — the first cloud session runs CLAUDE.md's four lines on a clean `main` checkout BEFORE changing
 > anything, and writes what they read here (bar height 151 and the `new game:` widths were measured with Windows'
 > font rendering; if a number differs on Linux, record the Linux number as the Linux baseline — do not "fix" the view
 > for it). If a download was blocked, say which verification could not run; never report it passed. **The harness
@@ -21,9 +23,9 @@
 > on `NewGameRow`, the number hidden, the share code keeps it); stone and iron **Sparse · Moderate · Rich** (code
 > `moderate`); **seam scatter dropped from the screen** (Joe: *"drop it from the screen completely"* — the three
 > `seam_*_scatter_percent` keys stay config, the `scale` kind stays for modders, guarded by a posed row); the button
-> reads **Found a new village**; **forest cover 0–100 %** (Joe's call — past the measured line, knowingly).
+> reads **Found a new village**; **forest cover 0–100 %** (Joe's call — past the measured line, knowingly). **Merged (D482).**
 > **Joe answered D480's three calls:** forest 0–100 %, **the diagonals' cost is acceptable**, **the preview's redraw
-> speed is fine.** ▶️ **Joe plays it again (`run.bat`), then merge `--no-ff` and push at his word.** ⚠️ Forest at 0 %
+> speed is fine.** ▶️ **Joe still plays it again on Windows (`run.bat`)** — anything he finds is a small fix on a new slice off `main`. ⚠️ Forest at 0 %
 > and 100 % founds (guarded, §8.8) but is unmeasured in play; if a session has the time, `tools/harness/arms.sh base
 > woods=0 woods=10 woods=100` and write the arms into `new-game-screen.md §7` — information for Joe, not a gate.
 >
@@ -38,8 +40,8 @@
 >   spec before building.
 > - **Order is his:** B1 (Professions panel starts open) → B2 (Tree in Settings gated) → B3 (What's here panel) are
 >   view-only — buildable in the cloud with the probe, but **he must play them on Windows**; B4 spec; B5 verify and
->   report; B6 `quarry_unlock_stone` 100 → 200 on the harness. ⚠️ **Do not start B on `slice/new-game-screen`** — after
->   the merge, a new slice off `main`; if the merge has not happened, branch off `slice/new-game-screen` and say so.
+>   report; B6 `quarry_unlock_stone` 100 → 200 on the harness. ⚠️ **Each B item on its own new slice off `main`**
+>   (`slice/<name>`), one commit per note; Joe merges at his word after playing.
 >
 > *(The banner before D481, kept below.)*
 >
@@ -4467,6 +4469,15 @@ Read `git status` after staging, every time.
 - **The measurement harness lived only in session scratchpads** (`%TEMP%`, one per session, each banner pointing at
   the last one's). A cloud session cannot see any of them. It is in `tools/harness/` now; keep it there, and keep it
   current when an arm is added.
+
+## ⛔ THE TRAP D482 PAID FOR — A CLOUD SESSION OPENS ON THE DEFAULT BRANCH
+
+- **D481 pushed `slice/new-game-screen` and called the project "cloud-ready". The cloud session opened on `main`**
+  (still D476), read the old handoff, said *"the new-game screen spec next"*, and re-asked Joe D477's four questions.
+  It also had no .NET or Godot: the setup hook is in `.claude/settings.json`, which was only on the branch, and it is
+  read **when the session starts**, so checking out the branch afterwards cannot fix that. *The fix was to merge (D482).
+  The lesson: the state a cloud session sees is `origin/main`, so check `git show origin/main:HANDOFF.md | head` before
+  saying anything is ready for one.*
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
