@@ -1,6 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE REPLAYED D481 AND APPROVED IT ALL; THE CLOUD SESSION TAKES QUEUE B.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D484 IN §7. B1 (THE PROFESSIONS WINDOW STARTS OPEN) IS BUILT ON `slice/professions-open` AND PUSHED, UNPLAYED (D484); JOE PLAYS IT ON WINDOWS, THEN MERGES. NEXT: B2.**
 
-> **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (NIGHT) — D484, FROM A CLOUD SESSION.**
+>
+> **State:** `main` = `1421d76` (D483), unchanged. **`slice/professions-open`** (off `main`, pushed, **NOT merged,
+> UNPLAYED**) = three commits: the handoff review (this file's title range, `new-game-screen.md`'s status line, the
+> .NET trap), **B1** (`startOpen: true` in `BuildProfessionsPanel`; the probe's `windows:` line now also says
+> *"Professions starts open"* — 1 red of 1 with the old `false`), and **the setup hook's .NET fallback**. At B1:
+> **1421 passing, 0 failing, 5 skipped of 1426 (5m49 on the cloud machine); no golden moved; view 0 warnings; probe
+> green** — bar height 151, tile centres ✅, `new game:` ✅ 400 of 400, the Professions window 300 × 377 at (14, 259).
+>
+> **☁️ THE LINUX BASELINE EXISTS NOW (D484)** — CLAUDE.md's four lines on clean `main`, before B1: the suite 1421 / 0 /
+> 5 of 1426 in **6m32** (Windows 3m32 — a different machine; compare clocks back to back only); view 0 warnings; probe
+> green with the Windows numbers — **bar height 151, tile centres ✅, `new game:` 400 of 400, bake 437 ms** (Windows
+> ~355). Nothing differs on Linux's font rendering. ⚠️ **.NET came from Ubuntu's `dotnet-sdk-8.0`** (8.0.131, in
+> `/usr/lib/dotnet`): the network policy refuses `builds.dotnet.microsoft.com`, the archive and `api.nuget.org` are
+> allowed. `cloud-setup.sh` on this slice falls back to that package by itself — **until the slice is merged, `main`'s
+> hook does not**, so a cloud session opening on `main` runs `apt-get install -y dotnet-sdk-8.0` by hand (see the trap).
+>
+> **▶️ NEXT:** Joe plays B1 on Windows (`run.bat` — a new village: the Professions window is open under the Overview,
+> its ▾ folds it) and merges at his word. Then **B2** on its own `slice/<name>` off `main`. The rest of B is below.
+>
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D483.**
 >
 > **State:** **`main` = `slice/new-game-screen` merged `--no-ff` and pushed (D482, 2026-10-04)** — at Joe's word, *ahead
 > of his replay of D481* (✅ **replayed and approved, 2026-10-04: *"all approved"***), because a cloud session opens on `main` and the first one read D476's handoff and re-asked
@@ -13,7 +33,11 @@
 > run** — the first cloud session runs CLAUDE.md's four lines on a clean `main` checkout BEFORE changing
 > anything, and writes what they read here (bar height 151 and the `new game:` widths were measured with Windows'
 > font rendering; if a number differs on Linux, record the Linux number as the Linux baseline — do not "fix" the view
-> for it). If a download was blocked, say which verification could not run; never report it passed. **The harness
+> for it). If a download was blocked, say which verification could not run; never report it passed. ⛔ **2026-10-04:
+> a cloud session found .NET blocked** — `dot.net` 301s to `builds.dotnet.microsoft.com`, which the environment's
+> network policy refused (proxy `CONNECT` 403); Godot downloaded. So the suite, the view build, the probe and the golden
+> diff have still never run on Linux. **Joe's fix:** the cloud environment's settings → Network access → allow
+> `builds.dotnet.microsoft.com` (and `dot.net`), or a broader level. **The harness
 > is in the repo now** (`tools/harness/` — `arms.sh`, `ZzBase.cs`, `dead.py`; its README). Joe's local
 > `data/sim.config.json` seed 41219 and his `art/` files are his and not on the remote — the cloud sees the
 > committed seed 12345, which is correct. **The file is `HANDOFF.md`** — upper case; Linux does not forgive
@@ -4478,6 +4502,19 @@ Read `git status` after staging, every time.
   read **when the session starts**, so checking out the branch afterwards cannot fix that. *The fix was to merge (D482).
   The lesson: the state a cloud session sees is `origin/main`, so check `git show origin/main:HANDOFF.md | head` before
   saying anything is ready for one.*
+
+## ⛔ THE TRAP THE FIRST POST-D483 CLOUD SESSION PAID FOR — A SETUP HOOK THAT SAYS "FAILED" MAY BE THE NETWORK POLICY
+
+- **`cloud-setup.sh` printed `.NET 8 install FAILED` and `dotnet: MISSING`; the script was fine.** `dot.net` answers
+  with a 301 to `builds.dotnet.microsoft.com`, and the environment's network policy refuses that host (the proxy's
+  `CONNECT` returns 403). **Allowing only `dot.net` is not enough — the redirect target is the host that matters.**
+  *Before editing the hook, `curl -sSI` both hosts and read the status; a 403 from the proxy is a setting Joe changes
+  in the environment, not a bug in the repo.* Until it is allowed, a cloud session can read and write docs but cannot
+  run the suite, the view build or the probe (the probe needs the built game) — say so; never report them passed.
+- **⭐ AND THE WAY ROUND IT (D484): Ubuntu's own archive ships `dotnet-sdk-8.0`, and the archive is allowed.**
+  `apt-get update && apt-get install -y dotnet-sdk-8.0` gave 8.0.131 in `/usr/lib/dotnet`; NuGet restored; all four
+  lines ran green. `DOTNET_ROOT` pointing at an empty `~/.dotnet` did not break the suite, the build or Godot, but the
+  hook now points it at `/usr/lib/dotnet` when that is where the SDK is.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

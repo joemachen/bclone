@@ -8,9 +8,10 @@ screen, 2026-10-03 — §2), D481 (his calls after playing it, 2026-10-04 — §
 `seeded-map-generation.md` (one valley archetype), §10.4 (*all seeds survivable, none equally
 comfortable*), D335 (a derived value is never hashed), D466 (splitmix64 over a name).
 **Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF (D478), THE VIEW (D479), THE MEASURED RANGES (D480)
-AND JOE'S PLAY NOTES (D481) BUILT** on `slice/new-game-screen` — guards §8.1–8.9 red-checked; no
-golden moved. ✅ **Played once by Joe (2026-10-04); ⏳ D481's changes unplayed — he plays them, then
-merges.**
+AND JOE'S PLAY NOTES (D481) BUILT** — guards §8.1–8.9 red-checked; no golden moved. ✅ **Merged to
+`main` and pushed (D482, 2026-10-04); Joe replayed D481's changes and approved them all (D483,
+2026-10-04).** ⚠️ Forest cover at 0 % and 100 % founds (guarded, §8.8) but is unmeasured in play —
+information for Joe, not a gate.
 Owner: Joe + Claude Code.
 
 ---
