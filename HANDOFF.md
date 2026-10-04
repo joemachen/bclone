@@ -1,6 +1,173 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D476 IN §7. PER-STAGE SEEDS (D470–D475) PLAYED, MERGED AND PUSHED. NO SLICE OPEN. NEXT: THE NEW-GAME SCREEN, SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN'S PLAY NOTES ARE BUILT (D481) AND PUSHED ON `slice/new-game-screen`; JOE PLAYS IT AGAIN AND MERGES; THE CLOUD SESSION TAKES QUEUE B.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (NIGHT) — PER-STAGE SEEDS MERGED AND PUSHED (D476).**
+> **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
+>
+> **State:** `main` = `6533f35` (D476). **`slice/new-game-screen`** = D477–D481 + this handoff, **pushed to `origin`
+> (2026-10-04, at Joe's word: "get this project in position for a cloud session"), NOT merged.** At D481: **1421 passing, 0 failing, 5 skipped of 1426, 3m32**;
+> no golden moved; view 0 warnings; probe green on Windows (`new game:` ✅ column 400 of 400, bake ~355 ms; bar height 151; tile centres ✅).
+>
+> **☁️ IF YOU ARE A CLOUD SESSION:** `.claude/hooks/cloud-setup.sh` ran at start (its last line says what it found) —
+> .NET 8 in `~/.dotnet`, Godot 4.7.1 .NET Linux in `~/godot`, `$GODOT` exported. ⚠️ **The Linux probe has never been
+> run** — the first cloud session runs CLAUDE.md's four lines on a clean `slice/new-game-screen` checkout BEFORE changing
+> anything, and writes what they read here (bar height 151 and the `new game:` widths were measured with Windows'
+> font rendering; if a number differs on Linux, record the Linux number as the Linux baseline — do not "fix" the view
+> for it). If a download was blocked, say which verification could not run; never report it passed. **The harness
+> is in the repo now** (`tools/harness/` — `arms.sh`, `ZzBase.cs`, `dead.py`; its README). Joe's local
+> `data/sim.config.json` seed 41219 and his `art/` files are his and not on the remote — the cloud sees the
+> committed seed 12345, which is correct. **The file is `HANDOFF.md`** — upper case; Linux does not forgive
+> `handoff.md`.
+>
+> **✅ A — DONE (D481), one commit, on the branch:** river width shows *narrow ◂——▸ wide* (`min_label`/`max_label`
+> on `NewGameRow`, the number hidden, the share code keeps it); stone and iron **Sparse · Moderate · Rich** (code
+> `moderate`); **seam scatter dropped from the screen** (Joe: *"drop it from the screen completely"* — the three
+> `seam_*_scatter_percent` keys stay config, the `scale` kind stays for modders, guarded by a posed row); the button
+> reads **Found a new village**; **forest cover 0–100 %** (Joe's call — past the measured line, knowingly).
+> **Joe answered D480's three calls:** forest 0–100 %, **the diagonals' cost is acceptable**, **the preview's redraw
+> speed is fine.** ▶️ **Joe plays it again (`run.bat`), then merge `--no-ff` and push at his word.** ⚠️ Forest at 0 %
+> and 100 % founds (guarded, §8.8) but is unmeasured in play; if a session has the time, `tools/harness/arms.sh base
+> woods=0 woods=10 woods=100` and write the arms into `new-game-screen.md §7` — information for Joe, not a gate.
+>
+> **▶️ B — HIS GAME NOTES — unchanged from the banner below (B1–B6), plus his answers for B4:**
+> - **B4, the destroy-resources brush — Joe answered his own design questions (2026-10-04):** *(a)* destroyed ground
+>   **can grow trees again if a forester replants it** (and only then — no natural regrowth); *(b)* the brush **destroys
+>   stone and iron too, and the village loses the goods** (*"useful if a player wants to clear nodes but doesn't have
+>   anywhere to store the goods or have a use for them"*); *(c)* herdsmen's pens: **yes, animals can live in the woods**
+>   — a pen does not need its trees cleared; *(d)* **laborers** clear the trees from a farm painted over them. Still
+>   spec first (`specs/`, a new one or `quarry.md`'s brush section — read what exists), and still **measure what the
+>   game does today before writing it** (trap 151). His answers are design, not yet a spec Joe has read: show him the
+>   spec before building.
+> - **Order is his:** B1 (Professions panel starts open) → B2 (Tree in Settings gated) → B3 (What's here panel) are
+>   view-only — buildable in the cloud with the probe, but **he must play them on Windows**; B4 spec; B5 verify and
+>   report; B6 `quarry_unlock_stone` 100 → 200 on the harness. ⚠️ **Do not start B on `slice/new-game-screen`** — after
+>   the merge, a new slice off `main`; if the merge has not happened, branch off `slice/new-game-screen` and say so.
+>
+> *(The banner before D481, kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-04 — JOE PLAYED THE NEW-GAME SCREEN; HIS NOTES, QUEUED.**
+>
+> **State:** `main` = `6533f35` (D476), pushed. **`slice/new-game-screen`** = `9cd0e21` (D477–D480) + this handoff —
+> **played by Joe, not merged, not pushed.** At D480: 1420 passing, 0 failing, 5 skipped of 1425; no golden moved; view 0
+> warnings; probe green (`new game:` ✅, bar height 151, tile centres ✅). ⚠️ Joe's `data/sim.config.json` `"seed": 41219`
+> and his `art/` files are uncommitted and his — `git stash push -- data/sim.config.json` around a suite run or a commit
+> of that file, pop after. Stage this file as **`HANDOFF.md`**.
+>
+> **▶️ A — HIS NOTES ON THE NEW-GAME SCREEN (on the branch, one commit each; then he plays it again and merges):**
+> 1. **River width shows no number** — a span labelled *narrow ◂——▸ wide*. A `range` row wants end labels in place of
+>    a number reading (e.g. `min_label` / `max_label` on `NewGameRow`, the reading hidden when they are set); the share
+>    code keeps the number. View + `NewGame.DefaultRows` + spec §5.
+> 2. **Stone and iron: "Usual" → "Moderate"** — the label AND the code value (`usual` → `moderate`), so a share code
+>    reads what the screen says. `NewGame.DefaultRows`, `NewGameScreenTests` (the share-code and defaults guards),
+>    `SeamsTests`' row poses, spec §5/§7.
+> 3. **He asked: "what does 'seam scatter' do?"** — answer him first, then build what he picks. *It is how far the
+>    stone and iron outcrops stray from an even, compass-like layout: each seam swings within its sector, lies a little
+>    further out, and varies in size (the three `seam_*_scatter_percent` keys scaled together, D475). 100 % is the
+>    shipped valley; 0 % is the "planned and symmetrical" cross he refused in D475.* Offer: keep it with a tooltip saying
+>    so, rename it (e.g. *"Ore layout: regular ◂▸ scattered"*), or drop it from the screen as a modder dial.
+> 4. **The button reads "Found a new village"** (was *"Found the village ▸"*) — `NewGameScreen.BuildTheColumn`.
+> **Still unanswered from D480 (⏸️ list):** forest cover below 35 %, the diagonals' cost, preview speed.
+>
+> **▶️ B — HIS GAME NOTES (after the merge, in this order unless he says otherwise; spec first where marked):**
+> 1. **The Professions panel starts open** — it opens minimised today. View only.
+> 2. **"Tree" is not in Settings until the tech tree is first unlocked.** The bar's `_treeButton` already has a
+>    visibility gate; the Settings panel's list of panels (`BuildSettingsPanel`) evidently does not — check, gate it on
+>    the same fact.
+> 3. **The "What's here" panel**: (a) its height bound to its contents — it is very tall; (b) it opens **behind** *The
+>    valley* and *Village log* and is hard to see; (c) it should first open **beside the tile it describes**, then
+>    **remember where the player moved it** (and stay closed if closed). `_whatsHerePanel`, `CloseTheWindow`, the
+>    window's `Wanted` state in `Main.cs`. View only; probe it (a posed tile, its rect inside the window, not under a
+>    docked panel).
+> 4. **A "destroy resources" brush, and farmland over trees — SPEC FIRST, with Joe.** His words: a red (destructive)
+>    brush; everything painted is destroyed and **trees do not grow back**; a farmer may paint fields over trees but
+>    cannot sow or farm a tile until its trees are gone; **farm "give land" must not paint stone or iron seams** — it
+>    paints round them until they are cleared, then the cleared ground. Herdsmen's pens over trees are an open question
+>    he raised himself (animals can live in woods). ⚠️ **Measure what the game does TODAY before speccing** (trap 151 —
+>    a filed finding is a hypothesis): how farm paint treats `Forest`, saplings, `Rock`, `IronDeposit`; whether
+>    regrowth (`RegrowthSystem`) reclaims painted or farmed ground; what the harvest brush already destroys.
+> 5. **Homes on forested tiles — verify, then report** (he thinks this is already how it works): laborers clear the
+>    building's footprint first, cleared trees do not regrow, trees between buildings may; homes never on stone or iron
+>    seams. Check `CanBuildAt`/site choice and regrowth against a played opening; change nothing unless it is wrong.
+> 6. **The quarry gift comes too soon — double the stone it takes:** `quarry_unlock_stone` **100 → 200**
+>    (`data/sim.config.json`; `quarry.md`, the config comment, and any guard posed on 100). A number change, measured on
+>    the harness like any other (D420's arms), its own commit.
+>
+> *(The D480 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (NIGHT) — THE NEW-GAME SCREEN BUILT (D477–D480), UNPLAYED.**
+>
+> **State:** `main` = `6533f35` (D476), pushed. `slice/per-stage-seeds` deleted at Joe's word. **`slice/new-game-screen`**
+> = the spec (D477), the sim half (D478), the view and the measured ranges (D479–D480) — **not merged, not pushed,
+> unplayed.** At D480: **1420 passing, 0 failing, 5 skipped of 1425, 4m36; no golden moved; view 0 warnings; probe green —
+> `new game:` ✅, bar height 151, tile centres ✅.** ⚠️ Joe's `data/sim.config.json` `"seed": 41219` is uncommitted — set it
+> aside (`git stash push -- data/sim.config.json`) around a suite run or a commit of that file, pop after. His `art/`
+> files are his. Stage this file as **`HANDOFF.md`**.
+>
+> **▶️ NEXT: JOE PLAYS IT** (`run.bat`) — the game now opens on the screen. What to try:
+> 1. **Roll** a few times; **type 41219** (his play seed — a plain number stays that number) and **12345**.
+> 2. Drag **every row to both ends** — river 0 and 6, each direction, forest 35 and 50, stone and iron levels, scatter 0.
+>    The preview redraws about a third of a second after letting go; the stats under it are read off the valley.
+> 3. **Copy** a share code, change things, **paste the code back** into the seed box — the rows follow. Paste a broken one
+>    (`oak#woods=90`) — a sentence, *Found* greyed, nothing changed.
+> 4. Type a **village name**; **Found the village** — the valley played is the one previewed, the name on the header;
+>    *Settings → About this run* shows the share code.
+> **His calls, waiting (⏸️ list):** a forest cover below 35 % as a hard setting (30 % loses 30 unattended valleys of
+> 100); the diagonals' cost (~5 more dead valleys in 100 than west–east, unattended); whether a ~0.3–0.4 s preview
+> bake feels live enough (8 px a tile; 6 would be quicker and a little softer). Then merge and push at his word; then
+> **settings persistence**, the next shell step.
+>
+> **Tools (this session's scratchpad, `…/a18806d2-fa2a-4c61-8716-978cc1511a51/scratchpad/`):** `ZzBase.cs` (now with
+> `ZZ_ROW=id=value` to set a new-game row, and `ZZ_WIDE=2` for seeds 300–399), `rows.sh` / `rows2.sh` (the §7 arms),
+> `dead.py` (alive / dead valleys / peak per arm), `mut.py` + `mut_d477.py`, the arm outputs `row-*.txt`.
+>
+> *(The D478 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN'S SIM HALF BUILT (D478).**
+>
+> **State:** `slice/new-game-screen` = the spec (D477) + **the sim half (D478)**, not merged, not pushed. At D478:
+> **1401 passing, 0 failing, 5 skipped of 1406; no golden moved; 4m16 against `main`'s 4m04 back to back; view 0
+> warnings; probe green, bar height 151.** ⚠️ Joe's `data/sim.config.json` `"seed": 41219` is uncommitted — set it aside
+> (`git stash push -- data/sim.config.json`) before a suite run and before staging that file, and pop it after.
+>
+> **What is built:** `SeedText` (Sim/Config), `NewGame` + `NewGameRow` (the rows, `Apply`, `ShareCode`, `TryRead`),
+> `village_name`, `seed_words`, `river_course` (`MapGenerator.CourseOf`, `CarveStraightRiver`, `CarveDiagonalRiver`).
+> **▶️ NEXT:** (2) **measure each row's ends** (`specs/new-game-screen.md §7`) — `ZzBase.cs` / `summ2.py` /
+> `mut.py` / `mut_d477.py` and the D475 baselines are in this session's scratchpad
+> (`…/a18806d2-fa2a-4c61-8716-978cc1511a51/scratchpad/`); the candidate ranges are in `NewGame.DefaultRows`; then
+> (3) **the view** (§3, probe `new game:`), then (4) Joe plays it.
+>
+> *(The D477 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN SPECCED (D477).**
+>
+> **State:** `main` = `6533f35` (D476), pushed. **`slice/per-stage-seeds` deleted at Joe's word** (fully merged, never
+> on the remote). **`slice/new-game-screen`** = the spec commit (D477), **not merged, not pushed.** ⚠️ Joe's
+> uncommitted edits — never stage them: his `art/` files and **`data/sim.config.json` `"seed": 41219`** (committed:
+> 12345). If a checkout refuses, `git stash push -- data/sim.config.json`, pop after. Stage this file as **`HANDOFF.md`**.
+>
+> **What Joe decided (D477 — `specs/new-game-screen.md §2`):** one archetype (*River valley*); six rows — river
+> width, **river direction** (W–E · N–S · two diagonals · Any), forest cover, stone, iron, seam scatter — **each a data
+> row** (`new_game_options`), *"space for more to be added"*; any-text seed, dice roll words, the screen opens on a
+> fresh roll; stats under the preview; editable village name; the settings in the share code; a Default settings
+> button. ⏸️ **Hills / height / mesas / buttes: after the whole shell** — the sim has no height; it is its own spec.
+>
+> **▶️ NEXT — the spec's §9, in order:**
+> 1. **The sim half**, no golden moving (`git diff` the goldens): `SeedText.ToSeed` (a plain number stays that
+>    number — 12345 and 41219 keep their valleys), `seed_words`, `village_name`, `new_game_options` applied as key
+>    overrides over the loaded file through `SimConfig.Validate`, the share code, `river_course` (W–E untouched; `any`
+>    by hash, never a draw). Guards §8.1–8.8, red-checked.
+> 2. **Measure every row's ends** (§7) on D420's harness, one row at a time, and type the ranges with their tables.
+> 3. **The view**: the screen at launch, the preview (real `SimWorld.Create` — 1.3 ms — under the real
+>    `ValleyTexture`; **measure the bake first**), the share code in the header; probe `new game:`; bar height 151.
+> 4. Joe plays it.
+>
+> **Tools:** the previous session's scratchpad (`…/1ab6508a-2be9-4bfc-b38f-988b499deba8/scratchpad/`) has `ZzBase.cs`,
+> `summ2.py`, `mut.py` and the D475 baselines (`base-d475.txt`, `wide-d475.txt`, `fix50-d475.txt`) — copy what you
+> need; run with **`PYTHONIOENCODING=utf-8`**; delete Zz files before committing.
+>
+> *(The banner as D476 left it — kept below.)*
+>
+> **(superseded by the banner above)**
+
+> **WHERE THINGS WERE, 2026-10-03 (NIGHT) — PER-STAGE SEEDS MERGED AND PUSHED (D476).**
 >
 > **State:** `main` = `5392216` — `slice/per-stage-seeds` (D470–D475) merged `--no-ff` and **pushed at Joe's word**
 > (*"merge and push"*), after he played it: *"everything else looks good"*, and the seams note D475 answered. **No slice
@@ -4261,7 +4428,63 @@ Read `git status` after staging, every time.
 - **"No soil anywhere" missed one** — the hint string *"g ground · "*. Grep the view for the KEY, not only for
   the word: a hint names keys.
 
+## ⛔ THE TRAPS D478 PAID FOR — A "DOES IT LOAD?" GUARD IS AS STRONG AS THE VALIDATOR, AND A CORNER IS NOT A GAP
+
+- **A guard that asks "does every row's end load?" scored zero twice** — `SimConfig.Validate` bounded neither
+  `forest_coverage_percent` nor the river widths (150 % and −1 loaded silently), under a comment that said forest
+  cover *"has its own guard below."* It had none. **Red-check a validation guard with a value the validator
+  should refuse; a zero is a finding about the validator, not the guard.** Bounded now.
+- **A mutant aimed at a "ford" in a diagonal river (one missing line across it) scored zero, correctly.** Land
+  either side of one missing anti-diagonal meets only at corners, and neither the route field (four-way) nor
+  `LineOfSight` passes a corner. Two missing lines make a ford (2 reds). Aim the mutant at the real failure.
+- **A width guard posed on total water read 0.90× for a diagonal that is as wide as a straight river** — a 45°
+  river crosses a 120 × 80 valley along ~113 tiles, not 120. Measure width *across the course*.
+- **The tests read `data/sim.config.json` — Joe's uncommitted seed included.** Stash it around a suite run.
+
+## ⛔ THE TRAPS D479–D480 PAID FOR — A HARNESS BLIND TO A SETTING, AND A PROBE THAT ASKED THE WRONG QUESTION
+
+- **Three new-game levels read the unattended baseline TO THE PERSON** (rich stone, both iron levels) while all hundred
+  final hashes differed. The valleys changed; an unattended village never walks to its iron or its second ring of
+  stone. **"No change in the harness" is not "safe"** — the generator's own promises, asked at every row end, found
+  sparse stone leaving two seams in reach and a wide river drowning an iron seam to 8.
+- **The probe's `new game:` line scored zero on its first pose** against the bug a snapshot showed (a stats line that
+  would not wrap pushed the column 17 px off screen): the column keeps its 400 px while sliding, and a plain `Control`
+  root reports no minimum of its children's. **Ask where a thing ENDS, and pose the widest content** (every row at its
+  widest, the longest refusal). *To see the screen at all: a temporary viewport snapshot (`GetViewport().GetTexture()
+  .GetImage().SavePng`) in a windowed run — never committed.*
+- **A guard pinned to another test's numbers must use that test's pose** — the fingerprint counts are of the shipped
+  config's founded world, not the fixture's bare map (28 against 27).
+- **Two samples before calling a direction worse.** NW–SE read 30 dead against SW–NE's 24; the second hundred said 25
+  against 28.
+
+## ⛔ THE TRAP D481 PAID FOR — THE FILE IS `HANDOFF.md`, AND WINDOWS HAD BEEN LYING ABOUT IT
+
+- **CLAUDE.md told every session to edit `handoff.md`; git tracks `HANDOFF.md`.** On Windows the two are one file, so
+  nobody noticed for months; on a Linux cloud session `handoff.md` does not exist, and a session following the
+  instruction would have **created a second, empty handoff** beside the real one and left the traps behind. Fixed in
+  CLAUDE.md. *The general form: a path in an instruction is only checked on the machine it was written on — before
+  moving the work to another OS, `git ls-files` the names the instructions use.*
+- **The measurement harness lived only in session scratchpads** (`%TEMP%`, one per session, each banner pointing at
+  the last one's). A cloud session cannot see any of them. It is in `tools/harness/` now; keep it there, and keep it
+  current when an arm is added.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **DECIDED (D481) — Joe: *"drop it from the screen completely."* Built.** ~~Seam scatter on the new-game screen.~~
+- ✅ **ANSWERED (2026-10-04) — Joe: replant by a forester only; stone and iron destroyed and the goods LOST; animals
+  live in woods (a pen keeps its trees); laborers clear a farm's trees. Not built — B4's spec carries them.**
+  ~~THE DESTROY-RESOURCES BRUSH — HIS DESIGN QUESTIONS, FOR ITS SPEC.~~ Can destroyed ground ever grow trees again
+  (a forester replanting it, or never)? Does it destroy stone and iron too, and does the village get the goods or lose
+  them? Herdsmen's pens: clear the trees first, or let animals live in woods? Does a farm painted over trees show the
+  field at once and its unsown tiles as "trees to clear", and who clears them (laborers, like a building site)?
+
+- ✅ **DECIDED (D481) — Joe: *"offer forest cover from 0-100%. diagonal cost is acceptable, and the preview's redraw
+  speed is fine."* Forest built 0–100 %.** ~~THE NEW-GAME SCREEN'S THREE CALLS (D480, `new-game-screen.md §7`).~~ *(1)* **Forest cover stops at 35 %** by the
+  spec's rule — 30 % loses 30 unattended valleys of 100 (25 % 42, 20 % 53). A leaner setting as a chosen hard valley is
+  yours. *(2)* **The diagonals cost about five valleys in a hundred** unattended (pooled 200 seeds: NW–SE 55, SW–NE 52,
+  west–east 43 dead) — kept as you asked; say if that is the price you want. *(3)* **The preview bakes in ~0.3–0.4 s**
+  after letting go of a slider (8 px a tile) — 6 px would be quicker and a little softer, or it could bake off the main
+  thread.
 
 - ✅ **DECIDED (D474) — Joe: *"i think its fine because hunting also produces leather whereas fishing only produces food."* The guard is re-posed to hunting above FORAGING (700 against 401 over six valleys, 2 of 2 reds). Kept for the numbers:**
 - ~~⭐⭐ **HUNTING DOES NOT OUT-EARN FISHING PER TICK WORKED — FALSE ON `main` TOO (found D473).**~~

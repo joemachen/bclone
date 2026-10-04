@@ -394,6 +394,14 @@
   "river_width_tiles": 3,
   "river_width_wander_tiles": 1,
 
+  // WHICH WAY THE RIVER RUNS (D477, new-game-screen.md §6): "we" west to
+  // east, "ns" north to south, "nwse" / "swne" the diagonals, or "any" -
+  // one of the four, by a hash of the river's own seed. "we" is the river
+  // every valley had before this key, to the tile. The new-game screen's
+  // rows (new_game_options, the seed words and village_name) are config
+  // too - see SimConfig; a json list here would replace them wholesale.
+  "river_course": "we",
+
   // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
   // The first was how many hands fit at one berry patch, and there are

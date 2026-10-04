@@ -34,7 +34,7 @@ Testing is not optional and not an afterthought.
 - **Golden/replay tests:** record an input sequence + expected end-state; replay to catch behavioral drift.
 - **Prefer TDD for sim systems:** write the failing test from the spec, then implement.
 - **QA pass per phase:** before merging a phase, do a manual playthrough against a written QA checklist for that phase (does it stay legible? can you read *why* things happen? does it hold the meditative pace?). Legibility is a QA criterion, not just a design goal.
-- Tests run locally via `test.bat` and in CI on every push/PR.
+- Tests run locally via `dotnet test bclone.sln` (`test.bat` wraps it for Joe — it ends in `pause`, so never from a session) and in CI on every push/PR.
 
 **Assert against the shipped config, not only the fixture.** `VillageFixtures.Village` derives its numbers; `data/sim.config.json` is typed in by hand and is what the game actually loads. The two drift, and the gap is where bugs live — it has produced D48 (a timber leak four times worse in the shipped file), D50 (three woodcutter seats where the economy needed eight), and D49 (thirty-day seasons that reached the game and not the tests, for four commits). `ShippedConfigTests` runs a real village on the real file; anything the economy depends on gets a guard there as well as against the fixture.
 
@@ -124,6 +124,7 @@ Lots of logging, structured and leveled — this is a first-class feature, not a
   # which has named the path all along. It must be the **mono/.NET** build (the project is
   # `Godot.NET.Sdk/4.7.1` and `config/features` lists "C#"); a standard build cannot run it.
   export GODOT="/d/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64.exe"
+  # ☁️ In a cloud session `.claude/hooks/cloud-setup.sh` has already exported GODOT (Linux build).
 
   BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
   ```

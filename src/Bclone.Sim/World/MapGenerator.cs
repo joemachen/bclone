@@ -77,7 +77,7 @@ public static class MapGenerator
 
         // ---- 1. The river ------------------------------------------
         var riverRng = new DeterministicRandom(StageSeed(seed, Stage.River));
-        CarveRiver(config, ref riverRng, terrain, width, height);
+        CarveRiver(config, CourseOf(config, seed), ref riverRng, terrain, width, height);
 
         // ⭐ The two ring-drawn tree stands and six ring-drawn forage sites that once followed
         // are gone (`forests-and-gathering.md` slice 5): the valley is wooded across its whole
@@ -161,26 +161,85 @@ public static class MapGenerator
     private static int DrawJitter(ref DeterministicRandom rng, int jitter) =>
         jitter <= 0 ? 0 : rng.NextInt(-jitter, jitter + 1);
 
+    /// <summary>The values <c>river_course</c> may take, in the new-game screen's order (D477).</summary>
+    public static IReadOnlyList<string> RiverCourses { get; } = new[] { "we", "ns", "nwse", "swne", "any" };
+
+    /// <summary>Whether <paramref name="course"/> is one of <see cref="RiverCourses"/>.</summary>
+    public static bool IsRiverCourse(string? course) => course is not null && RiverCourses.Contains(course);
+
     /// <summary>
-    /// Cut a river along the valley's long axis, wandering as it goes.
+    /// The way this valley's river runs: <c>river_course</c>, or under <c>any</c> one of the four
+    /// <b>by hash of the River stage's seed</b> — never a draw, so <c>any</c> moves no draw (D477).
+    /// </summary>
+    public static string CourseOf(SimConfig config, ulong seed)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        if (config.RiverCourse != "any")
+        {
+            return config.RiverCourse;
+        }
+
+        ulong pick = SplitMix64.Fold(StageSeed(seed, Stage.River), AnyCourseSalt);
+        return RiverCourses[(int)(pick % 4)];
+    }
+
+    /// <summary>Folded into the River stage's seed to choose a course under <c>any</c>.</summary>
+    private const ulong AnyCourseSalt = 0x52495645; // "RIVE"
+
+    /// <summary>
+    /// Cut the river the way <paramref name="course"/> says, wandering as it goes.
     /// </summary>
     /// <remarks>
-    /// Along rather than across, per D26: the valley is wide because §2.5 describes a
-    /// river valley, and a river runs down one. It wanders by a step at a time so the
-    /// shape is a watercourse rather than a canal.
+    /// <para>
+    /// <b>West to east is the river every valley had before D477</b> — the same loop, the same draws
+    /// in the same order — so the default moves nothing. North to south is that loop with the axes
+    /// swapped. The diagonals are carved as a strip (<see cref="CarveDiagonalRiver"/>).
+    /// </para>
+    /// <para>
+    /// Along rather than across, per D26: the valley is wide because §2.5 describes a river valley,
+    /// and a river runs down one. It wanders by a step at a time so the shape is a watercourse
+    /// rather than a canal.
+    /// </para>
     /// </remarks>
     private static void CarveRiver(
-        SimConfig config, ref DeterministicRandom rng, Terrain[] terrain, int width, int height)
+        SimConfig config, string course, ref DeterministicRandom rng, Terrain[] terrain, int width, int height)
     {
         if (config.RiverWidthTiles <= 0)
         {
             return;
         }
 
+        switch (course)
+        {
+            case "ns":
+                CarveStraightRiver(config, ref rng, terrain, width, height, alongX: false);
+                break;
+            case "nwse":
+                CarveDiagonalRiver(config, ref rng, terrain, width, height, falling: true);
+                break;
+            case "swne":
+                CarveDiagonalRiver(config, ref rng, terrain, width, height, falling: false);
+                break;
+            default:
+                CarveStraightRiver(config, ref rng, terrain, width, height, alongX: true);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// A river down one axis of the valley: west to east when <paramref name="alongX"/>, else north
+    /// to south — the same carve with the axes swapped.
+    /// </summary>
+    private static void CarveStraightRiver(
+        SimConfig config, ref DeterministicRandom rng, Terrain[] terrain, int width, int height, bool alongX)
+    {
+        int length = alongX ? width : height;
+        int across = alongX ? height : width;
+
         // Start somewhere in the middle band, so the river never hugs an edge and
         // cuts a thin strip of valley off from everything.
-        int band = height / 4;
-        int y = rng.NextInt(band, height - band);
+        int band = across / 4;
+        int y = rng.NextInt(band, across - band);
 
         // ⭐⭐ THE WIDTH WANDERS AS WELL AS THE COURSE (D344, Joe: *"let's widen it by
         // ~50% with some variation"*).
@@ -197,7 +256,7 @@ public static class MapGenerator
         int widest = config.RiverWidthTiles + config.RiverWidthWanderTiles;
         int start = y;
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < length; x++)
         {
             int wide = config.RiverWidthTiles;
             if (config.RiverWidthWanderTiles > 0)
@@ -209,9 +268,10 @@ public static class MapGenerator
             for (int w = 0; w < wide; w++)
             {
                 int row = y + w;
-                if (row >= 0 && row < height)
+                if (row >= 0 && row < across)
                 {
-                    terrain[(row * width) + x] = Terrain.Water;
+                    int tile = alongX ? (row * width) + x : (x * width) + row;
+                    terrain[tile] = Terrain.Water;
                 }
             }
 
@@ -220,9 +280,77 @@ public static class MapGenerator
 
             // ⚠️ Clamped against the WIDEST it may become, not against its width today
             // — or a river that swells while hugging the edge would run off the map.
-            y = Math.Clamp(y, 1, height - widest - 1);
+            y = Math.Clamp(y, 1, across - widest - 1);
         }
     }
+
+    /// <summary>
+    /// A river corner to corner: north-west to south-east when <paramref name="falling"/>, else
+    /// south-west to north-east (D477).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Carved as a strip, not a staircase.</b> Along the course a tile's position is
+    /// <c>x + y</c> (falling) or <c>x − y</c> (rising); across it, the other. The river is every
+    /// tile whose across-coordinate lies in <c>[d, d + span)</c>, where <c>d</c> wanders −1/0/+1 a
+    /// step along the course just as a west–east river's row does. A step a walker takes changes
+    /// both coordinates by exactly one, so a strip at least 2 wide whose edge moves at most one a
+    /// step cannot be crossed without entering it — no ford (`new-game-screen.md §8.4` asks the real
+    /// cost field rather than this sentence).
+    /// </para>
+    /// <para>
+    /// <b>The width is measured across the course.</b> A strip <c>span</c> wide in <c>x ± y</c> is
+    /// <c>span / √2</c> wide on the ground, so <c>span</c> is the width × √2, rounded — a diagonal 3
+    /// is as wide to the eye as a west–east 3. Integer throughout (D2).
+    /// </para>
+    /// </remarks>
+    private static void CarveDiagonalRiver(
+        SimConfig config, ref DeterministicRandom rng, Terrain[] terrain, int width, int height, bool falling)
+    {
+        // The across-coordinate of a line through the middle of the valley, and the band the
+        // start is drawn in — a quarter of the short side either way, as west–east's is.
+        int centre = falling ? (width - height) / 2 : ((width + height) / 2) - 1;
+        int band = Math.Min(width, height) / 4;
+        int d = rng.NextInt(centre - band, centre + band);
+        int start = d;
+
+        int widest = SpanAcross(config.RiverWidthTiles + config.RiverWidthWanderTiles);
+        int steps = width + height - 1;
+
+        for (int s = 0; s < steps; s++)
+        {
+            int wide = config.RiverWidthTiles;
+            if (config.RiverWidthWanderTiles > 0)
+            {
+                uint spin = Scramble(s / 7, start);
+                wide += (int)(spin % (uint)(config.RiverWidthWanderTiles + 1));
+            }
+
+            int span = SpanAcross(wide);
+            for (int a = d; a < d + span; a++)
+            {
+                // falling: s = x + y and a = x − y.  rising: s = x − y + (height − 1) and a = x + y.
+                int twiceX = falling ? s + a : s - (height - 1) + a;
+                if ((twiceX & 1) != 0)
+                {
+                    continue;
+                }
+
+                int x = twiceX / 2;
+                int y = falling ? s - x : a - x;
+                if (x >= 0 && x < width && y >= 0 && y < height)
+                {
+                    terrain[(y * width) + x] = Terrain.Water;
+                }
+            }
+
+            d += rng.NextInt(-1, 2);
+            d = Math.Clamp(d, centre - (2 * band), centre + (2 * band) - widest);
+        }
+    }
+
+    /// <summary>A diagonal strip's span in <c>x ± y</c> for a river this many tiles wide: × √2, rounded, at least 2.</summary>
+    private static int SpanAcross(int tilesWide) => Math.Max(2, ((tilesWide * 1414) + 500) / 1000);
 
     /// <summary>One seam: where its outcrop is centred and how big it is, in hundredths of a tile².</summary>
     public readonly record struct Seam(GridPos Centre, int ReachHundredths);
@@ -317,7 +445,11 @@ public static class MapGenerator
     private static int PaintOutcrop(
         Terrain[] terrain, Terrain kind, Seam seam, int leastTiles, int width, int height, int minX, int minY)
     {
-        const int MostGrowth = 3;
+        // ⚠️ Three steps were enough for every iron seam in 64 shipped valleys; a new-game screen's
+        // wide river or diagonal drowns more of a seam (D480: a 6-wide river left one holding 8), so a
+        // seam still short after three may take up to three more. A seam that held within three grows
+        // exactly as it did — no shipped valley moves.
+        const int MostGrowth = 6;
 
         int reach = seam.ReachHundredths;
         int held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);

@@ -2285,6 +2285,18 @@ public sealed record SimConfig
     public int RiverWidthWanderTiles { get; init; } = 1;
 
     /// <summary>
+    /// Which way the river runs (D477, `new-game-screen.md §6`): <c>we</c> west to east,
+    /// <c>ns</c> north to south, <c>nwse</c> and <c>swne</c> the two diagonals, or <c>any</c> —
+    /// one of the four, chosen by a hash of the River stage's seed.
+    /// </summary>
+    /// <remarks>
+    /// <b><c>we</c> is the river every valley had before this key</b>, carved by the same code
+    /// with the same draws, so the default moves no valley. Read by the River stage only (D473).
+    /// </remarks>
+    [JsonPropertyName("river_course")]
+    public string RiverCourse { get; init; } = "we";
+
+    /// <summary>
     /// Years between the village sharing out its work again from scratch.
     /// </summary>
     /// <remarks>
@@ -3896,6 +3908,57 @@ public sealed record SimConfig
         "Ravenscar", "Willowdale", "Stonebridge", "Fernhollow", "Larkspur", "Oakhaven",
     };
 
+    /// <summary>
+    /// The name the player typed for the village on the new-game screen, or <c>null</c> for the
+    /// seed's pick from <see cref="TownNames"/> (D477).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A label, never hashed and never in the share code</b> — D376's rename rule: a name
+    /// changes nothing that happens. Trimmed, 1–24 characters.
+    /// </remarks>
+    [JsonPropertyName("village_name")]
+    public string? VillageName { get; init; }
+
+    /// <summary>The words the new-game screen's dice roll a seed from, as <c>word-word-NN</c> (D477).</summary>
+    /// <remarks>
+    /// Content, replaced wholesale by a json's list like <see cref="TownNames"/>. The roll is the
+    /// view's randomness choosing an <em>input</em>; the sim only ever sees the text
+    /// (<see cref="SeedText"/>), so a list a modder grows reshuffles no valley.
+    /// </remarks>
+    [JsonPropertyName("seed_words")]
+    public IReadOnlyList<string> SeedWords { get; init; } = new[]
+    {
+        "alder", "amber", "ash", "aster", "badger", "barley", "bay", "beck", "birch", "bracken",
+        "bramble", "brook", "burrow", "cedar", "chalk", "clover", "cobble", "copse", "cress", "crow",
+        "dale", "dew", "dove", "elder", "elm", "ember", "fallow", "fen", "fern", "finch",
+        "flax", "flint", "fox", "frost", "gorse", "grove", "hare", "harrow", "hawthorn", "hazel",
+        "heath", "heron", "hollow", "holly", "honey", "ivy", "kestrel", "lantern", "larch", "lark",
+        "linden", "loam", "marrow", "marsh", "meadow", "mill", "mint", "moss", "mossy", "moth",
+        "nettle", "oak", "oat", "otter", "owl", "pebble", "pine", "plover", "poppy", "quill",
+        "rain", "raven", "reed", "ridge", "robin", "rook", "rowan", "rush", "rye", "sage",
+        "sedge", "sloe", "sorrel", "sparrow", "spruce", "stoat", "stone", "sumac", "tansy", "thistle",
+        "thorn", "thrush", "timber", "vale", "willow", "wold", "wren", "yarrow", "yew", "acorn",
+    };
+
+    /// <summary>
+    /// The rows of the new-game screen — <b>data, so a new option is a row, not a screen</b> (D477,
+    /// `new-game-screen.md §5`; Joe: <em>"space for more to be added"</em>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A row names the config keys it overrides and a range or its levels, and nothing else; the
+    /// screen applies a row by overriding those keys and loading the result through
+    /// <see cref="Validate"/>, the same path as any config (<see cref="NewGame.Apply"/>). Replaced
+    /// wholesale by a json's list, like <see cref="TownNames"/>.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The ranges and levels are measured, never typed</b> (`new-game-screen.md §7`): every end
+    /// of every row must leave valleys that can be lived in.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("new_game_options")]
+    public IReadOnlyList<NewGameRow> NewGameOptions { get; init; } = NewGame.DefaultRows();
+
     /// <summary>Age founding adults start at.</summary>
     [JsonPropertyName("founder_age")]
     public int FounderAge { get; init; } = 20;
@@ -4418,6 +4481,17 @@ public sealed record SimConfig
                 + $"(got {ExtraStoneSeams}, {ExtraIronSeams}, {IronSeamMinIron}).");
         }
 
+        // ⛔ The guard the comment above promised and nobody had written (found D477: the new-game
+        // screen's rows load through here, and a forest cover of 150 % or a river −1 wide loaded
+        // without a word). Zero stays allowed for both — a bare valley and a riverless one are the
+        // controls half the generator's tests are posed on.
+        if (ForestCoveragePercent is < 0 or > 100 || RiverWidthTiles < 0 || RiverWidthWanderTiles < 0)
+        {
+            throw new SimConfigException(
+                $"forest_coverage_percent must be 0-100, and river_width_tiles and river_width_wander_tiles "
+                + $"not negative (got {ForestCoveragePercent}, {RiverWidthTiles}, {RiverWidthWanderTiles}).");
+        }
+
         if (SeamAngleScatterPercent is < 0 or > 100 || SeamReachScatterPercent < 0
             || SeamSizeScatterPercent is < 0 or > 99)
         {
@@ -4520,6 +4594,22 @@ public sealed record SimConfig
         if (TownNames is null || TownNames.Count == 0)
         {
             throw new SimConfigException("town_names must contain at least one name.");
+        }
+
+        RequireANameList(SeedWords, "seed_words");
+
+        if (VillageName is not null && VillageName.Trim().Length is < 1 or > NewGame.LongestVillageName)
+        {
+            throw new SimConfigException(
+                $"village_name must be 1 to {NewGame.LongestVillageName} characters (got \"{VillageName}\").");
+        }
+
+        NewGame.ValidateRows(NewGameOptions);
+
+        if (!World.MapGenerator.IsRiverCourse(RiverCourse))
+        {
+            throw new SimConfigException(
+                $"river_course must be one of {string.Join(", ", World.MapGenerator.RiverCourses)} (got \"{RiverCourse}\").");
         }
 
         // ⛔ D411: every hashed range must hold something, and a reach of an exact half is a
