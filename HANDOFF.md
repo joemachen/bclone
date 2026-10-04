@@ -1,6 +1,55 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D480 IN §7. THE NEW-GAME SCREEN IS BUILT (D477–D480) ON `slice/new-game-screen`, UNPLAYED. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D480 IN §7. JOE PLAYED THE NEW-GAME SCREEN (`slice/new-game-screen`, D477–D480): FOUR NOTES ON IT TO FINISH BEFORE THE MERGE, THEN SIX GAME NOTES.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (NIGHT) — THE NEW-GAME SCREEN BUILT (D477–D480), UNPLAYED.**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-04 — JOE PLAYED THE NEW-GAME SCREEN; HIS NOTES, QUEUED.**
+>
+> **State:** `main` = `6533f35` (D476), pushed. **`slice/new-game-screen`** = `9cd0e21` (D477–D480) + this handoff —
+> **played by Joe, not merged, not pushed.** At D480: 1420 passing, 0 failing, 5 skipped of 1425; no golden moved; view 0
+> warnings; probe green (`new game:` ✅, bar height 151, tile centres ✅). ⚠️ Joe's `data/sim.config.json` `"seed": 41219`
+> and his `art/` files are uncommitted and his — `git stash push -- data/sim.config.json` around a suite run or a commit
+> of that file, pop after. Stage this file as **`HANDOFF.md`**.
+>
+> **▶️ A — HIS NOTES ON THE NEW-GAME SCREEN (on the branch, one commit each; then he plays it again and merges):**
+> 1. **River width shows no number** — a span labelled *narrow ◂——▸ wide*. A `range` row wants end labels in place of
+>    a number reading (e.g. `min_label` / `max_label` on `NewGameRow`, the reading hidden when they are set); the share
+>    code keeps the number. View + `NewGame.DefaultRows` + spec §5.
+> 2. **Stone and iron: "Usual" → "Moderate"** — the label AND the code value (`usual` → `moderate`), so a share code
+>    reads what the screen says. `NewGame.DefaultRows`, `NewGameScreenTests` (the share-code and defaults guards),
+>    `SeamsTests`' row poses, spec §5/§7.
+> 3. **He asked: "what does 'seam scatter' do?"** — answer him first, then build what he picks. *It is how far the
+>    stone and iron outcrops stray from an even, compass-like layout: each seam swings within its sector, lies a little
+>    further out, and varies in size (the three `seam_*_scatter_percent` keys scaled together, D475). 100 % is the
+>    shipped valley; 0 % is the "planned and symmetrical" cross he refused in D475.* Offer: keep it with a tooltip saying
+>    so, rename it (e.g. *"Ore layout: regular ◂▸ scattered"*), or drop it from the screen as a modder dial.
+> 4. **The button reads "Found a new village"** (was *"Found the village ▸"*) — `NewGameScreen.BuildTheColumn`.
+> **Still unanswered from D480 (⏸️ list):** forest cover below 35 %, the diagonals' cost, preview speed.
+>
+> **▶️ B — HIS GAME NOTES (after the merge, in this order unless he says otherwise; spec first where marked):**
+> 1. **The Professions panel starts open** — it opens minimised today. View only.
+> 2. **"Tree" is not in Settings until the tech tree is first unlocked.** The bar's `_treeButton` already has a
+>    visibility gate; the Settings panel's list of panels (`BuildSettingsPanel`) evidently does not — check, gate it on
+>    the same fact.
+> 3. **The "What's here" panel**: (a) its height bound to its contents — it is very tall; (b) it opens **behind** *The
+>    valley* and *Village log* and is hard to see; (c) it should first open **beside the tile it describes**, then
+>    **remember where the player moved it** (and stay closed if closed). `_whatsHerePanel`, `CloseTheWindow`, the
+>    window's `Wanted` state in `Main.cs`. View only; probe it (a posed tile, its rect inside the window, not under a
+>    docked panel).
+> 4. **A "destroy resources" brush, and farmland over trees — SPEC FIRST, with Joe.** His words: a red (destructive)
+>    brush; everything painted is destroyed and **trees do not grow back**; a farmer may paint fields over trees but
+>    cannot sow or farm a tile until its trees are gone; **farm "give land" must not paint stone or iron seams** — it
+>    paints round them until they are cleared, then the cleared ground. Herdsmen's pens over trees are an open question
+>    he raised himself (animals can live in woods). ⚠️ **Measure what the game does TODAY before speccing** (trap 151 —
+>    a filed finding is a hypothesis): how farm paint treats `Forest`, saplings, `Rock`, `IronDeposit`; whether
+>    regrowth (`RegrowthSystem`) reclaims painted or farmed ground; what the harvest brush already destroys.
+> 5. **Homes on forested tiles — verify, then report** (he thinks this is already how it works): laborers clear the
+>    building's footprint first, cleared trees do not regrow, trees between buildings may; homes never on stone or iron
+>    seams. Check `CanBuildAt`/site choice and regrowth against a played opening; change nothing unless it is wrong.
+> 6. **The quarry gift comes too soon — double the stone it takes:** `quarry_unlock_stone` **100 → 200**
+>    (`data/sim.config.json`; `quarry.md`, the config comment, and any guard posed on 100). A number change, measured on
+>    the harness like any other (D420's arms), its own commit.
+>
+> *(The D480 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (NIGHT) — THE NEW-GAME SCREEN BUILT (D477–D480), UNPLAYED.**
 >
 > **State:** `main` = `6533f35` (D476), pushed. `slice/per-stage-seeds` deleted at Joe's word. **`slice/new-game-screen`**
 > = the spec (D477), the sim half (D478), the view and the measured ranges (D479–D480) — **not merged, not pushed,
@@ -4366,6 +4415,13 @@ Read `git status` after staging, every time.
   against 28.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **SEAM SCATTER ON THE NEW-GAME SCREEN (Joe, 2026-10-04: *"what does 'seam scatter' do?"*).** Keep with a tooltip,
+  rename (*"Ore layout: regular ◂▸ scattered"*), or drop it as a modder dial — his pick; the answer is in the top banner.
+- ⭐ **THE DESTROY-RESOURCES BRUSH — HIS DESIGN QUESTIONS, FOR ITS SPEC.** Can destroyed ground ever grow trees again
+  (a forester replanting it, or never)? Does it destroy stone and iron too, and does the village get the goods or lose
+  them? Herdsmen's pens: clear the trees first, or let animals live in woods? Does a farm painted over trees show the
+  field at once and its unsown tiles as "trees to clear", and who clears them (laborers, like a building site)?
 
 - ⭐ **THE NEW-GAME SCREEN'S THREE CALLS (D480, `new-game-screen.md §7`).** *(1)* **Forest cover stops at 35 %** by the
   spec's rule — 30 % loses 30 unattended valleys of 100 (25 % 42, 20 % 53). A leaner setting as a chosen hard valley is
