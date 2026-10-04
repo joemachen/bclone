@@ -1,9 +1,10 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D484 IN §7. B1 (THE PROFESSIONS WINDOW STARTS OPEN) IS BUILT ON `slice/professions-open` AND PUSHED, UNPLAYED (D484); JOE PLAYS IT ON WINDOWS, THEN MERGES. NEXT: B2.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D484 IN §7. B1 (THE PROFESSIONS WINDOW STARTS OPEN) IS PLAYED, MERGED AND PUSHED (D484, D485). NEXT: B2.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (NIGHT) — D484, FROM A CLOUD SESSION.**
 >
-> **State:** `main` = `1421d76` (D483), unchanged. **`slice/professions-open`** (off `main`, pushed, **NOT merged,
-> UNPLAYED**) = three commits: the handoff review (this file's title range, `new-game-screen.md`'s status line, the
+> **State (D485):** ✅ **Joe played B1 (*"looks good. merge it."*) and `slice/professions-open` is merged `--no-ff` to `main`
+> and pushed — so `main`'s hook now has the .NET fallback.** No slice is open; B2 is next, on its own slice off `main`.
+> *(What the slice held:)* three commits: the handoff review (this file's title range, `new-game-screen.md`'s status line, the
 > .NET trap), **B1** (`startOpen: true` in `BuildProfessionsPanel`; the probe's `windows:` line now also says
 > *"Professions starts open"* — 1 red of 1 with the old `false`), and **the setup hook's .NET fallback**. At B1:
 > **1421 passing, 0 failing, 5 skipped of 1426 (5m49 on the cloud machine); no golden moved; view 0 warnings; probe
