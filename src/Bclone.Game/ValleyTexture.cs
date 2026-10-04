@@ -200,6 +200,36 @@ internal sealed class ValleyTexture
     private int _minX;
     private int _minY;
 
+    /// <summary>
+    /// How many image pixels a tile gets in <em>this</em> bake — <see cref="PixelsPerTile"/> for the
+    /// game, fewer for the new-game screen's preview (D479), which shows the whole valley at a few
+    /// pixels a tile and bakes again on every change.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A coarser bake is the same field sampled at fewer points</b>, not a second painter: each
+    /// pixel asks the noise and the blend at the 16-a-tile pixel under its centre, so the preview
+    /// shows the valley the game will draw. At <see cref="PixelsPerTile"/> that pixel is itself, and
+    /// the game's bake is byte for byte what it was.
+    /// </remarks>
+    private readonly int _perTile;
+
+    internal ValleyTexture(int pixelsPerTile = PixelsPerTile)
+    {
+        _perTile = Mathf.Clamp(pixelsPerTile, 1, PixelsPerTile);
+    }
+
+    /// <summary>Bake <paramref name="world"/> whole, as if for the first time — the preview's refresh.</summary>
+    /// <remarks>
+    /// The incremental <see cref="Refresh"/> repaints a margin round every changed tile, which for a
+    /// whole new valley is more work than painting it once.
+    /// </remarks>
+    internal void BakeAfresh(SimWorld world)
+    {
+        System.ArgumentNullException.ThrowIfNull(world);
+        _image = null;
+        FirstBake(world);
+    }
+
     /// <summary>The baked valley, or null until the first refresh.</summary>
     internal ImageTexture? Texture => _texture;
 
@@ -305,8 +335,8 @@ internal sealed class ValleyTexture
         _minX = config.MapMinX;
         _minY = config.MapMinY;
 
-        int wide = _width * PixelsPerTile;
-        int tall = _height * PixelsPerTile;
+        int wide = _width * _perTile;
+        int tall = _height * _perTile;
         _pixels = new byte[wide * tall * 4];
 
         _shadowTerrain = new Terrain[_width * _height];
@@ -365,21 +395,19 @@ internal sealed class ValleyTexture
         Terrain painted = IsWorked(here) ? Terrain.Grass : here;
         bool flat = !_neverFlat && NeighbourhoodIsFlat(map, tile, painted);
 
-        int px0 = tx * PixelsPerTile;
-        int py0 = ty * PixelsPerTile;
-
-        for (int y = 0; y < PixelsPerTile; y++)
+        for (int y = 0; y < _perTile; y++)
         {
-            for (int x = 0; x < PixelsPerTile; x++)
+            for (int x = 0; x < _perTile; x++)
             {
-                int px = px0 + x;
-                int py = py0 + y;
+                // The full-resolution pixel under this one's centre — itself at `PixelsPerTile`.
+                int px = (tx * PixelsPerTile) + (((2 * x) + 1) * PixelsPerTile / (2 * _perTile));
+                int py = (ty * PixelsPerTile) + (((2 * y) + 1) * PixelsPerTile / (2 * _perTile));
 
                 Color colour = flat
                     ? Dressed(painted, px, py, 1f)
                     : Blended(map, px, py);
 
-                int at = ((py * _width * PixelsPerTile) + px) * 4;
+                int at = ((((ty * _perTile) + y) * _width * _perTile) + (tx * _perTile) + x) * 4;
                 byte[] pixels = _pixels!;
 
                 pixels[at] = (byte)Mathf.Clamp(colour.R * 255f, 0f, 255f);

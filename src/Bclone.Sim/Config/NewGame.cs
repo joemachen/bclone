@@ -77,6 +77,16 @@ public sealed record NewGameLevel
 public sealed record NewGameSettings(
     string SeedText, string? VillageName, IReadOnlyDictionary<string, string> Values);
 
+/// <summary>A generated valley in the few numbers the new-game screen shows under its preview.</summary>
+/// <param name="WoodedPercent">Forest as a share of the land, rounded.</param>
+/// <param name="StoneSeams">Stone seams drawn.</param>
+/// <param name="StoneTiles">Rock tiles on the map — the stone a village can dig by hand.</param>
+/// <param name="IronSeams">Iron seams drawn.</param>
+/// <param name="IronTiles">Iron tiles on the map.</param>
+/// <param name="Course">Which way the river runs, <c>any</c> resolved to the seed's choice.</param>
+public sealed record ValleySummary(
+    int WoodedPercent, int StoneSeams, int StoneTiles, int IronSeams, int IronTiles, string Course);
+
 /// <summary>
 /// The new-game screen's rules, without the screen (D477, `new-game-screen.md`): each row's default,
 /// applying the settings to a config, and the share code.
@@ -112,8 +122,9 @@ public static class NewGame
 
     /// <summary>The shipped rows — the code's defaults, replaced wholesale by a json's list.</summary>
     /// <remarks>
-    /// ⚠️ <b>The ranges and levels here are candidates until `new-game-screen.md §7` measures
-    /// them</b>; that table, not this file, is where each end is argued.
+    /// ⭐ <b>Every end here was measured</b> (`new-game-screen.md §7`, D480) — that table, not this
+    /// file, is where each end is argued: forest cover stops at 35 because 30 lost 30 of 100
+    /// unattended valleys; sparse stone is 4 + 6 because 4 + 4 left a valley two stone seams in reach.
     /// </remarks>
     public static IReadOnlyList<NewGameRow> DefaultRows() => new[]
     {
@@ -137,14 +148,14 @@ public static class NewGame
         new NewGameRow
         {
             Id = "woods", Label = "Forest cover", Kind = RangeKind,
-            Keys = new[] { "forest_coverage_percent" }, Min = 20, Max = 50, Step = 5, Unit = "%",
+            Keys = new[] { "forest_coverage_percent" }, Min = 35, Max = 50, Step = 5, Unit = "%",
         },
         new NewGameRow
         {
             Id = "stone", Label = "Stone", Kind = LevelsKind,
             Levels = new[]
             {
-                Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "4")),
+                Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "6")),
                 Level("usual", "Usual", ("stone_seam_count", "4"), ("extra_stone_seams", "8")),
                 Level("rich", "Rich", ("stone_seam_count", "4"), ("extra_stone_seams", "12")),
             },
@@ -500,6 +511,52 @@ public static class NewGame
         read = current with { SeedText = seedPart.Trim(), Values = values };
         refusal = null;
         return true;
+    }
+
+    /// <summary>
+    /// What the new-game screen says under its preview — <b>read off the generated valley, never
+    /// restated from the settings</b> (`new-game-screen.md §3`), so a row that does not do what it says
+    /// shows it.
+    /// </summary>
+    public static ValleySummary Summarise(SimConfig config, World.GeneratedMap map)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(map);
+
+        int land = 0;
+        int forest = 0;
+        int rock = 0;
+        int iron = 0;
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x < map.MinX + map.Width; x++)
+            {
+                switch (map.TerrainAt(new World.GridPos(x, y)))
+                {
+                    case World.Terrain.Water:
+                        continue;
+                    case World.Terrain.Forest:
+                        forest++;
+                        break;
+                    case World.Terrain.Rock:
+                        rock++;
+                        break;
+                    case World.Terrain.IronDeposit:
+                        iron++;
+                        break;
+                }
+
+                land++;
+            }
+        }
+
+        return new ValleySummary(
+            land == 0 ? 0 : ((forest * 100) + (land / 2)) / land,
+            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.Rock).Count,
+            rock,
+            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.IronDeposit).Count,
+            iron,
+            World.MapGenerator.CourseOf(config, config.Seed));
     }
 
     private static JsonObject Serialise(SimConfig config) =>

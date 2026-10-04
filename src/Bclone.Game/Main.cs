@@ -94,6 +94,35 @@ public partial class Main : Control
     {
         SimConfig config = ConfigLocator.LoadOrDefault(out _configSource);
 
+        // ⭐ THE NEW-GAME SCREEN FIRST (D479, `new-game-screen.md`): the game opens on a choice of
+        // valley, and the village is founded from what the screen says. Under the probe the screen is
+        // measured and then founds the config's own valley, so every probe line after it reads the
+        // village it always has.
+        _newGame = new NewGameScreen(config);
+        _newGame.Founded += FoundTheVillage;
+        AddChild(_newGame);
+    }
+
+    /// <summary>The new-game screen, until the village is founded; then <c>null</c>.</summary>
+    private NewGameScreen? _newGame;
+
+    /// <summary>The share code that names this run's valley — beside the seed wherever a bug report looks.</summary>
+    private string _shareCode = string.Empty;
+
+    /// <summary>
+    /// Found the village the new-game screen chose: the log sinks, the world, the driver and the
+    /// whole UI — what <c>_Ready</c> did before there was a screen.
+    /// </summary>
+    private void FoundTheVillage(SimConfig config, string shareCode)
+    {
+        _shareCode = shareCode;
+        if (_newGame is not null)
+        {
+            RemoveChild(_newGame);
+            _newGame.QueueFree();
+            _newGame = null;
+        }
+
         // TWO SINKS, WANTING DIFFERENT THINGS.
         //
         // The village log on screen is the story (D8) and stays at INFO — six hundred
@@ -131,6 +160,7 @@ public partial class Main : Control
         var sinks = new CompositeLogSink(_sink, _audit);
 
         _loop = SimFactory.CreatePhase0(config, sinks);
+        _loop.World.Log(LogLevel.Info, "shell", $"Founded from the new-game screen: {shareCode} (seed {_loop.World.Seed}).");
         _driver = new FixedTimestepDriver(config, sinks);
 
         BuildUi();
@@ -152,6 +182,12 @@ public partial class Main : Control
 
     public override void _Process(double delta)
     {
+        if (_newGame is not null)
+        {
+            ProbeTheNewGameScreen();
+            return;
+        }
+
         // The single wall-clock read in the entire program.
         int ticks = _driver.Advance(delta, _loop.World.Tick);
         if (ticks > 0 && !_halted)
@@ -234,10 +270,79 @@ public partial class Main : Control
         Exception cause = fault.InnerException ?? fault;
         return $"The village stopped: system '{fault.SystemName}' failed at tick {fault.Tick:N0}, "
             + $"{when.SeasonAndYear()} — {cause.GetType().Name}: {cause.Message.TrimEnd('.')}. Nothing more will "
-            + $"happen. This is a bug; the log at {_logPath} has the details, and the seed is {_loop.World.Seed}.";
+            + $"happen. This is a bug; the log at {_logPath} has the details, and the valley is {_shareCode} (seed {_loop.World.Seed}).";
     }
 
     private bool _halted;
+
+    /// <summary>
+    /// ⭐ Measure the new-game screen, then found the config's own valley (D479, guard §8.9) — off
+    /// unless <c>BCLONE_PROBE_WIDTHS</c> is set.
+    /// </summary>
+    /// <remarks>
+    /// The screen's right column must fit 1280 with the longest refusal it can say showing and the
+    /// longest stats line under the preview (every row at its widest — the pose a snapshot caught
+    /// pushing the column off the screen), and the preview must have baked a valley. Then the config's valley is founded with the screen's
+    /// defaults — not the dice — so every probe line after this one reads the village it always has.
+    /// </remarks>
+    private void ProbeTheNewGameScreen()
+    {
+        if (_newGame is null || System.Environment.GetEnvironmentVariable("BCLONE_PROBE_WIDTHS") is null)
+        {
+            return;
+        }
+
+        if (++_newGameProbeFrames == 5)
+        {
+            _newGame.PoseTheLongestStats();
+            _newGame.PoseTheLongestRefusal();
+        }
+
+        if (_newGameProbeFrames < 20)
+        {
+            return;
+        }
+
+        // Past the first bake's warm-up: what a player waits for after letting go of a slider.
+        _newGame.BakeAgain();
+        _newGame.BakeAgain();
+        double settled = _newGame.LastBakeMs;
+
+        var faults = new List<string>();
+        Control column = _newGame.Column;
+        float wants = column.GetCombinedMinimumSize().X;
+
+        // ⛔ WHERE THE COLUMN ENDS, NOT HOW WIDE IT IS. The first pose of this line asked the column's
+        // width and the screen's minimum, and scored ZERO against the bug it was written for: a stats
+        // line that will not wrap pushes the column off the right edge at its full 400px, and a plain
+        // `Control` root reports no minimum of its children's. The right edge is the claim.
+        float ends = column.GetGlobalRect().End.X;
+        if (ends > Size.X + 0.5f)
+        {
+            faults.Add($"the column ends at {ends:F0}px of a {Size.X:F0}px window");
+        }
+
+        if (column.Size.X + 0.5f < wants)
+        {
+            faults.Add($"the column has {column.Size.X:F0}px and wants {wants:F0}");
+        }
+
+        if (!_newGame.HasAPreview)
+        {
+            faults.Add("the preview has no valley on it");
+        }
+
+        GD.Print(faults.Count == 0
+            ? $"[widths] new game: ✅ the column wants {wants:F0}px and has {column.Size.X:F0}, the longest refusal showing; "
+                + $"the preview bakes in {settled:F0} ms ({_newGame.SlowestBakeMs:F0} the first time)"
+            : $"[widths] new game: ❌ {string.Join("; ", faults)}");
+
+        SimConfig config = ConfigLocator.LoadOrDefault(out _);
+        NewGameSettings defaults = NewGame.Defaults(config, config.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        FoundTheVillage(NewGame.Apply(config, defaults), NewGame.ShareCode(config, defaults));
+    }
+
+    private int _newGameProbeFrames;
 
     /// <summary>
     /// Print what every control in the two panel columns is claiming as a minimum width,
@@ -1139,7 +1244,7 @@ public partial class Main : Control
 
     public override void _UnhandledKeyInput(InputEvent @event)
     {
-        if (@event is not InputEventKey { Pressed: true, Echo: false } key)
+        if (_newGame is not null || @event is not InputEventKey { Pressed: true, Echo: false } key)
         {
             return;
         }
@@ -5546,7 +5651,7 @@ public partial class Main : Control
 
     /// <summary>Build, seed, tick, config and log — the line a bug report quotes.</summary>
     private string TheRunLine(SimWorld world) =>
-        $"bclone {BuildVersion}   ·   seed {world.Seed}   ·   tick {world.Tick}   ·   "
+        $"bclone {BuildVersion}   ·   valley {_shareCode}   ·   seed {world.Seed}   ·   tick {world.Tick}   ·   "
         + $"config: {_configSource}   ·   log: {_logPath}";
 
     /// <summary>

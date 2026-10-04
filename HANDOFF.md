@@ -1,6 +1,34 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D478 IN §7. THE NEW-GAME SCREEN: SPECCED (D477), SIM HALF BUILT (D478) ON `slice/new-game-screen`. NEXT: MEASURE THE ROWS' RANGES, THEN THE VIEW.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D480 IN §7. THE NEW-GAME SCREEN IS BUILT (D477–D480) ON `slice/new-game-screen`, UNPLAYED. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN'S SIM HALF BUILT (D478).**
+> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-03 (NIGHT) — THE NEW-GAME SCREEN BUILT (D477–D480), UNPLAYED.**
+>
+> **State:** `main` = `6533f35` (D476), pushed. `slice/per-stage-seeds` deleted at Joe's word. **`slice/new-game-screen`**
+> = the spec (D477), the sim half (D478), the view and the measured ranges (D479–D480) — **not merged, not pushed,
+> unplayed.** At D480: **1420 passing, 0 failing, 5 skipped of 1425, 4m36; no golden moved; view 0 warnings; probe green —
+> `new game:` ✅, bar height 151, tile centres ✅.** ⚠️ Joe's `data/sim.config.json` `"seed": 41219` is uncommitted — set it
+> aside (`git stash push -- data/sim.config.json`) around a suite run or a commit of that file, pop after. His `art/`
+> files are his. Stage this file as **`HANDOFF.md`**.
+>
+> **▶️ NEXT: JOE PLAYS IT** (`run.bat`) — the game now opens on the screen. What to try:
+> 1. **Roll** a few times; **type 41219** (his play seed — a plain number stays that number) and **12345**.
+> 2. Drag **every row to both ends** — river 0 and 6, each direction, forest 35 and 50, stone and iron levels, scatter 0.
+>    The preview redraws about a third of a second after letting go; the stats under it are read off the valley.
+> 3. **Copy** a share code, change things, **paste the code back** into the seed box — the rows follow. Paste a broken one
+>    (`oak#woods=90`) — a sentence, *Found* greyed, nothing changed.
+> 4. Type a **village name**; **Found the village** — the valley played is the one previewed, the name on the header;
+>    *Settings → About this run* shows the share code.
+> **His calls, waiting (⏸️ list):** a forest cover below 35 % as a hard setting (30 % loses 30 unattended valleys of
+> 100); the diagonals' cost (~5 more dead valleys in 100 than west–east, unattended); whether a ~0.3–0.4 s preview
+> bake feels live enough (8 px a tile; 6 would be quicker and a little softer). Then merge and push at his word; then
+> **settings persistence**, the next shell step.
+>
+> **Tools (this session's scratchpad, `…/a18806d2-fa2a-4c61-8716-978cc1511a51/scratchpad/`):** `ZzBase.cs` (now with
+> `ZZ_ROW=id=value` to set a new-game row, and `ZZ_WIDE=2` for seeds 300–399), `rows.sh` / `rows2.sh` (the §7 arms),
+> `dead.py` (alive / dead valleys / peak per arm), `mut.py` + `mut_d477.py`, the arm outputs `row-*.txt`.
+>
+> *(The D478 banner, kept below.)*
+>
+> **(superseded by the banner above)** **WHERE THINGS WERE, 2026-10-03 (LATE NIGHT) — THE NEW-GAME SCREEN'S SIM HALF BUILT (D478).**
 >
 > **State:** `slice/new-game-screen` = the spec (D477) + **the sim half (D478)**, not merged, not pushed. At D478:
 > **1401 passing, 0 failing, 5 skipped of 1406; no golden moved; 4m16 against `main`'s 4m04 back to back; view 0
@@ -4321,7 +4349,30 @@ Read `git status` after staging, every time.
   river crosses a 120 × 80 valley along ~113 tiles, not 120. Measure width *across the course*.
 - **The tests read `data/sim.config.json` — Joe's uncommitted seed included.** Stash it around a suite run.
 
+## ⛔ THE TRAPS D479–D480 PAID FOR — A HARNESS BLIND TO A SETTING, AND A PROBE THAT ASKED THE WRONG QUESTION
+
+- **Three new-game levels read the unattended baseline TO THE PERSON** (rich stone, both iron levels) while all hundred
+  final hashes differed. The valleys changed; an unattended village never walks to its iron or its second ring of
+  stone. **"No change in the harness" is not "safe"** — the generator's own promises, asked at every row end, found
+  sparse stone leaving two seams in reach and a wide river drowning an iron seam to 8.
+- **The probe's `new game:` line scored zero on its first pose** against the bug a snapshot showed (a stats line that
+  would not wrap pushed the column 17 px off screen): the column keeps its 400 px while sliding, and a plain `Control`
+  root reports no minimum of its children's. **Ask where a thing ENDS, and pose the widest content** (every row at its
+  widest, the longest refusal). *To see the screen at all: a temporary viewport snapshot (`GetViewport().GetTexture()
+  .GetImage().SavePng`) in a windowed run — never committed.*
+- **A guard pinned to another test's numbers must use that test's pose** — the fingerprint counts are of the shipped
+  config's founded world, not the fixture's bare map (28 against 27).
+- **Two samples before calling a direction worse.** NW–SE read 30 dead against SW–NE's 24; the second hundred said 25
+  against 28.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⭐ **THE NEW-GAME SCREEN'S THREE CALLS (D480, `new-game-screen.md §7`).** *(1)* **Forest cover stops at 35 %** by the
+  spec's rule — 30 % loses 30 unattended valleys of 100 (25 % 42, 20 % 53). A leaner setting as a chosen hard valley is
+  yours. *(2)* **The diagonals cost about five valleys in a hundred** unattended (pooled 200 seeds: NW–SE 55, SW–NE 52,
+  west–east 43 dead) — kept as you asked; say if that is the price you want. *(3)* **The preview bakes in ~0.3–0.4 s**
+  after letting go of a slider (8 px a tile) — 6 px would be quicker and a little softer, or it could bake off the main
+  thread.
 
 - ✅ **DECIDED (D474) — Joe: *"i think its fine because hunting also produces leather whereas fishing only produces food."* The guard is re-posed to hunting above FORAGING (700 against 401 over six valleys, 2 of 2 reds). Kept for the numbers:**
 - ~~⭐⭐ **HUNTING DOES NOT OUT-EARN FISHING PER TICK WORKED — FALSE ON `main` TOO (found D473).**~~

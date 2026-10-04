@@ -445,7 +445,11 @@ public static class MapGenerator
     private static int PaintOutcrop(
         Terrain[] terrain, Terrain kind, Seam seam, int leastTiles, int width, int height, int minX, int minY)
     {
-        const int MostGrowth = 3;
+        // ⚠️ Three steps were enough for every iron seam in 64 shipped valleys; a new-game screen's
+        // wide river or diagonal drowns more of a seam (D480: a 6-wide river left one holding 8), so a
+        // seam still short after three may take up to three more. A seam that held within three grows
+        // exactly as it did — no shipped valley moves.
+        const int MostGrowth = 6;
 
         int reach = seam.ReachHundredths;
         int held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);

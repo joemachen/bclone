@@ -7,9 +7,9 @@ id and moves no other stage's draws), D475 (`MapGenerator.SeamsOf`), **D477 (Joe
 screen, 2026-10-03 — §2)**. Neighbours: D18 (*quoting one seed reproduces the whole run*), §10.3 of
 `seeded-map-generation.md` (one valley archetype), §10.4 (*all seeds survivable, none equally
 comfortable*), D335 (a derived value is never hashed), D466 (splitmix64 over a name).
-**Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF BUILT (D478)** — seed text, the rows, the share code, the village
-name, the river's four directions, guards §8.1–8.8 red-checked; no golden moved. ⏳ **Not yet:** §7's
-measurements (the ranges in `NewGame.DefaultRows` are still candidates) and the view (§3, guard §8.9).
+**Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF (D478), THE VIEW (D479) AND THE MEASURED RANGES (D480)
+BUILT** on `slice/new-game-screen` — guards §8.1–8.9 red-checked; no golden moved. ⏳ **Unplayed:**
+Joe plays it (§9.5).
 Owner: Joe + Claude Code.
 
 ---
@@ -66,8 +66,19 @@ place played again.* The screen is where that becomes something the player does.
   cost, not the world** (16 px a tile, value noise per pixel): measure it first; if it is over ~50 ms
   the preview bakes at a lower `PixelsPerTile` while a slider is dragged and at full resolution when
   it is let go. Never a second painter — one look, or the preview lies about the valley.
-- **Stats are read off the generated valley**, never restated from the sliders: wooded share of
-  land, stone seams and tiles, iron seams, the river's width, and which bank the founders chose.
+- **Stats are read off the generated valley**, never restated from the sliders (`NewGame.Summarise`):
+  wooded share of the land, stone seams and tiles, iron seams and tiles, the river's width and which
+  way it runs (`any` resolved). ⚠️ The wooded share is *of the land* as generated, so it reads below
+  the forest-cover setting (29 % at 35 on one seed) — the setting is what the generator aims at
+  across the valley, and seams and the founding take ground from it.
+- **The founders' camp is ringed** on the preview (`starting_residential_radius`).
+- ✅ **Built (D479): `NewGameScreen`** — the screen is the game's first node; *Found the village*
+  hands `Main.FoundTheVillage` the applied config and the share code, which runs what `_Ready` used
+  to. **The preview bakes at 8 px a tile** (`ValleyTexture(pixelsPerTile)` — the same field sampled
+  at fewer points, the game's 16-a-tile bake byte-identical, its self-check green) and **waits
+  0.12 s after the last change** before it bakes, so a dragged slider bakes once. Measured in the
+  probe: **~320 ms a bake** with the machine busy running §7's harness (the game's own whole-valley
+  bake read 1,090 ms in the same run) — a pause after letting go, not a stutter while dragging.
 - **Found** creates the world from exactly the settings on screen and starts the game. The header's
   seed line becomes the **share code** (§5), beside the version and the log path — together they
   are what reproduces and explains a run (METHODOLOGY §4).
@@ -169,14 +180,56 @@ against the shipped settings at fifty years:
 |---|---|---|
 | River width | 0 (no river) – 6 | dead valleys and alive; 0 is a supported valley today |
 | River runs | each of the four | dead valleys and alive per direction; the founding never on a bank |
-| Forest cover | 20 – 50 % | food and timber — the economy derives from this key (`VillageEconomy`) |
-| Stone | Sparse 4+4 · Usual 4+8 · Rich 4+12 | three stone seams in reach in every valley (`quarry.md §3.1`) |
+| Forest cover | 20 – 50 % → **35 – 50 %** | food and timber — the economy derives from this key (`VillageEconomy`) |
+| Stone | Sparse 4+4 → **4+6** · Usual 4+8 · Rich 4+12 | three stone seams in reach in every valley (`quarry.md §3.1`) |
 | Iron | Sparse 2+0 · Usual 2+2 · Rich 2+4 | an iron seam ≥ 50 in every valley (the smithy's gift, D444) |
 | Seam scatter | 0 – 100 % | 0 is the stamped cross Joe refused (D475) — offered, but it is his to keep or cut |
 
 - An end that kills valleys at a rate `MostSeedsProduceAValleyAVillageCanLiveIn` would refuse is
   pulled in until it does not, and the table of what was measured goes in this spec beside the
   number typed.
+
+**✅ Measured (D480)** — 100 shipped seeds (200–299) × fifty years, unattended, one row at a time;
+*dead* is a valley with nobody left. The survival guard's line is 25 % dead (18 of 24 must live).
+
+| Arm | Alive | Dead valleys | Peak | Starved | Froze | Typed |
+|---|---|---|---|---|---|---|
+| shipped (baseline = D475's, to the person) | 533 | 22 | 948 | 355 | 65 | |
+| river 0 (no river) | 566 | 24 | 972 | 334 | 73 | **0** ✓ |
+| river 6 | 490 | 24 | 912 | 370 | 69 | **6** ✓ |
+| runs N–S | 541 | 26 | 933 | 316 | 76 | ✓ |
+| runs NW–SE | 429 | 30 | 851 | 360 | 77 | ✓ ⚠️ |
+| runs SW–NE | 567 | 24 | 936 | 297 | 66 | ✓ ⚠️ |
+| *second sample, seeds 300–399:* shipped | 539 | 21 | 944 | 372 | 48 | |
+| *… NW–SE* | 450 | 25 | 928 | 388 | 64 | |
+| *… SW–NE* | 505 | 28 | 946 | 350 | 88 | |
+| forest 20 % | 235 | **53** | 668 | 255 | 166 | ✗ |
+| forest 25 % | 356 | **42** | 789 | 314 | 117 | ✗ |
+| forest 30 % | 471 | **30** | 885 | 325 | 85 | ✗ |
+| forest 50 % | 642 | 15 | 1,063 | 391 | 32 | **50** ✓ |
+| stone sparse (4 + 4) | 530 | 23 | 956 | 356 | 65 | ✗ — see below |
+| stone rich (4 + 12) · iron sparse (2 + 0) · iron rich (2 + 4) | 533 | 22 | 948 | 355 | 65 | ✓ |
+| seam scatter 0 % | 566 | 26 | 956 | 357 | 56 | **0** ✓ |
+
+- **Forest cover runs 35–50 %.** Below the shipped 35 the unattended valleys die past the guard's
+  line (30 % loses 30 of 100). ⏸️ *A leaner valley as a deliberate hard setting is Joe's call* — the
+  harness is not a player (D447).
+- ⚠️ **The diagonals cost about five valleys in a hundred** — pooled over 200 seeds, NW–SE 55 dead and
+  SW–NE 52 against west–east's 43 (27 % / 26 % against 21.5 %), just past the guard's line. The first
+  sample's NW–SE 30 against SW–NE 24 was noise (the second sample reverses it). Kept, because Joe
+  asked for them; the cost is said here and is his to weigh. The likely reason is shape: a diagonal
+  through the middle leaves the founders a triangle of valley, not a half.
+- **Stone and iron levels do not move an unattended village** — rich stone and both iron levels read
+  the shipped numbers *to the person* while every one of the hundred final state hashes differs: the
+  valleys changed, but an unattended village never walks to its second ring of stone or to its iron.
+  What decides those rows is the generator's promises, now guarded at **every row end**
+  (`SeamsTests.EveryIronSeamHoldsFifty` / `EveryValleyKeepsThreeStoneSeamsInReach`, ten poses each):
+  - **Sparse stone at 4 + 4 broke "three stone seams in reach"** (seed 46: two). **4 + 6** keeps it —
+    the leanest of 64 valleys has four (red: back to 4 + 4, **1**).
+  - **A wide or diagonal river drowned an iron seam below 50** (river 6, seed 5: **8**; NW–SE, seed
+    25: 48). A seam still short after its three growth steps may now take up to three more; every
+    seam that held within three grows exactly as before — **no golden and no terrain fingerprint
+    moved** (red: back to three steps, **2**).
 - ⚠️ **A harness is not a player (D447).** These measure that a setting can be lived in, not how it
   plays; Joe plays the ends.
 
@@ -224,8 +277,8 @@ ignored **1**, the scale row ignored **1**.
 1. ✅ **This spec** (D477).
 2. ✅ **The sim half** (D478) — `SeedText`, `seed_words`, `village_name`, `new_game_options`, the share code,
    `river_course` (W–E untouched), guards 1–8. **No golden should move**; `git diff` says so.
-3. **The measurements** (§7), the ranges typed with their tables.
-4. **The view** — the screen at launch, the preview, the header's share code, guard 9.
+3. ✅ **The measurements** (§7, D480), the ranges typed with their tables.
+4. ✅ **The view** (D479) — the screen at launch, the preview, the header's share code, guard 9.
 5. Joe plays it: rolls, types a seed he remembers (*41219*), drags every row to both ends, pastes a
    code, founds a valley.
 

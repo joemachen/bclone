@@ -73,7 +73,8 @@ grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs   # the goldens, before and 
 - ⚠️ **The probe is the only view verification that exists** (D11, D160). Read all its lines —
   `bar height` must stay **151** (161 until D475, when the hint line lost *"g ground ·"* with the soil
   and stopped wrapping at 1280 — proven by putting the words back: 161 again), `tile centres` must
-  stay ✅, and **if `done.` is missing a headless
+  stay ✅, `new game:` must stay ✅ (the new-game screen, measured and then founding the config's own
+  valley — D479), and **if `done.` is missing a headless
   Godot is still running**: `taskkill //PID n //F`, then confirm with `tasklist`.
 - **"No golden moved" is a `git diff`, not a passing suite.** A golden is a 19-to-20-digit number
   however it is spelled — `const`, `InlineData`, or an argument.

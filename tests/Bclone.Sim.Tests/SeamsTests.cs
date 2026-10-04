@@ -413,10 +413,20 @@ public sealed class SeamsTests
     /// around each seam's centre (<see cref="MapGenerator.SeamsOf"/>, D475), because the river can cut
     /// one seam in two and a player still sees one seam there.
     /// </remarks>
-    [Fact]
-    public void EveryIronSeamHoldsFifty()
+    [Theory]
+    [InlineData("")]
+    [InlineData("stone=sparse")]
+    [InlineData("stone=rich")]
+    [InlineData("iron=sparse")]
+    [InlineData("iron=rich")]
+    [InlineData("river=6")]
+    [InlineData("flow=ns")]
+    [InlineData("flow=nwse")]
+    [InlineData("flow=swne")]
+    [InlineData("scatter=0")]
+    public void EveryIronSeamHoldsFifty(string row)
     {
-        SimConfig shipped = ShippedConfig.Load();
+        SimConfig shipped = WithTheRow(row);
         int perTile = new GoodsCatalog(shipped.GoodsCatalog).YieldPerTileOf(Goods.Iron);
         int least = int.MaxValue;
 
@@ -444,10 +454,20 @@ public sealed class SeamsTests
     /// reachable seams are all cleared can never quarry. With the extra seams, three are within
     /// reach in every one of 64 valleys (the river cuts some off; there are no bridges yet).
     /// </remarks>
-    [Fact]
-    public void EveryValleyKeepsThreeStoneSeamsInReach()
+    [Theory]
+    [InlineData("")]
+    [InlineData("stone=sparse")]
+    [InlineData("stone=rich")]
+    [InlineData("iron=sparse")]
+    [InlineData("iron=rich")]
+    [InlineData("river=6")]
+    [InlineData("flow=ns")]
+    [InlineData("flow=nwse")]
+    [InlineData("flow=swne")]
+    [InlineData("scatter=0")]
+    public void EveryValleyKeepsThreeStoneSeamsInReach(string row)
     {
-        SimConfig shipped = ShippedConfig.Load();
+        SimConfig shipped = WithTheRow(row);
         int fewest = int.MaxValue;
 
         for (ulong seed = 1; seed <= 64; seed++)
@@ -468,6 +488,24 @@ public sealed class SeamsTests
         }
 
         _output.WriteLine($"the fewest reachable stone seams in 64 valleys: {fewest}");
+    }
+
+    /// <summary>
+    /// The shipped config with one new-game row set (`new-game-screen.md §7`, D480) — the screen may
+    /// not offer a setting that breaks a promise the generator makes on the shipped one.
+    /// </summary>
+    private static SimConfig WithTheRow(string row)
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        if (row.Length == 0)
+        {
+            return shipped;
+        }
+
+        NewGameSettings settings = NewGame.Defaults(shipped, "1");
+        string[] kv = row.Split('=');
+        var values = new Dictionary<string, string>(settings.Values) { [kv[0]] = kv[1] };
+        return NewGame.Apply(shipped, settings with { Values = values });
     }
 
     private static int CountNear(GeneratedMap map, GridPos at, Terrain kind, int within)

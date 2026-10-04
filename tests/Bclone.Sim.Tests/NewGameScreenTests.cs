@@ -333,7 +333,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("oak#woods=90", "goes from 20 to 50")]
+    [InlineData("oak#woods=90", "goes from 35 to 50")]
     [InlineData("oak#woods=37", "in steps of 5")]
     [InlineData("oak#hills=3", "no setting called \"hills\"")]
     [InlineData("oak#woods", "id=value")]
@@ -414,6 +414,37 @@ public class NewGameScreenTests(ITestOutputHelper output)
 
         SimConfigException refused = Assert.Throws<SimConfigException>(() => (Shipped with { NewGameOptions = rows }).Validate());
         Assert.Contains("not a config key", refused.Message, StringComparison.Ordinal);
+    }
+
+    // ---- The stats under the preview ----------------------------------------------------------
+
+    /// <summary>
+    /// The stats are read off the valley: on the shipped seed 12345, founded, they agree with the counts
+    /// `MapGenerationTests.EachSeedsTerrainIsWhatItWas` pins independently (water 410, forest 2,523,
+    /// stone 134, iron 40), and more forest cover reads as more woods.
+    /// </summary>
+    [Fact]
+    public void TheStatsAreReadOffTheValley()
+    {
+        // The fingerprint's own pose: the shipped config, founded (`EachSeedsTerrainIsWhatItWas`).
+        SimConfig config = ShippedConfig.Established() with { Seed = 12345UL };
+        GeneratedMap map = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink()).World.Map;
+        ValleySummary s = NewGame.Summarise(config, map);
+        int land = (map.Width * map.Height) - 410;
+        output.WriteLine($"fixture map {map.Width} x {map.Height}: wooded {s.WoodedPercent}% of {land} land tiles");
+
+        Assert.Equal(((2523 * 100) + (land / 2)) / land, s.WoodedPercent);
+        Assert.Equal(134, s.StoneTiles);
+        Assert.Equal(40, s.IronTiles);
+        Assert.Equal(MapGenerator.SeamsOf(config, 12345UL, Terrain.Rock).Count, s.StoneSeams);
+        Assert.Equal("we", s.Course);
+
+        SimConfig wooded = config with { ForestCoveragePercent = 50 };
+        Assert.True(NewGame.Summarise(wooded, MapGenerator.Generate(wooded, 12345UL)).WoodedPercent
+            > NewGame.Summarise(config, MapGenerator.Generate(config, 12345UL)).WoodedPercent);
+
+        SimConfig any = config with { RiverCourse = "any" };
+        Assert.Equal(MapGenerator.CourseOf(any, 12345UL), NewGame.Summarise(any, MapGenerator.Generate(any, 12345UL)).Course);
     }
 
     // ---- The village name ---------------------------------------------------------------------
