@@ -1,9 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE STILL REPLAYS D481; THE CLOUD SESSION TAKES QUEUE B.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE REPLAYED D481 AND APPROVED IT ALL; THE CLOUD SESSION TAKES QUEUE B.**
 
 > **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
 >
 > **State:** **`main` = `slice/new-game-screen` merged `--no-ff` and pushed (D482, 2026-10-04)** — at Joe's word, *ahead
-> of his replay of D481*, because a cloud session opens on `main` and the first one read D476's handoff and re-asked
+> of his replay of D481* (✅ **replayed and approved, 2026-10-04: *"all approved"***), because a cloud session opens on `main` and the first one read D476's handoff and re-asked
 > D477's questions. **No slice is open.** `slice/new-game-screen` is kept until he says to delete it. At D481 (the merged
 > tree is byte-identical): **1421 passing, 0 failing, 5 skipped of 1426, 3m32**;
 > no golden moved; view 0 warnings; probe green on Windows (`new game:` ✅ column 400 of 400, bake ~355 ms; bar height 151; tile centres ✅).
@@ -25,7 +25,7 @@
 > `seam_*_scatter_percent` keys stay config, the `scale` kind stays for modders, guarded by a posed row); the button
 > reads **Found a new village**; **forest cover 0–100 %** (Joe's call — past the measured line, knowingly). **Merged (D482).**
 > **Joe answered D480's three calls:** forest 0–100 %, **the diagonals' cost is acceptable**, **the preview's redraw
-> speed is fine.** ▶️ **Joe still plays it again on Windows (`run.bat`)** — anything he finds is a small fix on a new slice off `main`. ⚠️ Forest at 0 %
+> speed is fine.** ✅ **Joe replayed it: *"all approved."*** The new-game screen is done. ⚠️ Forest at 0 %
 > and 100 % founds (guarded, §8.8) but is unmeasured in play; if a session has the time, `tools/harness/arms.sh base
 > woods=0 woods=10 woods=100` and write the arms into `new-game-screen.md §7` — information for Joe, not a gate.
 >
