@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/cloud-setup.sh",
+            "timeout": 900
+          }
+        ]
+      }
+    ]
+  }
+}

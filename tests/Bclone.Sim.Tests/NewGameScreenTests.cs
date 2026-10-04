@@ -92,9 +92,9 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal("3", defaults.Values["river"]);
         Assert.Equal("we", defaults.Values["flow"]);
         Assert.Equal("35", defaults.Values["woods"]);
-        Assert.Equal("usual", defaults.Values["stone"]);
-        Assert.Equal("usual", defaults.Values["iron"]);
-        Assert.Equal("100", defaults.Values["scatter"]);
+        Assert.Equal("moderate", defaults.Values["stone"]);
+        Assert.Equal("moderate", defaults.Values["iron"]);
+        Assert.Equal(new[] { "river", "flow", "woods", "stone", "iron" }, Shipped.NewGameOptions.Select(r => r.Id));
     }
 
     // ---- §8.3 West to east is today's river ----------------------------------------------------
@@ -295,7 +295,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
     public void TheShareCodeCarriesEveryRowInOrder()
     {
         string code = NewGame.ShareCode(Shipped, NewGame.Defaults(Shipped, "Mossy  Lantern"));
-        Assert.Equal("mossy lantern#river=3,flow=we,woods=35,stone=usual,iron=usual,scatter=100", code);
+        Assert.Equal("mossy lantern#river=3,flow=we,woods=35,stone=moderate,iron=moderate", code);
     }
 
     /// <summary>Every row at both of its ends, written out and read back, is the same settings.</summary>
@@ -333,11 +333,11 @@ public class NewGameScreenTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("oak#woods=90", "goes from 35 to 50")]
+    [InlineData("oak#woods=105", "goes from 0 to 100")]
     [InlineData("oak#woods=37", "in steps of 5")]
     [InlineData("oak#hills=3", "no setting called \"hills\"")]
     [InlineData("oak#woods", "id=value")]
-    [InlineData("oak#stone=heaps", "one of sparse, usual, rich")]
+    [InlineData("oak#stone=heaps", "one of sparse, moderate, rich")]
     [InlineData("#woods=40", "Type a seed")]
     public void ACodeTheRulesRefuseChangesNothingAndSaysWhy(string code, string sentence)
     {
@@ -380,7 +380,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
         {
             Values = new Dictionary<string, string>(start.Values)
             {
-                ["river"] = "5", ["flow"] = "nwse", ["woods"] = "45", ["stone"] = "rich", ["iron"] = "sparse", ["scatter"] = "50",
+                ["river"] = "5", ["flow"] = "nwse", ["woods"] = "45", ["stone"] = "rich", ["iron"] = "sparse",
             },
         });
 
@@ -389,8 +389,69 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal(45, set.ForestCoveragePercent);
         Assert.Equal(12, set.ExtraStoneSeams);
         Assert.Equal(0, set.ExtraIronSeams);
-        Assert.Equal((config.SeamAngleScatterPercent + 1) / 2, set.SeamAngleScatterPercent);
         Assert.Equal(SeedText.ToSeed("oak"), set.Seed);
+    }
+
+    /// <summary>
+    /// A <c>scale</c> row — no shipped row is one since the seams' scatter left the screen (D481), so a
+    /// modder's is posed — sets every key to the file's value times the percentage.
+    /// </summary>
+    [Fact]
+    public void AScaleRowScalesEachOfItsKeys()
+    {
+        SimConfig config = Shipped with
+        {
+            NewGameOptions = new[]
+            {
+                new NewGameRow
+                {
+                    Id = "scatter", Label = "Seam scatter", Kind = NewGame.ScaleKind,
+                    Keys = new[] { "seam_angle_scatter_percent", "seam_size_scatter_percent" },
+                    Min = 0, Max = 100, Step = 10, Unit = "%",
+                },
+            },
+        };
+        NewGameSettings start = NewGame.Defaults(config, "oak");
+        Assert.Equal("100", start.Values["scatter"]);
+
+        SimConfig set = NewGame.Apply(config, start with { Values = new Dictionary<string, string> { ["scatter"] = "50" } });
+
+        Assert.Equal((config.SeamAngleScatterPercent + 1) / 2, set.SeamAngleScatterPercent);
+        Assert.Equal((config.SeamSizeScatterPercent + 1) / 2, set.SeamSizeScatterPercent);
+        Assert.Equal(config.SeamReachScatterPercent, set.SeamReachScatterPercent);
+    }
+
+    /// <summary>
+    /// River width shows its ends as words, not a number (D481, Joe: <em>"narrow ◂——▸ wide"</em>) —
+    /// and the share code still carries the number, so a code names the same valley.
+    /// </summary>
+    [Fact]
+    public void RiverWidthIsNamedAtItsEndsAndCodedAsANumber()
+    {
+        NewGameRow river = Shipped.NewGameOptions.Single(r => r.Id == "river");
+        Assert.True(river.HasEndLabels);
+        Assert.Equal(("narrow", "wide"), (river.MinLabel, river.MaxLabel));
+
+        NewGameSettings start = NewGame.Defaults(Shipped, "oak");
+        string code = NewGame.ShareCode(Shipped, start with { Values = new Dictionary<string, string>(start.Values) { ["river"] = "5" } });
+        Assert.Contains("river=5", code, StringComparison.Ordinal);
+    }
+
+    /// <summary>One end word without the other is a row the screen could not draw honestly.</summary>
+    [Fact]
+    public void AnEndLabelWithoutItsPairIsRefused()
+    {
+        var rows = new[]
+        {
+            new NewGameRow
+            {
+                Id = "river", Label = "River width", Kind = NewGame.RangeKind,
+                Keys = new[] { "river_width_tiles" }, Min = 0, Max = 6, MinLabel = "narrow",
+            },
+        };
+
+        var thrown = Assert.Throws<SimConfigException>(() => NewGame.ValidateRows(rows));
+        Assert.Contains("min_label and max_label", thrown.Message, StringComparison.Ordinal);
     }
 
     private static IEnumerable<string> Ends(NewGameRow row) =>

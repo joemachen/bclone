@@ -4,12 +4,13 @@
 is legitimate"*), D353 (the shell's order: error boundary → per-stage seeds → **the new-game screen**
 → settings persistence → save/load → title and pause), D473 (per-stage seeds: a new stage appends an
 id and moves no other stage's draws), D475 (`MapGenerator.SeamsOf`), **D477 (Joe's calls for this
-screen, 2026-10-03 — §2)**. Neighbours: D18 (*quoting one seed reproduces the whole run*), §10.3 of
+screen, 2026-10-03 — §2), D481 (his calls after playing it, 2026-10-04 — §2)**. Neighbours: D18 (*quoting one seed reproduces the whole run*), §10.3 of
 `seeded-map-generation.md` (one valley archetype), §10.4 (*all seeds survivable, none equally
 comfortable*), D335 (a derived value is never hashed), D466 (splitmix64 over a name).
-**Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF (D478), THE VIEW (D479) AND THE MEASURED RANGES (D480)
-BUILT** on `slice/new-game-screen` — guards §8.1–8.9 red-checked; no golden moved. ⏳ **Unplayed:**
-Joe plays it (§9.5).
+**Status:** ✍️ **SPECCED (D477). ✅ THE SIM HALF (D478), THE VIEW (D479), THE MEASURED RANGES (D480)
+AND JOE'S PLAY NOTES (D481) BUILT** on `slice/new-game-screen` — guards §8.1–8.9 red-checked; no
+golden moved. ✅ **Played once by Joe (2026-10-04); ⏳ D481's changes unplayed — he plays them, then
+merges.**
 Owner: Joe + Claude Code.
 
 ---
@@ -36,6 +37,13 @@ place played again.* The screen is where that becomes something the player does.
 - **The seed is any text; the dice roll words.** The screen opens on a fresh roll.
 - **On the screen:** stats under the preview, an editable village name, the settings in the share
   code, and a **Default settings** button (every row back to the shipped config's value).
+- **After playing it (D481, 2026-10-04):** river width shows **no number** — its ends are named
+  *narrow ◂——▸ wide* (`min_label` / `max_label`; the share code keeps the number). Stone and iron
+  levels are **Sparse · Moderate · Rich** (the code value too: `moderate`). **Seam scatter is off the
+  screen** — the three `seam_*_scatter_percent` keys stay config, a modder's dial. **Forest cover runs
+  0–100 %** — past the measured line (§7) on purpose: a bare or a solid valley is a hard setting he
+  offers knowingly. **The diagonals' cost is accepted** (§7), and **the preview's redraw speed is
+  fine** (§3). The button reads **Found a new village**.
 - ⏸️ **Hills, height, slope, mesas, buttes, promontories — after the whole shell** (his call). The
   sim has no height; it is a new layer of the world whose first question is what height *does*
   (walk cost in the one cost field? building and farming on a slope? the view's shading?). Its own
@@ -48,15 +56,15 @@ place played again.* The screen is where that becomes something the player does.
 │                                              │ Seed  [mossy-lantern-41   ][⚄]│
 │                                              │ Village name [Fernhollow     ]│
 │        the valley, baked as in play          │ Valley       [River valley ▾] │
-│        (ValleyTexture over a fresh world)    │ River width   ──●──────   3   │
+│        (ValleyTexture over a fresh world)    │ River width narrow ─●──── wide│
 │        the founding marked                   │ River runs    [W–E ▾]         │
-│                                              │ Forest cover  ────●────  35%  │
-│                                              │ Stone         [Usual ▾]       │
-├──────────────────────────────────────────────┤ Iron          [Usual ▾]       │
-│ Wooded 35% · Stone 12 seams · Iron 4 seams · │ Seam scatter  ───────●  100%  │
+│                                              │ Forest cover  ──●──────  35%  │
+│                                              │ Stone         [Moderate ▾]    │
+├──────────────────────────────────────────────┤ Iron          [Moderate ▾]    │
+│ Wooded 35% · Stone 12 seams · Iron 4 seams · │                               │
 │ River 3 wide · Founded west of the river     │                               │
 │                                              │ Share code [mossy-lantern-41#…]│
-│                                              │ [Default settings] [Found ▸]  │
+│                                              │ [Default settings] [Found a new village] │
 └──────────────────────────────────────────────┴───────────────────────────────┘
 ```
 
@@ -109,18 +117,23 @@ changes nothing that happens.
 
 ## 5. The rows, and the share code
 
-**A row is data** — `new_game_options`, a config list (`NewGameRow`): the code's defaults are the six
+**A row is data** — `new_game_options`, a config list (`NewGameRow`): the code's defaults are the five
 below (`NewGame.DefaultRows`), and a json's list replaces them wholesale, as `town_names` does. One
 entry per row:
 
 | id | label | kind | what it sets | default |
 |---|---|---|---|---|
-| `river` | River width | range | `river_width_tiles` | shipped (3) |
+| `river` | River width | range, ends named *narrow* / *wide* | `river_width_tiles` | shipped (3) |
 | `flow` | River runs | choice | `river_course`: `we` · `ns` · `nwse` · `swne` · `any` | `we` |
-| `woods` | Forest cover | range | `forest_coverage_percent` | shipped (35) |
-| `stone` | Stone | levels | `stone_seam_count` + `extra_stone_seams` per level: Sparse · Usual · Rich | Usual = shipped |
-| `iron` | Iron | levels | `iron_seam_count` + `extra_iron_seams` per level | Usual = shipped |
-| `scatter` | Seam scatter | range, % | the three `seam_*_scatter_percent` keys, scaled together; 100 % = shipped | 100 |
+| `woods` | Forest cover | range, 0–100 % in 5s | `forest_coverage_percent` | shipped (35) |
+| `stone` | Stone | levels | `stone_seam_count` + `extra_stone_seams` per level: Sparse · Moderate · Rich | Moderate = shipped |
+| `iron` | Iron | levels | `iron_seam_count` + `extra_iron_seams` per level | Moderate = shipped |
+
+- ~~`scatter` · Seam scatter~~ — **off the screen (D481).** Joe asked what it did (how far the stone and
+  iron outcrops stray from an even, compass-like layout; 0 % is D475's refused cross) and chose to
+  drop it. The `scale` kind stays for modders (`AScaleRowScalesEachOfItsKeys`).
+- A `range` or `scale` row may name its ends — `min_label` and `max_label`, both or neither — and then
+  the screen shows the words at the slider's ends and no number; the share code keeps the number.
 
 - A row names **config keys**, a range (min, max, step) or its levels, and nothing else. Applying the
   screen is **overriding those keys on the loaded config serialised to json, and loading the result**
@@ -139,7 +152,7 @@ entry per row:
 rows' order:
 
 ```
-mossy-lantern-41#river=3,flow=we,woods=35,stone=usual,iron=usual,scatter=100
+mossy-lantern-41#river=3,flow=we,woods=35,stone=moderate,iron=moderate
 ```
 
 - **Every row, always** — not only the ones that differ — so a code still reproduces its valley after
@@ -147,7 +160,7 @@ mossy-lantern-41#river=3,flow=we,woods=35,stone=usual,iron=usual,scatter=100
   sits beside the code in the header, which is why.)
 - **Pasting a code into the seed box sets the rows.** Text with no `#` is a bare seed and leaves the
   rows alone. An unknown id, a value outside a row's range, or a missing `=` is refused in a sentence
-  naming the part (*"`woods=90` — forest cover goes up to 50"*), and nothing changes.
+  naming the part (*"`woods=105` — forest cover goes from 0 to 100"*), and nothing changes.
 - **One code is one valley:** `SeedText` and the row values are all the generator reads that the
   config file does not, so code + build + config file ⇒ the same valley, byte for byte (guarded, §8).
 
@@ -180,10 +193,10 @@ against the shipped settings at fifty years:
 |---|---|---|
 | River width | 0 (no river) – 6 | dead valleys and alive; 0 is a supported valley today |
 | River runs | each of the four | dead valleys and alive per direction; the founding never on a bank |
-| Forest cover | 20 – 50 % → **35 – 50 %** | food and timber — the economy derives from this key (`VillageEconomy`) |
-| Stone | Sparse 4+4 → **4+6** · Usual 4+8 · Rich 4+12 | three stone seams in reach in every valley (`quarry.md §3.1`) |
-| Iron | Sparse 2+0 · Usual 2+2 · Rich 2+4 | an iron seam ≥ 50 in every valley (the smithy's gift, D444) |
-| Seam scatter | 0 – 100 % | 0 is the stamped cross Joe refused (D475) — offered, but it is his to keep or cut |
+| Forest cover | 20 – 50 % → **35 – 50 %** → **0 – 100 % (Joe, D481)** | food and timber — the economy derives from this key (`VillageEconomy`) |
+| Stone | Sparse 4+4 → **4+6** · Usual (Moderate, D481) 4+8 · Rich 4+12 | three stone seams in reach in every valley (`quarry.md §3.1`) |
+| Iron | Sparse 2+0 · Usual (Moderate, D481) 2+2 · Rich 2+4 | an iron seam ≥ 50 in every valley (the smithy's gift, D444) |
+| Seam scatter | 0 – 100 % | 0 is the stamped cross Joe refused (D475) — offered, but it is his to keep or cut → **cut (D481)** |
 
 - An end that kills valleys at a rate `MostSeedsProduceAValleyAVillageCanLiveIn` would refuse is
   pulled in until it does not, and the table of what was measured goes in this spec beside the
@@ -211,13 +224,15 @@ against the shipped settings at fifty years:
 | stone rich (4 + 12) · iron sparse (2 + 0) · iron rich (2 + 4) | 533 | 22 | 948 | 355 | 65 | ✓ |
 | seam scatter 0 % | 566 | 26 | 956 | 357 | 56 | **0** ✓ |
 
-- **Forest cover runs 35–50 %.** Below the shipped 35 the unattended valleys die past the guard's
-  line (30 % loses 30 of 100). ⏸️ *A leaner valley as a deliberate hard setting is Joe's call* — the
-  harness is not a player (D447).
+- **Forest cover was typed 35–50 % (D480); Joe opened it to 0–100 % (D481).** Below the shipped 35
+  the unattended valleys die past the guard's line (30 % loses 30 of 100, 20 % loses 53), and nothing
+  below 20 or above 50 was measured. ⚠️ **He chose it knowingly** — a lean or bare valley is a hard
+  setting, the harness is not a player (D447). What 0 % and 100 % do in play is unmeasured; a session
+  that measures them writes the arms here.
 - ⚠️ **The diagonals cost about five valleys in a hundred** — pooled over 200 seeds, NW–SE 55 dead and
   SW–NE 52 against west–east's 43 (27 % / 26 % against 21.5 %), just past the guard's line. The first
   sample's NW–SE 30 against SW–NE 24 was noise (the second sample reverses it). Kept, because Joe
-  asked for them; the cost is said here and is his to weigh. The likely reason is shape: a diagonal
+  asked for them; ✅ **he accepted the cost (D481).** The likely reason is shape: a diagonal
   through the middle leaves the founders a triangle of valley, not a half.
 - **Stone and iron levels do not move an unattended village** — rich stone and both iron levels read
   the shipped numbers *to the person* while every one of the hundred final state hashes differs: the

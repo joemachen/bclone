@@ -248,7 +248,7 @@ public sealed partial class NewGameScreen : Control
         var defaults = new Button { Text = "Default settings", TooltipText = "Every setting back to the game's own" };
         defaults.Pressed += OnDefaults;
         buttons.AddChild(defaults);
-        _found = new Button { Text = "Found the village ▸" };
+        _found = new Button { Text = "Found a new village" };
         _found.Pressed += OnFound;
         buttons.AddChild(_found);
         column.AddChild(buttons);
@@ -303,7 +303,21 @@ public sealed partial class NewGameScreen : Control
                     SetRow(row.Id, ((int)value).ToString(CultureInfo.InvariantCulture));
                 }
             };
-            box.AddChild(slider);
+            if (row.HasEndLabels)
+            {
+                // The ends named, no number (D481): the share code still carries the number.
+                var span = new HBoxContainer();
+                span.AddThemeConstantOverride("separation", 8);
+                span.AddChild(Caption(row.MinLabel));
+                span.AddChild(slider);
+                span.AddChild(Caption(row.MaxLabel));
+                box.AddChild(span);
+            }
+            else
+            {
+                box.AddChild(slider);
+            }
+
             _rowControls[row.Id] = slider;
         }
 
@@ -396,7 +410,7 @@ public sealed partial class NewGameScreen : Control
                     break;
                 case HSlider slider:
                     slider.Value = int.Parse(value, CultureInfo.InvariantCulture);
-                    _rowReadings[row.Id].Text = value + row.Unit;
+                    _rowReadings[row.Id].Text = row.HasEndLabels ? string.Empty : value + row.Unit;
                     break;
             }
         }

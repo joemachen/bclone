@@ -50,6 +50,22 @@ public sealed record NewGameRow
     [JsonPropertyName("unit")]
     public string Unit { get; init; } = string.Empty;
 
+    /// <summary>
+    /// What a <c>range</c> or <c>scale</c> row's low end is called on screen — <c>"narrow"</c>. With
+    /// <see cref="MaxLabel"/>, the screen shows the two words at the slider's ends and no number; the
+    /// share code still carries the number (D481, Joe: <em>"narrow ◂——▸ wide"</em>).
+    /// </summary>
+    [JsonPropertyName("min_label")]
+    public string MinLabel { get; init; } = string.Empty;
+
+    /// <summary>What a <c>range</c> or <c>scale</c> row's high end is called on screen — <c>"wide"</c>.</summary>
+    [JsonPropertyName("max_label")]
+    public string MaxLabel { get; init; } = string.Empty;
+
+    /// <summary>Whether the screen shows end words in place of the number.</summary>
+    [JsonIgnore]
+    public bool HasEndLabels => MinLabel.Length > 0;
+
     /// <summary>A <c>levels</c> row's choices, in the order the screen offers them.</summary>
     [JsonPropertyName("levels")]
     public IReadOnlyList<NewGameLevel> Levels { get; init; } = Array.Empty<NewGameLevel>();
@@ -123,8 +139,11 @@ public static class NewGame
     /// <summary>The shipped rows — the code's defaults, replaced wholesale by a json's list.</summary>
     /// <remarks>
     /// ⭐ <b>Every end here was measured</b> (`new-game-screen.md §7`, D480) — that table, not this
-    /// file, is where each end is argued: forest cover stops at 35 because 30 lost 30 of 100
-    /// unattended valleys; sparse stone is 4 + 6 because 4 + 4 left a valley two stone seams in reach.
+    /// file, is where each end is argued: sparse stone is 4 + 6 because 4 + 4 left a valley two stone
+    /// seams in reach. ⚠️ <b>Forest cover runs 0–100 % by Joe's call (D481)</b>, past the measured line:
+    /// below 35 unattended valleys die past the survival guard's rate (30 % lost 30 of 100), and a bare
+    /// or a solid valley is a hard setting he chose to offer. The seams' scatter is not a row (D481): the
+    /// three <c>seam_*_scatter_percent</c> keys are left to modders.
     /// </remarks>
     public static IReadOnlyList<NewGameRow> DefaultRows() => new[]
     {
@@ -132,6 +151,7 @@ public static class NewGame
         {
             Id = "river", Label = "River width", Kind = RangeKind,
             Keys = new[] { "river_width_tiles" }, Min = 0, Max = 6, Step = 1, Unit = " tiles",
+            MinLabel = "narrow", MaxLabel = "wide",
         },
         new NewGameRow
         {
@@ -148,7 +168,7 @@ public static class NewGame
         new NewGameRow
         {
             Id = "woods", Label = "Forest cover", Kind = RangeKind,
-            Keys = new[] { "forest_coverage_percent" }, Min = 35, Max = 50, Step = 5, Unit = "%",
+            Keys = new[] { "forest_coverage_percent" }, Min = 0, Max = 100, Step = 5, Unit = "%",
         },
         new NewGameRow
         {
@@ -156,7 +176,7 @@ public static class NewGame
             Levels = new[]
             {
                 Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "6")),
-                Level("usual", "Usual", ("stone_seam_count", "4"), ("extra_stone_seams", "8")),
+                Level("moderate", "Moderate", ("stone_seam_count", "4"), ("extra_stone_seams", "8")),
                 Level("rich", "Rich", ("stone_seam_count", "4"), ("extra_stone_seams", "12")),
             },
         },
@@ -166,15 +186,9 @@ public static class NewGame
             Levels = new[]
             {
                 Level("sparse", "Sparse", ("iron_seam_count", "2"), ("extra_iron_seams", "0")),
-                Level("usual", "Usual", ("iron_seam_count", "2"), ("extra_iron_seams", "2")),
+                Level("moderate", "Moderate", ("iron_seam_count", "2"), ("extra_iron_seams", "2")),
                 Level("rich", "Rich", ("iron_seam_count", "2"), ("extra_iron_seams", "4")),
             },
-        },
-        new NewGameRow
-        {
-            Id = "scatter", Label = "Seam scatter", Kind = ScaleKind,
-            Keys = new[] { "seam_angle_scatter_percent", "seam_reach_scatter_percent", "seam_size_scatter_percent" },
-            Min = 0, Max = 100, Step = 10, Unit = "%",
         },
     };
 
@@ -234,6 +248,11 @@ public static class NewGame
                     foreach (string key in row.Keys)
                     {
                         RequireAKey(key, where);
+                    }
+
+                    if ((row.MinLabel.Length == 0) != (row.MaxLabel.Length == 0))
+                    {
+                        throw new SimConfigException($"{where}: min_label and max_label are given together or not at all.");
                     }
 
                     break;

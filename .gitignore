@@ -54,3 +54,6 @@ dist/
 *.zip
 release/
 artifacts/
+
+# ---- The measurement harness's outputs (tools/harness/arms.sh) ----
+harness-out/

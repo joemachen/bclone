@@ -1,6 +1,49 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D480 IN §7. JOE PLAYED THE NEW-GAME SCREEN (`slice/new-game-screen`, D477–D480): FOUR NOTES ON IT TO FINISH BEFORE THE MERGE, THEN SIX GAME NOTES.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN'S PLAY NOTES ARE BUILT (D481) AND PUSHED ON `slice/new-game-screen`; JOE PLAYS IT AGAIN AND MERGES; THE CLOUD SESSION TAKES QUEUE B.**
 
-> **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-04 — JOE PLAYED THE NEW-GAME SCREEN; HIS NOTES, QUEUED.**
+> **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
+>
+> **State:** `main` = `6533f35` (D476). **`slice/new-game-screen`** = D477–D481 + this handoff, **pushed to `origin`
+> (2026-10-04, at Joe's word: "get this project in position for a cloud session"), NOT merged.** At D481: **1421 passing, 0 failing, 5 skipped of 1426, 3m32**;
+> no golden moved; view 0 warnings; probe green on Windows (`new game:` ✅ column 400 of 400, bake ~355 ms; bar height 151; tile centres ✅).
+>
+> **☁️ IF YOU ARE A CLOUD SESSION:** `.claude/hooks/cloud-setup.sh` ran at start (its last line says what it found) —
+> .NET 8 in `~/.dotnet`, Godot 4.7.1 .NET Linux in `~/godot`, `$GODOT` exported. ⚠️ **The Linux probe has never been
+> run** — the first cloud session runs CLAUDE.md's four lines on a clean `slice/new-game-screen` checkout BEFORE changing
+> anything, and writes what they read here (bar height 151 and the `new game:` widths were measured with Windows'
+> font rendering; if a number differs on Linux, record the Linux number as the Linux baseline — do not "fix" the view
+> for it). If a download was blocked, say which verification could not run; never report it passed. **The harness
+> is in the repo now** (`tools/harness/` — `arms.sh`, `ZzBase.cs`, `dead.py`; its README). Joe's local
+> `data/sim.config.json` seed 41219 and his `art/` files are his and not on the remote — the cloud sees the
+> committed seed 12345, which is correct. **The file is `HANDOFF.md`** — upper case; Linux does not forgive
+> `handoff.md`.
+>
+> **✅ A — DONE (D481), one commit, on the branch:** river width shows *narrow ◂——▸ wide* (`min_label`/`max_label`
+> on `NewGameRow`, the number hidden, the share code keeps it); stone and iron **Sparse · Moderate · Rich** (code
+> `moderate`); **seam scatter dropped from the screen** (Joe: *"drop it from the screen completely"* — the three
+> `seam_*_scatter_percent` keys stay config, the `scale` kind stays for modders, guarded by a posed row); the button
+> reads **Found a new village**; **forest cover 0–100 %** (Joe's call — past the measured line, knowingly).
+> **Joe answered D480's three calls:** forest 0–100 %, **the diagonals' cost is acceptable**, **the preview's redraw
+> speed is fine.** ▶️ **Joe plays it again (`run.bat`), then merge `--no-ff` and push at his word.** ⚠️ Forest at 0 %
+> and 100 % founds (guarded, §8.8) but is unmeasured in play; if a session has the time, `tools/harness/arms.sh base
+> woods=0 woods=10 woods=100` and write the arms into `new-game-screen.md §7` — information for Joe, not a gate.
+>
+> **▶️ B — HIS GAME NOTES — unchanged from the banner below (B1–B6), plus his answers for B4:**
+> - **B4, the destroy-resources brush — Joe answered his own design questions (2026-10-04):** *(a)* destroyed ground
+>   **can grow trees again if a forester replants it** (and only then — no natural regrowth); *(b)* the brush **destroys
+>   stone and iron too, and the village loses the goods** (*"useful if a player wants to clear nodes but doesn't have
+>   anywhere to store the goods or have a use for them"*); *(c)* herdsmen's pens: **yes, animals can live in the woods**
+>   — a pen does not need its trees cleared; *(d)* **laborers** clear the trees from a farm painted over them. Still
+>   spec first (`specs/`, a new one or `quarry.md`'s brush section — read what exists), and still **measure what the
+>   game does today before writing it** (trap 151). His answers are design, not yet a spec Joe has read: show him the
+>   spec before building.
+> - **Order is his:** B1 (Professions panel starts open) → B2 (Tree in Settings gated) → B3 (What's here panel) are
+>   view-only — buildable in the cloud with the probe, but **he must play them on Windows**; B4 spec; B5 verify and
+>   report; B6 `quarry_unlock_stone` 100 → 200 on the harness. ⚠️ **Do not start B on `slice/new-game-screen`** — after
+>   the merge, a new slice off `main`; if the merge has not happened, branch off `slice/new-game-screen` and say so.
+>
+> *(The banner before D481, kept below.)*
+>
+> **(superseded by the banner above)** **⭐⭐ START HERE — A FRESH SESSION. WHERE THINGS ARE, 2026-10-04 — JOE PLAYED THE NEW-GAME SCREEN; HIS NOTES, QUEUED.**
 >
 > **State:** `main` = `6533f35` (D476), pushed. **`slice/new-game-screen`** = `9cd0e21` (D477–D480) + this handoff —
 > **played by Joe, not merged, not pushed.** At D480: 1420 passing, 0 failing, 5 skipped of 1425; no golden moved; view 0
@@ -4414,16 +4457,29 @@ Read `git status` after staging, every time.
 - **Two samples before calling a direction worse.** NW–SE read 30 dead against SW–NE's 24; the second hundred said 25
   against 28.
 
+## ⛔ THE TRAP D481 PAID FOR — THE FILE IS `HANDOFF.md`, AND WINDOWS HAD BEEN LYING ABOUT IT
+
+- **CLAUDE.md told every session to edit `handoff.md`; git tracks `HANDOFF.md`.** On Windows the two are one file, so
+  nobody noticed for months; on a Linux cloud session `handoff.md` does not exist, and a session following the
+  instruction would have **created a second, empty handoff** beside the real one and left the traps behind. Fixed in
+  CLAUDE.md. *The general form: a path in an instruction is only checked on the machine it was written on — before
+  moving the work to another OS, `git ls-files` the names the instructions use.*
+- **The measurement harness lived only in session scratchpads** (`%TEMP%`, one per session, each banner pointing at
+  the last one's). A cloud session cannot see any of them. It is in `tools/harness/` now; keep it there, and keep it
+  current when an arm is added.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⭐ **SEAM SCATTER ON THE NEW-GAME SCREEN (Joe, 2026-10-04: *"what does 'seam scatter' do?"*).** Keep with a tooltip,
-  rename (*"Ore layout: regular ◂▸ scattered"*), or drop it as a modder dial — his pick; the answer is in the top banner.
-- ⭐ **THE DESTROY-RESOURCES BRUSH — HIS DESIGN QUESTIONS, FOR ITS SPEC.** Can destroyed ground ever grow trees again
+- ✅ **DECIDED (D481) — Joe: *"drop it from the screen completely."* Built.** ~~Seam scatter on the new-game screen.~~
+- ✅ **ANSWERED (2026-10-04) — Joe: replant by a forester only; stone and iron destroyed and the goods LOST; animals
+  live in woods (a pen keeps its trees); laborers clear a farm's trees. Not built — B4's spec carries them.**
+  ~~THE DESTROY-RESOURCES BRUSH — HIS DESIGN QUESTIONS, FOR ITS SPEC.~~ Can destroyed ground ever grow trees again
   (a forester replanting it, or never)? Does it destroy stone and iron too, and does the village get the goods or lose
   them? Herdsmen's pens: clear the trees first, or let animals live in woods? Does a farm painted over trees show the
   field at once and its unsown tiles as "trees to clear", and who clears them (laborers, like a building site)?
 
-- ⭐ **THE NEW-GAME SCREEN'S THREE CALLS (D480, `new-game-screen.md §7`).** *(1)* **Forest cover stops at 35 %** by the
+- ✅ **DECIDED (D481) — Joe: *"offer forest cover from 0-100%. diagonal cost is acceptable, and the preview's redraw
+  speed is fine."* Forest built 0–100 %.** ~~THE NEW-GAME SCREEN'S THREE CALLS (D480, `new-game-screen.md §7`).~~ *(1)* **Forest cover stops at 35 %** by the
   spec's rule — 30 % loses 30 unattended valleys of 100 (25 % 42, 20 % 53). A leaner setting as a chosen hard valley is
   yours. *(2)* **The diagonals cost about five valleys in a hundred** unattended (pooled 200 seeds: NW–SE 55, SW–NE 52,
   west–east 43 dead) — kept as you asked; say if that is the price you want. *(3)* **The preview bakes in ~0.3–0.4 s**

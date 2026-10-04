@@ -82,6 +82,12 @@ grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs   # the goldens, before and 
   aimed it — by line number, `grep -c` the changed text — before believing a green. **A guard that
   scores zero is kept and the zero is written down**, never quietly presented as evidence.
 
+☁️ **In a cloud session** (Linux, `CLAUDE_CODE_REMOTE=true`), `.claude/hooks/cloud-setup.sh` installs the
+.NET 8 SDK and Godot 4.7.1 (.NET, Linux) at session start and exports `$GODOT`, so all four lines
+above run there too. If its last line says `MISSING`, the network blocked a download — **say which
+of the four could not run; never report it as passed.** Joe plays on Windows: anything about how the
+game *looks or feels* still waits for him (`run.bat`).
+
 ⚠️ **The suite's own wall-clock is an instrument.** It went 4m55s → 9m in one commit with everything
 green (D329), and nothing but the clock reported it. If it moves a lot, find out why before
 committing.
@@ -95,7 +101,8 @@ committing.
   status line must be true when you write it** (D159): five specs claimed *"not started"* for
   systems that had shipped, one of them for the slice merged that morning. *A spec that lies about
   its own status is worse than no spec, because it is read at the moment a session is orienting.*
-- **⛔ LOG DEBT AND TRAPS IN `handoff.md` BEFORE FINISHING.** ⚠️ **But its trap list is NOT a to-do
+- **⛔ LOG DEBT AND TRAPS IN `HANDOFF.md` BEFORE FINISHING.** *(Upper case — that is the tracked name; Windows
+  forgives `handoff.md`, a Linux cloud session does not.)* ⚠️ **But its trap list is NOT a to-do
   list and must never be "resolved" or rewritten.** Each entry is a lesson a session paid for;
   clearing them drops that knowledge silently, which happened on 2026-08-22 and cost an hour and
   three quarters. **Edit the file, carry the traps forward, add one for what this session learned.**

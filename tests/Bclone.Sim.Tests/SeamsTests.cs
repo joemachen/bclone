@@ -423,7 +423,6 @@ public sealed class SeamsTests
     [InlineData("flow=ns")]
     [InlineData("flow=nwse")]
     [InlineData("flow=swne")]
-    [InlineData("scatter=0")]
     public void EveryIronSeamHoldsFifty(string row)
     {
         SimConfig shipped = WithTheRow(row);
@@ -464,7 +463,6 @@ public sealed class SeamsTests
     [InlineData("flow=ns")]
     [InlineData("flow=nwse")]
     [InlineData("flow=swne")]
-    [InlineData("scatter=0")]
     public void EveryValleyKeepsThreeStoneSeamsInReach(string row)
     {
         SimConfig shipped = WithTheRow(row);
