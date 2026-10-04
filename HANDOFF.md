@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D481 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE REPLAYED D481 AND APPROVED IT ALL; THE CLOUD SESSION TAKES QUEUE B.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D483 IN §7. THE NEW-GAME SCREEN (D477–D481) IS MERGED TO `main` AND PUSHED (D482); JOE REPLAYED D481 AND APPROVED IT ALL; THE CLOUD SESSION TAKES QUEUE B.**
 
-> **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D481.**
+> **⭐⭐ START HERE — A FRESH SESSION (PROBABLY IN THE CLOUD). WHERE THINGS ARE, 2026-10-04 (EVENING) — D483.**
 >
 > **State:** **`main` = `slice/new-game-screen` merged `--no-ff` and pushed (D482, 2026-10-04)** — at Joe's word, *ahead
 > of his replay of D481* (✅ **replayed and approved, 2026-10-04: *"all approved"***), because a cloud session opens on `main` and the first one read D476's handoff and re-asked
@@ -13,7 +13,11 @@
 > run** — the first cloud session runs CLAUDE.md's four lines on a clean `main` checkout BEFORE changing
 > anything, and writes what they read here (bar height 151 and the `new game:` widths were measured with Windows'
 > font rendering; if a number differs on Linux, record the Linux number as the Linux baseline — do not "fix" the view
-> for it). If a download was blocked, say which verification could not run; never report it passed. **The harness
+> for it). If a download was blocked, say which verification could not run; never report it passed. ⛔ **2026-10-04:
+> a cloud session found .NET blocked** — `dot.net` 301s to `builds.dotnet.microsoft.com`, which the environment's
+> network policy refused (proxy `CONNECT` 403); Godot downloaded. So the suite, the view build, the probe and the golden
+> diff have still never run on Linux. **Joe's fix:** the cloud environment's settings → Network access → allow
+> `builds.dotnet.microsoft.com` (and `dot.net`), or a broader level. **The harness
 > is in the repo now** (`tools/harness/` — `arms.sh`, `ZzBase.cs`, `dead.py`; its README). Joe's local
 > `data/sim.config.json` seed 41219 and his `art/` files are his and not on the remote — the cloud sees the
 > committed seed 12345, which is correct. **The file is `HANDOFF.md`** — upper case; Linux does not forgive
@@ -4478,6 +4482,15 @@ Read `git status` after staging, every time.
   read **when the session starts**, so checking out the branch afterwards cannot fix that. *The fix was to merge (D482).
   The lesson: the state a cloud session sees is `origin/main`, so check `git show origin/main:HANDOFF.md | head` before
   saying anything is ready for one.*
+
+## ⛔ THE TRAP THE FIRST POST-D483 CLOUD SESSION PAID FOR — A SETUP HOOK THAT SAYS "FAILED" MAY BE THE NETWORK POLICY
+
+- **`cloud-setup.sh` printed `.NET 8 install FAILED` and `dotnet: MISSING`; the script was fine.** `dot.net` answers
+  with a 301 to `builds.dotnet.microsoft.com`, and the environment's network policy refuses that host (the proxy's
+  `CONNECT` returns 403). **Allowing only `dot.net` is not enough — the redirect target is the host that matters.**
+  *Before editing the hook, `curl -sSI` both hosts and read the status; a 403 from the proxy is a setting Joe changes
+  in the environment, not a bug in the repo.* Until it is allowed, a cloud session can read and write docs but cannot
+  run the suite, the view build or the probe (the probe needs the built game) — say so; never report them passed.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
