@@ -525,8 +525,8 @@ public partial class Main : Control
     private void ProbePanelWidths(string when)
     {
         // ⚠️ UNFOLDED, OR A FOLDED PANEL HIDES ITS WIDTH. A folded panel's contents are not
-        // visible and do not count toward its minimum — the Professions window is folded at the
-        // founding, and the first red check of this probe scored zero on it for exactly that.
+        // visible and do not count toward its minimum — the Professions window was folded at the
+        // founding (until B1), and the first red check of this probe scored zero on it for exactly that.
         var wereOpen = new List<bool>(_headers.Count);
         foreach (Button header in _headers)
         {
@@ -721,8 +721,8 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// ⚠️ <b>Measured while HIDDEN, and that is fine</b> — `GetCombinedMinimumSize` is a layout
-    /// question, not a drawing one. It is also the only way to measure it: the panel starts closed,
-    /// and D242's whole lesson is that a layout correct at startup can be wrong later.
+    /// question, not a drawing one. It is also the only way to measure it once the player has folded or
+    /// closed the panel, and D242's whole lesson is that a layout correct at startup can be wrong later.
     /// </para>
     /// </remarks>
     private void ProbeTheProfessionsPanel()
@@ -4026,12 +4026,11 @@ public partial class Main : Control
     /// </remarks>
     private void BuildProfessionsPanel()
     {
-        // ⚠️ ROLLED UP BY DEFAULT, and that is the whole point rather than a compromise. These
-        // are STANDING ORDERS — you set them and then watch the year — so the panel's resting
-        // state should be a strip of title, not eleven rows of numbers competing with the
-        // valley. Open, it is tall enough to reach the roster and the control bar; closed, it
-        // costs one line. Joe asked for less on screen, and a panel that is only there when it
-        // is wanted is more of an answer than a smaller one that is always there.
+        // ⭐ OPEN AT THE FOUNDING (Joe, 2026-10-04, B1: *"the Professions panel starts open"*).
+        // It started rolled up for a long time — standing orders are set and then watched, so the
+        // resting state was a strip of title — but the first thing a new village asks of the
+        // player is who works, and a folded title hid the answer behind a click nobody knew to
+        // make. The fold is still one click away for a player who wants the valley back.
         // ⛔⛔ A FLOATING WINDOW, NOT A COLUMN PANEL, AND THE TABLE WAS WHY. A side column clamps
         // to 240–400 logical px, and a `GridContainer`'s minimum width is the SUM of its column
         // minimums — so a table with a notes column in it re-opened the exact bug recorded at
@@ -4039,7 +4038,8 @@ public partial class Main : Control
         // column is gone (D367) and the table is glyph + name + stepper, so the window is the
         // ordinary width now — Joe: *"professions is too wide."*
         VBoxContainer body = Floating(
-            Edge, Edge, DefaultPanelWidth, 0f, Corner.TopLeft, "Professions", startOpen: false);
+            Edge, Edge, DefaultPanelWidth, 0f, Corner.TopLeft, "Professions", startOpen: true);
+        _professionsBody = body;
 
         // ⚠️ Taken off the end of `_panels` the way `BuildSettingsPanel` does, because
         // `Dress` owns the registration and handing the panel back would be a second way to
@@ -4051,8 +4051,8 @@ public partial class Main : Control
         // and a window the reset cannot find is a window that can still be lost.
         _docked.Add((_panels[^1], false));
         _professionsPanel = _panels[^1];
-        // ⭐ ON SCREEN BUT ROLLED UP (Joe, 2026-09-07). Hidden meant a player had to know it existed
-        // and go to Settings to find it; folded means it is a title bar they can open in one click.
+        // ⭐ ON SCREEN (Joe, 2026-09-07), AND OPEN SINCE B1 (2026-10-04). Hidden meant a player had
+        // to know it existed and go to Settings to find it.
         // *A panel you cannot see and a panel you have not opened are different states.*
         _professionsPanel.Visible = true;
 
@@ -5939,6 +5939,9 @@ public partial class Main : Control
 
     private Label _laborerReadout = null!;
 
+    /// <summary>The Professions window's contents — visible exactly when the window is unfolded (the probe asks).</summary>
+    private VBoxContainer _professionsBody = null!;
+
     /// <summary>How many people are actually on this kind of work right now.</summary>
     private static int WorkingAt(SimWorld world, JobKind kind)
     {
@@ -6817,8 +6820,14 @@ public partial class Main : Control
             wrong.Add("Stock limits should start hidden and unticked");
         }
 
+        // B1 (Joe, 2026-10-04): the Professions window is shown AND unfolded at the founding.
+        if (!_professionsPanel.Visible || !_professionsBody.Visible)
+        {
+            wrong.Add("Professions should start shown and open");
+        }
+
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked"
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
