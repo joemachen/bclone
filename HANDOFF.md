@@ -1,5 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D484 IN §7. B1 (THE PROFESSIONS WINDOW STARTS OPEN) IS PLAYED, MERGED AND PUSHED (D484, D485). NEXT: B2.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D486 IN §7. B2 ("TREE" NOT IN SETTINGS UNTIL THE TREE IS SHOWN) IS BUILT ON `claude/adoring-rubin-l6widh`, UNPLAYED (D486). NEXT: JOE PLAYS B2, THEN B3.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATE NIGHT) — D486, FROM A CLOUD SESSION.**
+>
+> **State:** `main` = `db98952` (D485), unchanged. **B2 is built on `claude/adoring-rubin-l6widh`** (off `main`, pushed —
+> the cloud harness pushes only to the branch it names, so not a `slice/` name; see the D486 trap) — **not played, not
+> merged.** One commit: `RefreshTheTree` gates the Tree window's Settings tick on `ShownTheTechTree`, the latch the bar
+> button already reads; the `windows:` probe line adds *"Tree is not in Settings until the tree is shown"* (**1 red of 1**
+> with the gate forced to `true`); `tech-tree-map.md §3.6` says so. At B2, on Linux: **1421 passing, 0 failing, 5 skipped of
+> 1426 (6m08); no golden moved (`git diff` of the 15+-digit grep: identical); view 0 warnings; probe green, 0 ⛔** — bar
+> height 151, tile centres ✅, `new game:` 400 of 400 (bake 465 ms), windows ✅ all 7.
+>
+> **▶️ NEXT:** Joe plays B2 on Windows (`run.bat` — a new village: Settings → Windows lists six, no *Tree*; once the first
+> stone or iron unlock shows the tree, *Tree* appears in Settings with the bar button) and merges the branch at his word.
+> Then **B3** (*What's here*: height bound to contents, opens in front of the docked panels, first beside its tile then
+> where the player left it) — the rest of B is in the banners below.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (NIGHT) — D484, FROM A CLOUD SESSION.**
 >
 > **State (D485):** ✅ **Joe played B1 (*"looks good. merge it."*) and `slice/professions-open` is merged `--no-ff` to `main`
@@ -4516,6 +4532,19 @@ Read `git status` after staging, every time.
   `apt-get update && apt-get install -y dotnet-sdk-8.0` gave 8.0.131 in `/usr/lib/dotnet`; NuGet restored; all four
   lines ran green. `DOTNET_ROOT` pointing at an empty `~/.dotnet` did not break the suite, the build or Godot, but the
   hook now points it at `/usr/lib/dotnet` when that is where the SDK is.
+
+## ⛔ THE TRAPS B2 (D486) PAID FOR — A LIST BUILT ONCE, AND A BRANCH NAME THAT IS NOT YOURS
+
+- **Settings builds one tick per window ONCE (`BuildSettingsPanel` walks `_windows`), so a window gated on a latch
+  is listed from the founding unless its tick is gated too.** The Tree's bar button waited on `ShownTheTechTree`; its
+  Settings tick did not. Fixed in `RefreshTheTree` (the tick's `Visible` follows the latch). **The next window that
+  appears mid-game must gate its tick the same way** — today the Tree is the only one of the seven; the `windows:` probe
+  line checks only the Tree, so a new gated window wants its own clause.
+- **A cloud session is bound to the branch the harness names (here `claude/adoring-rubin-l6widh`) and may push only
+  there.** The handoff's *"each B item on its own `slice/<name>`"* cannot be followed in the cloud; the B item goes on
+  the assigned branch, off `main`, and Joe merges that branch at his word. Say which branch in the banner.
+- **`( long command ) &` inside a backgrounded tool call returns at once** — the "completed" notice is the wrapper, not
+  the suite. Wait on the suite's own output (`until grep -q '^exit' file`), not on the notice.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
