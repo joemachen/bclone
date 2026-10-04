@@ -2,7 +2,7 @@
 # SessionStart: make a Claude Code CLOUD session able to run CLAUDE.md's four verification lines.
 # Does nothing on Joe's machine (CLAUDE_CODE_REMOTE is only set in the cloud).
 #
-#   1. the .NET 8 SDK (the suite and the view build)        -> ~/.dotnet
+#   1. the .NET 8 SDK (the suite and the view build)        -> ~/.dotnet, else Ubuntu's package
 #   2. Godot 4.7.1 .NET, Linux, for the headless probe       -> ~/godot, exported as $GODOT
 #   3. a NuGet restore of the solution and the view
 #
@@ -23,8 +23,17 @@ if ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
   say "installing the .NET 8 SDK..."
   curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
     && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir "$DOTNET_ROOT" >/tmp/dotnet-install.log 2>&1 \
-    || say "⛔ .NET 8 install FAILED (see /tmp/dotnet-install.log) — is dot.net / builds.dotnet.microsoft.com allowed?"
+    || say "⚠️ .NET 8 from Microsoft FAILED (see /tmp/dotnet-install.log) — is builds.dotnet.microsoft.com allowed?"
 fi
+# ⭐ Fallback (D484): Ubuntu's own archive ships the .NET 8 SDK, and a cloud environment whose network
+# policy refuses builds.dotnet.microsoft.com (dot.net's redirect target) still allows the archive.
+if ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
+  say "trying Ubuntu's dotnet-sdk-8.0..."
+  (apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq dotnet-sdk-8.0) >/tmp/dotnet-apt.log 2>&1 \
+    || say "⛔ .NET 8 install FAILED both ways (see /tmp/dotnet-install.log, /tmp/dotnet-apt.log)"
+fi
+# The package lives in /usr/lib/dotnet, not ~/.dotnet — point DOTNET_ROOT at whichever holds the SDK.
+[ ! -x "$HOME/.dotnet/dotnet" ] && [ -x /usr/lib/dotnet/dotnet ] && export DOTNET_ROOT=/usr/lib/dotnet
 {
   echo "export DOTNET_ROOT=\"$DOTNET_ROOT\""
   echo "export PATH=\"$DOTNET_ROOT:$DOTNET_ROOT/tools:\$PATH\""
