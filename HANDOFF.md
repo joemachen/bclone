@@ -1,5 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D494 IN §7. B4 SLICES 2–3 (THE DESTROY BRUSH, SIM AND VIEW) ARE BUILT ON `slice/destroy-brush-sim` — UNPLAYED (D493, D494). NEXT: JOE PLAYS THEM; THEN B5, B6.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D495 IN §7. B4 (THE DESTROY BRUSH, FARMS OVER TREES) IS DONE — PLAYED, MERGED AND PUSHED (D490–D495). NEXT: B5 (VERIFY AND REPORT), THEN B6.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B4 DONE) — D495, ON WINDOWS.**
+>
+> **State (D495):** ✅ **B4 is done.** Joe played the destroy brush (*"played and it all looks good"*);
+> `slice/destroy-brush-sim` (slices 2–3, D493–D494) is merged `--no-ff` to `main` and pushed. No branch is open.
+>
+> **▶️ NEXT, IN JOE'S ORDER:**
+> - **B5 — homes on forested tiles: verify and report.** He thinks this already works: laborers clear a building's
+>   footprint first, cleared trees do not regrow, trees between buildings may, and homes never go on stone or iron
+>   seams. Check `CanBuildAt` / site choice and regrowth against a played opening. **Change nothing unless it is
+>   wrong; report to Joe.**
+> - **B6 — `quarry_unlock_stone` 100 → 200**, measured on the harness (`tools/harness/`, D420's arms), its own commit.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B4 SLICES 2 AND 3) — D494, ON WINDOWS.**
 >
 > **State (D494):** `slice/destroy-brush-sim` (off `main`, not pushed) holds **slice 2 (the destroy brush in the sim,

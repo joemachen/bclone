@@ -1,6 +1,6 @@
 # Spec: The destroy brush, and farms painted over trees
 
-**Decisions:** D490 (this document, B4), D491 (Joe took every recommendation in §8; slice 1 built), D492 (slice 1 merged), D493 (slice 2 built), D494 (slice 3 built). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
+**Decisions:** D490 (this document, B4), D491 (Joe took every recommendation in §8; slice 1 built), D492 (slice 1 merged), D493 (slice 2 built), D494 (slice 3 built), D495 (slices 2–3 played and merged). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
 (destructive) brush; everything painted is destroyed and trees do not grow back; a farmer may paint
 fields over trees but cannot farm a tile until its trees are gone; farm "give land" must not paint stone
 or iron seams*, and his four answers: (a) destroyed ground grows trees again **only if a forester replants
@@ -13,8 +13,8 @@ D138 (the village clears a site's ground, not the player), D126 (the valley grow
 stood), D127 (harvest paint is a standing instruction), D157 (footprints cleared in build-queue order),
 D162 (the farm), D220 (a planted sapling waits a period), D347 (a seam shrinks tile by tile), D452
 (forester planting counts Grass only), D61 (livestock is blocked behind trade).
-**Status:** ✅ **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), PLAYED AND MERGED (D492).** 🔨 **SLICES 2 AND 3
-(§3.1–§3.2 in the sim, D493; §5's view, D494) BUILT — UNPLAYED.** Joe plays them together. Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
+**Status:** ✅ **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), PLAYED AND MERGED (D492).** ✅ **SLICES 2 AND 3
+(§3.1–§3.2 in the sim, D493; §5's view, D494) BUILT, PLAYED AND MERGED (D495). THE SPEC IS COMPLETE.** Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
 
 ---
 
