@@ -472,6 +472,16 @@ public sealed record SimConfig
     [JsonPropertyName("cut_ticks")]
     public int CutTicks { get; init; } = 4;
 
+    /// <summary>
+    /// Ticks a laborer spends destroying what stands on one tile — the destroy brush's work
+    /// (D493, `destroy-brush.md §4`). <b>The same as clearing it</b> (<see cref="CutTicks"/>,
+    /// which a laborer spends on a tree, a rock or an iron seam alike): measured, there is no
+    /// separate dig time to match, and destroying should not be a faster way to spend a seam
+    /// than digging it.
+    /// </summary>
+    [JsonPropertyName("destroy_ticks_per_tile")]
+    public int DestroyTicksPerTile { get; init; } = 4;
+
     /// <summary>How many people can work one forester's hut at once.</summary>
     /// <remarks>
     /// <para>
@@ -4228,6 +4238,11 @@ public sealed record SimConfig
         if (CutTicks <= 0)
         {
             throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
+        }
+
+        if (DestroyTicksPerTile <= 0)
+        {
+            throw new SimConfigException($"destroy_ticks_per_tile must be greater than zero (got {DestroyTicksPerTile}).");
         }
 
         // ⚠️ ZERO IS REFUSED RATHER THAN TREATED AS "OFF". A rest of nought ticks is the old

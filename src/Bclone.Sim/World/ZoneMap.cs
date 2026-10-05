@@ -95,6 +95,9 @@ public sealed class ZoneMap
 
     private readonly bool[] _harvestSub;
 
+    /// <summary>The destroy brush's marks, per sub-tile (D493) — the state, hashed. The tile summary is <c>_destroy</c>.</summary>
+    private readonly bool[] _destroySub;
+
     // ---------------------------------------------------------------
     //  Plots — a household's ground (D386, `specs/organic-housing.md §3.4`)
     // ---------------------------------------------------------------
@@ -204,6 +207,10 @@ public sealed class ZoneMap
 
     private readonly byte[] _harvestCount;
 
+    private readonly bool[] _destroy;
+
+    private readonly byte[] _destroyCount;
+
     private readonly int _width;
     private readonly int _height;
     private readonly int _minX;
@@ -231,6 +238,9 @@ public sealed class ZoneMap
         _residentialCount = new byte[_width * _height];
         _workGroundCount = new byte[_width * _height];
         _harvestCount = new byte[_width * _height];
+        _destroySub = new bool[_subWidth * _subHeight];
+        _destroy = new bool[_width * _height];
+        _destroyCount = new byte[_width * _height];
         _walls = new byte[_harvestCount.Length];
         _plot = new int[_width * _height];
         _lane = new byte[_width * _height];
@@ -1141,6 +1151,90 @@ public sealed class ZoneMap
 
     /// <summary>Every painted tile, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<bool> Harvest => _harvest;
+
+    // ---------------------------------------------------------------
+    //  The destroy brush (D493, `specs/destroy-brush.md §3.1`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// How many tiles are marked to be destroyed — <b>the early-out</b>: a village that has never
+    /// used the red brush pays one compare (the harvest layer's argument, `PaintedHarvest`).
+    /// </summary>
+    public int DestroyTiles { get; private set; }
+
+    /// <summary>Whether this tile is marked for the village to destroy what stands on it.</summary>
+    public bool IsDestroy(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _destroy[index];
+    }
+
+    /// <summary>Whether any quarter of this tile carries a destroy mark — one read of the kept count.</summary>
+    public bool AnyDestroyOn(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _destroyCount[index] > 0;
+    }
+
+    /// <summary>Mark or unmark one tile. True if it changed anything.</summary>
+    public bool SetDestroy(GridPos position, bool marked) =>
+        SetWholeTile(position, at => SetDestroy(at, marked));
+
+    /// <summary>
+    /// Mark or unmark one SUB-tile — the harvest layer's shape exactly: the tile counts as marked
+    /// at half its quarters, and the summary is kept as the sub-tiles change, never recomputed.
+    /// </summary>
+    public bool SetDestroy(SubTile at, bool marked)
+    {
+        int sub = SubIndexOf(at);
+        if (sub < 0 || _destroySub[sub] == marked)
+        {
+            return false;
+        }
+
+        _destroySub[sub] = marked;
+        Edits++;
+
+        int tile = IndexOf(at.Tile);
+        if (tile < 0)
+        {
+            return true;
+        }
+
+        _destroyCount[tile] = (byte)(_destroyCount[tile] + (marked ? 1 : -1));
+
+        bool nowMarked = _destroyCount[tile] >= SubTile.HalfATile;
+        if (nowMarked == _destroy[tile])
+        {
+            return true;
+        }
+
+        _destroy[tile] = nowMarked;
+        DestroyTiles += nowMarked ? 1 : -1;
+
+        int place = _markedToDestroy.BinarySearch(tile);
+        if (nowMarked)
+        {
+            _markedToDestroy.Insert(place < 0 ? ~place : place, tile);
+        }
+        else if (place >= 0)
+        {
+            _markedToDestroy.RemoveAt(place);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// The marked tiles, in map order — so the laborers' search walks the marks, not the valley.
+    /// Derived from <c>_destroy</c> and never hashed (D335), written only beside it.
+    /// </summary>
+    public IReadOnlyList<int> MarkedToDestroy => _markedToDestroy;
+
+    private readonly List<int> _markedToDestroy = new();
+
+    /// <summary>Every marked sub-tile, in a fixed order — the state, hashed and drawn.</summary>
+    public IReadOnlyList<bool> DestroySub => _destroySub;
 
     private int IndexOf(GridPos position)
     {

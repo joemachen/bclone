@@ -270,6 +270,21 @@ public partial class VillageMap : Control
     /// </remarks>
     private static readonly Color HarvestWaitingColour = new("#d8892f", 0.07f);
 
+    /// <summary>The red brush's ink, at full strength — the bar's glyph borrows it, so the button and the map agree.</summary>
+    /// <remarks>⚠️ Declared ABOVE the two colours made from it: static fields initialise in source order, and below them it would still be transparent black when they read it.</remarks>
+    public static readonly Color DestroyTone = new("#a8202a");
+
+    /// <summary>Ground the village has been told to DESTROY, goods and all (D494).</summary>
+    /// <remarks>
+    /// <b>Red, darker and stronger than the harvest orange</b> (Joe: *"a red (destructive) brush"*),
+    /// because the two mean different losses — orange is *taken and kept*, red is *taken and lost*.
+    /// ⚠️ Red against orange is the pair a red-green colour-blind eye separates worst, so the
+    /// difference is carried by LIGHTNESS as well as hue (this is far darker) and by the stronger
+    /// fill — and it wants Joe's eyes in play (D332's argument for the cool work-ground wash).
+    /// </remarks>
+    private static readonly Color DestroyColour = DestroyTone with { A = 0.34f };
+
+
     /// <summary>Ground a building has been given to work (D86).</summary>
     /// <remarks>
     /// <b>Cool, where the other two zone washes are warm</b>, because it means a different
@@ -287,6 +302,8 @@ public partial class VillageMap : Control
     private static readonly Color ResidentialEdge = new("#b98a52", 0.55f);
 
     private static readonly Color HarvestEdge = new("#d8892f", 0.70f);
+
+    private static readonly Color DestroyEdge = DestroyTone with { A = 0.85f };
 
     private static readonly Color WorkGroundEdge = new("#4a9ba8", 0.65f);
 
@@ -696,6 +713,12 @@ public partial class VillageMap : Control
         /// <summary>Rubbing that marking out.</summary>
         Unmarking,
 
+        /// <summary>Marking what the village is to destroy, goods and all (D494, `destroy-brush.md §3.1`).</summary>
+        Destroying,
+
+        /// <summary>Taking those red marks back off.</summary>
+        Undestroying,
+
         /// <summary>Giving ground to one building (D86). <b>Not on the bar</b> — see below.</summary>
         PaintingGround,
 
@@ -769,6 +792,7 @@ public partial class VillageMap : Control
         _demolishing = tool == MapTool.Demolishing;
         _moving = tool == MapTool.Moving;
         _emptying = tool == MapTool.Emptying;
+        _destroying = tool is MapTool.Destroying or MapTool.Undestroying;
         _moveFrom = null;
 
         Tool = tool;
@@ -794,6 +818,13 @@ public partial class VillageMap : Control
             direction < 0 ? MapTool.Unmarking : MapTool.Harvesting,
             harvest: mode,
             brush: direction);
+
+    /// <summary>Start or stop marking what the village is to destroy (D494).</summary>
+    public void BeginDestroying(int direction) =>
+        SetTool(direction < 0 ? MapTool.Undestroying : MapTool.Destroying, brush: direction);
+
+    /// <summary>Whether the red brush is in hand — painting or taking back (D494).</summary>
+    private bool _destroying;
 
     /// <summary>Start or stop giving ground to one building (D86).</summary>
     public void BeginPaintingGround(int workplaceId, int direction) =>
@@ -1371,6 +1402,31 @@ public partial class VillageMap : Control
                 continue;
             }
 
+            // ⭐ THE RED BRUSH (D494, `destroy-brush.md §3.1`): it marks, the village does the work —
+            // and like the harvest brush, a drag over mixed ground skips what it cannot take, with one
+            // sentence for the stroke. Tested before the harvest and residential arms, which claim
+            // anything that reaches them.
+            if (_destroying)
+            {
+                if (direction < 0)
+                {
+                    _world!.EraseDestroy(at);
+                    continue;
+                }
+
+                PlacementVerdict red = _world!.PaintDestroy(at);
+                if (!red.Allowed)
+                {
+                    refused = red.Reason;
+                }
+                else if (red.HasWarning)
+                {
+                    warning = red.Warning;
+                }
+
+                continue;
+            }
+
             if (_harvestMode is not null)
             {
                 if (direction < 0)
@@ -1681,6 +1737,16 @@ public partial class VillageMap : Control
         // from a third direction. It has to be tested BEFORE the `_brush` arms, for the same
         // reason the ground brush is: those arms are written as if residential were the only
         // brush, and they claim anything that reaches them.
+        // The red brush's own sentence (D494) — tested before the residential arms for the reason
+        // the harvest brush's is: they claim any brush that reaches them.
+        if (_destroying)
+        {
+            return _brush < 0
+                ? $"Drag to take the red marks back{TheBrushKeys(erasing: true)}"
+                : "Drag to mark trees, stone and iron for the village to destroy — the goods are lost, "
+                    + $"and the ground stays bare until a forester plants it{TheBrushKeys(erasing: false)}";
+        }
+
         if (_harvestMode is not null)
         {
             return _brush < 0
@@ -2527,6 +2593,10 @@ public partial class VillageMap : Control
             verdict = owner is null
                 ? PlacementVerdict.No("That building is gone.")
                 : world.CanPaintWorkGround(owner, tile);
+        }
+        else if (_destroying)
+        {
+            verdict = world.CanPaintDestroy(tile);
         }
         else if (_harvestMode is not null)
         {
@@ -3464,6 +3534,7 @@ public partial class VillageMap : Control
 
         var residential = new HashSet<Vector2I>();
         var harvest = new HashSet<Vector2I>();
+        var destroy = new HashSet<Vector2I>();
         var byOwner = new Dictionary<int, HashSet<Vector2I>>();
         var owners = new List<int>();
 
@@ -3541,6 +3612,11 @@ public partial class VillageMap : Control
                     harvest.Add(at);
                 }
 
+                if (zones.DestroySub[index])
+                {
+                    destroy.Add(at);
+                }
+
                 int owner = zones.WorkGroundSub[index];
                 if (owner == 0)
                 {
@@ -3614,6 +3690,10 @@ public partial class VillageMap : Control
 
         FillFrom(working, Layer.Harvest, owner: 0, waiting: false);
         FillFrom(waiting, Layer.Harvest, owner: 0, waiting: true);
+
+        // The red marks (D494): traced and filled like the harvest wash, after it, so a red mark
+        // beside an orange one draws on top — the later instruction is the one that stands.
+        Keep(destroy, Layer.Destroy, DestroyEdge, owner: 0, waiting: false);
 
         for (int i = 0; i < owners.Count; i++)
         {
@@ -3904,6 +3984,7 @@ public partial class VillageMap : Control
             {
                 Layer.Residential => ResidentialColour,
                 Layer.WorkGround => owner == mine ? WorkGroundMine : WorkGroundColour,
+                Layer.Destroy => DestroyColour,
                 _ => waiting ? HarvestWaitingColour : HarvestColour,
             };
 
@@ -5666,7 +5747,7 @@ public partial class VillageMap : Control
     /// ⚠️ The wash and the outline are drawn by different code from the same sub-tiles, so
     /// the layer had to stop being *"whichever colour it came out"*.
     /// </remarks>
-    private enum Layer { Residential, WorkGround, Harvest }
+    private enum Layer { Residential, WorkGround, Harvest, Destroy }
 
     /// <summary>The smoothed borders of every painted region, and what they were traced from.</summary>
     /// <remarks>
@@ -6324,6 +6405,93 @@ public partial class VillageMap : Control
             : !clickable
                 ? $"[widths] heaps: ⛔ a click on the chip at {heap.GetCenter()} resolves to {(hit is null ? "no heap" : hit.ToString())}, not the heap on {store.Tile}"
                 : $"[widths] heaps: ⛔ a heap on {store.Name}'s tile draws {(clear ? "too far from" : "under")} the building — the door-heap is invisible";
+    }
+
+    /// <summary>
+    /// ⭐ The red brush, end to end in the view — <b>a probe clause</b> (D494): with the tool in hand,
+    /// the ghost over a tree says fine; a real stroke marks it; the zone trace makes a red fill of
+    /// it; the fill's colour is a colour; and the take-back stroke leaves the village as it was.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ The probe cannot see drawing (D340): this checks the TRACE the draw reads, and that the
+    /// colour it reads is not transparent — which is what a static field initialised before the tone
+    /// it is made from would be. Posed on the first tree the brush will take, and put back.
+    /// </remarks>
+    public string ARedStrokeMarksAndTraces()
+    {
+        SimWorld world = _world!;
+        GridPos? tree = null;
+        for (int i = 0; i < world.Map.Tiles.Count && tree is null; i++)
+        {
+            GridPos at = world.Zones.PositionOf(i);
+            if (world.Map.Tiles[i] == Terrain.Forest && world.CanPaintDestroy(at).Allowed && !world.Zones.AnyDestroyOn(at))
+            {
+                tree = at;
+            }
+        }
+
+        if (tree is not GridPos tile)
+        {
+            return "no tree the red brush could take";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        int before = world.Zones.DestroyTiles;
+        SubTile centre = SubTile.Of(tile, SubTile.PerTile / 2, SubTile.PerTile / 2);
+        try
+        {
+            BeginDestroying(1);
+            if (ColourForTheBrushOn(tile, 1) != GhostFine)
+            {
+                faults.Add("the ghost over a tree is not the fine colour");
+            }
+
+            // ⚠️ And over bare grass it is REFUSED — the pose that tells the red verdict from the
+            // homes brush's, which takes grass and trees alike (the tree alone scored zero).
+            for (int i = 0; i < world.Map.Tiles.Count; i++)
+            {
+                GridPos open = world.Zones.PositionOf(i);
+                if (world.Map.Tiles[i] == Terrain.Grass && world.CanPaintResidential(open).Allowed)
+                {
+                    if (ColourForTheBrushOn(open, 1) != GhostRefused)
+                    {
+                        faults.Add($"the ghost over bare grass at {open} is not refused");
+                    }
+
+                    break;
+                }
+            }
+
+            PaintAround(centre, 1);
+            if (!world.Zones.IsDestroy(tile))
+            {
+                faults.Add("a red stroke over a tree did not mark it");
+            }
+
+            TraceTheZonesIfTheyMoved(world.Zones);
+            bool traced = _zoneFills.Exists(f => f.Layer == Layer.Destroy && f.Triangles.Length > 0);
+            if (!traced)
+            {
+                faults.Add("the zone trace made no red fill of the mark");
+            }
+
+            if (DestroyColour.A < 0.2f || DestroyColour.R <= DestroyColour.G)
+            {
+                faults.Add($"the red fill's colour is {DestroyColour}");
+            }
+
+            PaintAround(centre, -1);
+            if (world.Zones.DestroyTiles != before)
+            {
+                faults.Add($"the take-back stroke left {world.Zones.DestroyTiles - before} tiles marked");
+            }
+        }
+        finally
+        {
+            SetTool(MapTool.None);
+        }
+
+        return faults.Count == 0 ? string.Empty : string.Join("; ", faults);
     }
 
     private static readonly Color HeapEdge = new(0f, 0f, 0f, 0.45f);

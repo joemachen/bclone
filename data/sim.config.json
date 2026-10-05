@@ -537,6 +537,10 @@
   "rest_ticks": 3,
 
   "cut_ticks": 4,
+  // The destroy brush (D493): a laborer spends this long laying one tile bare. The same as
+  // clearing it (cut_ticks covers a tree, a rock and a seam alike), so destroying is never a
+  // faster way to spend a seam than digging it.
+  "destroy_ticks_per_tile": 4,
   // DERIVED (VillageEconomy.RequiredForesterSeats), not picked. 3 -> 6.
   // Enough hands to keep the woodcutters in logs and still leave one for
   // building - the "+1" in the derivation is what stops the village

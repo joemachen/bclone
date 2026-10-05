@@ -1,6 +1,6 @@
 # Spec: The destroy brush, and farms painted over trees
 
-**Decisions:** D490 (this document, B4), D491 (Joe took every recommendation in §8; slice 1 built). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
+**Decisions:** D490 (this document, B4), D491 (Joe took every recommendation in §8; slice 1 built), D492 (slice 1 merged), D493 (slice 2 built), D494 (slice 3 built). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
 (destructive) brush; everything painted is destroyed and trees do not grow back; a farmer may paint
 fields over trees but cannot farm a tile until its trees are gone; farm "give land" must not paint stone
 or iron seams*, and his four answers: (a) destroyed ground grows trees again **only if a forester replants
@@ -13,8 +13,8 @@ D138 (the village clears a site's ground, not the player), D126 (the valley grow
 stood), D127 (harvest paint is a standing instruction), D157 (footprints cleared in build-queue order),
 D162 (the farm), D220 (a planted sapling waits a period), D347 (a seam shrinks tile by tile), D452
 (forester planting counts Grass only), D61 (livestock is blocked behind trade).
-**Status:** ✅ **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), PLAYED AND MERGED (D492). Slices 2–3 (the
-destroy brush) NOT STARTED.** Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
+**Status:** ✅ **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), PLAYED AND MERGED (D492).** 🔨 **SLICES 2 AND 3
+(§3.1–§3.2 in the sim, D493; §5's view, D494) BUILT — UNPLAYED.** Joe plays them together. Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
 
 ---
 
@@ -57,7 +57,11 @@ more). Traced in the code beside each.
 
 - **A red brush on the Removal tab, beside Demolish, Take back and Empty.** The same stroke as every other
   brush (`BrushStroke.SubTilesUnder`; left paints, right takes back, alt + wheel sizes it), coloured red so
-  it cannot be mistaken for the harvest brush's orange.
+  it cannot be mistaken for the harvest brush's orange. *(Built, D494: the marks are drawn red — `#a8202a`,
+  far darker than the orange so the pair separates by lightness as well as hue for a red-green colour-blind
+  eye — shown and hidden with the harvest marks' own map toggle. ⚠️ **The ghost under the cursor keeps the
+  green / amber / red every tool uses** — fine, warned, refused — because a red ghost would read as refused;
+  the red is the mark, not the preview.)*
 - **It marks; it does not erase.** Painting a tile **marks it to be destroyed**, and the village does the
   work (§8, Q1 — Joe's call; this is the recommendation). That is D100's rule — *the village clears the
   ground, not the player* — and it keeps destruction legible: the player sees the red paint, sees a laborer
@@ -67,7 +71,16 @@ more). Traced in the code beside each.
   take a sapling — it yields nothing; this one can.)
 - **What it refuses:** Water, a tile something stands on, a quarry's or mine's working face (a face is a
   building's ground — take it back from the building first), and ground with nothing on it. Field, Sown
-  and Ripe are farm ground — refused; taking a farm's ground back already returns it to Grass.
+  and Ripe are farm ground — refused; taking a farm's ground back already returns it to Grass. *(Built,
+  D493: "Something stands there — demolish it first."; "That {seam} is the {building}'s — take it back
+  from the building first."; "There is nothing there to destroy.")*
+- **One instruction per tile** (D493): painting red over orange takes the harvest mark off; the harvest
+  brush refuses a red tile (*"That is marked to be destroyed — take the mark back first."*). A tree marked
+  both ways would ask a laborer to keep the logs and lose them.
+- **Where it ranks for the laborers** (D493): after building footprints, wood a building waits on, and a
+  farm's trees — and **before ordinary harvest paint**, the farm's reason: painted wood grows back for ever,
+  so a red mark ranked by distance among it would wait behind a coppice that never runs out. No limit holds
+  it back; nothing is produced.
 - **The goods are lost** (Joe, b). Nothing is carried and nothing is left on the ground. The stone does
   **not** count toward `StoneEverDug`, nor iron toward the smithy's count, nor logs toward `LogsEverFelled`
   — the quarry and the smithy are earned by digging, and a brush that unlocked them by deletion would be a
@@ -123,9 +136,9 @@ trees stay — *animals can live in the woods.* Nothing is built for it now.
 
 ## 4. Data
 
-- `data/sim.config.json`: **`destroy_ticks_per_tile`** — how long a laborer spends destroying one tile.
-  ⚠️ **No number is proposed here** (trap: *a number in a design sentence is a claim about the
-  generator*). Slice 1 measures what felling and digging take today and proposes it beside them.
+- `data/sim.config.json`: **`destroy_ticks_per_tile`: 4** — how long a laborer spends destroying one tile
+  (D493). **Measured: clearing costs `cut_ticks` (4) whatever stands — a tree, a rock or a seam alike** —
+  so destroying costs the same, and is never a faster way to spend a seam than digging it.
 - No new good, building or job. The brush is a tool, so it is in the view's tool list, not in data.
 
 ## 5. Architecture
@@ -134,13 +147,19 @@ trees stay — *animals can live in the woods.* Nothing is built for it now.
   copy), hashed sparse; `CanPaintDestroy` / `PaintDestroy` / `EraseDestroy` beside the harvest trio;
   `SimWorld.Destroy(tile)` through `SetTerrain` (D85's one door) setting the laid-bare fact; the work joins
   `TryHelpWithHarvest`'s fallback as its own branch of `NearestHarvest`, so one search answers *"what
-  ground needs a hand?"* rather than two.
+  ground needs a hand?"* rather than two. *(Built, D493: `NearestMarkedToDestroy` walks `ZoneMap.MarkedToDestroy`,
+  the marked tiles in map order; the `Clearing` errand destroys when its tile is red; a mark on ground with nothing
+  left to destroy retires at `SetTerrain`, read off `ZoneMap.AnyDestroyOn`'s kept count.)*
 - **The laid-bare fact** lives beside `_youngSapling` in `GeneratedMap` (one bool per tile; set by
   `Destroy`, cleared by any tile becoming Forest or Sapling).
-- **View:** a `MapTool.Destroying` / `Undestroying` pair, a red zone colour and red ghost, a Removal-tab
-  button with its own `ToolMark` glyph, the drag's one-message rule (`VillageMap` ~1464).
+- **View:** a `MapTool.Destroying` / `Undestroying` pair, a red zone colour (the ghost keeps the shared
+  fine/warned/refused colours — D494), a Removal-tab button with its own `ToolMark` glyph (a tree and a rock
+  struck through in red), the drag's one-message rule (`VillageMap` ~1464). *(Built, D494.)*
 - ⛔ **Nothing rebuilt per tick** (CLAUDE.md). The destroy layer keeps a count of marked tiles beside its
   bits, the way `ZoneMap` keeps its other indices, so *"is anything marked to destroy?"* is one read.
+- **The hash** (D493): the destroy layer is mixed sparse and **tagged** — without the tag, a red and an orange
+  mark on the same sub-tile would hash the same; the laid-bare tiles are mixed sparse and untagged, because a
+  laid-bare tile is never Sapling terrain and a young sapling always is, so the terrain already keeps them apart.
 
 ## 6. Slices (one commit each, Joe plays each)
 

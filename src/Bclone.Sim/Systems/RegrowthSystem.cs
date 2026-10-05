@@ -145,6 +145,14 @@ internal sealed class RegrowthSystem : ISimSystem
             return false;
         }
 
+        // ⛔ NOR WHERE THE DESTROY BRUSH LAID THE GROUND BARE (Joe, B4, D493: *"trees do not grow
+        // back"*). A forester's sapling is the way back, and it clears the fact itself
+        // (`GeneratedMap.SetTerrain`).
+        if (world.Map.IsLaidBare(tile))
+        {
+            return false;
+        }
+
         if (world.Zones.IsResidential(tile) || world.SomethingStandsAt(tile))
         {
             return false;

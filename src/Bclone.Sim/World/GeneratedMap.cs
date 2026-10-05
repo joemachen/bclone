@@ -210,6 +210,9 @@ public sealed class GeneratedMap
     /// <summary>Saplings a forester planted that the sweep has not yet passed over (D220).</summary>
     private readonly bool[] _youngSapling;
 
+    /// <summary>Tiles the destroy brush laid bare, which no wood creeps back onto (D493).</summary>
+    private readonly bool[] _laidBare;
+
     public GeneratedMap(
         int width,
         int height,
@@ -227,6 +230,7 @@ public sealed class GeneratedMap
         _terrain = terrain;
         _crop = new byte[terrain.Length];
         _youngSapling = new bool[terrain.Length];
+        _laidBare = new bool[terrain.Length];
         FoundingSite = foundingSite;
 
         // The valley's natural woodland, recorded once. Everything the generator painted as
@@ -370,6 +374,39 @@ public sealed class GeneratedMap
     public IReadOnlyList<bool> YoungSaplings => _youngSapling;
 
     /// <summary>
+    /// Whether the destroy brush laid this tile bare — <b>no wood grows back onto it</b> until a
+    /// tree stands here again (Joe, B4, D493: *"trees do not grow back"* — and only a forester's
+    /// planting brings them; `destroy-brush.md §3.2`).
+    /// </summary>
+    /// <remarks>
+    /// State the player chose and the regrowth sweep reads, so it is hashed (sparse — a village
+    /// that never destroys anything mixes nothing). ⚠️ <b>Cleared by the same door that sets
+    /// <see cref="HasEverBeenWooded"/></b>: any tile becoming Forest or Sapling stops being bare,
+    /// and the only thing that can make a laid-bare tile wood is a forester planting it.
+    /// </remarks>
+    public bool IsLaidBare(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index >= 0 && _laidBare[index];
+    }
+
+    /// <summary>Lay a tile bare (the destroy brush's work). True if it changed anything.</summary>
+    public bool LayBare(GridPos position)
+    {
+        int index = IndexOf(position);
+        if (index < 0 || _laidBare[index])
+        {
+            return false;
+        }
+
+        _laidBare[index] = true;
+        return true;
+    }
+
+    /// <summary>Which tiles are laid bare, for the state hash.</summary>
+    public IReadOnlyList<bool> LaidBare => _laidBare;
+
+    /// <summary>
     /// Change what a tile is made of. Returns whether it changed anything.
     /// </summary>
     /// <remarks>
@@ -402,10 +439,12 @@ public sealed class GeneratedMap
 
         _terrain[index] = terrain;
 
-        // Ground that has ever held trees remembers it — see `HasEverBeenWooded`.
+        // Ground that has ever held trees remembers it — see `HasEverBeenWooded` — and stops being
+        // laid bare (D493): a forester's sapling is the way back the destroy brush leaves.
         if (terrain is Terrain.Forest or Terrain.Sapling)
         {
             _everWooded[index] = true;
+            _laidBare[index] = false;
         }
 
         return true;
