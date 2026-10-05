@@ -62,7 +62,14 @@ public sealed class FoodConservationTests
     // are alive at fifty (D463: 9), 8 of them with every source producing (2 4 8 10 11 12 13 16 —
     // 3 and 15 fished nothing); seed 6 died with no fish. Seed 4 lives with 14 (fish 25,905, meat
     // 14,570, wheat 35,158).
-    [InlineData(4UL, true)]
+    // ⚠️ AND SEED 14 SINCE D511: farmhands rest at the steading, and the half moved again. Swept over
+    // the same seventeen, main and the slice in one sitting: the ledger held to the unit in all of
+    // them; 6 villages alive at fifty on main (82 people) against 8 on D511 (124). Seed 4 froze in its
+    // first winter — on main too it is a near miss: no woodcutter until the farm's seats close for
+    // winter, and three villagers at cold ~4,900 when firewood reached one home at t381; on D511 the
+    // first split landed thirty ticks later, after a chore that history had moved. Seed 14 lives on
+    // BOTH arms with every source producing (D511: 16 alive; fish 22,479, meat 12,451, wheat 35,886).
+    [InlineData(14UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
     {

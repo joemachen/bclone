@@ -705,7 +705,12 @@ public sealed class Villager
     /// enum through both and fails if it gets an enum name back.
     /// </para>
     /// </remarks>
-    public string DescribeState(string? workplaceName = null)
+    /// <param name="atTheSteading">
+    /// Whether they rest at their farm just now rather than at home (D511) — the sim's
+    /// <c>RestsAtTheSteading</c>, asked by the caller, so a farmhand reads <em>"resting at
+    /// Eastfield"</em> where they are, not <em>"resting at home"</em> where they are not.
+    /// </param>
+    public string DescribeState(string? workplaceName = null, bool atTheSteading = false)
     {
         if (JustAte && Alive)
         {
@@ -723,14 +728,14 @@ public sealed class Villager
         VillagerState.TravelingToWater => "walking to the water",
         VillagerState.TravelingToGame => "walking out to the woods",
         VillagerState.Hunting => "hunting in the woods",
-            VillagerState.TravelingHome => "walking home",
+            VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}" : "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
             VillagerState.TravelingToHut => $"walking to {where}",
             VillagerState.MakingFirewood => SplitsThisStint > 0
             ? $"splitting logs into firewood, the {SplitsThisStint + 1}{(SplitsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} split of the day"
             : "splitting logs into firewood",
-            VillagerState.Resting => "resting at home",
+            VillagerState.Resting => atTheSteading ? $"resting at {where}" : "resting at home",
             VillagerState.Dead => "dead",
             VillagerState.HaulingToStore => "carrying a load to the store",
             VillagerState.FetchingFromStore => "fetching supplies for home",
@@ -766,6 +771,9 @@ public sealed class Villager
                 : "digging iron at the mine face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
+            VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
+            VillagerState.Tending => $"tending the wheat at {where}",
+            VillagerState.WalkingBackToTheSteading => $"walking back to {where}",
             _ => State.ToString(),
         };
     }

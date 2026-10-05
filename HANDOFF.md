@@ -1,4 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D511 IN §7. THE STEADING REBUILD IS SPECIFIED AND ANSWERED (D511, D512) ON `slice/steading` — BUILDING. THEN THE TITLE AND PAUSE SCREENS.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D513 IN §7. THE STEADING IS BUILT (D513) ON `slice/steading` — UNPLAYED: JOE PLAYS IT, THEN MERGE AT HIS WORD. THEN THE TITLE AND PAUSE SCREENS.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE STEADING BUILT) — D513, ON WINDOWS.**
+>
+> **State (D513):** `main` = D510, pushed. **`slice/steading`** (off `main`, not pushed) holds D511's spec, D512's
+> answers and **the whole feature, sim and view** (`specs/work-from-the-steading.md`): farmhands rest at the farm in
+> spring–autumn, tend their own sown tiles in summer (look only), go home in winter; a load always walks to the house;
+> a worn lane through a field draws over the crop. At D513, Windows: **1520 / 0 / 5 of 1525 (3m58); view 0 warnings;
+> probe green (new line `field lanes:`), bar height 151; the two seam goldens moved, proven to move for this rule only.**
+> `SteadingTests` 11 mutants, 21 reds, no zeros. ⭐ **Measured against main: the harvest went UP (+2 / +6 / +31 % at
+> 10 / 16 / 22 ticks out)**, against the 2026-08 branch's −13 % — so §8 call 3 (*"bring a worse cost back"*) never fired.
+>
+> **▶️ NEXT: Joe plays it** (`run.bat` on the branch — `git checkout slice/steading`):
+> 1. Found a village and paint a farm a little way out. Through spring and autumn its farmhands should stop **at the
+>    farm** between tasks — the card reads *"resting at {farm}"* — and walk home when winter comes.
+> 2. In summer they walk out into the green field, stand a day (*"tending the wheat at {farm}"*), walk back, rest, go
+>    again.
+> 3. ⚠️ **The look to judge:** measured, 9–10 of a farm's ~45 tiles wear to packed in twelve years (main 1–2), and those
+>    lanes now draw **over** the crop. Joe asked for paths through fields (*"absolutely"*); whether this many reads as
+>    right is his eye's call. The yield cost of a lane is *trampled fields*, later — not this slice.
+>
+> Then merge at his word: `git checkout main`, `git merge --no-ff slice/steading`, `git push`. **And ask whether
+> `slice/work-from-the-steading` may go now** — its measurement is superseded by D513's (§7 of the spec). After that,
+> §4's shell order has the title and pause screens.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (STEADING SPECIFIED) — D511, ON WINDOWS.**
 >
@@ -5130,6 +5155,31 @@ Read `git status` after staging, every time.
   project), but never touch a file a mutant is replacing: the script restores its own copy over yours.
 - **Saves are the player's, like settings**: the probe never reads or writes `user://saves` (`_saveFolder` is `null`
   under it); its `save:` line uses `user://probe-saves` and deletes it.
+
+## ⛔ THE TRAPS THE STEADING (D513) PAID FOR — ARRIVING "HOME" HAS SIDE EFFECTS, AND THE CLOCK AFTER A STEP IS TOMORROW'S
+
+- **"Where somebody rests" had two side effects nobody had written next to it.** Arriving to rest runs
+  `UnloadAtHome`, which posts to the household's larder **wherever the villager stands**; and the walk there,
+  `TravelingHome`, counts as **work** on the skill clock (`SkillSystem.OutOnTheWork`). Moving the resting place to the
+  farm would have teleported fetched suppers across the valley and grown farming skill from a look. *⛔ Any new place
+  somebody rests (the tavern and church §4 has waiting, D58's work-in-place) inherits both — read `ArriveAt`'s tail and
+  `OutOnTheWork` before giving anybody a new somewhere to stop.* Guarded here by `ALoadGoesHomeAndTheSteadingIsNotTheLarder`
+  and `TendingTakesNothingGrowsNothingAndDrawsNothing`.
+- **`world.Clock` read after `StepOnce` is the NEXT tick's** — the clock is derived from `Tick`, and the step increments it
+  after the systems run. A census of *"where did they rest this season"* read after a step put a rest decided on autumn's
+  last tick into winter. Classify by `SimClock.FromTick(world.Tick - 1, config)`. And `StepToTheStartOf(season)` steps one
+  tick **into** the season, so a comparison meant for *"the eve of summer"* ran after summer's first decisions. Both guards
+  were red for the test's reason, not the code's; the probe said which.
+- **A one-tick rest is not a rest.** Arriving at the resting place lands as `Resting` with no ticks, and `Decide` asks again
+  the next tick — so anything offered "as a rest ends" fires on arrival too. The walk back from a tend begins a whole
+  `rest_ticks` spell for that reason (M9 found it red).
+- **A dead seed is a question, then a sweep.** Seed 4 froze on the slice and lived on main; traced, it is a first-winter
+  coin main nearly loses too (no woodcutter until the farm's seats close for winter). Only the seventeen-valley sweep on
+  both arms, in one sitting, could say *coin, not mechanism* (8 alive against 6). Run main in a `git worktree` under the
+  scratchpad with the identical scratch test; remove it after.
+- **The farm memory has a second door.** `FieldTilesThisFarmCommitsPerHand` re-reckons the field whenever the haul walk
+  changes — a store filling is enough (D142). A guard that compares a winter lesson against a number read in spring is
+  reading across that door; read on the eve of the lesson.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

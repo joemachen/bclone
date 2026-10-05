@@ -682,9 +682,64 @@ public partial class VillageMap
     private void BuildTheTrailMesh()
     {
         long started = Stopwatch.GetTimestamp();
-        _trailMesh.ClearSurfaces();
-        TrailVerticesWorn = 0;
-        TrailVerticesPacked = 0;
+        LayTrails(_trailMesh, only: null);
+        LastTrailBuildMs = Since(started);
+    }
+
+    /// <summary>
+    /// ⭐ The same trails again, only where they cross a field — drawn over the field's fill and
+    /// under its stalks (D512, `work-from-the-steading.md §8a`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The trail mesh lies on the ground under every field (D358), and a field's fill is opaque, so a
+    /// lane worn through the wheat could not be seen. Joe: *"so should villagers walking through
+    /// fields."* The sim already wore it (every step treads, D424); this is the picture catching up.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The same geometry, not a second idea of a path</b>: <see cref="LayTrails"/> filtered to the
+    /// field tiles, reading the same grades (D362). Rebuilt when the paths or the ground change — the
+    /// two monotonic counters — never a frame (CLAUDE.md, D338). Sown and reaped tiles change the
+    /// ground a few times a day, and this mesh is the size of the fields' lanes, not the valley's.
+    /// </para>
+    /// </remarks>
+    private void BuildTheFieldTrailMesh()
+    {
+        GeneratedMap map = _world!.Map;
+        _fieldTrailTiles.Clear();
+        for (int i = 0; i < _trail.Count; i++)
+        {
+            GridPos tile = _trail[i].Tile;
+            if (map.TerrainAt(tile) is Terrain.Field or Terrain.Sown or Terrain.Ripe)
+            {
+                _fieldTrailTiles.Add(new Vector2I(tile.X, tile.Y));
+            }
+        }
+
+        if (_fieldTrailTiles.Count == 0)
+        {
+            _fieldTrailMesh.ClearSurfaces();
+            return;
+        }
+
+        LayTrails(_fieldTrailMesh, _fieldTrailTiles);
+    }
+
+    /// <summary>The field overlay of the trails (D512) — see <see cref="BuildTheFieldTrailMesh"/>.</summary>
+    private readonly ArrayMesh _fieldTrailMesh = new();
+
+    /// <summary>The worn tiles the last field-overlay build found on a field.</summary>
+    private readonly HashSet<Vector2I> _fieldTrailTiles = new();
+
+    /// <summary>Lay the trails into <paramref name="into"/> — every worn tile, or only those in <paramref name="only"/>.</summary>
+    private void LayTrails(ArrayMesh into, HashSet<Vector2I>? only)
+    {
+        into.ClearSurfaces();
+        if (only is null)
+        {
+            TrailVerticesWorn = 0;
+            TrailVerticesPacked = 0;
+        }
 
         System.Span<GridPos> joined = stackalloc GridPos[8];
         System.Span<Vector2> bend = stackalloc Vector2[BendSegments + 1];
@@ -700,6 +755,12 @@ public partial class VillageMap
             // paint's tracer at a cell a tile, ear-clipped — on this pass's surface for the tiles
             // of this grade (worn is the whole block; packed the packed part of it, over it).
             HashSet<Vector2I> yard = pass == 2 ? _packedBlockTiles : _blockTiles;
+            if (only is not null)
+            {
+                yard = new HashSet<Vector2I>(yard);
+                yard.IntersectWith(only);
+            }
+
             float area = 0f;
             if (yard.Count > 0)
             {
@@ -716,11 +777,11 @@ public partial class VillageMap
                 }
             }
 
-            if (pass == 1)
+            if (only is null && pass == 1)
             {
                 TrailBlockAreaWorn = area;
             }
-            else
+            else if (only is null)
             {
                 TrailBlockAreaPacked = area;
             }
@@ -728,6 +789,11 @@ public partial class VillageMap
             for (int i = 0; i < _trail.Count; i++)
             {
                 (GridPos tile, byte grade) = _trail[i];
+                if (only is not null && !only.Contains(new Vector2I(tile.X, tile.Y)))
+                {
+                    continue;
+                }
+
                 Vector2 here = TrailPointOf(tile);
                 int count = JoinedNeighbours(tile, joined);
 
@@ -796,20 +862,29 @@ public partial class VillageMap
                 }
             }
 
-            if (pass == 1)
+            if (only is null && pass == 1)
             {
                 TrailVerticesWorn = _trailBuilder.VertexCount;
             }
-            else
+            else if (only is null)
             {
                 TrailVerticesPacked = _trailBuilder.VertexCount;
             }
+            else if (pass == 1)
+            {
+                FieldTrailVertices = _trailBuilder.VertexCount;
+            }
+            else
+            {
+                FieldTrailVertices += _trailBuilder.VertexCount;
+            }
 
-            _trailBuilder.AddSurfaceTo(_trailMesh);
+            _trailBuilder.AddSurfaceTo(into);
         }
-
-        LastTrailBuildMs = Since(started);
     }
+
+    /// <summary>Vertices the last field-overlay build laid down, both grades — for the probe (D512).</summary>
+    public int FieldTrailVertices { get; private set; }
 
     /// <summary>A bend (or a band, whose control is its own end) the same whichever end it is read from.</summary>
     private static (Vector2, Vector2, Vector2) Shape(Vector2 from, Vector2 control, Vector2 to) =>

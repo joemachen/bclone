@@ -257,6 +257,26 @@ public enum VillagerState
 
     /// <summary>At the face, digging iron — the stint (D449, `iron-mine.md §3.2`).</summary>
     Mining,
+
+    /// <summary>A summer farmhand walking from the steading to a sown tile to tend it (D511).</summary>
+    /// <remarks>
+    /// ⛔ Not <see cref="TravelingToField"/> reused — that one arrives as a sow or a reap and is read
+    /// as a farmer's work errand by <c>ErrandKind</c>. Tending is the look only: not work, no skill,
+    /// no recall (`specs/work-from-the-steading.md §5`).
+    /// </remarks>
+    WalkingOutToTend,
+
+    /// <summary>On a sown tile, tending it — <c>tend_ticks</c>, then back to the steading (D511).</summary>
+    Tending,
+
+    /// <summary>Walking back to the steading after a tend, to rest there (D511).</summary>
+    /// <remarks>
+    /// ⛔ <b>Not <see cref="TravelingHome"/>, and the reason is the skill clock.</b>
+    /// <c>SkillSystem.OutOnTheWork</c> counts the walk home as work — and a tend walked back as
+    /// <c>TravelingHome</c> would grow farming skill all summer, skill bites yield, and a look would
+    /// have moved the harvest.
+    /// </remarks>
+    WalkingBackToTheSteading,
 }
 
 /// <summary>

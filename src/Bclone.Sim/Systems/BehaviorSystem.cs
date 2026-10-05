@@ -134,6 +134,9 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.StockingTheMarket => "stocking the market",
         VillagerState.WalkingToTheWell => "walking to the well",
         VillagerState.DrawingWater => "drawing water",
+        VillagerState.WalkingOutToTend => "walking out to tend the field",
+        VillagerState.Tending => "tending the field",
+        VillagerState.WalkingBackToTheSteading => "walking back to the steading",
         _ => state.ToString(),
     };
 
@@ -360,7 +363,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.FetchingFromStore:
-                Travel(world, villager, PlanFetch(world, villager)?.Position ?? world.RestingPoint(villager),
+                Travel(world, villager, PlanFetch(world, villager)?.Position ?? RestPointFor(world, villager),
                     VillagerState.FetchingFromStore);
                 return;
 
@@ -372,7 +375,7 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(
                     world,
                     villager,
-                    PlanEmptying(world, villager)?.Tile ?? world.RestingPlaceOf(villager),
+                    PlanEmptying(world, villager)?.Tile ?? RestPointFor(world, villager).ToTile(),
                     VillagerState.ClearingAStore);
                 return;
 
@@ -412,6 +415,15 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 Travel(world, villager, toTheWell.Position, VillagerState.DrawingWater);
+                return;
+
+            case VillagerState.WalkingOutToTend:
+                // To the tile they set off for (D511), fixed at departure like every field leg.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY), VillagerState.Tending);
+                return;
+
+            case VillagerState.WalkingBackToTheSteading:
+                Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
                 return;
 
             case VillagerState.TravelingToQuarry:
@@ -497,7 +509,7 @@ public sealed class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.TravelingHome:
-                Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
+                Travel(world, villager, RestPointFor(world, villager), VillagerState.Idle);
                 return;
         }
 
@@ -2209,10 +2221,16 @@ public sealed class BehaviorSystem : ISimSystem
         // catch, hidden while foragers fed their own larders and rarely ran out of work. Every
         // load to a store (D385) left the fixture's foragers idle under a met limit and the
         // guard read 0 % in a spell. The spell is `Decide`'s own (`rest_ticks`).
-        if (villager.Tile == world.RestingPlaceOf(villager))
+        if (villager.Tile == RestPointFor(world, villager).ToTile())
         {
             // ⭐ A rest at home is where the water trip is offered (D427) — see `TryDrawWater`.
             if (TryDrawWater(world, villager))
+            {
+                return;
+            }
+
+            // ⭐ And a rest at the steading in summer is where a tend is offered (D511).
+            if (TryTend(world, villager))
             {
                 return;
             }
@@ -2224,6 +2242,84 @@ public sealed class BehaviorSystem : ISimSystem
 
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.TravelingHome;
+        Travel(world, villager, RestPointFor(world, villager), VillagerState.Idle);
+    }
+
+    /// <summary>
+    /// Where somebody walking off to rest is going: home with a load, otherwise wherever they rest
+    /// just now (D511).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A load goes home, never to the steading.</b> Arriving to rest unloads into the household's
+    /// larder (<c>ArriveAt</c>), and a farmhand who fetched the family's supper and walked it to the
+    /// farm would put it in a cupboard on the other side of the valley — the teleport D30 and the
+    /// neighbour's-fire fix (D45) both closed once. For everybody but a farmhand in the working year
+    /// the two answers are the same place.
+    /// </remarks>
+    private static Point RestPointFor(SimWorld world, Villager villager) =>
+        villager.IsCarrying ? world.HomePoint(villager) : world.RestingPoint(villager);
+
+    /// <summary>
+    /// Send a summer farmhand out to tend a sown tile of their own field, if a rest spell has just
+    /// ended at the steading (D511, `specs/work-from-the-steading.md §5`). False, touching nothing,
+    /// otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>Asked only where a rest would begin, beside the water trip</b> — so every trade, chore and
+    /// fetch has already said no, and tending never takes a hand from work done today. That is what
+    /// makes it the look only (guarded by <c>TendingNeverTakesAChoreFromAFarmhand</c>).
+    /// </para>
+    /// <para>
+    /// <b>Only as a rest spell ends</b> (<c>State == Resting</c>), and the walk back from a tend
+    /// begins a full spell (<c>ArriveAt</c>) — so the summer reads <em>tend, walk back, rest,
+    /// tend</em> and nobody tends without a break, with no counter kept to say so.
+    /// </para>
+    /// </remarks>
+    private static bool TryTend(SimWorld world, Villager villager)
+    {
+        if (world.Config.TendTicks <= 0
+            || villager.State != VillagerState.Resting
+            || world.Clock.Season != Season.Summer
+            || villager.IsCarrying
+            || !world.RestsAtTheSteading(villager)
+            || WorkplaceOf(world, villager) is not Workplace farm
+            || world.ATendingTileFor(farm, villager) is not GridPos field)
+        {
+            return false;
+        }
+
+        // Tending IS their summer work, so the amber "nothing to sow or reap" note is not the
+        // sentence for it (§1.1); the next rest's `Decide` writes it again.
+        villager.WorkNote = string.Empty;
+        villager.ErrandX = field.X;
+        villager.ErrandY = field.Y;
+        villager.ActionTicksRemaining = 0;
+        villager.State = VillagerState.WalkingOutToTend;
+        Travel(world, villager, field, VillagerState.Tending);
+        return true;
+    }
+
+    /// <summary>Off the field and back to the steading, in a state that is not work (D511).</summary>
+    /// <remarks>
+    /// ⛔ <b>Not <c>GoHome</c></b>, whose walk is <c>TravelingHome</c> — and that one counts as work on
+    /// the skill clock (<c>SkillSystem.OutOnTheWork</c>), so a whole summer of tends would have grown
+    /// a farmer's skill, and skill bites yield. Somebody who is no longer a farmhand by the time
+    /// they finish goes home the ordinary way.
+    /// </remarks>
+    private static void WalkBackFromTheField(SimWorld world, Villager villager)
+    {
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+        villager.ActionTicksRemaining = 0;
+
+        if (!world.RestsAtTheSteading(villager))
+        {
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.State = VillagerState.WalkingBackToTheSteading;
         Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
     }
 
@@ -3091,11 +3187,11 @@ public sealed class BehaviorSystem : ISimSystem
         // it."* A buffer is the producer's (when the hut cannot take another load) and the
         // marketer's (when nothing is more pressing), and nobody else's.
 
-        // Rest — at home if not already there.
-        if (villager.Tile != world.RestingPlaceOf(villager))
+        // Rest — at home, or at the steading (D511), if not already there.
+        if (villager.Tile != RestPointFor(world, villager).ToTile())
         {
             villager.State = VillagerState.TravelingHome;
-            Travel(world, villager, world.RestingPoint(villager), VillagerState.Idle);
+            Travel(world, villager, RestPointFor(world, villager), VillagerState.Idle);
             return;
         }
 
@@ -3127,6 +3223,12 @@ public sealed class BehaviorSystem : ISimSystem
         // is where a household's water trip is offered — never ahead of eating, warmth, a larder
         // running empty or any work, because all of those were asked above this line.
         if (TryDrawWater(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ And a summer farmhand at the steading tends instead, as a spell ends (D511).
+        if (TryTend(world, villager))
         {
             return;
         }
@@ -3590,7 +3692,10 @@ public sealed class BehaviorSystem : ISimSystem
                     // home — and `GoHome` → `Travel` → no route → `GoHome` overflowed the stack the
                     // first time the suite met one. A stranded villager is a real state; they wait,
                     // and the next tick's `Decide` asks again with whatever has changed.
-                    if (onArrival == VillagerState.Idle && target == world.RestingPoint(villager).ToTile())
+                    // ⚠️ Either answer to "where do they rest" (D511): `GoHome` walks a load to the house
+                    // and empty arms to the steading, and both must stand still here or recurse.
+                    if (onArrival == VillagerState.Idle
+                        && (target == world.RestingPlaceOf(villager) || target == world.HomePlaceOf(villager)))
                     {
                         villager.State = VillagerState.Idle;
                         villager.WorkNote = "cannot get home from here";
@@ -4645,6 +4750,24 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // On the field (D511): tend a while, then back to the steading. A tile reaped, a season
+        // turned or a job lost on the way, and they turn round instead.
+        if (onArrival == VillagerState.Tending)
+        {
+            var field = new GridPos(villager.ErrandX, villager.ErrandY);
+            if (world.Clock.Season != Season.Summer
+                || world.Map.TerrainAt(field) != Terrain.Sown
+                || !world.RestsAtTheSteading(villager))
+            {
+                WalkBackFromTheField(world, villager);
+                return;
+            }
+
+            villager.State = VillagerState.Tending;
+            villager.ActionTicksRemaining = world.Config.TendTicks;
+            return;
+        }
+
         // At the well (D427): stand and draw, then `CompleteAction` sends them home.
         if (onArrival == VillagerState.DrawingWater)
         {
@@ -4780,9 +4903,30 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ BACK FROM A TEND, A WHOLE SPELL (D511). Arriving to rest otherwise lands as a spell-less
+        // `Resting` that `Decide` re-asks on the next tick — and `TryTend` is asked as a rest
+        // ends, so without this a farmhand would walk back and straight out again all summer.
+        if (onArrival == VillagerState.Idle && villager.State == VillagerState.WalkingBackToTheSteading)
+        {
+            villager.State = VillagerState.Resting;
+            villager.ActionTicksRemaining = world.Config.RestTicks;
+            return;
+        }
+
+        // ⛔ THE STEADING IS NOT HOME (D511). `UnloadAtHome` posts to the household's larder wherever
+        // they stand, so a farmhand arriving to rest at the farm must not run it — the neighbour's-
+        // fire teleport (above) one building over. `RestPointFor` sends any load home, so this is
+        // the guard rather than the route.
+        bool atTheSteading = world.RestsAtTheSteading(villager)
+            && villager.Tile == world.RestingPlaceOf(villager)
+            && world.RestingPlaceOf(villager) != world.HomePlaceOf(villager);
+
         // Home. Anything in their arms goes into the larder — a gather brought back
         // directly, or an armful fetched from the granary.
-        UnloadAtHome(world, villager);
+        if (!atTheSteading)
+        {
+            UnloadAtHome(world, villager);
+        }
 
         // Except what a larder is not for. Anyone who reaches their door still carrying
         // something turns round and walks it to a store, because a log in a larder is a log
@@ -4934,7 +5078,9 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         Household household = world.HouseholdOf(villager);
-        if (!household.HasHome || villager.Tile != world.RestingPlaceOf(villager))
+        // ⚠️ HOME, NOT WHERE THEY REST (D511, Joe: "yes"): the trip is the household's and its lane
+        // runs door to well, so a farmhand at the steading is never offered it.
+        if (!household.HasHome || villager.Tile != world.HomePlaceOf(villager))
         {
             return false;
         }
@@ -5338,6 +5484,12 @@ public sealed class BehaviorSystem : ISimSystem
                 // produced, consumed or moved — which is the point: this is the one action in
                 // the game whose completion has no effect on the world.
                 Decide(world, villager);
+                return;
+
+            case VillagerState.Tending:
+                // ⭐ Tended, and back to the steading to rest (D511). Nothing is produced, grown or
+                // learned — the field ripens exactly as it would have; the walk is the look.
+                WalkBackFromTheField(world, villager);
                 return;
 
             case VillagerState.DrawingWater:

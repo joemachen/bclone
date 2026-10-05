@@ -1,13 +1,14 @@
 # Spec: Work from the steading — farmhands rest at the farm, and tend it in summer
 
-**Decisions:** D511 (this document). Built on: D355 (Joe's call — *the look*, rebuilt on `RestingPoint`,
+**Decisions:** D511 (this document), D512 (Joe's §8 calls), D513 (built). Built on: D355 (Joe's call — *the look*, rebuilt on `RestingPoint`,
 the cost re-measured and accepted), D186 (the 2026-08-22 attempt, `slice/work-from-the-steading`,
 `e12b20f` — the record, never merged), D148 (one name for two questions), D15 (nearest home wins),
 D45/D53 (exposure), D10 (a meal is takeable where you stand), D194 (the self-fulfilling cap, and *a
 ledger, not a hypothesis*), D354 (`Point`s; a villager going home stands ON it), D384 (trades visibly
 work — the hash-picked tile), D385 (the rest flicker), D427 (the water trip).
-**Status:** ✍️ **specified (2026-10-05); Joe's §8 calls answered (D512); building on this branch — nothing built yet.** Branch `slice/steading`
-off `main`. Owner: Joe + Claude Code.
+**Status:** 🔨 **built (2026-10-05, D513), sim and view, on `slice/steading` — UNPLAYED.** Suite 1520 / 0 / 5 of 1525
+(3m58); view 0 warnings; probe green (`field lanes:` new), bar height 151; the two seam goldens moved, proven
+to move for this rule only. Branch `slice/steading` off `main`, not pushed. Owner: Joe + Claude Code.
 
 ---
 
@@ -118,14 +119,17 @@ New, beside the old ones:
   farm's owned tiles in index order — D384's `AGatheringTileFor` shape. ⛔ **Never an `Rng` draw**: a
   look must not reshuffle every seed's history. A tile nobody can walk to is passed over. With no
   sown tile, they rest at the steading.
-- **When — only in place of a rest.** Tending is asked at the two points where a summer farmhand
-  would otherwise begin a rest at the steading: the farmer branch's `GoHome`, after
-  `TryTidyGround` and `TryHelpWithHarvest` have both said no; and the last line of `Decide`. **It
+- **When — only in place of a rest.** Tending is asked beside the water trip, at the two points a
+  rest spell would begin — `GoHome`'s already-there arm and the last line of `Decide` — so every trade,
+  chore and fetch has already said no; and only **as a rest spell ends** (`State == Resting`). **It
   never takes a hand away from work they do today**, which is what makes it the look only. If tending
   sat above the chores, a summer farmhand would stop tidying and helping, and the economy would move
   for a cosmetic reason.
-- **How long.** `tend_ticks` (new, `data/`, proposed **4** — a day), on the tile. Then
-  `TravelingHome` to the steading for an ordinary rest spell (`rest_ticks`), and then `Decide` again.
+- **How long.** `tend_ticks` (new, `data/`, **4** — a day; 0 switches it off), on the tile. Then
+  `WalkingBackToTheSteading` — ⛔ **not `TravelingHome`, which the skill clock counts as work**
+  (`SkillSystem.OutOnTheWork`): a summer of tends walked back that way grows farming skill, and skill
+  bites yield. Arriving back begins a full rest spell (`rest_ticks`); without it the arrival is a
+  spell-less rest that ends next tick, and they would walk straight out again.
   The rhythm is *tend, walk back, rest, tend*. That is enough to read as tending, and the walk is the
   look.
 - **What it touches.** Nothing but position and state:
@@ -133,41 +137,120 @@ New, beside the old ones:
   - no skill gain (it is not `BeginWork` — skill comes from sowing and reaping),
   - no tool wear,
   - no change to `Terrain`.
-- **A new `VillagerState.Tending`.** The card reads *"tending the wheat at {farm}"*. The state needs
-  an errand tile, which reuses `ErrandX`/`ErrandY` as the sow and reap legs do, so no new field
-  is added.
+- **Three new states, none of them work:** `WalkingOutToTend`, `Tending`, `WalkingBackToTheSteading`
+  (appended to the enum). The card reads *"tending the wheat at {farm}"*. The errand tile reuses
+  `ErrandX`/`ErrandY` as the sow and reap legs do, so no new field is added or saved.
 
-## 6. Guards (tests first — each one red-checked, reds counted)
+### 5a. A load goes home (found building it)
 
-1. **The two methods agree.** `RestingPoint(v).ToTile() == RestingPlaceOf(v)` for every living
-   villager on every tick of a seam run. *Red-check:* `RestingPlaceOf` returns the home tile.
-2. **A farmhand rests at the steading in spring and autumn, and is home every winter tick.** Census
-   the `Resting` ticks by tile. *Red-check:* drop the winter clause. Expect a farmhand resting at the
-   farm in winter, and `Cold` rising there.
-3. **The allocator costs from home (D148).** A farmhand whose home moves nearer another farm is moved
-   by the next reshuffle. *Red-check:* `CostBetween` reads `RestingPlaceOf`.
-4. **Tending is summer only, on this farm's sown tiles only, and the harvest is unchanged.** The seam
-   run with tending switched off must reap the same tiles over the same ticks. *Red-check:* tending
-   calls `BeginWork`, or picks with `Rng`.
-5. **Tending never takes a job.** In the seam run, summer `TryTidyGround` and `TryHelpWithHarvest`
-   counts for farmhands are equal with and without tending. *Red-check:* tending asked above the chores.
-6. **Existing guards stay green.** `SomebodyWhoHoldsAJobRestsInSpellsToo` (D385's flicker) and the
-   exposure tests. `FarmLedgerTests.AndItIsNotIdleThroughIt` stays green too, and its reading will
-   move: autumn Resting goes from *at home* to *at the farm*. The reading is written down.
+Arriving to rest runs `UnloadAtHome`, which posts to the household's larder **wherever the villager
+stands**. With the steading as the resting place, a farmhand who fetched the family's supper and walked
+it "home" would have filled a cupboard across the valley from the farm — the teleport D30 and D45 each
+closed once. So `RestPointFor` sends anybody **carrying** to the house and empty arms to where they rest,
+and arriving at the steading never runs `UnloadAtHome`. For everybody but a farmhand in the working year
+the two places are the same, so neither line changes anybody else (the goldens prove it).
 
-## 7. Measurement (filled in when built)
+## 6. Guards — built (`SteadingTests`, seven), red-checked: 11 mutants, 21 reds, no zeros
 
-Today's code, both arms, the same fixtures:
+Each mutant was applied by exact text (matched once), built, run against the seven, and reverted;
+a mutant that does not build scores nothing (D420) and none failed to.
 
-- `FarmLedgerTests` distance arms (10 / 16 / 22 ticks out): tiles reaped, the farm's learned field per
-  hand, brought-in %, and the autumn census by state **and by where**.
-- The seam golden village, twenty years: wheat brought in, farmer-ticks moved, and births and deaths.
-- Water trips per farmhand household per year (§8 call 2).
-- Field tiles whose wear crosses the *worn* line in a summer (§8 call 1).
+| Guard | What it holds |
+|---|---|
+| `TheTwoRestingMethodsAlwaysAgree` | `RestingPoint(v).ToTile() == RestingPlaceOf(v)` for every villager every tick of two years — 5,044 asked, 1,438 of them resting away from home (refuses to pass on zero) |
+| `AFarmhandRestsAtTheSteadingThroughTheWorkingYearAndAtHomeInWinter` | every rest **spell begun**, counted in the season it was decided in: 80 at the steading in spring–autumn, 38 at home in winter, 0 anywhere else |
+| `TheAllocatorCostsAFarmhandFromWhereTheyLive` | `CostBetween` = the walk from **home**, and above zero, on every one of 720 ticks the farmhand rested at the farm |
+| `TendingIsSummerOnlyOnTheFarmsOwnSownTiles` | 122 tending ticks over three summers, every one in summer, on the farm's own `Sown` ground, over 12 tiles |
+| `TendingTakesNothingGrowsNothingAndDrawsNothing` | two villages in lockstep, `tend_ticks` 4 and 0: one hash on the eve of summer; at its end the same `Rng` state, the same crop on every tile, the same skill |
+| `ALoadGoesHomeAndTheSteadingIsNotTheLarder` | an armful arriving at the steading stays in the arms (larder 156 → 156); walked "home", it goes to the house |
+| `TendingNeverTakesAChoreFromAFarmhand` | posed: a summer farmhand's rest ending at the steading with a load on the ground — they fetch it |
 
-⛔ **Every delta gets a named cause from the census**, not a story. The 2026-08 attempt measured −13 %
-and stopped there, and this investigation has already produced three causal stories that measurement
-then rejected (D194). Goldens are re-taken with a dated *"before"* line each.
+| Mutant | Red |
+|---|---|
+| M1 `RestingPlaceOf` answers home | 3 — agree, allocator, load |
+| M2 no winter clause | 2 — winter, summer-only |
+| M3 the allocator costs from where they rest | 1 — allocator |
+| M4 tending counts as work | 1 — takes nothing |
+| M5 the walk back is `TravelingHome` | 2 — takes nothing, summer-only |
+| M6 the tile is picked with the `Rng` | 1 — takes nothing |
+| M7 tending asked above the chores | 2 — never takes a chore, summer-only |
+| M8 tending in any working season | 2 — summer-only, takes nothing |
+| M9 no rest spell after a tend | 1 — summer-only |
+| M10 the steading unloads into the larder | 1 — load |
+| M11 a load walks to the steading | 2 — load, summer-only |
+
+⚠️ **Two guards were wrong when first written, and the run said so** (the trap in HANDOFF):
+`world.Clock` after a step is the **next** tick's, so a census read after `StepOnce` put a rest decided
+on autumn's last tick into winter; and `StepToTheStartOf` steps one tick **into** a season, so the
+lockstep hash was compared after the first tend had happened. Both re-posed to measure what they claim.
+
+**The view's line** — probe `field lanes:` (§8a): three worn tiles sown for a moment are drawn over the
+field (210 vertices) and gone once the ground is put back. Red-checked: with the overlay reading only
+bare `Field`, ⛔ *0 of 3* — 1 of 1.
+
+**Existing guards moved, each with its reason written beside it:**
+
+- `FarmGoldenTests` — the seam village (the only golden that reaches a farm), both hashes.
+  ⭐ **Proven to be the only reason**: with `RestsAtTheSteading` false for everybody, the old values pass.
+- `FarmMemoryTests.AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots` — the first pose that
+  probes is now seed 12345 at nine ticks, year 2. Its hands-off autumn saw a store's fill move the haul
+  walk, and `FieldTilesThisFarmCommitsPerHand` re-reckoned 7 → 10 with nothing reaped (D142's door);
+  the lesson stepped back to 9. The guard now reads the step back from what the farm knew on the eve of
+  the lesson.
+- `FoodConservationTests` — seed 4 froze in its first winter; re-picked to seed 14, which lives on both
+  arms (§7). The ledger held to the unit on every seed.
+
+## 7. Measurement — main and the slice, the same scratch tests, one sitting (2026-10-05)
+
+**The farm, one pinned farmhand, twelve years, no limits set** (`FarmLedgerTests`' fixture):
+
+| Ticks out | Sown | Reaped | Wheat | Learned a hand | Autumn resting: where | Fetch trips · ticks a trip |
+|---|---|---|---|---|---|---|
+| 10 — main | 235 | 191 (81 %) | 13,429 | 8 | home 51 | 100 · 6.2 |
+| 10 — slice | 217 | 197 (91 %) | 13,669 (**+2 %**) | 8 | farm 43, home 33 | 96 · 6.6 |
+| 16 — main | 107 | 102 (95 %) | 7,375 | 4 | home 99 | 108 · 6.6 |
+| 16 — slice | 117 | 110 (94 %) | 7,788 (**+6 %**) | 4 | farm 59, home 36 | 98 · 9.2 |
+| 22 — main | 74 | 64 (86 %) | 4,887 | 3 | home 371 (13 % of autumn) | 127 · 7.1 |
+| 22 — slice | 133 | 89 (67 %) | 6,379 (**+31 %**) | 4 | farm 52, home 30 (2 %) | 103 · 10.5 |
+
+**The causes, from the census:**
+
+- ⭐ **The harvest goes UP, against 2026-08's −13 %.** On main a distant farmhand rests at home between
+  tasks — 13 % of autumn at twenty-two ticks out — and every rest ends in a walk back out. At the
+  steading a rest ends beside the field. The further the farm, the more of the autumn that gives back.
+  D194's self-fulfilling idleness, from the other side.
+- **The far farm learns a bigger field, and rots more of it.** With autumn to spare, D361's probe climbs
+  3 → 4 a hand at twenty-two ticks: it sows 80 % more, reaps 39 % more, and brings in a smaller share
+  (86 → 67 %), because the extra tile a hand is the probe testing its edge. This is the farm memory
+  working, not a cost.
+- **Fetch trips are fewer and longer.** Over twelve years, 4–19 % fewer trips, each 7–48 % longer: a
+  trip now starts at the farm and ends at the house. ⚠️ **Not attributed:** within that, autumn's
+  share rises (13 → 16, 14 → 25, 17 → 21 trips) while the year's falls. Measured, with no cause named.
+- **Water stays the household's** (§8 call 2): the farmhand draws less (22 → 9 trips at ten ticks out)
+  and housemates take it up — 60 → 61 trips for the household at ten ticks, 40 → 53 at twenty-two.
+- **The field wears** (§8 call 1): 9–10 of the farm's 42–49 tiles reach *packed* on the slice, against
+  1–2 on main. Tending walks from the farm to the field and back, and every step treads. With §8a these
+  are visible lanes through the crop. ⚠️ **That is the look to judge in play.** When *trampled fields*
+  comes, a packed lane through a field is what it would charge, and tending's own steps are the
+  question §8 call 1 leaves for it.
+
+**Every source, seventeen valleys × fifty years** (`FoodConservationTests`' founding — lodge,
+fishery and farm):
+
+| | Valleys alive at fifty | People alive |
+|---|---|---|
+| main | 6 (one with 2 people) | 82 |
+| slice | 8 | 124 |
+
+Nine to eleven of seventeen die on either arm, mostly in the first winter: no woodcutter exists until
+the farm's seats close for the year, and the first split races the cold. Seeds 4 and 16 flipped to
+dead and 5, 9, 10, 11 and 12345 to alive. Seed 4 was traced on both: on main its first firewood landed
+at t381 with three villagers near death at cold ~4,900; on the slice it landed thirty ticks later,
+after a chore the history had moved (the histories part in the first summer, t211). A coin over seeds,
+not a mechanism (D418). ⚠️ **The first-winter coin is main's, and it is worth Joe's attention on its
+own** — it is not this slice's to fix.
+
+**Tending, seen:** 39 tending ticks in the fixture's first summer; 122 over three summers, on 12 tiles.
 
 ## 8. Joe's calls (answered 2026-10-05, D512)
 

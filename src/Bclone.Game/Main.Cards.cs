@@ -1379,7 +1379,8 @@ public partial class Main
 
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
-        string doing = villager.DescribeState(job?.Name);
+        // ⭐ "resting at Eastfield", not "resting at home", for a farmhand out at the steading (D511).
+        string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager));
         Status(card, working: !hungry && !noted, hungry ? $"Hungry — {doing}." : Capitalise(doing) + ".");
 
         // ⭐ A PROBLEM WITH THEIR WORK TURNS THE BANNER AMBER, AND THE REASON IS ITS TOOLTIP (D432,
