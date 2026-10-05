@@ -99,6 +99,16 @@ internal sealed class RegrowthSystem : ISimSystem
             // how fast they grow.*
             if (here == Terrain.Sapling)
             {
+                // ⭐ ON A FARM, A SEEDLING IS PULLED UP, NOT GROWN (B4, D491). Measured: every
+                // sapling on a farm's ground was a tree within a year. The plough takes one when
+                // the ground is given; this takes any that came after (a forager's thinning,
+                // `ThinTheRingOf`, can turn a farm's tree into one).
+                if (world.IsFarmGround(tile))
+                {
+                    world.Plough(tile);
+                    continue;
+                }
+
                 if (world.Map.IsYoungSapling(tile))
                 {
                     world.Map.SetYoungSapling(tile, false);
@@ -140,6 +150,13 @@ internal sealed class RegrowthSystem : ISimSystem
             return false;
         }
 
+        // ⭐ Nor a farm's ground (B4, D491): a field the wood seeds into is a field the farmer has
+        // to fight every spring — the chore the paragraph above refuses, one zone over.
+        if (world.IsFarmGround(tile))
+        {
+            return false;
+        }
+
         // ⚠️ PAINTED GROUND STILL GROWS, AND THIS LINE USED TO SAY THE OPPOSITE. Skipping
         // harvest-painted tiles was right while paint came off the moment a tile was cleared:
         // paint meant "clear this soon", and growing trees on it would have been an argument
@@ -153,7 +170,9 @@ internal sealed class RegrowthSystem : ISimSystem
     }
 
     /// <summary>
-    /// Whether a tile is surrounded enough by wood to grow — <b>two neighbours, not one</b>.
+    /// Whether a tile has wood beside it to grow from — <b>one mature neighbour of four</b> (the
+    /// paragraphs below are the history: two was measured, then the bound moved to
+    /// <c>HasEverBeenWooded</c> and one became enough — see the closing comment).
     /// </summary>
     /// <remarks>
     /// <para>

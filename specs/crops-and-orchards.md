@@ -233,6 +233,10 @@ regrowth sweep.
   the ground is grass again, standing crop included, and the stroke says how many tiles of crop
   it gave up. D84's *no scar* rule for a dug seam, applied to a field. ⭐ **A reaped tile yields in proportion to
   its painted quarters** (D352, `BehaviorSystem`'s reap: `CropYieldAt × painted ⁄ 16`), and **the field is drawn as the paint** along its own curve (`sub-tile-zones.md §3.1`) — a round brush gives a round field.
+- ⭐ **Trees, saplings and seams under a farm's paint** (B4 slice 1, D491, `destroy-brush.md §3.3`): a seam
+  is refused (*"Not on a seam — clear it first."*); a tree is harvest-marked as the ground is given, cleared
+  by laborers ahead of ordinary paint, and ploughed the moment it is felled; a sapling is ploughed when
+  given and pulled up by the regrowth sweep if one appears later; nothing seeds into a farm's ground.
 - **Passable and buildable-refusing.** Unlike `Water` they are walked over; unlike `Grass` a
   building marked on one should warn, because it destroys a year's work.
 - **`TerrainRules.Yields(Ripe) => Goods.Food`**, which makes a ripe field harvestable by the

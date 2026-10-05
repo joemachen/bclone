@@ -1,6 +1,6 @@
 # Spec: The destroy brush, and farms painted over trees
 
-**Decisions:** D490 (this document, B4). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
+**Decisions:** D490 (this document, B4), D491 (Joe took every recommendation in §8; slice 1 built). Joe's notes and answers: the D483 banner (2026-10-04) — *a red
 (destructive) brush; everything painted is destroyed and trees do not grow back; a farmer may paint
 fields over trees but cannot farm a tile until its trees are gone; farm "give land" must not paint stone
 or iron seams*, and his four answers: (a) destroyed ground grows trees again **only if a forester replants
@@ -13,8 +13,8 @@ D138 (the village clears a site's ground, not the player), D126 (the valley grow
 stood), D127 (harvest paint is a standing instruction), D157 (footprints cleared in build-queue order),
 D162 (the farm), D220 (a planted sapling waits a period), D347 (a seam shrinks tile by tile), D452
 (forester planting counts Grass only), D61 (livestock is blocked behind trade).
-**Status:** 📝 **SPEC WRITTEN (2026-10-04, D490) — FOR JOE TO READ. NOTHING BUILT.** §8 holds the calls
-that are his before any code. Owner: Joe + Claude Code.
+**Status:** 🔨 **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), UNPLAYED. Slices 2–3 (the
+destroy brush) NOT STARTED.** Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
 
 ---
 
@@ -40,7 +40,7 @@ more). Traced in the code beside each.
 |---|---|---|
 | Farm ground may be painted over Forest, Sapling, Rock and IronDeposit | **Yes.** 8 of 12 forest, 12 of 12 saplings, 10 of 12 rock, 7 of 11 iron accepted; every refusal was ground another building or a yard already held, never the terrain | `CanPaintWorkGround`, `SimWorld.cs` ~5032–5076: no terrain test but Water |
 | Only Grass is ploughed | **Yes.** Grass → Field at once; nothing else changed | `Plough`, ~4030; `AfterGivingGround`, ~5152 |
-| Trees on farm ground stay | **Yes, for three years.** 11 of 12 forest tiles still Forest at year 3. ⚠️ **One was felled in year 2 by something unpainted — not traced.** It is a finding for the build to explain, not a premise | — |
+| Trees on farm ground stay | **Yes, for three years.** 11 of 12 forest tiles still Forest at year 3. The one felled was **not the farm's**: traced (D491), it was one of the four tiles refused because a forester's hut already held it, and the forester felled its own ground | — |
 | Saplings on farm ground grow up | **Yes — all 12 were Forest by year 1.** A farm painted over saplings becomes a farm with a wood on it | `RegrowthSystem`: work ground is not excluded |
 | Nothing clears a farm's trees | **Yes.** Nothing marks them; the comment at `AfterGivingGround` assumes laborers will, and nothing does | ~5150–5167 |
 | A harvested tile becomes Grass, its goods brought in | **Yes.** Rock: 12 stone. Forest: 12 logs | `Harvest`, ~5826 |
@@ -96,15 +96,18 @@ more). Traced in the code beside each.
 - **Forest and saplings may be painted as farm ground, and the laborers clear them** (Joe, d). Painting a
   farm's ground over a Forest tile harvest-marks it, the way placing a building marks its anchor (D100,
   `Mark` ~8021–8034). The laborers fell it through the harvest path they already walk (`NearestHarvest`),
-  **after building footprints** (D157) and before ordinary harvest paint. **The logs are the village's** —
-  this is clearing, not destroying.
+  **after building footprints** (D157) **and after wood a building is waiting on** (D215 — the buildings come
+  first), and before ordinary harvest paint. **It is cleared whatever the log limit says** — a field
+  waiting on its ground is a footprint's case (D212's exception), not production. **The logs are the
+  village's** — this is clearing, not destroying. Taking the ground back unmarks a tree still standing.
 - **A sapling on farm ground is grubbed up, not waited for.** Measured: left alone, every sapling on a farm
   was a tree within a year. So a farm's ground stops regrowth (no sapling grows up there, no grass seeds),
   and **the plough takes a sapling as it takes grass** — a farmer pulls up seedlings. No yield; there is
   none to take.
 - **The field shows at once; the uncleared tiles say why.** The farm's ground outline covers the trees
-  from the stroke. Its card's ground line counts them: *"3 tiles still to clear of trees"*. A tile joins
-  the field the season after it is cleared (measured: the farm re-ploughs Grass on its own).
+  from the stroke. Its card's ground cell counts them: **"18" over "3 to clear"** (measured: *"tiles · 999 to clear"* clips the cell; of six wordings only this fits at three digits) (the caption reads *tiles
+  of ground* once none are left). A felled farm tree is ploughed **the moment it is felled** — the field takes
+  the tile while the player watches, not the next spring.
 - **The clearing mark retires when the tile is cleared**, as `RetireTheClearingMark` does for a building,
   so a farm does not leave orange paint over its own field.
 - **Rock and iron are refused on farm ground** (Joe's note). The stroke paints round a seam and the drag's
@@ -161,7 +164,10 @@ Each red-checked, and the reds counted (D326):
   (`git diff` of the goldens: unchanged).
 - Probe: the Removal tab's button, its colour, and bar height 151 held.
 
-## 8. Joe's calls, before any code
+## 8. Joe's calls — ✅ ANSWERED (2026-10-04, D491): *"go with your recommendations"*
+
+Q1 laborers destroy; Q2 bare grass refused; Q3 a forester's own ground left as is; Q4 farms first. Kept
+below as asked.
 
 1. **Q1 — Instant, or the village does it?** Recommended: **laborers do it** (§3.1), as they clear a site.
    The alternative is an eraser that empties the tile the moment it is painted — faster, but the only tool
