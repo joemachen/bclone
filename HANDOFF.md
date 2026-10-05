@@ -1,8 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D486 IN §7. B2 ("TREE" NOT IN SETTINGS UNTIL THE TREE IS SHOWN) IS BUILT ON `claude/adoring-rubin-l6widh`, UNPLAYED (D486). NEXT: JOE PLAYS B2, THEN B3.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D487 IN §7. B2 ("TREE" NOT IN SETTINGS UNTIL THE TREE IS SHOWN) IS PLAYED, MERGED AND PUSHED (D486, D487). NEXT: B3.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATE NIGHT) — D486, FROM A CLOUD SESSION.**
 >
-> **State:** `main` = `db98952` (D485), unchanged. **B2 is built on `claude/adoring-rubin-l6widh`** (off `main`, pushed —
+> **State (D487):** ✅ **Joe played B2 on Windows (*"it works great. push."*); `claude/adoring-rubin-l6widh` is merged
+> `--no-ff` to `main` and pushed.** No branch is open; B3 is next. *(What the branch held:)* **B2 was built on `claude/adoring-rubin-l6widh`** (off `main`, pushed —
 > the cloud harness pushes only to the branch it names, so not a `slice/` name; see the D486 trap) — **not played, not
 > merged.** One commit: `RefreshTheTree` gates the Tree window's Settings tick on `ShownTheTechTree`, the latch the bar
 > button already reads; the `windows:` probe line adds *"Tree is not in Settings until the tree is shown"* (**1 red of 1**
@@ -4561,13 +4562,27 @@ Read `git status` after staging, every time.
 - **`( long command ) &` inside a backgrounded tool call returns at once** — the "completed" notice is the wrapper, not
   the suite. Wait on the suite's own output (`until grep -q '^exit' file`), not on the notice.
 
+## ⛔ THE TRAPS THE B2 MERGE (D487) PAID FOR — ONE DLL, TWO WRITERS, AND A COUNT FROM A SHALLOW CLONE
+
+- **Do not run `dotnet test bclone.sln` and `dotnet build src/Bclone.Game/...` at the same time.** Both build
+  `Bclone.Sim`, and the second fails with `CS2012: Cannot open '...Bclone.Sim.dll' for writing`. That looks like a red
+  build but it is not the code. Run them one after the other, as CLAUDE.md lists them.
+- **The probe's `ERROR: The village stopped … posed by the probe` line is expected.** `ProbeTheErrorBoundary` raises it
+  on purpose to exercise the error screen. Do not report it as a failure; do read it to confirm it says *"posed by the probe"*.
+- **A cloud session's `git rev-list` counts can be wrong if the clone is shallow.** D486's review counted 471 commits of
+  `origin/claude/handoff-review-next-steps-w37oks` not on `main`; on Joe's full Windows clone the count is **0** (its tip
+  `ce01abb` is an ancestor of `main`). Before reporting "unmerged" from the cloud, run `git rev-parse --is-shallow-repository`
+  (and `git fetch --unshallow` if it says `true`).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.**
   An earlier cloud session's branch. Its tip, `ce01abb` *"Panels draw what they hold, the bar is one height, and a
   dead village says so"*, is dated 2026-09-06, and `git rev-list origin/main..` counts **471 commits not on `main`**,
   far more than that one change, so it is probably a rewritten or re-rooted history, not unmerged work. Nobody has
-  touched it. **Keep or delete it: your call.**
+  touched it. **Keep or delete it: your call.** ⭐ **Rechecked on Joe's full Windows clone (D487): 0 commits not on
+  `main` — `ce01abb` is already an ancestor of `main`.** The 471 came from a shallow clone (trap above). Deleting the
+  branch loses nothing.
 
 - ✅ **DECIDED (D481) — Joe: *"drop it from the screen completely."* Built.** ~~Seam scatter on the new-game screen.~~
 - ✅ **ANSWERED (2026-10-04) — Joe: replant by a forester only; stone and iron destroyed and the goods LOST; animals
