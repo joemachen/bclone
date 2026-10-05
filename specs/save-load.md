@@ -9,7 +9,7 @@ D419 (a round trip posed from its own capture agrees with itself), D15 (the refl
 `new-game-screen.md §5` (the share code), `settings-persistence.md` (the file pattern this copies).
 **Status:** ✍️ **SPECCED (D507); Joe answered §11 (D508). 🔨 BUILT (D509) on `slice/save-load` — the sim half
 and the view, guards §9 red-checked (14 mutants, all red; two zeros on the way, fixed by poses and written
-down). ⏸️ UNPLAYED by Joe** — no automated check sees a real quit write the autosave, or *Continue* open it.
+down). ✅ PLAYED by Joe (*"test and it works"*) and merged to `main` (D510, 2026-10-05)** — his play is what saw a real quit write the autosave and *Continue* open it; the probe is hermetic by design.
 Owner: Joe + Claude Code.
 
 ---
@@ -320,7 +320,7 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
    size measured into §3.
 3. ✅ **The view** (D509): *Continue*, *Load…*, a name and *Save* in Settings, autosave at the year's turn
    and on quit, the share-out tick set from the loaded village, and the probe's `save:` line.
-4. ⏸️ **Joe plays it.**
+4. ✅ **Joe played it** (D510): *"test and it works."* Merged and pushed.
 
 ## 13. Definition of Done
 

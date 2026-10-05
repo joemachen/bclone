@@ -1,4 +1,33 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D509 IN §7. SAVE/LOAD IS BUILT (D509) ON `slice/save-load` — UNPLAYED: JOE PLAYS IT, THEN MERGE AT HIS WORD. AFTER SAVE/LOAD: THE STEADING REBUILD.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D510 IN §7. SAVE/LOAD IS DONE — PLAYED, MERGED AND PUSHED (D510). NEXT: THE STEADING REBUILD (JOE), SPEC FIRST; THEN THE TITLE AND PAUSE SCREENS.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD DONE) — D510, ON WINDOWS.**
+>
+> **State (D510):** ✅ **Save/load is done.** Joe played it (*"test and it works."*); `slice/save-load` is merged `--no-ff`
+> to `main` and pushed. `main` had not moved, so the merged tree is the one D509 verified (1513 / 0 / 5 of 1518; view 0
+> warnings; probe green, bar height 151, `save:` ✅; no golden moved). The village keeps: a snapshot of every field in
+> `%APPDATA%\Godot\app_userdata\bclone\saves\<village>-<seed>\`, three autosaves at Spring, Day 1 and on quit, a named
+> save in Settings, *Continue* and *Load…* on the new-game screen (`specs/save-load.md`).
+>
+> **Branches (2026-10-05, at Joe's word *"delete outdated branches"*):** `slice/save-load` deleted after the merge (local
+> only, never pushed). **What is left, locally and on GitHub: `main` and `slice/work-from-the-steading`** — ⚠️ **kept, and
+> asked about rather than deleted**: its one commit (`e12b20f`) was never merged and holds the 2026-08-22 measurement the
+> steading rebuild starts from (D355). Delete it only at Joe's explicit word.
+>
+> **▶️ NEXT: THE STEADING REBUILD** (Joe, D507: *"then i want to try steading again"*), **spec first**. What is settled
+> (DESIGN §4 Phase 5, *Work from the steading — the look only*, D355): farmhands rest at the steading in the working
+> seasons and go **home in winter** (the steading has no hearth, so D45's exposure is untouched), on `RestingPoint`'s
+> seam, **the harvest cost re-measured on today's code and accepted** — it was ~13 % in 2026-08 on a branch 445 commits
+> behind, before D194's sowing cap, `Point`s and clock B. Herdsmen inherit it with livestock (blocked on trade, D61).
+> ⛔ Not D58's work-in-place for every trade. Read `git show e12b20f` first: its message has the measurement and the
+> `RestingPlaceOf` / `HomePlaceOf` split (*the allocator measures distance from where somebody LIVES — one name for two
+> questions is D148's finding*). ⚠️ **A new villager field it adds is caught by `SaveLoadTests.EveryFieldIsSavedOrNamed`**
+> — save it, and say why in the table.
+>
+> **After that, §4's shell:** the title and pause screens (*Save* moves to the pause screen then), and ⏸️ later a full
+> settings screen (the autosave cadence becomes the player's, D508) and ironman mode (a name is Joe's — OPEN list).
+> Still open from D502: a market's *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD BUILT) — D509, ON WINDOWS.**
 >
