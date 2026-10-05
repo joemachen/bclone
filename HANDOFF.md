@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D510 IN §7. SAVE/LOAD IS DONE — PLAYED, MERGED AND PUSHED (D510). NEXT: THE STEADING REBUILD (JOE), SPEC FIRST; THEN THE TITLE AND PAUSE SCREENS.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D511 IN §7. THE STEADING REBUILD IS SPECIFIED AND ANSWERED (D511, D512) ON `slice/steading` — BUILDING. THEN THE TITLE AND PAUSE SCREENS.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (STEADING SPECIFIED) — D511, ON WINDOWS.**
+>
+> **State (D511):** `main` = D510, pushed. **`slice/steading`** (off `main`, not pushed, uncommitted until Joe has
+> read it) holds **`specs/work-from-the-steading.md`** — no code. Joe asked to revisit *"workers actually working at
+> their place of work"* and had `slice/work-from-the-steading` (`e12b20f`) reviewed. His calls this session:
+> **farmhands only** (D355) and **summer is tending, look only**. The review's findings are in the spec's §2 and D511.
+> The one to remember: `main` has two resting methods (`RestingPlaceOf` a tile, `RestingPoint` a Point), so the rebuild
+> derives the tile from the Point. Change one without the other and you get D385's flicker.
+>
+> **✅ Joe answered §8 (D512):** trails are drawn through the crop now, and the yield loss under a path stays his later
+> *trampled fields* slice. Water stays a home errand. A cost worse than −13 % comes back to him. The card wording stands.
+> **▶️ NEXT:** tests first (§6), then build (sim, then the §8a view), then §7's measurement with a cause for every delta.
+> `slice/work-from-the-steading` stays until Joe says otherwise.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD DONE) — D510, ON WINDOWS.**
 >
