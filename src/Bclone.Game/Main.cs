@@ -1659,6 +1659,14 @@ public partial class Main : Control
             _treeButton.Visible = world.ShownTheTechTree;
         }
 
+        // ⭐ B2 (D486, Joe: *"'Tree' is not in Settings until the tech tree is first unlocked"*).
+        // Settings makes a tick for every window, so the Tree was listed from the founding while
+        // its button was hidden. The same latch gates both.
+        if (WindowOf(_treePanel)?.Tick is CheckBox treeTick)
+        {
+            treeTick.Visible = world.ShownTheTechTree;
+        }
+
         ulong season = world.Tick / (ulong)world.Config.TicksPerSeason;
         if (_treePanel.Visible && season != _treeSeason)
         {
@@ -6826,8 +6834,14 @@ public partial class Main : Control
             wrong.Add("Professions should start shown and open");
         }
 
+        // B2 (D486): before the tree is first shown, Settings does not list it.
+        if (!_loop.World.ShownTheTechTree && WindowOf(_treePanel)?.Tick is { Visible: true })
+        {
+            wrong.Add("Tree is listed in Settings before the tree is shown");
+        }
+
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open"
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 

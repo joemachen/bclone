@@ -101,7 +101,8 @@ what each will take."* Every later unlock is its moment without the line.
 ### 3.6 Where it lives
 
 - **A *Tree* button on the control bar, beside Settings,** shown once `ShownTheTechTree` is set.
-  Before then the bar is unchanged.
+  Before then the bar is unchanged — **and Settings does not list the Tree window either** (D486, B2):
+  its tick follows the same latch.
 - **The moment's panel gets a second button, *See the tree*,** on the introducing moment only.
 - **The panel is a card skin like the others:** draggable and foldable. Nodes are drawn as small
   cards in columns by depth, with the `requires` edges as lines between them. A known node is in the

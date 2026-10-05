@@ -1,5 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D484 IN §7. B1 (THE PROFESSIONS WINDOW STARTS OPEN) IS PLAYED, MERGED AND PUSHED (D484, D485). NEXT: B2.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D486 IN §7. B2 ("TREE" NOT IN SETTINGS UNTIL THE TREE IS SHOWN) IS BUILT ON `claude/adoring-rubin-l6widh`, UNPLAYED (D486). NEXT: JOE PLAYS B2, THEN B3.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATE NIGHT) — D486, FROM A CLOUD SESSION.**
+>
+> **State:** `main` = `db98952` (D485), unchanged. **B2 is built on `claude/adoring-rubin-l6widh`** (off `main`, pushed —
+> the cloud harness pushes only to the branch it names, so not a `slice/` name; see the D486 trap) — **not played, not
+> merged.** One commit: `RefreshTheTree` gates the Tree window's Settings tick on `ShownTheTechTree`, the latch the bar
+> button already reads; the `windows:` probe line adds *"Tree is not in Settings until the tree is shown"* (**1 red of 1**
+> with the gate forced to `true`); `tech-tree-map.md §3.6` says so. At B2, on Linux: **1421 passing, 0 failing, 5 skipped of
+> 1426 (6m08); no golden moved (`git diff` of the 15+-digit grep: identical); view 0 warnings; probe green, 0 ⛔** — bar
+> height 151, tile centres ✅, `new game:` 400 of 400 (bake 465 ms), windows ✅ all 7.
+>
+> **▶️ NEXT:** Joe plays B2 on Windows (`run.bat` — a new village: Settings → Windows lists six, no *Tree*; once the first
+> stone or iron unlock shows the tree, *Tree* appears in Settings with the bar button) and merges the branch at his word.
+>
+> **How Joe merges B2 (Windows, at his word):** if his `data/sim.config.json` seed edit is still uncommitted,
+> `git stash push -- data/sim.config.json` first and `git stash pop` after; then `git fetch origin`, `git checkout main`,
+> `git merge --no-ff origin/claude/adoring-rubin-l6widh`, `git push`. *(The first B item on a `claude/…` branch, so his
+> checkout has never seen it: the fetch is not optional.)*
+>
+> **▶️ THE REST OF HIS B QUEUE, IN HIS ORDER** (full wording in the D483 banner below; one commit per note, on the
+> session's assigned branch off `main`; Joe plays each before it merges):
+> - **B3 — *What's here*** (view only, probe it): (a) its height bound to its contents — it is very tall; (b) it opens
+>   **behind** *The valley* and *Village log*; (c) it should first open **beside the tile it describes**, then
+>   **remember where the player moved it**, and stay closed if closed. `_whatsHerePanel`, `CloseTheWindow`, the window's
+>   `Wanted` state in `Main.cs`.
+> - **B4 — the destroy-resources brush and farms over trees — SPEC FIRST.** Joe's four answers (forester-only replant;
+>   stone and iron destroyed, goods lost; pens keep their trees; laborers clear a farm's trees) are in the D483 banner.
+>   **Measure what the game does today before writing it** (trap 151), and **show Joe the spec before building.**
+> - **B5 — homes on forested tiles: verify and report.** Change nothing unless it is wrong.
+> - **B6 — `quarry_unlock_stone` 100 → 200**, measured on the harness (D420's arms), its own commit.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (NIGHT) — D484, FROM A CLOUD SESSION.**
 >
 > **State (D485):** ✅ **Joe played B1 (*"looks good. merge it."*) and `slice/professions-open` is merged `--no-ff` to `main`
@@ -4517,7 +4548,26 @@ Read `git status` after staging, every time.
   lines ran green. `DOTNET_ROOT` pointing at an empty `~/.dotnet` did not break the suite, the build or Godot, but the
   hook now points it at `/usr/lib/dotnet` when that is where the SDK is.
 
+## ⛔ THE TRAPS B2 (D486) PAID FOR — A LIST BUILT ONCE, AND A BRANCH NAME THAT IS NOT YOURS
+
+- **Settings builds one tick per window ONCE (`BuildSettingsPanel` walks `_windows`), so a window gated on a latch
+  is listed from the founding unless its tick is gated too.** The Tree's bar button waited on `ShownTheTechTree`; its
+  Settings tick did not. Fixed in `RefreshTheTree` (the tick's `Visible` follows the latch). **The next window that
+  appears mid-game must gate its tick the same way** — today the Tree is the only one of the seven; the `windows:` probe
+  line checks only the Tree, so a new gated window wants its own clause.
+- **A cloud session is bound to the branch the harness names (here `claude/adoring-rubin-l6widh`) and may push only
+  there.** The handoff's *"each B item on its own `slice/<name>`"* cannot be followed in the cloud; the B item goes on
+  the assigned branch, off `main`, and Joe merges that branch at his word. Say which branch in the banner.
+- **`( long command ) &` inside a backgrounded tool call returns at once** — the "completed" notice is the wrapper, not
+  the suite. Wait on the suite's own output (`until grep -q '^exit' file`), not on the notice.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.**
+  An earlier cloud session's branch. Its tip, `ce01abb` *"Panels draw what they hold, the bar is one height, and a
+  dead village says so"*, is dated 2026-09-06, and `git rev-list origin/main..` counts **471 commits not on `main`**,
+  far more than that one change, so it is probably a rewritten or re-rooted history, not unmerged work. Nobody has
+  touched it. **Keep or delete it: your call.**
 
 - ✅ **DECIDED (D481) — Joe: *"drop it from the screen completely."* Built.** ~~Seam scatter on the new-game screen.~~
 - ✅ **ANSWERED (2026-10-04) — Joe: replant by a forester only; stone and iron destroyed and the goods LOST; animals
