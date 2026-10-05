@@ -1980,6 +1980,17 @@ public partial class VillageMap : Control
     private Vector2 ToScreen(GridPos tile) => ToScreen(new Vector2(tile.X, tile.Y));
 
     /// <summary>
+    /// The square a tile covers on screen, in this control's pixels — for a window that opens
+    /// beside what it describes (B3). The map fills the window from its corner, so these are the
+    /// shell's pixels too.
+    /// </summary>
+    public Rect2 OnScreen(GridPos tile)
+    {
+        var half = new Vector2(_pixelsPerTile, _pixelsPerTile) / 2f;
+        return new Rect2(ToScreen(tile) - half, half * 2f);
+    }
+
+    /// <summary>
     /// ⛔⛔ Where a building actually is, on screen — <b>and the half-tile seam lives here and
     /// nowhere else</b> (gridless 2c, D329).
     /// </summary>

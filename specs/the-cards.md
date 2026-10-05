@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
-**Decisions:** D376 (this document), D377, D378, D379, D380, D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) — played (*"villager cards are perfect for now"*) and merged (D433).** Owner: Joe + Claude Code.
+**Decisions:** D376 (this document), D377, D378, D379, D380, D488 (B3, *What's here*), D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
+**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) — played (*"villager cards are perfect for now"*) and merged (D433).** 🔨 ***What's here* fits its text, opens on top and beside its tile, and stays shut until asked — BUILT (2026-10-04, D488, B3), unplayed.** Owner: Joe + Claude Code.
 
 ---
 
@@ -70,7 +70,14 @@ hall stands — one click away, saying *"not written up yet"* until `town-hall.m
 Joe asked whether to make the card bigger: no — a card is 268 by D367/D376's rule; the words fit
 the card) and hides the
 moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
-card — and it returns on the next bare-ground click; every other panel's ✕ does what unticking it in
+card — and ✅ **since B3 (D488, Joe: *"stay closed if closed"*) it stays shut until a bare right-click
+or its Settings tick asks again** (it used to return on the next bare-ground left-click; Esc and a
+second right-click on the same tile shut it the same way). ✅ **B3 also: it is as tall as its text**,
+up to 460 logical, past which it scrolls with its bar (D367's fixed 460 reversed at Joe's word —
+*"it is very tall"*); **it opens on top** of the other windows (raised the frame it appears, as a card
+is); and **it opens beside the tile it describes** — to the right, or the left if there is no room,
+between the top bars and the control bar — **until the player drags it**, after which it opens where
+they left it (*Reset window positions* forgets the drag). Every other panel's ✕ does what unticking it in
 Settings does, and the tick reads the window's state every frame (D380). ✅ **Since D390 (Joe's play
 notes, 2026-09-18): a bare right-click opens *What's here* for the tile under the point** (resolved
 as a left-click resolves it, so a building opens its card), a second right-click on the same tile
