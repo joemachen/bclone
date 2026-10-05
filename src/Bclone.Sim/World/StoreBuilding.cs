@@ -1,4 +1,6 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Core;
+using Bclone.Sim.Persistence;
 
 namespace Bclone.Sim.World;
 
@@ -534,6 +536,54 @@ public sealed class StoreBuilding
     /// </para>
     /// </remarks>
     private bool KindAccepts(Goods goods) => Catalog.StoredBy(goods, Kind);
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+
+    internal JsonObject ToSave() => new()
+    {
+        ["id"] = Id,
+        ["kind"] = SaveWriter.Enum(Kind),
+        ["born_as"] = BornAs,
+        ["given_name"] = GivenName,
+        ["at"] = SaveWriter.Point(_position),
+        ["facing"] = SaveWriter.Angle(Facing),
+        ["raised_as"] = SaveWriter.Enum(RaisedAs),
+        ["width"] = ExtentWidth,
+        ["height"] = ExtentHeight,
+        ["store"] = Store.ToSave(),
+        ["allowed_goods"] = SaveWriter.Hex(AllowedGoods),
+        ["stocking"] = SaveWriter.Enum(Stocking),
+        ["limits"] = _limits?.ToSave(),
+    };
+
+    internal static StoreBuilding FromSave(SaveReader save, GoodsCatalog catalog)
+    {
+        var store = new StoreBuilding
+        {
+            Id = save.Int("id"),
+            Kind = save.Enum<StoreKind>("kind"),
+            Name = save.String("born_as"),
+            Position = save.Point("at"),
+            Facing = save.Angle("facing"),
+            RaisedAs = save.NullableEnum<BuildingKind>("raised_as"),
+            ExtentWidth = save.Int("width"),
+            ExtentHeight = save.Int("height"),
+            Store = Stockpile.FromSave(save.Object("store")),
+            Catalog = catalog,
+            AllowedGoods = save.Long("allowed_goods"),
+            Stocking = save.Enum<Stocking>("stocking"),
+        };
+
+        store.Rename(save.NullableString("given_name"));
+        if (save.HasValue("limits"))
+        {
+            store.Limits.ReadSave(save, "limits");
+        }
+
+        return store;
+    }
 }
 
 /// <summary>The kinds of goods a store can hold. Lumber and cloth land here next.</summary>

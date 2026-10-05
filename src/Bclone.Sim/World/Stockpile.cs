@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -350,6 +353,36 @@ public sealed class Stockpile
     /// </para>
     /// </remarks>
     private static string Name(Goods goods) => goods.ToString().ToLowerInvariant();
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+
+    /// <summary>What this store holds and has ever produced, and its room — all of it state.</summary>
+    internal JsonObject ToSave() => new()
+    {
+        ["capacity"] = Capacity == int.MaxValue ? null : Capacity,
+        ["held"] = SaveWriter.Ints(_held),
+        ["produced"] = SaveWriter.Ints(_produced),
+    };
+
+    /// <summary>A store as it was saved. ⛔ Its slots must be the catalogue's — a good gone from the data is refused.</summary>
+    internal static Stockpile FromSave(SaveReader save)
+    {
+        List<int> held = save.Ints("held");
+        List<int> produced = save.Ints("produced");
+        int slots = save.GoodsCount;
+        if (held.Count != slots || produced.Count != slots)
+        {
+            throw new SaveDataException("a different list of goods",
+                $"{save.Path}: {held.Count} goods where this game's data has {slots}.");
+        }
+
+        var pile = new Stockpile(slots) { Capacity = save.NullableInt("capacity") ?? int.MaxValue };
+        held.CopyTo(pile._held);
+        produced.CopyTo(pile._produced);
+        return pile;
+    }
 }
 
 // ⭐ `TreeStand` AND `FoodSource` ARE DELETED HERE (D159), which three comments elsewhere in

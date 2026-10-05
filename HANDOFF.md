@@ -1,4 +1,82 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D506 IN §7. SETTINGS PERSISTENCE IS DONE — PLAYED, MERGED AND PUSHED (D506). NEXT IN THE SHELL: SAVE/LOAD, SPEC FIRST — JOE'S CALL.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D510 IN §7. SAVE/LOAD IS DONE — PLAYED, MERGED AND PUSHED (D510). NEXT: THE STEADING REBUILD (JOE), SPEC FIRST; THEN THE TITLE AND PAUSE SCREENS.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD DONE) — D510, ON WINDOWS.**
+>
+> **State (D510):** ✅ **Save/load is done.** Joe played it (*"test and it works."*); `slice/save-load` is merged `--no-ff`
+> to `main` and pushed. `main` had not moved, so the merged tree is the one D509 verified (1513 / 0 / 5 of 1518; view 0
+> warnings; probe green, bar height 151, `save:` ✅; no golden moved). The village keeps: a snapshot of every field in
+> `%APPDATA%\Godot\app_userdata\bclone\saves\<village>-<seed>\`, three autosaves at Spring, Day 1 and on quit, a named
+> save in Settings, *Continue* and *Load…* on the new-game screen (`specs/save-load.md`).
+>
+> **Branches (2026-10-05, at Joe's word *"delete outdated branches"*):** `slice/save-load` deleted after the merge (local
+> only, never pushed). **What is left, locally and on GitHub: `main` and `slice/work-from-the-steading`** — ⚠️ **kept, and
+> asked about rather than deleted**: its one commit (`e12b20f`) was never merged and holds the 2026-08-22 measurement the
+> steading rebuild starts from (D355). Delete it only at Joe's explicit word.
+>
+> **▶️ NEXT: THE STEADING REBUILD** (Joe, D507: *"then i want to try steading again"*), **spec first**. What is settled
+> (DESIGN §4 Phase 5, *Work from the steading — the look only*, D355): farmhands rest at the steading in the working
+> seasons and go **home in winter** (the steading has no hearth, so D45's exposure is untouched), on `RestingPoint`'s
+> seam, **the harvest cost re-measured on today's code and accepted** — it was ~13 % in 2026-08 on a branch 445 commits
+> behind, before D194's sowing cap, `Point`s and clock B. Herdsmen inherit it with livestock (blocked on trade, D61).
+> ⛔ Not D58's work-in-place for every trade. Read `git show e12b20f` first: its message has the measurement and the
+> `RestingPlaceOf` / `HomePlaceOf` split (*the allocator measures distance from where somebody LIVES — one name for two
+> questions is D148's finding*). ⚠️ **A new villager field it adds is caught by `SaveLoadTests.EveryFieldIsSavedOrNamed`**
+> — save it, and say why in the table.
+>
+> **After that, §4's shell:** the title and pause screens (*Save* moves to the pause screen then), and ⏸️ later a full
+> settings screen (the autosave cadence becomes the player's, D508) and ironman mode (a name is Joe's — OPEN list).
+> Still open from D502: a market's *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD BUILT) — D509, ON WINDOWS.**
+>
+> **State (D509):** `main` = D506 + the branch clean-up, pushed. **`slice/save-load`** (off `main`, not pushed) holds
+> D507's spec, D508's answers and **the whole feature, sim and view**: `Bclone.Sim/Persistence/` (`SaveGame`, `SaveFile`,
+> `SaveData`), each world class's `ToSave` / `FromSave`, `SimWorld`'s restoring constructor, `Main.Saves.cs`, *Continue*
+> and *Load…* on the new-game screen, a name and *Save* in Settings, autosave at Spring, Day 1 and on quit (three kept).
+> Saves live in `%APPDATA%\Godot\app_userdata\bclone\saves\<village>-<seed>\`. At D509, Windows: **1513 / 0 / 5 of 1518
+> (4m28); view 0 warnings; probe green (new line `save:`), bar height 151; no golden moved.** `SaveLoadTests` 14 mutants
+> all red; probe `save:` 2 of 2.
+>
+> **▶️ NEXT: Joe plays it** (`run.bat` on the branch — `git checkout slice/save-load`):
+> 1. Found a village, play two or three years (let one Spring pass), untick *share the work out* in Settings, type a name
+>    beside *Save* and press it — the village log says *"Saved as …"*.
+> 2. Quit with the window's ✕. Relaunch: *Continue* opens the newest save — the village where he left it, the share-out
+>    tick still off. *Load…* lists the named save and the autosaves (village, season and year, file, build).
+> 3. Optional: quit, open a save in a text editor (it is gzip — rename to `.gz` and unzip it to read the JSON), break it,
+>    put it back and relaunch: *Load…* refuses it in words and a `.bad` copy sits beside it.
+>
+> Then merge at his word: `git checkout main`, `git merge --no-ff slice/save-load`, `git push`. **Then the steading
+> rebuild** (Joe: *"then i want to try steading again"* — DESIGN §4 Phase 5's entry; `slice/work-from-the-steading` is the
+> record, read its commit message, do not merge it). After that §4's shell order has the title and pause screens.
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD SPECCED) — D507, ON WINDOWS.**
+>
+> **State (D507):** `main` = D506 + the branch clean-up, pushed. **`slice/save-load`** (off `main`, one commit, not
+> pushed) holds **`specs/save-load.md`** — no code. Joe's calls, asked this session: **a snapshot** (not seed + input
+> log — a replay save becomes a different village every time a golden moves), **autosave + named saves** (one slot per
+> village is *ironman mode*, later, under a better name — ⏸️ OPEN list), **an older format refused in words**, no
+> migrations before v1. Measured first as §4 asked (`tools/harness/ZzReplay.cs`): replaying fifty shipped years is
+> 0.3–1.8 s on harness villages that never pass ~19 people — a floor.
+>
+> **▶️ NEXT:**
+> 1. ✅ **Joe answered the spec's §11 (D508):** yearly at Spring, Day 1 (⏸️ the player chooses it in a later *full
+>    settings* screen — §4), three autosaves, *Save* in Settings until the pause screen, the words as written (all four
+>    refusal sentences are in §7's table).
+> 2. **The sim half** (spec §12.2), on this branch: `Bclone.Sim/Persistence/` (`SaveGame`, `SaveFile`), an `internal`
+>    capture + restoring constructor in `SimWorld`, guards §9.1–9.7. ⭐ **Build guard §9.4 (the reflection guard) FIRST**
+>    — it is the field list, and it will find state the spec's §5.2 table missed. Red-check by deleting one saved
+>    field at a time. Measure load time and file size into the spec.
+> 3. The view (§12.3), then Joe plays it, then merge at his word.
+> 4. **Then the steading rebuild** (Joe: *"then i want to try steading again"*) — DESIGN §4 Phase 5's entry: farmhands
+>    rest at the steading in the working seasons, home in winter, on `RestingPoint`'s seam, the harvest cost
+>    re-measured on today's code. `slice/work-from-the-steading` (`e12b20f`) is the record — read its commit message
+>    for the 2026-08-22 measurement; do not merge it.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SETTINGS PERSISTENCE DONE) — D506, ON WINDOWS.**
 >
@@ -5006,7 +5084,42 @@ Read `git status` after staging, every time.
 - **Two Godot exit warnings are not this branch's**: `1 RID of type "CanvasItem" was leaked` and `2 ObjectDB instances
   were leaked at exit` print after `done.` on `main` too (checked in a side worktree, 2026-10-05).
 
+## ⛔ THE TRAP THE SAVE/LOAD SPEC (D507) PAID FOR — THE HASH IS NOT THE SAVE
+
+- **`StateHash` is a fingerprint, and it was always allowed to skip state that never changes the future — but some of
+  what it skips DOES.** Reading for the spec found the sim reading at least seven things the hash never mixes:
+  `GeneratedMap._everWooded` (history), `PathWear._priceClass` (hysteresis), `TravelCostField._entryCost` (last
+  spring's prices, not today's), `_nextWorkplaceId`, a site's `_delivered` / `WorkDone`, `Workplace.Kind` / `Capacity`,
+  and `Villager.LastWorkplaceId` — **whose own comment says it only words explanations, while `LabourAllocator.cs:329`
+  reads it.** A comment that says *"not hashed, explanation only"* is a claim; grep for its readers before trusting it.
+- **So `save → load → hash == live` — §4's own guard — would pass on a save that loses all seven.** The guard that sees
+  them runs the loaded village on and compares it with one that never stopped. Any future check of the form *"X
+  round-trips"* asks the same question: *does the thing I compare see everything that matters?*
+- **A harness village is not a played village** (D447, again): `ZzReplay`'s four arms never pass ~19 people, so its
+  replay times are a floor, and the spec says so rather than quoting them as the cost.
+
+## ⛔ THE TRAPS SAVE/LOAD (D509) PAID FOR — A POSE THAT NEVER REACHES THE STATE, AND A SUITE THAT LOOKS GREEN FIRST TIME
+
+- **Every guard passed on its first run, and two of fourteen mutants then scored ZERO.** Dropping `Moments` or the
+  *nowhere to keep it* latch from the save changed nothing any pose could see, because no pose held a pending moment or
+  a set latch. The code was fine; the poses were blind. Two poses were added (an unattended village gone empty; every
+  store closed at tick 40) and both mutants went red. *A field guard is only as good as the states its poses reach —
+  when a mutant scores zero, ask what village would hold that field set.*
+- **The run-on year is not the strong guard here; the field guard is.** Seven of twelve dropped fields did not make a
+  loaded year part from the live one (`_everWooded` needs a felled wood; `LastWorkplaceId` the three-yearly reshuffle).
+  ⛔ **When the next slice adds a field, `EveryFieldIsSavedOrNamed` fails by name — enter it in `SaveLoadTests.Fields`
+  with its reason AND save it (`ToSave` / `FromSave`); never classify a field as `Cache` to make the test pass.** A
+  `Cache` field must be one the sim rebuilds on its first ask.
+- **The red-check script ran while I edited other files** — fine for `src/Bclone.Game` (the script built only the test
+  project), but never touch a file a mutant is replacing: the script restores its own copy over yours.
+- **Saves are the player's, like settings**: the probe never reads or writes `user://saves` (`_saveFolder` is `null`
+  under it); its `save:` line uses `user://probe-saves` and deletes it.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **A NAME FOR "IRONMAN MODE" (Joe, D507: *"we'll have to come up with a better theme name than that"*).** One save
+  per village, overwritten, no going back — a mode over save/load's file (`save-load.md §10`), built after save/load
+  and the title screen. Not scheduled; the name is his.
 
 - ✅ **DECIDED (D497) — Joe: *"1. yes 2. agree … 3. keep"*. Built (D498), played and merged (D499).** ~~B5'S THREE CALLS (D496).~~ *(Q1)* **Clear the whole
   footprint?** Today only the front tile of a house (and the anchor of a granary, warehouse, market, woodcutter's or

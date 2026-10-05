@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.Core;
 
 namespace Bclone.Sim.World;
@@ -60,4 +62,26 @@ public sealed class Well
     /// finder). The card says it.
     /// </remarks>
     public int Draws { get; internal set; }
+
+    internal JsonObject ToSave() => new()
+    {
+        ["at"] = SaveWriter.Point(Position),
+        ["facing"] = SaveWriter.Angle(Facing),
+        ["width"] = ExtentWidth,
+        ["height"] = ExtentHeight,
+        ["name"] = Name,
+        ["kind"] = SaveWriter.Enum(Kind),
+        ["draws"] = Draws,
+    };
+
+    internal static Well FromSave(SaveReader save) => new()
+    {
+        Position = save.Point("at"),
+        Facing = save.Angle("facing"),
+        ExtentWidth = save.Int("width"),
+        ExtentHeight = save.Int("height"),
+        Name = save.String("name"),
+        Kind = save.Enum<BuildingKind>("kind"),
+        Draws = save.Int("draws"),
+    };
 }

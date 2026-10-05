@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
 using System.Text.Json.Serialization;
 
 namespace Bclone.Sim.World;
@@ -282,4 +284,22 @@ public sealed class SkillProgress
     /// </para>
     /// </remarks>
     public bool MasteredHere { get; set; }
+
+    internal JsonObject ToSave() => new()
+    {
+        ["skill"] = SkillId,
+        ["ticks"] = Ticks,
+        ["work"] = Work,
+        ["mastered"] = Mastered,
+        ["mastered_here"] = MasteredHere,
+    };
+
+    internal static SkillProgress FromSave(SaveReader save) => new()
+    {
+        SkillId = save.Int("skill"),
+        Ticks = save.Int("ticks"),
+        Work = save.Int("work"),
+        Mastered = save.Bool("mastered"),
+        MasteredHere = save.Bool("mastered_here"),
+    };
 }

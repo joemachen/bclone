@@ -1,5 +1,7 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Persistence;
 
 namespace Bclone.Sim.World;
 
@@ -801,5 +803,73 @@ public sealed class ConstructionSite
 
         WorkDone = 0;
         return back;
+    }
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5.2`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ A half-built site is state the hash never mixes (`Workplace.Construction` is not in it), so this
+    // is one of the things a save "beside StateHash" would have lost. ⚠️ And the recipe is SAVED, not
+    // looked up again: a site is built to the recipe it was marked with (a demolition's is its own,
+    // `SimWorld.MarkDemolition`), so a recipe changed in `data/` reaches the next site, not this one.
+
+    internal JsonObject ToSave()
+    {
+        var materials = new JsonArray();
+        for (int i = 0; i < Recipe.Materials.Count; i++)
+        {
+            materials.Add(new JsonObject
+            {
+                ["goods"] = SaveWriter.Good(Recipe.Materials[i].Goods),
+                ["amount"] = Recipe.Materials[i].Amount,
+                ["delivered"] = _delivered[i],
+            });
+        }
+
+        return new JsonObject
+        {
+            ["kind"] = SaveWriter.Enum(Kind),
+            ["name"] = Name,
+            ["for_household"] = ForHouseholdId,
+            ["moving_from"] = SaveWriter.GridPos(MovingFrom),
+            ["facing"] = SaveWriter.Angle(Facing),
+            ["demolishing"] = Demolishing,
+            ["work_ticks"] = Recipe.WorkTicks,
+            ["materials"] = materials,
+            ["work_done"] = WorkDone,
+        };
+    }
+
+    internal static ConstructionSite FromSave(SaveReader save)
+    {
+        var costs = new List<MaterialCost>();
+        var delivered = new List<int>();
+        foreach (SaveReader material in save.Objects("materials"))
+        {
+            costs.Add(new MaterialCost(material.Good("goods"), material.Int("amount")));
+            delivered.Add(material.Int("delivered"));
+        }
+
+        var site = new ConstructionSite(new BuildingRecipe(save.Int("work_ticks"), costs.ToArray()))
+        {
+            Kind = save.Enum<BuildingKind>("kind"),
+            Name = save.String("name"),
+            ForHouseholdId = save.Int("for_household"),
+            MovingFrom = save.NullableGridPos("moving_from"),
+            Facing = save.Angle("facing"),
+            Demolishing = save.Bool("demolishing"),
+            WorkDone = save.Int("work_done"),
+        };
+
+        // ⚠️ The recipe drops a zero and sorts by good, so a saved list that is not already in that
+        // shape is not one this code wrote.
+        if (site._delivered.Length != delivered.Count)
+        {
+            throw new SaveFormatException($"{save.Path}.materials: not a recipe this build writes.");
+        }
+
+        delivered.CopyTo(site._delivered);
+        return site;
     }
 }

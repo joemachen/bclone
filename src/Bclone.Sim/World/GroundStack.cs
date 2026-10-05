@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -42,4 +45,18 @@ public sealed class GroundStack
 
     /// <summary>How much is lying here. Never negative, and a heap at zero is removed.</summary>
     public int Amount { get; set; }
+
+    internal JsonObject ToSave() => new()
+    {
+        ["at"] = SaveWriter.GridPos(Position),
+        ["goods"] = SaveWriter.Good(Goods),
+        ["amount"] = Amount,
+    };
+
+    internal static GroundStack FromSave(SaveReader save) => new()
+    {
+        Position = save.GridPos("at"),
+        Goods = save.Good("goods"),
+        Amount = save.Int("amount"),
+    };
 }

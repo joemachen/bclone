@@ -26,3 +26,8 @@ How a number in `data/sim.config.json` or a new-game row's end gets **measured b
 ⚠️ **A harness is not a player (D447):** it measures that a setting can be lived in, not how it plays.
 ⚠️ Baselines move whenever the sim does: run `base` in the same sitting as the arm, never compare
 against a number from an older commit.
+- `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
+  fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
+  one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its
+  size. Copy in, `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzReplay
+  --logger "console;verbosity=detailed"`, delete. ⚠️ No harness village passes ~19 people, so its times are a floor.

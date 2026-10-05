@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -122,6 +125,38 @@ public sealed class JobLimits
         for (int i = 0; i < _targets.Length; i++)
         {
             other._targets[i] = _targets[i];
+        }
+    }
+
+    /// <summary>Each trade the player set a number for, by name — a trade they never touched is absent.</summary>
+    internal JsonObject ToSave()
+    {
+        var saved = new JsonObject();
+        for (int i = 0; i < _targets.Length; i++)
+        {
+            if (_targets[i] is int target)
+            {
+                saved[Kinds[i].ToString()] = target;
+            }
+        }
+
+        return saved;
+    }
+
+    /// <summary>The saved numbers, read into this (fresh) set. A trade this build does not have is refused.</summary>
+    internal void ReadSave(SaveReader save)
+    {
+        for (int i = 0; i < Kinds.Count; i++)
+        {
+            _targets[i] = save.NullableInt(Kinds[i].ToString());
+        }
+
+        foreach (string name in save.Keys)
+        {
+            if (!Enum.TryParse(name, ignoreCase: false, out JobKind _))
+            {
+                throw new SaveDataException($"the trade “{name}”", $"{save.Path}.{name}: a trade this build does not have.");
+            }
         }
     }
 
