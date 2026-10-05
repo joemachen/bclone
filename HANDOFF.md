@@ -1,5 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D498 IN §7. B5 IS BUILT ON `slice/b5-whole-footprint` (D497 JOE'S CALLS, D498) — UNPLAYED, NOT MERGED. NEXT: JOE PLAYS IT, THEN B6.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D499 IN §7. B5 IS DONE — PLAYED, MERGED AND PUSHED (D496–D499). NEXT: B6.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 DONE) — D499, ON WINDOWS.**
+>
+> **State (D499):** ✅ **B5 is done.** Joe played it (*"both worked. merge and push."*); `slice/b5-whole-footprint`
+> (D497–D498) is merged `--no-ff` to `main` and pushed. No branch is open. At D498: 1445 / 0 / 5 of 1450 (3m40); view 0
+> warnings; probe green, bar height 151; four goldens moved for B5's one reason.
+>
+> **▶️ NEXT: B6 — `quarry_unlock_stone` 100 → 200**, measured on the harness (`tools/harness/`, D420's arms — run
+> `main` in a `git worktree` beside the change, back to back), its own commit; `quarry.md`, the config comment and any
+> guard posed on 100 move with it. That is the last of Joe's B queue.
+>
+> ⚠️ **Playing a house-siting rule needs a pose** (D499): the chooser prices walks and a tree costs a site nothing, so
+> houses take bare ground nearer the village first. To see trees or seams under a house, paint homes ONLY over wood (or
+> ONLY over a seam) in a new game, before unpausing — the founders are sited at the first day boundary.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 BUILT) — D498, ON WINDOWS.**
 >
 > **State (D498):** `main` = D496, pushed. **`slice/b5-whole-footprint`** (off `main`, one commit, not pushed) holds
@@ -4835,7 +4850,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ✅ **DECIDED (D497) — Joe: *"1. yes 2. agree … 3. keep"*. Built (D498), unplayed.** ~~B5'S THREE CALLS (D496).~~ *(Q1)* **Clear the whole
+- ✅ **DECIDED (D497) — Joe: *"1. yes 2. agree … 3. keep"*. Built (D498), played and merged (D499).** ~~B5'S THREE CALLS (D496).~~ *(Q1)* **Clear the whole
   footprint?** Today only the front tile of a house (and the anchor of a granary, warehouse, market, woodcutter's or
   builder's hut) is cleared and waited on; 30 of 80 measured houses stand on a tree or rock that never goes. Recommended:
   yes — paint and wait on every tile the building covers. *(Q2)* **Homes and seams:** today a house may be sited over

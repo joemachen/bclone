@@ -1,7 +1,7 @@
 # Spec: Footprints per building — a granary is bigger than a hut
 
 **Decisions:** D382 (this document). Neighbours: D319 (the centre rule), D322 (the longhouse), D329–D331 (free placement, SAT), D344 (a re-take with one reason), D353 (item 4 of Joe's 2026-09-12 list).
-**Status:** ✅ **BUILT (2026-09-16, D382)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), unplayed** — the table is Joe's ("Modest", chosen 2026-09-16); unplayed as of this line. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-16, D382)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16); unplayed as of this line. Owner: Joe + Claude Code.
 
 ---
 
@@ -98,7 +98,7 @@ re-taken once; specs (`gridless.md §2.3` says "every building is 1×1" — no l
 
 ## 7. Clearing the whole footprint (B5 — D496 measured, D497 Joe's call, D498 built)
 
-**Status:** ✅ **BUILT (D498) on `slice/b5-whole-footprint` — unplayed.**
+**Status:** ✅ **BUILT (D498), PLAYED BY JOE (*"both worked"*) AND MERGED (D499).**
 
 ### 7.1 What was wrong, measured
 
