@@ -1,5 +1,23 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D495 IN §7. B4 (THE DESTROY BRUSH, FARMS OVER TREES) IS DONE — PLAYED, MERGED AND PUSHED (D490–D495). NEXT: B5 (VERIFY AND REPORT), THEN B6.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D496 IN §7. B5 (HOMES ON FORESTED TILES) IS VERIFIED AND REPORTED (D496) — TWO OF JOE'S FOUR BELIEFS DO NOT HOLD; HIS THREE CALLS WAIT IN THE ⏸️ LIST. NEXT: HIS ANSWER, THEN B6.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 REPORTED) — D496, ON WINDOWS.**
+>
+> **State (D496):** `main` = D495 + one commit (this handoff, D496's docs and `tools/harness/ZzB5.cs`) — **not pushed;
+> no code changed, no golden moved.** B5 was verify-and-report; Joe chose **report first, then he decides** (asked
+> this session). The measurement (24 runs × 30 years, 80 houses) and its verdicts are D496:
+> - **Footprints are cleared one tile of two.** 30 of 80 houses rose with a tree (23) or rock (7) on the second tile,
+>   still there at year 30 — one in the unposed played opening. Granary / warehouse / market / the two huts share it.
+> - **Ground under a building never regrows** ✅. **Inside the homes paint nothing regrows at all** (by design), so
+>   *"trees between buildings may"* holds only off the paint.
+> - **Homes DO go on seams:** 8 sited over rock; 7 stood on it after the front tile was quarried.
+>
+> **▶️ NEXT:** Joe answers the three B5 calls in the ⏸️ list (Q1 clear every tile, Q2 homes round seams or quarry first,
+> Q3 keep residential regrowth off). If he wants fixes: a `slice/b5-…` off `main`, spec section first
+> (`organic-housing.md` / `building-placement.md`), guards red-checked; re-run `tools/harness/ZzB5.cs` (`ZZ_YEARS=30`)
+> before and after — **the fix's measure is "0 houses raised over growth"**. **Then B6** (`quarry_unlock_stone`
+> 100 → 200 on the harness). Push `main` at his word.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B4 DONE) — D495, ON WINDOWS.**
 >
 > **State (D495):** ✅ **B4 is done.** Joe played the destroy brush (*"played and it all looks good"*);
@@ -4768,7 +4786,28 @@ Read `git status` after staging, every time.
   in `src/Bclone.Game` that calls it fails the view build, and the probe then runs the LAST build — a stale mutant
   result, not this code. Read the build line before the probe line.
 
+## ⛔ THE TRAP B5 (D496) PAID FOR — A RULE CHECKED AT THE ANCHOR IS A RULE ABOUT ONE TILE
+
+- **"The site waits for clear ground" was true and meant one tile.** Every check (`MarkHome`'s paint, `GroundIsClearAt`,
+  `NextFootprintToClear`) asks `Workplace.Tile`, and a house has had two tiles since D386. D321 fixed the same shape for
+  `CanBuildAt` and nobody carried it to the clearing. **When a building's extent grows, grep every `.Tile` it is asked
+  through** — a single-tile question is silently right for 1×1 and silently wrong for anything wider.
+- **Measure the claim per tile, not per building.** "Was the house raised on cleared ground?" reads yes if you look at
+  the anchor; the per-tile record (`ZzB5H … raise[Forest Grass]`) is what showed it.
+- **Moving the opening's homes paint is a clean pose**: erase the 9×9 at tick 0 (before `HouseTheRoofless` at tick 4)
+  and paint where you want houses. The chooser then sites the founders there.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **B5'S THREE CALLS (D496) — measured, nothing built; you chose report first.** *(Q1)* **Clear the whole
+  footprint?** Today only the front tile of a house (and the anchor of a granary, warehouse, market, woodcutter's or
+  builder's hut) is cleared and waited on; 30 of 80 measured houses stand on a tree or rock that never goes. Recommended:
+  yes — paint and wait on every tile the building covers. *(Q2)* **Homes and seams:** today a house may be sited over
+  rock or iron, the front tile is quarried first (the village gets the stone) and the other tile stays rock. Recommended:
+  the site chooser skips a plot whose house tiles are rock or iron — houses go round seams as farms do (D491) — and the
+  homes brush stays as it is, so clearing or destroying the seam later frees the ground. Or keep quarry-first and only
+  fix Q1. *(Q3)* **Regrowth inside the homes paint:** cleared ground there never regrows (by design: *"the wood stops at
+  the fence"*), so trees between houses come back only off the paint. Recommended: keep it.
 
 - ✅ **DECIDED (D487) — Joe: delete it. Deleted from GitHub, with the merged `claude/adoring-rubin-l6widh`.**
   ~~A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.~~

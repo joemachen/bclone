@@ -13,6 +13,9 @@ How a number in `data/sim.config.json` or a new-game row's end gets **measured b
 - `dead.py` — per arm: runs, alive, **dead valleys**, peak, starved, froze. The survival guard's line
   is 25 % dead.
 - `summ2.py` — the older per-group summary (shipped / fixture / every).
+- `ZzB5.cs` — B5's measurement (D496): every house's footprint tiles at mark, raise and the end (`ZZB5H`), and
+  where cleared wood regrew (`ZZB5S`), over three arms (played / homes over a wood / over a seam); `ZZ_YEARS`.
+  `Placed` poses a granary and a woodcutter's hut over trees. Copy in, `--filter ZzB5`, delete.
 
 ⛔ **`ZzBase.cs` is never committed under `tests/`** — it is slow and it is not a guard.
 ⚠️ **A harness is not a player (D447):** it measures that a setting can be lived in, not how it plays.
