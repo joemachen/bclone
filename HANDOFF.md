@@ -1,4 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D506 IN §7. SETTINGS PERSISTENCE IS DONE — PLAYED, MERGED AND PUSHED (D506). NEXT IN THE SHELL: SAVE/LOAD, SPEC FIRST — JOE'S CALL.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D507 IN §7. SAVE/LOAD IS SPECCED (D507, `specs/save-load.md`) ON `slice/save-load` — JOE READS IT AND ANSWERS ITS §11, THEN THE SIM HALF IS BUILT. AFTER SAVE/LOAD: THE STEADING REBUILD.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD SPECCED) — D507, ON WINDOWS.**
+>
+> **State (D507):** `main` = D506 + the branch clean-up, pushed. **`slice/save-load`** (off `main`, one commit, not
+> pushed) holds **`specs/save-load.md`** — no code. Joe's calls, asked this session: **a snapshot** (not seed + input
+> log — a replay save becomes a different village every time a golden moves), **autosave + named saves** (one slot per
+> village is *ironman mode*, later, under a better name — ⏸️ OPEN list), **an older format refused in words**, no
+> migrations before v1. Measured first as §4 asked (`tools/harness/ZzReplay.cs`): replaying fifty shipped years is
+> 0.3–1.8 s on harness villages that never pass ~19 people — a floor.
+>
+> **▶️ NEXT:**
+> 1. **Joe reads `specs/save-load.md` and answers its §11** — autosave cadence (yearly at Spring, Day 1?), how many
+>    autosaves kept (3?), where *Save* sits (Settings, under *How the village runs*?), the words.
+> 2. **The sim half** (spec §12.2), on this branch: `Bclone.Sim/Persistence/` (`SaveGame`, `SaveFile`), an `internal`
+>    capture + restoring constructor in `SimWorld`, guards §9.1–9.7. ⭐ **Build guard §9.4 (the reflection guard) FIRST**
+>    — it is the field list, and it will find state the spec's §5.2 table missed. Red-check by deleting one saved
+>    field at a time. Measure load time and file size into the spec.
+> 3. The view (§12.3), then Joe plays it, then merge at his word.
+> 4. **Then the steading rebuild** (Joe: *"then i want to try steading again"*) — DESIGN §4 Phase 5's entry: farmhands
+>    rest at the steading in the working seasons, home in winter, on `RestingPoint`'s seam, the harvest cost
+>    re-measured on today's code. `slice/work-from-the-steading` (`e12b20f`) is the record — read its commit message
+>    for the 2026-08-22 measurement; do not merge it.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SETTINGS PERSISTENCE DONE) — D506, ON WINDOWS.**
 >
@@ -5006,7 +5030,25 @@ Read `git status` after staging, every time.
 - **Two Godot exit warnings are not this branch's**: `1 RID of type "CanvasItem" was leaked` and `2 ObjectDB instances
   were leaked at exit` print after `done.` on `main` too (checked in a side worktree, 2026-10-05).
 
+## ⛔ THE TRAP THE SAVE/LOAD SPEC (D507) PAID FOR — THE HASH IS NOT THE SAVE
+
+- **`StateHash` is a fingerprint, and it was always allowed to skip state that never changes the future — but some of
+  what it skips DOES.** Reading for the spec found the sim reading at least seven things the hash never mixes:
+  `GeneratedMap._everWooded` (history), `PathWear._priceClass` (hysteresis), `TravelCostField._entryCost` (last
+  spring's prices, not today's), `_nextWorkplaceId`, a site's `_delivered` / `WorkDone`, `Workplace.Kind` / `Capacity`,
+  and `Villager.LastWorkplaceId` — **whose own comment says it only words explanations, while `LabourAllocator.cs:329`
+  reads it.** A comment that says *"not hashed, explanation only"* is a claim; grep for its readers before trusting it.
+- **So `save → load → hash == live` — §4's own guard — would pass on a save that loses all seven.** The guard that sees
+  them runs the loaded village on and compares it with one that never stopped. Any future check of the form *"X
+  round-trips"* asks the same question: *does the thing I compare see everything that matters?*
+- **A harness village is not a played village** (D447, again): `ZzReplay`'s four arms never pass ~19 people, so its
+  replay times are a floor, and the spec says so rather than quoting them as the cost.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **A NAME FOR "IRONMAN MODE" (Joe, D507: *"we'll have to come up with a better theme name than that"*).** One save
+  per village, overwritten, no going back — a mode over save/load's file (`save-load.md §10`), built after save/load
+  and the title screen. Not scheduled; the name is his.
 
 - ✅ **DECIDED (D497) — Joe: *"1. yes 2. agree … 3. keep"*. Built (D498), played and merged (D499).** ~~B5'S THREE CALLS (D496).~~ *(Q1)* **Clear the whole
   footprint?** Today only the front tile of a house (and the anchor of a granary, warehouse, market, woodcutter's or
