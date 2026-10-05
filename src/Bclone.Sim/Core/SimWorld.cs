@@ -3597,6 +3597,32 @@ public sealed class SimWorld : IObstacles
     public bool IsUnlocked(BuildingKind kind) => WhyNotYet(kind) is null;
 
     /// <summary>
+    /// Whether the village knows this good exists — what the view may list in a store, the stock
+    /// limits and the bar (`professions.md §3.0`, D502, Joe: <i>"iron tools are unlocked later, and
+    /// shouldn't be storable … yet"</i>).
+    /// </summary>
+    /// <remarks>
+    /// A forged good is unknown until the smithy is, because nothing else makes it — except the tool
+    /// the founders' cart carries, which the village holds from the first day. Read off the goods
+    /// rows and <see cref="IsUnlocked"/>, so a modded forged good hides with no line here.
+    /// </remarks>
+    public bool KnowsOf(Goods goods) => KnowsOf(goods, IsUnlocked(BuildingKind.Smithy));
+
+    /// <summary>
+    /// <see cref="KnowsOf(Goods)"/> with the forge's gate given — the view passes the flag its build bar
+    /// latched from <see cref="IsUnlocked"/>, so the bar and its lists cannot disagree.
+    /// </summary>
+    public bool KnowsOf(Goods goods, bool forgeKnown)
+    {
+        if ((int)goods < 0 || (int)goods >= GoodsCatalog.Count || GoodsCatalog[goods].ForgedFrom.Count == 0)
+        {
+            return true;
+        }
+
+        return forgeKnown || (goods == Goods.Tools && Config.CartTools > 0);
+    }
+
+    /// <summary>
     /// The face a quarrier or miner walks to next: the cheapest tile of its seam on the workplace's
     /// own ground, or null (`quarry.md §3.5`, `iron-mine.md §3.2`).
     /// </summary>

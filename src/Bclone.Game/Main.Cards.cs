@@ -144,6 +144,9 @@ public partial class Main
 
         /// <summary>The dropdown's trades, by item index — item 0 is <i>the village decides</i>.</summary>
         public List<JobKind> KeepTrades { get; } = new();
+
+        /// <summary>The <c>Main._knownGeneration</c> the dropdown was filled at, and the pin it was filled for (D502).</summary>
+        public (int Generation, JobKind? Pin)? KeepFilledFor { get; set; }
     }
 
     private readonly List<Card> _cards = new();
@@ -862,7 +865,10 @@ public partial class Main
                 // longer takes is exactly the state the player wants to see.
                 foreach ((Goods goods, HBoxContainer row, Label name, Label amount, Button take) in c.Storage)
                 {
-                    bool holdable = store.CanEverHold(goods);
+                    // ⭐ Not a good the village has not learned (D502) — unless this store holds some:
+                    // what is in a store is always shown (legibility over surprise).
+                    int held = store.Store[goods];
+                    bool holdable = store.CanEverHold(goods) && (GoodKnown(goods) || held > 0);
                     row.Visible = holdable;
                     if (!holdable)
                     {
@@ -870,7 +876,6 @@ public partial class Main
                     }
 
                     bool allowed = store.PlayerAllows(goods);
-                    int held = store.Store[goods];
                     amount.Text = held > 0 ? held.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) : "—";
                     take.ButtonPressed = allowed;
                     take.Text = allowed ? "✓" : "✕";
@@ -885,7 +890,7 @@ public partial class Main
                 {
                     foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in c.Limits)
                     {
-                        cell.Visible = store.CanEverHold(goods);
+                        cell.Visible = store.CanEverHold(goods) && GoodKnown(goods);
                         amount.SetValueNoSignal(world.MarketStockLimit(store, goods));
                         clear.Disabled = store.Limits.For(goods) is null;
                     }
@@ -1480,15 +1485,27 @@ public partial class Main
     }
 
     /// <summary>The Kept-on dropdown: the village decides, or one trade (Joe, 2026-08-22; a dropdown since D431).</summary>
-    private static void FillKeep(SimWorld world, VillagerParts p, Villager villager)
+    /// <remarks>
+    /// ⭐ <b>Only the trades the village has learned</b> (D502, Joe: <i>"villager work dropdown shouldn't
+    /// spoil unlockable professions"</i>) — the Professions panel's own question, <see cref="TradeKnown"/>.
+    /// A trade the villager is already kept on is always listed: a pin is never hidden from the person it
+    /// binds. ⛔ Refilled only when what is known or the pin has changed, never per frame.
+    /// </remarks>
+    private void FillKeep(SimWorld world, VillagerParts p, Villager villager)
     {
-        if (p.KeepTrades.Count == 0)
+        if (p.KeepFilledFor != (_knownGeneration, villager.PinnedTrade))
         {
+            p.KeepFilledFor = (_knownGeneration, villager.PinnedTrade);
+            p.Keep.Clear();
+            p.KeepTrades.Clear();
             p.Keep.AddItem("The village decides");
             foreach (JobKind trade in System.Enum.GetValues<JobKind>())
             {
-                p.Keep.AddItem($"Always {world.JobsCatalog.NameOf(trade)}");
-                p.KeepTrades.Add(trade);
+                if (TradeKnown(trade) || villager.PinnedTrade == trade)
+                {
+                    p.Keep.AddItem($"Always {world.JobsCatalog.NameOf(trade)}");
+                    p.KeepTrades.Add(trade);
+                }
             }
         }
 
@@ -2018,10 +2035,11 @@ public partial class Main
             faults.Add("a person's card has no subtitle or no status");
         }
 
-        int trades = System.Enum.GetValues<JobKind>().Length;
+        // Every trade the village knows, and no other (D502 — `spoilers:` checks the hidden ones by name).
+        int trades = System.Enum.GetValues<JobKind>().Count(t => TradeKnown(t) || villager.PinnedTrade == t);
         if (p.Keep.ItemCount != trades + 1)
         {
-            faults.Add($"the Kept-on dropdown offers {p.Keep.ItemCount} items, not the village plus {trades} trades");
+            faults.Add($"the Kept-on dropdown offers {p.Keep.ItemCount} items, not the village plus {trades} known trades");
         }
 
         int kept = villager.PinnedTrade is JobKind pinned ? p.KeepTrades.IndexOf(pinned) + 1 : 0;
@@ -2130,6 +2148,103 @@ public partial class Main
     /// <summary>
     /// A card of every kind opens, holds its width, drags, pins and is replaced — <b>a probe line</b> (D376).
     /// </summary>
+    /// <summary>
+    /// ⭐ Nothing the village has not learned is offered — <b>a probe line</b> (D502, Joe's B7 note).
+    /// </summary>
+    /// <remarks>
+    /// At the founding: the cart's card lists no unknown good, the stock limits and the bar's <i>more ▾</i>
+    /// hide it whole, and a villager's dropdown offers no trade the Professions panel hides. Then the three
+    /// learned-by-doing flags are posed known in the view (never in the sim) and the strip refreshed — the
+    /// path every real unlock takes — and each must come back; put back after.
+    /// </remarks>
+    private string NothingUnlearnedIsOffered()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        var unknownGoods = Enumerable.Range(0, world.GoodsCatalog.Count).Select(g => (Goods)g).Where(g => !GoodKnown(g)).ToList();
+        var unknownTrades = System.Enum.GetValues<JobKind>().Where(t => !TradeKnown(t)).ToList();
+        if (!unknownGoods.Contains(Goods.IronTools))
+        {
+            faults.Add("iron tools are known at the founding");
+        }
+
+        if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner))
+        {
+            faults.Add($"the founding knows trades it should not: unknown are only {string.Join(", ", unknownTrades)}");
+        }
+
+        StoreBuilding cart = world.StoreBuildings[0];
+        Villager villager = world.Villagers[0];
+
+        void Ask(string when, bool learned)
+        {
+            OpenCard(new CardSubject(CardKind.Store, cart.Id));
+            foreach ((Goods goods, HBoxContainer row, Label _, Label _, Button _) in _selectedCard!.Controls.Storage)
+            {
+                bool offered = row.Visible;
+                bool should = cart.CanEverHold(goods) && (GoodKnown(goods) || cart.Store[goods] > 0);
+                if (offered != should)
+                {
+                    faults.Add($"{when}: the cart's {world.GoodsCatalog.NameOf(goods)} row is {(offered ? "shown" : "hidden")}");
+                }
+
+                if (unknownGoods.Contains(goods) && offered != learned)
+                {
+                    faults.Add($"{when}: the cart {(offered ? "offers" : "hides")} {world.GoodsCatalog.NameOf(goods)}");
+                }
+            }
+
+            foreach ((Goods goods, Control[] cells) in _goodRows)
+            {
+                if (unknownGoods.Contains(goods) && cells[0].Visible != learned)
+                {
+                    faults.Add($"{when}: a stock-limit or more ▾ row {(learned ? "hides" : "offers")} {world.GoodsCatalog.NameOf(goods)}");
+                }
+            }
+
+            OpenCard(new CardSubject(CardKind.Villager, villager.Id));
+            List<JobKind> offeredTrades = _selectedCard!.Person.KeepTrades;
+            foreach (JobKind trade in unknownTrades)
+            {
+                if (offeredTrades.Contains(trade) != learned && villager.PinnedTrade != trade)
+                {
+                    faults.Add($"{when}: the dropdown {(learned ? "lacks" : "offers")} Always {world.JobsCatalog.NameOf(trade)}");
+                }
+            }
+
+            if (_selectedCard.Person.Keep.ItemCount != offeredTrades.Count + 1)
+            {
+                faults.Add($"{when}: the dropdown has {_selectedCard.Person.Keep.ItemCount} items for {offeredTrades.Count} trades");
+            }
+        }
+
+        Ask("at the founding", learned: false);
+
+        (bool quarry, bool mine, bool smithy) = (_quarryKnown, _mineKnown, _smithyKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown) = (true, true, true);
+        RefreshTheStrip();
+        Ask("all learned", learned: true);
+        (_quarryKnown, _mineKnown, _smithyKnown) = (quarry, mine, smithy);
+        RefreshTheStrip();
+        RefreshCards(world);
+        bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);
+        if (!putBack)
+        {
+            faults.Add("putting the flags back left iron tools or the smith offered");
+        }
+
+        while (_cards.Count > 0)
+        {
+            CloseCard(_cards[0]);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] spoilers: ✅ at the founding nothing unlearned is offered ({string.Join(", ", unknownGoods.Select(world.GoodsCatalog.NameOf))}; "
+                + $"{string.Join(", ", unknownTrades.Select(world.JobsCatalog.NameOf))}) in the cart, the stock limits, the bar's more or the dropdown; "
+                + "all appear when learned, and go again when put back"
+            : $"[widths] spoilers: ⛔ {string.Join("; ", faults)}";
+    }
+
     private string TheCardsHoldTheirShape()
     {
         SimWorld world = _loop.World;

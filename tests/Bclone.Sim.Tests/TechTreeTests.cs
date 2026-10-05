@@ -96,6 +96,33 @@ public sealed class TechTreeTests
         Assert.False(TechTree.IntroducesTheMap(TechCondition.FoundersGone));
     }
 
+    /// <summary>
+    /// ⭐ A forged good is not offered before anything can forge it — iron tools wait for the smithy;
+    /// the founders' own stone tools and every good dug, felled or grown are known from the first day
+    /// (`professions.md §3.0`, D502, Joe: <i>"iron tools are unlocked later"</i>).
+    /// </summary>
+    [Fact]
+    public void ForgedGoodsAreUnknownUntilTheSmithy()
+    {
+        SimWorld world = AVillage();
+        Assert.NotEmpty(world.GoodsCatalog[Goods.IronTools].ForgedFrom);
+        Assert.NotEmpty(world.GoodsCatalog[Goods.Tools].ForgedFrom);
+        Assert.True(world.Config.CartTools > 0, "The pose needs the founders to carry tools.");
+        Assert.False(world.IsUnlocked(BuildingKind.Smithy));
+
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            bool forged = world.GoodsCatalog[goods].ForgedFrom.Count > 0;
+            _output.WriteLine($"day one: {world.GoodsCatalog.NameOf(goods)} {(world.KnowsOf(goods) ? "known" : "unknown")}");
+            Assert.Equal(!forged || goods == Goods.Tools, world.KnowsOf(goods));
+        }
+
+        world.IronEverDug = world.Config.SmithyUnlockIron;
+        Assert.True(world.IsUnlocked(BuildingKind.Smithy));
+        Assert.All(Enumerable.Range(0, world.GoodsCatalog.Count), g => Assert.True(world.KnowsOf((Goods)g)));
+    }
+
     /// <summary>Having been shown the tree is in the fingerprint, sparsely.</summary>
     [Fact]
     public void BeingShownTheTreeIsInTheFingerprint()
