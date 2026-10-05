@@ -5341,6 +5341,13 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing standing there to take.");
         }
 
+        // One instruction per tile (D493): a red mark is taken back with the destroy brush's
+        // right-click, not painted over in orange.
+        if (Zones.IsDestroy(tile))
+        {
+            return PlacementVerdict.No("That is marked to be destroyed — take the mark back first.");
+        }
+
         if (IsFace(tile))
         {
             Workplace holder = FindWorkplace(Zones.WorkGroundOwner(tile))!;
@@ -5457,6 +5464,7 @@ public sealed class SimWorld : IObstacles
             GridPos at = Zones.PositionOf(i);
             if (at != except
                 && !Zones.IsHarvest(at)
+                && !Zones.IsDestroy(at)
                 && TravelCost.Cost(at, Map.FoundingSite) != TravelCostField.Unreachable)
             {
                 return true;
@@ -5529,6 +5537,121 @@ public sealed class SimWorld : IObstacles
     /// <summary>Rub out one sub-tile of the marking (D336).</summary>
     public bool EraseHarvest(SubTile at) => Zones.SetHarvest(at, false);
 
+    // ---------------------------------------------------------------
+    //  The destroy brush (D493, `specs/destroy-brush.md §3.1–§3.2`)
+    // ---------------------------------------------------------------
+
+    /// <summary>What the destroy brush takes: a tree, a sapling, a rock or an iron seam.</summary>
+    public static bool IsDestroyable(Terrain terrain) =>
+        terrain is Terrain.Forest or Terrain.Sapling or Terrain.Rock or Terrain.IronDeposit;
+
+    /// <summary>Whether this tile would take the destroy brush — pure (D198), the preview's door and the paint's.</summary>
+    /// <remarks>
+    /// <b>The red brush MARKS; the village does the work</b> (Joe's call, D491 — D100's rule: the
+    /// village clears the ground, not the player). Refused: outside, a tile something stands on,
+    /// a quarry's or mine's working face, and ground with nothing on it to destroy (water and a
+    /// field included — taking a farm's ground back already returns it to grass).
+    /// </remarks>
+    public PlacementVerdict CanPaintDestroy(GridPos tile)
+    {
+        if (!Map.Contains(tile))
+        {
+            return PlacementVerdict.No("That is outside the valley.");
+        }
+
+        if (SomethingStandsAt(tile))
+        {
+            return PlacementVerdict.No("Something stands there — demolish it first.");
+        }
+
+        if (IsFace(tile))
+        {
+            Workplace holder = FindWorkplace(Zones.WorkGroundOwner(tile))!;
+            return PlacementVerdict.No(
+                $"That {FaceWord(Map.TerrainAt(tile))} is the {BuildingNameFor(holder.Kind)}'s — take it back "
+                + "from the building first.");
+        }
+
+        return IsDestroyable(Map.TerrainAt(tile))
+            ? PlacementVerdict.Fine
+            : PlacementVerdict.No("There is nothing there to destroy.");
+    }
+
+    /// <summary>Mark one tile for the village to destroy what stands on it.</summary>
+    public PlacementVerdict PaintDestroy(GridPos tile)
+    {
+        PlacementVerdict verdict = CanPaintDestroy(tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        // ⭐ The red brush overrides the orange (D493): one instruction per tile, the later one —
+        // a tree marked both to fell and to destroy would ask a laborer to keep the logs and lose them.
+        Zones.SetHarvest(tile, false);
+        Zones.SetDestroy(tile, true);
+        return WithTheLastRockWarning(verdict, tile);
+    }
+
+    /// <summary>The same at the brush's resolution (D336): the verdict of the tile, the mark on the sub-tile.</summary>
+    public PlacementVerdict PaintDestroy(SubTile at)
+    {
+        PlacementVerdict verdict = CanPaintDestroy(at.Tile);
+        if (!verdict.Allowed)
+        {
+            return verdict;
+        }
+
+        Zones.SetHarvest(at, false);
+        Zones.SetDestroy(at, true);
+        return WithTheLastRockWarning(verdict, at.Tile);
+    }
+
+    /// <summary>Take a destroy mark back off one tile.</summary>
+    public bool EraseDestroy(GridPos tile) => Zones.SetDestroy(tile, false);
+
+    /// <summary>Take a destroy mark back off one sub-tile (D336).</summary>
+    public bool EraseDestroy(SubTile at) => Zones.SetDestroy(at, false);
+
+    /// <summary>
+    /// ⭐ Destroy what stands on a tile — <b>the goods are lost, and the ground is laid bare</b>
+    /// (Joe, B4: *"the village loses the goods"*; *"trees do not grow back"*). A laborer's work,
+    /// called when their errand ends (<c>BehaviorSystem</c>, <c>Clearing</c>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>No counter moves</b>: not <see cref="LogsEverFelled"/>, not <see cref="StoneEverDug"/>,
+    /// not <see cref="IronEverDug"/>. The quarry and the smith are earned by digging (`quarry.md
+    /// §3.2`); a brush that unlocked them by deleting seams would be a shortcut round the knowledge
+    /// tree (Non-Negotiable 1, DESIGN §2.7).
+    /// </para>
+    /// <para>
+    /// Laid bare, the tile never seeds again (<see cref="GeneratedMap.IsLaidBare"/>) until a
+    /// forester plants it. On a farm's ground it is ploughed at once, as a felled farm tree is
+    /// (D491). The mark retires through <see cref="SetTerrain"/>: grass has nothing to destroy.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether anything was destroyed — false if the tile had nothing left on it.</returns>
+    public bool Destroy(GridPos tile)
+    {
+        if (!IsDestroyable(Map.TerrainAt(tile)))
+        {
+            Zones.SetDestroy(tile, false);
+            return false;
+        }
+
+        SetTerrain(tile, Terrain.Grass);
+        Map.LayBare(tile);
+
+        if (IsFarmGround(tile))
+        {
+            Zones.SetHarvest(tile, false);
+            Plough(tile);
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Whether a tile has been cleared of everything standing on it — so a site here may be
     /// worked (D101).
@@ -5596,7 +5719,7 @@ public sealed class SimWorld : IObstacles
         // A village that has never used the brush now pays one integer compare, which is
         // the same argument the sparse hashing makes one file over: a feature nobody has
         // switched on should cost nothing at all.
-        if (Zones.HarvestTiles == 0)
+        if (Zones.HarvestTiles == 0 && Zones.DestroyTiles == 0)
         {
             return null;
         }
@@ -5809,6 +5932,16 @@ public sealed class SimWorld : IObstacles
             return farm;
         }
 
+        // ⭐ THEN WHAT THE PLAYER MARKED TO DESTROY (D493), before ordinary harvest paint — the
+        // farm's argument again: painted wood grows back for ever (D126), so a red mark ranked by
+        // distance among it would wait behind a coppice that never runs out. A destroy mark is an
+        // order that ends; nothing is produced, so no limit holds it back.
+        if (NearestMarkedToDestroy(from) is GridPos destroy)
+        {
+            heldBackBy = null;
+            return destroy;
+        }
+
         // Only a refusal if it is the reason there is nothing to do. Somebody who walked past a
         // capped seam on the way to a tree is not being held back by anything.
         if (best is not null)
@@ -5851,6 +5984,36 @@ public sealed class SimWorld : IObstacles
     /// the village something. What moves is only which painted tile is taken first.
     /// </para>
     /// </remarks>
+    /// <summary>The nearest tile marked to destroy that still has something on it, or null (D493).</summary>
+    private GridPos? NearestMarkedToDestroy(GridPos from)
+    {
+        if (Zones.DestroyTiles == 0)
+        {
+            return null;
+        }
+
+        GridPos? best = null;
+        int bestCost = int.MaxValue;
+        IReadOnlyList<int> marked = Zones.MarkedToDestroy;
+        for (int i = 0; i < marked.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(marked[i]);
+            if (!IsDestroyable(Map.TerrainAt(at)))
+            {
+                continue;
+            }
+
+            int cost = TravelCost.Cost(from, at);
+            if (cost < bestCost)
+            {
+                best = at;
+                bestCost = cost;
+            }
+        }
+
+        return best;
+    }
+
     private GridPos? NextFootprintToClear(GridPos from)
     {
         for (int i = 0; i < _waitingOnTheGround.Count; i++)
@@ -6432,6 +6595,14 @@ public sealed class SimWorld : IObstacles
         if (terrain != Terrain.Sapling)
         {
             Map.SetYoungSapling(position, false);
+        }
+
+        // ⚠️ And a red mark on ground with nothing left to destroy retires (D493) — destroyed, dug,
+        // or felled by a forester before a laborer got there — so a finished order never lingers
+        // as paint, or as a count that keeps the laborers' search awake.
+        if (!IsDestroyable(terrain) && Zones.AnyDestroyOn(position))
+        {
+            Zones.SetDestroy(position, false);
         }
 
         bool routeAffecting = TerrainRules.IsPassable(before) != TerrainRules.IsPassable(terrain);

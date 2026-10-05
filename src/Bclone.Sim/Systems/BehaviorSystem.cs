@@ -4604,7 +4604,11 @@ public sealed class BehaviorSystem : ISimSystem
             // forester's hut can clear ground from under the paint. Not an error — go
             // and find another, or go home.
             var tile = new GridPos(villager.ErrandX, villager.ErrandY);
-            if (!world.HasSomethingToHarvest(tile))
+
+            // ⭐ A red mark is the destroy brush's errand (D493): anything destroyable is work —
+            // a sapling too, which the harvest brush cannot take — and it costs its own ticks.
+            bool destroying = world.Zones.IsDestroy(tile);
+            if (destroying ? !SimWorld.IsDestroyable(world.Map.TerrainAt(tile)) : !world.HasSomethingToHarvest(tile))
             {
                 villager.ErrandX = 0;
                 villager.ErrandY = 0;
@@ -4617,8 +4621,8 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             villager.State = VillagerState.Clearing;
-            villager.ActionTicksRemaining =
-                world.BeginWork(villager, JobKind.Forester, world.Config.CutTicks);
+            villager.ActionTicksRemaining = world.BeginWork(
+                villager, JobKind.Forester, destroying ? world.Config.DestroyTicksPerTile : world.Config.CutTicks);
             return;
         }
 
@@ -5707,6 +5711,28 @@ public sealed class BehaviorSystem : ISimSystem
                 // way it scales berries and timber: the same day's work brings back
                 // less as somebody ages.
                 var cleared = new GridPos(villager.ErrandX, villager.ErrandY);
+
+                // ⭐ DESTROYED, NOT CLEARED (D493): nothing to carry and nothing left on the ground —
+                // the goods are lost, by Joe's call — so the hand goes straight to the next mark.
+                if (world.Zones.IsDestroy(cleared))
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    if (world.Destroy(cleared))
+                    {
+                        world.Log(LogLevel.Debug, "behavior",
+                            $"{villager.Name} destroyed what stood at {cleared} — {world.Clock}.");
+                    }
+
+                    villager.State = VillagerState.Idle;
+                    if (!TryHelpWithHarvest(world, villager))
+                    {
+                        GoHome(world, villager);
+                    }
+
+                    return;
+                }
+
                 (Goods goods, int amount) = world.Harvest(cleared, villager);
                 villager.ErrandX = 0;
                 villager.ErrandY = 0;

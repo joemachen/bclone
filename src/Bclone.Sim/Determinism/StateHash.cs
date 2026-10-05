@@ -27,6 +27,10 @@ public static class StateHash
     private const ulong FnvOffsetBasis = 14695981039346656037UL;
     private const ulong FnvPrime = 1099511628211UL;
 
+    /// <summary>Mixed before the destroy marks, so they cannot read as harvest marks (D493).</summary>
+    private const uint DestroyLayerTag = 0xDE57_0001u;
+
+
     /// <summary>Fingerprint the whole world.</summary>
     public static ulong Compute(SimWorld world) => Compute(world, skills: true);
 
@@ -140,6 +144,24 @@ public static class StateHash
             if (world.Zones.HarvestSub[i])
             {
                 hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        // What the village means to DESTROY (D493). Sparse, so a village that never used the red
+        // brush mixes nothing and no golden moves. ⚠️ TAGGED, unlike the three layers above: a
+        // destroy mark and a harvest mark on the same sub-tile are bare indices in the same style,
+        // and without a tag "harvest {5}" and "destroy {5}" would hash the same — two villages, one
+        // fingerprint. The tag is mixed only when the layer has anything, so it costs the
+        // unused layer nothing.
+        if (world.Zones.DestroyTiles > 0)
+        {
+            hash = MixUInt32(hash, DestroyLayerTag);
+            for (int i = 0; i < world.Zones.DestroySub.Count; i++)
+            {
+                if (world.Zones.DestroySub[i])
+                {
+                    hash = MixUInt32(hash, (uint)i);
+                }
             }
         }
 
@@ -785,6 +807,19 @@ public static class StateHash
         for (int i = 0; i < map.YoungSaplings.Count; i++)
         {
             if (map.YoungSaplings[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        // ⭐ AND THE LAID-BARE TILES (D493) — they decide whether a wood may return, which is the
+        // young-sapling argument above, word for word. Sparse, so a valley nothing was ever
+        // destroyed in mixes nothing. ⚠️ Untagged, unlike the destroy layer, because it cannot
+        // collide: a young sapling is always Sapling terrain and a laid-bare tile never is, and the
+        // terrain is mixed above — a tag here would be code no guard could ever catch missing.
+        for (int i = 0; i < map.LaidBare.Count; i++)
+        {
+            if (map.LaidBare[i])
             {
                 hash = MixUInt32(hash, (uint)i);
             }
