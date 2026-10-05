@@ -4569,6 +4569,10 @@ Read `git status` after staging, every time.
   build but it is not the code. Run them one after the other, as CLAUDE.md lists them.
 - **The probe's `ERROR: The village stopped … posed by the probe` line is expected.** `ProbeTheErrorBoundary` raises it
   on purpose to exercise the error screen. Do not report it as a failure; do read it to confirm it says *"posed by the probe"*.
+- **The shipped seed is pinned: `data/sim.config.json` must say `"seed": 12345`.** `ShippedConfigFile_IsValid` asserts
+  it, and ~15 shipped-village tests (`ColdStartTests`, `HousesAreBuiltTests`, `SkillTests`, two goldens…) were measured on
+  that valley. Joe's local `41219` failed **16 of 1426**. To play another valley, type its seed on the new-game screen;
+  do not commit a seed edit. Stash it before running the checks.
 - **A cloud session's `git rev-list` counts can be wrong if the clone is shallow.** D486's review counted 471 commits of
   `origin/claude/handoff-review-next-steps-w37oks` not on `main`; on Joe's full Windows clone the count is **0** (its tip
   `ce01abb` is an ancestor of `main`). Before reporting "unmerged" from the cloud, run `git rev-parse --is-shallow-repository`
@@ -4576,7 +4580,8 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.**
+- ✅ **DECIDED (D487) — Joe: delete it. Deleted from GitHub, with the merged `claude/adoring-rubin-l6widh`.**
+  ~~A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.~~
   An earlier cloud session's branch. Its tip, `ce01abb` *"Panels draw what they hold, the bar is one height, and a
   dead village says so"*, is dated 2026-09-06, and `git rev-list origin/main..` counts **471 commits not on `main`**,
   far more than that one change, so it is probably a rewritten or re-rooted history, not unmerged work. Nobody has
