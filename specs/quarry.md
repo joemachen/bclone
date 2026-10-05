@@ -13,7 +13,7 @@ smaller), D385 (every load to a store), D430 (a tool: 34 % off ticks, 25 % on yi
 **§3.1 BUILT (D436, part 1 of six): the seams. §3.2 and §3.8's warning BUILT (D437,
 part 2): the ever-dug counters and the last-rock warning. §3.3–§3.7 BUILT (D438, part 3): the
 quarry — with the worked-face look deferred and the stone amber dropped (§3.4, §3.6 say why).
-§6.3's prices ×3 BUILT (D439).** Parts 5 and 6 built in D444 and D446. Every number is measured and
+§6.3's prices ×3 BUILT (D439).** Parts 5 and 6 built in D444 and D446. **The unlock doubled to 200 (D500, B6).** Every number is measured and
 called by Joe (§1, §6); §9 holds what is left. The smithy gift and stone-versus-iron tools ride in the same
 slice and are specified in `tools-and-the-smith.md §9`. Owner: Joe + Claude Code.
 
@@ -52,7 +52,9 @@ limited and spent on buildings, while the quarry and the mason do not exist"*).
    seam of 50 in reach. ⚠️ *Picked as "the four diagonals and a second ring"; built as the second
    ring's cardinals and diagonals, because the first ring's diagonals sit at (7, 7) in the
    village's plots (§3.1) — the count is his, the placement was the suite's.*
-8. **The unlock at 100 stone dug by hand** — about eight seam tiles, most of one seam.
+8. **The unlock at ~~100~~ 200 stone dug by hand** — ~~about eight seam tiles, most of one seam~~ **about
+   seventeen seam tiles, more than one seam** (Joe, B6, D500: *"the quarry gift comes too soon —
+   double the stone it takes"*; measured in §6.4).
 9. **The pace: four-tick digs of ten stone**, a stint of four to an armful (about 100 stone per
    hundred ticks worked against a laborer's 43); two seats; six faces a quarrier.
 10. **The word is *quarrier*.**
@@ -142,7 +144,7 @@ and it never needs to count again once the quarry is unlocked.
 
 The quarry is **hidden from the build bar and refused by `Mark`** until `StoneEverDug ≥
 quarry_unlock_stone`. One rule in the sim — `SimWorld.WhyNotYet(BuildingKind)` / `IsUnlocked` —
-read by `Mark` (*"Nobody knows how to cut a quarry yet — the village has dug 40 of the 100 stone
+read by `Mark` (*"Nobody knows how to cut a quarry yet — the village has dug 40 of the 200 stone
 by hand it takes to learn."*) and by the view's `EarnedYet`, through a flag the strip is rebuilt on
 when it changes (the library button's shape). When it unlocks, **the village stops for it** (D442,
 Joe's D440: *"slowing down the game to 1x and a pop-up modal"*) — a moment that waits to be
@@ -231,7 +233,7 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
 | `extra_stone_seams` | **8** | hashed stone seams: the second ring's four cardinals and four diagonals |
 | `extra_iron_seams` | **2** | hashed iron seams at ring 26, south and north |
 | `iron_seam_min_iron` | 50 | an iron seam grows until it holds this (D395) |
-| `quarry_unlock_stone` | **100** | stone dug by hand before the quarry appears |
+| `quarry_unlock_stone` | **200** | stone dug by hand before the quarry appears (100 until D500 — §6.4) |
 | `quarry_logs` / `quarry_stone` | **25 / 0** | a quarry is timber sheds and a crane at the face |
 | `quarry_work_ticks` | 40 | as the huts |
 | `quarry_capacity` | **2** | seats |
@@ -325,6 +327,38 @@ does not never raises its granary, grows smaller and starves less — D384's ope
 ⚠️ Within the noise, and **what it cannot see:** the unattended villages build a granary, a
 warehouse and huts, not a market, a lodge or a smithy, so this proves the rise is not dangerous and
 says nothing about how it feels. That is Joe's play. The houses cost no stone and do not change.
+
+### 6.4 The unlock doubled: 100 → 200 (D500, Joe's B6)
+
+Joe, playing: *"the quarry gift comes too soon — double the stone it takes."* Measured before typed on
+D420's harness (`ZZ_QUARRY`, and the `learned` / `at100` / `at200` fields on the `ZZB` line —
+`tools/harness/quarry.py`), both numbers on one build, back to back, fifty unattended years. Two
+paint arms: the harness's own (the opening's four rock tiles and the granary and warehouse's five at
+year 3 — about **108 stone**), and `ZZ_PAINT=25` at year 3 (300 stone, the core's price, §6.3).
+
+| Valleys | Paint | Learned at 100 (median year) | Learned at 200 | Alive / dead valleys, 100 vs 200 |
+|---|---|---|---|---|
+| shipped 200–299 | harness (~108) | 84 of 100, **3.4** | **1** of 100 | 543 / 25 — identical |
+| shipped 200–299 | 25 tiles | 84, 3.4 | 84, **3.8** | 513 / 27 — identical |
+| shipped 300–399 | harness | 86 of 100, 3.4 | 1 of 100 | 535 / 22 — identical |
+| shipped 300–399 | 25 tiles | 86, 3.4 | 86, 3.7 | 504 / 25 — identical |
+| fixture 400–449 | harness | 46 of 50, 3.8 | 0 of 50 | 559 / 7 — identical |
+| fixture 400–449 | 25 tiles | 46, 3.8 | 46, 4.4 | 531 / 8 — identical |
+
+*(The valleys that never learn either way died before year 3. The two that reach 200 on the harness's
+own paint — seeds 246 (264 stone, from year 1) and 304 (204) — dug rock nobody posed; not traced,
+most likely a footprint over a seam cleared under D498's rule.)*
+
+- **What 100 meant:** the quarry was learned on the stone of the village's first granary and warehouse
+  — a third of a year after they were painted. That is Joe's *"too soon"*, in numbers.
+- **What 200 means:** about seventeen seam tiles, more than one seam — two-thirds of the core's price
+  dug by hand. **The unlock counts stone, not time:** a village that paints a core's worth of rock at
+  once learns it about half a year later (3.4 → 3.8); one that paints only what its first buildings
+  cost does not learn it at all until it paints more. How soon that feels is Joe's play.
+- **Survival is byte-identical in all 500 pairs** (alive, peak, starved, cold): nothing in behaviour
+  reads the unlock but `Mark`, and the harness never marks a quarry. **Final hashes differ only where
+  the village ended between 100 and 199 stone** (83 of 100 in the first arm, 0 of 100 in the second):
+  the hashed `ShownTheTechTree`, raised by the moment (D442).
 
 ## 7. How it is tested — `tests/Bclone.Sim.Tests/QuarryTests.cs`, `SeamsTests.cs`
 

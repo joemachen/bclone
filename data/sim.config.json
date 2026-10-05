@@ -907,13 +907,17 @@
 
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only
-  // rock takes the paint of. Unlocked after 100 stone dug by hand (most of one
-  // seam), so clearing deposits stays the early game (D84). Timber only -- it
+  // rock takes the paint of. Unlocked after 200 stone dug by hand (about
+  // seventeen seam tiles, more than one seam), so clearing deposits stays the
+  // early game (D84). It was 100 until D500 (Joe, B6: "the quarry gift comes
+  // too soon -- double the stone it takes"): an unattended village learned it
+  // at year 3.4 on the stone of its first granary and warehouse. Survival
+  // identical in 250 valleys either way; only the moment moves. Timber only -- it
   // is cut into rock, not built of it. Two seats; six faces a quarrier, since
   // a face never empties. A dig is a laborer's four ticks for ten stone, four
   // to a stint (an armful of 40): about 100 stone per 100 ticks worked against
   // a laborer's 43, measured as the TRIP (trap 134, quarry.md 6.2).
-  "quarry_unlock_stone": 100,
+  "quarry_unlock_stone": 200,
   "quarry_logs": 25,
   "quarry_stone": 0,
   "quarry_work_ticks": 40,
