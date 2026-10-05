@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D507 IN §7. SAVE/LOAD IS SPECCED (D507, `specs/save-load.md`) ON `slice/save-load` — JOE READS IT AND ANSWERS ITS §11, THEN THE SIM HALF IS BUILT. AFTER SAVE/LOAD: THE STEADING REBUILD.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D508 IN §7. SAVE/LOAD IS SPECCED (D507, `specs/save-load.md`) ON `slice/save-load` — JOE ANSWERED ITS §11 (D508); NEXT, THE SIM HALF. AFTER SAVE/LOAD: THE STEADING REBUILD.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD SPECCED) — D507, ON WINDOWS.**
 >
@@ -10,8 +10,9 @@
 > 0.3–1.8 s on harness villages that never pass ~19 people — a floor.
 >
 > **▶️ NEXT:**
-> 1. **Joe reads `specs/save-load.md` and answers its §11** — autosave cadence (yearly at Spring, Day 1?), how many
->    autosaves kept (3?), where *Save* sits (Settings, under *How the village runs*?), the words.
+> 1. ✅ **Joe answered the spec's §11 (D508):** yearly at Spring, Day 1 (⏸️ the player chooses it in a later *full
+>    settings* screen — §4), three autosaves, *Save* in Settings until the pause screen, the words as written (all four
+>    refusal sentences are in §7's table).
 > 2. **The sim half** (spec §12.2), on this branch: `Bclone.Sim/Persistence/` (`SaveGame`, `SaveFile`), an `internal`
 >    capture + restoring constructor in `SimWorld`, guards §9.1–9.7. ⭐ **Build guard §9.4 (the reflection guard) FIRST**
 >    — it is the field list, and it will find state the spec's §5.2 table missed. Red-check by deleting one saved

@@ -3,12 +3,12 @@
 **Decisions:** D353 (the shell's order: error boundary → per-stage seeds → new-game screen → settings
 persistence → **save/load** → title and pause), D364 (`SimLoop.Fault` — *"a corrupt save will want the
 same door"*), D504 (*share the work out* is the village's, not a setting — it travels here), **D507 (Joe's
-calls for this slice, 2026-10-05 — §2)**. Neighbours: D3 (JSON), D335 (a derived index is never hashed),
+calls for this slice, 2026-10-05 — §2), D508 (his answers to §11)**. Neighbours: D3 (JSON), D335 (a derived index is never hashed),
 D419 (a round trip posed from its own capture agrees with itself), D15 (the reflection-guard shape),
 `tick-loop.md §5` (the fault door) and its open question *"state hash vs. full serialization"*,
 `new-game-screen.md §5` (the share code), `settings-persistence.md` (the file pattern this copies).
-**Status:** ✍️ **SPECCED (D507), NOT STARTED.** Nothing in `src/` saves or loads a village yet. Four calls
-for Joe in §11 before the build.
+**Status:** ✍️ **SPECCED (D507), NOT STARTED.** Nothing in `src/` saves or loads a village yet. Joe answered
+§11's four calls (D508); the sim half (§12.2) is next.
 Owner: Joe + Claude Code.
 
 ---
@@ -174,15 +174,19 @@ name and the seed, so two Ashfords are two folders. Autosaves are `autosave-1.sa
 - Every write is **atomic**: `.tmp` and then a move, as `PlayerSettingsFile.Save` does
   (`PlayerSettings.cs:254`).
 - ⛔ **A faulted village (`SimLoop.Fault`) is never saved.** There is nothing sound to save
-  (`tick-loop.md §5`). The autosave and *Save* are refused in words. The last good autosave is the way
-  back, which is exactly why there are three of them.
+  (`tick-loop.md §5`). The autosave and *Save* are refused in words (the table). The last good autosave
+  is the way back, which is exactly why there are three of them.
+- ⏸️ **The cadence becomes the player's when full settings exist** (Joe, D508): yearly is the default,
+  and a later *full settings* screen lets the player choose it. Until then it is a constant in the view,
+  and nothing about the file depends on it.
 
 | What | What happens |
 |---|---|
 | No saves yet | *Continue* is not offered. Nothing is said. |
 | A different `format` | Refused: *"Saved by build 0.0.3, whose saves this build cannot read."* It stays on the list, greyed, so the player can see it was not lost. |
-| Not gzip / not JSON / a key missing / a wrong type / a duplicate key | Refused in words naming the file. The file is **copied to `<file>.bad` first**, `KeepTheBrokenFile`'s pattern (`PlayerSettings.cs:271`). **Never half-loaded**: the world is built whole, or not at all. |
-| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused in words naming the thing. A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
+| Not gzip / not JSON / a key missing / a wrong type / a duplicate key | Refused: *"This save can't be read — it's damaged. A copy was kept as ashford-1.save.bad."* The file is **copied to `<file>.bad` first**, `KeepTheBrokenFile`'s pattern (`PlayerSettings.cs:271`). **Never half-loaded**: the world is built whole, or not at all. The detail (which key, which byte) goes to the audit log, not the sentence. |
+| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused: *"This save holds a smokehouse, which this game no longer has, so it can't be opened."* A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
+| *Save* or the autosave on a faulted village | Refused: *"The village stopped on an error, so it can't be saved. The last autosave is from Year 12."* |
 | The first tick after a load throws | **D364's door**, unchanged: `Main.HaltTheVillage`. The load was sound and the sim was not, so that is a fault, not a corrupt save. |
 | The disk will not take the write | Said in the village log and Godot's error stream. The game carries on, and the previous autosave stands (the atomic write never touched it). |
 
@@ -243,15 +247,16 @@ hash. Then the *Load…* list reads the scratch save back with its village and y
   *Load…* on the new-game screen until then.
 - **Cloud sync, and saving mid-tick.**
 
-## 11. Joe's calls before the build
+## 11. Joe's calls before the build — ✅ answered (D508, 2026-10-05)
 
-1. **Autosave cadence**: every year at Spring, Day 1 (recommended — a year is the game's own rhythm,
-   480 ticks, about eleven minutes at 1×), or every season?
-2. **How many autosaves to keep**: 3 (recommended)?
-3. **Where *Save* sits in the game**: in Settings under *How the village runs* (recommended until the
-   pause screen exists), or a button on the bar?
-4. **The words**: *Continue*, *Load…*, *Save*, *Save as…*, and the refusal sentence in §7. Yours to
-   change.
+1. ✅ **Autosave cadence: every year at Spring, Day 1** (a year is the game's own rhythm, 480 ticks, about
+   eleven minutes at 1×). ⏸️ *"user can adjust this in full settings later"* — the cadence becomes a
+   player setting when a full settings screen exists (§7).
+2. ✅ **Three autosaves kept.**
+3. ✅ **Save sits in Settings under *How the village runs*** — *"until the pause screen exists (and full
+   settings exist)"*; it moves there when they do.
+4. ✅ **The words**: *Continue*, *Load…*, *Save*, *Save as…*, and the refusal sentences in §7's table
+   (Joe asked to see them; shown to him in D508's session).
 
 ## 12. Order of work
 
