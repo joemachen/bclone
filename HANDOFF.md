@@ -1,5 +1,31 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D503 IN §7. B7 IS DONE — PLAYED, MERGED AND PUSHED (D503). JOE'S QUEUE IS EMPTY.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D505 IN §7. SETTINGS PERSISTENCE IS BUILT ON `slice/settings-persistence` (D505), UNPLAYED — JOE PLAYS IT NEXT.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SETTINGS PERSISTENCE BUILT) — D504–D505, ON WINDOWS.**
+>
+> **State (D505):** `main` = D503, pushed. **`slice/settings-persistence`** (off `main`, not pushed) holds the shell's
+> next step (§4): **what the player set stays set**, in `%APPDATA%\Godot\app_userdata\bclone\settings.json`. Joe's calls
+> (D504, asked this session): remember the view's preferences (UI size, Routes, Paths, the nine *On the map* ticks),
+> each window's Settings tick, fold and **dragged** place, and the new-game screen's rows (the seed still rolls fresh).
+> ⛔ *Share the work out* is NOT remembered — it is hashed village state and goes with save/load. Spec:
+> `specs/settings-persistence.md`. Code: `Bclone.Sim/Config/PlayerSettings.cs` (pure, tested), `NewGame.Remembered`,
+> `Bclone.Game/Main.Settings.cs` (the view's half). At D505, Windows: **1466 / 0 / 5 of 1471 (4m20, against `main`'s 1451 at 4m56 back to back — the machine is slow today, not the branch); view 0 warnings; probe green (new
+> line `settings:`), bar height 151; no golden moved.** Sim guards 10 of 10 mutants red; view line 9 of 9 — two zeros
+> on the way, both fixed or written down (the trap section for D505).
+>
+> **▶️ NEXT: Joe plays it** (`run.bat` on the branch — `git checkout slice/settings-persistence`):
+> 1. On the new-game screen move *Forest cover* to 20 % and found. Settings: UI size to 90 %, tick *draw the tile grid*,
+>    Routes to *all*, untick *The valley*; fold *The village*; drag *Professions* to the middle. Quit.
+> 2. Relaunch: the screen opens at forest 20 % **with a new seed**; found — the village opens at 90 % with the grid,
+>    Routes all, no valley window, the roster folded and Professions where he left it.
+> 3. *Reset window positions*, quit, relaunch: the windows open in the default arrangement.
+> 4. Optional: quit, put `nonsense` in the settings file, relaunch — defaults, the village log says why, and
+>    `settings.json.bad` sits beside it. (Delete the file to start clean; the path is under *Settings → About this run*.)
+>
+> Then merge at his word: `git checkout main`, `git merge --no-ff slice/settings-persistence`, `git push`. **After that
+> the shell's next step is save/load** (§4: *seed + input log with replay* or *a snapshot beside `StateHash`*, chosen by
+> measuring load time on a fifty-year village) — spec first, and it is where *share the work out* gets remembered.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B7 DONE) — D503, ON WINDOWS.**
 >
 > **State (D503):** ✅ **B7 is done.** Joe played it (*"played it works. merge and push."*); `slice/no-spoilers` is
@@ -4934,6 +4960,29 @@ Read `git status` after staging, every time.
   Hiding is a view fact; never clear sim state to hide a row.
 - **A mutant on a code path no probe poses scores zero** (a market's *Keeps up to*, the pin exception). Write the zero
   down; do not count the line as guarded.
+
+## ⛔ THE TRAPS SETTINGS PERSISTENCE (D505) PAID FOR — A ROUND TRIP POSED FROM ITS OWN CAPTURE, AND A `/tmp` NOBODY SHARES
+
+- **⛔ THE PROBE MUST NEVER READ THE PLAYER'S SETTINGS FILE.** Since D505 the game reads
+  `%APPDATA%\Godot\app_userdata\bclone\settings.json` at launch. The probe asserts the DEFAULTS — `bar height 151` is the
+  bar at 75 %, `windows:` wants *Stock limits* hidden and *Professions* open — so it runs with `_settingsPath = null`
+  (`Main.Settings.cs`, `TheProbeIsRunning`). Anything that reads settings must go through that path; a second reader
+  would make the probe pass on a clean machine and fail on Joe's.
+- **A round trip whose pose is built from its own capture agrees with itself** — D419's trap, paid again. The first
+  `settings:` line flipped `CaptureSettings().Toggles`, so a tick the capture forgot was missing from the pose too: that
+  mutant scored **zero**. Pose from the registries (`_mapToggles`, `_titled`), and check the capture names every one.
+- **A place that forgets the UI scale comes back right at 100 %** (drawn width = laid-out width). The place pose runs at
+  90 % for that reason — measured: zero at 100, red at 90.
+- **Git Bash's `/tmp` is not Windows Python's `/tmp`.** A red-check that wrote its mutants with `python` to `/tmp/m1` and
+  copied them with `cp` found nothing to copy — every "mutant" ran the real code and the run read **all green**. Write
+  mutants to the scratchpad as `C:/...` (both shells read that), `assert` each replacement landed exactly once, and print
+  the diff size per mutant before trusting a green. Same session: a mutant that deleted a line left an unused `using`
+  and failed to BUILD (D420's trap) — re-posed as a compiling break.
+- **A setting is the player's, never the village's.** *Share the work out* sits in the Settings panel but is hashed;
+  it is deliberately NOT in `settings.json` and travels with save/load. The next toggle added to Settings goes to one
+  side of that line or the other on purpose — `settings-persistence.md §3`.
+- **Two Godot exit warnings are not this branch's**: `1 RID of type "CanvasItem" was leaked` and `2 ObjectDB instances
+  were leaked at exit` print after `done.` on `main` too (checked in a side worktree, 2026-10-05).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

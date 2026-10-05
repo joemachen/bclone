@@ -28,8 +28,11 @@ namespace Bclone.Game;
 /// </remarks>
 public sealed partial class NewGameScreen : Control
 {
-    /// <summary>The config the village is founded on, and the share code that names its valley.</summary>
-    public event Action<SimConfig, string>? Founded;
+    /// <summary>
+    /// The config the village is founded on, the share code that names its valley, and the rows it was
+    /// chosen with — which the settings remember for the next screen (D504).
+    /// </summary>
+    public event Action<SimConfig, string, IReadOnlyDictionary<string, string>>? Founded;
 
     private const float ColumnWidth = 400f;
 
@@ -66,14 +69,20 @@ public sealed partial class NewGameScreen : Control
 
     /// <summary>For Godot, which may construct a script's node itself; the game uses the other.</summary>
     public NewGameScreen()
-        : this(new SimConfig())
+        : this(new SimConfig(), new Dictionary<string, string>(), new List<PlayerSettingsProblem>())
     {
     }
 
-    public NewGameScreen(SimConfig config)
+    /// <summary>
+    /// ⭐ Opens on <paramref name="remembered"/> — the rows of the valley last founded (D504,
+    /// `settings-persistence.md §4`) — with a fresh seed; a remembered value the rows now refuse opens
+    /// at the config's default and says so in <paramref name="problems"/>.
+    /// </summary>
+    public NewGameScreen(
+        SimConfig config, IReadOnlyDictionary<string, string> remembered, ICollection<PlayerSettingsProblem> problems)
     {
         _config = config;
-        _settings = NewGame.Defaults(config, RollASeed());
+        _settings = NewGame.Remembered(config, NewGame.Defaults(config, RollASeed()), remembered, problems);
     }
 
     /// <summary>For the probe: the slowest preview bake so far, in milliseconds.</summary>
@@ -378,7 +387,7 @@ public sealed partial class NewGameScreen : Control
         {
             NewGameSettings settings = _settings with { VillageName = _name.Text };
             SimConfig founded = NewGame.Apply(_config, settings);
-            Founded?.Invoke(founded, NewGame.ShareCode(_config, settings));
+            Founded?.Invoke(founded, NewGame.ShareCode(_config, settings), settings.Values);
         }
         catch (SimConfigException refused)
         {

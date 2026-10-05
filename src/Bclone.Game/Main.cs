@@ -94,11 +94,15 @@ public partial class Main : Control
     {
         SimConfig config = ConfigLocator.LoadOrDefault(out _configSource);
 
+        // ⭐ THE PLAYER'S SETTINGS FIRST (D504): the UI size and the new-game screen's rows are needed
+        // before anything is built. Under the probe nothing is read (`settings-persistence.md §7`).
+        ReadTheSettings();
+
         // ⭐ THE NEW-GAME SCREEN FIRST (D479, `new-game-screen.md`): the game opens on a choice of
         // valley, and the village is founded from what the screen says. Under the probe the screen is
         // measured and then founds the config's own valley, so every probe line after it reads the
         // village it always has.
-        _newGame = new NewGameScreen(config);
+        _newGame = new NewGameScreen(config, _settings.NewGameRows, _settingsProblems);
         _newGame.Founded += FoundTheVillage;
         AddChild(_newGame);
     }
@@ -113,7 +117,7 @@ public partial class Main : Control
     /// Found the village the new-game screen chose: the log sinks, the world, the driver and the
     /// whole UI — what <c>_Ready</c> did before there was a screen.
     /// </summary>
-    private void FoundTheVillage(SimConfig config, string shareCode)
+    private void FoundTheVillage(SimConfig config, string shareCode, IReadOnlyDictionary<string, string> rows)
     {
         _shareCode = shareCode;
         if (_newGame is not null)
@@ -161,9 +165,13 @@ public partial class Main : Control
 
         _loop = SimFactory.CreatePhase0(config, sinks);
         _loop.World.Log(LogLevel.Info, "shell", $"Founded from the new-game screen: {shareCode} (seed {_loop.World.Seed}).");
+        TellTheLogAboutTheSettings();
+        RememberTheValley(rows);
         _driver = new FixedTimestepDriver(config, sinks);
 
         BuildUi();
+        ApplySettings(_settings);
+        _settingsLive = true;
         Refresh();
     }
 
@@ -228,6 +236,7 @@ public partial class Main : Control
         }
 
         Refresh();
+        WriteTheSettingsIfChanged();
         ProbeColumnWidths();
     }
 
@@ -339,7 +348,7 @@ public partial class Main : Control
 
         SimConfig config = ConfigLocator.LoadOrDefault(out _);
         NewGameSettings defaults = NewGame.Defaults(config, config.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        FoundTheVillage(NewGame.Apply(config, defaults), NewGame.ShareCode(config, defaults));
+        FoundTheVillage(NewGame.Apply(config, defaults), NewGame.ShareCode(config, defaults), defaults.Values);
     }
 
     private int _newGameProbeFrames;
@@ -459,6 +468,7 @@ public partial class Main : Control
         // Asked again here (D419): the founding has only the cart, twelve years in the granaries and
         // warehouses stand — so the rule the draw obeys is read on every kind that exists.
         GD.Print(_map.EveryStoreShowsItsStock());
+        GD.Print(TheSettingsComeBackAsTheyWent());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -1340,13 +1350,18 @@ public partial class Main : Control
             _ => MapDetail.Off,
         };
 
+        ShowTheDetail();
+        SettingsChanged();
+    }
+
+    /// <summary>The one place the Routes button's text is written.</summary>
+    private void ShowTheDetail() =>
         _detailButton.Text = _detail switch
         {
             MapDetail.Off => "Routes: off",
             MapDetail.Selected => "Routes: selected",
             _ => "Routes: all",
         };
-    }
 
     /// <summary>Switch the wear overlay (D358), and say so on the button that switched it.</summary>
     /// <remarks>
@@ -1359,6 +1374,7 @@ public partial class Main : Control
     {
         _map.ShowWear(!_map.WearShown);
         RefreshWearButton();
+        SettingsChanged();
     }
 
     /// <summary>The one place the paths button's text is written.</summary>
@@ -4779,11 +4795,15 @@ public partial class Main : Control
         if (!_arranged && Size.X > 0f && ++_settling > 8)
         {
             ArrangeDefaults();
+            ThePlacedAreTheDragged();
             _arranged = true;
         }
 
+        // ⭐ Then every window the player dragged goes back where they left it (D504), as each is
+        // first shown with a size — before the clamp, so a place off a smaller screen comes back on.
         if (_arranged)
         {
+            PlaceWhatThePlayerPlaced();
             KeepWindowsOnScreen();
         }
     }
@@ -4840,10 +4860,8 @@ public partial class Main : Control
     /// the only view most players will ever judge it on.*
     /// </para>
     /// </remarks>
-    private float _uiScale = 0.75f;
-
-    private const float MinUiScale = 0.55f;
-    private const float MaxUiScale = 1.15f;
+    // ⭐ The dial's numbers live in `PlayerSettings` (D504) — one source for the dial and the file.
+    private float _uiScale = PlayerSettings.DefaultUiScalePercent / 100f;
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -5113,7 +5131,7 @@ public partial class Main : Control
 
         panel.GrowVertical = bottom ? GrowDirection.Begin : GrowDirection.End;
 
-        VBoxContainer floated = Dress(panel, title, startOpen);
+        VBoxContainer floated = Dress(panel, title, startOpen, right);
         AddChild(panel);
 
         // ⭐ Registered so `FitColumns` can scale it with everything else. Before this the side
@@ -5174,12 +5192,21 @@ public partial class Main : Control
     private void MakeDraggable(Control grip, PanelContainer panel)
     {
         bool dragging = false;
+        bool moved = false;
         Vector2 last = Vector2.Zero;
 
         grip.GuiInput += @event =>
         {
             if (@event is InputEventMouseButton click && click.ButtonIndex == MouseButton.Left)
             {
+                // ⭐ THE RELEASE IS THE GESTURE (D504): where the player let go is the place the
+                // settings remember — never a frame of the drag, and never a click that did not move.
+                if (dragging && moved && !click.Pressed)
+                {
+                    ThePlayerPlaced(panel);
+                }
+
+                moved = false;
                 dragging = click.Pressed;
                 last = GetGlobalMousePosition();
                 grip.AcceptEvent();
@@ -5194,6 +5221,7 @@ public partial class Main : Control
             Vector2 now = GetGlobalMousePosition();
             Vector2 by = now - last;
             last = now;
+            moved = true;
 
             // ⚠️ Set HERE rather than in `MovePanel`, because the centring goes through
             // `MovePanel` too and would otherwise mark the panel as dragged the first time it
@@ -5317,7 +5345,7 @@ public partial class Main : Control
         }
     }
 
-    private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen)
+    private VBoxContainer Dress(PanelContainer panel, string? title, bool startOpen, bool right)
     {
         var body = new VBoxContainer();
         body.AddThemeConstantOverride("separation", 4);
@@ -5362,6 +5390,7 @@ public partial class Main : Control
             {
                 contents.Visible = open;
                 header.Text = open ? $"▾ {title}" : $"▸ {title}";
+                SettingsChanged();
             };
 
             // ⭐⭐ A SEPARATE GRIP RATHER THAN DRAGGING THE HEADER ITSELF (Joe: *"it needs to be
@@ -5398,6 +5427,9 @@ public partial class Main : Control
 
             body.AddChild(handle);
             _headers.Add(header);
+
+            // Remembered by its title (D504): its fold, its Settings tick, and where it was dragged.
+            _titled.Add(new TitledPanel(title, panel, header, right));
         }
 
         body.AddChild(contents);
@@ -5517,6 +5549,7 @@ public partial class Main : Control
         if (WindowOf(panel) is ShellWindow window)
         {
             window.Wanted = false;
+            SettingsChanged();
         }
 
         panel.Visible = false;
@@ -5652,6 +5685,7 @@ public partial class Main : Control
 
                 // A tick set is asking for the window, so it undoes a ✕ on What's here (B3).
                 _whatsHereShut &= !(on && window.Panel == _whatsHerePanel);
+                SettingsChanged();
             };
             window.Tick = shown;
             body.AddChild(shown);
@@ -5659,9 +5693,10 @@ public partial class Main : Control
 
         // ⭐ Joe: *"'reset all panels' could maybe be a settings button."* Under Windows, because
         // it is about windows; run once after the first layout pass and then never automatically.
+        // Since D504 it also forgets every place the player dragged a window to.
         var reset = new Button { Text = "Reset window positions", Flat = true, Alignment = HorizontalAlignment.Left };
         reset.AddThemeFontSizeOverride("font_size", 12);
-        reset.Pressed += ArrangeDefaults;
+        reset.Pressed += ResetWindowPositions;
         body.AddChild(reset);
 
         // ⭐ THE ONE DIAL JOE ASKED FOR: *"smaller please. give me more room to see the game
@@ -5672,25 +5707,25 @@ public partial class Main : Control
         var sizing = new HBoxContainer();
         sizing.AddThemeConstantOverride("separation", 4);
 
-        Label reading = Muted(string.Empty);
-        reading.CustomMinimumSize = new Vector2(38, 0);
-        reading.HorizontalAlignment = HorizontalAlignment.Right;
-
-        void ShowScale() => reading.Text = $"{_uiScale * 100f:F0}%";
+        _scaleReading = Muted(string.Empty);
+        _scaleReading.CustomMinimumSize = new Vector2(38, 0);
+        _scaleReading.HorizontalAlignment = HorizontalAlignment.Right;
 
         var smaller = new Button { Text = "−", Flat = true };
         var bigger = new Button { Text = "+", Flat = true };
 
+        // ⭐ Whole percents on the dial's steps (D504): five hundredths added as floats drifted off
+        // the steps, and the file holds what the dial reads.
         smaller.Pressed += () =>
         {
-            _uiScale = Mathf.Max(MinUiScale, _uiScale - 0.05f);
-            ShowScale();
+            SetUiScale(_uiScalePercent - PlayerSettings.UiScaleStep);
+            SettingsChanged();
         };
 
         bigger.Pressed += () =>
         {
-            _uiScale = Mathf.Min(MaxUiScale, _uiScale + 0.05f);
-            ShowScale();
+            SetUiScale(_uiScalePercent + PlayerSettings.UiScaleStep);
+            SettingsChanged();
         };
 
         smaller.AddThemeFontSizeOverride("font_size", 12);
@@ -5698,10 +5733,10 @@ public partial class Main : Control
 
         sizing.AddChild(Muted("UI size"));
         sizing.AddChild(smaller);
-        sizing.AddChild(reading);
+        sizing.AddChild(_scaleReading);
         sizing.AddChild(bigger);
         body.AddChild(sizing);
-        ShowScale();
+        SetUiScale(_uiScalePercent);
 
         // ⭐ THE GLOBAL HALF OF THE FULL-STORE MARKER (Joe, D140): *"visibility of which should
         // be able to be disabled by building or globally."* The per-building half lives on the
@@ -5735,7 +5770,7 @@ public partial class Main : Control
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
-        _mapToggles.Add(("stores with no room", markers, () => _map.FullMarkersShown));
+        _mapToggles.Add(("full_markers", "stores with no room", markers, () => _map.FullMarkersShown));
 
         // The global half of D147's idle ring, beside the global half of D140's, because they
         // are the same kind of preference and a player looking for one will look for the other.
@@ -5743,7 +5778,7 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
-        _mapToggles.Add(("buildings that cannot work", idle, () => _map.IdleMarkersShown));
+        _mapToggles.Add(("idle_markers", "buildings that cannot work", idle, () => _map.IdleMarkersShown));
 
         // ⭐ The wildlife is scenery rather than a marker, but it belongs with the other two:
         // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
@@ -5761,7 +5796,7 @@ public partial class Main : Control
         snap.AddThemeFontSizeOverride("font_size", 12);
         snap.Toggled += on => _map.SnapToGrid(on);
         body.AddChild(snap);
-        _mapToggles.Add(("snap to the grid", snap, () => _map.SnapsToGrid));
+        _mapToggles.Add(("snap", "snap to the grid", snap, () => _map.SnapsToGrid));
 
         // ⚠️ This caption used to promise that the ghost shows the tiles a building will
         // claim when snap is off. **The code never did that** — it showed them always, and
@@ -5779,7 +5814,7 @@ public partial class Main : Control
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
-        _mapToggles.Add(("the tile grid", grid, () => _map.GridShown));
+        _mapToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
 
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in
@@ -5793,7 +5828,7 @@ public partial class Main : Control
         homes.AddThemeFontSizeOverride("font_size", 12);
         homes.Toggled += on => _map.ShowResidentialLand(on);
         body.AddChild(homes);
-        _mapToggles.Add(("ground marked for housing", homes, () => _map.ResidentialLandShown));
+        _mapToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
 
         var fields = new CheckBox
         {
@@ -5803,7 +5838,7 @@ public partial class Main : Control
         fields.AddThemeFontSizeOverride("font_size", 12);
         fields.Toggled += on => _map.ShowWorkGround(on);
         body.AddChild(fields);
-        _mapToggles.Add(("ground a workplace claimed", fields, () => _map.WorkGroundShown));
+        _mapToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
 
         var marked = new CheckBox
         {
@@ -5813,13 +5848,13 @@ public partial class Main : Control
         marked.AddThemeFontSizeOverride("font_size", 12);
         marked.Toggled += on => _map.ShowHarvestLand(on);
         body.AddChild(marked);
-        _mapToggles.Add(("ground marked for harvest", marked, () => _map.HarvestLandShown));
+        _mapToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
 
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
-        _mapToggles.Add(("animals in the woods", wildlife, () => _map.GameShown));
+        _mapToggles.Add(("animals", "animals in the woods", wildlife, () => _map.GameShown));
 
         // Its own switch rather than one "scenery" tick, because the two answer different
         // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
@@ -5828,7 +5863,7 @@ public partial class Main : Control
         forage.AddThemeFontSizeOverride("font_size", 12);
         forage.Toggled += on => _map.ShowForage(on);
         body.AddChild(forage);
-        _mapToggles.Add(("berry patches in the woods", forage, () => _map.ForageShown));
+        _mapToggles.Add(("berries", "berry patches in the woods", forage, () => _map.ForageShown));
 
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
@@ -5853,6 +5888,14 @@ public partial class Main : Control
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
 
+        // ⭐ Every map tick is remembered (D504) — hooked here, once, off the registry, so a tick added
+        // above is remembered the day it is written. ⛔ The share-out tick is NOT: it is the village's
+        // (hashed), and goes with save/load (`settings-persistence.md §3`).
+        foreach ((_, _, CheckBox box, _) in _mapToggles)
+        {
+            box.Toggled += _ => SettingsChanged();
+        }
+
         // ⭐ THE OVERVIEW'S LEFTOVERS (D378). The seed and the audit log together, because they
         // are the two things you need to reproduce and explain a run: the seed says which world,
         // the log says what happened in it — and the build, which is the third (METHODOLOGY §5):
@@ -5863,6 +5906,9 @@ public partial class Main : Control
         body.AddChild(Muted("About this run"));
         _seedLabel = Wrapped(Muted(TheRunLine(_loop.World)));
         body.AddChild(_seedLabel);
+        body.AddChild(Wrapped(Muted(_settingsPath is null
+            ? "settings: not read or written (the probe)"
+            : $"settings: {_settingsPath}")));
         body.AddChild(BuildGoodsRoadmap());
     }
 
@@ -7004,7 +7050,7 @@ public partial class Main : Control
 
         for (int i = 0; i < _mapToggles.Count; i++)
         {
-            (string name, CheckBox box, System.Func<bool> mapSays) = _mapToggles[i];
+            (_, string name, CheckBox box, System.Func<bool> mapSays) = _mapToggles[i];
 
             if (box.ButtonPressed != mapSays())
             {
@@ -7271,9 +7317,12 @@ public partial class Main : Control
             : "[widths] destroy: ⛔ " + string.Join("; ", faults);
     }
 
-    /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>
+    /// <summary>
+    /// Each map toggle: the id the settings file remembers it by (D504), its name, its tick, and what
+    /// the map itself believes — for the probe.
+    /// </summary>
     private readonly System.Collections.Generic.List<(
-        string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
+        string Key, string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
 
     /// <summary>
     /// ⭐ Write the baked valley out as a PNG — <b>the only way anything but Joe has ever
