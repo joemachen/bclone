@@ -1,5 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D489 IN §7. B3 (*WHAT'S HERE* FITS, OPENS ON TOP AND BESIDE ITS TILE, STAYS SHUT) IS PLAYED, MERGED AND PUSHED (D488, D489). NEXT: B4 — SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D490 IN §7. B4'S SPEC (`specs/destroy-brush.md`) IS WRITTEN ON `slice/destroy-brush` — FOR JOE TO READ; NOTHING BUILT (D490). NEXT: HIS FOUR CALLS IN ITS §8, THEN SLICE 1.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SPEC) — D490, ON WINDOWS.**
+>
+> **State (D490):** `main` = D489, pushed; `slice/whats-here-window` deleted at Joe's word (it was never on the
+> remote). **B4's spec is written: `specs/destroy-brush.md`, on `slice/destroy-brush`** (off `main`, one commit, not
+> pushed) — **spec only, nothing built, no code changed.** §2 is what the game does today, measured with a throwaway
+> harness test (deleted, never committed) and traced; §3 the design; §8 **four calls for Joe**: (Q1) laborers destroy,
+> or an instant eraser — recommended laborers; (Q2) bare grass refused, or laid bare to keep a meadow; (Q3) a forester
+> replanting its own destroyed wood is left as is; (Q4) slice order — farms first.
+>
+> **▶️ NEXT:** Joe reads the spec and answers §8. Then slice 1 (farms over trees and seams), spec status updated in
+> the same commit. ⚠️ **Explain the untraced fell first:** one of twelve forest tiles on the measured farm became
+> Grass in year 2 with nothing painted (§2) — find what did it before building the auto-mark beside it.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATEST) — D489, ON WINDOWS.**
 >
 > **State (D489):** ✅ **Joe played B3 (*"works perfectly. merge it"*); `slice/whats-here-window` is merged `--no-ff` to
@@ -4630,6 +4644,14 @@ Read `git status` after staging, every time.
 - **The probe is one synchronous call at frame 20, so it cannot wait for layout.** To test something the game does
   over frames (fit, then place), pose it earlier from `ProbeColumnWidths`' frame countdown (B3 poses at frame 12) and
   read it at 20.
+
+## ⛔ THE TRAP THE B4 SPEC (D490) PAID FOR — A FILED NOTE'S PREMISE CAN BE A SYSTEM THAT DOES NOT EXIST
+
+- **B4's note asked about herdsmen's pens; there are no pens.** Livestock is blocked by D61 — nothing in the sim
+  says `Herd` or `Pen`. A design answer about a system not built is recorded where that system's spec will read it
+  (`livestock.md §6.1`), not built. **Grep for the system before speccing its rule.**
+- **Two explorers read one method and disagreed** (one forest neighbour or two, for regrowth): the method's summary
+  says two, its body and closing comment say one. **Read the line that returns, not the summary above it.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
