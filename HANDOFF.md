@@ -4,8 +4,14 @@
 >
 > **State (D506):** ✅ **Settings persistence is done.** Joe played it (*"tested and it holds up. merge and push."*);
 > `slice/settings-persistence` is merged `--no-ff` to `main` and pushed. `main` had not moved, so the merged tree is the
-> one D505 verified (1466 / 0 / 5 of 1471; view 0 warnings; probe green, bar height 151; no golden moved). The local
-> branch `slice/settings-persistence` is fully merged and kept until Joe says to delete it (never pushed).
+> one D505 verified (1466 / 0 / 5 of 1471; view 0 warnings; probe green, bar height 151; no golden moved).
+>
+> **Branches, cleaned at Joe's word (2026-10-05):** every branch with nothing off `main` is gone — 17 local `slice/*`
+> (`settings-persistence` among them), the local `claude/handoff-review-next-steps-w37oks` (D487's, already off GitHub),
+> and five GitHub copies (`fences-as-walls`, `new-game-screen`, `professions-open`, `the-founders-hall`,
+> `two-seats-per-hut`). Each was checked at 0 commits off `main` before it went. **What is left, locally and on GitHub:
+> `main` and `slice/work-from-the-steading`** — kept on purpose: 1 commit never merged, the record of D355's steading
+> (§4: *"a record, the feature is a rebuild"*).
 >
 > **▶️ NEXT: ASK JOE.** §4's shell order puts **save/load** next — *seed + input log with replay* or *a snapshot built
 > beside `StateHash`*, chosen by measuring load time on a fifty-year village, guarded by `save → load → hash == live` —
@@ -4994,6 +5000,9 @@ Read `git status` after staging, every time.
 - **A setting is the player's, never the village's.** *Share the work out* sits in the Settings panel but is hashed;
   it is deliberately NOT in `settings.json` and travels with save/load. The next toggle added to Settings goes to one
   side of that line or the other on purpose — `settings-persistence.md §3`.
+- **`git branch -d` can refuse a branch that IS merged to `main`** — when its upstream on GitHub is stale, git checks
+  against the upstream (`slice/fences-as-walls` was 9 commits ahead of its old GitHub copy). Before `-D`, prove it with
+  `git rev-list --count main..<branch>` (and `main..origin/<branch>`) — both 0 means nothing is lost.
 - **Two Godot exit warnings are not this branch's**: `1 RID of type "CanvasItem" was leaked` and `2 ObjectDB instances
   were leaked at exit` print after `done.` on `main` too (checked in a side worktree, 2026-10-05).
 
