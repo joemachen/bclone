@@ -380,6 +380,13 @@ public partial class Main : Control
         // A few frames in, so the containers have been laid out at least once.
         if (++_probeFrames < 20)
         {
+            // B3: What's here is opened eight frames early, after the default arrangement, so the
+            // frames between fit and place it through the game's own path rather than the probe's.
+            if (_probeFrames == 12)
+            {
+                _whatsHerePosedOn = PoseWhatsHere();
+            }
+
             return;
         }
 
@@ -387,6 +394,7 @@ public partial class Main : Control
 
         GD.Print(
             $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
+        GD.Print(WhatsHereOpensWhereItBelongs());
 
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
@@ -2072,6 +2080,7 @@ public partial class Main : Control
 
         ShowTheFrameCost();
         CentreSettingsIfItJustOpened();
+        FitWhatsHere();
 
         // WHO IS HERE, BROKEN DOWN BY LIFE STAGE (Joe's area 1, on the villagers bar since D378).
         // "17 villagers" is the number; "11 adults and 4 children" is the one that tells you
@@ -2360,10 +2369,14 @@ public partial class Main : Control
                     || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))
                     || world.WellCovering(at) is not null));
         // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
-        // furniture is shown (`h`) — this line used to override both every frame.
+        // furniture is shown (`h`) — this line used to override both every frame. ⭐ And not once
+        // the player has shut it (B3): a left-click selects, it does not reopen what they closed.
+        bool wasShown = _whatsHerePanel.Visible;
         _whatsHerePanel.Visible = _furnitureShown
             && (WindowOf(_whatsHerePanel)?.Wanted ?? true)
+            && !_whatsHereShut
             && !carded && (_selectedTile is not null);
+        OpenWhatsHereWhereItBelongs(wasShown);
 
         if (_selectedTile is GridPos tile)
         {
@@ -2439,8 +2452,123 @@ public partial class Main : Control
             return;
         }
 
+        // ⭐ The right-click is the asking (B3, Joe's call): it reopens a window the player shut.
+        _whatsHereShut = false;
         OnBuildingClicked(tile);
     }
+
+    /// <summary>
+    /// Whether the player has shut <i>What's here</i> (B3) — by its ✕, by Esc, or by a second
+    /// right-click on the same tile. Only a bare right-click or its Settings tick opens it again;
+    /// a left-click still selects the tile, and leaves the window closed.
+    /// </summary>
+    private bool _whatsHereShut;
+
+    /// <summary>Whether the player has moved <i>What's here</i> — after which it opens where they left it (B3).</summary>
+    private bool _whatsHereWasDragged;
+
+    /// <summary>The tile <i>What's here</i> was last placed beside, so a new tile moves it and the same one does not.</summary>
+    private GridPos? _whatsHerePlacedFor;
+
+    /// <summary>
+    /// Frames until <i>What's here</i> is placed beside its tile — two, because the window's
+    /// height is fitted to its text the frame it opens and the layout settles the frame after
+    /// (the Settings window waits for the same reason, <see cref="CentreSettingsIfItJustOpened"/>).
+    /// </summary>
+    private int _placeWhatsHereIn;
+
+    /// <summary>The box inside <i>What's here</i> that scrolls once the text is taller than <see cref="InspectorHeight"/>.</summary>
+    private ScrollContainer _whatsHereScroll = null!;
+
+    /// <summary>
+    /// ⭐ <i>What's here</i>, opening: <b>on top, and beside the tile it describes</b> (B3, Joe:
+    /// *"it opens behind The valley and Village log"*, and *"it should first open beside the tile
+    /// it describes, then remember where the player moved it"*).
+    /// </summary>
+    /// <remarks>
+    /// Raised the frame it appears, the way a card is (<c>SelectCard</c>) — panels are siblings
+    /// and the later child draws on top, so a window built before the two it opens under stays
+    /// under them until something moves it. Placed for a new tile only until the player drags it,
+    /// on the Settings window's rule (<see cref="_settingsWasDragged"/>): re-placing a window the
+    /// player has parked is the complaint <see cref="ArrangeDefaults"/> exists to prevent.
+    /// </remarks>
+    private void OpenWhatsHereWhereItBelongs(bool wasShown)
+    {
+        if (!_whatsHerePanel.Visible)
+        {
+            return;
+        }
+
+        if (!wasShown)
+        {
+            RaiseToTheFront(_whatsHerePanel);
+        }
+
+        if (_selectedTile is GridPos tile && (!wasShown || _whatsHerePlacedFor != tile))
+        {
+            _whatsHerePlacedFor = tile;
+            _placeWhatsHereIn = 2;
+        }
+    }
+
+    /// <summary>
+    /// ⭐ <i>What's here</i> as tall as what it says (B3, Joe: *"it is very tall"*), up to
+    /// <see cref="InspectorHeight"/>, past which the text scrolls with a visible bar (D350, D367).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ This reverses half of D367, at Joe's word: D367 held the box at 460 whatever was
+    /// selected because the window changing size on every click was the complaint then. Bare
+    /// ground says three lines, and 460 pixels of nothing under them is the complaint now. A
+    /// card's people list does the same (<c>PeopleScroll</c>: its rows, capped). Asked every frame
+    /// because the text is rewritten every frame; written only when it changes.
+    /// </remarks>
+    private void FitWhatsHere()
+    {
+        if (!_whatsHerePanel.Visible)
+        {
+            return;
+        }
+
+        float wants = Mathf.Min(_inspector.GetCombinedMinimumSize().Y, InspectorHeight);
+        if (!Mathf.IsEqualApprox(_whatsHereScroll.CustomMinimumSize.Y, wants))
+        {
+            _whatsHereScroll.CustomMinimumSize = new Vector2(0, wants);
+        }
+
+        // ⚠️ Dragged is asked when the placing lands, not when it is queued: a window grabbed in
+        // the two frames between is the player's (the probe found it, B3).
+        if (_placeWhatsHereIn > 0 && --_placeWhatsHereIn == 0 && !_whatsHereWasDragged && _selectedTile is GridPos tile)
+        {
+            Vector2 drawn = _whatsHerePanel.GetCombinedMinimumSize() * _uiScale;
+            MovePanel(_whatsHerePanel, BesideTheTile(_map.OnScreen(tile), drawn) - DrawnTopLeft(_whatsHerePanel));
+        }
+    }
+
+    /// <summary>
+    /// Where a window of <paramref name="drawn"/> size goes beside a tile: to its right, or its
+    /// left if the right has no room, centred on it, between the top bars and the control bar.
+    /// </summary>
+    private Vector2 BesideTheTile(Rect2 tile, Vector2 drawn)
+    {
+        const float Gap = 24f;
+
+        float x = tile.End.X + Gap;
+        if (x + drawn.X > Size.X - Edge)
+        {
+            x = tile.Position.X - Gap - drawn.X;
+        }
+
+        float top = TopOfTheLeftColumn();
+        float bottom = TopOfTheControlBar() - Edge - drawn.Y;
+
+        return new Vector2(
+            Mathf.Clamp(x, Edge, Mathf.Max(Edge, Size.X - Edge - drawn.X)),
+            Mathf.Clamp(tile.GetCenter().Y - (drawn.Y / 2f), top, Mathf.Max(top, bottom)));
+    }
+
+    /// <summary>Where the control bar's drawn top edge is, in screen pixels.</summary>
+    private float TopOfTheControlBar() =>
+        _controlBar?.GetParent()?.GetParent() is PanelContainer bar ? DrawnTopLeft(bar).Y : Size.Y;
 
     /// <summary>
     /// Whether the selection is a heap the player clicked by its chip (D396) — so <i>What's
@@ -3776,6 +3904,9 @@ public partial class Main : Control
         // the card is the one surface for a building or a person, its controls under its Settings
         // fold. This panel is left for what has no card yet: bare ground, the library, the hall.
         // It hides whenever the selection has a card.
+        // ⭐ AND THE BOX IS AS TALL AS ITS TEXT NOW, UP TO THAT HEIGHT (B3, Joe: *"it is very
+        // tall"*) — `FitWhatsHere` writes the scroll's minimum every frame; past `InspectorHeight`
+        // it still scrolls with its bar. It opens on top, beside its tile, until it is dragged.
         VBoxContainer body = InColumn(right: true, InspectorHeight, "What's here");
 
         // ScrollActive so a long reason scrolls rather than being cut off. The one panel
@@ -3817,6 +3948,7 @@ public partial class Main : Control
         body.AddChild(_inspector);
 
         _whatsHerePanel = _docked[^1].Panel;
+        _whatsHereScroll = (ScrollContainer)body.GetParent();
     }
 
         // ⭐ STAFFING WHERE THE BUILDING IS (Joe). It lived on the toolbar and acted on
@@ -4726,8 +4858,8 @@ public partial class Main : Control
     private const float DefaultPanelWidth = 300f;
 
     /// <summary>
-    /// How tall the inspector's contents are, whatever is selected (D367) — logical px, scaled
-    /// with the rest. ⚠️ Measured, not guessed: the probe poses a market-sized description (the
+    /// The most the inspector's contents stand before they scroll (D367; a ceiling since B3, when
+    /// <see cref="FitWhatsHere"/> bound the box to its text) — logical px, scaled with the rest. ⚠️ Measured, not guessed: the probe poses a market-sized description (the
     /// longest in the game) with its store rows and prints the content height beside this number.
     /// </summary>
     private const float InspectorHeight = 460f;
@@ -4758,6 +4890,9 @@ public partial class Main : Control
         // used to sit at the corner, under the Overview.
         float leftY = TopOfTheLeftColumn();
         float rightY = Edge;
+
+        // *What's here* starts where it started (B3): beside its tile, from the next one.
+        _whatsHereWasDragged = false;
 
         if (_frameCounter is not null)
         {
@@ -4996,6 +5131,7 @@ public partial class Main : Control
             // `MovePanel` too and would otherwise mark the panel as dragged the first time it
             // opened — which would make the setting work exactly once.
             _settingsWasDragged |= panel == _settingsPanel;
+            _whatsHereWasDragged |= panel == _whatsHerePanel;
 
             MovePanel(panel, by);
             grip.AcceptEvent();
@@ -5295,13 +5431,15 @@ public partial class Main : Control
     /// <remarks>
     /// One rule: it does what unticking the window in Settings does, so the tick follows.
     /// ⭐ <b>*What's here* is the exception, deliberately:</b> it is about what you clicked, like a
-    /// card, so its ✕ clears the selection and it returns on the next bare-ground click; its
-    /// Settings tick remains the permanent switch. Settings itself is not a window and simply hides.
+    /// card, so its ✕ clears the selection — and it stays shut until a bare right-click asks again
+    /// or its Settings tick is set (B3, Joe: *"stay closed if closed"*; it used to return on the
+    /// next bare-ground left-click). Settings itself is not a window and simply hides.
     /// </remarks>
     private void CloseTheWindow(PanelContainer panel)
     {
         if (panel == _whatsHerePanel)
         {
+            _whatsHereShut = true;
             _selectedTile = null;
             _selectedVillagerId = 0;
             RefreshInspector(_loop.World);
@@ -5443,6 +5581,9 @@ public partial class Main : Control
             {
                 window.Wanted = on;
                 window.Panel.Visible = on;
+
+                // A tick set is asking for the window, so it undoes a ✕ on What's here (B3).
+                _whatsHereShut &= !(on && window.Panel == _whatsHerePanel);
             };
             window.Tick = shown;
             body.AddChild(shown);
@@ -6843,6 +6984,147 @@ public partial class Main : Control
         return wrong.Count == 0
             ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
+    }
+
+    /// <summary>The bare tile the probe opened <i>What's here</i> on (B3), or null if it found none.</summary>
+    private GridPos? _whatsHerePosedOn;
+
+    /// <summary>A bare tile near the founding at least <paramref name="from"/> columns along — nothing stands on it that has a card.</summary>
+    private GridPos? ABareTile(int from)
+    {
+        SimWorld world = _loop.World;
+        for (int dx = from; dx < from + 20; dx++)
+        {
+            var tile = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 5);
+            if (world.StoreAt(tile) is null && world.WorkplaceCovering(tile) is null && world.HouseholdAt(tile) is null
+                && world.LibraryCovering(tile) is null && !(world.TownHall is not null && world.TownHallCovers(tile))
+                && world.WellCovering(tile) is null)
+            {
+                return tile;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Open <i>What's here</i> on a bare tile <b>after raising the two windows Joe saw it open
+    /// under</b> (B3) — the shape that makes the "on top" claim bite: by build order alone it may
+    /// already be above them, and a hover is all it takes in play to put them over it.
+    /// </summary>
+    private GridPos? PoseWhatsHere()
+    {
+        foreach (string name in new[] { "The valley", "Village log" })
+        {
+            if (_windows.Find(w => w.Name == name) is ShellWindow window)
+            {
+                RaiseToTheFront(window.Panel);
+            }
+        }
+
+        GridPos? tile = ABareTile(0);
+        if (tile is GridPos at)
+        {
+            _whatsHereShut = false;
+            _whatsHereWasDragged = false;
+            OnBuildingClicked(at);
+        }
+
+        return tile;
+    }
+
+    /// <summary>
+    /// <i>What's here</i> opens as tall as its text, on top, beside its tile; stays shut after a ✕
+    /// until a right-click; and stays where it was dragged — <b>a probe line</b> (B3).
+    /// </summary>
+    /// <remarks>
+    /// The first half reads the window eight frames after <see cref="PoseWhatsHere"/> opened it, so
+    /// the fit and the placement are the game's own frames. The second half is state, asked
+    /// directly. Everything posed is put back: no selection, not shut, not dragged.
+    /// </remarks>
+    private string WhatsHereOpensWhereItBelongs()
+    {
+        if (_whatsHerePosedOn is not GridPos tile)
+        {
+            return "[widths] what's here: ⛔ no bare tile near the founding to open it on";
+        }
+
+        var wrong = new List<string>();
+        PanelContainer panel = _whatsHerePanel;
+
+        if (!panel.Visible)
+        {
+            wrong.Add("it did not open on a bare tile");
+        }
+
+        float text = _inspector.GetCombinedMinimumSize().Y;
+        float box = _whatsHereScroll.Size.Y;
+        if (box > Mathf.Min(text, InspectorHeight) + 1f)
+        {
+            wrong.Add($"its box is {box:F0} tall for {text:F0} of text");
+        }
+
+        Rect2 at = _map.OnScreen(tile);
+        var drawn = new Rect2(DrawnTopLeft(panel), panel.Size * _uiScale);
+        bool beside = !drawn.Intersects(at)
+            && (Mathf.Abs(drawn.Position.X - at.End.X) <= 30f || Mathf.Abs(at.Position.X - drawn.End.X) <= 30f);
+        if (!beside)
+        {
+            wrong.Add($"it opened at ({drawn.Position.X:F0}, {drawn.Position.Y:F0}), not beside its tile at ({at.Position.X:F0}, {at.Position.Y:F0})");
+        }
+
+        if (drawn.Position.Y < 0f || drawn.End.Y > TopOfTheControlBar() || drawn.Position.X < 0f || drawn.End.X > Size.X)
+        {
+            wrong.Add($"it runs off the screen or under the control bar ({drawn.Position.X:F0}, {drawn.Position.Y:F0}, {drawn.Size.X:F0}×{drawn.Size.Y:F0})");
+        }
+
+        foreach (string name in new[] { "The valley", "Village log" })
+        {
+            if (_windows.Find(w => w.Name == name) is ShellWindow window && window.Panel.GetIndex() > panel.GetIndex())
+            {
+                wrong.Add($"it opened under {name}");
+            }
+        }
+
+        // ✕, then a left-click on bare ground: it stays shut. A right-click reopens it.
+        CloseTheWindow(panel);
+        OnBuildingClicked(tile);
+        if (panel.Visible)
+        {
+            wrong.Add("a left-click reopened it after its ✕");
+        }
+
+        OnWhatsHereAsked(tile);
+        if (!panel.Visible)
+        {
+            wrong.Add("a right-click did not reopen it");
+        }
+
+        // Dragged, then another tile: it stays where it was put.
+        _whatsHereWasDragged = true;
+        MovePanel(panel, new Vector2(-40f, 30f));
+        Vector2 parked = DrawnTopLeft(panel);
+        if (ABareTile(tile.X - _loop.World.Map.FoundingSite.X + 1) is GridPos other)
+        {
+            OnBuildingClicked(other);
+            FitWhatsHere();
+            FitWhatsHere();
+            if (!DrawnTopLeft(panel).IsEqualApprox(parked))
+            {
+                wrong.Add("it left the place it was dragged to when another tile was clicked");
+            }
+        }
+
+        _whatsHereWasDragged = false;
+        _whatsHereShut = false;
+        _placeWhatsHereIn = 0;
+        _selectedTile = null;
+        _selectedVillagerId = 0;
+        RefreshInspector(_loop.World);
+
+        return wrong.Count == 0
+            ? $"[widths] what's here: ✅ box {box:F0} for {text:F0} of text; beside its tile at ({drawn.Position.X:F0}, {drawn.Position.Y:F0}); above The valley and Village log; shut until a right-click; stays where it is dragged"
+            : "[widths] what's here: ⛔ " + string.Join("; ", wrong);
     }
 
     /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>

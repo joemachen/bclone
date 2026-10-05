@@ -1,5 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D487 IN §7. B2 ("TREE" NOT IN SETTINGS UNTIL THE TREE IS SHOWN) IS PLAYED, MERGED AND PUSHED (D486, D487). NEXT: B3.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D488 IN §7. B3 (*WHAT'S HERE* FITS, OPENS ON TOP AND BESIDE ITS TILE, STAYS SHUT) IS BUILT ON `slice/whats-here-window` — UNPLAYED, UNMERGED (D488). NEXT: JOE PLAYS B3; THEN B4, SPEC FIRST.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATER) — D488, ON WINDOWS.**
+>
+> **State (D488):** **B3 is built on `slice/whats-here-window`** (off `main`, one commit, **not pushed, not played, not
+> merged**). *What's here*: (a) as tall as its text, up to 460 logical, then it scrolls (`FitWhatsHere`); (b) raised on
+> top the frame it opens; (c) opens beside the tile it describes until dragged, then where it was left (*Reset window
+> positions* forgets the drag); after a ✕, Esc or a second right-click **only a bare right-click or its Settings tick
+> reopens it** (Joe's call, asked this session: *right-click only*). New probe line `what's here:` — **6 reds of 6**.
+> At B3, Windows: **1421 passing, 0 failing, 5 skipped of 1426 (3m43); view 0 warnings (`--no-incremental`); probe green,
+> 0 ⛔** — bar height 151, tile centres ✅, `new game:` 400 of 400 (bake 376 ms), windows ✅, what's here ✅ (box 54 for 54
+> of text); **goldens 315, nothing under `tests/`, `src/Bclone.Sim/` or `data/` changed.**
+>
+> **▶️ NEXT:** Joe plays B3 (`run.bat`, on the branch): left-click bare ground → *What's here* opens next to the tile, on
+> top, short; click another tile → it follows; drag it, click again → it stays; ✕ → left-clicks leave it shut, a
+> right-click brings it back where it was. Then, at his word, `git checkout main`, `git merge --no-ff slice/whats-here-window`,
+> `git push`. **Then B4 — spec first** (the banner below has his four answers).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATE NIGHT) — D486, FROM A CLOUD SESSION.**
 >
 > **State (D487):** ✅ **Joe played B2 on Windows (*"it works great. push."*); `claude/adoring-rubin-l6widh` is merged
@@ -4577,6 +4594,27 @@ Read `git status` after staging, every time.
   `origin/claude/handoff-review-next-steps-w37oks` not on `main`; on Joe's full Windows clone the count is **0** (its tip
   `ce01abb` is an ancestor of `main`). Before reporting "unmerged" from the cloud, run `git rev-parse --is-shallow-repository`
   (and `git fetch --unshallow` if it says `true`).
+
+## ⛔ THE TRAPS B3 (D488) PAID FOR — ONE FACT CHECKED TWICE, AND A RED-CHECK SCRIPT ON WINDOWS
+
+- **A flag checked in two places makes a mutant of either one score zero.** *"Has the player dragged it?"* was asked
+  where a placement is queued AND where it lands; the drag mutant came back green. One place now (where it lands,
+  which also catches a drag in the two frames between). Before trusting a 0-red, look for the same condition elsewhere.
+- **A queued action needs its precondition asked again when it fires.** The probe's first run failed honestly: a
+  placement queued by the reopen fired after the drag and moved the window. Same shape as the Settings centring wait.
+- **Red-checking on Windows with Python:** (1) Python cannot open Git Bash's `/d/...` paths; pass `cygpath -w` output.
+  (2) Files are CRLF in the working copy (`core.autocrlf=true`), and the Edit tool's new lines may be LF, so an anchor
+  written with `
+` or `
+` can count 0 either way. Normalise to `
+` to match, write the mutant normalised, and
+  restore the **original bytes** (`rb`/`wb`). (3) Set `PYTHONIOENCODING=utf-8`, or printing ⛔ crashes cp1252 halfway
+  through the run, with a mutant still in the file unless a `finally` restores it.
+- **The headless probe window is 1280 × 1280, not 1280 × 720.** A panel at y = 1058 is on screen there. Read the
+  `[widths] window` line before calling a coordinate wrong.
+- **The probe is one synchronous call at frame 20, so it cannot wait for layout.** To test something the game does
+  over frames (fit, then place), pose it earlier from `ProbeColumnWidths`' frame countdown (B3 poses at frame 12) and
+  read it at 20.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
