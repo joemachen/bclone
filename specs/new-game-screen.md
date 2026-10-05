@@ -302,8 +302,9 @@ ignored **1**, the scale row ignored **1**.
 
 - **Hills and height** — after the shell (Joe, D477), a stage and a row of their own.
 - **A second archetype** — the Valley row shows one.
-- **Remembering the last settings** — *settings persistence* is the next shell step; until then the
-  screen opens on a fresh roll at the config's defaults every launch.
+- **Remembering the last settings** — ✅ done by *settings persistence* (D504–D505,
+  `settings-persistence.md §4`): the screen opens on the rows of the valley last founded, each through
+  `NewGame.IsAllowed`, with a fresh roll of the seed; *Default settings* still means the config's.
 - **A title screen** — the last shell step; until then this screen is the first thing the game shows.
 - **Save/load** — will want the share code (and the name) in the save; this spec only makes sure
   there is one string that names the valley.

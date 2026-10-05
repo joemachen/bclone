@@ -538,4 +538,48 @@ public class NewGameScreenTests(ITestOutputHelper output)
         string json = JsonSerializer.Serialize(Shipped.NewGameOptions);
         Assert.Contains("\"river_course\":\"nwse\"", json, StringComparison.Ordinal);
     }
+
+    // ---- settings-persistence.md §8.9 The screen opens on the valley last founded --------------
+
+    /// <summary>
+    /// ⭐ A remembered row is kept only through the screen's own door (<see cref="NewGame.IsAllowed"/>):
+    /// an allowed value is kept, a refused one opens at the config's default and says why, a row this
+    /// build does not have is dropped without a word — and the seed is always the fresh roll's.
+    /// </summary>
+    [Fact]
+    public void TheScreenOpensOnTheRowsLastFoundedThroughItsOwnDoor()
+    {
+        SimConfig config = Shipped;
+        NewGameSettings fresh = NewGame.Defaults(config, "oak");
+        var remembered = new Dictionary<string, string>
+        {
+            ["woods"] = "20",
+            ["stone"] = "rich",
+            ["river"] = "99",
+            ["hills"] = "tall",
+        };
+
+        var problems = new List<PlayerSettingsProblem>();
+        NewGameSettings opened = NewGame.Remembered(config, fresh, remembered, problems);
+
+        Assert.Equal("oak", opened.SeedText);
+        Assert.Equal("20", opened.Values["woods"]);
+        Assert.Equal("rich", opened.Values["stone"]);
+        Assert.Equal(fresh.Values["river"], opened.Values["river"]);
+        Assert.False(opened.Values.ContainsKey("hills"));
+        Assert.Contains("river=99", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+    }
+
+    /// <summary>A remembered screen names the same valley as the same values chosen by hand.</summary>
+    [Fact]
+    public void ARememberedScreenSharesTheValleyItShows()
+    {
+        SimConfig config = Shipped;
+        NewGameSettings fresh = NewGame.Defaults(config, "oak");
+        NewGameSettings opened = NewGame.Remembered(
+            config, fresh, new Dictionary<string, string> { ["woods"] = "20", ["flow"] = "ns" }, new List<PlayerSettingsProblem>());
+
+        Assert.True(NewGame.TryRead(config, "oak#woods=20,flow=ns", fresh, out NewGameSettings typed, out _));
+        Assert.Equal(NewGame.ShareCode(config, typed), NewGame.ShareCode(config, opened));
+    }
 }

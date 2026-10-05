@@ -329,6 +329,49 @@ public static class NewGame
         return new NewGameSettings(seedText, null, values);
     }
 
+    /// <summary>
+    /// <paramref name="fresh"/> with the rows the player last founded a valley on (D504,
+    /// `settings-persistence.md §4`) — the seed and the name stay <paramref name="fresh"/>'s.
+    /// </summary>
+    /// <remarks>
+    /// A remembered value is kept only where its row still exists and <see cref="IsAllowed"/> still
+    /// accepts it — the one door every value on this screen goes through — so a modder's changed rows or
+    /// a narrowed range fall back to the config's default instead of founding something refused. A row
+    /// this build does not have is an older build's, and is dropped without a word; a refused value
+    /// says why in <paramref name="problems"/>.
+    /// </remarks>
+    public static NewGameSettings Remembered(
+        SimConfig config,
+        NewGameSettings fresh,
+        IReadOnlyDictionary<string, string> rows,
+        ICollection<PlayerSettingsProblem> problems)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(fresh);
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(problems);
+
+        var values = new Dictionary<string, string>(fresh.Values, StringComparer.Ordinal);
+        foreach (NewGameRow row in config.NewGameOptions)
+        {
+            if (!rows.TryGetValue(row.Id, out string? value))
+            {
+                continue;
+            }
+
+            if (IsAllowed(row, value, out string? refusal))
+            {
+                values[row.Id] = value;
+            }
+            else
+            {
+                problems.Add(new(Logging.LogLevel.Warn, $"The remembered new-game setting {refusal} The row opens at its default."));
+            }
+        }
+
+        return fresh with { Values = values };
+    }
+
     private static string DefaultValue(NewGameRow row, JsonObject doc)
     {
         switch (row.Kind)
