@@ -42,6 +42,9 @@ public enum ToolMark
     /// <summary>Rub a marking out.</summary>
     Unmark,
 
+    /// <summary>Destroy what stands, goods and all (D494).</summary>
+    Destroy,
+
     /// <summary>Put down whatever is in hand.</summary>
     Cancel,
 }
@@ -145,6 +148,15 @@ public sealed partial class ToolGlyph : Control
                 DrawRect(new Rect2(s * 0.08f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.TimberTone);
                 DrawRect(new Rect2(s * 0.38f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.StoneTone);
                 DrawRect(new Rect2(s * 0.68f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.IronTone);
+                break;
+
+            // ⭐ What the ground gives up, struck through in red (D494): a tree and a rock, and a cross
+            // over both — taken, and not kept.
+            case ToolMark.Destroy:
+                Tree(new Vector2(s * 0.30f, s * 0.80f), s * 0.40f, VillageMap.TimberTone);
+                DrawRect(new Rect2(s * 0.56f, s * 0.52f, s * 0.32f, s * 0.28f), VillageMap.StoneTone);
+                DrawLine(new Vector2(s * 0.12f, s * 0.18f), new Vector2(s * 0.88f, s * 0.86f), VillageMap.DestroyTone, 1.8f);
+                DrawLine(new Vector2(s * 0.88f, s * 0.18f), new Vector2(s * 0.12f, s * 0.86f), VillageMap.DestroyTone, 1.8f);
                 break;
 
             // A marking, struck through.

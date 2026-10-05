@@ -1,5 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D493 IN §7. B4 SLICE 2 (THE DESTROY BRUSH IN THE SIM) IS BUILT ON `slice/destroy-brush-sim` — NOTHING TO PLAY UNTIL SLICE 3 (D493). NEXT: SLICE 3, THE VIEW.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D494 IN §7. B4 SLICES 2–3 (THE DESTROY BRUSH, SIM AND VIEW) ARE BUILT ON `slice/destroy-brush-sim` — UNPLAYED (D493, D494). NEXT: JOE PLAYS THEM; THEN B5, B6.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B4 SLICES 2 AND 3) — D494, ON WINDOWS.**
+>
+> **State (D494):** `slice/destroy-brush-sim` (off `main`, not pushed) holds **slice 2 (the destroy brush in the sim,
+> D493) and slice 3 (its button and its red, D494) — unplayed.** At slice 3, Windows: **1435 / 0 / 5 of 1440; view 0
+> warnings (`--no-incremental`); probe green, 0 ⛔ (bar height 151; the new `destroy:` line ✅); goldens 315,
+> unchanged.** `DestroyBrushTests` 14 reds of 14; the probe line 9 of 9.
+>
+> **▶️ NEXT:** Joe plays it (`run.bat` on the branch): Removal → *Destroy*; drag over a wood, a seam and some saplings —
+> red marks, the ghost green over what it takes and red over bare grass; laborers walk out and the tiles go bare, nothing
+> carried home; the ground beside a wood stays bare; give a forester that ground and it plants and the wood comes back;
+> right-drag takes red marks back. **⚠️ Ask him whether the red reads apart from the harvest orange** (colour-blindness,
+> D332's reason). Then merge at his word: `git checkout main`, `git merge --no-ff slice/destroy-brush-sim`, `git push`.
+> Then **B5** (homes on forested tiles: verify and report) and **B6** (`quarry_unlock_stone` 100 → 200 on the harness).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SLICE 2) — D493, ON WINDOWS.**
 >
 > **State (D493):** **B4 slice 2 — the destroy brush in the sim — is built on `slice/destroy-brush-sim`** (off `main`,
@@ -4729,6 +4744,16 @@ Read `git status` after staging, every time.
   arrival mutant did. Every tier of the search must apply the arrival's own test to the tiles it returns.
 - **A red-check script that prints neither pass nor fail is a crash, not a pass** — read the run by hand
   (`Test Run Aborted`).
+
+## ⛔ THE TRAPS B4 SLICE 3 (D494) PAID FOR — STATIC FIELDS IN SOURCE ORDER, AND A GHOST THAT AGREES WITH THE WRONG BRUSH
+
+- **C# initialises static fields in the order they are written.** A colour `X with { A = … }` declared above `X` reads
+  it as transparent black. The build does not warn; only the probe's colour check catches it now.
+- **A preview guard posed where two verdicts agree scores zero.** Over a tree, the homes brush says fine as well as the
+  red one. Pose the ghost where they disagree (bare grass: homes fine, red refused).
+- **`SimWorld.SomethingStandsAt` is internal** — the tests see it (InternalsVisibleTo), the game does not. A probe line
+  in `src/Bclone.Game` that calls it fails the view build, and the probe then runs the LAST build — a stale mutant
+  result, not this code. Read the build line before the probe line.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

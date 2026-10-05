@@ -435,6 +435,7 @@ public partial class Main : Control
         GD.Print(_map.TheFieldsStayInsideTheirFences());
 
         ProbeTheControlBar();
+        GD.Print(TheRedBrushIsOnTheBar());
         GD.Print(TheAnnounceIsAHintNotALogLine());
         GD.Print(ShiftRSquaresTheGhost());
         ProbeTheProfessionsPanel();
@@ -6550,6 +6551,11 @@ public partial class Main : Control
         Add(BuildTab.Removal, BuildCategory.Storage, "Empty", ToolMark.Empty,
             () => _map.BeginEmptying());
 
+        // ⭐ THE RED BRUSH (D494, Joe: *"a red (destructive) brush"*) — on Removal, because it takes
+        // things away and keeps nothing; harvest is the tab for taking and keeping.
+        Add(BuildTab.Removal, BuildCategory.Resources, "Destroy", ToolMark.Destroy,
+            () => _map.BeginDestroying(1));
+
         foreach ((string Label, HarvestBrush Mode, ToolMark Mark) entry in new[]
         {
             ("Trees", HarvestBrush.Trees, ToolMark.HarvestTrees),
@@ -6773,7 +6779,8 @@ public partial class Main : Control
             VillageMap.MapTool.Building or VillageMap.MapTool.PaintingHomes
                 or VillageMap.MapTool.Moving => BuildTab.Build,
             VillageMap.MapTool.Demolishing or VillageMap.MapTool.ErasingHomes
-                or VillageMap.MapTool.Emptying => BuildTab.Removal,
+                or VillageMap.MapTool.Emptying or VillageMap.MapTool.Destroying
+                or VillageMap.MapTool.Undestroying => BuildTab.Removal,
             VillageMap.MapTool.Harvesting or VillageMap.MapTool.Unmarking => BuildTab.Harvest,
 
             // ⚠️ The work-ground brush belongs to a BUILDING and is reached from that building's
@@ -6820,6 +6827,7 @@ public partial class Main : Control
         VillageMap.MapTool.Moving => ToolMark.Move,
         VillageMap.MapTool.Emptying => ToolMark.Empty,
         VillageMap.MapTool.Unmarking => ToolMark.Unmark,
+        VillageMap.MapTool.Destroying or VillageMap.MapTool.Undestroying => ToolMark.Destroy,
         VillageMap.MapTool.Harvesting => harvest switch
         {
             HarvestBrush.Trees => ToolMark.HarvestTrees,
@@ -7125,6 +7133,68 @@ public partial class Main : Control
         return wrong.Count == 0
             ? $"[widths] what's here: ✅ box {box:F0} for {text:F0} of text; beside its tile at ({drawn.Position.X:F0}, {drawn.Position.Y:F0}); above The valley and Village log; shut until a right-click; stays where it is dragged"
             : "[widths] what's here: ⛔ " + string.Join("; ", wrong);
+    }
+
+    /// <summary>
+    /// ⭐ The red brush from the bar — <b>a probe line</b> (D494): the Destroy button is on Removal,
+    /// pressing it puts the red brush in hand, lights Removal and itself, and says what it does;
+    /// then the map's own stroke-and-trace clause (<c>VillageMap.ARedStrokeMarksAndTraces</c>).
+    /// </summary>
+    private string TheRedBrushIsOnTheBar()
+    {
+        var faults = new List<string>();
+        (BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) destroy =
+            _strip.Find(e => e.Mark == ToolMark.Destroy);
+        if (destroy.Button is null)
+        {
+            return "[widths] destroy: ⛔ no Destroy button on the bar";
+        }
+
+        if (destroy.Tab != BuildTab.Removal)
+        {
+            faults.Add($"Destroy is on {destroy.Tab}, not Removal");
+        }
+
+        try
+        {
+            destroy.Button.EmitSignal(BaseButton.SignalName.Pressed);
+            RelightTheStrip();
+            if (_map.Tool != VillageMap.MapTool.Destroying)
+            {
+                faults.Add($"pressing Destroy put {_map.Tool} in hand");
+            }
+
+            Button removal = _tabButtons.Find(t => t.Tab == BuildTab.Removal).Button;
+            if (removal.Modulate == Colors.White)
+            {
+                faults.Add("the Removal tab did not light");
+            }
+
+            if (!destroy.Button.ButtonPressed)
+            {
+                faults.Add("the Destroy button did not light");
+            }
+
+            if (!destroy.Button.TooltipText.Contains("destroy", System.StringComparison.Ordinal))
+            {
+                faults.Add($"its sentence is \"{destroy.Button.TooltipText}\"");
+            }
+        }
+        finally
+        {
+            _map.PutTheToolDown();
+            RelightTheStrip();
+        }
+
+        string stroke = _map.ARedStrokeMarksAndTraces();
+        if (stroke.Length > 0)
+        {
+            faults.Add(stroke);
+        }
+
+        return faults.Count == 0
+            ? "[widths] destroy: ✅ on Removal; pressed, it is the red brush in hand, Removal and Destroy lit, its sentence set; a stroke marks a tree, traces red, and takes back clean"
+            : "[widths] destroy: ⛔ " + string.Join("; ", faults);
     }
 
     /// <summary>Each map toggle, its tick, and what the map itself believes — for the probe.</summary>
