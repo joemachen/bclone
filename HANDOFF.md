@@ -1,5 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D500 IN §7. B6 IS BUILT ON `slice/b6-quarry-unlock-200` (D500), UNPLAYED — THE LAST OF JOE'S B QUEUE.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D501 IN §7. B6 IS DONE — PLAYED, MERGED AND PUSHED (D501). NEXT: B7, NO SPOILERS.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B6 DONE) — D501, ON WINDOWS.**
+>
+> **State (D501):** ✅ **B6 is done.** Joe played it (*"it works. merge and push."*); `slice/b6-quarry-unlock-200` is
+> merged `--no-ff` to `main` and pushed. Joe's B queue (B1–B6) is empty.
+>
+> **▶️ NEXT: B7 — Joe's clean-up note (D501): nothing locked is offered before it is learned.** The villager card's
+> *Always …* dropdown lists smith / quarrier / miner at tick 1, and every store's goods rows, the stock limits and the
+> bar's *more ▾* list iron tools. D460 fixed only the Professions panel (`ShowTheKnownTrades`, `EarnedYet`). The plan:
+> `SimWorld.KnowsOf(Goods)` (a forged good is unknown until the smithy is, except the founders' cart tools); the view
+> shares `TradeKnown` / `GoodKnown`, refreshed from `RefreshTheStrip` where the latches flip (never per frame); a
+> store holding a good always shows it. `specs/professions.md` first. Its own `slice/no-spoilers` off `main`.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B6 BUILT) — D500, ON WINDOWS.**
 >
 > **State (D500):** `main` = D499, pushed. **`slice/b6-quarry-unlock-200`** (off `main`, one commit, not pushed) holds
