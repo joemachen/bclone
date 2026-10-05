@@ -1,5 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D502 IN §7. B7 (NO SPOILERS) IS BUILT ON `slice/no-spoilers` (D502), UNPLAYED.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D503 IN §7. B7 IS DONE — PLAYED, MERGED AND PUSHED (D503). JOE'S QUEUE IS EMPTY.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B7 DONE) — D503, ON WINDOWS.**
+>
+> **State (D503):** ✅ **B7 is done.** Joe played it (*"played it works. merge and push."*); `slice/no-spoilers` is
+> merged `--no-ff` to `main` and pushed. No branch is open (`slice/b6-quarry-unlock-200` and `slice/no-spoilers` are
+> kept until Joe says to delete them).
+>
+> **▶️ NEXT: ASK JOE.** His B queue and his clean-up note are both done. §4's roadmap had **settings persistence**
+> (nothing persists today) as the next shell step before the B notes (D480). Still open from D502, written down: a
+> market's *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B7 BUILT) — D502, ON WINDOWS.**
 >
 > **State (D502):** `main` = D501, pushed. **`slice/no-spoilers`** (off `main`, one commit, not pushed) holds B7: the
