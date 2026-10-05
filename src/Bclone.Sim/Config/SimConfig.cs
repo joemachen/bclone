@@ -1288,11 +1288,12 @@ public sealed record SimConfig
 
     /// <summary>Stone the village must dig by hand before anybody knows how to cut a quarry (`quarry.md §3.3`).</summary>
     /// <remarks>
-    /// Joe's call, 2026-09-29: about eight seam tiles, most of one seam — so clearing deposits is
-    /// the early game (D84's warning) and the quarry arrives as the village's core goes up.
+    /// Joe's call, doubled in D500 (B6, *"the quarry gift comes too soon"*): about seventeen seam
+    /// tiles, more than one seam — so clearing deposits is the early game (D84's warning) and the
+    /// quarry arrives as the village's core goes up, not on the stone of its first granary.
     /// </remarks>
     [JsonPropertyName("quarry_unlock_stone")]
-    public int QuarryUnlockStone { get; init; } = 100;
+    public int QuarryUnlockStone { get; init; } = 200;
 
     /// <summary>A quarry's timber — sheds and a crane at the face.</summary>
     [JsonPropertyName("quarry_logs")]

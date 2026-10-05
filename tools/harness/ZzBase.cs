@@ -32,6 +32,7 @@ public sealed class ZzBase
         if (Environment.GetEnvironmentVariable("ZZ_YIELD") is string yi) { config = config with { ToolYieldBonusPercent = int.Parse(yi) }; }
         if (Environment.GetEnvironmentVariable("ZZ_USES") is string us) { config = config with { ToolUses = int.Parse(us) }; }
         if (Environment.GetEnvironmentVariable("ZZ_CART") is string ca) { config = config with { CartTools = int.Parse(ca) }; }
+        if (Environment.GetEnvironmentVariable("ZZ_QUARRY") is string qu) { config = config with { QuarryUnlockStone = int.Parse(qu) }; }
         if (Environment.GetEnvironmentVariable("ZZ_STONEX") is string sx)
         {
             int k = int.Parse(sx);
@@ -75,7 +76,10 @@ public sealed class ZzBase
             FarmFixtures.GiveItGround(world, farm, 3);
         }
 
+        // B6: the first tick the quarry is known, and the first ticks 100 and 200 stone had been dug by
+        // hand. The harness never marks a quarry, so the crossings do not depend on the unlock's number.
         int peak = 0;
+        int learned = -1, at100 = -1, at200 = -1;
         for (int t = 0; t < config.TicksPerYear * 50; t++)
         {
             if (t == config.TicksPerYear * 3)
@@ -96,6 +100,9 @@ public sealed class ZzBase
 
             loop.StepOnce();
             peak = Math.Max(peak, world.Population);
+            if (learned < 0 && world.IsUnlocked(BuildingKind.Quarry)) { learned = t; }
+            if (at100 < 0 && world.StoneEverDug >= 100) { at100 = t; }
+            if (at200 < 0 && world.StoneEverDug >= 200) { at200 = t; }
         }
 
         int starved = world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Starvation);
@@ -103,7 +110,7 @@ public sealed class ZzBase
         int sites = world.Workplaces.Count(w => w.Construction is { IsFinished: false });
         int iron = world.Villagers.Count(v => v.Alive && v.ToolUses > 0 && v.ToolGood == Goods.IronTools);
         int stone = world.Villagers.Count(v => v.Alive && v.ToolUses > 0 && v.ToolGood == Goods.Tools);
-        _o.WriteLine($"ZZB {arm} {seed} sites {sites} alive {world.Population} peak {peak} starved {starved} cold {cold} hash {StateHash.Compute(world)} forged {world.ToolsEverForged} hands-iron {iron} hands-stone {stone} taken {world.ToolsEverTaken}");
+        _o.WriteLine($"ZZB {arm} {seed} sites {sites} alive {world.Population} peak {peak} starved {starved} cold {cold} hash {StateHash.Compute(world)} forged {world.ToolsEverForged} hands-iron {iron} hands-stone {stone} taken {world.ToolsEverTaken} dug {world.StoneEverDug} learned {learned} at100 {at100} at200 {at200} tpy {config.TicksPerYear}");
     }
 
     public static IEnumerable<object[]> Runs()

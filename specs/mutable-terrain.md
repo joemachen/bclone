@@ -128,8 +128,8 @@ somebody has to fill in rather than a default it inherits silently.
   building is what you place when you are tired of moving.
 - **⚠️ Watch:** with quarries and mines infinite, all of §2.3's pressure rests on deposits and
   trees. The quarry must therefore sit far enough up the tree that clearing deposits is
-  genuinely the early game. **Answered for the quarry by D434:** it unlocks after 100 stone dug by
-  hand, and it may only be cut into rock, so a seam cleared by hand is a quarry site spent.
+  genuinely the early game. **Answered for the quarry by D434:** it unlocks after 200 stone dug by
+  hand (100 until D500 — Joe: it came too soon), and it may only be cut into rock, so a seam cleared by hand is a quarry site spent.
 
 ### 5.1 ✅ The harvest-brush conflict — resolved by D86, and the brush moved
 

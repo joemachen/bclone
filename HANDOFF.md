@@ -1,5 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D499 IN §7. B5 IS DONE — PLAYED, MERGED AND PUSHED (D496–D499). NEXT: B6.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D500 IN §7. B6 IS BUILT ON `slice/b6-quarry-unlock-200` (D500), UNPLAYED — THE LAST OF JOE'S B QUEUE.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B6 BUILT) — D500, ON WINDOWS.**
+>
+> **State (D500):** `main` = D499, pushed. **`slice/b6-quarry-unlock-200`** (off `main`, one commit, not pushed) holds
+> B6: `quarry_unlock_stone` **100 → 200** (`data/sim.config.json` and `SimConfig`'s default), `quarry.md §6.4` with the
+> measurement, the harness's `ZZ_QUARRY` arm and `tools/harness/quarry.py`. At D500, Windows: **1445 / 0 / 5 of 1450
+> (4m05, straight after 40 minutes of harness); view 0 warnings; probe green, bar height 151; no golden moved.**
+>
+> **What the harness said (D500, `quarry.md §6.4`):** at 100 an unattended village learned to quarry at a median
+> **year 3.4**, on the stone of its first granary and warehouse; at 200 it needs about seventeen tiles dug — with a
+> core's worth painted at once, year 3.8. Survival identical in all 500 valley pairs. **The unlock counts stone, not
+> time: how much later it feels is Joe's play.**
+>
+> **▶️ NEXT:** Joe plays it (`run.bat` on the branch): paint rock for laborers; the build bar keeps the quarry hidden and
+> marking one says *"… dug N of the 200 stone by hand it takes to learn"*; the moment *"The village learned to quarry"*
+> stops the game at 200. Then merge at his word: `git checkout main`, `git merge --no-ff slice/b6-quarry-unlock-200`,
+> `git push`. **After that Joe's B queue is empty — ask him what is next** (§4's roadmap: settings persistence was the
+> next shell step before the B notes, D480).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 DONE) — D499, ON WINDOWS.**
 >
 > **State (D499):** ✅ **B5 is done.** Joe played it (*"both worked. merge and push."*); `slice/b5-whole-footprint`
@@ -4847,6 +4866,20 @@ Read `git status` after staging, every time.
   fixture years for stored forage; one more tree a house and there was none. Pose the premise.
 - **A test fixture can hold the very assumption the slice removes.** Three guards cleared or checked the anchor tile
   only and failed when the rule became the whole footprint — not regressions, the old rule written into a pose.
+
+## ⛔ THE TRAPS B6 (D500) PAID FOR — A SURVIVAL HARNESS IS BLIND TO A GATE IT NEVER WALKS THROUGH, AND NOT EVERY GODOT IS YOURS
+
+- **"Measured on the harness" can measure nothing.** The unattended harness never marks a quarry, so `quarry_unlock_stone`
+  is invisible to alive / dead / starved — 500 pairs byte-identical, which proves *harmless*, not *right*. **Ask what
+  the number moves, and print that** (`learned`, `at100`, `at200` on the `ZZB` line), and give the harness the
+  behaviour it otherwise lacks (`ZZ_PAINT=25`: without it the harness digs ~108 stone and a 200 gate never opens).
+- **A config-only change needs no worktree:** a `ZZ_` knob on one build is `main` against the change, back to back,
+  without a second checkout. A worktree is for when code differs (D498).
+- **`tasklist | grep -i godot` after the probe may show a Godot that is not the probe's.** On 2026-10-05 it was Joe's
+  `D:\Projects\wordgame` open in the editor. Read the command line (`Get-CimInstance Win32_Process -Filter
+  "ProcessId=N"`) before `taskkill`; the probe's own `done.` is what says it finished.
+- **The probe's `ERROR: The village stopped … posed by the probe` is the probe's own pose** (`Main.cs` ~689), not a
+  failure.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
