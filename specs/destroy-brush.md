@@ -13,7 +13,7 @@ D138 (the village clears a site's ground, not the player), D126 (the valley grow
 stood), D127 (harvest paint is a standing instruction), D157 (footprints cleared in build-queue order),
 D162 (the farm), D220 (a planted sapling waits a period), D347 (a seam shrinks tile by tile), D452
 (forester planting counts Grass only), D61 (livestock is blocked behind trade).
-**Status:** 🔨 **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), UNPLAYED. Slices 2–3 (the
+**Status:** ✅ **SLICE 1 (§3.3, farms over trees and seams) BUILT (2026-10-04, D491), PLAYED AND MERGED (D492). Slices 2–3 (the
 destroy brush) NOT STARTED.** Spec written D490; Joe took every recommendation in §8 (D491). Owner: Joe + Claude Code.
 
 ---

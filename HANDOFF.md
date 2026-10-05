@@ -1,5 +1,15 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D491 IN §7. B4 SLICE 1 (FARMS OVER TREES AND SEAMS) IS BUILT ON `slice/destroy-brush` — UNPLAYED, UNMERGED (D491). NEXT: JOE PLAYS IT; THEN SLICE 2, THE DESTROY BRUSH IN THE SIM.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D492 IN §7. B4 SLICE 1 (FARMS OVER TREES AND SEAMS) IS PLAYED, MERGED AND PUSHED (D491, D492). NEXT: SLICE 2, THE DESTROY BRUSH IN THE SIM.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SLICE 1 MERGED) — D492, ON WINDOWS.**
+>
+> **State (D492):** ✅ **Joe played B4 slice 1 (*"both 1 and 2 are great"*); `slice/destroy-brush` (spec D490 + slice 1
+> D491) is merged `--no-ff` to `main` and pushed.** No other branch is open. **Next: slice 2 — the destroy brush in the
+> sim** (`destroy-brush.md §3.1–§3.2, §5`), on its own branch off `main`.
+>
+> ⚠️ **The suite's clock on Joe's machine moves with his other programs** (his words, D492). A slower suite is his
+> load until a back-to-back comparison (`main` then the branch, or the slowest tests A/B'd) says it is the code.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SLICE 1) — D491, ON WINDOWS.**
 >
 > **State (D491):** `slice/destroy-brush` (off `main`, not pushed) holds two commits: the spec (D490) and **slice 1 —
