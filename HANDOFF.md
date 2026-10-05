@@ -1,5 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D489 IN §7. B3 (*WHAT'S HERE* FITS, OPENS ON TOP AND BESIDE ITS TILE, STAYS SHUT) IS PLAYED, MERGED AND PUSHED (D488, D489). NEXT: B4 — SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D491 IN §7. B4 SLICE 1 (FARMS OVER TREES AND SEAMS) IS BUILT ON `slice/destroy-brush` — UNPLAYED, UNMERGED (D491). NEXT: JOE PLAYS IT; THEN SLICE 2, THE DESTROY BRUSH IN THE SIM.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SLICE 1) — D491, ON WINDOWS.**
+>
+> **State (D491):** `slice/destroy-brush` (off `main`, not pushed) holds two commits: the spec (D490) and **slice 1 —
+> farms over trees and seams — unplayed.** Joe took all four of the spec's §8 recommendations. A farm's ground refuses
+> stone and iron; its trees are marked and cleared by laborers (after building sites, before ordinary paint) and
+> ploughed the moment they fall; saplings are ploughed; nothing seeds into farm ground; the card reads *"3 to clear"*.
+> At slice 1, Windows: **1427 / 0 / 5 of 1432; view 0 warnings (`--no-incremental`); probe green, 0 ⛔** (bar height
+> 151, tile centres ✅, `new game:` ✅, windows ✅, what's here ✅, cards ✅ with the caption); **goldens 315, unchanged.**
+> `FarmClearingTests` 9 reds of 9. The suite clock moved; it was the machine (D491 has the back-to-back numbers).
+>
+> **▶️ NEXT:** Joe plays slice 1 (`run.bat` on the branch): give a farm ground over a wood — the trees go orange, a
+> laborer fells them, each becomes field the moment it falls, the card counts down *"N to clear"*; drag the farm brush
+> over a stone or iron seam — it goes round, and the drag says *"Not on a seam — clear it first."* Then merge at his
+> word (`git checkout main`, `git merge --no-ff slice/destroy-brush`, `git push`), or keep the branch for slices 2–3.
+> **Then slice 2: the destroy brush in the sim** (`destroy-brush.md §3.1–§3.2, §5`).
+>
+> **(superseded by the banner above)**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (B4 SPEC) — D490, ON WINDOWS.**
+>
+> **State (D490):** `main` = D489, pushed; `slice/whats-here-window` deleted at Joe's word (it was never on the
+> remote). **B4's spec is written: `specs/destroy-brush.md`, on `slice/destroy-brush`** (off `main`, one commit, not
+> pushed) — **spec only, nothing built, no code changed.** §2 is what the game does today, measured with a throwaway
+> harness test (deleted, never committed) and traced; §3 the design; §8 **four calls for Joe**: (Q1) laborers destroy,
+> or an instant eraser — recommended laborers; (Q2) bare grass refused, or laid bare to keep a meadow; (Q3) a forester
+> replanting its own destroyed wood is left as is; (Q4) slice order — farms first.
+>
+> **▶️ NEXT:** Joe reads the spec and answers §8. Then slice 1 (farms over trees and seams), spec status updated in
+> the same commit. ⚠️ **Explain the untraced fell first:** one of twelve forest tiles on the measured farm became
+> Grass in year 2 with nothing painted (§2) — find what did it before building the auto-mark beside it.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATEST) — D489, ON WINDOWS.**
 >
 > **State (D489):** ✅ **Joe played B3 (*"works perfectly. merge it"*); `slice/whats-here-window` is merged `--no-ff` to
@@ -4630,6 +4661,34 @@ Read `git status` after staging, every time.
 - **The probe is one synchronous call at frame 20, so it cannot wait for layout.** To test something the game does
   over frames (fit, then place), pose it earlier from `ProbeColumnWidths`' frame countdown (B3 poses at frame 12) and
   read it at 20.
+
+## ⛔ THE TRAP THE B4 SPEC (D490) PAID FOR — A FILED NOTE'S PREMISE CAN BE A SYSTEM THAT DOES NOT EXIST
+
+- **B4's note asked about herdsmen's pens; there are no pens.** Livestock is blocked by D61 — nothing in the sim
+  says `Herd` or `Pen`. A design answer about a system not built is recorded where that system's spec will read it
+  (`livestock.md §6.1`), not built. **Grep for the system before speccing its rule.**
+- **Two explorers read one method and disagreed** (one forest neighbour or two, for regrowth): the method's summary
+  says two, its body and closing comment say one. **Read the line that returns, not the summary above it.**
+
+## ⛔ THE TRAPS B4 SLICE 1 (D491) PAID FOR — A POSE THAT REUSES ITS OWN TILE, AND A RULE HIDING BEHIND ITS NEIGHBOUR
+
+- **A test helper that poses "the first free tile" returns the same tile every call** unless it remembers what it
+  posed. Rock, iron, forest and sapling were all one tile, overwritten in turn, and the seam guard failed on a
+  verdict about a sapling. Keep a used-set in the fixture.
+- **Two rules that both end in the same terrain hide each other from a mutant.** With seeding on farm ground
+  allowed, the tile seeded and the next pass pulled the sapling up — a field, which *"not wood"* accepted. Assert
+  the exact terrain nothing should have touched (*"still grass"*), not the absence of the one you fear.
+- **A farm with a hand on it sows open grass in spring**, so a regrowth guard on farm grass measures the farmer.
+  Unstaff it (`SetStaffing(farm, 0)`).
+- **Wood a building is waiting on outranks a farm's trees (D215, by design)** — the fixture founding has a house
+  waiting on logs. A priority guard stocks every site first, or it measures D215.
+- ⚠️ **Untraced, recorded:** farm ground can be painted over homes land, and a waiting family's plot posed as marked
+  forest was returned first by `NextFootprintToClear` for two years yet never cleared. The pose is artificial; if a
+  played village ever shows a footprint that is "being cleared" for ever, start there.
+- **A caption is a width, so measure it** — *"tiles · 999 to clear"* clipped the card's 81px cell. The cards probe
+  now checks the farm's caption; six wordings were tried and only *"999 to clear"* fit.
+- **A heredoc with a lot of quotes and backticks can fail to parse in Git Bash.** Write the script to the scratchpad
+  and run the file.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

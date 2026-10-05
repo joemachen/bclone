@@ -1073,11 +1073,38 @@ public partial class Main
         return ($"{total:N0}", held.Count > 1 ? $"{first} +{held.Count - 1}" : first);
     }
 
-    private static (string Value, string Key) WhereItWorks(JobKind kind, int ground, int ring, int huntingRange)
+    /// <summary>
+    /// A farm's trees still to clear — asked of the sim only when the terrain or the zones have
+    /// moved since (CLAUDE.md: nothing derivable is rebuilt per frame; the two counters are
+    /// the cheapest honest answer to "has this changed?").
+    /// </summary>
+    private int TreesToClear(SimWorld world, Workplace farm)
+    {
+        if (_treesToClear.TryGetValue(farm.Id, out (int Terrain, int Zones, int Trees) seen)
+            && seen.Terrain == world.TerrainGeneration && seen.Zones == world.Zones.Edits)
+        {
+            return seen.Trees;
+        }
+
+        int trees = world.TreesToClearOn(farm);
+        _treesToClear[farm.Id] = (world.TerrainGeneration, world.Zones.Edits, trees);
+        return trees;
+    }
+
+    /// <summary>Each farm's last count, and the two counters it was counted at.</summary>
+    private readonly Dictionary<int, (int Terrain, int Zones, int Trees)> _treesToClear = new();
+
+    private static (string Value, string Key) WhereItWorks(JobKind kind, int ground, int ring, int huntingRange, int toClear)
     {
         if (SimWorld.KeepsWorkGround(kind))
         {
-            return ground > 0 ? ($"{ground}", "tiles of ground") : ("—", "no ground painted");
+            // ⭐ A farm's trees, said where its ground is (B4, D491): the field outline covers them
+            // from the stroke, and this is why some of it is not field yet. ⚠️ Just "3 to clear":
+            // measured by the cards probe, "tiles · 999 to clear" clips the 81px cell and of six
+            // wordings only this one fits at three digits.
+            return ground <= 0 ? ("—", "no ground painted")
+                : toClear > 0 ? ($"{ground}", $"{toClear} to clear")
+                : ($"{ground}", "tiles of ground");
         }
 
         if (ring > 0)
@@ -1187,7 +1214,8 @@ public partial class Main
                 place.Kind,
                 world.Zones.WorkGroundTiles(place.Id),
                 place.GatheringRadius,
-                world.BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0);
+                world.BuildingsCatalog[BuildingKind.HunterLodge]?.HuntingRadius ?? 0,
+                place.Kind == JobKind.Farmer ? TreesToClear(world, place) : 0);
             Number(card, 1, reach.value, reach.key);
 
             // ⚠️ A BUFFER WITH NO WALL HAS NO "OF" (Joe: *"what is the 0 of 2,147,483 representative
@@ -2169,7 +2197,7 @@ public partial class Main
             tradesAsked++;
             (string wallValue, string wallKey) = WallCell(row.LocalStoreCap > 0 ? row.LocalStoreCap : int.MaxValue, row.Seats ?? 1);
             string held = $"{wallValue} {wallKey}";
-            (string _, string where) = WhereItWorks(trade, 0, row.GatheringRadius, row.HuntingRadius);
+            (string _, string where) = WhereItWorks(trade, 0, row.GatheringRadius, row.HuntingRadius, 0);
             if (held.Contains("2,147", StringComparison.Ordinal))
             {
                 faults.Add($"a {row.Name}'s card would print int.MaxValue ({held})");
@@ -2240,6 +2268,14 @@ public partial class Main
                 if (valueWide > cell + 1f || keyWide > cell + 1f)
                 {
                     faults.Add($"a site's materials clip in their cell ({valueWide:F0} and {keyWide:F0} in {cell:F0})");
+                }
+
+                // B4 (D491): a farm's trees still to clear, at their widest — three digits.
+                string toClear = WhereItWorks(JobKind.Farmer, 999, 0, 0, 999).Key;
+                siteShape += $"; a farm's \"{toClear}\" {(FitsItsCell(siteCard, siteCard.Keys[1], toClear) ? "fits" : "CLIPS")}";
+                if (!FitsItsCell(siteCard, siteCard.Keys[1], toClear))
+                {
+                    faults.Add($"a farm's \"{toClear}\" clips in its cell");
                 }
 
                 // ⭐ A BUFFER SAYS WHAT IT HOLDS BY GOOD, AND IT FITS (D422): the lodge posed (meat and

@@ -4021,14 +4021,44 @@ public sealed class SimWorld : IObstacles
     /// than by somebody remembering to tell them.
     /// </para>
     /// <para>
-    /// <b>Grass only, on the same restraint <see cref="Plant"/> keeps.</b> A farm does not
-    /// plough up a wood, a sapling, a rock or a river — it takes the ground that is already
-    /// open. What happens to the rest is the player's business: paint it for harvest and the
-    /// laborers will clear it, and it becomes ploughable then (D87, D100).
+    /// <b>Open ground and seedlings — never a wood, a rock or a river.</b> A sapling is pulled
+    /// up (B4, D491): left alone, every sapling on a measured farm was a tree within a year, so a
+    /// farm painted over saplings became a farm with a wood on it. A grown tree is the laborers'
+    /// to clear (<see cref="AfterGivingGround"/> marks it), and a seam is never farm ground at all
+    /// (<see cref="CanPaintWorkGround"/>).
     /// </para>
     /// </remarks>
     public bool Plough(GridPos tile) =>
-        Map.TerrainAt(tile) == Terrain.Grass && SetTerrain(tile, Terrain.Field);
+        Map.TerrainAt(tile) is Terrain.Grass or Terrain.Sapling && SetTerrain(tile, Terrain.Field);
+
+    /// <summary>
+    /// How many of a farm's tiles still stand under trees for the laborers to clear (B4, D491) —
+    /// the card's caption. A walk of the farm's own ground: ask it when <see cref="TerrainGeneration"/>
+    /// or <see cref="ZoneMap.Edits"/> has moved, not every frame.
+    /// </summary>
+    public int TreesToClearOn(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        int trees = 0;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            trees += Map.TerrainAt(Zones.PositionOf(owned[i])) == Terrain.Forest ? 1 : 0;
+        }
+
+        return trees;
+    }
+
+    /// <summary>
+    /// Whether this tile is a farm's ground — what the farm's clearing, plough and regrowth rules
+    /// ask (B4, D491).
+    /// </summary>
+    public bool IsFarmGround(GridPos tile)
+    {
+        int owner = Zones.WorkGroundOwner(tile);
+        return owner != 0 && FindWorkplace(owner)?.Kind == JobKind.Farmer;
+    }
 
     /// <summary>
     /// Whether the village may put more ground under seed right now.
@@ -5054,6 +5084,14 @@ public sealed class SimWorld : IObstacles
                 + $"{Describe(Map.TerrainAt(tile))}.");
         }
 
+        // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
+        // the laborers' to clear (`AfterGivingGround`); stone and iron are dug or destroyed first,
+        // and the cleared ground is grass the brush then takes.
+        if (workplace.Kind == JobKind.Farmer && Map.TerrainAt(tile) is Terrain.Rock or Terrain.IronDeposit)
+        {
+            return PlacementVerdict.No("Not on a seam — clear it first.");
+        }
+
         int owner = Zones.WorkGroundOwner(tile);
         if (owner != 0 && owner != workplace.Id)
         {
@@ -5159,12 +5197,22 @@ public sealed class SimWorld : IObstacles
         // tell a farm they had given ground from one they had not.
         //
         // ⚠️ It is not load-bearing, deliberately. Sowing takes `Grass` as readily as `Field`
-        // (`IsSowable`), so a tile this could not plough — one still under trees when the brush
-        // went over it — joins the field the moment the laborers clear it, with no second rule
-        // to remember. The plough is what the player can see; the sowing is what is true.
-        if (workplace.Kind == JobKind.Farmer)
+        // (`IsSowable`), so a tile this could not plough joins the field once it is cleared.
+        // The plough is what the player can see; the sowing is what is true.
+        if (workplace.Kind != JobKind.Farmer)
         {
-            Plough(tile);
+            return;
+        }
+
+        Plough(tile);
+
+        // ⭐ AND THE LABORERS CLEAR ITS TREES (Joe, B4, D491) — D100's rule for a building's site,
+        // for a field: the village marks the wood, and the harvest errand it already walks takes
+        // it (first after the building sites, `NearestHarvest`). Nothing marked them before; the
+        // comment here assumed somebody would, and measured, 11 of 12 trees still stood at year 3.
+        if (Map.TerrainAt(tile) == Terrain.Forest)
+        {
+            Zones.SetHarvest(tile, true);
         }
     }
 
@@ -5204,6 +5252,14 @@ public sealed class SimWorld : IObstacles
         {
             SetTerrain(tile, Terrain.Grass);
             Map.SetCrop(tile, 0);
+        }
+
+        // The clearing mark the giving laid goes with the ground (B4): a wood no farm wants is
+        // not the laborers' to fell. ⚠️ A mark the player laid there themselves goes too — the
+        // two are one bit, and a field's own wood is the only reason either would be there.
+        if (was == Terrain.Forest)
+        {
+            Zones.SetHarvest(tile, false);
         }
     }
 
@@ -5570,6 +5626,8 @@ public sealed class SimWorld : IObstacles
         int bestCost = int.MaxValue;
         GridPos? needed = null;
         int neededCost = int.MaxValue;
+        GridPos? farm = null;
+        int farmCost = int.MaxValue;
 
         // ⭐ WHAT THE VILLAGE HAS ENOUGH OF, ASKED ONCE (D212). A limit is a ceiling on
         // production (D62), and clearing painted ground is production — it was simply the one
@@ -5610,8 +5668,20 @@ public sealed class SimWorld : IObstacles
         // cannot otherwise get this"*, not *"a site wants this"*, which would send laborers to
         // the rock every time a granary was marked.
         bool[]? waitedOn = null;
+
+        // ⭐ AND A FARM'S TREES BEFORE WHAT IS MERELY NEAREST (B4, D491) — the same argument a third
+        // time: the field is waiting on them, and nearer painted wood grows back for ever (D126).
+        // The farms are asked here, from the short list, for the cost reason the footprint branch
+        // gives: never "whose ground is this?" walked per painted tile.
+        List<int>? farms = null;
         for (int i = 0; i < Workplaces.Count; i++)
         {
+            if (Workplaces[i].Kind == JobKind.Farmer && !Workplaces[i].IsSite)
+            {
+                farms ??= new List<int>();
+                farms.Add(Workplaces[i].Id);
+            }
+
             if (Workplaces[i].Construction is not { IsFinished: false } plan
                 || !GroundIsClearAt(Workplaces[i].Tile))
             {
@@ -5668,6 +5738,20 @@ public sealed class SimWorld : IObstacles
                 continue;
             }
 
+            // ⭐ A farm's tree is cleared whatever the log limit says — a field waiting on its
+            // ground is a building's footprint's case (D212's exception below), not production.
+            if (farms is not null && farms.Contains(Zones.WorkGroundOwner(at)))
+            {
+                int toField = TravelCost.Cost(from, at);
+                if (toField < farmCost)
+                {
+                    farm = at;
+                    farmCost = toField;
+                }
+
+                continue;
+            }
+
             // ⭐ AND IT IS LEFT STANDING WHEN THE VILLAGE HAS ENOUGH (D212). Skipped, never
             // un-painted — the rule D127 wrote three paragraphs up: the paint is a standing
             // instruction, so a seam the village is currently full of is *work that is waiting*
@@ -5717,6 +5801,12 @@ public sealed class SimWorld : IObstacles
         {
             heldBackBy = null;
             return needed;
+        }
+
+        if (farm is not null)
+        {
+            heldBackBy = null;
+            return farm;
         }
 
         // Only a refusal if it is the reason there is nothing to do. Somebody who walked past a
@@ -5832,6 +5922,16 @@ public sealed class SimWorld : IObstacles
         }
 
         SetTerrain(tile, Terrain.Grass);
+
+        // ⭐ A FARM'S TREE, FELLED, IS FIELD AT ONCE (B4, D491): the mark retires — the plough makes
+        // the ground a field, which never grows back, so D127's standing instruction has nothing
+        // left to stand for (the `RetireTheClearingMark` argument) — and the player sees the field
+        // take the tile the moment the stump is gone, not the next spring.
+        if (IsFarmGround(tile))
+        {
+            Zones.SetHarvest(tile, false);
+            Plough(tile);
+        }
 
         // ⭐ One number per kind of ground, and the terrain is what says which — a new harvestable
         // kind is a row in TerrainRules.Yields and a row here, not a fifth place to remember.

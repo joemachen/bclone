@@ -150,6 +150,9 @@ seed contract.
   picks the tile.
 - Pasture may only be painted on **reachable, non-water, non-built** ground, reusing
   `CanBuildAt`'s occupancy question (the one D57 had to fix for being written twice).
+- **Woodland is pasture too, and its trees stay** (Joe, 2026-10-04, recorded by D490 —
+  `destroy-brush.md §3.4`): *"animals can live in the woods."* Unlike a farm's ground, a
+  pasture painted over forest is not marked for clearing.
 
 ### 6.2 The herd
 
