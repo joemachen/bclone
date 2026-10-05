@@ -1,5 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D488 IN §7. B3 (*WHAT'S HERE* FITS, OPENS ON TOP AND BESIDE ITS TILE, STAYS SHUT) IS BUILT ON `slice/whats-here-window` — UNPLAYED, UNMERGED (D488). NEXT: JOE PLAYS B3; THEN B4, SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D489 IN §7. B3 (*WHAT'S HERE* FITS, OPENS ON TOP AND BESIDE ITS TILE, STAYS SHUT) IS PLAYED, MERGED AND PUSHED (D488, D489). NEXT: B4 — SPEC FIRST.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATEST) — D489, ON WINDOWS.**
+>
+> **State (D489):** ✅ **Joe played B3 (*"works perfectly. merge it"*); `slice/whats-here-window` is merged `--no-ff` to
+> `main` (`52893c8`) and pushed.** No branch is open. `main` had not moved, so the merged tree is the one D488 verified:
+> 1421 / 0 / 5 of 1426 (3m43); view 0 warnings; probe green, 0 ⛔ (what's here ✅); goldens 315, unchanged.
+> `slice/whats-here-window` is kept until Joe says to delete it.
+>
+> **▶️ NEXT: B4 — the destroy-resources brush and farms over trees. SPEC FIRST, NO CODE.** Joe's four answers (D483
+> banner below): a forester's replanting is the only regrowth on destroyed ground; the brush destroys stone and iron too
+> and the village loses the goods; herdsmen's pens keep their trees; laborers clear the trees from a farm painted over
+> them. Read what exists first (`specs/quarry.md`'s brush section, the harvest brush), **measure what the game does today
+> before writing a word of it** (trap 151), write the spec, and **show it to Joe before building.** Then B5 (homes on
+> forested tiles: verify and report, change nothing unless wrong), then B6 (`quarry_unlock_stone` 100 → 200 on the harness).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (LATER) — D488, ON WINDOWS.**
 >
 > **State (D488):** **B3 is built on `slice/whats-here-window`** (off `main`, one commit, **not pushed, not played, not
