@@ -258,7 +258,23 @@ public sealed class Workplace
     public GridPos Tile => _position.ToTile();
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(Point to) => _position = to;
+    internal void MoveTo(Point to)
+    {
+        _position = to;
+        _covered = null;
+    }
+
+    /// <summary>The tiles this building stands on — kept, because builders ask every tick (B5, D497).</summary>
+    /// <remarks>
+    /// ⭐ <b>Derived from position, extent and facing, so computed once and dropped on a move</b>
+    /// (CLAUDE.md: nothing derivable is rebuilt per tick). `SimWorld.FootprintIsClear` asks it of
+    /// every unfinished site for every builder on every tick; <see cref="Footprint.CoveredTiles"/>
+    /// is a list and a few dozen rotations each time. ⚠️ <b>Never hashed</b> (D335): it restates the
+    /// position, it is not a second fact.
+    /// </remarks>
+    internal IReadOnlyList<GridPos> CoveredTiles => _covered ??= Footprint.CoveredTiles();
+
+    private List<GridPos>? _covered;
 
     /// <summary>Which way this building is turned (gridless 2b, D319).</summary>
     /// <remarks>

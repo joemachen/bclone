@@ -1,7 +1,7 @@
 # Spec: Footprints per building — a granary is bigger than a hut
 
 **Decisions:** D382 (this document). Neighbours: D319 (the centre rule), D322 (the longhouse), D329–D331 (free placement, SAT), D344 (a re-take with one reason), D353 (item 4 of Joe's 2026-09-12 list).
-**Status:** ✅ **BUILT (2026-09-16, D382)** — the table is Joe's ("Modest", chosen 2026-09-16); unplayed as of this line. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-16, D382)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), unplayed** — the table is Joe's ("Modest", chosen 2026-09-16); unplayed as of this line. Owner: Joe + Claude Code.
 
 ---
 
@@ -95,3 +95,99 @@ tile the anchor is in).
 Table typed; anchor rule in the sim and the snap; founding re-spaced with a guard; goldens
 re-taken once; specs (`gridless.md §2.3` says "every building is 1×1" — no longer),
 `DESIGN.md §6/§7`, `handoff.md`; Joe has placed a 2×2 and a 3×2 and turned them.
+
+## 7. Clearing the whole footprint (B5 — D496 measured, D497 Joe's call, D498 built)
+
+**Status:** ✅ **BUILT (D498) on `slice/b5-whole-footprint` — unplayed.**
+
+### 7.1 What was wrong, measured
+
+D100 (*the village clears the ground, the player does not have to*) and D101 (*no work goes in
+until the ground is bare*) were written when every building was one tile, and every check asks
+`Workplace.Tile` — the anchor. D382 made five buildings wider and D386 made the house 2×1, and
+nobody carried the extent to the clearing. **Measured (D496, `tools/harness/ZzB5.cs`, 80 houses
+over 24 runs of 30 years): every front tile was cleared before raising, and 30 houses rose with a
+tree (23) or rock (7) on their other tile — still there at year 30**, one of them in the unposed
+played opening. A granary posed over four trees stood on two. Joe (2026-10-05): *"yes"* — clear
+every tile.
+
+### 7.2 The rule
+
+**Every tile a building covers is asked, never only the one it is filed under.**
+
+- **Marked** (`Mark`, `MarkHome`, and a relocation's destination in `Relocate` — which painted
+  nothing until now and relied on D138's builder): every covered tile with something clearable on
+  it (`TerrainRules.Yields`) is painted for harvest. One helper, three doors.
+- **Waited on** (D101): a site takes no work, and is not served, until **every** covered tile is
+  clear — `SimWorld.FootprintIsClear(Workplace)` in `NextSiteToServe`, `BegunSiteWithWhatItNeeds`,
+  `NextBuildableSite`, the waited-on-goods pass in `NearestHarvest`, and both builder checks in
+  `BehaviorSystem`.
+- **Cleared:** `NextFootprintToClear` sends a laborer to the first painted, still-standing covered
+  tile of the head site (row order of `CoveredTiles`); D138's builder clears the first unpainted
+  one. A free building waiting on its ground (`_waitingOnTheGround`) is raised when the **last** of
+  its covered tiles comes clear, from whichever tile cleared last.
+- **Shown:** the view draws a site in the clearing's orange while any covered tile still stands
+  (`VillageMap`, the D350 colour) — not only the anchor.
+
+### 7.3 Cost (CLAUDE.md's rule: nothing derivable incrementally is rebuilt per tick)
+
+`FootprintIsClear` is asked by every builder on every tick, of every site. A site's covered tiles
+are a pure function of its position, extent and facing, so the workplace keeps them
+(`Workplace.CoveredTiles`), computed on first ask and dropped when it moves (`MoveTo`). **Derived,
+so never hashed** (D335). A 1×1 site asks one tile, as before.
+
+### 7.4 What it changes, stated
+
+- Houses and the five wider buildings in wooded ground take a little longer to start — one or three
+  more tiles to fell — and the timber comes home.
+- ⚠️ **And the trees under the far half of a house are gone for good** — residential ground never
+  regrows (Joe kept that, D497) — so a village whose homes paint lies in its foragers' wood loses a
+  few more ring trees than it did. **Measured (D498, D420's harness, `main` against the branch back
+  to back, 50 years unattended):** 200 shipped seeds **43 → 47 dead valleys** (21.5 → 23.5 %, the
+  guard's line is 25 %), alive **1,072 → 1,078**; 50 fixture valleys **9 → 7 dead**, alive **581 →
+  559**, starved 92 → 110. Half the shipped seeds play byte for byte as before; the flips are
+  villages of 1–3 survivors either way (4 died, 1 lived, on seeds 200–299). A lean, not a cliff —
+  and the fixture's default village at year 7 holds no forage where `main` held 263, which is
+  why `FoodLimitTests` now poses its store (below).
+- **Goldens moved once, for this reason — four:** `SkillTests`' fixture and shipped fifty-year
+  pair and `StockLimitTests`' pair. The cold start, the determinism guard and every other golden
+  held.
+
+### 7.5 Guards (`FootprintClearingTests`), each red-checked with the reds counted
+
+One mutant per rule, each a compiling change back to the anchor (D420: a mutant that does not
+build scores zero — three first drafts did not, and were rewritten). **10 of 11 mutants red, one
+red each:**
+
+- `MarkingAHousePaintsBothItsTiles` — a house over two trees asks for both. *(`MarkHome` on the
+  anchor: red.)*
+- `NoWorkGoesInWhileAnyTileStands` — a stocked site with its anchor clear and its other tile wooded
+  is not buildable, and is once the tree falls. *(`FootprintIsClear` asking the anchor: red.)*
+- `ALaborerIsSentToTheTileStillStanding` — anchor clear, the other painted, a nearer painted tree
+  by the founding: the errand goes to the house. *(`NextFootprintToClear` on the anchor: red.)*
+- `AWiderBuildingMarkedOnWoodPaintsEveryTile` — a granary over four trees: four painted. *(`Mark`
+  on the anchor: red.)*
+- `AFreeBuildingWaitsForItsLastTile` — a 2×1 builder's hut over two trees does not stand when one
+  is cleared, and does when both are. *(the waiting list raised on the anchor: red.)*
+- `AMovedBuildingAsksForItsNewGround` — a relocation onto wood paints its destination.
+  *(nothing painted: red.)*
+- `ABuilderClearsEveryTileOfTheirSite` — played: a house over two trees with its marks taken off is
+  raised on bare ground, by the builder alone (D138). *(the builder's errand on the anchor: red.)*
+- `OrganicHousingTests.AHouseGoesRoundASeam` (rock and iron) — a seam under the far tile of the
+  chooser's own pick moves the house. *(`TilesClippedOff` blind to seams: red. ⚠️ First posed with
+  both tiles seamed, which the front check caught first — **it scored zero**, and was re-posed.)*
+- `OrganicHousingTests.AFamilyWithOnlySeamsSaysSo` — all-seam homes land says *"N on a stone or
+  iron seam"*. *(the front check off: red; the reason unsaid: red.)*
+- ⛔ **Scored zero, kept, written down:** the second builder gate (`BehaviorSystem`, D101's *"a
+  builder can already be standing here"*) put back on the anchor turns nothing red — the gates
+  before it stop the same case first. ⛔ **Unguarded:** the view's orange (`VillageMap`); the probe
+  has no site-colour line. Joe sees it.
+- Re-posed for the rule, not weakened: `NoBuildersHutTests.ClearGroundNearby` and
+  `BuildersHutTests.AHutMarkedOnWoodedGroundStandsOnceTheGroundIsCleared` (a 2×1 hut's other half
+  may be wooded), `HousesAreBuiltTests.PoseABegunSite` (both 2×2 sites cleared whole), and
+  `FoodLimitTests.AMetFoodLimitStopsTheGatheringAndLeavesTheTrade` (its year-7 store posed — see §7.4).
+- Played: `ZzB5.cs` re-run, 24 runs × 30 years — **0 houses raised over a tree or seam (was 30), and
+  no house sited on one**; the posed granary stands on four grass tiles. Dead posed villages 5 of 24
+  before and after (one each way; `wood 13` traced: both sites clear by tick 80, the houses 30 tiles
+  out never got their logs, everybody froze in the first winter — it scraped through on `main` with
+  one house at t497).

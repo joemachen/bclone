@@ -63,7 +63,11 @@ public sealed class NoBuildersHutTests
                 for (int dx = -radius; dx <= radius; dx++)
                 {
                     var at = new GridPos(founding.X + dx, founding.Y + dy);
-                    if (!world.HasSomethingToHarvest(at) && world.CanBuildAt(kind, at).Allowed)
+                    // ⚠️ Every tile it would cover, not the one it is filed under (B5, D497): a 2×1
+                    // hut with a tree under its other half waits for that tree now.
+                    bool bare = world.FootprintOf(kind, world.AnchorOn(kind, at)).CoveredTiles()
+                        .TrueForAll(tile => !world.HasSomethingToHarvest(tile));
+                    if (bare && world.CanBuildAt(kind, at).Allowed)
                     {
                         return at;
                     }

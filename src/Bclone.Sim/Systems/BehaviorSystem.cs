@@ -1438,9 +1438,10 @@ public sealed class BehaviorSystem : ISimSystem
         // hut in `TheHutThePlayerMarkedIsBuiltBeforeTheHousesTheVillageWants` went from
         // standing at **t150 to t394**, past a winter that starts at t360. Painted ground has
         // somebody coming for it; unpainted ground has nobody, for ever.
-        if (!world.GroundIsClearAt(standing.Tile))
+        // ⭐ EVERY TILE OF IT (B5, D497): the far half of a house is ground it stands on too.
+        if (!world.FootprintIsClear(standing))
         {
-            if (world.Zones.IsHarvest(standing.Tile))
+            if (FirstUnpaintedStandingUnder(world, standing) is not GridPos ground)
             {
                 villager.WorkNote =
                     $"{site.Name} cannot be started yet — the ground it stands on is still being "
@@ -1449,9 +1450,9 @@ public sealed class BehaviorSystem : ISimSystem
             }
 
             villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
-            villager.ErrandX = standing.Tile.X;
-            villager.ErrandY = standing.Tile.Y;
-            HeadFor(world, villager, standing.Tile, VillagerState.Clearing);
+            villager.ErrandX = ground.X;
+            villager.ErrandY = ground.Y;
+            HeadFor(world, villager, ground, VillagerState.Clearing);
             return true;
         }
 
@@ -1689,7 +1690,7 @@ public sealed class BehaviorSystem : ISimSystem
         // Checked here as well as in WorkTheSite because a builder can already be standing
         // here when the site is marked, and a rule enforced in one of two places is a rule
         // that gets around.
-        if (!world.GroundIsClearAt(job!.Tile))
+        if (!world.FootprintIsClear(job!))
         {
             villager.WorkNote =
                 $"{site.Name} cannot be started yet — the ground it stands on is still being "
@@ -6022,5 +6023,24 @@ public sealed class BehaviorSystem : ISimSystem
                 // that is the travel-delay case, which resolves on the next tick.
                 return;
         }
+    }
+
+    /// <summary>
+    /// The first tile under a site that still stands and that nobody has been asked to clear —
+    /// the builder's own errand (D138), every tile of the footprint (B5, D497). Painted ground has
+    /// laborers coming for it; unpainted ground has nobody, for ever.
+    /// </summary>
+    private static GridPos? FirstUnpaintedStandingUnder(SimWorld world, Workplace site)
+    {
+        IReadOnlyList<GridPos> covered = site.CoveredTiles;
+        for (int i = 0; i < covered.Count; i++)
+        {
+            if (world.HasSomethingToHarvest(covered[i]) && !world.Zones.IsHarvest(covered[i]))
+            {
+                return covered[i];
+            }
+        }
+
+        return null;
     }
 }

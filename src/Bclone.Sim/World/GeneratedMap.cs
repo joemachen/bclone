@@ -146,6 +146,14 @@ public static class TerrainRules
         Terrain.IronDeposit => Goods.Iron,
         _ => null,
     };
+
+    /// <summary>Whether this ground is a stone or iron seam — what a field and a house go round.</summary>
+    /// <remarks>
+    /// One question for the two rules that ask it: a farm's ground refuses a seam (D491) and a
+    /// house is never sited on one (B5, D497). A seam is dug or destroyed first; the grass left
+    /// behind is ground like any other.
+    /// </remarks>
+    public static bool IsSeam(Terrain terrain) => terrain is Terrain.Rock or Terrain.IronDeposit;
 }
 
 /// <summary>

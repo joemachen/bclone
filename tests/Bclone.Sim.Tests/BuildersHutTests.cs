@@ -152,7 +152,12 @@ public sealed class BuildersHutTests
         Assert.Contains(at, world.BuildingsWaitingOnTheGround);
         Assert.True(world.Zones.IsHarvest(at), "Marking on a resource asks for it to be cleared.");
 
-        world.Harvest(at);
+        // ⚠️ EVERY TILE IT COVERS (B5, D497): the hut is 2×1, and its other half may be wooded too.
+        // Clearing only the tile it is filed under once raised it with a tree under the rest.
+        foreach (GridPos tile in world.FootprintOf(BuildingKind.BuilderHut, world.AnchorOn(BuildingKind.BuilderHut, at)).CoveredTiles())
+        {
+            world.Harvest(tile);
+        }
 
         Workplace? hut = HutIn(world);
         Assert.NotNull(hut);

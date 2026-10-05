@@ -868,8 +868,11 @@ public sealed class HousesAreBuiltTests
 
         // Both grounds cleared, as a builder clears them first — so a builder's only choices are
         // to fetch for the head or to work the warehouse.
-        world.SetTerrain(head.Tile, Terrain.Grass);
-        world.SetTerrain(begun.Tile, Terrain.Grass);
+        // ⚠️ Every tile of each (B5, D497): both are 2×2, and a site waits on all four now.
+        foreach (GridPos tile in head.CoveredTiles.Concat(begun.CoveredTiles))
+        {
+            world.SetTerrain(tile, Terrain.Grass);
+        }
 
         for (int g = 0; headCanBeFetchedFor && g < world.GoodsCatalog.Count; g++)
         {

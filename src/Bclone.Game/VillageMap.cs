@@ -5636,8 +5636,9 @@ public partial class VillageMap : Control
                 // (D350). Its own harvest mark (D100) is deliberately not traced as a zone — a lone
                 // marked tile rounded into a circle beside a free-placed hut read as a mistake (Joe)
                 // — so the building carries the message instead: orange until the trees are gone,
-                // then the site's own grey. Asked of the anchor tile, which is the tile D100 marks.
-                bool groundIsBusy = !pullingDown && !world.GroundIsClearAt(workplace.Tile);
+                // then the site's own grey. Asked of every tile it covers (B5, D497): the far half
+                // of a house is marked and waited on too, so it stays orange until that tree is down.
+                bool groundIsBusy = !pullingDown && !world.FootprintIsClear(workplace);
                 Color colourOfWork = pullingDown
                     ? DemolishColour
                     : groundIsBusy ? HarvestEdge with { A = 1f } : SiteColour;
