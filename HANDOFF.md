@@ -12,8 +12,23 @@
 >
 > **▶️ NEXT:** Joe plays B2 on Windows (`run.bat` — a new village: Settings → Windows lists six, no *Tree*; once the first
 > stone or iron unlock shows the tree, *Tree* appears in Settings with the bar button) and merges the branch at his word.
-> Then **B3** (*What's here*: height bound to contents, opens in front of the docked panels, first beside its tile then
-> where the player left it) — the rest of B is in the banners below.
+>
+> **How Joe merges B2 (Windows, at his word):** if his `data/sim.config.json` seed edit is still uncommitted,
+> `git stash push -- data/sim.config.json` first and `git stash pop` after; then `git fetch origin`, `git checkout main`,
+> `git merge --no-ff origin/claude/adoring-rubin-l6widh`, `git push`. *(The first B item on a `claude/…` branch, so his
+> checkout has never seen it: the fetch is not optional.)*
+>
+> **▶️ THE REST OF HIS B QUEUE, IN HIS ORDER** (full wording in the D483 banner below; one commit per note, on the
+> session's assigned branch off `main`; Joe plays each before it merges):
+> - **B3 — *What's here*** (view only, probe it): (a) its height bound to its contents — it is very tall; (b) it opens
+>   **behind** *The valley* and *Village log*; (c) it should first open **beside the tile it describes**, then
+>   **remember where the player moved it**, and stay closed if closed. `_whatsHerePanel`, `CloseTheWindow`, the window's
+>   `Wanted` state in `Main.cs`.
+> - **B4 — the destroy-resources brush and farms over trees — SPEC FIRST.** Joe's four answers (forester-only replant;
+>   stone and iron destroyed, goods lost; pens keep their trees; laborers clear a farm's trees) are in the D483 banner.
+>   **Measure what the game does today before writing it** (trap 151), and **show Joe the spec before building.**
+> - **B5 — homes on forested tiles: verify and report.** Change nothing unless it is wrong.
+> - **B6 — `quarry_unlock_stone` 100 → 200**, measured on the harness (D420's arms), its own commit.
 >
 > **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-04 (NIGHT) — D484, FROM A CLOUD SESSION.**
@@ -4547,6 +4562,12 @@ Read `git status` after staging, every time.
   the suite. Wait on the suite's own output (`until grep -q '^exit' file`), not on the notice.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **A REMOTE BRANCH NO HANDOFF MENTIONS (found 2026-10-05): `origin/claude/handoff-review-next-steps-w37oks`.**
+  An earlier cloud session's branch. Its tip, `ce01abb` *"Panels draw what they hold, the bar is one height, and a
+  dead village says so"*, is dated 2026-09-06, and `git rev-list origin/main..` counts **471 commits not on `main`**,
+  far more than that one change, so it is probably a rewritten or re-rooted history, not unmerged work. Nobody has
+  touched it. **Keep or delete it: your call.**
 
 - ✅ **DECIDED (D481) — Joe: *"drop it from the screen completely."* Built.** ~~Seam scatter on the new-game screen.~~
 - ✅ **ANSWERED (2026-10-04) — Joe: replant by a forester only; stone and iron destroyed and the goods LOST; animals
