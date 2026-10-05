@@ -7,8 +7,8 @@ project"*), `new-game-screen.md §10` (remembering the screen's last rows parked
 the mechanism*), D380 (*a tick reads the state; it does not only write it*), D335 (a derived value is
 never hashed).
 **Status:** ✍️ **SPECCED (D504). ✅ BUILT (D505) on `slice/settings-persistence` — the sim half and the
-view, guards §8 red-checked; no golden moved. ⚠️ UNPLAYED: Joe's play (§10.4) is the only check that a real
-launch writes the file and a drag is remembered** — the probe is hermetic by design (§7) and cannot drag.
+view, guards §8 red-checked; no golden moved. ✅ PLAYED by Joe (*"it holds up"*) and merged (D506, 2026-10-05)** —
+his play is what saw a real launch write the file and a drag remembered; the probe is hermetic by design (§7) and cannot drag.
 Owner: Joe + Claude Code.
 
 ---
@@ -162,7 +162,7 @@ file it deletes.
    capture must name every one; and a place that forgets the UI scale comes back right at 100 %, so the
    place pose runs at 90. ⚠️ **Unguarded by any automated check**: the release of a drag writing a place
    (headless cannot drag) and the file actually being written (the probe never writes) — §10.4.
-4. Joe plays it (§10).
+4. ✅ Joe played it (D506): *"tested and it holds up."*
 
 ## 10. Definition of Done
 

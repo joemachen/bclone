@@ -1,5 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D505 IN §7. SETTINGS PERSISTENCE IS BUILT ON `slice/settings-persistence` (D505), UNPLAYED — JOE PLAYS IT NEXT.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D506 IN §7. SETTINGS PERSISTENCE IS DONE — PLAYED, MERGED AND PUSHED (D506). NEXT IN THE SHELL: SAVE/LOAD, SPEC FIRST — JOE'S CALL.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SETTINGS PERSISTENCE DONE) — D506, ON WINDOWS.**
+>
+> **State (D506):** ✅ **Settings persistence is done.** Joe played it (*"tested and it holds up. merge and push."*);
+> `slice/settings-persistence` is merged `--no-ff` to `main` and pushed. `main` had not moved, so the merged tree is the
+> one D505 verified (1466 / 0 / 5 of 1471; view 0 warnings; probe green, bar height 151; no golden moved). The local
+> branch `slice/settings-persistence` is fully merged and kept until Joe says to delete it (never pushed).
+>
+> **▶️ NEXT: ASK JOE.** §4's shell order puts **save/load** next — *seed + input log with replay* or *a snapshot built
+> beside `StateHash`*, chosen by measuring load time on a fifty-year village, guarded by `save → load → hash == live` —
+> spec first. It is also where *share the work out* (hashed, deliberately not in `settings.json`) gets remembered.
+> Still open from D502: a market's *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SETTINGS PERSISTENCE BUILT) — D504–D505, ON WINDOWS.**
 >
 > **State (D505):** `main` = D503, pushed. **`slice/settings-persistence`** (off `main`, not pushed) holds the shell's
