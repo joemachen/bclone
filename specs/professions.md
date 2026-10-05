@@ -86,6 +86,26 @@ Today that hides the **smith** (50 iron dug), the **quarrier** (stone dug by han
 (the smith's first iron tool); the gates are monotonic, so a row appears once and stays. Probe:
 `trades:`.
 
+**⭐ Nothing the village has not learned is offered anywhere (D502, B7).** Joe, after D460: *"villager
+work dropdown shouldn't spoil unlockable professions … same with storage. iron tools are unlocked
+later, and shouldn't be storable in the cart (or any storage building) yet. same with stock limits."*
+D460 hid only the panel's rows. **✅ Built (D502):**
+- **Trades.** The villager card's *Always …* dropdown offers a trade only when its row would show
+  (`Main.TradeKnown` — the same `EarnedYet(works_at)` the panel asks). It is refilled when a gate
+  flips, never per frame (`_knownGeneration`, bumped in `RefreshTheStrip`). A trade the villager is
+  already kept on always shows — a pin is never hidden from the person it binds.
+- **Goods.** One rule in the sim, `SimWorld.KnowsOf(Goods)`: a good is known unless it is **forged**
+  (`forged_from` non-empty) and **the smithy is not yet unlocked** — except **the tool the founders'
+  cart carries** (`Goods.Tools` while `cart_tools > 0`), known from the start. Today that hides
+  exactly *iron tools* until the smithy gift (50 iron dug), when they become makeable; a modded forged
+  good hides the same way with no new line. The view caches it per good (`Main.GoodKnown`) where the
+  latches flip, and asks it in **every store's goods rows, a market's *Keeps up to*, the stock limits
+  panel and the bar's *more ▾***. ⚠️ **A store holding a good always shows it** — legibility over
+  surprise: a row is hidden for being unknown only while the store holds none of it.
+- A limit already set on a hidden good (a starting limit) still applies; its row appears with its
+  number when the good is learned.
+Guard `ForgedGoodsAreUnknownUntilTheSmithy` (`TechTreeTests`, 2 reds of 2); probe `spoilers:` (5 reds of 6 — ⚠️ a market's *Keeps up to* scores zero: no probe poses a market; the pin exception is unguarded too).
+
 **⚠️ The panel's warnings (D367, D374).** A row shows ` ⚠` on its name, coloured, with the sentence
 as a tooltip — never a notes column, and the name is a fixed 110 px so the ⚠ cannot widen the
 table. Two sentences exist: *"you asked for N, the village wants none — why"* (needs the player to

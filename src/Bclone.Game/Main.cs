@@ -398,6 +398,7 @@ public partial class Main : Control
 
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
+        GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -3414,11 +3415,14 @@ public partial class Main : Control
                 continue;
             }
 
-            table.AddChild(Chip(ChipColour(goods)));
-            table.AddChild(Muted(world.GoodsCatalog.NameOf(goods)));
+            Control chip = Chip(ChipColour(goods));
+            Label name = Muted(world.GoodsCatalog.NameOf(goods));
+            table.AddChild(chip);
+            table.AddChild(name);
             Label held = Amount();
             table.AddChild(held);
             _goodsReadouts.Add((goods, held));
+            _goodRows.Add((goods, new Control[] { chip, name, held }));
         }
 
         table.AddChild(new Control());
@@ -4299,11 +4303,74 @@ public partial class Main : Control
             return;
         }
 
-        SimWorld world = _loop.World;
         for (int i = 0; i < _professionRows.Count; i++)
         {
             (JobKind kind, Control[] cells) = _professionRows[i];
-            bool known = EarnedYet(world.JobsCatalog.WorksAt(kind));
+            bool known = TradeKnown(kind);
+            foreach (Control cell in cells)
+            {
+                cell.Visible = known;
+            }
+        }
+    }
+
+    /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
+    private bool TradeKnown(JobKind kind) => EarnedYet(_loop.World.JobsCatalog.WorksAt(kind));
+
+    /// <summary>
+    /// Whether a good is offered in a store's rows, the stock limits and the bar's <i>more ▾</i> (D502,
+    /// Joe: <i>"iron tools are unlocked later, and shouldn't be storable … yet"</i>) — the sim's one rule,
+    /// <c>SimWorld.KnowsOf</c>, given the smithy flag the bar latched.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Cached where the flags flip (<see cref="ShowTheKnownGoods"/>), never asked per frame of the sim;
+    /// a good outside the cache (the cache not yet built) is known.
+    /// </remarks>
+    private bool GoodKnown(Goods goods) => (int)goods >= _goodKnown.Length || _goodKnown[(int)goods];
+
+    private bool[] _goodKnown = System.Array.Empty<bool>();
+
+    /// <summary>
+    /// ⭐ Bumped whenever what is known changes — the cheapest honest answer to <i>"has it changed since I
+    /// last filled this?"</i> (CLAUDE.md), read by each villager card's dropdown.
+    /// </summary>
+    private int _knownGeneration;
+
+    private bool[] _tradeKnown = System.Array.Empty<bool>();
+
+    /// <summary>Every good row in the stock limits and the bar's <i>more ▾</i>, hidden whole while unknown.</summary>
+    private readonly List<(Goods Goods, Control[] Cells)> _goodRows = new();
+
+    /// <summary>
+    /// Recompute what is known from the bar's flags and hide or show the rows that ask (D502). Called from
+    /// <see cref="RefreshTheStrip"/>, where every flag lands when it flips — the gates are monotonic.
+    /// </summary>
+    private void ShowTheKnownGoods()
+    {
+        SimWorld world = _loop.World;
+        bool forge = EarnedYet(BuildingKind.Smithy);
+        var goods = new bool[world.GoodsCatalog.Count];
+        for (int g = 0; g < goods.Length; g++)
+        {
+            goods[g] = world.KnowsOf((Goods)g, forge);
+        }
+
+        var trades = new bool[JobLimits.Kinds.Count];
+        for (int t = 0; t < trades.Length; t++)
+        {
+            trades[t] = TradeKnown(JobLimits.Kinds[t]);
+        }
+
+        if (!goods.AsSpan().SequenceEqual(_goodKnown) || !trades.AsSpan().SequenceEqual(_tradeKnown))
+        {
+            _goodKnown = goods;
+            _tradeKnown = trades;
+            _knownGeneration++;
+        }
+
+        foreach ((Goods good, Control[] cells) in _goodRows)
+        {
+            bool known = GoodKnown(good);
             foreach (Control cell in cells)
             {
                 cell.Visible = known;
@@ -6035,8 +6102,10 @@ public partial class Main : Control
 
     private void AddStockLimitRow(GridContainer table, Goods goods)
     {
-        table.AddChild(Chip(ChipColour(goods)));
-        table.AddChild(Body(GoodsName(_loop.World, goods)));
+        Control chip = Chip(ChipColour(goods));
+        Label name = Body(GoodsName(_loop.World, goods));
+        table.AddChild(chip);
+        table.AddChild(name);
 
         // ⛔⛔ THE PANEL NO LONGER HAS NUMBERS OF ITS OWN (D409). It set food 2000, firewood 400 and
         // 200 for the rest into the sim the moment it was built — so the game Joe played always
@@ -6069,6 +6138,9 @@ public partial class Main : Control
 
         table.AddChild(amount);
         table.AddChild(clear);
+
+        // ⭐ Hidden whole while the village does not know the good (D502); a limit already set still holds.
+        _goodRows.Add((goods, new Control[] { chip, name, amount, clear }));
     }
 
     /// <summary>
@@ -6704,8 +6776,10 @@ public partial class Main : Control
             entry.Button.Visible = onThisTab && pastTheFilter && EarnedYet(entry.Kind);
         }
 
-        // The professions panel asks the same question of the same flags (D460).
+        // The professions panel asks the same question of the same flags (D460), and so do the
+        // dropdown, the stores, the stock limits and the bar's more (D502).
         ShowTheKnownTrades();
+        ShowTheKnownGoods();
 
         // ⚠️ NO-SIGNAL, OR THIS METHOD CALLS ITSELF. Every one of these buttons is in toggle
         // mode and every one of them re-enters here when pressed, so writing `ButtonPressed`

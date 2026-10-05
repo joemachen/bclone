@@ -1,5 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D501 IN §7. B6 IS DONE — PLAYED, MERGED AND PUSHED (D501). NEXT: B7, NO SPOILERS.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D502 IN §7. B7 (NO SPOILERS) IS BUILT ON `slice/no-spoilers` (D502), UNPLAYED.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B7 BUILT) — D502, ON WINDOWS.**
+>
+> **State (D502):** `main` = D501, pushed. **`slice/no-spoilers`** (off `main`, one commit, not pushed) holds B7: the
+> villager card's *Always …* dropdown offers only learned trades (+ the villager's own pin); every store's goods rows,
+> a market's *Keeps up to*, the stock limits and the bar's *more ▾* hide a good the village does not know
+> (`SimWorld.KnowsOf` — a forged good waits for the smithy, except the founders' cart tools; today: iron tools). At
+> D502, Windows: **1446 / 0 / 5 of 1451 (3m48); view 0 warnings; probe green (new line `spoilers:`), bar height 151;
+> no golden moved.** Sim guard 2 reds of 2; probe 5 of 6 — **a market's *Keeps up to* scores zero** (no probe poses a
+> market) and the pin exception is unguarded; both written down in D502.
+>
+> **▶️ NEXT:** Joe plays it (`run.bat` on the branch), a new village at tick 1: a villager's work dropdown has no
+> *Always smith / quarrier / miner*; the cart, Stock limits and the bar's *more ▾* have no *Iron tools*. Dig 50 iron
+> (the smithy gift): *Always smith* and *Iron tools* appear everywhere; dig 200 stone: *Always quarrier*. Then merge at
+> his word: `git checkout main`, `git merge --no-ff slice/no-spoilers`, `git push`. Then ask him what is next (his
+> queue is empty; settings persistence was the next shell step, §4).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B6 DONE) — D501, ON WINDOWS.**
 >
 > **State (D501):** ✅ **B6 is done.** Joe played it (*"it works. merge and push."*); `slice/b6-quarry-unlock-200` is
@@ -4893,6 +4910,19 @@ Read `git status` after staging, every time.
   "ProcessId=N"`) before `taskkill`; the probe's own `done.` is what says it finished.
 - **The probe's `ERROR: The village stopped … posed by the probe` is the probe's own pose** (`Main.cs` ~689), not a
   failure.
+
+## ⛔ THE TRAPS B7 (D502) PAID FOR — A GUARD THAT ASSERTED THE BUG, AND A GATE THE PROBE CANNOT POSE
+
+- **An old guard can be the bug's own specification.** The `villager card:` probe line asserted *"the village plus 11
+  trades"* — every trade, i.e. the very spoiler Joe filed. When a clean-up turns a guard red, read what it claimed
+  before "fixing" the code to satisfy it; re-pose it to the rule (every *known* trade) and say so in the D-entry.
+- **A sim rule the view asks must take the view's latch as an argument** (`KnowsOf(goods, forgeKnown)`): the probe poses
+  unlocks in the view and never writes the sim, so a view that asked `IsUnlocked` directly could not be probed, and
+  could disagree with the bar for the frame between the sim flipping and the latch catching up.
+- **A list hidden whole that the player can SET must keep its setting** — a stock limit on a hidden good still binds.
+  Hiding is a view fact; never clear sim state to hide a row.
+- **A mutant on a code path no probe poses scores zero** (a market's *Keeps up to*, the pin exception). Write the zero
+  down; do not count the line as guarded.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
