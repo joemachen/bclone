@@ -3,8 +3,8 @@
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B7 DONE) — D503, ON WINDOWS.**
 >
 > **State (D503):** ✅ **B7 is done.** Joe played it (*"played it works. merge and push."*); `slice/no-spoilers` is
-> merged `--no-ff` to `main` and pushed. No branch is open (`slice/b6-quarry-unlock-200` and `slice/no-spoilers` are
-> kept until Joe says to delete them).
+> merged `--no-ff` to `main` and pushed. No branch is open. `slice/b6-quarry-unlock-200` and `slice/no-spoilers` were
+> deleted at Joe's word (2026-10-05) — local only, never pushed, both fully merged (`git branch -d`).
 >
 > **▶️ NEXT: ASK JOE.** His B queue and his clean-up note are both done. §4's roadmap had **settings persistence**
 > (nothing persists today) as the next shell step before the B notes (D480). Still open from D502, written down: a
