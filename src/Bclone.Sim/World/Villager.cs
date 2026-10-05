@@ -1,4 +1,6 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Core;
+using Bclone.Sim.Persistence;
 
 namespace Bclone.Sim.World;
 
@@ -766,5 +768,133 @@ public sealed class Villager
             VillagerState.DrawingWater => "drawing water at the well",
             _ => State.ToString(),
         };
+    }
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+    //
+    // ⚠️ Everything here but `PacedOnTick` / `PaceLeft`, which only mean anything inside the tick that
+    // wrote them — a save is taken between ticks, so a loaded villager's pace is already "not this tick".
+    // `SaveLoadTests`' field guard names every field that is left out, and why.
+
+    internal JsonObject ToSave()
+    {
+        var skills = new JsonArray();
+        foreach (SkillProgress skill in Skills)
+        {
+            skills.Add(skill.ToSave());
+        }
+
+        return new JsonObject
+        {
+            ["id"] = Id,
+            ["name"] = Name,
+            ["surname"] = Surname,
+            ["lifespan_years"] = LifespanYears,
+            ["household"] = HouseholdId,
+            ["partner"] = PartnerId,
+            ["life_stage"] = SaveWriter.Enum(LifeStage),
+            ["workplace"] = WorkplaceId,
+            ["last_workplace"] = LastWorkplaceId,
+            ["pinned_trade"] = SaveWriter.Enum(PinnedTrade),
+            ["job_reason"] = JobReason,
+            ["work_note"] = WorkNote,
+            ["commute_note"] = CommuteNote,
+            ["birth_tick"] = SaveWriter.Hex(BirthTick),
+            ["founder"] = Founder,
+            ["age_years"] = AgeYears,
+            ["vigour"] = Vigour,
+            ["vigour_stage"] = SaveWriter.Enum(Stage),
+            ["hunger"] = Hunger,
+            ["ticks_at_max_hunger"] = TicksAtMaxHunger,
+            ["cold"] = Cold,
+            ["state"] = SaveWriter.Enum(State),
+            ["at"] = SaveWriter.Point(_position),
+            ["leg_from"] = SaveWriter.Point(LegFrom),
+            ["leg_to"] = SaveWriter.Point(LegTo),
+            ["leg_target"] = SaveWriter.GridPos(LegTarget),
+            ["leg_ticks"] = SaveWriter.Fixed(LegTicks),
+            ["leg_walked"] = SaveWriter.Fixed(LegWalked),
+            ["carried"] = Carried.ToSave(),
+            ["errand_x"] = ErrandX,
+            ["errand_y"] = ErrandY,
+            ["action_ticks_remaining"] = ActionTicksRemaining,
+            ["just_ate"] = JustAte,
+            ["alive"] = Alive,
+            ["cause_of_death"] = SaveWriter.Enum(CauseOfDeath),
+            ["died_at"] = SaveWriter.Hex(DiedAtTick),
+            ["winters_survived"] = WintersSurvived,
+            ["total_gathers"] = TotalGathers,
+            ["gathers_this_season"] = GathersThisSeason,
+            ["splits_this_stint"] = SplitsThisStint,
+            ["tool_uses"] = ToolUses,
+            ["tool_good"] = SaveWriter.Good(ToolGood),
+            ["forges_this_stint"] = ForgesThisStint,
+            ["digs_this_stint"] = DigsThisStint,
+            ["rhythm"] = Rhythm,
+            ["skills"] = skills,
+        };
+    }
+
+    internal static Villager FromSave(SaveReader save)
+    {
+        var villager = new Villager
+        {
+            Id = save.Int("id"),
+            Name = save.String("name"),
+            Surname = save.String("surname"),
+            LifespanYears = save.Int("lifespan_years"),
+            HouseholdId = save.Int("household"),
+            PartnerId = save.Int("partner"),
+            LifeStage = save.Enum<LifeStage>("life_stage"),
+            WorkplaceId = save.Int("workplace"),
+            LastWorkplaceId = save.Int("last_workplace"),
+            PinnedTrade = save.NullableEnum<JobKind>("pinned_trade"),
+            JobReason = save.String("job_reason"),
+            WorkNote = save.String("work_note"),
+            CommuteNote = save.String("commute_note"),
+            BirthTick = save.Long("birth_tick"),
+            Founder = save.Bool("founder"),
+            AgeYears = save.Int("age_years"),
+            Vigour = save.Int("vigour"),
+            Stage = save.Enum<VigourStage>("vigour_stage"),
+            Hunger = save.Int("hunger"),
+            TicksAtMaxHunger = save.Int("ticks_at_max_hunger"),
+            Cold = save.Int("cold"),
+            State = save.Enum<VillagerState>("state"),
+            LegFrom = save.Point("leg_from"),
+            LegTo = save.Point("leg_to"),
+            LegTarget = save.GridPos("leg_target"),
+            LegTicks = save.Fixed("leg_ticks"),
+            LegWalked = save.Fixed("leg_walked"),
+            Carried = Stockpile.FromSave(save.Object("carried")),
+            ErrandX = save.Int("errand_x"),
+            ErrandY = save.Int("errand_y"),
+            ActionTicksRemaining = save.Int("action_ticks_remaining"),
+            JustAte = save.Bool("just_ate"),
+            Alive = save.Bool("alive"),
+            CauseOfDeath = save.Enum<CauseOfDeath>("cause_of_death"),
+            DiedAtTick = save.NullableULong("died_at"),
+            WintersSurvived = save.Int("winters_survived"),
+            TotalGathers = save.Int("total_gathers"),
+            GathersThisSeason = save.Int("gathers_this_season"),
+            SplitsThisStint = save.Int("splits_this_stint"),
+            ToolUses = save.Int("tool_uses"),
+            ToolGood = save.Good("tool_good"),
+            ForgesThisStint = save.Int("forges_this_stint"),
+            DigsThisStint = save.Int("digs_this_stint"),
+            Rhythm = save.Int("rhythm"),
+        };
+
+        // ⚠️ Through the field, never `Position`'s setter — that drops the leg (D356), and a villager
+        // saved half way along one must load half way along it.
+        villager._position = save.Point("at");
+        foreach (SaveReader skill in save.Objects("skills"))
+        {
+            villager.Skills.Add(SkillProgress.FromSave(skill));
+        }
+
+        return villager;
     }
 }

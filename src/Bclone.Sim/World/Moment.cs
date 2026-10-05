@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -61,4 +64,18 @@ public sealed record Moment
     /// </para>
     /// </remarks>
     public bool WaitsToBeDismissed { get; init; } = true;
+
+    internal JsonObject ToSave() => new()
+    {
+        ["title"] = Title,
+        ["body"] = Body,
+        ["waits"] = WaitsToBeDismissed,
+    };
+
+    internal static Moment FromSave(SaveReader save) => new()
+    {
+        Title = save.String("title"),
+        Body = save.String("body"),
+        WaitsToBeDismissed = save.Bool("waits"),
+    };
 }

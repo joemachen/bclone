@@ -7,8 +7,9 @@ calls for this slice, 2026-10-05 — §2), D508 (his answers to §11)**. Neighbo
 D419 (a round trip posed from its own capture agrees with itself), D15 (the reflection-guard shape),
 `tick-loop.md §5` (the fault door) and its open question *"state hash vs. full serialization"*,
 `new-game-screen.md §5` (the share code), `settings-persistence.md` (the file pattern this copies).
-**Status:** ✍️ **SPECCED (D507), NOT STARTED.** Nothing in `src/` saves or loads a village yet. Joe answered
-§11's four calls (D508); the sim half (§12.2) is next.
+**Status:** ✍️ **SPECCED (D507); Joe answered §11 (D508). 🔨 BUILT (D509) on `slice/save-load` — the sim half
+and the view, guards §9 red-checked (14 mutants, all red; two zeros on the way, fixed by poses and written
+down). ⏸️ UNPLAYED by Joe** — no automated check sees a real quit write the autosave, or *Continue* open it.
 Owner: Joe + Claude Code.
 
 ---
@@ -52,8 +53,11 @@ What a replay save would cost to load: the founding plus fifty shipped years, re
   people. So *"a second or two"* is a **floor**, and it grows again with every further decade.
 - **One `StateHash.Compute` over a fifty-year village takes about 2 ms.** That is a full walk of the
   hashed state, which is most of what a snapshot reads and writes. So a snapshot should load in tens of
-  milliseconds whatever the village's age. **Measure it when it is built** and write the number beside
-  this table.
+  milliseconds whatever the village's age.
+- ✅ **Measured once it was built (D509), the same forty villages after their fifty years:** writing the
+  save (capture + gzip + the atomic move) **5–9 ms**; opening it (gunzip + parse + build, hash checked
+  equal) **14–31 ms**, one outlier 52 ms on the run whose fifty years also took 2.6 s (the machine, that
+  minute); the file **5–11 KB**. Against 300–2,500 ms to replay the same villages, and that is the floor.
 
 ## 4. What a save is
 
@@ -122,13 +126,21 @@ Not simulated, and still the village's:
 ### 5.4 What stays out, and is rebuilt once on load
 - **D335's derived indexes**: ZoneMap's tile summaries and owner indexes, `_onTheGround`, the
   `_standing*` arrays, `_freeGroundToday`, `_plotsAsked`, `Workplace.CachedWoodedTiles`, and every
-  cached flow field. Each is rebuilt by the code that already builds it at the founding. ⛔ None is
-  ever rebuilt per tick to make loading easier (CLAUDE.md).
-- **Generation counters** (`_terrainGeneration`, `BuildingGeneration`, `StandingGeneration`) start fresh.
-  They only answer *"has this changed since I last looked?"*, and after a load nothing has looked yet.
-- **Pure functions of the seed and an id**: first names, `Household.DayForAChild`, `AgeYears` (from the
-  hashed `BirthTick`).
+  cached flow field. ZoneMap's summaries are rebuilt by painting the saved sub-tiles back through the
+  brush's own `Set…` doors (one owner per tile makes the order free); `_onTheGround` is summed once from
+  the heaps; the rest are rebuilt on the first ask, as at a founding. ⛔ None is ever rebuilt per tick to
+  make loading easier (CLAUDE.md).
+- **Generation counters** (`_terrainGeneration`, `BuildingGeneration`, `StandingGeneration`, `Edits`,
+  `WallGeneration`, `PathWear.Generation`) start fresh. They only answer *"has this changed since I last
+  looked?"*, and after a load nothing has looked yet.
 - **Within-a-tick scratch**: `PacedOnTick` / `PaceLeft`, `BehaviorSystem._carriedBefore`.
+
+⚠️ **Two things this list first put here are saved after all (as built, D509).** *A plot*: it is derived
+from where a house's **front** was and which way it faced when it was marked (`SimWorld.PlotFor`), and
+the front is kept nowhere else, so each household's plot tiles, lane, fence edges and gate go in whole
+and the walls are raised again from the fences. *First names, `DayForAChild` and `AgeYears`*: pure
+functions of the seed and an id or of `BirthTick`, but stored on the objects, so they are saved as they
+stand rather than re-derived — cheaper than proving the derivation, and §9.4 compares them.
 
 ⭐ **The systems are stateless** (checked, D507: the only field in `Systems/` is that scratch array). All
 state lives in `SimWorld`, so a loaded world is driven by `SimFactory.CreatePhase0`'s own list of
@@ -153,7 +165,7 @@ systems, in its order (D5).
   something a modder or a bug report can open and read.
 - **The bulk arrays** (terrain, `_everWooded`, the sub-tile zone layers, path wear and price classes) are
   base64 of their bytes, not JSON arrays of numbers. The whole file is **gzip'd**
-  (`System.IO.Compression`, which is in the BCL), and the size is measured and written here at build time.
+  (`System.IO.Compression`, which is in the BCL), and a fifty-year harness village comes to **5–11 KB** (D509, §3).
 - **No floats.** `Fixed` and `Angle` go in as their raw bits, as the hash mixes them. A `ulong` goes in as
   hex text, because JSON numbers are doubles to most readers.
 - `saved_at` is the only wall-clock value, and it is written by the **view**. The sim never reads it,
@@ -185,7 +197,7 @@ name and the seed, so two Ashfords are two folders. Autosaves are `autosave-1.sa
 | No saves yet | *Continue* is not offered. Nothing is said. |
 | A different `format` | Refused: *"Saved by build 0.0.3, whose saves this build cannot read."* It stays on the list, greyed, so the player can see it was not lost. |
 | Not gzip / not JSON / a key missing / a wrong type / a duplicate key | Refused: *"This save can't be read — it's damaged. A copy was kept as ashford-1.save.bad."* The file is **copied to `<file>.bad` first**, `KeepTheBrokenFile`'s pattern (`PlayerSettings.cs:271`). **Never half-loaded**: the world is built whole, or not at all. The detail (which key, which byte) goes to the audit log, not the sentence. |
-| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused: *"This save holds a smokehouse, which this game no longer has, so it can't be opened."* A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
+| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused: *"This save holds “Smokehouse”, which this game no longer has, so it can't be opened."* — the thing named as the save spells it (`SaveDataException.What`): a kind by its name, a good by its id (*"good 12"*), or *"a different list of goods"* when the catalogue itself changed. Not damage: no `.bad` copy. A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
 | *Save* or the autosave on a faulted village | Refused: *"The village stopped on an error, so it can't be saved. The last autosave is from Year 12."* |
 | The first tick after a load throws | **D364's door**, unchanged: `Main.HaltTheVillage`. The load was sound and the sim was not, so that is a fault, not a corrupt save. |
 | The disk will not take the write | Said in the village log and Godot's error stream. The game carries on, and the previous autosave stands (the atomic write never touched it). |
@@ -194,18 +206,28 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
 
 ## 8. Where it lives
 
-- **`Bclone.Sim`, pure and tested**: `SaveGame` (the record of §4) and `SaveFile` (read, write, refuse,
-  `.bad`) in a new `Bclone.Sim/Persistence/`, beside `Config/PlayerSettings.cs` in spirit.
-- **`SimWorld` gains one `internal` pair**: a capture, and a **private constructor that restores instead
-  of generating**. It builds the catalogues from the config as today, takes §5's state from the file, then
-  rebuilds §5.4 once. The capture/restore code lives **in `SimWorld`** because the state is private there,
-  and it must stay private. The file format lives in `Persistence/`.
+- **`Bclone.Sim/Persistence/`, pure and tested** (as built, D509): `SaveGame` (the header record, `Capture`,
+  `HeaderOf`, `ConfigFor` — today's data with the save's share code, through `NewGame.TryRead` and
+  `NewGame.Apply` — and `Load`), `SaveFile` (gzip, the atomic write, the autosave rotation, and **`Open`,
+  the one door a save comes in by**, which never throws for anything in the file) and `SaveData`
+  (`SaveReader` / `SaveWriter`, every value spelled in one place; `SaveFormatException` for damage,
+  `SaveDataException` for a sound save over changed data). ⚠️ A good is saved by its **id**, never its
+  enum name: a modder's good has an id and no name.
+- **Each class saves itself** — `ToSave` / `FromSave` (or `ReadSave` into a fresh one) beside its fields,
+  so the field and its line in the save are read together. **`SimWorld`** holds the rest: an `internal`
+  `CaptureTheVillage`, an `internal static Restore`, and the constructor's one new argument — given a save,
+  it reads the map from it instead of generating one, wires the wear exactly as a founding does, then reads
+  the village (`ReadTheVillage`) and returns before anything is founded.
 - **The view**, `Main.Saves.cs`. Until the title screen exists (§4's next shell step):
-  - **the new-game screen** gains **Continue**, the newest autosave of the last village played, and
-    **Load…**, a list of every save with its village, year, season and build, newest first;
-  - **in the game**, *Save* and *Save as…* sit in Settings, under *How the village runs* beside *share the
-    work out*. The village log says *"Saved."* with the file name;
-  - **quitting writes the autosave**.
+  - **the new-game screen** gains **Continue** — the newest save that can be opened, of any kind — and
+    **Load…**, a popup of every save (village, season and year, file, build), newest first, an unreadable
+    one greyed with its refusal as the tooltip. ⚠️ A popup, not a list in the column: the column is
+    measured at 400 by the probe's `new game:` line;
+  - **in the game**, a name and *Save* sit in Settings under *How the village runs* (an empty name saves
+    as `year-N`); the village log says *"Saved as … — path"*;
+  - **autosave at the year's turn**: a frame's ticks are stepped up to the turn, the autosave written,
+    then the rest — so it is the village of Spring, Day 1 whatever the speed. **And on quit**
+    (`NotificationWMCloseRequest`).
 
 ## 9. Guards (each red-checked, the reds counted — D326)
 
@@ -235,6 +257,38 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
 player's `saves/`, `settings-persistence.md §7`'s rule), load it into a second world, and compare the
 hash. Then the *Load…* list reads the scratch save back with its village and year.
 
+**As built (D509): eight poses, every one played** — the opening while a site is half-supplied and a
+villager is half way along a leg (tick 61, found by scanning, not guessed); the last tick before a spring
+re-price; winter; year 6; the fixture in winter; the warm founding with *share the work out* off; the warm
+founding with **every store closed** (the *"nowhere to keep it"* latch); and an **unattended village gone
+empty** with its moment waiting. `ThePosesCatchTheMomentsTheyAreNamedFor` asserts each premise. §9.4 is
+two tests: `EveryFieldIsSavedOrNamed` walks every class reachable from `SimWorld` through what is saved
+and fails on any field not in its table (*Saved*, *Rebuilt* — compared too, so the rebuild is proven —
+*Cache*, or *Data*, each with its reason); `EverySavedFieldComesBackAsItWas` compares every *Saved* and
+*Rebuilt* field, deep, between the village saved and the village loaded.
+
+**The red-check (D326), one saved field dropped at a time — 14 mutants, all red:**
+
+| Dropped | Reds | Caught by |
+|---|---|---|
+| `_everWooded` | 10 | field compare, byte identity — ⚠️ not the run-on year (regrowth needs a felled wood) |
+| `LastWorkplaceId` | 10 | field compare, byte identity — ⚠️ not the run-on year (the allocator reads it at the three-yearly reshuffle) |
+| last spring's prices rebuilt from today's | 6 | byte identity only — ⚠️ the loaded year did not part in any pose: the copy and today's classes agreed there. Kept exact anyway |
+| a site's delivered materials | 3 | the run-on year, field compare, byte identity |
+| `_nextWorkplaceId` | 8 | field compare, byte identity |
+| the waiting-site latch | 6 | field compare, byte identity |
+| `Moments` | **0 → 2** | ⛔ zero until the emptied-village pose existed |
+| *share the work out* | 5 | the hash, the run-on year, field compare |
+| the plots | 12 | field compare, byte identity |
+| the RNG | 24 | everything |
+| the `.bad` copy | 6 | the damage cases |
+| `_routesDirty` | 7 | the run-on year, field compare |
+| the *nowhere to keep it* latch | **0 → 3** | ⛔ zero until the closed-stores pose existed; then the run-on year's **log** caught it (said twice) |
+| a new field nobody saved | 1 | `EveryFieldIsSavedOrNamed`, by name |
+
+⭐ **The run-on year alone would have missed seven of the twelve dropped fields**, and §4's own hash guard would have
+missed all but two. The field guard is the one this feature rests on, as §9.4 said it would be.
+
 ## 10. Out of scope
 
 - **Ironman mode** (one save per village, overwritten, no going back). Joe wants it later, under a better
@@ -260,12 +314,13 @@ hash. Then the *Load…* list reads the scratch save back with its village and y
 
 ## 12. Order of work
 
-1. ✍️ **This spec** (D507), with §3's measurement.
-2. **The sim half**: `SaveGame`, `SaveFile`, the capture and restore in `SimWorld`, and guards §9.1–9.7.
-   No view. Measure the load time and the file size, and write them in §3 and §6.
-3. **The view**: *Continue*, *Load…*, *Save* / *Save as…*, autosave at the year and on quit, and the probe's
-   `save:` line.
-4. **Joe plays it.**
+1. ✅ **This spec** (D507), with §3's measurement; Joe's answers (D508).
+2. ✅ **The sim half** (D509): `SaveGame`, `SaveFile`, `SaveData`, each class's `ToSave` / `FromSave`, the
+   capture and restore in `SimWorld`, and guards §9.1–9.7 (`SaveLoadTests`, 47 cases). Load time and file
+   size measured into §3.
+3. ✅ **The view** (D509): *Continue*, *Load…*, a name and *Save* in Settings, autosave at the year's turn
+   and on quit, the share-out tick set from the loaded village, and the probe's `save:` line.
+4. ⏸️ **Joe plays it.**
 
 ## 13. Definition of Done
 

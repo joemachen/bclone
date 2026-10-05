@@ -1,6 +1,8 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Config;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Core;
@@ -10516,7 +10518,7 @@ public sealed class SimWorld : IObstacles
             ? typed
             : Config.TownNames[(int)(Seed % (ulong)Config.TownNames.Count)];
 
-    private SimWorld(SimConfig config, ISimLogger logger, ulong seed)
+    private SimWorld(SimConfig config, ISimLogger logger, ulong seed, SaveReader? save = null)
     {
         Config = config;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
@@ -10558,7 +10560,8 @@ public sealed class SimWorld : IObstacles
         // (D473, `MapGenerator.Stage`) — never on `Rng`, which is the founding's and the
         // village's. One number still reproduces the whole run, world included. (Before D473
         // the generator was handed `Rng` by value, so the sim's first draws were the river's.)
-        Map = MapGenerator.Generate(config, seed);
+        // ⭐ Or read back, whole, from a save (`save-load.md §4`) — a loaded village is never re-generated.
+        Map = save is null ? MapGenerator.Generate(config, seed) : GeneratedMap.FromSave(save.Object("map"));
 
         // The cost field needs the terrain, so it is built after the valley — a route
         // now goes ROUND the river rather than over it (D40), and catchment, market
@@ -10572,6 +10575,12 @@ public sealed class SimWorld : IObstacles
             Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost,
             config.PathHoldsFor);
         Paths.CapAt(config.PathWearCeiling);
+
+        if (save is not null)
+        {
+            ReadTheVillage(save);
+            return;
+        }
 
         // Everything the village builds hangs off the founding site the generator
         // chose. The config keys that used to hold absolute coordinates are now
@@ -12871,6 +12880,274 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>The first household's store.</summary>
     public Stockpile Stockpile => Households[0].Stockpile;
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md`, D507)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THE HASH IS NOT THE SAVE. `StateHash` is a fingerprint and was always allowed to skip what never
+    // changes the future — and some of what it skips DOES (§5.2): a half-built site, last spring's path
+    // prices, the next workplace id, the narration latches a loaded village would otherwise say twice.
+    // So this is every field of the village, and `SaveLoadTests`' field guard holds it to that: a field
+    // in no list fails, by name, the day it is added.
+    //
+    // ⛔ Not saved, and why (each is in the field guard's list): the catalogues and the config (rebuilt
+    // from today's data, §4); every D335 index (`_onTheGround`, the `_standing*` arrays, the free-ground
+    // sweep, the plot memo) and every generation counter, rebuilt on the first ask; `_trialWalls` /
+    // `_trialHome`, which exist only inside one site-chooser call; `AlwaysSweepTheWholeValley`, a test's knob.
+
+    /// <summary>The whole village, as the JSON a save holds under <c>"world"</c> (§6).</summary>
+    internal JsonObject CaptureTheVillage()
+    {
+        static JsonArray All<T>(IEnumerable<T> items, Func<T, JsonNode> save)
+        {
+            var array = new JsonArray();
+            foreach (T item in items)
+            {
+                array.Add(save(item));
+            }
+
+            return array;
+        }
+
+        var knowledge = new JsonArray();
+        for (int i = 0; i < KnowledgeStates.Length; i++)
+        {
+            knowledge.Add(new JsonObject
+            {
+                ["state"] = SaveWriter.Enum(KnowledgeStates[i]),
+                ["last_knower"] = LastKnowerIds[i],
+            });
+        }
+
+        // Each food the village has ever produced, as [good, amount] in id order — the keys it holds, no more.
+        var foodOf = new JsonArray();
+        for (int id = 0; id < GoodsCatalog.Count; id++)
+        {
+            if (_foodEverProducedOf.TryGetValue((Goods)id, out int amount))
+            {
+                foodOf.Add(SaveWriter.Ints(new[] { id, amount }));
+            }
+        }
+
+        var atRisk = new List<(int Villager, int Skill)>(_saidKnowledgeIsAtRisk);
+        atRisk.Sort();
+        var waiting = new List<int>(_saidSiteIsWaiting);
+        waiting.Sort();
+
+        return new JsonObject
+        {
+            ["seed"] = SaveWriter.Hex(Seed),
+            ["tick"] = SaveWriter.Hex(Tick),
+            ["rng"] = new JsonObject { ["state"] = SaveWriter.Hex(Rng.State), ["inc"] = SaveWriter.Hex(Rng.Inc) },
+            ["map"] = Map.ToSave(),
+            ["paths"] = Paths.ToSave(),
+            ["travel_cost"] = TravelCost.ToSave(),
+            ["zones"] = Zones.ToSave(),
+            ["stock_limits"] = StockLimits.ToSave(),
+            ["job_limits"] = JobLimits.ToSave(),
+            ["shares_out_work"] = VillageSharesOutWork,
+            ["villagers"] = All(Villagers, v => v.ToSave()),
+            ["households"] = All(Households, h => h.ToSave()),
+            ["workplaces"] = All(Workplaces, w => w.ToSave()),
+            ["stores"] = All(StoreBuildings, s => s.ToSave()),
+            ["libraries"] = All(Libraries, l => l.ToSave()),
+            ["town_hall"] = TownHall?.ToSave(),
+            ["wells"] = All(Wells, w => w.ToSave()),
+            ["ground_stacks"] = All(GroundStacks, g => g.ToSave()),
+            ["buildings_waiting"] = All(_waitingOnTheGround, p => new JsonObject
+            {
+                ["at"] = SaveWriter.Point(p.Position),
+                ["kind"] = SaveWriter.Enum(p.Kind),
+                ["facing"] = SaveWriter.Angle(p.Facing),
+            }),
+            ["moments"] = All(Moments, m => m.ToSave()),
+            ["knowledge"] = knowledge,
+            ["first_granary_tick"] = SaveWriter.Hex(FirstGranaryTick),
+            ["food_produced_this_year"] = FoodProducedThisYear,
+            ["food_produced_last_year"] = FoodProducedLastYear,
+            ["food_ledger_years"] = FoodLedgerYears,
+            ["food_eaten_this_year"] = FoodEatenThisYear,
+            ["food_eaten_last_year"] = FoodEatenLastYear,
+            ["food_ever_produced"] = FoodEverProduced,
+            ["food_ever_produced_of"] = foodOf,
+            ["food_ever_eaten"] = FoodEverEaten,
+            ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
+            ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
+            ["a_first_path_has_worn"] = AFirstPathHasWorn,
+            ["a_town_hall_is_owed"] = ATownHallIsOwed,
+            ["said_the_founders_are_gone"] = SaidTheFoundersAreGone,
+            ["said_they_can_write"] = SaidTheyCanWrite,
+            ["shown_the_tech_tree"] = ShownTheTechTree,
+            ["needs_more_residential_land"] = NeedsMoreResidentialLand,
+            ["work_is_going_undone"] = WorkIsGoingUndone,
+            ["work_seen_undone_once"] = WorkSeenUndoneOnce,
+            ["said_there_is_nowhere_for"] = SaveWriter.Bools(_saidThereIsNowhereFor),
+            ["said_knowledge_is_at_risk"] = All(atRisk, said => SaveWriter.Ints(new[] { said.Villager, said.Skill })),
+            ["said_site_is_waiting"] = SaveWriter.Ints(waiting),
+            ["next_workplace_id"] = _nextWorkplaceId,
+            ["buildings_named"] = SaveWriter.Ints(_buildingsNamed),
+            ["logs_ever_felled"] = LogsEverFelled,
+            ["logs_ever_split"] = LogsEverSplit,
+            ["stone_ever_dug"] = StoneEverDug,
+            ["iron_ever_dug"] = IronEverDug,
+            ["tools_ever_forged"] = ToolsEverForged,
+            ["iron_tools_ever_forged"] = IronToolsEverForged,
+            ["tools_ever_taken"] = ToolsEverTaken,
+            ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
+        };
+    }
+
+    /// <summary>
+    /// The village a save holds, built whole on today's config (§4) — or a <see cref="SaveFormatException"/>
+    /// and no world at all (§7: never half-loaded).
+    /// </summary>
+    internal static SimWorld Restore(SimConfig config, JsonObject village, ISimLogger? logger = null)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(village);
+        config.Validate();
+
+        var goods = new GoodsCatalog(config.GoodsCatalog);
+        var save = new SaveReader(village, "world", goods.Count);
+        var world = new SimWorld(config, logger ?? NullSimLogger.Instance, save.ULong("seed"), save);
+        world.Log(LogLevel.Info, "sim", $"Village loaded from a save at tick {world.Tick} (seed={world.Seed}).");
+        return world;
+    }
+
+    /// <summary>Everything but the map, the wear's wiring and the catalogues — those are the constructor's.</summary>
+    private void ReadTheVillage(SaveReader save)
+    {
+        Tick = save.ULong("tick");
+        SaveReader rng = save.Object("rng");
+        Rng = DeterministicRandom.FromState(rng.ULong("state"), rng.ULong("inc"));
+
+        Paths.ReadSave(save.Object("paths"));
+        TravelCost.ReadSave(save.Object("travel_cost"));
+        Zones.ReadSave(save.Object("zones"));
+        StockLimits.ReadSave(save, "stock_limits");
+        JobLimits.ReadSave(save.Object("job_limits"));
+        VillageSharesOutWork = save.Bool("shares_out_work");
+
+        foreach (SaveReader villager in save.Objects("villagers"))
+        {
+            Villagers.Add(Villager.FromSave(villager));
+        }
+
+        foreach (SaveReader household in save.Objects("households"))
+        {
+            Households.Add(Household.FromSave(household));
+        }
+
+        foreach (SaveReader workplace in save.Objects("workplaces"))
+        {
+            Workplaces.Add(Workplace.FromSave(workplace));
+        }
+
+        foreach (SaveReader store in save.Objects("stores"))
+        {
+            StoreBuildings.Add(StoreBuilding.FromSave(store, GoodsCatalog));
+        }
+
+        foreach (SaveReader library in save.Objects("libraries"))
+        {
+            Libraries.Add(Library.FromSave(library));
+        }
+
+        TownHall = save.NullableObject("town_hall") is SaveReader hall ? TownHall.FromSave(hall) : null;
+        foreach (SaveReader well in save.Objects("wells"))
+        {
+            Wells.Add(Well.FromSave(well));
+        }
+
+        // ⭐ The heaps' per-good totals are an index (D335) and are summed once here, never saved.
+        foreach (SaveReader heap in save.Objects("ground_stacks"))
+        {
+            GroundStack stack = GroundStack.FromSave(heap);
+            GroundStacks.Add(stack);
+            _onTheGround[(int)stack.Goods] += stack.Amount;
+        }
+
+        foreach (SaveReader pending in save.Objects("buildings_waiting"))
+        {
+            _waitingOnTheGround.Add(new PendingBuilding(
+                pending.Point("at"), pending.Enum<BuildingKind>("kind"), pending.Angle("facing")));
+        }
+
+        foreach (SaveReader moment in save.Objects("moments"))
+        {
+            Moments.Add(Moment.FromSave(moment));
+        }
+
+        List<SaveReader> knowledge = save.Objects("knowledge").ToList();
+        if (knowledge.Count != KnowledgeStates.Length)
+        {
+            throw new SaveDataException("a different list of techniques",
+                $"{save.Path}.knowledge: {knowledge.Count} techniques where this game's data has {KnowledgeStates.Length}.");
+        }
+
+        for (int i = 0; i < knowledge.Count; i++)
+        {
+            KnowledgeStates[i] = knowledge[i].Enum<KnowledgeState>("state");
+            LastKnowerIds[i] = knowledge[i].Int("last_knower");
+        }
+
+        FirstGranaryTick = save.ULong("first_granary_tick");
+        FoodProducedThisYear = save.Int("food_produced_this_year");
+        FoodProducedLastYear = save.Int("food_produced_last_year");
+        FoodLedgerYears = save.Int("food_ledger_years");
+        FoodEatenThisYear = save.Int("food_eaten_this_year");
+        FoodEatenLastYear = save.Int("food_eaten_last_year");
+        FoodEverProduced = save.Int("food_ever_produced");
+        foreach ((int Good, int Amount) food in save.Pairs("food_ever_produced_of"))
+        {
+            if (food.Good < 0 || food.Good >= GoodsCatalog.Count)
+            {
+                throw new SaveDataException($"good {food.Good}", $"{save.Path}.food_ever_produced_of: good {food.Good}, which this game's data no longer has.");
+            }
+
+            _foodEverProducedOf[(Goods)food.Good] = food.Amount;
+        }
+
+        FoodEverEaten = save.Int("food_ever_eaten");
+        AFreeLibraryIsOwed = save.Bool("a_free_library_is_owed");
+        AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
+        AFirstPathHasWorn = save.Bool("a_first_path_has_worn");
+        ATownHallIsOwed = save.Bool("a_town_hall_is_owed");
+        SaidTheFoundersAreGone = save.Bool("said_the_founders_are_gone");
+        SaidTheyCanWrite = save.Bool("said_they_can_write");
+        ShownTheTechTree = save.Bool("shown_the_tech_tree");
+        NeedsMoreResidentialLand = save.Bool("needs_more_residential_land");
+        WorkIsGoingUndone = save.Bool("work_is_going_undone");
+        WorkSeenUndoneOnce = save.Bool("work_seen_undone_once");
+        save.BoolsInto("said_there_is_nowhere_for", _saidThereIsNowhereFor);
+        foreach ((int Villager, int Skill) said in save.Pairs("said_knowledge_is_at_risk"))
+        {
+            _saidKnowledgeIsAtRisk.Add(said);
+        }
+
+        foreach (int site in save.Ints("said_site_is_waiting"))
+        {
+            _saidSiteIsWaiting.Add(site);
+        }
+
+        _nextWorkplaceId = save.Int("next_workplace_id");
+        List<int> named = save.Ints("buildings_named");
+        if (named.Count != _buildingsNamed.Length)
+        {
+            throw new SaveDataException("a different list of buildings", $"{save.Path}.buildings_named: {named.Count} kinds of building where this game's data has {_buildingsNamed.Length}.");
+        }
+
+        named.CopyTo(_buildingsNamed);
+        LogsEverFelled = save.Int("logs_ever_felled");
+        LogsEverSplit = save.Int("logs_ever_split");
+        StoneEverDug = save.Int("stone_ever_dug");
+        IronEverDug = save.Int("iron_ever_dug");
+        ToolsEverForged = save.Int("tools_ever_forged");
+        IronToolsEverForged = save.Int("iron_tools_ever_forged");
+        ToolsEverTaken = save.Int("tools_ever_taken");
+        WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
+    }
 
     /// <summary>
     /// Create a world.

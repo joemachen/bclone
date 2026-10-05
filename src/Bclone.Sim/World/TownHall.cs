@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.Core;
 
 namespace Bclone.Sim.World;
@@ -82,4 +84,24 @@ public sealed class TownHall
     /// the player took to place it and the builders took to raise it.
     /// </remarks>
     public required ulong RaisedAtTick { get; init; }
+
+    internal JsonObject ToSave() => new()
+    {
+        ["at"] = SaveWriter.Point(Position),
+        ["facing"] = SaveWriter.Angle(Facing),
+        ["width"] = ExtentWidth,
+        ["height"] = ExtentHeight,
+        ["name"] = Name,
+        ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+    };
+
+    internal static TownHall FromSave(SaveReader save) => new()
+    {
+        Position = save.Point("at"),
+        Facing = save.Angle("facing"),
+        ExtentWidth = save.Int("width"),
+        ExtentHeight = save.Int("height"),
+        Name = save.String("name"),
+        RaisedAtTick = save.ULong("raised_at"),
+    };
 }

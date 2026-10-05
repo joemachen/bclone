@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.Core;
 using System.Text.Json.Serialization;
 
@@ -309,6 +311,51 @@ public sealed class Library
 
     /// <summary>Whether there is room for one more.</summary>
     public bool HasRoom => Records.Count < Shelves;
+
+    internal JsonObject ToSave()
+    {
+        var records = new JsonArray();
+        foreach (LibraryRecord record in Records)
+        {
+            records.Add(new JsonObject
+            {
+                ["technique"] = record.TechniqueId,
+                ["found_by"] = record.FoundBy,
+                ["found_in_year"] = record.FoundInYear,
+            });
+        }
+
+        return new JsonObject
+        {
+            ["at"] = SaveWriter.Point(Position),
+            ["facing"] = SaveWriter.Angle(Facing),
+            ["width"] = ExtentWidth,
+            ["height"] = ExtentHeight,
+            ["name"] = Name,
+            ["shelves"] = Shelves,
+            ["records"] = records,
+        };
+    }
+
+    internal static Library FromSave(SaveReader save)
+    {
+        var library = new Library
+        {
+            Position = save.Point("at"),
+            Facing = save.Angle("facing"),
+            ExtentWidth = save.Int("width"),
+            ExtentHeight = save.Int("height"),
+            Name = save.String("name"),
+            Shelves = save.Int("shelves"),
+        };
+
+        foreach (SaveReader record in save.Objects("records"))
+        {
+            library.Records.Add(new LibraryRecord(record.Int("technique"), record.String("found_by"), record.Int("found_in_year")));
+        }
+
+        return library;
+    }
 }
 
 /// <summary>

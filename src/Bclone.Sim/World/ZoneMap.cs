@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -1252,4 +1255,131 @@ public sealed class ZoneMap
     /// </remarks>
     public GridPos PositionOf(int index) =>
         new((index % _width) + _minX, (index / _width) + _minY);
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ The four sub-tile layers are the state (D335) and are what is saved; every tile summary, count
+    // and owner index is rebuilt on load by painting them back through the same `Set…` doors the brush
+    // uses, in index order — one owner per tile makes that order-free. ⚠️ A plot is saved whole, by
+    // contrast: it is derived from where a house's FRONT was and which way it faced at the moment it was
+    // marked (`SimWorld.PlotFor`), and the front is not kept anywhere else. So each household's plot,
+    // lane and fence go in as they are, and the walls are put back up from the fences.
+
+    internal JsonObject ToSave()
+    {
+        var plots = new JsonArray();
+        var owners = new List<int>(_plotByOwner.Keys);
+        owners.Sort();
+        foreach (int owner in owners)
+        {
+            var edges = new List<GridPos>();
+            if (_fenceByOwner.TryGetValue(owner, out List<(GridPos From, GridPos To)>? fence))
+            {
+                foreach ((GridPos from, GridPos to) in fence)
+                {
+                    edges.Add(from);
+                    edges.Add(to);
+                }
+            }
+
+            plots.Add(new JsonObject
+            {
+                ["owner"] = owner,
+                ["tiles"] = SaveWriter.Ints(_plotByOwner[owner]),
+                ["lane"] = SaveWriter.Ints(_laneByOwner[owner]),
+                ["fenced"] = fence is null ? null : SaveWriter.GridPositions(edges),
+                ["gate_front"] = _gateFrontByOwner.TryGetValue(owner, out GridPos gate) ? SaveWriter.GridPos(gate) : null,
+            });
+        }
+
+        return new JsonObject
+        {
+            ["residential"] = SaveWriter.Bools(_residentialSub),
+            ["work_ground"] = SaveWriter.PackedInts(_workGroundSub),
+            ["harvest"] = SaveWriter.Bools(_harvestSub),
+            ["destroy"] = SaveWriter.Bools(_destroySub),
+            ["plots"] = plots,
+        };
+    }
+
+    /// <summary>The saved paint and plots, into this fresh map — every summary rebuilt as the brush builds it.</summary>
+    internal void ReadSave(SaveReader save)
+    {
+        var residential = new bool[_residentialSub.Length];
+        var workGround = new int[_workGroundSub.Length];
+        var harvest = new bool[_harvestSub.Length];
+        var destroy = new bool[_destroySub.Length];
+        save.BoolsInto("residential", residential);
+        save.IntsInto("work_ground", workGround);
+        save.BoolsInto("harvest", harvest);
+        save.BoolsInto("destroy", destroy);
+
+        for (int i = 0; i < residential.Length; i++)
+        {
+            if (residential[i])
+            {
+                SetResidential(SubPositionOf(i), true);
+            }
+
+            if (workGround[i] != 0 && !SetWorkGround(SubPositionOf(i), workGround[i]))
+            {
+                throw new SaveFormatException($"{save.Path}.work_ground: two owners on the tile at {SubPositionOf(i).Tile}.");
+            }
+
+            if (harvest[i])
+            {
+                SetHarvest(SubPositionOf(i), true);
+            }
+
+            if (destroy[i])
+            {
+                SetDestroy(SubPositionOf(i), true);
+            }
+        }
+
+        foreach (SaveReader plot in save.Objects("plots"))
+        {
+            int owner = plot.Int("owner");
+            List<int> held = plot.Ints("tiles");
+            List<int> fronts = plot.Ints("lane");
+            foreach (int tile in held)
+            {
+                _plot[CheckedTile(plot, tile)] = owner;
+            }
+
+            foreach (int tile in fronts)
+            {
+                _lane[CheckedTile(plot, tile)]++;
+            }
+
+            _plotByOwner[owner] = held;
+            _laneByOwner[owner] = fronts;
+
+            if (plot.HasValue("fenced"))
+            {
+                List<GridPos> ends = plot.GridPositions("fenced");
+                var edges = new List<(GridPos From, GridPos To)>(ends.Count / 2);
+                for (int e = 0; e < ends.Count; e += 2)
+                {
+                    edges.Add((ends[e], ends[e + 1]));
+                    Wall(ends[e], ends[e + 1], up: true);
+                }
+
+                _fenceByOwner[owner] = edges;
+            }
+
+            if (plot.NullableGridPos("gate_front") is GridPos front)
+            {
+                _gateFrontByOwner[owner] = front;
+                _gateFronts[front] = _gateFronts.GetValueOrDefault(front) + 1;
+            }
+        }
+    }
+
+    private int CheckedTile(SaveReader plot, int index) =>
+        index >= 0 && index < _plot.Length
+            ? index
+            : throw new SaveFormatException($"{plot.Path}: tile {index} is outside the valley.");
 }

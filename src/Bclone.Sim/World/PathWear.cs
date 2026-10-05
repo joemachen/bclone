@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -275,4 +278,33 @@ public sealed class PathWear
 
     /// <summary>Where a map-order index is — the inverse of the indexing, for the hash and the view.</summary>
     public GridPos PositionOf(int index) => new((index % _width) + _minX, (index / _width) + _minY);
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5.2`)
+    // ---------------------------------------------------------------
+    //
+    // ⚠️ The price classes are saved beside the wear: the hysteresis remembers the class each tile had at
+    // the last hand-over, and today's wear alone cannot say it. The thresholds and the ceiling are the
+    // config's and are set again by `SimWorld` exactly as at a founding. `Generation` starts fresh — it
+    // only answers "has this changed since I looked?" and nothing has looked yet.
+
+    internal JsonObject ToSave() => new()
+    {
+        ["wear"] = SaveWriter.UShorts(_wear),
+        ["price_class"] = SaveWriter.Bytes(_priceClass),
+        ["trodden_tiles"] = TroddenTiles,
+        ["path_tiles"] = PathTiles,
+        ["routes_generation"] = RoutesGeneration,
+        ["routes_dirty"] = _routesDirty,
+    };
+
+    internal void ReadSave(SaveReader save)
+    {
+        save.UShortsInto("wear", _wear);
+        save.BytesInto("price_class", _priceClass);
+        TroddenTiles = save.Int("trodden_tiles");
+        PathTiles = save.Int("path_tiles");
+        RoutesGeneration = save.Int("routes_generation");
+        _routesDirty = save.Bool("routes_dirty");
+    }
 }

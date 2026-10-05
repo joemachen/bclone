@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -456,4 +459,36 @@ public sealed class TravelCostField
     // `TilesToCost` went the same way in D159, and for the same reason it should have gone
     // with the fence: converting a radius in tiles into cost units is a question only the
     // catchment ever asked, and it had sat here with no caller since D120.
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5.2`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THE PRICES THE ROUTES ARE WALKED ON ARE LAST SPRING'S, NOT TODAY'S. `_entryCost` is copied from
+    // the wear's price classes the first time a route is asked for after a re-price (`FieldTo`), and the
+    // classes go on moving every season in between. So a field rebuilt on load from today's classes
+    // would route differently until the next spring — the copy is saved, and so is whether it has been
+    // taken yet this generation (a save between the re-price and the first ask must take it late, as the
+    // village that never stopped would). The flow fields themselves are a cache and are not saved.
+
+    internal JsonObject ToSave() => new()
+    {
+        ["wear_taken"] = _wear is not null && _builtAtWearGeneration == _wear.RoutesGeneration,
+        ["anything_worn"] = _anythingWorn,
+        ["entry_cost"] = _entryCost is null ? null : SaveWriter.Bytes(_entryCost),
+    };
+
+    /// <summary>Last spring's prices, read back — after <see cref="ReadWearFrom"/> and the wear's own load.</summary>
+    internal void ReadSave(SaveReader save)
+    {
+        if (_wear is null || _map is null)
+        {
+            throw new InvalidOperationException("The wear is read before the prices it was priced from.");
+        }
+
+        _anythingWorn = save.Bool("anything_worn");
+        _entryCost = save.HasValue("entry_cost") ? save.Bytes("entry_cost", _map.Width * _map.Height) : null;
+        _builtAtWearGeneration = save.Bool("wear_taken") ? _wear.RoutesGeneration : -1;
+        Forget();
+    }
 }

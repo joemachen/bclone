@@ -261,8 +261,63 @@ public sealed partial class NewGameScreen : Control
         _found.Pressed += OnFound;
         buttons.AddChild(_found);
         column.AddChild(buttons);
+        column.AddChild(BuildTheSaves());
 
         return column;
+    }
+
+    // ---------------------------------------------------------------
+    //  Continue and Load… (`save-load.md §8`) — until the title screen exists
+    // ---------------------------------------------------------------
+
+    /// <summary>A save the player can open, as the list shows it — or one it can only show, greyed, with why.</summary>
+    internal sealed record SaveListing(string Path, string Line, string? Refusal);
+
+    /// <summary>Asked to open the save at this path. Main opens it, and says so here if it cannot.</summary>
+    public event Action<string>? LoadAsked;
+
+    /// <summary>Every save on disk, newest first — set by Main before the screen is shown.</summary>
+    internal IReadOnlyList<SaveListing> Saves { get; set; } = Array.Empty<SaveListing>();
+
+    /// <summary>
+    /// <b>Continue</b> (the newest save that can be opened) and <b>Load…</b> (all of them, newest first). A
+    /// popup rather than a list in the column: the column is measured at 400 (the probe's <c>new game:</c>
+    /// line) and a list of saves would widen it to its longest line.
+    /// </summary>
+    private Control BuildTheSaves()
+    {
+        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
+        row.AddThemeConstantOverride("separation", 10);
+        SaveListing? newest = Saves.FirstOrDefault(s => s.Refusal is null);
+
+        var load = new MenuButton { Text = "Load…", Flat = false, Disabled = Saves.Count == 0 };
+        PopupMenu menu = load.GetPopup();
+        for (int i = 0; i < Saves.Count; i++)
+        {
+            menu.AddItem(Saves[i].Line, i);
+            menu.SetItemDisabled(i, Saves[i].Refusal is not null);
+            menu.SetItemTooltip(i, Saves[i].Refusal ?? Saves[i].Path);
+        }
+
+        menu.IdPressed += id => LoadAsked?.Invoke(Saves[(int)id].Path);
+        row.AddChild(load);
+
+        var resume = new Button
+        {
+            Text = "Continue",
+            Disabled = newest is null,
+            TooltipText = newest?.Line ?? "No saved village yet",
+        };
+        resume.Pressed += () => LoadAsked?.Invoke(newest!.Path);
+        row.AddChild(resume);
+        return row;
+    }
+
+    /// <summary>A save that would not open, said where the player is looking. The screen stays, and so does Found.</summary>
+    internal void RefuseTheLoad(string sentence)
+    {
+        _refusal.Text = sentence;
+        _refusal.Visible = true;
     }
 
     private Control BuildARow(NewGameRow row)

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,7 +16,8 @@ namespace Bclone.Sim.Tests;
 // Four arms: "unattended" (founded and left), "played" (ColdStartTests' opening, a granary and a
 // warehouse at year 3 — ZzBase's shape), "every" (played, plus a lodge, a fishery and a farm — ZzBase's
 // "every") and "established" (the warm founding, ShippedConfig.Established). One ZZR line per run: founding ms, fifty-year ms, ticks/sec,
-// alive and peak, and how long one StateHash takes at the end (the walk a snapshot would also make).
+// alive and peak, how long one StateHash takes at the end, and — since the snapshot was built — how long the
+// village takes to save and to load back (hash checked) and how big the file is.
 public sealed class ZzReplay
 {
     private readonly ITestOutputHelper _o;
@@ -67,7 +69,25 @@ public sealed class ZzReplay
         ulong h = StateHash.Compute(world);
         hash.Stop();
         long ticks = config.TicksPerYear * 50L;
-        _o.WriteLine($"ZZR {arm} {seed} found_ms {found.ElapsedMilliseconds} fifty_ms {run.ElapsedMilliseconds} tps {ticks * 1000 / Math.Max(1, run.ElapsedMilliseconds)} alive {world.Population} peak {peak} buildings {world.Workplaces.Count + world.StoreBuildings.Count} hash_us {hash.Elapsed.TotalMicroseconds:F0} hash {h}");
+
+        // D507's other half, measured once the snapshot existed: write the village and read it back the way
+        // the game does — capture + gzip to a file, then gunzip + parse + build — and the file's size.
+        string path = Path.Combine(Path.GetTempPath(), $"zzreplay-{arm}-{seed}.save");
+        var write = Stopwatch.StartNew();
+        SaveFile.Write(path, SaveGame.Capture(loop, "0.0.1", "now", seed.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        write.Stop();
+        long bytes = new FileInfo(path).Length;
+        var read = Stopwatch.StartNew();
+        using (var zipped = new System.IO.Compression.GZipStream(File.OpenRead(path), System.IO.Compression.CompressionMode.Decompress))
+        using (var text = new StreamReader(zipped))
+        {
+            SimLoop loaded = SaveGame.Load(System.Text.Json.Nodes.JsonNode.Parse(text.ReadToEnd())!.AsObject(), config);
+            Assert.Equal(h, StateHash.Compute(loaded.World));
+        }
+
+        read.Stop();
+        File.Delete(path);
+        _o.WriteLine($"ZZR {arm} {seed} found_ms {found.ElapsedMilliseconds} fifty_ms {run.ElapsedMilliseconds} tps {ticks * 1000 / Math.Max(1, run.ElapsedMilliseconds)} alive {world.Population} peak {peak} buildings {world.Workplaces.Count + world.StoreBuildings.Count} hash_us {hash.Elapsed.TotalMicroseconds:F0} save_ms {write.ElapsedMilliseconds} load_ms {read.ElapsedMilliseconds} save_kb {bytes / 1024} hash {h}");
     }
 
     public static IEnumerable<object[]> Runs()

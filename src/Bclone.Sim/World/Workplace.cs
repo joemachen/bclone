@@ -1,4 +1,6 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Core;
+using Bclone.Sim.Persistence;
 
 namespace Bclone.Sim.World;
 
@@ -698,4 +700,74 @@ public sealed class Workplace
 
     /// <summary>Room still going spare.</summary>
     public int OpenPositions => Places - WorkerIds.Count;
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+    //
+    // ⚠️ `Kind`, `Capacity` and `GatheringRadius` are not in the hash and ARE the building (§5.2). The
+    // seats a building was raised with stay its seats — a re-tuned row reaches the next one built.
+    // Left out: `_covered` and the wooded-tile cache, which are rebuilt on the first ask.
+
+    internal JsonObject ToSave() => new()
+    {
+        ["id"] = Id,
+        ["kind"] = SaveWriter.Enum(Kind),
+        ["born_as"] = BornAs,
+        ["given_name"] = GivenName,
+        ["at"] = SaveWriter.Point(_position),
+        ["facing"] = SaveWriter.Angle(Facing),
+        ["width"] = ExtentWidth,
+        ["height"] = ExtentHeight,
+        ["capacity"] = Capacity,
+        ["gathering_radius"] = GatheringRadius,
+        ["mode"] = SaveWriter.Enum(Mode),
+        ["forge_good"] = SaveWriter.Good(ForgeGood),
+        ["workers"] = SaveWriter.Ints(WorkerIds),
+        ["construction"] = Construction?.ToSave(),
+        ["store"] = Store.ToSave(),
+        ["field_sixteenths_sown"] = FieldSixteenthsSown,
+        ["field_hands_at_autumn"] = FieldHandsAtAutumn,
+        ["field_tiles_learned"] = FieldTilesLearned,
+        ["field_walk_when_learned"] = FieldWalkWhenLearned,
+        ["field_cleared_at"] = SaveWriter.Hex(FieldClearedAtTick),
+        ["field_probed_this_year"] = FieldProbedThisYear,
+        ["field_probe_failed"] = FieldProbeFailed,
+        ["staffing_override"] = StaffingOverride,
+        ["queue_rank"] = QueueRank,
+    };
+
+    internal static Workplace FromSave(SaveReader save)
+    {
+        SaveReader? site = save.NullableObject("construction");
+        var workplace = new Workplace
+        {
+            Id = save.Int("id"),
+            Kind = save.Enum<JobKind>("kind"),
+            Name = save.String("born_as"),
+            Position = save.Point("at"),
+            Facing = save.Angle("facing"),
+            ExtentWidth = save.Int("width"),
+            ExtentHeight = save.Int("height"),
+            Capacity = save.Int("capacity"),
+            GatheringRadius = save.Int("gathering_radius"),
+            Mode = save.Enum<WorkMode>("mode"),
+            ForgeGood = save.Good("forge_good"),
+            Construction = site is null ? null : ConstructionSite.FromSave(site),
+            Store = Stockpile.FromSave(save.Object("store")),
+            FieldSixteenthsSown = save.Int("field_sixteenths_sown"),
+            FieldHandsAtAutumn = save.Int("field_hands_at_autumn"),
+            FieldTilesLearned = save.Int("field_tiles_learned"),
+            FieldWalkWhenLearned = save.Int("field_walk_when_learned"),
+            FieldClearedAtTick = save.ULong("field_cleared_at"),
+            FieldProbedThisYear = save.Bool("field_probed_this_year"),
+            FieldProbeFailed = save.Bool("field_probe_failed"),
+            StaffingOverride = save.NullableInt("staffing_override"),
+            QueueRank = save.NullableInt("queue_rank"),
+        };
+
+        workplace.Rename(save.NullableString("given_name"));
+        workplace.WorkerIds.AddRange(save.Ints("workers"));
+        return workplace;
+    }
 }

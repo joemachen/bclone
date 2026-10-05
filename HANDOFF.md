@@ -1,4 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D508 IN §7. SAVE/LOAD IS SPECCED (D507, `specs/save-load.md`) ON `slice/save-load` — JOE ANSWERED ITS §11 (D508); NEXT, THE SIM HALF. AFTER SAVE/LOAD: THE STEADING REBUILD.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D509 IN §7. SAVE/LOAD IS BUILT (D509) ON `slice/save-load` — UNPLAYED: JOE PLAYS IT, THEN MERGE AT HIS WORD. AFTER SAVE/LOAD: THE STEADING REBUILD.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD BUILT) — D509, ON WINDOWS.**
+>
+> **State (D509):** `main` = D506 + the branch clean-up, pushed. **`slice/save-load`** (off `main`, not pushed) holds
+> D507's spec, D508's answers and **the whole feature, sim and view**: `Bclone.Sim/Persistence/` (`SaveGame`, `SaveFile`,
+> `SaveData`), each world class's `ToSave` / `FromSave`, `SimWorld`'s restoring constructor, `Main.Saves.cs`, *Continue*
+> and *Load…* on the new-game screen, a name and *Save* in Settings, autosave at Spring, Day 1 and on quit (three kept).
+> Saves live in `%APPDATA%\Godot\app_userdata\bclone\saves\<village>-<seed>\`. At D509, Windows: **1513 / 0 / 5 of 1518
+> (4m28); view 0 warnings; probe green (new line `save:`), bar height 151; no golden moved.** `SaveLoadTests` 14 mutants
+> all red; probe `save:` 2 of 2.
+>
+> **▶️ NEXT: Joe plays it** (`run.bat` on the branch — `git checkout slice/save-load`):
+> 1. Found a village, play two or three years (let one Spring pass), untick *share the work out* in Settings, type a name
+>    beside *Save* and press it — the village log says *"Saved as …"*.
+> 2. Quit with the window's ✕. Relaunch: *Continue* opens the newest save — the village where he left it, the share-out
+>    tick still off. *Load…* lists the named save and the autosaves (village, season and year, file, build).
+> 3. Optional: quit, open a save in a text editor (it is gzip — rename to `.gz` and unzip it to read the JSON), break it,
+>    put it back and relaunch: *Load…* refuses it in words and a `.bad` copy sits beside it.
+>
+> Then merge at his word: `git checkout main`, `git merge --no-ff slice/save-load`, `git push`. **Then the steading
+> rebuild** (Joe: *"then i want to try steading again"* — DESIGN §4 Phase 5's entry; `slice/work-from-the-steading` is the
+> record, read its commit message, do not merge it). After that §4's shell order has the title and pause screens.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (SAVE/LOAD SPECCED) — D507, ON WINDOWS.**
 >
@@ -5044,6 +5068,23 @@ Read `git status` after staging, every time.
   round-trips"* asks the same question: *does the thing I compare see everything that matters?*
 - **A harness village is not a played village** (D447, again): `ZzReplay`'s four arms never pass ~19 people, so its
   replay times are a floor, and the spec says so rather than quoting them as the cost.
+
+## ⛔ THE TRAPS SAVE/LOAD (D509) PAID FOR — A POSE THAT NEVER REACHES THE STATE, AND A SUITE THAT LOOKS GREEN FIRST TIME
+
+- **Every guard passed on its first run, and two of fourteen mutants then scored ZERO.** Dropping `Moments` or the
+  *nowhere to keep it* latch from the save changed nothing any pose could see, because no pose held a pending moment or
+  a set latch. The code was fine; the poses were blind. Two poses were added (an unattended village gone empty; every
+  store closed at tick 40) and both mutants went red. *A field guard is only as good as the states its poses reach —
+  when a mutant scores zero, ask what village would hold that field set.*
+- **The run-on year is not the strong guard here; the field guard is.** Seven of twelve dropped fields did not make a
+  loaded year part from the live one (`_everWooded` needs a felled wood; `LastWorkplaceId` the three-yearly reshuffle).
+  ⛔ **When the next slice adds a field, `EveryFieldIsSavedOrNamed` fails by name — enter it in `SaveLoadTests.Fields`
+  with its reason AND save it (`ToSave` / `FromSave`); never classify a field as `Cache` to make the test pass.** A
+  `Cache` field must be one the sim rebuilds on its first ask.
+- **The red-check script ran while I edited other files** — fine for `src/Bclone.Game` (the script built only the test
+  project), but never touch a file a mutant is replacing: the script restores its own copy over yours.
+- **Saves are the player's, like settings**: the probe never reads or writes `user://saves` (`_saveFolder` is `null`
+  under it); its `save:` line uses `user://probe-saves` and deletes it.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

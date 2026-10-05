@@ -1,4 +1,7 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Core;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -1236,4 +1239,49 @@ public sealed class Household
     // out and never when somebody dies, so the list only ever grows and a house full of
     // graves reads as full. Ask `SimWorld.LivingMembersOf` instead; it counts the living,
     // which is what every occupancy question in the sim actually means.
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+
+    internal JsonObject ToSave() => new()
+    {
+        ["id"] = Id,
+        ["surname"] = _surname,
+        ["given_name"] = GivenName,
+        ["home"] = SaveWriter.Point(HomePosition),
+        ["home_facing"] = SaveWriter.Angle(HomeFacing),
+        ["why_here"] = WhyHere,
+        ["fenced"] = SaveWriter.GridPositions(FencedTiles),
+        ["last_birth_year"] = LastBirthYear,
+        ["day_for_a_child"] = DayForAChild,
+        ["topping_up_food"] = ToppingUpFood,
+        ["topping_up_firewood"] = ToppingUpFirewood,
+        ["water_drawn_on_day"] = WaterDrawnOnDay,
+        ["larder"] = Stockpile.ToSave(),
+        ["members"] = SaveWriter.Ints(_memberIds),
+    };
+
+    internal static Household FromSave(SaveReader save)
+    {
+        var household = new Household
+        {
+            Id = save.Int("id"),
+            Surname = save.String("surname"),
+            HomePosition = save.NullablePoint("home"),
+            HomeFacing = save.Angle("home_facing"),
+            WhyHere = save.String("why_here"),
+            FencedTiles = save.GridPositions("fenced"),
+            LastBirthYear = save.Int("last_birth_year"),
+            DayForAChild = save.Int("day_for_a_child"),
+            ToppingUpFood = save.Bool("topping_up_food"),
+            ToppingUpFirewood = save.Bool("topping_up_firewood"),
+            WaterDrawnOnDay = save.Int("water_drawn_on_day"),
+            Stockpile = Stockpile.FromSave(save.Object("larder")),
+        };
+
+        household.GivenName = save.NullableString("given_name");
+        household._memberIds.AddRange(save.Ints("members"));
+        return household;
+    }
 }

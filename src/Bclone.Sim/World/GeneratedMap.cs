@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>What a tile is made of.</summary>
@@ -509,4 +512,61 @@ public sealed class GeneratedMap
 
     /// <summary>Crops, in the same order as <see cref="Tiles"/>. Zero means nothing sown.</summary>
     public IReadOnlyList<byte> Crops => _crop;
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ The valley as it stands — never re-generated on load. ⚠️ `_everWooded` is saved although the hash
+    // never mixes it: it is the terrain's HISTORY (§5.2), and today's terrain cannot say which meadow
+    // was a wood before the village felled it.
+
+    internal JsonObject ToSave()
+    {
+        var terrain = new byte[_terrain.Length];
+        for (int i = 0; i < _terrain.Length; i++)
+        {
+            terrain[i] = (byte)_terrain[i];
+        }
+
+        return new JsonObject
+        {
+            ["width"] = Width,
+            ["height"] = Height,
+            ["min_x"] = MinX,
+            ["min_y"] = MinY,
+            ["founding_site"] = SaveWriter.GridPos(FoundingSite),
+            ["terrain"] = SaveWriter.Bytes(terrain),
+            ["crops"] = SaveWriter.Bytes(_crop),
+            ["young_saplings"] = SaveWriter.Bools(_youngSapling),
+            ["laid_bare"] = SaveWriter.Bools(_laidBare),
+            ["ever_wooded"] = SaveWriter.Bools(_everWooded),
+        };
+    }
+
+    internal static GeneratedMap FromSave(SaveReader save)
+    {
+        int width = save.Int("width");
+        int height = save.Int("height");
+        if (width < 1 || height < 1 || width > 4096 || height > 4096)
+        {
+            throw new SaveFormatException($"{save.Path}: a {width} × {height} valley.");
+        }
+
+        byte[] bytes = save.Bytes("terrain", width * height);
+        var terrain = new Terrain[bytes.Length];
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            terrain[i] = Enum.IsDefined((Terrain)bytes[i])
+                ? (Terrain)bytes[i]
+                : throw new SaveDataException($"ground {bytes[i]}", $"{save.Path}.terrain: ground {bytes[i]}, which this build does not have.");
+        }
+
+        var map = new GeneratedMap(width, height, save.Int("min_x"), save.Int("min_y"), terrain, save.GridPos("founding_site"));
+        save.BytesInto("crops", map._crop);
+        save.BoolsInto("young_saplings", map._youngSapling);
+        save.BoolsInto("laid_bare", map._laidBare);
+        save.BoolsInto("ever_wooded", map._everWooded);
+        return map;
+    }
 }

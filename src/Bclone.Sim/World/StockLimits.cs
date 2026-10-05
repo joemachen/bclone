@@ -1,3 +1,6 @@
+using System.Text.Json.Nodes;
+using Bclone.Sim.Persistence;
+
 namespace Bclone.Sim.World;
 
 /// <summary>
@@ -192,5 +195,39 @@ public sealed class StockLimits
     {
         int index = (int)goods;
         return index >= 0 && index < _limits.Length ? index : -1;
+    }
+
+    /// <summary>One entry a good, in id order; <c>null</c> where the player set none.</summary>
+    internal JsonArray ToSave()
+    {
+        var array = new JsonArray();
+        for (int i = 0; i < _limits.Length; i++)
+        {
+            array.Add(_limits[i]);
+        }
+
+        return array;
+    }
+
+    /// <summary>The saved limits, read into this (fresh) set. A count that is not the catalogue's is refused.</summary>
+    internal void ReadSave(SaveReader save, string key)
+    {
+        JsonArray array = save.Array(key);
+        if (array.Count != _limits.Length)
+        {
+            throw new SaveDataException("a different list of goods", $"{save.Path}.{key}: {array.Count} goods where this game's data has {_limits.Length}.");
+        }
+
+        for (int i = 0; i < array.Count; i++)
+        {
+            try
+            {
+                _limits[i] = array[i]?.GetValue<int>();
+            }
+            catch (Exception ex) when (ex is FormatException or InvalidOperationException)
+            {
+                throw new SaveFormatException($"{save.Path}.{key}[{i}]: not a number.", ex);
+            }
+        }
     }
 }

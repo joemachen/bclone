@@ -102,8 +102,13 @@ public partial class Main : Control
         // valley, and the village is founded from what the screen says. Under the probe the screen is
         // measured and then founds the config's own valley, so every probe line after it reads the
         // village it always has.
-        _newGame = new NewGameScreen(config, _settings.NewGameRows, _settingsProblems);
+        _newGame = new NewGameScreen(config, _settings.NewGameRows, _settingsProblems)
+        {
+            // ⭐ AND THE SAVES (D507): Continue and Load… sit on this screen until the title screen exists.
+            Saves = TheSavesOnDisk(config),
+        };
         _newGame.Founded += FoundTheVillage;
+        _newGame.LoadAsked += path => OpenTheVillage(config, path);
         AddChild(_newGame);
     }
 
@@ -120,13 +125,40 @@ public partial class Main : Control
     private void FoundTheVillage(SimConfig config, string shareCode, IReadOnlyDictionary<string, string> rows)
     {
         _shareCode = shareCode;
+        CloseTheNewGameScreen();
+        CompositeLogSink sinks = OpenTheLogs();
+
+        _loop = SimFactory.CreatePhase0(config, sinks);
+        _loop.World.Log(LogLevel.Info, "shell", $"Founded from the new-game screen: {shareCode} (seed {_loop.World.Seed}).");
+        TellTheLogAboutTheSettings();
+        RememberTheValley(rows);
+        StartTheVillage(sinks);
+    }
+
+    private void CloseTheNewGameScreen()
+    {
         if (_newGame is not null)
         {
             RemoveChild(_newGame);
             _newGame.QueueFree();
             _newGame = null;
         }
+    }
 
+    /// <summary>The driver, the saves' folder and the whole UI, over <see cref="_loop"/> — a village founded or loaded.</summary>
+    private void StartTheVillage(CompositeLogSink sinks)
+    {
+        _driver = new FixedTimestepDriver(_loop.World.Config, sinks);
+        BeginSaving();
+        BuildUi();
+        ApplySettings(_settings);
+        _settingsLive = true;
+        Refresh();
+    }
+
+    /// <summary>The village log on screen and the audit file — opened before the world, which logs as it is made.</summary>
+    private CompositeLogSink OpenTheLogs()
+    {
         // TWO SINKS, WANTING DIFFERENT THINGS.
         //
         // The village log on screen is the story (D8) and stays at INFO — six hundred
@@ -161,18 +193,7 @@ public partial class Main : Control
         _audit = new FileLogSink(logPath, LogLevel.Debug, alsoConsole: false);
         _logPath = logPath;
 
-        var sinks = new CompositeLogSink(_sink, _audit);
-
-        _loop = SimFactory.CreatePhase0(config, sinks);
-        _loop.World.Log(LogLevel.Info, "shell", $"Founded from the new-game screen: {shareCode} (seed {_loop.World.Seed}).");
-        TellTheLogAboutTheSettings();
-        RememberTheValley(rows);
-        _driver = new FixedTimestepDriver(config, sinks);
-
-        BuildUi();
-        ApplySettings(_settings);
-        _settingsLive = true;
-        Refresh();
+        return new CompositeLogSink(_sink, _audit);
     }
 
     // ⛔ THE SCREENSHOT HOOK IS DELETED, NOT FIXED (D160, Joe's call). `BCLONE_SCREENSHOT` and
@@ -214,7 +235,7 @@ public partial class Main : Control
             long before = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
-                _loop.Step(ticks);
+                StepAndAutosave(ticks);
             }
             catch (SimSystemException fault)
             {
@@ -469,6 +490,7 @@ public partial class Main : Control
         // warehouses stand — so the rule the draw obeys is read on every kind that exists.
         GD.Print(_map.EveryStoreShowsItsStock());
         GD.Print(TheSettingsComeBackAsTheyWent());
+        GD.Print(TheVillageSavesAndLoads());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -5878,7 +5900,7 @@ public partial class Main : Control
         var share = new CheckBox
         {
             Text = "share the work out every few years",
-            ButtonPressed = true,
+            ButtonPressed = _loop.World.VillageSharesOutWork,
         };
         share.AddThemeFontSizeOverride("font_size", 12);
         share.Toggled += on => _loop.World.VillageSharesOutWork = on;
@@ -5887,6 +5909,10 @@ public partial class Main : Control
         body.AddChild(Caption(
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
+
+        // ⭐ Save, beside the one control that is the village's rather than the view's (Joe, D508: here until the
+        // pause screen exists). The share-out tick above is saved with the village and set from it on a load.
+        AddTheSaveRow(body);
 
         // ⭐ Every map tick is remembered (D504) — hooked here, once, off the registry, so a tick added
         // above is remembered the day it is written. ⛔ The share-out tick is NOT: it is the village's
