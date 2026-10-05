@@ -13,7 +13,7 @@ yard modules the player attaches; the kitchen garden comes later, *after plots*)
 **Status:** ✅ **BUILT (2026-09-17, D386): slice 1 the sim, slice 2 the view.** Built with D387 (the
 birth gate reads the harvest, `storage-and-distribution.md §12.4`). **✅ Joe's play notes built
 (2026-09-18, D388): the lane picks the door and the fence is built with the house (§3.3, §3.5).**
-Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT, PLAYED AND MERGED (D427, D428, §9.12) — Joe: *"Looks good! merge and push"*; every 20 days, weight 50.** Owner:
+Suite 1184 passing, 0 failing, 2 skipped of 1186. **Slice 3, a village and not a street (§9): specced (D411), slices A + B BUILT AND MERGED (D412, D413, §9.11) — Joe: *"looks good. i really like fixture seed 4. plays nicely too"*, *"merge"*. Slice C (the well): BUILT, PLAYED AND MERGED (D427, D428, §9.12) — Joe: *"Looks good! merge and push"*; every 20 days, weight 50. §3.3's seam rule (B5): BUILT (D498), unplayed.** Owner:
 Joe + Claude Code.
 
 ---
@@ -151,6 +151,17 @@ Facing falls out of the score: `toStore` is read from the lane tile, so a plot f
 walks leave by, which is the lane between it and the village; a second row across the lane faces
 back at the first because its own walks leave through the same lane. The well as a focal point
 (DESIGN §4: *later*) would simply be one more term.
+
+**⛔ Not on a seam (B5 — D496 measured, D497 Joe's call, D498 built).** A plot is refused when
+either of its **house** tiles is stone or iron (`TerrainRules.IsSeam`) — the house goes round the
+seam, as a farm's ground does (D491). Measured before (D496): 8 of 80 houses were sited over rock;
+the front tile was quarried first and the house stood on rock with the other. Joe: *"houses go
+round seams the way farms now do."* **The homes brush still paints over a seam** — painting says
+*people may live here*, and a seam the village later clears or destroys becomes ground a house can
+take. Yards and lanes may hold a seam (a yard may hold a tree). The *"none can take one"* sentence
+counts it: *"N on a stone or iron seam"*. Cleared ground inside the paint still never regrows
+(Joe, D497: keep it). Guards in `OrganicHousingTests`: `AHouseGoesRoundASeam`,
+`AFamilyWithOnlySeamsSaysSo`.
 
 ### 3.4 What the plot is, in state
 

@@ -151,6 +151,63 @@ public sealed class OrganicHousingTests
         }
     }
 
+    /// <summary>⛔ A house goes round a seam (B5, D497 — §3.3), as a farm's ground does (D491).</summary>
+    /// <remarks>
+    /// Posed on the chooser's own first pick: the same painted square is asked twice, the second
+    /// time with a seam under the far tile of the house it chose. Red with <c>TilesClippedOff</c> not
+    /// asking for seams — the chooser takes the same tiles again, seam and all.
+    /// </remarks>
+    [Theory]
+    [InlineData(Terrain.Rock)]
+    [InlineData(Terrain.IronDeposit)]
+    public void AHouseGoesRoundASeam(Terrain seam)
+    {
+        SimWorld world = Bare();
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 1, 3);
+        Paint(world, centre, 3);
+        Household family = ANewFamily(world, "Ashford");
+
+        HomeSite first = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
+        // Under the house's OTHER tile only: the front is grass, so only the plot's own house-tile
+        // check can see the seam (a pose with both tiles seamed is caught by the front check first,
+        // and scored zero against this one).
+        List<GridPos> under = world.HomeFootprintAt(first.Front, first.Facing).CoveredTiles()
+            .Where(t => t != first.Front).ToList();
+        Assert.Single(under);
+        world.SetTerrain(under[0], seam);
+
+        HomeSite second = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
+        List<GridPos> now = world.HomeFootprintAt(second.Front, second.Facing).CoveredTiles();
+        _output.WriteLine($"first {first.Front} facing {first.Facing} on {string.Join(" ", under)}; "
+            + $"with {seam} there, {second.Front} facing {second.Facing} on {string.Join(" ", now.Select(t => $"{t}={world.Map.TerrainAt(t)}"))}");
+
+        Assert.All(now, t => Assert.False(TerrainRules.IsSeam(world.Map.TerrainAt(t)), $"The house stands on {seam} at {t}."));
+    }
+
+    /// <summary>⭐ Homes land that is all seam says so, in words the player can act on.</summary>
+    /// <remarks>Red with the cheap pass not counting seams: the sentence names no seam.</remarks>
+    [Fact]
+    public void AFamilyWithOnlySeamsSaysSo()
+    {
+        SimWorld world = Bare();
+        GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 1, 3);
+        Paint(world, centre, 3);
+        for (int dy = -3; dy <= 3; dy++)
+        {
+            for (int dx = -3; dx <= 3; dx++)
+            {
+                world.SetTerrain(new GridPos(centre.X + dx, centre.Y + dy), Terrain.Rock);
+            }
+        }
+
+        Household family = ANewFamily(world, "Ashford");
+        Household.NoRoomToBuildException refused = Assert.Throws<Household.NoRoomToBuildException>(
+            () => Household.ChooseSite(world, world.Map.FoundingSite, family.Id));
+        _output.WriteLine(refused.Message);
+
+        Assert.Contains("on a stone or iron seam", refused.Message);
+    }
+
     /// <summary>
     /// ⭐ A home is a house in a plot: 3×3 tiles of the household's, the house on the front row,
     /// and the lane across the front nobody's (§3.1–3.2).

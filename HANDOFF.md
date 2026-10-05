@@ -1,5 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D496 IN §7. B5 (HOMES ON FORESTED TILES) IS VERIFIED AND REPORTED (D496) — TWO OF JOE'S FOUR BELIEFS DO NOT HOLD; HIS THREE CALLS WAIT IN THE ⏸️ LIST. NEXT: HIS ANSWER, THEN B6.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D498 IN §7. B5 IS BUILT ON `slice/b5-whole-footprint` (D497 JOE'S CALLS, D498) — UNPLAYED, NOT MERGED. NEXT: JOE PLAYS IT, THEN B6.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 BUILT) — D498, ON WINDOWS.**
+>
+> **State (D498):** `main` = D496, pushed. **`slice/b5-whole-footprint`** (off `main`, one commit, not pushed) holds
+> Joe's three B5 calls (D497) built: every tile a building covers is cleared and waited on; a house is never sited on
+> stone or iron; residential ground still never regrows. At D498, Windows: **1445 / 0 / 5 of 1450 (3m40); view 0
+> warnings; probe green, bar height 151; four goldens moved, once, for this reason.** 10 of 11 mutants red.
+>
+> **⚠️ The price, for Joe to weigh while he plays** (D498, D420's harness, back to back): 200 shipped seeds **43 → 47
+> dead valleys** (still under the 25 % line), alive 1,072 → 1,078; 50 fixture valleys 9 → 7 dead, alive **581 → 559**.
+> Every house now fells the tree under its far half, and homes ground never regrows, so homes paint in a forager's wood
+> costs a few more ring trees. Small, measured, and his to accept.
+>
+> **▶️ NEXT:** Joe plays it (`run.bat` on the branch): paint homes over a wood — each house site stays orange until
+> **both** its tiles are bare, laborers fell the far tree too, nothing stands on a stump; paint homes over a stone or
+> iron seam — no house goes on it, and if that is all the paint there is the log says *"N on a stone or iron seam"*;
+> mark a granary over trees — all four tiles are felled first. Then merge at his word: `git checkout main`,
+> `git merge --no-ff slice/b5-whole-footprint`, `git push`. **Then B6** (`quarry_unlock_stone` 100 → 200 on the
+> harness).
+>
+> **(superseded by the banner above)**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (B5 REPORTED) — D496, ON WINDOWS.**
 >
 > **State (D496):** `main` = D495 + one commit (this handoff, D496's docs and `tools/harness/ZzB5.cs`) — **not pushed;
@@ -4797,9 +4817,25 @@ Read `git status` after staging, every time.
 - **Moving the opening's homes paint is a clean pose**: erase the 9×9 at tick 0 (before `HouseTheRoofless` at tick 4)
   and paint where you want houses. The chooser then sites the founders there.
 
+## ⛔ THE TRAPS B5's BUILD (D498) PAID FOR — A STALE DLL, A POSE THAT IS HISTORY, AND A HARNESS THAT LOCKS THE BUILD
+
+- **A "back to back" run on `main` that does not build runs the branch.** `git stash push -- src` left the new tests
+  referring to new APIs; the build failed and `dotnet test --no-build` ran the branch's DLL, reading identical numbers.
+  **Read the build line before the run's** — set the new tests aside too, or use a `git worktree` for `main` (cleaner,
+  and the harness can run both sides at once).
+- **The harness copies `ZzBase.cs` into `tests/` and its testhost locks the test DLL.** A build in the same checkout
+  while `arms.sh` runs fails to copy (`MSB3027`) and the next `--no-build` run is stale. Wait for it, or work in the
+  worktree.
+- **`arms.sh` ends in `python3`, which on Joe's Windows is the Store stub** — the job exits 1 *after* the data is
+  written. Run `python tools/harness/dead.py` on the `row-*.txt` yourself.
+- **A pose that waits years for a premise is a pose of that history** (D463 again): `FoodLimitTests` waited seven
+  fixture years for stored forage; one more tree a house and there was none. Pose the premise.
+- **A test fixture can hold the very assumption the slice removes.** Three guards cleared or checked the anchor tile
+  only and failed when the rule became the whole footprint — not regressions, the old rule written into a pose.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **B5'S THREE CALLS (D496) — measured, nothing built; you chose report first.** *(Q1)* **Clear the whole
+- ✅ **DECIDED (D497) — Joe: *"1. yes 2. agree … 3. keep"*. Built (D498), unplayed.** ~~B5'S THREE CALLS (D496).~~ *(Q1)* **Clear the whole
   footprint?** Today only the front tile of a house (and the anchor of a granary, warehouse, market, woodcutter's or
   builder's hut) is cleared and waited on; 30 of 80 measured houses stand on a tree or rock that never goes. Recommended:
   yes — paint and wait on every tile the building covers. *(Q2)* **Homes and seams:** today a house may be sited over

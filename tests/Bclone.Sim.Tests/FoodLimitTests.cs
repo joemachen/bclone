@@ -329,6 +329,17 @@ public sealed class FoodLimitTests
             world.Villagers.Exists(v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Forager),
             "Nobody took the forager's trade in a year, so there is nobody for the limit to stand down.");
 
+        // ⚠️ THE STORE POSED, NOT WAITED FOR (D463's rule; B5, D497). Whether this fixture has forage
+        // in its granary at year seven is seven years of history: it held 263 on `main` at D496 and 0
+        // once every house cleared both its tiles — two trees a house, out of the foragers' rings for
+        // good. The claim is the limit's, so a working stock is put in when the history left none.
+        const int working = 200;
+        if (world.HeldAgainstItsLimit(Goods.Produce) < working)
+        {
+            StoreBuilding granary = world.StoreBuildings.First(s => s.Accepts(Goods.Produce));
+            granary.Store.Receive(Goods.Produce, working - world.HeldAgainstItsLimit(Goods.Produce));
+        }
+
         int holds = world.HeldAgainstItsLimit(Goods.Produce);
         Assert.True(holds > 0, "The village stored no forage in seven years, so this is vacuous.");
         world.SetStockLimit(Goods.Produce, holds / 2);

@@ -230,6 +230,7 @@ public sealed class Household
         int cutOff = 0;
         int fencedIn = 0;
         int noRoom = 0;
+        int onASeam = 0;
 
         // The haul routes, once per search, so a house is not sited on the road (D383) — and the
         // tiles they cross, once, so a house can face the road (D388).
@@ -274,6 +275,14 @@ public sealed class Household
             if (world.SomethingStandsAt(front) || world.Zones.PlotOwner(front) != 0 || world.Zones.IsLane(front))
             {
                 builtOn++;
+                continue;
+            }
+
+            // ⛔ NOT ON A SEAM (Joe, B5, D497): a house goes round stone and iron, as a farm's ground
+            // does (D491). The brush still paints over one; dug or destroyed, it is grass a house can take.
+            if (TerrainRules.IsSeam(world.Map.TerrainAt(front)))
+            {
+                onASeam++;
                 continue;
             }
 
@@ -529,6 +538,11 @@ public sealed class Household
             reasons.Add($"{cutOff} cut off from the village");
         }
 
+        if (onASeam > 0)
+        {
+            reasons.Add($"{onASeam} on a stone or iron seam");
+        }
+
         // ⭐ §3.3's refusal, in words the player can act on: the plot would fit, but its fence
         // would shut a neighbour's door (D404).
         if (fencedIn > 0)
@@ -557,7 +571,7 @@ public sealed class Household
 
     /// <summary>
     /// Whether a plot can be taken here (§3.1–3.2), and how much of its yard the paint, the water
-    /// or a building clips off. <b>−1</b> unless the house's two tiles are whole-painted, on land,
+    /// or a building clips off. <b>−1</b> unless the house's two tiles are whole-painted, on land and off a seam (B5, D497),
     /// free, in nobody's plot and on nobody's lane, the lane is in nobody's plot, and the door's
     /// tile is land nobody stands on; the yard tiles must be in nobody's plot and on nobody's lane.
     /// Otherwise the count of yard tiles that are off the map, water, unpainted by the half rule,
@@ -570,6 +584,7 @@ public sealed class Household
             GridPos tile = plot.House[i];
             if (!world.Map.Contains(tile)
                 || world.Map.TerrainAt(tile) == Terrain.Water
+                || TerrainRules.IsSeam(world.Map.TerrainAt(tile))
                 || !world.Zones.WholeResidentialTiles.Contains(tile)
                 || world.SomethingStandsAt(tile)
                 || world.Zones.PlotOwner(tile) != 0

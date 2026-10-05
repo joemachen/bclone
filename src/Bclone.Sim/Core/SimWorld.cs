@@ -1298,7 +1298,12 @@ public sealed class SimWorld : IObstacles
 
         for (int i = 0; i < _waitingOnTheGround.Count; i++)
         {
-            if (_waitingOnTheGround[i].Position.ToTile() != tile)
+            // ⛔ ITS LAST TILE, NOT ITS ANCHOR (B5, D497). This asked `Position.ToTile() == tile`,
+            // which raised a 2×1 hut the moment its anchor came clear with a tree still under its
+            // other half — and raised nothing at all if the other half was cleared last.
+            Footprint ground = FootprintOf(
+                _waitingOnTheGround[i].Kind, _waitingOnTheGround[i].Position, _waitingOnTheGround[i].Facing);
+            if (!ground.Covers(tile) || !AllClear(ground.CoveredTiles()))
             {
                 continue;
             }
@@ -1306,6 +1311,7 @@ public sealed class SimWorld : IObstacles
             BuildingKind kind = _waitingOnTheGround[i].Kind;
             Angle facing = _waitingOnTheGround[i].Facing;
             Point position = _waitingOnTheGround[i].Position;
+            GridPos at = position.ToTile();
             _waitingOnTheGround.RemoveAt(i);
             BuildingGeneration++;
             string name = NameFor(kind);
@@ -1313,9 +1319,9 @@ public sealed class SimWorld : IObstacles
             // Something may have gone up here while the trees were coming down. Said out
             // loud rather than silently dropped: a mark the player made and never sees the
             // result of is the untraceable outcome §1.1 forbids.
-            if (SomethingStandsAt(tile))
+            if (SomethingOverlaps(ground))
             {
-                Narrate($"The ground at {tile} was cleared, but something else stands there "
+                Narrate($"The ground at {at} was cleared, but something else stands there "
                     + $"now, so {name} was never laid out. {Clock.SeasonAndYear()}.", LogCategory.Warning);
                 return;
             }
@@ -5087,7 +5093,7 @@ public sealed class SimWorld : IObstacles
         // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
         // the laborers' to clear (`AfterGivingGround`); stone and iron are dug or destroyed first,
         // and the cleared ground is grass the brush then takes.
-        if (workplace.Kind == JobKind.Farmer && Map.TerrainAt(tile) is Terrain.Rock or Terrain.IronDeposit)
+        if (workplace.Kind == JobKind.Farmer && TerrainRules.IsSeam(Map.TerrainAt(tile)))
         {
             return PlacementVerdict.No("Not on a seam — clear it first.");
         }
@@ -5665,6 +5671,72 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public bool GroundIsClearAt(GridPos tile) => !HasSomethingToHarvest(tile);
 
+    /// <summary>
+    /// ⭐ Whether EVERY tile this building covers is clear — so a site may be worked (D101, every
+    /// tile: B5, D497, `footprints.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Not <c>GroundIsClearAt(site.Tile)</c>, which is what every gate asked</b> while
+    /// buildings were one tile — and went on asking once a house was two (D386). Measured in D496:
+    /// 30 of 80 houses stood on a tree or rock that never went. Asks the workplace's kept tiles,
+    /// so a builder's per-tick question costs a lookup a tile.
+    /// </remarks>
+    public bool FootprintIsClear(Workplace site) => FirstTileStandingUnder(site) is null;
+
+    /// <summary>The first tile under a building, in footprint order, with something still standing on it.</summary>
+    internal GridPos? FirstTileStandingUnder(Workplace site)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+        IReadOnlyList<GridPos> covered = site.CoveredTiles;
+        for (int i = 0; i < covered.Count; i++)
+        {
+            if (HasSomethingToHarvest(covered[i]))
+            {
+                return covered[i];
+            }
+        }
+
+        return null;
+    }
+
+    private bool AllClear(List<GridPos> tiles)
+    {
+        for (int i = 0; i < tiles.Count; i++)
+        {
+            if (HasSomethingToHarvest(tiles[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// ⭐ Mark every tile a building will cover for clearing — the one door D100's promise goes
+    /// through, for a site, a house and a move (B5, D497). True if anything was standing.
+    /// </summary>
+    /// <remarks>
+    /// <i>"The village clears the ground, the player does not have to"</i> (Joe, D100) — written for
+    /// a one-tile building and painted on the anchor only, so the far half of every house and the
+    /// other three tiles of every granary were never asked for.
+    /// </remarks>
+    private bool AskForTheGroundUnder(Footprint footprint)
+    {
+        bool anything = false;
+        List<GridPos> covered = footprint.CoveredTiles();
+        for (int i = 0; i < covered.Count; i++)
+        {
+            if (HasSomethingToHarvest(covered[i]))
+            {
+                Zones.SetHarvest(covered[i], true);
+                anything = true;
+            }
+        }
+
+        return anything;
+    }
+
     /// <summary>Whether a tile holds anything a laborer could take.</summary>
     /// <remarks>
     /// <para>
@@ -5806,7 +5878,7 @@ public sealed class SimWorld : IObstacles
             }
 
             if (Workplaces[i].Construction is not { IsFinished: false } plan
-                || !GroundIsClearAt(Workplaces[i].Tile))
+                || !FootprintIsClear(Workplaces[i]))
             {
                 continue;
             }
@@ -6016,16 +6088,20 @@ public sealed class SimWorld : IObstacles
 
     private GridPos? NextFootprintToClear(GridPos from)
     {
+        // ⭐ EVERY TILE A BUILDING COVERS, IN FOOTPRINT ORDER (B5, D497) — this asked the anchor
+        // only, so the far half of a house was never anyone's errand.
         for (int i = 0; i < _waitingOnTheGround.Count; i++)
         {
-            GridPos at = _waitingOnTheGround[i].Position.ToTile();
-            if (NeedsClearing(at) && TravelCost.CanReach(from, at))
+            Footprint ground = FootprintOf(
+                _waitingOnTheGround[i].Kind, _waitingOnTheGround[i].Position, _waitingOnTheGround[i].Facing);
+            if (FirstToClearIn(ground.CoveredTiles()) is GridPos at)
             {
                 return at;
             }
         }
 
         Workplace? head = null;
+        GridPos headTile = default;
         for (int i = 0; i < Workplaces.Count; i++)
         {
             Workplace candidate = Workplaces[i];
@@ -6035,8 +6111,7 @@ public sealed class SimWorld : IObstacles
             // a laborer who cannot walk to the head of the queue must fall through to work they
             // can reach rather than stand still.
             if (candidate.Construction is not { IsFinished: false }
-                || !NeedsClearing(candidate.Tile)
-                || !TravelCost.CanReach(from, candidate.Tile))
+                || FirstToClearIn(candidate.CoveredTiles) is not GridPos tile)
             {
                 continue;
             }
@@ -6047,12 +6122,25 @@ public sealed class SimWorld : IObstacles
                     && candidate.Id < head.Id))
             {
                 head = candidate;
+                headTile = tile;
             }
         }
 
-        return head?.Tile;
+        return head is null ? null : headTile;
 
-        bool NeedsClearing(GridPos at) => Zones.IsHarvest(at) && HasSomethingToHarvest(at);
+        GridPos? FirstToClearIn(IReadOnlyList<GridPos> tiles)
+        {
+            for (int t = 0; t < tiles.Count; t++)
+            {
+                GridPos at = tiles[t];
+                if (Zones.IsHarvest(at) && HasSomethingToHarvest(at) && TravelCost.CanReach(from, at))
+                {
+                    return at;
+                }
+            }
+
+            return null;
+        }
     }
 
     /// <summary>
@@ -6761,6 +6849,10 @@ public sealed class SimWorld : IObstacles
         }
 
         BuildingRecipe recipe = BuildingsCatalog.RecipeOf(kind.Value);
+
+        // ⭐ AND ITS NEW GROUND IS ASKED FOR, AS A MARK'S IS (B5, D497). Nothing was painted here, so
+        // a move onto wood waited on the builder alone (D138), one tile at a time.
+        AskForTheGroundUnder(FootprintOf(kind.Value, to, facing));
 
         // ⭐ WORK BUT NO MATERIALS — the timber and stone walk over with the crew. A relocation
         // that also charged for the building would be a demolition and a rebuild wearing one name.
@@ -8298,11 +8390,8 @@ public sealed class SimWorld : IObstacles
         //
         // "The user can if they choose to, but shouldn't have to" — so a player who clears it
         // by hand first sees exactly the same outcome, one step sooner.
-        bool groundIsBusy = TerrainRules.Yields(Map.TerrainAt(position)) is not null;
-        if (groundIsBusy)
-        {
-            Zones.SetHarvest(position, true);
-        }
+        // ⭐ EVERY TILE IT WILL COVER (B5, D497), not the one it is filed under.
+        bool groundIsBusy = AskForTheGroundUnder(FootprintOf(kind, where, facing));
 
         // ⭐ A FREE BUILDING IS NOT A CONSTRUCTION SITE, AND THAT IS THE POINT (D96, D108). It
         // costs nothing and owes no work, so a site for one would be a builder walking over to
@@ -8408,11 +8497,9 @@ public sealed class SimWorld : IObstacles
         }
 
         // The same rule every other site gets (D100): if something is standing here, the
-        // village clears it, and nothing is built until it has.
-        if (TerrainRules.Yields(Map.TerrainAt(position)) is not null)
-        {
-            Zones.SetHarvest(position, true);
-        }
+        // village clears it, and nothing is built until it has — under BOTH of the house's tiles
+        // (B5, D497; D496 measured 30 of 80 houses standing on a tree or rock under the other).
+        AskForTheGroundUnder(HomeFootprintAt(site.Front, site.Facing));
 
         RaiseSiteFor(
             BuildingKind.Home, HomeAnchorOn(site.Front, site.Facing), name, recipe, householdId,
@@ -8597,7 +8684,7 @@ public sealed class SimWorld : IObstacles
         {
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false } plan
-                || !GroundIsClearAt(candidate.Tile)
+                || !FootprintIsClear(candidate)
                 || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
@@ -8652,7 +8739,7 @@ public sealed class SimWorld : IObstacles
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false, HasMaterials: true } plan
                 || plan.WorkDone == 0
-                || !GroundIsClearAt(candidate.Tile)
+                || !FootprintIsClear(candidate)
                 || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
@@ -8679,7 +8766,7 @@ public sealed class SimWorld : IObstacles
         {
             Workplace candidate = Workplaces[i];
             if (candidate.Construction is not { IsFinished: false, HasMaterials: true }
-                || !GroundIsClearAt(candidate.Tile)
+                || !FootprintIsClear(candidate)
                 || !TravelCost.CanReach(village, candidate.Tile))
             {
                 continue;
