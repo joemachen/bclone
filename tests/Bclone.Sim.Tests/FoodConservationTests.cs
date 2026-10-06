@@ -69,6 +69,8 @@ public sealed class FoodConservationTests
     // winter, and three villagers at cold ~4,900 when firewood reached one home at t381; on D511 the
     // first split landed thirty ticks later, after a chore that history had moved. Seed 14 lives on
     // BOTH arms with every source producing (D511: 16 alive; fish 22,479, meat 12,451, wheat 35,886).
+    // ⚠️ D515: that race is this founding's, not a player's — the farm below is raised free at t0 and takes two hands
+    // from spring of Year 1; a farm a player marks at t0 stands after sowing (`tools/harness/ZzFirstWinter.cs`).
     [InlineData(14UL, true)]
     [InlineData(2UL, true)]
     public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
