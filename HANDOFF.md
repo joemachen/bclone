@@ -1,4 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN IS SPECCED (D520), NOTHING BUILT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D520 IN §7, THEN `specs/food-chain.md`. NEXT: JOE ANSWERS THE SPEC'S §9.**
+# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN: SPECCED (D520), CALLS ANSWERED AND ANCHORS MEASURED (D521), NOTHING BUILT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D521 IN §7, THEN `specs/food-chain.md`. NEXT: JOE ANSWERS §9b AND §9c, THEN TESTS FIRST.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (FOOD-CHAIN ANCHORS MEASURED) — D521, ON WINDOWS.**
+>
+> **State (D521):** `main` = D519, pushed. **`slice/food-chain`** (not pushed): D520's spec commit, plus D521 —
+> Joe's answers to §9 (all six as recommended: the oven burns a little firewood, one mill anywhere, skill rows for
+> miller and baker, eat the best food first, the card's sentence, the *Ale* row stays) and **§8.1's measurement**:
+> `tools/harness/ZzFoodChain.cs` + `foodchain.py`, seventeen valleys × fifty years, six arms. **No game code, config
+> or test changed** — suite, view build and probe not run; no golden can have moved.
+>
+> **What it found:** a farmer seat-year brings 755–828 wheat, a forager 935–1,033 forage; a farm makes ~2,000 a year;
+> a farm marked at t0 has reaped 5,000 by Year 4. ⛔⛔ **A forage-fed village never eats its wheat** (meals take
+> food in id order, forage first), so with the shipped 1,000 limit **a farm reaps once and stands idle for fifty
+> years**, its card saying *"the crop stands until the village eats into it"* every autumn. That is the shipped game.
+>
+> **▶️ NEXT: JOE ANSWERS `food-chain.md §9b` and `§9c`.** §9b: the stalled farm — *(a) let the mill answer it*
+> (recommended: bread is eaten first and draws the wheat down), *(b)* eat the most-held of equal foods first (its own
+> slice; moves goldens), *(c)* change the card's sentence. §9c: confirm §8.2's numbers — bread 2, the mill after 5,000
+> wheat reaped, the bakery after the first grind, the oven 1 firewood a firing (one household's winter a year).
+> **Then:** tests first (§11), the build, and §8 step 3 — the post-build arm that confirms one miller and one baker keep
+> up with one farm (the stint sizes are starting values, not measurements).
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (THE FOOD CHAIN SPECCED) — D520, ON WINDOWS.**
 >
@@ -5357,11 +5382,25 @@ Read `git status` after staging, every time.
 - **Python on Windows writes CRLF in text mode.** `open(p,'w')` turned two LF specs into CRLF; pass `newline=''` and
   write the file's own ending, or `sed -i 's/\r$//'` after. `HANDOFF.md` is CRLF in the working copy, the specs are LF.
 
+## ⛔ THE TRAPS THE FOOD-CHAIN MEASUREMENT (D521) PAID FOR — A DOUBLE-COUNTED LOAD, A FIELD ON A SITE, AND AN IDLE FARM NOBODY ASKED
+
+- **`Stockpile.Produced` counts an armful twice.** A gather is `Add`ed to the arms and `Add`ed again to the store it is
+  carried to, so summing `Produced` over arms, larders and stores read 154,397 food against `FoodEverProduced`'s 81,766.
+  **Read `SimWorld.FoodEverProducedOf(good)`** — recorded where the food comes into being — and print a check against
+  the total, as `ZzFoodChain`'s `check` field does.
+- **A field painted on a construction site never reaps.** Marking a farmhouse and painting its ground in the same tick
+  gave 90 farmer seat-years and 0 wheat; paint when the farm stands. **D515's ZzFirstWinter `farm0` did exactly this**, so
+  its farm never harvested — its firewood finding stands (it was about the hut's hands), but no harvest was measured.
+- **Ask the building's card before trusting a rate.** The farm's `IdleNote` had said *"the crop stands until the village
+  eats into it"* every autumn; nobody eats wheat while there is forage, so the rate was 0 and looked like a broken
+  harness. `ZZ_WHY=1` prints it a season.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE FOOD CHAIN'S SIX CALLS (D520, `specs/food-chain.md §9`).** (1) the oven burns firewood? (2) a watermill
-  by the river? (3) skill rows for the miller and the baker? (4) eat the best food first? (5) the card's sentence?
-  (6) the Overview's *Ale* row stays? Each has a recommendation in the spec. Nothing is built until he answers.
+- ⏸️ **THE FOOD CHAIN'S §9b AND §9c (D521, `specs/food-chain.md`).** ✅ §9's six were answered (D521). Open: **§9b** the
+  farm that stops for good after one harvest (a forage-fed village never eats its wheat) — (a) let the mill answer it,
+  recommended; (b) eat the most-held of equal foods first; (c) change the card. **§9c** confirm §8.2's numbers (bread 2,
+  the mill after 5,000 wheat reaped, the bakery after the first grind, the oven 1 firewood a firing).
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands

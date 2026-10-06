@@ -10,7 +10,7 @@ the winter's firewood), D392 (the founding draws from `founding_trades`, not the
 D434/D444/D449 (gifts by doing: the quarry, the smithy, the mine), D440 (the tech-tree map), D28/D190
 (villagers in lockstep, and the seeded rhythm that had to be manufactured to break it).
 **Status:** ✍️ **specced, not started (2026-10-06).** Joe made three calls before it was written
-(§0). **§9's calls are still open, and nothing is built.** No code, config or test exists for anything in
+(§0) and answered §9's six the same day (D521). **§8's measurement has started; nothing is built.** No code, config or test exists for anything in
 this document. Owner: Joe + Claude Code.
 
 ---
@@ -195,9 +195,10 @@ fit goes on the ground beside the mill (D96, D134). Up to `grinds_per_stint` a d
 
 ### 4.4 The bake is the forge, one good over
 
-`VillagerState.TravelingToBakery` → `Baking`. A bake takes `flour_per_bake` flour (and
-`firewood_per_bake` firewood if §9 call 1 says yes) from **the one store holding both**. A warehouse
-holds both, which is why flour lives there. It spends `bake_ticks` at the oven and puts
+`VillagerState.TravelingToBakery` → `Baking`. A bake takes `flour_per_bake` flour from **the one store
+holding both** flour and the oven's firewood; a warehouse holds both, which is why flour lives there. The
+oven burns `firewood_per_firing` firewood once a stint, when it is lit (Joe's *"a little"*, sized in §8.1
+finding 6). A bake spends `bake_ticks` at the oven and puts
 `bread_per_bake` bread (through `YieldFor`) into the nearest store that takes food. Overflow goes on the
 ground. Up to `bakes_per_stint` a day.
 
@@ -211,7 +212,7 @@ The chain-starves-in-the-middle guard (`wood-fuel-and-tools.md §8`), once per c
    last of the wheat in a hungry spring turns a meal into a sack nobody can eat until a baker gets to
    it. The sentence: *"Nothing to grind — the village needs its grain to eat."*
 2. ⛔ **The oven never burns the winter's firewood** (`LabourQuota.FirewoodShortfall == 0`, the smith's
-   rule word for word), if it burns any (§9 call 1). *"Nothing to bake — the village needs its
+   rule word for word; it burns a little, Joe's §9 call 1). *"Nothing to bake — the village needs its
    firewood for the winter."*
 3. **A met stock limit stops either one** (D139): flour at its limit stops the mill, bread at its limit
    stops the oven.
@@ -267,14 +268,87 @@ fifty years** and on **the shipped played opening**, and measures:
    aim is for a village's second or third farm to bring the mill, not the first harvest.
 3. **What it does to a village**: alive / peak / starved against the same seeds without a mill, and how
    far apart two members of one household eat (the D28 measure, 99.9 % in lockstep when it was taken).
-4. **Firewood** (if §9 call 1 is yes): the oven's burn against D515's first-winter margins.
+4. **Firewood** (Joe: yes, a little): the oven's burn against D515's first-winter margins.
 
 The run and its numbers go into this section. The probe that produced them is deleted or kept as a
 harness record, never shipped.
 
-## 9. Calls still Joe's
+### 8.1 ✅ The anchors, measured on the code as it is (D521, 2026-10-06)
 
-Each one has a recommendation; nothing is built until he has answered.
+Nothing of the chain exists yet, so step 1 measured **what its numbers must be set against**:
+`tools/harness/ZzFoodChain.cs` (summary: `foodchain.py`), shipped config, the played opening, seeds 1–16 +
+12345, fifty years, six arms. `every` raises a farm, lodge and fishery free at t0 (a fixture effect for
+any timeline, D515). `farm0s` / `farm2sw` mark a farmhouse at t0 / Year 2, paint its field once it stands
+and staff it as a player would (`SetJobLimit`). A trailing `w` lifts the **wheat** limit alone.
+Per seat-year held, from Year 5:
+
+| Arm | wheat a farmer seat-year | forage a forager seat-year | reaped 2k / 5k / 10k by year | dead valleys |
+|---|---|---|---|---|
+| `farm0sw` (marked t0) | **828** (742–976) | 935 (786–1,245) | **3 / 4 / 7** | 5 / 17 |
+| `farm2sw` (marked Year 2) | **755** (598–820) | 1,011 (801–1,275) | **4 / 6 / 9** | 5 / 17 |
+| `everyw` (free farm, fixture) | 1,034 (924–1,269) | 928 (818–1,261) | 2 / 3 / 6 (8 of 17 valleys) | 9 / 17 |
+| `farm0s` (**shipped wheat limit**) | **0** — never past 2,000 | 1,033 (870–1,324) | never (0 of 13 surviving) | 5 / 17 |
+
+Medians, p10–p90 in brackets.
+
+**What it says:**
+
+1. ⛔⛔ **Today a forage-fed village never eats its wheat, and its farm stops for good after one
+   harvest.** Meals take food in id order, so forage (0) is eaten before wheat (9). The wheat sits
+   (1,067 held against the 1,000 limit), the limit stays met, and the farm's own card says *"The crop
+   stands until the village eats into it, and winter takes the rest"* — every autumn for fifty years,
+   in 13 of 13 surviving `farm0s` valleys. **That is the shipped game, not the harness**, and it is why
+   ZzFirstWinter's `farm0` never showed a harvest either: a field painted on a *site* never reaps (the
+   harness now paints it when the farm stands). ⚠️ §3.3's eat-best-first does **not** cure it, because
+   wheat and forage are both worth 1. **Bread does, indirectly**: a mill draws the stored wheat down, so
+   the limit stops being met and the farm reaps again. Raised to Joe (§9b).
+2. **A farm makes about 2,000 wheat a year from two seats** (a seat-year 755–828), and these villages
+   eat far less: produced food ran 135k against 60–83k eaten in the `w` arms. **There is spare grain
+   for a mill in any village with a farm.**
+3. **The rung a miller and baker must reach.** At nutrition 2, every unit of wheat that becomes bread
+   adds one point of food. A pair that keeps up with one farm (~2,000 a year) adds ~2,000 points:
+   **~1,000 a seat-year — a little above a farmer (755–828), level with a forager (935–1,033).** At
+   nutrition 3 it would be ~2,000 a seat-year, a step far beyond every raw trade. The yardstick is two
+   more farmers, which in a forage-fed village add wheat nobody eats (finding 1). **So nutrition 2 is
+   enough, and the pair's real value is grain that would otherwise go to waste.**
+4. **The mill's gift.** A farm marked at t0 has reaped 2,000 by Year 3, 5,000 by Year 4 and 10,000 by
+   Year 7; one marked in Year 2 gets there in Years 4, 6 and 9. `mill_unlock_wheat` **5,000** is about a
+   farm's third harvest: the village has proven it farms, and it is not the first autumn.
+5. **Lockstep is already broken** (D190): two adults of one household share a hunger value on 1–3 % of
+   ticks (D28 measured 100 % before the seeded rhythm). Bread gives a *reason* the card can state, not
+   the fix. §8 step 3 measures whether it shows.
+6. **The oven's "little" firewood.** A household burns 24 firewood a winter (8 burns × 3). One firewood a
+   bake would be ~100 a year, four households' winter. **One a firing** — the oven lit once per stint —
+   is ~25 a year, one household's winter. That is how *"a little"* was sized (§4.4 changed to match).
+
+⚠️ **What the harness cannot say.** Dead valleys (5 of 17 in every farm arm) are the unattended harness
+(D447), identical with the wheat limit on or off, so not the wheat. `farm0x2sw` (two farms staffed from
+four founders at t0) died in 15 of 17 and is the harness's staffing, not a player's. The woodcutter's
+splits a seat-year were too thin to use (2 runs, and demand-gated), so the stint sizes below are
+**starting values that the post-build arm (step 3) must confirm**, not measurements.
+
+### 8.2 The numbers proposed from it (Joe's to confirm, §9c)
+
+| Key | Proposed | From |
+|---|---|---|
+| bread `nutrition` | **2** | §8.1 finding 3 |
+| `mill_unlock_wheat` | **5,000** | finding 4 |
+| `bakery_unlock_flour` | **20** (the first grind) | Joe's call 3: *"after the first flour"* |
+| `wheat_per_grind` → `flour_per_grind` | 20 → 20 | sized so one miller keeps up with one farm (~2,000 a year); **confirmed after the build** |
+| `grind_ticks`, `grinds_per_stint` | 4, 4 | the woodcutter's split and stint |
+| `flour_per_bake` → `bread_per_bake` | 20 → 20 | one baker keeps up with one miller |
+| `bake_ticks`, `bakes_per_stint` | 4, 4 | as the grind |
+| `firewood_per_firing` | 1 | finding 6 — one household's winter a year |
+| mill / bakery seats | 2 / 2 | as the smithy |
+| flour / bread stock limits | 200 / 1,000 | a few days' baking; bread as wheat's own limit |
+
+## 9. Joe's calls on the rest — ✅ ALL SIX ANSWERED (D521, 2026-10-06), each as recommended
+
+Joe: *"1. yes 2. not in this slice 3. yes 4. yes 5. perfect 6. sure"*, and *"measurement can start"*.
+So: **the oven burns a little firewood** under the winter guard; **one mill, anywhere** (the watermill is
+later); **the miller and baker get skill rows**; **the best food is eaten first**; the card reads
+*"Full from a meal of bread — not hungry for another 3 days"*; the *Ale* row stays. The questions as
+they were put, kept:
 
 1. **Does the oven burn firewood?** *Recommended: yes, a little* (one per batch, under §5 rule 2). It
    ties bread to the woodpile, a trade-off the player can read (*warmth or fullness*), and it is the
@@ -293,6 +367,27 @@ Each one has a recommendation; nothing is built until he has answered.
    full twice as long as grain."*
 6. **The Overview's *"Ale — no brewer, no barley"* row** stays as a roadmap row until §13 is built
    (`Main.NotYetInTheValley`'s own rule: *"delete a row when it ships"*).
+
+### 9b. ⏸️ Raised by the measurement: the farm that stops for good (§8.1 finding 1) — Joe's
+
+A forage-fed village never eats its wheat, so with the shipped limit (1,000) a farm reaps once and then
+stands idle every autumn, for decades, while its card promises the village will *"eat into it"*. Three
+ways to answer it, and the recommendation:
+
+- **(a) Let the mill answer it** *(recommended)*. Once there is a mill, stored wheat becomes bread, bread
+  is eaten first, and the farm reaps again. Until there is a mill, the card's sentence is true and the
+  player can raise the limit. Nothing extra to build.
+- **(b) Fix eating now, its own small slice:** among foods of equal worth, eat the one the larder holds
+  most of. That rotates the diet and drains a pile, but it moves every golden that eats two foods, and it
+  is a rule about wheat, not bread.
+- **(c) Change the card**, so it says *"the village eats its forage first"* instead of promising an
+  eating that will not come.
+
+### 9c. ⏸️ The numbers in §8.2 — Joe's to confirm
+
+Bread at **2**, the mill after **5,000** wheat reaped, the bakery after the **first grind**, the oven
+lit for **1** firewood a stint. Batch sizes are starting values, and the post-build arm checks that
+one miller and one baker keep up with one farm.
 
 ## 10. Failure modes designed against
 
@@ -321,13 +416,13 @@ Each one has a recommendation; nothing is built until he has answered.
 - `AFoodWorthLessThanOneIsRefusedAtLoad`, and `TwoNutritionValuesNowLoad` (the old throw's inverse).
 - `AMealOfBreadHoldsHungerOff`: P, C and `FullFor` to the tick, and **hunger never negative**.
 - `AMixedMealIsWorthItsParts`, and `ADependantsMealScales`.
-- `TheBestFoodIsEatenFirst` (if call 4).
+- `TheBestFoodIsEatenFirst`, and `TheMillDrawsDownStoredWheatAndTheFarmReapsAgain` (§8.1 finding 1).
 - `FullForIsSaved` (the field guard covers it, and is red-checked by dropping it).
-- `TheMillWaitsWhileTheVillageIsHungry`, `TheOvenNeverBurnsTheWintersFirewood` (if call 1),
+- `TheMillWaitsWhileTheVillageIsHungry`, `TheOvenNeverBurnsTheWintersFirewood`,
   `AMetLimitStopsTheMillAndTheOven`.
 - `FlourAndBreadComeOutOfAStoresCount`: nothing conjured, and the `TryTake` return is read (D96, D144).
 - `TheMillIsAGiftOfReapedWheat`, `TheBakeryIsAGiftOfGroundFlour`, and `OnlyTheReapCounts`.
-- `NoFoundingMovesWithTheNewSkillRows` (if call 3).
+- `NoFoundingMovesWithTheNewSkillRows`.
 - `ShippedConfigTests`: the shipped file loads with bread at its measured nutrition.
 - The probe gains a line for the mill and bakery cards if the build bar's height moves (it must stay 151).
 
