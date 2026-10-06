@@ -1,14 +1,14 @@
 # Spec: Work from the steading — farmhands rest at the farm, and tend it in summer
 
-**Decisions:** D511 (this document), D512 (Joe's §8 calls), D513 (built). Built on: D355 (Joe's call — *the look*, rebuilt on `RestingPoint`,
+**Decisions:** D511 (this document), D512 (Joe's §8 calls), D513 (built), D514 (played and merged). Built on: D355 (Joe's call — *the look*, rebuilt on `RestingPoint`,
 the cost re-measured and accepted), D186 (the 2026-08-22 attempt, `slice/work-from-the-steading`,
 `e12b20f` — the record, never merged), D148 (one name for two questions), D15 (nearest home wins),
 D45/D53 (exposure), D10 (a meal is takeable where you stand), D194 (the self-fulfilling cap, and *a
 ledger, not a hypothesis*), D354 (`Point`s; a villager going home stands ON it), D384 (trades visibly
 work — the hash-picked tile), D385 (the rest flicker), D427 (the water trip).
-**Status:** 🔨 **built (2026-10-05, D513), sim and view, on `slice/steading` — UNPLAYED.** Suite 1520 / 0 / 5 of 1525
+**Status:** ✅ **built (2026-10-05, D513), sim and view; played by Joe — *"looks good"* — merged and pushed (D514).** Suite 1520 / 0 / 5 of 1525
 (3m58); view 0 warnings; probe green (`field lanes:` new), bar height 151; the two seam goldens moved, proven
-to move for this rule only. Branch `slice/steading` off `main`, not pushed. Owner: Joe + Claude Code.
+to move for this rule only. Owner: Joe + Claude Code.
 
 ---
 

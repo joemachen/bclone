@@ -1,4 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D513 IN §7. THE STEADING IS BUILT (D513) ON `slice/steading` — UNPLAYED: JOE PLAYS IT, THEN MERGE AT HIS WORD. THEN THE TITLE AND PAUSE SCREENS.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D514 IN §7. THE STEADING IS DONE — PLAYED, MERGED AND PUSHED (D514). NEXT: THE TITLE AND PAUSE SCREENS, SPEC FIRST.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE STEADING DONE) — D514, ON WINDOWS.**
+>
+> **State (D514):** ✅ **The steading is done.** Joe played it (*"looks good"*); `slice/steading` is merged `--no-ff` to
+> `main` and pushed. `main` had not moved, so the merged tree is the one D513 verified (1520 / 0 / 5 of 1525; view 0
+> warnings; probe green, bar height 151, `field lanes:` ✅; the two seam goldens moved for this rule only). Farmhands rest
+> at the farm in spring–autumn, tend in summer, go home in winter; lanes through a field draw over the crop
+> (`specs/work-from-the-steading.md`).
+>
+> **Branches (at Joe's word, *"yes"*):** `slice/steading` deleted after the merge (local only, never pushed);
+> **`slice/work-from-the-steading` deleted locally and on GitHub** — its measurement is superseded by D513's and recorded
+> in the spec. **What is left, locally and on GitHub: `main`.**
+>
+> **▶️ NEXT:** §4's shell — **the title and pause screens**, spec first (*Save* moves from Settings to the pause screen
+> then). ⏸️ Later: a full settings screen (the autosave cadence becomes the player's, D508) and ironman mode (a name is
+> Joe's — OPEN list). Still open from D502: a market's *Keeps up to* row and the pin exception have no guard. Worth
+> Joe's attention on its own (D513 §7): **the first-winter firewood race** — a village with a farm has no woodcutter
+> until the farm's seats close for winter, and nine to eleven of seventeen every-source valleys die, on main as on D513.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE STEADING BUILT) — D513, ON WINDOWS.**
 >
