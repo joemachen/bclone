@@ -2,8 +2,13 @@
 
 > Status: **reference / partly implemented — Tier 0 `Fish` shipped 2026-09-03; Tier 1 `Wheat`
 > shipped 2026-09-11 (D348) as a real good the farm grows, edible raw at the shared nutrition.**
-> The crain → flour → bread chain is what changes that; `Goods.Produce` remains the umbrella
+> The grain → flour → bread chain is what changes that; `Goods.Produce` remains the umbrella
 > foragers fill.
+> ✍️ **THE CHAIN IS SPECCED (D520, 2026-10-06): `specs/food-chain.md`.** Joe's calls: bread **sates
+> longer** (§0 below, taken literally), beer waits for morale, and the mill and bakery are gifts by doing.
+> **§0's derivation question is answered there (§3): the floor is solved at nutrition 1, the least an
+> edible unit can be worth, so every better food is upside.** Not built: the load-time throw described
+> below still stands until it is.
 > ⭐ **The first entry in `§3` is real**: a fishing hut on the bank, four seats, a 300-catch buffer a
 > marketer runs dry, and `Fish` as a `GoodRow` with `Nutrition` (D277, D282–D284). ⚠️ **Every edible
 > good must share one nutrition value and the config refuses to load otherwise** — the survival
@@ -41,6 +46,10 @@ would not need a switch.
 against `food_per_meal` — one number for one food. A catalogue of nutritional values means the
 floor is solved against **the worst food a village might be living on**, or the derivation has to
 change shape. That is the question to answer before any numbers get typed.
+
+**✍️ Answered in `food-chain.md §3` (D520):** the floor stays solved at nutrition 1, which is the
+least an integer nutrition can be, so it holds for every diet; a better food holds hunger off for
+longer (`Villager.FullFor`), and every reader that counts units under-counts it — the safe way.
 
 **Also open, and asked in the same breath (see `DESIGN.md §5`):** children eat half an adult's
 meal today and **elders eat a full one**.

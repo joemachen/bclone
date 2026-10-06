@@ -1,4 +1,33 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT, JOE'S PICK: THE FOOD CHAIN (WHEAT → FLOUR → BREAD, WHEAT → BEER) — SPEC FIRST, NOTHING BUILT UNTIL HE SAYS.**
+# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN IS SPECCED (D520), NOTHING BUILT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D520 IN §7, THEN `specs/food-chain.md`. NEXT: JOE ANSWERS THE SPEC'S §9.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (THE FOOD CHAIN SPECCED) — D520, ON WINDOWS.**
+>
+> **State (D520):** `main` = D519, pushed. **`slice/food-chain`** (off `main`, **not pushed**) holds one docs-only
+> commit: **`specs/food-chain.md`** plus the lines that move with it (`food-catalog.md`'s status and §0, `DESIGN.md`
+> §4/§5/§6 and D520, this banner). **No `src/`, `data/` or `tests/` file changed** — so the suite, the view build and
+> the probe were not run (nothing compiled moved), and the goldens cannot have moved (`git diff --stat` says so).
+>
+> **Joe's three calls, made before the spec was written:** (1) bread **sates longer** — a meal's worth beyond a plain
+> one becomes `Villager.FullFor`, ticks with no hunger rise (four loaves at nutrition 2: the next meal at 22 ticks,
+> not 11); (2) **bread only** — beer waits for morale and the tavern (Phase 6), refused as a third food; (3) the mill
+> and bakery are **gifts by doing** (wheat reaped, then flour ground — the numbers measured, not typed).
+> ⭐ **`DESIGN §5`'s nutrition question is answered on paper:** the floor stays solved at nutrition 1, the least an
+> integer nutrition can be, so it holds for every diet; every units reader (granary, larders, birth gate, hunger
+> line, limits, the D298 umbrella) **under-counts** a better food and none over-counts it.
+>
+> **▶️ NEXT: JOE ANSWERS `specs/food-chain.md §9`** — six calls, each with a recommendation: (1) the oven burns a
+> little firewood? (rec. yes, under the forge's winter guard); (2) a watermill by the river? (rec. not this slice);
+> (3) skill rows for miller and baker? (rec. yes — D392 made a row safe; guard that no founding moves); (4) eat the
+> best food first? (rec. yes — byte-identical at all-1); (5) the card's sentence; (6) the Overview's *Ale* row stays.
+> **Then §8's measurement before any number** — a `tools/harness` arm (the `ZzFirstWinter` shape): is a miller and
+> baker pair worth two hands on D286/D363's ladder, and when does a played village reach the mill's wheat? Then tests
+> first (§11), then build. ⚠️ Ids: flour 11, bread 12, mill 19, bakery 20, miller 11, baker 12 — the modded fixtures
+> (`ModdedGoodTests.PitchId`, the boatman) move with them.
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE MERGED) — D519, ON WINDOWS.**
 >
@@ -5316,7 +5345,23 @@ Read `git status` after staging, every time.
   three times, saw nothing, and reasonably asked *"is it even saving?"* — **before writing "the log says", find where
   the sentence is drawn.** And a list built when a panel opens is stale the moment the panel changes what it lists.
 
+## ⛔ THE TRAP THE FOOD-CHAIN SPEC (D520) WAS WARNED OF — A PROCESSED GOOD WORTH ITS INPUT IS A TAX
+
+- **Ask what a processed good is FOR before drawing its building.** With every edible good worth 1 (D277's load-time
+  throw), bread from wheat feeds exactly what the wheat fed: the mill and the bakery would cost two hands and timber
+  for nothing. The handoff named it before the session started, and the spec's first call was this, not the buildings.
+- **A food worth more is safe only if every reader that counts it under-counts.** The floor is solved in units at
+  nutrition 1; a unit of bread counted as one by the granary, the larder target, the birth gate and the hunger line is
+  a cautious village, never a reckless one. **The day a reader converts units to meals or points, check which way it
+  errs** — D48–D50 were each a reader that over-counted, and a village died against it.
+- **Python on Windows writes CRLF in text mode.** `open(p,'w')` turned two LF specs into CRLF; pass `newline=''` and
+  write the file's own ending, or `sed -i 's/\r$//'` after. `HANDOFF.md` is CRLF in the working copy, the specs are LF.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **THE FOOD CHAIN'S SIX CALLS (D520, `specs/food-chain.md §9`).** (1) the oven burns firewood? (2) a watermill
+  by the river? (3) skill rows for the miller and the baker? (4) eat the best food first? (5) the card's sentence?
+  (6) the Overview's *Ale* row stays? Each has a recommendation in the spec. Nothing is built until he answers.
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands
