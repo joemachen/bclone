@@ -6,8 +6,7 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 *Continue* and *Load…* on the new-game screen *"until the title screen exists"*, *Save* in Settings *"until the
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
-**Status:** 🔨 **BUILT (D517, 2026-10-05) on `slice/title-and-pause`; PLAYED by Joe (2026-10-06) — everything worked
-but the Save row's silence, fixed in D518 and waiting for his replay.** View only; nothing in
+**Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** View only; nothing in
 `Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros**. ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
 *Quit to desktop* — they wait for §10.5. Owner: Joe + Claude Code.

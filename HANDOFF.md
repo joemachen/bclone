@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D518 IN §7. THE TITLE AND PAUSE SCREENS ARE PLAYED; D518 FIXED THE SILENT SAVE — JOE REPLAYS THE SAVE ROW, THEN MERGE.**
+# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE BUT FOR ITS ⏸️ ITEMS (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT: ASK JOE.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE MERGED) — D519, ON WINDOWS.**
+>
+> **State (D519):** ✅ **The title and pause screens are done.** Joe played them, D518 fixed the silent Save row, and at
+> his word (*"merge and push"*) `slice/title-and-pause` is merged `--no-ff` to `main` and pushed; the branch is deleted.
+> The merged tree is the one D518 verified (1520 / 0 / 5 of 1525; view 0 warnings; probe green, bar height 151, `title:`
+> and `pause:` ✅; goldens byte-identical). **What is left, locally and on GitHub: `main`.**
+>
+> **▶️ NEXT: ASK JOE.** §4's shell order is finished but for ⏸️ items nobody has scheduled — a full settings screen
+> (the autosave cadence becomes the player's, D508) and ironman mode (a name is Joe's — OPEN list). Still open from
+> D502: a market's *Keeps up to* row and the pin exception have no guard. §4's Master Roadmap is the list to offer.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE PLAYED, SAVE ROW FIXED) — D518, ON WINDOWS.**
 >
