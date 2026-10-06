@@ -98,17 +98,56 @@ public partial class Main : Control
         // before anything is built. Under the probe nothing is read (`settings-persistence.md §7`).
         ReadTheSettings();
 
-        // ⭐ THE NEW-GAME SCREEN FIRST (D479, `new-game-screen.md`): the game opens on a choice of
-        // valley, and the village is founded from what the screen says. Under the probe the screen is
-        // measured and then founds the config's own valley, so every probe line after it reads the
-        // village it always has.
-        _newGame = new NewGameScreen(config, _settings.NewGameRows, _settingsProblems)
+        // ⭐ THE TITLE FIRST (D516, `title-and-pause.md`) — or, after a Load… from the pause screen reloaded the
+        // scene, straight into the save the player picked (§6). Under the probe the title is measured, then it
+        // presses New village, and the new-game screen is measured and founds the config's own valley (D479), so
+        // every probe line after it reads the village it always has.
+        if (TakeTheSaveToOpen() is (string copy, string chosen))
         {
-            // ⭐ AND THE SAVES (D507): Continue and Load… sit on this screen until the title screen exists.
-            Saves = TheSavesOnDisk(config),
+            OpenTheVillage(config, copy, chosen);
+            return;
+        }
+
+        ShowTheTitle(config);
+    }
+
+    /// <summary>The title screen, until the player leaves it; then <c>null</c>.</summary>
+    private TitleScreen? _title;
+
+    /// <summary>The title, over the saves on disk (§3). Each button raises an event and Main acts on it.</summary>
+    private void ShowTheTitle(SimConfig config)
+    {
+        _title = new TitleScreen(config, TheSavesOnDisk(config), BuildVersion);
+        _title.LoadAsked += path => OpenTheVillage(config, path);
+        _title.NewVillageAsked += () =>
+        {
+            CloseTheTitle();
+            ShowTheNewGameScreen(config);
         };
+        _title.QuitAsked += () => GetTree().Quit();
+        AddChild(_title);
+    }
+
+    private void CloseTheTitle()
+    {
+        if (_title is not null)
+        {
+            RemoveChild(_title);
+            _title.QueueFree();
+            _title = null;
+        }
+    }
+
+    /// <summary>The new-game screen (D479), with Back to the title (D516).</summary>
+    private void ShowTheNewGameScreen(SimConfig config)
+    {
+        _newGame = new NewGameScreen(config, _settings.NewGameRows, _settingsProblems);
         _newGame.Founded += FoundTheVillage;
-        _newGame.LoadAsked += path => OpenTheVillage(config, path);
+        _newGame.BackAsked += () =>
+        {
+            CloseTheNewGameScreen();
+            ShowTheTitle(config);
+        };
         AddChild(_newGame);
     }
 
@@ -211,6 +250,12 @@ public partial class Main : Control
 
     public override void _Process(double delta)
     {
+        if (_title is not null)
+        {
+            ProbeTheTitle();
+            return;
+        }
+
         if (_newGame is not null)
         {
             ProbeTheNewGameScreen();
@@ -375,6 +420,48 @@ public partial class Main : Control
     private int _newGameProbeFrames;
 
     /// <summary>
+    /// ⭐ The probe's <c>title:</c> line (`title-and-pause.md §8`): the title as the probe meets it — no saves, so a
+    /// rolled valley behind it, <i>Continue</i> disabled and <i>New village</i> not, the band inside the window —
+    /// then it presses <i>New village</i> and the <c>new game:</c> line runs as it always has.
+    /// </summary>
+    private void ProbeTheTitle()
+    {
+        if (_title is null || !TheProbeIsRunning || ++_titleProbeFrames < 5)
+        {
+            return;
+        }
+
+        var faults = new List<string>();
+        if (!_title.HasABackdrop)
+        {
+            faults.Add("the backdrop has no valley on it");
+        }
+
+        if (!_title.ContinueButton.Disabled)
+        {
+            faults.Add("Continue is offered with no save on disk");
+        }
+
+        if (_title.NewVillageButton.Disabled)
+        {
+            faults.Add("New village is disabled");
+        }
+
+        float ends = _title.Band.GetGlobalRect().End.X;
+        if (ends > Size.X + 0.5f)
+        {
+            faults.Add($"the band ends at {ends:F0}px of a {Size.X:F0}px window");
+        }
+
+        GD.Print(faults.Count == 0
+            ? $"[widths] title: ✅ {TitleScreen.GameName} over a {(_title.BackdropIsASave ? "saved" : "rolled")} valley ({_title.BackdropMs:F0} ms), Continue disabled with no saves, New village offered, the band ends at {ends:F0}px"
+            : $"[widths] title: ❌ {string.Join("; ", faults)}");
+        _title.PressNewVillage();
+    }
+
+    private int _titleProbeFrames;
+
+    /// <summary>
     /// Print what every control in the two panel columns is claiming as a minimum width,
     /// then quit. Off unless <c>BCLONE_PROBE_WIDTHS</c> is set.
     /// </summary>
@@ -492,6 +579,7 @@ public partial class Main : Control
         GD.Print(_map.EveryStoreShowsItsStock());
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheVillageSavesAndLoads());
+        GD.Print(ThePauseOpensAndCloses());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -1287,8 +1375,15 @@ public partial class Main : Control
 
     public override void _UnhandledKeyInput(InputEvent @event)
     {
-        if (_newGame is not null || @event is not InputEventKey { Pressed: true, Echo: false } key)
+        if (_title is not null || _newGame is not null || @event is not InputEventKey { Pressed: true, Echo: false } key)
         {
+            return;
+        }
+
+        // ⭐ WHILE THE PAUSE SCREEN IS UP, ESC RESUMES AND NOTHING ELSE DOES ANYTHING (D516, §5).
+        if (ThePauseIsUp)
+        {
+            KeyOnThePause(key.Keycode);
             return;
         }
 
@@ -1344,6 +1439,13 @@ public partial class Main : Control
                 else if (_whatsHerePanel.Visible)
                 {
                     CloseTheWindow(_whatsHerePanel);
+                }
+
+                // ⭐ AND WITH NOTHING NEARER OPEN, ESC PAUSES (D516, `title-and-pause.md §5`) — the third step,
+                // so a tool and a window still go down first and no Esc that used to close something now pauses.
+                else
+                {
+                    OpenThePause();
                 }
 
                 break;
@@ -5911,9 +6013,8 @@ public partial class Main : Control
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
 
-        // ⭐ Save, beside the one control that is the village's rather than the view's (Joe, D508: here until the
-        // pause screen exists). The share-out tick above is saved with the village and set from it on a load.
-        AddTheSaveRow(body);
+        // ⛔ Save is on the pause screen now (D516) — it sat here until the pause screen existed (Joe, D508). The
+        // share-out tick above is saved with the village and set from it on a load.
 
         // ⭐ Every map tick is remembered (D504) — hooked here, once, off the registry, so a tick added
         // above is remembered the day it is written. ⛔ The share-out tick is NOT: it is the village's
