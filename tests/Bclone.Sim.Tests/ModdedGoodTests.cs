@@ -52,7 +52,8 @@ public sealed class ModdedGoodTests
     // reading the modded catalogue and finding tar where the grain should be.
     // ⚠️ AND 10 STOPPED BEING FREE THE DAY IRON TOOLS SHIPPED (D446) — the third time, so the
     // validator's "missing id" sentence is what bumps it, not a test going quietly wrong.
-    private const int PitchId = 11;
+    // ⚠️ AND 11 AND 12 THE DAY FLOUR AND BREAD SHIPPED (D522) — the fourth time.
+    private const int PitchId = 13;
 
     private static Goods Pitch => (Goods)PitchId;
 
@@ -83,9 +84,11 @@ public sealed class ModdedGoodTests
         { "id": 10, "name": "iron tools", "category": "FuelAndGoods", "stored_by": ["Warehouse", "Cart"],
           "tool_uses": 250, "tool_speed_bonus_percent": 50, "tool_yield_bonus_percent": 35,
           "forged_from": [{ "goods": "Iron", "amount": 4 }, { "goods": "Firewood", "amount": 4 }] },
+        { "id": 11, "name": "flour", "category": "Materials",   "stored_by": ["Warehouse", "Cart"] },
+        { "id": 12, "name": "bread", "category": "Food",        "nutrition": 2, "stored_by": ["Granary", "Market", "Cart"] },
 
         // The modder's own good, above every built-in. Nothing in the sim has heard of it.
-        { "id": 11, "name": "pitch", "category": "Materials",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
+        { "id": 13, "name": "pitch", "category": "Materials",   "source_name": "a tar seep",   "yield_per_tile": 5,  "stored_by": ["Warehouse"] }
       ]
     }
     """;
@@ -135,7 +138,7 @@ public sealed class ModdedGoodTests
         SimConfig config = ConfigWithPitch();
         var catalog = new GoodsCatalog(config.GoodsCatalog);
 
-        Assert.Equal(12, catalog.Count);
+        Assert.Equal(14, catalog.Count); // 12 → 14 with flour and bread (D522)
 
         // ⭐ Everything the sim used to answer with a switch, answered for a good no switch
         // has ever named.
@@ -172,10 +175,10 @@ public sealed class ModdedGoodTests
 
         // Every stockpile in the run is sized from the catalogue, so the seventh has a slot —
         // this is the six-good ceiling, gone.
-        Assert.Equal(12, world.Households[0].Stockpile.Slots);
+        Assert.Equal(14, world.Households[0].Stockpile.Slots);
 
         StoreBuilding warehouse = FindWarehouse(world);
-        Assert.Equal(12, warehouse.Store.Slots);
+        Assert.Equal(14, warehouse.Store.Slots);
 
         // ⭐ The warehouse takes it because the ROW says so — `stored_by: ["Warehouse"]` — not because
         // anything in the sim was taught about pitch.
@@ -319,7 +322,7 @@ public sealed class ModdedGoodTests
         // returned -1 and `Set` answered **false** — *the player sets a limit, the control reports
         // no change, and nothing anywhere says why.* Silent refusal is the worst of the three
         // possible failures, because there is nothing to read.
-        Assert.Equal(12, world.StockLimits.Slots);
+        Assert.Equal(14, world.StockLimits.Slots);
 
         Assert.True(world.StockLimits.Set(Pitch, 120), "a modded good can be limited");
         Assert.Equal(120, world.StockLimits.For(Pitch));
@@ -389,7 +392,7 @@ public sealed class ModdedGoodTests
     public void TwoGoodsSharingAnIdAreRefusedAtLoad()
     {
         string duplicated = JsonWithPitch.Replace(
-            """{ "id": 11, "name": "pitch",""",
+            """{ "id": 13, "name": "pitch",""",
             """{ "id": 5, "name": "pitch",""");
 
         SimConfigException error = Assert.Throws<SimConfigException>(

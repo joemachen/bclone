@@ -25,6 +25,12 @@ public enum TechCondition
 
     /// <summary>Iron tools forged — <see cref="SimWorld.IronToolsEverForged"/> against <c>mine_unlock_iron_tools</c> (D449).</summary>
     IronToolsForged,
+
+    /// <summary>Wheat reaped — <see cref="SimWorld.WheatEverReaped"/> against <c>mill_unlock_wheat</c> (D522).</summary>
+    WheatReaped,
+
+    /// <summary>Flour ground — <see cref="SimWorld.FlourEverGround"/> against <c>bakery_unlock_flour</c> (D522).</summary>
+    FlourGround,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -127,6 +133,18 @@ public static class TechTree
         },
         new TechNodeRow
         {
+            Id = "mill", Name = "The mill", Unlocks = BuildingKind.Mill, Condition = TechCondition.WheatReaped,
+            Says = "Reap enough wheat, and somebody works out how to set millstones turning.",
+        },
+        new TechNodeRow
+        {
+            Id = "bakery", Name = "The bakery", Unlocks = BuildingKind.Bakery, Condition = TechCondition.FlourGround,
+            Requires = new[] { "mill" },
+            Says = "Grind the first flour, and somebody knows what an oven does with it — bread, "
+                + "which keeps a villager full for longer than grain.",
+        },
+        new TechNodeRow
+        {
             Id = "school", Name = "The school", Condition = TechCondition.NotYet, Requires = new[] { "library" },
             Says = "Where what the library keeps becomes what the young know.",
         },
@@ -185,6 +203,10 @@ public static class TechTree
                 return (world.IronEverDug, world.Config.SmithyUnlockIron);
             case TechCondition.IronToolsForged:
                 return (world.IronToolsEverForged, world.Config.MineUnlockIronTools);
+            case TechCondition.WheatReaped:
+                return (world.WheatEverReaped, world.Config.MillUnlockWheat);
+            case TechCondition.FlourGround:
+                return (world.FlourEverGround, world.Config.BakeryUnlockFlour);
             case TechCondition.KeptGranaryYears:
                 int years = world.FirstGranaryTick == 0 || world.Tick < world.FirstGranaryTick
                     ? 0
@@ -213,7 +235,8 @@ public static class TechTree
 
     /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
     public static bool IntroducesTheMap(TechCondition condition) =>
-        condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged;
+        condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
+            or TechCondition.WheatReaped or TechCondition.FlourGround;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

@@ -589,6 +589,19 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.IronToolsEverForged);
         }
 
+        // The mill's and the bakery's unlocks read these (D522), so they are state — sparse, a tag each.
+        if (world.WheatEverReaped != 0)
+        {
+            hash = MixByte(hash, 0x3A);
+            hash = MixUInt32(hash, (uint)world.WheatEverReaped);
+        }
+
+        if (world.FlourEverGround != 0)
+        {
+            hash = MixByte(hash, 0xF1);
+            hash = MixUInt32(hash, (uint)world.FlourEverGround);
+        }
+
         // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
         // learned by doing mixes nothing.
         if (world.ShownTheTechTree)
@@ -951,6 +964,21 @@ public static class StateHash
         {
             hash = MixUInt32(hash, 3u);
             hash = MixUInt32(hash, (uint)villager.DigsThisStint);
+        }
+
+        // ⭐ A FULL BELLY (`food-chain.md §3.2`, D522) — it decides when they next eat. Sparse, so a
+        // village with no bread, where nobody is ever full, hashes as it did before bread existed.
+        if (villager.FullFor != 0)
+        {
+            hash = MixUInt32(hash, 5u);
+            hash = MixUInt32(hash, (uint)villager.FullFor);
+        }
+
+        // The mill's and the oven's stint (D522), sparse and tagged like the forge's above.
+        if (villager.BatchesThisStint != 0)
+        {
+            hash = MixUInt32(hash, 6u);
+            hash = MixUInt32(hash, (uint)villager.BatchesThisStint);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

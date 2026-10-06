@@ -48,7 +48,9 @@ public readonly record struct LabourQuota
         int hunters = 0,
         int smiths = 0,
         int quarriers = 0,
-        int miners = 0)
+        int miners = 0,
+        int millers = 0,
+        int bakers = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -70,6 +72,8 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Smith] = smiths;
         _byJob[(int)JobKind.Quarrier] = quarriers;
         _byJob[(int)JobKind.Miner] = miners;
+        _byJob[(int)JobKind.Miller] = millers;
+        _byJob[(int)JobKind.Baker] = bakers;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -156,6 +160,12 @@ public readonly record struct LabourQuota
 
     /// <summary>Hands the village wants forging tools (D391).</summary>
     public int Smiths => _byJob[(int)JobKind.Smith];
+
+    /// <summary>Millers the village wants (D522).</summary>
+    public int Millers => _byJob[(int)JobKind.Miller];
+
+    /// <summary>Bakers the village wants (D522).</summary>
+    public int Bakers => _byJob[(int)JobKind.Baker];
 
     /// <summary>Quarriers the village wants (D434).</summary>
     public int Quarriers => _byJob[(int)JobKind.Quarrier];
@@ -286,6 +296,8 @@ public readonly record struct LabourQuota
         int smithsWanted = SmithsWanted(world);
         int quarriersWanted = QuarriersWanted(world);
         int minersWanted = MinersWanted(world);
+        int millersWanted = MillersWanted(world);
+        int bakersWanted = BakersWanted(world);
 
         // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
         // here is the last moment it is unqualified — before the food floor zeroes four trades
@@ -299,6 +311,8 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Smith] = smithsWanted;
         needed[(int)JobKind.Quarrier] = quarriersWanted;
         needed[(int)JobKind.Miner] = minersWanted;
+        needed[(int)JobKind.Miller] = millersWanted;
+        needed[(int)JobKind.Baker] = bakersWanted;
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -572,6 +586,12 @@ public readonly record struct LabourQuota
         // Iron, after stone (D449): the mine's twin of the quarry's reasoning, one rung on.
         int miners = Take(ref free, Cap(minersWanted, TotalCapacityFor(world, JobKind.Miner)));
 
+        // The mill and the oven, after the face trades and before the market (D522): bread is upside
+        // above the floor (`food-chain.md §6`), discretionary like the smith's — and the mill only
+        // ever wants hands while the village is fed (`SimWorld.WhyTheBatchWaits`).
+        int millers = Take(ref free, Cap(millersWanted, TotalCapacityFor(world, JobKind.Miller)));
+        int bakers = Take(ref free, Cap(bakersWanted, TotalCapacityFor(world, JobKind.Baker)));
+
         // And the market, last of all, out of hands nobody else needs (D14).
         //
         // Deliberately the LOWEST priority of every job, which is the mechanical form
@@ -733,6 +753,8 @@ public readonly record struct LabourQuota
         smiths = Asked(world, JobKind.Smith, smiths, hands);
         quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
         miners = Asked(world, JobKind.Miner, miners, hands);
+        millers = Asked(world, JobKind.Miller, millers, hands);
+        bakers = Asked(world, JobKind.Baker, bakers, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -756,11 +778,13 @@ public readonly record struct LabourQuota
         smiths = AtLeastPinned(world, JobKind.Smith, smiths);
         quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
         miners = AtLeastPinned(world, JobKind.Miner, miners);
+        millers = AtLeastPinned(world, JobKind.Miller, millers);
+        bakers = AtLeastPinned(world, JobKind.Baker, bakers);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
-            quarriers: quarriers, miners: miners);
+            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1363,6 +1387,56 @@ public readonly record struct LabourQuota
         }
 
         return seats;
+    }
+
+    /// <summary>
+    /// Millers the village wants — every seat of every standing mill with work to do (D522), the face
+    /// trades' shape. "Work to do" is <c>SimWorld.WhyTheBatchWaits</c>, the one copy of the reasons.
+    /// </summary>
+    public static int MillersWanted(SimWorld world) => BatchSeatsWanted(world, JobKind.Miller);
+
+    /// <summary>Bakers the village wants — every seat of every standing bakery with work to do (D522).</summary>
+    public static int BakersWanted(SimWorld world) => BatchSeatsWanted(world, JobKind.Baker);
+
+    private static int BatchSeatsWanted(SimWorld world, JobKind trade)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == trade && !workplace.IsSite && world.WhyTheBatchWaits(workplace) is null)
+            {
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>
+    /// The flour the mill grinds toward when the player has set no flour limit (`food-chain.md §6`):
+    /// two stints' baking for every oven seat — and at least one stint of the mill's own, so the first
+    /// flour can be ground before any bakery stands (the bakery is learned from it).
+    /// </summary>
+    public static int FlourWantedForTheOvens(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        Config.SimConfig config = world.Config;
+        int ovenSeats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i] is { Kind: JobKind.Baker, IsSite: false } bakery)
+            {
+                ovenSeats += bakery.Capacity;
+            }
+        }
+
+        int forTheOvens = ovenSeats * config.FlourPerBake * config.BakesPerStint * 2;
+        int aStint = config.FlourPerGrind * config.GrindsPerStint;
+        return forTheOvens > aStint ? forTheOvens : aStint;
     }
 
     public static int SmithsWanted(SimWorld world) =>

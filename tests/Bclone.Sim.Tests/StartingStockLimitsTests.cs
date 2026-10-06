@@ -49,6 +49,10 @@ public sealed class StartingStockLimitsTests
             [Goods.IronTools] = 25,
             [Goods.Iron] = 200,
             [Goods.Leather] = 200,
+
+            // The food chain (D522): flour by Joe's "200 for everything else", bread at wheat's own.
+            [Goods.Flour] = 200,
+            [Goods.Bread] = 1000,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

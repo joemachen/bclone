@@ -42,8 +42,8 @@ public sealed class ModdedBuildingTests
     /// can read.
     /// </remarks>
     // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped.
-    // ⚠️ 11 since the miner took 10 (D449).
-    private static JobKind Boatman => (JobKind)11;
+    // ⚠️ 11 since the miner took 10 (D449); 13 since the miller and the baker took 11 and 12 (D522).
+    private static JobKind Boatman => (JobKind)13;
 
     /// <summary>
     /// A catalogue with an eleventh building and a seventh trade that staffs it.
@@ -89,10 +89,12 @@ public sealed class ModdedBuildingTests
         { "id": 8, "name": "smith",      "plural": "smiths",      "doing": "forging tools",      "works_at": "Smithy",        "limited_by": "Tools" },
         { "id": 9, "name": "quarrier",   "plural": "quarriers",   "doing": "cutting stone",      "works_at": "Quarry",        "limited_by": "Stone" },
         { "id": 10, "name": "miner",     "plural": "miners",      "doing": "digging iron",       "works_at": "Mine",          "limited_by": "Iron" },
+        { "id": 11, "name": "miller",    "plural": "millers",     "doing": "grinding wheat",     "works_at": "Mill",          "limited_by": "Flour" },
+        { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",       "works_at": "Bakery",        "limited_by": "Bread" },
 
         // ⚠️ 9 → 10 WHEN THE QUARRIER SHIPPED (D434) — this row's job is to be an id the enum
         // cannot name, and 9 stopped being one. The fisherman's move, again.
-        { "id": 11, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
+        { "id": 13, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
       ],
 
       "buildings": [
@@ -131,7 +133,9 @@ public sealed class ModdedBuildingTests
         // ⭐ `draws_water` IS A COLUMN A MODDER CAN REACH (D427) — the well's reason to exist.
         { "id": 16, "name": "well", "draws_water": true, "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 10 }, { "goods": "Stone", "amount": 5 } ] },
         { "id": 17, "name": "quarry", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
-        { "id": 18, "name": "iron mine", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 15 } ] }
+        { "id": 18, "name": "iron mine", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 15 } ] },
+        { "id": 19, "name": "mill", "seats": 2, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 24 } ] },
+        { "id": 20, "name": "bakery", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 24 } ] }
       ]
     }
     """;
@@ -188,9 +192,9 @@ public sealed class ModdedBuildingTests
         // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
         // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391); → 17 with the well (D427);
-        // → 18 with the quarry (D434).
+        // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522).
         // The modder's boathouse sits inside the range, at the library's id, on purpose.
-        Assert.Equal(19, catalog.Count);
+        Assert.Equal(21, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -325,6 +329,8 @@ public sealed class ModdedBuildingTests
             { "id": 16, "name": "well",           "draws_water": true,                            "work_ticks": 20, "materials": [ { "goods": "Logs", "amount": 10 } ] },
             { "id": 17, "name": "quarry",         "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 18, "name": "iron mine",      "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 19, "name": "mill",           "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 20, "name": "bakery",         "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },

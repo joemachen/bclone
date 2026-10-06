@@ -1,4 +1,38 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN: SPECCED (D520), CALLS ANSWERED AND ANCHORS MEASURED (D521), NOTHING BUILT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D521 IN §7, THEN `specs/food-chain.md`. NEXT: JOE ANSWERS §9b AND §9c, THEN TESTS FIRST.**
+# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN IS BUILT, SIM AND VIEW (D522), UNPLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D522 IN §7, THEN `specs/food-chain.md`. NEXT: JOE'S CALL ON THE MILL'S UNLOCK (§9d), THEN HE PLAYS IT.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (THE FOOD CHAIN BUILT) — D522, ON WINDOWS.**
+>
+> **State (D522):** `main` = D519, pushed. **`slice/food-chain`** (not pushed): the spec (D520), Joe's calls and the
+> anchors (D521), and **the whole feature, sim and view** (D522, uncommitted until this banner's commit). Bread holds
+> hunger off (`Villager.FullFor`), the best food is eaten first, the floor reads no nutrition; a mill learned by reaping
+> wheat, a bakery by the first flour, one shared path for both (`SimWorld.BatchFor` / `WhyTheBatchWaits`). **1539 / 0 / 5
+> of 1544 (4m50; main 4m31 the same sitting); view 0 warnings; probe green, bar height 151, `spoilers:` ✅; 19 mutants,
+> 18 red, one zero written down; three goldens moved, each proven by ablation.** Save format 1 → 2: **Joe's existing
+> saves are refused in words on this branch** (no migrations before v1, D507).
+>
+> ⛔⛔ **WHAT THE MEASUREMENT FOUND (`food-chain.md §8.3`): at `mill_unlock_wheat` 5,000 the mill is learned in NO valley
+> under the shipped wheat limit** — a forage-fed village never eats its wheat, the farm stalls at ~1,079 reaped, and
+> 5,000 never comes. D521 measured 5,000 with the wheat limit lifted — the wrong premise, and Joe confirmed it on that.
+> At 1,000 the mill and bakery stand in Year 2, the stalled farm reaps again, ~28,000 bread in fifty years.
+>
+> **▶️ NEXT: JOE'S CALL ON §9d — `mill_unlock_wheat` 1,000 (recommended: an unlock no higher than the wheat limit is
+> always reached before a farm stalls) or another number.** It is one line in `data/sim.config.json` and the
+> `SimConfig` default, plus the spec's §8.2 row. **Then Joe plays it** (`run.bat` on the branch):
+> 1. Found a village, paint a farm, keep the forage coming. After the first full harvest the farm's card says the
+>    wheat limit is met — and (at 1,000) a moment says the village learned to build a mill.
+> 2. Build the mill (Food, beside the farmhouse; 30 logs, 24 stone). A miller grinds wheat from the granary into flour
+>    in a warehouse; the bakery is learned from the first flour.
+> 3. Build the bakery (25 logs, 24 stone). The baker lights the oven once a day's baking (1 firewood) and bakes bread
+>    into the granary. The farm's card should stop saying the limit is met as the wheat goes down.
+> 4. A villager who ate bread: the NEEDS cell reads **Full**, and its tooltip says *"Full from a meal of bread — not
+>    hungry for another 3 days."* ⚠️ **Unprobed and only his play checks it:** the mill's and bakery's look on the map,
+>    the glyphs, the moments, and whether *Full* reads right.
+> Then merge at his word (`git checkout main`, `git merge --no-ff slice/food-chain`, `git push`).
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (FOOD-CHAIN ANCHORS MEASURED) — D521, ON WINDOWS.**
 >
@@ -5395,12 +5429,29 @@ Read `git status` after staging, every time.
   eats into it"* every autumn; nobody eats wheat while there is forage, so the rate was 0 and looked like a broken
   harness. `ZZ_WHY=1` prints it a season.
 
+## ⛔ THE TRAPS THE FOOD-CHAIN BUILD (D522) PAID FOR — A STALE DLL, A LOCKED RESTORE, AND A CURE THAT COULD NOT ARRIVE
+
+- **A harness that does not compile runs the LAST one under `--no-build`.** `ZzFoodChain.cs` failed with CS0136 and the
+  next `dotnet test --no-build` ran yesterday's DLL — a whole arm read "the mill never stood" for a reason that was
+  not the sim. Build with `|| { echo BUILD FAILED; exit 1; }` and never trust an arm whose build you did not see pass.
+- **A red-check restore can hit a Windows file lock** (`OSError: [Errno 22] Invalid argument` writing the source back)
+  and leave the mutant in the tree. The script died with M7's `if (false)` still in `SimWorld.cs`. Retry the restore,
+  and after every red-check run `git status` for `.redbak` files and grep for the mutant text.
+- **A constant `if (false)` mutant does not build** (CS0162 is an error here), nor one that leaves a parameter unused
+  (IDE0060). Use a false the compiler cannot prove (`&& Tick == ulong.MaxValue`), and count "did not build" as a
+  zero, never a red (D450).
+- **Measure a gift's threshold under the limits the game ships with.** 5,000 was read off arms with the wheat limit
+  lifted; under the shipped limit the farm stalls at ~1,079 and the mill — the cure for that stall — never comes.
+  *Ask whether the cure can arrive before the illness it cures.*
+- **A mill brings nothing in from the valley.** Passing a batch through `YieldFor` gave a tool's 25 % to flour and
+  bread: grain from nothing. A converter's tool and mastery go on its ticks only.
+- **A "same hunger" lockstep measure is blind to fullness** — two full villagers sit at the same post-meal hunger.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE FOOD CHAIN'S §9b AND §9c (D521, `specs/food-chain.md`).** ✅ §9's six were answered (D521). Open: **§9b** the
-  farm that stops for good after one harvest (a forage-fed village never eats its wheat) — (a) let the mill answer it,
-  recommended; (b) eat the most-held of equal foods first; (c) change the card. **§9c** confirm §8.2's numbers (bread 2,
-  the mill after 5,000 wheat reaped, the bakery after the first grind, the oven 1 firewood a firing).
+- ⏸️ **THE MILL'S UNLOCK (D522, `specs/food-chain.md §9d`).** ✅ §9b (*"a"*) and §9c (*"yes ok"*) answered. At 5,000 the
+  mill is never learned under the shipped wheat limit (the farm stalls at ~1,079 first); **1,000 recommended** — an
+  unlock no higher than the wheat limit is always reached before the stall. One line of data.
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands

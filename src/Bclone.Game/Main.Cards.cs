@@ -1422,8 +1422,12 @@ public partial class Main
         }
 
         // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
-        SetNeed(p.Needs[0], !hungry, hungry ? "Hungry" : "Fed",
-            hungry ? $"{villager.Name} is hungry and will stop to eat." : $"{villager.Name} has eaten.");
+        // ⭐ FULL, AND JOE'S SENTENCE IS ITS TOOLTIP (D522, `food-chain.md §9` call 5): a meal of bread holds
+        // hunger off, and the card says what filled them and for how long — one hover away, as the work
+        // note is (D432: the card is not to grow wordy).
+        string? full = world.FullNote(villager);
+        SetNeed(p.Needs[0], !hungry, hungry ? "Hungry" : full is null ? "Fed" : "Full",
+            hungry ? $"{villager.Name} is hungry and will stop to eat." : full ?? $"{villager.Name} has eaten.");
         int threshold = world.Config.ExposureThreshold;
         int cold = threshold > 0 ? villager.Cold * 100 / threshold : 0;
         SetNeed(p.Needs[1], villager.Cold == 0, villager.Cold == 0 ? "Warm" : "Cold",
@@ -2164,12 +2168,13 @@ public partial class Main
         var faults = new List<string>();
         var unknownGoods = Enumerable.Range(0, world.GoodsCatalog.Count).Select(g => (Goods)g).Where(g => !GoodKnown(g)).ToList();
         var unknownTrades = System.Enum.GetValues<JobKind>().Where(t => !TradeKnown(t)).ToList();
-        if (!unknownGoods.Contains(Goods.IronTools))
+        if (!unknownGoods.Contains(Goods.IronTools) || !unknownGoods.Contains(Goods.Flour) || !unknownGoods.Contains(Goods.Bread))
         {
-            faults.Add("iron tools are known at the founding");
+            faults.Add($"the founding knows goods it should not: unknown are only {string.Join(", ", unknownGoods)}");
         }
 
-        if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner))
+        if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner)
+            || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker))
         {
             faults.Add($"the founding knows trades it should not: unknown are only {string.Join(", ", unknownTrades)}");
         }
@@ -2221,11 +2226,11 @@ public partial class Main
 
         Ask("at the founding", learned: false);
 
-        (bool quarry, bool mine, bool smithy) = (_quarryKnown, _mineKnown, _smithyKnown);
-        (_quarryKnown, _mineKnown, _smithyKnown) = (true, true, true);
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (true, true, true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
-        (_quarryKnown, _mineKnown, _smithyKnown) = (quarry, mine, smithy);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (quarry, mine, smithy, mill, bakery);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);

@@ -148,8 +148,8 @@ Requires scale, accumulated knowledge, or both.
 
 | Building | Class | Unlock | Knowledge | Does what |
 |---|---|---|---|---|
-| **Mill** | Placed | By knowledge | ✓ | Grain → flour. **One building, sited by terrain** — on a river it is a watermill and faster; on open ground a windmill and slower. Not two buildings. |
-| **Bakery** | Placed | By doing | ✓ | Flour → bread. §2.7's own worked example of unlock-by-doing. |
+| **Mill** | Placed | By doing (wheat reaped) | ✓ | Grain → flour. **One building, sited by terrain** — on a river it is a watermill and faster; on open ground a windmill and slower. Not two buildings. ✅ **BUILT (D522, `food-chain.md`) — one mill, anywhere; the watermill by the river is a later slice (Joe, §9 call 2).** |
+| **Bakery** | Placed | By doing | ✓ | Flour → bread. §2.7's own worked example of unlock-by-doing. ✅ **BUILT (D522)** — learned from the mill's first flour; bread holds hunger off for longer. |
 | **Creamery** | Placed | By knowledge | ✓ | Milk → butter, cheese. The point of cheese is that it keeps. |
 | **Iron mine** | Placed | Civic | — | Ore. Effort-limited; consumes props. |
 | **Smelter** | Placed | By knowledge | ✓ | Ore + charcoal → iron. |

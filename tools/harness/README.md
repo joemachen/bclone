@@ -46,3 +46,8 @@ against a number from an older commit.
   `python tools/harness/foodchain.py <output>`. ⚠️ A field painted on a **site** never reaps — ZzFirstWinter's `farm0`
   did that, so it never measured a harvest. ⚠️ Food production is `SimWorld.FoodEverProducedOf(good)`; summing
   `Stockpile.Produced` over arms and stores double-counts every carried load.
+  ⭐ **Since D522, the chain itself:** a trailing `B` marks the mill the tick it is learned and the bakery the tick
+  that is (one hand each); `R` raises them free (unattended builders raised the mill in 1 valley of 17 — 24 stone);
+  `ZZ_MILL=n` sets `mill_unlock_wheat`. The ZZF line then ends with `mill`/`bakery` years, flour ground, bread baked,
+  wheat reaped a year once milling, flour and bread a seat-year. ⛔ **Build with a check** — a harness that did not
+  compile ran the previous DLL under `--no-build` and a whole arm was read off the wrong code.

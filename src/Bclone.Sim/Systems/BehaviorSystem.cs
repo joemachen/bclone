@@ -123,6 +123,10 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.FetchingATool => "fetching a tool from a store",
         VillagerState.TravelingToSmithy => "walking to the smithy",
         VillagerState.Forging => "forging tools",
+        VillagerState.TravelingToMill => "walking to the mill",
+        VillagerState.Grinding => "grinding wheat",
+        VillagerState.TravelingToBakery => "walking to the bakery",
+        VillagerState.Baking => "baking bread",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
         VillagerState.Quarrying => "cutting stone",
         VillagerState.TravelingToMine => "walking to the mine face",
@@ -446,6 +450,18 @@ public sealed class BehaviorSystem : ISimSystem
                 Travel(world, villager, forge.Position, VillagerState.Forging);
                 return;
 
+            case VillagerState.TravelingToMill:
+            case VillagerState.TravelingToBakery:
+                // To the mill or the oven they hold a seat at (D522), the smith's walk.
+                if (WorkplaceOf(world, villager) is not Workplace hut)
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, hut.Position, BatchState(villager.State));
+                return;
+
             case VillagerState.FetchingMaterials:
             case VillagerState.Building:
                 // To the spot they set off for, not to whatever looks best from this
@@ -551,6 +567,16 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsForging(VillagerState state) =>
         state is VillagerState.TravelingToSmithy or VillagerState.Forging;
 
+    private static bool IsMilling(VillagerState state) =>
+        state is VillagerState.TravelingToMill or VillagerState.Grinding;
+
+    private static bool IsBaking(VillagerState state) =>
+        state is VillagerState.TravelingToBakery or VillagerState.Baking;
+
+    /// <summary>The work a walk to the mill or the oven arrives as (D522).</summary>
+    private static VillagerState BatchState(VillagerState travelling) =>
+        travelling == VillagerState.TravelingToMill ? VillagerState.Grinding : VillagerState.Baking;
+
     private static bool IsQuarrying(VillagerState state) =>
         state is VillagerState.TravelingToQuarry or VillagerState.Quarrying;
 
@@ -571,7 +597,7 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state) || IsMining(state);
+        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -626,6 +652,18 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsForging(state))
         {
             return JobKind.Smith;
+        }
+
+        // ⛔ D281, a sixth and seventh time (D522): without these arms the miller and the baker are
+        // recalled home every tick.
+        if (IsMilling(state))
+        {
+            return JobKind.Miller;
+        }
+
+        if (IsBaking(state))
+        {
+            return JobKind.Baker;
         }
 
         // ⛔ D281, a fourth time: without this arm a quarrier is recalled home every tick.
@@ -2446,8 +2484,8 @@ public sealed class BehaviorSystem : ISimSystem
         // code could not see.
         if (world.FoodIn(villager.Carried) >= mealCost)
         {
-            world.TakeAMealFrom(villager.Carried, mealCost);
-            Feed(villager, config);
+            world.TakeAMealFrom(villager.Carried, mealCost, out int armsWorth, out Goods armsBest);
+            Feed(villager, config, mealCost, armsWorth, armsBest);
             world.LogVillager(LogLevel.Debug, villager, "needs",
                 $"ate {mealCost} from their own arms (hunger was {villager.Hunger})");
             return true;
@@ -2459,7 +2497,7 @@ public sealed class BehaviorSystem : ISimSystem
             return false;
         }
 
-        if (!world.TakeAMealFrom(larder, mealCost))
+        if (!world.TakeAMealFrom(larder, mealCost, out int worth, out Goods best))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.
@@ -2478,17 +2516,29 @@ public sealed class BehaviorSystem : ISimSystem
             $"ate {mealCost} from the {world.HouseholdOf(villager).Name} larder " +
             $"(hunger was {villager.Hunger}, {world.FoodIn(world.HouseholdOf(villager).Stockpile)} left)");
 
-        Feed(villager, config);
+        Feed(villager, config, mealCost, worth, best);
         return true;
     }
 
     /// <summary>Apply the effect of a meal, wherever it came from.</summary>
-    private static void Feed(Villager villager, SimConfig config)
+    /// <remarks>
+    /// ⭐ <b>A meal worth more than it cost holds hunger off</b> (`food-chain.md §3.2`, D522): hunger
+    /// falls as it always did, then what the meal was worth beyond a plain meal of the same cost
+    /// becomes ticks of <see cref="Villager.FullFor"/> — the extra share of a meal interval, rounded
+    /// down. A meal of foods worth one adds nothing, so a village with no bread plays as before.
+    /// </remarks>
+    private static void Feed(Villager villager, SimConfig config, int cost, int worth, Goods best)
     {
         villager.Hunger -= config.EatReducesHunger;
         if (villager.Hunger < 0)
         {
             villager.Hunger = 0;
+        }
+
+        if (worth > cost && cost > 0)
+        {
+            villager.FullFor += (worth - cost) * VillageEconomy.MealIntervalTicks(config) / cost;
+            villager.FullFrom = best;
         }
 
         villager.TicksAtMaxHunger = 0;
@@ -2676,6 +2726,39 @@ public sealed class BehaviorSystem : ISimSystem
             {
                 villager.State = VillagerState.TravelingToSmithy;
                 Travel(world, villager, job.Position, VillagerState.Forging);
+            }
+
+            return;
+        }
+
+        // ⭐ THE MILLER AND THE BAKER (D522, `food-chain.md §4`) — the smith's stint, one recipe over: to
+        // the hut while it has work, a batch at a time up to a day's stint. `WhyTheBatchWaits` is the one
+        // place the reasons not to live, read here, after every batch, and by the card.
+        if (villager.CanWork && job is not null && world.BatchFor(job.Kind) is Batch)
+        {
+            if (world.WhyTheBatchWaits(job) is string waits)
+            {
+                villager.WorkNote = waits;
+                if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+                {
+                    GoHome(world, villager);
+                }
+
+                return;
+            }
+
+            villager.WorkNote = string.Empty;
+            VillagerState working = job.Kind == JobKind.Miller ? VillagerState.Grinding : VillagerState.Baking;
+            if (villager.Tile == job.Tile)
+            {
+                BeginBatches(world, villager, working);
+            }
+            else
+            {
+                villager.State = job.Kind == JobKind.Miller
+                    ? VillagerState.TravelingToMill
+                    : VillagerState.TravelingToBakery;
+                Travel(world, villager, job.Position, working);
             }
 
             return;
@@ -4790,6 +4873,12 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival is VillagerState.Grinding or VillagerState.Baking)
+        {
+            BeginBatches(world, villager, onArrival);
+            return;
+        }
+
         if (onArrival is VillagerState.Quarrying or VillagerState.Mining)
         {
             BeginDigging(world, villager, onArrival);
@@ -5000,6 +5089,15 @@ public sealed class BehaviorSystem : ISimSystem
     {
         int dug = world.YieldFor(villager, trade, FaceRow(world, trade).FacePerDig) * villager.Vigour / 100;
         return dug < 1 ? 1 : dug;
+    }
+
+    /// <summary>The first batch of a stint at the mill or the oven (D522).</summary>
+    private static void BeginBatches(SimWorld world, Villager villager, VillagerState working)
+    {
+        villager.BatchesThisStint = 0;
+        villager.State = working;
+        JobKind trade = working == VillagerState.Grinding ? JobKind.Miller : JobKind.Baker;
+        villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
     }
 
     /// <summary>The first forge of a stint at the smithy (D391).</summary>
@@ -5840,6 +5938,7 @@ public sealed class BehaviorSystem : ISimSystem
 
                 villager.Carried.Receive(grain, crop < 1 ? 1 : crop);
                 world.RecordFoodProduced(grain, crop < 1 ? 1 : crop);
+                world.Reaped(grain, crop < 1 ? 1 : crop);
 
                 if (WorkplaceOf(world, villager) is Workplace theirFarm)
                 {
@@ -6170,11 +6269,93 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.State = VillagerState.TravelingHome;
                 return;
 
+            case VillagerState.Grinding:
+            case VillagerState.Baking:
+                FinishABatch(world, villager);
+                return;
+
             default:
                 // A timed action finished in a state that has no completion effect —
                 // that is the travel-delay case, which resolves on the next tick.
                 return;
         }
+    }
+
+    /// <summary>
+    /// A grind or a bake is done (D522, `food-chain.md §4.3–§4.4`): the input out of the one store that
+    /// holds it (and, on a stint's first bake, the firewood that lights the oven), the output into the
+    /// store it belongs in, the rest on the ground; then again while the reason to work holds, up to a
+    /// day's stint. <c>WhyTheBatchWaits</c> is the one place the reasons live, so a stint ends for
+    /// exactly the reasons it would not have started.
+    /// </summary>
+    private static void FinishABatch(SimWorld world, Villager villager)
+    {
+        if (WorkplaceOf(world, villager) is not Workplace hut
+            || world.BatchFor(hut.Kind) is not Batch batch
+            || world.WhyTheBatchWaits(hut) is not null)
+        {
+            villager.BatchesThisStint = 0;
+            villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
+        // ⭐ The oven is lit once a stint, on its first bake (Joe, *"a little"*; §8.1 finding 6).
+        int firing = villager.BatchesThisStint == 0 ? batch.Firing : 0;
+        StoreBuilding? source = world.StoreForTheBatch(villager.Tile, batch);
+        bool took = source is not null
+            && source.Store[Goods.Firewood] >= firing
+            && source.Store.TryTake(batch.Input, batch.InputPerBatch);
+        if (took && firing > 0 && !source!.Store.TryTake(Goods.Firewood, firing))
+        {
+            // Unreachable — the store was found holding both and nothing moved between — but the
+            // returns are read (D96, D144): put the input back rather than bake on a cold oven.
+            source.Store.Receive(batch.Input, batch.InputPerBatch);
+            took = false;
+        }
+
+        if (!took)
+        {
+            // Unreachable in practice, as the forge's — `WhyTheBatchWaits` just re-found the store.
+            villager.BatchesThisStint = 0;
+            villager.State = VillagerState.TravelingHome;
+            return;
+        }
+
+        // ⛔ THE RECIPE, NOT `YieldFor` (D522). A tool's yield bonus is on what an action brings IN from
+        // the valley; a mill or an oven brings nothing in, it turns one good into another — and 25 % more
+        // flour out of the same wheat is grain made from nothing (measured on the first draft: 140 flour
+        // baked into 160 bread). A tool and mastery make a batch QUICKER (`BeginWork`), never bigger.
+        int made = batch.OutputPerBatch;
+
+        StoreBuilding? shelf = world.StoreForTheOutput(villager.Tile, batch.Output, source);
+        int shelved = shelf?.Put(batch.Output, made) ?? 0;
+        if (shelved < made)
+        {
+            world.SetDown(villager.Tile, batch.Output, made - shelved);
+        }
+
+        world.Batched(batch.Output, made);
+
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} made {made} {world.GoodsCatalog.NameOf(batch.Output)} from "
+                + $"{batch.InputPerBatch} {world.GoodsCatalog.NameOf(batch.Input)}"
+                + (firing > 0 ? $" and lit the oven with {firing} firewood" : string.Empty)
+                + (shelved > 0 ? $" — {shelved} into {shelf!.Name}" : " — no store would take it")
+                + (shelved < made ? $", {made - shelved} set down" : string.Empty)
+                + $" — {world.Clock}.");
+        }
+
+        villager.BatchesThisStint++;
+        if (villager.BatchesThisStint < batch.PerStint && world.WhyTheBatchWaits(hut) is null)
+        {
+            villager.ActionTicksRemaining = world.BeginWork(villager, batch.Trade, batch.Ticks);
+            return;
+        }
+
+        villager.BatchesThisStint = 0;
+        villager.State = VillagerState.TravelingHome;
     }
 
     /// <summary>

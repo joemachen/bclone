@@ -2052,18 +2052,28 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// Take a meal's worth out of a pile, from whatever is edible — <b>in id order</b>.
+    /// Take a meal's worth out of a pile, from whatever is edible — <b>the best food first, then id
+    /// order</b>.
     /// </summary>
     /// <remarks>
-    /// ⚠️ <b>Id order, and it is not tidiness.</b> Anything that walks goods and writes to the
-    /// world must do so in a fixed order or two runs of one seed diverge (§5). It also means the
-    /// village eats its oldest good first — food before fish — which is arbitrary but stable, and
-    /// stops mattering the day spoilage gives it a reason.
+    /// ⚠️ <b>A fixed order, and it is not tidiness.</b> Anything that walks goods and writes to the
+    /// world must do so in a fixed order or two runs of one seed diverge (§5). <c>EdibleGoods</c> is
+    /// the best food first (`food-chain.md §3.3`), then id — so bread before grain, and among foods
+    /// of equal worth the oldest good first, as before bread existed.
     /// </remarks>
-    public bool TakeAMealFrom(Stockpile store, int cost)
+    public bool TakeAMealFrom(Stockpile store, int cost) => TakeAMealFrom(store, cost, out _, out _);
+
+    /// <summary>
+    /// Take a meal, and say what it was worth (<paramref name="worth"/>: units × nutrition) and the best
+    /// food in it — `food-chain.md §3.2`. Worth equals <paramref name="cost"/> for any meal of foods
+    /// worth one.
+    /// </summary>
+    public bool TakeAMealFrom(Stockpile store, int cost, out int worth, out Goods best)
     {
         ArgumentNullException.ThrowIfNull(store);
 
+        worth = 0;
+        best = Goods.Produce;
         if (cost <= 0 || FoodIn(store) < cost)
         {
             return false;
@@ -2077,12 +2087,37 @@ public sealed class SimWorld : IObstacles
             int take = here < owed ? here : owed;
             if (take > 0 && store.TryTake(edible[i], take))
             {
+                if (owed == cost)
+                {
+                    best = edible[i];
+                }
+
                 owed -= take;
+                worth += take * GoodsCatalog.NutritionOf(edible[i]);
             }
         }
 
         RecordFoodEaten(cost - owed);
         return owed == 0;
+    }
+
+    /// <summary>
+    /// What the card says about a full belly (Joe, `food-chain.md §9` call 5) — or null when this
+    /// villager's last meal holds nothing off.
+    /// </summary>
+    public string? FullNote(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        if (villager.FullFor <= 0)
+        {
+            return null;
+        }
+
+        int perDay = Config.TicksPerDay < 1 ? 1 : Config.TicksPerDay;
+        int days = (villager.FullFor + (perDay / 2)) / perDay;
+        days = days < 1 ? 1 : days;
+        return $"Full from a meal of {GoodsCatalog.NameOf(villager.FullFrom)} — not hungry for another "
+            + $"{days} {(days == 1 ? "day" : "days")}.";
     }
 
     /// <summary>Whether a store would ever take anything anybody can eat.</summary>
@@ -2211,6 +2246,8 @@ public sealed class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
+            JobKind.Miller or JobKind.Baker =>
+                WhyTheBatchWaits(workplace) is string waits ? $"{workplace.Name}: {waits}" : null,
             JobKind.Quarrier or JobKind.Miner =>
                 WhyTheFaceIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
             JobKind.Forager => ForagerIdleNote(workplace),
@@ -3566,6 +3603,14 @@ public sealed class SimWorld : IObstacles
             + $"{Config.SmithyUnlockIron} iron by hand it takes.",
 
         // ⭐ THE MINE WAITS ON THE SMITH'S FIRST IRON TOOL (Joe, D449; `iron-mine.md §3.4`).
+        // ⭐ THE MILL WAITS ON REAPED WHEAT, THE BAKERY ON THE MILL'S FIRST FLOUR (D521, `food-chain.md §7`).
+        BuildingKind.Mill when WheatEverReaped < Config.MillUnlockWheat =>
+            $"Nobody here has built a mill yet — the village has reaped {WheatEverReaped} of the "
+            + $"{Config.MillUnlockWheat} wheat it takes to learn.",
+        BuildingKind.Bakery when FlourEverGround < Config.BakeryUnlockFlour =>
+            $"Nobody here bakes yet — the mill has ground {FlourEverGround} of the "
+            + $"{Config.BakeryUnlockFlour} flour it takes.",
+
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
@@ -3606,22 +3651,39 @@ public sealed class SimWorld : IObstacles
     /// <remarks>
     /// A forged good is unknown until the smithy is, because nothing else makes it — except the tool
     /// the founders' cart carries, which the village holds from the first day. Read off the goods
-    /// rows and <see cref="IsUnlocked"/>, so a modded forged good hides with no line here.
+    /// rows and <see cref="IsUnlocked"/>, so a modded forged good hides with no line here. ⭐ And a
+    /// good only a mill or an oven makes — flour, bread — is unknown until that building is (D522).
     /// </remarks>
-    public bool KnowsOf(Goods goods) => KnowsOf(goods, IsUnlocked(BuildingKind.Smithy));
+    public bool KnowsOf(Goods goods) => KnowsOf(goods, IsUnlocked);
 
     /// <summary>
-    /// <see cref="KnowsOf(Goods)"/> with the forge's gate given — the view passes the flag its build bar
+    /// <see cref="KnowsOf(Goods)"/> with the gates given — the view passes the flags its build bar
     /// latched from <see cref="IsUnlocked"/>, so the bar and its lists cannot disagree.
     /// </summary>
-    public bool KnowsOf(Goods goods, bool forgeKnown)
+    public bool KnowsOf(Goods goods, Func<BuildingKind, bool> known)
     {
-        if ((int)goods < 0 || (int)goods >= GoodsCatalog.Count || GoodsCatalog[goods].ForgedFrom.Count == 0)
+        ArgumentNullException.ThrowIfNull(known);
+        if ((int)goods < 0 || (int)goods >= GoodsCatalog.Count)
         {
             return true;
         }
 
-        return forgeKnown || (goods == Goods.Tools && Config.CartTools > 0);
+        if (GoodsCatalog[goods].ForgedFrom.Count > 0)
+        {
+            return known(BuildingKind.Smithy) || (goods == Goods.Tools && Config.CartTools > 0);
+        }
+
+        // The mill's and the oven's goods wait on the building that makes them.
+        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker })
+        {
+            if (BatchFor(trade) is Batch batch && batch.Output == goods
+                && JobsCatalog.WorksAt(trade) is BuildingKind maker)
+            {
+                return known(maker);
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -3703,6 +3765,147 @@ public sealed class SimWorld : IObstacles
         Terrain.Field or Terrain.Sown or Terrain.Ripe => "a field",
         _ => terrain.ToString().ToLowerInvariant(),
     };
+
+    // ---------------------------------------------------------------
+    //  The mill and the oven (D522, `specs/food-chain.md §4–§5`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// One stint's recipe at a mill or an oven — what goes in, what comes out, how long, how many, and
+    /// what the oven burns when it is lit. Null for any other trade.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>One shape for both</b>, so the walk, the batch, the put-away and every reason it stands
+    /// still are written once (`food-chain.md §4`). The smith keeps its own path: a forge's recipe is
+    /// its tool's row and its card chooses the tool.
+    /// </remarks>
+    public Batch? BatchFor(JobKind trade) => trade switch
+    {
+        JobKind.Miller => new Batch(
+            JobKind.Miller, Goods.Wheat, Config.WheatPerGrind, Goods.Flour, Config.FlourPerGrind,
+            Firing: 0, Config.GrindTicks, Config.GrindsPerStint, "grind", "a grind"),
+        JobKind.Baker => new Batch(
+            JobKind.Baker, Goods.Flour, Config.FlourPerBake, Goods.Bread, Config.BreadPerBake,
+            Config.FirewoodPerFiring, Config.BakeTicks, Config.BakesPerStint, "bake", "a bake"),
+        _ => null,
+    };
+
+    /// <summary>Why the mill's stones are still, in a sentence naming the store — or null when it can grind.</summary>
+    public string? WhyTheMillIsStill(Workplace mill) => WhyTheBatchWaits(mill);
+
+    /// <summary>Why the oven is cold, in a sentence naming the store — or null when it can bake.</summary>
+    public string? WhyTheOvenIsCold(Workplace bakery) => WhyTheBatchWaits(bakery);
+
+    /// <summary>
+    /// Why a mill or an oven is not running — or null when it can (`food-chain.md §5`).
+    /// </summary>
+    /// <remarks>
+    /// <b>One copy, read by the worker before the walk and after every batch, and by the card</b> — so
+    /// a stint ends for exactly the reasons it would not have started (the forge's rule). In the order
+    /// they are cheapest to say: the player's limit, the village's hunger (the mill), what the ovens
+    /// will use (the mill, with no limit set), the winter's firewood (the oven), the input.
+    /// </remarks>
+    public string? WhyTheBatchWaits(Workplace at)
+    {
+        ArgumentNullException.ThrowIfNull(at);
+        if (BatchFor(at.Kind) is not Batch batch)
+        {
+            return null;
+        }
+
+        string nothing = $"Nothing to {batch.Verb}";
+        if (LimitIsMet(batch.Output))
+        {
+            return $"{nothing} — you asked the village to keep {StockLimits.For(batch.Output)} "
+                + $"{GoodsCatalog.NameOf(batch.Output)} and it has {HeldAgainstItsLimit(batch.Output)} stored.";
+        }
+
+        if (batch.Trade == JobKind.Miller)
+        {
+            // ⛔ FLOUR IS NOT FOOD (§5 rule 1). Grinding the last of the wheat in a hungry spring turns a
+            // meal into a sack nobody can eat until a baker gets to it.
+            if (LabourQuota.VillageIsShortOfFood(this))
+            {
+                return $"{nothing} — the village needs its grain to eat.";
+            }
+
+            // With no limit of the player's, the stones turn for what the ovens will bake, and no more:
+            // flour that sits is wheat nobody can eat.
+            if (StockLimits.For(Goods.Flour) is null
+                && HeldAgainstItsLimit(Goods.Flour) >= LabourQuota.FlourWantedForTheOvens(this))
+            {
+                return $"{nothing} — the ovens have flour enough ({HeldAgainstItsLimit(Goods.Flour)} stored).";
+            }
+        }
+
+        // ⛔ The oven never takes firewood the homes still want (§5 rule 2, the forge's rule).
+        if (batch.Firing > 0 && LabourQuota.FirewoodShortfall(this) > 0)
+        {
+            return $"{nothing} — the village needs its firewood for the winter.";
+        }
+
+        if (StoreForTheBatch(at.Tile, batch) is null)
+        {
+            string firing = batch.Firing > 0
+                ? $" and the {batch.Firing} {GoodsCatalog.NameOf(Goods.Firewood)} to light the oven"
+                : string.Empty;
+            return $"{nothing} — no store within reach of {at.Name} has the {batch.InputPerBatch} "
+                + $"{GoodsCatalog.NameOf(batch.Input)}{firing} {batch.OneOf} takes.";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The nearest store holding one batch's input — and, for the oven, the firewood to light it — never
+    /// the market, whose counter is the households' shop (`storage-and-distribution.md §14.9`).
+    /// </summary>
+    /// <remarks>
+    /// The forge's question, one recipe over: a bake that found its flour in one store and its firewood
+    /// in another would be two walks the stint does not price.
+    /// </remarks>
+    public StoreBuilding? StoreForTheBatch(GridPos from, Batch batch) =>
+        NearestStoreAccepting(
+            from,
+            batch.Input,
+            store => store.Kind != StoreKind.Market
+                && store.Store[batch.Input] >= batch.InputPerBatch
+                && store.Store[Goods.Firewood] >= batch.Firing);
+
+    /// <summary>
+    /// Where a batch's output goes: the store it came from if that takes it, else the nearest store
+    /// that takes it with room — a granary first for food, because the birth gate reads granaries —
+    /// and ⛔ never the market (only a trader stocks the counter, D358). Null when nothing has room.
+    /// </summary>
+    public StoreBuilding? StoreForTheOutput(GridPos from, Goods made, StoreBuilding? source)
+    {
+        if (source is not null && source.Kind != StoreKind.Market && source.Accepts(made) && source.HasRoomFor(made))
+        {
+            return source;
+        }
+
+        if (GoodsCatalog.Edible(made)
+            && NearestStore(from, StoreKind.Granary, store => store.Accepts(made) && store.HasRoomFor(made)) is StoreBuilding granary)
+        {
+            return granary;
+        }
+
+        return NearestStoreAccepting(from, made, store => store.Kind != StoreKind.Market && store.HasRoomFor(made));
+    }
+
+    /// <summary>A batch has come out of a mill or an oven — counted where it is made (D522).</summary>
+    internal void Batched(Goods made, int amount)
+    {
+        if (made == Goods.Flour)
+        {
+            Ground(amount);
+        }
+        else if (made == Goods.Bread)
+        {
+            BreadEverBaked += amount;
+            RecordFoodProduced(Goods.Bread, amount);
+        }
+    }
 
     private string? SmithyIdleNote(Workplace smithy) =>
         WhyTheForgeIsCold(smithy) is string cold ? $"{smithy.Name}: {cold}" : null;
@@ -10313,6 +10516,61 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public int IronToolsEverForged { get; internal set; }
 
+    /// <summary>Wheat ever reaped from a field — what the mill's unlock counts (D522, `food-chain.md §7`).</summary>
+    /// <remarks>
+    /// ⛔ <b>State, and hashed sparsely</b>: it decides what the player may build. Only the reap counts —
+    /// wheat that arrives in a cart or a gift is not wheat the village grew.
+    /// </remarks>
+    public int WheatEverReaped { get; internal set; }
+
+    /// <summary>Flour ever ground at a mill — what the bakery's unlock counts (D522). Hashed sparsely.</summary>
+    public int FlourEverGround { get; internal set; }
+
+    /// <summary>Bread ever baked — counted at the oven (D522). A statistic, not hashed, as <see cref="ToolsEverForged"/>.</summary>
+    public int BreadEverBaked { get; internal set; }
+
+    /// <summary>
+    /// A field has given up <paramref name="amount"/> of <paramref name="grain"/> — counted at the reap,
+    /// and the mill learned when the wheat crosses <c>mill_unlock_wheat</c> (D522).
+    /// </summary>
+    internal void Reaped(Goods grain, int amount)
+    {
+        if (grain != Goods.Wheat || amount <= 0)
+        {
+            return;
+        }
+
+        bool knewHow = IsUnlocked(BuildingKind.Mill);
+        WheatEverReaped += amount;
+        if (!knewHow && IsUnlocked(BuildingKind.Mill))
+        {
+            // ⭐ A STOP, LIKE THE QUARRY'S (D442) — learned by doing, paid for, no gift.
+            LearnedByDoing(
+                "The village learned to build a mill",
+                $"The village has reaped {WheatEverReaped} wheat, and somebody has worked out how to set "
+                + "millstones turning. A mill grinds wheat into flour — and flour, in an oven, is bread. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+    }
+
+    /// <summary>
+    /// A mill has ground <paramref name="flour"/> flour — counted at the stones, and the bakery learned
+    /// on the first flour (Joe, D521: *"after the first flour"*).
+    /// </summary>
+    internal void Ground(int flour)
+    {
+        bool knewHow = IsUnlocked(BuildingKind.Bakery);
+        FlourEverGround += flour;
+        if (!knewHow && IsUnlocked(BuildingKind.Bakery))
+        {
+            LearnedByDoing(
+                "The village learned to bake",
+                "The mill has ground its first flour, and somebody knows what an oven does with it. A "
+                + "bakery bakes flour into bread — and a meal of bread keeps a villager full for longer "
+                + $"than a meal of grain. {Clock.SeasonAndYear()}.");
+        }
+    }
+
     /// <summary>
     /// The smith has forged <paramref name="tools"/> of <paramref name="made"/> — counted at the anvil,
     /// and the mine learned on the first iron tool (D449, `iron-mine.md §3.4`).
@@ -13135,6 +13393,9 @@ public sealed class SimWorld : IObstacles
             ["iron_ever_dug"] = IronEverDug,
             ["tools_ever_forged"] = ToolsEverForged,
             ["iron_tools_ever_forged"] = IronToolsEverForged,
+            ["wheat_ever_reaped"] = WheatEverReaped,
+            ["flour_ever_ground"] = FlourEverGround,
+            ["bread_ever_baked"] = BreadEverBaked,
             ["tools_ever_taken"] = ToolsEverTaken,
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
         };
@@ -13287,6 +13548,9 @@ public sealed class SimWorld : IObstacles
         IronEverDug = save.Int("iron_ever_dug");
         ToolsEverForged = save.Int("tools_ever_forged");
         IronToolsEverForged = save.Int("iron_tools_ever_forged");
+        WheatEverReaped = save.Int("wheat_ever_reaped");
+        FlourEverGround = save.Int("flour_ever_ground");
+        BreadEverBaked = save.Int("bread_ever_baked");
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
     }

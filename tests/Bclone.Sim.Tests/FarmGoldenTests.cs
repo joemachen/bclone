@@ -288,7 +288,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 2163965788719030807.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 13124465361264696566.
     // RE-TAKEN (D511) — farmhands rest at the steading in spring, summer and autumn, tend their sown tiles in summer, and go home in winter (`work-from-the-steading.md`, Joe: "workers actually working at their place of work"). ⭐ PROVEN TO BE THE ONLY REASON: with `RestsAtTheSteading` answering false for everybody, the old value passes. Was 6162009344269948841.
-    private const ulong SeamGoldenHash = 4704120055719651414UL;
+    // RE-TAKEN (D522) — the food chain (`food-chain.md §7`): the wheat a field gives up is counted (`WheatEverReaped`, hashed — the mill's unlock reads it) and this village reaps past `mill_unlock_wheat`, so it learns the mill and the moment shows it the tree. No mill is built and nobody eats bread. ⭐ PROVEN TO BE THE ONLY REASON: with the counter unhashed and the mill's unlock out of reach, the old value passes. Was 4704120055719651414.
+    private const ulong SeamGoldenHash = 10120269350165060630UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -359,7 +360,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): every valley generated anew, and the soil no longer drawn or hashed (D470). The same village as `SeamGoldenHash`. Was 4805834385522930014.
     // RE-TAKEN (D475) — the seams found, not placed (Joe: "stone and iron nodes look planned and symmetrical"): the same village as `SeamGoldenHash`. Was 2806896355272201745.
     // RE-TAKEN (D511) with it again: farmhands rest at the steading and tend in summer. ⭐ PROVEN: with `RestsAtTheSteading` false for everybody, the old value passes. Was 8900799605716253735.
-    private const ulong SeamBeforeAnybodyGotBetter = 18386648076548936173UL;
+    // RE-TAKEN (D522) with it, for the same reason. Was 18386648076548936173.
+    private const ulong SeamBeforeAnybodyGotBetter = 16656143455684160865UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
