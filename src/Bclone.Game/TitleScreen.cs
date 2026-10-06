@@ -121,19 +121,39 @@ public sealed partial class TitleScreen : Control
     /// and the pause screen's (`title-and-pause.md §3, §5`). A popup, never a list: a list widens its column to
     /// its longest line.
     /// </summary>
-    internal static MenuButton LoadButton(IReadOnlyList<SaveListing> saves, Action<string> picked)
+    /// <remarks>
+    /// ⭐ <b>It owns its list and can be refilled</b> (D518): the pause screen's stayed as it was opened, so a save
+    /// made while it was up never appeared in it — Joe saved <i>test</i> three times and saw no <i>test</i>.
+    /// </remarks>
+    internal sealed class LoadMenu
     {
-        var load = new MenuButton { Text = "Load…", Flat = false, Disabled = saves.Count == 0 };
-        PopupMenu menu = load.GetPopup();
-        for (int i = 0; i < saves.Count; i++)
+        private readonly List<SaveListing> _listed = new();
+
+        internal LoadMenu(IReadOnlyList<SaveListing> saves, Action<string> picked)
         {
-            menu.AddItem(saves[i].Line, i);
-            menu.SetItemDisabled(i, saves[i].Refusal is not null);
-            menu.SetItemTooltip(i, saves[i].Refusal ?? saves[i].Path);
+            Button = new MenuButton { Text = "Load…", Flat = false };
+            Button.GetPopup().IdPressed += id => picked(_listed[(int)id].Path);
+            Fill(saves);
         }
 
-        menu.IdPressed += id => picked(saves[(int)id].Path);
-        return load;
+        internal MenuButton Button { get; }
+
+        /// <summary>Every row again, from <paramref name="saves"/>.</summary>
+        internal void Fill(IReadOnlyList<SaveListing> saves)
+        {
+            _listed.Clear();
+            _listed.AddRange(saves);
+            PopupMenu menu = Button.GetPopup();
+            menu.Clear();
+            for (int i = 0; i < _listed.Count; i++)
+            {
+                menu.AddItem(_listed[i].Line, i);
+                menu.SetItemDisabled(i, _listed[i].Refusal is not null);
+                menu.SetItemTooltip(i, _listed[i].Refusal ?? _listed[i].Path);
+            }
+
+            Button.Disabled = _listed.Count == 0;
+        }
     }
 
     private Control BuildTheBand()
@@ -177,7 +197,7 @@ public sealed partial class TitleScreen : Control
         NewVillageButton.Pressed += () => NewVillageAsked?.Invoke();
         column.AddChild(NewVillageButton);
 
-        column.AddChild(Big(LoadButton(Saves, path => LoadAsked?.Invoke(path))));
+        column.AddChild(Big(new LoadMenu(Saves, path => LoadAsked?.Invoke(path)).Button));
 
         Button quit = Big(new Button { Text = "Quit" });
         quit.Pressed += () => QuitAsked?.Invoke();

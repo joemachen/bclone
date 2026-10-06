@@ -1,4 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D517 IN §7. THE TITLE AND PAUSE SCREENS ARE BUILT ON `slice/title-and-pause` (D517) — JOE PLAYS THEM NEXT.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D518 IN §7. THE TITLE AND PAUSE SCREENS ARE PLAYED; D518 FIXED THE SILENT SAVE — JOE REPLAYS THE SAVE ROW, THEN MERGE.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE PLAYED, SAVE ROW FIXED) — D518, ON WINDOWS.**
+>
+> **State (D518):** `main` = D515, pushed. **`slice/title-and-pause`** (not pushed) = D516 spec + D517 build + D518 fix.
+> Joe played D517: the title, Continue, Esc, Load… and the quits all worked; **Save looked broken and was not** — it
+> saved (`test.save` was on disk) but said so only to the audit file, and the pause screen's Load… list never
+> refreshed. Now the line under Save says what happened, the village log gets it too, Enter saves, and Load… refills.
+>
+> **▶️ NEXT: Joe replays the Save row** (`run.bat` on the branch): type *test* → Save → *"Saved as test."* under it, and
+> *Load…* lists *… · test* without reopening; Save again → *"…, replacing the earlier save of that name."* Then merge at
+> his word (`git checkout main`, `git merge --no-ff slice/title-and-pause`, `git push`, delete the branch), and **ask
+> what's next** — §4's shell has only ⏸️ items left (full settings, ironman mode).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (TITLE AND PAUSE BUILT) — D517, ON WINDOWS.**
 >
@@ -5270,6 +5284,11 @@ Read `git status` after staging, every time.
 - **Not every Godot in `tasklist` is yours.** After the first probe two `Godot_v4.7.1` processes were still listed:
   `--path game -- --seed=42 --selftest`, a different project, started in the same minute. Read the command line
   (`Get-CimInstance Win32_Process`) before killing anything (D500).
+
+- **A `World.Log(…, "shell", …)` line never reaches the screen (D518).** The village log draws `"life"` entries
+  only; *"Saved as …"* went to the audit file for a whole slice while two specs said the player saw it. Joe saved
+  three times, saw nothing, and reasonably asked *"is it even saving?"* — **before writing "the log says", find where
+  the sentence is drawn.** And a list built when a panel opens is stale the moment the panel changes what it lists.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

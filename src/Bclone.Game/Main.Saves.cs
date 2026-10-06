@@ -259,22 +259,26 @@ public partial class Main
     }
 
     /// <summary>
-    /// A named save from Settings — or, on a village that stopped on an error, the refusal (§7): there is
+    /// A named save from the pause screen — or, on a village that stopped on an error, the refusal (§7): there is
     /// nothing sound to save, and the last autosave is the way back.
     /// </summary>
-    private void SaveUnderAName(string name)
+    /// <returns>
+    /// ⭐ The sentence the player reads, and whether it saved (D518). It used to say <i>"Saved as …"</i> only to the
+    /// audit file: the village log on screen shows <c>"life"</c> entries and nothing else, so the player never saw it.
+    /// </returns>
+    private (string Said, bool Saved) SaveUnderAName(string name)
     {
         if (_halted)
         {
             SimClock last = SimClock.FromTick(_loop.World.Tick - (_loop.World.Tick % (ulong)_loop.World.Config.TicksPerYear), _loop.World.Config);
-            SayInTheLog($"The village stopped on an error, so it can't be saved. The last autosave is from Year {last.Year}.");
-            return;
+            string refused = $"The village stopped on an error, so it can't be saved. The last autosave is from Year {last.Year}.";
+            SayInTheLog(refused);
+            return (refused, false);
         }
 
         if (_saveFolder is null)
         {
-            SayInTheLog("Nothing is saved while the probe runs.");
-            return;
+            return ("Nothing is saved while the probe runs.", false);
         }
 
         string stem = Slug(name);
@@ -284,23 +288,28 @@ public partial class Main
         }
 
         string path = System.IO.Path.Combine(_saveFolder, stem + SaveFile.Extension);
+        bool replacing = System.IO.File.Exists(path);
         try
         {
             SaveFile.Write(path, CaptureTheVillage());
             _loop.World.Log(LogLevel.Info, "shell", $"Saved as {stem} — {path}.");
+            string said = replacing ? $"Saved as {stem}, replacing the earlier save of that name." : $"Saved as {stem}.";
+            SayInTheLog(said);
+            return (said, true);
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
-            CouldNotSave(ex);
+            return (CouldNotSave(ex), false);
         }
     }
 
-    private void CouldNotSave(Exception ex)
+    private string CouldNotSave(Exception ex)
     {
         string sentence = $"The village could not be saved ({ex.Message}). The last save still stands.";
         SayInTheLog(sentence);
         _audit.Log(_loop.World.Tick, LogLevel.Error, "shell", $"{sentence} {ex}");
         GD.PushError($"[bclone] {sentence}");
+        return sentence;
     }
 
     /// <summary>⭐ Quitting writes the autosave (§7) — a village is never lost to the window's ✕.</summary>
@@ -314,9 +323,11 @@ public partial class Main
 
     /// <summary>
     /// A name and <i>Save</i> — on the pause screen since D516 (Joe, D508: in Settings <i>"until the pause screen
-    /// exists"</i>).
+    /// exists"</i>) — and, under them, the line that says what happened (D518). Enter in the box saves too.
     /// </summary>
-    private void AddTheSaveRow(VBoxContainer body)
+    /// <param name="body">Where the rows go.</param>
+    /// <param name="afterASave">Run when a save is written — the pause screen refills its Load… list.</param>
+    private (Button Save, Label Said) AddTheSaveRow(VBoxContainer body, Action afterASave)
     {
         var row = new HBoxContainer();
         var name = new LineEdit
@@ -328,10 +339,34 @@ public partial class Main
         row.AddChild(name);
         var save = new Button { Text = "Save", TooltipText = "Save the village under this name" };
         save.AddThemeFontSizeOverride("font_size", 12);
-        save.Pressed += () => SaveUnderAName(name.Text);
         row.AddChild(save);
         body.AddChild(row);
+
+        var said = new Label
+        {
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Visible = false,
+            CustomMinimumSize = new Vector2(260, 0),
+        };
+        said.AddThemeFontSizeOverride("font_size", 12);
+        body.AddChild(said);
         body.AddChild(Caption($"It also saves itself every spring and when you quit — the last {AutosavesKept} are kept."));
+
+        void Saving()
+        {
+            (string sentence, bool saved) = SaveUnderAName(name.Text);
+            said.Text = sentence;
+            said.Modulate = saved ? new Color(0.62f, 0.86f, 0.58f) : new Color(1f, 0.55f, 0.45f);
+            said.Visible = true;
+            if (saved)
+            {
+                afterASave();
+            }
+        }
+
+        save.Pressed += Saving;
+        name.TextSubmitted += _ => Saving();
+        return (save, said);
     }
 
     // ---------------------------------------------------------------

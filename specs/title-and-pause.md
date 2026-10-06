@@ -6,7 +6,8 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 *Continue* and *Load…* on the new-game screen *"until the title screen exists"*, *Save* in Settings *"until the
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
-**Status:** 🔨 **BUILT (D517, 2026-10-05) on `slice/title-and-pause` — not yet played by Joe.** View only; nothing in
+**Status:** 🔨 **BUILT (D517, 2026-10-05) on `slice/title-and-pause`; PLAYED by Joe (2026-10-06) — everything worked
+but the Save row's silence, fixed in D518 and waiting for his replay.** View only; nothing in
 `Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros**. ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
 *Quit to desktop* — they wait for §10.5. Owner: Joe + Claude Code.
@@ -75,7 +76,9 @@ new-game screen's shape (`NewGameScreen`, which raises events and Main acts on t
   - **Resume**.
   - **Save**: the name box and *Save* button, as they were in Settings (an empty name saves as `year-N`), with
     the caption *"It also saves itself every spring and when you quit — the last 3 are kept."* The result is
-    said in the village log as today (*"Saved as …"*, or the refusal).
+    said **on the pause screen, under the Save row** (D518 — green for a save, the warning colour for a refusal) and
+    in the village log after resuming. Enter in the name box saves too, and the *Load…* list below refills at once.
+    ⛔ It used to be "said in the village log as today" — it never was: that line went to the audit file only.
   - **Load…** — the title's popup. Picking a save: this village is autosaved (*"before loading another"*), then
     the chosen one opens — see §6 for why that order needs care.
   - **Settings** — closes the pause screen and opens the Settings window. ⚠️ **The village stays paused** (the
@@ -118,7 +121,8 @@ and one style box), and `_ExitTree` already disposes the audit log.
 | New-game screen | **Back** |
 | Pause | **Paused** · *{village} — {Day N, Season, Year N}* · **Resume** · **Save** · **Load…** · **Settings** · **Quit to title** · **Quit to desktop** |
 | Pause, halted | *The village stopped on an error and will not be saved — the last autosave is from Year N.* |
-| Log | *Autosaved (on quit to title) to …* · *Autosaved (before loading another) to …* |
+| Under Save (D518) | *Saved as test.* · *Saved as test, replacing the earlier save of that name.* · *Nothing is saved while the probe runs.* · the halted refusal · *The village could not be saved (…). The last save still stands.* |
+| Audit log | *Autosaved (on quit to title) to …* · *Autosaved (before loading another) to …* |
 
 ## 8. Verification
 
@@ -147,7 +151,10 @@ Two new lines, each red-checked (D326) by breaking the thing it claims and count
   | P5 | the Save row back in Settings | `pause:` ❌ Settings still has Save |
   | P6 | no Save row on the pause screen | `pause:` ❌ no Save |
 
-  **9 mutants, 10 reds, no zeros.** ⚠️ The ways out (*Quit to title*, *Load…* through the copy aside, *Quit to
+  | M1 (D518) | the line under Save never shown | `pause:` ❌ Save said nothing |
+  | M2 (D518) | the Load… list not refilled after a save | ⚠️ **zero** — the probe writes no save, so it has nothing to list; Joe's replay is the check |
+
+  **11 mutants, 11 reds, one zero (M2, written down).** ⚠️ The ways out (*Quit to title*, *Load…* through the copy aside, *Quit to
   desktop*) and *Continue* are not probed: a probe that pressed them would end itself or touch the player's saves.
 - **Joe plays it** (§10).
 

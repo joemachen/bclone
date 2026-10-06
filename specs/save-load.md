@@ -225,7 +225,9 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
     one greyed with its refusal as the tooltip. ⚠️ A popup, not a list in the column: the column is
     measured at 400 by the probe's `new game:` line;
   - **in the game**, a name and *Save* sit in Settings under *How the village runs* (an empty name saves
-    as `year-N`); the village log says *"Saved as … — path"*;
+    as `year-N`); ~~the village log says *"Saved as … — path"*~~ ⛔ **it never did** — that line went to the audit
+    file only (`"shell"`; the village log shows `"life"` entries), found by Joe in D518. Since D518 the pause screen
+    says it under the Save row and the village log gets it too (`title-and-pause.md §5`);
   - **autosave at the year's turn**: a frame's ticks are stepped up to the turn, the autosave written,
     then the rest — so it is the village of Spring, Day 1 whatever the speed. **And on quit**
     (`NotificationWMCloseRequest`).

@@ -17,6 +17,12 @@ public partial class Main
 
     private bool ThePauseIsUp => _pause is not null;
 
+    /// <summary>For the probe: the pause screen's Save button.</summary>
+    private Button? _pauseSave;
+
+    /// <summary>For the probe: the line under Save that says what happened (D518).</summary>
+    private Label? _pauseSaid;
+
     /// <summary>Stop the village and put the pause screen over it.</summary>
     private void OpenThePause()
     {
@@ -39,8 +45,9 @@ public partial class Main
 
         _pause.AddButton("Resume", () => CloseThePause(resume: true));
         _pause.AddGap();
-        AddTheSaveRow(_pause.Body);
-        _pause.Body.AddChild(TitleScreen.LoadButton(TheSavesOnDisk(_loop.World.Config), LoadFromThePause));
+        var load = new TitleScreen.LoadMenu(TheSavesOnDisk(_loop.World.Config), LoadFromThePause);
+        (_pauseSave, _pauseSaid) = AddTheSaveRow(_pause.Body, () => load.Fill(TheSavesOnDisk(_loop.World.Config)));
+        _pause.Body.AddChild(load.Button);
         _pause.AddButton("Settings", OpenSettingsFromThePause);
         _pause.AddGap();
         _pause.AddButton("Quit to title", QuitToTheTitle, notSaved ?? "Saves the village first, then the title.");
@@ -130,6 +137,14 @@ public partial class Main
                 faults.Add("the pause screen has no Save");
             }
 
+            // ⭐ D518: pressing Save says what happened, on the pause screen. Safe under the probe — nothing is
+            // saved, and that refusal is the sentence the line must show.
+            _pauseSave?.EmitSignal(BaseButton.SignalName.Pressed);
+            if (_pauseSaid is not { Visible: true } said || said.Text != "Nothing is saved while the probe runs.")
+            {
+                faults.Add($"Save said nothing on the pause screen (\"{_pauseSaid?.Text}\")");
+            }
+
             PressAKey(Key.Key4);
             if (!_driver.IsPaused)
             {
@@ -154,7 +169,7 @@ public partial class Main
 
         SetSpeed(speedBefore);
         return faults.Count == 0
-            ? "[widths] pause: ✅ Esc with nothing open pauses under the dim, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen and not in Settings"
+            ? "[widths] pause: ✅ Esc with nothing open pauses under the dim, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen, says what it did, and is not in Settings"
             : $"[widths] pause: ❌ {string.Join("; ", faults)}";
 
         void PressAKey(Key key) => _UnhandledKeyInput(new InputEventKey { Keycode = key, Pressed = true });
