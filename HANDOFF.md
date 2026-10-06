@@ -1,4 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D515 IN §7. THE FIRST-WINTER FIREWOOD RACE IS CLOSED AS A FIXTURE EFFECT (D515). NEXT: THE TITLE AND PAUSE SCREENS, SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D517 IN §7. THE TITLE AND PAUSE SCREENS ARE BUILT ON `slice/title-and-pause` (D517) — JOE PLAYS THEM NEXT.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (TITLE AND PAUSE BUILT) — D517, ON WINDOWS.**
+>
+> **State (D517):** `main` = D515 merged and pushed (*"merge and push"*). **`slice/title-and-pause`** (off `main`, not
+> pushed) holds D516's spec with Joe's calls and **the whole feature, view only** (`specs/title-and-pause.md`):
+> `TitleScreen.cs`, `PauseScreen.cs`, `Main.Pause.cs`; the new-game screen's saves moved to the title and it gained
+> *Back*; *Save* left Settings for the pause screen; leaving a village reloads the scene. Suite and goldens untouched;
+> view 0 warnings; probe green with two new lines, `title:` and `pause:` — **9 mutants, 10 reds, no zeros**.
+>
+> **▶️ NEXT: Joe plays it** (`run.bat` on the branch — `git checkout slice/title-and-pause`). ⚠️ **These are unprobed
+> and only his play checks them**: *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*
+> (through the copy aside), *Quit to desktop*.
+> 1. Launch: the title over the valley of his newest save; *Continue*'s tooltip names it, and it opens it.
+> 2. In the village, Esc with nothing in hand: the village stops under the dim. Esc again: back at the speed he had.
+> 3. Save under a name from the pause screen. Then *Load…* one of **this village's own autosaves**: it must open the one
+>    he picked, and the log says *"Autosaved (before loading another)"*.
+> 4. *Quit to title*: *Continue* now names the autosave just written. *New village* → *Back* returns to the title.
+> 5. *Quit to desktop*, relaunch: *Continue* opens where he left.
+>
+> Then merge at his word: `git checkout main`, `git merge --no-ff slice/title-and-pause`, `git push`, delete the branch.
+> After that, §4's shell has only ⏸️ items left (full settings, ironman mode — both unscheduled): **ask Joe what's next.**
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE FIRST-WINTER RACE CLOSED) — D515, ON WINDOWS.**
 >
@@ -11,8 +34,8 @@
 > standing on winter's first day** (seeds 4, 8) or **no tree ever felled** (3, 7) — the unattended harness's play (D447).
 > A *winter readiness* warning was offered and not chosen; it is in D515 if it is ever wanted.
 >
-> **Branches:** **`slice/first-winter-race`** (off `main`, not pushed) holds D515 — docs and the harness only. Merge at
-> Joe's word: `git checkout main`, `git merge --no-ff slice/first-winter-race`, `git push`, then delete the branch.
+> **Branches:** `slice/first-winter-race` held D515 — docs and the harness only; merged `--no-ff` and pushed at Joe's
+> word (*"merge and push"*), then deleted.
 >
 > **▶️ NEXT:** §4's shell — **the title and pause screens**, spec first (*Save* moves from Settings to the pause screen
 > then). ⏸️ Later: a full settings screen (D508) and ironman mode (a name is Joe's — OPEN list). Still open from D502: a
@@ -5232,6 +5255,21 @@ Read `git status` after staging, every time.
 - **"Firewood in reach" and "froze" together mean look at the roof.** Seeds 4 and 8 of the played opening froze with
   306 / 330 firewood in reach; neither had a house standing on winter's first day. Exposure is positional (D45) —
   firewood heats a hearth nobody has.
+
+## ⛔ THE TRAPS THE TITLE AND PAUSE SCREENS (D516–D517) PAID FOR — A ROTATING FILE NAME, AND THE DOORS A PROBE CANNOT PRESS
+
+- **An autosave's path is not the autosave.** `SaveFile.WriteAutosave` rotates by renaming (`autosave1` → `2` → `3`,
+  the oldest deleted). Anything that writes an autosave between *choosing* a save and *opening* it — *"autosave this
+  village first, then load"* — opens a different file, or a deleted one. The pause screen's *Load…* copies the pick
+  aside before it autosaves. **Read the path into something that cannot move before you write next to it.**
+- **`GetTree().Quit()` raises no `NotificationWMCloseRequest`.** The ✕'s autosave lives in that notification, so a
+  button that quits must autosave itself.
+- **A probe that presses a way out ends itself.** *Quit to title* reloads the scene and *Quit to desktop* closes it,
+  so the probe can only check that the buttons exist and that Esc and the speed are right. The exits, *Continue* from
+  a real save and *Load…* are Joe's play — say so in the spec, never present the probe as covering them.
+- **Not every Godot in `tasklist` is yours.** After the first probe two `Godot_v4.7.1` processes were still listed:
+  `--path game -- --seed=42 --selftest`, a different project, started in the same minute. Read the command line
+  (`Get-CimInstance Win32_Process`) before killing anything (D500).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

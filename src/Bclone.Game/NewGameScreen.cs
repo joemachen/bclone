@@ -34,6 +34,9 @@ public sealed partial class NewGameScreen : Control
     /// </summary>
     public event Action<SimConfig, string, IReadOnlyDictionary<string, string>>? Founded;
 
+    /// <summary><i>Back</i>: the title screen (D516). Nothing is founded.</summary>
+    public event Action? BackAsked;
+
     private const float ColumnWidth = 400f;
 
     /// <summary>How long after the last change the preview waits before it bakes again, in seconds.</summary>
@@ -254,6 +257,13 @@ public sealed partial class NewGameScreen : Control
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
         buttons.AddThemeConstantOverride("separation", 10);
+
+        // ⭐ Back to the title (D516): nothing is founded, and the rows are not remembered — they are when a
+        // village is founded (D504).
+        var back = new Button { Text = "Back", TooltipText = "Back to the title" };
+        back.Pressed += () => BackAsked?.Invoke();
+        buttons.AddChild(back);
+        buttons.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         var defaults = new Button { Text = "Default settings", TooltipText = "Every setting back to the game's own" };
         defaults.Pressed += OnDefaults;
         buttons.AddChild(defaults);
@@ -261,63 +271,8 @@ public sealed partial class NewGameScreen : Control
         _found.Pressed += OnFound;
         buttons.AddChild(_found);
         column.AddChild(buttons);
-        column.AddChild(BuildTheSaves());
 
         return column;
-    }
-
-    // ---------------------------------------------------------------
-    //  Continue and Load… (`save-load.md §8`) — until the title screen exists
-    // ---------------------------------------------------------------
-
-    /// <summary>A save the player can open, as the list shows it — or one it can only show, greyed, with why.</summary>
-    internal sealed record SaveListing(string Path, string Line, string? Refusal);
-
-    /// <summary>Asked to open the save at this path. Main opens it, and says so here if it cannot.</summary>
-    public event Action<string>? LoadAsked;
-
-    /// <summary>Every save on disk, newest first — set by Main before the screen is shown.</summary>
-    internal IReadOnlyList<SaveListing> Saves { get; set; } = Array.Empty<SaveListing>();
-
-    /// <summary>
-    /// <b>Continue</b> (the newest save that can be opened) and <b>Load…</b> (all of them, newest first). A
-    /// popup rather than a list in the column: the column is measured at 400 (the probe's <c>new game:</c>
-    /// line) and a list of saves would widen it to its longest line.
-    /// </summary>
-    private Control BuildTheSaves()
-    {
-        var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
-        row.AddThemeConstantOverride("separation", 10);
-        SaveListing? newest = Saves.FirstOrDefault(s => s.Refusal is null);
-
-        var load = new MenuButton { Text = "Load…", Flat = false, Disabled = Saves.Count == 0 };
-        PopupMenu menu = load.GetPopup();
-        for (int i = 0; i < Saves.Count; i++)
-        {
-            menu.AddItem(Saves[i].Line, i);
-            menu.SetItemDisabled(i, Saves[i].Refusal is not null);
-            menu.SetItemTooltip(i, Saves[i].Refusal ?? Saves[i].Path);
-        }
-
-        menu.IdPressed += id => LoadAsked?.Invoke(Saves[(int)id].Path);
-        row.AddChild(load);
-
-        var resume = new Button
-        {
-            Text = "Continue",
-            Disabled = newest is null,
-            TooltipText = newest?.Line ?? "No saved village yet",
-        };
-        resume.Pressed += () => LoadAsked?.Invoke(newest!.Path);
-        row.AddChild(resume);
-        return row;
-    }
-
-    /// <summary>A save that would not open, said where the player is looking. The screen stays, and so does Found.</summary>
-    internal void RefuseTheLoad(string sentence)
-    {
-        _refusal.Text = sentence;
-        _refusal.Visible = true;
     }
 
     private Control BuildARow(NewGameRow row)
@@ -396,10 +351,13 @@ public sealed partial class NewGameScreen : Control
         return label;
     }
 
-    private string RollASeed()
+    private string RollASeed() => RollASeed(_config, _dice);
+
+    /// <summary>A seed of words, rolled by the view's dice — the title's rolled valley uses it too (D516).</summary>
+    internal static string RollASeed(SimConfig config, System.Random dice)
     {
-        IReadOnlyList<string> words = _config.SeedWords;
-        return $"{words[_dice.Next(words.Count)]}-{words[_dice.Next(words.Count)]}-{_dice.Next(10, 100)}";
+        IReadOnlyList<string> words = config.SeedWords;
+        return $"{words[dice.Next(words.Count)]}-{words[dice.Next(words.Count)]}-{dice.Next(10, 100)}";
     }
 
     private void OnSeedTyped(string text)

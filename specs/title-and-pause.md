@@ -6,8 +6,10 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 *Continue* and *Load…* on the new-game screen *"until the title screen exists"*, *Save* in Settings *"until the
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
-**Status:** ✍️ **SPECCED (D516), Joe's calls answered — being built on `slice/title-and-pause`.** View only;
-nothing in `Bclone.Sim` changes and no golden may move. Owner: Joe + Claude Code.
+**Status:** 🔨 **BUILT (D517, 2026-10-05) on `slice/title-and-pause` — not yet played by Joe.** View only; nothing in
+`Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros**. ⚠️ What
+the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
+*Quit to desktop* — they wait for §10.5. Owner: Joe + Claude Code.
 
 ---
 
@@ -131,6 +133,22 @@ Two new lines, each red-checked (D326) by breaking the thing it claims and count
    pause screen has one. It never presses Save, Load or a quit (the probe never touches the player's saves, and
    a quit would end the probe).
 - `bar height` stays **151**, `tile centres`, `new game:` and `save:` stay ✅, and `done.` prints.
+- **Red-checked (D517)** — each mutant's landing confirmed by a single exact match before its probe ran:
+
+  | Mutant | Broke | Read |
+  |---|---|---|
+  | T1 | the backdrop never set | `title:` ❌ no valley |
+  | T2 | *Continue* always enabled | `title:` ❌ offered with no save |
+  | T3 | the band 3000 px wide | `title:` ❌ ends at 3000 of 1280 |
+  | P1 | Esc's third step removed | `pause:` ❌ did not open |
+  | P2 | the village not stopped | `pause:` ❌ runs at 4× **and** a speed key reached it (2 reds) |
+  | P3 | the keyboard gate only for Esc | `pause:` ❌ a speed key reached the village |
+  | P4 | *Resume* gives back 0× | `pause:` ❌ gave back 0× |
+  | P5 | the Save row back in Settings | `pause:` ❌ Settings still has Save |
+  | P6 | no Save row on the pause screen | `pause:` ❌ no Save |
+
+  **9 mutants, 10 reds, no zeros.** ⚠️ The ways out (*Quit to title*, *Load…* through the copy aside, *Quit to
+  desktop*) and *Continue* are not probed: a probe that pressed them would end itself or touch the player's saves.
 - **Joe plays it** (§10).
 
 ## 9. Not in this slice

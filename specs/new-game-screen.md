@@ -305,7 +305,8 @@ ignored **1**, the scale row ignored **1**.
 - **Remembering the last settings** — ✅ done by *settings persistence* (D504–D505,
   `settings-persistence.md §4`): the screen opens on the rows of the valley last founded, each through
   `NewGame.IsAllowed`, with a fresh roll of the seed; *Default settings* still means the config's.
-- **A title screen** — the last shell step; until then this screen is the first thing the game shows.
+- **A title screen** — ✅ built (D517, `title-and-pause.md`): the game opens on the title, and *New village*
+  brings this screen up; it gained *Back* and gave *Continue* and *Load…* to the title.
 - **Save/load** — will want the share code (and the name) in the save; this spec only makes sure
   there is one string that names the valley.
 

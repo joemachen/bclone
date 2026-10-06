@@ -218,7 +218,8 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
   `CaptureTheVillage`, an `internal static Restore`, and the constructor's one new argument — given a save,
   it reads the map from it instead of generating one, wires the wear exactly as a founding does, then reads
   the village (`ReadTheVillage`) and returns before anything is founded.
-- **The view**, `Main.Saves.cs`. Until the title screen exists (§4's next shell step):
+- **The view**, `Main.Saves.cs`. Until the title screen existed (⭐ since D517 *Continue* and *Load…* are on the
+  title and the pause screen, and *Save* on the pause screen — `title-and-pause.md`):
   - **the new-game screen** gains **Continue** — the newest save that can be opened, of any kind — and
     **Load…**, a popup of every save (village, season and year, file, build), newest first, an unreadable
     one greyed with its refusal as the tooltip. ⚠️ A popup, not a list in the column: the column is
@@ -297,7 +298,7 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
 - **Migrations** from an older `format`. Not before v1 (§2).
 - **Replays and an input log.** These may come back one day as a debugging tool, or for co-op (§3 of
   DESIGN), but not as a save.
-- **The title and pause screens**, which are §4's next shell step. This slice puts *Continue* and
+- **The title and pause screens** — ✅ built (D517, `title-and-pause.md`). This slice put *Continue* and
   *Load…* on the new-game screen until then.
 - **Cloud sync, and saving mid-tick.**
 
@@ -307,7 +308,7 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
    eleven minutes at 1×). ⏸️ *"user can adjust this in full settings later"* — the cadence becomes a
    player setting when a full settings screen exists (§7).
 2. ✅ **Three autosaves kept.**
-3. ✅ **Save sits in Settings under *How the village runs*** — *"until the pause screen exists (and full
+3. ✅ **Save sits in Settings under *How the village runs*** (⭐ moved to the pause screen, D517) — *"until the pause screen exists (and full
    settings exist)"*; it moves there when they do.
 4. ✅ **The words**: *Continue*, *Load…*, *Save*, *Save as…*, and the refusal sentences in §7's table
    (Joe asked to see them; shown to him in D508's session).

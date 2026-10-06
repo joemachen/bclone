@@ -16,7 +16,8 @@ namespace Bclone.Game;
 /// <para>
 /// The sim does the saving (<see cref="SaveGame"/>, <see cref="SaveFile"/>); this file decides <em>when</em>
 /// and <em>where</em>: an autosave at every Spring, Day 1 and on quit, three kept (Joe, D508); a named save
-/// from Settings; and the new-game screen's <i>Continue</i> and <i>Load…</i> until the title screen exists.
+/// from the pause screen; <i>Continue</i> and <i>Load…</i> on the title and the pause screen; and the ways out of a
+/// village, which reload the scene (D516, `title-and-pause.md §6`).
 /// </para>
 /// <para>
 /// ⛔ <b>The probe never touches the player's saves</b> — the same rule as their settings
@@ -36,9 +37,9 @@ public partial class Main
     private static string SavesRoot => ProjectSettings.GlobalizePath("user://saves");
 
     /// <summary>Every save on disk, newest first, as the new-game screen lists them — none under the probe.</summary>
-    private static List<NewGameScreen.SaveListing> TheSavesOnDisk(SimConfig data)
+    private static List<TitleScreen.SaveListing> TheSavesOnDisk(SimConfig data)
     {
-        var listed = new List<NewGameScreen.SaveListing>();
+        var listed = new List<TitleScreen.SaveListing>();
         if (TheProbeIsRunning || !System.IO.Directory.Exists(SavesRoot))
         {
             return listed;
@@ -54,7 +55,7 @@ public partial class Main
             string line = read.Header is SaveHeader header
                 ? $"{SaveGame.VillageNameOf(header, data)} — {SimClock.FromTick(header.Tick, data).SeasonAndYear()} · {stem} · {header.Build}"
                 : $"{System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(path))} · {stem}";
-            listed.Add(new NewGameScreen.SaveListing(path, line, read.Refusal));
+            listed.Add(new TitleScreen.SaveListing(path, line, read.Refusal));
             if (read.Detail is not null)
             {
                 GD.Print($"[bclone] {read.Detail}");
@@ -66,27 +67,123 @@ public partial class Main
 
     /// <summary>
     /// ⭐ THE ONE DOOR A VILLAGE COMES IN BY FROM DISK. Opened whole on today's data, or refused in words on
-    /// the new-game screen, which stays (§7: never a half-loaded village).
+    /// the title, which stays (§7: never a half-loaded village).
     /// </summary>
-    private void OpenTheVillage(SimConfig data, string path)
+    /// <remarks>
+    /// <paramref name="chosen"/> is the file the player picked when <paramref name="path"/> is the copy set aside
+    /// before a pause-screen load (`title-and-pause.md §6`) — the log names the pick, and the copy is deleted.
+    /// </remarks>
+    private void OpenTheVillage(SimConfig data, string path, string? chosen = null)
     {
         CompositeLogSink sinks = OpenTheLogs();
         SaveOpened opened = SaveFile.Open(path, data, sinks);
+        if (chosen is not null)
+        {
+            DeleteTheCopy(path);
+        }
+
+        string named = chosen ?? path;
         if (opened.Loop is null)
         {
             // ⚠️ Never swallowed (METHODOLOGY §4): the sentence on the screen, the detail in the audit file.
-            _audit.Log(0UL, LogLevel.Error, "shell", $"{opened.Refusal} ({opened.Detail})");
-            GD.PushError($"[bclone] {opened.Refusal} ({opened.Detail})");
-            _newGame?.RefuseTheLoad(opened.Refusal ?? "That save could not be opened.");
+            _audit.Log(0UL, LogLevel.Error, "shell", $"{opened.Refusal} ({opened.Detail}) — {named}");
+            GD.PushError($"[bclone] {opened.Refusal} ({opened.Detail}) — {named}");
+            if (_title is null)
+            {
+                ShowTheTitle(data);
+            }
+
+            _title!.RefuseTheLoad(opened.Refusal ?? "That save could not be opened.");
             return;
         }
 
         _loop = opened.Loop;
         _shareCode = opened.Header!.ShareCode;
-        CloseTheNewGameScreen();
-        _loop.World.Log(LogLevel.Info, "shell", $"Opened {path}, saved by build {opened.Header.Build} at {opened.Header.SavedAt}: {_shareCode}.");
+        CloseTheTitle();
+        _loop.World.Log(LogLevel.Info, "shell", $"Opened {named}, saved by build {opened.Header.Build} at {opened.Header.SavedAt}: {_shareCode}.");
         TellTheLogAboutTheSettings();
         StartTheVillage(sinks);
+    }
+
+    // ---------------------------------------------------------------
+    //  Leaving a village (`title-and-pause.md §6`): the scene is reloaded, never torn down
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The one thing that crosses a reload: the copy of the save to open, and the file the player chose — or
+    /// null. Set just before the reload; read and cleared by <c>_Ready</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ The view's only mutable static, and the reason it is safe to reload at all: nothing else survives.
+    /// </remarks>
+    private static (string Copy, string Chosen)? _saveToOpen;
+
+    /// <summary>Where a pick is set aside — beside the saves' folder, never in it, so no list ever shows it.</summary>
+    private static string CopyAside => ProjectSettings.GlobalizePath("user://opening" + SaveFile.Extension);
+
+    private static (string Copy, string Chosen)? TakeTheSaveToOpen()
+    {
+        (string Copy, string Chosen)? taken = _saveToOpen;
+        _saveToOpen = null;
+        return taken;
+    }
+
+    /// <summary>The copy, and the <c>.bad</c> a refused open may have left beside it.</summary>
+    private static void DeleteTheCopy(string copy)
+    {
+        foreach (string file in new[] { copy, copy + SaveFile.BrokenSuffix })
+        {
+            if (System.IO.File.Exists(file))
+            {
+                System.IO.File.Delete(file);
+            }
+        }
+    }
+
+    /// <summary><i>Quit to title</i>: autosave, then a fresh scene opens on the title.</summary>
+    private void QuitToTheTitle()
+    {
+        Autosave("on quit to title");
+        GetTree().ReloadCurrentScene();
+    }
+
+    /// <summary>
+    /// <i>Quit to desktop</i>: autosave, then close. ⚠️ <c>GetTree().Quit()</c> raises no
+    /// <c>NotificationWMCloseRequest</c>, so the ✕'s autosave would never run — it is said here.
+    /// </summary>
+    private void QuitToTheDesktop()
+    {
+        Autosave("on quit");
+        GetTree().Quit();
+    }
+
+    /// <summary>
+    /// <i>Load…</i> from the pause screen: <b>set the pick aside, then autosave this village, then reload</b> and
+    /// open the copy (§6).
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>The order is the whole method.</b> Autosaves rotate by renaming (<see cref="SaveFile.WriteAutosave"/>:
+    /// 1 → 2 → 3, the oldest deleted), so autosaving first and then opening the path the player picked opens a
+    /// different file when the pick is one of this village's own autosaves — and a deleted one when it was the
+    /// oldest.
+    /// </remarks>
+    private void LoadFromThePause(string chosen)
+    {
+        try
+        {
+            System.IO.File.Copy(chosen, CopyAside, overwrite: true);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            string sentence = $"That save could not be read ({ex.Message}). Nothing has changed.";
+            SayInTheLog(sentence);
+            _audit.Log(_loop.World.Tick, LogLevel.Error, "shell", $"{sentence} {chosen} {ex}");
+            return;
+        }
+
+        Autosave("before loading another");
+        _saveToOpen = (CopyAside, chosen);
+        GetTree().ReloadCurrentScene();
     }
 
     /// <summary>This village's folder: its name and its seed, so two Ashfords are two folders (§7).</summary>
@@ -209,15 +306,15 @@ public partial class Main
     /// <summary>⭐ Quitting writes the autosave (§7) — a village is never lost to the window's ✕.</summary>
     public override void _Notification(int what)
     {
-        if (what == NotificationWMCloseRequest && _newGame is null && _loop is not null)
+        if (what == NotificationWMCloseRequest && _title is null && _newGame is null && _loop is not null)
         {
             Autosave("on quit");
         }
     }
 
     /// <summary>
-    /// The Settings rows under <i>How the village runs</i>: a name and <i>Save</i>, until the pause screen
-    /// exists (Joe, D508).
+    /// A name and <i>Save</i> — on the pause screen since D516 (Joe, D508: in Settings <i>"until the pause screen
+    /// exists"</i>).
     /// </summary>
     private void AddTheSaveRow(VBoxContainer body)
     {
