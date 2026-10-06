@@ -1396,6 +1396,18 @@ public sealed record SimConfig
     public int WellDrawTicks { get; init; } = 2;
 
     /// <summary>
+    /// Ticks a summer farmhand spends on one sown tile tending it, before walking back to the
+    /// steading to rest (D511, `specs/work-from-the-steading.md §5`). Zero switches tending off.
+    /// </summary>
+    /// <remarks>
+    /// <b>The look only.</b> A tend produces, consumes and teaches nothing, and is offered only where
+    /// a rest would begin — so the number decides how the summer field reads, never what it yields.
+    /// Four is a day.
+    /// </remarks>
+    [JsonPropertyName("tend_ticks")]
+    public int TendTicks { get; init; } = 4;
+
+    /// <summary>
     /// How many days apart a household walks to its well (D427, `organic-housing.md §9.12`).
     /// </summary>
     /// <remarks>
@@ -4670,6 +4682,11 @@ public sealed record SimConfig
                 "home_well_weight cannot be negative, and home_well_reach_tiles, well_draw_ticks and "
                 + $"water_trip_every_days must be greater than zero (got {HomeWellWeight}, "
                 + $"{HomeWellReachTiles}, {WellDrawTicks}, {WaterTripEveryDays}).");
+        }
+
+        if (TendTicks < 0)
+        {
+            throw new SimConfigException($"tend_ticks cannot be negative (got {TendTicks}); zero switches tending off.");
         }
 
         if (FounderAge < 0)

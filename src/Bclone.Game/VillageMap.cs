@@ -4812,6 +4812,7 @@ public partial class VillageMap : Control
 
         _trailsOf = paths;
         _trailsCollectedAt = paths.Generation;
+        _trailCollections++;
         _trail.Clear();
 
         IReadOnlyList<ushort> wear = paths.Tiles;
@@ -4861,6 +4862,14 @@ public partial class VillageMap : Control
     private readonly HashSet<Vector2I> _packedBlockTiles = new();
     private byte[] _trailGrade = System.Array.Empty<byte>();
     private PathWear? _trailsOf;
+
+    /// <summary>How many times the trails have been collected — the field overlay's cache key (D512).</summary>
+    private int _trailCollections;
+
+    /// <summary>The collection and the ground the field overlay was last built from (D512).</summary>
+    private int _fieldTrailsAtCollection = -1;
+
+    private int _fieldTrailsAtTerrain = -1;
     private int _trailsCollectedAt = -1;
 
     /// <summary>
@@ -4922,6 +4931,60 @@ public partial class VillageMap : Control
     }
 
     private bool _showWear;
+
+    /// <summary>
+    /// ⭐ A lane worn through a field is drawn over it (D512) — <b>a probe line</b>, posed, because the
+    /// probe's valley has no farm: three worn tiles are sown for a moment, the overlay must draw all
+    /// three, and once the ground is put back it must draw none of them.
+    /// </summary>
+    public string ALaneThroughAFieldIsDrawn()
+    {
+        SimWorld world = _world!;
+        CollectTheTrailsIfTheyMoved(world);
+
+        // Pose it: three worn tiles of the lanes `TheTrailsLieOnTheGround` laid, sown for a moment.
+        var posed = new List<(GridPos Tile, Terrain Was)>();
+        for (int i = 0; i < _trail.Count && posed.Count < 3; i++)
+        {
+            GridPos tile = _trail[i].Tile;
+            Terrain was = world.Map.TerrainAt(tile);
+            if (was == Terrain.Grass && world.SetTerrain(tile, Terrain.Sown))
+            {
+                posed.Add((tile, was));
+            }
+        }
+
+        BuildTheFieldTrailMesh();
+        int drawn = 0;
+        foreach ((GridPos tile, _) in posed)
+        {
+            drawn += _fieldTrailTiles.Contains(new Vector2I(tile.X, tile.Y)) ? 1 : 0;
+        }
+
+        int vertices = FieldTrailVertices;
+
+        // And back as it was — the field goes, and so does its overlay.
+        foreach ((GridPos tile, Terrain was) in posed)
+        {
+            world.SetTerrain(tile, was);
+        }
+
+        BuildTheFieldTrailMesh();
+        int left = 0;
+        foreach ((GridPos tile, _) in posed)
+        {
+            left += _fieldTrailTiles.Contains(new Vector2I(tile.X, tile.Y)) ? 1 : 0;
+        }
+
+        if (posed.Count == 0)
+        {
+            return "[widths] field lanes: ⛔ no worn grass to pose a field on — this proves nothing";
+        }
+
+        return drawn == posed.Count && vertices > 0 && left == 0
+            ? $"[widths] field lanes: ✅ a lane worn through {posed.Count} sown tiles is drawn over the field ({vertices} vertices), and goes with it"
+            : $"[widths] field lanes: ⛔ {drawn} of {posed.Count} sown tiles under a worn lane drew over the field ({vertices} vertices; {left} still drawn after the field went)";
+    }
 
     /// <summary>
     /// The trails draw where the paths are — <b>a probe line for the headless run</b> (D358).
@@ -5194,6 +5257,22 @@ public partial class VillageMap : Control
             }
 
             DrawTriangles(onScreen, FillColourOf(stage));
+        }
+
+        // ⭐ A LANE WORN THROUGH THE WHEAT IS SEEN (D512, Joe: "so should villagers walking through
+        // fields") — over the fill and under the stalks. Rebuilt only when the trails were
+        // re-collected or the ground changed, never a frame (D338).
+        int terrainNow = _world!.TerrainGeneration;
+        if (_fieldTrailsAtCollection != _trailCollections || _fieldTrailsAtTerrain != terrainNow)
+        {
+            _fieldTrailsAtCollection = _trailCollections;
+            _fieldTrailsAtTerrain = terrainNow;
+            BuildTheFieldTrailMesh();
+        }
+
+        if (_fieldTrailMesh.GetSurfaceCount() > 0)
+        {
+            RenderingServer.CanvasItemAddMesh(GetCanvasItem(), _fieldTrailMesh.GetRid(), TileToScreen());
         }
 
         if (_pixelsPerTile < TreeZoomFloor)
@@ -5556,8 +5635,9 @@ public partial class VillageMap : Control
             Color colour = ColourOf(workplace.Kind);
             bool selected = villager.Id == _selectedVillagerId;
 
+            // From where they LIVE (D511): a farmhand resting at the steading still commutes from home.
             DrawLine(
-                ToScreen(world.RestingPlaceOf(villager)),
+                ToScreen(world.HomePlaceOf(villager)),
                 ToScreen(workplace.Position),
                 colour with { A = selected ? 0.75f : 0.3f },
                 selected ? 2f : 1f);

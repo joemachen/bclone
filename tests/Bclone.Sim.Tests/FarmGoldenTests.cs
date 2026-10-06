@@ -287,7 +287,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D470) — ground quality removed (D395, Joe: "remove the 'ground' quality functionality from the game entirely"): a tile of crop reaps `crop_yield_per_tile` everywhere, the soil under a field no longer scales it. The only golden in the suite that reaches a farm, so the only one that moved. ⭐ PROVEN TO BE THE ONLY REASON: with the soil term put back at the reap, the old value passes. Was 7465599573486248760.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 2163965788719030807.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 13124465361264696566.
-    private const ulong SeamGoldenHash = 6162009344269948841UL;
+    // RE-TAKEN (D511) — farmhands rest at the steading in spring, summer and autumn, tend their sown tiles in summer, and go home in winter (`work-from-the-steading.md`, Joe: "workers actually working at their place of work"). ⭐ PROVEN TO BE THE ONLY REASON: with `RestsAtTheSteading` answering false for everybody, the old value passes. Was 6162009344269948841.
+    private const ulong SeamGoldenHash = 4704120055719651414UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -357,7 +358,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D470) — ground quality removed (D395): a tile of crop reaps `crop_yield_per_tile` everywhere. The same village as `SeamGoldenHash`, so it moved with it. ⭐ PROVEN: with the soil term put back at the reap, the old value passes. Was 4462969067628441091.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): every valley generated anew, and the soil no longer drawn or hashed (D470). The same village as `SeamGoldenHash`. Was 4805834385522930014.
     // RE-TAKEN (D475) — the seams found, not placed (Joe: "stone and iron nodes look planned and symmetrical"): the same village as `SeamGoldenHash`. Was 2806896355272201745.
-    private const ulong SeamBeforeAnybodyGotBetter = 8900799605716253735UL;
+    // RE-TAKEN (D511) with it again: farmhands rest at the steading and tend in summer. ⭐ PROVEN: with `RestsAtTheSteading` false for everybody, the old value passes. Was 8900799605716253735.
+    private const ulong SeamBeforeAnybodyGotBetter = 18386648076548936173UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

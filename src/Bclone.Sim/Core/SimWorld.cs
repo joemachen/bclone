@@ -11054,7 +11054,7 @@ public sealed class SimWorld : IObstacles
                     Hunger = rhythm,
 
                     // Standing at their house, or at the cart they arrived in (D70). Not
-                    // RestingPlaceOf — that reads the household, and this villager is not
+                    // HomePoint — that reads the household, and this villager is not
                     // in it yet.
                     Position = household.HomePosition ?? Point.CentreOf(origin),
                     HouseholdId = household.Id,
@@ -12736,7 +12736,7 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// Where a villager goes when there is nothing else to do — their house, or the cart.
+    /// Where a villager <b>lives</b> — their house, or the cart.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -12752,16 +12752,158 @@ public sealed class SimWorld : IObstacles
     /// questions — <em>where do I go?</em> and <em>what does this tile cost me?</em> — are
     /// kept apart on purpose; conflating them is how a cart quietly becomes a hearth.
     /// </para>
+    /// <para>
+    /// <b>⛔ NOT WHERE THEY STOP — THAT IS <see cref="RestingPlaceOf"/>, AND THE TWO ARE DIFFERENT
+    /// QUESTIONS (D511).</b> A farmhand stops at the steading through the working year and still
+    /// lives here. <c>LabourAllocator</c> costs a job from this one (D15's nearest home wins): read
+    /// from where they stop, a farmhand's cost to their own farm would be zero and no reshuffle
+    /// would ever move them. One name for two questions is D148's finding.
+    /// </para>
     /// </remarks>
-    public GridPos RestingPlaceOf(Villager villager) =>
+    public GridPos HomePlaceOf(Villager villager) =>
         HouseholdOf(villager).HomeTile ?? TheCart?.Tile ?? Map.FoundingSite;
 
     /// <summary>
     /// The same place as a <see cref="Point"/> — the doorstep itself, the cart itself — so a
     /// villager going home stands ON it (gridless slice 3, D354).
     /// </summary>
-    public Point RestingPoint(Villager villager) =>
+    public Point HomePoint(Villager villager) =>
         HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Point.CentreOf(Map.FoundingSite);
+
+    /// <summary>
+    /// Where a villager stops when there is nothing to do <b>right now</b> — home, except a
+    /// farmhand in the working year, who stops at the steading (D511).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ DERIVED FROM <see cref="RestingPoint"/>, NEVER ANSWERED SEPARATELY.</b> <c>GoHome</c>
+    /// walks to the Point and checks arrival against this tile; if the two ever disagreed a villager
+    /// would walk to one and be told they had not reached the other — D385's flicker, or somebody
+    /// who never gets in. One rule, one answer.
+    /// </para>
+    /// <para>
+    /// <b>It changes where they stop, never whether.</b> Eating, warmth and every trade and chore
+    /// are asked before anybody comes here to rest.
+    /// </para>
+    /// </remarks>
+    public GridPos RestingPlaceOf(Villager villager) => RestingPoint(villager).ToTile();
+
+    /// <summary>The same place as a <see cref="Point"/>, which is what a walk stands ON (D354).</summary>
+    public Point RestingPoint(Villager villager) =>
+        RestsAtTheSteading(villager, out Workplace? farm) ? farm!.Position : HomePoint(villager);
+
+    /// <summary>
+    /// Whether this villager stops at their farm rather than at home just now (D511,
+    /// `specs/work-from-the-steading.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A farmhand with ground to work, outside winter.</b> Somebody who can work, holds a job at a
+    /// standing farm, and that farm has painted ground — a farm with none has nothing to stay out
+    /// for, and its panel already tells the player to paint some.
+    /// </para>
+    /// <para>
+    /// <b>⛔ WINTER SENDS EVERYBODY HOME, AND THAT IS WHAT KEEPS IT SAFE.</b> The steading has no
+    /// hearth and <see cref="ShelterAt"/> knows nothing of it, so a farmhand staying out in winter
+    /// would be standing in the cold D45 built to kill people. The cold only counts in winter
+    /// (`HearthSystem.IsHeatingSeason`), so staying out in the other three seasons adds no way to die.
+    /// </para>
+    /// <para>
+    /// Derived, so nothing is stored, hashed or saved: it is a fact about the villager's job, the
+    /// farm's ground and the calendar, all of which already are.
+    /// </para>
+    /// </remarks>
+    public bool RestsAtTheSteading(Villager villager) => RestsAtTheSteading(villager, out _);
+
+    private bool RestsAtTheSteading(Villager villager, out Workplace? steading)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        steading = null;
+
+        if (Clock.IsWinter || !villager.CanWork || !villager.HasJob)
+        {
+            return false;
+        }
+
+        Workplace? farm = FindWorkplace(villager.WorkplaceId);
+        if (farm is null || farm.IsSite || farm.Kind != JobKind.Farmer || Zones.WorkGroundTiles(farm.Id) == 0)
+        {
+            return false;
+        }
+
+        steading = farm;
+        return true;
+    }
+
+    /// <summary>
+    /// A sown tile of this farm's own field for a summer farmhand to tend, or null when there is
+    /// none they can walk to (D511, `specs/work-from-the-steading.md §5`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The forager's rule, one trade over</b> (<see cref="AGatheringTileFor"/>, D384): the
+    /// candidates are the farm's sown tiles in the zone's own order, and the one taken is picked by
+    /// a hash of the villager and the tick, so a farmhand moves about the field rather than standing
+    /// on one row. ⛔ <b>Never an <c>Rng</c> draw</b>: tending is a look, and a look must not
+    /// reshuffle every seed's history. A tile nobody can walk to is passed over for the next.
+    /// </para>
+    /// <para>
+    /// Asked once a tend, over the farm's own ground only — the size of a field, not of the valley.
+    /// </para>
+    /// </remarks>
+    public GridPos? ATendingTileFor(Workplace farm, Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+        ArgumentNullException.ThrowIfNull(villager);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        int sown = 0;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (Map.TerrainAt(Zones.PositionOf(owned[i])) == Terrain.Sown)
+            {
+                sown++;
+            }
+        }
+
+        if (sown == 0)
+        {
+            return null;
+        }
+
+        uint mix = unchecked(((uint)villager.Id * 2654435761u) ^ ((uint)Tick * 2246822519u));
+        mix ^= mix >> 15;
+        mix = unchecked(mix * 2654435761u);
+        mix ^= mix >> 13;
+        int first = (int)(mix % (uint)sown);
+
+        // The `first`-th sown tile, then onward in the zone's order round to the start, until one
+        // can be walked to from the steading.
+        for (int step = 0; step < sown; step++)
+        {
+            int wanted = (first + step) % sown;
+            for (int i = 0, seen = 0; i < owned.Count; i++)
+            {
+                GridPos at = Zones.PositionOf(owned[i]);
+                if (Map.TerrainAt(at) != Terrain.Sown)
+                {
+                    continue;
+                }
+
+                if (seen++ == wanted)
+                {
+                    if (TravelCost.CanReach(farm.Tile, at))
+                    {
+                        return at;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Where "the village" is, for anything that needs one point to measure from.

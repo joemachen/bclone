@@ -284,10 +284,27 @@ public sealed class FarmMemoryTests
         Assert.True(world.StandingCropSixteenths(farm) > 0, "the probe year sowed nothing, so there is nothing to fail to reap");
         int places = farm.Places;
         world.SetStaffing(farm, 0);
-        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
 
-        _output.WriteLine($"after the failed autumn: {farm.FieldTilesLearned} a hand, probe failed = {farm.FieldProbeFailed}");
-        Assert.Equal(tried - 1, farm.FieldTilesLearned);
+        // ⚠️ READ ON THE EVE OF THE LESSON, NOT AT `tried` (D512). The step back is one tile from
+        // what the farm KNOWS when winter turns — and that is not always what it tried: a store
+        // filling or emptying moves the haul walk, and `FieldTilesThisFarmCommitsPerHand`
+        // re-reckons the field when it does (D142's one door). Measured when the steading changed
+        // which pose probes first (seed 12345, nine ticks out, year 2): the walk moved mid-autumn,
+        // the farm re-reckoned 7 → 10 a hand with nothing reaped, and the lesson stepped it back to
+        // 9 — the retreat working exactly, against a number read before the walk moved.
+        while (world.Clock.Season != Season.Winter)
+        {
+            loop.StepOnce();
+        }
+
+        int knew = farm.FieldTilesLearned;
+        Assert.True(world.StandingCropSixteenths(farm) > 0, "the hands-off autumn brought everything in, so no probe failed");
+        loop.StepOnce();
+
+        _output.WriteLine(
+            $"after the failed autumn: {knew} → {farm.FieldTilesLearned} a hand (tried {tried}), "
+            + $"probe failed = {farm.FieldProbeFailed}");
+        Assert.Equal(knew - 1, farm.FieldTilesLearned);
         Assert.True(farm.FieldProbeFailed);
         return (loop, farm, tried, places);
     }

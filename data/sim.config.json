@@ -961,6 +961,12 @@
   "well_draw_ticks": 2,
   "water_trip_every_days": 20,
 
+  // THE STEADING (D511, work-from-the-steading.md 5). A summer farmhand tends a
+  // sown tile of their own field for tend_ticks, walks back to the farm and rests,
+  // and goes again. The look only: a tend yields, teaches and draws nothing, and
+  // is offered only where a rest would begin. 4 is a day; 0 switches it off.
+  "tend_ticks": 4,
+
   // DERIVED, like gather_yield. The stated target: heating every home
   // through winter must cost no more than HALF the hands the village can
   // spare once everyone is fed. The half is the margin, and it is the

@@ -281,6 +281,12 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.WalkingToTheWell => false,
         VillagerState.DrawingWater => false,
 
+        // Tending is the look only (D511): no trade grows from it, and nor does the walk back to the
+        // steading — which is why that walk is its own state and not `TravelingHome`, which counts.
+        VillagerState.WalkingOutToTend => false,
+        VillagerState.Tending => false,
+        VillagerState.WalkingBackToTheSteading => false,
+
         // Only reachable by casting an integer that is not a state at all. Loud rather than
         // swallowed (METHODOLOGY §4), and the walking test above is what catches a real new
         // state long before this could.

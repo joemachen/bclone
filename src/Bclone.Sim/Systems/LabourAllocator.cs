@@ -370,7 +370,7 @@ internal static class LabourAllocator
                 continue;
             }
 
-            GridPos home = world.RestingPlaceOf(villager);
+            GridPos home = world.HomePlaceOf(villager);
 
             for (int w = 0; w < world.Workplaces.Count; w++)
             {
@@ -644,7 +644,7 @@ internal static class LabourAllocator
                 villager.JobReason = closest is null
                     ? "No work: there is nowhere in the valley to work."
                     : $"No work: there is no way to walk from home to any of it. The nearest, "
-                      + $"{closest.Name}, is {world.RestingPlaceOf(villager).ManhattanDistanceTo(closest.Tile)} "
+                      + $"{closest.Name}, is {world.HomePlaceOf(villager).ManhattanDistanceTo(closest.Tile)} "
                       + "tiles off in a straight line — and the water is in the way.";
                 continue;
             }
@@ -1267,9 +1267,15 @@ internal static class LabourAllocator
     /// From home, not from wherever they happen to be standing. A job is a daily
     /// commute, and measuring from their current position would make assignment
     /// flicker as people walk about.
+    /// <para>
+    /// ⛔ <b>And from where they LIVE, not where they rest</b> (D511): a farmhand rests at the
+    /// steading through the working year, and costed from there their own farm would cost zero —
+    /// unbeatable for the seat, never moved again. D148's one-name-two-questions, guarded by
+    /// <c>SteadingTests.TheAllocatorCostsAFarmhandFromWhereTheyLive</c>.
+    /// </para>
     /// </remarks>
     internal static int CostBetween(SimWorld world, Villager villager, Workplace workplace) =>
-        world.TravelCost.Cost(world.RestingPlaceOf(villager), workplace.Tile);
+        world.TravelCost.Cost(world.HomePlaceOf(villager), workplace.Tile);
 
     /// <summary>Whether any walk at all gets this villager from home to that work.</summary>
     /// <remarks>
