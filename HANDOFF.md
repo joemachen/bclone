@@ -5203,6 +5203,15 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
+  with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands
+  while a crop stands), so no firewood exists before winter's first day and the first split races the cold. Measured
+  over seventeen every-source valleys × fifty years (`FoodConservationTests`' founding): **11 of 17 die on main, 9 of 17
+  on D513**, mostly in that first winter. Seed 4 on main survives with three villagers at cold ~4,900 because firewood
+  reached one home at t381. A *harness* valley is not a player (D447), so whether a played village meets it is the first
+  question. Asked: take this before the title and pause screens, or after? ⚠️ It is a §0.1 question too: a first winter
+  the player cannot see coming is the punishment §0.1 refuses.
+
 - ⏸️ **A NAME FOR "IRONMAN MODE" (Joe, D507: *"we'll have to come up with a better theme name than that"*).** One save
   per village, overwritten, no going back — a mode over save/load's file (`save-load.md §10`), built after save/load
   and the title screen. Not scheduled; the name is his.
