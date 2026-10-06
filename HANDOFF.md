@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE BUT FOR ITS ⏸️ ITEMS (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT: ASK JOE.**
+# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT, JOE'S PICK: THE FOOD CHAIN (WHEAT → FLOUR → BREAD, WHEAT → BEER) — SPEC FIRST, NOTHING BUILT UNTIL HE SAYS.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE MERGED) — D519, ON WINDOWS.**
 >
@@ -7,9 +7,22 @@
 > The merged tree is the one D518 verified (1520 / 0 / 5 of 1525; view 0 warnings; probe green, bar height 151, `title:`
 > and `pause:` ✅; goldens byte-identical). **What is left, locally and on GitHub: `main`.**
 >
-> **▶️ NEXT: ASK JOE.** §4's shell order is finished but for ⏸️ items nobody has scheduled — a full settings screen
-> (the autosave cadence becomes the player's, D508) and ironman mode (a name is Joe's — OPEN list). Still open from
-> D502: a market's *Keeps up to* row and the pin exception have no guard. §4's Master Roadmap is the list to offer.
+> **▶️ NEXT — JOE'S PICK (2026-10-06): THE FOOD CHAIN**, from Phase 5's open items (he was offered it beside building
+> condition, soil depletion and house tiers): *wheat → flour → bread, wheat → beer* (`food-catalog.md §6`) — a mill and
+> a bakery, the second processing chain after logs → firewood. ⛔ **His words: "Don't build anything"** — the next
+> session starts **spec first** and brings him the spec's calls before any code.
+>
+> ⚠️ **The spec's first question is not the buildings, it is what bread is FOR.** DESIGN §4: *"deriving a diet is the
+> precondition"* (D277, D348). Today **every edible good must share one nutrition value and the config refuses to load
+> otherwise** (`food-catalog.md` status; `VillageEconomy`'s survival floor is derived from one figure), so bread would
+> feed exactly what the wheat in it fed — a chain that only costs hands. Read first: `food-catalog.md §0` (the nutrition
+> axis Joe named 2026-08-23), §6 (processed) and §7 (*meals — scope caution*); D277, D348, D357 (*diet is health's
+> first content*, Phase 6) in §7; `wood-fuel-and-tools.md` (the one processing chain built — an input consumed, a
+> workplace idle for want of stock, D29); `crops-and-orchards.md` (a second crop is a `CropRow` plus a *"grow…"*
+> control). Grep §7 for *bread*, *flour*, *mill*, *nutrition* before proposing a number.
+>
+> ⏸️ Unscheduled, his: a full settings screen (the autosave cadence becomes the player's, D508) and ironman mode (a name
+> is Joe's — OPEN list). Still open from D502: a market's *Keeps up to* row and the pin exception have no guard.
 >
 > **(superseded by the banner above)**
 
