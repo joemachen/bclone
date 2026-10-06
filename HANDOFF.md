@@ -1,4 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D514 IN §7. THE STEADING IS DONE — PLAYED, MERGED AND PUSHED (D514). NEXT: THE TITLE AND PAUSE SCREENS, SPEC FIRST.**
+# Handoff — bclone: **▶️ PHASE 5, THE SHELL UNDER WAY — READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D515 IN §7. THE FIRST-WINTER FIREWOOD RACE IS CLOSED AS A FIXTURE EFFECT (D515). NEXT: THE TITLE AND PAUSE SCREENS, SPEC FIRST.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE FIRST-WINTER RACE CLOSED) — D515, ON WINDOWS.**
+>
+> **State (D515):** `main` = D514, pushed. Joe took the first-winter firewood race (OPEN list) before the shell and chose
+> *warn, don't fix* should a played village meet it. **Measured first — it does not** (`tools/harness/ZzFirstWinter.cs`,
+> five arms × seventeen valleys × fifty years, one sitting): the race needs a farm standing by spring of Year 1, which only
+> the fixture's free farm does (*everyfix*: 0 firewood in reach at winter in 17 of 17, 7 of 17 lose people in Year 1). A
+> farm a player marks at t0 stands at t264–375, after sowing. Joe: *"close it as a fixture effect."* **No game code
+> changed; no golden moved.** ⚠️ The shipped opening's own Year-1 losses (4 of 17, as before) come with **no house
+> standing on winter's first day** (seeds 4, 8) or **no tree ever felled** (3, 7) — the unattended harness's play (D447).
+> A *winter readiness* warning was offered and not chosen; it is in D515 if it is ever wanted.
+>
+> **Branches:** **`slice/first-winter-race`** (off `main`, not pushed) holds D515 — docs and the harness only. Merge at
+> Joe's word: `git checkout main`, `git merge --no-ff slice/first-winter-race`, `git push`, then delete the branch.
+>
+> **▶️ NEXT:** §4's shell — **the title and pause screens**, spec first (*Save* moves from Settings to the pause screen
+> then). ⏸️ Later: a full settings screen (D508) and ironman mode (a name is Joe's — OPEN list). Still open from D502: a
+> market's *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-05 (THE STEADING DONE) — D514, ON WINDOWS.**
 >
@@ -5201,16 +5221,28 @@ Read `git status` after staging, every time.
   changes — a store filling is enough (D142). A guard that compares a winter lesson against a number read in spring is
   reading across that door; read on the eve of the lesson.
 
+## ⛔ THE TRAP THE FIRST-WINTER RACE (D515) PAID FOR — A FIXTURE THAT RAISES BUILDINGS FREE CAN INVENT A RACE
+
+- **`FarmFixtures.RaiseAFarm`, `HuntingTests.RaiseALodgeFor` and `FishingTests.RaiseAFishery` build at t0 for nothing**
+  — stocked, worked and completed in one call. A farm that stands in spring of Year 1 takes two of four founders'
+  hands for the whole year, so the woodcutter waits for winter. **No player can do that**: a farmhouse marked at t0 on the
+  shipped config stood at t264–375, after sowing. Before filing a finding from `FoodConservationTests`' every-source
+  founding or `ZzBase`'s `every` arm, ask whether it needs a building standing earlier than a builder could raise it —
+  and run the same valleys with the building **marked**, not raised (`ZzFirstWinter`'s `farm0`).
+- **"Firewood in reach" and "froze" together mean look at the roof.** Seeds 4 and 8 of the played opening froze with
+  306 / 330 firewood in reach; neither had a house standing on winter's first day. Exposure is positional (D45) —
+  firewood heats a hearth nobody has.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
+- ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands
   while a crop stands), so no firewood exists before winter's first day and the first split races the cold. Measured
   over seventeen every-source valleys × fifty years (`FoodConservationTests`' founding): **11 of 17 die on main, 9 of 17
   on D513**, mostly in that first winter. Seed 4 on main survives with three villagers at cold ~4,900 because firewood
   reached one home at t381. A *harness* valley is not a player (D447), so whether a played village meets it is the first
   question. Asked: take this before the title and pause screens, or after? ⚠️ It is a §0.1 question too: a first winter
-  the player cannot see coming is the punishment §0.1 refuses.
+  the player cannot see coming is the punishment §0.1 refuses.~~
 
 - ⏸️ **A NAME FOR "IRONMAN MODE" (Joe, D507: *"we'll have to come up with a better theme name than that"*).** One save
   per village, overwritten, no going back — a mode over save/load's file (`save-load.md §10`), built after save/load
