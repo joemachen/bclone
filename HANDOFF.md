@@ -1,4 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT, JOE'S PICK: THE FOOD CHAIN (WHEAT → FLOUR → BREAD, WHEAT → BEER) — SPEC FIRST, NOTHING BUILT UNTIL HE SAYS.**
+# Handoff — bclone: **▶️ PHASE 5 — TWO BRANCHES WAIT ON JOE'S PLAY: `slice/food-chain` (D520–D524) AND `slice/movement-skip` (D525, the crowd fan, THIS BRANCH). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — 2026-10-07 — D525, ON WINDOWS. THIS IS `slice/movement-skip`, OFF `main`.**
+>
+> **Two branches, both unpushed, both waiting on Joe's play, independent of each other:**
+> - **`slice/food-chain`** (off `main`, D520–D524): bread, the mill and the bakery at 5,000 wheat reaped, a varied
+>   diet. **Its docs (D520–D524, its handoff banners and traps) live on that branch, not here** — read its `HANDOFF.md`
+>   for its play steps. ⚠️ When both merge, `DESIGN.md` §6/§7 and this file will conflict: keep both sides' entries,
+>   in decision order (D520–D524, then D525).
+> - **`slice/movement-skip`** (this branch, D525, view only): **the skip was the crowd fan**, measured
+>   (`tools/harness/ZzSkip.cs`, `gridless.md` slice 7). The sim never moves anyone more than √2 tiles a tick; the fan
+>   ranked walkers too and was never glided — 108–135 instant jumps per 1,000 villager-ticks. Now only the standing
+>   are fanned, once a tick, and the fan glides. Probe `crowd:` ✅ (2 mutants, 2 red); view 0 warnings; probe green,
+>   bar height 151.
+>
+> **▶️ NEXT: Joe plays `slice/movement-skip`** (`git checkout slice/movement-skip`, `run.bat`): watch a doorstep or the
+> market at 2–4× — walkers pass through a standing group in a straight line, and when somebody stops or leaves, the
+> others *slide* round to make room rather than jump. ⏸️ If the slides still read busy, **stable slots** (each person
+> keeps one place on the ring) is the next step — his call. Then merge at his word.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE MERGED) — D519, ON WINDOWS.**
 >
@@ -5316,7 +5336,20 @@ Read `git status` after staging, every time.
   three times, saw nothing, and reasonably asked *"is it even saving?"* — **before writing "the log says", find where
   the sentence is drawn.** And a list built when a panel opens is stale the moment the panel changes what it lists.
 
+## ⛔ THE TRAP D525 PAID FOR — THE SUSPECTS ON FILE WERE THE SIM'S, AND THE SKIP WAS THE VIEW
+
+- **D403 filed the skip's suspects in the sim** (the arrival snap, short legs) because the sim was where the last bug
+  had lived. The per-tick measurement found **no** sim move over the view's snap line at all, and the jumps in the
+  view's crowd fan, which nobody had listed. *Measure the thing the eye sees — the drawn position — not only the
+  thing you suspect.*
+- **A view rule recomputed every frame from "everyone on this tile" counts walkers as a crowd.** Anything drawn from
+  a grouping should ask who belongs in it, and anything that changes at a tick boundary should glide like the
+  position does, or it is a jump.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- 🔨 **THE MOVEMENT SKIP — BUILT (D525) on `slice/movement-skip`, unplayed.** It was the crowd fan (`gridless.md`
+  slice 7). ⏸️ Stable slots if the re-rank slides still read busy — his eye's call.
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands

@@ -37,3 +37,8 @@ against a number from an older commit.
   and the woodcutter's hut stood, the first split, firewood in reach / the burn on each winter's first day (Years 1–5),
   houses standing and logs felled at Winter, Year 1, cold deaths by year, and the woodcutters wanted / given and farmers
   given at each season turn (Years 1–3). `ZZ_ARMS`, `ZZ_SEEDS` narrow it. Copy in, `--filter ZzFirstWinter`, delete.
+- `ZzSkip.cs` — D525's measurement of the movement skip (`gridless.md` slice 7): per villager per tick, a position move
+  over √2 tiles (the view teleports), a walking-speed histogram, a stutter (a walker standing a tick mid-journey, and
+  how many were a meal on the road), and the crowd fan's instant jumps by size — the view's own rule restated — plus
+  D525's rule modelled (`glides-D525`: re-ranks among the standing, now slides). Arm `played` (shipped config, played
+  opening), ZZ_SEEDS / ZZ_YEARS. Copy in, `-c Release --filter ZzSkip`, delete.

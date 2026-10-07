@@ -360,10 +360,14 @@ public partial class VillageMap : Control
     /// how far through a tick we are; it never says that one ended. Advancing this on a
     /// reading of alpha is what D169 fixed.
     /// </remarks>
-    private readonly Dictionary<int, (Vector2 Previous, Vector2 Current)> _tiles = new();
-
-    /// <summary>Reused each frame so a busy village does not allocate per redraw.</summary>
-    private readonly Dictionary<GridPos, List<int>> _byTile = new();
+    /// <remarks>
+    /// ⭐ <b>And the crowd fan's two ends (D525).</b> The fan used to be worked out every frame from
+    /// everyone on a tile and added unglided, so a walker crossing a busy tile was shoved off their line
+    /// and everyone standing there re-ranked — an instant jump of up to 0.6 of a tile, measured at 108–135
+    /// in every 1,000 villager-ticks: <b>the skip Joe kept seeing</b> (`tools/harness/ZzSkip.cs`). Now it
+    /// is worked out once a tick, among the people STANDING on a tile, and glides like the position.
+    /// </remarks>
+    private readonly Dictionary<int, (Vector2 Previous, Vector2 Current, Vector2 FanPrevious, Vector2 FanCurrent)> _tiles = new();
 
     /// <summary>
     /// The sim tick <see cref="_tiles"/> was last advanced for. <see cref="ulong.MaxValue"/>
@@ -2222,6 +2226,48 @@ public partial class VillageMap : Control
                 + $"worst {worst:F4}px"
             : $"[widths] tile centres: ⛔ {worst:F2}px adrift at {where} — every building on the "
                 + $"map is off by {worst / Mathf.Max(1f, _pixelsPerTile):F2} of a tile";
+    }
+
+    /// <summary>
+    /// ⭐ The crowd fan cannot skip (D525) — <b>a probe line</b>: a walker crossing a crowded tile is not
+    /// fanned and moves nobody standing there, and a reshuffle drawn half way through a tick sits half way.
+    /// </summary>
+    public static string TheCrowdDoesNotSkip()
+    {
+        var faults = new List<string>();
+        var tile = new GridPos(4, 4);
+
+        // Three people standing at a door; then a fourth walks across the tile.
+        var standing = new List<(int Id, GridPos Tile, bool Standing)> { (1, tile, true), (2, tile, true), (3, tile, true) };
+        Dictionary<int, Vector2> before = FanTargets(standing);
+        var crossed = new List<(int Id, GridPos Tile, bool Standing)>(standing) { (9, tile, false) };
+        Dictionary<int, Vector2> during = FanTargets(crossed);
+
+        if (during[9] != Vector2.Zero)
+        {
+            faults.Add($"a walker crossing a crowded tile is shoved {during[9].Length():F2} of a tile off their line");
+        }
+
+        foreach (int id in new[] { 1, 2, 3 })
+        {
+            if (before[id] != during[id])
+            {
+                faults.Add($"villager {id}, standing, jumps {before[id].DistanceTo(during[id]):F2} of a tile when someone walks past");
+            }
+        }
+
+        // A fourth stops: the three re-rank, and half way through the tick they are half way.
+        var stopped = new List<(int Id, GridPos Tile, bool Standing)>(standing) { (9, tile, true) };
+        Dictionary<int, Vector2> after = FanTargets(stopped);
+        Vector2 half = FanDrawn(before[2], after[2], 0.5f);
+        if (half.DistanceTo((before[2] + after[2]) / 2f) > 0.0001f)
+        {
+            faults.Add("a re-rank does not glide — half way through the tick the fan is not half way");
+        }
+
+        return faults.Count == 0
+            ? "[widths] crowd: ✅ a walker crossing a crowded tile keeps their line and moves nobody standing there; a re-rank glides"
+            : $"[widths] crowd: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -6119,7 +6165,7 @@ public partial class VillageMap : Control
     /// </para>
     /// <para>
     /// ⚠️ <b>DERIVED, NOT RANDOM.</b> Every other mark on this map is backed by sim state, and even
-    /// <c>FanOffset</c> takes its angle from a villager's RANK rather than a roll, precisely so the
+    /// the crowd fan (<c>FanTargets</c>) takes its angle from a villager's RANK rather than a roll, precisely so the
     /// arrangement does not jitter. A per-frame <c>GD.Randi</c> here would make the woods boil. The
     /// tile's own coordinates are the seed, so a given tile either has an animal or a patch or
     /// both, for ever.
@@ -6582,8 +6628,6 @@ public partial class VillageMap : Control
         SimWorld world = _world!;
         var stillAlive = new HashSet<int>();
 
-        GroupByTile(world);
-
         // Before anybody is drawn, because DrawnCentre reads what this writes and the click
         // test asks DrawnCentre too — one answer per frame, or the dot and the hit test
         // would disagree by a tile.
@@ -6669,9 +6713,9 @@ public partial class VillageMap : Control
 
             // First sight of somebody — born, or the first frame of the run. They start
             // standing still rather than gliding in from nowhere.
-            if (!_tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known))
+            if (!_tiles.TryGetValue(villager.Id, out var known))
             {
-                _tiles[villager.Id] = (current, current);
+                _tiles[villager.Id] = (current, current, Vector2.Zero, Vector2.Zero);
                 continue;
             }
 
@@ -6682,68 +6726,83 @@ public partial class VillageMap : Control
 
             // `known.Current` is where they were on the previous frame, and a sim position
             // only changes on a tick boundary — so it is where they stood last tick.
-            _tiles[villager.Id] = (known.Current, current);
+            _tiles[villager.Id] = (known.Current, current, known.FanCurrent, known.FanCurrent);
         }
-    }
 
-    /// <summary>Everyone alive, bucketed by the tile they are standing on.</summary>
-    private void GroupByTile(SimWorld world)
-    {
-        foreach (KeyValuePair<GridPos, List<int>> bucket in _byTile)
+        if (!tickAdvanced)
         {
-            bucket.Value.Clear();
+            return;
         }
 
+        // ⭐ THE CROWD FAN, ONCE A TICK, AMONG THE STANDING (D525). A villager who moved this tick is on their
+        // way somewhere and keeps to their line; the people standing on a tile share its ring, ranked by id.
+        // The new offset becomes the glide's far end — it slides there over the tick, as the position does.
+        var everyone = new List<(int Id, GridPos Tile, bool Standing)>(world.Villagers.Count);
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive)
+            if (villager.Alive && _tiles.TryGetValue(villager.Id, out var known))
             {
-                continue;
+                everyone.Add((villager.Id, villager.Tile, known.Previous == known.Current));
             }
+        }
 
-            if (!_byTile.TryGetValue(villager.Tile, out List<int>? here))
-            {
-                here = new List<int>();
-                _byTile[villager.Tile] = here;
-            }
-
-            // Villagers are walked in id order, so each bucket comes out sorted by id
-            // without needing to be sorted.
-            here.Add(villager.Id);
+        foreach ((int id, Vector2 fan) in FanTargets(everyone))
+        {
+            var known = _tiles[id];
+            _tiles[id] = (known.Previous, known.Current, known.FanPrevious, fan);
         }
     }
 
     /// <summary>
-    /// Where to draw somebody standing on a crowded tile.
+    /// Where each villager sits on their tile's crowd ring this tick (D525) — pure, so the probe can pose it.
     /// </summary>
     /// <remarks>
-    /// Four adults resting at one house are four people, and drawing them at one point
-    /// makes them look like one — which is exactly the question the phase's Success
-    /// Test asks. So a crowded tile spreads its occupants around a small ring.
-    /// <para>
-    /// The offset depends only on <em>rank within the tile</em> and <em>how many are
-    /// on it</em>, and rank comes from villager id order, so the arrangement is stable
-    /// from frame to frame and nobody jitters. It is view-only: sim positions never
-    /// move (DESIGN.md §3).
-    /// </para>
+    /// <b>Only the standing are fanned</b>: a walker gets no offset, and does not count toward the ring of
+    /// the people they pass. Rank is by id among the standing on a tile, so the arrangement is stable while
+    /// nobody comes or goes, and nobody jitters.
     /// </remarks>
-    private Vector2 FanOffset(Villager villager)
+    internal static Dictionary<int, Vector2> FanTargets(IReadOnlyList<(int Id, GridPos Tile, bool Standing)> everyone)
     {
-        if (!_byTile.TryGetValue(villager.Tile, out List<int>? here) || here.Count <= 1)
+        var byTile = new Dictionary<GridPos, List<int>>();
+        var fans = new Dictionary<int, Vector2>(everyone.Count);
+        foreach ((int id, GridPos tile, bool standing) in everyone)
         {
-            return Vector2.Zero;
+            fans[id] = Vector2.Zero;
+            if (!standing)
+            {
+                continue;
+            }
+
+            if (!byTile.TryGetValue(tile, out List<int>? here))
+            {
+                here = new List<int>();
+                byTile[tile] = here;
+            }
+
+            here.Add(id);
         }
 
-        int rank = here.IndexOf(villager.Id);
-        if (rank < 0)
+        foreach (List<int> here in byTile.Values)
         {
-            return Vector2.Zero;
+            if (here.Count <= 1)
+            {
+                continue;
+            }
+
+            here.Sort();
+            for (int rank = 0; rank < here.Count; rank++)
+            {
+                float angle = Mathf.Tau * rank / here.Count;
+                fans[here[rank]] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * FanRadiusTiles;
+            }
         }
 
-        float angle = Mathf.Tau * rank / here.Count;
-        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * FanRadiusTiles;
+        return fans;
     }
+
+    /// <summary>The fan drawn this frame: from last tick's place on the ring to this tick's, as alpha runs.</summary>
+    internal static Vector2 FanDrawn(Vector2 previous, Vector2 current, float alpha) => previous.Lerp(current, alpha);
 
     /// <summary>How big a person is drawn, in pixels. Never smaller than a clickable dot.</summary>
     private float VillagerRadius => Mathf.Max(3f, _pixelsPerTile * 0.2f);
@@ -6768,19 +6827,22 @@ public partial class VillageMap : Control
     private Vector2 DrawnCentre(Villager villager)
     {
         Vector2 current = InViewTiles(villager.Position);
-        Vector2 previous =
-            _tiles.TryGetValue(villager.Id, out (Vector2 Previous, Vector2 Current) known)
-                ? known.Previous
-                : current;
+        bool seen = _tiles.TryGetValue(villager.Id, out var known);
+        Vector2 previous = seen ? known.Previous : current;
 
         // Lerp from where they were to where they are. If they moved more than a
         // tile — being born, moving house, or several ticks passing inside one frame at
         // 10× — snap instead, or they would glide across the map.
-        Vector2 drawTile = previous.DistanceSquaredTo(current) > 2f
-            ? current
-            : previous.Lerp(current, (float)_alpha);
+        bool snapped = previous.DistanceSquaredTo(current) > 2f;
+        Vector2 drawTile = snapped ? current : previous.Lerp(current, (float)_alpha);
 
-        return ToScreen(drawTile + FanOffset(villager));
+        // ⭐ And the crowd fan glides with them (D525) — snapped with them too, so a teleport does not trail
+        // its old place on a ring behind it.
+        Vector2 fan = !seen ? Vector2.Zero
+            : snapped ? known.FanCurrent
+            : FanDrawn(known.FanPrevious, known.FanCurrent, (float)_alpha);
+
+        return ToScreen(drawTile + fan);
     }
 
     /// <summary>
@@ -6867,7 +6929,7 @@ public partial class VillageMap : Control
         }
 
         var gone = new List<int>();
-        foreach (KeyValuePair<int, (Vector2 Previous, Vector2 Current)> entry in _tiles)
+        foreach (KeyValuePair<int, (Vector2 Previous, Vector2 Current, Vector2 FanPrevious, Vector2 FanCurrent)> entry in _tiles)
         {
             if (!stillAlive.Contains(entry.Key))
             {

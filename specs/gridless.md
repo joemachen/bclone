@@ -5,6 +5,7 @@
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
+> **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`, unplayed).**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -357,6 +358,42 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 7 — 🔨 BUILT (2026-10-07, D525), unplayed: the skip was the crowd fan
+
+Joe, 2026-10-06: *"there are definitely still skips. frequently."* D403 had ruled out the frame driver and the
+interpolation and filed two sim-side suspects — the arrival snap and short legs — with one rule: **measure the
+per-tick distance distribution first.** `tools/harness/ZzSkip.cs` did, over the shipped played opening, nine
+valleys × twenty years (five lived), per villager per tick:
+
+| Per 1,000 villager-ticks | What the eye sees | Measured |
+|---|---|---|
+| A position move of more than √2 tiles | `DrawnCentre` teleports | **0** — never; the worst tick is 1.25 tiles (a walk on a packed path) |
+| A walker standing a tick mid-journey | a pause | 10–16, **about two-thirds a meal on the road** (eating pre-empts everything, D10 — by design) |
+| **The crowd fan moving more than 0.15 of a tile** | **an instant jump — the fan was never interpolated** | **108–135**: 70 % of 0.15–0.3 of a tile, 17 % of 0.3–0.45, **12 % of over 0.45 (up to 0.6)** |
+
+⭐ **Neither filed suspect was it.** The fan (`VillageMap.FanOffset`) ranked **everyone alive on a tile** —
+walkers included — and was recomputed every frame and added unglided. So a walker crossing a busy tile (a
+doorstep, the market) was shoved 0.3 of a tile off their line for that tick, **and everyone standing there
+re-ranked round the ring at once**; when they left, everyone jumped back. In a village of nine that is about
+one instant jump on screen every tick.
+
+**The rule now (view only, no sim or golden change):**
+1. **Only the standing are fanned** — a villager whose position did not move this tick. A walker keeps their
+   line and does not count toward the ring of the people they pass.
+2. **The fan glides** — worked out once a tick in `AdvanceInterpolation` (`VillageMap.FanTargets`, pure) and
+   carried in the per-villager glide record beside the position; drawn as `FanDrawn(previous, current, alpha)`,
+   and snapped with the position when that teleports.
+3. **Once a tick, not every frame** — the per-frame `GroupByTile` and `FanOffset` are deleted (CLAUDE.md).
+
+Measured under the rule: **no instant fan jumps**; a standing group still re-ranks when someone joins or leaves —
+59–68 glides per 1,000 villager-ticks, each a slide over one tick. ⏸️ If that still reads as busy, *stable
+slots* (a person keeps one place on the ring whoever else is there) is the next step, and it is Joe's eye's call.
+⚠️ The remaining third of the stutters (~4 per 1,000) is unexplained and small; not chased.
+
+**Guarded by the probe** (the view has no tests, D11): `crowd:` poses three standing at a door and a walker
+crossing — the walker unfanned, nobody standing moved — and a fourth stopping, drawn half way through the tick
+at half way. **2 mutants, 2 red** (walkers fanned again; no glide). Probe green, bar height 151; view 0 warnings.
 
 ### Slice 6 — ✅ MET (2026-10-03, D463; played and merged D464): steady pace, the stutter
 
