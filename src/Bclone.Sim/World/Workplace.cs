@@ -160,6 +160,20 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 10, never inserted — hashed by position.</remarks>
     Miner = 10,
+
+    /// <summary>
+    /// Grind wheat into flour at a mill (D522, `specs/food-chain.md §4.3`) — the woodcutter's stint,
+    /// one good over, and never while the village is hungry.
+    /// </summary>
+    /// <remarks>⛔ Appended at 11, never inserted — hashed by position.</remarks>
+    Miller = 11,
+
+    /// <summary>
+    /// Bake flour into bread at a bakery (D522, `food-chain.md §4.4`) — the forge's shape: flour and
+    /// the oven's firewood from one store, the oven lit once a stint, never with the winter's firewood.
+    /// </summary>
+    /// <remarks>⛔ Appended at 12, never inserted — hashed by position.</remarks>
+    Baker = 12,
 }
 
 /// <summary>
@@ -771,3 +785,21 @@ public sealed class Workplace
         return workplace;
     }
 }
+
+/// <summary>
+/// One stint's recipe at a mill or an oven (D522, `specs/food-chain.md §4`) — see
+/// <c>SimWorld.BatchFor</c>.
+/// </summary>
+/// <param name="Trade">Who works it.</param>
+/// <param name="Input">What one batch takes.</param>
+/// <param name="InputPerBatch">How much of the input one batch takes.</param>
+/// <param name="Output">What one batch makes.</param>
+/// <param name="OutputPerBatch">How much one batch makes, before a tool and a technique.</param>
+/// <param name="Firing">Firewood burned once a stint, when the oven is lit — nought for the mill.</param>
+/// <param name="Ticks">Ticks one batch takes.</param>
+/// <param name="PerStint">Batches before walking home.</param>
+/// <param name="Verb">The card's verb: grind, bake.</param>
+/// <param name="OneOf">One batch, in a sentence: a grind, a bake.</param>
+public readonly record struct Batch(
+    JobKind Trade, Goods Input, int InputPerBatch, Goods Output, int OutputPerBatch,
+    int Firing, int Ticks, int PerStint, string Verb, string OneOf);

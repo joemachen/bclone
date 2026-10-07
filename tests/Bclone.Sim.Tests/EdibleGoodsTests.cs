@@ -64,8 +64,8 @@ public sealed class EdibleGoodsTests
         SimConfig edibleLogs = config with { GoodsList = rows };
         SimWorld world = SimFactory.CreatePhase0(edibleLogs, new InMemoryLogSink()).World;
 
-        // Produce, fish, meat and wheat ship edible (D348); the posed logs make five.
-        Assert.Equal(5, world.GoodsCatalog.EdibleGoods.Count);
+        // Produce, fish, meat, wheat (D348) and bread (D522) ship edible; the posed logs make six.
+        Assert.Equal(6, world.GoodsCatalog.EdibleGoods.Count);
 
         int before = world.FoodTheVillageHolds();
         StoreBuilding granary = world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);
@@ -77,17 +77,17 @@ public sealed class EdibleGoodsTests
         Assert.Equal(before + 100, after);
     }
 
-    /// <summary>⛔ Two edible goods worth different amounts is refused at load.</summary>
+    /// <summary>⭐ Two edible goods worth different amounts now load (D522) — this guard's inverse.</summary>
     /// <remarks>
-    /// <b>THE GUARD THAT KEEPS THE SURVIVAL FLOOR HONEST.</b> `VillageEconomy` solves the floor
-    /// against `food_per_meal` — one number for one food — and `food-catalog.md` states the
-    /// consequence: a catalogue of nutritional values means the floor must be solved against
-    /// *"the worst food a village might be living on, or the derivation has to change shape."*
-    /// `RequiredGatherYield` and `MouthsFedByOneAdult` have no valid form until somebody answers
-    /// that, so **a second edible good is allowed and a second VALUE is not.**
+    /// <b>It was the guard that kept the survival floor honest</b>, and it threw: *"a second edible
+    /// good is allowed and a second VALUE is not"*, until somebody answered `food-catalog.md`'s
+    /// question — the floor solved against *"the worst food a village might be living on"*.
+    /// `food-chain.md §3.1` answered it: the floor counts units at nutrition 1, the least an edible
+    /// unit can be worth, so it holds for every diet (`NutritionTests.TheFloorReadsNoNutrition`).
+    /// A negative worth is still refused — that is the food the floor could not survive.
     /// </remarks>
     [Fact]
-    public void TwoFoodsWorthDifferentAmountsIsRefusedAtLoad()
+    public void TwoFoodsWorthDifferentAmountsNowLoad()
     {
         SimConfig config = VillageFixtures.Village;
         var rows = new List<GoodRow>(config.GoodsCatalog);
@@ -99,11 +99,20 @@ public sealed class EdibleGoodsTests
             }
         }
 
+        (config with { GoodsList = rows }).Validate();
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (rows[i].Id == (int)Goods.Logs)
+            {
+                rows[i] = rows[i] with { Nutrition = -1 };
+            }
+        }
+
         SimConfigException blew =
             Assert.Throws<SimConfigException>(() => (config with { GoodsList = rows }).Validate());
-
         _output.WriteLine(blew.Message);
-        Assert.Contains("worth the same", blew.Message, System.StringComparison.Ordinal);
+        Assert.Contains("nutrition -1", blew.Message, System.StringComparison.Ordinal);
     }
 
     /// <summary>Exactly the foods the game ships are edible — no more, no fewer.</summary>
@@ -120,7 +129,8 @@ public sealed class EdibleGoodsTests
 
         _output.WriteLine(string.Join(", ", world.GoodsCatalog.EdibleGoods));
 
+        // ⭐ Best first (`food-chain.md §3.3`): bread, then the foods worth one in id order.
         Assert.Equal(
-            new[] { Goods.Produce, Goods.Fish, Goods.Meat, Goods.Wheat }, world.GoodsCatalog.EdibleGoods);
+            new[] { Goods.Bread, Goods.Produce, Goods.Fish, Goods.Meat, Goods.Wheat }, world.GoodsCatalog.EdibleGoods);
     }
 }

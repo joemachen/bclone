@@ -143,19 +143,18 @@ public sealed record GoodRow
     /// on 2026-09-02, so it landed.
     /// </para>
     /// <para>
-    /// ⛔⛔ <b>EVERY EDIBLE GOOD IS WORTH THE SAME TODAY, AND THAT IS THE WHOLE REASON THIS SLICE
-    /// IS SAFE.</b> `food-catalog.md` states the danger exactly: *"it lands on a derivation, not on
-    /// a blank page — `VillageEconomy` solves the survival floor against `food_per_meal`, one
-    /// number for one food."* **If a unit of fish and a unit of venison were worth different
-    /// amounts, `RequiredGatherYield` and `MouthsFedByOneAdult` would have no valid form** — the
-    /// floor would have to be solved against the worst diet a village might be living on. So this
-    /// field exists to answer *"can it be eaten?"* and **not yet** *"how well?"*.
+    /// ⭐⭐ <b>SINCE D522 A FOOD MAY BE WORTH MORE THAN ONE, AND THE FLOOR DID NOT MOVE.</b>
+    /// `food-catalog.md` named the danger — *"it lands on a derivation, not on a blank page"* — and
+    /// `food-chain.md §3.1` answers it: every number in `VillageEconomy` counts units and assumes each
+    /// is worth a nutrition-1 share, the least an edible unit can be, so the floor holds for every diet
+    /// and a better food is upside. A meal still costs <c>food_per_meal</c> units; what it is worth
+    /// beyond a plain meal holds hunger off (<c>Villager.FullFor</c>).
     /// </para>
     /// <para>
-    /// ⚠️ <b>The moment two rows carry different non-zero values, the survival floor has to be
-    /// re-derived before anything ships</b> (`DESIGN.md §5`'s nutrition axis, still unchecked).
-    /// That is a separate feature and it has a body count — D48, D49 and D50 are each a village
-    /// that died because a yield moved and the floor did not.
+    /// ⛔ <b>Every reader that counts food counts units</b> — the granary, larders, the birth gate, the
+    /// hunger line, the limits — and so under-counts a better food and never over-counts it. A reader
+    /// that converts units to meals or points must be checked for which way it errs: D48, D49 and D50
+    /// were each a reader that over-counted, and a village that died against it.
     /// </para>
     /// </remarks>
     [JsonPropertyName("nutrition")]
@@ -329,6 +328,15 @@ public sealed class GoodsCatalog
             }
         }
 
+        // ⭐ THE BEST FOOD FIRST, THEN ID (`food-chain.md §3.3`, Joe's §9 call 4). A stable sort on
+        // a list already in id order: while every food is worth the same this IS id order, so nothing
+        // that ate before bread existed eats differently.
+        edible = edible
+            .Select((good, index) => (good, index))
+            .OrderByDescending(pair => _rows[(int)pair.good].Nutrition)
+            .ThenBy(pair => pair.index)
+            .Select(pair => pair.good)
+            .ToList();
         EdibleGoods = edible;
 
         // ⭐ The tools, best first, built once — see `ToolsBestFirst`.
@@ -417,10 +425,11 @@ public sealed class GoodsCatalog
     /// unpicking (an O(n²) Dijkstra doing 92 million iterations a flow field).
     /// </para>
     /// <para>
-    /// ⚠️ <b>In id order, and that is load-bearing rather than tidy.</b> Anything that iterates
-    /// goods and writes to the world — filling a larder, loading a market round — must do it in a
-    /// fixed order or two runs of one seed diverge (§5's determinism rules). Ids are the order
-    /// everything else in this file already uses.
+    /// ⚠️ <b>The best food first, then id order — and the order is load-bearing rather than tidy.</b>
+    /// Anything that iterates goods and writes to the world — filling a larder, loading a market
+    /// round, taking a meal — must do it in a fixed order or two runs of one seed diverge (§5's
+    /// determinism rules). ⭐ <b>Best first</b> (`food-chain.md §3.3`): a meal takes bread before
+    /// grain, so a larder with bread in it shows it; among foods of equal worth it is id order.
     /// </para>
     /// </remarks>
     public IReadOnlyList<Goods> EdibleGoods { get; }

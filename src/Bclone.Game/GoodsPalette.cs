@@ -49,6 +49,11 @@ internal static class GoodsPalette
         // the Overview agree about what wheat looks like.
         Goods.Wheat => new Color(0.86f, 0.72f, 0.32f),
 
+        // The food chain (D522): flour the pale cream of a sack, bread the brown of a crust — so the
+        // two read apart from the wheat they came from and from each other.
+        Goods.Flour => new Color(0.92f, 0.88f, 0.78f),
+        Goods.Bread => new Color(0.72f, 0.48f, 0.24f),
+
         // ⚠️ A MOD-ADDED GOOD GETS A COLOUR RATHER THAN A CRASH, and it is deliberately drab.
         // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
         // it *"the first thing a modder will ask for"*. Until that is answered, a neutral grey is

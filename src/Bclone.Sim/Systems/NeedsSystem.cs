@@ -38,7 +38,18 @@ public sealed class NeedsSystem : ISimSystem
 
         bool wasAtMax = villager.Hunger >= config.HungerMax;
 
-        villager.Hunger += config.HungerPerTick;
+        // ⭐ A FULL BELLY HOLDS HUNGER OFF (`food-chain.md §3.2`, D522): while the last meal was worth
+        // more than it cost, hunger does not rise — the fullness counts down instead. Hunger itself
+        // never goes below nought, so the invariant at the bottom of this method stands.
+        if (villager.FullFor > 0)
+        {
+            villager.FullFor--;
+        }
+        else
+        {
+            villager.Hunger += config.HungerPerTick;
+        }
+
         if (villager.Hunger > config.HungerMax)
         {
             villager.Hunger = config.HungerMax;

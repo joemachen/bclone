@@ -78,6 +78,8 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Smithy => TradeGlyph.ColourOf(JobKind.Smith),
         BuildingKind.Quarry => TradeGlyph.ColourOf(JobKind.Quarrier),
         BuildingKind.Mine => TradeGlyph.ColourOf(JobKind.Miner),
+        BuildingKind.Mill => TradeGlyph.ColourOf(JobKind.Miller),
+        BuildingKind.Bakery => TradeGlyph.ColourOf(JobKind.Baker),
 
         _ => Unchosen,
     };
@@ -204,6 +206,23 @@ public sealed partial class BuildingGlyph : Control
                 DrawLine(new Vector2(s * 0.34f, s * 0.48f), new Vector2(s * 0.66f, s * 0.48f), ink, 1.4f);
                 DrawArc(new Vector2(s * 0.50f, s * 0.20f), s * 0.12f, 0f, Mathf.Tau, 12, ink, 1.6f);
                 DrawRect(new Rect2(s * 0.16f, s * 0.80f, s * 0.68f, s * 0.08f), ink);
+                break;
+
+            // A mill (D522): a tall house under its roof, and the four sails over it.
+            case BuildingKind.Mill:
+                Roof(new Rect2(s * 0.26f, s * 0.40f, s * 0.48f, s * 0.16f), ink);
+                DrawRect(new Rect2(s * 0.30f, s * 0.56f, s * 0.40f, s * 0.32f), ink);
+                DrawLine(new Vector2(s * 0.50f, s * 0.36f), new Vector2(s * 0.18f, s * 0.10f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.50f, s * 0.36f), new Vector2(s * 0.82f, s * 0.10f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.50f, s * 0.36f), new Vector2(s * 0.18f, s * 0.58f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.50f, s * 0.36f), new Vector2(s * 0.82f, s * 0.58f), ink, 1.8f);
+                break;
+
+            // A bakery (D522): a hut with the oven's dome beside its door, and the fire's glow in it.
+            case BuildingKind.Bakery:
+                Hut(ink);
+                DrawCircle(new Vector2(s * 0.70f, s * 0.70f), s * 0.16f, ink);
+                DrawRect(new Rect2(s * 0.64f, s * 0.70f, s * 0.12f, s * 0.08f), new Color(0.95f, 0.55f, 0.20f));
                 break;
 
             // A low lodge under a drawn bow.

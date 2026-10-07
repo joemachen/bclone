@@ -81,6 +81,10 @@ public sealed partial class TradeGlyph : Control
         // so it reads on the dark bar beside the smith's grey.
         JobKind.Miner => new Color(0.64f, 0.40f, 0.28f),
 
+        // The miller takes the flour's cream, the baker the crust's brown (D522) — the goods they make.
+        JobKind.Miller => new Color(0.86f, 0.82f, 0.70f),
+        JobKind.Baker => new Color(0.72f, 0.48f, 0.24f),
+
         // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
         // same answer `GoodsPalette` gives a good nobody has chosen a colour for.
         _ => new Color(0.70f, 0.70f, 0.70f),
@@ -190,6 +194,20 @@ public sealed partial class TradeGlyph : Control
                 DrawCircle(new Vector2(s * 0.40f, s * 0.72f), s * 0.18f, ink);
                 DrawLine(new Vector2(s * 0.32f, s * 0.56f), new Vector2(s * 0.76f, s * 0.14f), ink, 1.8f);
                 DrawLine(new Vector2(s * 0.56f, s * 0.12f), new Vector2(s * 0.88f, s * 0.28f), ink, 1.8f);
+                break;
+
+            // A millstone (D522): the round stone and the hole its spindle turns in.
+            case JobKind.Miller:
+                DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.34f, ink);
+                DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.08f, new Color(0.10f, 0.10f, 0.12f));
+                break;
+
+            // A loaf (D522): the rounded crust and two scores across it.
+            case JobKind.Baker:
+                DrawCircle(new Vector2(s * 0.50f, s * 0.58f), s * 0.30f, ink);
+                DrawRect(new Rect2(s * 0.20f, s * 0.58f, s * 0.60f, s * 0.24f), ink);
+                DrawLine(new Vector2(s * 0.36f, s * 0.40f), new Vector2(s * 0.44f, s * 0.62f), new Color(0.10f, 0.10f, 0.12f), 1.2f);
+                DrawLine(new Vector2(s * 0.56f, s * 0.40f), new Vector2(s * 0.64f, s * 0.62f), new Color(0.10f, 0.10f, 0.12f), 1.2f);
                 break;
 
             // A bow, drawn: the stave and the string.

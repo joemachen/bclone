@@ -905,6 +905,50 @@
   // cleared brings it. Read by the smithy's gate and the tech-tree map alike.
   "smithy_unlock_iron": 50,
 
+  // THE FOOD CHAIN -- WHEAT TO FLOUR TO BREAD (specs/food-chain.md, D520-D522;
+  // Joe's calls before a line was written, every number from section 8.1).
+  // Bread SATES LONGER: a meal costs the units any meal costs, and a meal of
+  // bread holds hunger off for what it is worth beyond a plain one (4 loaves at
+  // 2 = the next meal after 22 ticks, not 11). The survival floor reads none of
+  // this -- every raw food is worth 1, the least a food can be, so the floor
+  // holds for every diet and bread is upside (food-chain.md 3.1).
+  // bread_nutrition 2: a miller and a baker keeping up with one farm add about
+  // 1,000 points a seat-year -- a little above a farmer (755-828), level with a
+  // forager (935-1,033). 3 would double it past every raw trade. Joe: "yes ok".
+  "bread_nutrition": 2,
+  // The mill AND the bakery are learned together by reaping wheat (Joe, D523:
+  // "the mill and bakery should unlock together"). Learned by doing and PAID
+  // FOR, as the quarry and the mine are. The number is Joe's, from 5,000-10,000
+  // ("1000 wheat should be reapable within one season. that is much too fast"),
+  // to be picked off the measurement in food-chain.md 8.4.
+  "mill_unlock_wheat": 5000,
+  // A grind and a bake: the woodcutter's day, four to a stint. STARTING VALUES,
+  // sized so one miller and one baker keep up with one farm (~2,000 wheat a
+  // year); the post-build arm confirms them (food-chain.md 8, step 3).
+  "wheat_per_grind": 20,
+  "flour_per_grind": 20,
+  "grind_ticks": 4,
+  "grinds_per_stint": 4,
+  "flour_per_bake": 20,
+  "bread_per_bake": 20,
+  "bake_ticks": 4,
+  "bakes_per_stint": 4,
+  // The oven is LIT ONCE A STINT, not once a bake (Joe: "a little"), and never
+  // with firewood the homes still want (the forge's rule). A household burns 24
+  // a winter; one a firing is about 25 a year, where one a bake would be four
+  // households' winter.
+  "firewood_per_firing": 1,
+  // The mill is two by two (millstones and a store-room); the bakery a hut's
+  // two by one with an oven's stone, as the smithy's forge. Two seats each.
+  "mill_logs": 30,
+  "mill_stone": 24,
+  "mill_work_ticks": 40,
+  "mill_capacity": 2,
+  "bakery_logs": 25,
+  "bakery_stone": 24,
+  "bakery_work_ticks": 40,
+  "bakery_capacity": 2,
+
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only
   // rock takes the paint of. Unlocked after 200 stone dug by hand (about
@@ -1499,9 +1543,13 @@
   // food total any more -- each food stops its own trade. Keys are goods' names.
   // TOOLS: 25 each, stone and iron (Joe, 2026-10-01, D447): "its going to take a
   // few years to have more than 25 people who need tools at once."
+  // FLOUR 200 (Joe's "200 for everything else") and BREAD 1000 (wheat's own),
+  // D522 -- the mill stops at its flour, the oven at its bread.
   "starting_stock_limits": {
     "forage": 2000,
     "wheat": 1000,
+    "bread": 1000,
+    "flour": 200,
     "fish": 250,
     "meat": 250,
     "logs": 200,

@@ -1,4 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5 — JOE PLAYED BOTH BRANCHES (2026-10-07). `slice/food-chain` IS GOOD TO GO — MERGE IT FIRST. `slice/movement-skip` STILL SKIPS — ALL FOUR FOUNDERS AT ONCE, SO THE CAUSE IS GLOBAL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D527: THE FOOD CHAIN IS MERGED TO `main` (NOT PUSHED). NEXT: THE SKIP — ALL FOUR FOUNDERS AT ONCE, SO MEASURE THE WHOLE FRAME ON `slice/movement-skip`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (FOOD CHAIN MERGED) — D527, ON WINDOWS.**
+>
+> **`main` = D527**, local, **not pushed** — `origin/main` is still D519. `slice/food-chain` is merged `--no-ff` (Joe:
+> *"good to go"*). The branch is kept until `main` is pushed, then delete it. Merged tree: 1542 / 0 / 5 of 1547
+> (4m17 — the branch's 3m39 on byte-identical code, so the machine); view 0 warnings (`--no-incremental`); probe green,
+> bar height 151, `done.`; goldens byte-identical to the branch tip. `food-chain.md` and `content-inventory.md` say ✅.
+>
+> **▶️ NEXT: the skip, measured — the banner below has the whole plan.** In short: merge `main` into
+> `slice/movement-skip` (it is off D519, so the food chain's save format 2 comes with it), then add the **whole frame** to the
+> debug line (the longest `_Process`-to-`_Process` gap, frames over ~33 ms, and the tick of the day / season turn they
+> land on — `VillageMap.cs` already times its draw phases near lines 2390 and 3419, so a long frame can be split into
+> sim / `Refresh()` / map). Joe reads it in play. ⛔ Fix nothing until the number exists.
+>
+> ⏸️ **Push `main`** — at Joe's word only.
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (JOE'S PLAYTEST) — ON WINDOWS.**
 >
@@ -72,6 +87,127 @@
 >
 > ⏸️ Still his, unscheduled: a full settings screen (D508), ironman mode's name (D507), a market's *Keeps up to* row and
 > the pin exception without a guard (D502).
+>
+> **(superseded by the banner above)**
+
+# (superseded) **▶️ PHASE 5 — THE FOOD CHAIN IS BUILT (D522–D524), UNPLAYED, ON `slice/food-chain`; THE MILL AT 5,000 WHEAT REAPED. NEXT: THE MOVEMENT SKIP, ON ITS OWN BRANCH (JOE: *"skips next"*). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D524 IN §7.**
+
+> **⭐⭐ START HERE — 2026-10-07 — D524, ON WINDOWS.** Joe picked **5,000 wheat reaped** for the mill and the bakery
+> (`food-chain.md §8.4`); it was already the shipped value, so this is docs only. `slice/food-chain` (unpushed) waits on
+> **his play** — the steps are in the banner below. **▶️ NEXT, his word: *"skips next"*** — the movement skip, on a
+> branch of its own off `main`, measurement first (the banner below has where to look).
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (A VARIED DIET; MILL AND BAKERY TOGETHER) — D523, ON WINDOWS.**
+>
+> **State (D523):** `main` = D519, pushed. **`slice/food-chain`** (not pushed): D520–D522 plus D523, committed with
+> this banner. **A varied diet** (`SimWorld.FoodToTake`: the best food first, then a share of each in proportion) —
+> a forage-fed village eats its wheat, so **a farm no longer stalls at the wheat limit**. **The mill and the bakery
+> are learned together** on reaped wheat (Joe: *"it doesnt make sense to mill something … and then unlock the
+> bakery"*). 1542 / 0 / 5 of 1547 (3m39); view 0 warnings; probe green, bar height 151; 5 mutants, 5 red; the farm
+> golden pair moved, proven. `mill_unlock_wheat` is **still 5,000** in the data until Joe picks.
+>
+> **▶️ NEXT: JOE PICKS `mill_unlock_wheat` FROM `food-chain.md §8.4`** — in a ten-person one-farm harness village,
+> 5,000 is reached by **Year 14**, 7,500 by **Year 20**, 10,000 by **Year 25** (an upper bound: a bigger village
+> with more fields eats more wheat and gets there sooner). One line in `data/sim.config.json` and the `SimConfig`
+> default; then the milestone-map row, `food-chain.md §9d`, and the four CLAUDE.md lines. **Then Joe plays it**
+> (`run.bat` on the branch): a farm, the wheat limit met, the farm still reaping the next year; at the number, one
+> moment for both buildings; build them; a villager who ate bread reads **Full** with the tooltip sentence. ⚠️ Joe's
+> existing saves are refused on this branch (format 2).
+>
+> ⏸️ **Joe, mid-build: *"there are definitely still skips. frequently."*** The movement skip (D402/D403's open item):
+> a villager moving more than a tile in one tick, sim-side. The frame driver and interpolation are ruled out (D403).
+> Candidates: the snap onto a building's standing place at the end of every walk, and a leg short in steps for its
+> length. **Measure the per-tick distance distribution first** — its own slice, on its own branch, at his word.
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (THE FOOD CHAIN BUILT) — D522, ON WINDOWS.**
+>
+> **State (D522):** `main` = D519, pushed. **`slice/food-chain`** (not pushed): the spec (D520), Joe's calls and the
+> anchors (D521), and **the whole feature, sim and view** (D522, uncommitted until this banner's commit). Bread holds
+> hunger off (`Villager.FullFor`), the best food is eaten first, the floor reads no nutrition; a mill learned by reaping
+> wheat, a bakery by the first flour, one shared path for both (`SimWorld.BatchFor` / `WhyTheBatchWaits`). **1539 / 0 / 5
+> of 1544 (4m50; main 4m31 the same sitting); view 0 warnings; probe green, bar height 151, `spoilers:` ✅; 19 mutants,
+> 18 red, one zero written down; three goldens moved, each proven by ablation.** Save format 1 → 2: **Joe's existing
+> saves are refused in words on this branch** (no migrations before v1, D507).
+>
+> ⛔⛔ **WHAT THE MEASUREMENT FOUND (`food-chain.md §8.3`): at `mill_unlock_wheat` 5,000 the mill is learned in NO valley
+> under the shipped wheat limit** — a forage-fed village never eats its wheat, the farm stalls at ~1,079 reaped, and
+> 5,000 never comes. D521 measured 5,000 with the wheat limit lifted — the wrong premise, and Joe confirmed it on that.
+> At 1,000 the mill and bakery stand in Year 2, the stalled farm reaps again, ~28,000 bread in fifty years.
+>
+> **▶️ NEXT: JOE'S CALL ON §9d — `mill_unlock_wheat` 1,000 (recommended: an unlock no higher than the wheat limit is
+> always reached before a farm stalls) or another number.** It is one line in `data/sim.config.json` and the
+> `SimConfig` default, plus the spec's §8.2 row. **Then Joe plays it** (`run.bat` on the branch):
+> 1. Found a village, paint a farm, keep the forage coming. After the first full harvest the farm's card says the
+>    wheat limit is met — and (at 1,000) a moment says the village learned to build a mill.
+> 2. Build the mill (Food, beside the farmhouse; 30 logs, 24 stone). A miller grinds wheat from the granary into flour
+>    in a warehouse; the bakery is learned from the first flour.
+> 3. Build the bakery (25 logs, 24 stone). The baker lights the oven once a day's baking (1 firewood) and bakes bread
+>    into the granary. The farm's card should stop saying the limit is met as the wheat goes down.
+> 4. A villager who ate bread: the NEEDS cell reads **Full**, and its tooltip says *"Full from a meal of bread — not
+>    hungry for another 3 days."* ⚠️ **Unprobed and only his play checks it:** the mill's and bakery's look on the map,
+>    the glyphs, the moments, and whether *Full* reads right.
+> Then merge at his word (`git checkout main`, `git merge --no-ff slice/food-chain`, `git push`).
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (FOOD-CHAIN ANCHORS MEASURED) — D521, ON WINDOWS.**
+>
+> **State (D521):** `main` = D519, pushed. **`slice/food-chain`** (not pushed): D520's spec commit, plus D521 —
+> Joe's answers to §9 (all six as recommended: the oven burns a little firewood, one mill anywhere, skill rows for
+> miller and baker, eat the best food first, the card's sentence, the *Ale* row stays) and **§8.1's measurement**:
+> `tools/harness/ZzFoodChain.cs` + `foodchain.py`, seventeen valleys × fifty years, six arms. **No game code, config
+> or test changed** — suite, view build and probe not run; no golden can have moved.
+>
+> **What it found:** a farmer seat-year brings 755–828 wheat, a forager 935–1,033 forage; a farm makes ~2,000 a year;
+> a farm marked at t0 has reaped 5,000 by Year 4. ⛔⛔ **A forage-fed village never eats its wheat** (meals take
+> food in id order, forage first), so with the shipped 1,000 limit **a farm reaps once and stands idle for fifty
+> years**, its card saying *"the crop stands until the village eats into it"* every autumn. That is the shipped game.
+>
+> **▶️ NEXT: JOE ANSWERS `food-chain.md §9b` and `§9c`.** §9b: the stalled farm — *(a) let the mill answer it*
+> (recommended: bread is eaten first and draws the wheat down), *(b)* eat the most-held of equal foods first (its own
+> slice; moves goldens), *(c)* change the card's sentence. §9c: confirm §8.2's numbers — bread 2, the mill after 5,000
+> wheat reaped, the bakery after the first grind, the oven 1 firewood a firing (one household's winter a year).
+> **Then:** tests first (§11), the build, and §8 step 3 — the post-build arm that confirms one miller and one baker keep
+> up with one farm (the stint sizes are starting values, not measurements).
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (THE FOOD CHAIN SPECCED) — D520, ON WINDOWS.**
+>
+> **State (D520):** `main` = D519, pushed. **`slice/food-chain`** (off `main`, **not pushed**) holds one docs-only
+> commit: **`specs/food-chain.md`** plus the lines that move with it (`food-catalog.md`'s status and §0, `DESIGN.md`
+> §4/§5/§6 and D520, this banner). **No `src/`, `data/` or `tests/` file changed** — so the suite, the view build and
+> the probe were not run (nothing compiled moved), and the goldens cannot have moved (`git diff --stat` says so).
+>
+> **Joe's three calls, made before the spec was written:** (1) bread **sates longer** — a meal's worth beyond a plain
+> one becomes `Villager.FullFor`, ticks with no hunger rise (four loaves at nutrition 2: the next meal at 22 ticks,
+> not 11); (2) **bread only** — beer waits for morale and the tavern (Phase 6), refused as a third food; (3) the mill
+> and bakery are **gifts by doing** (wheat reaped, then flour ground — the numbers measured, not typed).
+> ⭐ **`DESIGN §5`'s nutrition question is answered on paper:** the floor stays solved at nutrition 1, the least an
+> integer nutrition can be, so it holds for every diet; every units reader (granary, larders, birth gate, hunger
+> line, limits, the D298 umbrella) **under-counts** a better food and none over-counts it.
+>
+> **▶️ NEXT: JOE ANSWERS `specs/food-chain.md §9`** — six calls, each with a recommendation: (1) the oven burns a
+> little firewood? (rec. yes, under the forge's winter guard); (2) a watermill by the river? (rec. not this slice);
+> (3) skill rows for miller and baker? (rec. yes — D392 made a row safe; guard that no founding moves); (4) eat the
+> best food first? (rec. yes — byte-identical at all-1); (5) the card's sentence; (6) the Overview's *Ale* row stays.
+> **Then §8's measurement before any number** — a `tools/harness` arm (the `ZzFirstWinter` shape): is a miller and
+> baker pair worth two hands on D286/D363's ladder, and when does a played village reach the mill's wheat? Then tests
+> first (§11), then build. ⚠️ Ids: flour 11, bread 12, mill 19, bakery 20, miller 11, baker 12 — the modded fixtures
+> (`ModdedGoodTests.PitchId`, the boatman) move with them.
+>
+> ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
+> *Keeps up to* row and the pin exception have no guard.
 >
 > **(superseded by the banner above)**
 
@@ -5391,6 +5527,64 @@ Read `git status` after staging, every time.
   three times, saw nothing, and reasonably asked *"is it even saving?"* — **before writing "the log says", find where
   the sentence is drawn.** And a list built when a panel opens is stale the moment the panel changes what it lists.
 
+## ⛔ THE TRAP THE FOOD-CHAIN SPEC (D520) WAS WARNED OF — A PROCESSED GOOD WORTH ITS INPUT IS A TAX
+
+- **Ask what a processed good is FOR before drawing its building.** With every edible good worth 1 (D277's load-time
+  throw), bread from wheat feeds exactly what the wheat fed: the mill and the bakery would cost two hands and timber
+  for nothing. The handoff named it before the session started, and the spec's first call was this, not the buildings.
+- **A food worth more is safe only if every reader that counts it under-counts.** The floor is solved in units at
+  nutrition 1; a unit of bread counted as one by the granary, the larder target, the birth gate and the hunger line is
+  a cautious village, never a reckless one. **The day a reader converts units to meals or points, check which way it
+  errs** — D48–D50 were each a reader that over-counted, and a village died against it.
+- **Python on Windows writes CRLF in text mode.** `open(p,'w')` turned two LF specs into CRLF; pass `newline=''` and
+  write the file's own ending, or `sed -i 's/\r$//'` after. `HANDOFF.md` is CRLF in the working copy, the specs are LF.
+
+## ⛔ THE TRAPS THE FOOD-CHAIN MEASUREMENT (D521) PAID FOR — A DOUBLE-COUNTED LOAD, A FIELD ON A SITE, AND AN IDLE FARM NOBODY ASKED
+
+- **`Stockpile.Produced` counts an armful twice.** A gather is `Add`ed to the arms and `Add`ed again to the store it is
+  carried to, so summing `Produced` over arms, larders and stores read 154,397 food against `FoodEverProduced`'s 81,766.
+  **Read `SimWorld.FoodEverProducedOf(good)`** — recorded where the food comes into being — and print a check against
+  the total, as `ZzFoodChain`'s `check` field does.
+- **A field painted on a construction site never reaps.** Marking a farmhouse and painting its ground in the same tick
+  gave 90 farmer seat-years and 0 wheat; paint when the farm stands. **D515's ZzFirstWinter `farm0` did exactly this**, so
+  its farm never harvested — its firewood finding stands (it was about the hut's hands), but no harvest was measured.
+- **Ask the building's card before trusting a rate.** The farm's `IdleNote` had said *"the crop stands until the village
+  eats into it"* every autumn; nobody eats wheat while there is forage, so the rate was 0 and looked like a broken
+  harness. `ZZ_WHY=1` prints it a season.
+
+## ⛔ THE TRAPS THE FOOD-CHAIN BUILD (D522) PAID FOR — A STALE DLL, A LOCKED RESTORE, AND A CURE THAT COULD NOT ARRIVE
+
+- **A harness that does not compile runs the LAST one under `--no-build`.** `ZzFoodChain.cs` failed with CS0136 and the
+  next `dotnet test --no-build` ran yesterday's DLL — a whole arm read "the mill never stood" for a reason that was
+  not the sim. Build with `|| { echo BUILD FAILED; exit 1; }` and never trust an arm whose build you did not see pass.
+- **A red-check restore can hit a Windows file lock** (`OSError: [Errno 22] Invalid argument` writing the source back)
+  and leave the mutant in the tree. The script died with M7's `if (false)` still in `SimWorld.cs`. Retry the restore,
+  and after every red-check run `git status` for `.redbak` files and grep for the mutant text.
+- **A constant `if (false)` mutant does not build** (CS0162 is an error here), nor one that leaves a parameter unused
+  (IDE0060). Use a false the compiler cannot prove (`&& Tick == ulong.MaxValue`), and count "did not build" as a
+  zero, never a red (D450).
+- **Measure a gift's threshold under the limits the game ships with.** 5,000 was read off arms with the wheat limit
+  lifted; under the shipped limit the farm stalls at ~1,079 and the mill — the cure for that stall — never comes.
+  *Ask whether the cure can arrive before the illness it cures.*
+- **A mill brings nothing in from the valley.** Passing a batch through `YieldFor` gave a tool's 25 % to flour and
+  bread: grain from nothing. A converter's tool and mastery go on its ticks only.
+- **A "same hunger" lockstep measure is blind to fullness** — two full villagers sit at the same post-meal hunger.
+
+## ⛔ THE TRAPS D523 PAID FOR — A RANKING OF FOODS, A GUARD A TICK LATE, AND A HANG READ AS A ZERO
+
+- **An order that names goods is a ranking, and a ranking makes the last good inedible.** Forage-first lived in the
+  meal AND the fetch; fixing one would have changed nothing. And "the biggest pile first" still stalls when the
+  limits differ (forage 2,000 against wheat 1,000) — the foragers keep forage the bigger pile. A share in proportion
+  is the only order that cannot starve a pile.
+- **A step runs at `World.Tick` and then advances it**, so a guard that reads the clock after `StepOnce` judges the
+  step by the NEXT tick's season. Record the season before the step.
+- **A mutant can loop for ever.** `worth * 0` made a tier loop that never advanced; the test host hung for twenty
+  minutes and the red-check script wrote "ZERO (green)" for the run it never finished. Time each run out and call a
+  hang a hang. And a heredoc turns `\n` inside a Python f-string into a real line break — write such scripts with
+  the Write tool.
+- **Guard a stall where the stall lives.** The fixture village is short enough of forage to eat its wheat anyway, so
+  a stall guard posed there passed on the broken code; the shipped game and the played opening is where it shows.
+
 ## ⛔ THE TRAP THIS SESSION LEFT FOR `main` — WORK THAT LIVES ON TWO UNMERGED BRANCHES
 
 - **Three lines of work, three places.** `main` holds D526; `slice/food-chain` holds D520–D524; `slice/movement-skip`
@@ -5406,7 +5600,28 @@ Read `git status` after staging, every time.
   at once**, which no per-villager cause can produce. *Ask whether the symptom is per-thing or global before choosing
   what to measure; a skip that moves every dot together is the frame.*
 
+## ⛔ THE TRAPS THE FOOD-CHAIN MERGE (D527) PAID FOR — A LINE BOTH SIDES SHARED, AND A LINE-ENDING CHECK THAT LIES
+
+- **A merge keeps a line both sides share only once.** Both `HANDOFF.md` sides ended their banner with
+  *"(superseded by the banner above)"*, so git counted it as common context; stacking the two sides left main's D526
+  banner with no closing line, running straight into the branch's heading. **After resolving, diff each side's block
+  against its own blob** (`git show <ref>:HANDOFF.md`), and read the seams by eye.
+- **Backslash escapes do not survive a Bash-tool heredoc — D523's trap, paid again.** A CRLF check written as
+  `grep -c $'<backslash>r$'` in a heredoc lost its escape and became `$`, which matches every line: it reported
+  4,096 CRLF lines of 4,096 on a file that has none. And a Python script in a heredoc wrote a *real* line break into
+  this trap where its source said backslash-n. **Count line endings with a script written by the Write tool**, by
+  bytes. `DESIGN.md` and `HANDOFF.md` are **LF** in the working copy and in the blob; read and write them with
+  `newline=''`.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
+
+- ⏸️ **THE MOVEMENT SKIP — "definitely still skips. frequently" (Joe, 2026-10-06).** ~~D402/D403's open item, sim-side.
+  Measure the per-tick distance distribution before touching the arrival snap or the leg clock. Its own slice.~~
+  **Measured (D525): the sim never moves anyone over √2 tiles in a tick; the crowd fan's jumps were fixed on
+  `slice/movement-skip`. Joe replayed it (2026-10-07): *"all 4 founders skip at the same time"* — a global cause, so
+  the next measurement is the whole frame (top banner). Not his call yet; his eye on the new debug line is.**
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands

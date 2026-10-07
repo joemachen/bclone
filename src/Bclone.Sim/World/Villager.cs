@@ -558,6 +558,32 @@ public sealed class Villager
     public int DigsThisStint { get; set; }
 
     /// <summary>
+    /// Grinds at the mill, or bakes at the oven, since this miller or baker last walked to it — the
+    /// stint (D522). One field for both: a villager holds one job, and the first bake of a stint is
+    /// the one that lights the oven.
+    /// </summary>
+    public int BatchesThisStint { get; set; }
+
+    /// <summary>
+    /// ⭐ Ticks this villager's last meal still holds hunger off — what it was worth beyond a plain meal
+    /// (`food-chain.md §3.2`, D522). While above nought, hunger does not rise; it counts down instead.
+    /// </summary>
+    /// <remarks>
+    /// Nought after any meal of foods worth one, so a village with no bread is never full and hashes as
+    /// it did before bread existed (sparse in the hash).
+    /// </remarks>
+    public int FullFor { get; set; }
+
+    /// <summary>
+    /// The best food in the meal that made them full — what the card names (*"Full from a meal of
+    /// bread"*). Meaningless while <see cref="FullFor"/> is nought.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Saved but not hashed: no rule reads it, only the card. It cannot change what anybody does.
+    /// </remarks>
+    public Goods FullFrom { get; set; }
+
+    /// <summary>
     /// Ticks this villager still has to wait before their working life begins — <b>a seeded
     /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
     /// </summary>
@@ -761,6 +787,14 @@ public sealed class Villager
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "forging tools at the anvil",
+            VillagerState.TravelingToMill => $"walking to {where}",
+            VillagerState.Grinding => BatchesThisStint > 0
+                ? $"grinding wheat, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} grind of the day"
+                : "grinding wheat at the stones",
+            VillagerState.TravelingToBakery => $"walking to {where}",
+            VillagerState.Baking => BatchesThisStint > 0
+                ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
+                : "lighting the oven",
             VillagerState.TravelingToQuarry => $"walking to the face at {where}",
             VillagerState.Quarrying => DigsThisStint > 0
                 ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
@@ -840,6 +874,9 @@ public sealed class Villager
             ["tool_good"] = SaveWriter.Good(ToolGood),
             ["forges_this_stint"] = ForgesThisStint,
             ["digs_this_stint"] = DigsThisStint,
+            ["batches_this_stint"] = BatchesThisStint,
+            ["full_for"] = FullFor,
+            ["full_from"] = SaveWriter.Good(FullFrom),
             ["rhythm"] = Rhythm,
             ["skills"] = skills,
         };
@@ -892,6 +929,9 @@ public sealed class Villager
             ToolGood = save.Good("tool_good"),
             ForgesThisStint = save.Int("forges_this_stint"),
             DigsThisStint = save.Int("digs_this_stint"),
+            BatchesThisStint = save.Int("batches_this_stint"),
+            FullFor = save.Int("full_for"),
+            FullFrom = save.Good("full_from"),
             Rhythm = save.Int("rhythm"),
         };
 

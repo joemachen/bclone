@@ -237,17 +237,22 @@ public sealed class SteadingTests
 
         for (int i = 0; i < config.TicksPerYear * 3; i++)
         {
+            // ⚠️ THE SEASON THE STEP RAN IN, NOT THE ONE AFTER IT (D523). A step runs every system at
+            // `World.Tick` and then advances it, so after the last step of summer the clock already reads
+            // autumn — and a tend begun three ticks before the turn, still a tick from done, read as
+            // "tending in autumn". It never lined up until the varied diet moved the village's timings.
+            Season ran = world.Clock.Season;
             loop.StepOnce();
             if (!hand.Alive || hand.State != VillagerState.Tending)
             {
                 Assert.False(
-                    IsTendingState(hand.State) && world.Clock.Season != Season.Summer,
+                    IsTendingState(hand.State) && ran != Season.Summer,
                     $"{hand.Name} is {hand.State} in {world.Clock}.");
                 continue;
             }
 
             tending++;
-            Assert.Equal(Season.Summer, world.Clock.Season);
+            Assert.Equal(Season.Summer, ran);
             Assert.Contains(hand.Tile, ground);
             Assert.Equal(Terrain.Sown, world.Map.TerrainAt(hand.Tile));
             if (tended.Add(hand.Tile))

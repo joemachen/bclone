@@ -311,6 +311,23 @@ public enum BuildingKind
     /// (<c>mine_unlock_iron_tools</c>). <b>Appended at 18.</b>
     /// </remarks>
     Mine = 18,
+
+    /// <summary>
+    /// A mill — wheat into flour (D522, `specs/food-chain.md`).
+    /// </summary>
+    /// <remarks>
+    /// One mill, anywhere (Joe, §9 call 2: the watermill by the river is a later slice). Learned by
+    /// reaping wheat (<c>mill_unlock_wheat</c>), paid for. <b>Appended at 19.</b>
+    /// </remarks>
+    Mill = 19,
+
+    /// <summary>
+    /// A bakery — flour into bread (D522, `food-chain.md`).
+    /// </summary>
+    /// <remarks>
+    /// Learned with the mill, on reaped wheat (<c>mill_unlock_wheat</c>, Joe D523), paid for. <b>Appended at 20.</b>
+    /// </remarks>
+    Bakery = 20,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

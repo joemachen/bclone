@@ -1,8 +1,8 @@
 # Inventory: what the village has, what the documents promise, and where they disagree
 
 > Status: **an audit. ✅ PARTS A AND B REFRESHED 2026-10-07 (D526, Joe: *"refresh the inventory on main"*)**
-> — read off the code on `main` at D519, with the food chain marked 🔨 where it lives on `slice/food-chain`
-> (D520–D524, unmerged). Part C (the disagreements) is the August audit, kept as history through D223.
+> — read off the code on `main` at D519, with the food chain marked 🔨 on `slice/food-chain` (D520–D524); **the food
+> chain merged to `main` at D527 (2026-10-07) and is ✅ below.** Part C (the disagreements) is the August audit, kept as history through D223.
 > Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
 >
 > **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in
@@ -48,10 +48,10 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 
 | | Count on `main` | Members |
 |---|---|---|
-| Goods | **11** (🔨 +2) | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools · 🔨 flour, bread |
-| Buildings | **19** (🔨 +2) | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, longhouse, smithy, well, quarry, iron mine · 🔨 mill, bakery — and the founders' cart, a store that is not built |
-| Trades | **11** (🔨 +2), plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner · 🔨 miller, baker. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
-| Skills | **6** (🔨 +2) | foraging, forestry, woodcutting, farming, building, trading · 🔨 milling, baking. ⚠️ The fisher, hunter, smith, quarrier and miner have **no skill row** (D391) |
+| Goods | **13** | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools, flour, bread |
+| Buildings | **21** | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, longhouse, smithy, well, quarry, iron mine, mill, bakery — and the founders' cart, a store that is not built |
+| Trades | **13**, plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
+| Skills | **8** | foraging, forestry, woodcutting, farming, building, trading, milling, baking. ⚠️ The fisher, hunter, smith, quarrier and miner have **no skill row** (D391) |
 | Techniques | **4** | splitting lumber, coppicing, crop rotation, tended patches — see the knowledge table below |
 | Crops | **1** | wheat (`CropRow` — a second crop is a row plus a *"grow…"* control) |
 | Terrain | **9** | grass, water, forest, rock, iron seam, sapling, field, sown, ripe |
@@ -65,8 +65,8 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | Fish | ✅ | Fishing hut, which must touch water; never runs out; works in winter |
 | Meat (+ leather) | ✅ | Hunter's lodge, hunts in the woods within reach |
 | Wheat | ✅ | Farmhouse and its painted field — sown in spring, reaped in autumn, **rots if left standing into winter** |
-| Flour → bread | 🔨 | The mill grinds wheat (never while the village is hungry); the bakery bakes flour, lighting its oven once a stint (never with the winter's firewood). **Bread sates longer** (`Villager.FullFor`). Both learned together at 5,000 wheat reaped |
-| A varied diet | 🔨 | Meals and fetches take the best food first, then a share of each in proportion (D523) — on `main` today **meals take forage first and a forage-fed village never eats its wheat** (D521 §8.1) |
+| Flour → bread | ✅ | The mill grinds wheat (never while the village is hungry); the bakery bakes flour, lighting its oven once a stint (never with the winter's firewood). **Bread sates longer** (`Villager.FullFor`). Both learned together at 5,000 wheat reaped |
+| A varied diet | ✅ | Meals and fetches take the best food first, then a share of each in proportion (D523) — before it, **meals took forage first and a forage-fed village never ate its wheat** (D521 §8.1) |
 | The machinery | ✅ | Hunger and meals, granaries and larders, the market, a stock limit per food, the birth gate on stored food, dependants eating half, *"Food"* as the sum of every food (D298) |
 
 ### The other resources
@@ -74,7 +74,7 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | Group | ✅ On `main` | What spends it |
 |---|---|---|
 | Building materials | logs (felled), stone (dug by hand or quarried), iron (dug by hand or mined) | logs and stone raise buildings; stone and iron make tools |
-| Fuel | firewood (split from logs) | hearths in winter; the smith's iron tools; 🔨 the bakery's oven |
+| Fuel | firewood (split from logs) | hearths in winter; the smith's iron tools; the bakery's oven |
 | Tools | stone tools (the founders' cart), iron tools (the smithy) | worn one use per action; a third quicker and a quarter more |
 | Animal products | leather (from hunting) | ⚠️ **nothing yet** |
 | Water | the well — households walk to it | no water good yet (Phase 6) |
@@ -94,8 +94,8 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | **The quarry** | ✅ | Learned by doing: **200 stone dug by hand** — paid for |
 | **The smithy** | ✅ | A **gift** after **50 iron dug by hand** (D444) |
 | **The iron mine** | ✅ | Learned when the smith forges the **first iron tool** (D449) — paid for |
-| **The mill and the bakery** | 🔨 | Learned together at **5,000 wheat reaped** (D523, D524) — paid for |
-| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). Nodes: quarry, smithy, library, town hall, iron mine (🔨 mill, bakery), and a fogged horizon — **mason's yard → stone cottage, school** |
+| **The mill and the bakery** | ✅ | Learned together at **5,000 wheat reaped** (D523, D524) — paid for |
+| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). Nodes: quarry, smithy, library, town hall, iron mine, mill, bakery, and a fogged horizon — **mason's yard → stone cottage, school** |
 
 ---
 
@@ -155,7 +155,7 @@ innkeeper, merchant, beekeeper, administrator.
   teaches it), TERRAIN (only thinkable in some places).
 - **The branch catalogue (§9), ten trunks:**
   - **Ground** — ✅ tended patches, ✅ crop rotation, 💭 sowing, manuring (herder + farmer), fallowing, drainage,
-    basic sanitation (compost), crop milling (🔨 built as the mill's unlock by reaped wheat), subterranean
+    basic sanitation (compost), crop milling (✅ built as the mill's unlock by reaped wheat), subterranean
     engineering, thermal horticulture, hydronic heat.
   - **Woods** — ✅ coppicing, ✅ the planting brush (shipped ungated, D125), 💭 charcoal burning, orchard,
     mechanical carpentry (sawmill), container fabrication (cooperage).

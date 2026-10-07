@@ -267,6 +267,12 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToSmithy => true,
         VillagerState.Forging => true,
 
+        // The mill and the oven, and the walk to each, are a miller or a baker out on their trade (D522).
+        VillagerState.TravelingToMill => true,
+        VillagerState.Grinding => true,
+        VillagerState.TravelingToBakery => true,
+        VillagerState.Baking => true,
+
         // The walk to the face and the stint at it are a quarrier out on their trade (D434).
         VillagerState.TravelingToQuarry => true,
         VillagerState.Quarrying => true,
