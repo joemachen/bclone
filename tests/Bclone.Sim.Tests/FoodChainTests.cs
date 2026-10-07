@@ -235,6 +235,69 @@ public sealed class FoodChainTests
     }
 
     // ---------------------------------------------------------------
+    //  § A varied diet (D523) — the farm that never stalls
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ A fetch brings home a mix of what the store holds, in proportion (Joe, D523): the granary's wheat goes
+    /// into the larders, not only its forage. Red with the fetch walking id order.
+    /// </summary>
+    [Fact]
+    public void AFetchBringsHomeAMixOfWhatTheStoreHolds()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        StoreBuilding granary = TheGranary(world);
+        Stockpile larder = world.Households[0].Stockpile;
+        foreach (Goods good in world.GoodsCatalog.EdibleGoods)
+        {
+            granary.Store.TakeAll(good);
+            larder.TakeAll(good);
+        }
+
+        granary.Store.Add(Goods.Produce, 900);
+        granary.Store.Add(Goods.Wheat, 1067);
+
+        int moved = world.MoveFood(granary.Store, larder, 50);
+
+        // 50 × 900 / 1,967 = 22.9 and 50 × 1,067 / 1,967 = 27.1: floors 22 and 27, the last unit to the
+        // larger remainder.
+        Assert.Equal(50, moved);
+        Assert.Equal(27, larder[Goods.Wheat]);
+        Assert.Equal(23, larder[Goods.Produce]);
+    }
+
+    /// <summary>
+    /// ⭐⭐ The stall, gone (D523): a village fed on forage, with a farm and the shipped wheat limit, keeps
+    /// reaping year after year — wheat reaped was flat at the first harvest (D521 §8.1 finding 1).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The shipped game and the played opening, not the fixture</b> — measured first: the fixture village
+    /// is short enough of forage that it eats its wheat anyway (276 → 598 reaped on the old rule), so a guard
+    /// posed there could not see the stall. This is the D521 harness's `every` village, which reaped 1,162 in
+    /// its first year and nothing more for twenty.
+    /// </remarks>
+    [Fact]
+    public void AForageFedFarmDoesNotStall()
+    {
+        SimConfig config = ShippedConfig.Load();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        FarmFixtures.GiveItGround(world, farm, 3);
+        Assert.Equal(1000, world.StockLimits.For(Goods.Wheat));
+
+        loop.Step(config.TicksPerYear * 3);
+        int byYearThree = world.WheatEverReaped;
+        loop.Step(config.TicksPerYear * 3);
+        int byYearSix = world.WheatEverReaped;
+
+        _output.WriteLine($"wheat reaped: {byYearThree} by year 3, {byYearSix} by year 6; held {world.HeldAgainstItsLimit(Goods.Wheat)}; alive {world.Population}");
+        Assert.True(byYearThree > 0, "The premise: the farm reaped.");
+        Assert.True(byYearSix > byYearThree + 500, $"The farm stalled: {byYearThree} reaped by year 3 and {byYearSix} by year 6.");
+    }
+
+    // ---------------------------------------------------------------
     //  § The gifts (§7)
     // ---------------------------------------------------------------
 
@@ -267,45 +330,44 @@ public sealed class FoodChainTests
         Assert.True(world.WheatEverReaped > 0, "The farm reaped nothing in two years.");
         Assert.Equal(world.FoodEverProducedOf(Goods.Wheat), world.WheatEverReaped);
         Assert.True(world.IsUnlocked(BuildingKind.Mill));
-        Assert.Contains(world.Moments, m => m.Title.Contains("mill", StringComparison.Ordinal) && m.WaitsToBeDismissed);
-    }
 
-    /// <summary>The bakery is learned by the mill's first flour (Joe: *"after the first flour"*).</summary>
-    [Fact]
-    public void TheBakeryIsLearnedByTheFirstFlour()
-    {
-        SimConfig config = Config;
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
-        SimWorld world = loop.World;
-        Assert.False(world.IsUnlocked(BuildingKind.Bakery));
-        Assert.Contains("flour", world.WhyNotYet(BuildingKind.Bakery), StringComparison.Ordinal);
-
-        RaiseA(world, BuildingKind.Mill);
-        ToolsTests.KeepTheVillageWarmAndFed(world);
-        OnlyOneTradeWorks(world, JobKind.Miller);
-        TheGranary(world).Store.Add(Goods.Wheat, 200);
-        world.Moments.Clear();
-        for (int t = 0; t < config.TicksPerSeason && world.FlourEverGround == 0; t++)
-        {
-            loop.StepOnce();
-        }
-
-        Assert.True(world.FlourEverGround >= config.BakeryUnlockFlour);
+        // ⭐ AND THE BAKERY WITH IT, IN ONE MOMENT (Joe, D523: "the mill and bakery should unlock together").
         Assert.True(world.IsUnlocked(BuildingKind.Bakery));
-        Assert.Contains(world.Moments, m => m.Title.Contains("bak", StringComparison.Ordinal));
+        Moment learned = Assert.Single(world.Moments, m => m.Title.Contains("mill", StringComparison.Ordinal));
+        Assert.True(learned.WaitsToBeDismissed);
+        Assert.Contains("bake", learned.Title, StringComparison.Ordinal);
     }
 
-    /// <summary>The two counters are the village's identity, sparsely: they decide what may be built.</summary>
+    /// <summary>
+    /// Neither is known a grain early, and neither waits on the other (Joe, D523) — the bakery is not learned
+    /// from flour. Red with the bakery gated apart.
+    /// </summary>
     [Fact]
-    public void TheGiftCountersAreInTheFingerprint()
+    public void TheMillAndTheBakeryAreLearnedTogether()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        world.WheatEverReaped = world.Config.MillUnlockWheat - 1;
+        Assert.False(world.IsUnlocked(BuildingKind.Mill));
+        Assert.False(world.IsUnlocked(BuildingKind.Bakery));
+        Assert.Contains("reaped", world.WhyNotYet(BuildingKind.Bakery), StringComparison.Ordinal);
+
+        world.WheatEverReaped = world.Config.MillUnlockWheat;
+        Assert.Equal(0, world.FlourEverGround);
+        Assert.True(world.IsUnlocked(BuildingKind.Mill));
+        Assert.True(world.IsUnlocked(BuildingKind.Bakery));
+    }
+
+    /// <summary>
+    /// Wheat reaped is the village's identity, sparsely: it decides what may be built. Flour ground is a
+    /// statistic since D523 (nothing reads it), and is not.
+    /// </summary>
+    [Fact]
+    public void TheWheatCounterIsInTheFingerprint()
     {
         SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
         ulong before = StateHash.Compute(world);
         world.WheatEverReaped = 1;
-        ulong reaped = StateHash.Compute(world);
-        world.FlourEverGround = 1;
-        Assert.NotEqual(before, reaped);
-        Assert.NotEqual(reaped, StateHash.Compute(world));
+        Assert.NotEqual(before, StateHash.Compute(world));
     }
 
     // ---------------------------------------------------------------
@@ -413,17 +475,10 @@ public sealed class FoodChainTests
         }
     }
 
-    /// <summary>Raise a mill or a bakery near the founding, the village lent what it takes to know how — that one only.</summary>
+    /// <summary>Raise a mill or a bakery near the founding, the village lent the wheat it takes to know how.</summary>
     internal static Workplace RaiseA(SimWorld world, BuildingKind kind)
     {
-        if (kind == BuildingKind.Mill)
-        {
-            world.WheatEverReaped = Math.Max(world.WheatEverReaped, world.Config.MillUnlockWheat);
-        }
-        else
-        {
-            world.FlourEverGround = Math.Max(world.FlourEverGround, world.Config.BakeryUnlockFlour);
-        }
+        world.WheatEverReaped = Math.Max(world.WheatEverReaped, world.Config.MillUnlockWheat);
 
         GridPos site = world.Map.FoundingSite;
         GridPos? at = null;

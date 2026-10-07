@@ -50,11 +50,11 @@ for arm, rows in arms.items():
     for name in ("Produce", "Wheat", "LogsSplit"):
         rates = [r[name][2] for r in rows if name in r and r[name][1] >= 5]
         print(f"   {name:9} per seat-year {fmt(rates)}  over {len(rates)} runs with >= 5 seat-years")
-    for threshold in (1000, 2000, 5000, 10000):
+    for threshold in (1000, 2000, 5000, 7500, 10000):
         years = [next((i + 1 for i, v in enumerate(r["reaped"]) if v >= threshold), None) for r in rows]
         reached = [y for y in years if y is not None]
-        print(f"   reaped {threshold:>5} by year {fmt(reached)}  ({len(reached)}/{len(rows)} by Year 20)")
-    for y in (5, 20):
+        print(f"   reaped {threshold:>5} by year {fmt(reached)}  ({len(reached)}/{len(rows)} by Year {len(rows[0]['reaped'])})")
+    for y in (5, 20, 50):
         print(f"   wheat held at Year {y:>2}: {fmt([r['held'][y - 1] for r in rows if len(r['held']) >= y])}")
     print(f"   lockstep {fmt([r['lock'] for r in rows if r['lock'] >= 0])} %")
     froze = [int(m.group(1)) for r in rows for m in [re.search(r"froze (\d+)", r["line"])] if m]

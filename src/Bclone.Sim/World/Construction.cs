@@ -325,7 +325,7 @@ public enum BuildingKind
     /// A bakery — flour into bread (D522, `food-chain.md`).
     /// </summary>
     /// <remarks>
-    /// Learned by the mill's first flour (<c>bakery_unlock_flour</c>), paid for. <b>Appended at 20.</b>
+    /// Learned with the mill, on reaped wheat (<c>mill_unlock_wheat</c>, Joe D523), paid for. <b>Appended at 20.</b>
     /// </remarks>
     Bakery = 20,
 }

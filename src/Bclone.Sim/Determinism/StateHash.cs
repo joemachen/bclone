@@ -589,17 +589,12 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.IronToolsEverForged);
         }
 
-        // The mill's and the bakery's unlocks read these (D522), so they are state — sparse, a tag each.
+        // The mill's and the bakery's unlock reads this (D522, D523), so it is state — sparse, under a tag.
+        // Flour ground is a statistic since the two are learned together, and is not mixed.
         if (world.WheatEverReaped != 0)
         {
             hash = MixByte(hash, 0x3A);
             hash = MixUInt32(hash, (uint)world.WheatEverReaped);
-        }
-
-        if (world.FlourEverGround != 0)
-        {
-            hash = MixByte(hash, 0xF1);
-            hash = MixUInt32(hash, (uint)world.FlourEverGround);
         }
 
         // Whether the tech-tree map has been introduced (D440) — sparse: a village that never

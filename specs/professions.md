@@ -192,7 +192,7 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Hunter** | hunter's lodge | **woods within reach** | meat → granary; leather → warehouse | 2,700 | ✅ **BUILT** (D291–D293, `hunting.md`; in the woods since D384) |
 | **Smith** | smithy | — | iron + firewood → tools → warehouse | — | ✅ **BUILT** (D391, `tools-and-the-smith.md`) — and every trade above but the marketer and the builder wears the tools |
 | **Miller** | mill | — | wheat → flour → warehouse | 200 flour (a limit) | ✅ **BUILT** (D522, `food-chain.md`) — learned by reaping wheat; never grinds while the village is hungry |
-| **Baker** | bakery | — | flour + a firing of firewood → bread → granary | 1,000 bread (a limit) | ✅ **BUILT** (D522) — learned from the mill's first flour; the oven lit once a stint, never with the winter's firewood |
+| **Baker** | bakery | — | flour + a firing of firewood → bread → granary | 1,000 bread (a limit) | ✅ **BUILT** (D522) — learned with the mill (D523); the oven lit once a stint, never with the winter's firewood |
 | **Tailor** | tailor's | — | clothing → warehouse | 50 clothing | ❌ new; `clothing.md` blocked on its input |
 | **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
 

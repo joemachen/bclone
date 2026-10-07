@@ -289,7 +289,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 13124465361264696566.
     // RE-TAKEN (D511) — farmhands rest at the steading in spring, summer and autumn, tend their sown tiles in summer, and go home in winter (`work-from-the-steading.md`, Joe: "workers actually working at their place of work"). ⭐ PROVEN TO BE THE ONLY REASON: with `RestsAtTheSteading` answering false for everybody, the old value passes. Was 6162009344269948841.
     // RE-TAKEN (D522) — the food chain (`food-chain.md §7`): the wheat a field gives up is counted (`WheatEverReaped`, hashed — the mill's unlock reads it) and this village reaps past `mill_unlock_wheat`, so it learns the mill and the moment shows it the tree. No mill is built and nobody eats bread. ⭐ PROVEN TO BE THE ONLY REASON: with the counter unhashed and the mill's unlock out of reach, the old value passes. Was 4704120055719651414.
-    private const ulong SeamGoldenHash = 10120269350165060630UL;
+    // RE-TAKEN (D523) — a varied diet (Joe: "eat a varied diet"): among foods worth the same, a meal and a fetch take a share of each in proportion to what the pile holds, not forage first — this village eats its wheat. ⭐ PROVEN TO BE THE ONLY REASON: with the share taken greedily in id order again, the old value passes. Was 10120269350165060630.
+    private const ulong SeamGoldenHash = 8728969007328010656UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -361,7 +362,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D475) — the seams found, not placed (Joe: "stone and iron nodes look planned and symmetrical"): the same village as `SeamGoldenHash`. Was 2806896355272201745.
     // RE-TAKEN (D511) with it again: farmhands rest at the steading and tend in summer. ⭐ PROVEN: with `RestsAtTheSteading` false for everybody, the old value passes. Was 8900799605716253735.
     // RE-TAKEN (D522) with it, for the same reason. Was 18386648076548936173.
-    private const ulong SeamBeforeAnybodyGotBetter = 16656143455684160865UL;
+    // RE-TAKEN (D523) with it, for the same reason. Was 16656143455684160865.
+    private const ulong SeamBeforeAnybodyGotBetter = 3902667481052543839UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

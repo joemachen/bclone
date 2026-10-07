@@ -128,6 +128,28 @@ public sealed class NutritionTests
     }
 
     /// <summary>
+    /// ⭐ A varied diet (Joe, D523): among foods worth the same, a meal is a mix in proportion to what the
+    /// larder holds — so a village eats its wheat at its share instead of forage for ever. Red with the meal
+    /// walking id order.
+    /// </summary>
+    [Fact]
+    public void AMealIsAMixOfWhatTheLarderHolds()
+    {
+        SimConfig config = Phase0Fixtures.Plenty;
+        (SimLoop loop, _, Stockpile larder) = AboutToEat(config, (Goods.Produce, 100), (Goods.Wheat, 300));
+        int cost = config.FoodPerMeal;
+
+        loop.StepOnce();
+
+        int forage = 100 - larder[Goods.Produce];
+        int wheat = 300 - larder[Goods.Wheat];
+        _output.WriteLine($"a meal of {cost}: {forage} forage, {wheat} wheat");
+        Assert.Equal(cost, forage + wheat);
+        Assert.True(wheat > forage, "The larder holds three times the wheat, and the meal took less of it.");
+        Assert.True(forage > 0 || cost < 4, "A meal from a larder of both was all one food.");
+    }
+
+    /// <summary>
     /// ⛔ With no bread, nobody is ever full — the rule lands byte-identical (§3.2). Red with a meal that
     /// always adds a tick of fullness.
     /// </summary>

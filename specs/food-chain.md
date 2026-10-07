@@ -9,12 +9,12 @@ content, Phase 6, *waiting on this derivation*), D391/D446 (the smith: two input
 the winter's firewood), D392 (the founding draws from `founding_trades`, not the skills catalogue),
 D434/D444/D449 (gifts by doing: the quarry, the smithy, the mine), D440 (the tech-tree map), D28/D190
 (villagers in lockstep, and the seeded rhythm that had to be manufactured to break it).
-**Status:** 🔨 **BUILT, SIM AND VIEW (D522, 2026-10-06), on `slice/food-chain` — unplayed, and ⏸️ one number
-waits on Joe (§9d: the mill's unlock).** Joe made three calls before it was written (§0), answered §9's six
-(D521) and §9b/§9c (D522). Guards: `NutritionTests` (8), `FoodChainTests` (12), red-checked by 19 mutants —
-18 red, one zero written down (§11). 1539 / 0 / 5 of 1544; view 0 warnings; probe green, bar height 151,
-`spoilers:` ✅ with flour, bread, miller and baker hidden at the founding. Three goldens moved, each proven
-(§12). Owner: Joe + Claude Code.
+**Status:** 🔨 **BUILT, SIM AND VIEW (D522–D523, 2026-10-06), on `slice/food-chain` — unplayed, and ⏸️ the
+mill's unlock waits on Joe's pick from §8.4 (5,000 / 7,500 / 10,000 wheat reaped).** D523: **a varied diet**
+(§3.3 — the farm no longer stalls) and **the mill and the bakery learned together** (§7). Guards:
+`NutritionTests` (8), `FoodChainTests` (14); 1542 / 0 / 5 of 1547; view 0 warnings; probe green,
+bar height 151. Red checks: D522's 19 mutants (18 red, one zero) and D523's 5 (5 red). Goldens moved and
+each proven (§12). Owner: Joe + Claude Code.
 
 ---
 
@@ -32,7 +32,9 @@ covers:
 2. **Beer? → *"Bread only, beer later."*** Beer comes with morale and the tavern (Phase 6), where it has a
    mechanic to plug into. §13 records the brewery's shape so it is not rediscovered.
 3. **How do the buildings arrive? → *"Gift by doing."*** The mill after the village has reaped enough
-   wheat, the bakery after its first flour is ground: the quarry's, smithy's and mine's shape. The
+   wheat, the bakery after its first flour is ground: the quarry's, smithy's and mine's shape. ⚠️ **Amended
+   by Joe (D523): *"the mill and bakery should unlock together. it doesnt make sense to mill something …
+   and then unlock the bakery"* — one gate, on reaped wheat (§7).** The
    numbers are measured (§8), not typed.
 
 ---
@@ -127,17 +129,24 @@ ratio.
 - Starvation, `TicksAtMaxHunger` and the *"nothing left to eat"* narration read hunger, which a full
   villager is not near.
 
-### 3.3 Eat the best food first (recommended, §9 call 4)
+### 3.3 The best food first, and a varied diet among the rest (§9 call 4; Joe, D523)
 
-`TakeAMealFrom` walks the edible goods in **descending nutrition, then id**. While every food is worth
-1, that is id order, so it is **byte-identical**.
+A meal (`TakeAMealFrom`) and a fetch (`MoveFood`) take food through one rule, `SimWorld.FoodToTake`:
+**the best food first**, all that is needed (bread before grain); **among foods worth the same, a share of
+each in proportion to what the pile holds**, rounded by largest remainder (ties to the bigger pile, then
+the lower id). A plate is a mix of what the larder has; a fetch brings home a mix of what the store has.
 
-**Why:** in id order bread (12) is eaten last. A household with forage in its larder would eat forage
-until it ran out, and the rhythm change would show only in want. The village's **total** eating is
-unchanged by the order: the same points are consumed either way, because a point bought as fullness
-is a point not bought as a meal. The order only decides **when the player can see it**.
-`EdibleGoods` is built once (`GoodsCatalog`), so this is a sort at load, never per meal (CLAUDE.md's
-rule).
+**Why the best first:** in id order bread (12) is eaten last, and the rhythm change would show only in
+want. **Why a varied diet (D523):** in id order forage (0) went before wheat (9), so a village with forage
+never ate a grain of its wheat — the larders held nothing else, the wheat met its limit after one harvest,
+and the farm stood idle for fifty years (§8.1 finding 1). Joe wanted the mill at 5,000–10,000 wheat reaped
+(*"1000 wheat should be reapable within one season. that is much too fast"*), which only a farm that keeps
+reaping can reach. ⛔ **"The biggest pile first" was built first and measured to fail**: forage's limit
+(2,000) sits above wheat's (1,000), so the foragers kept forage the bigger pile for ever (1,494 reaped by
+Year 3 and by Year 6). In proportion, wheat is eaten at its share, always.
+
+Determinism: a pure function of the pile's counts and ids, built per call (no index to keep — it reads the
+pile as it is now). `EdibleGoods` stays best-first-then-id for the readers whose order does not matter.
 
 ### 3.4 Every units reader stays in units, and that is the safety argument
 
@@ -249,22 +258,22 @@ The chain-starves-in-the-middle guard (`wood-fuel-and-tools.md §8`), once per c
 - ⛔ **Nothing here reaches `VillageEconomy`.** Bread is upside; the floor reads no nutrition
   (`NutritionTests.TheFloorReadsNoNutrition`).
 
-## 7. The gifts
+## 7. The gifts — the mill and the bakery learned together (Joe, D523)
 
-- **`SimWorld.WheatEverReaped`**: wheat brought in by reaping, counted where the reap writes it.
-  Hashed sparsely, the `StoneEverDug` shape. **The mill is known at `mill_unlock_wheat`.**
-- **`SimWorld.FlourEverGround`**: counted where the grind writes it. **The bakery is known at
-  `bakery_unlock_flour`.** The first grind is a natural default, and §8 decides.
-- `WhyNotYet` gains two arms, in the village's words:
-  - *"Nobody has built a mill here yet — the village has reaped {n} of the {N} wheat it takes to learn."*
-  - *"Nobody here bakes yet — the mill has ground {n} of the {N} flour it takes."*
-- Each crossing raises its `LearnedByDoing` moment (D442), as the quarry's and the smithy's do.
-- Two `TechTree.DefaultNodes` rows, `"mill"` and `"bakery"` (bakery `Requires` mill), with new
-  `TechCondition` values that read the same two keys. **No second copy of the number** (the
-  `tech-tree-map.md §3.1` rule).
-- A row on the milestone map (`DESIGN.md §4`) once §8 says what year a played village meets the mill.
-- ⛔ **A cart's or a gift's wheat is not reaped wheat.** Only the reap counts, the way only digging by
-  hand counts stone.
+- **`SimWorld.WheatEverReaped`**: wheat brought in by reaping, counted where the reap writes it
+  (`SimWorld.Reaped`). Hashed sparsely, the `StoneEverDug` shape. **The mill and the bakery are both known
+  at `mill_unlock_wheat`** — one gate, one `WhyNotYet` sentence (*"Nobody here mills or bakes yet — the
+  village has reaped {n} of the {N} wheat it takes to learn."*), one `LearnedByDoing` moment (*"The village
+  learned to mill and bake"*).
+- ⛔ **Not the bakery after the first flour**, which D522 built: Joe, *"it doesnt make sense to mill
+  something (for what reason? there is no need for flour until there is something to bake?)"*. The
+  `bakery_unlock_flour` key and the `FlourGround` tech condition are gone; `FlourEverGround` is a statistic
+  now, like `BreadEverBaked`, and not hashed.
+- Two `TechTree.DefaultNodes` rows, `"mill"` and `"bakery"`, both on the wheat condition. **No second copy of
+  the number** (the `tech-tree-map.md §3.1` rule).
+- A row on the milestone map (`DESIGN.md §4`) once Joe has picked the number (§8.4).
+- ⛔ **A cart's or a gift's wheat is not reaped wheat.** Only the reap counts, the way only digging by hand
+  counts stone.
 
 ## 8. Measured before typed
 
@@ -346,7 +355,7 @@ splits a seat-year were too thin to use (2 runs, and demand-gated), so the stint
 |---|---|---|
 | bread `nutrition` | **2** | §8.1 finding 3 |
 | `mill_unlock_wheat` | **5,000** | finding 4 |
-| `bakery_unlock_flour` | **20** (the first grind) | Joe's call 3: *"after the first flour"* |
+| ~~`bakery_unlock_flour`~~ | ~~20~~ — **gone (D523): the bakery is learned with the mill** | Joe |
 | `wheat_per_grind` → `flour_per_grind` | 20 → 20 | sized so one miller keeps up with one farm (~2,000 a year); **confirmed after the build** |
 | `grind_ticks`, `grinds_per_stint` | 4, 4 | the woodcutter's split and stint |
 | `flour_per_bake` → `bread_per_bake` | 20 → 20 | one baker keeps up with one miller |
@@ -392,6 +401,38 @@ arms with the wheat limit LIFTED (`w`) — the wrong premise, mine, and Joe conf
    villagers full of bread both sit at their post-meal hunger, so it rose 2 % → 4 % for the wrong reason.
    **Whether bread varies rhythms is unmeasured** — a meal-tick measure would be the right one.
 
+### 8.4 ✅ The varied diet, and when the mill comes (D523)
+
+The same harness, seventeen valleys × fifty years, the shipped config and limits, on the code with the varied
+diet and the one gate. Until a mill stands the village is the same whatever the unlock, so the no-mill arms
+give the year each number is reached. Medians, p10–p90.
+
+| | No mill, farm at t0 (`farm0s`) | No mill, farm in Year 2 (`farm2s`) |
+|---|---|---|
+| Wheat a farmer seat-year | **210** (201–216) — was **0**, stalled (D521) | 219 (207–223) |
+| 5,000 reaped by | **Year 14** (14–15) | Year 15 (14–15) |
+| 7,500 reaped by | **Year 20** (20–21) | Year 21 (20–21) |
+| 10,000 reaped by | **Year 25** (24–26) | Year 26 (25–27) |
+| Alive / peak / starved / froze / dead valleys | 9 / 10 / 0 / 25 / 5 (was 8 / 9 / 0 / 25 / 5) | 9 / 10 / 0 / 25 / 5 |
+
+| Mill unlock (`farm0sRB`) | Mill and bakery stand | Bread baked by Year 50 | Wheat reaped a year after | Alive / peak |
+|---|---|---|---|---|
+| 5,000 | **Year 14** (14–15) | 24,300 | 688 | 9 / 10 |
+| 7,500 | **Year 20** (20–21) | 20,760 | 693 | 9 / 10 |
+| 10,000 | **Year 25** (24–26) | 17,060 | 680 | 9 / 10 |
+
+**What it says:**
+
+1. ✅ **The stall is gone without a mill.** A farm reaps every year (~400 wheat), because the village eats
+   its wheat at its share. The village is a little better for it (alive 9, peak 10 — was 8 and 9).
+2. **The unlock's years are set by how much wheat a village eats, not by how fast a farm can grow it.**
+   One farm could grow ~2,000 a year; a village of ten eats ~400 of it as wheat. ⚠️ **These are unattended
+   harness villages of about ten people with one farm** — a played village that grows, and plants more
+   fields, eats more and reaches each number sooner. The years are an upper bound for one-farm play.
+3. Once the mill stands the farm reaps ~690 a year (the bread is eaten first and the wheat drawn down).
+4. ⚠️ **Joe's pick.** 5,000 is about Year 14 here, 10,000 about Year 25 — the town hall comes at 30–60
+   (`DESIGN.md §4`'s milestone map), the library at 15–19.
+
 ## 9. Joe's calls on the rest — ✅ ALL SIX ANSWERED (D521, 2026-10-06), each as recommended
 
 Joe: *"1. yes 2. not in this slice 3. yes 4. yes 5. perfect 6. sure"*, and *"measurement can start"*.
@@ -418,7 +459,11 @@ they were put, kept:
 6. **The Overview's *"Ale — no brewer, no barley"* row** stays as a roadmap row until §13 is built
    (`Main.NotYetInTheValley`'s own rule: *"delete a row when it ships"*).
 
-### 9b. ✅ Raised by the measurement: the farm that stops for good (§8.1 finding 1) — Joe: *"a"* (D522)
+### 9b. ✅ Raised by the measurement: the farm that stops for good (§8.1 finding 1) — Joe: *"a"* (D522), then (b) too (D523)
+
+⚠️ **(a) alone could not hold once Joe moved the unlock to 5,000–10,000** (D523): the mill could never arrive
+at a farm that stalled at ~1,079. He chose (b), the varied diet (§3.3), built as a share in proportion
+rather than "the biggest pile first" (which was measured to stall still).
 
 A forage-fed village never eats its wheat, so with the shipped limit (1,000) a farm reaps once and then
 stands idle every autumn, for decades, while its card promises the village will *"eat into it"*. Three
@@ -439,7 +484,11 @@ Bread at **2**, the mill after **5,000** wheat reaped, the bakery after the **fi
 lit for **1** firewood a stint. Batch sizes were starting values; the post-build arm (§8.3) found the stint
 nowhere near binding. ⚠️ **The 5,000 is reopened by §9d.**
 
-### 9d. ⏸️ The mill's unlock — 5,000 can never be reached (§8.3) — Joe's
+### 9d. ⏸️ The mill's unlock — Joe: *"5000-10000"*, picked off §8.4 (D523)
+
+⚠️ **The 1,000 recommended below was declined**: *"1000 wheat should be reapable within one season. that is
+much too fast."* The varied diet keeps any number reachable; §8.4 gives the year for 5,000, 7,500 and 10,000.
+*The original question, kept:*
 
 Under the shipped wheat limit (1,000) a forage-fed village's farm stalls at ~1,079 reaped, so a 5,000 unlock
 never comes and call (a) cannot work. ⭐ **Recommended: `mill_unlock_wheat` 1,000 — the starting wheat
@@ -498,7 +547,19 @@ before the mill; the farm's card says the limit is met, and raising it is the an
 `TechTreeTests.ForgedGoodsAreUnknownUntilTheSmithy` grew the mill's and the bakery's goods; the probe's
 `spoilers:` line hides flour, bread, miller and baker at the founding.
 
-**Red checks (D326): 19 mutants, 18 red, one zero.** Red: no fullness from bread (4 guards), fullness from
+**D523's guards:** `AMealIsAMixOfWhatTheLarderHolds`, `AFetchBringsHomeAMixOfWhatTheStoreHolds` (the shares
+to the unit), `AForageFedFarmDoesNotStall` (posed on the shipped game and the played opening — the fixture
+village is short enough of forage to eat its wheat anyway, so a guard posed there could not see the stall),
+`TheMillAndTheBakeryAreLearnedTogether`, `TheWheatCounterIsInTheFingerprint` (flour ground left the hash);
+`TheMillIsLearnedByReapingWheat` now asserts both and one moment; `TheBakeryIsLearnedByTheFirstFlour` is
+retired with its rule. ⚠️ `SteadingTests.TendingIsSummerOnlyOnTheFarmsOwnSownTiles` read the clock a tick
+late (a step runs at `World.Tick` and then advances it) — it judged a tend begun in summer's last ticks as
+"tending in autumn" the first time the diet moved the timings; it now judges each step by the season it ran
+in. **Red checks (D523): 5 mutants, 5 red** — the diet taken greedily in id order (3), the leftover unit to
+the smallest remainder, tending outside summer, bread not first (⚠️ its first form looped for ever — no food
+is worth nought — and a hang is not a verdict), the bakery gated apart.
+
+**Red checks (D522): 19 mutants, 18 red, one zero.** Red: no fullness from bread (4 guards), fullness from
 every meal, hunger rising while full, eating in id order (2), the floor reading bread's worth, the mill
 grinding while hungry (2), the oven burning the winter's firewood, the oven lit every bake, a tool making
 flour from nothing (2), a met limit ignored, the reap not counted, flour not counted, either counter
@@ -518,7 +579,9 @@ build scores nothing (D450).
    fifty-year village (`SkillTests`, shipped) for the two new starting limits — byte-identical with those two
    lines out of the data — and the farm golden pair (`FarmGoldenTests`) for `WheatEverReaped` in the hash
    and the mill being learned — byte-identical with the counter unhashed and the unlock out of reach. No
-   village in the suite eats bread.
+   village in the suite eats bread. **D523: the farm golden pair moved again for the varied diet** —
+   byte-identical with the share taken greedily in id order. The shipped fifty-year village did not move
+   (it farms nothing).
 5. The four CLAUDE.md verification lines. The probe stays green at bar height 151.
 6. Joe plays it: a mill appears, a bakery after it, a card says *"full from a meal of bread"*.
 7. `DESIGN.md` §4/§5/§6/§7, `food-catalog.md`, `buildings-plan.md` and `HANDOFF.md` updated in the same

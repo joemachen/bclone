@@ -2052,15 +2052,9 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// Take a meal's worth out of a pile, from whatever is edible — <b>the best food first, then id
-    /// order</b>.
+    /// Take a meal's worth out of a pile, from whatever is edible — <b>a varied diet</b>
+    /// (<see cref="FoodToTake"/>): the best food first, and among foods worth the same, a share of each.
     /// </summary>
-    /// <remarks>
-    /// ⚠️ <b>A fixed order, and it is not tidiness.</b> Anything that walks goods and writes to the
-    /// world must do so in a fixed order or two runs of one seed diverge (§5). <c>EdibleGoods</c> is
-    /// the best food first (`food-chain.md §3.3`), then id — so bread before grain, and among foods
-    /// of equal worth the oldest good first, as before bread existed.
-    /// </remarks>
     public bool TakeAMealFrom(Stockpile store, int cost) => TakeAMealFrom(store, cost, out _, out _);
 
     /// <summary>
@@ -2080,25 +2074,123 @@ public sealed class SimWorld : IObstacles
         }
 
         int owed = cost;
-        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
-        for (int i = 0; i < edible.Count && owed > 0; i++)
+        List<(Goods Good, int Amount)> plate = FoodToTake(store, cost);
+        for (int k = 0; k < plate.Count; k++)
         {
-            int here = store[edible[i]];
-            int take = here < owed ? here : owed;
-            if (take > 0 && store.TryTake(edible[i], take))
+            (Goods good, int take) = plate[k];
+            if (store.TryTake(good, take))
             {
                 if (owed == cost)
                 {
-                    best = edible[i];
+                    best = good;
                 }
 
                 owed -= take;
-                worth += take * GoodsCatalog.NutritionOf(edible[i]);
+                worth += take * GoodsCatalog.NutritionOf(good);
             }
         }
 
         RecordFoodEaten(cost - owed);
         return owed == 0;
+    }
+
+    /// <summary>
+    /// ⭐ What a meal or a fetch takes out of a pile — <b>a varied diet</b> (Joe, D523; `food-chain.md §3.3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The best food first</b>, all of it that is needed (bread before grain, Joe's §9 call 4). <b>Among
+    /// foods worth the same, a share of each in proportion to what the pile holds</b> — a plate is a mix of
+    /// what the larder has, and a fetch brings home a mix of what the store has. Rounded by largest
+    /// remainder (ties to the bigger pile, then the lower id), so it is exact, integer and deterministic.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>Why not id order, which this was:</b> forage is good 0 and wheat good 9, so a village with forage
+    /// never ate a grain of its wheat — the larders held nothing else, the granary's wheat met its limit after
+    /// one harvest and the farm stood idle for fifty years (D521 §8.1, 13 of 13 valleys).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>And not "the biggest pile first"</b>, which was built first and measured: forage's limit (2,000)
+    /// sits above wheat's (1,000), so the foragers kept forage the bigger pile for ever and the farm still
+    /// stalled (1,494 reaped by Year 3 and by Year 6). In proportion, wheat is always eaten at its share, so
+    /// a farm is never stood down by wheat nobody eats — which is what keeps a 5,000–10,000 mill unlock
+    /// reachable (Joe: <i>"1000 wheat should be reapable within one season. that is much too fast"</i>).
+    /// </para>
+    /// <para>
+    /// Built per call over the edible goods — it reads the pile as it is now, so there is no index to keep
+    /// (CLAUDE.md's rule is about derivable state, and it is not a zero-allocation rule).
+    /// </para>
+    /// </remarks>
+    public List<(Goods Good, int Amount)> FoodToTake(Stockpile from, int upTo)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+
+        var taken = new List<(Goods Good, int Amount)>();
+        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
+        int owed = upTo;
+        int i = 0;
+        while (i < edible.Count && owed > 0)
+        {
+            // One worth at a time, best first — `EdibleGoods` is ordered that way.
+            int worth = GoodsCatalog.NutritionOf(edible[i]);
+            int end = i;
+            long held = 0;
+            while (end < edible.Count && GoodsCatalog.NutritionOf(edible[end]) == worth)
+            {
+                held += from[edible[end]];
+                end++;
+            }
+
+            if (held > 0)
+            {
+                int take = held < owed ? (int)held : owed;
+                int count = end - i;
+                var shares = new int[count];
+                var remainders = new long[count];
+                int given = 0;
+                for (int k = 0; k < count; k++)
+                {
+                    long exact = (long)take * from[edible[i + k]];
+                    shares[k] = (int)(exact / held);
+                    remainders[k] = exact % held;
+                    given += shares[k];
+                }
+
+                // The units the floors left over go to the largest remainders — each at most one more, which
+                // never takes a pile past what it holds.
+                while (given < take)
+                {
+                    int best = -1;
+                    for (int k = 0; k < count; k++)
+                    {
+                        if (remainders[k] > 0 && (best < 0
+                            || remainders[k] > remainders[best]
+                            || (remainders[k] == remainders[best] && from[edible[i + k]] > from[edible[i + best]])))
+                        {
+                            best = k;
+                        }
+                    }
+
+                    shares[best]++;
+                    remainders[best] = 0;
+                    given++;
+                }
+
+                for (int k = 0; k < count; k++)
+                {
+                    if (shares[k] > 0)
+                    {
+                        taken.Add((edible[i + k], shares[k]));
+                    }
+                }
+
+                owed -= take;
+            }
+
+            i = end;
+        }
+
+        return taken;
     }
 
     /// <summary>
@@ -3603,13 +3695,11 @@ public sealed class SimWorld : IObstacles
             + $"{Config.SmithyUnlockIron} iron by hand it takes.",
 
         // ⭐ THE MINE WAITS ON THE SMITH'S FIRST IRON TOOL (Joe, D449; `iron-mine.md §3.4`).
-        // ⭐ THE MILL WAITS ON REAPED WHEAT, THE BAKERY ON THE MILL'S FIRST FLOUR (D521, `food-chain.md §7`).
-        BuildingKind.Mill when WheatEverReaped < Config.MillUnlockWheat =>
-            $"Nobody here has built a mill yet — the village has reaped {WheatEverReaped} of the "
+        // ⭐ THE MILL AND THE BAKERY ARE LEARNED TOGETHER, ON REAPED WHEAT (Joe, D523: *"the mill and bakery
+        // should unlock together. it doesnt make sense to mill something … and then unlock the bakery"*).
+        BuildingKind.Mill or BuildingKind.Bakery when WheatEverReaped < Config.MillUnlockWheat =>
+            $"Nobody here mills or bakes yet — the village has reaped {WheatEverReaped} of the "
             + $"{Config.MillUnlockWheat} wheat it takes to learn.",
-        BuildingKind.Bakery when FlourEverGround < Config.BakeryUnlockFlour =>
-            $"Nobody here bakes yet — the mill has ground {FlourEverGround} of the "
-            + $"{Config.BakeryUnlockFlour} flour it takes.",
 
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
@@ -3898,7 +3988,7 @@ public sealed class SimWorld : IObstacles
     {
         if (made == Goods.Flour)
         {
-            Ground(amount);
+            FlourEverGround += amount;
         }
         else if (made == Goods.Bread)
         {
@@ -10401,16 +10491,14 @@ public sealed class SimWorld : IObstacles
         }
 
         int moved = 0;
-        IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
 
-        for (int i = 0; i < edible.Count && moved < upTo; i++)
+        // ⭐ A varied diet (D523): a fetch brings home a share of each food the store holds, so the
+        // granary's wheat reaches the larders and not only its forage.
+        List<(Goods Good, int Amount)> load = FoodToTake(from, upTo);
+        for (int k = 0; k < load.Count; k++)
         {
-            Goods goods = edible[i];
-            int room = upTo - moved;
-            int held = from[goods];
-            int take = room < held ? room : held;
-
-            if (take > 0 && from.TryTake(goods, take))
+            (Goods goods, int take) = load[k];
+            if (from.TryTake(goods, take))
             {
                 into.Receive(goods, take);
                 moved += take;
@@ -10523,7 +10611,10 @@ public sealed class SimWorld : IObstacles
     /// </remarks>
     public int WheatEverReaped { get; internal set; }
 
-    /// <summary>Flour ever ground at a mill — what the bakery's unlock counts (D522). Hashed sparsely.</summary>
+    /// <summary>
+    /// Flour ever ground at a mill — counted at the stones (D522). A statistic, not hashed, as
+    /// <see cref="BreadEverBaked"/>: since D523 the bakery is learned with the mill, so nothing reads it.
+    /// </summary>
     public int FlourEverGround { get; internal set; }
 
     /// <summary>Bread ever baked — counted at the oven (D522). A statistic, not hashed, as <see cref="ToolsEverForged"/>.</summary>
@@ -10531,7 +10622,7 @@ public sealed class SimWorld : IObstacles
 
     /// <summary>
     /// A field has given up <paramref name="amount"/> of <paramref name="grain"/> — counted at the reap,
-    /// and the mill learned when the wheat crosses <c>mill_unlock_wheat</c> (D522).
+    /// and the mill and the bakery learned together when the wheat crosses <c>mill_unlock_wheat</c> (D523).
     /// </summary>
     internal void Reaped(Goods grain, int amount)
     {
@@ -10546,28 +10637,11 @@ public sealed class SimWorld : IObstacles
         {
             // ⭐ A STOP, LIKE THE QUARRY'S (D442) — learned by doing, paid for, no gift.
             LearnedByDoing(
-                "The village learned to build a mill",
-                $"The village has reaped {WheatEverReaped} wheat, and somebody has worked out how to set "
-                + "millstones turning. A mill grinds wheat into flour — and flour, in an oven, is bread. "
+                "The village learned to mill and bake",
+                $"The village has reaped {WheatEverReaped} wheat, and somebody has worked out what to do with "
+                + "it: millstones to grind it into flour, and an oven to bake the flour into bread — which keeps "
+                + "a villager full for longer than a meal of grain. Build a mill and a bakery. "
                 + $"{Clock.SeasonAndYear()}.");
-        }
-    }
-
-    /// <summary>
-    /// A mill has ground <paramref name="flour"/> flour — counted at the stones, and the bakery learned
-    /// on the first flour (Joe, D521: *"after the first flour"*).
-    /// </summary>
-    internal void Ground(int flour)
-    {
-        bool knewHow = IsUnlocked(BuildingKind.Bakery);
-        FlourEverGround += flour;
-        if (!knewHow && IsUnlocked(BuildingKind.Bakery))
-        {
-            LearnedByDoing(
-                "The village learned to bake",
-                "The mill has ground its first flour, and somebody knows what an oven does with it. A "
-                + "bakery bakes flour into bread — and a meal of bread keeps a villager full for longer "
-                + $"than a meal of grain. {Clock.SeasonAndYear()}.");
         }
     }
 

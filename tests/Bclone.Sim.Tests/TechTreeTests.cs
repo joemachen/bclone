@@ -126,11 +126,10 @@ public sealed class TechTreeTests
         Assert.True(world.KnowsOf(Goods.IronTools));
         Assert.False(world.KnowsOf(Goods.Flour), "Flour was known before the mill.");
 
-        world.WheatEverReaped = world.Config.MillUnlockWheat;
-        Assert.True(world.KnowsOf(Goods.Flour));
         Assert.False(world.KnowsOf(Goods.Bread), "Bread was known before the bakery.");
 
-        world.FlourEverGround = world.Config.BakeryUnlockFlour;
+        // The mill and the bakery are learned together (Joe, D523), so flour and bread are known together.
+        world.WheatEverReaped = world.Config.MillUnlockWheat;
         Assert.All(Enumerable.Range(0, world.GoodsCatalog.Count), g => Assert.True(world.KnowsOf((Goods)g)));
     }
 

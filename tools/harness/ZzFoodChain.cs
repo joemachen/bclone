@@ -249,7 +249,7 @@ public sealed class ZzFoodChain
                 }
             }
 
-            if (now % perYear == 0 && now / perYear <= 20)
+            if (now % perYear == 0 && now / perYear <= years)
             {
                 reapedBy.Add(ProducedEver(world, Goods.Wheat));
                 wheatHeld.Add(world.StoreBuildings.Sum(s => s.Store[Goods.Wheat]));

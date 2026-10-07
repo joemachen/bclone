@@ -1305,17 +1305,16 @@ public sealed record SimConfig
     [JsonPropertyName("bread_nutrition")]
     public int BreadNutrition { get; init; } = 2;
 
-    /// <summary>Wheat the village must reap before anybody here builds a mill (`food-chain.md §7`).</summary>
+    /// <summary>
+    /// Wheat the village must reap before anybody here mills and bakes — the mill and the bakery are learned
+    /// together (Joe, D523; `food-chain.md §7`).
+    /// </summary>
     /// <remarks>
     /// Measured (§8.1): a farm marked at t0 has reaped 5,000 by Year 4, one marked in Year 2 by Year 6
     /// — about a farm's third harvest. Read by the mill's gate and the tech-tree map's node — one key.
     /// </remarks>
     [JsonPropertyName("mill_unlock_wheat")]
     public int MillUnlockWheat { get; init; } = 5000;
-
-    /// <summary>Flour the mill must grind before anybody here bakes (Joe: *"after the first flour"*).</summary>
-    [JsonPropertyName("bakery_unlock_flour")]
-    public int BakeryUnlockFlour { get; init; } = 20;
 
     /// <summary>Wheat one grind takes.</summary>
     /// <remarks>
@@ -4938,7 +4937,7 @@ public sealed record SimConfig
 
         foreach ((string key, int value) in new[]
         {
-            ("mill_unlock_wheat", MillUnlockWheat), ("bakery_unlock_flour", BakeryUnlockFlour),
+            ("mill_unlock_wheat", MillUnlockWheat),
             ("firewood_per_firing", FirewoodPerFiring),
         })
         {
