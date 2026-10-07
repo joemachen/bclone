@@ -1,4 +1,35 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE SHELL IS DONE (D519). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D519 IN §7. NEXT, JOE'S PICK: THE FOOD CHAIN (WHEAT → FLOUR → BREAD, WHEAT → BEER) — SPEC FIRST, NOTHING BUILT UNTIL HE SAYS.**
+# Handoff — bclone: **▶️ PHASE 5 — JOE IS PLAYTESTING TWO BRANCHES: `slice/movement-skip` (D525) AND `slice/food-chain` (D520–D524). `main` = D526. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7. NEXT: HIS FEEDBACK.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 — D526, ON WINDOWS.**
+>
+> **`main` = D526**, local, **not pushed** (D519 + the content-inventory refresh). Two branches off `main`, both
+> unpushed, independent of each other, **both waiting on Joe's playtest — he said he will play them next and send
+> feedback.** Do nothing on either until it arrives.
+>
+> | Branch | What | Its decisions | How Joe plays it |
+> |---|---|---|---|
+> | `slice/movement-skip` | **The skip was the crowd fan** (view only): only the standing are fanned, once a tick, and the fan glides. Measured first (`tools/harness/ZzSkip.cs`): no sim move over √2 tiles ever; the fan made 108–135 instant jumps per 1,000 villager-ticks. Probe `crowd:` | D525, `gridless.md` slice 7 | Watch a doorstep or the market at 2–4×: walkers pass straight through a standing group; when someone stops or leaves, the rest *slide* round. ⏸️ If the slides read busy: **stable slots**, his call |
+> | `slice/food-chain` | **Bread, a mill and a bakery, a varied diet** (sim and view): bread holds hunger off (`Villager.FullFor`); meals and fetches take the best food first, then a share of each; mill and bakery learned **together at 5,000 wheat reaped**; the oven lights once a stint, never with the winter's firewood | D520–D524, `specs/food-chain.md` | A farm; the wheat limit met, the farm still reaping the next year; at 5,000 one moment for both buildings; build them; a villager who ate bread reads **Full** with the tooltip sentence. ⚠️ **Save format 2 — his old saves are refused** on that branch |
+>
+> ⚠️ **The branches carry their own docs.** D520–D525, their banners and their traps are in `DESIGN.md` and this file
+> **on those branches**, not here — `main`'s §7 jumps from D519 to D526. **Merging each one will conflict** in
+> `DESIGN.md` §6/§7 and `HANDOFF.md`: keep both sides' entries, in decision order (D520–D525, then D526), and carry every
+> trap forward. Merge at Joe's word only (`git merge --no-ff <branch>`, then `git push`), and ask whether `main` itself
+> is pushed — it was not, at his word or otherwise.
+>
+> **What landed on `main` this session (D526):** `specs/content-inventory.md` Parts A and B rewritten off the code —
+> every good, building, trade, skill, technique and crop as built, the food chain marked 🔨 where it lives, a
+> knowledge table (how each technique, gift and learned building is gained and lost), and everything planned by
+> status. It is the answer to *"what is in the game and what is planned"* — read it before re-deriving a list.
+>
+> ⛔ **`bclone-tracker.xlsx` in the repo root is Joe's own** (2026-10-07: *"you can ignore that - that is just for
+> me"*). **Never commit it, move it or edit it** — and never `git add -A` / `git add .` at the root while it is there
+> (Excel also leaves a `~$bclone-tracker.xlsx` lock file while it is open). Add paths by name.
+>
+> ⏸️ Still his, unscheduled: a full settings screen (D508), ironman mode's name (D507), a market's *Keeps up to* row and
+> the pin exception without a guard (D502).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (TITLE AND PAUSE MERGED) — D519, ON WINDOWS.**
 >
@@ -5315,6 +5346,13 @@ Read `git status` after staging, every time.
   only; *"Saved as …"* went to the audit file for a whole slice while two specs said the player saw it. Joe saved
   three times, saw nothing, and reasonably asked *"is it even saving?"* — **before writing "the log says", find where
   the sentence is drawn.** And a list built when a panel opens is stale the moment the panel changes what it lists.
+
+## ⛔ THE TRAP THIS SESSION LEFT FOR `main` — WORK THAT LIVES ON TWO UNMERGED BRANCHES
+
+- **Three lines of work, three places.** `main` holds D526; `slice/food-chain` holds D520–D524; `slice/movement-skip`
+  holds D525. A session that reads only `main` will think the food chain is unbuilt and the skip unmeasured. **Read
+  the banner's table, and `git log --oneline main..<branch>`, before deciding anything is missing.**
+- **A user's file in the working tree is not a build artifact.** `bclone-tracker.xlsx` is Joe's; add paths by name.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
