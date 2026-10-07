@@ -1,8 +1,12 @@
 # Inventory: what the village has, what the documents promise, and where they disagree
 
-> Status: **an audit. Part C is maintained through D223; ⚠️ PART A WAS STALE UNTIL 2026-08-28** —
-> and Part A is the half people quote. Not a spec and not a plan — it invents nothing
-> and decides nothing. Owner: Joe + Claude.
+> Status: **an audit. ✅ PARTS A AND B REFRESHED 2026-10-07 (D526, Joe: *"refresh the inventory on main"*)**
+> — read off the code on `main` at D519, with the food chain marked 🔨 where it lives on `slice/food-chain`
+> (D520–D524, unmerged). Part C (the disagreements) is the August audit, kept as history through D223.
+> Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
+>
+> **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in
+> `buildings-plan.md`, `food-catalog.md`, `tech-tree.md §9` or `TECH-EXAMPLE.md`, no spec yet.
 > Companion to `buildings-plan.md` (which governs *which buildings exist and why*),
 > `skills-catalog.md` (*what a skill is*) and `tech-tree.md` (*how knowledge is held and lost*).
 
@@ -36,101 +40,146 @@ own warning about it.
 
 ---
 
-## Part A — what the village actually has today
+## Part A — what the village actually has today (refreshed 2026-10-07, D526)
 
-| | Count | Members | Declared in |
-|---|---|---|---|
-| `BuildingKind` | **11** | Granary, Warehouse, Market, WoodcutterHut, Pile, Home, BuilderHut, GathererHut *(named "forager's hut" since D240)*, ForesterHut, Farmhouse, **Library** *(D226)* | `World/Construction.cs` |
-| `JobKind` | **6** | Forager, Forester, Woodcutter, Marketer, Builder, Farmer | `World/Workplace.cs:21` |
-| `Goods` | **6** *(and open to 62 since D210 — the enum is an alias for the first ids)* | Food, Logs, Firewood, Stone, Tools, Iron | `World/StoreBuilding.cs` |
-| `Terrain` | **9** | Grass, Water, Forest, Rock, IronDeposit, Sapling, Field, Sown, Ripe | `World/GeneratedMap.cs:20` |
-| Skills | **6** | foraging, forestry, woodcutting, farming, building, trading | `Config/SimConfig.cs:1273` |
-| Zones | **3** | residential, work ground, harvest | `World/ZoneMap.cs:43` |
+**Read off the code, not off a document's claim about it** — `SimConfig.DefaultGoods`, `BuildingKind`,
+`JobKind`, `SimConfig.Skills`, `SimConfig.Techniques`, `TechTree.DefaultNodes`. Goods, trades and buildings
+have been **rows** since D210, D218 and D222; the enums are aliases for the built-in ids.
 
-⭐ **The zones already come in two shapes, and it matters for any new one** (D86): **residential is
-global** — the village owns it, the player picks the neighbourhood and the sim picks the tile —
-while **work ground is owned by a building**. `buildings-plan.md §8.1` proposes crop and pasture
-zones as brushes and leaves the shape open; **D162 already answered it for the farm** — a painted
-zone plus a small steading that is the workplace, because the labour allocator is built entirely
-around workplaces with a catchment and a global zone has no workplace in it.
-
-**Four of these are C# enums hashed by position** (`BuildingKind`, `JobKind`, `Goods`, `Terrain`)
-— D168's standing note, and the reason *"enum value or data row?"* is the question to ask every
-time a new kind of thing arrives. **Skills are the one thing that got it right** (`SkillRow`), and
-crops are the other (`crops-and-orchards.md §4`).
-
-### What is real but has nothing spending it
-
-| Thing | Produced by | Consumed by |
+| | Count on `main` | Members |
 |---|---|---|
-| `Goods.Stone` | ✅ quarried from `Terrain.Rock` via the harvest brush | ✅ **BUILDINGS, since D213** — a granary costs 40 logs **and 10 stone**; the warehouse and market likewise, the huts 3 each |
-| `Goods.Iron` | ✅ mined from `Terrain.IronDeposit` via the harvest brush | **nothing** |
-| `Goods.Tools` | ⛔ only the founders' cart | **nothing** |
+| Goods | **11** (🔨 +2) | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools · 🔨 flour, bread |
+| Buildings | **19** (🔨 +2) | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, longhouse, smithy, well, quarry, iron mine · 🔨 mill, bakery — and the founders' cart, a store that is not built |
+| Trades | **11** (🔨 +2), plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner · 🔨 miller, baker. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
+| Skills | **6** (🔨 +2) | foraging, forestry, woodcutting, farming, building, trading · 🔨 milling, baking. ⚠️ The fisher, hunter, smith, quarrier and miner have **no skill row** (D391) |
+| Techniques | **4** | splitting lumber, coppicing, crop rotation, tended patches — see the knowledge table below |
+| Crops | **1** | wheat (`CropRow` — a second crop is a row plus a *"grow…"* control) |
+| Terrain | **9** | grass, water, forest, rock, iron seam, sapling, field, sown, ripe |
+| Painted ground | **4 shapes** | housing land (the village's), harvest marks (the village's), work ground (a building's), house plots (a household's, D386) — plus the red remove brush (D494) |
 
-> ⛔ **THIS TABLE SAID STONE WAS "CONSUMED BY NOTHING" WHILE FINDING 2 BELOW SAID *"✅✅ BUILT
-> 2026-08-25 (D213)"*** — the same document disagreeing with itself, corrected 2026-08-28. Part C
-> was maintained and Part A was not, which is the more dangerous way round: **Part A is the half
-> people quote.**
+### Food — the systems
 
-The economy says so itself, honestly, at `World/VillageEconomy.cs:1421`:
+| Food | Status | How |
+|---|---|---|
+| Forage | ✅ | Forager's hut, gathered in its wooded ring; nothing in winter; **thins only when the wood is felled** (D297) |
+| Fish | ✅ | Fishing hut, which must touch water; never runs out; works in winter |
+| Meat (+ leather) | ✅ | Hunter's lodge, hunts in the woods within reach |
+| Wheat | ✅ | Farmhouse and its painted field — sown in spring, reaped in autumn, **rots if left standing into winter** |
+| Flour → bread | 🔨 | The mill grinds wheat (never while the village is hungry); the bakery bakes flour, lighting its oven once a stint (never with the winter's firewood). **Bread sates longer** (`Villager.FullFor`). Both learned together at 5,000 wheat reaped |
+| A varied diet | 🔨 | Meals and fetches take the best food first, then a share of each in proportion (D523) — on `main` today **meals take forage first and a forage-fed village never eats its wheat** (D521 §8.1) |
+| The machinery | ✅ | Hunger and meals, granaries and larders, the market, a stock limit per food, the birth gate on stored food, dependants eating half, *"Food"* as the sum of every food (D298) |
 
-> *"No floor, because nothing spends them yet — a survival floor is derived from consumption, and
-> neither has any. Named rather than left to the default so that the day stone becomes what a
-> building costs, this is the line that is obviously wrong instead of quietly right."*
+### The other resources
 
-**So the mining half of the material chain is built and the spending half is not.** That is a
-larger asset than it looks: seams are generated, visible, finite, brush-harvestable and hashed.
+| Group | ✅ On `main` | What spends it |
+|---|---|---|
+| Building materials | logs (felled), stone (dug by hand or quarried), iron (dug by hand or mined) | logs and stone raise buildings; stone and iron make tools |
+| Fuel | firewood (split from logs) | hearths in winter; the smith's iron tools; 🔨 the bakery's oven |
+| Tools | stone tools (the founders' cart), iron tools (the smithy) | worn one use per action; a third quicker and a quarter more |
+| Animal products | leather (from hunting) | ⚠️ **nothing yet** |
+| Water | the well — households walk to it | no water good yet (Phase 6) |
 
-### Skills, in full
+### Knowledge — what the village can know, and how
 
-All six are `Recordable: true`; **none sets `MasteryYears`**, so all inherit `mastery_years: 20`.
-
-| Id | Name | Grown by | Years phrase |
-|---|---|---|---|
-| 1 | foraging | Forager | *as a forager* |
-| 2 | forestry | Forester | *as a forester* |
-| 3 | woodcutting | Woodcutter | *as a woodcutter* |
-| 4 | farming | Farmer | *as a farmer* |
-| 5 | building | Builder | *as a builder* |
-| 6 | trading | Marketer | *as a marketer* |
-
-⚠️ **One skill per job, exactly 1:1 today** — which `skills-catalog.md §4.3` explicitly warns the
-model must not assume is permanent.
+| Thing | Status | How it is gained · how it is lost |
+|---|---|---|
+| **Skill and mastery** | ✅ | Time on the trade, per villager per skill; **mastered at 20 years** (`mastery_years`); an action's ticks fall as they learn, to **half at mastery** (`mastery_speed_bonus_percent` 50). A learner beside a master learns **twice as fast** (`apprentice_learning_bonus_percent` 100). Lost with the person |
+| **Splitting lumber** (woodcutting) | ✅ | +15 % firewood a split. **PEOPLE**: worked out by someone who masters woodcutting *here* |
+| **Coppicing** (forestry) | ✅ | +12 % timber. PEOPLE, from mastering forestry |
+| **Crop rotation** (farming) | ✅ | +15 % harvest. PEOPLE, from mastering farming |
+| **Tended patches** (foraging) | ✅ | +10 % forage. PEOPLE, from mastering foraging |
+| *How a technique lives* | ✅ | **Unknown → Known** when someone masters the trade here (a founder's mastery does not count); **kept** while any master is alive; **Established** once written in a library, which is **automatic at mastery** if a shelf is free (D204; `library_shelves` 5); **lost** when the last master dies and no library holds it. An elder who is the only master is flagged *at risk* |
+| **The library** (literacy) | ✅ | A **gift** after **15 years of a kept granary** (`literacy_years`) — free materials, the work owed |
+| **The town hall** | ✅ | A **gift** when the **last founder dies** (D252) |
+| **The quarry** | ✅ | Learned by doing: **200 stone dug by hand** — paid for |
+| **The smithy** | ✅ | A **gift** after **50 iron dug by hand** (D444) |
+| **The iron mine** | ✅ | Learned when the smith forges the **first iron tool** (D449) — paid for |
+| **The mill and the bakery** | 🔨 | Learned together at **5,000 wheat reaped** (D523, D524) — paid for |
+| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). Nodes: quarry, smithy, library, town hall, iron mine (🔨 mill, bakery), and a fogged horizon — **mason's yard → stone cottage, school** |
 
 ---
 
-## Part B — what the three documents promise
+## Part B — what the documents promise (refreshed 2026-10-07)
 
-### `buildings-plan.md §4` — the catalogue
+### Food, planned
 
-**53 rows**: 46 buildings and zones across three tiers, plus 7 branch nodes at T3.
+- 📝 **Livestock** (`livestock.md`) — a herd on painted pasture, hay for winter, butchery for meat and hides.
+  ⛔ Blocked by D61: animals come by trade. `TECH-EXAMPLE.md` adds goats, ducks and geese, alpaca, yak, bees and silkworms.
+- 📝 **Diet and health** (Phase 6) — food groups, and an immunity a one-food diet wears down.
+- 📝 **Beer / ale** — its shape is recorded (`food-chain.md §13`), waiting on morale and the tavern.
+- 💭 **Wild kinds** — nuts, roots, herbs; venison, boar, rabbit, wildfowl (`food-catalog.md §3`); `TECH-EXAMPLE.md` adds
+  elk, moose, caribou, bison, ibex, beaver, fox and pheasant.
+- 💭 **More crops** — barley, oats/rye, corn, squash, potatoes, turnips, carrots, onions, cabbage, peas, beans.
+- 💭 **Orchards** — cherry, apple, pear (deferred: a generation to pay off, `crops-and-orchards.md §8`).
+- 💭 **Processed** — cheese and butter (creamery), smoked and cured meat and fish, pickles, jam, hardtack; the root cellar.
+- 💭 **Drinks** — cider, perry, wine, mead.
+- 💭 **Glasshouse exotics** (`TECH-EXAMPLE.md` Tier 4) — citrus, tomatoes, peppers, winter grain, spices.
+- 💭 **Meals** — kept abstract on purpose (`food-catalog.md §7`): one "a cooked meal" bonus at a tavern, no recipe tree.
 
-| Tier | Rows | What earns it |
-|---|---|---|
-| T0 — Founding | 11 | What the exiles arrive able to do |
-| T1 — Settlement | 19 | Practice, or the village simply being a village |
-| T2 — Town | 16 | Scale, accumulated knowledge, or both |
-| T3 — Branches | 7 | *Broad, not tall* — nobody gets all of these in one lifetime |
+### Buildings, planned (`buildings-plan.md §4`, 💭 unless marked)
 
-**18 rows carry a "Knowledge ✓"** — a promise only the tech tree can cash.
+- **T0:** cemetery.
+- **T1:** pasture zone, butcher, root cellar, smokehouse, sawpit, charcoal burner, tannery, weaver, tailor, brewery,
+  herbalist's cottage, clay pit, kiln, mason's yard, orchard, chapel, bridge.
+- **T2:** creamery, smelter, tool warehouse, scriptorium (deferred, D204), 📝 school, trading post or dock, church,
+  tavern, vineyard and press, apiary, physician's house.
+- **T3 (branches):** crop rotation / fallow (✅ crop rotation shipped as a technique), deep shaft and drainage, coal
+  mine, stone bridge / road / granary, selective breeding, better oven / kiln / mill.
+- **From `TECH-EXAMPLE.md`'s 45** (`buildings-plan.md §4.5`): stone cottage and insulated manor (the house ladder,
+  D206), timber and stone barns, compost pit, cartwright, glassworks, paper mill, soapery and candles, cooperage,
+  oil renderer, pigeon aviary, apothecary and infirmary, inn, deep shaft mine, blast furnace, glasshouse, boiler
+  house, heated aqueduct, a great library.
 
-**`§6` is the cut list — 12 entries, each with its reason.** The more useful half of a catalogue,
-and the part most likely to be silently re-proposed in a year.
+### Trades, planned
 
-### `skills-catalog.md §4`
+📝 herdsman, teacher · 💭 tailor, weaver, tanner, butcher, brewer, dairy hand, smoker or salter, cellarhand, sawyer,
+charcoal burner, potter or brick burner, mason, carpenter (repairs, once buildings decay — Phase 5), cartwright,
+cooper, glassblower, papermaker, scribe, soapmaker, renderer, herbalist or apothecary, physician, priest,
+innkeeper, merchant, beekeeper, administrator.
 
-Six skills; **§4.1**'s rule that a skill is *a row, not an enum value*; **§4.3**'s rule that a
-skill is not permanently attached to one job.
+### Resources, planned
 
-### `tech-tree.md`
+| Group | Planned |
+|---|---|
+| Building materials | 💭 planks, cut stone, clay, bricks, mortar, iron ingots, steel, glass, rope, thatch, slate, iron parts, pipes, hoops — ⚠️ `TECH-EXAMPLE.md` names ~14 materials with 23 spellings (Part C finding 8) |
+| Fuel | 💭 charcoal (the only smelting fuel until coal), coal, lamp oil |
+| Tools | 💭 the builder's hammer (with the workshop); better tools per trade |
+| Animal products and textiles | 📝 clothing (`clothing.md` — makes outdoor winter work possible; needs leather, wool or cotton) · 💭 wool, cloth, hides, tallow, bone, feathers, fur, silk, cotton, hay and silage |
+| Water and health | 📝 water as a need; herbalists, an infirmary, disease (Phase 6) |
+| Goods and trade | 💭 soap, candles, paper, ink, barrels, salt (mined or traded), luxury goods for trade (§2.4) |
 
-- **§4 — eight unlock mechanisms**: PEOPLE, DOING, SCALE, SEREN, IMPORT, ADJ, CRISIS, TERRAIN.
-  **This is the vocabulary content can be hung on**, and it is probably the most immediately useful
-  thing in the three documents for a content pass.
-- **§9 — eight branches**, sketched: Ground, Woods, Herd, Fire and materials, Keeping, Building and
-  ground works, Bodies, Knowing.
-- **⛔ No technique list, deliberately** (§12, and D196 — Joe: *"we don't have to come up with the
-  full list… eventually they will all have a number of them"*).
+### Knowledge, planned (`tech-tree.md`)
+
+- **The eight unlock mechanisms (§4):** only **PEOPLE** is built. 💭 DOING, SCALE, SEREN (a seeded roll for someone
+  deep in the practice), IMPORT (a migrant or a youth sent away), ADJ (two knowers together), CRISIS (the failure
+  teaches it), TERRAIN (only thinkable in some places).
+- **The branch catalogue (§9), ten trunks:**
+  - **Ground** — ✅ tended patches, ✅ crop rotation, 💭 sowing, manuring (herder + farmer), fallowing, drainage,
+    basic sanitation (compost), crop milling (🔨 built as the mill's unlock by reaped wheat), subterranean
+    engineering, thermal horticulture, hydronic heat.
+  - **Woods** — ✅ coppicing, ✅ the planting brush (shipped ungated, D125), 💭 charcoal burning, orchard,
+    mechanical carpentry (sawmill), container fabrication (cooperage).
+  - **Herd** — 💭 trapping, penning, husbandry (blocked by D61), dairying, draught animals, livestock processing,
+    avian and insect culture.
+  - **Fire and materials** — ✅ the forge and iron tools (built ungated as the smithy's gift, D391/D444), 💭 kiln and
+    pottery, lime burning, smelting, steel, subterranean mining, vitrification (glass), chemical rendering (soap),
+    rendering and distillation (oil).
+  - **Keeping** — ✅ the granary, 💭 drying, salting, smoking (a CRISIS node), root cellar, icehouse, fermentation,
+    logistics management.
+  - **Building and ground works** — 💭 masonry and stonecutting (the stone cottage), mortar, stone excavation
+    (✅ shipped as the quarry's unlock), watermill (a TERRAIN gate), bridge, paving, advanced joinery (the manor),
+    monumental architecture.
+  - **Bodies** — 💭 midwifery and herbal medicine (both *unwritable*), clean water (✅ the well, free since D427),
+    quarantine.
+  - **Knowing** — ✅ the library (as the literacy gift), ✅ the town hall (civic governance, the founders' gift),
+    📝 the school, 💭 tally-keeping, letters, paper and ink, the scriptorium (deferred, D204), a great library,
+    formal apprenticeship, contracts and regional trade.
+  - **Cloth and hide** — 💭 leather working, advanced textiles, fine fabrics.
+  - **Gathering-in** — ✅ organized commerce (the market), 💭 community and faith, hospitality (the tavern),
+    maritime and overland trade.
+- ✅ **Splitting lumber** is the one built technique with no §9 row — it was §1's *first content* (D225).
+- ⏸️ **Still Joe's** (§9a): the forge's *"and weapons"* (no combat), gold and barter value, crop cycles of 20–40 days,
+  the barn before trade.
 
 ---
 
