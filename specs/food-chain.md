@@ -9,8 +9,8 @@ content, Phase 6, *waiting on this derivation*), D391/D446 (the smith: two input
 the winter's firewood), D392 (the founding draws from `founding_trades`, not the skills catalogue),
 D434/D444/D449 (gifts by doing: the quarry, the smithy, the mine), D440 (the tech-tree map), D28/D190
 (villagers in lockstep, and the seeded rhythm that had to be manufactured to break it).
-**Status:** 🔨 **BUILT, SIM AND VIEW (D522–D523, 2026-10-06), on `slice/food-chain` — unplayed, and ⏸️ the
-mill's unlock waits on Joe's pick from §8.4 (5,000 / 7,500 / 10,000 wheat reaped).** D523: **a varied diet**
+**Status:** 🔨 **BUILT, SIM AND VIEW (D522–D523, 2026-10-06), on `slice/food-chain` — unplayed; the mill's
+unlock is 5,000 wheat reaped (Joe, D524, picked off §8.4).** D523: **a varied diet**
 (§3.3 — the farm no longer stalls) and **the mill and the bakery learned together** (§7). Guards:
 `NutritionTests` (8), `FoodChainTests` (14); 1542 / 0 / 5 of 1547; view 0 warnings; probe green,
 bar height 151. Red checks: D522's 19 mutants (18 red, one zero) and D523's 5 (5 red). Goldens moved and
@@ -271,7 +271,7 @@ The chain-starves-in-the-middle guard (`wood-fuel-and-tools.md §8`), once per c
   now, like `BreadEverBaked`, and not hashed.
 - Two `TechTree.DefaultNodes` rows, `"mill"` and `"bakery"`, both on the wheat condition. **No second copy of
   the number** (the `tech-tree-map.md §3.1` rule).
-- A row on the milestone map (`DESIGN.md §4`) once Joe has picked the number (§8.4).
+- A row on the milestone map (`DESIGN.md §4`): 5,000 reaped, about Year 14 in one-farm play (Joe, D524).
 - ⛔ **A cart's or a gift's wheat is not reaped wheat.** Only the reap counts, the way only digging by hand
   counts stone.
 
@@ -484,7 +484,9 @@ Bread at **2**, the mill after **5,000** wheat reaped, the bakery after the **fi
 lit for **1** firewood a stint. Batch sizes were starting values; the post-build arm (§8.3) found the stint
 nowhere near binding. ⚠️ **The 5,000 is reopened by §9d.**
 
-### 9d. ⏸️ The mill's unlock — Joe: *"5000-10000"*, picked off §8.4 (D523)
+### 9d. ✅ The mill's unlock — **5,000 wheat reaped** (Joe, D524: *"5000"*, picked off §8.4)
+
+About Year 14 in a ten-person one-farm harness village (§8.4), sooner in a village that grows and plants more.
 
 ⚠️ **The 1,000 recommended below was declined**: *"1000 wheat should be reapable within one season. that is
 much too fast."* The varied diet keeps any number reachable; §8.4 gives the year for 5,000, 7,500 and 10,000.

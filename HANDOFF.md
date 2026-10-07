@@ -1,4 +1,11 @@
-# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN IS BUILT (D522–D523), UNPLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D523 IN §7, THEN `specs/food-chain.md`. NEXT: JOE PICKS THE MILL'S UNLOCK FROM §8.4, THEN PLAYS IT. THE MOVEMENT SKIP IS BACK ON HIS LIST.**
+# Handoff — bclone: **▶️ PHASE 5 — THE FOOD CHAIN IS BUILT (D522–D524), UNPLAYED, ON `slice/food-chain`; THE MILL AT 5,000 WHEAT REAPED. NEXT: THE MOVEMENT SKIP, ON ITS OWN BRANCH (JOE: *"skips next"*). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND D465–D524 IN §7.**
+
+> **⭐⭐ START HERE — 2026-10-07 — D524, ON WINDOWS.** Joe picked **5,000 wheat reaped** for the mill and the bakery
+> (`food-chain.md §8.4`); it was already the shipped value, so this is docs only. `slice/food-chain` (unpushed) waits on
+> **his play** — the steps are in the banner below. **▶️ NEXT, his word: *"skips next"*** — the movement skip, on a
+> branch of its own off `main`, measurement first (the banner below has where to look).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-06 (A VARIED DIET; MILL AND BAKERY TOGETHER) — D523, ON WINDOWS.**
 >
@@ -5488,8 +5495,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE MILL'S UNLOCK (D523, `specs/food-chain.md §8.4`).** Joe: *"5000-10000"*. Measured with the varied diet:
-  5,000 by Year 14, 7,500 by Year 20, 10,000 by Year 25 (one-farm harness village, an upper bound). His pick.
+- ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
 - ⏸️ **THE MOVEMENT SKIP — "definitely still skips. frequently" (Joe, 2026-10-06).** D402/D403's open item, sim-side.
   Measure the per-tick distance distribution before touching the arrival snap or the leg clock. Its own slice.
