@@ -1,4 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 5 — JOE IS PLAYTESTING TWO BRANCHES: `slice/movement-skip` (D525) AND `slice/food-chain` (D520–D524). `main` = D526. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7. NEXT: HIS FEEDBACK.**
+# Handoff — bclone: **▶️ PHASE 5 — JOE PLAYED BOTH BRANCHES (2026-10-07). `slice/food-chain` IS GOOD TO GO — MERGE IT FIRST. `slice/movement-skip` STILL SKIPS — ALL FOUR FOUNDERS AT ONCE, SO THE CAUSE IS GLOBAL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (JOE'S PLAYTEST) — ON WINDOWS.**
+>
+> **`main` = D526** (`f1a79f5`), local, **not pushed**. Joe played both branches and reported:
+>
+> | Branch | Joe's verdict | What it means for the next session |
+> |---|---|---|
+> | `slice/food-chain` (D520–D524, `4fb8bc3`) | ***"slice/food-chain is good to go."*** | **Step 1: merge it.** `git checkout main`, `git merge --no-ff slice/food-chain`. ⚠️ It **will conflict** in `DESIGN.md` (§6 and §7) and `HANDOFF.md`: keep both sides — §7 in decision order D520–D524, then D526; §6's lines newest first; this banner on top, the branch's banners and traps below it, every trap carried forward. Then the four CLAUDE.md lines on the merged tree (expect 1542 / 0 / 5 of 1547 and the food chain's goldens). Record the play and the merge as **D527**. **Push only at Joe's word** — `main` has not been pushed since D519 |
+> | `slice/movement-skip` (D525, `1e62875`) | ***"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."*** | **The crowd fan was real but it is not what he sees.** D525 measured the fan's jumps per villager, and fixed them. **A skip that hits everyone in the same instant is not per-villager — it is the frame.** Do NOT merge this branch yet; the next step is below |
+>
+> ### ▶️ The skip — what we know, and the one measurement to take next
+>
+> - **The sim is cleared** (D525, `tools/harness/ZzSkip.cs`): no villager ever moves more than √2 tiles in a tick, so
+>   `VillageMap.DrawnCentre` never snaps anybody. Walkers stand a tick mid-journey 10–16 times per 1,000 villager-ticks,
+>   two-thirds of them meals on the road (by design) — and **those are per-villager, not all-at-once.**
+> - **The frame driver was "cleared" in D403 — but only half of it was ever measured.** The debug line's instrument
+>   (`Main._Process`, around line 280) times **only the sim step** (`StepAndAutosave`): `slowest step 51 ms` is the
+>   sim. **It does not time the frame** — `Refresh()`, the map's `_Draw`, the panels and cards all run outside the
+>   stopwatch — and `catch-up` counts only frames that took more than one tick. **A frame that runs long for any
+>   other reason freezes every dot, and the next frame's alpha jumps them all forward together**: everyone skips at
+>   once. That is exactly Joe's description, and it matches D395's original note: *"Villagers (and forest animals)
+>   skip a tile at the start of a day"* — the animals are drawn on the sim clock, so a frame hitch moves them too.
+> - **⭐ So measure the WHOLE frame first** — D403's rule, applied to the half it missed. Add to the debug line: the
+>   longest frame (`_Process` start to start, or `Engine`/`Performance` frame time), how many frames ran over ~33 ms,
+>   and **which tick of the day / which season turn** the long ones fall on. Joe reads it off the screen in play, as he
+>   did for D403. ⛔ Fix nothing until the number exists.
+> - **Suspects for a long frame, in the order to check them** (none measured): (1) per-tick UI work in `Refresh()` —
+>   panels, cards, the roster rebuilt when a tick lands, which at 1× is once every 1.3 s ("frequently"); (2) map work
+>   rebuilt on a day or season turn (trails are collected once a season, D338/D358; the zone wash, D338, was once 80 %
+>   of a frame); (3) a heavy sim tick at a day boundary that the step timer *would* show — check its number first, it
+>   is already on screen; (4) GC.
+> - **What to do with D525's branch:** its fan fix is real (108–135 instant jumps per 1,000 villager-ticks, measured
+>   and gone) and is view only — **keep it**, and merge it at Joe's word once the frame skip is understood, or carry
+>   the frame fix on the same branch. It is off `main` at D519, so it will need `main` merged in first.
+>
+> ### Then
+>
+> - ⏸️ Still his, unscheduled: a full settings screen (D508), ironman mode's name (D507), a market's *Keeps up to* row
+>   and the pin exception without a guard (D502); *stable slots* for the crowd fan if the glide reads busy (D525).
+> - ⛔ **`bclone-tracker.xlsx` in the repo root is Joe's own** — never commit, move or edit it; add paths by name, never
+>   `git add -A` / `git add .` at the root. Excel leaves a `~$bclone-tracker.xlsx` lock file while it is open.
+> - ⭐ **Joe runs commands in PowerShell**: give `.\run.bat`, not `run.bat` (2026-10-07 — the bare name is refused).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 — D526, ON WINDOWS.**
 >
@@ -5353,6 +5397,14 @@ Read `git status` after staging, every time.
   holds D525. A session that reads only `main` will think the food chain is unbuilt and the skip unmeasured. **Read
   the banner's table, and `git log --oneline main..<branch>`, before deciding anything is missing.**
 - **A user's file in the working tree is not a build artifact.** `bclone-tracker.xlsx` is Joe's; add paths by name.
+
+## ⛔ THE TRAP JOE'S PLAYTEST FOUND (2026-10-07) — AN INSTRUMENT THAT TIMES PART OF THE FRAME CLEARS ONLY THAT PART
+
+- **D403 read "slowest step 51 ms, catch-up 0.0 %" as "the driver is not the cause"** — but the stopwatch wraps only the
+  sim step, and catch-up counts only multi-tick frames. A frame made long by drawing or UI is invisible to both. D525
+  then measured per-villager movement and fixed a real per-villager jump (the fan) — and Joe still saw **everyone skip
+  at once**, which no per-villager cause can produce. *Ask whether the symptom is per-thing or global before choosing
+  what to measure; a skip that moves every dot together is the frame.*
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
