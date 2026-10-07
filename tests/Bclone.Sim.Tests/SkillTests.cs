@@ -340,7 +340,8 @@ public sealed class SkillTests
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 14668937530557764166.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 8694415183060773569.
     // RE-TAKEN (D498), BOTH — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 13678622736665324494.
-    [InlineData(true, 527323685715353248UL)]
+    // RE-TAKEN (D522), THE SHIPPED ONE ONLY — the shipped game starts with limits on the new flour (200, Joe's "200 for everything else") and bread (1,000, wheat's own), and a set limit is hashed. This village builds no mill. ⭐ PROVEN TO BE THE ONLY REASON: with those two lines taken out of the data the old value passes. The fixture sets no limits and did not move. Was 527323685715353248.
+    [InlineData(true, 12230475117074009146UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

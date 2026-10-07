@@ -38,7 +38,9 @@ public static class SaveGame
     /// The save format this build writes and reads. ⛔ Bump it when the shape of a save changes; a save
     /// of another format is refused in words, and there are no migrations before v1 (Joe, D507).
     /// </summary>
-    public const int Format = 1;
+    /// <remarks>2 since D522: a villager keeps a full belly and a mill or oven stint, the world counts
+    /// wheat reaped and flour ground.</remarks>
+    public const int Format = 2;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

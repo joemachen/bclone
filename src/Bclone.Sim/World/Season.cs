@@ -277,6 +277,20 @@ public enum VillagerState
     /// have moved the harvest.
     /// </remarks>
     WalkingBackToTheSteading,
+
+    /// <summary>Walking to the mill for a stint of grinding (D522, `food-chain.md §4.3`).</summary>
+    /// <remarks>⛔ Its own state — D281's lesson: <c>ErrandKind</c> reads it as the miller's.</remarks>
+    TravelingToMill,
+
+    /// <summary>At the mill, grinding wheat into flour — the stint (D522).</summary>
+    Grinding,
+
+    /// <summary>Walking to the bakery for a stint of baking (D522, `food-chain.md §4.4`).</summary>
+    /// <remarks>⛔ Its own state — D281's lesson: <c>ErrandKind</c> reads it as the baker's.</remarks>
+    TravelingToBakery,
+
+    /// <summary>At the oven, baking flour into bread — the stint (D522).</summary>
+    Baking,
 }
 
 /// <summary>

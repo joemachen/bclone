@@ -241,7 +241,7 @@ public sealed class SaveLoadTests : IDisposable
             "ShownTheTechTree", "_saidThereIsNowhereFor", "_saidKnowledgeIsAtRisk", "_saidSiteIsWaiting",
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
-            "ToolsEverTaken", "WorkActionsBegun", "Seed",
+            "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -262,6 +262,7 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
+            "BatchesThisStint", "FullFor", "FullFrom",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
@@ -467,7 +468,12 @@ public sealed class SaveLoadTests : IDisposable
                 File.WriteAllBytes(path, Zip("nonsense"));
                 break;
             case "a key written twice":
-                File.WriteAllBytes(path, Zip(text.Replace("\"format\": 1,", "\"format\": 1,\n  \"format\": 1,", StringComparison.Ordinal)));
+                // ⚠️ The format is read from the build, never typed: a typed `1` matched nothing the day the
+                // format went to 2 (D522), and the save loaded whole — the guard against a duplicate key
+                // tested no duplicate.
+                string format = $"\"format\": {SaveGame.Format},";
+                Assert.Contains(format, text, StringComparison.Ordinal);
+                File.WriteAllBytes(path, Zip(text.Replace(format, format + "\n  " + format, StringComparison.Ordinal)));
                 break;
         }
 

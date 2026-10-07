@@ -37,6 +37,20 @@ against a number from an older commit.
   and the woodcutter's hut stood, the first split, firewood in reach / the burn on each winter's first day (Years 1–5),
   houses standing and logs felled at Winter, Year 1, cold deaths by year, and the woodcutters wanted / given and farmers
   given at each season turn (Years 1–3). `ZZ_ARMS`, `ZZ_SEEDS` narrow it. Copy in, `--filter ZzFirstWinter`, delete.
+- `ZzFoodChain.cs` + `foodchain.py` — D521's anchors for the food chain (`specs/food-chain.md §8.1`), measured before
+  any of it exists: wheat and forage per seat-year held, when cumulative reaped wheat reaches 1k/2k/5k/10k, wheat held
+  in stores, and the lockstep share (two adults of one household carrying the same hunger). Arms: `every` (free farm,
+  lodge, fishery), `farm0s` / `farm2sw` (a farmhouse marked at t0 / Year 2, its field painted **once it stands**, staffed
+  with `SetJobLimit`), trailing `w` lifts the wheat limit alone, `x2` marks two. `ZZ_WHY=1` prints each farm's card a
+  season (that is how the wheat stall was found). Copy in, `--filter ZzFoodChain`, delete; then
+  `python tools/harness/foodchain.py <output>`. ⚠️ A field painted on a **site** never reaps — ZzFirstWinter's `farm0`
+  did that, so it never measured a harvest. ⚠️ Food production is `SimWorld.FoodEverProducedOf(good)`; summing
+  `Stockpile.Produced` over arms and stores double-counts every carried load.
+  ⭐ **Since D522, the chain itself:** a trailing `B` marks the mill the tick it is learned and the bakery the tick
+  that is (one hand each); `R` raises them free (unattended builders raised the mill in 1 valley of 17 — 24 stone);
+  `ZZ_MILL=n` sets `mill_unlock_wheat`. The ZZF line then ends with `mill`/`bakery` years, flour ground, bread baked,
+  wheat reaped a year once milling, flour and bread a seat-year. ⛔ **Build with a check** — a harness that did not
+  compile ran the previous DLL under `--no-build` and a whole arm was read off the wrong code.
 - `ZzSkip.cs` — D525's measurement of the movement skip (`gridless.md` slice 7): per villager per tick, a position move
   over √2 tiles (the view teleports), a walking-speed histogram, a stutter (a walker standing a tick mid-journey, and
   how many were a meal on the road), and the crowd fan's instant jumps by size — the view's own rule restated — plus

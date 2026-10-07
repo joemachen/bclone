@@ -714,4 +714,22 @@ public enum Goods
     /// row and the default forge recipe.
     /// </remarks>
     IronTools = 10,
+
+    /// <summary>
+    /// ⭐ <b>Flour</b> — wheat ground at a mill, and what a bakery bakes (`specs/food-chain.md §4`, D522).
+    /// </summary>
+    /// <remarks>
+    /// Not food: nobody eats a sack of flour, which is why the mill never grinds while the village is
+    /// hungry. Kept dry — a warehouse, never a granary (the birth gate measures granary room).
+    /// </remarks>
+    Flour = 11,
+
+    /// <summary>
+    /// ⭐ <b>Bread</b> — baked from flour, and the first food worth more than one (`food-chain.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// A meal of bread costs what any meal costs and holds hunger off for longer
+    /// (<c>Villager.FullFor</c>); stored where food is stored, because the birth gate reads granaries.
+    /// </remarks>
+    Bread = 12,
 }

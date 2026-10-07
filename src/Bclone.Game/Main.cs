@@ -1525,6 +1525,8 @@ public partial class Main : Control
     private Button? _quarryButton;
     private Button? _mineButton;
     private Button? _smithyButton;
+    private Button? _millButton;
+    private Button? _bakeryButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
@@ -1661,6 +1663,11 @@ public partial class Main : Control
 
         // The mine is the quarry's twin, learned from the smith's first iron tool (D449).
         RefreshALearnedButton(world, BuildingKind.Mine, JobKind.Miner, _mineButton, ref _mineKnown, ref _mineTried);
+
+        // The mill, learned from reaped wheat, and the bakery from its first flour (D522) — paid for, lit
+        // until the first is marked, as the quarry's.
+        RefreshALearnedButton(world, BuildingKind.Mill, JobKind.Miller, _millButton, ref _millKnown, ref _millTried);
+        RefreshALearnedButton(world, BuildingKind.Bakery, JobKind.Baker, _bakeryButton, ref _bakeryKnown, ref _bakeryTried);
     }
 
     /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
@@ -1689,6 +1696,10 @@ public partial class Main : Control
     private bool _quarryTried;
     private bool _mineKnown;
     private bool _mineTried;
+    private bool _millKnown;
+    private bool _millTried;
+    private bool _bakeryKnown;
+    private bool _bakeryTried;
     private bool _smithyKnown;
 
     /// <summary>
@@ -3079,6 +3090,8 @@ public partial class Main : Control
         JobKind.Farmer => "the fields around it are sown and reaped from here",
         JobKind.Quarrier => "stone is cut from its rock here",
         JobKind.Miner => "iron is dug from its seam here",
+        JobKind.Miller => "wheat is ground into flour here",
+        JobKind.Baker => "flour is baked into bread here",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -4490,11 +4503,11 @@ public partial class Main : Control
     private void ShowTheKnownGoods()
     {
         SimWorld world = _loop.World;
-        bool forge = EarnedYet(BuildingKind.Smithy);
         var goods = new bool[world.GoodsCatalog.Count];
         for (int g = 0; g < goods.Length; g++)
         {
-            goods[g] = world.KnowsOf((Goods)g, forge);
+            // The bar's latched flags (the smithy, the mill, the bakery), so its lists cannot disagree with it.
+            goods[g] = world.KnowsOf((Goods)g, kind => EarnedYet(kind));
         }
 
         var trades = new bool[JobLimits.Kinds.Count];
@@ -6774,6 +6787,14 @@ public partial class Main : Control
             {
                 _smithyButton = button;
             }
+            else if (kind == BuildingKind.Mill)
+            {
+                _millButton = button;
+            }
+            else if (kind == BuildingKind.Bakery)
+            {
+                _bakeryButton = button;
+            }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
             _stripRow.AddChild(button);
@@ -6878,8 +6899,10 @@ public partial class Main : Control
             // The smithy beside it (D391): the second building whose product is for every trade.
             BuildingKind.Smithy => BuildCategory.Works,
 
+            // The mill and the bakery beside the farm they turn the wheat of (D522).
             BuildingKind.GathererHut or BuildingKind.Farmhouse
-                or BuildingKind.FishingHut or BuildingKind.HunterLodge => BuildCategory.Food,
+                or BuildingKind.FishingHut or BuildingKind.HunterLodge
+                or BuildingKind.Mill or BuildingKind.Bakery => BuildCategory.Food,
 
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
                 or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
@@ -7008,6 +7031,8 @@ public partial class Main : Control
         BuildingKind.Quarry => _quarryKnown,
         BuildingKind.Mine => _mineKnown,
         BuildingKind.Smithy => _smithyKnown,
+        BuildingKind.Mill => _millKnown,
+        BuildingKind.Bakery => _bakeryKnown,
         _ => true,
     };
 

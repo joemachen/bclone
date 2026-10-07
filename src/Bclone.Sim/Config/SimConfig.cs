@@ -1283,6 +1283,117 @@ public sealed record SimConfig
     public int SmithyUnlockIron { get; init; } = 50;
 
     // ---------------------------------------------------------------
+    //  The food chain (D520–D522, `specs/food-chain.md`) — wheat to flour to bread
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// What a loaf of bread is worth to a hungry person, against every raw food's 1 (`food-chain.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The floor reads none of this.</b> Every number in <c>VillageEconomy</c> counts units and
+    /// assumes each is worth a nutrition-1 share — the least an edible unit can be worth — so a better
+    /// food is upside above the floor and never a hole in it. A meal of bread costs the units any meal
+    /// costs and holds hunger off for what it is worth beyond them (<c>Villager.FullFor</c>).
+    /// </para>
+    /// <para>
+    /// Measured (§8.1): at 2, a miller and baker keeping up with one farm add about 1,000 points a
+    /// seat-year — a little above a farmer (755–828), level with a forager. 3 would double it past every
+    /// raw trade. Joe confirmed 2 (D522).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("bread_nutrition")]
+    public int BreadNutrition { get; init; } = 2;
+
+    /// <summary>
+    /// Wheat the village must reap before anybody here mills and bakes — the mill and the bakery are learned
+    /// together (Joe, D523; `food-chain.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// Measured (§8.1): a farm marked at t0 has reaped 5,000 by Year 4, one marked in Year 2 by Year 6
+    /// — about a farm's third harvest. Read by the mill's gate and the tech-tree map's node — one key.
+    /// </remarks>
+    [JsonPropertyName("mill_unlock_wheat")]
+    public int MillUnlockWheat { get; init; } = 5000;
+
+    /// <summary>Wheat one grind takes.</summary>
+    /// <remarks>
+    /// A starting value, sized so one miller keeps up with one farm (~2,000 a year, §8.1) — confirmed by
+    /// the post-build arm, not by this comment.
+    /// </remarks>
+    [JsonPropertyName("wheat_per_grind")]
+    public int WheatPerGrind { get; init; } = 20;
+
+    /// <summary>Flour one grind makes.</summary>
+    [JsonPropertyName("flour_per_grind")]
+    public int FlourPerGrind { get; init; } = 20;
+
+    /// <summary>Ticks one grind takes at the mill — a day, the woodcutter's split.</summary>
+    [JsonPropertyName("grind_ticks")]
+    public int GrindTicks { get; init; } = 4;
+
+    /// <summary>Grinds a miller makes before walking home — the stint, as <see cref="SplitsPerStint"/>.</summary>
+    [JsonPropertyName("grinds_per_stint")]
+    public int GrindsPerStint { get; init; } = 4;
+
+    /// <summary>Flour one bake takes.</summary>
+    [JsonPropertyName("flour_per_bake")]
+    public int FlourPerBake { get; init; } = 20;
+
+    /// <summary>Bread one bake makes.</summary>
+    [JsonPropertyName("bread_per_bake")]
+    public int BreadPerBake { get; init; } = 20;
+
+    /// <summary>Ticks one bake takes at the oven.</summary>
+    [JsonPropertyName("bake_ticks")]
+    public int BakeTicks { get; init; } = 4;
+
+    /// <summary>Bakes a baker makes before walking home — the stint.</summary>
+    [JsonPropertyName("bakes_per_stint")]
+    public int BakesPerStint { get; init; } = 4;
+
+    /// <summary>Firewood the oven burns when it is lit — once a stint, not once a bake (Joe, *"a little"*).</summary>
+    /// <remarks>
+    /// ⛔ <b>Never the winter's</b>: the oven is lit only while <c>LabourQuota.FirewoodShortfall</c> reads
+    /// zero, as the forge is. Measured (§8.1 finding 6): a household burns 24 a winter; one a firing is
+    /// about 25 a year, where one a bake would be four households' winter.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_firing")]
+    public int FirewoodPerFiring { get; init; } = 1;
+
+    /// <summary>Logs a mill takes to raise.</summary>
+    [JsonPropertyName("mill_logs")]
+    public int MillLogs { get; init; } = 30;
+
+    /// <summary>Stone in a mill — the millstones.</summary>
+    [JsonPropertyName("mill_stone")]
+    public int MillStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a mill takes.</summary>
+    [JsonPropertyName("mill_work_ticks")]
+    public int MillWorkTicks { get; init; } = 40;
+
+    /// <summary>How many millers a mill seats.</summary>
+    [JsonPropertyName("mill_capacity")]
+    public int MillCapacity { get; init; } = 2;
+
+    /// <summary>Logs a bakery takes to raise — a hut's.</summary>
+    [JsonPropertyName("bakery_logs")]
+    public int BakeryLogs { get; init; } = 25;
+
+    /// <summary>Stone in a bakery — an oven is a hearth of stone, as a forge is.</summary>
+    [JsonPropertyName("bakery_stone")]
+    public int BakeryStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a bakery takes.</summary>
+    [JsonPropertyName("bakery_work_ticks")]
+    public int BakeryWorkTicks { get; init; } = 40;
+
+    /// <summary>How many bakers a bakery seats.</summary>
+    [JsonPropertyName("bakery_capacity")]
+    public int BakeryCapacity { get; init; } = 2;
+
+    // ---------------------------------------------------------------
     //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
     // ---------------------------------------------------------------
 
@@ -2599,6 +2710,30 @@ public sealed record SimConfig
                 new MaterialCost(World.Goods.Iron, IronPerTool),
                 new MaterialCost(World.Goods.Firewood, FirewoodPerTool)),
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Flour,
+            Category = World.GoodCategory.Materials,
+            Name = "flour",
+
+            // ⚠️ KEPT DRY, AND NEVER IN A GRANARY (`food-chain.md §4.1`): it is not food, and a granary's
+            // room is what the birth gate measures. A warehouse holds the oven's firewood too, so a bake
+            // finds both in one store — the forge's rule.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Bread,
+            Category = World.GoodCategory.Food,
+            Name = "bread",
+
+            // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // ⭐ THE FIRST FOOD WORTH MORE THAN ONE (`food-chain.md §3`): a meal of bread holds hunger off
+            // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
+            Nutrition = BreadNutrition,
+        },
     };
 
     /// <summary>
@@ -2790,6 +2925,30 @@ public sealed record SimConfig
 
             // The quarrier's face on an iron seam; the pace is iron's row (`iron-mine.md §3.1`).
             WorksFace = Terrain.IronDeposit,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Miller,
+            Name = "miller",
+            Plural = "millers",
+            Doing = "grinding wheat",
+            WorksAt = BuildingKind.Mill,
+
+            // A met flour limit stops the stones (D139), as a met tools limit stops the forge.
+            LimitedBy = World.Goods.Flour,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Baker,
+            Name = "baker",
+            Plural = "bakers",
+            Doing = "baking bread",
+            WorksAt = BuildingKind.Bakery,
+
+            // A met bread limit lets the oven go cold (D139).
+            LimitedBy = World.Goods.Bread,
+            UsesTool = true,
         },
     };
 
@@ -3204,6 +3363,38 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
+        // ⭐ THE MILL AND THE BAKERY (D522, `specs/food-chain.md`) — wheat to flour to bread. Each
+        // learned by doing and paid for, as the quarry and the mine are. The mill is two by two:
+        // millstones and a store-room, larger than a hut.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Mill,
+            Name = "mill",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MillLogs),
+                new MaterialCost(World.Goods.Stone, MillStone),
+            },
+            WorkTicks = MillWorkTicks,
+            Seats = MillCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Bakery,
+            Name = "bakery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, BakeryLogs),
+                new MaterialCost(World.Goods.Stone, BakeryStone),
+            },
+            WorkTicks = BakeryWorkTicks,
+            Seats = BakeryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
         // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
         // Three tiles by one, and it exists so that extent and facing are content the player can
         // place rather than machinery with nothing behind it. Everything else is 1×1, so until
@@ -3299,6 +3490,30 @@ public sealed record SimConfig
                 + "Every door and every shortcut is known ground.",
         },
 
+        new SkillRow
+        {
+            Id = 7,
+            Name = "milling",
+            GrownBy = JobKind.Miller,
+            YearsPhrase = "as a miller",
+            MasteryLine = "{0} has ground the village's grain for {1} years. "
+                + "The stones are set by ear now.",
+        },
+        new SkillRow
+        {
+            Id = 8,
+            Name = "baking",
+            GrownBy = JobKind.Baker,
+            YearsPhrase = "as a baker",
+            MasteryLine = "{0} has baked the village's bread for {1} years. "
+                + "The oven is read by the hand on its door.",
+        },
+
+        // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
+        // the founders' trades are drawn from `founding_trades`, a stated list, never from this
+        // catalogue's length — so adding a row moves no founding (`FoodChainTests.
+        // NoFoundingMovesWithTheNewSkillRows`). The note below is the history, kept.
+        //
         // ⛔ NO ROW FOR THE SMITH — NOR FOR THE FISHER OR THE HUNTER — AND THE REASON IS
         // MEASURED (D391). The founders' trades are drawn from THIS list with the run's `Rng`
         // (`SimWorld.GiveTheFoundersTheirTrades`: `NextInt(0, available.Count)`), so a seventh
@@ -4703,6 +4918,34 @@ public sealed record SimConfig
         {
             throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
         }
+
+        // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,
+        // and the unlocks may be nought (a modder's village that knows both from the start) but not less.
+        foreach ((string key, int value) in new[]
+        {
+            ("bread_nutrition", BreadNutrition), ("wheat_per_grind", WheatPerGrind), ("flour_per_grind", FlourPerGrind),
+            ("grind_ticks", GrindTicks), ("grinds_per_stint", GrindsPerStint), ("flour_per_bake", FlourPerBake),
+            ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
+            ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
+        })
+        {
+            if (value < 1)
+            {
+                throw new SimConfigException($"{key} must be at least one (got {value}).");
+            }
+        }
+
+        foreach ((string key, int value) in new[]
+        {
+            ("mill_unlock_wheat", MillUnlockWheat),
+            ("firewood_per_firing", FirewoodPerFiring),
+        })
+        {
+            if (value < 0)
+            {
+                throw new SimConfigException($"{key} cannot be negative (got {value}).");
+            }
+        }
         ValidateSkills();
         ValidateTechniques();
     }
@@ -4977,41 +5220,19 @@ public sealed record SimConfig
             }
         }
 
-        // ⛔⛔ EVERY EDIBLE GOOD MUST BE WORTH THE SAME, AND THIS GUARD IS THE WHOLE REASON THE
-        // FOOD DERIVATION SURVIVED THIS SLICE.
+        // ⭐⭐ EDIBLE GOODS MAY BE WORTH DIFFERENT AMOUNTS SINCE D522 — AND THE FLOOR NEEDED NO
+        // RE-DERIVATION, BECAUSE IT WAS ALREADY SOLVED AT THE WORST (`food-chain.md §3.1`).
         //
-        // `VillageEconomy` solves the survival floor against `food_per_meal` — **one number for
-        // one food** — and `food-catalog.md` states the consequence plainly: a catalogue of
-        // nutritional values means the floor must be solved against *"the worst food a village
-        // might be living on, or the derivation has to change shape."* `RequiredGatherYield` and
-        // `MouthsFedByOneAdult` have no valid form until somebody answers that.
+        // This was a throw: *"every edible good must be worth the same until the survival floor is
+        // re-derived against a diet"* — `food-catalog.md`'s question, *"solved against the worst food
+        // a village might be living on, or the derivation changes shape."* **The answer is the first,
+        // and it was true all along:** every `VillageEconomy` number counts units and assumes each is
+        // worth a nutrition-1 share, and nutrition is an integer that an edible good holds at one or
+        // more (a negative one is refused above; nought means not food). So the floor holds for every
+        // diet, and a better food is upside above it — the tools precedent.
         //
-        // ⭐ So a second edible good is allowed and a second VALUE is not. This throws at load
-        // rather than letting a village quietly starve against a floor solved for a diet it is not
-        // eating — which is D48, D49 and D50's shape, and each of those was a village that died.
-        int worth = 0;
-        for (int i = 0; i < goodsCatalog.Count; i++)
-        {
-            if (goodsCatalog[i].Nutrition <= 0)
-            {
-                continue;
-            }
-
-            if (worth == 0)
-            {
-                worth = goodsCatalog[i].Nutrition;
-                continue;
-            }
-
-            if (goodsCatalog[i].Nutrition != worth)
-            {
-                throw new SimConfigException(
-                    $"goods[{i}] ('{goodsCatalog[i].Name}') is worth {goodsCatalog[i].Nutrition} to a hungry "
-                    + $"villager where another edible good is worth {worth}. Every edible good "
-                    + "must be worth the same until the survival floor is re-derived against a "
-                    + "diet rather than against one food (see GoodRow.Nutrition).");
-            }
-        }
+        // ⛔ What would break it is a food worth LESS than the floor assumes — D48, D49 and D50 were
+        // each a village that starved against a reader that over-counted. An integer ≥ 1 cannot be.
 
         // ⛔ The enum is an alias for the first ids (`goods-catalog.md §2.1`). If the catalogue
         // does not cover them, `Goods.Produce` indexes a row that is not there — and it would fail
