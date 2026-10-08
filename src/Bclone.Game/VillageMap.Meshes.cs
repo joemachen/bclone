@@ -90,10 +90,29 @@ public partial class VillageMap
 
     private static double Since(long started) => Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
+    /// <summary>
+    /// The whole cost of every <c>_Draw</c> since the last ask, raw — <b>not</b> smoothed, so one long draw is
+    /// seen (D528) — and zero again. Taken once a frame by <see cref="FrameWatch"/>'s caller.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <see cref="LastFrame"/> is smoothed a tenth a frame, which is right for reading a steady cost and
+    /// blind to a single long frame: a 60 ms draw moves it 6 ms. Taken rather than read, so a frame the map
+    /// did not redraw is charged nothing instead of the last draw again.
+    /// </remarks>
+    internal double TakeTheDrawTime()
+    {
+        double taken = _drawnSinceAsked;
+        _drawnSinceAsked = 0d;
+        return taken;
+    }
+
+    private double _drawnSinceAsked;
+
     /// <summary>Fold this frame's raw pass times into the smoothed readout. Called at the end of <c>_Draw</c>.</summary>
     private void RecordTheFrame(long frameStarted)
     {
         double total = Since(frameStarted);
+        _drawnSinceAsked += total;
         double rest = total - _treesNow - _trailsNow - _fieldsNow - _zonesNow;
 
         _treesMs = Smooth(_treesMs, _treesNow);

@@ -56,3 +56,12 @@ against a number from an older commit.
   how many were a meal on the road), and the crowd fan's instant jumps by size — the view's own rule restated — plus
   D525's rule modelled (`glides-D525`: re-ranks among the standing, now slides). Arm `played` (shipped config, played
   opening), ZZ_SEEDS / ZZ_YEARS. Copy in, `-c Release --filter ZzSkip`, delete.
+- `ZzLockstep.cs` — D528's measurement of the all-at-once skip (`gridless.md` slice 7b): per tick, how many walkers
+  **stalled** (moved over half a tile, then nothing, same errand) and how many of the stalls were meals
+  (`Villager.JustAte`), so a tick where several stop together is counted. `ZZ_TABLE=n` prints the first n ticks
+  (each villager's move and state, `*` a meal) — that table is how the four-way stop was seen. Arms: `played`,
+  `unattended`, and `played+ticks` / `played+spread`, which restagger hunger at t0 **in the harness only** (D190's
+  rhythm as ticks' worth of hunger; founders evenly over the meal cycle). ZZ_ARMS, ZZ_SEEDS, ZZ_DAYS (120). Copy in,
+  `-c Release --filter ZzLockstep`, delete. ⚠️ D525's "10–16 stalls per 1,000" was over all villager-ticks, standing
+  ones included, across twenty years — **per walking tick in the founding it is 113–130**, and that is the shape the
+  eye sees.

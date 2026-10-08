@@ -5,7 +5,9 @@
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
-> **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`, unplayed).**
+> **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`); Joe played it and
+> still saw every founder skip at once. ⏸️ Slice 7b (D528): the frame is measured and cleared on this machine, and the
+> all-at-once stop is the founders' meals landing on one tick — a sim fix, Joe's call, NOT built.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -358,6 +360,49 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 7b — ⏸️ MEASURED (2026-10-07, D528), the fix is Joe's call: everyone stops together to eat
+
+Joe, playing slice 7: *"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."* A
+skip that moves every dot in one instant cannot be any one villager's, so the frame was measured first.
+
+**1. The frame — cleared on Joe's machine.** `FrameWatch` (view, `src/Bclone.Game/FrameWatch.cs`) charges each
+gap between two `_Process` calls to the frame **before** it — its ticks, step, `Refresh()`, raw draw, collections
+and tick of the day — because the debug line D403 read timed the sim step alone, and the map's draw passes are
+smoothed nine-tenths old so one long frame vanishes from them. It is the debug line's second row, and every frame
+over 33 ms prints `[frame] long: …`. `BCLONE_FRAME_SAMPLE=<seconds>` (`_SPEED=<x>`) founds the config's valley in a
+real window, runs, prints the summary and quits, writing no save and no settings. **Sixty seconds each at 1×, 4×
+and 10× (44, 176 and 442 ticks), ~160 fps with vsync: no frame over 33 ms, the longest 8–12 ms, and a frame that
+stepped a tick no longer than one that did not (6.0 against 6.1 ms).** ⚠️ The sample's founding is unattended,
+and unattended founders do not walk (`ZzLockstep`'s `unattended` arm: no move in 120 days), so it times a quiet
+village; a long frame in a busy one would print in Joe's play.
+
+**2. The motion — the founders eat on the same tick.** `tools/harness/ZzLockstep.cs`, the played opening, six
+valleys: a walker **stalls** (moved over half a tile, then nothing, same errand) **113–130 times per 1,000 walking
+ticks** in the first 120 days — about one walking tick in eight, nearly all of it a meal on the road (D10: a meal
+costs a tick, by design). **65–91 % of those stalls share their tick with another villager's, and almost every
+shared one is a meal.** Seed 5's table: at t22 all four founders, three walking home and one hauling, eat and
+stand; at t23 all four walk on. At 1× that is every dot stopping for 1.3 s at once; at 4×, a third of a second.
+
+**Why — the stagger's units.** D190 starts each villager's hunger at their `Rhythm`, 0–3 — a count of **ticks**
+(§3.5 of `skills-catalog.md`) — as hunger **points**, and hunger rises 7 a tick (`hunger_per_tick`). An offset under
+one tick's worth moves nobody's meal off the tick: offsets 0, 1 and 2 all reach the threshold (80) on tick 12, and
+after one meal each all four eat on tick 23. A meal takes exactly 80 off, so two villagers' hunger differs by the
+same amount for ever; under 7 apart, they mostly eat together. D190's own guard asked whether hunger was
+*identical* (100 % → 0 %), which it is not, and never whether meals share a tick. Births copy the same line
+(`HouseholdSystem`).
+
+| Arm (posted at t0 by the harness; no sim change) | Stalls in a group of 2+ | Ticks where 3+ stall together |
+|---|---|---|
+| shipped, 120 days | **65–91 %** | 12–29 a valley |
+| `+ticks` — `Hunger = Rhythm × hunger_per_tick` | 5–57 % | 0–1 |
+| `+spread` — founders evenly over a meal's cycle (`i × eat_threshold / n`) | **9–15 %** | 0–1 |
+| shipped, ten years | 52–58 % (living valleys) | 29–44 a valley |
+| `+spread`, ten years | **8–18 %** | 0–2 |
+
+How often each villager stops is the same in every arm: the spread does not take the meal's tick away, it stops
+everyone taking it at the same moment. ⛔ **Not built — it moves the state hash, so it is a mechanic, measured on
+the shipped valleys before it ships, and Joe's call** (`HANDOFF.md`, OPEN).
 
 ### Slice 7 — 🔨 BUILT (2026-10-07, D525), unplayed: the skip was the crowd fan
 
