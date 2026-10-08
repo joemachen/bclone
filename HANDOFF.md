@@ -1,4 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 5 — D527: THE FOOD CHAIN IS MERGED TO `main` (NOT PUSHED). NEXT: THE SKIP — ALL FOUR FOUNDERS AT ONCE, SO MEASURE THE WHOLE FRAME ON `slice/movement-skip`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D529: THE SKIP IS FIXED ON `slice/movement-skip` (PUSHED, UNPLAYED) — THE FOUNDERS' FIRST MEALS ARE SPREAD, SO NOBODY STOPS TOGETHER. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP FIXED) — D529, ON WINDOWS.**
+>
+> **`main` = D527, pushed. `slice/movement-skip` (pushed at Joe's "yes", plus D529 on top)** = D525's crowd fan +
+> `main` merged in + D528's frame instrument + **D529, the fix**. Joe confirmed by eye: *"stop and go - they were
+> eating"*, then *"Yes"* to the fix. Verified: 1544 / 0 / 5 of 1549; view 0 warnings; probe green, bar height 151;
+> goldens re-taken (4) and pins re-pinned (2), each proven by the parent commit (`DESIGN.md` D529).
+>
+> **What D529 is** (`skills-catalog.md §3.5a`): each founder's first hunger is **held off** for their place on one meal
+> interval (`FullFor`; card: *"Full from a meal of forage"* for those few ticks), so their first meals fall apart and
+> stay apart; a child starts at a hashed hunger. Shared mid-walk stops 65–91 % → 7–17 %; **all four together: never**.
+> Survival over 200 valleys: a reshuffle, not a shift. ⚠️ Not "start them hungrier" — that was built first and starved
+> founders in bare-store openings (D529 has the numbers).
+>
+> **▶️ NEXT: Joe plays `slice/movement-skip`** (`git checkout slice/movement-skip`, `.\run.bat` — save format 2, as
+> `main` is since the food chain; a save from before it is refused on either). Watch the founders at 2–4×: they still stop for a beat to eat
+> (a meal costs a tick, D10), **but one at a time, never all four at once**. Then merge `--no-ff` at his word and push.
+>
+> ⏸️ **Still his:** whether a meal on the road should be *shown* (asked 2026-10-07 — *"how do you mean 'shown'?"*,
+> answered in chat, see OPEN); stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
+> market's *Keeps up to* row and pin exception guards (D502).
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP MEASURED) — D528, ON WINDOWS.**
+>
+> **`main` = D527, pushed** (`50a44fe`; Joe: *"yes"*); `slice/food-chain` deleted. **`slice/movement-skip`** (not
+> pushed) = D525 + `main` merged in (`f22e3c8`) + D528: the whole frame on the debug line, a frame sample, and the
+> measurement that found the skip. Verified: 1542 / 0 / 5 of 1547; view 0 warnings; probe 41 ✅ (`frames:` new, 5 of 5
+> mutants red), bar height 151; no golden moved.
+>
+> **What was found** (`gridless.md` slice 7b, D528):
+> 1. **The frame is not it**, on this machine: 60 s at 1×, 4× and 10× (`BCLONE_FRAME_SAMPLE`), no frame over 33 ms, the
+>    longest 8–12 ms. The debug line's second row now says so in play, and `[frame] long:` prints any long frame.
+> 2. **The founders eat on the same tick.** A meal on the road costs a tick (D10), and 65–91 % of those stops share their
+>    tick — all four at once on seed 5's t22. D190 staggers hunger by `Rhythm` (0–3 *ticks*) written as hunger *points*,
+>    under one tick's worth (7), so it moves nobody's meal. Spreading founders over the meal cycle, posed in the harness:
+>    9–15 % shared, and it holds ten years (8–18 % against 52–58 %).
+>
+> **⏸️ JOE'S CALL — see OPEN.** Recommended: spread the stagger over the meal cycle, at founding and at birth — a sim
+> change, so goldens move and it is measured on the shipped valleys before it ships. ⚠️ **Ask him first to confirm by
+> eye:** when the skip comes, do the dots *stop for a beat and walk on* (a meal), rather than jump?
+>
+> ⏸️ Push `slice/movement-skip` and merge it — at his word. The fan fix and `FrameWatch` are view only and stand either way.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (FOOD CHAIN MERGED) — D527, ON WINDOWS.**
 >
@@ -14,6 +58,8 @@
 > sim / `Refresh()` / map). Joe reads it in play. ⛔ Fix nothing until the number exists.
 >
 > ⏸️ **Push `main`** — at Joe's word only.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (JOE'S PLAYTEST) — ON WINDOWS.**
 >
@@ -208,6 +254,28 @@
 >
 > ⏸️ Unchanged and still his: a full settings screen (D508), ironman mode's name. Still open from D502: a market's
 > *Keeps up to* row and the pin exception have no guard.
+>
+> **(superseded by the banner above)**
+
+# (superseded) **▶️ PHASE 5 — TWO BRANCHES WAIT ON JOE'S PLAY: `slice/food-chain` (D520–D524) AND `slice/movement-skip` (D525, the crowd fan, THIS BRANCH). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — 2026-10-07 — D525, ON WINDOWS. THIS IS `slice/movement-skip`, OFF `main`.**
+>
+> **Two branches, both unpushed, both waiting on Joe's play, independent of each other:**
+> - **`slice/food-chain`** (off `main`, D520–D524): bread, the mill and the bakery at 5,000 wheat reaped, a varied
+>   diet. **Its docs (D520–D524, its handoff banners and traps) live on that branch, not here** — read its `HANDOFF.md`
+>   for its play steps. ⚠️ When both merge, `DESIGN.md` §6/§7 and this file will conflict: keep both sides' entries,
+>   in decision order (D520–D524, then D525).
+> - **`slice/movement-skip`** (this branch, D525, view only): **the skip was the crowd fan**, measured
+>   (`tools/harness/ZzSkip.cs`, `gridless.md` slice 7). The sim never moves anyone more than √2 tiles a tick; the fan
+>   ranked walkers too and was never glided — 108–135 instant jumps per 1,000 villager-ticks. Now only the standing
+>   are fanned, once a tick, and the fan glides. Probe `crowd:` ✅ (2 mutants, 2 red); view 0 warnings; probe green,
+>   bar height 151.
+>
+> **▶️ NEXT: Joe plays `slice/movement-skip`** (`git checkout slice/movement-skip`, `run.bat`): watch a doorstep or the
+> market at 2–4× — walkers pass through a standing group in a straight line, and when somebody stops or leaves, the
+> others *slide* round to make room rather than jump. ⏸️ If the slides still read busy, **stable slots** (each person
+> keeps one place on the ring) is the next step — his call. Then merge at his word.
 >
 > **(superseded by the banner above)**
 
@@ -5585,6 +5653,16 @@ Read `git status` after staging, every time.
 - **Guard a stall where the stall lives.** The fixture village is short enough of forage to eat its wheat anyway, so
   a stall guard posed there passed on the broken code; the shipped game and the played opening is where it shows.
 
+## ⛔ THE TRAP D525 PAID FOR — THE SUSPECTS ON FILE WERE THE SIM'S, AND THE SKIP WAS THE VIEW
+
+- **D403 filed the skip's suspects in the sim** (the arrival snap, short legs) because the sim was where the last bug
+  had lived. The per-tick measurement found **no** sim move over the view's snap line at all, and the jumps in the
+  view's crowd fan, which nobody had listed. *Measure the thing the eye sees — the drawn position — not only the
+  thing you suspect.*
+- **A view rule recomputed every frame from "everyone on this tile" counts walkers as a crowd.** Anything drawn from
+  a grouping should ask who belongs in it, and anything that changes at a tick boundary should glide like the
+  position does, or it is a jump.
+
 ## ⛔ THE TRAP THIS SESSION LEFT FOR `main` — WORK THAT LIVES ON TWO UNMERGED BRANCHES
 
 - **Three lines of work, three places.** `main` holds D526; `slice/food-chain` holds D520–D524; `slice/movement-skip`
@@ -5613,15 +5691,64 @@ Read `git status` after staging, every time.
   bytes. `DESIGN.md` and `HANDOFF.md` are **LF** in the working copy and in the blob; read and write them with
   `newline=''`.
 
+## ⛔ THE TRAPS D528 PAID FOR — A PLAUSIBLE SUSPECT, A RATE DILUTED TO NOTHING, AND A GUARD THAT ASKED THE WRONG EQUALITY
+
+- **"Everyone at once" pointed at the frame, and the frame was clean.** D527's own reasoning (a global symptom must be
+  global machinery) was sound and still wrong: **a tick boundary is global too** — every dot's glide changes there at
+  once. Measuring the frame first was right, because it was cheap and it ruled a whole class out; *believing* it
+  first would have cost a session of fixing UI work that was never slow.
+- **A rate over the wrong denominator hides the shape.** D525 counted a mid-walk stall 10–16 times per 1,000 over
+  every villager-tick (standing ones too) for twenty years of a grown village, and called it small. Per *walking*
+  tick, in the *founding*, counted *per tick rather than per villager*, it is 113–130 per 1,000 and mostly everyone
+  together. **Pose the measurement where the player saw it** (early, four founders) **and count the coincidence,
+  not just the event.**
+- **A guard that asks "identical?" passes for "same meal tick?".** D190 proved hunger was no longer identical
+  (100 % → 0 %) and the meals still coincided, because the offset was in the wrong units (ticks written as hunger
+  points, under one tick's worth). *When a fix is meant to stop two things happening together, guard the
+  together, not a proxy for it.*
+- **The frame sample's founding is unattended, and unattended founders never walk** (`ZzLockstep` `unattended`: no
+  move in 120 days). It is a fair frame clock, a poor picture of a busy village — a long frame in real play shows as
+  `[frame] long:` in Godot's output, not in the sample.
+
+## ⛔ THE TRAPS D529 PAID FOR — A GUARD WHOSE PREMISE IS A VILLAGER WHO HAPPENED TO LIVE, AND A FIX THAT STARTS SOMEBODY WORSE OFF
+
+- **Ask why each tipped guard's villager died before re-pinning anything.** The fix tipped nine behaviour guards. The
+  first reading — "single-valley coins, re-pose them" — was half true: five were a pinned hand who froze in D515's
+  first-winter race or starved six ticks short of a sample. But the *first form* of the fix (start founders up to 79
+  hungry) tipped a different nine, and those deaths were the fix's own: a founder arriving hungry to bare stores.
+  `ZzWhy` (a throwaway that printed one villager's log to the death line) told the two apart in two runs.
+- **Survival over 200 valleys can hide what one lean opening shows.** The hunger-raised variant read 1,078 alive / 49
+  dead valleys against 1,078 / 47 — neutral — while a far farm in a bare-store guard fell 98 % → 61 %. Both readings
+  were true; only the second said the mechanism was harsher than §3.5's "small". **Pair seed by seed**
+  (`scratchpad paired.py` shape: newly dead / newly alive, more / fewer per valley) before calling a pooled gap noise.
+- **A fix that makes a mechanic reach a new state reaches every reader of it.** `FullFor` was bread's; founders held
+  off by it tipped four nutrition guards that assumed only bread fills anybody, and the card says *"Full from a meal
+  of forage"*. Grep every reader (`FullNote`, `StateHash`, the save) before reusing a field.
+- **The "ate from their own arms" debug line prints hunger AFTER the meal** (`BehaviorSystem.TryEat`: `Feed` runs
+  before the log; the larder path logs before) — *"hunger was 0"* is a log bug, not a meal at hunger 0. Debt, not
+  fixed (it would move nothing but the audit file).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- ⏸️ **THE MOVEMENT SKIP — "definitely still skips. frequently" (Joe, 2026-10-06).** ~~D402/D403's open item, sim-side.
-  Measure the per-tick distance distribution before touching the arrival snap or the leg clock. Its own slice.~~
-  **Measured (D525): the sim never moves anyone over √2 tiles in a tick; the crowd fan's jumps were fixed on
-  `slice/movement-skip`. Joe replayed it (2026-10-07): *"all 4 founders skip at the same time"* — a global cause, so
-  the next measurement is the whole frame (top banner). Not his call yet; his eye on the new debug line is.**
+- ⏸️ **SHOWING A MEAL ON THE ROAD (asked 2026-10-07; Joe: *"how do you mean 'shown'?"* — answered in chat).** View
+  only, after D529 is played: a villager who stops to eat could say so on screen — a small mark on the dot for its
+  tick, and/or the card's state line reading *eating* instead of the errand it paused. Not built; his call.
+
+- ✅ **FIXED (D529), UNPLAYED — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
+  is clean on his machine; 65–91 % of mid-walk meal stops share their tick, because D190's `Hunger = Rhythm` is ticks
+  written as hunger points (`SimWorld.cs` founding, `HouseholdSystem.cs` births). Options: **(a) recommended —
+  spread each villager's starting hunger over the meal cycle** (a seeded value in `[0, eat_threshold)`, at founding
+  and at birth): 9–15 % shared at 120 days, 8–18 % at ten years, posed in the harness; a sim change, so the goldens
+  move and it is measured on the shipped valleys (survival, D16's budgets) before it ships. **(b)** the literal fix,
+  `Rhythm × hunger_per_tick` — weaker (5–57 %), because 0–3 ticks of a ~11-tick cycle still collide. **(c)** leave it.
+  ⭐ Separately, view only, either way: a meal on the road could be *shown* (the dot pauses because they are eating),
+  which makes every remaining stop legible. **Before any of it, ask: does his eye agree the skip is a stop-and-go,
+  not a jump?**
+  ~~**THE MOVEMENT SKIP — "definitely still skips. frequently" (Joe, 2026-10-06).** Measured (D525): the sim never
+  moves anyone over √2 tiles in a tick; the crowd fan's jumps were fixed on `slice/movement-skip`. Joe replayed it
+  (2026-10-07): "all 4 founders skip at the same time" — a global cause, so the next measurement is the whole frame.~~
 
 - ✅ **ANSWERED 2026-10-05 (D515) — closed as a fixture effect** (Joe: *"look at the first-winter firewood problem first"*, then *"warn, don't fix"*, then, measured, *"close it as a fixture effect"*): a played farm stands after sowing and never takes a Year-1 hand; only the fixture's free t0 farm meets the race. ~~**THE FIRST-WINTER FIREWOOD RACE (found measuring D513, asked 2026-10-05, not yet answered).** A village founded
   with a farm has **no woodcutter until the farm's seats close for winter** (`FarmerSeatsWithGroundToWork` wants hands

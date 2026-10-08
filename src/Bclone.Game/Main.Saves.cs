@@ -188,7 +188,7 @@ public partial class Main
 
     /// <summary>This village's folder: its name and its seed, so two Ashfords are two folders (§7).</summary>
     private void BeginSaving() =>
-        _saveFolder = TheProbeIsRunning ? null : System.IO.Path.Combine(SavesRoot, FolderFor(_loop.World.Name, _shareCode));
+        _saveFolder = NothingIsWritten ? null : System.IO.Path.Combine(SavesRoot, FolderFor(_loop.World.Name, _shareCode));
 
     /// <summary>A folder name from the village's name and its seed's words — lower case, letters and digits and dashes.</summary>
     internal static string FolderFor(string villageName, string shareCode)

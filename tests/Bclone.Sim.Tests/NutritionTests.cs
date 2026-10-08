@@ -43,8 +43,10 @@ public sealed class NutritionTests
         villager.Hunger = config.EatThreshold;
 
         // ⚠️ A founder starts with a seeded rhythm (D190) and rests through it rather than eating; the pose
-        // is about the meal, so it is spent.
+        // is about the meal, so it is spent — and so is the hunger held off at the founding (§3.5a, D529),
+        // which would otherwise be counted as fullness this meal had given.
         villager.Rhythm = 0;
+        villager.FullFor = 0;
         return (loop, villager, home);
     }
 
@@ -150,21 +152,31 @@ public sealed class NutritionTests
     }
 
     /// <summary>
-    /// ⛔ With no bread, nobody is ever full — the rule lands byte-identical (§3.2). Red with a meal that
-    /// always adds a tick of fullness.
+    /// ⛔ With no bread, no meal ever makes anybody full (§3.2). Red with a meal that always adds a tick of
+    /// fullness.
     /// </summary>
+    /// <remarks>
+    /// ⚠️ RE-POSED (D529): this asserted <c>FullFor</c> nought for everybody every tick, and the founders now
+    /// arrive with their first hunger held off for their place on the meal's cycle (`skills-catalog.md §3.5a`)
+    /// — fullness no meal here gave. The claim is the meal's, so the meal is what is asked: fullness never
+    /// rises from one tick to the next, and by the year's end it has run out for everybody.
+    /// </remarks>
     [Fact]
     public void WithNoBreadNobodyIsEverFull()
     {
         SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
         SimWorld world = loop.World;
         int meals = 0;
+        var was = world.Villagers.ToDictionary(v => v.Id, v => v.FullFor);
         for (int t = 0; t < world.Config.TicksPerYear; t++)
         {
             loop.StepOnce();
             meals += world.Villagers.Count(v => v.Alive && v.JustAte);
-            Assert.All(world.Villagers, v => Assert.Equal(0, v.FullFor));
+            Assert.All(world.Villagers, v => Assert.True(v.FullFor <= was.GetValueOrDefault(v.Id), $"{v.Name} grew fuller: {was.GetValueOrDefault(v.Id)} → {v.FullFor}."));
+            was = world.Villagers.ToDictionary(v => v.Id, v => v.FullFor);
         }
+
+        Assert.All(world.Villagers, v => Assert.Equal(0, v.FullFor));
 
         _output.WriteLine($"{meals} meals in a year; nobody full after any of them");
         Assert.True(meals > 0, "The premise: people ate.");

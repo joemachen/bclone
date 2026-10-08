@@ -120,6 +120,16 @@ public sealed class PinnedTradeTests
 
         world.SetPinnedTrade(mover, wanted);
 
+        // ⚠️ AND A LARDER'S WORTH OF FOOD IN EVERY HOME AT THE PIN (D529). This unattended village starves
+        // (D447: a harness is not a player), and when the founders' meals moved a few ticks
+        // (`skills-catalog.md §3.5a`) it starved in Year 4 — the pin held 954 of 954 ticks and the guard
+        // failed only on the two years it needs to sample, six ticks short. The famine is not this guard's
+        // subject; a pinned villager alive across two reshuffles is its premise.
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.Add(Goods.Produce, world.TargetFoodFor(household));
+        }
+
         foreach (Workplace place in world.Workplaces)
         {
             if (place.Kind == wanted)

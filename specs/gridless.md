@@ -5,6 +5,10 @@
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
+> **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`); Joe played it and
+> still saw every founder skip at once. Slice 7b (D528): the frame is measured and cleared on this machine, and the
+> all-at-once stop is the founders' meals landing on one tick (Joe: *"stop and go - they were eating"*). 🔨 Its fix is
+> built (D529, `skills-catalog.md §3.5a`, on `slice/movement-skip`, unplayed): all four never stop together now.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -357,6 +361,89 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 ---
 
 ## 9. Definition of Done
+
+### Slice 7b — ⏸️ MEASURED (2026-10-07, D528), the fix is Joe's call: everyone stops together to eat
+
+Joe, playing slice 7: *"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."* A
+skip that moves every dot in one instant cannot be any one villager's, so the frame was measured first.
+
+**1. The frame — cleared on Joe's machine.** `FrameWatch` (view, `src/Bclone.Game/FrameWatch.cs`) charges each
+gap between two `_Process` calls to the frame **before** it — its ticks, step, `Refresh()`, raw draw, collections
+and tick of the day — because the debug line D403 read timed the sim step alone, and the map's draw passes are
+smoothed nine-tenths old so one long frame vanishes from them. It is the debug line's second row, and every frame
+over 33 ms prints `[frame] long: …`. `BCLONE_FRAME_SAMPLE=<seconds>` (`_SPEED=<x>`) founds the config's valley in a
+real window, runs, prints the summary and quits, writing no save and no settings. **Sixty seconds each at 1×, 4×
+and 10× (44, 176 and 442 ticks), ~160 fps with vsync: no frame over 33 ms, the longest 8–12 ms, and a frame that
+stepped a tick no longer than one that did not (6.0 against 6.1 ms).** ⚠️ The sample's founding is unattended,
+and unattended founders do not walk (`ZzLockstep`'s `unattended` arm: no move in 120 days), so it times a quiet
+village; a long frame in a busy one would print in Joe's play.
+
+**2. The motion — the founders eat on the same tick.** `tools/harness/ZzLockstep.cs`, the played opening, six
+valleys: a walker **stalls** (moved over half a tile, then nothing, same errand) **113–130 times per 1,000 walking
+ticks** in the first 120 days — about one walking tick in eight, nearly all of it a meal on the road (D10: a meal
+costs a tick, by design). **65–91 % of those stalls share their tick with another villager's, and almost every
+shared one is a meal.** Seed 5's table: at t22 all four founders, three walking home and one hauling, eat and
+stand; at t23 all four walk on. At 1× that is every dot stopping for 1.3 s at once; at 4×, a third of a second.
+
+**Why — the stagger's units.** D190 starts each villager's hunger at their `Rhythm`, 0–3 — a count of **ticks**
+(§3.5 of `skills-catalog.md`) — as hunger **points**, and hunger rises 7 a tick (`hunger_per_tick`). An offset under
+one tick's worth moves nobody's meal off the tick: offsets 0, 1 and 2 all reach the threshold (80) on tick 12, and
+after one meal each all four eat on tick 23. A meal takes exactly 80 off, so two villagers' hunger differs by the
+same amount for ever; under 7 apart, they mostly eat together. D190's own guard asked whether hunger was
+*identical* (100 % → 0 %), which it is not, and never whether meals share a tick. Births copy the same line
+(`HouseholdSystem`).
+
+| Arm (posted at t0 by the harness; no sim change) | Stalls in a group of 2+ | Ticks where 3+ stall together |
+|---|---|---|
+| shipped, 120 days | **65–91 %** | 12–29 a valley |
+| `+ticks` — `Hunger = Rhythm × hunger_per_tick` | 5–57 % | 0–1 |
+| `+spread` — founders evenly over a meal's cycle (`i × eat_threshold / n`) | **9–15 %** | 0–1 |
+| shipped, ten years | 52–58 % (living valleys) | 29–44 a valley |
+| `+spread`, ten years | **8–18 %** | 0–2 |
+
+How often each villager stops is the same in every arm: the spread does not take the meal's tick away, it stops
+everyone taking it at the same moment.
+
+**🔨 Built (D529), at Joe's word** (*"stop and go - they were eating"* / *"Yes"*) — `skills-catalog.md §3.5a`: the
+founders' first hunger is **held off** for their place on one meal interval (never started hungrier; that was tried
+and starved founders in bare-store openings), a child starts at a hashed place on the cycle. On the real code, played
+opening, six valleys, 120 days: shared stops **7–17 %**, three or more together **0–2** a valley, **all four never**.
+
+### Slice 7 — 🔨 BUILT (2026-10-07, D525), unplayed: the skip was the crowd fan
+
+Joe, 2026-10-06: *"there are definitely still skips. frequently."* D403 had ruled out the frame driver and the
+interpolation and filed two sim-side suspects — the arrival snap and short legs — with one rule: **measure the
+per-tick distance distribution first.** `tools/harness/ZzSkip.cs` did, over the shipped played opening, nine
+valleys × twenty years (five lived), per villager per tick:
+
+| Per 1,000 villager-ticks | What the eye sees | Measured |
+|---|---|---|
+| A position move of more than √2 tiles | `DrawnCentre` teleports | **0** — never; the worst tick is 1.25 tiles (a walk on a packed path) |
+| A walker standing a tick mid-journey | a pause | 10–16, **about two-thirds a meal on the road** (eating pre-empts everything, D10 — by design) |
+| **The crowd fan moving more than 0.15 of a tile** | **an instant jump — the fan was never interpolated** | **108–135**: 70 % of 0.15–0.3 of a tile, 17 % of 0.3–0.45, **12 % of over 0.45 (up to 0.6)** |
+
+⭐ **Neither filed suspect was it.** The fan (`VillageMap.FanOffset`) ranked **everyone alive on a tile** —
+walkers included — and was recomputed every frame and added unglided. So a walker crossing a busy tile (a
+doorstep, the market) was shoved 0.3 of a tile off their line for that tick, **and everyone standing there
+re-ranked round the ring at once**; when they left, everyone jumped back. In a village of nine that is about
+one instant jump on screen every tick.
+
+**The rule now (view only, no sim or golden change):**
+1. **Only the standing are fanned** — a villager whose position did not move this tick. A walker keeps their
+   line and does not count toward the ring of the people they pass.
+2. **The fan glides** — worked out once a tick in `AdvanceInterpolation` (`VillageMap.FanTargets`, pure) and
+   carried in the per-villager glide record beside the position; drawn as `FanDrawn(previous, current, alpha)`,
+   and snapped with the position when that teleports.
+3. **Once a tick, not every frame** — the per-frame `GroupByTile` and `FanOffset` are deleted (CLAUDE.md).
+
+Measured under the rule: **no instant fan jumps**; a standing group still re-ranks when someone joins or leaves —
+59–68 glides per 1,000 villager-ticks, each a slide over one tick. ⏸️ If that still reads as busy, *stable
+slots* (a person keeps one place on the ring whoever else is there) is the next step, and it is Joe's eye's call.
+⚠️ The remaining third of the stutters (~4 per 1,000) is unexplained and small; not chased.
+
+**Guarded by the probe** (the view has no tests, D11): `crowd:` poses three standing at a door and a walker
+crossing — the walker unfanned, nobody standing moved — and a fourth stopping, drawn half way through the tick
+at half way. **2 mutants, 2 red** (walkers fanned again; no glide). Probe green, bar height 151; view 0 warnings.
 
 ### Slice 6 — ✅ MET (2026-10-03, D463; played and merged D464): steady pace, the stutter
 

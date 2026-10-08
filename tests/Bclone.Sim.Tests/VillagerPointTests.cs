@@ -137,7 +137,12 @@ public sealed class VillagerPointTests
     // the name's draw back, when 39 / 100 return. Were 39 / 100.
     // ⚠️ RE-PINNED (D473), not for the clock: per-stage seeds generate the fixture's valley anew, so the
     // founder's walks to food and to the store are different walks — 40 / 95. Were 41 / 102.
-    private const int FirstGatherAtPace1 = 40;
+    // ⚠️ RE-PINNED (D529), not for the clock: the founder's first hunger is held off for their place on
+    // the meal's cycle (`skills-catalog.md §3.5a`) instead of starting at the rhythm, so their first meal
+    // falls on a different tick and the first gather at pace 1 comes one tick sooner — 39 / 95. Pace 3,
+    // whose walks are three times as long, did not move, which is a meal and not a walk. Proven the only
+    // reason: the parent commit (3b675ec) holds 40 / 95 and this is its only sim change. Were 40 / 95.
+    private const int FirstGatherAtPace1 = 39;
     private const int FirstGatherAtPace3 = 95;
 
     /// <summary>
@@ -329,8 +334,13 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D475), not for the clock: the seams are found, not placed, and the woods round
         // the founders' gatherer's hut grow differently — 53 trips, the 1st/10th/20th at 7 / 223 / 512.
         // Were 25 at 14 / 544 / 1,452.
-        Assert.Equal(53, entries);
-        Assert.Equal(new ulong[] { 7, 223, 512 }, at);
+        // ⚠️ RE-PINNED (D529), not for the clock: the founders' first meals are spread over one meal
+        // interval (`skills-catalog.md §3.5a`) instead of falling on one tick, so who eats on the road
+        // and when moves and the seats land differently — 51 trips, the 1st/10th/20th at 7 / 213 / 489;
+        // the first unchanged. Proven the only reason: the parent commit (3b675ec) holds 53 at
+        // 7 / 223 / 512 and this is its only sim change. Were 53 at 7 / 223 / 512.
+        Assert.Equal(51, entries);
+        Assert.Equal(new ulong[] { 7, 213, 489 }, at);
     }
 
     /// <summary>

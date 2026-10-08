@@ -64,7 +64,7 @@ public partial class Main
     /// <summary>Read the player's settings before anything is built — the UI size and the new-game rows are needed first.</summary>
     private void ReadTheSettings()
     {
-        _settingsPath = TheProbeIsRunning ? null : ProjectSettings.GlobalizePath("user://settings.json");
+        _settingsPath = NothingIsWritten ? null : ProjectSettings.GlobalizePath("user://settings.json");
         if (_settingsPath is not null)
         {
             _settings = PlayerSettingsFile.Load(_settingsPath, _settingsProblems);

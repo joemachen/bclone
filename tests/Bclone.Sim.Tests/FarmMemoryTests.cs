@@ -226,7 +226,15 @@ public sealed class FarmMemoryTests
             {
                 SimLoop loop = Loop(Config with { CartTools = 0, Seed = seed });
                 Workplace farm = FarmTestGround.SiteAFarm(loop.World, walkAway: away, out int walk);
-                Assert.True(FarmFixtures.GiveItGround(loop.World, farm, reach: 3) > 13);
+
+                // ⚠️ A SITE TOO SMALL TO PAINT IS NOT A CANDIDATE, NOT A FAILURE (D529). This asserted, inside the
+                // search, that every site takes more than 13 tiles; when the founders' meals moved a few ticks
+                // (`skills-catalog.md §3.5a`) the first probe came later in the stated order and the search reached
+                // a site that could not — failing on a farm it would never have chosen.
+                if (FarmFixtures.GiveItGround(loop.World, farm, reach: 3) <= 13)
+                {
+                    continue;
+                }
 
                 // ⛔ EACH PASS WALKS TO THE NEXT WINTER THROUGH SPRING (D422). This called
                 // `StepToTheStartOf(Winter)` alone, which returns two ticks later when it is already

@@ -145,19 +145,30 @@ public sealed class MarketShopTests
             world.SetJobLimit(kind, 0);
         }
 
+        // ⚠️ WHAT THE TRIPS BROUGHT, NOT THE LARDER'S PEAK (D529). The household eats out of this larder while
+        // it is being filled, and since the founders' meals were spread over the meal's cycle
+        // (`skills-catalog.md §3.5a`) a meal lands between two deliveries: the peak read 137 of a 139 bar
+        // with every trip made. With nobody gathering, every rise in the larder is a fetch, so the claim —
+        // trips come back to back until the larder is at target — is the start plus what they delivered.
         int fullest = 0;
+        int delivered = 0;
+        int was = world.FoodIn(home.Stockpile);
+        int start = was;
         for (int tick = 0; tick < config.TicksPerSeason; tick++)
         {
             loop.StepOnce();
-            fullest = System.Math.Max(fullest, world.FoodIn(home.Stockpile));
+            int now = world.FoodIn(home.Stockpile);
+            delivered += System.Math.Max(0, now - was);
+            was = now;
+            fullest = System.Math.Max(fullest, now);
         }
 
         _output.WriteLine(
-            $"{home.Name} wants {target}; from {target / 2} the larder reached {fullest} within a season "
-            + $"(one armful would have stopped at {target / 2 + config.CarryCapacity})");
-        Assert.True(fullest > target / 2 + config.CarryCapacity,
-            $"the larder stopped at {fullest} — one armful over the trigger, not back to target");
-        Assert.True(fullest >= target * 9 / 10, $"the larder never came back near {target} (best {fullest})");
+            $"{home.Name} wants {target}; from {start} the trips brought {delivered} within a season and the larder "
+            + $"reached {fullest} (one armful would have stopped at {target / 2 + config.CarryCapacity})");
+        Assert.True(start + delivered > target / 2 + config.CarryCapacity,
+            $"the trips brought {delivered} — one armful over the trigger, not back to target");
+        Assert.True(start + delivered >= target * 9 / 10, $"the trips never brought the larder back near {target} ({start} + {delivered})");
     }
 
     /// <summary>The anti-vacuity half of the trigger: the same dial, read from config.</summary>

@@ -556,9 +556,16 @@ public sealed class HouseholdSystem : ISimSystem
             Rhythm = rhythm,
             Carried = world.NewStockpile(),
 
-            // ⭐ And their hunger a little apart — see the founding path for why the action
-            // stagger alone leaves two siblings eating on the same tick for ever.
-            Hunger = rhythm,
+            // ⭐ And their hunger apart — see the founding path for why the action stagger alone
+            // leaves two siblings eating on the same tick for ever. ⛔ Their place on the meal's
+            // cycle, a hash of the seed and their id (§3.5a, D529) — not the rhythm, which counts
+            // ticks and was under one tick's worth of hunger. Set as hunger, not held off as the
+            // founders' is: a child is born only when the birth gate finds food in store, and eats
+            // half a share, so starting anywhere on the cycle puts nobody at risk — a founder may
+            // arrive to bare stores, which is why theirs is held off instead.
+            Hunger = config.SeededRhythm && config.EatThreshold > 0
+                ? NameHash.MealPhase(world.Seed, id, config.EatThreshold)
+                : 0,
             BirthTick = (long)world.Tick,
             AgeYears = 0,
             LifeStage = LifeStage.Child,

@@ -769,11 +769,27 @@ public sealed class FarmTests
         Assert.NotNull(farmhand);
         world.SetPinnedTrade(farmhand!, JobKind.Farmer);
 
+        // ⚠️ AND A WINTER'S FIREWOOD IN EVERY HOME (D529). A farm raised free at t0 has no woodcutter until
+        // its seats close (D515's fixture effect, the first-winter race), and when the founders' meals moved
+        // a few ticks (`skills-catalog.md §3.5a`) the pinned hand was out on the field when the cold came and
+        // froze in Year 1 — seated 423 ticks of 1,920, 14 tiles against 43. The cold is not this guard's
+        // subject; the hand is its premise, as the pin above is.
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.Add(Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+        }
+
         const int Years = 4;
         int reaped = 0;
+        int seated = 0;
         for (int i = 0; i < config.TicksPerYear * Years; i++)
         {
             loop.StepOnce();
+            if (farmhand!.Alive && farmhand.WorkplaceId == farm.Id)
+            {
+                seated++;
+            }
+
             foreach (Villager villager in world.Villagers)
             {
                 if (villager.Alive
@@ -789,7 +805,8 @@ public sealed class FarmTests
         int perYear = reaped / Years;
         _output.WriteLine(
             $"the derivation promises {promised} tiles a farmer; over {Years} years the farm's "
-            + $"{farm.Places} seat(s) reaped {reaped} — {perYear} a year");
+            + $"{farm.Places} seat(s) reaped {reaped} — {perYear} a year; the pinned hand {farmhand!.Name} "
+            + $"{(farmhand.Alive ? "lived" : "died")}, seated on {seated} of {config.TicksPerYear * Years} ticks");
 
         // ⚠️ HALF, NOT ALL OF IT (D406). With fences as walls the farmer's walks home and to the
         // store go round yards the derivation never priced, and this read 8 a year against 13 —

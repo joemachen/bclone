@@ -375,6 +375,47 @@ and §3.2c is the other half.
 last, one stated reason (D152) — and it should land in the *same* commit as the mixed founding, so
 one golden move covers both rather than two.
 
+#### 3.5a The meal's phase — the hunger half, in the right units (D528, D529; Joe: *"stop and go — they were eating"*)
+
+> ✅ **Built (D529, 2026-10-07), on `slice/movement-skip`, unplayed.** Measured on the played opening, six valleys,
+> first 120 days (`tools/harness/ZzLockstep.cs`): mid-walk stops shared with someone else's **65–91 % → 7–17 %**,
+> ticks with three or more stopped together **12–29 → 0–2**, all four together **6–13 → 0**. Survival over 200
+> shipped valleys × fifty years: 1,078 alive / 47 dead valleys before, 1,058 / 54 after — 67 valleys more alive and
+> 62 fewer, seed by seed, a reshuffle and not a shift. Guards 2 new, 1 re-posed; **5 mutants, 4 red, one zero**
+> written down (`TendingIsSummerOnlyOnTheFarmsOwnSownTiles`).
+
+⛔ **D190 wrote the rhythm into hunger as `Hunger = Rhythm`** — 0–3, a count of *ticks*, used as hunger *points*.
+Hunger rises `hunger_per_tick` (7) a tick, so the offset was under one tick's worth and **moved nobody's meal**: offsets
+0, 1 and 2 all reach `eat_threshold` (80) on tick 12, and after one meal each all four founders eat on tick 23. A
+meal takes `eat_reduces_hunger` (80) off exactly, so two people's hunger differs by the same amount for ever. A meal on
+the road costs its tick (D10), so **every founder stood still on the same tick, again and again** — 65–91 % of
+mid-walk stops shared their tick (`gridless.md` slice 7b). Joe saw it as everyone skipping at once.
+
+**The rule now: each villager has a place on the meal's cycle, apart from the action rhythm.**
+- **Founders are spaced evenly over one meal interval, by HOLDING hunger off**: every founder starts at hunger 0, and
+  founder *k* of *n*'s hunger does not begin to rise for `(base + k × interval / n) mod interval` ticks
+  (`Villager.FullFor`, the food chain's full belly; `interval` = `eat_threshold / hunger_per_tick`, 11), where
+  `base` is a hash of the seed — so their first meals fall on different ticks in every valley, and which founder eats
+  first differs from valley to valley. Their card reads *"Full from a meal of forage"* for those few ticks: they
+  ate from the cart before they set out, and the cart carries forage.
+- ⛔ **Never by starting anybody hungrier.** Built first that way (starting hunger spread over `[0, eat_threshold)`)
+  and measured: survival over 200 shipped valleys held, but in the openings posed with bare stores a founder who
+  arrived at 79 starved — a far farm brought in 98 % → 61 % of what it sowed, villager 0 died inside a guard's five
+  years, a valley had three fewer births. Held off, every one of those came back.
+- **A child's is a hash of the seed and their id**, set as starting hunger uniform over `[0, eat_threshold)` —
+  `NameHash.MealPhase`, ⛔ never an `Rng` draw, like a name or a birthday (D468), so the stream every other draw
+  takes from is untouched. A child is born only when the birth gate finds food in store and eats half a share, so
+  starting anywhere on the cycle puts nobody at risk.
+- **Off with the rhythm** (`seeded_rhythm: false`), so the lockstep the rhythm exists to break can still be posed.
+- **Small, by §3.5's own rule**: it sets *when* a first meal falls, never how often anybody eats — and no founder's
+  first meal comes sooner than it did (tick 12), only up to ten ticks later.
+
+Guarded by `SkillTests.FoundersStartAMealApart` (every founder at hunger 0, and no two within one tick's hunger of
+each other on the cycle)
+and `SkillTests.TheFoundersDoNotEatOnTheSameTick` (the shared share of meals in the played opening's first 120 days,
+with the rhythm switched off as its built-in red arm). ⚠️ **Guard the *together*, not a proxy**: D190's guard asked
+whether hunger was *identical*, which it stopped being, while the meals still coincided.
+
 ### 3.4 ~~Skill decays — slowly, and only off the task~~ ⛔ DELETED (D183)
 
 > **⛔⛔ THERE IS NO DECAY. Joe, 2026-08-22: *"let's give to the player, not punish or decay."***

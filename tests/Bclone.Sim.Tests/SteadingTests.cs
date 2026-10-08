@@ -242,12 +242,22 @@ public sealed class SteadingTests
             // autumn — and a tend begun three ticks before the turn, still a tick from done, read as
             // "tending in autumn". It never lined up until the varied diet moved the village's timings.
             Season ran = world.Clock.Season;
+            VillagerState was = hand.State;
             loop.StepOnce();
             if (!hand.Alive || hand.State != VillagerState.Tending)
             {
+                // ⚠️ THE WALKS EITHER SIDE OF A TEND MAY CROSS THE TURN; SETTING OUT MAY NOT (D529). A walk
+                // out begun in summer's last ticks is still under way in autumn and turns round on arrival
+                // (`ArriveAt`: "a season turned … and they turn round instead"), and the walk back is how a
+                // tend ends. This asserted every tending state summer-only and passed only while no walk
+                // happened to cross the turn — the meal phase (§3.5a) moved the timings and one did. The
+                // rule is the tend itself (below) and the leaving for it, here.
+                // ⚠️ RED-CHECKED (D529): setting out in any season — red. Arriving after the turn and tending
+                // anyway — ⛔ ZERO, written down (D326): under D529's timings no walk out crosses the turn in
+                // these three summers, so `ArriveAt`'s season check is never reached here.
                 Assert.False(
-                    IsTendingState(hand.State) && ran != Season.Summer,
-                    $"{hand.Name} is {hand.State} in {world.Clock}.");
+                    hand.State == VillagerState.WalkingOutToTend && was != VillagerState.WalkingOutToTend && ran != Season.Summer,
+                    $"{hand.Name} set out to tend in {ran}, {world.Clock}.");
                 continue;
             }
 

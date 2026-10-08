@@ -88,6 +88,16 @@ public sealed class FoodConservationTests
             FishingTests.RaiseAFishery(world);
             Workplace farm = FarmFixtures.RaiseAFarm(world);
             FarmFixtures.GiveItGround(world, farm, 3);
+
+            // ⚠️ AND A WINTER'S FIREWOOD IN EVERY HOME (D529). The farm raised free above takes its hands from
+            // spring of Year 1, so no woodcutter splits before winter — D515's fixture effect, the race this
+            // seed list has already lost twice (seed 4, see above). When the founders' meals moved a few ticks
+            // (`skills-catalog.md §3.5a`) seed 2 lost it too: no fish ever caught, 2,531 food in fifty years
+            // against 47,562. Firewood is not food, so the ledger is untouched; the claim needs every source alive.
+            foreach (Household household in world.Households)
+            {
+                household.Stockpile.Add(Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+            }
         }
 
         // ⚠️ The cart's food was never produced, so the ledger starts from what is held now.

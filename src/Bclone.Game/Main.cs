@@ -108,6 +108,13 @@ public partial class Main : Control
             return;
         }
 
+        // A frame sample (D528) passes the title by and founds the config's valley, as the probe does.
+        if (FrameSampleSeconds > 0d)
+        {
+            StartTheFrameSample(config);
+            return;
+        }
+
         ShowTheTitle(config);
     }
 
@@ -262,10 +269,16 @@ public partial class Main : Control
             return;
         }
 
+        // ⭐⭐ THE WHOLE FRAME (D528): the frame before this one closes now — its gap, and what it did.
+        // Joe saw every founder skip in the same instant, which is a frame, not a villager (`FrameWatch`).
+        TheFrameBegins();
+
         // The single wall-clock read in the entire program.
         int ticks = _driver.Advance(delta, _loop.World.Tick);
         if (ticks > 0 && !_halted)
         {
+            ulong firstTick = _loop.World.Tick;
+
             // ⭐⭐ HOW MANY TICKS LANDED IN ONE FRAME, AND HOW LONG THEY TOOK (D402, the D395
             // investigation: *"villagers (and forest animals) skip a tile at the start of a day"*,
             // and Joe again on 2026-09-22: *"it feels like villagers appear at the market — the
@@ -299,11 +312,16 @@ public partial class Main : Control
             }
 
             _slowestStepMs = System.Math.Max(_slowestStepMs, spent);
+            _frameWatch.Stepped(ticks, firstTick, spent, _loop.World.Config.TicksPerDay, _loop.World.Config.TicksPerSeason);
         }
 
+        long refreshStarted = System.Diagnostics.Stopwatch.GetTimestamp();
         Refresh();
+        _frameWatch.Refreshed(System.Diagnostics.Stopwatch.GetElapsedTime(refreshStarted).TotalMilliseconds);
+
         WriteTheSettingsIfChanged();
         ProbeColumnWidths();
+        EndTheFrameSampleWhenDue();
     }
 
     /// <summary>
@@ -538,6 +556,8 @@ public partial class Main : Control
         // this measured every sentence against 377 pixels the player does not have.
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         GD.Print(_map.AVillagerDrawsWhereTheyStand());
+        GD.Print(VillageMap.TheCrowdDoesNotSkip());
+        GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
@@ -7551,10 +7571,13 @@ public partial class Main : Control
             ? "no catch-up"
             : $"catch-up {_framesThatCaughtUp} of {_framesStepped} ({_framesThatCaughtUp * 100.0 / _framesStepped:F1}%), worst {_mostTicksInAFrame} ticks";
 
+        // ⭐⭐ AND THE WHOLE FRAME, ON ITS OWN ROW (D528). The row above times the sim step and a smoothed draw;
+        // neither can see one long frame, which is what moves every dot at once.
         _frameCounter.Text =
             $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}"
             + $"  ·  {_ticksThisFrame} tick/frame, {caughtUp}, slowest step {_slowestStepMs:F1}ms"
-            + (_driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty);
+            + (_driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty)
+            + $"\n{_frameWatch.Summary}";
     }
 
     private void AddTheSkipControls(Container controls)
