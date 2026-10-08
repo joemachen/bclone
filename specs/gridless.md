@@ -362,6 +362,27 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 
 ## 9. Definition of Done
 
+### Slice 7c — 🔨 BUILT (2026-10-08, D531), view only, unplayed: a meal on the road is seen
+
+Joe, asked whether a meal on the road should be shown: *"yes"*; of the two forms offered, **both**; and the mark
+**a fixed half second**. D529 left every villager still stopping a tick to eat (a meal costs its tick, D10) — one at a
+time now, but with nothing on screen to say why a dot paused.
+
+1. **The card already says it.** `Villager.DescribeState` reads *"stopping to eat"* for the tick `JustAte` holds —
+   nothing to build; noted so nobody builds it twice.
+2. **A mark on the dot**: a small bowl drawn just above the villager for **half a second of real time** from the frame
+   that sees the meal's tick, fading out. Real time, not ticks, because a tick is 1.3 s at 1× and a seventh of a
+   second at 10×: the mark must be readable at every speed (Joe's call). It reads `JustAte` and nothing else — **every
+   meal, wherever it is eaten**; at home it marks a dot that was not walking, which is still true.
+3. **Kept where it changes** (CLAUDE.md): `VillageMap` holds a *shown until* time per villager, written once a tick
+   in `AdvanceInterpolation` from who ate (`MarkTheMeals`, pure) and read by the draw; the clock is the map's own sum
+   of frame deltas, view only. The dead are pruned with the glide record. ⚠️ Paused, the clock still runs, so a mark
+   fades while the village is stopped — the card still says *"stopping to eat"* until the next tick.
+4. **Guarded by the probe** (`meal:`): a posed meal is marked and a posed non-meal is not; at a quarter second the
+   mark is half faded; at the half second it is gone; a dead villager's mark is pruned. **4 mutants, 3 red**; ⛔ the
+   fourth — the live map never handing its eaters to `MarkTheMeals` — **scores ZERO, written down (D326)**: the probe
+   poses the pure rule, and only a running village reaches that call. Joe's eye is its check.
+
 ### Slice 7b — ✅ MEASURED (D528), FIXED (D529), PLAYED AND MERGED (D530): everyone stopped together to eat
 
 Joe, playing slice 7: *"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."* A

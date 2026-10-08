@@ -557,6 +557,7 @@ public partial class Main : Control
         GD.Print(_map.TheCentreOfATileDrawsWhereTheTileDoes());
         GD.Print(_map.AVillagerDrawsWhereTheyStand());
         GD.Print(VillageMap.TheCrowdDoesNotSkip());
+        GD.Print(VillageMap.AMealIsSeen());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
