@@ -290,7 +290,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D511) — farmhands rest at the steading in spring, summer and autumn, tend their sown tiles in summer, and go home in winter (`work-from-the-steading.md`, Joe: "workers actually working at their place of work"). ⭐ PROVEN TO BE THE ONLY REASON: with `RestsAtTheSteading` answering false for everybody, the old value passes. Was 6162009344269948841.
     // RE-TAKEN (D522) — the food chain (`food-chain.md §7`): the wheat a field gives up is counted (`WheatEverReaped`, hashed — the mill's unlock reads it) and this village reaps past `mill_unlock_wheat`, so it learns the mill and the moment shows it the tree. No mill is built and nobody eats bread. ⭐ PROVEN TO BE THE ONLY REASON: with the counter unhashed and the mill's unlock out of reach, the old value passes. Was 4704120055719651414.
     // RE-TAKEN (D523) — a varied diet (Joe: "eat a varied diet"): among foods worth the same, a meal and a fetch take a share of each in proportion to what the pile holds, not forage first — this village eats its wheat. ⭐ PROVEN TO BE THE ONLY REASON: with the share taken greedily in id order again, the old value passes. Was 10120269350165060630.
-    private const ulong SeamGoldenHash = 8728969007328010656UL;
+    // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 8728969007328010656.
+    private const ulong SeamGoldenHash = 4635216801340531294UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -363,7 +364,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D511) with it again: farmhands rest at the steading and tend in summer. ⭐ PROVEN: with `RestsAtTheSteading` false for everybody, the old value passes. Was 8900799605716253735.
     // RE-TAKEN (D522) with it, for the same reason. Was 18386648076548936173.
     // RE-TAKEN (D523) with it, for the same reason. Was 16656143455684160865.
-    private const ulong SeamBeforeAnybodyGotBetter = 3902667481052543839UL;
+    // RE-TAKEN (D529) with it, for the same reason: the founders' first meals spread over one meal interval. ⭐ PROVEN: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 3902667481052543839.
+    private const ulong SeamBeforeAnybodyGotBetter = 17597176157332866743UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

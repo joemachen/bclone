@@ -6,8 +6,9 @@
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
 > **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`); Joe played it and
-> still saw every founder skip at once. ⏸️ Slice 7b (D528): the frame is measured and cleared on this machine, and the
-> all-at-once stop is the founders' meals landing on one tick — a sim fix, Joe's call, NOT built.**
+> still saw every founder skip at once. Slice 7b (D528): the frame is measured and cleared on this machine, and the
+> all-at-once stop is the founders' meals landing on one tick (Joe: *"stop and go - they were eating"*). 🔨 Its fix is
+> built (D529, `skills-catalog.md §3.5a`, on `slice/movement-skip`, unplayed): all four never stop together now.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -401,8 +402,12 @@ same amount for ever; under 7 apart, they mostly eat together. D190's own guard 
 | `+spread`, ten years | **8–18 %** | 0–2 |
 
 How often each villager stops is the same in every arm: the spread does not take the meal's tick away, it stops
-everyone taking it at the same moment. ⛔ **Not built — it moves the state hash, so it is a mechanic, measured on
-the shipped valleys before it ships, and Joe's call** (`HANDOFF.md`, OPEN).
+everyone taking it at the same moment.
+
+**🔨 Built (D529), at Joe's word** (*"stop and go - they were eating"* / *"Yes"*) — `skills-catalog.md §3.5a`: the
+founders' first hunger is **held off** for their place on one meal interval (never started hungrier; that was tried
+and starved founders in bare-store openings), a child starts at a hashed place on the cycle. On the real code, played
+opening, six valleys, 120 days: shared stops **7–17 %**, three or more together **0–2** a valley, **all four never**.
 
 ### Slice 7 — 🔨 BUILT (2026-10-07, D525), unplayed: the skip was the crowd fan
 

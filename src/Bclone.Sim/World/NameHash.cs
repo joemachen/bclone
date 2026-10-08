@@ -36,6 +36,9 @@ public static class NameHash
     /// <summary>What a household's day for a child is picked by (D469, keyed on the household's id).</summary>
     public const int ChildDaySalt = 5;
 
+    /// <summary>What a villager's meal phase is picked by (D529) — and, keyed on the first founder's id, the founding's.</summary>
+    public const int MealPhaseSalt = 6;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>SplitMix64.Fold</c>, well spread even for adjacent ids.
@@ -74,4 +77,12 @@ public static class NameHash
     /// </summary>
     public static int DayForAChild(ulong seed, int householdId, int daysPerYear) =>
         (int)(Mix(seed, householdId, ChildDaySalt, 0) % (ulong)daysPerYear);
+
+    /// <summary>
+    /// Where on the meal's cycle villager <paramref name="id"/> starts — a starting hunger in
+    /// <c>[0, eatThreshold)</c> (`skills-catalog.md §3.5a`, D529). ⛔ A hash, never a draw: it decides only
+    /// when a first meal falls, and the stream every other draw takes from stays where it was.
+    /// </summary>
+    public static int MealPhase(ulong seed, int id, int eatThreshold) =>
+        (int)(Mix(seed, id, MealPhaseSalt, 0) % (ulong)eatThreshold);
 }

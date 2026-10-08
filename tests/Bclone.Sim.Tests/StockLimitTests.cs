@@ -376,7 +376,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 15384670967182429752.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6756984149169340031.
     // RE-TAKEN (D498) — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 8205114029936109547.
-    private const ulong FixtureFiftyYearHash = 8954345765606684111UL;
+    // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 8954345765606684111.
+    private const ulong FixtureFiftyYearHash = 11828556488198516637UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -484,7 +485,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 6805272437520323772.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 1113605318073682364.
     // RE-TAKEN (D498) — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 1021202375279885574.
-    private const ulong ShippedFiftyYearHash = 3584174389802385215UL;
+    // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 3584174389802385215.
+    private const ulong ShippedFiftyYearHash = 18211395129735087795UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

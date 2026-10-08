@@ -1416,6 +1416,112 @@ public sealed class SkillTests
     }
 
     /// <summary>
+    /// ⭐⭐ <b>The founders start a meal apart</b> — no two within one tick's hunger of each other on the
+    /// meal's cycle (§3.5a, D529).
+    /// </summary>
+    /// <remarks>
+    /// <b>The units, asserted.</b> D190 started hunger at the rhythm — 0–3, ticks written as hunger points —
+    /// and hunger rises <c>hunger_per_tick</c> a tick, so every founder sat inside one tick's worth of the
+    /// others and they ate together (Joe: <i>"stop and go — they were eating"</i>). Measured on the circle of
+    /// <c>eat_threshold</c> points, because a meal takes exactly that much off: 79 and 1 are two points apart.
+    /// A founder's place on it is their hunger less the ticks it is held off (<c>FullFor</c>) at a tick's
+    /// worth each — held off, never started hungrier (§3.5a).
+    /// </remarks>
+    [Fact]
+    public void FoundersStartAMealApart()
+    {
+        int foundings = 0;
+        int closest = int.MaxValue;
+        foreach (SimConfig config in new[] { ShippedConfig.Load(), VillageFixtures.Village })
+        {
+            for (ulong seed = 1; seed <= 100; seed++)
+            {
+                SimWorld world = SimFactory.CreatePhase0(config with { Seed = seed }, new InMemoryLogSink()).World;
+                Assert.All(world.Villagers, v => Assert.Equal(0, v.Hunger));
+                List<int> phases = world.Villagers
+                    .Select(v => ((v.Hunger - (v.FullFor * config.HungerPerTick)) % config.EatThreshold + config.EatThreshold) % config.EatThreshold)
+                    .ToList();
+                for (int i = 0; i < phases.Count; i++)
+                {
+                    for (int j = i + 1; j < phases.Count; j++)
+                    {
+                        int apart = Math.Abs(phases[i] - phases[j]) % config.EatThreshold;
+                        apart = Math.Min(apart, config.EatThreshold - apart);
+                        closest = Math.Min(closest, apart);
+                        Assert.True(
+                            apart >= config.HungerPerTick,
+                            $"Seed {seed}: founders {i + 1} and {j + 1} start at {phases[i]} and {phases[j]} on the meal's cycle, "
+                            + $"{apart} apart — under one tick's worth ({config.HungerPerTick}), so they eat on the same tick.");
+                    }
+                }
+
+                foundings++;
+            }
+        }
+
+        _output.WriteLine($"{foundings} foundings, the closest two founders {closest} points apart on the meal's cycle");
+    }
+
+    /// <summary>
+    /// ⭐⭐ <b>The founders do not eat on the same tick</b> — the measurement Joe's eye made, asserted (§3.5a, D529).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A meal costs its tick (D10), so founders who eat together stand still together: on the shipped opening
+    /// before D529, 65–91 % of mid-walk stops shared their tick, and Joe saw every founder skip at once. This
+    /// counts meals over the played opening's first 120 days and the share of them eaten on a tick somebody
+    /// else also ate on.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The red arm is built in</b>: the same count with the rhythm switched off must show the lockstep, or
+    /// this guard is describing a village that was never in step. ⚠️ <b>Guard the together, not a proxy</b> —
+    /// D190's own guard asked whether hunger was identical, and it stopped being identical while the meals still
+    /// coincided.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheFoundersDoNotEatOnTheSameTick()
+    {
+        SimConfig config = ShippedConfig.Load();
+        int offShare = SharedMealPercent(config with { SeededRhythm = false });
+        _output.WriteLine($"rhythm off: {offShare}% of meals eaten on a shared tick");
+        Assert.True(offShare >= 50, $"With the rhythm off only {offShare}% of meals share a tick — the lockstep this guards against is not posed.");
+
+        foreach (ulong seed in new ulong[] { 12345, 1, 2, 5 })
+        {
+            int share = SharedMealPercent(config with { Seed = seed });
+            _output.WriteLine($"seed {seed}: {share}% of meals eaten on a shared tick");
+            Assert.True(
+                share <= 30,
+                $"Seed {seed}: {share}% of the founders' meals fall on a tick somebody else also eats on — they "
+                + "stand still together, which reads on screen as everyone skipping at once.");
+        }
+    }
+
+    /// <summary>The share of meals, in the played opening's first 120 days, eaten on a tick another villager also ate on.</summary>
+    private static int SharedMealPercent(SimConfig config)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+
+        long meals = 0;
+        long shared = 0;
+        for (int t = 0; t < config.TicksPerDay * 120; t++)
+        {
+            loop.StepOnce();
+            int ate = world.Villagers.Count(v => v.Alive && v.JustAte);
+            meals += ate;
+            if (ate > 1)
+            {
+                shared += ate;
+            }
+        }
+
+        return (int)(shared * 100 / Math.Max(1, meals));
+    }
+
+    /// <summary>
     /// ⛔ The founding deals its trades from the stated list, not from the skills catalogue — so
     /// a new skill row leaves every founding exactly where it was (D392).
     /// </summary>

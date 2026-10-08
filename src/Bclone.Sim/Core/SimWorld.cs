@@ -11277,6 +11277,25 @@ public sealed class SimWorld : IObstacles
             $"No ground within eight tiles of {wanted} for the founding's {NameFor(kind)} — this valley cannot be founded here.");
     }
 
+    /// <summary>
+    /// Ticks founder <paramref name="id"/>'s hunger is held off before it starts to rise — their place on the
+    /// meal's cycle (`skills-catalog.md §3.5a`, D529): the founders spaced evenly over one meal interval from a
+    /// hashed start, so no two eat on the same tick for a reason nobody chose. Nought with the rhythm off,
+    /// which is how the lockstep is posed.
+    /// </summary>
+    private int FoundersFirstHungerHeldFor(SimConfig config, int id)
+    {
+        if (!config.SeededRhythm || config.EatThreshold <= 0)
+        {
+            return 0;
+        }
+
+        int founders = config.StartingHouseholds * config.AdultsPerHousehold;
+        int interval = VillageEconomy.MealIntervalTicks(config);
+        int start = NameHash.MealPhase(Seed, 1, interval);
+        return (start + ((id - 1) * interval / founders)) % interval;
+    }
+
     private void FoundVillage(SimConfig config, GridPos origin)
     {
         int nextVillagerId = 1;
@@ -11376,14 +11395,26 @@ public sealed class SimWorld : IObstacles
                     // good a mod adds can be picked up rather than only stored.
                     Carried = NewStockpile(),
 
-                    // ⭐⭐ AND THEIR HUNGER STARTS A LITTLE APART, WHICH IS THE HALF THE STAGGER
-                    // ALONE COULD NOT REACH (§3.5, D190). Measured with only the action
-                    // stagger: two adults of one household still had **identical hunger 100% of
-                    // ticks** — because hunger is a pure function of ticks since the last meal,
-                    // so two people who eat on the same tick stay in step for ever however
-                    // differently they walk. **Identical hunger is one of the two numbers D28
-                    // named**, and nothing that offsets only movement can touch it.
-                    Hunger = rhythm,
+                    // ⭐⭐ AND THEIR HUNGER STARTS APART, WHICH IS THE HALF THE STAGGER ALONE COULD
+                    // NOT REACH (§3.5, D190). Measured with only the action stagger: two adults of
+                    // one household still had **identical hunger 100% of ticks** — hunger is a pure
+                    // function of ticks since the last meal, so two people who eat on the same tick
+                    // stay in step for ever however differently they walk.
+                    //
+                    // ⛔⛔ AND IN THE RIGHT UNITS (§3.5a, D529). This was `Hunger = rhythm` — 0..3, a
+                    // count of TICKS written as hunger POINTS, under one tick's worth (7): hunger
+                    // stopped being identical and the meals still fell on one tick, so every founder
+                    // stood still together for a meal on the road and Joe saw them all skip at once.
+                    //
+                    // ⭐ Now the founders' first meals are spread evenly over a meal's interval — by
+                    // HOLDING hunger off, never by starting anybody hungrier. Measured both ways: a
+                    // founder started up to 79 hungry starved in the openings with bare stores (a far
+                    // farm brought in 98 % → 61 %, villager 0 died in a guard's five years); held off,
+                    // every one of those came back. They ate from the cart before they set out, and
+                    // the cart carries forage — which is what the card says (`FullNote`).
+                    Hunger = 0,
+                    FullFor = FoundersFirstHungerHeldFor(config, id),
+                    FullFrom = Goods.Produce,
 
                     // Standing at their house, or at the cart they arrived in (D70). Not
                     // HomePoint — that reads the household, and this villager is not

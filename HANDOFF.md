@@ -1,4 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — D528: THE SKIP IS FOUND — THE FOUNDERS EAT ON THE SAME TICK (D190'S STAGGER IS IN THE WRONG UNITS). THE FRAME IS CLEARED. THE FIX IS JOE'S CALL, ON `slice/movement-skip`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D529: THE SKIP IS FIXED ON `slice/movement-skip` (PUSHED, UNPLAYED) — THE FOUNDERS' FIRST MEALS ARE SPREAD, SO NOBODY STOPS TOGETHER. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP FIXED) — D529, ON WINDOWS.**
+>
+> **`main` = D527, pushed. `slice/movement-skip` (pushed at Joe's "yes", plus D529 on top)** = D525's crowd fan +
+> `main` merged in + D528's frame instrument + **D529, the fix**. Joe confirmed by eye: *"stop and go - they were
+> eating"*, then *"Yes"* to the fix. Verified: 1544 / 0 / 5 of 1549; view 0 warnings; probe green, bar height 151;
+> goldens re-taken (4) and pins re-pinned (2), each proven by the parent commit (`DESIGN.md` D529).
+>
+> **What D529 is** (`skills-catalog.md §3.5a`): each founder's first hunger is **held off** for their place on one meal
+> interval (`FullFor`; card: *"Full from a meal of forage"* for those few ticks), so their first meals fall apart and
+> stay apart; a child starts at a hashed hunger. Shared mid-walk stops 65–91 % → 7–17 %; **all four together: never**.
+> Survival over 200 valleys: a reshuffle, not a shift. ⚠️ Not "start them hungrier" — that was built first and starved
+> founders in bare-store openings (D529 has the numbers).
+>
+> **▶️ NEXT: Joe plays `slice/movement-skip`** (`git checkout slice/movement-skip`, `.\run.bat` — save format 2, as
+> `main` is since the food chain; a save from before it is refused on either). Watch the founders at 2–4×: they still stop for a beat to eat
+> (a meal costs a tick, D10), **but one at a time, never all four at once**. Then merge `--no-ff` at his word and push.
+>
+> ⏸️ **Still his:** whether a meal on the road should be *shown* (asked 2026-10-07 — *"how do you mean 'shown'?"*,
+> answered in chat, see OPEN); stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
+> market's *Keeps up to* row and pin exception guards (D502).
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP MEASURED) — D528, ON WINDOWS.**
 >
@@ -20,6 +41,8 @@
 > eye:** when the skip comes, do the dots *stop for a beat and walk on* (a meal), rather than jump?
 >
 > ⏸️ Push `slice/movement-skip` and merge it — at his word. The fan fix and `FrameWatch` are view only and stand either way.
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (FOOD CHAIN MERGED) — D527, ON WINDOWS.**
 >
@@ -5687,11 +5710,33 @@ Read `git status` after staging, every time.
   move in 120 days). It is a fair frame clock, a poor picture of a busy village — a long frame in real play shows as
   `[frame] long:` in Godot's output, not in the sample.
 
+## ⛔ THE TRAPS D529 PAID FOR — A GUARD WHOSE PREMISE IS A VILLAGER WHO HAPPENED TO LIVE, AND A FIX THAT STARTS SOMEBODY WORSE OFF
+
+- **Ask why each tipped guard's villager died before re-pinning anything.** The fix tipped nine behaviour guards. The
+  first reading — "single-valley coins, re-pose them" — was half true: five were a pinned hand who froze in D515's
+  first-winter race or starved six ticks short of a sample. But the *first form* of the fix (start founders up to 79
+  hungry) tipped a different nine, and those deaths were the fix's own: a founder arriving hungry to bare stores.
+  `ZzWhy` (a throwaway that printed one villager's log to the death line) told the two apart in two runs.
+- **Survival over 200 valleys can hide what one lean opening shows.** The hunger-raised variant read 1,078 alive / 49
+  dead valleys against 1,078 / 47 — neutral — while a far farm in a bare-store guard fell 98 % → 61 %. Both readings
+  were true; only the second said the mechanism was harsher than §3.5's "small". **Pair seed by seed**
+  (`scratchpad paired.py` shape: newly dead / newly alive, more / fewer per valley) before calling a pooled gap noise.
+- **A fix that makes a mechanic reach a new state reaches every reader of it.** `FullFor` was bread's; founders held
+  off by it tipped four nutrition guards that assumed only bread fills anybody, and the card says *"Full from a meal
+  of forage"*. Grep every reader (`FullNote`, `StateHash`, the save) before reusing a field.
+- **The "ate from their own arms" debug line prints hunger AFTER the meal** (`BehaviorSystem.TryEat`: `Feed` runs
+  before the log; the larder path logs before) — *"hunger was 0"* is a log bug, not a meal at hunger 0. Debt, not
+  fixed (it would move nothing but the audit file).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- ⏸️ **THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).** Measured: the frame
+- ⏸️ **SHOWING A MEAL ON THE ROAD (asked 2026-10-07; Joe: *"how do you mean 'shown'?"* — answered in chat).** View
+  only, after D529 is played: a villager who stops to eat could say so on screen — a small mark on the dot for its
+  tick, and/or the card's state line reading *eating* instead of the errand it paused. Not built; his call.
+
+- ✅ **FIXED (D529), UNPLAYED — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
   is clean on his machine; 65–91 % of mid-walk meal stops share their tick, because D190's `Hunger = Rhythm` is ticks
   written as hunger points (`SimWorld.cs` founding, `HouseholdSystem.cs` births). Options: **(a) recommended —
   spread each villager's starting hunger over the meal cycle** (a seeded value in `[0, eat_threshold)`, at founding
