@@ -5,10 +5,10 @@
 > either.** Buildings have a footprint, a facing and a free `Point`; **villagers hold a `Point`, stand on what they walk to (D354), and walk straight lines across the tile route on the route's own clock (D356).**
 > **Desire paths (§2.6) are built (D358, `specs/desire-paths.md`) — worn ground is cheaper and a leg's ticks follow it — and clock B, the real-clock rebalance, is a later slice of its own, to be measured against D358's outcomes.**
 > **Clock B is built (D361, slice 5). ✅ Slice 6, steady pace — the stutter — is built (D463), played by Joe, its price accepted, merged and pushed (D464).**
-> **🔨 Slice 7, the skip — the crowd fan — is built (D525, view only, on `slice/movement-skip`); Joe played it and
-> still saw every founder skip at once. Slice 7b (D528): the frame is measured and cleared on this machine, and the
-> all-at-once stop is the founders' meals landing on one tick (Joe: *"stop and go - they were eating"*). 🔨 Its fix is
-> built (D529, `skills-catalog.md §3.5a`, on `slice/movement-skip`, unplayed): all four never stop together now.**
+> **✅ Slice 7, the skip — DONE: PLAYED (*"looks good"*), MERGED AND PUSHED (D530, 2026-10-08).** The crowd fan glides
+> (D525, view only); the whole frame is on the debug line and was clean (D528); the all-at-once stop was the founders'
+> meals landing on one tick (Joe: *"stop and go - they were eating"*), fixed by spreading their first meals (D529,
+> `skills-catalog.md §3.5a`) — all four never stop together now.**
 > ⚠️ **§2 is an AUDIT taken on 2026-09-06 and is deliberately left as it was written** — §2.2 says
 > *"there is no `Fixed` type"*, which was true that morning and is the finding that justified the
 > slice. *A spec that edits its own audit to look current stops being evidence of anything.*
@@ -362,7 +362,7 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 
 ## 9. Definition of Done
 
-### Slice 7b — ⏸️ MEASURED (2026-10-07, D528), the fix is Joe's call: everyone stops together to eat
+### Slice 7b — ✅ MEASURED (D528), FIXED (D529), PLAYED AND MERGED (D530): everyone stopped together to eat
 
 Joe, playing slice 7: *"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."* A
 skip that moves every dot in one instant cannot be any one villager's, so the frame was measured first.
@@ -409,7 +409,7 @@ founders' first hunger is **held off** for their place on one meal interval (nev
 and starved founders in bare-store openings), a child starts at a hashed place on the cycle. On the real code, played
 opening, six valleys, 120 days: shared stops **7–17 %**, three or more together **0–2** a valley, **all four never**.
 
-### Slice 7 — 🔨 BUILT (2026-10-07, D525), unplayed: the skip was the crowd fan
+### Slice 7 — ✅ BUILT (2026-10-07, D525), played and merged with 7b (D530): the skip was the crowd fan
 
 Joe, 2026-10-06: *"there are definitely still skips. frequently."* D403 had ruled out the frame driver and the
 interpolation and filed two sim-side suspects — the arrival snap and short legs — with one rule: **measure the

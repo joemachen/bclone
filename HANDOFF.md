@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — D529: THE SKIP IS FIXED ON `slice/movement-skip` (PUSHED, UNPLAYED) — THE FOUNDERS' FIRST MEALS ARE SPREAD, SO NOBODY STOPS TOGETHER. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D530: THE SKIP IS DONE — PLAYED, MERGED AND PUSHED. NEXT: SHOW A MEAL ON THE ROAD, SPEC FIRST (JOE: "YES"; WHICH FORM IS HIS). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE SKIP MERGED) — D530, ON WINDOWS.**
+>
+> **`main` = D530, pushed. Nothing else is open: `slice/movement-skip` is merged `--no-ff` and deleted.** Joe played
+> D529: *"looks good"* — the founders stop for a beat one at a time. The merged tree is byte-identical to the branch tip
+> D529 verified (1544 / 0 / 5 of 1549; view 0 warnings; probe 41 ✅, bar height 151).
+>
+> **▶️ NEXT: show a meal on the road — Joe said "yes", spec first.** View only. Two forms were offered (2026-10-07) and
+> **he has not said which**: (a) a small mark on the dot for the tick they eat (a bowl or a brief pulse); (b) the card's
+> state line reading *eating* for that tick instead of the errand they paused (*walking home*). Write the spec with
+> both, recommend one, and bring him the call before building. Where to look: `VillageMap.DrawVillagers` (the dot),
+> `Villager.JustAte` (set by `Feed`, the one fact both forms read), the card's state sentence (`Villager.cs` ~808).
+> ⚠️ `JustAte` lasts one tick, which at 1× is 1.3 s and at 10× a seventh of a second — the mark's length is a call.
+>
+> ⏸️ **Still his, unscheduled:** stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
+> market's *Keeps up to* row and pin exception guards (D502).
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP FIXED) — D529, ON WINDOWS.**
 >
@@ -20,6 +36,8 @@
 > ⏸️ **Still his:** whether a meal on the road should be *shown* (asked 2026-10-07 — *"how do you mean 'shown'?"*,
 > answered in chat, see OPEN); stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
 > market's *Keeps up to* row and pin exception guards (D502).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP MEASURED) — D528, ON WINDOWS.**
 >
@@ -5727,14 +5745,18 @@ Read `git status` after staging, every time.
 - **The "ate from their own arms" debug line prints hunger AFTER the meal** (`BehaviorSystem.TryEat`: `Feed` runs
   before the log; the larder path logs before) — *"hunger was 0"* is a log bug, not a meal at hunger 0. Debt, not
   fixed (it would move nothing but the audit file).
+- **A new banner's *"(superseded by the banner above)"* goes at the end of the OLD banner, never the new one.** Made
+  three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
+  the ten lines either side of where it meets the one below.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- ⏸️ **SHOWING A MEAL ON THE ROAD (asked 2026-10-07; Joe: *"how do you mean 'shown'?"* — answered in chat).** View
-  only, after D529 is played: a villager who stops to eat could say so on screen — a small mark on the dot for its
-  tick, and/or the card's state line reading *eating* instead of the errand it paused. Not built; his call.
+- ⏸️ **SHOWING A MEAL ON THE ROAD — JOE: *"yes"* (2026-10-08); WHICH FORM IS STILL HIS.** View only: a villager who
+  stops to eat says so on screen — (a) a small mark on the dot for its tick, (b) the card's state line reading *eating*
+  instead of the errand it paused, or both. Spec first; bring him the form and the mark's length (one tick is 1.3 s at
+  1×) before building.
 
 - ✅ **FIXED (D529), UNPLAYED — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
   is clean on his machine; 65–91 % of mid-walk meal stops share their tick, because D190's `Hunger = Rhythm` is ticks

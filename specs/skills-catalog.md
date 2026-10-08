@@ -377,7 +377,7 @@ one golden move covers both rather than two.
 
 #### 3.5a The meal's phase — the hunger half, in the right units (D528, D529; Joe: *"stop and go — they were eating"*)
 
-> ✅ **Built (D529, 2026-10-07), on `slice/movement-skip`, unplayed.** Measured on the played opening, six valleys,
+> ✅ **Built (D529, 2026-10-07); played (Joe: *"looks good"*), merged and pushed (D530, 2026-10-08).** Measured on the played opening, six valleys,
 > first 120 days (`tools/harness/ZzLockstep.cs`): mid-walk stops shared with someone else's **65–91 % → 7–17 %**,
 > ticks with three or more stopped together **12–29 → 0–2**, all four together **6–13 → 0**. Survival over 200
 > shipped valleys × fifty years: 1,078 alive / 47 dead valleys before, 1,058 / 54 after — 67 valleys more alive and
