@@ -1,7 +1,9 @@
 # Spec: Clothing — the thing that makes winter workable
 
 **Decision:** D45's third clause. **Slice:** `specs/environment-and-seasons.md §11`, slice 4.
-**Status:** ⛔ **specced and NOT started — it is blocked twice over, and §5 is the argument.**
+**Status:** ⏸️ **specced and NOT started. The input is no longer blocked** (leather has come from
+hunting since D291, D69's road); **the payoff is still narrow, re-measured on 2026-10-08 (D533, §5.2)**,
+and **Joe parked it (D534)** until winter has work worth wanting.
 
 ---
 
@@ -52,7 +54,7 @@ is entirely unbuilt, and it is the largest unbuilt thing on the roadmap (D19, D3
 
 | Needs | Comes from | Built? |
 |---|---|---|
-| Leather | herding → butchering | ❌ |
+| Leather | hunting (D69's road, no trade needed) | ✅ since D291: `leather_yield` 10 a catch, unspent, limit 200 |
 | Wool | herding (sheep), shearing | ❌ |
 | Cotton / flax | farming | ❌ |
 
@@ -122,6 +124,55 @@ done.** Clothing takes an outdoor winter job from ~34% duty to 100%, which is ro
    reasons.
 3. **If lives are wanted sooner, the file to open is `seek_shelter_percent`, not the
    day-counts** — the same refusal D53 recorded for option (b).
+
+### 5.2 Re-measured on today's code (D533, 2026-10-08): no longer a pure no-op, and still narrow
+
+§5 was measured on 2026-08-01, before hunting in the woods, the quarry and the mine, stock limits,
+laborers and fences. `tools/harness/ZzClothing.cs` re-takes it: 30 shipped valleys (the played
+opening, ZzBase's) and 13 every-source valleys (lodge, fishery and farm free at t0), fifty years,
+in three cold worlds: **bare** (today, 15 days outdoors / 25 under a roof), **coat** (outdoors chills
+only as fast as a roof does, 25 / 25: a garment as a roof you wear), **off** (`exposure_days_outdoors`
+0, §5's upper bound). Shares are of working-age villagers' winter ticks.
+
+**At the shipped stock limits, nothing after the founding changes:**
+
+| | at a fire | working outdoors | break-offs / valley | cold deaths, Year 1 | cold deaths, Years 2–50 |
+|---|---|---|---|---|---|
+| played: bare / coat / off | 71 / 71 / 72 % | 1.0 / 1.0 / 1.1 % | 61 / 16 / 0 | 16 / 16 / 0 | **0 / 0 / 0** |
+| every: bare / coat / off | 71 / 76 / 70 % | 1.4 / 1.2 / 1.9 % | 50 / 20 / 0 | 28 / 13 / 0 | **0 / 0 / 0** |
+
+- **Every cold death is a whole founding party in Year 1, before a home has a fire.** In the played
+  opening they die *under a roof with no fire*, which no garment touches. In the every-source opening
+  it is D515's free-farm race, which Joe closed as a fixture effect.
+- **Hunters do not hunt in winter, with or without cold.** In 37 of 39 every-source runs no hunter
+  held the job in any winter: the quota hires none. The likely cause is meat already at its limit
+  (`meatIsEnough`, `LabourQuota.cs` ~462), but that is **not traced**. The code's comment says the
+  lodge *"is what winter is for"*; in these villages winter never uses it.
+
+**When the player asks for more** (every limit except tools ×10 at Year 5, the posed version of
+D62's argument that limits give clothing its reason):
+
+| | working outdoors | break-offs / valley | cold deaths, Year 3+ (outdoors / roof) | alive at 50 |
+|---|---|---|---|---|
+| played: bare / coat / off | 6.2 / 5.9 / 6.0 % | 73 / 26 / 0 | 7+7 / 2+0 / 0 | 158 / 171 / 179 |
+| every: bare / coat / off | 8.2 / 8.2 / 8.7 % | 56 / 28 / 0 | 5+14 / 2+18 / 0 | 98 / 164 / 221 |
+
+- **Winter fills with outdoor work** (1% → 6–8%, almost all laborers digging and hauling), so the cold
+  starts to cost something: about seventy break-offs a valley, and a few people frozen after the founding.
+- **A coat removes about two-thirds of the break-offs and nearly all the *outdoor* freezes** (played 7 → 2).
+- **It does not raise the work done** (6.2 → 5.9%, 8.2 → 8.2%). The limit bounds the work, not the
+  cold: a laborer who goes in to get warm comes back and finishes the same job later. §5.1's "3× on
+  winter labour" assumed demand without end, and no village has that.
+- **It does nothing for the roof deaths**, a household out of firewood, which are the larger share
+  in the every-source arm. That is fuel, not clothing.
+- ⚠️ Raising the limits ×10 **from day one** kills all 13 every-source foundings in Year 1 (labour drawn
+  off the first firewood). That is the harness playing badly (D447), not a finding about clothing.
+
+**Reading it:** clothing is now a real but *small* unlock: fewer *"going in to get warm"* lines and
+fewer outdoor freezes in a village that pushes winter work. It is still not D45's *"winter as a
+working season"*, because winter still has almost nothing the village wants doing. §6 stands: **the
+thing that makes clothing matter is winter work worth wanting**, and today the nearest candidate is
+the lodge the quota never staffs in winter.
 
 ---
 

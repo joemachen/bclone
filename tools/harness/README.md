@@ -65,3 +65,11 @@ against a number from an older commit.
   `-c Release --filter ZzLockstep`, delete. ⚠️ D525's "10–16 stalls per 1,000" was over all villager-ticks, standing
   ones included, across twenty years — **per walking tick in the founding it is 113–130**, and that is the shape the
   eye sees.
+- `ZzClothing.cs` — D533's re-take of `specs/clothing.md §5` (`§5.2`): per run, working-age villagers' winter ticks
+  split into work outdoors / work under a roof / walking / seeking shelter / at a fire, cold break-offs (entering
+  `SeekingShelter`), and outdoor/roof winter work by trade (`ZZC`); a `ZZD` line per cold death (year, shelter, state,
+  job). Cold worlds `ZZ_COLDS` = `bare` (shipped), `coat` (`exposure_days_outdoors` = the roof's days), `off` (0);
+  openings `ZZ_ARMS` = `played` (30 shipped seeds) / `every` (13). `ZZ_LIMITX=k` multiplies every limit but the tools'
+  at Year 5; `ZZ_HUNT=1` prints a hunter state histogram (`ZZH`). Copy in, `-c Release --filter ZzClothing`, delete.
+  ⚠️ `off` is not a coat: the threshold is outdoor ticks × roof ticks, so 0 switches **roof** cold off too, and it
+  is an upper bound. ⚠️ `ZZ_LIMITX` applied at t0 kills every every-source founding in Year 1 (D447).

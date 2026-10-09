@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — D532: THE SKIP AND THE MEAL MARK ARE DONE, MERGED AND PUSHED. NOTHING IS OPEN ON A BRANCH — ASK JOE WHAT'S NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D534: CLOTHING MEASURED AND PARKED (JOE: "c"). NEXT: THE ARMFUL 40 → 80 (D474), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (CLOTHING MEASURED) — D533, ON WINDOWS.**
+>
+> **`main` = D532 + D533's docs and `tools/harness/ZzClothing.cs`. No sim or view code changed.** Joe asked
+> *"what's next? should we do clothing?"* Clothing's input is unblocked (leather from hunting since D291, D69's
+> road), so its payoff was re-measured (`specs/clothing.md §5.2`, D533). **At the shipped limits nothing changes
+> after Year 1.** With limits ×10 from Year 5, a coat cuts cold break-offs by about two-thirds and outdoor freezes
+> 7 → 2, **but no more winter work gets done**. Hunters are never hired in winter.
+>
+> **▶️ NEXT: THE ARMFUL — Joe chose (c) (D534).** Clothing is parked; take D474's approved, unbuilt armful 40 → 80
+> and eat once every four days. It is a D16 re-derivation: spec first, measured on the harness arms, goldens move.
+>
+> **(the banner below is the state before D533)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE MEAL MARK MERGED) — D532, ON WINDOWS.**
 >
@@ -5781,7 +5794,31 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAPS D533 PAID FOR — A BLOCKER THAT LEFT QUIETLY, AND "CLOTHED" THAT TURNED OFF THE ROOF TOO
+
+- **A spec's blocker can disappear with nobody writing it down.** `clothing.md` said *"blocked twice over"* and
+  §4 said *"wool needs livestock"* for five weeks after hunting began making leather (D291), which was D69's chosen
+  road. Before calling something blocked, check the dependency against the code (`grep Leather src/`), not the spec.
+- **`exposure_days_outdoors: 0` is not "clothed".** The threshold is outdoor ticks × roof ticks, so 0 switches
+  roof cold off as well. It is an upper bound. Pose a garment as `exposure_days_outdoors = exposure_days_sheltered`
+  (outdoors as warm as a roof). The two arms disagree on alive-at-fifty by up to ~60 people in 13 valleys.
+- **A harness at the shipped limits wants nothing in winter**, so it cannot see any winter mechanic. Pose demand
+  (`ZZ_LIMITX` at Year 5), and **never at t0**: ×10 from day one drew labour off the first firewood and killed
+  13 of 13 every-source foundings.
+- **A share that does not move can hide a count that does.** Raising every limit ×10 grows the work, yet the share of
+  winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **DECIDED (D534) — Joe: *"c"*. Clothing parked; the armful is next.** ~~CLOTHING — BUILD IT NOW, GIVE WINTER WORK FIRST, OR PARK IT? (D533, asked 2026-10-08).~~ Measured
+  (`clothing.md §5.2`): at the shipped limits winter is ~71% at a fire and ~1% outdoor work whether villagers are
+  bare, in a coat or immune to cold; the only cold deaths are founding parties in Year 1. Asking for more (limits ×10
+  at Year 5) puts 6–8% of winter into outdoor work; then a coat removes ~2/3 of the *"going in to get warm"*
+  break-offs and the outdoor freezes (7 → 2), and does not raise the work done. **(a)** Build it as that small unlock:
+  a tailor, leather → garments, D69's third exposure rate (tattered furs). **(b)** First give winter wanted work:
+  no hunter is hired in any winter in 37 of 39 runs (likely meat at its limit, untraced). **(c)** Park it and take
+  D474's approved, unbuilt armful 40 → 80. Recommended: **(c), with (b) traced as a side question.** Clothing's
+  measured effect is small, and the armful fixes a problem already measured in play.
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
