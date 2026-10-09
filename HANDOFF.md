@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — D530: THE SKIP IS DONE — PLAYED, MERGED AND PUSHED. NEXT: SHOW A MEAL ON THE ROAD, SPEC FIRST (JOE: "YES"; WHICH FORM IS HIS). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D531: A MEAL ON THE ROAD IS SEEN (A BOWL ABOVE THE DOT) — BUILT ON `slice/meal-shown`, UNPLAYED. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE MEAL MARK BUILT) — D531, ON WINDOWS.**
+>
+> **`main` = D530, pushed. `slice/meal-shown`** (off `main`, not pushed) = D531, **view only**. Joe chose *both* forms
+> and *a fixed half second*: the card already said *"stopping to eat"* (nothing built there); the new part is a small
+> warm bowl above a villager's dot for half a second of real time from the tick they eat (`gridless.md` slice 7c).
+> Verified: suite untouched (sim unchanged); view 0 warnings; probe 42 ✅ (`meal:` new, 3 of 4 mutants red — the zero,
+> the live map's call into `MarkTheMeals`, is his eye's to check); bar height 151; no golden moved.
+>
+> **▶️ NEXT: Joe plays it** (`git checkout slice/meal-shown`, `.\run.bat`). At 1×, 4× and 10×: when a dot pauses
+> mid-walk, a bowl appears above it and fades in half a second; clicking that villager in the same tick, the card reads
+> *stopping to eat*. Things his eye decides: the bowl's size and colour, and whether marking meals at home too (it marks
+> every meal) is noise. Then merge `--no-ff` at his word and push.
+>
+> ⏸️ **Still his, unscheduled:** stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
+> market's *Keeps up to* row and pin exception guards (D502).
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE SKIP MERGED) — D530, ON WINDOWS.**
 >
@@ -15,6 +31,8 @@
 >
 > ⏸️ **Still his, unscheduled:** stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
 > market's *Keeps up to* row and pin exception guards (D502).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-07 (THE SKIP FIXED) — D529, ON WINDOWS.**
 >
@@ -5753,10 +5771,9 @@ Read `git status` after staging, every time.
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- ⏸️ **SHOWING A MEAL ON THE ROAD — JOE: *"yes"* (2026-10-08); WHICH FORM IS STILL HIS.** View only: a villager who
-  stops to eat says so on screen — (a) a small mark on the dot for its tick, (b) the card's state line reading *eating*
-  instead of the errand it paused, or both. Spec first; bring him the form and the mark's length (one tick is 1.3 s at
-  1×) before building.
+- 🔨 **SHOWING A MEAL ON THE ROAD — JOE: *"yes"*, *"Both"*, *"a fixed half second"* (2026-10-08). BUILT (D531), UNPLAYED,
+  on `slice/meal-shown`.** The card already said *stopping to eat*; the bowl above the dot is new. His eye: size, colour,
+  and whether marking meals eaten at home is noise.
 
 - ✅ **FIXED (D529), UNPLAYED — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
   is clean on his machine; 65–91 % of mid-walk meal stops share their tick, because D190's `Hunger = Rhythm` is ticks

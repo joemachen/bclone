@@ -375,6 +375,18 @@ public partial class VillageMap : Control
     /// </summary>
     private ulong _interpolatedThroughTick = ulong.MaxValue;
 
+    /// <summary>
+    /// ⭐ When each villager's meal mark stops showing, on <see cref="_mealClock"/> (gridless slice 7c, D531) — written
+    /// once a tick for whoever ate (<see cref="MarkTheMeals"/>), read by the draw, pruned with the dead.
+    /// </summary>
+    private readonly Dictionary<int, double> _mealShownUntil = new();
+
+    /// <summary>The map's own clock for the meal mark: real seconds, summed from frame deltas. View only.</summary>
+    private double _mealClock;
+
+    /// <summary>How long a meal mark shows — <b>real time</b>, so it reads at every speed (Joe: "a fixed half second").</summary>
+    internal const double MealMarkSeconds = 0.5;
+
     private SimWorld? _world;
     private double _alpha;
     private int _selectedVillagerId;
@@ -528,6 +540,9 @@ public partial class VillageMap : Control
         {
             return;
         }
+
+        // The meal mark's clock (D531): real seconds, so half a second is half a second at any speed.
+        _mealClock += delta;
 
         // Polled rather than event-driven: held keys have to pan smoothly, and key
         // events only fire on press and repeat.
@@ -2268,6 +2283,41 @@ public partial class VillageMap : Control
         return faults.Count == 0
             ? "[widths] crowd: ✅ a walker crossing a crowded tile keeps their line and moves nobody standing there; a re-rank glides"
             : $"[widths] crowd: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ A meal on the road is seen (D531) — <b>a probe line</b>: a posed meal is marked and a posed non-meal is not,
+    /// a quarter second on the mark is half faded, at the half second it is gone, and the dead lose theirs.
+    /// </summary>
+    public static string AMealIsSeen()
+    {
+        var faults = new List<string>();
+        var shownUntil = new Dictionary<int, double>();
+        const double Now = 100d;
+
+        MarkTheMeals(shownUntil, new[] { 1, 3 }, Now);
+        if (!shownUntil.ContainsKey(1) || !shownUntil.ContainsKey(3) || shownUntil.ContainsKey(2))
+        {
+            faults.Add($"marked {string.Join(", ", shownUntil.Keys)} for meals by 1 and 3");
+        }
+
+        float atOnce = MealMarkLeft(shownUntil[1], Now);
+        float quarter = MealMarkLeft(shownUntil[1], Now + (MealMarkSeconds / 2d));
+        float done = MealMarkLeft(shownUntil[1], Now + MealMarkSeconds);
+        if (atOnce < 0.999f || Mathf.Abs(quarter - 0.5f) > 0.001f || done > 0f)
+        {
+            faults.Add($"the mark reads {atOnce:F2} at once, {quarter:F2} half way, {done:F2} at {MealMarkSeconds} s (want 1, 0.5, 0)");
+        }
+
+        ForgetTheMealsOfTheGone(shownUntil, new HashSet<int> { 1 });
+        if (shownUntil.ContainsKey(3) || !shownUntil.ContainsKey(1))
+        {
+            faults.Add("a dead villager kept their meal mark, or a living one lost theirs");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] meal: ✅ who ate is marked and nobody else, the mark fades over {MealMarkSeconds} s of real time, the dead lose theirs"
+            : $"[widths] meal: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -6661,10 +6711,41 @@ public partial class VillageMap : Control
             {
                 DrawArc(centre, radius + 4f, 0f, Mathf.Tau, 24, SelectedRing, 2f);
             }
+
+            if (_mealShownUntil.TryGetValue(villager.Id, out double until))
+            {
+                float left = MealMarkLeft(until, _mealClock);
+                if (left > 0f)
+                {
+                    DrawTheMealMark(centre, radius, left);
+                }
+                else
+                {
+                    _mealShownUntil.Remove(villager.Id);
+                }
+            }
         }
 
         PruneTheDead(stillAlive);
     }
+
+    /// <summary>
+    /// ⭐ A small bowl just above a villager who is eating (gridless slice 7c, D531) — the dot's pause has a reason on
+    /// screen. Fades as <paramref name="left"/> runs from 1 to 0 over <see cref="MealMarkSeconds"/>.
+    /// </summary>
+    private void DrawTheMealMark(Vector2 centre, float radius, float left)
+    {
+        float size = Mathf.Max(3f, radius * 0.9f);
+        Vector2 at = centre + new Vector2(0f, -(radius + size + 2f));
+        var bowl = new Color(MealMark, MealMark.A * left);
+
+        // The bowl: the lower half of a circle (screen y runs down, so 0 → π sweeps below the rim), and its rim.
+        DrawArc(at, size, 0f, Mathf.Pi, 10, bowl, 2f);
+        DrawLine(at - new Vector2(size + 1f, 0f), at + new Vector2(size + 1f, 0f), bowl, 2f);
+    }
+
+    /// <summary>The meal mark's colour: a warm bread-crust, apart from the life-stage colours of the dots.</summary>
+    private static readonly Color MealMark = new(0.96f, 0.78f, 0.42f, 0.95f);
 
     /// <summary>
     /// Roll each villager's glide forward when — and only when — the sim has actually
@@ -6733,6 +6814,18 @@ public partial class VillageMap : Control
         {
             return;
         }
+
+        // ⭐ AND WHOEVER ATE THIS TICK IS MARKED (D531) — once a tick, where the sim's fact changes.
+        var ate = new List<int>();
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].Alive && world.Villagers[i].JustAte)
+            {
+                ate.Add(world.Villagers[i].Id);
+            }
+        }
+
+        MarkTheMeals(_mealShownUntil, ate, _mealClock);
 
         // ⭐ THE CROWD FAN, ONCE A TICK, AMONG THE STANDING (D525). A villager who moved this tick is on their
         // way somewhere and keeps to their line; the people standing on a tile share its ring, ranked by id.
@@ -6803,6 +6896,45 @@ public partial class VillageMap : Control
 
     /// <summary>The fan drawn this frame: from last tick's place on the ring to this tick's, as alpha runs.</summary>
     internal static Vector2 FanDrawn(Vector2 previous, Vector2 current, float alpha) => previous.Lerp(current, alpha);
+
+    /// <summary>
+    /// Mark everybody in <paramref name="ate"/> as eating until <see cref="MealMarkSeconds"/> past <paramref name="now"/>
+    /// (gridless slice 7c, D531) — pure, so the probe can pose it.
+    /// </summary>
+    internal static void MarkTheMeals(Dictionary<int, double> shownUntil, IReadOnlyList<int> ate, double now)
+    {
+        for (int i = 0; i < ate.Count; i++)
+        {
+            shownUntil[ate[i]] = now + MealMarkSeconds;
+        }
+    }
+
+    /// <summary>A meal mark on somebody who died the tick they ate is dropped with them (D531). Pure, for the probe.</summary>
+    internal static void ForgetTheMealsOfTheGone(Dictionary<int, double> shownUntil, ISet<int> stillAlive)
+    {
+        if (shownUntil.Count == 0)
+        {
+            return;
+        }
+
+        var gone = new List<int>();
+        foreach (int id in shownUntil.Keys)
+        {
+            if (!stillAlive.Contains(id))
+            {
+                gone.Add(id);
+            }
+        }
+
+        foreach (int id in gone)
+        {
+            shownUntil.Remove(id);
+        }
+    }
+
+    /// <summary>How much of a meal mark is left at <paramref name="now"/>: 1 as it appears, 0 when it is gone.</summary>
+    internal static float MealMarkLeft(double shownUntil, double now) =>
+        (float)Math.Clamp((shownUntil - now) / MealMarkSeconds, 0d, 1d);
 
     /// <summary>How big a person is drawn, in pixels. Never smaller than a clickable dot.</summary>
     private float VillagerRadius => Mathf.Max(3f, _pixelsPerTile * 0.2f);
@@ -6924,6 +7056,8 @@ public partial class VillageMap : Control
     /// and the dictionary does not grow for the whole run.</summary>
     private void PruneTheDead(HashSet<int> stillAlive)
     {
+        ForgetTheMealsOfTheGone(_mealShownUntil, stillAlive);
+
         if (_tiles.Count <= stillAlive.Count)
         {
             return;
