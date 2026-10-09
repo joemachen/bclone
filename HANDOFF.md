@@ -5785,11 +5785,11 @@ Read `git status` after staging, every time.
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- ✅ **SHOWING A MEAL ON THE ROAD — JOE: *"yes"*, *"Both"*, *"a fixed half second"* (2026-10-08). BUILT (D531), PLAYED AND MERGED (D532),
-  on `slice/meal-shown`.** The card already said *stopping to eat*; the bowl above the dot is new. His eye: size, colour,
-  and whether marking meals eaten at home is noise.
+- ✅ **SHOWING A MEAL ON THE ROAD — JOE: *"yes"*, *"Both"*, *"a fixed half second"* (2026-10-08). BUILT (D531), PLAYED
+  (*"ah, i do see it. cool!"*) AND MERGED (D532).** The card already said *stopping to eat*; the bowl above the dot is
+  new. He raised nothing on its size, its colour or meals at home being marked.
 
-- ✅ **FIXED (D529), UNPLAYED — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
+- ✅ **FIXED (D529), PLAYED (*"looks good"*) AND MERGED (D530) — Joe: *"stop and go - they were eating"* / *"Yes"*.** ~~THE SKIP: THE FOUNDERS EAT ON THE SAME TICK — FIX THE STAGGER? (D528, asked 2026-10-07).~~ Measured: the frame
   is clean on his machine; 65–91 % of mid-walk meal stops share their tick, because D190's `Hunger = Rhythm` is ticks
   written as hunger points (`SimWorld.cs` founding, `HouseholdSystem.cs` births). Options: **(a) recommended —
   spread each villager's starting hunger over the meal cycle** (a seeded value in `[0, eat_threshold)`, at founding
