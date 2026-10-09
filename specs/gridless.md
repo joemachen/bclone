@@ -362,7 +362,7 @@ provably deterministic the whole direction is wrong and it is worth learning in 
 
 ## 9. Definition of Done
 
-### Slice 7c — 🔨 BUILT (2026-10-08, D531), view only, unplayed: a meal on the road is seen
+### Slice 7c — ✅ BUILT (D531), PLAYED (*"ah, i do see it. cool!"*), MERGED AND PUSHED (D532, 2026-10-08): a meal on the road is seen
 
 Joe, asked whether a meal on the road should be shown: *"yes"*; of the two forms offered, **both**; and the mark
 **a fixed half second**. D529 left every villager still stopping a tick to eat (a meal costs its tick, D10) — one at a

@@ -1,4 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5 — D531: A MEAL ON THE ROAD IS SEEN (A BOWL ABOVE THE DOT) — BUILT ON `slice/meal-shown`, UNPLAYED. NEXT: JOE PLAYS IT, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D532: THE SKIP AND THE MEAL MARK ARE DONE, MERGED AND PUSHED. NOTHING IS OPEN ON A BRANCH — ASK JOE WHAT'S NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE MEAL MARK MERGED) — D532, ON WINDOWS.**
+>
+> **`main` = D532, pushed; the only branch is `main`.** Since D526: the food chain merged (D527); the skip measured
+> (D528 — the frame clean, the founders eating on one tick), fixed (D529 — their first meals spread, all four never stop
+> together) and merged (D530); a meal on the road shown as a bowl above the dot (D531), played — *"ah, i do see it.
+> cool!"* — and merged (D532). Each merged tree is byte-identical to the branch tip that passed all four checks.
+>
+> **▶️ NEXT: ask Joe.** Phase 5's queue holds only his ⏸️ items: stable slots for the crowd fan if the glide reads busy
+> (D525); a full settings screen (D508); ironman mode's name (D507); the market's *Keeps up to* row and the pin exception
+> without a guard (D502). Or something new of his. Debt on file: the "ate from their own arms" log line prints hunger
+> after the meal (D529's traps).
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE MEAL MARK BUILT) — D531, ON WINDOWS.**
 >
@@ -15,6 +27,8 @@
 >
 > ⏸️ **Still his, unscheduled:** stable slots for the crowd fan (D525); full settings (D508); ironman's name (D507); the
 > market's *Keeps up to* row and pin exception guards (D502).
+>
+> **(superseded by the banner above)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (THE SKIP MERGED) — D530, ON WINDOWS.**
 >
@@ -5771,7 +5785,7 @@ Read `git status` after staging, every time.
 
 - ✅ **THE MILL'S UNLOCK — 5,000 WHEAT REAPED (Joe, D524).**
 
-- 🔨 **SHOWING A MEAL ON THE ROAD — JOE: *"yes"*, *"Both"*, *"a fixed half second"* (2026-10-08). BUILT (D531), UNPLAYED,
+- ✅ **SHOWING A MEAL ON THE ROAD — JOE: *"yes"*, *"Both"*, *"a fixed half second"* (2026-10-08). BUILT (D531), PLAYED AND MERGED (D532),
   on `slice/meal-shown`.** The card already said *stopping to eat*; the bowl above the dot is new. His eye: size, colour,
   and whether marking meals eaten at home is noise.
 
