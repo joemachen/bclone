@@ -7,10 +7,12 @@ How a number in `data/sim.config.json` or a new-game row's end gets **measured b
   `ColdStartTests` does, marks a granary and a warehouse at year 3, runs fifty years unattended and
   prints one `ZZB …` line (alive, peak, starved, froze, final hash). Arms are environment variables:
   `ZZ_ROW=id=value` (a new-game row), `ZZ_WIDE=1|2` (seeds 200–299 / 300–399), `ZZ_FIX=1` (50 fixture
-  valleys), and the older `ZZ_SPEED`, `ZZ_YIELD`, `ZZ_USES`, `ZZ_CART`, `ZZ_STONEX`, `ZZ_PAINT`,
+  valleys), `ZZ_CARRY` / `ZZ_HUNGER` / `ZZ_MEAL` (`carry_capacity`, `hunger_per_tick`, `food_per_meal`; D535's armful
+  and meal arms), and the older `ZZ_SPEED`, `ZZ_YIELD`, `ZZ_USES`, `ZZ_CART`, `ZZ_STONEX`, `ZZ_PAINT`,
   `ZZ_SMITHY`, `ZZ_IRON`, and `ZZ_QUARRY` (`quarry_unlock_stone`, B6). The `ZZB` line ends with
-  `dug N learned T at100 T at200 T tpy N` — the stone dug by hand, and the first ticks the quarry was
-  learned and 100 / 200 stone had been dug (−1 never).
+  `dug N learned T at100 T at200 T tpy N fetches N meals N hhyears N` — the stone dug by hand, and the first ticks the quarry was
+  learned and 100 / 200 stone had been dug (−1 never); then household food fetches begun, meals eaten and
+  household-years (D535: fetches ÷ hhyears is a household's food trips a year).
 - `quarry.py` — per arm: how many valleys learned to quarry and when (p10 / median / p90 years), and
   when 100 and 200 stone had been dug. The harness never marks a quarry, so the crossings are the same
   whatever `ZZ_QUARRY` says; only `learned` follows it (D500).

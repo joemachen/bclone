@@ -1,4 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5 — D534: CLOTHING MEASURED AND PARKED (JOE: "c"). NEXT: THE ARMFUL 40 → 80 (D474), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D535: THE ARMFUL AND THE MEAL SPECCED AND MEASURED ON `slice/armful`. THREE CALLS FOR JOE (`armful-and-meals.md §7`), THEN BUILD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL SPECCED) — D535, ON WINDOWS.**
+>
+> **`main` = D534, pushed. `slice/armful`** (off `main`) = D535: `specs/armful-and-meals.md` and the harness knobs
+> (`ZzBase.cs`: `ZZ_CARRY`, `ZZ_HUNGER`, `ZZ_MEAL`, a fetch / meal counter). **No sim or view code yet.**
+> Measured over 100 valleys: armful 80 cuts food fetches 41% at no cost; every 4 days at 6 a meal plus the armful is
+> today's village with 29% fewer meal stops; at 5 a meal the village grows 42%. Found: a founding race where the
+> woodcutter splits the houses' logs (spec §5.1).
+>
+> **▶️ NEXT: Joe's three calls (OPEN, top entry), then build it TDD per spec §6.** Goldens will move.
+>
+> **(the banner below is the state before D535)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (CLOTHING MEASURED) — D533, ON WINDOWS.**
 >
@@ -5794,6 +5806,16 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAP D535 PAID FOR — A FLIPPED VALLEY'S CAUSE IS NOT THE FIRST PLAUSIBLE ONE
+
+- **Three valleys froze with the armful, and the first story was wrong.** *"One household fetches 80 firewood and
+  leaves the others short"* fitted the numbers and was false: the trace showed more firewood at 80, and **no house
+  ever built.** The woodcutter had split the houses' logs. Trace a flipped valley's year before naming its cause;
+  print sites (`Workplace.Construction`: logs and stone delivered against the recipe) and everyone's state every
+  ten days. That table found it in one run.
+- **A population that moves with a meal-clock change is the food, not the clock.** 5 a meal every 4 days read +42%;
+  6 a meal read −6%. Hold the year's food when you mean to measure the pacing.
+
 ## ⛔ THE TRAPS D533 PAID FOR — A BLOCKER THAT LEFT QUIETLY, AND "CLOTHED" THAT TURNED OFF THE ROOF TOO
 
 - **A spec's blocker can disappear with nobody writing it down.** `clothing.md` said *"blocked twice over"* and
@@ -5809,6 +5831,12 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **THE ARMFUL AND THE MEAL — THREE CALLS (D535, asked 2026-10-09, `armful-and-meals.md §7`).** **Q1:** every 4
+  days, a meal of **6** (recommended; +5% a year, the village level with today) or **5** (−13%, the harness village +42%,
+  an easing on top of D363's scarcity)? **Q2:** one armful of 80 for **everybody** (recommended) or for a household's
+  food fetch only? **Q3:** the founding race (the woodcutter splits the logs two marked houses wait on; lost foundings
+  15 → 18 of 100 with the armful, present at 40 too): **leave it** for this slice (recommended) or fix it as its own?
 
 - ✅ **DECIDED (D534) — Joe: *"c"*. Clothing parked; the armful is next.** ~~CLOTHING — BUILD IT NOW, GIVE WINTER WORK FIRST, OR PARK IT? (D533, asked 2026-10-08).~~ Measured
   (`clothing.md §5.2`): at the shipped limits winter is ~71% at a fire and ~1% outdoor work whether villagers are

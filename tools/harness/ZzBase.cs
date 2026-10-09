@@ -33,6 +33,10 @@ public sealed class ZzBase
         if (Environment.GetEnvironmentVariable("ZZ_USES") is string us) { config = config with { ToolUses = int.Parse(us) }; }
         if (Environment.GetEnvironmentVariable("ZZ_CART") is string ca) { config = config with { CartTools = int.Parse(ca) }; }
         if (Environment.GetEnvironmentVariable("ZZ_QUARRY") is string qu) { config = config with { QuarryUnlockStone = int.Parse(qu) }; }
+        // D535 (the armful): ZZ_CARRY = carry_capacity, ZZ_HUNGER = hunger_per_tick, ZZ_MEAL = food_per_meal.
+        if (Environment.GetEnvironmentVariable("ZZ_CARRY") is string cc) { config = config with { CarryCapacity = int.Parse(cc) }; }
+        if (Environment.GetEnvironmentVariable("ZZ_HUNGER") is string hu) { config = config with { HungerPerTick = int.Parse(hu) }; }
+        if (Environment.GetEnvironmentVariable("ZZ_MEAL") is string me) { config = config with { FoodPerMeal = int.Parse(me) }; }
         if (Environment.GetEnvironmentVariable("ZZ_STONEX") is string sx)
         {
             int k = int.Parse(sx);
@@ -80,6 +84,9 @@ public sealed class ZzBase
         // hand. The harness never marks a quarry, so the crossings do not depend on the unlock's number.
         int peak = 0;
         int learned = -1, at100 = -1, at200 = -1;
+        // D535: household food fetches begun (entering FetchingFromStore), meals eaten, and household-years.
+        long fetches = 0, meals = 0, householdTicks = 0;
+        var fetching = new HashSet<int>();
         for (int t = 0; t < config.TicksPerYear * 50; t++)
         {
             if (t == config.TicksPerYear * 3)
@@ -100,6 +107,15 @@ public sealed class ZzBase
 
             loop.StepOnce();
             peak = Math.Max(peak, world.Population);
+            householdTicks += world.OccupiedHouseholds();
+            foreach (Villager v in world.Villagers)
+            {
+                if (!v.Alive) { continue; }
+                if (v.JustAte) { meals++; }
+                bool now = v.State == VillagerState.FetchingFromStore;
+                if (now && fetching.Add(v.Id)) { fetches++; }
+                else if (!now) { fetching.Remove(v.Id); }
+            }
             if (learned < 0 && world.IsUnlocked(BuildingKind.Quarry)) { learned = t; }
             if (at100 < 0 && world.StoneEverDug >= 100) { at100 = t; }
             if (at200 < 0 && world.StoneEverDug >= 200) { at200 = t; }
@@ -110,7 +126,7 @@ public sealed class ZzBase
         int sites = world.Workplaces.Count(w => w.Construction is { IsFinished: false });
         int iron = world.Villagers.Count(v => v.Alive && v.ToolUses > 0 && v.ToolGood == Goods.IronTools);
         int stone = world.Villagers.Count(v => v.Alive && v.ToolUses > 0 && v.ToolGood == Goods.Tools);
-        _o.WriteLine($"ZZB {arm} {seed} sites {sites} alive {world.Population} peak {peak} starved {starved} cold {cold} hash {StateHash.Compute(world)} forged {world.ToolsEverForged} hands-iron {iron} hands-stone {stone} taken {world.ToolsEverTaken} dug {world.StoneEverDug} learned {learned} at100 {at100} at200 {at200} tpy {config.TicksPerYear}");
+        _o.WriteLine($"ZZB {arm} {seed} sites {sites} alive {world.Population} peak {peak} starved {starved} cold {cold} hash {StateHash.Compute(world)} forged {world.ToolsEverForged} hands-iron {iron} hands-stone {stone} taken {world.ToolsEverTaken} dug {world.StoneEverDug} learned {learned} at100 {at100} at200 {at200} tpy {config.TicksPerYear} fetches {fetches} meals {meals} hhyears {householdTicks / config.TicksPerYear}");
     }
 
     public static IEnumerable<object[]> Runs()
