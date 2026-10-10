@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — D537: THE ARMFUL (80) AND THE MEAL (6 EVERY 4¼ DAYS) BUILT ON `slice/armful`, UNPLAYED. JOE'S CALL ON THE FOUNDING RACE (15 → 22 LOST OF 100), THEN HE PLAYS IT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D538: THE ARMFUL, THE 4¼-DAY MEAL AND THE WOODCUTTER FIX MERGED TO `main`, UNPLAYED. NEXT: QUARRIES AND MINES PLACED NEAR THEIR SEAMS (JOE, NEW), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL MERGED) — D538, ON WINDOWS.**
+>
+> **`main` = D538, pushed; `slice/armful` merged `--no-ff` at Joe's *"merge"*, UNPLAYED.** In it: an armful of 80 for
+> everyone, a meal of 6 every 4¼ days (D537), and the woodcutter leaving the logs a building waits on once the winter's
+> firewood is in (D538: lost foundings 22 → 13 of 100). Verified: 1553 / 0 / 5 of 1558; view 0 warnings; probe 42 ✅,
+> bar height 151; six goldens moved with D537, none with D538.
+>
+> **▶️ NEXT: quarries and mines must be placed within reach of a stone or iron seam, as the fishing hut is of water
+> (Joe, 2026-10-09).** Spec first. ⏸️ Joe still owes the armful a play (`.\run.bat`): household trips at 2–4×, the
+> founders eating about every four days.
+>
+> **(the banner below is the state before D538)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL BUILT) — D537, ON WINDOWS.**
 >
@@ -8,7 +21,8 @@
 > 15 → 22**: the race where the woodcutter splits the logs two houses wait on (spec §5.1/§5.3).
 >
 > **▶️ NEXT: Joe's call on the founding race (OPEN, top entry); then he plays `slice/armful`** (`git checkout
-> slice/armful`, `.un.bat`): household trips to the market at 2–4×, the founders stopping to eat about every four
+> slice/armful`, `.
+un.bat`): household trips to the market at 2–4×, the founders stopping to eat about every four
 > days. Merge `--no-ff` at his word.
 >
 > **(the banner below is the state before D537)**
@@ -5819,6 +5833,18 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAPS D538 PAID FOR — A GUARD THAT ASKED FOR NOTHING, AND A BACKSLASH THE HEREDOC ATE (AGAIN)
+
+- **"Splits none" was the wrong claim, and the rule failed it honestly.** The fixture's other stores held logs beyond
+  the site's need; the woodcutter split exactly those and left 43 of 40. Ask what must be **left**, not what must not
+  be **done**, when the rule permits some of the doing.
+- **D527's trap paid twice more in one session:** Python written through a Bash heredoc turned a backslash escape into a
+  real line break (and once a quote broke the heredoc itself), so the script would not parse. **Write scripts with the
+  Write tool** whenever they hold a backslash or a triple quote.
+- **The suite's clock moved +30 % with no golden and no hot path touched.** Timed back to back the change cost nothing
+  (137 s / 138 s), and the probe's preview bake had slowed as much with no view code changed. Time back to back before
+  blaming the code, and before clearing it.
+
 ## ⛔ THE TRAPS D537 PAID FOR — A GOLDEN BEHIND A GOLDEN, A MUTANT THAT CANNOT BUILD, AND A CALL MADE BEFORE ITS NUMBER
 
 - **Two goldens in one test redden one at a time.** `FarmGoldenTests` asserts `SeamGoldenHash` and then
@@ -5857,7 +5883,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).** With the armful built, seven more
+- ✅ **FIXED (D538) — Joe: *"fix it"*. Lost foundings 22 → 13 of 100.** ~~THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).~~ With the armful built, seven more
   valleys of 100 lose all four founders in Year 1 (15 → 22): the woodcutter splits every stored log while firewood is
   under its 400 limit, so marked houses wait at a few logs into winter (`armful-and-meals.md §5.1`, traced on seed 2).
   Joe said *"keep"* before the number existed. **(a)** keep it and play; **(b)** fix it first, as its own small slice on

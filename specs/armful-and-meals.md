@@ -2,9 +2,9 @@
 
 **Decisions:** D395 (Joe's call), D474 (confirmed), D534 (taken next), D535 (this spec), D536 (Joe's three
 calls), D537 (the quarter day, and built).
-**Status:** 🔨 **built 2026-10-09 on `slice/armful` (D537), sim only; NOT played, NOT merged.** The guards in
-§6 are green and red-checked (§6a); six goldens moved (§6b). ⚠️ **Lost foundings rose 15 → 22 of 100 (§5.3):
-the race §5.1 named, which Joe chose to keep before that number existed.**
+**Status:** ✅ **built 2026-10-09 on `slice/armful` (D537, D538), sim only, merged to `main` at Joe's word
+(*"merge"*) unplayed.** The guards in §6 and §7a are green and red-checked; six goldens moved with D537 (§6b),
+none with D538. **The founding race is fixed (§7a): lost foundings 22 → 13 of 100, under the 15 before.**
 
 ---
 
@@ -241,6 +241,52 @@ Joe chose Q3 *"keep"* before this number existed, so it goes back to him.
   while firewood is above the winter's need"*: its own slice, measured on its own.
 
 ---
+
+## 7a. The founding race — fixed (Joe, D538: *"fix it"*) ✅ built
+
+**The cause** (§5.1, traced on seed 2): `TheVillageWantsMoreFirewood()` reads the **player's** firewood limit
+when one is set, and the game starts with one (`starting_stock_limits.firewood` 400). So a woodcutter splits
+every log in the stores until 400, whatever the village needs to get through winter, and a founding's two
+marked houses wait at a few logs while the warehouse fills with firewood nobody can burn yet.
+
+**The rule:** *while a construction site still waits on logs, the woodcutter splits beyond the village's own
+winter need only from spare logs.*
+
+```
+MaySplitLogs = TheVillageWantsMoreFirewood()
+               && (FirewoodShortfall > 0                       // below the derived winter need: fuel first
+                   || LogsInWarehouses − LogsTheSitesStillNeed ≥ logs_per_split)   // above it: spare logs only
+```
+
+- **Below the derived need, fuel wins**, exactly as today. That is D515's ground (a first winter decided
+  by firewood) and D17's (cold is a live death axis), so the fix cannot freeze anybody who is not frozen now.
+- **Above it, the player's limit still holds**, just not over logs a house is waiting on. *Derived floor,
+  player ceiling* (D62) — and the ceiling yields to building only between the two.
+- `LogsTheSitesStillNeed` is every unfinished, non-demolishing site's `StillNeeded(Logs)`, summed when a
+  woodcutter asks (per decision, never per tick for the village; a few dozen sites at most).
+- **Said on the card**: a woodcutter held back by it reads *"Nothing to split — the N logs in store are
+  wanted for building (M still to deliver), and the homes have the firewood they need."*
+- Read at both places a woodcutter commits to a split: choosing to go (`Decide`) and carrying on a stint.
+
+**Guards** (`LogsForBuildingTests`): the predicate in its three states (held back / spare logs / fuel
+first); and a posed village with the winter's firewood in and a site waiting on logs, where the stores never
+fall below what the site waits on, against the same village with no site, where the woodcutter splits the
+stores bare. ⚠️ The first draft asked *"splits none"* and the rule failed it honestly: the fixture's other
+stores held logs beyond the site's need and the woodcutter split exactly those. **Red-checked: 5 mutants,
+7 reds, no zeros**: the rule removed (2), no fuel first (1), sites need nothing (2), only `Decide` asks (1),
+only the stint asks (1).
+
+**Measured** on §5.3's 100 valleys (seeds 200–299), against the same valleys:
+
+| | Alive at 50 | Valleys dead | Lost in the founding | Froze | Starved |
+|---|---|---|---|---|---|
+| Before the slice | 546 | 24 | 15 | 56 | 358 |
+| Armful and meal, no fix (D537) | 560 | 29 | 22 | 88 | 289 |
+| **With the fix (D538)** | **620** | **19** | **13** | **52** | 354 |
+
+The race was costing villages before the armful too. On 100 fresh valleys (seeds 300–399) with the fix:
+12 lost foundings, 25 dead. **No golden moved**: the rule differs from before only while a firewood limit
+is set, and no golden village sets one.
 
 ## 8. Definition of Done
 
