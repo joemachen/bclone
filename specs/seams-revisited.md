@@ -147,8 +147,9 @@ arms (2); iron ring back to 26 (1); iron as near as stone (2); and the two house
   stats' counts.
 - **Seed 7's fixture valley now freezes its founders in Year 1**: the warm start's forester was given 72 wooded tiles all
   across the river (`SimWorld.GiveItTheWoodAroundIt` never asks whether the wood is reachable — D110's mistake, latent,
-  fixture-only: a real game starts cold). `ALogLimitAbove…` and `NoStepEverCrossesAWall` moved to seed 11; **the bug is on
-  file, not fixed here.**
+  fixture-only: a real game starts cold). `ALogLimitAbove…` and `NoStepEverCrossesAWall` moved to seed 11 for one commit;
+  **fixed next, in D544** (a warm-start hut is ranked and given only wood the village can walk to), and both are back on
+  seed 7.
 - **Two house-facing guards** (`HousesFaceThePathInFrontOfThem`, `AHouseWithNoPathNearFacesTheVillage`) had passed with the
   bare square lying about due west of the village; reshuffled, it lay south-east, the nearest house stood on the paint's
   corner, and a diagonal facing swings a house's second tile off the paint (`TilesClippedOff`). They now **state** the

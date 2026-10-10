@@ -10249,7 +10249,7 @@ public sealed class SimWorld : IObstacles
                     continue;
                 }
 
-                int trees = WoodedTilesWithin(at, ring);
+                int trees = WoodedTilesWithin(at, ring, origin);
                 if (trees < bestTrees || (trees == bestTrees && distance >= bestDistance))
                 {
                     continue;
@@ -10317,7 +10317,7 @@ public sealed class SimWorld : IObstacles
         return false;
     }
 
-    private void GiveItTheWoodAroundIt(Workplace hut, SimConfig config)
+    private void GiveItTheWoodAroundIt(Workplace hut, SimConfig config, GridPos origin)
     {
         // ⚠️ AGAINST THE SEATS, NOT AGAINST THE WORKERS. `WorkGroundAllowanceFor` prices
         // ground by the hands **actually assigned** (D86), and at the founding a hut has
@@ -10345,9 +10345,13 @@ public sealed class SimWorld : IObstacles
                         continue;
                     }
 
+                    // ⛔ AND ONLY WOOD THE VILLAGE CAN WALK TO (D544) — D110's mistake, latent until D543's seams
+                    // reshuffled the fixture's seed 7: every one of the 72 tiles it was given lay across the river, no
+                    // log was ever felled, and the four founders froze in Year 1. Seven valleys in 64 were given some.
                     var tile = new GridPos(hut.Tile.X + dx, hut.Tile.Y + dy);
                     if (Map.TerrainAt(tile) != Terrain.Forest
-                        || Zones.WorkGroundOwner(tile) != 0)
+                        || Zones.WorkGroundOwner(tile) != 0
+                        || !TravelCost.CanReach(tile, origin))
                     {
                         continue;
                     }
@@ -10359,8 +10363,16 @@ public sealed class SimWorld : IObstacles
         }
     }
 
-    /// <summary>Wooded tiles inside a radius of a point. Counts the ground, not a cache.</summary>
-    private int WoodedTilesWithin(GridPos centre, int radius)
+    /// <summary>
+    /// Wooded tiles inside a radius of a point <b>that the village at <paramref name="origin"/> can walk to</b>. Counts
+    /// the ground, not a cache.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>REACHABLE, SINCE D544 — D110's MISTAKE, FOUND IN THE WARM START.</b> It counted every tree inside the ring,
+    /// so a warm-start hut ranked a spot by wood across the river as gladly as by wood beside it. Asked the cheap way
+    /// round (<c>CanReach(tile, origin)</c>: one flow field, to the founding, answers every tile).
+    /// </remarks>
+    private int WoodedTilesWithin(GridPos centre, int radius, GridPos origin)
     {
         int count = 0;
         for (int dy = -radius; dy <= radius; dy++)
@@ -10373,7 +10385,7 @@ public sealed class SimWorld : IObstacles
                 }
 
                 var tile = new GridPos(centre.X + dx, centre.Y + dy);
-                if (Map.Contains(tile) && Map.TerrainAt(tile) == Terrain.Forest)
+                if (Map.Contains(tile) && Map.TerrainAt(tile) == Terrain.Forest && TravelCost.CanReach(tile, origin))
                 {
                     count++;
                 }
@@ -11087,7 +11099,7 @@ public sealed class SimWorld : IObstacles
 
         StandingChanged();
         Workplaces.Add(forester);
-        GiveItTheWoodAroundIt(forester, config);
+        GiveItTheWoodAroundIt(forester, config, origin);
 
         // The first workplace that consumes an input rather than only producing one
         // (D29). Logs in, firewood out - and it can stand idle for want of logs,

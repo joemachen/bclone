@@ -987,9 +987,9 @@ public sealed class StockLimitTests
         // these six at 40 / 99 / 100 / 101 the ambitious arm ran +2 / 0 / −4 / +2 against the content
         // one: a couple either way, whichever seeds it lands on. The failure this guards was a village
         // halved (ten alive down to four), which four of sixty still catches with room to spare.
-        // ⚠️ SEED 11, NOT 7, SINCE D543. The seam draws reshuffled the fixture's seed-7 valley, and its warm-start forester was given 72 wooded tiles all across the river — `GiveItTheWoodAroundIt` never asks whether the village can walk to the wood (D110's mistake, latent until a valley put it there) — so no log is ever felled and the four founders freeze in Year 1. A fixture's fixed pose on a reshuffled valley is a coin (D475); the latent bug is on file, not fixed here, so these goldens move for the seams alone.
+        // SEED 7 AGAIN SINCE D544. D543's seams reshuffled the fixture's seed-7 valley and its warm-start forester was given 72 wooded tiles all across the river, so the founders froze in Year 1 and this moved to seed 11 for one commit. D544 gives a warm-start forester only wood the village can walk to (`WarmStartWoodTests`), and seed 7 lives again.
         int heldWith = 0, heldWithout = 0, aliveWith = 0, aliveWithout = 0;
-        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 11UL, 1UL, 3UL, 5UL })
+        foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 5UL })
         {
             SimConfig config = VillageFixtures.Village with { Seed = seed };
             int years = config.TicksPerYear * 12;

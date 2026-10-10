@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — D543: STONE AND IRON ACROSS THE WHOLE VALLEY, BUILT ON `slice/seams-revisited`, UNPLAYED; `slice/seam-reach` (D540–D541) ALSO UNPLAYED. JOE PLAYS BOTH, THEN MERGE (SEAM-REACH FIRST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D544: THREE BRANCHES WAIT FOR JOE — `slice/seam-reach` (D539–D541), `slice/seams-revisited` (D542–D543) AND `slice/warm-start-wood` (D544, ON TOP OF IT). PLAY, THEN MERGE IN THAT ORDER. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (WARM-START WOOD) — D544, ON WINDOWS.**
+>
+> **`main` = D538.** Three branches, none merged:
+> 1. **`slice/seam-reach`** (off `main`) — D539–D541: a quarry or a mine within 2 tiles of its seam. Unplayed.
+> 2. **`slice/seams-revisited`** (off `main`) — D542–D543: stone and iron across the whole valley. Unplayed.
+> 3. **`slice/warm-start-wood`** (off **2**) — D544: the warm start's forester is ranked and given only reachable wood
+>    (a fixture-only bug D543 exposed; no golden moved; seed 7 restored in two guards). Test-only in effect — nothing to play.
+>
+> **▶️ NEXT: Joe plays 1 and 2, then merge 1, then 3 (which carries 2), `--no-ff`, resolving `DESIGN.md`/`HANDOFF.md`
+> by keeping both sides (D527); run the suite after each merge before believing it.**
+>
+> **(the banner below is the state before D544)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (SEAMS REVISITED) — D543, ON WINDOWS.**
 >
@@ -5913,7 +5926,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **DEBT, FOUND D543 — THE WARM START'S FORESTER CAN BE GIVEN WOOD NOBODY CAN REACH.** `SimWorld.GiveItTheWoodAroundIt`
+- ✅ **FIXED (D544), on `slice/warm-start-wood`.** ~~DEBT, FOUND D543 — THE WARM START'S FORESTER CAN BE GIVEN WOOD NOBODY CAN REACH.~~ `SimWorld.GiveItTheWoodAroundIt`
   takes the nearest wooded tiles inside the gatherer ring and never asks `TravelCost.CanReach` — D110's mistake. On the
   fixture's reshuffled seed 7 all 72 tiles lay across the river, no log was ever felled, and the founders froze in Year 1.
   Fixture-only (a real game starts cold and the player paints the ground), so not fixed in D543 (it would move the
