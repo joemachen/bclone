@@ -756,6 +756,13 @@ public sealed record SimConfig
     [JsonPropertyName("hunting_radius")]
     public int HuntingRadius { get; init; } = 12;
 
+    /// <summary>
+    /// How near its seam a quarry or a mine must stand, and how far from it its faces may be painted, in tiles
+    /// (D540, `specs/seam-reach.md`; Joe: *"4 tiles"*). Zero switches the rule off.
+    /// </summary>
+    [JsonPropertyName("face_reach_tiles")]
+    public int FaceReachTiles { get; init; } = 4;
+
     /// <summary>Ticks one hunt takes — <b>the longest action in the game</b>.</summary>
     /// <remarks>
     /// <b>Joe:</b> *"it takes longer and isn't instantaneous."* A cast is ten (D282); a hunt is
@@ -3344,6 +3351,9 @@ public sealed record SimConfig
             Seats = QuarryCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
+
+            // Within reach of rock (D540) — the quarrier's `works_face`, which a guard holds them to.
+            MustBeNear = FaceReachTiles > 0 ? new NearRule { Terrain = Terrain.Rock, Tiles = FaceReachTiles } : null,
         },
 
         // ⭐ THE IRON MINE (D449, `specs/iron-mine.md`) — the quarry's twin beside its own painted
@@ -3361,6 +3371,9 @@ public sealed record SimConfig
             Seats = MineCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
+
+            // Within reach of an iron seam (D540).
+            MustBeNear = FaceReachTiles > 0 ? new NearRule { Terrain = Terrain.IronDeposit, Tiles = FaceReachTiles } : null,
         },
 
         // ⭐ THE MILL AND THE BAKERY (D522, `specs/food-chain.md`) — wheat to flour to bread. Each
@@ -4536,6 +4549,11 @@ public sealed record SimConfig
                 "iron_per_tool, forge_ticks, tools_per_forge and forges_per_stint must be greater "
                 + $"than zero and firewood_per_tool at least zero (got {IronPerTool}, {FirewoodPerTool}, "
                 + $"{ForgeTicks}, {ToolsPerForge}, {ForgesPerStint}).");
+        }
+
+        if (FaceReachTiles < 0)
+        {
+            throw new SimConfigException($"face_reach_tiles must be zero or more (got {FaceReachTiles}).");
         }
 
         if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0

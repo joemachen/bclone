@@ -1,4 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5 — D539: QUARRIES AND MINES NEAR THEIR SEAMS SPECCED ON `slice/seam-reach`. THREE CALLS FOR JOE (`seam-reach.md §6`), THEN BUILD. THE ARMFUL (D537–D538) IS MERGED AND STILL UNPLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D540: QUARRIES AND MINES WITHIN 4 TILES OF THEIR SEAMS, BUILT ON `slice/seam-reach`, UNPLAYED. THEN JOE'S NEXT: STONE AND IRON NODE VOLUME, POSITIONING, FREQUENCY, SIZE (HIS SENTENCE WAS CUT OFF — ASK). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (SEAM REACH BUILT) — D540, ON WINDOWS.**
+>
+> **`main` = D538, pushed (the armful — played since: *"looks great"*). `slice/seam-reach`** = D539 (spec) + D540 (built,
+> sim only): a quarry or a mine must stand within 4 tiles of rock / iron the village can walk to, and paints faces
+> only that near it. A placement rule (`must_be_near`, the fishery's family), not a third reach field. Verified:
+> 1559 / 0 / 5; view 0 warnings; probe 42 ✅, bar height 151; no golden moved.
+>
+> **▶️ NEXT: Joe plays `slice/seam-reach`** (`git checkout slice/seam-reach`, `.\run.bat`): a quarry and a mine near and
+> far from their seams (the ghost's sentence), and painting faces near and far. Merge `--no-ff` at his word. **Then his
+> next item: stone and iron node volume, positioning, frequency and size** — his sentence ended *"…size and"*; ask
+> what else before speccing.
+>
+> **(the banner below is the state before D540)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (SEAM REACH SPECCED) — D539, ON WINDOWS.**
 >
@@ -5844,6 +5858,18 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAPS D540 PAID FOR — A GUARD WITH A SILENT EXIT, A CALLBACK'S LAST WORD, AND A GODOT THAT WAS JOE'S
+
+- **A guard that `return`s when its valley lacks the case scores zero in that valley, silently.** The across-the-water
+  paint guard's first draft did exactly that. **Pose the case** (lay the rock with `SetTerrain`) rather than hope the
+  valley has one.
+- **A search callback that stores what it saw keeps the LAST candidate it was asked about, not the chosen one.**
+  `FindASite`'s predicate recorded the far bank for every cheaper candidate, including ones `CanBuildAt` then refused.
+  Recompute for the chosen site.
+- **A Godot still running after the probe's `done.` may be Joe's game.** PID 30384 had no `--headless` and started at
+  9:24 PM from `run.bat`. **Read the command line** (`Get-CimInstance Win32_Process -Filter "ProcessId = n"`) **before
+  `taskkill`.**
+
 ## ⛔ THE TRAPS D538 PAID FOR — A GUARD THAT ASKED FOR NOTHING, AND A BACKSLASH THE HEREDOC ATE (AGAIN)
 
 - **"Splits none" was the wrong claim, and the rule failed it honestly.** The fixture's other stores held logs beyond
@@ -5894,7 +5920,11 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **QUARRIES AND MINES NEAR THEIR SEAMS — THREE CALLS (D539, asked 2026-10-09, `seam-reach.md §6`).** **Q1:** how
+- ⏸️ **NEXT, JOE'S (2026-10-09): *"once this is done i want to revisit iron and stone node volume and positioning and
+  frequency and size and"*** — cut off mid-sentence. Ask for the rest, then spec it against `quarry.md §3.1`
+  (more stone and iron, placed by hash), `seeded-map-generation.md` (the seams found, not placed, D475) and D436.
+
+- ✅ **ANSWERED (D540) — Joe: *"1. yes, 4 tiles 2. yes 3. yes"*. Built on `slice/seam-reach`, unplayed.** ~~QUARRIES AND MINES NEAR THEIR SEAMS — THREE CALLS (D539, asked 2026-10-09, `seam-reach.md §6`).~~ **Q1:** how
   far may the building stand from its seam? **4 tiles** recommended (a quarry at the edge of its rock); 2 is nearly the
   fishery's touch, 8 lets it stand back in the meadow. No number strands a seam (measured). **Q2:** must the painted
   faces be within that reach too? **Yes** recommended, or the rule is a formality (stand by a stray rock, paint the big

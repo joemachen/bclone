@@ -1,6 +1,8 @@
 # Spec: A quarry or a mine stands near its seam
 
-**Decision:** D539 (Joe, 2026-10-09). **Status:** ✍️ **specced on `slice/seam-reach`, NOT built** — calls in §6.
+**Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built). **Status:** 🔨 **built 2026-10-09 on
+`slice/seam-reach` (D540), sim only; NOT played, NOT merged.** `SeamReachTests` (6) green and red-checked: 7 mutants,
+12 reds, no zeros. No golden moved.
 
 ---
 
@@ -33,6 +35,17 @@ seam is already named on the **job** row: `works_face` is `Rock` for the quarrie
 ---
 
 ## 3. The rule
+
+> ⭐ **As built (D540): not a third reach field but a placement rule in `MustTouch`'s family.** `Building.cs` warns
+> that two "how far this building reaches" fields already exist (`gathering_radius`, `hunting_radius`) and *"a third
+> would be a smell rather than a feature"*. So the row carries **`must_be_near: { terrain, tiles }`** (`NearRule`):
+> *"must stand within N tiles of terrain T the village can walk to"*, which any building may state. The quarry row
+> names rock and the mine an iron seam, both at **`face_reach_tiles` 4** (one config key); a guard holds each to its
+> trade's `works_face`. Everything below that says `face_reach` means that rule. The fishery's `MustTouch` and the
+> lodge's `HuntingRadius` are untouched; folding them into `must_be_near` is a possible later cleanup.
+> ⚠️ **One wording changed while building**: ground the village cannot walk to may be walled in by buildings or
+> fences as well as across the river, so the sentence is *"The rock there is cut off — across the water or walled
+> in — and the quarriers could not reach it."*
 
 - **A new building-row field, `face_reach`** (tiles; 0 = no rule). The quarry and the mine set it; nothing else.
   The ground it asks for is the face its trade works (`JobsCatalog.WorksFace` of the row's trade), so a modded face
@@ -83,7 +96,7 @@ can lose its sites, and the refusal then says so like any other.
 
 ---
 
-## 6. Joe's calls
+## 6. Joe's calls — answered (D540, 2026-10-09): *"1. yes, 4 tiles 2. yes 3. yes"*
 
 - **Q1 — How far?** Recommended **4 tiles** for both: a quarry at the edge of its rock, the face a few steps from
   the door. 2 is nearly the fishery's *touch*; 8 lets it stand back in the meadow.
@@ -96,9 +109,12 @@ can lose its sites, and the refusal then says so like any other.
 
 ## 7. Definition of Done
 
-- [ ] Joe's calls answered and written into §3.
-- [ ] §5 measured; the number typed into `data/sim.config.json` with the measurement in its comment.
-- [ ] Guards §4 written red first; red-checks counted, zeros written down.
-- [ ] The four checks; no golden moved.
+- [x] Joe's calls answered and written into §3.
+- [x] §5 measured; the number typed into `data/sim.config.json` with the measurement in its comment.
+- [x] Guards §4 written red first (`SeamReachTests`, 6: rows, quarry, mine, across the river, painting in reach,
+      painting across the water); 7 mutants, 12 reds, no zeros (rule removed 3; reach ignored 3; reachability 1;
+      paint distance 1; paint off by one 1; paint reachability 1; the mine's row naming rock 2).
+- [x] The four checks: suite 1559 / 0 / 5; view 0 warnings; probe 42 ✅ (`faces:` green), bar height 151; no golden
+      moved.
 - [ ] Played by Joe: placing a quarry and a mine near and far from their seams, reading the ghost's sentence.
 - [ ] `quarry.md`, `iron-mine.md`, `DESIGN.md` §6/§7 and `HANDOFF.md` in the same commit; this status line made true.
