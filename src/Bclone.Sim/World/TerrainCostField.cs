@@ -309,7 +309,7 @@ public sealed class TerrainCostField
         public byte[] Walls = System.Array.Empty<byte>();
 
         /// <summary>
-        /// Close every tile a building stands on (D383) and copy the walls (D404) — water and
+        /// Open every bridge deck (D546), close every tile a building stands on (D383) and copy the walls (D404) — water and
         /// buildings are one answer to the sweep, and a fence is the edge beside it. Called once
         /// per obstacle or wall generation; a field opens its own destination's footprint around
         /// its refill.
@@ -324,7 +324,10 @@ public sealed class TerrainCostField
             for (int i = 0; i < Passable.Length; i++)
             {
                 var at = new GridPos((i % map.Width) + map.MinX, (i / map.Width) + map.MinY);
-                Passable[i] = TerrainRules.IsPassable(map.TerrainAt(at)) && !obstacles.StandsOn(at);
+                // ⭐ A bridge's deck is water a villager may walk (D546) — passability is the scratch's
+                // answer from here on, never the terrain's alone.
+                Passable[i] = (TerrainRules.IsPassable(map.TerrainAt(at)) || obstacles.DeckOn(at) != 0)
+                    && !obstacles.StandsOn(at);
                 Walls[i] = obstacles.WallsOn(at);
             }
         }

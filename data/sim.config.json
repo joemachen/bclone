@@ -398,8 +398,8 @@
   // Widening this genuinely lengthens the village's walks. Zero
   // generates no river at all, which is a supported valley.
   //
-  // Crossing water will need a bridge, which is a technology first and
-  // a building second, and waits on the tech tree.
+  // Crossing it takes a bridge (D546): a technology first - learned when the
+  // village has held bridge_unlock_population people - and a building second.
   // ⭐ Widened from 2 with Joe from play (D344): "river looks great! Let's widen it
   // by ~50% with some variation." The wander is the variation — the width takes a
   // slow walk between these two, so a reach reads as a pool or a narrows rather than as
@@ -1026,6 +1026,42 @@
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
   "water_trip_every_days": 20,
+
+  // BRIDGES (D40, D546, D547, D549, specs/bridges.md). A deck over the water, one
+  // tile wide: the tiles stay river and become walkable. Pressed on one bank and
+  // dragged to the other, a straight line at any angle; priced per tile of its
+  // length, so the narrows are worth looking for. Across the river lies 37-42 %
+  // of every valley's land, woods, rock and iron (D547, 400 valleys).
+  //
+  // The wooden bridge is learned when the village has held this many people
+  // (Joe: SCALE). Joe's played villages first hold 10 at Years 11-12.
+  "bridge_unlock_population": 10,
+  "bridge_logs_per_tile": 8,
+  "bridge_work_ticks_per_tile": 10,
+  //
+  // The stone bridge is learned by crossings walked over the bridges (Joe:
+  // DOING), and rebuilt over a wooden one in place - the wooden deck carries the
+  // village until the stone is set. Measured (D547): one bridge with a forager's
+  // hut across carries a median 23 crossings a year (12-60), so 150 is about
+  // six years of real use.
+  "stone_bridge_unlock_crossings": 150,
+  "stone_bridge_stone_per_tile": 12,
+  "stone_bridge_logs_per_tile": 4,
+  "stone_bridge_work_ticks_per_tile": 15,
+  //
+  // What a step onto a deck costs, against grass's 10 and a packed path's 8: a
+  // deck takes no wear, so a bridge costs what it is made of. Stone is the
+  // quicker crossing (Joe). Both must be 1-10 (the routes' bucket queue).
+  "bridge_wood_tile_cost": 10,
+  "bridge_stone_tile_cost": 8,
+  //
+  // The longest a bridge may be, end to end (Joe: "8 tiles" in D549, then
+  // "let bridges be longer than 8 tiles. 12 max." in D550, after playing it).
+  // It is dragged from one bank to the other in a straight line at any angle,
+  // both ends on dry land; every valley of 400 has a crossing of 4 or fewer, so
+  // the cap is about how far a bridge may run, not about whether a valley can
+  // be crossed.
+  "bridge_max_length_tiles": 12,
 
   // THE STEADING (D511, work-from-the-steading.md 5). A summer farmhand tends a
   // sown tile of their own field for tend_ticks, walks back to the farm and rests,

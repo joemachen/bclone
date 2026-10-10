@@ -182,7 +182,7 @@ order for `we`, so **W–E is today's river to the tile and no golden moves** (g
   moves no draw either; a valley's direction under `any` is a fact about its seed.
 - The founding (stage 2) is unchanged: it already settles on the biggest land mass, on dry ground
   (D472), whatever shape the water is. **Seams on the far bank stay where they are** — as with a W–E
-  river today, some outcrops lie across the water until bridges exist.
+  river today, some outcrops lie across the water until the village bridges it (D546, `bridges.md`).
 
 ## 7. Measured before a range is typed
 

@@ -199,6 +199,12 @@ public partial class VillageMap : Control
     // reads as dressed stone rather than a boulder, with the fishery's water at its heart.
     internal static readonly Color WellColour = new("#8d8577");
 
+    /// <summary>A wooden bridge's planks (D546) — weathered timber, darker than a hut so it reads over the water.</summary>
+    internal static readonly Color BridgeColour = new("#8a6a48");
+
+    /// <summary>A stone bridge (D546) — dressed grey, lighter than the rock seams so the two are not confused.</summary>
+    internal static readonly Color StoneBridgeColour = new("#a8a49b");
+
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
     /// Warm amber rather than red. A full store is not a disaster — it is usually a village
@@ -813,6 +819,7 @@ public partial class VillageMap : Control
         _emptying = tool == MapTool.Emptying;
         _destroying = tool is MapTool.Destroying or MapTool.Undestroying;
         _moveFrom = null;
+        _bridgeFrom = null;
 
         Tool = tool;
 
@@ -1010,7 +1017,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private void TurnTheGhostBy(float pixels, bool fine)
     {
-        if (_building is null)
+        if (_building is null || HoldsABridge)
         {
             return;
         }
@@ -1060,6 +1067,12 @@ public partial class VillageMap : Control
         // so a middle-drag was a decision the player could not take back. Rounding UP to the next
         // multiple of a quarter is the same control when the ghost is already square — it steps
         // 90°, as it always did — and is **one tap back to square when it is not.**
+        // ⭐ A BRIDGE HAS NO FACING TO TURN (Joe, D549): it lies where it is dragged.
+        if (HoldsABridge)
+        {
+            return;
+        }
+
         if (toTheQuarter)
         {
             const int Quarter = 65536 / 4;
@@ -1073,6 +1086,72 @@ public partial class VillageMap : Control
 
         QueueRedraw();
     }
+
+    /// <summary>Whether the building in hand is a bridge — pressed on one bank and dragged to the other (D549).</summary>
+    private bool HoldsABridge =>
+        _building is BuildingKind held && _world?.BuildingsCatalog[held]?.SpansWater == true;
+
+    /// <summary>Where the bridge being dragged began, or null while nothing is pressed (D549).</summary>
+    private Point? _bridgeFrom;
+
+    /// <summary>Where the bridge being dragged would end — the cursor, snapped as the setting says.</summary>
+    private Point _bridgeTo;
+
+    /// <summary>
+    /// ⭐ Press: the bridge begins here (Joe, D549: <i>"click and hold on one tile where they want the bridge to
+    /// begin"</i>). Public so the probe can pose a drag the way a hand makes one.
+    /// </summary>
+    public void PressABridgeAt(Point at)
+    {
+        if (!HoldsABridge || _world is null)
+        {
+            return;
+        }
+
+        _bridgeFrom = at;
+        DragABridgeTo(at);
+    }
+
+    /// <summary>Drag: the bridge would end here, and the ghost and its sentence follow (D549).</summary>
+    public void DragABridgeTo(Point at)
+    {
+        if (_bridgeFrom is not Point from || _building is not BuildingKind kind || _world is null)
+        {
+            return;
+        }
+
+        _bridgeTo = at;
+        _verdict = _world.CanBridge(kind, from, at);
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>Release: the bridge is marked from the press to here — or the sim says why not (D549).</summary>
+    public PlacementVerdict ReleaseABridgeAt(Point at)
+    {
+        if (_bridgeFrom is not Point from || _building is not BuildingKind kind || _world is null)
+        {
+            return PlacementVerdict.No("Nothing is being dragged.");
+        }
+
+        _bridgeFrom = null;
+        PlacementVerdict verdict = _world.MarkBridge(kind, from, at);
+        PlacementMessageChanged?.Invoke(!verdict.Allowed
+            ? verdict.Reason
+            : verdict.HasWarning
+                ? $"Marked out. {verdict.Warning}"
+                : "Marked out. The village will raise it when it can spare the hands.");
+        _verdict = PlacementVerdict.Fine;
+        Announce();
+        QueueRedraw();
+        return verdict;
+    }
+
+    /// <summary>The verdict the ghost is showing — for the probe.</summary>
+    public PlacementVerdict Verdict => _verdict;
+
+    /// <summary>The two ends of the bridge being dragged, or null — for the probe.</summary>
+    public (Point From, Point To)? BridgeBeingDragged => _bridgeFrom is Point from ? (from, _bridgeTo) : null;
 
     /// <summary>Next click pulls a building down.</summary>
     public void BeginDemolishing() => SetTool(MapTool.Demolishing);
@@ -1129,6 +1208,35 @@ public partial class VillageMap : Control
             return;
         }
 
+        // ⭐⭐ A BRIDGE IS PRESSED, DRAGGED AND RELEASED (Joe, D549: *"click and hold on one tile where they
+        // want the bridge to begin - then drag where they want the bridge to end, and release. it should
+        // work as a straight line in ANY direction"*). Above the `Pressed: true` guard below, because the
+        // release is the half that marks it. A right-click while dragging lets go of the drag only.
+        if (HoldsABridge && @event is InputEventMouseButton { ButtonIndex: MouseButton.Left } bridgeClick)
+        {
+            if (bridgeClick.Pressed)
+            {
+                PressABridgeAt(WhereItWouldStand(bridgeClick.Position));
+            }
+            else if (_bridgeFrom is not null)
+            {
+                ReleaseABridgeAt(WhereItWouldStand(bridgeClick.Position));
+            }
+
+            AcceptEvent();
+            return;
+        }
+
+        if (_bridgeFrom is not null && @event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
+        {
+            _bridgeFrom = null;
+            _verdict = PlacementVerdict.Fine;
+            Announce();
+            QueueRedraw();
+            AcceptEvent();
+            return;
+        }
+
         if (_turningTheGhost && @event is InputEventMouseMotion turn)
         {
             TurnTheGhostBy(turn.Relative.X, turn.ShiftPressed);
@@ -1159,7 +1267,22 @@ public partial class VillageMap : Control
             {
                 _hovered = over;
                 _hoveredPoint = wouldStand;
-                if (_building is not null)
+                if (HoldsABridge)
+                {
+                    // ⭐ A BRIDGE IS JUDGED END TO END WHILE IT IS DRAGGED (D549); before the press there is
+                    // nothing to judge but a click — which rebuilds a wooden bridge with stone in hand.
+                    if (_bridgeFrom is not null)
+                    {
+                        DragABridgeTo(wouldStand);
+                    }
+                    else
+                    {
+                        _verdict = _world.BridgeAt(over) is not null
+                            ? _world.CanBridge(_building!.Value, wouldStand, wouldStand)
+                            : PlacementVerdict.Fine;
+                    }
+                }
+                else if (_building is not null)
                 {
                     // ⭐ AT THE ANGLE IN YOUR HAND (D328). The ghost has been drawn with
                     // `_ghostFacing` since D320 and the verdict was computed without it, so a
@@ -1640,7 +1763,8 @@ public partial class VillageMap : Control
             // ⭐ One finder, then the question (D328). A standing building and a site cannot both
             // cover a tile — nothing may be raised on ground something already stands on — so the
             // first thing covering it is the thing this branch means.
-            if (_world!.WorkplaceCovering(where) is { IsSite: true } workplace)
+            // ⭐ A bridge's site is found across its whole span, not only on the bank it stands on (D546).
+            if ((_world!.WorkplaceCovering(where) ?? _world.BridgeSiteAt(where)) is { IsSite: true } workplace)
             {
                 string name = workplace.Construction!.Name;
 
@@ -1657,6 +1781,19 @@ public partial class VillageMap : Control
 
                 _world.Demolish(workplace);
                 PlacementMessageChanged?.Invoke($"{name} is gone.");
+                QueueRedraw();
+                return;
+            }
+
+            // ⭐ A BRIDGE COMES DOWN AT ONCE, LIKE A WELL (D546, `bridges.md §5.4`) — or is refused in words:
+            // somebody on it, or something across the water that would be cut off.
+            if (_world.BridgeAt(where) is Bridge bridge)
+            {
+                string bridgeName = bridge.Name;
+                PlacementVerdict down = _world.Demolish(bridge);
+                PlacementMessageChanged?.Invoke(down.Allowed
+                    ? $"{char.ToUpperInvariant(bridgeName[0])}{bridgeName[1..]} was pulled down."
+                    : down.Reason);
                 QueueRedraw();
                 return;
             }
@@ -1792,6 +1929,19 @@ public partial class VillageMap : Control
         if (_building is null)
         {
             return string.Empty;
+        }
+
+        // ⭐ A BRIDGE IN HAND (D549): before the press, how to lay one; while dragging, what the sim says.
+        if (HoldsABridge)
+        {
+            if (!_verdict.Allowed)
+            {
+                return _verdict.Reason;
+            }
+
+            return _bridgeFrom is null
+                ? "Press on the bank where the bridge begins and drag to where it ends. Esc to stop."
+                : _verdict.HasWarning ? _verdict.Warning : "Release to mark it out. Right-click lets go.";
         }
 
         return _verdict switch
@@ -2496,6 +2646,9 @@ public partial class VillageMap : Control
         // mistaken for a villager or hide a building, so it goes down with the terrain.
         DrawTheWoods();
 
+        // ⭐ The bridges lie on the water, under everything that stands and everyone who walks (D546).
+        DrawBridges();
+
         // Routes under everything, then workplaces, then homes, then people on top —
         // the things that move must never be hidden behind the things that do not.
         DrawRoutes();
@@ -2756,8 +2909,6 @@ public partial class VillageMap : Control
             return;
         }
 
-        Vector2 centre = ToScreen(_hoveredPoint);
-
         Color colour = _verdict switch
         {
             { Allowed: false } => GhostRefused,
@@ -2773,9 +2924,36 @@ public partial class VillageMap : Control
         // ⭐ Through the sim's own helper, so the ghost cannot disagree with what placement will
         // actually refuse (D321). Two ways of asking "how big is this building?" is how a preview
         // starts lying.
+        // ⭐ A BRIDGE'S GHOST IS THE LINE BEING DRAGGED (D549) — from the press to the cursor, at whatever angle
+        // the hand makes; before the press, a mark on the tile it would begin from.
+        if (HoldsABridge)
+        {
+            Color bridgeColour = _verdict switch
+            {
+                { Allowed: false } => GhostRefused,
+                { HasWarning: true } => GhostWarned,
+                _ => GhostFine,
+            };
+
+            if (_bridgeFrom is Point from)
+            {
+                DrawALine(from, _bridgeTo, BridgeWidth, bridgeColour with { A = 0.35f }, bridgeColour);
+            }
+            else
+            {
+                DrawFootprint(ToScreen(_hoveredPoint), 0.5f, 0.5f, 0, bridgeColour with { A = 0.35f }, bridgeColour);
+            }
+
+            return;
+        }
+
         Footprint shape = world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing);
         float wide = shape.Width * 0.9f;
         float deep = shape.Height * 0.9f;
+
+        // ⭐ WHERE THE SIM SAYS IT STANDS, TURNED AS THE SIM SAYS (D546): the same point and facing for
+        // every building — and for a bridge the span bank to bank, centred on the water and squared.
+        Vector2 centre = ToScreen(shape.Origin);
 
         // ⭐⭐ AND THE TILES IT WILL CLAIM, UNDER IT (D330, Joe's call). **D319's rule is that a
         // building covers the tiles whose CENTRES it stands on** — which was invisible while every
@@ -2808,7 +2986,7 @@ public partial class VillageMap : Control
             }
         }
 
-        DrawFootprint(centre, wide, deep, _ghostFacing.Raw, colour with { A = 0.35f }, colour);
+        DrawFootprint(centre, wide, deep, shape.Facing.Raw, colour with { A = 0.35f }, colour);
 
         DrawTheHomesThisMarketWouldServe();
     }
@@ -3042,6 +3220,61 @@ public partial class VillageMap : Control
                 WellColour with { A = 0.9f },
                 WellColour);
             DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
+        }
+    }
+
+    /// <summary>How wide a bridge's deck is drawn, in tiles — a lane, not a road.</summary>
+    internal const float BridgeWidth = 0.7f;
+
+    /// <summary>
+    /// A straight line between two sim points as the turned quad <see cref="FootprintQuad"/> draws — its centre on
+    /// screen, its length in tiles, and the facing that lays its own bottom on <paramref name="to"/> (D549). View
+    /// arithmetic only: floats never reach the sim.
+    /// </summary>
+    private (Vector2 Centre, float LengthTiles, ushort Facing) LineAsAQuad(Point from, Point to)
+    {
+        Vector2 a = ToScreen(from);
+        Vector2 b = ToScreen(to);
+        Vector2 along = b - a;
+        float length = along.Length() / Mathf.Max(1f, _pixelsPerTile);
+
+        // `FootprintQuadAt` turns local +Y to (−sin θ, cos θ); that is the direction from `from` to `to`.
+        float radians = along.LengthSquared() < 0.0001f ? 0f : Mathf.Atan2(-along.X, along.Y);
+        float turns = radians / Mathf.Tau;
+        ushort facing = unchecked((ushort)Mathf.RoundToInt((turns - Mathf.Floor(turns)) * 65536f));
+        return ((a + b) / 2f, length, facing);
+    }
+
+    /// <summary>A bridge's quad from one end to the other — the ghost, the site and the deck all draw through this.</summary>
+    private void DrawALine(Point from, Point to, float widthTiles, Color fill, Color edge)
+    {
+        (Vector2 centre, float length, ushort facing) = LineAsAQuad(from, to);
+        DrawFootprint(centre, widthTiles, Mathf.Max(length, widthTiles), facing, fill, edge);
+    }
+
+    /// <summary>
+    /// ⭐ The bridges (D546): a deck over the baked river — planks across for wood, a stone arch's grey for
+    /// stone — from one bank to the other, drawn from the sim's own span so the picture is the crossing.
+    /// </summary>
+    private void DrawBridges()
+    {
+        SimWorld world = _world!;
+        for (int i = 0; i < world.Bridges.Count; i++)
+        {
+            Bridge bridge = world.Bridges[i];
+            bool stone = bridge.Kind == BuildingKind.StoneBridge;
+            Color deck = stone ? StoneBridgeColour : BridgeColour;
+            DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, deck.Darkened(0.35f));
+
+            // Planks across the deck, three a tile; a stone deck shows its joints a tile apart.
+            (Vector2 centre, float length, ushort facing) = LineAsAQuad(bridge.Near, bridge.Far);
+            int across = Mathf.Max(1, Mathf.RoundToInt(length * (stone ? 1f : 3f)));
+            for (int k = 1; k < across; k++)
+            {
+                float at = k / (float)across;
+                Vector2[] band = FootprintQuad(centre, BridgeWidth, length, facing, at, at);
+                DrawLine(band[0], band[1], deck.Darkened(stone ? 0.25f : 0.4f), 1f);
+            }
         }
     }
 
@@ -5795,6 +6028,16 @@ public partial class VillageMap : Control
                 float wide = workplace.ExtentWidth * 0.8f;
                 float deep = workplace.ExtentHeight * 0.8f;
                 ushort facing = workplace.Facing.Raw;
+
+                // ⭐ A BRIDGE'S SITE SHOWS THE WHOLE SPAN IT WILL LAY, bank to bank, filling from the near
+                // bank as it is built (D546) — not the one tile of bank its builders stand on.
+                if (site.BridgeTo is Point far)
+                {
+                    // The quad's own bottom is its second end, so it is laid far → near: the band fills from
+                    // the bottom, and the deck grows out from where its builders stand.
+                    (centre, deep, facing) = LineAsAQuad(far, workplace.Position);
+                    wide = BridgeWidth;
+                }
 
                 // Every material plus the work, so a two-material building fills its ring
                 // honestly rather than showing full while its stone is still coming (D213).

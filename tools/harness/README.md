@@ -75,3 +75,14 @@ against a number from an older commit.
   at Year 5; `ZZ_HUNT=1` prints a hunter state histogram (`ZZH`). Copy in, `-c Release --filter ZzClothing`, delete.
   ⚠️ `off` is not a coat: the threshold is outdoor ticks × roof ticks, so 0 switches **roof** cold off too, and it
   is an upper bound. ⚠️ `ZZ_LIMITX` applied at t0 kills every every-source founding in Year 1 (D447).
+- `ZzBridges.cs` — D547's measurements for bridges (`specs/bridges.md §8`). `Valley` (pure map generation, 100 seeds × the
+  four river courses, `ZZV`): the founding's land by flood fill and what lies across the river (land, woods, rock, iron),
+  and every straight cardinal run of water with land at both ends and the founding on one side — the spans a one-wide
+  deck could cross (`le3`…`le8`, `min`, `max`). `Growth` (`ZZG`, the `shipped` and `every` arms, fifty years): the first
+  year a village holds 10 / 12 / 15 / 20 / 25 people. `Crossings` (`ZZX`): a played opening, a wooden bridge raised free at
+  Year 5 at the crossing nearest the founding, a forager's hut marked on the far bank and an 8×8 patch painted for homes
+  beyond it; crossings per year, Years 5–35. Copy in, `-c Release --filter ZzBridges.<method>`, delete.
+  ⚠️ Without the hut across, every village crossed **zero** times in thirty years: the unattended chooser never sites a
+  home on the far bank while near-side paint is left, so a bridge nothing needs is an idle bridge, not a measurement.
+  ⚠️ Joe's own saves are the better number for growth (three played villages first held 10 at Years 11, 12, 11) — they
+  are gzipped JSON under `%APPDATA%/Godot/app_userdata/bclone/saves/`; a founder's `birth_tick` is negative, so read it signed.

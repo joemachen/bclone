@@ -577,6 +577,7 @@ public partial class Main : Control
         GD.Print(TheRedBrushIsOnTheBar());
         GD.Print(TheAnnounceIsAHintNotALogLine());
         GD.Print(ShiftRSquaresTheGhost());
+        GD.Print(ABridgeIsDraggedBankToBank());
         ProbeTheProfessionsPanel();
 
         ProbeTheLogLines();
@@ -1204,6 +1205,127 @@ public partial class Main : Control
     }
 
     /// <summary>
+    /// ⭐ A bridge is laid by pressing on one bank and dragging to the other, at any angle — <b>a probe line</b>
+    /// (Joe, D549; `bridges.md §7`). Posed through the map's own press and drag, and put back; nothing is marked.
+    /// </summary>
+    private string ABridgeIsDraggedBankToBank()
+    {
+        SimWorld world = _loop.World;
+        BuildingKind? was = _map.PendingBuilding;
+        Angle facingWas = _map.GhostFacing;
+        var faults = new List<string>();
+
+        _map.BeginBuilding(BuildingKind.Bridge);
+        _map.GhostFacing = Angle.Zero;
+        _map.TurnTheGhost();
+        _map.TurnTheGhost(toTheQuarter: true);
+        if (_map.GhostFacing != Angle.Zero)
+        {
+            faults.Add($"R turned a bridge to {_map.GhostFacing.Raw} — a bridge has no facing");
+        }
+
+        // A crossing at an angle near the founding: a bank tile on one side, a bank tile some way along on the other.
+        (Point From, Point To)? diagonal = null;
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 1; radius < 80 && diagonal is null; radius++)
+        {
+            for (int ring = 0; ring < radius * 8 && diagonal is null; ring++)
+            {
+                // Round the square ring at this radius, every side — the river may lie any way from the founding.
+                int side = ring / (radius * 2), along = (ring % (radius * 2)) - radius;
+                (int dx, int dy) = side switch { 0 => (along, -radius), 1 => (radius, along), 2 => (-along, radius), _ => (-radius, -along) };
+                var water = new GridPos(site.X + dx, site.Y + dy);
+                if (!world.Map.Contains(water) || world.Map.TerrainAt(water) != Terrain.Water)
+                {
+                    continue;
+                }
+
+                GridPos north = water;
+                while (world.Map.Contains(north) && world.Map.TerrainAt(north) == Terrain.Water) { north = new GridPos(north.X, north.Y - 1); }
+                foreach (int slant in new[] { 2, -2, 3, -3 })
+                {
+                    GridPos south = new(water.X + slant, water.Y);
+                    while (world.Map.Contains(south) && world.Map.TerrainAt(south) == Terrain.Water) { south = new GridPos(south.X, south.Y + 1); }
+                    if (world.Map.Contains(north) && world.Map.Contains(south)
+                        && world.BridgeLineFrom(BuildingKind.Bridge, Point.CentreOf(north), Point.CentreOf(south)).Allowed)
+                    {
+                        diagonal = (Point.CentreOf(north), Point.CentreOf(south));
+                        break;
+                    }
+                }
+            }
+        }
+
+        int length = 0;
+        if (diagonal is not (Point from, Point to))
+        {
+            faults.Add("no crossing at an angle anywhere near the founding to pose");
+        }
+        else
+        {
+            _map.PressABridgeAt(from);
+            _map.DragABridgeTo(to);
+            length = world.BridgeLineFrom(BuildingKind.Bridge, from, to).Length;
+            if (_map.BridgeBeingDragged != (from, to))
+            {
+                faults.Add("the ghost is not the line between the press and the cursor");
+            }
+
+            if (_map.Verdict != world.CanBridge(BuildingKind.Bridge, from, to))
+            {
+                faults.Add($"the ghost says \"{_map.Verdict.Reason}\" where the sim says \"{world.CanBridge(BuildingKind.Bridge, from, to).Reason}\"");
+            }
+
+            // Dragged onto the water, the sim's refusal is the ghost's sentence.
+            GridPos wet = to.ToTile();
+            for (int y = from.ToTile().Y; y < to.ToTile().Y; y++)
+            {
+                if (world.Map.TerrainAt(new GridPos(from.ToTile().X, y)) == Terrain.Water)
+                {
+                    wet = new GridPos(from.ToTile().X, y);
+                    break;
+                }
+            }
+
+            // ⚠️ At the founding the village has not learned to bridge, so the ghost's verdict is the lock — the button
+            // is hidden in play until it is learned. The drag's own rule is asked of the sim, and the ghost of the sim.
+            _map.DragABridgeTo(Point.CentreOf(wet));
+            string onTheWater = world.BridgeLineFrom(BuildingKind.Bridge, from, Point.CentreOf(wet)).Reason;
+            if (onTheWater != "A bridge begins and ends on dry land.")
+            {
+                faults.Add($"a drag ending on the water said \"{onTheWater}\"");
+            }
+
+            if (_map.Verdict != world.CanBridge(BuildingKind.Bridge, from, Point.CentreOf(wet)))
+            {
+                faults.Add("the ghost dragged onto the water does not say what the sim says");
+            }
+
+            if (!world.BridgeLineFrom(BuildingKind.Bridge, from, to).Allowed)
+            {
+                faults.Add("the angled crossing the probe found is not one the drag rule allows");
+            }
+        }
+
+        _map.PutTheToolDown();
+        if (_map.BridgeBeingDragged is not null)
+        {
+            faults.Add("putting the tool down left a drag behind");
+        }
+
+        if (was is BuildingKind holding)
+        {
+            _map.BeginBuilding(holding);
+        }
+
+        _map.GhostFacing = facingWas;
+
+        return faults.Count == 0
+            ? $"[widths] bridge: ✅ pressed on a bank and dragged at an angle, {length} tiles end to end — the ghost is the line and the sim's verdict; on the water it says why not; R does nothing"
+            : $"[widths] bridge: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
     /// A tool picked up puts its sentence on the lit button's tooltip and nothing in the log — <b>a probe line</b> (D397).
     /// </summary>
     /// <remarks>
@@ -1547,6 +1669,8 @@ public partial class Main : Control
     private Button? _smithyButton;
     private Button? _millButton;
     private Button? _bakeryButton;
+    private Button? _bridgeButton;
+    private Button? _stoneBridgeButton;
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
@@ -1688,11 +1812,16 @@ public partial class Main : Control
         // until the first is marked, as the quarry's.
         RefreshALearnedButton(world, BuildingKind.Mill, JobKind.Miller, _millButton, ref _millKnown, ref _millTried);
         RefreshALearnedButton(world, BuildingKind.Bakery, JobKind.Baker, _bakeryButton, ref _bakeryKnown, ref _bakeryTried);
+
+        // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
+        // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
+        RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
+        RefreshALearnedButton(world, BuildingKind.StoneBridge, null, _stoneBridgeButton, ref _stoneBridgeKnown, ref _stoneBridgeTried);
     }
 
     /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
     private void RefreshALearnedButton(
-        SimWorld world, BuildingKind kind, JobKind trade, Button? button, ref bool knownSoFar, ref bool tried)
+        SimWorld world, BuildingKind kind, JobKind? trade, Button? button, ref bool knownSoFar, ref bool tried)
     {
         bool known = world.IsUnlocked(kind);
         if (knownSoFar != known)
@@ -1707,7 +1836,8 @@ public partial class Main : Control
         // marked, and never again once one has been.
         if (button is not null && known && !tried)
         {
-            tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind);
+            tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind)
+                || world.Bridges.Exists(b => b.Kind == kind);
             button.Modulate = tried ? Colors.White : new Color(1f, 0.85f, 0.4f);
         }
     }
@@ -1720,6 +1850,10 @@ public partial class Main : Control
     private bool _millTried;
     private bool _bakeryKnown;
     private bool _bakeryTried;
+    private bool _bridgeKnown;
+    private bool _bridgeTried;
+    private bool _stoneBridgeKnown;
+    private bool _stoneBridgeTried;
     private bool _smithyKnown;
 
     /// <summary>
@@ -2801,6 +2935,16 @@ public partial class Main : Control
         {
             OpenCard(new CardSubject(CardKind.Well, world.Wells.IndexOf(well)));
         }
+        else if (world.BridgeAt(tile) is Bridge bridge)
+        {
+            // ⭐ A bridge has a card too (D546): what it is made of, how far it spans, how often it is crossed.
+            OpenCard(new CardSubject(CardKind.Bridge, world.Bridges.IndexOf(bridge)));
+        }
+        else if (world.BridgeSiteAt(tile) is Workplace bridgeSite)
+        {
+            // A bridge being raised is a site — its card is the site's, wherever on the span it is clicked.
+            OpenCard(new CardSubject(CardKind.Workplace, bridgeSite.Id));
+        }
 
         RefreshInspector(world);
     }
@@ -2932,7 +3076,12 @@ public partial class Main : Control
     {
         string ground = world.Map.TerrainAt(tile) switch
         {
-            Terrain.Water => "The river. Nobody can cross it and nothing can be built on it.",
+            // ⭐ The river is crossable now (D546), and the sentence says how — or how the village learns to.
+            Terrain.Water => world.BridgeAt(tile) is Bridge bridge
+                ? $"The river, and {bridge.Name} across it — {bridge.Length} tiles long."
+                : world.IsUnlocked(BuildingKind.Bridge)
+                    ? "The river. Nothing can be built on it — the village crosses it by bridge, at the narrows."
+                    : "The river. Nobody can cross it until the village learns to bridge water, and nothing can be built on it.",
             Terrain.Forest => "Woodland.",
 
             // ⭐⭐ THE SAPLING SAYS SO (Joe, 2026-08-25): *"right now it reads as open land until
@@ -6815,6 +6964,14 @@ public partial class Main : Control
             {
                 _bakeryButton = button;
             }
+            else if (kind == BuildingKind.Bridge)
+            {
+                _bridgeButton = button;
+            }
+            else if (kind == BuildingKind.StoneBridge)
+            {
+                _stoneBridgeButton = button;
+            }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
             _stripRow.AddChild(button);
@@ -6918,6 +7075,9 @@ public partial class Main : Control
 
             // The smithy beside it (D391): the second building whose product is for every trade.
             BuildingKind.Smithy => BuildCategory.Works,
+
+            // ⭐ And the bridges, which this group was named for (D546) — the builder's work on the land.
+            BuildingKind.Bridge or BuildingKind.StoneBridge => BuildCategory.Works,
 
             // The mill and the bakery beside the farm they turn the wheat of (D522).
             BuildingKind.GathererHut or BuildingKind.Farmhouse
@@ -7053,6 +7213,8 @@ public partial class Main : Control
         BuildingKind.Smithy => _smithyKnown,
         BuildingKind.Mill => _millKnown,
         BuildingKind.Bakery => _bakeryKnown,
+        BuildingKind.Bridge => _bridgeKnown,
+        BuildingKind.StoneBridge => _stoneBridgeKnown,
         _ => true,
     };
 

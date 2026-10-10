@@ -1510,6 +1510,60 @@ public sealed record SimConfig
     [JsonPropertyName("well_work_ticks")]
     public int WellWorkTicks { get; init; } = 20;
 
+    // ---------------------------------------------------------------
+    //  Bridges (D40, D546, D547 — `specs/bridges.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a wooden bridge takes for each tile of its length, end to end (`bridges.md §4`).</summary>
+    [JsonPropertyName("bridge_logs_per_tile")]
+    public int BridgeLogsPerTile { get; init; } = 8;
+
+    /// <summary>Ticks of a builder's work a wooden bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("bridge_work_ticks_per_tile")]
+    public int BridgeWorkTicksPerTile { get; init; } = 10;
+
+    /// <summary>Stone a stone bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("stone_bridge_stone_per_tile")]
+    public int StoneBridgeStonePerTile { get; init; } = 12;
+
+    /// <summary>Logs a stone bridge takes for each tile of its length — the centring the arch is set on.</summary>
+    [JsonPropertyName("stone_bridge_logs_per_tile")]
+    public int StoneBridgeLogsPerTile { get; init; } = 4;
+
+    /// <summary>Ticks of a builder's work a stone bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("stone_bridge_work_ticks_per_tile")]
+    public int StoneBridgeWorkTicksPerTile { get; init; } = 15;
+
+    /// <summary>What a step onto a wooden deck costs — grass's 10 (`bridges.md §3.1`).</summary>
+    [JsonPropertyName("bridge_wood_tile_cost")]
+    public int BridgeWoodTileCost { get; init; } = 10;
+
+    /// <summary>What a step onto a stone deck costs — a packed path's 8: the quicker crossing (Joe, D546).</summary>
+    [JsonPropertyName("bridge_stone_tile_cost")]
+    public int BridgeStoneTileCost { get; init; } = 8;
+
+    /// <summary>
+    /// The longest a bridge may be, end to end, in tiles (Joe, D550 after playing D549: <i>"let bridges be longer
+    /// than 8 tiles. 12 max."</i>; `bridges.md §4`). Every valley can be crossed in 5 or less (D547); the cap is
+    /// how far a bridge may run, not whether the river can be crossed.
+    /// </summary>
+    [JsonPropertyName("bridge_max_length_tiles")]
+    public int BridgeMaxLengthTiles { get; init; } = 12;
+
+    /// <summary>
+    /// The village learns to bridge water once it has held this many people (Joe, D546: SCALE). Measured
+    /// (D547): Joe's played villages first hold 10 at Years 11–12.
+    /// </summary>
+    [JsonPropertyName("bridge_unlock_population")]
+    public int BridgeUnlockPopulation { get; init; } = 10;
+
+    /// <summary>
+    /// Crossings walked over bridges before the village learns to set a span in stone (Joe, D546: DOING).
+    /// Measured (D547): one bridge with work across carries a median 23 crossings a year — about six years.
+    /// </summary>
+    [JsonPropertyName("stone_bridge_unlock_crossings")]
+    public int StoneBridgeUnlockCrossings { get; init; } = 150;
+
     /// <summary>Ticks somebody stands at the well drawing water before walking home (D427).</summary>
     [JsonPropertyName("well_draw_ticks")]
     public int WellDrawTicks { get; init; } = 2;
@@ -3388,6 +3442,32 @@ public sealed record SimConfig
             DrawsWater = true,
         },
 
+        // ⭐ THE BRIDGES (D40, D546, `specs/bridges.md`) — a deck over the water, one tile wide, priced
+        // per tile of span. Wood first, learned by village size; stone set over it, learned by crossings.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Bridge,
+            Name = "wooden bridge",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, BridgeLogsPerTile) },
+            WorkTicks = BridgeWorkTicksPerTile,
+            SpansWater = true,
+            DeckTileCost = BridgeWoodTileCost,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.StoneBridge,
+            Name = "stone bridge",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, StoneBridgeLogsPerTile),
+                new MaterialCost(World.Goods.Stone, StoneBridgeStonePerTile),
+            },
+            WorkTicks = StoneBridgeWorkTicksPerTile,
+            SpansWater = true,
+            DeckTileCost = BridgeStoneTileCost,
+            Rebuilds = BuildingKind.Bridge,
+        },
+
         // ⭐ THE QUARRY (D434, `specs/quarry.md`) — a hut beside its own painted rock. Timber
         // only: it is cut into the rock, not built of it. Unlocked by stone dug by hand.
         new BuildingRow
@@ -4608,6 +4688,14 @@ public sealed record SimConfig
             throw new SimConfigException($"face_reach_tiles must be zero or more (got {FaceReachTiles}).");
         }
 
+        if (BridgeMaxLengthTiles < 2 || BridgeUnlockPopulation < 0 || StoneBridgeUnlockCrossings < 0)
+        {
+            throw new SimConfigException(
+                "bridge_max_length_tiles must be at least 2, and bridge_unlock_population and "
+                + $"stone_bridge_unlock_crossings at least zero (got {BridgeMaxLengthTiles}, "
+                + $"{BridgeUnlockPopulation}, {StoneBridgeUnlockCrossings}).");
+        }
+
         if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0
             || QuarryDigTicks <= 0 || StonePerDig <= 0 || DigsPerStint <= 0)
         {
@@ -5549,13 +5637,26 @@ public sealed record SimConfig
             // **so this guard refused it too**, correctly, before it had a column saying what it
             // was for. *Second building, second time; the validator is earning its keep.*
             // ⭐ AND DRAWING WATER IS A SIXTH (D427) — the well, refused the same way, a third time.
+            // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
-                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater)
+                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "
-                    + "houses nobody, keeps no records, is not civic and nobody draws water there. "
-                    + "The village would raise it and it would do nothing for ever.");
+                    + "houses nobody, keeps no records, is not civic, nobody draws water there and it "
+                    + "spans no water. The village would raise it and it would do nothing for ever.");
+            }
+
+            // ⛔ A deck's cost goes into Dial's bucket queue, which takes 1..10 and throws otherwise — said
+            // here, at load, rather than the first time somebody routes over the bridge.
+            if (row.SpansWater
+                && (row.DeckTileCost < 1 || row.DeckTileCost > World.TravelCostField.BaseTileCost
+                    || row.ExtentWidth != 1 || row.ExtentHeight != 1))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) spans water, so its deck_tile_cost must be "
+                    + $"1 to {World.TravelCostField.BaseTileCost} (got {row.DeckTileCost}) and its extent 1×1 — "
+                    + "a bridge's length is the river's, not the row's.");
             }
         }
 

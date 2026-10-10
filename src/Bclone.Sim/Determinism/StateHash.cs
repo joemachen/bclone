@@ -407,6 +407,15 @@ public static class StateHash
             }
 
             hash = MixStore(hash, workplace.Store);
+
+            // A bridge's site carries its far bank (D546) — sparse, so no other site mixes a byte.
+            if (workplace.Construction is { BridgeTo: Point far } bridgeSite)
+            {
+                hash = MixByte(hash, 0x4B);
+                hash = MixFixed(hash, far.X);
+                hash = MixFixed(hash, far.Y);
+                hash = MixByte(hash, bridgeSite.RebuildsBridge ? (byte)1 : (byte)0);
+            }
         }
 
         // ---- Storage buildings (D30) ----
@@ -684,6 +693,34 @@ public static class StateHash
             hash = MixFixed(hash, well.Position.Y);
             hash = MixAngle(hash, well.Facing);
             hash = MixUInt32(hash, (uint)well.Kind);
+        }
+
+        // ---- The bridges (D546) ----
+        // A deck over the water decides where everybody can walk, so it is sim state. ⛔ Sparse, the
+        // well's rule: a village with no bridge hashes as it did before bridges existed. The deck index
+        // is derived from these and is not mixed (D335); a bridge's crossings are history nothing reads.
+        if (world.Bridges.Count > 0)
+        {
+            hash = MixByte(hash, 0x4C);
+            hash = MixUInt32(hash, (uint)world.Bridges.Count);
+        }
+
+        for (int i = 0; i < world.Bridges.Count; i++)
+        {
+            Bridge bridge = world.Bridges[i];
+            hash = MixFixed(hash, bridge.Near.X);
+            hash = MixFixed(hash, bridge.Near.Y);
+            hash = MixFixed(hash, bridge.Far.X);
+            hash = MixFixed(hash, bridge.Far.Y);
+            hash = MixUInt32(hash, (uint)bridge.Kind);
+            hash = MixUInt64(hash, bridge.RaisedAtTick);
+        }
+
+        // The stone bridge's unlock reads the crossings (D546), so they are state — sparse, under a tag.
+        if (world.BridgeCrossings != 0)
+        {
+            hash = MixByte(hash, 0x4D);
+            hash = MixUInt32(hash, (uint)world.BridgeCrossings);
         }
 
         // ---- Goods on the ground (D96) ----

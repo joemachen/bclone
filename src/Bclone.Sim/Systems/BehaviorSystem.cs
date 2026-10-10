@@ -3837,7 +3837,22 @@ public sealed class BehaviorSystem : ISimSystem
             // staircase they no longer take. ⛔ It trod only the tile it LANDED on until D424, and the
             // lane wore into dashes (Joe's broken lane). `LineOfSight.Footprints` has the whole story.
             int wearPerStep = world.Config.PathWearPerStep;
-            LineOfSight.Footprints(stepFrom, villager.Position, tile => world.Paths.Tread(tile, wearPerStep));
+            // ⭐ A BRIDGE'S DECK TAKES NO WEAR, AND A STEP ONTO IT FROM A BANK IS A CROSSING (D546): the
+            // deck is a road already, and the crossings are what teach the village to build it in stone.
+            GridPos was = stepFrom.ToTile();
+            LineOfSight.Footprints(stepFrom, villager.Position, tile =>
+            {
+                if (world.DeckOn(tile) == 0)
+                {
+                    world.Paths.Tread(tile, wearPerStep);
+                }
+                else if (world.DeckOn(was) == 0)
+                {
+                    world.CrossedOnto(tile);
+                }
+
+                was = tile;
+            });
 
             // travel_ticks_per_unit > 1 means each tick's walk costs extra ticks; the walk is
             // already applied, so the remainder is the extra waiting.

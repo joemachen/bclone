@@ -322,6 +322,38 @@ public sealed record BuildingRow
     public bool DrawsWater { get; init; }
 
     /// <summary>
+    /// Whether this is a bridge — <b>a deck laid over the water, bank to bank</b>, and the seventh
+    /// reason a building may exist (D546, `specs/bridges.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A bridge stores nothing, employs nobody, houses nobody, keeps no records and draws no water;
+    /// its output is the far bank. It is dragged from one bank to the other in a straight line at any
+    /// angle (`SimWorld.BridgeLineFrom`, Joe D549), and is one tile wide.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Priced per tile of its length</b>: <see cref="Materials"/> and <see cref="WorkTicks"/> are for
+    /// one tile, end to end, so the narrows are worth looking for.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("spans_water")]
+    public bool SpansWater { get; init; }
+
+    /// <summary>
+    /// For a bridge, what a step onto its deck costs in the shared cost field — grass is 10, a packed
+    /// path 8 (`desire-paths.md §3`). Between 1 and 10, or Dial's bucket queue refuses it.
+    /// </summary>
+    [JsonPropertyName("deck_tile_cost")]
+    public int DeckTileCost { get; init; }
+
+    /// <summary>
+    /// For a bridge, the kind of standing bridge this one may be rebuilt over in place — the stone
+    /// bridge over the wooden one (`bridges.md §5.3`). Null for a bridge that is only ever new.
+    /// </summary>
+    [JsonPropertyName("rebuilds")]
+    public BuildingKind? Rebuilds { get; init; }
+
+    /// <summary>
     /// How many tiles across this building stands, before it is turned. <b>One by default.</b>
     /// </summary>
     /// <remarks>

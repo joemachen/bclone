@@ -43,7 +43,9 @@ public static class LineOfSight
         bool clear = true;
         Walk(from, to, (was, tile) =>
         {
-            if (!map.Contains(tile) || !TerrainRules.IsPassable(map.TerrainAt(tile)))
+            // ⭐ A bridge's deck may be walked (D546) — the routing and the leg read the same rule.
+            if (!map.Contains(tile)
+                || (!TerrainRules.IsPassable(map.TerrainAt(tile)) && obstacles.DeckOn(tile) == 0))
             {
                 clear = false;
                 return false;

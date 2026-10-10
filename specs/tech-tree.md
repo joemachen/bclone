@@ -432,7 +432,8 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Mortar | ADJ (lime burner + builder) | |
 | ★ **Stone Excavation** | SCALE + TERRAIN (stone) | *Quarry & Slate Works.* The source the whole tier stands on |
 | Watermill | TERRAIN (fall on river) | The headline terrain gate |
-| Bridge | SCALE | |
+| Bridge | SCALE | 🔨 **Built (D546–D548, `bridges.md`)**: the village has held 10 people. Its stop does not introduce the map — learned by size, not hands |
+| Stone bridge | DOING (crossings) | 🔨 **Built (D546–D548)**: 150 crossings walked over the bridges; rebuilt over a wooden one in place |
 | Paving / auto-pave policy | SCALE | The civic tier §2.6 already anticipates |
 | ★ **Advanced Joinery** | PEOPLE | *Insulated Manor.* The **second** house upgrade — Joe's fuel-burn ladder is wood hut → stone → insulated |
 | ★ **Monumental Architecture** | SCALE + PEOPLE | *Stone Cathedral.* The grown chapel; deepest civic node |

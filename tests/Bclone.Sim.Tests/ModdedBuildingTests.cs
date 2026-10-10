@@ -135,7 +135,11 @@ public sealed class ModdedBuildingTests
         { "id": 17, "name": "quarry", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
         { "id": 18, "name": "iron mine", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 15 } ] },
         { "id": 19, "name": "mill", "seats": 2, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 24 } ] },
-        { "id": 20, "name": "bakery", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 24 } ] }
+        { "id": 20, "name": "bakery", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 24 } ] },
+
+        // ⭐ `spans_water` IS A COLUMN A MODDER CAN REACH (D546) — a bridge's reason to exist.
+        { "id": 21, "name": "wooden bridge", "spans_water": true, "deck_tile_cost": 10, "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
+        { "id": 22, "name": "stone bridge", "spans_water": true, "deck_tile_cost": 8, "rebuilds": "Bridge", "work_ticks": 15, "materials": [ { "goods": "Stone", "amount": 12 } ] }
       ]
     }
     """;
@@ -192,9 +196,9 @@ public sealed class ModdedBuildingTests
         // 12 → 13 when the fishing hut shipped (2026-09-02); → 14 with the hunter's lodge
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
         // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391); → 17 with the well (D427);
-        // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522).
-        // The modder's boathouse sits inside the range, at the library's id, on purpose.
-        Assert.Equal(21, catalog.Count);
+        // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522); → 23 with the two
+        // bridges (D546). The modder's boathouse sits inside the range, at the library's id, on purpose.
+        Assert.Equal(23, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -331,6 +335,8 @@ public sealed class ModdedBuildingTests
             { "id": 18, "name": "iron mine",      "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 19, "name": "mill",           "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 20, "name": "bakery",         "seats": 2,                                     "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 22, "name": "stone bridge",   "spans_water": true, "deck_tile_cost": 8,        "work_ticks": 15, "materials": [ { "goods": "Stone", "amount": 12 } ] },
+            { "id": 21, "name": "wooden bridge",  "spans_water": true, "deck_tile_cost": 10,       "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
             { "id": 2,  "name": "market",          "stores": "Market", "seats": 2,             "work_ticks": 50, "materials": [ { "goods": "Logs", "amount": 35 } ] },
