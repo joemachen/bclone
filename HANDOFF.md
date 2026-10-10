@@ -2,7 +2,9 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (MERGED) — D545, ON WINDOWS.**
 >
-> **`main` = D545, pushed. No branch is open.** Joe played and approved both slices: *"seam-reach and seams-revisited
+> **`main` = D545, pushed. No branch is open, here or on GitHub** — `slice/armful`, `slice/seam-reach`,
+> `slice/seams-revisited` and `slice/warm-start-wood` were deleted from `origin` at Joe's word (2026-10-10), each checked
+> to be an ancestor of `main` first. Joe played and approved both slices: *"seam-reach and seams-revisited
 > are played and approved."* Merged `--no-ff`: `slice/seam-reach` (D539–D541 — a quarry or a mine stands within 2 tiles
 > of rock or iron the village can walk to, and paints faces only that near), then `slice/warm-start-wood` (D544, carrying
 > `slice/seams-revisited`, D542–D543 — about twice the stone and iron, across the whole valley, blobs, veins, clusters
