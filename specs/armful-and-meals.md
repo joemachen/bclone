@@ -1,8 +1,10 @@
-# Spec: The armful and the meal — carry 80, eat once every four days
+# Spec: The armful and the meal — carry 80, eat once every 4¼ days
 
-**Decisions:** D395 (Joe's call), D474 (confirmed), D534 (taken next), D535 (this spec).
-**Status:** ✍️ **specced 2026-10-09 on `slice/armful`, NOT built.** Measured first (§5); three calls for
-Joe in §7 before any code.
+**Decisions:** D395 (Joe's call), D474 (confirmed), D534 (taken next), D535 (this spec), D536 (Joe's three
+calls), D537 (the quarter day, and built).
+**Status:** 🔨 **built 2026-10-09 on `slice/armful` (D537), sim only; NOT played, NOT merged.** The guards in
+§6 are green and red-checked (§6a); six goldens moved (§6b). ⚠️ **Lost foundings rose 15 → 22 of 100 (§5.3):
+the race §5.1 named, which Joe chose to keep before that number existed.**
 
 ---
 
@@ -34,9 +36,12 @@ gives too much food now"*), which is the trap in §7 Q1.
 | Key | Today | After | What it means |
 |---|---|---|---|
 | `carry_capacity` | 40 | **80** | One armful, for **every** errand that carries (§3). |
-| `hunger_per_tick` | 7 | **5** | Hunger reaches `eat_threshold` 80 in **16 ticks = 4 days** (`ticks_per_day` 4). |
-| `food_per_meal` | 4 | **Joe's call, §7 Q1** (6 recommended) | What one meal costs. |
-| `eat_threshold`, `eat_reduces_hunger`, `hunger_max`, `starvation_ticks` | 80, 80, 100, 24 | unchanged | |
+| `hunger_per_tick` | 7 | **5** | |
+| `eat_threshold`, `eat_reduces_hunger` | 80, 80 | **85, 85** (D537) | Hunger reaches 85 in **17 ticks = 4¼ days** (`ticks_per_day` 4). |
+| `food_per_meal` | 4 | **6** (Joe, D536) | An adult eats 168 a year against 172 (−2 %). |
+| `hunger_max`, `starvation_ticks` | 100, 24 | unchanged | From the threshold to `hunger_max` is 15: 3 ticks at 5, as it was 3 at 7. |
+
+The village fixture follows all five (D223's seam, `VillageFixtures.Village`); Phase 0's fixture keeps its own world.
 
 **No new mechanism.** Three numbers in `data/sim.config.json`, the derived values that follow from
 them, and the guards that pin them.
@@ -58,7 +63,7 @@ them, and the guards that pin them.
 | `SimWorld.WorthTheWalk` (buffer clearing) | a hut's buffer is cleared once it holds an armful | Cleared at 80, not 40: a buffer waits longer before somebody fetches it. |
 | `SimWorld.CounterShortOf` | the market restocks a good only if an armful still fits under its limit | ⚠️ With one household the derived market limit is 100, so a counter restocks only below 20 (was 60). A market serving a small village runs lower before it is topped up. |
 | `SimWorld.ArmfulsWaitingIn` | the card's *"N armfuls waiting"* | Counts in 80s. |
-| `CompleteAction` (quarry and mine stints) | another dig fits in the arms | **No change.** `digs_per_stint` 4 × 10 stone and `mine_digs_per_stint` 8 × 5 iron already stop a stint at 40. |
+| `CompleteAction` (quarry and mine stints) | another dig fits in the arms | ⚠️ **Changes for a worker with a tool** (corrected while writing the guards; the first draft said *no change*). A dig is `YieldFor` × vigour, so a tool's 25 % makes a stone dig 12 and an iron dig 6. At 40 the arms end the stint early (3 digs = 36 stone, 6 digs = 36 iron); at 80 the stint runs to its own count (4 × 12 = 48, 8 × 6 = 48): **a third more a stint with a tool**, unchanged without one. That is the stint length `digs_per_stint` was always meant to set. |
 | `SimConfig` validation | `home_store_cap` ≥ a winter's firewood + one armful of food | 400 still clears it (validated at build). |
 
 **Producers are not armful-bound:** a forager's gather, a hunt, a cast and a felled tree go into the
@@ -138,6 +143,43 @@ builder's-hut roof in winter.
 there the same race happens to go to the houses. It is D515's family (a first winter decided by what
 the founding did first) and D447's (an unattended harness never notices unfunded houses). §7 Q3.
 
+### 5.2 ⚠️ What building it found: 6 every 4 days is 5 % more food, and that bites (2026-10-09)
+
+Joe answered Q1 *"6"*. With the numbers in, the suite reddened two things the harness tables above could
+not show:
+
+- **The food floor** (`VillageEconomyTests.TheShippedConfigFileMeetsTheTarget`): at 180 a year a forager
+  keeps themselves and a dependant only at `gather_yield` **128**; the config ships **123** (D363's cut).
+- **The market-off promise** (`MarketTests`, §14.4: *switching the market off costs convenience, never
+  lives*). Isolated over eight fixture seeds × 150 years with the market off, forage at each version's floor:
+
+| Variant | Food a year | Starved | Old age |
+|---|---|---|---|
+| Today (every 11–12 ticks, 4 a meal) | 172 | 40 | 153 |
+| Armful 80 only | 172 | 36 | 159 |
+| Every 16 ticks, 6 a meal | 180 (+5 %) | **55** | 131 |
+| **Every 17 ticks (4¼ days), 6 a meal** | **168 (−2 %)** | **42** | 135 |
+| Every 16 ticks, 5 a meal | 150 (−13 %) | 26 | 160 |
+
+**The extra starvation is the 5 % more food, not bigger, rarer meals**: the same meal shape at −2 % starves
+as today does. At 17 ticks the floor wants **120**, under the shipped 123, so no yield moves.
+
+**So Q1 comes back to Joe (Q1b):** keep exactly four days at 6 (raise forage 123 → 128 and accept a
+hungrier village without a market), or take **4¼ days at 6** (`eat_threshold` and `eat_reduces_hunger`
+80 → 85: the same rare meals, 2 % less food than today, nothing else moves). Recommended: 4¼ days.
+
+### 5.3 After the build (D537): 100 valleys, the same as §5's, against the parent
+
+| | Alive at 50 | Starved | Food fetches / hh-year | Meal stops / hh-year | Valleys dead | Lost in the founding | Froze |
+|---|---|---|---|---|---|---|---|
+| Before (parent) | 546 | 358 | 12.7 | 140 | 24 | 15 | 56 |
+| **After** | **560** | **289** | **7.5** | **93** | 29 | **22** | 88 |
+
+Everything the slice is for landed: 41 % fewer food trips, a third fewer meal stops, a fifth fewer starved.
+⚠️ **The founding race of §5.1 grew to 22 lost foundings of 100** (15 at 40; 18–20 in §5's armful arms):
+seven more valleys lose their four founders in Year 1, and their 28 deaths are most of the extra cold.
+Joe chose Q3 *"keep"* before this number existed, so it goes back to him.
+
 ---
 
 ## 6. Guards (TDD — written red first, each red-checked and counted)
@@ -150,7 +192,7 @@ the founding did first) and D447's (an unattended harness never notices unfunded
    most ~60% of fetches at 40. That is D473's finding as a guard.
 4. **A villager eats every 16 ticks** at the shipped config with no bread (posed: one villager, food
    at hand, count `JustAte` over a season).
-5. **Quarry and mine stints are unchanged** at 80 (digs per stint still bind).
+5. **At 80 a stint is ended by its digs, not the arms**, for a quarrier and a miner holding a tool (§3).
 6. **The derivation guards** (`VillageEconomyTests`, `ShippedConfigTests`' floors) stay green, or are
    re-measured and typed with the numbers that moved, in this slice's commit.
 7. **Determinism** stays green; **the goldens move** (four or so, as D529's did), each re-taken with the
@@ -158,7 +200,32 @@ the founding did first) and D447's (an unattended harness never notices unfunded
 
 ---
 
-## 7. Joe's calls
+### 6a. Red-checks (D537): 8 mutants, 12 reds, one that did not build, one zero
+
+| Mutant | Reds |
+|---|---|
+| shipped armful 80 → 40 | 3: the shipped armful, the stint, the fixture-follows-the-game |
+| shipped eating 85 → 80 | 2: the shipped meal, the fixture-follows-the-game |
+| fixture armful 80 → 40 | 2: a fetch brings a whole armful, the fixture-follows-the-game |
+| fixture eating 85 → 80 | 2: a villager eats every 4¼ days, the fixture-follows-the-game |
+| `ATripsWorth` capped at 40 | ⛔ **did not build** (it left `config` unused, IDE0060): scores nothing |
+| a fetch's `load` capped at 40 | 2: a fetch brings a whole armful, 80 takes fewer trips |
+| the top-up never remembered | ⚠️ **0 on the re-posed half-larder guard, and 0 on the parent too**; `ALoadOnItsWayHomeCountsAsHeld` reddens (1) |
+| the lanes arm cuts corners too | 1: the founding hub wears lanes |
+
+### 6b. What moved, and why
+
+- **Six goldens**: `StockLimitTests` (fixture, shipped), `SkillTests` (fixture, shipped), `FarmGoldenTests`'
+  `SeamGoldenHash` and, behind it, `SeamBeforeAnybodyGotBetter` (asserted second, so it could only redden
+  once the first was re-taken). Each proven by the parent (`f3decb0`) holding the old value with the suite green.
+- **One pin**: `VillagerPointTests`' clock, 7 / 213 / 489 → 7 / 192 / 499; the first trip unchanged.
+- **Two re-poses**: the half-larder guard poses an armful of 40 (at 80 a couple's 150 fits in two armfuls,
+  which is the point); the lanes guard sums six valleys, because the fixture's one valley was a coin (D470).
+
+## 7. Joe's calls — answered (D536, D537)
+
+**Answered 2026-10-09:** Q1 *"6"*, then, once building found that 6 every four days was 5 % more food (§5.2),
+*"proceed with every 4¼ days at 6 a meal"*; Q2 *"everyone"*; Q3 *"keep"* — ⚠️ given before §5.3's 22.
 
 - **Q1 — Does eating less often mean eating less?** Every 4 days, a meal of **6 (recommended: about
   what a villager eats today, +5% a year, the village level with today)** or of **5 (−13% a year, the
@@ -177,13 +244,14 @@ the founding did first) and D447's (an unattended harness never notices unfunded
 
 ## 8. Definition of Done
 
-- [ ] Joe's three calls answered and written into §2 / §7.
-- [ ] Guards §6 written red first; every red-check counted, zeros written down (D326).
-- [ ] `data/sim.config.json` and its comments (hunger, carry, bread's *"22 ticks"*), the derived values
-      the guards ask for, and `SimConfig.cs` defaults, all in one commit with the docs.
+- [x] Joe's calls answered (D536: 6, everyone, keep; D537: the quarter day) and written into §2 / §7.
+- [x] Guards §6 written red first; every red-check counted, zeros written down (§6a).
+- [x] `data/sim.config.json` and its comments (hunger, eating, meal, carry, bread's *"34 ticks"*) and the
+      village fixture, in one commit with the docs. `SimConfig.cs`'s code defaults are deliberately left
+      (they already differ from the shipped file and are what Phase 0's fixture reads).
 - [ ] The four checks (suite, game build, probe, golden grep before and after), the goldens' moves
-      accounted for one by one.
-- [ ] Re-measured on the harness after the build (the 100-seed arm), and the table in §5 updated.
+      accounted for one by one (§6b).
+- [x] Re-measured on the harness after the build (§5.3).
 - [ ] Played by Joe: a household's trip to the market at 2–4×, the founders stopping to eat about every
       four days, and whether the world feels right.
 - [ ] `DESIGN.md` §6 / §7 and `HANDOFF.md` in the same commit; the status line above made true.

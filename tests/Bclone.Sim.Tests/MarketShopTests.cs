@@ -118,7 +118,14 @@ public sealed class MarketShopTests
     [Fact]
     public void AHouseholdFetchesAtHalfALarder()
     {
-        SimConfig config = Config;
+        // ⚠️ AT AN ARMFUL OF 40, ON PURPOSE (D537). The claim is the run of trips — `ToppingUpFood` set at
+        // the trigger, cleared at target — and it cannot be seen unless the larder wants more than two
+        // armfuls. At the shipped 80 a couple's 150 fits in two, which is what the armful was doubled
+        // for (`armful-and-meals.md`); the rule itself never reads the armful's size.
+        // ⚠️ RED-CHECKED (D537): a household that never remembers the top-up (`StillShort(..., false)`) scores
+        // ZERO here, on the parent commit as on this one: over a season the larder falls back under the trigger and
+        // fires again, so the trips add up anyway. `ALoadOnItsWayHomeCountsAsHeld` is the guard that reddens.
+        SimConfig config = Config with { CarryCapacity = 40 };
         SimLoop loop = Build(config);
         SimWorld world = loop.World;
 
