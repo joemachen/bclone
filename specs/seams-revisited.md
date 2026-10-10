@@ -1,7 +1,8 @@
 # Spec: Stone and iron seams, revisited — volume, positioning, frequency, size, shape
 
-**Decision:** D542 (Joe, 2026-10-10). **Status:** ✍️ **a census and Joe's questions only, on `slice/seams-revisited`;
-NOTHING DESIGNED OR BUILT.** The direction is Joe's to set (§3) before anything is specified.
+**Decisions:** D542 (the census and the questions), D543 (Joe's answers; built). **Status:** 🔨 **built 2026-10-10 on
+`slice/seams-revisited` (D543), sim only; NOT played, NOT merged.** §4 is the design as built, §5 the measurement, §6
+the guards and their red-checks.
 
 ---
 
@@ -67,6 +68,88 @@ Each is a direction to pick before a spec is written. Nothing here is recommende
    tile or two wide running across the ground), **clusters** of small outcrops, **irregular** blobs with arms, or a
    mix by kind (stone as broad outcrops, iron as narrow veins)?
 
+## 3a. Joe's answers (2026-10-10, D543)
+
+1. **Volume: as is** — stone 12 and iron 8 a tile; a typical seam holds what it did. (A valley's total roughly doubles,
+   because it holds about twice the seams.)
+2. **Positioning: stone as is; iron a little closer** to the founding.
+3. **Frequency: "more variety, more frequency across the whole valley"** — about **2×** on average, valleys differing.
+4. **Size: "wider range".**
+5. **Shape: "all of the above, more variety".**
+6. **Seams across the river: keep them** — *"we'll eventually add bridges to the game."*
+7. **Only the near iron seams must hold 50**; scattered ones may be small.
+
 ⚠️ **Whatever changes, the valley must stay livable**, and the guards that say so are already written:
 `quarry.md §6.1` (three reachable stone seams in every valley), `SeamsTests`, every iron seam ≥ 50, and D420's harness
 for survival. Moving the generator reshuffles every valley, so the goldens move once, in its own commit.
+
+---
+
+## 4. The design, as built (D543)
+
+All in `MapGenerator` (`SeamsOf`, `ScatteredSeamsOf`, `PaintSeamAt`), every draw on the existing StoneSeams / IronSeams
+stage streams (D473): water is unchanged in every valley, and the woodland draws as before. Integer throughout.
+
+- **Near seams** — `SeamsOf`, the rings, keep every guarantee they had: stone 4 at 14 + 8 at 21; iron 4 at
+  **`iron_seam_ring_tiles` 22** (was 26). Each draws a **shape and heading with its position**, so a ring's seams are the
+  same whatever rings come after (drawn after all of them, the inner four changed shape when the outer eight were
+  added, and `TheQuarrysSeamsMovedNoForest` caught it). Near shapes are solid only: stone a **blob or arms**, iron a
+  **blob** (arms grown to 50 iron ran past what a player reads as one seam; a wide river left one holding 24 within
+  eight tiles of its centre). Near iron still grows until it holds `iron_seam_min_iron` 50.
+- **Valley-wide seams** — `ScatteredSeamsOf`, drawn after the rings on the same stage. One candidate per cell of a
+  **`seam_scatter_cell_tiles` 12** grid over the whole map (a partial shuffle picks the cells, a jitter places the seam
+  inside one), so they spread and reach the far bank. **How many**: `scattered_stone_seams` 12 / `scattered_iron_seams`
+  4, swung ±**`seam_count_variety_percent` 50** by one draw per kind per valley. **Kept off the founding**: stone
+  `stone_seam_clear_of_founding_tiles` 10, iron `iron_seam_clear_of_founding_tiles` **18** (at 10 one valley had iron 7
+  tiles out — the doorstep, not "a little closer"). **Size**: `scattered_seam_tiles_min` 1 to `…_max` 40, a uniform
+  draw **squared**, so pebbles are common and big outcrops rare. No iron minimum.
+- **Shapes** — `stone_seam_shapes` `{ blob 40, vein 15, cluster 25, arms 20 }`, `iron_seam_shapes`
+  `{ blob 25, vein 40, cluster 15, arms 20 }`: a **blob** (D475's wobbling outline), a **vein** (a 1–2-wide stripe along
+  a heading, bending a tile now and then by hash), a **cluster** (3–5 small blobs round the centre), **arms** (a small
+  blob and 2–3 one-wide veins). Every part paints open grass only and each tile is counted once (`Ground.Held`).
+  Where a cluster's parts or an arm's heading fall is **hashed** from the centre, never drawn.
+- **The new-game rows** scale the valley-wide counts too: stone *sparse / moderate / rich* 6 / 12 / 20, iron 1 / 4 / 7.
+
+## 5. Measured (64 shipped valleys for the shape of things; D420's 100 for survival)
+
+| | Before | After |
+|---|---|---|
+| Stone seams a valley | 12 (11–16) | **18–30, mean 23.4** |
+| Iron seams a valley | 4 (4–7) | **5–10, mean 7.9** |
+| Valley-wide seams beyond 30 tiles | — | stone 549 of 727, iron 197 of 250; every quarter 15 %+ |
+| Valley-wide seam size | — | **1–44 tiles**, p10 2, median 9, p90 31 |
+| Shapes (stone / iron, all seams) | blobs only | blob 781 / 322, vein 121 / 98, cluster 174 / 35, arms 419 / 51 |
+| Elongation, (longest span)² ÷ tiles ×100 | — | vein median **803**, blob median 119 |
+| Nearest iron to the founding | median 30 | **median 24**, 14–31 |
+| Woodland the valley-wide seams take | — | 0.5–1.4 % (four seeds) |
+| Shipped terrain (seeds 12345 / 2 / 42) | stone 134 / 127 / 121, iron 40 / 59 / 45 | stone 214 / 231 / 185, iron 88 / 69 / 69; water identical |
+| **Survival, 100 valleys × 50 years** (back to back) | alive 620, dead 19, lost foundings 13 | **alive 612, dead 21, lost foundings 13** |
+
+## 6. Guards (`SeamVarietyTests`, 9; `SeamsTests` re-posed) and red-checks
+
+New: twice the seams and a spread between valleys; the valley-wide seams reach the whole valley; none within the
+founding's clearance (iron's further than stone's); the nearest iron 21–26 tiles (median) and never under 10; sizes
+from pebbles to outcrops; every shape for each kind (near seams only the solid ones); a vein long and a blob round;
+the valley-wide seams moved no forest out of place.
+
+Re-posed: `TheSeamsMoveNoOtherStagesDraws` and `TheQuarrysSeamsMovedNoForest` switch the valley-wide seams off (drawn after
+the rings, they move when the rings do); the latter varies **stone extras only** — since D475 going from two iron seams
+to four re-spaces the whole ring, so a vacated iron tile may grow trees, which the four seeds never happened to show
+until the ring came in to 22.
+
+**Red-checks: 11 mutants, 20 reds, no zeros** — no valley-wide seams (5); no richness swing (1); the clearance ignored
+after the jitter (1); one size for every seam (2); every seam a blob (2); a vein painted as a disc (1); near iron with
+arms (2); iron ring back to 26 (1); iron as near as stone (2); and the two house guards below (2, 1).
+`TheScatteredSeamsMovedNoForest` (a draw-order guard) was not red-checked.
+
+**What else the reshuffle moved** (each with its reason in the test):
+- **Ten goldens** — the map hash, three terrain prints and counts, two farm, two skill, two stock-limit — and the new-game
+  stats' counts.
+- **Seed 7's fixture valley now freezes its founders in Year 1**: the warm start's forester was given 72 wooded tiles all
+  across the river (`SimWorld.GiveItTheWoodAroundIt` never asks whether the wood is reachable — D110's mistake, latent,
+  fixture-only: a real game starts cold). `ALogLimitAbove…` and `NoStepEverCrossesAWall` moved to seed 11; **the bug is on
+  file, not fixed here.**
+- **Two house-facing guards** (`HousesFaceThePathInFrontOfThem`, `AHouseWithNoPathNearFacesTheVillage`) had passed with the
+  bare square lying about due west of the village; reshuffled, it lay south-east, the nearest house stood on the paint's
+  corner, and a diagonal facing swings a house's second tile off the paint (`TilesClippedOff`). They now **state** the
+  village centre due west of their square (`DueWestOf`) instead of finding it.

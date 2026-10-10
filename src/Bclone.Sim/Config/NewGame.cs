@@ -175,9 +175,9 @@ public static class NewGame
             Id = "stone", Label = "Stone", Kind = LevelsKind,
             Levels = new[]
             {
-                Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "6")),
-                Level("moderate", "Moderate", ("stone_seam_count", "4"), ("extra_stone_seams", "8")),
-                Level("rich", "Rich", ("stone_seam_count", "4"), ("extra_stone_seams", "12")),
+                Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "6"), ("scattered_stone_seams", "6")),
+                Level("moderate", "Moderate", ("stone_seam_count", "4"), ("extra_stone_seams", "8"), ("scattered_stone_seams", "12")),
+                Level("rich", "Rich", ("stone_seam_count", "4"), ("extra_stone_seams", "12"), ("scattered_stone_seams", "20")),
             },
         },
         new NewGameRow
@@ -185,9 +185,9 @@ public static class NewGame
             Id = "iron", Label = "Iron", Kind = LevelsKind,
             Levels = new[]
             {
-                Level("sparse", "Sparse", ("iron_seam_count", "2"), ("extra_iron_seams", "0")),
-                Level("moderate", "Moderate", ("iron_seam_count", "2"), ("extra_iron_seams", "2")),
-                Level("rich", "Rich", ("iron_seam_count", "2"), ("extra_iron_seams", "4")),
+                Level("sparse", "Sparse", ("iron_seam_count", "2"), ("extra_iron_seams", "0"), ("scattered_iron_seams", "1")),
+                Level("moderate", "Moderate", ("iron_seam_count", "2"), ("extra_iron_seams", "2"), ("scattered_iron_seams", "4")),
+                Level("rich", "Rich", ("iron_seam_count", "2"), ("extra_iron_seams", "4"), ("scattered_iron_seams", "7")),
             },
         },
     };
@@ -614,9 +614,11 @@ public static class NewGame
 
         return new ValleySummary(
             land == 0 ? 0 : ((forest * 100) + (land / 2)) / land,
-            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.Rock).Count,
+            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.Rock).Count
+                + World.MapGenerator.ScatteredSeamsOf(config, config.Seed, World.Terrain.Rock).Count,
             rock,
-            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.IronDeposit).Count,
+            World.MapGenerator.SeamsOf(config, config.Seed, World.Terrain.IronDeposit).Count
+                + World.MapGenerator.ScatteredSeamsOf(config, config.Seed, World.Terrain.IronDeposit).Count,
             iron,
             World.MapGenerator.CourseOf(config, config.Seed));
     }

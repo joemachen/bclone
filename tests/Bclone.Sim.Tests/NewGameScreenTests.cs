@@ -494,10 +494,14 @@ public class NewGameScreenTests(ITestOutputHelper output)
         int land = (map.Width * map.Height) - 410;
         output.WriteLine($"fixture map {map.Width} x {map.Height}: wooded {s.WoodedPercent}% of {land} land tiles");
 
-        Assert.Equal(((2523 * 100) + (land / 2)) / land, s.WoodedPercent);
-        Assert.Equal(134, s.StoneTiles);
-        Assert.Equal(40, s.IronTiles);
-        Assert.Equal(MapGenerator.SeamsOf(config, 12345UL, Terrain.Rock).Count, s.StoneSeams);
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was forest 2523, stone 134, iron 40.
+        Assert.Equal(((2509 * 100) + (land / 2)) / land, s.WoodedPercent);
+        Assert.Equal(214, s.StoneTiles);
+        Assert.Equal(88, s.IronTiles);
+        // Near and valley-wide both (D543): the screen counts every seam the valley has.
+        Assert.Equal(
+            MapGenerator.SeamsOf(config, 12345UL, Terrain.Rock).Count + MapGenerator.ScatteredSeamsOf(config, 12345UL, Terrain.Rock).Count,
+            s.StoneSeams);
         Assert.Equal("we", s.Course);
 
         SimConfig wooded = config with { ForestCoveragePercent = 50 };

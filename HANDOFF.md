@@ -1,4 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5 — D538: THE ARMFUL, THE 4¼-DAY MEAL AND THE WOODCUTTER FIX MERGED TO `main`, UNPLAYED. NEXT: QUARRIES AND MINES PLACED NEAR THEIR SEAMS (JOE, NEW), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D543: STONE AND IRON ACROSS THE WHOLE VALLEY, BUILT ON `slice/seams-revisited`, UNPLAYED; `slice/seam-reach` (D540–D541) ALSO UNPLAYED. JOE PLAYS BOTH, THEN MERGE (SEAM-REACH FIRST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (SEAMS REVISITED) — D543, ON WINDOWS.**
+>
+> **`main` = D538** (the armful — played: *"looks great"*). Two branches off it, both unplayed:
+> - **`slice/seam-reach`** = D539–D541: a quarry or a mine within **2** tiles of its seam, faces painted only that near.
+> - **`slice/seams-revisited`** = D542–D543: about twice the stone and iron seams, across the whole valley, in blobs, veins,
+>   clusters and arms, 1–44 tiles; iron's ring 26 → 22. Survival unchanged over 100 valleys. Ten goldens moved.
+>
+> **▶️ NEXT: Joe plays both** (`git checkout <branch>`, `.\run.bat`; for the seams, the new-game screen at several seeds and
+> *sparse* / *rich*). Merge `slice/seam-reach` first, then merge `main` into `slice/seams-revisited`: **`DESIGN.md` and
+> `HANDOFF.md` will conflict** (both branches added banners and decisions) — keep both sides and read the seams by eye
+> (D527). Then merge it `--no-ff`. ⚠️ The seam-reach guards were written against today's valleys; after the merge, run the
+> suite before believing them.
+>
+> **(the banner below is the state before D543)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL MERGED) — D538, ON WINDOWS.**
 >
@@ -5845,6 +5860,21 @@ Read `git status` after staging, every time.
   (137 s / 138 s), and the probe's preview bake had slowed as much with no view code changed. Time back to back before
   blaming the code, and before clearing it.
 
+## ⛔ THE TRAPS D543 PAID FOR — A RESHUFFLE IS A FREE SAMPLE OF EVERY POSE, AND A GLOBAL `sed` HITS A THIRD CALL
+
+- **Any change to a stage's draws reshuffles every valley, and every test posed on "the valley the fixture happens to
+  have" flips.** D543 moved seed 7 (dead in Year 1) and the house guards' bare square (south-east instead of west).
+  **Before re-posing, trace why**: seed 7 was a latent bug (wood across the river), the squares were geometry. State the
+  case in the test (`DueWestOf`, a seed with a note) rather than hunting for a valley that passes.
+- **A draw added inside a loop moves everything after it in that loop.** Drawing the near seams' shapes after all their
+  positions changed the inner ring's shapes when the outer ring was added; drawn with each seam, a ring is the same
+  whatever follows.
+- **A global `sed` on a test file hit a third call** with the same argument (`bareHalf: 8` in the yard guard). Edit by
+  exact, unique context, and diff the file's calls afterwards.
+- **"The house can't face it" had three wrong explanations before the right one** (terrain at the gate, a meadow too
+  small, the river on the row). The probe that settled it was the chooser's own check (`TilesClippedOff`) at the house's
+  tile. Ask the code that refuses, not the ground around it.
+
 ## ⛔ THE TRAPS D537 PAID FOR — A GOLDEN BEHIND A GOLDEN, A MUTANT THAT CANNOT BUILD, AND A CALL MADE BEFORE ITS NUMBER
 
 - **Two goldens in one test redden one at a time.** `FarmGoldenTests` asserts `SeamGoldenHash` and then
@@ -5882,6 +5912,12 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **DEBT, FOUND D543 — THE WARM START'S FORESTER CAN BE GIVEN WOOD NOBODY CAN REACH.** `SimWorld.GiveItTheWoodAroundIt`
+  takes the nearest wooded tiles inside the gatherer ring and never asks `TravelCost.CanReach` — D110's mistake. On the
+  fixture's reshuffled seed 7 all 72 tiles lay across the river, no log was ever felled, and the founders froze in Year 1.
+  Fixture-only (a real game starts cold and the player paints the ground), so not fixed in D543 (it would move the
+  fixture's goldens for a second reason in the same commit). Fix: skip unreachable tiles, its own commit, goldens re-taken.
 
 - ✅ **FIXED (D538) — Joe: *"fix it"*. Lost foundings 22 → 13 of 100.** ~~THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).~~ With the armful built, seven more
   valleys of 100 lose all four founders in Year 1 (15 → 22): the woodcutter splits every stored log while firewood is

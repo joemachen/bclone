@@ -1952,7 +1952,7 @@ public sealed record SimConfig
 
     /// <summary>How far out the iron seams ring the origin.</summary>
     [JsonPropertyName("iron_seam_ring_tiles")]
-    public int IronSeamRingTiles { get; init; } = 26;
+    public int IronSeamRingTiles { get; init; } = 22;
 
     /// <summary>How wide one iron seam is.</summary>
     [JsonPropertyName("iron_seam_radius_tiles")]
@@ -1991,6 +1991,57 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("iron_seam_min_iron")]
     public int IronSeamMinIron { get; init; } = 50;
+
+    /// <summary>
+    /// Stone seams laid across the whole valley beyond the near rings, on average (D543, `seams-revisited.md`; Joe:
+    /// *"more variety, more frequency across the whole valley"*). Each valley draws its own richness round this.
+    /// </summary>
+    [JsonPropertyName("scattered_stone_seams")]
+    public int ScatteredStoneSeams { get; init; } = 12;
+
+    /// <summary>Iron seams laid across the whole valley beyond the near ring, on average (D543). No 50-iron minimum.</summary>
+    [JsonPropertyName("scattered_iron_seams")]
+    public int ScatteredIronSeams { get; init; } = 4;
+
+    /// <summary>How far a valley's richness swings round those averages, as a percentage (D543): one draw per kind.</summary>
+    [JsonPropertyName("seam_count_variety_percent")]
+    public int SeamCountVarietyPercent { get; init; } = 50;
+
+    /// <summary>The grid the valley-wide seams are laid on, in tiles a cell (D543): one candidate a cell, so they spread.</summary>
+    [JsonPropertyName("seam_scatter_cell_tiles")]
+    public int SeamScatterCellTiles { get; init; } = 12;
+
+    /// <summary>No valley-wide stone seam within this many tiles of the founding — the house plots (D434, D543).</summary>
+    [JsonPropertyName("stone_seam_clear_of_founding_tiles")]
+    public int StoneSeamClearOfFoundingTiles { get; init; } = 10;
+
+    /// <summary>
+    /// No valley-wide iron seam within this many tiles of the founding (D543): *"iron a little closer"*, not on the
+    /// doorstep — at the stone's 10, one valley in some had iron seven tiles from the founders.
+    /// </summary>
+    [JsonPropertyName("iron_seam_clear_of_founding_tiles")]
+    public int IronSeamClearOfFoundingTiles { get; init; } = 18;
+
+    /// <summary>The smallest a valley-wide seam may be, in tiles (D543, Joe: *"wider range"*).</summary>
+    [JsonPropertyName("scattered_seam_tiles_min")]
+    public int ScatteredSeamTilesMin { get; init; } = 1;
+
+    /// <summary>The largest a valley-wide seam may be, in tiles — skewed so big ones are rare (D543).</summary>
+    [JsonPropertyName("scattered_seam_tiles_max")]
+    public int ScatteredSeamTilesMax { get; init; } = 40;
+
+    /// <summary>
+    /// How often a stone seam takes each shape — <c>blob</c>, <c>vein</c>, <c>cluster</c>, <c>arms</c> — as weights
+    /// (D543, Joe: *"all of the above, more variety"*). The near seams take only the solid two.
+    /// </summary>
+    [JsonPropertyName("stone_seam_shapes")]
+    public IReadOnlyDictionary<string, int> StoneSeamShapes { get; init; } =
+        new Dictionary<string, int> { ["blob"] = 40, ["vein"] = 15, ["cluster"] = 25, ["arms"] = 20 };
+
+    /// <summary>How often an iron seam takes each shape, as weights — iron runs in veins more than stone (D543).</summary>
+    [JsonPropertyName("iron_seam_shapes")]
+    public IReadOnlyDictionary<string, int> IronSeamShapes { get; init; } =
+        new Dictionary<string, int> { ["blob"] = 25, ["vein"] = 40, ["cluster"] = 15, ["arms"] = 20 };
 
     /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
     /// <remarks>
@@ -4717,6 +4768,30 @@ public sealed record SimConfig
         // the answer is now `forest_coverage_percent`, which has its own guard below, and a
         // hut the player has to build. **The valley owes the village trees; it no longer
         // owes it jobs.**
+        if (ScatteredStoneSeams < 0 || ScatteredIronSeams < 0 || SeamCountVarietyPercent is < 0 or > 100
+            || SeamScatterCellTiles < 4 || StoneSeamClearOfFoundingTiles < 0 || IronSeamClearOfFoundingTiles < 0
+            || ScatteredSeamTilesMin < 1
+            || ScatteredSeamTilesMax < ScatteredSeamTilesMin)
+        {
+            throw new SimConfigException(
+                $"scattered seams: counts not negative, seam_count_variety_percent 0-100, seam_scatter_cell_tiles at least 4, "
+                + $"the clearances not negative, and 1 <= scattered_seam_tiles_min <= scattered_seam_tiles_max "
+                + $"(got {ScatteredStoneSeams}, {ScatteredIronSeams}, {SeamCountVarietyPercent}, {SeamScatterCellTiles}, "
+                + $"{StoneSeamClearOfFoundingTiles}, {IronSeamClearOfFoundingTiles}, {ScatteredSeamTilesMin}, {ScatteredSeamTilesMax}).");
+        }
+
+        foreach ((string key, IReadOnlyDictionary<string, int> shapes) in new[] { ("stone_seam_shapes", StoneSeamShapes), ("iron_seam_shapes", IronSeamShapes) })
+        {
+            foreach ((string shape, int weight) in shapes)
+            {
+                if (shape is not ("blob" or "vein" or "cluster" or "arms") || weight < 0)
+                {
+                    throw new SimConfigException(
+                        $"{key}: \"{shape}\" must be blob, vein, cluster or arms with a weight of zero or more (got {weight}).");
+                }
+            }
+        }
+
         if (ExtraStoneSeams < 0 || ExtraIronSeams < 0 || IronSeamMinIron < 0)
         {
             throw new SimConfigException(

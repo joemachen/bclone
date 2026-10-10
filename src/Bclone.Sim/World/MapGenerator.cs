@@ -136,6 +136,19 @@ public static class MapGenerator
             PaintOutcrop(terrain, Terrain.IronDeposit, seam, ironTiles, width, height, minX, minY);
         }
 
+        // ⭐ AND THEN ACROSS THE WHOLE VALLEY (D543, Joe: *"more variety, more frequency across the whole valley"*;
+        // `specs/seams-revisited.md`). The near seams above keep their guarantees and go down first, so they have the
+        // ground; the valley-wide ones fill in after, in every shape and size, and only the near iron grows to 50.
+        foreach (Seam seam in ScatteredSeamsOf(config, seed, Terrain.Rock))
+        {
+            PaintOutcrop(terrain, Terrain.Rock, seam, 0, width, height, minX, minY);
+        }
+
+        foreach (Seam seam in ScatteredSeamsOf(config, seed, Terrain.IronDeposit))
+        {
+            PaintOutcrop(terrain, Terrain.IronDeposit, seam, 0, width, height, minX, minY);
+        }
+
         // ---- 5. Woodland across the whole valley ---------------------
         // ⭐ THE VALLEY IS WOODED, NOT DOTTED WITH TWO STANDS (Joe,
         // `specs/forests-and-gathering.md`). "There should be generated forests on the map
@@ -352,8 +365,27 @@ public static class MapGenerator
     /// <summary>A diagonal strip's span in <c>x ± y</c> for a river this many tiles wide: × √2, rounded, at least 2.</summary>
     private static int SpanAcross(int tilesWide) => Math.Max(2, ((tilesWide * 1414) + 500) / 1000);
 
-    /// <summary>One seam: where its outcrop is centred and how big it is, in hundredths of a tile².</summary>
-    public readonly record struct Seam(GridPos Centre, int ReachHundredths);
+    /// <summary>The shapes a seam takes (D543, Joe: *"all of the above, more variety"*).</summary>
+    public enum SeamShape
+    {
+        /// <summary>A rounded outcrop with a wobbling edge — every seam before D543.</summary>
+        Blob = 0,
+
+        /// <summary>A long stripe a tile or two wide, bending as it runs.</summary>
+        Vein = 1,
+
+        /// <summary>Three to five small outcrops close together.</summary>
+        Cluster = 2,
+
+        /// <summary>A small outcrop with two or three veins running out of it.</summary>
+        Arms = 3,
+    }
+
+    /// <summary>
+    /// One seam: where it is centred, how big it is (in hundredths of a tile², a disc's r² × 100), its shape, and which
+    /// way a vein or the first arm or part runs (a raw <see cref="Angle"/>).
+    /// </summary>
+    public readonly record struct Seam(GridPos Centre, int ReachHundredths, SeamShape Shape = SeamShape.Blob, int Turn = 0);
 
     /// <summary>
     /// Where a kind's seams lie and how big each is — <b>drawn from that kind's own stage</b>, and the
@@ -380,7 +412,29 @@ public static class MapGenerator
     /// throughout: positions turn through <see cref="Angle"/>'s table (D2, D318).
     /// </para>
     /// </remarks>
-    public static IReadOnlyList<Seam> SeamsOf(SimConfig config, ulong seed, Terrain kind)
+    public static IReadOnlyList<Seam> SeamsOf(SimConfig config, ulong seed, Terrain kind) => Lay(config, seed, kind).Near;
+
+    /// <summary>
+    /// ⭐ The valley-wide seams (D543): one candidate per cell of a grid over the whole map, a valley's own richness
+    /// deciding how many, each a size and a shape of its own. <b>Drawn after the near seams, on the same stage</b>, so
+    /// the rings lie where they did and no other stage draws a number differently.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Across the whole valley, the far bank included</b> (Joe: *"keep them. we'll eventually add bridges"*), but
+    /// never within <c>stone_seam_clear_of_founding_tiles</c> (iron: <c>iron_…</c>, further) of the founding — the house
+    /// plots D434 kept the rings off, and for iron the doorstep.
+    /// </para>
+    /// <para>
+    /// <b>How many is the valley's</b>: one draw of ±<c>seam_count_variety_percent</c> around
+    /// <c>scattered_stone_seams</c> / <c>scattered_iron_seams</c>, so one valley is rich and the next is lean.
+    /// <b>How big is skewed small</b>: a uniform draw squared, between <c>scattered_seam_tiles_min</c> and
+    /// <c>…_max</c>, so pebbles are common and big outcrops rare. No iron minimum (Joe: only the near iron holds 50).
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<Seam> ScatteredSeamsOf(SimConfig config, ulong seed, Terrain kind) => Lay(config, seed, kind).Scattered;
+
+    private static (List<Seam> Near, List<Seam> Scattered) Lay(SimConfig config, ulong seed, Terrain kind)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -418,11 +472,135 @@ public static class MapGenerator
                     size += rng.NextInt(-vary, vary + 1);
                 }
 
-                seams.Add(new Seam(centre, size < 50 ? 50 : size));
+                // ⭐ Its shape with it (D543), so a ring's seams are the same whatever rings come after — drawn after
+                // all of them, the inner four took different shapes the moment the outer eight were added, and woods
+                // moved (`TheQuarrysSeamsMovedNoForest` caught it). Solid shapes only, because the near seams'
+                // guarantees count what lies round the centre: stone a blob or a blob with arms (three in reach), iron
+                // a blob — arms grown to 50 ran their iron past what a player reads as one seam (a wide river left one
+                // holding 24 within eight tiles of its centre).
+                SeamShape shape = PickShape(config, stone, ref rng, nearOnly: true);
+                seams.Add(new Seam(centre, size < 50 ? 50 : size, shape, rng.NextInt(0, 65536)));
             }
         }
 
-        return seams;
+        var scattered = new List<Seam>();
+        int target = stone ? config.ScatteredStoneSeams : config.ScatteredIronSeams;
+        if (target <= 0)
+        {
+            return (seams, scattered);
+        }
+
+        int variety = config.SeamCountVarietyPercent;
+        int richness = 100 + (variety > 0 ? rng.NextInt(-variety, variety + 1) : 0);
+        int wanted = ((target * richness) + 50) / 100;
+
+        int cell = config.SeamScatterCellTiles;
+        int clear = stone ? config.StoneSeamClearOfFoundingTiles : config.IronSeamClearOfFoundingTiles;
+        var cells = new List<GridPos>();
+        for (int y = config.MapMinY; y < config.MapMinY + config.MapHeight; y += cell)
+        {
+            for (int x = config.MapMinX; x < config.MapMinX + config.MapWidth; x += cell)
+            {
+                int cx = x + (cell / 2);
+                int cy = y + (cell / 2);
+                if ((cx * cx) + (cy * cy) >= clear * clear)
+                {
+                    cells.Add(new GridPos(x, y));
+                }
+            }
+        }
+
+        int least = config.ScatteredSeamTilesMin;
+        int spread = config.ScatteredSeamTilesMax - least;
+        for (int i = 0; i < wanted && i < cells.Count; i++)
+        {
+            // A cell of its own (a partial shuffle), a place inside it, a size, a shape and a heading — every draw made
+            // whether or not the seam is kept, so one valley's skip never shifts the next seam's numbers.
+            int j = rng.NextInt(i, cells.Count);
+            (cells[i], cells[j]) = (cells[j], cells[i]);
+            GridPos corner = cells[i];
+            GridPos at = ClampInside(new GridPos(corner.X + rng.NextInt(0, cell), corner.Y + rng.NextInt(0, cell)), config);
+            int u = rng.NextInt(0, 1001);
+            int tiles = least + (spread * u * u / 1_000_000);
+            SeamShape shape = PickShape(config, stone, ref rng, nearOnly: false);
+            int turn = rng.NextInt(0, 65536);
+
+            if ((at.X * at.X) + (at.Y * at.Y) < clear * clear)
+            {
+                continue;
+            }
+
+            scattered.Add(new Seam(at, Math.Max(50, tiles * 700 / 22), shape, turn));
+        }
+
+        return (seams, scattered);
+    }
+
+    /// <summary>A shape by this kind's weights (`stone_seam_shapes`, `iron_seam_shapes`) — the near seams only solid ones.</summary>
+    private static SeamShape PickShape(SimConfig config, bool stone, ref DeterministicRandom rng, bool nearOnly)
+    {
+        IReadOnlyDictionary<string, int> weights = stone ? config.StoneSeamShapes : config.IronSeamShapes;
+        int total = 0;
+        foreach (SeamShape shape in Shapes)
+        {
+            total += Allowed(shape) ? weights.GetValueOrDefault(NameOf(shape)) : 0;
+        }
+
+        if (total <= 0)
+        {
+            return SeamShape.Blob;
+        }
+
+        int roll = rng.NextInt(0, total);
+        foreach (SeamShape shape in Shapes)
+        {
+            roll -= Allowed(shape) ? weights.GetValueOrDefault(NameOf(shape)) : 0;
+            if (roll < 0)
+            {
+                return shape;
+            }
+        }
+
+        return SeamShape.Blob;
+
+        bool Allowed(SeamShape shape) => !nearOnly || shape == SeamShape.Blob || (stone && shape == SeamShape.Arms);
+    }
+
+    /// <summary>The shapes in id order — the order their weights are rolled against.</summary>
+    private static readonly SeamShape[] Shapes = { SeamShape.Blob, SeamShape.Vein, SeamShape.Cluster, SeamShape.Arms };
+
+    /// <summary>A shape's name in the data file: <c>blob</c>, <c>vein</c>, <c>cluster</c>, <c>arms</c>.</summary>
+    public static string NameOf(SeamShape shape) => shape switch
+    {
+        SeamShape.Vein => "vein",
+        SeamShape.Cluster => "cluster",
+        SeamShape.Arms => "arms",
+        _ => "blob",
+    };
+
+    /// <summary>
+    /// The tiles this seam covers painted alone on open grass — what its shape and size come to, asked of the painter
+    /// itself rather than restated (D543's shape and size guards).
+    /// </summary>
+    public static IReadOnlyList<GridPos> FootprintOf(Seam seam, Terrain kind)
+    {
+        const int Half = 60;
+        int side = (2 * Half) + 1;
+        var scratch = new Terrain[side * side];
+        int minX = seam.Centre.X - Half;
+        int minY = seam.Centre.Y - Half;
+        PaintSeamAt(scratch, kind, seam, seam.ReachHundredths, side, side, minX, minY);
+
+        var tiles = new List<GridPos>();
+        for (int i = 0; i < scratch.Length; i++)
+        {
+            if (scratch[i] == kind)
+            {
+                tiles.Add(new GridPos(minX + (i % side), minY + (i / side)));
+            }
+        }
+
+        return tiles;
     }
 
     /// <summary>
@@ -452,7 +630,7 @@ public static class MapGenerator
         const int MostGrowth = 6;
 
         int reach = seam.ReachHundredths;
-        int held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);
+        int held = PaintSeamAt(terrain, kind, seam, reach, width, height, minX, minY);
         for (int grown = 0; held < leastTiles && grown < MostGrowth; grown++)
         {
             // A ring a step: the radius one tile wider, as the diamond grew. Integer (D2).
@@ -463,14 +641,96 @@ public static class MapGenerator
             }
 
             reach += 100 * ((2 * radius) + 1);
-            held = PaintOutcropAt(terrain, kind, seam.Centre, reach, width, height, minX, minY);
+            held = PaintSeamAt(terrain, kind, seam, reach, width, height, minX, minY);
         }
 
         return held;
     }
 
-    private static int PaintOutcropAt(
-        Terrain[] terrain, Terrain kind, GridPos centre, int reachHundredths, int width, int height, int minX, int minY)
+    /// <summary>
+    /// Paint one seam in its shape at this size, over open grass only, and say how many tiles of its kind it covers —
+    /// each tile counted once, whatever parts of the shape overlap (D543).
+    /// </summary>
+    private static int PaintSeamAt(
+        Terrain[] terrain, Terrain kind, Seam seam, int reachHundredths, int width, int height, int minX, int minY)
+    {
+        var held = new HashSet<int>();
+        var ground = new Ground(terrain, kind, width, height, minX, minY, held);
+        switch (seam.Shape)
+        {
+            case SeamShape.Vein:
+                PaintVein(ground, seam.Centre, seam.Turn, AreaOf(reachHundredths), wide: 0, fromTheCentre: false);
+                break;
+
+            case SeamShape.Cluster:
+                {
+                    // Three to five small outcrops round the centre, each a part of the size; where they sit is hashed
+                    // from the centre, never drawn, so the shape changes nothing else in the valley.
+                    int parts = 3 + (int)(Scramble(seam.Centre.X, seam.Centre.Y + 17) % 3);
+                    int each = Math.Max(50, reachHundredths / parts);
+                    int apart = 2 + RadiusOf(each);
+                    for (int j = 0; j < parts; j++)
+                    {
+                        int turn = seam.Turn + (j * 65536 / parts) + (int)(Scramble(seam.Centre.X + j, seam.Centre.Y - j) % 8001) - 4000;
+                        int far = apart + (int)(Scramble(seam.Centre.Y + j, seam.Centre.X) % 3);
+                        PaintDisc(ground, Off(seam.Centre, far, 0, turn), each);
+                    }
+
+                    break;
+                }
+
+            case SeamShape.Arms:
+                {
+                    // A small outcrop and two or three veins one tile wide running out of it.
+                    int core = Math.Max(50, reachHundredths * 45 / 100);
+                    PaintDisc(ground, seam.Centre, core);
+                    int arms = 2 + (int)(Scramble(seam.Centre.X - 31, seam.Centre.Y + 31) % 2);
+                    int armTiles = Math.Max(2, AreaOf(reachHundredths) * 55 / 100 / arms) + RadiusOf(core);
+                    for (int j = 0; j < arms; j++)
+                    {
+                        int turn = seam.Turn + (j * 65536 / arms) + (int)(Scramble(seam.Centre.X + (j * 13), seam.Centre.Y) % 10001) - 5000;
+                        PaintVein(ground, seam.Centre, turn, armTiles, wide: 1, fromTheCentre: true);
+                    }
+
+                    break;
+                }
+
+            default:
+                PaintDisc(ground, seam.Centre, reachHundredths);
+                break;
+        }
+
+        return held.Count;
+    }
+
+    /// <summary>Where one seam's paint goes, and the tiles of its kind it has covered so far.</summary>
+    private readonly record struct Ground(
+        Terrain[] Terrain, Terrain Kind, int Width, int Height, int MinX, int MinY, HashSet<int> Held);
+
+    /// <summary>One tile: painted if it is open grass, counted if it is this kind (painted now or already).</summary>
+    private static void PaintTile(Ground ground, GridPos at)
+    {
+        int x = at.X - ground.MinX;
+        int row = at.Y - ground.MinY;
+        if (x < 0 || x >= ground.Width || row < 0 || row >= ground.Height)
+        {
+            return;
+        }
+
+        int index = (row * ground.Width) + x;
+        if (ground.Terrain[index] == Terrain.Grass)
+        {
+            ground.Terrain[index] = ground.Kind;
+        }
+
+        if (ground.Terrain[index] == ground.Kind)
+        {
+            ground.Held.Add(index);
+        }
+    }
+
+    /// <summary>A rounded outcrop with the forests' wobbling edge — every seam's shape before D543 (D475).</summary>
+    private static void PaintDisc(Ground ground, GridPos centre, int reachHundredths)
     {
         int bound = 2;
         while (bound * bound * 100 < reachHundredths * 7 / 5)
@@ -478,38 +738,69 @@ public static class MapGenerator
             bound++;
         }
 
-        int held = 0;
         for (int dy = -bound; dy <= bound; dy++)
         {
             for (int dx = -bound; dx <= bound; dx++)
             {
                 int away = 100 * ((dx * dx) + (dy * dy));
-                if (away > reachHundredths + (reachHundredths * Wobble(centre, dx, dy) / 50))
+                if (away <= reachHundredths + (reachHundredths * Wobble(centre, dx, dy) / 50))
                 {
-                    continue;
-                }
-
-                int x = centre.X + dx - minX;
-                int row = centre.Y + dy - minY;
-                if (x < 0 || x >= width || row < 0 || row >= height)
-                {
-                    continue;
-                }
-
-                int index = (row * width) + x;
-                if (terrain[index] == Terrain.Grass)
-                {
-                    terrain[index] = kind;
-                }
-
-                if (terrain[index] == kind)
-                {
-                    held++;
+                    PaintTile(ground, new GridPos(centre.X + dx, centre.Y + dy));
                 }
             }
         }
+    }
 
-        return held;
+    /// <summary>
+    /// A stripe of about this many tiles, a tile or two wide (<paramref name="wide"/> 0 lets the centre's hash choose),
+    /// along a heading, bending a tile sideways now and then by hash. Through <see cref="Angle"/>'s table: integers (D2).
+    /// </summary>
+    private static void PaintVein(Ground ground, GridPos centre, int turn, int tiles, int wide, bool fromTheCentre)
+    {
+        if (wide <= 0)
+        {
+            wide = 1 + (int)(Scramble((centre.X * 3) + turn, centre.Y * 5) % 2);
+        }
+
+        int length = Math.Max(2, tiles / wide);
+        int start = fromTheCentre ? 0 : -(length / 2);
+        int bend = 0;
+        for (int i = 0; i < length; i++)
+        {
+            int step = start + i;
+            if (i % 4 == 3)
+            {
+                bend = Math.Clamp(bend + (int)(Scramble(centre.X + (step * 7919), centre.Y + turn) % 3) - 1, -2, 2);
+            }
+
+            for (int w = 0; w < wide; w++)
+            {
+                PaintTile(ground, Off(centre, step, bend + w, turn));
+            }
+        }
+    }
+
+    /// <summary>The tile <paramref name="along"/> tiles out and <paramref name="across"/> to the side of a heading from a centre.</summary>
+    private static GridPos Off(GridPos centre, int along, int across, int turn)
+    {
+        GridPos off = new Point(Fixed.FromInt(along), Fixed.FromInt(across))
+            .RotatedBy(Angle.FromRaw(unchecked((ushort)turn))).ToTile();
+        return new GridPos(centre.X + off.X, centre.Y + off.Y);
+    }
+
+    /// <summary>About how many tiles a size covers: a disc's r² × 100 ÷ 100 × π, with π as 22/7 (D2).</summary>
+    private static int AreaOf(int reachHundredths) => Math.Max(1, reachHundredths * 22 / 700);
+
+    /// <summary>The whole-tile radius of a size: the largest r with r² × 100 within it.</summary>
+    private static int RadiusOf(int reachHundredths)
+    {
+        int radius = 0;
+        while ((radius + 1) * (radius + 1) * 100 <= reachHundredths)
+        {
+            radius++;
+        }
+
+        return radius;
     }
 
     /// <summary>Tiles of a seam it takes to hold <paramref name="least"/> of a good — its row's yield a tile.</summary>

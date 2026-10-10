@@ -146,7 +146,8 @@ public sealed class MapGenerationTests
     // 10984246327142560906.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 8294284479965600006.
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6546559622498121930.
-    private const ulong GoldenMapHash = 4985353537107002683UL;
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 4985353537107002683.
+    private const ulong GoldenMapHash = 6993585647478989079UL;
 
     /// <summary>
     /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
@@ -171,9 +172,10 @@ public sealed class MapGenerationTests
     // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
     // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Every kind moves, as it should. Were 9492872349874793864 (420 / 2640 / 141 / 52), 17624964258198066199 (410 / 2673 / 150 / 52), 9190696535150768213 (425 / 2626 / 127 / 43).
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. ⭐ Water holds on all three — the river is another stage. Were 17700436842626828916 (410 / 2489 / 143 / 45), 9700739267172670076 (415 / 2722 / 156 / 52), 1092681087056102210 (410 / 2650 / 141 / 51).
-    [InlineData(12345UL, 10571714027248664497UL, 410, 2523, 134, 40)]
-    [InlineData(2UL, 12027232115351811171UL, 415, 2729, 127, 59)]
-    [InlineData(42UL, 13978094359002128344UL, 410, 2651, 121, 45)]
+    // RE-TAKEN (D543) ALL THREE — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Water holds to the tile; forest gives up 0.6-2.5 % to the new seams; stone rises about two-thirds and iron about doubles. Was 12345: 10571714027248664497, 410, 2523, 134, 40 / 2: 12027232115351811171, 415, 2729, 127, 59 / 42: 13978094359002128344, 410, 2651, 121, 45.
+    [InlineData(12345UL, 17187169797415403285UL, 410, 2509, 214, 88)]
+    [InlineData(2UL, 17209291963455288967UL, 415, 2672, 231, 69)]
+    [InlineData(42UL, 1133243648252987032UL, 410, 2584, 185, 69)]
     public void EachSeedsTerrainIsWhatItWas(
         ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
     {

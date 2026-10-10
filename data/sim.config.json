@@ -1421,7 +1421,11 @@
   "stone_seam_radius_tiles": 2,
 
   "iron_seam_count": 2,
-  "iron_seam_ring_tiles": 26,
+  // 26 -> 22 (D543, Joe: "move iron a little closer to the starting position").
+  // Measured over 64 valleys with the valley-wide seams in: the nearest iron to
+  // the founding, median 30 before; 27 at 26, 26 at 24, 24 at 22, 22 at 20. Every
+  // near iron seam still holds 56 or more.
+  "iron_seam_ring_tiles": 22,
   "iron_seam_radius_tiles": 1,
 
   // MORE STONE AND IRON FOR THE QUARRY (quarry.md §3.1, D434, Joe's calls).
@@ -1437,6 +1441,29 @@
   "extra_stone_seams": 8,
   "extra_iron_seams": 2,
   "iron_seam_min_iron": 50,
+
+  // ACROSS THE WHOLE VALLEY, IN EVERY SHAPE AND SIZE (D543; Joe: "revisit iron
+  // and stone node volume and positioning and frequency and size and shape" --
+  // volume as is, iron a little closer, "more variety, more frequency across the
+  // whole valley", "wider range", shapes "all of the above"; seams across the
+  // river kept, bridges later; only the near iron holds 50; specs/seams-
+  // revisited.md). The rings above stay, with their guarantees; these come on top,
+  // one candidate per cell of a grid over the whole map, each valley drawing its
+  // own richness (+/- variety) round the averages. Sizes are skewed small: a
+  // uniform draw squared between min and max tiles. Shapes are weights per kind;
+  // the near seams take only blob and arms, so what their guards count stays.
+  "scattered_stone_seams": 12,
+  "scattered_iron_seams": 4,
+  "seam_count_variety_percent": 50,
+  "seam_scatter_cell_tiles": 12,
+  // Stone may come as near as the house plots allow; iron stays off the doorstep
+  // ("a little closer", not next door -- at 10 some valleys had iron 7 tiles out).
+  "stone_seam_clear_of_founding_tiles": 10,
+  "iron_seam_clear_of_founding_tiles": 18,
+  "scattered_seam_tiles_min": 1,
+  "scattered_seam_tiles_max": 40,
+  "stone_seam_shapes": { "blob": 40, "vein": 15, "cluster": 25, "arms": 20 },
+  "iron_seam_shapes": { "blob": 25, "vein": 40, "cluster": 15, "arms": 20 },
 
   // The land the exiles arrive having already chosen to live on (D42).
   // A village founded with nothing painted could never build a house,

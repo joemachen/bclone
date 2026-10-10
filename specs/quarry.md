@@ -97,6 +97,9 @@ What the code had before this spec, traced rather than remembered:
 
 ### 3.1 More stone and iron, placed by hash
 
+> **Since D543 (`seams-revisited.md`)** these near seams are joined by valley-wide ones (about twice the seams, every
+> shape and size), and the iron ring is 22. The guarantees below hold for the near seams.
+
 > ⭐ **SUPERSEDED BY D475 (2026-10-03, Joe: *"stone and iron nodes look planned and symmetrical"*).** The
 > hash and the slots below are gone. Every seam is drawn from its kind's own stage stream (D473 made that
 > free) by `MapGenerator.SeamsOf`: a ring of up to `4k` seams at `1 + (k−1)/2` times the kind's ring (the
