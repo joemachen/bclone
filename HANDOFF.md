@@ -1,4 +1,15 @@
-# Handoff — bclone: **▶️ PHASE 5 — D538: THE ARMFUL, THE 4¼-DAY MEAL AND THE WOODCUTTER FIX MERGED TO `main`, UNPLAYED. NEXT: QUARRIES AND MINES PLACED NEAR THEIR SEAMS (JOE, NEW), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D539: QUARRIES AND MINES NEAR THEIR SEAMS SPECCED ON `slice/seam-reach`. THREE CALLS FOR JOE (`seam-reach.md §6`), THEN BUILD. THE ARMFUL (D537–D538) IS MERGED AND STILL UNPLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (SEAM REACH SPECCED) — D539, ON WINDOWS.**
+>
+> **`main` = D538, pushed. `slice/seam-reach`** (off `main`) = D539: `specs/seam-reach.md`, nothing built. Joe asked that
+> a quarry or a mine be placeable only within some distance of stone or iron, as the fishing hut is of water. Measured:
+> every reachable seam in 64 valleys keeps a legal site even at a reach of 1, so the number is feel, not survival.
+>
+> **▶️ NEXT: Joe's three calls (OPEN, top entry), then build it TDD per the spec's §4.** ⏸️ Still owed by Joe: a play
+> of the merged armful (`.\run.bat`).
+>
+> **(the banner below is the state before D539)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL MERGED) — D538, ON WINDOWS.**
 >
@@ -5882,6 +5893,12 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **QUARRIES AND MINES NEAR THEIR SEAMS — THREE CALLS (D539, asked 2026-10-09, `seam-reach.md §6`).** **Q1:** how
+  far may the building stand from its seam? **4 tiles** recommended (a quarry at the edge of its rock); 2 is nearly the
+  fishery's touch, 8 lets it stand back in the meadow. No number strands a seam (measured). **Q2:** must the painted
+  faces be within that reach too? **Yes** recommended, or the rule is a formality (stand by a stray rock, paint the big
+  seam across the valley). **Q3:** seams across the river do not count (recommended, D110)?
 
 - ✅ **FIXED (D538) — Joe: *"fix it"*. Lost foundings 22 → 13 of 100.** ~~THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).~~ With the armful built, seven more
   valleys of 100 lose all four founders in Year 1 (15 → 22): the woodcutter splits every stored log while firewood is
