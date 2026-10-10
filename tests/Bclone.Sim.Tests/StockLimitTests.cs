@@ -378,7 +378,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D498) — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 8205114029936109547.
     // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 8954345765606684111.
     // RE-TAKEN (D537) — the armful and the meal (`armful-and-meals.md`, Joe: "armful 80", "6", "everyone", "proceed with every 4¼ days at 6 a meal"): `carry_capacity` 40 → 80, `hunger_per_tick` 7 → 5, `eat_threshold` and `eat_reduces_hunger` 80 → 85 and `food_per_meal` 4 → 6 (a meal every 17 ticks), the village fixture following the game. Proven the only reason: the parent commit (f3decb0) holds the old value with the suite green, and this commit's sim-facing change is those numbers. Was 11828556488198516637.
-    private const ulong FixtureFiftyYearHash = 686603967521758927UL;
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 686603967521758927.
+    private const ulong FixtureFiftyYearHash = 13092297679144213687UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -488,7 +489,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D498) — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 1021202375279885574.
     // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 3584174389802385215.
     // RE-TAKEN (D537) — the armful and the meal (`armful-and-meals.md`, Joe: "armful 80", "6", "everyone", "proceed with every 4¼ days at 6 a meal"): `carry_capacity` 40 → 80, `hunger_per_tick` 7 → 5, `eat_threshold` and `eat_reduces_hunger` 80 → 85 and `food_per_meal` 4 → 6 (a meal every 17 ticks), the village fixture following the game. Proven the only reason: the parent commit (f3decb0) holds the old value with the suite green, and this commit's sim-facing change is those numbers. Was 18211395129735087795.
-    private const ulong ShippedFiftyYearHash = 15656478682750353969UL;
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 15656478682750353969.
+    private const ulong ShippedFiftyYearHash = 12397874138769020261UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
@@ -985,6 +987,7 @@ public sealed class StockLimitTests
         // these six at 40 / 99 / 100 / 101 the ambitious arm ran +2 / 0 / −4 / +2 against the content
         // one: a couple either way, whichever seeds it lands on. The failure this guards was a village
         // halved (ten alive down to four), which four of sixty still catches with room to spare.
+        // SEED 7 AGAIN SINCE D544. D543's seams reshuffled the fixture's seed-7 valley and its warm-start forester was given 72 wooded tiles all across the river, so the founders froze in Year 1 and this moved to seed 11 for one commit. D544 gives a warm-start forester only wood the village can walk to (`WarmStartWoodTests`), and seed 7 lives again.
         int heldWith = 0, heldWithout = 0, aliveWith = 0, aliveWithout = 0;
         foreach (ulong seed in new ulong[] { 12345UL, 2UL, 7UL, 1UL, 3UL, 5UL })
         {

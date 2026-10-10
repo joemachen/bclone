@@ -479,14 +479,26 @@ public sealed class OrganicHousingTests
         return true;
     }
 
+    /// <summary>
+    /// A village centre due west of a square, far enough that every house sites on the square's west edge.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>POSED, NOT FOUND (D543).</b> The facing guards passed with the founding lying about due west of the square
+    /// the helper found. D543's seam draws reshuffled the fixture's valley and the nearest bare square came out
+    /// south-east of the village, where the house nearest the village stands on the paint's corner: a diagonal facing
+    /// swings its second tile off the paint (`TilesClippedOff`), so every house fell back to a compass point. The
+    /// chooser takes the village centre as an argument, so these guards state it.
+    /// </remarks>
+    private static GridPos DueWestOf(GridPos centre) => new(centre.X - 30, centre.Y);
+
     /// <summary>Site this many families one after another, as a growing village would.</summary>
-    private List<HomeSite> SiteFamilies(SimWorld world, int families)
+    private List<HomeSite> SiteFamilies(SimWorld world, int families, GridPos? village = null)
     {
         var sites = new List<HomeSite>();
         for (int i = 0; i < families; i++)
         {
             Household family = ANewFamily(world, "F" + i);
-            HomeSite site = Household.ChooseSite(world, world.Map.FoundingSite, family.Id);
+            HomeSite site = Household.ChooseSite(world, village ?? world.Map.FoundingSite, family.Id);
             world.MarkHome(family.Id, site);
             _output.WriteLine($"{family.Name} at {site.Front} facing {site.Facing.Raw}: {site.WhyHere}");
             sites.Add(site);
@@ -525,10 +537,10 @@ public sealed class OrganicHousingTests
     [Fact]
     public void HousesFaceThePathInFrontOfThem()
     {
-        (SimWorld world, _) = ASquareWithAPath(c =>
+        (SimWorld world, GridPos centre) = ASquareWithAPath(c =>
             Enumerable.Range(-7, 15).Select(k => new GridPos(c.X + k, c.Y + k)));
 
-        List<HomeSite> sites = SiteFamilies(world, 6);
+        List<HomeSite> sites = SiteFamilies(world, 6, DueWestOf(centre));
         int offTheQuarters = 0;
         foreach (HomeSite site in sites)
         {
@@ -700,13 +712,13 @@ public sealed class OrganicHousingTests
     [Fact]
     public void AHouseWithNoPathNearFacesTheVillage()
     {
-        (SimWorld world, _) = ASquareWithAPath(_ => Array.Empty<GridPos>());
-        HomeSite site = SiteFamilies(world, 1)[0];
+        (SimWorld world, GridPos centre) = ASquareWithAPath(_ => Array.Empty<GridPos>());
+        GridPos village = DueWestOf(centre);
+        HomeSite site = SiteFamilies(world, 1, village)[0];
 
         // ⚠️ The bearing itself, to the 1/64 turn, not "anywhere toward it": the first draft scored
         // ZERO against the no-path branch removed, because a house facing north passed whenever the
         // village lay anywhere north of the square.
-        GridPos village = world.Map.FoundingSite;
         double bearing = System.Math.Atan2(village.X - site.Front.X, -(village.Y - site.Front.Y));
         int expected = (int)System.Math.Round(bearing / (2 * System.Math.PI) * 64) & 63;
         int got = site.Facing.Raw / 1024;

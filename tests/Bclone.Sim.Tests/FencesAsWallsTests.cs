@@ -511,6 +511,7 @@ public sealed class FencesAsWallsTests
     /// <remarks>
     /// A step is the segment a villager moved in one tick, walked tile by tile as a leg is
     /// (<see cref="LineOfSight.TilesCrossed"/>).
+    /// <para>SEED 7 AGAIN SINCE D544. D543's seams reshuffled the fixture's seed-7 valley and its warm-start forester was given 72 wooded tiles all across the river, so the founders froze in Year 1 and this moved to seed 11 for one commit. D544 gives a warm-start forester only wood the village can walk to (`WarmStartWoodTests`), and seed 7 lives again.</para>
     /// </remarks>
     [Theory]
     [InlineData(12345UL)]

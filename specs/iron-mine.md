@@ -37,7 +37,7 @@ What the code has before this spec, traced:
 
 | Thing | State |
 |---|---|
-| Iron seams | 2 drawn + 2 hashed at ring 26, each grown to ≥ 50 iron (8 a tile, ~7 tiles); `Terrain.IronDeposit` |
+| Iron seams | 2 drawn + 2 hashed at ring 26 (**22 since D543**, and valley-wide iron seams of any size on top — `seams-revisited.md`), the near ones each grown to ≥ 50 iron (8 a tile, ~7 tiles); `Terrain.IronDeposit` |
 | Digging iron | laborers only, under the harvest brush (`Harvest` → grass, `IronEverDug +=`) |
 | The tech tree | a horizon node `"mine"` — *"The iron mine"*, `NotYet`, requires `"smithy"`, unlocks nothing (`TechTree.DefaultNodes`) |
 | Iron tools forged | `ToolsEverForged` — stone and iron together, **not hashed**; no per-kind count |

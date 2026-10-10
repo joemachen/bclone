@@ -131,7 +131,14 @@ public sealed class SeamsTests
     public void TheSeamsMoveNoOtherStagesDraws(ulong seed)
     {
         SimConfig with = VillageFixtures.Village with { Seed = seed };
-        SimConfig without = with with { StoneSeamCount = 0, IronSeamCount = 0, ExtraStoneSeams = 0, ExtraIronSeams = 0 };
+        // ⚠️ The valley-wide seams too (D543): left on, they are drawn after the rings on the same stage, so taking the
+        // rings away moves them — and a wood then stands where one of them used to, which is the seams' stage, not the
+        // woodland's.
+        SimConfig without = with with
+        {
+            StoneSeamCount = 0, IronSeamCount = 0, ExtraStoneSeams = 0, ExtraIronSeams = 0,
+            ScatteredStoneSeams = 0, ScatteredIronSeams = 0,
+        };
 
         GeneratedMap withOre = MapGenerator.Generate(with, seed);
         GeneratedMap withoutOre = MapGenerator.Generate(without, seed);
@@ -371,9 +378,17 @@ public sealed class SeamsTests
     [InlineData(12345UL)]
     public void TheQuarrysSeamsMovedNoForest(ulong seed)
     {
-        SimConfig with = ShippedConfig.Load() with { Seed = seed };
-        SimConfig without = with with { ExtraStoneSeams = 0, ExtraIronSeams = 0 };
-        Assert.True(with.ExtraStoneSeams > 0 && with.ExtraIronSeams > 0, "Nothing to compare.");
+        // ⚠️ With the valley-wide seams off in both arms (D543): they are drawn after the rings, so taking the extras
+        // away moves them, and a wood then stands where one used to lie. `SeamVarietyTests.TheScatteredSeamsMovedNoForest`
+        // asks the same of them.
+        // ⚠️ AND THE STONE EXTRAS ONLY (D543). Since D475 the iron ring is laid four to a ring, so going from two iron
+        // seams to four re-spaces the whole ring rather than adding two to it: a tile an iron seam leaves is grass, and
+        // a wood may stand there. That was always so and the four seeds here never happened to show it until the ring
+        // came in to 22. The stone extras ARE additive — the first ring's four stay, the second ring's eight are added —
+        // and they are the claim this guard makes.
+        SimConfig with = ShippedConfig.Load() with { Seed = seed, ScatteredStoneSeams = 0, ScatteredIronSeams = 0 };
+        SimConfig without = with with { ExtraStoneSeams = 0 };
+        Assert.True(with.ExtraStoneSeams > 0, "Nothing to compare.");
 
         GeneratedMap a = MapGenerator.Generate(without, seed);
         GeneratedMap b = MapGenerator.Generate(with, seed);

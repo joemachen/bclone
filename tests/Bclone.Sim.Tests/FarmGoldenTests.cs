@@ -292,7 +292,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D523) — a varied diet (Joe: "eat a varied diet"): among foods worth the same, a meal and a fetch take a share of each in proportion to what the pile holds, not forage first — this village eats its wheat. ⭐ PROVEN TO BE THE ONLY REASON: with the share taken greedily in id order again, the old value passes. Was 10120269350165060630.
     // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 8728969007328010656.
     // RE-TAKEN (D537) — the armful and the meal (`armful-and-meals.md`, Joe: "armful 80", "6", "everyone", "proceed with every 4¼ days at 6 a meal"): `carry_capacity` 40 → 80, `hunger_per_tick` 7 → 5, `eat_threshold` and `eat_reduces_hunger` 80 → 85 and `food_per_meal` 4 → 6 (a meal every 17 ticks), the village fixture following the game. Proven the only reason: the parent commit (f3decb0) holds the old value with the suite green, and this commit's sim-facing change is those numbers. Was 4635216801340531294.
-    private const ulong SeamGoldenHash = 7137397597790898232UL;
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 7137397597790898232.
+    private const ulong SeamGoldenHash = 12182673311767804666UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -367,7 +368,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D523) with it, for the same reason. Was 16656143455684160865.
     // RE-TAKEN (D529) with it, for the same reason: the founders' first meals spread over one meal interval. ⭐ PROVEN: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 3902667481052543839.
     // RE-TAKEN (D537) with it, for the same reason: the armful of 80 and a meal of 6 every 17 ticks. Proven by the parent commit (f3decb0), which holds the old value with the suite green. ⚠️ Found only on the second run: it is asserted after `SeamGoldenHash`, so it could not redden until that one passed. Was 17597176157332866743.
-    private const ulong SeamBeforeAnybodyGotBetter = 3928392852916589393UL;
+    // RE-TAKEN (D543) with it, for the same reason: the seams across the whole valley. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 3928392852916589393.
+    private const ulong SeamBeforeAnybodyGotBetter = 8164107751542196257UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
