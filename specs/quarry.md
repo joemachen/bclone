@@ -194,6 +194,8 @@ stone (D385); what will not fit goes on the ground beside that store (D96). ⭐ 
   overstretched warning read it (a quarry branch in `OverstretchedNote`: *"…enough for 6. The
   rest will stand idle."*).
 - **Seats:** `quarry_capacity`, player-staffed like every trade (D109).
+- **Where it stands (D540, `seam-reach.md`):** within `face_reach_tiles` (2 since D541) of rock the village can walk to, and its
+  faces are painted only that near it.
 - **Demand:** `LabourQuota.QuarriersWanted` — every seat of every standing quarry that has rock
   painted, while the stone limit is not met; zeroed while food comes first. Taken after the smith
   and before the builders (`KindsInOrder`: woodcutter, smith, **quarrier**, marketer, builder). The

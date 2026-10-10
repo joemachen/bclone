@@ -3877,6 +3877,54 @@ public sealed class SimWorld : IObstacles
     }
 
     /// <summary>The ground a tile is, in a word a sentence can hold.</summary>
+    /// <summary>
+    /// Why this building may not stand here for want of its ground nearby — or null when a tile of it the village can
+    /// walk to lies within the rule's reach (D540).
+    /// </summary>
+    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village)
+    {
+        bool cutOff = false;
+        for (int dy = -near.Tiles; dy <= near.Tiles; dy++)
+        {
+            int span = near.Tiles - Math.Abs(dy);
+            for (int dx = -span; dx <= span; dx++)
+            {
+                var at = new GridPos(position.X + dx, position.Y + dy);
+                if (!Map.Contains(at) || Map.TerrainAt(at) != near.Terrain)
+                {
+                    continue;
+                }
+
+                if (TravelCost.CanReach(village, at))
+                {
+                    return null;
+                }
+
+                cutOff = true;
+            }
+        }
+
+        string ground = Describe(near.Terrain);
+        if (cutOff && BuildingsCatalog.EmployedBy(kind) is JobKind trade)
+        {
+            return CutOff(WithoutArticle(ground), JobsCatalog.PluralOf(trade));
+        }
+
+        string name = BuildingsCatalog[kind]!.Name;
+        string a = "aeiou".Contains(name[0], StringComparison.Ordinal) ? "An" : "A";
+        return $"{a} {name} has to stand near {ground}, and there is none within {near.Tiles} tiles of there.";
+    }
+
+    /// <summary>The sentence for ground in reach that nobody can walk to (D540, D110).</summary>
+    private static string CutOff(string ground, string workers) =>
+        $"The {ground} there is cut off — across the water or walled in — and the {workers} could not reach it.";
+
+    /// <summary><c>"an iron seam"</c> → <c>"iron seam"</c>, for a sentence that brings its own article.</summary>
+    private static string WithoutArticle(string ground) =>
+        ground.StartsWith("an ", StringComparison.Ordinal) ? ground[3..]
+        : ground.StartsWith("a ", StringComparison.Ordinal) ? ground[2..]
+        : ground;
+
     private static string Describe(Terrain terrain) => terrain switch
     {
         Terrain.Grass => "grass",
@@ -5441,6 +5489,26 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No(
                 $"{char.ToUpperInvariant(building[0])}{building[1..]} works {Describe(face)} — this is "
                 + $"{Describe(Map.TerrainAt(tile))}.");
+        }
+
+        // ⭐ AND ONLY WITHIN ITS REACH (Joe, D540: *"yes"* to Q2). Otherwise the placement rule is a formality —
+        // stand beside one stray rock, then paint the big seam across the valley, which is the walk the rule exists
+        // to stop. Measured from the building's tile, the same diamond `CanBuildAt` asks.
+        if (JobsCatalog.WorksAt(workplace.Kind) is BuildingKind works
+            && BuildingsCatalog[works]?.MustBeNear is NearRule near)
+        {
+            GridPos at = workplace.Position.ToTile();
+            string bare = WithoutArticle(Describe(near.Terrain));
+            if (Math.Abs(tile.X - at.X) + Math.Abs(tile.Y - at.Y) > near.Tiles)
+            {
+                return PlacementVerdict.No(
+                    $"Too far from the {BuildingsCatalog[works]!.Name} — its {bare} must be within {near.Tiles} tiles of it.");
+            }
+
+            if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), tile))
+            {
+                return PlacementVerdict.No(CutOff(bare, JobsCatalog.PluralOf(workplace.Kind)));
+            }
         }
 
         // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
@@ -8471,6 +8539,16 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No(
                 $"A {BuildingsCatalog[kind]!.Name} needs woods to hunt, and there is not a tree "
                 + $"within {reach} tiles of there.");
+        }
+
+        // ⭐ AND A QUARRY OR A MINE STANDS NEAR ITS SEAM (Joe, D540: *"same way fishing hut is for water"*,
+        // *"4 tiles"*; `specs/seam-reach.md`). The fishery's family — a rule about where the building may stand —
+        // asked of a reach like the lodge's. ⚠️ Counted only where the village can walk (D110/D111): rock across
+        // the river is not near, it is cut off, and the sentence says which mistake it is.
+        if (BuildingsCatalog[kind]?.MustBeNear is NearRule near
+            && WhyNotNearItsGround(kind, position, near, village) is string notNear)
+        {
+            return PlacementVerdict.No(notNear);
         }
 
         // Legal, but perhaps unwise — and that is the player's call to make (D43). Two

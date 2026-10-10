@@ -402,8 +402,10 @@ public sealed class QuarryTests
             GridPos at = world.Zones.PositionOf(i);
             if (world.Map.Tiles[i] == Terrain.Rock)
             {
+                // ⚠️ ONLY ROCK THE QUARRY MAY PAINT (D540/D541): within `face_reach_tiles` of it. This took the
+                // nearest by walk alone, and at a reach of 2 some of those six lay further than the paint allows.
                 int cost = world.TravelCost.Cost(at, quarry.Tile);
-                if (cost != TravelCostField.Unreachable)
+                if (cost != TravelCostField.Unreachable && world.CanPaintWorkGround(quarry, at).Allowed)
                 {
                     rock.Add((cost, at));
                 }

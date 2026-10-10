@@ -392,8 +392,9 @@ public sealed class MineTests
             GridPos at = world.Zones.PositionOf(i);
             if (world.Map.Tiles[i] == Terrain.IronDeposit)
             {
+                // ⚠️ ONLY IRON THE MINE MAY PAINT (D540/D541): within `face_reach_tiles` of it.
                 int cost = world.TravelCost.Cost(at, mine.Tile);
-                if (cost != TravelCostField.Unreachable)
+                if (cost != TravelCostField.Unreachable && world.CanPaintWorkGround(mine, at).Allowed)
                 {
                     iron.Add((cost, at));
                 }

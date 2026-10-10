@@ -1,4 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5 — D538: THE ARMFUL, THE 4¼-DAY MEAL AND THE WOODCUTTER FIX MERGED TO `main`, UNPLAYED. NEXT: QUARRIES AND MINES PLACED NEAR THEIR SEAMS (JOE, NEW), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D541: QUARRIES AND MINES WITHIN 2 TILES OF THEIR SEAMS ON `slice/seam-reach`, UNPLAYED. NEXT: JOE'S STONE AND IRON NODES — VOLUME, POSITIONING, FREQUENCY, SIZE, SHAPE — MEASURE, THEN SPEC. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (SEAM REACH AT 2) — D541, ON WINDOWS.** *(D541: Joe moved the reach
+> 4 → 2 before playing; everything below holds at 2.)*
+>
+> **`main` = D538, pushed (the armful — played since: *"looks great"*). `slice/seam-reach`** = D539 (spec) + D540 (built,
+> sim only): a quarry or a mine must stand within 4 tiles of rock / iron the village can walk to, and paints faces
+> only that near it. A placement rule (`must_be_near`, the fishery's family), not a third reach field. Verified:
+> 1559 / 0 / 5; view 0 warnings; probe 42 ✅, bar height 151; no golden moved.
+>
+> **▶️ NEXT: Joe plays `slice/seam-reach`** (`git checkout slice/seam-reach`, `.\run.bat`): a quarry and a mine near and
+> far from their seams (the ghost's sentence), and painting faces near and far. Merge `--no-ff` at his word. **Then his
+> next item: stone and iron node volume, positioning, frequency and size** — his sentence ended *"…size and"*; ask
+> what else before speccing.
+>
+> **(the banner below is the state before D540)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (SEAM REACH SPECCED) — D539, ON WINDOWS.**
+>
+> **`main` = D538, pushed. `slice/seam-reach`** (off `main`) = D539: `specs/seam-reach.md`, nothing built. Joe asked that
+> a quarry or a mine be placeable only within some distance of stone or iron, as the fishing hut is of water. Measured:
+> every reachable seam in 64 valleys keeps a legal site even at a reach of 1, so the number is feel, not survival.
+>
+> **▶️ NEXT: Joe's three calls (OPEN, top entry), then build it TDD per the spec's §4.** ⏸️ Still owed by Joe: a play
+> of the merged armful (`.\run.bat`).
+>
+> **(the banner below is the state before D539)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL MERGED) — D538, ON WINDOWS.**
 >
@@ -5833,6 +5859,18 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAPS D540 PAID FOR — A GUARD WITH A SILENT EXIT, A CALLBACK'S LAST WORD, AND A GODOT THAT WAS JOE'S
+
+- **A guard that `return`s when its valley lacks the case scores zero in that valley, silently.** The across-the-water
+  paint guard's first draft did exactly that. **Pose the case** (lay the rock with `SetTerrain`) rather than hope the
+  valley has one.
+- **A search callback that stores what it saw keeps the LAST candidate it was asked about, not the chosen one.**
+  `FindASite`'s predicate recorded the far bank for every cheaper candidate, including ones `CanBuildAt` then refused.
+  Recompute for the chosen site.
+- **A Godot still running after the probe's `done.` may be Joe's game.** PID 30384 had no `--headless` and started at
+  9:24 PM from `run.bat`. **Read the command line** (`Get-CimInstance Win32_Process -Filter "ProcessId = n"`) **before
+  `taskkill`.**
+
 ## ⛔ THE TRAPS D538 PAID FOR — A GUARD THAT ASKED FOR NOTHING, AND A BACKSLASH THE HEREDOC ATE (AGAIN)
 
 - **"Splits none" was the wrong claim, and the rule failed it honestly.** The fixture's other stores held logs beyond
@@ -5882,6 +5920,16 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **NEXT, JOE'S (2026-10-09/10): *"revisit iron and stone node volume and positioning and frequency and size and
+  shape"*** (the rest of the sentence came on 2026-10-10). Measure what the generator makes today, then spec it against `quarry.md §3.1`
+  (more stone and iron, placed by hash), `seeded-map-generation.md` (the seams found, not placed, D475) and D436.
+
+- ✅ **ANSWERED (D540) — Joe: *"1. yes, 4 tiles 2. yes 3. yes"*. Built on `slice/seam-reach`, unplayed.** ~~QUARRIES AND MINES NEAR THEIR SEAMS — THREE CALLS (D539, asked 2026-10-09, `seam-reach.md §6`).~~ **Q1:** how
+  far may the building stand from its seam? **4 tiles** recommended (a quarry at the edge of its rock); 2 is nearly the
+  fishery's touch, 8 lets it stand back in the meadow. No number strands a seam (measured). **Q2:** must the painted
+  faces be within that reach too? **Yes** recommended, or the rule is a formality (stand by a stray rock, paint the big
+  seam across the valley). **Q3:** seams across the river do not count (recommended, D110)?
 
 - ✅ **FIXED (D538) — Joe: *"fix it"*. Lost foundings 22 → 13 of 100.** ~~THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).~~ With the armful built, seven more
   valleys of 100 lose all four founders in Year 1 (15 → 22): the woodcutter splits every stored log while firewood is

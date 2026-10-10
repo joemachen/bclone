@@ -2,6 +2,18 @@ using System.Text.Json.Serialization;
 
 namespace Bclone.Sim.World;
 
+/// <summary>Ground a building must stand near (`must_be_near`, D540): this terrain within this many tiles.</summary>
+public sealed record NearRule
+{
+    /// <summary>The ground — rock for a quarry, an iron seam for a mine.</summary>
+    [JsonPropertyName("terrain")]
+    public required Terrain Terrain { get; init; }
+
+    /// <summary>How far, in tiles (`|dx| + |dy|`), measured from the building's tile.</summary>
+    [JsonPropertyName("tiles")]
+    public required int Tiles { get; init; }
+}
+
 /// <summary>
 /// One building — <b>a row in a data file, not a value in an enum</b>
 /// (`specs/buildings-catalog.md`).
@@ -118,6 +130,25 @@ public sealed record BuildingRow
     /// </remarks>
     [JsonPropertyName("must_touch")]
     public Terrain? MustTouch { get; init; }
+
+    /// <summary>
+    /// Ground this building must stand <b>near</b> — within <see cref="NearRule.Tiles"/> of a tile of
+    /// <see cref="NearRule.Terrain"/> the village can walk to. Null for anything that may go anywhere.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b><see cref="MustTouch"/>'s family, not a third reach</b> (D540, `specs/seam-reach.md`). A quarry or a mine
+    /// stands within four tiles of its seam (Joe: *"same way fishing hut is for water"*), and the same number holds
+    /// the faces it may paint. It says where the building may stand, as the fishery's touch does; it is not a ring
+    /// the building works or competes over, which is what <see cref="HuntingRadius"/>'s remark warns a third field
+    /// would be.
+    /// </para>
+    /// <para>
+    /// A row, never a kind check: a modder's building is in the rule the day it states the column.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("must_be_near")]
+    public NearRule? MustBeNear { get; init; }
 
     /// <summary>
     /// How much that store holds, or <b>null to let the economy derive it</b>.
