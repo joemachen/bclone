@@ -3,8 +3,8 @@
 **Decision:** D40 (2026-07-27: *"water is impassable until the village learns to bridge it — a technology, then a
 building. Wood bridges first, stone upgrades later"*), D546 (Joe's calls, 2026-10-10), D547 (measured), D548 (built),
 D549 (placed by drag, at any angle — Joe, after playing it).
-**Status:** 🔨 **built on `slice/bridges` (D546–D549), sim and view; D548 played (*"works as expected"*), D549 NOT played,
-NOT merged.** `BridgeTests` (16) green and red-checked — 25 mutants, 37 reds, no zeros (§11); the probe's `bridge:` line
+**Status:** ✅ **built, played and merged (D546–D551)** — sim and view; Joe played both the first placement (D548) and the
+drag (D549: *"everything is good except let bridges be longer than 8 tiles. 12 max."*, D550). `BridgeTests` (16) green and red-checked — 25 mutants, 37 reds, no zeros (§11); the probe's `bridge:` line
 red-checked (3 of 3). No golden moved. Slice 3 of
 `seeded-map-generation.md §11`; the *"Slice 3 — bridges — is a separate spec"* that `pathfinding-and-water.md §10`
 promised.

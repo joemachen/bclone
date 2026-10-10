@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — D549: BRIDGES ARE DRAGGED BANK TO BANK AT ANY ANGLE (D546–D549), ON `slice/bridges` — THE DRAG UNPLAYED, UNMERGED, UNCOMMITTED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D551: BRIDGES (WOODEN, THEN STONE, DRAGGED AT ANY ANGLE) PLAYED, MERGED AND PUSHED; NOTHING OPEN ON A BRANCH — ASK JOE WHAT'S NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (BRIDGES MERGED) — D551, ON WINDOWS.**
+>
+> **`main` = D551, pushed.** `slice/bridges` (D546–D550) was committed as `a3be435` and merged `--no-ff` as `7cd87e4` at
+> Joe's word (*"commit and merge and push"*); the branch is kept locally, not pushed. Joe played the drag and changed only
+> the cap: *"everything is good except let bridges be longer than 8 tiles. 12 max."* The merged tree is byte-identical to
+> the branch tip the four checks passed on (1587 / 0 / 5; view 0 warnings; probe 79 lines, no ⛔, bar height 151; no golden
+> moved). Save format **4** — older saves are refused.
+>
+> **▶️ NEXT: ask Joe.** Still his, unscheduled: wooden bridges wearing (*"slows, then closes"*) waits for the maintenance
+> slice (D546 call 5); the bridge choices he has not overruled (one tile wide, the prices, the colours — OPEN); stable slots
+> for the crowd fan (D525); full settings (D508); ironman's name (D507); the market's *Keeps up to* row and pin exception
+> guards (D502); clothing, parked (D534).
+>
+> **(the banner below is the state before D551)**
+
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (BRIDGES DRAGGED) — D549, ON WINDOWS.**
 >
