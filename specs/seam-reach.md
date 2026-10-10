@@ -1,7 +1,7 @@
 # Spec: A quarry or a mine stands near its seam
 
-**Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built). **Status:** 🔨 **built 2026-10-09 on
-`slice/seam-reach` (D540), sim only; NOT played, NOT merged.** `SeamReachTests` (6) green and red-checked: 7 mutants,
+**Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles). **Status:** 🔨 **built on
+`slice/seam-reach` (D540, D541), sim only, at a reach of 2; NOT played, NOT merged.** `SeamReachTests` (6) green and red-checked: 7 mutants,
 12 reds, no zeros. No golden moved.
 
 ---
@@ -40,7 +40,8 @@ seam is already named on the **job** row: `works_face` is `Rock` for the quarrie
 > that two "how far this building reaches" fields already exist (`gathering_radius`, `hunting_radius`) and *"a third
 > would be a smell rather than a feature"*. So the row carries **`must_be_near: { terrain, tiles }`** (`NearRule`):
 > *"must stand within N tiles of terrain T the village can walk to"*, which any building may state. The quarry row
-> names rock and the mine an iron seam, both at **`face_reach_tiles` 4** (one config key); a guard holds each to its
+> names rock and the mine an iron seam, both at **`face_reach_tiles` 2** (one config key; 4 until D541, Joe: *"update
+> from 4 tiles distance to 2 tiles. i want it even closer."*); a guard holds each to its
 > trade's `works_face`. Everything below that says `face_reach` means that rule. The fishery's `MustTouch` and the
 > lodge's `HuntingRadius` are untouched; folding them into `must_be_near` is a possible later cleanup.
 > ⚠️ **One wording changed while building**: ground the village cannot walk to may be walled in by buildings or
@@ -55,7 +56,7 @@ seam is already named on the **job** row: `works_face` is `Rock` for the quarrie
   (`TravelCost.CanReach`), the D110/D111 lesson: a seam across the river is not near, it is unreachable, and the
   sentence says which.
 - **The order and the words**, after the reachability check, beside the fishery and lodge rules:
-  - none at all within reach: *"A quarry has to stand near rock, and there is none within 4 tiles of there."*
+  - none at all within reach: *"A quarry has to stand near rock, and there is none within 2 tiles of there."*
   - only across water: *"The rock near there is across the water — the quarriers could not reach it."*
 - **Moving a building** (`relocate`) goes through `CanBuildAt`, so the rule holds there too.
 - **A building already standing is never refused after the fact**: a save from before this slice keeps a quarry in
@@ -96,7 +97,14 @@ can lose its sites, and the refusal then says so like any other.
 
 ---
 
-## 6. Joe's calls — answered (D540, 2026-10-09): *"1. yes, 4 tiles 2. yes 3. yes"*
+## 6. Joe's calls — answered (D540, 2026-10-09): *"1. yes, 4 tiles 2. yes 3. yes"*; then (D541, 2026-10-10) *"update from 4 tiles distance to 2 tiles. i want it even closer."*
+
+**At 2 (D541):** §5's measurement already covered it (every reachable seam keeps a legal site at 1). Three poses
+followed the number: `QuarryTests.GiveItRock` and `MineTests.GiveItIron` paint only what the paint rule allows (their
+nearest-by-walk six lay past 2), and **the two river guards pose at a reach of 4** (`SeamReachTests.RiverReach`): at 2
+no site in the fixture valley has dry ground across the water within reach — the river is wider — so at the shipped
+number *cut off* is a walled-in seam far more often than a river. The one-past-the-reach paint check is now asserted,
+not `if`-guarded. Same 7 mutants, same 12 reds.
 
 - **Q1 — How far?** Recommended **4 tiles** for both: a quarry at the edge of its rock, the face a few steps from
   the door. 2 is nearly the fishery's *touch*; 8 lets it stand back in the meadow.

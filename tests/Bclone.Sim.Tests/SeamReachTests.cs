@@ -9,7 +9,8 @@ namespace Bclone.Sim.Tests;
 
 /// <summary>
 /// A quarry or a mine stands within reach of its seam, and paints only the seam within that reach —
-/// <c>specs/seam-reach.md</c> (D539, D540; Joe: *"same way fishing hut is for water"*, *"4 tiles"*).
+/// <c>specs/seam-reach.md</c> (D539, D540, D541; Joe: *"same way fishing hut is for water"*, *"4 tiles"*, then
+/// *"update from 4 tiles distance to 2 tiles. i want it even closer."*).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,6 +26,16 @@ public sealed class SeamReachTests
 
     private static SimConfig Shipped => ShippedConfig.Load();
 
+    /// <summary>The shipped reach. Every pose reads it; only the pin below states the number.</summary>
+    private static int Reach => Shipped.FaceReachTiles;
+
+    /// <summary>
+    /// ⚠️ THE RIVER POSES RUN AT A REACH OF 4 (D541). At the shipped 2 no site in this valley has dry ground across the
+    /// water within reach — the river is wider than that — so "cut off" at 2 is a walled-in seam far more than a river.
+    /// The rule does not read the number to decide reachability, so the river is posed where it can be.
+    /// </summary>
+    private const int RiverReach = 4;
+
     private static SimWorld AValley(SimConfig config) =>
         SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
@@ -33,17 +44,17 @@ public sealed class SeamReachTests
     // ---------------------------------------------------------------
 
     [Fact]
-    public void AQuarryAndAMineMustStandWithinFourTilesOfTheirSeam()
+    public void AQuarryAndAMineMustStandWithinTwoTilesOfTheirSeam()
     {
         SimConfig shipped = Shipped;
-        Assert.Equal(4, shipped.FaceReachTiles);
+        Assert.Equal(2, shipped.FaceReachTiles);
 
         SimWorld world = AValley(shipped);
         foreach (BuildingKind kind in new[] { BuildingKind.Quarry, BuildingKind.Mine })
         {
             NearRule? rule = world.BuildingsCatalog[kind]!.MustBeNear;
             Assert.NotNull(rule);
-            Assert.Equal(4, rule!.Tiles);
+            Assert.Equal(2, rule!.Tiles);
 
             // The row and the job cannot disagree about which seam it is.
             JobKind trade = world.BuildingsCatalog.EmployedBy(kind)!.Value;
@@ -64,7 +75,7 @@ public sealed class SeamReachTests
     //  Placing
     // ---------------------------------------------------------------
 
-    /// <summary>A quarry beside rock stands; the same quarry with no rock within four tiles is refused, in words.</summary>
+    /// <summary>A quarry beside rock stands; the same quarry with no rock within reach is refused, in words.</summary>
     [Fact]
     public void AQuarryStandsNearRockAndNowhereElse()
     {
@@ -81,7 +92,7 @@ public sealed class SeamReachTests
         SimWorld off = AValley(Shipped with { FaceReachTiles = 0 });
         SimWorld on = AValley(Shipped);
         GridPos? site = FindASite(off, BuildingKind.Mine,
-            at => SeamWithin(off, at, Terrain.Rock, 4, reachable: true) && !SeamWithin(off, at, Terrain.IronDeposit, 4, reachable: false));
+            at => SeamWithin(off, at, Terrain.Rock, Reach, reachable: true) && !SeamWithin(off, at, Terrain.IronDeposit, Reach, reachable: false));
         Assert.NotNull(site);
         PlacementVerdict verdict = on.CanBuildAt(BuildingKind.Mine, site!.Value);
         _output.WriteLine($"a mine beside rock with no iron near, at {site}: {verdict.Reason}");
@@ -94,22 +105,22 @@ public sealed class SeamReachTests
     public void RockAcrossTheRiverDoesNotCount()
     {
         SimWorld off = AValley(Shipped with { FaceReachTiles = 0 });
-        SimWorld on = AValley(Shipped);
+        SimWorld on = AValley(Shipped with { FaceReachTiles = RiverReach });
 
         // A site the rule-free valley allows, with no seam of any kind near it and dry ground across the water
         // within reach.
         GridPos? farBank;
         GridPos? site = FindASite(off, BuildingKind.Quarry, at =>
         {
-            if (SeamWithin(off, at, Terrain.Rock, 4, reachable: false))
+            if (SeamWithin(off, at, Terrain.Rock, RiverReach, reachable: false))
             {
                 return false;
             }
 
-            return UnreachableDryGroundWithin(off, at, 4) is not null;
+            return UnreachableDryGroundWithin(off, at, RiverReach) is not null;
         });
         Assert.NotNull(site);
-        farBank = UnreachableDryGroundWithin(off, site!.Value, 4);
+        farBank = UnreachableDryGroundWithin(off, site!.Value, RiverReach);
 
         Assert.True(on.SetTerrain(farBank!.Value, Terrain.Rock), $"could not lay rock at {farBank}");
         Assert.False(on.TravelCost.CanReach(on.Map.FoundingSite, farBank.Value), "the posed rock is reachable after all");
@@ -125,26 +136,26 @@ public sealed class SeamReachTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ A quarry paints rock within four tiles of it and no further — or the rule is a formality (Joe's Q2).
+    /// ⭐ A quarry paints rock within reach of it and no further — or the rule is a formality (Joe's Q2).
     /// </summary>
     [Fact]
     public void AQuarryPaintsOnlyTheRockWithinItsReach()
     {
         SimWorld world = AValley(Shipped);
-        GridPos? site = FindASite(world, BuildingKind.Quarry, at => SeamWithin(world, at, Terrain.Rock, 4, reachable: true));
+        GridPos? site = FindASite(world, BuildingKind.Quarry, at => SeamWithin(world, at, Terrain.Rock, Reach, reachable: true));
         Assert.NotNull(site);
         Workplace quarry = RaiseAQuarryAt(world, site!.Value);
         GridPos at = quarry.Position.ToTile();
 
         GridPos near = TheNearestReachable(world, Terrain.Rock, at);
-        Assert.True(Distance(at, near) <= 4, $"the quarry at {at} stands {Distance(at, near)} tiles from its nearest rock");
+        Assert.True(Distance(at, near) <= Reach, $"the quarry at {at} stands {Distance(at, near)} tiles from its nearest rock");
         Assert.True(world.CanPaintWorkGround(quarry, near).Allowed, $"rock {Distance(at, near)} tiles away was refused");
 
         GridPos? far = null;
         for (int i = 0; i < world.Map.Tiles.Count && far is null; i++)
         {
             GridPos p = world.Zones.PositionOf(i);
-            if (world.Map.Tiles[i] == Terrain.Rock && Distance(at, p) > 4 && world.TravelCost.CanReach(world.Map.FoundingSite, p))
+            if (world.Map.Tiles[i] == Terrain.Rock && Distance(at, p) > Reach && world.TravelCost.CanReach(world.Map.FoundingSite, p))
             {
                 far = p;
             }
@@ -156,12 +167,11 @@ public sealed class SeamReachTests
         Assert.False(refused.Allowed);
         Assert.Contains("Too far", refused.Reason, StringComparison.Ordinal);
 
-        // Exactly the reach is near; one past it is not.
-        GridPos? atFive = RockAtExactly(world, at, 5);
-        if (atFive is GridPos five)
-        {
-            Assert.False(world.CanPaintWorkGround(quarry, five).Allowed, "rock five tiles away was allowed");
-        }
+        // One past the reach is not near. ⚠️ Asserted, not `if`-guarded (D540's trap): a valley with no rock at exactly
+        // that distance would have skipped it silently.
+        GridPos? onePast = RockAtExactly(world, at, Reach + 1);
+        Assert.NotNull(onePast);
+        Assert.False(world.CanPaintWorkGround(quarry, onePast!.Value).Allowed, $"rock {Reach + 1} tiles away was allowed");
     }
 
     /// <summary>Rock within reach but across the water is no face for this quarry.</summary>
@@ -173,16 +183,16 @@ public sealed class SeamReachTests
     public void AQuarryPaintsNoRockAcrossTheWater()
     {
         SimWorld off = AValley(Shipped with { FaceReachTiles = 0 });
-        SimWorld world = AValley(Shipped);
+        SimWorld world = AValley(Shipped with { FaceReachTiles = RiverReach });
         GridPos? farBank;
         GridPos? nearBank;
         GridPos? site = FindASite(off, BuildingKind.Quarry, at =>
         {
-            return UnreachableDryGroundWithin(off, at, 4) is not null && ReachableGrassWithin(off, at, 4) is not null;
+            return UnreachableDryGroundWithin(off, at, RiverReach) is not null && ReachableGrassWithin(off, at, RiverReach) is not null;
         });
         Assert.NotNull(site);
-        farBank = UnreachableDryGroundWithin(off, site!.Value, 4);
-        nearBank = ReachableGrassWithin(off, site.Value, 4);
+        farBank = UnreachableDryGroundWithin(off, site!.Value, RiverReach);
+        nearBank = ReachableGrassWithin(off, site.Value, RiverReach);
 
         Assert.True(world.SetTerrain(nearBank!.Value, Terrain.Rock));
         Assert.True(world.SetTerrain(farBank!.Value, Terrain.Rock));
@@ -205,17 +215,17 @@ public sealed class SeamReachTests
         SimWorld off = AValley(Shipped with { FaceReachTiles = 0 });
         SimWorld on = AValley(Shipped);
 
-        GridPos? near = FindASite(off, kind, at => SeamWithin(off, at, face, 4, reachable: true));
+        GridPos? near = FindASite(off, kind, at => SeamWithin(off, at, face, Reach, reachable: true));
         Assert.NotNull(near);
-        Assert.True(on.CanBuildAt(kind, near!.Value).Allowed, $"a {kind} with {face} within four tiles was refused");
+        Assert.True(on.CanBuildAt(kind, near!.Value).Allowed, $"a {kind} with {face} within reach was refused");
 
-        GridPos? far = FindASite(off, kind, at => !SeamWithin(off, at, face, 4, reachable: false));
+        GridPos? far = FindASite(off, kind, at => !SeamWithin(off, at, face, Reach, reachable: false));
         Assert.NotNull(far);
         PlacementVerdict verdict = on.CanBuildAt(kind, far!.Value);
-        _output.WriteLine($"a {kind} at {far} with no {face} within four tiles: {verdict.Reason}");
+        _output.WriteLine($"a {kind} at {far} with no {face} within reach: {verdict.Reason}");
         Assert.False(verdict.Allowed);
         Assert.Contains(word, verdict.Reason, StringComparison.Ordinal);
-        Assert.Contains("4 tiles", verdict.Reason, StringComparison.Ordinal);
+        Assert.Contains($"{Reach} tiles", verdict.Reason, StringComparison.Ordinal);
     }
 
     /// <summary>The nearest tile to the founding, by travel, where the rule-free world lets this building stand and the test holds.</summary>

@@ -758,10 +758,11 @@ public sealed record SimConfig
 
     /// <summary>
     /// How near its seam a quarry or a mine must stand, and how far from it its faces may be painted, in tiles
-    /// (D540, `specs/seam-reach.md`; Joe: *"4 tiles"*). Zero switches the rule off.
+    /// (D540, `specs/seam-reach.md`; Joe: *"4 tiles"*, then D541: *"2 tiles. i want it even closer."*). Zero switches
+    /// the rule off.
     /// </summary>
     [JsonPropertyName("face_reach_tiles")]
-    public int FaceReachTiles { get; init; } = 4;
+    public int FaceReachTiles { get; init; } = 2;
 
     /// <summary>Ticks one hunt takes — <b>the longest action in the game</b>.</summary>
     /// <remarks>

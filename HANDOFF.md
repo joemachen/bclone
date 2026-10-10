@@ -1,6 +1,7 @@
-# Handoff — bclone: **▶️ PHASE 5 — D540: QUARRIES AND MINES WITHIN 4 TILES OF THEIR SEAMS, BUILT ON `slice/seam-reach`, UNPLAYED. THEN JOE'S NEXT: STONE AND IRON NODE VOLUME, POSITIONING, FREQUENCY, SIZE (HIS SENTENCE WAS CUT OFF — ASK). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D541: QUARRIES AND MINES WITHIN 2 TILES OF THEIR SEAMS ON `slice/seam-reach`, UNPLAYED. NEXT: JOE'S STONE AND IRON NODES — VOLUME, POSITIONING, FREQUENCY, SIZE, SHAPE — MEASURE, THEN SPEC. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (SEAM REACH BUILT) — D540, ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (SEAM REACH AT 2) — D541, ON WINDOWS.** *(D541: Joe moved the reach
+> 4 → 2 before playing; everything below holds at 2.)*
 >
 > **`main` = D538, pushed (the armful — played since: *"looks great"*). `slice/seam-reach`** = D539 (spec) + D540 (built,
 > sim only): a quarry or a mine must stand within 4 tiles of rock / iron the village can walk to, and paints faces
@@ -5920,8 +5921,8 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **NEXT, JOE'S (2026-10-09): *"once this is done i want to revisit iron and stone node volume and positioning and
-  frequency and size and"*** — cut off mid-sentence. Ask for the rest, then spec it against `quarry.md §3.1`
+- ⏸️ **NEXT, JOE'S (2026-10-09/10): *"revisit iron and stone node volume and positioning and frequency and size and
+  shape"*** (the rest of the sentence came on 2026-10-10). Measure what the generator makes today, then spec it against `quarry.md §3.1`
   (more stone and iron, placed by hash), `seeded-map-generation.md` (the seams found, not placed, D475) and D436.
 
 - ✅ **ANSWERED (D540) — Joe: *"1. yes, 4 tiles 2. yes 3. yes"*. Built on `slice/seam-reach`, unplayed.** ~~QUARRIES AND MINES NEAR THEIR SEAMS — THREE CALLS (D539, asked 2026-10-09, `seam-reach.md §6`).~~ **Q1:** how

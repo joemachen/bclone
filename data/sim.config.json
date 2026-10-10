@@ -985,12 +985,13 @@
   "digs_per_stint": 4,
 
   // A QUARRY OR A MINE STANDS NEAR ITS SEAM (Joe, D539/D540: "same way fishing
-  // hut is for water", "4 tiles"; specs/seam-reach.md). Within this many tiles
+  // hut is for water", "4 tiles"; then D541: "update from 4 tiles distance to 2
+  // tiles. i want it even closer."; specs/seam-reach.md). Within this many tiles
   // (|dx| + |dy|) of rock or iron the village can walk to, or it cannot be
   // placed; and its faces may be painted only this near it. Measured first: in
   // 64 shipped valleys every one of 555 stone and 172 iron reachable seams
   // keeps a legal site even at 1, so no number here strands a seam. 0 = off.
-  "face_reach_tiles": 4,
+  "face_reach_tiles": 2,
 
   // THE IRON MINE (iron-mine.md, D449 -- Joe's calls before a line was
   // written). The quarry's twin on an iron seam: painted iron that never runs

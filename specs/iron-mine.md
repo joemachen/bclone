@@ -62,7 +62,7 @@ What the code has before this spec, traced:
 
 ### 3.1 One face code path, two trades
 
-> **Since D540 (`seam-reach.md`)** a mine, like a quarry, stands within `face_reach_tiles` (4) of its iron seam and
+> **Since D540 (`seam-reach.md`)** a mine, like a quarry, stands within `face_reach_tiles` (2 since D541) of its iron seam and
 > paints faces only that near it.
 
 The quarry's work is generalised rather than copied: **a face trade is a job row that names the
