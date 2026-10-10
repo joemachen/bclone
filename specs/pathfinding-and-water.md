@@ -137,7 +137,9 @@ Standard DoD (`METHODOLOGY.md §3`), plus:
 2. **`TravelCostField` consults it**, and movement walks the field. Water becomes impassable in one step, because cost and movement disagreeing is worse than either being wrong.
 3. **The generator's connectivity guarantee**, and the economy re-derived against real paths.
 
-Slice 3 — bridges — is a separate spec and needs the tech tree and placement first.
+Slice 3 — bridges — is a separate spec and needs the tech tree and placement first. 🔨 **It is `specs/bridges.md`
+(D546–D548): a deck over the water that the cost field reads as walkable (`IObstacles.DeckOn`), the tiles staying
+water.** §11's question 2 stands: no fords.
 
 ---
 

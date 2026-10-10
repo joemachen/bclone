@@ -41,4 +41,15 @@ public interface IObstacles
 
     /// <summary>Moves whenever a wall goes up or comes down, so a field knows to rebuild.</summary>
     int WallGeneration { get; }
+
+    /// <summary>
+    /// ⭐ What a step onto this tile's bridge deck costs — 0 where there is no deck (D546,
+    /// `specs/bridges.md §3`). <b>A deck makes water walkable</b>, at its own price and with no wear.
+    /// </summary>
+    /// <remarks>
+    /// A fifth question on the same seam. A deck changes only when a bridge is finished, rebuilt or
+    /// pulled down, and each of those moves <see cref="Generation"/> — a deck is standing structure,
+    /// so no sixth counter.
+    /// </remarks>
+    byte DeckOn(GridPos tile);
 }

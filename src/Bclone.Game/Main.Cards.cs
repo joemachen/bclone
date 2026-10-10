@@ -42,6 +42,9 @@ public partial class Main
 
         /// <summary>A well (D427) — its Id is its index in <see cref="SimWorld.Wells"/>, as a library's is.</summary>
         Well,
+
+        /// <summary>A bridge (D546) — its Id is its index in <see cref="SimWorld.Bridges"/>, as a well's is.</summary>
+        Bridge,
     }
 
     private readonly record struct CardSubject(CardKind Kind, int Id);
@@ -252,8 +255,16 @@ public partial class Main
                 _selectedTile = WellOf(subject)?.Tile;
                 _selectedVillagerId = 0;
                 break;
+            case CardKind.Bridge:
+                _selectedTile = BridgeOf(subject)?.Near.ToTile();
+                _selectedVillagerId = 0;
+                break;
         }
     }
+
+    /// <summary>The bridge a card is about — by index, the well's rule and its caveat (D546).</summary>
+    private Bridge? BridgeOf(CardSubject card) =>
+        card.Id >= 0 && card.Id < _loop.World.Bridges.Count ? _loop.World.Bridges[card.Id] : null;
 
     /// <summary>The well a card is about — by index, the library's rule (D396) and its caveat.</summary>
     private Well? WellOf(CardSubject card) =>
@@ -653,6 +664,7 @@ public partial class Main
             CardKind.Library => LibraryOf(card.Subject) is Library library && ShowLibrary(world, card, library),
             CardKind.TownHall => world.TownHall is TownHall hall && ShowTownHall(world, card, hall),
             CardKind.Well => WellOf(card.Subject) is Well well && ShowWell(world, card, well),
+            CardKind.Bridge => BridgeOf(card.Subject) is Bridge bridge && ShowBridge(world, card, bridge),
             _ => false,
         };
 
@@ -1912,6 +1924,49 @@ public partial class Main
         card.Portrait.Show(VillageMap.WellColour, wide * 0.7f, deep * 0.7f, facing, null);
     }
 
+    /// <summary>The bridge card (D546): what it is made of, how much water it spans, how often it is crossed.</summary>
+    private bool ShowBridge(SimWorld world, Card card, Bridge bridge)
+    {
+        bool stone = bridge.Kind == BuildingKind.StoneBridge;
+        string next = stone
+            ? "Set in stone — the quicker crossing."
+            : world.IsUnlocked(BuildingKind.StoneBridge)
+                ? "It can be rebuilt in stone where it stands, and stays open while it is."
+                : $"The village learns stone after {world.Config.StoneBridgeUnlockCrossings:N0} crossings "
+                    + $"({world.BridgeCrossings:N0} so far).";
+        int water = bridge.Tiles().Count(t => world.Map.TerrainAt(t) == Terrain.Water);
+        WriteBridgeCard(card, bridge.Name, world.BuildingsCatalog.NameOf(bridge.Kind), bridge.Length, water,
+            bridge.CrossingsThisYear, bridge.Crossings, next, stone);
+        return true;
+    }
+
+    /// <summary>The bridge card from plain facts — so the probe can pose one where none stands.</summary>
+    private void WriteBridgeCard(
+        Card card, string name, string kind, int length, int water, int thisYear, int crossings, string next, bool stone)
+    {
+        Title(card, name, renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+        card.PeopleScroll.Visible = false;
+
+        Status(
+            card,
+            working: thisYear > 0,
+            thisYear > 0
+                ? $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water, crossed {thisYear:N0} "
+                    + $"{(thisYear == 1 ? "time" : "times")} this year."
+                : $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water. Nobody has crossed it this year.");
+
+        Number(card, 0, $"{length}", length == 1 ? "tile long" : "tiles long");
+        Number(card, 1, $"{thisYear:N0}", "crossings this year");
+        Number(card, 2, $"{crossings:N0}", "crossings in all");
+        card.Caption.Text = next;
+        card.Caption.TooltipText = string.Empty;
+        card.Portrait.Show(stone ? VillageMap.StoneBridgeColour : VillageMap.BridgeColour,
+            VillageMap.BridgeWidth, Mathf.Min(length, 4) * 0.8f, 0, null);
+    }
+
     /// <summary>The town hall card from plain facts — so the probe can pose one where none stands.</summary>
     private void WriteTownHallCard(Card card, string name, IReadOnlyList<(string Name, string Life)> founders, int raisedInYear, int wide, int deep, ushort facing)
     {
@@ -2634,6 +2689,31 @@ public partial class Main
         if (emptyWell > CardWidth + 1f)
         {
             faults.Add($"a well nobody draws at widens a card's minimum to {emptyWell:F0}");
+        }
+
+        // ⭐ AND A BRIDGE (D546), the same two poses — a 40-letter name over the widest span with a lifetime
+        // of crossings and the longest caption, then one nobody has crossed this year.
+        WriteBridgeCard(posed, new string('B', SimWorld.NameLengthLimit), "wooden bridge", world.Config.BridgeMaxLengthTiles,
+            world.Config.BridgeMaxLengthTiles - 2, 12_345, 1_234_567,
+            $"The village learns stone after {world.Config.StoneBridgeUnlockCrossings:N0} crossings (1,999 so far).", false);
+        ForceUpdateTransform();
+        float bridgeWidth = posed.Panel.GetCombinedMinimumSize().X;
+        if (bridgeWidth > CardWidth + 1f)
+        {
+            faults.Add($"a busy bridge with a 40-letter name widens a card's minimum to {bridgeWidth:F0}");
+        }
+
+        if (posed.Values[1].Text != "12,345" || posed.Values[2].Text != "1,234,567")
+        {
+            faults.Add($"a bridge card reads {posed.Values[1].Text} and {posed.Values[2].Text} crossings, not 12,345 and 1,234,567");
+        }
+
+        WriteBridgeCard(posed, "stone bridge 1", "stone bridge", 3, 1, 0, 0, "Set in stone — the quicker crossing.", true);
+        ForceUpdateTransform();
+        float quietBridge = posed.Panel.GetCombinedMinimumSize().X;
+        if (quietBridge > CardWidth + 1f)
+        {
+            faults.Add($"a bridge nobody crossed this year widens a card's minimum to {quietBridge:F0}");
         }
 
         // Drag: move the selected card's panel and read it back.

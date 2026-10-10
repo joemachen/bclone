@@ -580,11 +580,15 @@ public sealed class HouseholdSystem : ISimSystem
 
         household.AddMember(child.Id);
         household.LastBirthYear = year;
+        bool knewHowToBridge = world.IsUnlocked(BuildingKind.Bridge);
         world.Villagers.Add(child);
 
         world.Narrate(
             $"{child.FullName} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
             $"The village is now {world.Population}.", LogCategory.Life);
+
+        // ⭐ A birth is the only way the village grows, so it is where it learns to bridge (D546: SCALE).
+        world.NoticeTheVillageSize(knewHowToBridge);
     }
 
     /// <summary>

@@ -1,4 +1,47 @@
-# Handoff — bclone: **▶️ PHASE 5 — D545: SEAM REACH (2 TILES) AND STONE AND IRON ACROSS THE WHOLE VALLEY, PLAYED AND MERGED; NOTHING OPEN ON A BRANCH — ASK JOE WHAT'S NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D549: BRIDGES ARE DRAGGED BANK TO BANK AT ANY ANGLE (D546–D549), ON `slice/bridges` — THE DRAG UNPLAYED, UNMERGED, UNCOMMITTED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (BRIDGES DRAGGED) — D549, ON WINDOWS.**
+>
+> **`main` = D545, pushed. `slice/bridges`** = D546–D549, **uncommitted at writing — check `git log` / `git status`
+> first**. Joe played D548 (*"the bridge works as expected"*) and overruled its placement (*"i hate it"*): a bridge is
+> now **pressed on one bank, dragged, and released on the other — a straight line at any angle**, both ends on dry land,
+> at most **12** tiles end to end (**8 until D550** — Joe, after playing the drag: *"everything is good except let bridges
+> be longer than 8 tiles. 12 max."*), priced by its length; a **click** on a wooden bridge with the stone one in hand rebuilds
+> it. Its tiles are the line's exact grid walk (`LineOfSight.TilesCrossed`), which joins edge to edge at any angle.
+> Save format **4** — the branch's own format-3 saves are refused.
+>
+> Verified: **1587 / 0 / 5 of 1592** (4m27); view 0 warnings (`--no-incremental`); probe 79 lines, no ⛔, bar height 151,
+> tile centres ✅, new game ✅, `bridge:` ✅, `done.`; **no golden moved**. `BridgeTests` (16): 25 mutants, 37 reds, no zeros.
+>
+> **✅ The drag is PLAYED (D550)**; the only change was the cap, 8 → 12. **▶️ NEXT: commit at Joe's word** (D546–D550,
+> docs in the same commit), then merge `--no-ff` to `main` and push at his word.
+>
+> **(the banner below is the state before D549)**
+
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (BRIDGES BUILT) — D546–D548, ON WINDOWS.**
+>
+> **`main` = D545, pushed. `slice/bridges`** (off `main`) = D546 (Joe's six calls), D547 (measured), D548 (built, sim and
+> view) — `specs/bridges.md`. ⚠️ **Check `git log` before trusting this line**: the work was finished uncommitted, waiting on
+> Joe's word to commit.
+>
+> **What it is:** a bridge is a **deck over the water**, one tile wide, clicked on the river and stretched bank to bank; the
+> tiles stay `Terrain.Water` and become walkable (`SimWorld.IsWalkable`, `IObstacles.DeckOn`). Wood is learned when the
+> village has held **10** people; stone after **150** crossings, rebuilt over a wooden bridge while it stays open, and its
+> deck is quicker (8 against 10). Pulling one down is instant, refused in words with somebody on it or a building across it
+> would strand. Save format **3** — older saves are refused.
+>
+> Verified: **1587 / 0 / 5 of 1592** (3m46); view **0 warnings** (`--no-incremental`); probe **79 lines, no ⛔**, bar height
+> 151, tile centres ✅, new game ✅, `bridge:` ✅, `done.`; **no golden moved**.
+>
+> **▶️ NEXT: Joe plays `slice/bridges`** (`git checkout slice/bridges`, `.\run.bat`; a new village — save format 3). Grow to
+> ten (or play to Year ~11): the stop *"The village learned to bridge water"*, the button on **Works**. Click the river at a
+> narrows: the ghost runs bank to bank; **R** turns it a quarter; a too-wide reach says *"Look for the narrows"*. Watch the
+> deck fill from the near bank, walk it, build across, open the bridge's card. Things his eye decides (`OPEN`, top entry):
+> one tile wide, quarter turns only, the prices, the colours.
+>
+> **(the banner below is the state before D546)**
+
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (MERGED) — D545, ON WINDOWS.**
 >
@@ -5967,6 +6010,39 @@ Read `git status` after staging, every time.
 - **A population that moves with a meal-clock change is the food, not the clock.** 5 a meal every 4 days read +42%;
   6 a meal read −6%. Hold the year's food when you mean to measure the pacing.
 
+## ⛔ THE TRAPS THE DRAG (D549) PAID FOR — A PROBE THAT COMPARED TWO LOCKS, AND A SEARCH THAT LOOKED ONE WAY
+
+- **A "the ghost says what the sim says" check is vacuous when both are saying something else.** At the founding the
+  bridge is not learned, so the ghost's verdict and `CanBridge` were both the lock sentence — equal, passing, and
+  proving nothing about the drag. The water-end check said so (it read the lock); the equality never would have. *Ask the
+  rule you mean* (`BridgeLineFrom`), and pose it where the gate is open or the gate's sentence is all you will read.
+- **A probe that searches the map has to search all of it.** The probe looked for a crossing south of the founding only;
+  the config's own valley has its river elsewhere, and the line read *"no crossing anywhere near the founding"*. The test
+  helper searched the whole ring and never met it — two searches for one thing is two chances to be wrong.
+- **An accepted zero can come back as a red when the ground changes.** D548 wrote down that no guard could see the leg
+  planner ignoring decks, *because a one-wide square deck walks the same either way*. At an angle it does not — a
+  tile-by-tile walk strays off the line — and the straight-crossing guard reddens. Re-run old mutants when the shape
+  they were zero on changes; the written-down reason may have expired.
+
+## ⛔ THE TRAPS BRIDGES (D546–D548) PAID FOR — A POPUP THAT MOVED FOUR GOLDENS, A HARNESS WITH NOTHING TO CROSS FOR, AND `if (false)`
+
+- **A stop raised through `LearnedByDoing` writes hashed state.** It sets `ShownTheTechTree` the first time, so the
+  bridge's unlock moved four goldens in villages that reached ten people before digging a quarry's stone. *Prove a golden's
+  cause before re-taking it*: switching the stop off made all four byte-identical, and D440's rule (only the hands'
+  learning introduces the map) said the stop was in the wrong door. `RaiseMoment` for anything learned by size or gift.
+- **A measurement of use needs a reason to use it.** Thirty years of 43 harness villages with a bridge crossed it **zero
+  times**: the unattended chooser never sites a home across while near paint is left. Put work across (a forager's hut),
+  or the number is the idle bridge's.
+- **`if (false)` does not build here** (CS0162 is an error), nor does a mutant that leaves a private method unused
+  (IDE0051). Seven of fourteen mutants scored "DID NOT BUILD" on the first pass — **not zeros, not reds**. Write a mutant's
+  false as a runtime fact (`&& i < 0`, `Workplaces.Count < 0`). And a mutant that inverts a shared branch (`FootprintOf`'s
+  bridge arm) crashed the founding before the probe line printed — no `bridge:` line, no `done.` — which is D493's
+  *mutant that never returns*, discarded rather than counted.
+- **Joe's saves are the best population data there is**, and a founder's `birth_tick` is negative: read as unsigned it is
+  2⁶⁴ − n, and every founder was born at the end of time.
+- **A shell heredoc with `'''` and `$"…"` broke the Bash tool's quoting once.** Write the edit script to the scratchpad with
+  the Write tool and run it; it costs nothing and never misparses.
+
 ## ⛔ THE TRAPS D533 PAID FOR — A BLOCKER THAT LEFT QUIETLY, AND "CLOTHED" THAT TURNED OFF THE ROOF TOO
 
 - **A spec's blocker can disappear with nobody writing it down.** `clothing.md` said *"blocked twice over"* and
@@ -5982,6 +6058,15 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **BRIDGES — WHAT WAS DECIDED FOR JOE, TO OVERRULE IN PLAY (D546, `bridges.md §2`).** Every one is one line to change:
+  **(a)** one tile wide (D40's funnel); ~~**(b)** quarter turns only~~ ~~**(c)** clicked on the water and stretched by
+  the sim~~ — ✅ **ANSWERED IN PLAY (D549): *"i hate it"* — dragged bank to bank at any angle, 12 tiles at most (8 until D550), priced
+  by length, a click rebuilds in stone**; **(d)** priced per tile ~~of water~~ **of length** — wood
+  8 logs and 10 ticks a tile, stone 12 stone + 4 logs and 15 ticks; **(e)** a stone deck costs 8 to walk against wood's 10;
+  **(f)** the planks `#8a6a48` and the stone `#a8a49b`. ⏸️ **And his, unscheduled:** wood's wear — *"slows, then closes"* —
+  waits for the maintenance slice (D546 call 5); the founding rule *"enough work, not most"* that would put the good land
+  across the river on purpose (`pathfinding-and-water.md §12.3`) is not touched.
 
 - ✅ **FIXED (D544), MERGED (D545).** ~~DEBT, FOUND D543 — THE WARM START'S FORESTER CAN BE GIVEN WOOD NOBODY CAN REACH.~~ `SimWorld.GiveItTheWoodAroundIt`
   takes the nearest wooded tiles inside the gatherer ring and never asks `TravelCost.CanReach` — D110's mistake. On the

@@ -242,6 +242,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
+            "Bridges", "BridgeCrossings",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -253,6 +254,9 @@ public sealed class SaveLoadTests : IDisposable
             "_terrainGeneration", "BuildingGeneration", "StandingGeneration", "_standing", "_standingOwner",
             "_standingFootprints", "_standingBuiltAt", "_freeGroundToday", "_freeGroundTodayGeneration",
             "_freeGroundTodayWalls", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
+            // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
+            // most ever alive is derived from the villagers' arrivals and deaths.
+            "_deckCost", "_bridgeLands", "_bridgeIndexBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {
@@ -287,6 +291,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",
+            "BridgeTo", "RebuildsBridge",
         }),
         (typeof(BuildingRecipe), Kept.Saved, new[] { "_materials", "WorkTicks" }),
         (typeof(GeneratedMap), Kept.Saved, new[]
@@ -324,12 +329,16 @@ public sealed class SaveLoadTests : IDisposable
             // and their scratch are a cache; `_builtAtWearGeneration` is saved as whether it is current.
             "_map", "_wear", "_fields", "_obstacles", "_builtAtObstacleGeneration", "_builtAtWallGeneration",
             "_builtAtWearGeneration", "_scratch",
+            // The route prices are last spring's wear (saved) with the bridges' decks priced in (D546).
+            "_routeCost", "_routeCostBuiltAt",
         }),
         (typeof(Stockpile), Kept.Saved, new[] { "_held", "_produced", "Capacity" }),
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws" }),
+        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "Crossings", "CrossingsThisYear" }),
+        (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick" }),
         (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records" }),
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),

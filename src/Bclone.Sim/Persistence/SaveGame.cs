@@ -39,8 +39,9 @@ public static class SaveGame
     /// of another format is refused in words, and there are no migrations before v1 (Joe, D507).
     /// </summary>
     /// <remarks>2 since D522: a villager keeps a full belly and a mill or oven stint, the world counts
-    /// wheat reaped and flour ground.</remarks>
-    public const int Format = 2;
+    /// wheat reaped and flour ground. 3 since D546: the bridges, the crossings walked, and a site's far bank. 4 since D549: a bridge's ends are
+    /// points, at any angle — a format-3 save from the branch's first build is refused rather than misread.</remarks>
+    public const int Format = 4;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

@@ -132,8 +132,23 @@ public sealed class TravelCostField
         Forget();
     }
 
-    /// <summary>What it costs to step onto this tile — grass, a worn path, or a packed one.</summary>
+    /// <summary>What it costs to step onto this tile — a bridge's deck, grass, a worn path, or a packed one.</summary>
+    /// <remarks>
+    /// ⭐ A deck first (D546): it takes no wear, so a bridge costs what it is made of — planks or stone —
+    /// however many feet have crossed it.
+    /// </remarks>
     public int CostToEnter(GridPos tile)
+    {
+        if (_obstacles is not null && _obstacles.DeckOn(tile) is byte deck and > 0)
+        {
+            return deck;
+        }
+
+        return WearCostToEnter(tile);
+    }
+
+    /// <summary>What the ground's wear alone makes a step cost — last spring's price table is taken from this.</summary>
+    private int WearCostToEnter(GridPos tile)
     {
         if (_wear is null)
         {
@@ -332,6 +347,7 @@ public sealed class TravelCostField
     {
         _fields.Clear();
         _scratch = null;
+        _routeCostBuiltAt = (-1, -1);
     }
 
     /// <summary>How many routes are currently cached. For tests and diagnostics.</summary>
@@ -353,7 +369,7 @@ public sealed class TravelCostField
                 _entryCost ??= new byte[_map!.Width * _map.Height];
                 for (int i = 0; i < _entryCost.Length; i++)
                 {
-                    _entryCost[i] = (byte)CostToEnter(_wear.PositionOf(i));
+                    _entryCost[i] = (byte)WearCostToEnter(_wear.PositionOf(i));
                 }
             }
         }
@@ -370,6 +386,16 @@ public sealed class TravelCostField
             _builtAtWallGeneration = _obstacles.WallGeneration;
             _fields.Clear();
             _scratch = null;
+            _routeCostBuiltAt = (-1, -1);
+        }
+
+        // ⭐ THE PRICES A ROUTE IS WALKED ON: last spring's wear, with every bridge deck at its own price
+        // (D546). Composed once per wear hand-over or standing change — never saved, because both halves
+        // are (the wear's table) or are derived from what is (the bridges).
+        if (_routeCostBuiltAt != (_builtAtWearGeneration, _builtAtObstacleGeneration))
+        {
+            _routeCostBuiltAt = (_builtAtWearGeneration, _builtAtObstacleGeneration);
+            _routeCost = ComposeTheRouteCost();
         }
 
         if (_scratch is null)
@@ -405,7 +431,7 @@ public sealed class TravelCostField
                 }
             }
 
-            field.Refill(BaseTileCost, _anythingWorn ? _entryCost : null, _scratch);
+            field.Refill(BaseTileCost, _routeCost, _scratch);
 
             for (int i = 0; i < own.Count; i++)
             {
@@ -420,6 +446,50 @@ public sealed class TravelCostField
         }
 
         return field;
+    }
+
+    /// <summary>The wear table with every deck priced in — or null when every tile costs grass (D179's sweep is exact).</summary>
+    private byte[]? _routeCost;
+
+    private (int Wear, int Standing) _routeCostBuiltAt = (-1, -1);
+
+    private byte[]? ComposeTheRouteCost()
+    {
+        byte[]? worn = _anythingWorn ? _entryCost : null;
+        if (_obstacles is null || _map is null)
+        {
+            return worn;
+        }
+
+        byte[]? composed = null;
+        int width = _map.Width;
+        for (int i = 0; i < width * _map.Height; i++)
+        {
+            byte deck = _obstacles.DeckOn(new GridPos((i % width) + _map.MinX, (i / width) + _map.MinY));
+            if (deck == 0)
+            {
+                continue;
+            }
+
+            if (composed is null)
+            {
+                if (deck == BaseTileCost && worn is null)
+                {
+                    // A deck at grass's price on unworn ground changes nothing the sweep would not see.
+                    continue;
+                }
+
+                composed = new byte[width * _map.Height];
+                for (int j = 0; j < composed.Length; j++)
+                {
+                    composed[j] = worn is null ? (byte)BaseTileCost : worn[j];
+                }
+            }
+
+            composed[i] = deck;
+        }
+
+        return composed ?? worn;
     }
 
     /// <summary>Ticks it takes to travel a given cost.</summary>

@@ -29,6 +29,12 @@ public enum TechCondition
     /// <summary>Wheat reaped — <see cref="SimWorld.WheatEverReaped"/> against <c>mill_unlock_wheat</c> (D522).</summary>
     WheatReaped,
 
+    /// <summary>The most people ever alive at once — <see cref="SimWorld.MostEverAlive"/> against <c>bridge_unlock_population</c> (D546, SCALE).</summary>
+    VillageSize,
+
+    /// <summary>Crossings walked over bridges — <see cref="SimWorld.BridgeCrossings"/> against <c>stone_bridge_unlock_crossings</c> (D546).</summary>
+    CrossingsWalked,
+
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -143,6 +149,17 @@ public static class TechTree
         },
         new TechNodeRow
         {
+            Id = "bridging", Name = "The wooden bridge", Unlocks = BuildingKind.Bridge, Condition = TechCondition.VillageSize,
+            Says = "Grow the village, and somebody works out how to put a span of timber across the water.",
+        },
+        new TechNodeRow
+        {
+            Id = "stone-arch", Name = "The stone bridge", Unlocks = BuildingKind.StoneBridge,
+            Condition = TechCondition.CrossingsWalked, Requires = new[] { "bridging" },
+            Says = "Cross the wooden bridges often enough, and somebody learns to set the span in stone.",
+        },
+        new TechNodeRow
+        {
             Id = "school", Name = "The school", Condition = TechCondition.NotYet, Requires = new[] { "library" },
             Says = "Where what the library keeps becomes what the young know.",
         },
@@ -203,6 +220,10 @@ public static class TechTree
                 return (world.IronToolsEverForged, world.Config.MineUnlockIronTools);
             case TechCondition.WheatReaped:
                 return (world.WheatEverReaped, world.Config.MillUnlockWheat);
+            case TechCondition.VillageSize:
+                return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
+            case TechCondition.CrossingsWalked:
+                return (world.BridgeCrossings, world.Config.StoneBridgeUnlockCrossings);
             case TechCondition.KeptGranaryYears:
                 int years = world.FirstGranaryTick == 0 || world.Tick < world.FirstGranaryTick
                     ? 0

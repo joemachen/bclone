@@ -268,7 +268,8 @@ Validated at load: counts ≥ 0, capacities and yields above zero.
 ### 6.1 The valley — 64 shipped seeds (scratch harness `ZzSeams`, never committed)
 
 Reachable = walkable from the founding site (no bridges yet, so a seam on the far bank is
-unreachable). Steps are tiles walked.
+unreachable). Steps are tiles walked. *(Measured before bridges, D546: a seam across the river is reachable once a
+bridge stands, and the seam-reach rule counts it then — it asks the same cost field.)*
 
 | Arm | Reachable stone tiles (min / p10 / median) | Nearest stone (median steps) | 3rd-nearest stone seam (median) | Valleys with a reachable iron seam ≥ 50 | Reachable iron tiles (median) |
 |---|---|---|---|---|---|

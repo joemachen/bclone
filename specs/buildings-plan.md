@@ -140,7 +140,7 @@ Earned by practice, or by the village simply being a village.
 | **Mason's yard** | Placed | By knowledge | ✓ | Stone → blocks. Gates every durable building. |
 | **Orchard** | Zoned | By doing | — | Fruit. Slow to mature — a planting whose payoff is a generation out, which is §1.5 in miniature. |
 | **Chapel** | Placed | Civic | — | The small form of the church. Funerals, and the reason the cemetery has a shape. |
-| **Bridge** | Placed | By knowledge | — | (D40.) Crossing changes catchment more than any other single placement. |
+| **Bridge** | Placed | ~~By knowledge~~ **By village size** (Joe, D546 — SCALE, as `tech-tree.md` said; the two docs disagreed) | — | (D40.) Crossing changes catchment more than any other single placement. 🔨 **Built (D548, `bridges.md`)**, wood then stone. |
 
 ### 4.3 Tier 2 — Town
 

@@ -328,6 +328,25 @@ public enum BuildingKind
     /// Learned with the mill, on reaped wheat (<c>mill_unlock_wheat</c>, Joe D523), paid for. <b>Appended at 20.</b>
     /// </remarks>
     Bakery = 20,
+
+    /// <summary>
+    /// A wooden bridge — a deck over the water, one tile wide, bank to bank (D40, D546, `specs/bridges.md`).
+    /// </summary>
+    /// <remarks>
+    /// Not a building that stands on the ground but a deck over it: the tiles stay water and become
+    /// walkable (`SimWorld.IsWalkable`). Learned when the village has held <c>bridge_unlock_population</c>
+    /// people. <b>Appended at 21.</b>
+    /// </remarks>
+    Bridge = 21,
+
+    /// <summary>
+    /// A stone bridge — the wooden one's span set in stone: a quicker deck (D546, `bridges.md §5.3`).
+    /// </summary>
+    /// <remarks>
+    /// Placed fresh, or rebuilt over a standing wooden bridge, which carries traffic until the stone is
+    /// finished. Learned by crossings walked (<c>stone_bridge_unlock_crossings</c>). <b>Appended at 22.</b>
+    /// </remarks>
+    StoneBridge = 22,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>
@@ -608,6 +627,22 @@ public sealed class ConstructionSite
 
     public bool Demolishing { get; init; }
 
+    /// <summary>
+    /// For a bridge, the far end — where the player let go of the drag, across the water (D546, D549,
+    /// `bridges.md §5.1`).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The site stands on the near end</b>, dry ground builders can walk to, and the bridge is the straight
+    /// line from there to this. Null for every other site.
+    /// </remarks>
+    public Point? BridgeTo { get; init; }
+
+    /// <summary>
+    /// Whether this site rebuilds the standing bridge between its two abutments rather than raising a
+    /// new one (`bridges.md §5.3`) — the old deck carries traffic until this one is finished.
+    /// </summary>
+    public bool RebuildsBridge { get; init; }
+
     /// <summary>What it costs. Set once, at marking.</summary>
     /// <remarks>
     /// <b>A constructor parameter rather than an <c>init</c> property since D213</b>, because
@@ -852,6 +887,8 @@ public sealed class ConstructionSite
             ["moving_from"] = SaveWriter.GridPos(MovingFrom),
             ["facing"] = SaveWriter.Angle(Facing),
             ["demolishing"] = Demolishing,
+            ["bridge_to"] = SaveWriter.Point(BridgeTo),
+            ["rebuilds_bridge"] = RebuildsBridge,
             ["work_ticks"] = Recipe.WorkTicks,
             ["materials"] = materials,
             ["work_done"] = WorkDone,
@@ -876,6 +913,8 @@ public sealed class ConstructionSite
             MovingFrom = save.NullableGridPos("moving_from"),
             Facing = save.Angle("facing"),
             Demolishing = save.Bool("demolishing"),
+            BridgeTo = save.NullablePoint("bridge_to"),
+            RebuildsBridge = save.Bool("rebuilds_bridge"),
             WorkDone = save.Int("work_done"),
         };
 

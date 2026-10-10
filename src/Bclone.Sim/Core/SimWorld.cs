@@ -21,7 +21,7 @@ namespace Bclone.Sim.Core;
 /// The renderer may <em>read</em> this. It must never write to it (DESIGN.md §3).
 /// </para>
 /// </remarks>
-public sealed class SimWorld : IObstacles
+public sealed partial class SimWorld : IObstacles
 {
     /// <summary>
     /// Ticks elapsed. The sim's only notion of time — there is no wall clock in
@@ -3736,7 +3736,9 @@ public sealed class SimWorld : IObstacles
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
-        _ => null,
+
+        // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
+        _ => WhyNoBridgeYet(kind),
     };
 
     /// <summary>
@@ -6108,6 +6110,13 @@ public sealed class SimWorld : IObstacles
     internal GridPos? FirstTileStandingUnder(Workplace site)
     {
         ArgumentNullException.ThrowIfNull(site);
+
+        // ⭐ A BRIDGE NEVER WAITS ON ITS BANK (D546): trees and rock are walkable, so an abutment needs no
+        // clearing and nobody is asked to clear it — a wooded bank would otherwise hold its builders for ever.
+        if (IsABridgeSite(site))
+        {
+            return null;
+        }
         IReadOnlyList<GridPos> covered = site.CoveredTiles;
         for (int i = 0; i < covered.Count; i++)
         {
@@ -8350,6 +8359,12 @@ public sealed class SimWorld : IObstacles
             return PlacementVerdict.No("That is outside the valley.");
         }
 
+        // ⭐ A BRIDGE IS DRAGGED, NOT PLACED (D549) — its own rule, `bridges.md §4`; one point is a click.
+        if (BuildingsCatalog[kind]?.SpansWater == true)
+        {
+            return CanBridgeAt(kind, where);
+        }
+
         if (Map.TerrainAt(position) == Terrain.Water)
         {
             return PlacementVerdict.No("The ground there is under water.");
@@ -8378,6 +8393,13 @@ public sealed class SimWorld : IObstacles
             if (WhoseYard(onTheGround[i]) is string yard)
             {
                 return PlacementVerdict.No($"That is {yard} yard.");
+            }
+
+            // ⛔ NOR ON A BRIDGE'S END (D546): it is walkable, not an obstacle, so the overlap test above
+            // cannot see it — and a building there would close the crossing it stands on.
+            if (BridgeLandsOn(onTheGround[i]))
+            {
+                return PlacementVerdict.No("A bridge lands there — it would close the crossing.");
             }
 
             // ⛔ NOR ON THE LANE IN FRONT OF A GATE (Joe, D448 — `fences-as-walls.md §9.3`). It was
@@ -8774,6 +8796,12 @@ public sealed class SimWorld : IObstacles
         if (!verdict.Allowed)
         {
             return verdict;
+        }
+
+        // A bridge marked at one point is a click (D549): a stone rebuild, or the drag's own refusal.
+        if (BuildingsCatalog[kind]?.SpansWater == true)
+        {
+            return MarkBridge(kind, where, where);
         }
 
 
@@ -9382,7 +9410,9 @@ public sealed class SimWorld : IObstacles
         BuildingRecipe recipe,
         int forHouseholdId,
         GridPos? movingFrom = null,
-        Angle facing = default)
+        Angle facing = default,
+        Point? bridgeTo = null,
+        bool rebuildsBridge = false)
     {
         BuildingGeneration++;
         StandingChanged();
@@ -9409,6 +9439,8 @@ public sealed class SimWorld : IObstacles
                 ForHouseholdId = forHouseholdId,
                 MovingFrom = movingFrom,
                 Facing = facing,
+                BridgeTo = bridgeTo,
+                RebuildsBridge = rebuildsBridge,
             },
         });
 
@@ -9689,6 +9721,13 @@ public sealed class SimWorld : IObstacles
         {
             RetireWorkplace(site);
             PullDownWhatStandsAt(site.Tile);
+            return;
+        }
+
+        // ⭐ A BRIDGE'S SITE OPENS A DECK RATHER THAN RAISING A BUILDING (D546, `bridges.md §5`).
+        if (plan.BridgeTo is not null)
+        {
+            FinishABridge(site, plan);
             return;
         }
 
@@ -11882,7 +11921,9 @@ public sealed class SimWorld : IObstacles
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Footprint.Overlaps(shape))
+            // A bridge's site is not a shape on the ground (see `StandingShapes`); its ends refuse a
+            // building through `SomethingStandsAt`.
+            if (!IsABridgeSite(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
             {
                 return true;
             }
@@ -12119,6 +12160,13 @@ public sealed class SimWorld : IObstacles
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
+            // ⛔ A BRIDGE'S SITE STANDS ON THE BANK IT IS BUILT FROM, AND MUST NOT CLOSE IT (D546): the
+            // near abutment stays walkable while it is raised, and while a wooden deck is rebuilt in stone.
+            if (IsABridgeSite(Workplaces[i]))
+            {
+                continue;
+            }
+
             Footprint shape = Workplaces[i].Footprint;
             yield return (shape, shape.Origin.ToTile());
         }
@@ -12379,7 +12427,7 @@ public sealed class SimWorld : IObstacles
 
                 int index = IndexOfTile(next);
                 if (index < 0 || closed.Contains(index) || _standing![index]
-                    || !TerrainRules.IsPassable(Map.TerrainAt(next)))
+                    || !IsWalkable(next))
                 {
                     return;
                 }
@@ -12571,7 +12619,7 @@ public sealed class SimWorld : IObstacles
         void Visit(int index)
         {
             if (reached[index] || closed[index] || _standing![index]
-                || !TerrainRules.IsPassable(Map.TerrainAt(new GridPos((index % width) + Map.MinX, (index / width) + Map.MinY))))
+                || !IsWalkable(new GridPos((index % width) + Map.MinX, (index / width) + Map.MinY)))
             {
                 return;
             }
@@ -12733,7 +12781,9 @@ public sealed class SimWorld : IObstacles
         // This walked households, workplaces, libraries, the hall and the stores doing
         // `Footprint.Covers` per ask (D321's own comment warned about two rules for "is this tile
         // free?"); the index is those same shapes, rebuilt when one of them changes.
-        return StandsOn(position);
+        // ⭐ AND A BRIDGE'S ENDS AND DECK (D546): not an obstacle to a walker, but nothing else may be
+        // built, sited or placed on them — a house on an abutment would close the crossing it stands on.
+        return StandsOn(position) || BridgeLandsOn(position);
     }
 
     // ⭐ D56's PLACE-NAMING IS DELETED HERE, AND IT IS THE RIGHT KIND OF DELETION.
@@ -13581,6 +13631,7 @@ public sealed class SimWorld : IObstacles
             ["libraries"] = All(Libraries, l => l.ToSave()),
             ["town_hall"] = TownHall?.ToSave(),
             ["wells"] = All(Wells, w => w.ToSave()),
+            ["bridges"] = All(Bridges, b => b.ToSave()),
             ["ground_stacks"] = All(GroundStacks, g => g.ToSave()),
             ["buildings_waiting"] = All(_waitingOnTheGround, p => new JsonObject
             {
@@ -13621,6 +13672,7 @@ public sealed class SimWorld : IObstacles
             ["tools_ever_forged"] = ToolsEverForged,
             ["iron_tools_ever_forged"] = IronToolsEverForged,
             ["wheat_ever_reaped"] = WheatEverReaped,
+            ["bridge_crossings"] = BridgeCrossings,
             ["flour_ever_ground"] = FlourEverGround,
             ["bread_ever_baked"] = BreadEverBaked,
             ["tools_ever_taken"] = ToolsEverTaken,
@@ -13688,6 +13740,12 @@ public sealed class SimWorld : IObstacles
         foreach (SaveReader well in save.Objects("wells"))
         {
             Wells.Add(Well.FromSave(well));
+        }
+
+        // ⭐ The deck index is derived from these and rebuilt on the next ask (D546) — never saved.
+        foreach (SaveReader bridge in save.Objects("bridges"))
+        {
+            Bridges.Add(Bridge.FromSave(bridge));
         }
 
         // ⭐ The heaps' per-good totals are an index (D335) and are summed once here, never saved.
@@ -13776,10 +13834,14 @@ public sealed class SimWorld : IObstacles
         ToolsEverForged = save.Int("tools_ever_forged");
         IronToolsEverForged = save.Int("iron_tools_ever_forged");
         WheatEverReaped = save.Int("wheat_ever_reaped");
+        BridgeCrossings = save.Int("bridge_crossings");
         FlourEverGround = save.Int("flour_ever_ground");
         BreadEverBaked = save.Int("bread_ever_baked");
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
+
+        // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
+        _bridgeIndexBuiltAt = -1;
     }
 
     /// <summary>

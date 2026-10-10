@@ -64,6 +64,7 @@ public sealed class ClockSystem : ISimSystem
         if (current.Year != previous.Year)
         {
             world.CloseTheFoodYear();
+            world.CloseTheBridgeYear();
         }
 
         NarrateSeasonTurn(world, current, previous, foragedThisSeason);
