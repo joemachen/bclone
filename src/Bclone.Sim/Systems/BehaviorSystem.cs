@@ -3003,6 +3003,17 @@ public sealed class BehaviorSystem : ISimSystem
                     + $"{world.FirewoodTheVillageHas()}.";
             }
 
+            // ⭐ AND NOT THE LOGS A BUILDING WAITS ON, ONCE THE WINTER'S FIREWOOD IS IN (D538, Joe: *"fix it"*;
+            // `armful-and-meals.md §7a`). The player's limit wanted 400 and a founding's two houses waited at four
+            // logs into a winter that killed all four founders — traced on shipped seed 2, 15 → 22 valleys of 100.
+            // Under the derived need, fuel still comes first: `MaySplitLogs` says yes whatever a site is waiting on.
+            else if (!world.MaySplitLogs())
+            {
+                villager.WorkNote =
+                    $"Nothing to split — the {world.LogsInWarehouses()} logs in store are wanted for building "
+                    + $"({world.LogsTheSitesStillNeed()} still to deliver), and the homes have the firewood they need.";
+            }
+
             else
             {
             // The nearest warehouse that actually has a batch in it. Naming THAT warehouse rather
@@ -6140,7 +6151,7 @@ public sealed class BehaviorSystem : ISimSystem
                 // and the market-off village to one soul before this line.
                 villager.SplitsThisStint++;
                 if (villager.SplitsThisStint < world.Config.SplitsPerStint
-                    && world.TheVillageWantsMoreFirewood()
+                    && world.MaySplitLogs()
                     && NearestStoreWithLogs(world, villager.Tile, world.Config.LogsPerSplit) is not null)
                 {
                     villager.ActionTicksRemaining =

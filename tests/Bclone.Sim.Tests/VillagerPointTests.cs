@@ -339,8 +339,12 @@ public sealed class VillagerPointTests
         // and when moves and the seats land differently — 51 trips, the 1st/10th/20th at 7 / 213 / 489;
         // the first unchanged. Proven the only reason: the parent commit (3b675ec) holds 53 at
         // 7 / 223 / 512 and this is its only sim change. Were 53 at 7 / 223 / 512.
+        // ⚠️ RE-PINNED (D537), not for the clock: a meal every 17 ticks, not 11–12, and an armful of 80
+        // (`armful-and-meals.md`), so the founders stop to eat and fetch less often and the later trips
+        // land differently — still 51 trips, the 1st/10th/20th at 7 / 192 / 499; the first unchanged.
+        // Proven the only reason: the parent commit (f3decb0) holds 7 / 213 / 489. Were 7 / 213 / 489.
         Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 7, 213, 489 }, at);
+        Assert.Equal(new ulong[] { 7, 192, 499 }, at);
     }
 
     /// <summary>

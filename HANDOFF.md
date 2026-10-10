@@ -1,4 +1,43 @@
-# Handoff — bclone: **▶️ PHASE 5 — D534: CLOTHING MEASURED AND PARKED (JOE: "c"). NEXT: THE ARMFUL 40 → 80 (D474), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D538: THE ARMFUL, THE 4¼-DAY MEAL AND THE WOODCUTTER FIX MERGED TO `main`, UNPLAYED. NEXT: QUARRIES AND MINES PLACED NEAR THEIR SEAMS (JOE, NEW), SPEC FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL MERGED) — D538, ON WINDOWS.**
+>
+> **`main` = D538, pushed; `slice/armful` merged `--no-ff` at Joe's *"merge"*, UNPLAYED.** In it: an armful of 80 for
+> everyone, a meal of 6 every 4¼ days (D537), and the woodcutter leaving the logs a building waits on once the winter's
+> firewood is in (D538: lost foundings 22 → 13 of 100). Verified: 1553 / 0 / 5 of 1558; view 0 warnings; probe 42 ✅,
+> bar height 151; six goldens moved with D537, none with D538.
+>
+> **▶️ NEXT: quarries and mines must be placed within reach of a stone or iron seam, as the fishing hut is of water
+> (Joe, 2026-10-09).** Spec first. ⏸️ Joe still owes the armful a play (`.\run.bat`): household trips at 2–4×, the
+> founders eating about every four days.
+>
+> **(the banner below is the state before D538)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL BUILT) — D537, ON WINDOWS.**
+>
+> **`main` = D534, pushed. `slice/armful`** = D535 (spec) + D537 (built, sim only). Joe's calls: an armful of 80 for
+> everyone, a meal of 6 every 17 ticks = 4¼ days (exactly four was 5 % more food and starved a no-market village; spec
+> §5.2). Over 100 valleys: alive 546 → 560, starved 358 → 289, food fetches −41 %, meal stops −34 %. ⚠️ **Lost foundings
+> 15 → 22**: the race where the woodcutter splits the logs two houses wait on (spec §5.1/§5.3).
+>
+> **▶️ NEXT: Joe's call on the founding race (OPEN, top entry); then he plays `slice/armful`** (`git checkout
+> slice/armful`, `.
+un.bat`): household trips to the market at 2–4×, the founders stopping to eat about every four
+> days. Merge `--no-ff` at his word.
+>
+> **(the banner below is the state before D537)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-09 (THE ARMFUL SPECCED) — D535, ON WINDOWS.**
+>
+> **`main` = D534, pushed. `slice/armful`** (off `main`) = D535: `specs/armful-and-meals.md` and the harness knobs
+> (`ZzBase.cs`: `ZZ_CARRY`, `ZZ_HUNGER`, `ZZ_MEAL`, a fetch / meal counter). **No sim or view code yet.**
+> Measured over 100 valleys: armful 80 cuts food fetches 41% at no cost; every 4 days at 6 a meal plus the armful is
+> today's village with 29% fewer meal stops; at 5 a meal the village grows 42%. Found: a founding race where the
+> woodcutter splits the houses' logs (spec §5.1).
+>
+> **▶️ NEXT: Joe's three calls (OPEN, top entry), then build it TDD per spec §6.** Goldens will move.
+>
+> **(the banner below is the state before D535)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-08 (CLOTHING MEASURED) — D533, ON WINDOWS.**
 >
@@ -5794,6 +5833,40 @@ Read `git status` after staging, every time.
   three times in two days (D527, D529, D530), each caught only by reading the seam back. After writing a banner, read
   the ten lines either side of where it meets the one below.
 
+## ⛔ THE TRAPS D538 PAID FOR — A GUARD THAT ASKED FOR NOTHING, AND A BACKSLASH THE HEREDOC ATE (AGAIN)
+
+- **"Splits none" was the wrong claim, and the rule failed it honestly.** The fixture's other stores held logs beyond
+  the site's need; the woodcutter split exactly those and left 43 of 40. Ask what must be **left**, not what must not
+  be **done**, when the rule permits some of the doing.
+- **D527's trap paid twice more in one session:** Python written through a Bash heredoc turned a backslash escape into a
+  real line break (and once a quote broke the heredoc itself), so the script would not parse. **Write scripts with the
+  Write tool** whenever they hold a backslash or a triple quote.
+- **The suite's clock moved +30 % with no golden and no hot path touched.** Timed back to back the change cost nothing
+  (137 s / 138 s), and the probe's preview bake had slowed as much with no view code changed. Time back to back before
+  blaming the code, and before clearing it.
+
+## ⛔ THE TRAPS D537 PAID FOR — A GOLDEN BEHIND A GOLDEN, A MUTANT THAT CANNOT BUILD, AND A CALL MADE BEFORE ITS NUMBER
+
+- **Two goldens in one test redden one at a time.** `FarmGoldenTests` asserts `SeamGoldenHash` and then
+  `SeamBeforeAnybodyGotBetter`; the second could not fail until the first was re-taken, so "five goldens moved" was
+  six. After re-taking goldens, **run the suite again before counting them.**
+- **A mutant that leaves a parameter unused does not build** (IDE0060 is an error here), so it scores nothing:
+  `ATripsWorth` capped at a literal 40 dropped `config`. Mutate inside the expression, not around it.
+- **The harness tables in a spec are not the suite.** §5's arms passed every number Joe chose; the floor guard and the
+  market-off test reddened on the first build. Pose the guards' own villages (`MarketTests`' fixture, `RequiredGatherYield`)
+  in the measurement before bringing a number to Joe.
+- **A call made before its number goes back to him.** Q3 *"keep"* was answered at 15 → 18; built, it was 15 → 22.
+
+## ⛔ THE TRAP D535 PAID FOR — A FLIPPED VALLEY'S CAUSE IS NOT THE FIRST PLAUSIBLE ONE
+
+- **Three valleys froze with the armful, and the first story was wrong.** *"One household fetches 80 firewood and
+  leaves the others short"* fitted the numbers and was false: the trace showed more firewood at 80, and **no house
+  ever built.** The woodcutter had split the houses' logs. Trace a flipped valley's year before naming its cause;
+  print sites (`Workplace.Construction`: logs and stone delivered against the recipe) and everyone's state every
+  ten days. That table found it in one run.
+- **A population that moves with a meal-clock change is the food, not the clock.** 5 a meal every 4 days read +42%;
+  6 a meal read −6%. Hold the year's food when you mean to measure the pacing.
+
 ## ⛔ THE TRAPS D533 PAID FOR — A BLOCKER THAT LEFT QUIETLY, AND "CLOTHED" THAT TURNED OFF THE ROOF TOO
 
 - **A spec's blocker can disappear with nobody writing it down.** `clothing.md` said *"blocked twice over"* and
@@ -5809,6 +5882,21 @@ Read `git status` after staging, every time.
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **FIXED (D538) — Joe: *"fix it"*. Lost foundings 22 → 13 of 100.** ~~THE FOUNDING RACE, NOW 22 LOST FOUNDINGS OF 100 (D537, asked 2026-10-09).~~ With the armful built, seven more
+  valleys of 100 lose all four founders in Year 1 (15 → 22): the woodcutter splits every stored log while firewood is
+  under its 400 limit, so marked houses wait at a few logs into winter (`armful-and-meals.md §5.1`, traced on seed 2).
+  Joe said *"keep"* before the number existed. **(a)** keep it and play; **(b)** fix it first, as its own small slice on
+  this branch: the woodcutter leaves logs a funded site is waiting on while the village has a winter's firewood
+  (measured on the same 100 valleys before it ships). Recommended: **(b)**, because it is a Year-1 death the player
+  cannot see coming (§0.1).
+
+- ✅ **ANSWERED (D536, D537) — Joe: *"1. 6 2. everyone 3. keep 4. push"*, then *"proceed with every 4¼ days at 6 a
+  meal"*.** ~~THE ARMFUL AND THE MEAL — THREE CALLS (D535, asked 2026-10-09, `armful-and-meals.md §7`).~~ **Q1:** every 4
+  days, a meal of **6** (recommended; +5% a year, the village level with today) or **5** (−13%, the harness village +42%,
+  an easing on top of D363's scarcity)? **Q2:** one armful of 80 for **everybody** (recommended) or for a household's
+  food fetch only? **Q3:** the founding race (the woodcutter splits the logs two marked houses wait on; lost foundings
+  15 → 18 of 100 with the armful, present at 40 too): **leave it** for this slice (recommended) or fix it as its own?
 
 - ✅ **DECIDED (D534) — Joe: *"c"*. Clothing parked; the armful is next.** ~~CLOTHING — BUILD IT NOW, GIVE WINTER WORK FIRST, OR PARK IT? (D533, asked 2026-10-08).~~ Measured
   (`clothing.md §5.2`): at the shipped limits winter is ~71% at a fire and ~1% outdoor work whether villagers are

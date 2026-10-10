@@ -1001,6 +1001,38 @@ public sealed class SimWorld : IObstacles
             ? !LimitIsMet(Goods.Firewood)
             : LabourQuota.FirewoodShortfall(this) > 0;
 
+    /// <summary>
+    /// Whether a woodcutter may split a batch now (D538, `armful-and-meals.md §7a`): the village wants more
+    /// firewood, and either it is short of its winter's need or the logs in store are more than the sites wait on.
+    /// </summary>
+    /// <remarks>
+    /// <b>Derived floor, player ceiling (D62), and the ceiling yields to building between the two.</b> Under the
+    /// derived need fuel comes first, as it always has (D17, D515), so nobody this rule holds back can freeze for
+    /// it. Over it, the player's limit still asks for more — from spare logs only.
+    /// </remarks>
+    public bool MaySplitLogs() =>
+        TheVillageWantsMoreFirewood()
+        && (LabourQuota.FirewoodShortfall(this) > 0
+            || LogsInWarehouses() - LogsTheSitesStillNeed() >= Config.LogsPerSplit);
+
+    /// <summary>
+    /// Logs every unfinished site still waits on — what a woodcutter leaves in the stores once the winter's
+    /// firewood is in (D538). Summed when a woodcutter asks, never per tick for the village.
+    /// </summary>
+    public int LogsTheSitesStillNeed()
+    {
+        int waiting = 0;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is { IsFinished: false, Demolishing: false } site)
+            {
+                waiting += site.StillNeeded(Goods.Logs);
+            }
+        }
+
+        return waiting;
+    }
+
 
     /// <summary>
     /// How much of any good the village's stores hold between them.

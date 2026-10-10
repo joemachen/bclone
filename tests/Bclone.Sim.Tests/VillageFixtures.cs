@@ -56,7 +56,16 @@ public static class VillageFixtures
                 // firewood at all, its own hunger rate and its own gather yield — and its spec is
                 // written against it. **The defect was never that Phase 0 differs; it is that the
                 // VILLAGE fixture inherited a number it was not supposed to.**
-                FoodPerMeal = 4,
+                //
+                // ⭐ AND AGAIN FOR THE 4¼-DAY MEAL AND THE ARMFUL OF 80 (D536, D537): 4 -> 6 a meal,
+                // hunger 7 -> 5 a tick and eaten at 85, an armful 40 -> 80 — the game's numbers, here,
+                // for the same reason. `ArmfulAndMealTests.TheVillageFixtureEatsAndCarriesAsTheGameDoes`
+                // is the guard that would have caught D223's drift.
+                FoodPerMeal = 6,
+                HungerPerTick = 5,
+                EatThreshold = 85,
+                EatReducesHunger = 85,
+                CarryCapacity = 80,
 
                 StartingHouseholds = 2,
                 AdultsPerHousehold = 2,

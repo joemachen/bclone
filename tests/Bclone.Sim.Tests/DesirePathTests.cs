@@ -582,14 +582,30 @@ public sealed class DesirePathTests
     /// the same years, once as shipped and once with the allowance so large any shortcut the eye can
     /// see is taken (the walk before D414). ⚠️ And paths must still exist: §2.6's *no paths* failure
     /// is the other ditch.
+    /// <para>
+    /// ⚠️ SIX VALLEYS, NOT ONE (D537). On the fixture's valley alone it was a coin: the 4¼-day meal and the
+    /// armful of 80 moved it from 16 block tiles against 31 to 24 against 33, over the bar, while ten valleys
+    /// in a scratch arm read 0.66 before and 0.60 after — the rule working as well as it did. D470's lesson
+    /// again: a one-valley guard is a coin.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheFoundingHubWearsLanesNotABlock()
     {
-        (int kept, int keptPaths) = BlockTilesAfter(Config, 15);
-        (int cut, int cutPaths) = BlockTilesAfter(Config with { PathShortcutGrassAllowance = 1_000 }, 15);
-        _output.WriteLine($"fifteen fixture years: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
-        Assert.True(keptPaths >= 10, $"only {keptPaths} path tiles — the village wore no paths (§2.6)");
+        int kept = 0, keptPaths = 0, cut = 0, cutPaths = 0;
+        foreach (ulong? seed in new ulong?[] { null, 1, 2, 3, 4, 5 })
+        {
+            SimConfig config = seed is ulong s ? Config with { Seed = s } : Config;
+            (int k, int kp) = BlockTilesAfter(config, 15);
+            (int c, int cp) = BlockTilesAfter(config with { PathShortcutGrassAllowance = 1_000 }, 15);
+            kept += k;
+            keptPaths += kp;
+            cut += c;
+            cutPaths += cp;
+        }
+
+        _output.WriteLine($"fifteen years in six valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
+        Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in six valleys — the villages wore no paths (§2.6)");
         Assert.True(kept * 10 <= cut * BlockBarTenths,
             $"keeping to the lanes left {kept} block tiles against {cut} — not a thinner network");
     }

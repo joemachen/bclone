@@ -109,6 +109,16 @@
   "max_ticks_per_frame": 250,
 
   // ---- Needs -------------------------------------------------
+  // ⭐ FIVE, AND A MEAL EVERY 4 1/4 DAYS (Joe, D395 / D474 / D536 / D537):
+  // "they stop to eat 1x every 2 days - let's change it to 4." At 5 a tick
+  // and eating at 85 the villager eats every 17 ticks = 4 1/4 days, and a
+  // meal is 6: an adult eats 168 a year against 172 before (-2%). Exactly
+  // four days (eat at 80, 16 ticks) was +5% food, which needed gather_yield
+  // 123 -> 128 for the floor and starved a village with no market 55 against
+  // 40 (specs/armful-and-meals.md 5.2) - so Joe took the quarter day. The
+  // population follows what people eat, not how often they stop.
+  //
+  // What it was, kept for the reasoning below:
   // The villager eats at 80 hunger, so at 7 a tick that is a meal
   // every 11 ticks - roughly every 2.8 days. That cadence is
   // chosen to be READ rather than calculated: you should be able
@@ -132,10 +142,13 @@
   // Not a cosmetic dial: this sets what an adult eats in a year,
   // which is the number the whole food economy is derived from
   // (D16). gather_yield and stockpile_target below moved with it.
-  "hunger_per_tick": 7,
+  "hunger_per_tick": 5,
   "hunger_max": 100,
-  "eat_threshold": 80,
-  "eat_reduces_hunger": 80,
+  "eat_threshold": 85,
+  "eat_reduces_hunger": 85,
+  // ⭐ 4 -> 6 WITH THE 4 1/4-DAY MEAL (D536, D537): fewer meals, each bigger,
+  // so an adult eats 168 a year against 172 (28 meals of 6, not 43 of 4).
+  //
   // ⭐ 5 -> 4 (Joe, 2026-08-23): "lower food consumption -20%".
   //
   // EXACTLY -20%, and the derivation makes it a REAL loosening rather
@@ -144,7 +157,7 @@
   // yields where they are hands the village the whole 20% as headroom
   // above the survival line. Re-deriving the yields down too would have
   // been the same game with smaller numbers.
-  "food_per_meal": 4,
+  "food_per_meal": 6,
 
   // 24 ticks = 6 days at maximum hunger before death. Boundary
   // is >= (decided in spec §11).
@@ -908,8 +921,8 @@
   // THE FOOD CHAIN -- WHEAT TO FLOUR TO BREAD (specs/food-chain.md, D520-D522;
   // Joe's calls before a line was written, every number from section 8.1).
   // Bread SATES LONGER: a meal costs the units any meal costs, and a meal of
-  // bread holds hunger off for what it is worth beyond a plain one (4 loaves at
-  // 2 = the next meal after 22 ticks, not 11). The survival floor reads none of
+  // bread holds hunger off for what it is worth beyond a plain one (6 loaves at
+  // 2 = the next meal after 34 ticks, not 17, since D537). The survival floor reads none of
   // this -- every raw food is worth 1, the least a food can be, so the floor
   // holds for every diet and bread is upside (food-chain.md 3.1).
   // bread_nutrition 2: a miller and a baker keeping up with one farm add about
@@ -1208,7 +1221,15 @@
   // armful at a time is what makes the distance to the granary cost
   // something, which is where D32 said the interesting inequality would
   // live. Raise it far enough and storage becomes bookkeeping again.
-  "carry_capacity": 40,
+  //
+  // ⭐ 40 -> 80 (Joe, D395 / D474 / D536: "armful 80"), for EVERY errand
+  // that carries - one armful, one meaning. D473 traced a household ten
+  // tiles from its store fetching about as fast as it ate; measured over
+  // 100 valleys, 80 takes 41% fewer food trips at no cost to the village.
+  // A tooled quarrier or miner's stint now runs its full count of digs
+  // instead of being cut short by full arms (specs/armful-and-meals.md §3).
+  // The Cartwright Warehouse, when it exists, raises it from here.
+  "carry_capacity": 80,
 
   // WHEN A HOUSEHOLD GOES SHOPPING (D372, Joe): at half a larder, not at the
   // first dip - and then back to back until the larder is at target again.
