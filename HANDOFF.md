@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION IS BUILT, ALL THREE COMMITS (D554–D556), ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION BUILT (D554–D556), HOUSES CLEAR OF STONE (D557), SURNAMES LEFT FOR THE NOMADS (D558) — ALL ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (JOE'S YEAR-88 NOTES, ALL THREE DONE) — D557–D558, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (local, not pushed) = D552–D556 (building condition, all three commits)
+> and **D557 + D558, one commit**: houses go round seams by their rectangle (a turned house had reached stone it did not
+> "cover"), and the one-surname village written down and left for the nomads (Joe's call). No golden moved in either.
+>
+> **▶️ NEXT: ask Joe to play** a fresh village on this branch (`.\run.bat` — he runs PowerShell): read a building card's
+> wear line climb, watch a roof go darker and a builder mend it, leave a wooden bridge to fail, and see that new houses
+> keep clear of stone. Then merge to `main` and push **at his word only**. ⚠️ Saves from before format 5 are refused, and
+> a house already sitting on stone in an old save stays there (no migrations, D507).
+>
+> **(the banner below is the state before D557)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (CONDITION, COMMIT 3 — THE VIEW) — D556, ON WINDOWS.**
 >
@@ -6270,6 +6283,12 @@ Read `git status` after staging, every time.
   what the village does — `noservable` ran fast because nobody was hired to mend, not because the check was dear.
 - **`$GODOT` is not set in this shell on Windows.** The probe line silently ran `""` (*command not found*). The console
   exe is `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
+- **A rule checked "by the tiles a thing covers" is a rule checked by tile centres.** `CoveredTiles` is the centre rule
+  (right for an obstacle), and anything turned off the quarters reaches into tiles it does not cover. A *"never on X"*
+  rule wants the rectangle (`Footprint.Overlaps` against `Footprint.OneTile`) — and an unattended harness may never pose
+  it (0 of 337 homes), because only a player paints homes land against stone. The guard's own village found it.
+- **Bash heredocs over ~20 lines with `\n` inside Python strings still break** — every script this session that did so
+  failed to parse. Write the script with the Write tool, always.
 
 ## ⛔ THE TRAPS THE MAINTENANCE SPEC (D552) PAID FOR — A RATIO AGAINST A LIMITED FLOW, A BYTE THAT IS ALREADY THE DIAL'S END, AND A HEREDOC (AGAIN)
 

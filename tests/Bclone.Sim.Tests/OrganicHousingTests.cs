@@ -182,6 +182,77 @@ public sealed class OrganicHousingTests
             + $"with {seam} there, {second.Front} facing {second.Facing} on {string.Join(" ", now.Select(t => $"{t}={world.Map.TerrainAt(t)}"))}");
 
         Assert.All(now, t => Assert.False(TerrainRules.IsSeam(world.Map.TerrainAt(t)), $"The house stands on {seam} at {t}."));
+        Assert.Null(ASeamTheHouseReaches(world, world.HomeFootprintAt(second.Front, second.Facing)));
+    }
+
+    /// <summary>
+    /// ⛔ A TURNED HOUSE DOES NOT REACH ONTO A SEAM EITHER (D557, Joe: <i>"house was built on a stone node. shouldn't be
+    /// possible."</i>). The seam check read the tiles whose <em>centre</em> the house covers, and a house turned to any
+    /// 1/64 reaches into tiles whose centre it does not — so a tilted house stood half on stone, legally. Posed at three
+    /// turns that are not quarters: a stone tile the rectangle reaches and does not cover refuses the plot.
+    /// </summary>
+    [Fact]
+    public void ATurnedHouseDoesNotReachOntoASeam()
+    {
+        int posed = 0;
+        for (int sixteenth = 1; sixteenth <= 3; sixteenth++)
+        {
+            SimWorld world = Bare();
+            GridPos centre = ABareSquareAtLeast(world, world.Map.FoundingSite, 1, 4);
+            Paint(world, centre, 4);
+            Household family = ANewFamily(world, "Ashford");
+            Angle facing = Angle.FromTurnFraction(sixteenth, 16);
+            PlotShape plot = world.PlotFor(centre, facing, family.Id);
+            Footprint house = world.HomeFootprintAt(centre, facing);
+            if (Household.TilesClippedOff(world, plot) < 0)
+            {
+                continue;
+            }
+
+            GridPos? reached = null;
+            for (int dy = -2; dy <= 2 && reached is null; dy++)
+            {
+                for (int dx = -2; dx <= 2 && reached is null; dx++)
+                {
+                    var tile = new GridPos(centre.X + dx, centre.Y + dy);
+                    if (!plot.House.Contains(tile) && house.Overlaps(Footprint.OneTile(tile)))
+                    {
+                        reached = tile;
+                    }
+                }
+            }
+
+            if (reached is not GridPos stone)
+            {
+                continue;
+            }
+
+            world.SetTerrain(stone, Terrain.Rock);
+            _output.WriteLine($"facing {sixteenth}/16: the house covers {string.Join(" ", plot.House)} and reaches {stone}");
+            Assert.Equal(-1, Household.TilesClippedOff(world, plot));
+            posed++;
+        }
+
+        Assert.True(posed > 0, "No turn of the house reached a tile it does not cover, so nothing was posed.");
+    }
+
+    /// <summary>A seam tile whose square the house's own rectangle overlaps — touching is apart — or null.</summary>
+    private static GridPos? ASeamTheHouseReaches(SimWorld world, Footprint house)
+    {
+        GridPos at = house.Origin.ToTile();
+        for (int dy = -3; dy <= 3; dy++)
+        {
+            for (int dx = -3; dx <= 3; dx++)
+            {
+                var tile = new GridPos(at.X + dx, at.Y + dy);
+                if (world.Map.Contains(tile) && TerrainRules.IsSeam(world.Map.TerrainAt(tile)) && house.Overlaps(Footprint.OneTile(tile)))
+                {
+                    return tile;
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>⭐ Homes land that is all seam says so, in words the player can act on.</summary>

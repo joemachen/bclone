@@ -163,6 +163,19 @@ counts it: *"N on a stone or iron seam"*. Cleared ground inside the paint still 
 (Joe, D497: keep it). Guards in `OrganicHousingTests`: `AHouseGoesRoundASeam`,
 `AFamilyWithOnlySeamsSaysSo`.
 
+**⛔ By the rectangle, not the tile centres (D557).** Joe, at a Year-88 village: *"house was built on a stone node.
+shouldn't be possible."* The rule above read the tiles whose **centre** the house covers — the obstacle's tiles, which is
+right for an obstacle — but a house turned to any 1/64 reaches into tiles whose centre it does not, and stood half on
+stone. The check is now the house's own rectangle against every seam tile's square within its reach
+(`Household.ReachesASeam`, `Footprint.Overlaps` — touching is apart, so a house flush against stone still stands). His
+call: houses go round, exactly — no margin, no quarrying under a house. ⭐ **`AHouseGoesRoundASeam`'s own village
+reproduced it**: with iron under the first pick, the chooser moved the house one tile and turned it 16°, and the
+rectangle still reached the iron. Guards: `ATurnedHouseDoesNotReachOntoASeam` (three non-square turns, a stone tile the
+rectangle reaches and does not cover), and `AHouseGoesRoundASeam` now asserts the rectangle too. Measured (`ZzSeamHouses`,
+100 shipped valleys × 50 years, unattended): **0 of 337 homes reach a seam before or after** — the harness never paints
+homes land against stone the way a player does, so the case lives in played villages; survival unchanged to the unit
+(590 / 21). Houses already standing over stone in a save stay there (no migrations, D507).
+
 ### 3.4 What the plot is, in state
 
 The state is the house and its fence: `Household.HomePosition` (a `Point`), **`Household.HomeFacing`

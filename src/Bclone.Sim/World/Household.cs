@@ -587,7 +587,7 @@ public sealed class Household
 
     /// <summary>
     /// Whether a plot can be taken here (§3.1–3.2), and how much of its yard the paint, the water
-    /// or a building clips off. <b>−1</b> unless the house's two tiles are whole-painted, on land and off a seam (B5, D497),
+    /// or a building clips off. <b>−1</b> unless the house's two tiles are whole-painted, on land and off a seam (B5, D497) — and no corner of the house on one, by its rectangle (D557) —
     /// free, in nobody's plot and on nobody's lane, the lane is in nobody's plot, and the door's
     /// tile is land nobody stands on; the yard tiles must be in nobody's plot and on nobody's lane.
     /// Otherwise the count of yard tiles that are off the map, water, unpainted by the half rule,
@@ -608,6 +608,14 @@ public sealed class Household
             {
                 return -1;
             }
+        }
+
+        // ⛔ AND NOT A CORNER OF IT ON A SEAM (D557, Joe: *"house was built on a stone node. shouldn't be possible."*). The
+        // loop above reads the tiles whose CENTRE the house covers — the obstacle's tiles, rightly — but a house turned to
+        // any 1/64 reaches into tiles whose centre it does not, and stood half on stone. Seams are asked by the rectangle.
+        if (ReachesASeam(world, world.HomeFootprintAt(plot.Front, plot.Facing)))
+        {
+            return -1;
         }
 
         for (int i = 0; i < plot.Lane.Count; i++)
@@ -644,6 +652,32 @@ public sealed class Household
         }
 
         return clipped + plot.Unreached;
+    }
+
+    /// <summary>
+    /// Whether the house's own rectangle overlaps any seam tile's square — touching is apart (<see cref="Footprint.Overlaps"/>),
+    /// so a house flush against stone still stands. Every tile within the rectangle's reach is asked, not only the ones
+    /// whose centre it covers (D557).
+    /// </summary>
+    private static bool ReachesASeam(Core.SimWorld world, Footprint house)
+    {
+        GridPos at = house.Origin.ToTile();
+        int reach = ((house.Width + house.Height) / 2) + 1;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var tile = new GridPos(at.X + dx, at.Y + dy);
+                if (world.Map.Contains(tile)
+                    && TerrainRules.IsSeam(world.Map.TerrainAt(tile))
+                    && house.Overlaps(Footprint.OneTile(tile)))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
