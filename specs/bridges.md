@@ -38,7 +38,7 @@ game can say, and now *"…and the bridge is how they get home"* is one too.
 | 2 | What does stone give over wood? | **A quicker deck, and it lasts where wood wears** (same spans) — rebuilt in place |
 | 3 | What unlocks stone? | **Crossings walked** over wooden bridges (DOING) |
 | 4 | Can people cross while wood is rebuilt in stone? | **Yes — it stays open** |
-| 5 | Wear needs building decay, which does not exist | **Bridges first, wear later** — with Phase 5's maintenance slice |
+| 5 | Wear needs building decay, which does not exist | **Bridges first, wear later** — with Phase 5's maintenance slice (✍️ specced D552, `building-condition.md §4.4`: a failing wooden deck's leg takes 150 %, a ruined deck closes, stone is a row that never wears) |
 | 6 | When wear lands, an unrepaired wooden deck… | **Slows, then closes** — warned and drawn worn well ahead; never closes with anybody on it |
 
 ⚠️ Call 1 resolves a contradiction between two docs: `tech-tree.md` said SCALE and `buildings-plan.md` said *"by

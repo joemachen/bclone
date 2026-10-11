@@ -1,4 +1,37 @@
-# Handoff — bclone: **▶️ PHASE 5 — D551: BRIDGES (WOODEN, THEN STONE, DRAGGED AT ANY ANGLE) PLAYED, MERGED AND PUSHED; NOTHING OPEN ON A BRANCH — ASK JOE WHAT'S NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D552–D553: BUILDING CONDITION AND MAINTENANCE IS MEASURED, SPECCED AND ITS SEVEN CALLS ANSWERED (*"yes to all"*), COMMITTED ON `slice/maintenance`, NOTHING BUILT — NEXT: BUILD IT TDD PER `building-condition.md §9`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (MAINTENANCE SPECCED) — D552, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (off `main`) = D552–D553, **committed at Joe's word (*"yes to all. commit"*), not
+> pushed** — `specs/building-condition.md` and its measurement (`tools/harness/ZzMaintenance.cs`), docs moved with it
+> (`DESIGN.md` §4 / §5 / §6 / §7, `bridges.md §2` call 5, the harness README). **No sim or view code, no golden, no save
+> format moved.** Joe picked it over stable slots for the crowd fan (D525's conditional, whose trigger never fired — he
+> played D530 and said *"looks good"*).
+>
+> **What it is:** the D65 reversal §4 and §5 already schedule. Two stamps per standing thing, a wear age **derived** from
+> them and the calendar (a winter adds half a season), four states from the row (*sound → worn → failing → ruin*; 0 =
+> never — the stone bridge, the town hall); **a repair is a `ConstructionSite` with `Repairing` set**, raised at the
+> season turn when a thing turns worn, queued behind funded new sites, 25 % of the logs and **no stone**, worked by the
+> builders from the hut — no click; a *ruin* is closed and stays on the map (the nomads' inheritance); a failing wooden
+> deck slows and a ruined one closes, never with anybody on it, never stranding. Workshop / carpenter / hammer: a later slice.
+>
+> **Measured** (spec §8): a played village stands 16–25 buildings by Year 30–118 and nearly all of it is past 8 years by
+> Year 20; logs sit at their 200 limit from Year 5 (felling is limit-driven; one woodcutter fells ~90 a year when asked);
+> **no unattended valley ever holds stone**; the recommended rate costs a mature village ~17–22 logs and 2–3 ten-tick
+> repairs a year — **feel, not survival**.
+>
+> Verified on this tree (code byte-identical to `main`'s D551): suite **1587 / 0 / 5 of 1592**, 5m22 then 5m24 back to
+> back (D551 ran 4m27 on the same code — the machine's load, not the tree; watch it); view 0 warnings (`--no-incremental`);
+> probe 79 lines, no ⛔ (bar height 151, `tile centres` ✅, `new game` ✅, `done.`); goldens byte-identical (342 lines
+> before and after).
+>
+> **▶️ NEXT: BUILD IT.** Joe answered every call as recommended (D553, `building-condition.md §3`). On this branch, TDD per the spec's §9 in three commits (sim: stamps + `Condition.Of` + hash + save; sim: repair sites +
+> the bridge; view), **measuring §8.5 on 100 valleys before any number goes into `data/sim.config.json`**, goldens moved
+> once and explained. ⏸️ Still his, unscheduled: stable slots for the crowd fan (D525); full settings (D508); ironman's
+> name (D507); the market's *Keeps up to* row and pin exception guards (D502); clothing, parked (D534).
+>
+> **(the banner below is the state before D552)**
+
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (BRIDGES MERGED) — D551, ON WINDOWS.**
 >
@@ -6073,7 +6106,36 @@ Read `git status` after staging, every time.
 - **A share that does not move can hide a count that does.** Raising every limit ×10 grows the work, yet the share of
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
 
+## ⛔ THE TRAPS THE MAINTENANCE SPEC (D552) PAID FOR — A RATIO AGAINST A LIMITED FLOW, A BYTE THAT IS ALREADY THE DIAL'S END, AND A HEREDOC (AGAIN)
+
+- **A demand measured against a limit-driven flow lies in both directions.** Repair logs a year ÷ logs felled a year
+  read 37–168 % and looked ruinous. Felling was 3–18 a year only because logs sat at their 200 limit and the woodcutter
+  idled; in the opening, when something wanted wood, the same hut felled ~90. **Compare a new demand to capacity (what
+  the trade does when asked), not to a flow a limit is holding down** — and say which in the spec.
+- **A zero in the store is a design fact.** Stone in store was 0 in every unattended valley in every one of fifty years.
+  Any cost priced in stone would never be served there and would quietly turn every building into a ruin. Read the
+  stores' zeros before pricing anything in them.
+- **A "slow it down" on a byte that is already the dial's maximum is not a knob.** `deck_tile_cost` is validated to
+  1..10 and the wooden deck is 10 (grass), so *"a failing deck slows"* cannot be a cost-field change; it has to be the
+  leg's ticks. Check the range of the field you mean to turn before promising the turn.
+- **Editing CRLF docs from a script: match the file's endings, and never let the script print emoji on Windows.** A
+  `\n` anchor finds nothing in `HANDOFF.md` (CRLF); an inserted `\n` leaves DESIGN.md with mixed endings (D527's trap
+  again); and `python -I` ignores `PYTHONIOENCODING`, so a `print` of a ⛔ dies with cp1252 **after** the file was
+  written, leaving half the edits applied. Use `python -X utf8`, convert anchors to the file's newline, and make every
+  edit idempotent (skip when the new text is already there) so a rerun is safe. The long heredoc failed to parse as well
+  (D538, D540): write the script with the Write tool and run it.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **ANSWERED (D553, 2026-10-10) — Joe: *"yes to all. commit"*. Every recommendation stands; the build is next.** ~~BUILDING CONDITION AND MAINTENANCE — SEVEN CALLS (D552, asked 2026-10-10, `building-condition.md §3`).~~ Recommended
+  first (and decided). **(1)** the D65 reversal itself: wear on a derived clock, the builders repair automatically, no click — yes;
+  **(2)** what wears: everything with timber (homes included); the town hall exempt; the stone bridge never; **(3)** the
+  rates: worn 8 / failing 12 / ruin 20 years of mild weather, a winter +50 % of a season (measured: feel, not survival);
+  **(4)** worn and failing change only the look, the card and the queue; a ruin is *closed* and stays on the map; no
+  graded penalties on buildings (the failing wooden deck alone slows, Joe's D546 call 6); **(5)** a repair behind every
+  funded new site, at 25 % of the logs and 25 % of the work, **no stone** (unattended valleys hold none, ever);
+  **(6)** builders from the hut now; workshop + carpenter + hammer a follow-on slice; **(7)** pulling down a ruin returns
+  nothing.
 
 - ⏸️ **BRIDGES — WHAT WAS DECIDED FOR JOE, TO OVERRULE IN PLAY (D546, `bridges.md §2`).** Every one is one line to change:
   **(a)** one tile wide (D40's funnel); ~~**(b)** quarter turns only~~ ~~**(c)** clicked on the water and stretched by
