@@ -88,8 +88,9 @@ public sealed class HearthSystem : ISimSystem
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            if (world.LivingMembersOf(household) == 0)
+            if (world.LivingMembersOf(household) == 0 || household.HomeClosed)
             {
+                // Nobody home, or no roof to be home under (`building-condition.md §4.5`): the fire is not lit.
                 continue;
             }
 

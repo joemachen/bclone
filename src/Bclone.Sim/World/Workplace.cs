@@ -611,6 +611,13 @@ public sealed class Workplace
     /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
     public ulong RepairedAtTick { get; set; }
 
+    /// <summary>
+    /// Whether it has fallen in — closed until the builders mend it (`building-condition.md §4.5`, D555). Set by the
+    /// season's walk when its condition turns <em>ruin</em>, cleared by the repair; a decision made at a moment, so a
+    /// fact (hashed sparsely, saved), not a per-read derivation.
+    /// </summary>
+    public bool Closed { get; set; }
+
     /// <summary>Whether this year's field is one tile a hand bigger than the farm had proven (D361) — the probe, so a rot can undo it.</summary>
     public bool FieldProbedThisYear { get; set; }
 
@@ -714,7 +721,7 @@ public sealed class Workplace
     /// half the code and ignored by the other half — which is this project's most
     /// repeated bug.
     /// </remarks>
-    public int Places => StaffingOverride ?? Capacity;
+    public int Places => Closed ? 0 : StaffingOverride ?? Capacity;
 
     public bool IsFull => WorkerIds.Count >= Places;
 
@@ -753,6 +760,7 @@ public sealed class Workplace
         ["field_cleared_at"] = SaveWriter.Hex(FieldClearedAtTick),
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
+        ["closed"] = Closed,
         ["field_probed_this_year"] = FieldProbedThisYear,
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
@@ -784,6 +792,7 @@ public sealed class Workplace
             FieldClearedAtTick = save.ULong("field_cleared_at"),
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
+            Closed = save.HasValue("closed") && save.Bool("closed"),
             FieldProbedThisYear = save.Bool("field_probed_this_year"),
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),

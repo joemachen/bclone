@@ -406,7 +406,7 @@ public sealed partial class SimWorld : IObstacles
     {
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].HasRoom)
+            if (!Libraries[i].Closed && Libraries[i].HasRoom)
             {
                 return true;
             }
@@ -428,7 +428,8 @@ public sealed partial class SimWorld : IObstacles
     {
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].HasRoom)
+            // A library that has fallen in takes no record and gives none (`building-condition.md §4.5`).
+            if (!Libraries[i].Closed && Libraries[i].HasRoom)
             {
                 Libraries[i].Records.Add(new LibraryRecord(techniqueId, foundBy, Clock.Year));
                 return Libraries[i];
@@ -489,7 +490,7 @@ public sealed partial class SimWorld : IObstacles
     {
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Holds(techniqueId))
+            if (!Libraries[i].Closed && Libraries[i].Holds(techniqueId))
             {
                 return true;
             }
@@ -1054,13 +1055,13 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public int InStores(Goods goods) => TotalAccepting(goods, store => store[goods]);
 
-    /// <summary>Sum a good across every store that will hold it, reachable or not.</summary>
+    /// <summary>Sum a good across every store that will hold it, reachable or not — a fallen-in one's too: it still gives.</summary>
     private int TotalAccepting(Goods goods, Func<Stockpile, int> read)
     {
         int total = 0;
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Accepts(goods))
+            if (StoreBuildings[i].Gives(goods))
             {
                 total += read(StoreBuildings[i].Store);
             }
@@ -2336,6 +2337,12 @@ public sealed partial class SimWorld : IObstacles
         if (workplace.IsSite)
         {
             return null;
+        }
+
+        // It has fallen in: nobody works a ruin until the builders mend it (`building-condition.md §4.5`, D555).
+        if (workplace.Closed)
+        {
+            return $"{Capitalised(workplace.Name)} has fallen in — it waits on the builders.";
         }
 
         // "Nobody here" is an instruction when the player typed it (D136's null-versus-zero).
@@ -6117,6 +6124,14 @@ public sealed partial class SimWorld : IObstacles
         {
             return null;
         }
+
+        // ⭐ NOR DOES A REPAIR (D555): it stands on the building it mends, whose ground was cleared when it went up —
+        // and a bridge's repair stands on a bank, which may be wooded and is walkable as it is.
+        if (IsARepairSite(site))
+        {
+            return null;
+        }
+
         IReadOnlyList<GridPos> covered = site.CoveredTiles;
         for (int i = 0; i < covered.Count; i++)
         {
@@ -7284,6 +7299,13 @@ public sealed partial class SimWorld : IObstacles
         // a move onto wood waited on the builder alone (D138), one tile at a time.
         AskForTheGroundUnder(FootprintOf(kind.Value, to, facing));
 
+        // A building on the move takes its stamps with it; its repair, if one was queued, is re-asked for
+        // next season where it lands (`building-condition.md §7`).
+        if (RepairSiteAt(from) is Workplace mending)
+        {
+            CancelConstruction(mending);
+        }
+
         // ⭐ WORK BUT NO MATERIALS — the timber and stone walk over with the crew. A relocation
         // that also charged for the building would be a demolition and a rebuild wearing one name.
         RaiseSiteFor(
@@ -7447,6 +7469,12 @@ public sealed partial class SimWorld : IObstacles
         {
             PullDownWhatStandsAt(tile);
             return PlacementVerdict.Fine;
+        }
+
+        // A building coming down has nothing to mend (`building-condition.md §7`).
+        if (RepairSiteAt(tile) is Workplace mending)
+        {
+            CancelConstruction(mending);
         }
 
         StandingChanged();
@@ -7890,6 +7918,12 @@ public sealed partial class SimWorld : IObstacles
         tiles = int.MaxValue;
         for (int i = 0; i < Wells.Count; i++)
         {
+            // A well that has fallen in draws no water (`building-condition.md §4.5`).
+            if (Wells[i].Closed)
+            {
+                continue;
+            }
+
             int cost = TravelCost.Cost(from, Wells[i].Tile);
             if (cost == TravelCostField.Unreachable)
             {
@@ -9092,7 +9126,7 @@ public sealed partial class SimWorld : IObstacles
     {
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Accepts(goods) && StoreBuildings[i].Store[goods] > 0)
+            if (StoreBuildings[i].Gives(goods) && StoreBuildings[i].Store[goods] > 0)
             {
                 return true;
             }
@@ -9723,6 +9757,15 @@ public sealed partial class SimWorld : IObstacles
         {
             RetireWorkplace(site);
             PullDownWhatStandsAt(site.Tile);
+            return;
+        }
+
+        // ⭐ A REPAIR FINISHES BY MENDING WHAT STANDS THERE (`building-condition.md §4.3`, D555) — it raises nothing.
+        if (plan.Repairing)
+        {
+            GridPos mended = site.Tile;
+            RetireWorkplace(site);
+            Mend(mended, plan.Name);
             return;
         }
 
@@ -11931,7 +11974,7 @@ public sealed partial class SimWorld : IObstacles
         {
             // A bridge's site is not a shape on the ground (see `StandingShapes`); its ends refuse a
             // building through `SomethingStandsAt`.
-            if (!IsABridgeSite(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
+            if (!IsABridgeSite(Workplaces[i]) && !IsARepairSite(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
             {
                 return true;
             }
@@ -12170,7 +12213,11 @@ public sealed partial class SimWorld : IObstacles
         {
             // ⛔ A BRIDGE'S SITE STANDS ON THE BANK IT IS BUILT FROM, AND MUST NOT CLOSE IT (D546): the
             // near abutment stays walkable while it is raised, and while a wooden deck is rebuilt in stone.
-            if (IsABridgeSite(Workplaces[i]))
+            // ⭐ Nor a repair's site (D555): it stands on the building it mends, which is the obstacle already. Listed
+            // too, it took over the tiles' owner in the index, and the opener then opened the site's shape instead of
+            // the building's — a granary under repair was unreachable to everyone fetching food from it (found by
+            // `TheMarketKeepsLardersFromRunningDry`: a 15-tick dry spell against a round trip of -2).
+            if (IsABridgeSite(Workplaces[i]) || IsARepairSite(Workplaces[i]))
             {
                 continue;
             }
@@ -12839,6 +12886,12 @@ public sealed partial class SimWorld : IObstacles
         // through the shared finder now (D328) rather than through a fourth copy of the loop.
         if (HouseholdAt(at) is Household household)
         {
+            // A house that has fallen in shelters nobody (`building-condition.md §4.5`, D555).
+            if (household.HomeClosed)
+            {
+                return Shelter.Outdoors;
+            }
+
             // An empty house has nobody to keep the fire in, whatever is on its shelf.
             return LivingMembersOf(household) > 0 && household.Stockpile.Firewood > 0
                 ? Shelter.Fire

@@ -401,8 +401,9 @@ public sealed class PlacementTests
         foreach (Workplace workplace in world.Workplaces)
         {
             // The SITE, not any Builder workplace — the hut is one of those now (D108),
-            // and picking it up here dereferenced a null Construction.
-            if (workplace.IsSite)
+            // and picking it up here dereferenced a null Construction. And not a repair: twelve
+            // years in, the founders' huts are worn and the builders' mending them (D555).
+            if (workplace.IsSite && !SimWorld.IsARepairSite(workplace))
             {
                 site = workplace;
             }
@@ -420,7 +421,7 @@ public sealed class PlacementTests
 
         _output.WriteLine($"{delivered} logs were on site; store went {before} -> {world.LogsInWarehouses()}.");
         Assert.Equal(before + delivered, world.LogsInWarehouses());
-        Assert.DoesNotContain(world.Workplaces, w => w.IsSite);
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite && !SimWorld.IsARepairSite(w));
     }
 
     [Fact]

@@ -124,6 +124,9 @@ public sealed class Household
     /// <summary>The tick the builders last mended the house, or 0 never.</summary>
     public ulong HomeRepairedAtTick { get; set; }
 
+    /// <summary>Whether the house has fallen in — a roof that shelters nobody until the builders mend it (`building-condition.md §4.5`). Set at the ruin transition, cleared by the repair, cleared with the house.</summary>
+    public bool HomeClosed { get; set; }
+
     /// <summary>
     /// Why the house is where it is, in the chooser's words — *"near the granary, facing the
     /// lane, beside the Ashfords"* (D386). Set with the site; the card reads it. Not hashed: it
@@ -1263,6 +1266,7 @@ public sealed class Household
         ["home_facing"] = SaveWriter.Angle(HomeFacing),
         ["home_raised_at"] = SaveWriter.Hex(HomeRaisedAtTick),
         ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
+        ["home_closed"] = HomeClosed,
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1284,6 +1288,7 @@ public sealed class Household
             HomeFacing = save.Angle("home_facing"),
             HomeRaisedAtTick = save.ULong("home_raised_at"),
             HomeRepairedAtTick = save.ULong("home_repaired_at"),
+            HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

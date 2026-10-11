@@ -69,6 +69,13 @@ public sealed class Well
     /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
     public ulong RepairedAtTick { get; set; }
 
+    /// <summary>
+    /// Whether it has fallen in — closed until the builders mend it (`building-condition.md §4.5`, D555). Set by the
+    /// season's walk when its condition turns <em>ruin</em>, cleared by the repair; a decision made at a moment, so a
+    /// fact (hashed sparsely, saved), not a per-read derivation.
+    /// </summary>
+    public bool Closed { get; set; }
+
     internal JsonObject ToSave() => new()
     {
         ["at"] = SaveWriter.Point(Position),
@@ -80,6 +87,7 @@ public sealed class Well
         ["draws"] = Draws,
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
+        ["closed"] = Closed,
     };
 
     internal static Well FromSave(SaveReader save) => new()
@@ -93,5 +101,6 @@ public sealed class Well
         Draws = save.Int("draws"),
         RaisedAtTick = save.ULong("raised_at"),
         RepairedAtTick = save.ULong("repaired_at"),
+        Closed = save.HasValue("closed") && save.Bool("closed"),
     };
 }

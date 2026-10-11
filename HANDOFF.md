@@ -1,4 +1,85 @@
-# Handoff — bclone: **▶️ PHASE 5 — D554: BUILDING CONDITION, COMMIT 1 OF 3 (THE STAMPS, THE DERIVED CONDITION, THE ROWS, THE HASH, SAVE FORMAT 5) ON `slice/maintenance`, LOCAL — NEXT: COMMIT 2 (THE SEASON WALK, REPAIR SITES, CLOSED, THE BRIDGE), THEN 3 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION: THE SIM IS BUILT AND COMMITTED (D554, D555) ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. NEXT: COMMIT 3, THE VIEW (WORN FILLS, CARD LINES, THE PROBE'S `worn:` LINE). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (CONDITION, COMMIT 2 DONE) — D555, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (local, not pushed) = D552 spec, D553 calls, D554 commit 1, **D555 commit
+> 2 — committed** (Joe: *"continue commit 2"*). Things wear, the builders mend, a ruin is closed and stays on the map, a
+> failing wooden deck slows and a ruined one closes. **Nothing is drawn yet** — no worn fill, no card line: commit 3.
+>
+> Verified on the committed tree: suite **1621 / 0 / 5 of 1626**; view 0 warnings (`--no-incremental`); probe 79
+> `[widths]` lines, no ⛔, bar height 151 everywhere, `tile centres` ✅, `new game` ✅, `done.`, no Godot left running;
+> **exactly six goldens moved** (`git diff`: `FarmGoldenTests` ×2, `StockLimitTests` ×2, `SkillTests` ×2) — ⭐ proven the
+> walk alone: with `TendWhatStands` short-circuited the old values pass (65 of 65 golden and determinism guards).
+> **22 mutants, 31 reds, one zero kept** (`SomethingOverlaps` not skipping a repair site — equivalent, written down in
+> `building-condition.md §9`); three zeros found and closed with new guards.
+>
+> **What this session added to the half-built commit:** the two red guards fixed (`TimberGatesGrowthWithoutStoppingIt` →
+> seed 9; `AnAbandonedSiteGivesItsLogsBack` ignores repair sites); the goldens; the red-check; ⭐ **a real bug: a closed store
+> hid what it held** — every *who holds this* path asked `Accepts`, so a fallen-in granary starved the people beside it,
+> against Joe's call 4 (*"what is inside can still be fetched"*). `StoreBuilding.Gives` split from `Accepts`; the guard now
+> asks the village's count, not `Stockpile.TryTake`. ⭐ **The suite's clock: 4m24 → 7m27 back to back, and it is the
+> villages, not the code** — walk short-circuited, the 300-year test runs 8.4 s against commit 1's 8 s; the fixture village
+> that died at ~Year 190 now lives all 300 (spec §8.5). Measured on the final code: 100 valleys, **dead 21 → 21**, alive
+> 612 → 590 (reproduced to the unit); not one ruin in 43 valleys × 50 years.
+>
+> **▶️ NEXT: commit 3, the view** (`building-condition.md §6`): three steps darker-and-duller per state beside the colours
+> in `DrawFootprint`, a ruin's edge dashed, a failing deck's planks thinned; one condition line on every card (§4.2's words,
+> `WearTicksOf` for *about N years*); a repair site's card is a site's; the probe's `worn:` line posing `ConditionRules.Of`
+> at the four thresholds, a winter's extra, a reset and a never-wears row, and `TheCardsHoldTheirShape` posing the four
+> states. Then the four checks, docs, commit — and **ask Joe to play it** (§10: a twenty-year village at 4×, a roof turning
+> worn, a builder mending it, a wooden bridge left to fail). Merge and push only at his word.
+>
+> **(the banner below is the state before D555 was finished)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (CONDITION, COMMIT 2 — UNFINISHED) — D555, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (local) = D552 spec, D553 calls, **D554 commit 1 (`4585d0d`)**, and
+> **commit 2 built but UNCOMMITTED — `git status` shows it.** The session ran out of usage mid-verification; nothing is
+> half-written in the code, but the tree is not green and must not be committed as it stands.
+>
+> **What commit 2 is (all in the tree):** `Core/SimWorld.Condition.cs` — `TendWhatStands()` from `ClockSystem` on the
+> season's turn (state now vs a season ago, both derived), `RaiseARepairIfNoneFor` (the demolition site's shape with
+> `ConstructionSite.Repairing`, the building's exact position and facing, **not an obstacle** — `StandingShapes` and
+> `SomethingOverlaps` skip it), `Mend` (stamps everything on the tile — the market is two things), `WhyNotClose`,
+> `DeckIsSlow`, `AServableRepairSite`; a `Closed` flag per kind (hashed sparsely, tags 0x60–0x65; saved via `HasValue`)
+> read by `Places`, `Accepts`, `ShelterAt`, `NearestWell`, the library, `IdleNote`, the hearth; the deck index refuses a
+> closed deck and marks a failing one `_deckSlow`, which `BehaviorSystem.WalkedOver` charges at 150 %; `LabourQuota`
+> spares one hand for a servable repair when `free / 2` rounds to nobody (D453's exception extended); `SimConfig` allows the
+> three wear keys all 0 (nothing wears) and `Phase0Fixtures.Plenty` uses that (the village of one has nobody to mend a roof
+> and its spec forbids a second death system), `VillageFixtures.Village` puts 8 / 12 / 20 back. Guards: `RepairTests` (12),
+> `BridgeConditionTests` (6), `ObstacleTests` union skips repair sites, `MaintenanceTests` house guard loosened for an
+> inherited founders' house. **Docs already moved:** `building-condition.md` §4.3 / §4.5 *as built*, §7, the trap list
+> below; `bridges.md §3.1`; `tools/harness/ZzMaintenance.cs` now reports mends / fallen-in / closed / repairs waiting.
+>
+> **Measured (§8.5, 100 shipped valleys × 50 years, `tools/harness/arms.sh base`, same sitting):** before 612 alive /
+> 21 dead valleys / 347 starved / 52 cold; **after 590 / 21 / 370 / 55** — dead valleys unchanged, alive −3.6 %. The
+> 120-year tail moves: a village down to two people cannot keep its roofs (no woodcutter → no logs → ruin at ~Year 116,
+> the last two freeze) — the dying-village endgame (D143), now a little earlier. Twelve-seed timber-gate scan at 120
+> years, gated / free alive: 1: 7/0, 2: 0/0, 3: 0/0, **4: 3/7**, 5: 0/6, **6: 5/12**, 7: 0/0, 8: 0/0, **9: 10/13**, 10: 0/0,
+> 11: 1/0, **12: 11/8** — totals 37 / 46 against D429's 36 / 28, so maintenance did not weaken that premise overall; seed 1's
+> free arm flipped.
+>
+> **▶️ NEXT, IN ORDER (the suite read 1598 / 21 / 5 before the last two fixes; those cleared the fifteen Phase-0 lifetime
+> guards):**
+> 1. `WoodTests.TimberGatesGrowthWithoutStoppingIt` — re-pick its seed (1 → **4**, the lowest whose free arm lives; or 9,
+>    the healthiest) and record the scan above in its comment, as D429 did.
+> 2. `PlacementTests.AnAbandonedSiteGivesItsLogsBack` — it runs **twelve** years first, so repair sites now exist when it
+>    cancels "the last site" and asserts none remain: make it pick and assert only non-repair sites
+>    (`!SimWorld.IsARepairSite(w)`), or mark the granary earlier.
+> 3. Re-take the six fifty-year goldens (`FarmGoldenTests` ×2, `StockLimitTests` ×2, `SkillTests` ×2) — they move for the
+>    first repairs at Year ~7, proven by the §8.5 outcomes; `SeamBeforeAnybodyGotBetter` surfaces on the second run.
+> 4. Red-check commit 2's guards by mutant and count the reds (`scratchpad/mutate1.py` is the pattern): the walk per
+>    tick; a repair priced in stone; a repair ahead of a funded site; a ruin still staffed; a deck closed with somebody
+>    on it; the strand check skipped; a flag left out of the hash; the labour exception removed; the site left an
+>    obstacle; `Mend` stopping at the first thing.
+> 5. ⚠️ **The suite's clock read 7m35 against 4m24** on the run that had 21 failures — compare back to back on a green
+>    tree before believing either (D426); if it holds, find out what per tick got dearer (suspects: `AServableRepairSite`
+>    from the labour quota, `Closed` reads are trivial).
+> 6. Copy `tools/harness/ZzMaintenance.cs` in, run it, put mends / fallen-in / closed / repairs-waiting by decade into
+>    `building-condition.md §8.5`; then the four checks; `DESIGN.md` §6 + D555; this banner; commit.
+> 7. Then commit 3 (the view): worn fills, card lines, the `worn:` probe line.
+>
+> **(the banner below is the state before D555)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (CONDITION, COMMIT 1) — D554, ON WINDOWS.**
 >
@@ -6132,6 +6213,44 @@ Read `git status` after staging, every time.
   13 of 13 every-source foundings.
 - **A share that does not move can hide a count that does.** Raising every limit ×10 grows the work, yet the share of
   winter spent working stays the same with and without a coat, because demand bounds the work. Read shares and counts together.
+
+## ⛔ THE TRAPS THE MAINTENANCE BUILD (D554–D555) PAID FOR — A POSE THE SIM HAD ALREADY MOVED, A SITE THAT OWNED THE TILES, A ROUNDING THAT STARVED A REPAIR, AND PYTHON'S NEWLINES
+
+- **A pose that sets one stamp back is defeated by the other.** The guards set `RaisedAtTick` eight years back on the
+  fixture's hut and read *sound*: the fixture's builders had already mended it at tick 3439 (the mechanism working before
+  its guards were green), so `RepairedAtTick` won. Pose **both** stamps. And a stamp set twenty years back two years in
+  wraps a `ulong` to the far future — give a ruin twenty years of room (`AVillageAfter`).
+- **"Step to the season's turn" is off by one unless you say which tick the turn is processed in.** `ClockSystem` sees
+  the turn in the step whose tick *is* the boundary, so a step that lands *on* the boundary has not run it, and a step
+  that runs *through* it gives the builders a season to finish what the turn raised. `(season − Tick % season) % season
+  + 1` steps, and no more.
+- **A second shape on a building's tiles takes over the occupancy index.** `_standingOwner` is written per shape in
+  order; a repair site listed after the building owned its tiles, the path opener opened the site's shape, and a
+  granary under repair was unreachable to anybody fetching food (a dry spell "against a round trip of −2"). A thing
+  that stands on a building is not an obstacle; skip it as a bridge's site is skipped. The demolition site has the same
+  structure and gets away with it only because the building is leaving.
+- **Two things on one tile: mend both.** The market is a store and a workplace; an `else if` chain stamped the store and
+  re-queued the workplace every season.
+- **`free / 2` rounds to nobody at two people**, and a mechanism that depends on builders is a mechanism that fails the
+  smallest village silently — eleven repairs waiting with sixty logs in store for thirty years, found only because
+  `TheVillageSurvivesWithTheMarketSwitchedOff` asserts nobody freezes. D453's one-hand exception is the shape to extend.
+- **Python's default `open()` rewrites every LF file as CRLF on Windows.** Twenty-six source files flipped in one
+  sitting (the golden re-take and the mutant scripts); `git` showed them as modified for nothing and the fix touched
+  files committed with CRLF, which then *did* show. Always `open(..., newline='')`, both ways. The long heredoc failed
+  to parse twice more (`\n` inside a heredoc is a real newline): write the script with the Write tool and run it.
+- **`python3` is not on Joe's PATH; `python` is.** `arms.sh`'s last line (`dead.py`) says *Python was not found* and the
+  arm's summary is lost; run `python tools/harness/dead.py <row file>` by hand.
+- **A closed thing must still be the thing it was, to everyone who only reads from it.** `Accepts` meant *takes in*, but
+  six paths used it to mean *holds* — so the first closing flag hid a ruined store's stock from the village. When a flag
+  narrows a predicate, grep every caller and sort them into the two meanings before trusting the guard; and a guard that
+  calls `Stockpile.TryTake` directly proves the shelf, not the village (it passed with the bug in).
+- **The suite's clock can move for behaviour, and that is proved, not assumed.** 4m24 → 7m27 looked like a per-tick cost.
+  The proof that it was not: the slow test with the new mechanism short-circuited ran as fast as the parent (8.4 s vs 8 s),
+  the suspect was counted (16 calls in a century — the sim bans `Stopwatch`, RS0030, so count, don't time), and the
+  population trace showed the village living 110 years longer. ⚠️ A variant that switches a suspect *off* also changes
+  what the village does — `noservable` ran fast because nobody was hired to mend, not because the check was dear.
+- **`$GODOT` is not set in this shell on Windows.** The probe line silently ran `""` (*command not found*). The console
+  exe is `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/Godot_v4.7.1-stable_mono_win64_console.exe`.
 
 ## ⛔ THE TRAPS THE MAINTENANCE SPEC (D552) PAID FOR — A RATIO AGAINST A LIMITED FLOW, A BYTE THAT IS ALREADY THE DIAL'S END, AND A HEREDOC (AGAIN)
 

@@ -1393,7 +1393,7 @@ public sealed class BehaviorSystem : ISimSystem
         return household.ToppingUpFirewood
             ? NearestShopHolding(
                 world, villager.Tile, ATripsWorth(config, firewoodFloor - firewoodAtHome),
-                (store, atLeast) => store.Accepts(Goods.Firewood) && HeldOf(store.Store, Goods.Firewood) >= atLeast)
+                (store, atLeast) => store.Gives(Goods.Firewood) && HeldOf(store.Store, Goods.Firewood) >= atLeast)
             : null;
     }
 
@@ -1673,7 +1673,7 @@ public sealed class BehaviorSystem : ISimSystem
             // The cart counts here too, and it must: the walk above may have sent them to
             // one, and a builder who arrives at the materials and cannot pick them up is worse
             // than one who never set off (D75).
-            if (!store.Accepts(wanted)
+            if (!store.Gives(wanted)
                 || store.Tile != villager.Tile)
             {
                 continue;
@@ -2209,7 +2209,7 @@ public sealed class BehaviorSystem : ISimSystem
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding store = world.StoreBuildings[i];
-            if (!store.Accepts(goods) || HeldOf(store.Store, goods) <= 0)
+            if (!store.Gives(goods) || HeldOf(store.Store, goods) <= 0)
             {
                 continue;
             }
@@ -3993,14 +3993,7 @@ public sealed class BehaviorSystem : ISimSystem
         // first step out of a door cost nothing and a leg out of a house strode two tiles in a tick
         // — hidden for as long as a leg was rounded up to a whole tick.
         int routeSteps = furthest + 1;
-        int walked = 0;
-        int grassToFurthest = 0;
-        for (int i = 0; i <= furthest; i++)
-        {
-            int cost = world.TravelCost.CostToEnter(route[i]);
-            walked += cost;
-            grassToFurthest += cost == TravelCostField.BaseTileCost ? 1 : 0;
-        }
+        (int walked, int grassToFurthest) = WalkedOver(world, route, furthest);
 
         // ⭐ THE LAST LEG ENDS WHERE THEY WILL STAND (D463), so arrival is walked, not jumped — if the
         // place is in sight and the line to it keeps to the lane as the line to the centre did
@@ -4027,6 +4020,35 @@ public sealed class BehaviorSystem : ISimSystem
         villager.LegTicks = AtLeastARaw(length * Fixed.FromRatio(walked, routeSteps * TravelCostField.BaseTileCost));
         villager.LegWalked = Fixed.Zero;
         return true;
+    }
+
+    /// <summary>
+    /// What a leg's route tiles cost to enter, summed to <paramref name="furthest"/>, and how many of them are grass —
+    /// the price clock B charges (D361, D463).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A FAILING DECK SLOWS THE WALK, NOT THE ROUTE</b> (`building-condition.md §4.4`, D546 call 6, D555). The deck
+    /// byte is already the dial's maximum, so the slow is charged here, on the leg's ticks: nobody re-routes round a
+    /// bridge they can still cross, and the walker is visibly slower on it. Grass is counted before the slow, so a
+    /// slowed deck is not mistaken for grass by the lane rule.
+    /// </remarks>
+    internal static (int Walked, int Grass) WalkedOver(SimWorld world, IReadOnlyList<GridPos> route, int furthest)
+    {
+        int walked = 0;
+        int grass = 0;
+        for (int i = 0; i <= furthest; i++)
+        {
+            int cost = world.TravelCost.CostToEnter(route[i]);
+            grass += cost == TravelCostField.BaseTileCost ? 1 : 0;
+            if (world.DeckIsSlow(route[i]))
+            {
+                cost = cost * world.Config.FailingDeckSlowPercent / 100;
+            }
+
+            walked += cost;
+        }
+
+        return (walked, grass);
     }
 
     /// <summary>
@@ -4398,7 +4420,7 @@ public sealed class BehaviorSystem : ISimSystem
 
         for (int i = 0; i < edible.Count; i++)
         {
-            if (store.Accepts(edible[i]))
+            if (store.Gives(edible[i]))
             {
                 food += store.Store[edible[i]];
             }

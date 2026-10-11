@@ -4,9 +4,13 @@
 already say), D353 (2026-09-11, Phase 5 names *decay and maintenance*, condition *derived from built-at and
 last-repaired ticks*), D546 (2026-10-10, calls 5 and 6: *bridges first, wear later*; an unrepaired wooden deck *slows,
 then closes*), D552 (2026-10-10, this spec and its measurement).
-**Status:** 🔨 **commit 1 of 3 built on `slice/maintenance` (D554, 2026-10-10): the stamps, `ConditionRules`, the rows' three years and the six keys, the hash and save format 5 — nothing wears, nobody repairs yet.** Joe's seven calls answered as recommended (D553: *"yes to all"*). `ConditionTests` (9) and `MaintenanceTests` (5): 11 mutants, 13 reds, no zeros (§9). Six goldens moved once, proven the stamps' mix alone (§5). Commits 2 (the season walk, repair sites, closed, the bridge) and 3 (the view) are next. Measured
-first (§8: `tools/harness/ZzMaintenance.cs`, 43 unattended valleys × 50 years, and Joe's own 20 saves). No code, no
-golden, no save format has moved yet.
+**Status:** 🔨 **the sim is built — commits 1 and 2 of 3 on `slice/maintenance` (D554, D555, 2026-10-10/11); the view
+(commit 3: worn fills, card lines, the probe's `worn:` line) is next.** Commit 1: the stamps, `ConditionRules`, the rows'
+three years and the six keys, the hash and save format 5. Commit 2: the season's walk, repair sites, *closed* per kind,
+the wooden bridge's slow and close (§4.3–4.5 *as built*). Joe's seven calls answered as recommended (D553: *"yes to
+all"*). Guards: commit 1's 11 mutants / 13 reds / no zeros; commit 2's **22 mutants / 31 reds / one zero, equivalent and
+written down** (§9). The goldens moved twice, each proven (§5, §9). Measured first (§8) and on the build (§8.5): **dead
+valleys 21 → 21** of 100, and not one ruin in 43 valleys × 50 years. **Not yet played by Joe.**
 
 ---
 
@@ -152,6 +156,25 @@ building pulled down or moved takes its repair site with it (the demolition path
   next season if the thing is still worn — the sim does not nag, it re-asks once a season at most).
 - **A ruin's repair is the same site** (it has stood in the queue since *worn*); finishing it reopens the building.
 
+> ⭐ **As built (D555, commit 2):**
+> - **The repair site is the demolition site's shape, raised by `SimWorld.TendWhatStands()` from `ClockSystem` on the
+>   season's turn** (`Core/SimWorld.Condition.cs`), comparing this season's derived state with last season's — nothing
+>   stored, nothing per tick (`ConditionWalks` counts the walks; a guard reads four a year).
+> - **It takes the building's exact position and facing** (a house's from `HomeFootprintOf`, whose origin is the anchor,
+>   not the front point the household keeps), **and it is not an obstacle** — `StandingShapes` and `SomethingOverlaps`
+>   skip it as they skip a bridge's site. Listed as one, it took over the tiles' owner in the occupancy index and the
+>   path opener opened the site's shape instead of the building's: a granary under repair was unreachable to everyone
+>   fetching food from it (`TheMarketKeepsLardersFromRunningDry` read a 15-tick dry spell against a round trip of −2).
+> - **Finishing it mends everything standing on the tile**, not the first thing found: the market is a store and a
+>   workplace on one tile, and stamping only the store left its workplace half worn — a fresh repair every season.
+> - **A repair whose logs are in store spares one hand when half the spare hands rounds to nobody** — D453's exception
+>   for a begun site, extended (`LabourQuota`, `SimWorld.AServableRepairSite`). Measured in the fixture's market-off
+>   village: at two people, `free / 2` rounded to zero builders for thirty years while eleven repairs waited with sixty
+>   logs in store, and the last two froze in their fallen-in house fifteen years before they would have aged out. A
+>   repair owes a tenth of a hut; one spare hand mends it and goes back. The food gate still comes first.
+> - A demolition, a relocation or a bridge's pulling-down cancels the repair on its tile; a repair site never waits on
+>   clearing (`FirstTileStandingUnder`), so a bridge's repair on a wooded bank is served.
+
 ### 4.4 The wooden bridge: slows, then closes (D546 call 6)
 
 - **Failing: slows.** ⚠️ The deck byte cannot do it: `deck_tile_cost` is validated to 1..`BaseTileCost` (10) and the
@@ -182,6 +205,22 @@ building pulled down or moved takes its repair site with it (the demolition path
 
 A ruin is **not** demolished by the sim: it stands until the player pulls it down (returning nothing, call 7) or its
 repair is served. That is the nomads' inheritance.
+
+> ⭐ **As built (D555): *closed* is a flag the sim sets at the transition, not a per-read derivation.** A bridge's closing
+> has exceptions judged at the season's turn (somebody on it, the only way somewhere), so the outcome is a decision made at
+> a moment, like `RepairedAtTick` — a fact, hashed sparsely (tags `0x60`–`0x65`) and saved, cleared by the mend. Every kind
+> closes the same way so one word means one thing: `Workplace.Closed` (its `Places` read 0, its workers released, the
+> idle note says *fallen in*), `StoreBuilding.Closed` (`Accepts` false; what is held is still given), `Household.HomeClosed`
+> (`ShelterAt` is *Outdoors*, the hearth lights no fire), `Well.Closed` (`NearestWell` skips it), `Library.Closed` (no record
+> written or read), `Bridge.Closed` (its water is water again). ⚠️ **Closing a bridge is a standing change of its own**: a
+> bridge posed a ruin twenty years back has no transition this season, and without it the deck index went on selling a
+> deck that was no longer there.
+>
+> ⭐ **A closed store still gives** (D553 call 4): `StoreBuilding.Gives(goods)` is `Accepts` without the ruin, and every
+> path that asks *who holds this* — the village's counts (`InStores`, `AnyStoreHolding`), `NearestStoreHolding`, the
+> builder's pickup, the firewood shop, `FoodItWillGiveUp` — reads it. They had all asked `Accepts`, so the first build
+> hid a fallen-in granary's food from the people beside it; its guard had checked `Stockpile.TryTake` and passed. The
+> player's `Stocking.Closed` still keeps what it has, as it always did.
 
 ### 4.6 Not in this slice, said so
 
@@ -259,6 +298,11 @@ fixture's 50-year hashes are the ones to watch and explain.
 - **Determinism** — the walk is in the sim's tick order over the standing lists in id order; the only new RNG use is
   none.
 - **Loading** — format 5 only; a format-4 save is refused in words (D507: no migrations).
+- **Found while building (D555):** the market's two halves on one tile (mend everything on the tile); the repair site as
+  an obstacle taking over the index's owner (not an obstacle); a two-person village never affording a builder (one hand
+  for a servable repair); a bridge closing without a transition (a close is a standing change); a house's repair site
+  posed at the front point instead of the anchor (the house's own footprint); a closed store hiding what it held, because
+  the fetch paths asked `Accepts` for *who holds this* (`Gives`). Each has a guard.
 
 ---
 
@@ -338,6 +382,45 @@ woodcutter; 15 years makes wear a thing seen twice in a lifetime.
   *almost none ruined* (the builders mend), or the queue rule is wrong.
 - **The suite's clock**, back to back (D426).
 
+> ⭐ **Measured on the build (D555, 2026-10-11).**
+>
+> **Survival** (`tools/harness/arms.sh base`, 100 shipped valleys × 50 years, commit 1's tree and this one back to back):
+>
+> | | alive at 50 | dead valleys | peak | starved | froze |
+> |---|---|---|---|---|---|
+> | before (D554 — nothing wears) | 612 | 21 | 1,007 | 347 | 52 |
+> | after (D555) | **590** | **21** | 996 | 370 | 55 |
+>
+> Dead valleys unchanged — the acceptance line holds; −3.6 % alive. *No new Year-1 death*: nothing wears before Year 7.
+> The cost is in the tail of a dying village: valley `every 10` died by Year 40 before and by Year 30 after (its last logs
+> went to repairs with no woodcutter to replace them); a village down to two at Year 110+ can no longer keep its roof
+> (D143's endgame, a little earlier). The twelve-seed timber-gate scan at 120 years, gated / free alive, reads 37 / 46
+> against D429's 36 / 28 — the gate kills nothing; seed 1's free arm flipped, so `TimberGatesGrowthWithoutStoppingIt`
+> moved to seed 9 (10 / 13).
+>
+> **The maintenance itself** (`ZzMaintenance.cs`, 30 `shipped` + 13 `every` valleys, medians over every valley):
+>
+> | | Year 10 | Year 20 | Year 30 | Year 40 | Year 50 |
+> |---|---|---|---|---|---|
+> | mended in the decade (shipped / every) | 5 / 7 | 5 / 8 | 10 / 13 | 8 / 13 | 8 / 13 |
+> | fallen in, ever | 0 | 0 | 0 | 0 | 0 |
+> | closed now | 0 | 0 | 0 | 0 | 0 |
+> | repairs waiting (max over valleys) | 0 | 1 | 8 † | 8 † | 8 † |
+>
+> † one dead valley's leftovers (`every 10`, empty from Year 30: the walk runs only while somebody lives). **Not one
+> ruin in 43 valleys × 50 years: the builders keep up**, so the queue rule is right (*"almost none ruined"* was the bar).
+> Felling rises with it — the shipped median 6 → ~10 logs a year in Years 10–20 and 16 → 23 in Years 20–30 — the
+> woodcutter working instead of idling at the limit, as §8.3 predicted.
+>
+> **The suite's clock moved, and it is the villages, not the code.** Back to back: commit 1 **4m24**, commit 2 **7m27**
+> (1601 → 1621 tests). Per test, the long village runs carry it (`NoHouseholdEverHoldsLogs` 29 s → 92 s in the parallel
+> run). Taken apart on that test: with the season's walk short-circuited it runs **8.4 s against commit 1's 8 s** — the
+> new code costs nothing per tick; `AServableRepairSite` is asked **16 times in 100 years**; `DeckIsSlow` switched off
+> changes nothing. The difference is behaviour: commit 1's fixture village dies out around Year 190 and commit 2's
+> **lives all 300 years** (its roofs mended), so the run simulates a living village for a century longer, and in every
+> run builders and woodcutters now work where they idled. One new guard was dear for itself (`ARuinedDeckIsNotClosed
+> WhenItIsTheOnlyWaySomewhere`, 46 s, a `CanBuildAt` over every tile across the river) and asks open grass first now.
+
 ---
 
 ## 9. Guards (TDD, red first, red-checked and counted — D326)
@@ -349,6 +432,22 @@ woodcutter; 15 years makes wear a thing seen twice in a lifetime.
 > the save format not bumped **1**; the shipped rows not given the years **2**; the row check removed **1**; the key check
 > removed **1** (⚠️ scored **zero** at first: the rows the keys write refuse the same village with a sentence that also says
 > *rising*, so the guard now asserts the key's name); a workplace's stamps not saved **1**. **11 mutants, 13 reds, no zeros.**
+
+> ⭐ **Commit 2 (D555) — `RepairTests` (13), `BridgeConditionTests` (6), `HousesAreBuiltTests` (+1), `ObstacleTests`' union.**
+> Mutants (`scratchpad/mutate2.py`), each one line: the walk per tick **4 reds**; a repair priced in stone **6**; a repair
+> ahead of a funded site **1**; a ruin still staffed **1**; a deck closed with somebody on it **1**; the strand check
+> skipped **1**; a workplace's `Closed` out of the hash **1**; a home's **1**; the labour exception removed **1** (⚠️
+> **zero** at first — the targeted classes never posed a village that rounds to nobody; now
+> `OneSpareHandIsKeptForARepairWhoseLogsAreInStore`); the site left in the occupancy index **1**; `Mend` stopping at the
+> first thing **1** (⚠️ **zero** at first; now `AMendedMarketIsMendedWhole`); a failing deck not slowed **1**; a closed deck
+> still in the index **2**; a closed home still shelters **1**; a closed store still accepts **1**; `Mend` leaving the flag
+> **1**; a store's `Closed` not saved **1** (⚠️ **zero** at first — the save pose closed only the home; now all three); a
+> demolition leaving the repair **1**; a ruin never closed **2**; the village's count reading `Accepts` **1**;
+> `AnyStoreHolding` reading `Accepts` **1**. **22 mutants, 31 reds, one zero kept:** `SomethingOverlaps` not skipping a
+> repair site scores **0** and is **equivalent** — a repair site's shape is the building's own, so whatever overlaps it
+> overlaps the building, and a bridge's repair stands on a bank `SomethingStandsAt` already refuses. The skip is there to
+> agree with `StandingShapes`, whose own mutant scores 1. ⭐ **The goldens moved a second time, for the walk alone:** with
+> `TendWhatStands` short-circuited the six old values pass (65 of 65 golden and determinism guards green).
 
 `ConditionTests` (pure): the thresholds in wear ticks; a winter adds exactly its extra and a summer none; a repair
 resets to sound; a 0 / 0 / 0 row never wears at a thousand years; the validator refuses `wears ≥ fails`.
@@ -369,11 +468,14 @@ deck closed with somebody on it; the strand check skipped; a stamp left out of t
 ## 10. Definition of Done
 
 - [x] Joe's seven calls answered (D553: *"yes to all"*) — §3 and §4 as written.
-- [ ] §8.5 measured on the build before the numbers are typed; the comment on each key cites the number.
-- [ ] §9's guards written red first; mutants listed with their red counts, zeros written down — commit 1: ✅ 11 / 13 / none.
-- [x] Goldens moved once (D554), explained by §5's last paragraph and proven by the thirteen lines switched off; the determinism test green.
-- [ ] The four checks (CLAUDE.md): suite, view build read, probe (`worn:` ✅, bar height 151, `done.`), goldens diffed.
-- [ ] `DESIGN.md` §4 (the Phase 5 bullet, and D65's §5 item marked reversed-and-built), §6, §7; `specs/bridges.md` §2
-      call 5; `HANDOFF.md`; this status line made true — in the same commit as the code.
+- [x] §8.5 measured on the build (D555): dead valleys 21 → 21, no ruin in 43 valleys; the keys' comment cites it.
+- [x] §9's guards; mutants listed with their red counts, zeros written down — commit 1 ✅ 11 / 13 / none; commit 2 ✅ 22 /
+      31 / one equivalent zero, written down.
+- [x] Goldens moved once for the stamps (D554) and once for the walk (D555), each proven by switching its cause off; the
+      determinism test green.
+- [ ] The four checks (CLAUDE.md): ✅ for commits 1 and 2 (suite, view build read, probe, goldens diffed); commit 3 adds
+      the probe's `worn:` ✅.
+- [x] `DESIGN.md` §4 (the Phase 5 bullet, and D65's §5 item marked reversed-and-built), §6, §7; `specs/bridges.md` §3.1;
+      `HANDOFF.md`; this status line made true — in the same commit as the code. *(Commit 3 repeats it for the view.)*
 - [ ] Played by Joe: a village of twenty years at 4×, watching a roof turn worn, a builder mend it, and a wooden
       bridge left to fail.

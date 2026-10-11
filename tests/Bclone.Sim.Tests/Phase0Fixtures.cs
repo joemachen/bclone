@@ -35,6 +35,13 @@ public static class Phase0Fixtures
         // the Phase 0 spec describes, and it stays that way.
         FirewoodPerWinterDay = 0,
 
+        // No wear either (D555). The village of one has nobody to mend a roof and the spec above rules a second
+        // overlapping death system out by name: with the shipped years its hut fell in at eighteen and the villager
+        // starved at nineteen in every lifetime guard. `VillageFixtures.Village` puts the shipped years back.
+        BuildingWearsInYears = 0,
+        BuildingFailsInYears = 0,
+        BuildingRuinedInYears = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

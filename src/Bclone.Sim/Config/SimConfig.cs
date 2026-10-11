@@ -1557,7 +1557,7 @@ public sealed record SimConfig
     /// <summary>
     /// Years of mild weather before a timber building is <em>worn</em> (`building-condition.md §4.2`) — written onto
     /// every shipped row but the stone bridge's and the town hall's. Measured feel, not survival (§8.4): at 8 a mature
-    /// played village spends about a fifth of one woodcutter's year on repairs.
+    /// played village spends about a fifth of one woodcutter's year on repairs. All three keys 0: nothing wears.
     /// </summary>
     [JsonPropertyName("building_wears_in_years")]
     public int BuildingWearsInYears { get; init; } = 8;
@@ -4759,11 +4759,15 @@ public sealed record SimConfig
                 + $"{BridgeUnlockPopulation}, {StoneBridgeUnlockCrossings}).");
         }
 
-        if (BuildingWearsInYears <= 0 || BuildingFailsInYears <= BuildingWearsInYears || BuildingRuinedInYears <= BuildingFailsInYears)
+        // All three 0 switches wear off — the rows' own rule (`building-condition.md §4.2`), at the keys: Phase 0's
+        // village of one has nobody to mend anything and its spec rules a second death system out by name.
+        bool nothingWears = BuildingWearsInYears == 0 && BuildingFailsInYears == 0 && BuildingRuinedInYears == 0;
+        if (!nothingWears
+            && (BuildingWearsInYears <= 0 || BuildingFailsInYears <= BuildingWearsInYears || BuildingRuinedInYears <= BuildingFailsInYears))
         {
             throw new SimConfigException(
                 "building_wears_in_years, building_fails_in_years and building_ruined_in_years must be positive and "
-                + $"rising (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
+                + $"rising, or all 0 for nothing wears (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
         }
 
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)

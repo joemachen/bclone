@@ -79,10 +79,14 @@ public sealed class MaintenanceTests
         List<Household> newHomes = world.Households.Where(h => h.Id > founders && h.HasHome).ToList();
         _output.WriteLine($"{newHomes.Count} households housed after the founders, of {world.Households.Count}");
         Assert.NotEmpty(newHomes);
+        // A new couple may inherit a founders' house, raised at tick 0 (`HouseTheRoofless`), so 0 is honest for those;
+        // at least one house was raised for a family later and carries its tick. Older houses may already have been
+        // mended (commit 2): a repair stamp is later than the raise, or never.
+        Assert.Contains(newHomes, h => h.HomeRaisedAtTick > 0);
         Assert.All(newHomes, h =>
         {
-            Assert.InRange(h.HomeRaisedAtTick, 1UL, world.Tick);
-            Assert.Equal(0UL, h.HomeRepairedAtTick);
+            Assert.InRange(h.HomeRaisedAtTick, 0UL, world.Tick);
+            Assert.True(h.HomeRepairedAtTick == 0 || h.HomeRepairedAtTick > h.HomeRaisedAtTick);
         });
     }
 

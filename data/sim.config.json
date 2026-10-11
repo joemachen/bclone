@@ -1072,6 +1072,10 @@
   // Year 30-118 and nearly all of it is past 8 years by Year 20; at these
   // numbers upkeep costs a mature village about a fifth of one woodcutter's year
   // and a tenth of a builder's - feel, not survival. Joe: "yes to all" (D553).
+  // Measured on the build (D555, spec 8.5): 100 shipped valleys x 50 years lose
+  // 21 valleys before and after, 612 -> 590 alive at Year 50; across 43 valleys
+  // the builders mend 5-13 buildings a valley a decade (median) from Year 7, and
+  // nothing falls in - not one ruin in fifty years.
   "building_wears_in_years": 8,
   "building_fails_in_years": 12,
   "building_ruined_in_years": 20,

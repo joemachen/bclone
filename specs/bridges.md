@@ -89,7 +89,7 @@ right-click lets go of a drag.
 ### 3.1 Walking a deck
 
 - A deck tile costs **`bridge_wood_tile_cost` 10** (grass) for wood and **`bridge_stone_tile_cost` 8** (packed
-  ground) for stone, **fixed**. The deck takes **no wear** and draws no trail: a bridge is already a road.
+  ground) for stone, **fixed**. The deck takes **no path wear** and draws no trail: a bridge is already a road. ⭐ **Since D555 the wooden bridge itself wears** (`building-condition.md §4.4`): failing, its deck is walked at 150 % of the ticks (the route unchanged — the byte is already the dial's maximum); a ruin closes it, never with anybody on it and never when it is the only way somewhere; the builders mend it from the near bank for a quarter of its logs. Stone never wears.
   Both stay inside Dial's 1..10 (`TerrainCostField.Refill` throws otherwise).
 - **Crossings**: a walker whose step goes from land onto a deck has crossed. Counted on the bridge (the card) and
   in the village's `BridgeCrossings` (the unlock, §5.2). Hashed once non-zero, so it is zero in every golden today.

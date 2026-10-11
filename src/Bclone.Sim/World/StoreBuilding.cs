@@ -207,6 +207,13 @@ public sealed class StoreBuilding
     /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
     public ulong RepairedAtTick { get; set; }
 
+    /// <summary>
+    /// Whether it has fallen in — closed until the builders mend it (`building-condition.md §4.5`, D555). Set by the
+    /// season's walk when its condition turns <em>ruin</em>, cleared by the repair; a decision made at a moment, so a
+    /// fact (hashed sparsely, saved), not a per-read derivation.
+    /// </summary>
+    public bool Closed { get; set; }
+
     /// <summary>How many tiles across, before turning — from the building's row.</summary>
     public int ExtentWidth { get; init; } = 1;
 
@@ -306,7 +313,16 @@ public sealed class StoreBuilding
     /// player has said (D141). Deliberately a plain question rather than a set of flags: a
     /// modder adding a good should be able to see at a glance where it can go.
     /// </remarks>
-    public bool Accepts(Goods goods) => Stocking == Stocking.Open && PlayerAllows(goods) && KindAccepts(goods);
+    public bool Accepts(Goods goods) => !Closed && Gives(goods);
+
+    /// <summary>Whether this building hands a given kind of goods out — what it would accept, ruin or not.</summary>
+    /// <remarks>
+    /// ⭐ <b>A store that has fallen in takes nothing in, and what it holds can still be fetched</b> (D553 call 4,
+    /// `building-condition.md §4.5`, D555). The fetch paths asked <see cref="Accepts"/> for "who holds this", so closing
+    /// a granary hid its food from everyone who would eat it. The player's <see cref="Stocking.Closed"/> still keeps
+    /// what it has, as it always did.
+    /// </remarks>
+    public bool Gives(Goods goods) => Stocking == Stocking.Open && PlayerAllows(goods) && KindAccepts(goods);
 
     /// <summary>Whether this store will take a load of <paramref name="goods"/> — accepts it, and has room by <see cref="RoomFor"/>.</summary>
     public bool HasRoomFor(Goods goods) => Accepts(goods) && RoomFor(goods) > 0;
@@ -558,6 +574,7 @@ public sealed class StoreBuilding
         ["raised_as"] = SaveWriter.Enum(RaisedAs),
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
+        ["closed"] = Closed,
         ["width"] = ExtentWidth,
         ["height"] = ExtentHeight,
         ["store"] = Store.ToSave(),
@@ -578,6 +595,7 @@ public sealed class StoreBuilding
             RaisedAs = save.NullableEnum<BuildingKind>("raised_as"),
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
+            Closed = save.HasValue("closed") && save.Bool("closed"),
             ExtentWidth = save.Int("width"),
             ExtentHeight = save.Int("height"),
             Store = Stockpile.FromSave(save.Object("store")),

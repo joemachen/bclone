@@ -16,6 +16,9 @@ namespace Bclone.Sim.Tests;
 //         village's wood flow — logs ever felled, ever split, in stores now — so a wear rate can be priced
 //         against what the village actually has before a number is typed. Arms `shipped` / `every`.
 //         ZZ_SEEDS narrows the seeds; ZZ_YEARS the horizon (50).
+//         Since D555 the line also carries the maintenance itself: things mended so far (from the narration), things
+//         that fell in, what stands closed now, repair sites waiting now, and the logs delivered to repairs still
+//         waiting — the numbers `building-condition.md §8.5` asked for.
 public sealed class ZzMaintenance
 {
     private readonly ITestOutputHelper _o;
@@ -27,8 +30,10 @@ public sealed class ZzMaintenance
     public void Standing(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        var sink = new Bclone.Sim.Logging.InMemoryLogSink(Bclone.Sim.Logging.LogLevel.Info);
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
         SimWorld world = loop.World;
+        int narrated = 0, mended = 0, fellIn = 0;
         foreach (var (name, limit) in config.StartingStockLimits)
         {
             for (int id = 0; id < world.GoodsCatalog.Count; id++)
@@ -76,6 +81,20 @@ public sealed class ZzMaintenance
 
             if (!samples.Contains(year) && year != years) { continue; }
 
+            // The maintenance since the last sample, read off the narration (the only record a mend leaves).
+            for (; narrated < sink.Entries.Count; narrated++)
+            {
+                string m = sink.Entries[narrated].Message;
+                if (m.Contains(" was mended.", StringComparison.Ordinal)) { mended++; }
+                if (m.Contains(" has fallen in", StringComparison.Ordinal) || m.Contains(" has fallen into ruin", StringComparison.Ordinal)) { fellIn++; }
+            }
+
+            int closedNow = world.Households.Count(h => h.HomeClosed) + world.Workplaces.Count(w => w.Closed)
+                + world.StoreBuildings.Count(st => st.Closed) + world.Libraries.Count(l => l.Closed) + world.Wells.Count(w => w.Closed)
+                + world.Bridges.Count(b => b.Closed);
+            int repairSitesNow = world.Workplaces.Count(w => w.Construction is { Repairing: true });
+            int logsOnRepairs = world.Workplaces.Where(w => w.Construction is { Repairing: true }).Sum(w => w.Construction!.LogsDelivered);
+
             var standing = WhatStands(world).ToList();
             var byKind = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
             int logsStanding = 0, stoneStanding = 0;
@@ -96,7 +115,8 @@ public sealed class ZzMaintenance
                 $"ZZM {arm} {seed} year {year} alive {world.Population} standing {standing.Count} logs-standing {logsStanding} "
                 + $"stone-standing {stoneStanding} felled {felled} split {split} logs-stored {world.InStores(Goods.Logs)} "
                 + $"stone-stored {world.InStores(Goods.Stone)} firewood-stored {world.InStores(Goods.Firewood)} "
-                + $"felled-since {felled - felledLast} split-since {split - splitLast} | {kinds}");
+                + $"felled-since {felled - felledLast} split-since {split - splitLast} mended {mended} fell-in {fellIn} closed-now {closedNow} "
+                + $"repairs-waiting {repairSitesNow} logs-on-waiting-repairs {logsOnRepairs} | {kinds}");
             felledLast = felled;
             splitLast = split;
         }

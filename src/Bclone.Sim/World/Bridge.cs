@@ -48,6 +48,13 @@ public sealed class Bridge
     /// <summary>The tick the builders last mended it, or 0 never — wear is read from the later of the two stamps (`building-condition.md §4.1`).</summary>
     public ulong RepairedAtTick { get; set; }
 
+    /// <summary>
+    /// Whether it has fallen in — closed until the builders mend it (`building-condition.md §4.5`, D555). Set by the
+    /// season's walk when its condition turns <em>ruin</em>, cleared by the repair; a decision made at a moment, so a
+    /// fact (hashed sparsely, saved), not a per-read derivation.
+    /// </summary>
+    public bool Closed { get; set; }
+
     /// <summary>How many times somebody has stepped onto its deck from land.</summary>
     /// <remarks>
     /// <b>History, and not hashed</b> — nothing in the sim reads one bridge's count; the unlock reads the
@@ -99,6 +106,7 @@ public sealed class Bridge
         ["name"] = Name,
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
+        ["closed"] = Closed,
         ["crossings"] = Crossings,
         ["crossings_this_year"] = CrossingsThisYear,
     };
@@ -111,6 +119,7 @@ public sealed class Bridge
         Name = save.String("name"),
         RaisedAtTick = save.ULong("raised_at"),
         RepairedAtTick = save.ULong("repaired_at"),
+        Closed = save.HasValue("closed") && save.Bool("closed"),
         Crossings = save.Int("crossings"),
         CrossingsThisYear = save.Int("crossings_this_year"),
     };

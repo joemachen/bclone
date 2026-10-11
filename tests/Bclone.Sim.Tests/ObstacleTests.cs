@@ -150,7 +150,8 @@ public sealed class ObstacleTests
                 if (world.HomeFootprintOf(h) is Footprint home) { expected.UnionWith(home.CoveredTiles()); }
             }
 
-            foreach (Workplace w in world.Workplaces) { expected.UnionWith(w.Footprint.CoveredTiles()); }
+            // A repair's site stands on the building it mends and is not an obstacle of its own (D555) — the building is.
+            foreach (Workplace w in world.Workplaces.Where(w => !SimWorld.IsARepairSite(w))) { expected.UnionWith(w.Footprint.CoveredTiles()); }
             foreach (StoreBuilding s in world.StoreBuildings) { expected.UnionWith(s.Footprint.CoveredTiles()); }
             foreach (Library l in world.Libraries) { expected.UnionWith(l.Footprint.CoveredTiles()); }
             if (world.TownHall is TownHall hall) { expected.UnionWith(hall.Footprint.CoveredTiles()); }

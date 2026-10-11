@@ -318,6 +318,13 @@ public sealed class Library
     /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
     public ulong RepairedAtTick { get; set; }
 
+    /// <summary>
+    /// Whether it has fallen in — closed until the builders mend it (`building-condition.md §4.5`, D555). Set by the
+    /// season's walk when its condition turns <em>ruin</em>, cleared by the repair; a decision made at a moment, so a
+    /// fact (hashed sparsely, saved), not a per-read derivation.
+    /// </summary>
+    public bool Closed { get; set; }
+
     internal JsonObject ToSave()
     {
         var records = new JsonArray();
@@ -341,6 +348,7 @@ public sealed class Library
             ["shelves"] = Shelves,
             ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
             ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
+            ["closed"] = Closed,
             ["records"] = records,
         };
     }
@@ -357,6 +365,7 @@ public sealed class Library
             Shelves = save.Int("shelves"),
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
+            Closed = save.HasValue("closed") && save.Bool("closed"),
         };
 
         foreach (SaveReader record in save.Objects("records"))

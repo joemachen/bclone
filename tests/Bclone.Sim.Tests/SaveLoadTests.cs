@@ -256,7 +256,9 @@ public sealed class SaveLoadTests : IDisposable
             "_freeGroundTodayWalls", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
-            "_deckCost", "_bridgeLands", "_bridgeIndexBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
+            "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
+            // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
+            "ConditionWalks",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {
@@ -273,26 +275,26 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
-            "HomeRaisedAtTick", "HomeRepairedAtTick",
+            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "ExtentWidth", "ExtentHeight", "Capacity",
             "GatheringRadius", "Mode", "ForgeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
-            "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick",
+            "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]
         {
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
-            "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick",
+            "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick", "Closed",
         }),
         (typeof(StoreBuilding), Kept.Data, new[] { "Catalog" }),
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",
-            "BridgeTo", "RebuildsBridge",
+            "BridgeTo", "RebuildsBridge", "Repairing",
         }),
         (typeof(BuildingRecipe), Kept.Saved, new[] { "_materials", "WorkTicks" }),
         (typeof(GeneratedMap), Kept.Saved, new[]
@@ -337,11 +339,11 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
-        (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick" }),
-        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear" }),
+        (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
+        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
-        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick" }),
+        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
         (typeof(JobLimits), Kept.Saved, new[] { "_targets" }));
 
