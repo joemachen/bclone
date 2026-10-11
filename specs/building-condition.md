@@ -4,13 +4,13 @@
 already say), D353 (2026-09-11, Phase 5 names *decay and maintenance*, condition *derived from built-at and
 last-repaired ticks*), D546 (2026-10-10, calls 5 and 6: *bridges first, wear later*; an unrepaired wooden deck *slows,
 then closes*), D552 (2026-10-10, this spec and its measurement).
-**Status:** 🔨 **the sim is built — commits 1 and 2 of 3 on `slice/maintenance` (D554, D555, 2026-10-10/11); the view
-(commit 3: worn fills, card lines, the probe's `worn:` line) is next.** Commit 1: the stamps, `ConditionRules`, the rows'
-three years and the six keys, the hash and save format 5. Commit 2: the season's walk, repair sites, *closed* per kind,
-the wooden bridge's slow and close (§4.3–4.5 *as built*). Joe's seven calls answered as recommended (D553: *"yes to
-all"*). Guards: commit 1's 11 mutants / 13 reds / no zeros; commit 2's **22 mutants / 31 reds / one zero, equivalent and
-written down** (§9). The goldens moved twice, each proven (§5, §9). Measured first (§8) and on the build (§8.5): **dead
-valleys 21 → 21** of 100, and not one ruin in 43 valleys × 50 years. **Not yet played by Joe.**
+**Status:** ✅ **built — all three commits on `slice/maintenance` (D554 the stamps, D555 the season's walk / repairs /
+*closed* / the bridge, D556 the view), local, not pushed. Not yet played by Joe** (§10). Joe's seven calls answered as
+recommended (D553: *"yes to all"*), and one more from his first look at a Year-88 village (D556: the card says the state
+**and a percentage toward fallen in**). Guards: commit 1's 11 mutants / 13 reds / no zeros; commit 2's 22 / 31 / one
+equivalent zero written down; commit 3's 6 sim mutants / 7 reds and 3 probe mutants / 3 reds, no zeros (§9). The goldens
+moved twice, each proven (§5, §9); commit 3 moved none. Measured first (§8) and on the build (§8.5): **dead valleys
+21 → 21** of 100, and not one ruin in 43 valleys × 50 years.
 
 ---
 
@@ -133,6 +133,15 @@ hall). The validator refuses a row whose three are not `0 ≤ wears < fails < ru
 | **worn** | wear ≥ `wears_in_years` | fill one step darker and duller | *worn — the builders will see to it; fails in about N years without repair* | **a repair site is raised** (§4.3); narrated once |
 | **failing** | wear ≥ `fails_in_years` | two steps | *failing — closes in about N seasons without repair* | a wooden bridge **slows** (§4.4); narrated once |
 | **ruin** | wear ≥ `ruined_in_years` | three steps, the edge broken | *fallen in — closed until repaired or pulled down* | **closed** (§4.5); narrated once |
+
+> ⭐ **As built (D556) — the card says the state *and how far toward fallen in*** (Joe, on his first look at a Year-88
+> village: *"described state + % wear"*; asked, *"toward fallen in"*). `ConditionRules.PercentWorn` is wear ÷ the ruin's
+> years, 0–100, so worn begins at **40 %** and failing at **60 %** at the shipped 8 / 12 / 20; null for a row that never
+> wears. One line under the status, amber from worn on, wrapped so it never costs the card its 268:
+> *Sound · 12 % worn — raised Spring, Year 3.* · *Worn · 45 % — the builders will see to it; it fails in about 3 years
+> without repair.* · *Failing · 63 % — it falls in within about 7 years without repair.* (seasons in its last two years) (a deck: *it slows the
+> crossing, and closes within …*) · *Fallen in · 100 % — closed until it is mended or pulled down.* (a deck: *closed to
+> crossing until it is mended*, or the turn's own reason it stays open) · stone: *Built to last — it does not wear.*
 
 Repair sets `RepairedAtTick = now`: the thing is sound again and the clock starts over. Defaults for the shipped rows
 (data, overrulable): every timber building 8 / 12 / 20; the stone bridge and the town hall 0 / 0 / 0.
@@ -275,6 +284,23 @@ fixture's 50-year hashes are the ones to watch and explain.
   2 years without repair."* / *"The old granary has fallen in."*), `LogCategory.Building`.
 - **Probe:** `worn:` poses `Condition.Of` at the four thresholds, a winter's extra, a repair's reset, and a never-wears
   row (the view has no tests, D11) — and the card's line for each state through `TheCardsHoldTheirShape`.
+
+> ⭐ **As built (D556, commit 3).**
+> - **The sim reports, the view says.** `SimWorld.WearOf(…)` per kind returns a `WearReport` — state, percent, years to
+>   the next state, seasons to a ruin, the later stamp and whether it was a mend — read off the stamps whenever a card is
+>   drawn; null for a thing with no row (a site, the cart). `Main.WearLine` turns it into the sentence; the probe calls
+>   the same function. A repair site's card reads *Being repaired — 2nd in the queue* over *the builders mending it*.
+> - **A ruined bridge's reason is kept, not recomputed.** Cards refresh every frame and `WhyNotClose` is a strand sweep,
+>   so the season's turn keeps its verdict on the bridge (`Bridge.KeptOpenBecause` — saved, not hashed: it restates
+>   `Closed`) and the card reads that. Cleared by the mend.
+> - **The map:** `VillageMap.Weathered(colour, state)` pulls the paint 30 / 50 / 70 % toward its own grey and darkens it
+>   12 / 25 / 40 % — steps, not a gradient — for every building, house and deck, and the card's portrait the same way; a
+>   ruin's edge is dashed (`DrawEdges`); a failing or fallen-in wooden deck has lost every other plank (the same gaps
+>   every frame). The town hall and the stone bridge never change.
+> - **Probe:** `[widths] worn: ✅` (each state a tick short and on its tick, the percentage at 40 / 60 / 100, a winter's
+>   extra, a repair's reset, stone never wearing, each state's house darker than the last); `cards:` now poses eight
+>   condition lines on one card (the four states, the deck's failing / closed / kept-open with a 40-letter household, and
+>   stone) — each visible, said, inside 268, amber from worn on.
 
 ---
 
@@ -449,6 +475,15 @@ woodcutter; 15 years makes wear a thing seen twice in a lifetime.
 > agree with `StandingShapes`, whose own mutant scores 1. ⭐ **The goldens moved a second time, for the walk alone:** with
 > `TendWhatStands` short-circuited the six old values pass (65 of 65 golden and determinism guards green).
 
+> ⭐ **Commit 3 (D556) — `ConditionTests` (+2), the report and the kept-open note in `RepairTests` / `BridgeConditionTests`,
+> the probe's `worn:` and `cards:`.** Sim mutants (`scratchpad/mutate3.py`): the percentage off by a hundredth **1**; a
+> season counted as half a year **1**; the kept-open reason not kept **2**; the report's years to the wrong state **1**; a
+> stone row given a percentage **1**; the kept-open reason not saved **1** (⚠️ **zero** at first — the save guard compares
+> hashes and the note is unhashed by design; now a round-trip asserts it). **6 mutants, 7 reds, no zeros.** View mutants
+> against the probe (`scratchpad/mutate_probe.py`): the map never weathering → `worn: ⛔`; a worn card never amber →
+> `cards: ⛔`; the line never shown → `cards: ⛔`. **3 mutants, 3 reds.** No golden moved — the view reads, and the note is
+> not hashed.
+
 `ConditionTests` (pure): the thresholds in wear ticks; a winter adds exactly its extra and a summer none; a repair
 resets to sound; a 0 / 0 / 0 row never wears at a thousand years; the validator refuses `wears ≥ fails`.
 `MaintenanceTests` (sim): a worn hut raises exactly one repair site at the season turn, behind a funded new site, pricing
@@ -473,9 +508,9 @@ deck closed with somebody on it; the strand check skipped; a stamp left out of t
       31 / one equivalent zero, written down.
 - [x] Goldens moved once for the stamps (D554) and once for the walk (D555), each proven by switching its cause off; the
       determinism test green.
-- [ ] The four checks (CLAUDE.md): ✅ for commits 1 and 2 (suite, view build read, probe, goldens diffed); commit 3 adds
-      the probe's `worn:` ✅.
+- [x] The four checks (CLAUDE.md), for each commit: suite, view build read, probe (`worn:` ✅ from commit 3, bar height
+      151, `done.`), goldens diffed.
 - [x] `DESIGN.md` §4 (the Phase 5 bullet, and D65's §5 item marked reversed-and-built), §6, §7; `specs/bridges.md` §3.1;
-      `HANDOFF.md`; this status line made true — in the same commit as the code. *(Commit 3 repeats it for the view.)*
+      `HANDOFF.md`; this status line made true — in the same commit as the code, for all three commits.
 - [ ] Played by Joe: a village of twenty years at 4×, watching a roof turn worn, a builder mend it, and a wooden
       bridge left to fail.

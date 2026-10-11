@@ -533,6 +533,7 @@ public partial class Main : Control
 
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
+        GD.Print(TheWearReadsTrue(_loop.World.Config));
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());

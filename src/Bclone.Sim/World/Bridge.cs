@@ -55,6 +55,14 @@ public sealed class Bridge
     /// </summary>
     public bool Closed { get; set; }
 
+    /// <summary>
+    /// Why a ruined bridge was left open at the last season's turn — somebody on it, or the only way somewhere
+    /// (`SimWorld.WhyNotClose`) — or null. The card's words (D556): kept from the turn that judged it, because the card
+    /// is drawn every frame and the strand sweep must not be. Saved; not hashed — it restates the decision
+    /// <see cref="Closed"/> already records.
+    /// </summary>
+    public string? KeptOpenBecause { get; set; }
+
     /// <summary>How many times somebody has stepped onto its deck from land.</summary>
     /// <remarks>
     /// <b>History, and not hashed</b> — nothing in the sim reads one bridge's count; the unlock reads the
@@ -107,6 +115,7 @@ public sealed class Bridge
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
         ["closed"] = Closed,
+        ["kept_open_because"] = KeptOpenBecause,
         ["crossings"] = Crossings,
         ["crossings_this_year"] = CrossingsThisYear,
     };
@@ -120,6 +129,7 @@ public sealed class Bridge
         RaisedAtTick = save.ULong("raised_at"),
         RepairedAtTick = save.ULong("repaired_at"),
         Closed = save.HasValue("closed") && save.Bool("closed"),
+        KeptOpenBecause = save.NullableString("kept_open_because"),
         Crossings = save.Int("crossings"),
         CrossingsThisYear = save.Int("crossings_this_year"),
     };

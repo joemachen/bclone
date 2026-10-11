@@ -1,3 +1,4 @@
+using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.World;
 using Godot;
@@ -67,6 +68,9 @@ public partial class Main
         public required Button Pin { get; init; }
         public required ColorRect Light { get; init; }
         public required Label Status { get; init; }
+
+        /// <summary>The building's condition, under its status (D556, Joe: <i>"described state + % wear"</i>). Hidden on a person.</summary>
+        public required Label Wear { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
@@ -389,6 +393,12 @@ public partial class Main
         status.MouseFilter = MouseFilterEnum.Stop;
         statusRow.AddChild(status);
 
+        // ---- the building's condition (D556) ----
+        // Wrapped, never clipped: the sentence carries the years to the next state and must not cost the card its 268.
+        Label wear = Wrapped(Muted(string.Empty));
+        wear.Visible = false;
+        column.AddChild(wear);
+
         // ---- a person's sections (D431) ----
         VillagerParts person = BuildPersonParts();
         column.AddChild(person.Box);
@@ -493,6 +503,7 @@ public partial class Main
             Pin = pin,
             Light = light,
             Status = status,
+            Wear = wear,
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
@@ -655,9 +666,13 @@ public partial class Main
         card.Portrait.Visible = !person;
         card.Caption.Visible = !person;
 
+        // Each building's writer says its condition; a person, a site and anything without a row says none.
+        card.Wear.Visible = false;
+        card.Portrait.Wear = Condition.Sound;
+
         bool shown = card.Subject.Kind switch
         {
-            CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(card, store),
+            CardKind.Store => StoreOf(card) is StoreBuilding store && ShowStore(world, card, store),
             CardKind.Workplace => world.FindWorkplace(card.Subject.Id) is Workplace place && ShowWorkplace(world, card, place),
             CardKind.Household => world.FindHousehold(card.Subject.Id) is Household home && ShowHousehold(world, card, home),
             CardKind.Villager => world.FindVillager(card.Subject.Id) is Villager villager && ShowVillager(world, card, villager),
@@ -1137,9 +1152,10 @@ public partial class Main
         return kind == JobKind.Fisher ? ("—", "the water") : ("—", "at the building");
     }
 
-    private bool ShowStore(Card card, StoreBuilding store)
+    private bool ShowStore(SimWorld world, Card card, StoreBuilding store)
     {
         Title(card, store.Name, renamable: true);
+        Wear(card, world.WearOf(store), world.Config);
 
         int used = store.Store.Capacity - store.Store.FreeSpace;
         if (store.Emptying)
@@ -1188,7 +1204,8 @@ public partial class Main
             // builder said *"still wants 5 stone, and nowhere within reach has any"* — the card showed
             // a site fully supplied). The status names what is missing, in the sim's own words
             // (`DescribeWhatIsMissing`), so a clipped number cell can never hide it.
-            string queued = $"Being built — {Ordinal(world.QueuePositionOf(place))} in the queue";
+            // ⭐ A repair says it is one (D556): the builders are mending something that stands, not raising it.
+            string queued = $"{(site.Repairing ? "Being repaired" : "Being built")} — {Ordinal(world.QueuePositionOf(place))} in the queue";
             Status(card, working: false, site.HasMaterials
                 ? queued + "."
                 : $"{queued} · still wants {site.DescribeWhatIsMissing(world.GoodsCatalog)}.");
@@ -1207,6 +1224,8 @@ public partial class Main
         }
         else
         {
+            Wear(card, world.WearOf(place), world.Config);
+
             // ⭐ A BUFFER THE HANDS CANNOT KEEP UP WITH SAYS SO (D394): Joe's lodge held 2,103 meat
             // — a hunt is 900 in fifteen ticks, a carry is forty — and its card read *Working*.
             string? why = world.IdleNote(place);
@@ -1249,7 +1268,8 @@ public partial class Main
         card.Portrait.Show(
             TradeGlyph.ColourOf(place.Kind), place.ExtentWidth * 0.8f, place.ExtentHeight * 0.8f, place.Facing.Raw,
             idleRing ? VillageMap.IdleWorkplaceRing : null);
-        card.Caption.Text = place.IsSite ? "a building site" : Workers(world, place);
+        card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
+            : place.IsSite ? "a building site" : Workers(world, place);
         return true;
     }
 
@@ -1278,6 +1298,7 @@ public partial class Main
         card.Numbers.Visible = true;
         card.Storage.Visible = false;
         Title(card, $"The {home.Name} household", renamable: true);
+        Wear(card, world.WearOf(home), world.Config);
 
         int living = world.LivingMembersOf(home);
         int food = world.FoodIn(home.Stockpile);
@@ -1776,6 +1797,7 @@ public partial class Main
         }
 
         WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
+        Wear(card, world.WearOf(library), world.Config);
         return true;
     }
 
@@ -1874,6 +1896,7 @@ public partial class Main
 
         int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
         WriteTownHallCard(card, hall.Name, founders, raised, hall.ExtentWidth, hall.ExtentHeight, hall.Facing.Raw);
+        Wear(card, world.WearOf(hall), world.Config);
         return true;
     }
 
@@ -1899,6 +1922,7 @@ public partial class Main
 
         WriteWellCard(card, well.Name, _drawingAt.GetValueOrDefault(well), well.Draws,
             world.Config.HomeWellReachTiles, well.ExtentWidth, well.ExtentHeight, well.Facing.Raw);
+        Wear(card, world.WearOf(well), world.Config);
         return true;
     }
 
@@ -1937,6 +1961,7 @@ public partial class Main
         int water = bridge.Tiles().Count(t => world.Map.TerrainAt(t) == Terrain.Water);
         WriteBridgeCard(card, bridge.Name, world.BuildingsCatalog.NameOf(bridge.Kind), bridge.Length, water,
             bridge.CrossingsThisYear, bridge.Crossings, next, stone);
+        Wear(card, world.WearOf(bridge), world.Config, isABridge: true, bridge.Closed, bridge.KeptOpenBecause);
         return true;
     }
 
@@ -2047,6 +2072,149 @@ public partial class Main
         card.Values[slot].Text = value;
         card.Keys[slot].Text = key;
     }
+
+    /// <summary>Write the condition line and weather the portrait — or hide the line, for a thing with no row.</summary>
+    private static void Wear(
+        Card card, WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
+    {
+        (string Text, bool Warn)? line = WearLine(report, config, isABridge, closed, keptOpenBecause);
+        card.Wear.Visible = line is not null;
+        card.Portrait.Wear = report?.State ?? Condition.Sound;
+        if (line is { } said)
+        {
+            card.Wear.Text = said.Text;
+            card.Wear.Modulate = said.Warn ? LightStopped : new Color(1, 1, 1, 0.7f);
+        }
+    }
+
+    /// <summary>
+    /// A building's condition in a sentence (`building-condition.md §4.2, §6`; Joe, D556: <i>"described state + % wear"</i>)
+    /// — the state, its share of the way to fallen in, and what comes next and when. Null for a thing with no row.
+    /// </summary>
+    /// <remarks>
+    /// Amber from <i>worn</i> on: that is the state a repair is raised at, and the one a player might want to look into
+    /// (is there timber? are there builders?). A sound building says when it was raised or last mended, so the line is
+    /// never empty and a fresh repair can be seen to have happened.
+    /// </remarks>
+    internal static (string Text, bool Warn)? WearLine(
+        WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        if (report is not WearReport r)
+        {
+            return null;
+        }
+
+        if (r.Percent is not int percent)
+        {
+            return ("Built to last — it does not wear.", false);
+        }
+
+        // Seasons when the end is near, years while it is far: "about 27 seasons" is a number, "about 7 years" is a sentence.
+        string toRuin = r.SeasonsToRuin is <= 8 ? About(r.SeasonsToRuin, "season") : About(r.YearsToNext, "year");
+        return r.State switch
+        {
+            Condition.Sound => (
+                $"Sound · {percent} % worn — {(r.Mended ? "mended" : "raised")} {SimClock.FromTick(r.Since, config).SeasonAndYear()}.",
+                false),
+            Condition.Worn => (
+                $"Worn · {percent} % — the builders will see to it; it fails in {About(r.YearsToNext, "year")} without repair.",
+                true),
+            Condition.Failing => (
+                isABridge
+                    ? $"Failing · {percent} % — it slows the crossing, and closes within {toRuin} without repair."
+                    : $"Failing · {percent} % — it falls in within {toRuin} without repair.",
+                true),
+            _ => (
+                !isABridge ? $"Fallen in · {percent} % — closed until it is mended or pulled down."
+                    : closed ? $"Fallen in · {percent} % — closed to crossing until it is mended."
+                    : keptOpenBecause is string why ? $"Fallen in · {percent} % — {why}"
+                    : $"Fallen in · {percent} % — it closes at the season's turn unless somebody is on it.",
+                true),
+        };
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>worn:</c> line (`building-condition.md §6`, D556) — the view has no tests (D11), so the rules the
+    /// cards and the map read are posed here at their edges: each state a tick short and on the tick, the percentage at
+    /// each threshold, a winter's extra, a repair's reset, a row that never wears, and the map's steps getting darker.
+    /// </summary>
+    internal static string TheWearReadsTrue(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        var faults = new List<string>();
+        var row = new BuildingRow
+        {
+            Id = 99,
+            Name = "a timber thing",
+            WearsInYears = config.BuildingWearsInYears,
+            FailsInYears = config.BuildingFailsInYears,
+            RuinedInYears = config.BuildingRuinedInYears,
+        };
+        var stone = new BuildingRow { Id = 98, Name = "a stone thing" };
+        ulong year = (ulong)config.TicksPerYear;
+
+        foreach ((Condition state, int years) in new[]
+        {
+            (Condition.Worn, row.WearsInYears), (Condition.Failing, row.FailsInYears), (Condition.Ruin, row.RuinedInYears),
+        })
+        {
+            ulong at = (ulong)years * year;
+            if (ConditionRules.Of(at - 1, row, config) >= state || ConditionRules.Of(at, row, config) != state)
+            {
+                faults.Add($"{state} does not begin on its tick ({years} years)");
+            }
+
+            if (ConditionRules.PercentWorn(at, row, config) != years * 100 / row.RuinedInYears)
+            {
+                faults.Add($"{state} reads {ConditionRules.PercentWorn(at, row, config)} %, not {years * 100 / row.RuinedInYears}");
+            }
+        }
+
+        ulong firstWinter = 3UL * (ulong)config.TicksPerSeason;
+        ulong extra = (ulong)config.TicksPerSeason * (ulong)config.WinterWearExtraPercent / 100UL;
+        if (ConditionRules.WearTicks(firstWinter - 1, 0, firstWinter, config) != 1 + extra)
+        {
+            faults.Add("a winter begun does not add its extra");
+        }
+
+        ulong wornAt = (ulong)row.WearsInYears * year;
+        if (ConditionRules.Of(0, wornAt - 1, wornAt, row, config) != Condition.Sound)
+        {
+            faults.Add("a repair does not put the clock back");
+        }
+
+        if (ConditionRules.Of(0, 0, 1000UL * year, stone, config) != Condition.Sound
+            || ConditionRules.PercentWorn(1000UL * year, stone, config) is not null
+            || WearLine(new WearReport(Condition.Sound, null, null, null, 0, false), config)?.Text.Contains("does not wear", StringComparison.Ordinal) != true)
+        {
+            faults.Add("a row that never wears wears, or says it does");
+        }
+
+        float last = float.MaxValue;
+        foreach (Condition state in new[] { Condition.Sound, Condition.Worn, Condition.Failing, Condition.Ruin })
+        {
+            float luminance = VillageMap.Weathered(VillageMap.HomeColour, state).Luminance;
+            if (luminance >= last)
+            {
+                faults.Add($"a {state} house is no darker than the step before");
+            }
+
+            last = luminance;
+        }
+
+        return faults.Count == 0
+            ? $"[widths] worn: ✅ worn / failing / fallen in begin on their tick at {row.WearsInYears} / {row.FailsInYears} / {row.RuinedInYears} years and read {row.WearsInYears * 100 / row.RuinedInYears} / {row.FailsInYears * 100 / row.RuinedInYears} / 100 %, a winter adds {extra} ticks, a repair resets, stone never wears, and each state draws darker than the last"
+            : $"[widths] worn: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary><i>"about 3 years"</i>, <i>"about 1 season"</i>, or <i>"no time"</i> at zero.</summary>
+    private static string About(int? count, string unit) => count switch
+    {
+        null or <= 0 => "no time",
+        1 => $"about 1 {unit}",
+        int n => $"about {n} {unit}s",
+    };
 
     private static string TradeWordFor(SimWorld world, Villager villager)
     {
@@ -2716,6 +2884,44 @@ public partial class Main
             faults.Add($"a bridge nobody crossed this year widens a card's minimum to {quietBridge:F0}");
         }
 
+        // ⭐ AND EVERY CONDITION (D556), posed on that card: the four states, the bridge's own failing and fallen-in
+        // words, and a bridge kept open with the longest reason the sim gives — each visible, said, and inside 268.
+        string longName = new('N', SimWorld.NameLengthLimit);
+        var conditions = new (string What, WearReport Report, bool Bridge, bool Closed, string? Why)[]
+        {
+            ("sound", new WearReport(Condition.Sound, 12, 6, 70, 0, false), false, false, null),
+            ("worn", new WearReport(Condition.Worn, 45, 3, 30, 0, false), false, false, null),
+            ("failing", new WearReport(Condition.Failing, 63, 7, 27, 0, false), false, false, null),
+            ("fallen in", new WearReport(Condition.Ruin, 100, 0, 0, 0, false), false, false, null),
+            ("a failing deck", new WearReport(Condition.Failing, 63, 7, 27, 0, false), true, false, null),
+            ("a closed deck", new WearReport(Condition.Ruin, 100, 0, 0, 0, false), true, true, null),
+            ("a deck kept open", new WearReport(Condition.Ruin, 100, 0, 0, 0, false), true, false,
+                $"It stays open — closing it would cut off the {longName} household's house."),
+            ("stone", new WearReport(Condition.Sound, null, null, null, 0, false), true, false, null),
+        };
+
+        foreach ((string what, WearReport report, bool isABridge, bool closed, string? why) in conditions)
+        {
+            Wear(posed, report, world.Config, isABridge, closed, why);
+            ForceUpdateTransform();
+            float wornWidth = posed.Panel.GetCombinedMinimumSize().X;
+            if (wornWidth > CardWidth + 1f)
+            {
+                faults.Add($"a card saying {what} widens its minimum to {wornWidth:F0}");
+            }
+
+            if (!posed.Wear.Visible || posed.Wear.Text.Length == 0)
+            {
+                faults.Add($"a card saying {what} shows no condition line");
+            }
+
+            bool warns = report.State >= Condition.Worn;
+            if (warns != (posed.Wear.Modulate == LightStopped))
+            {
+                faults.Add($"a card saying {what} is {(warns ? "not amber" : "amber")}");
+            }
+        }
+
         // Drag: move the selected card's panel and read it back.
         Card dragged = _cards[^1];
         Vector2 before = dragged.Panel.Position;
@@ -2762,7 +2968,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every workplace's numbers honest, a site {siteShape}, the smithy's Forges dropdown offering every kind a forge makes and fitting, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
+            ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every condition said inside the width, every workplace's numbers honest, a site {siteShape}, the smithy's Forges dropdown offering every kind a forge makes and fitting, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
     }
 }
@@ -2779,6 +2985,21 @@ public sealed partial class BuildingPortrait : Control
     private float _tall = 0.8f;
     private ushort _facing;
     private Color? _ring;
+    private Condition _wear;
+
+    /// <summary>The building's condition — the portrait weathers as the map does (D556).</summary>
+    public Condition Wear
+    {
+        get => _wear;
+        set
+        {
+            if (_wear != value)
+            {
+                _wear = value;
+                QueueRedraw();
+            }
+        }
+    }
 
     public void Show(Color fill, float wideTiles, float tallTiles, ushort facing, Color? ring)
     {
@@ -2797,10 +3018,18 @@ public sealed partial class BuildingPortrait : Control
         float pixelsPerTile = Mathf.Min(Size.X, Size.Y) / longest;
 
         Vector2[] quad = VillageMap.FootprintQuadAt(centre, _wide, _tall, _facing, pixelsPerTile);
-        DrawColoredPolygon(quad, _fill with { A = 0.85f });
+        Color fill = VillageMap.Weathered(_fill, _wear);
+        DrawColoredPolygon(quad, fill with { A = 0.85f });
         for (int i = 0; i < 4; i++)
         {
-            DrawLine(quad[i], quad[(i + 1) % 4], _fill, 2f);
+            if (_wear == Condition.Ruin)
+            {
+                DrawDashedLine(quad[i], quad[(i + 1) % 4], fill, 2f, 4f);
+            }
+            else
+            {
+                DrawLine(quad[i], quad[(i + 1) % 4], fill, 2f);
+            }
         }
 
         if (_ring is Color ring)

@@ -340,7 +340,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
-        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed" }),
+        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
         (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),

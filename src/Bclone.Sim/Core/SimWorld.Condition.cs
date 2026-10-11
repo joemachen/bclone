@@ -62,6 +62,54 @@ public sealed partial class SimWorld
     /// <summary>The wear a thing has taken, for the cards' "about N years" — the same stamps the state is read from.</summary>
     public ulong WearTicksOf(ulong raisedAt, ulong repairedAt) => ConditionRules.WearTicks(raisedAt, repairedAt, Tick, Config);
 
+    // ---------------------------------------------------------------
+    //  What the cards say (`building-condition.md §6`, D556) — null for a thing with no row (a site, the cart)
+    // ---------------------------------------------------------------
+
+    public WearReport? WearOf(Workplace workplace) =>
+        RowOf(workplace) is BuildingRow row ? Report(workplace.RaisedAtTick, workplace.RepairedAtTick, row) : null;
+
+    public WearReport? WearOf(StoreBuilding store) =>
+        RowOf(store) is BuildingRow row ? Report(store.RaisedAtTick, store.RepairedAtTick, row) : null;
+
+    public WearReport? WearOf(Library library) =>
+        BuildingsCatalog[BuildingKind.Library] is BuildingRow row ? Report(library.RaisedAtTick, library.RepairedAtTick, row) : null;
+
+    public WearReport? WearOf(Well well) =>
+        BuildingsCatalog[well.Kind] is BuildingRow row ? Report(well.RaisedAtTick, well.RepairedAtTick, row) : null;
+
+    public WearReport? WearOf(TownHall hall) =>
+        BuildingsCatalog[BuildingKind.TownHall] is BuildingRow row ? Report(hall.RaisedAtTick, hall.RepairedAtTick, row) : null;
+
+    /// <summary>The family's house, or null for a family with none.</summary>
+    public WearReport? WearOf(Household household) =>
+        household.HasHome && BuildingsCatalog[BuildingKind.Home] is BuildingRow row
+            ? Report(household.HomeRaisedAtTick, household.HomeRepairedAtTick, row)
+            : null;
+
+    public WearReport? WearOf(Bridge bridge) =>
+        BuildingsCatalog[bridge.Kind] is BuildingRow row ? Report(bridge.RaisedAtTick, bridge.RepairedAtTick, row) : null;
+
+    private WearReport Report(ulong raisedAt, ulong repairedAt, BuildingRow row)
+    {
+        ulong wear = WearTicksOf(raisedAt, repairedAt);
+        Condition state = ConditionRules.Of(wear, row, Config);
+        Condition next = state switch
+        {
+            Condition.Sound => Condition.Worn,
+            Condition.Worn => Condition.Failing,
+            _ => Condition.Ruin,
+        };
+
+        return new WearReport(
+            state,
+            ConditionRules.PercentWorn(wear, row, Config),
+            ConditionRules.YearsUntil(wear, next, row, Config),
+            ConditionRules.SeasonsUntil(wear, Condition.Ruin, row, Config),
+            Math.Max(raisedAt, repairedAt),
+            repairedAt > raisedAt);
+    }
+
     /// <summary>How many times the season's walk has run — the probe's and the guards' way to see it is seasonal, not per tick.</summary>
     public int ConditionWalks { get; private set; }
 
@@ -231,11 +279,16 @@ public sealed partial class SimWorld
                 RaiseARepairIfNoneFor(bridge.Kind, bridge.Near, bridge.Name, Angle.Zero, BridgeRecipe(bridge.Kind, bridge.Length));
             }
 
-            if (now == Condition.Ruin && !bridge.Closed && WhyNotClose(bridge) is null)
+            if (now == Condition.Ruin && !bridge.Closed)
             {
-                bridge.Closed = true;
-                StandingChanged();
-                Narrate($"{Capitalised(bridge.Name)} is closed — nobody will cross it until it is mended. {Clock.SeasonAndYear()}.", LogCategory.Building);
+                // Judged here, once a season, and kept for the card (D556): the strand sweep is not a per-frame question.
+                bridge.KeptOpenBecause = WhyNotClose(bridge);
+                if (bridge.KeptOpenBecause is null)
+                {
+                    bridge.Closed = true;
+                    StandingChanged();
+                    Narrate($"{Capitalised(bridge.Name)} is closed — nobody will cross it until it is mended. {Clock.SeasonAndYear()}.", LogCategory.Building);
+                }
             }
 
             // The deck index prices a failing deck and refuses a closed one; it re-reads on a standing change.
@@ -415,6 +468,7 @@ public sealed partial class SimWorld
         {
             bridge.RepairedAtTick = Tick;
             bridge.Closed = false;
+            bridge.KeptOpenBecause = null;
             mended = true;
         }
 

@@ -73,6 +73,13 @@ public sealed class RepairTests
         Workplace hut = WornHut(world, world.Config.BuildingWearsInYears);
         Assert.Equal(Condition.Worn, world.ConditionOf(hut));
 
+        // What its card reads (D556): worn, its share of the way to fallen in, and the years to failing.
+        WearReport card = world.WearOf(hut)!.Value;
+        Assert.Equal(Condition.Worn, card.State);
+        Assert.InRange(card.Percent!.Value, world.Config.BuildingWearsInYears * 100 / world.Config.BuildingRuinedInYears, 59);
+        Assert.InRange(card.YearsToNext!.Value, 1, world.Config.BuildingFailsInYears - world.Config.BuildingWearsInYears);
+        Assert.False(card.Mended);
+
         loop.Step(1);
         Assert.Null(RepairSiteOf(world, hut));
 

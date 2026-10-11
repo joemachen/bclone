@@ -16,6 +16,14 @@ public enum Condition
 }
 
 /// <summary>
+/// What a card says about a thing's wear (`building-condition.md §6`, D556) — read off the two stamps and the row
+/// whenever it is drawn, never stored. <see cref="Percent"/> runs toward fallen in and is null for a row that never
+/// wears; <see cref="YearsToNext"/> is to the next state; <see cref="SeasonsToRuin"/> is for the failing card;
+/// <see cref="Since"/> is the later stamp and <see cref="Mended"/> says which one it was.
+/// </summary>
+public readonly record struct WearReport(Condition State, int? Percent, int? YearsToNext, int? SeasonsToRuin, ulong Since, bool Mended);
+
+/// <summary>
 /// Condition is <b>derived</b> from two stamps and the calendar — never a counter anybody decrements
 /// (`building-condition.md §4.1`; CLAUDE.md: nothing derivable is rebuilt per tick).
 /// </summary>
@@ -93,7 +101,39 @@ public static class ConditionRules
     /// "fails in about N years" — or null for a row that never gets there. Rounded up; a winter's extra is
     /// averaged in, so the number is a year's worth of ordinary weather, not a promise.
     /// </summary>
-    public static int? YearsUntil(ulong wearTicks, Condition target, BuildingRow row, SimConfig config)
+    public static int? YearsUntil(ulong wearTicks, Condition target, BuildingRow row, SimConfig config) =>
+        Until(wearTicks, target, row, config, AYearsWear(config));
+
+    /// <summary>
+    /// The same in seasons — the failing card's "falls in in about N seasons" (`building-condition.md §4.2`), where a
+    /// count of years would round two seasons up to a whole year.
+    /// </summary>
+    public static int? SeasonsUntil(ulong wearTicks, Condition target, BuildingRow row, SimConfig config) =>
+        Until(wearTicks, target, row, config, (AYearsWear(config) + 3UL) / 4UL);
+
+    /// <summary>
+    /// How far a thing has gone toward falling in, 0 to 100 — the card's percentage (Joe, D556: <em>"toward fallen
+    /// in"</em>). Worn begins at <c>wears ÷ ruined</c> (40 % at the shipped 8 / 20), failing at 60 %, a ruin at 100.
+    /// Null for a row that never wears: the stone bridge and the town hall have no percentage to show.
+    /// </summary>
+    public static int? PercentWorn(ulong wearTicks, BuildingRow row, SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (row.WearsInYears <= 0)
+        {
+            return null;
+        }
+
+        ulong ruin = (ulong)row.RuinedInYears * (ulong)config.TicksPerYear;
+        return wearTicks >= ruin ? 100 : (int)(wearTicks * 100UL / ruin);
+    }
+
+    private static ulong AYearsWear(SimConfig config) =>
+        (ulong)config.TicksPerYear + ((ulong)config.TicksPerSeason * (ulong)config.WinterWearExtraPercent / 100UL);
+
+    private static int? Until(ulong wearTicks, Condition target, BuildingRow row, SimConfig config, ulong aStepsWear)
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(config);
@@ -116,8 +156,6 @@ public static class ConditionRules
             return 0;
         }
 
-        ulong aYearsWear = (ulong)config.TicksPerYear
-            + ((ulong)config.TicksPerSeason * (ulong)config.WinterWearExtraPercent / 100UL);
-        return (int)((threshold - wearTicks + aYearsWear - 1UL) / aYearsWear);
+        return (int)((threshold - wearTicks + aStepsWear - 1UL) / aStepsWear);
     }
 }

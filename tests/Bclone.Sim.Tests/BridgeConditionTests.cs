@@ -1,6 +1,8 @@
+using System.Text.Json.Nodes;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
@@ -114,6 +116,7 @@ public sealed class BridgeConditionTests
 
         Assert.False(bridge.Closed);
         Assert.True(world.IsWalkable(deck[0]));
+        Assert.Contains("is on the bridge", bridge.KeptOpenBecause!, StringComparison.Ordinal);
         _output.WriteLine($"{somebody.Name} stood on the deck at the turn; the bridge stayed open");
 
         // Off the deck, and the next turn closes it — unless the builders mended it in the meantime, which they may: the
@@ -152,6 +155,16 @@ public sealed class BridgeConditionTests
         StepToTheSeasonTurn(loop);
         Assert.False(bridge.Closed);
         Assert.True(world.IsWalkable(BridgeTests.DeckOf(world, bridge)[0]));
+
+        // The card's words are the turn's judgement, kept (D556) — the card is drawn every frame, the sweep must not be.
+        Assert.Contains("cut off", bridge.KeptOpenBecause!, StringComparison.Ordinal);
+        Assert.Equal(Condition.Ruin, world.WearOf(bridge)!.Value.State);
+        Assert.Equal(100, world.WearOf(bridge)!.Value.Percent);
+
+        // Kept through a save: the note is not hashed (it restates `Closed`), so the hash cannot tell if it was lost.
+        SimLoop loaded = SaveGame.Load(
+            JsonNode.Parse(SaveFile.TextOf(SaveGame.Capture(loop, "test", "now", "code")))!.AsObject(), world.Config);
+        Assert.Equal(bridge.KeptOpenBecause, loaded.World.Bridges[world.Bridges.IndexOf(bridge)].KeptOpenBecause);
         _output.WriteLine(why);
     }
 

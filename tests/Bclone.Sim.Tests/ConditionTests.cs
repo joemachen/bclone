@@ -135,6 +135,42 @@ public sealed class ConditionTests
         Assert.Null(ConditionRules.YearsUntil(0, Condition.Sound, row, config));
     }
 
+    /// <summary>The failing card counts in seasons: one tick short is one season, two seasons' wear short is two, and it stops at zero.</summary>
+    [Fact]
+    public void TheSeasonsUntilAStateCountDownAndStopAtZero()
+    {
+        SimConfig config = Shipped;
+        BuildingRow row = Timber(config);
+        ulong year = (ulong)config.TicksPerYear;
+        ulong aSeason = (year + ((ulong)config.TicksPerSeason * (ulong)config.WinterWearExtraPercent / 100) + 3) / 4;
+        ulong ruinAt = (ulong)row.RuinedInYears * year;
+
+        Assert.Equal(1, ConditionRules.SeasonsUntil(ruinAt - 1, Condition.Ruin, row, config));
+        Assert.Equal(2, ConditionRules.SeasonsUntil(ruinAt - (2 * aSeason), Condition.Ruin, row, config));
+        Assert.Equal(0, ConditionRules.SeasonsUntil(ruinAt, Condition.Ruin, row, config));
+        Assert.Null(ConditionRules.SeasonsUntil(0, Condition.Ruin, NeverWears, config));
+    }
+
+    /// <summary>
+    /// The card's percentage runs toward fallen in (Joe, D556): 0 new, the worn and failing thresholds at their share of
+    /// the ruin's years (40 % and 60 % at the shipped 8 / 12 / 20), 100 at a ruin and no further; none for stone.
+    /// </summary>
+    [Fact]
+    public void ThePercentageRunsTowardFallenIn()
+    {
+        SimConfig config = Shipped;
+        BuildingRow row = Timber(config);
+        ulong year = (ulong)config.TicksPerYear;
+
+        Assert.Equal(0, ConditionRules.PercentWorn(0, row, config));
+        Assert.Equal(row.WearsInYears * 100 / row.RuinedInYears, ConditionRules.PercentWorn((ulong)row.WearsInYears * year, row, config));
+        Assert.Equal(row.FailsInYears * 100 / row.RuinedInYears, ConditionRules.PercentWorn((ulong)row.FailsInYears * year, row, config));
+        Assert.Equal(99, ConditionRules.PercentWorn(((ulong)row.RuinedInYears * year) - 1, row, config));
+        Assert.Equal(100, ConditionRules.PercentWorn((ulong)row.RuinedInYears * year, row, config));
+        Assert.Equal(100, ConditionRules.PercentWorn(1000UL * year, row, config));
+        Assert.Null(ConditionRules.PercentWorn(1000UL * year, NeverWears, config));
+    }
+
     // ---------------------------------------------------------------
     //  The rows and the keys
     // ---------------------------------------------------------------

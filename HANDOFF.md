@@ -1,4 +1,23 @@
-# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION: THE SIM IS BUILT AND COMMITTED (D554, D555) ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. NEXT: COMMIT 3, THE VIEW (WORN FILLS, CARD LINES, THE PROBE'S `worn:` LINE). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION IS BUILT, ALL THREE COMMITS (D554–D556), ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (CONDITION, COMMIT 3 — THE VIEW) — D556, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (local, not pushed) = D552–D555 and **D556, the view — committed.** Joe
+> looked at a Year-88 village and asked for wear on every building's card, *"described state + % wear"*; the percentage
+> runs toward fallen in (his pick). Every building card has the line; the map weathers in steps, a ruin's edge is dashed,
+> a failing deck loses planks. Verified: see D556 in `DESIGN.md §7` and the commit message (suite, view 0 warnings, probe
+> 80 lines with `worn:` ✅, no golden moved).
+>
+> **Joe's other two notes from the same look, and where they went:**
+> - *"house was built on a stone node"* — **D557, next on this branch**: a house turned to any angle only checked the tiles
+>   whose *centre* it covers, so a tilted house could reach into a stone tile. His call: houses go round seams, exactly —
+>   the house's rectangle against each seam tile's whole square (`Household.TilesClippedOff`, `Footprint.Overlaps`).
+> - *"my whole village has the same surname"* — **D558, docs only**: two founding names, no inflow, and the older-partner
+>   rule (D465) always picks the earliest-born family because the seeker is the lowest id. His call: **wait for nomads**.
+>
+> Plan: `~/.claude/plans/building-wear-needs-to-joyful-chipmunk.md`. Then ask Joe to play (§10 of the spec).
+>
+> **(the banner below is the state before D556)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (CONDITION, COMMIT 2 DONE) — D555, ON WINDOWS.**
 >
