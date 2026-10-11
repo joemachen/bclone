@@ -45,6 +45,9 @@ public sealed class Bridge
     /// <summary>The tick it was finished (or last rebuilt) — the card's line, and what wear will read (D546 call 5).</summary>
     public ulong RaisedAtTick { get; set; }
 
+    /// <summary>The tick the builders last mended it, or 0 never — wear is read from the later of the two stamps (`building-condition.md §4.1`).</summary>
+    public ulong RepairedAtTick { get; set; }
+
     /// <summary>How many times somebody has stepped onto its deck from land.</summary>
     /// <remarks>
     /// <b>History, and not hashed</b> — nothing in the sim reads one bridge's count; the unlock reads the
@@ -95,6 +98,7 @@ public sealed class Bridge
         ["kind"] = SaveWriter.Enum(Kind),
         ["name"] = Name,
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+        ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
         ["crossings"] = Crossings,
         ["crossings_this_year"] = CrossingsThisYear,
     };
@@ -106,6 +110,7 @@ public sealed class Bridge
         Kind = save.Enum<BuildingKind>("kind"),
         Name = save.String("name"),
         RaisedAtTick = save.ULong("raised_at"),
+        RepairedAtTick = save.ULong("repaired_at"),
         Crossings = save.Int("crossings"),
         CrossingsThisYear = save.Int("crossings_this_year"),
     };

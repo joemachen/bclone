@@ -273,19 +273,20 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
+            "HomeRaisedAtTick", "HomeRepairedAtTick",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "ExtentWidth", "ExtentHeight", "Capacity",
             "GatheringRadius", "Mode", "ForgeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
-            "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank",
+            "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]
         {
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
-            "AllowedGoods", "Stocking", "_limits",
+            "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick",
         }),
         (typeof(StoreBuilding), Kept.Data, new[] { "Catalog" }),
         (typeof(ConstructionSite), Kept.Saved, new[]
@@ -336,11 +337,11 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
-        (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws" }),
-        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "Crossings", "CrossingsThisYear" }),
+        (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick" }),
+        (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
-        (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick" }),
-        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records" }),
+        (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
+        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick" }),
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
         (typeof(JobLimits), Kept.Saved, new[] { "_targets" }));
 

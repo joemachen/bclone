@@ -63,6 +63,12 @@ public sealed class Well
     /// </remarks>
     public int Draws { get; internal set; }
 
+    /// <summary>The tick this was finished — what its condition is read from (`building-condition.md §4.1`, D552).</summary>
+    public ulong RaisedAtTick { get; set; }
+
+    /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
+    public ulong RepairedAtTick { get; set; }
+
     internal JsonObject ToSave() => new()
     {
         ["at"] = SaveWriter.Point(Position),
@@ -72,6 +78,8 @@ public sealed class Well
         ["name"] = Name,
         ["kind"] = SaveWriter.Enum(Kind),
         ["draws"] = Draws,
+        ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+        ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
     };
 
     internal static Well FromSave(SaveReader save) => new()
@@ -83,5 +91,7 @@ public sealed class Well
         Name = save.String("name"),
         Kind = save.Enum<BuildingKind>("kind"),
         Draws = save.Int("draws"),
+        RaisedAtTick = save.ULong("raised_at"),
+        RepairedAtTick = save.ULong("repaired_at"),
     };
 }

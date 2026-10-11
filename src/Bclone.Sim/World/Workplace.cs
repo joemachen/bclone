@@ -605,6 +605,12 @@ public sealed class Workplace
     /// </remarks>
     public ulong FieldClearedAtTick { get; set; }
 
+    /// <summary>The tick this was finished — what its condition is read from (`building-condition.md §4.1`, D552).</summary>
+    public ulong RaisedAtTick { get; set; }
+
+    /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
+    public ulong RepairedAtTick { get; set; }
+
     /// <summary>Whether this year's field is one tile a hand bigger than the farm had proven (D361) — the probe, so a rot can undo it.</summary>
     public bool FieldProbedThisYear { get; set; }
 
@@ -745,6 +751,8 @@ public sealed class Workplace
         ["field_tiles_learned"] = FieldTilesLearned,
         ["field_walk_when_learned"] = FieldWalkWhenLearned,
         ["field_cleared_at"] = SaveWriter.Hex(FieldClearedAtTick),
+        ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+        ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
         ["field_probed_this_year"] = FieldProbedThisYear,
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
@@ -774,6 +782,8 @@ public sealed class Workplace
             FieldTilesLearned = save.Int("field_tiles_learned"),
             FieldWalkWhenLearned = save.Int("field_walk_when_learned"),
             FieldClearedAtTick = save.ULong("field_cleared_at"),
+            RaisedAtTick = save.ULong("raised_at"),
+            RepairedAtTick = save.ULong("repaired_at"),
             FieldProbedThisYear = save.Bool("field_probed_this_year"),
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),

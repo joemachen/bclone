@@ -1,4 +1,31 @@
-# Handoff — bclone: **▶️ PHASE 5 — D552–D553: BUILDING CONDITION AND MAINTENANCE IS MEASURED, SPECCED AND ITS SEVEN CALLS ANSWERED (*"yes to all"*), COMMITTED ON `slice/maintenance`, NOTHING BUILT — NEXT: BUILD IT TDD PER `building-condition.md §9`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — D554: BUILDING CONDITION, COMMIT 1 OF 3 (THE STAMPS, THE DERIVED CONDITION, THE ROWS, THE HASH, SAVE FORMAT 5) ON `slice/maintenance`, LOCAL — NEXT: COMMIT 2 (THE SEASON WALK, REPAIR SITES, CLOSED, THE BRIDGE), THEN 3 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (CONDITION, COMMIT 1) — D554, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (off `main`, **local, not pushed** — Joe: *"leave it local and start"*)
+> = D552 (spec + measurement), D553 (the seven calls: *"yes to all"*), **D554 (commit 1 of 3 built)**. Nothing wears and
+> nobody repairs yet: commit 1 is the plumbing — `RaisedAtTick` / `RepairedAtTick` on every standing kind (the home's on
+> its household), `World/Condition.cs` deriving *sound / worn / failing / ruin* from the stamps and the calendar, the
+> rows' `wears_in_years` / `fails_in_years` / `ruined_in_years` (8 / 12 / 20 on every timber row through
+> `SimConfig.WithTheShippedWear`; the stone bridge, the town hall and the free instant rows never), six config keys,
+> the stamps hashed at the end of each block, **save format 5**.
+>
+> Verified: suite **1601 / 0 / 5 of 1606** (4m24); view 0 warnings (`--no-incremental`); probe 79 lines, no ⛔, bar height
+> 151, `tile centres` ✅, `new game` ✅, `done.`; **six goldens moved once** (`FarmGoldenTests` ×2, `StockLimitTests` ×2,
+> `SkillTests` ×2) — ⭐ **proven the stamps' mix alone: with the thirteen new `Mix` lines switched off, all 22 golden
+> guards passed on the old values.** `ConditionTests` (9), `MaintenanceTests` (5): 11 mutants, 13 reds, no zeros
+> (`building-condition.md §9`).
+>
+> **▶️ NEXT: commit 2**, per the plan in `~/.claude/plans/` and the spec's §4.3–4.5: `ConstructionSite.Repairing`; a repair
+> site in the demolition site's shape, raised by `SimWorld.TendWhatStands()` from `ClockSystem` on the season turn
+> (state now vs a season ago, both derived — never per tick); a `Closed` flag per kind set at the ruin transition and
+> cleared by `Mend`; `Places`, `Accepts`, `ShelterAt`, `NearestWell` and the library read it; the deck index prices a
+> failing deck (`_deckSlow`, `PlanLeg` × 150 %) and refuses a closed one, never with anybody on it and never
+> stranding (`WhyNotClose`). **Measure §8.5 (`tools/harness/arms.sh base` before and after, same sitting) before any
+> number is typed into data.** The fixture's fifty-year goldens will move again (the first repairs at Year ~7) — expected,
+> explained, re-taken once more. Then commit 3: worn fills, card lines, the `worn:` probe line.
+>
+> **(the banner below is the state before D554)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-10 (MAINTENANCE SPECCED) — D552, ON WINDOWS.**
 >

@@ -312,6 +312,12 @@ public sealed class Library
     /// <summary>Whether there is room for one more.</summary>
     public bool HasRoom => Records.Count < Shelves;
 
+    /// <summary>The tick this was finished — what its condition is read from (`building-condition.md §4.1`, D552).</summary>
+    public ulong RaisedAtTick { get; set; }
+
+    /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
+    public ulong RepairedAtTick { get; set; }
+
     internal JsonObject ToSave()
     {
         var records = new JsonArray();
@@ -333,6 +339,8 @@ public sealed class Library
             ["height"] = ExtentHeight,
             ["name"] = Name,
             ["shelves"] = Shelves,
+            ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+            ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
             ["records"] = records,
         };
     }
@@ -347,6 +355,8 @@ public sealed class Library
             ExtentHeight = save.Int("height"),
             Name = save.String("name"),
             Shelves = save.Int("shelves"),
+            RaisedAtTick = save.ULong("raised_at"),
+            RepairedAtTick = save.ULong("repaired_at"),
         };
 
         foreach (SaveReader record in save.Objects("records"))

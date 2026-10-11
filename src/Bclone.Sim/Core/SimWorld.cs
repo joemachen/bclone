@@ -7573,6 +7573,8 @@ public sealed partial class SimWorld : IObstacles
             StandingChanged();
             family.HomePosition = null;
             family.HomeFacing = Angle.Zero;
+            family.HomeRaisedAtTick = 0;
+            family.HomeRepairedAtTick = 0;
             family.WhyHere = "";
             ReleasePlotOf(family.Id);
 
@@ -9780,6 +9782,8 @@ public sealed partial class SimWorld : IObstacles
                 StandingChanged();
                 family.HomePosition = site.Position;
                 family.HomeFacing = plan.Facing;
+                family.HomeRaisedAtTick = Tick;
+                family.HomeRepairedAtTick = 0;
                 NeedsMoreResidentialLand = false;
 
                 // A house is the one building that does not go through `RaiseFinished`.
@@ -9861,6 +9865,7 @@ public sealed partial class SimWorld : IObstacles
             ExtentWidth = row?.ExtentWidth ?? 1,
             ExtentHeight = row?.ExtentHeight ?? 1,
             RaisedAs = kind,
+            RaisedAtTick = Tick,
         };
 
         StandingChanged();
@@ -9924,6 +9929,7 @@ public sealed partial class SimWorld : IObstacles
                 Position = position,
                 Name = name,
                 Shelves = row.Shelves,
+                RaisedAtTick = Tick,
                 Facing = facing,
                 ExtentWidth = row.ExtentWidth,
                 ExtentHeight = row.ExtentHeight,
@@ -9964,6 +9970,7 @@ public sealed partial class SimWorld : IObstacles
                 Position = position,
                 Name = name,
                 Kind = kind,
+                RaisedAtTick = Tick,
                 Facing = facing,
                 ExtentWidth = row.ExtentWidth,
                 ExtentHeight = row.ExtentHeight,
@@ -9998,6 +10005,7 @@ public sealed partial class SimWorld : IObstacles
             },
             Id = NextWorkplaceId(),
             Kind = trade,
+            RaisedAtTick = Tick,
             Name = name,
             Position = position,
             Capacity = seats,

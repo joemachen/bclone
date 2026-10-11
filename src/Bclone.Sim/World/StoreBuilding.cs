@@ -201,6 +201,12 @@ public sealed class StoreBuilding
     /// </remarks>
     public BuildingKind? RaisedAs { get; init; }
 
+    /// <summary>The tick this was finished — what its condition is read from (`building-condition.md §4.1`, D552).</summary>
+    public ulong RaisedAtTick { get; set; }
+
+    /// <summary>The tick the builders last mended it, or 0 never — the clock starts over from the later stamp.</summary>
+    public ulong RepairedAtTick { get; set; }
+
     /// <summary>How many tiles across, before turning — from the building's row.</summary>
     public int ExtentWidth { get; init; } = 1;
 
@@ -550,6 +556,8 @@ public sealed class StoreBuilding
         ["at"] = SaveWriter.Point(_position),
         ["facing"] = SaveWriter.Angle(Facing),
         ["raised_as"] = SaveWriter.Enum(RaisedAs),
+        ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+        ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
         ["width"] = ExtentWidth,
         ["height"] = ExtentHeight,
         ["store"] = Store.ToSave(),
@@ -568,6 +576,8 @@ public sealed class StoreBuilding
             Position = save.Point("at"),
             Facing = save.Angle("facing"),
             RaisedAs = save.NullableEnum<BuildingKind>("raised_as"),
+            RaisedAtTick = save.ULong("raised_at"),
+            RepairedAtTick = save.ULong("repaired_at"),
             ExtentWidth = save.Int("width"),
             ExtentHeight = save.Int("height"),
             Store = Stockpile.FromSave(save.Object("store")),

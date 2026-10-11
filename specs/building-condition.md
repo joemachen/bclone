@@ -4,7 +4,7 @@
 already say), D353 (2026-09-11, Phase 5 names *decay and maintenance*, condition *derived from built-at and
 last-repaired ticks*), D546 (2026-10-10, calls 5 and 6: *bridges first, wear later*; an unrepaired wooden deck *slows,
 then closes*), D552 (2026-10-10, this spec and its measurement).
-**Status:** ✍️ **specced on `slice/maintenance` (D552, 2026-10-10); Joe's seven calls ANSWERED (D553, 2026-10-10: *"yes to all"*) — every recommendation in §3 stands as written; nothing built yet.** Measured
+**Status:** 🔨 **commit 1 of 3 built on `slice/maintenance` (D554, 2026-10-10): the stamps, `ConditionRules`, the rows' three years and the six keys, the hash and save format 5 — nothing wears, nobody repairs yet.** Joe's seven calls answered as recommended (D553: *"yes to all"*). `ConditionTests` (9) and `MaintenanceTests` (5): 11 mutants, 13 reds, no zeros (§9). Six goldens moved once, proven the stamps' mix alone (§5). Commits 2 (the season walk, repair sites, closed, the bridge) and 3 (the view) are next. Measured
 first (§8: `tools/harness/ZzMaintenance.cs`, 43 unattended valleys × 50 years, and Joe's own 20 saves). No code, no
 golden, no save format has moved yet.
 
@@ -212,6 +212,15 @@ repair is served. That is the nomads' inheritance.
 (§8.5) before they are re-taken, as D463 did. Nothing else about today's villages changes until Year 7–8, so the
 fixture's 50-year hashes are the ones to watch and explain.
 
+> ⭐ **As built (D554, commit 1):** the six live goldens (`FarmGoldenTests` ×2, `StockLimitTests` ×2, `SkillTests` ×2)
+> moved for the stamps' mix and nothing else — **proven by switching the thirteen new `Mix` lines off: all 22 golden
+> guards passed on the old values.** Nothing in the sim reads a stamp yet, so commit 2's behaviour (the first repair at
+> Year ~7) will move the fifty-year hashes a second time, with its own reason. The stamps are **defaulted `ulong`s, not
+> `required`** — `required` would have broken 20 object initialisers in the tests and 12 in `src`, and `Bridge.RaisedAtTick`
+> already has this shape. The three years live on every shipped row through `SimConfig.WithTheShippedWear`, one place
+> fed by three keys, exempting the stone bridge, the town hall and the two free instant rows (the stockpile and the
+> builder's hut); a modder's `buildings` array is taken as typed and wears only where it says so.
+
 ---
 
 ## 6. Saved, hashed, drawn, told
@@ -333,6 +342,14 @@ woodcutter; 15 years makes wear a thing seen twice in a lifetime.
 
 ## 9. Guards (TDD, red first, red-checked and counted — D326)
 
+> ⭐ **Commit 1 (D554) — `ConditionTests` (9), `MaintenanceTests` (5).** Mutants, each the one line it names: winter's extra
+> dropped **1 red**; `RepairedAtTick` not read **2** (⚠️ the first pose left the parameter unused and did not build — a
+> mutant that does not build scores zero, D450; re-posed as `repairedAt * 0`); the worn threshold `>` for `>=` **1**; a well's
+> stamp not set at the raise **1**; a workplace's raise left out of the hash **1**; a home's repair left out of the hash **1**;
+> the save format not bumped **1**; the shipped rows not given the years **2**; the row check removed **1**; the key check
+> removed **1** (⚠️ scored **zero** at first: the rows the keys write refuse the same village with a sentence that also says
+> *rising*, so the guard now asserts the key's name); a workplace's stamps not saved **1**. **11 mutants, 13 reds, no zeros.**
+
 `ConditionTests` (pure): the thresholds in wear ticks; a winter adds exactly its extra and a summer none; a repair
 resets to sound; a 0 / 0 / 0 row never wears at a thousand years; the validator refuses `wears ≥ fails`.
 `MaintenanceTests` (sim): a worn hut raises exactly one repair site at the season turn, behind a funded new site, pricing
@@ -353,8 +370,8 @@ deck closed with somebody on it; the strand check skipped; a stamp left out of t
 
 - [x] Joe's seven calls answered (D553: *"yes to all"*) — §3 and §4 as written.
 - [ ] §8.5 measured on the build before the numbers are typed; the comment on each key cites the number.
-- [ ] §9's guards written red first; mutants listed with their red counts, zeros written down.
-- [ ] Goldens moved once, explained by §5's last paragraph; the determinism test green.
+- [ ] §9's guards written red first; mutants listed with their red counts, zeros written down — commit 1: ✅ 11 / 13 / none.
+- [x] Goldens moved once (D554), explained by §5's last paragraph and proven by the thirteen lines switched off; the determinism test green.
 - [ ] The four checks (CLAUDE.md): suite, view build read, probe (`worn:` ✅, bar height 151, `done.`), goldens diffed.
 - [ ] `DESIGN.md` §4 (the Phase 5 bullet, and D65's §5 item marked reversed-and-built), §6, §7; `specs/bridges.md` §2
       call 5; `HANDOFF.md`; this status line made true — in the same commit as the code.

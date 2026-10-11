@@ -1063,6 +1063,33 @@
   // be crossed.
   "bridge_max_length_tiles": 12,
 
+  // CONDITION AND MAINTENANCE (D552, D553, specs/building-condition.md). The D65
+  // reversal: a timber building wears on a derived clock (two stamps and the
+  // calendar, never a counter), and the builders mend it from the hut without a
+  // click. Four states - sound, worn, failing, ruin - in years of mild weather;
+  // every shipped row wears but the stone bridge (Joe: "it lasts") and the town
+  // hall. Measured first (spec 8): a played village stands 16-25 buildings by
+  // Year 30-118 and nearly all of it is past 8 years by Year 20; at these
+  // numbers upkeep costs a mature village about a fifth of one woodcutter's year
+  // and a tenth of a builder's - feel, not survival. Joe: "yes to all" (D553).
+  "building_wears_in_years": 8,
+  "building_fails_in_years": 12,
+  "building_ruined_in_years": 20,
+  //
+  // Each winter begun adds this share of a season's ticks to the wear, so a thing
+  // worn at 8 is worn at about 7 calendar years.
+  "winter_wear_extra_percent": 50,
+  //
+  // A repair takes this share of the row's logs and work, rounded up - logs only,
+  // never stone: no unattended valley holds any stone in fifty years (spec 8.3),
+  // so a repair priced in stone would never be served there.
+  "repair_cost_percent": 25,
+  //
+  // A leg over a failing wooden deck takes this share of its ticks (D546 call 6,
+  // "slows, then closes"). The deck's cost byte is already grass's 10, the dial's
+  // maximum, so it is the walk that slows, not the route.
+  "failing_deck_slow_percent": 150,
+
   // THE STEADING (D511, work-from-the-steading.md 5). A summer farmhand tends a
   // sown tile of their own field for tend_ticks, walks back to the farm and rests,
   // and goes again. The look only: a tend yields, teaches and draws nothing, and

@@ -115,6 +115,16 @@ public sealed class Household
     public Angle HomeFacing { get; set; }
 
     /// <summary>
+    /// The tick the house was finished (`building-condition.md §4.1`, D552) — the home's condition is read from
+    /// this and <see cref="HomeRepairedAtTick"/>. Meaningful only while <see cref="HomePosition"/> is set; hashed
+    /// beside it; travels with the house when a family moves into an empty one and is cleared with it.
+    /// </summary>
+    public ulong HomeRaisedAtTick { get; set; }
+
+    /// <summary>The tick the builders last mended the house, or 0 never.</summary>
+    public ulong HomeRepairedAtTick { get; set; }
+
+    /// <summary>
     /// Why the house is where it is, in the chooser's words — *"near the granary, facing the
     /// lane, beside the Ashfords"* (D386). Set with the site; the card reads it. Not hashed: it
     /// restates the choice.
@@ -1251,6 +1261,8 @@ public sealed class Household
         ["given_name"] = GivenName,
         ["home"] = SaveWriter.Point(HomePosition),
         ["home_facing"] = SaveWriter.Angle(HomeFacing),
+        ["home_raised_at"] = SaveWriter.Hex(HomeRaisedAtTick),
+        ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1270,6 +1282,8 @@ public sealed class Household
             Surname = save.String("surname"),
             HomePosition = save.NullablePoint("home"),
             HomeFacing = save.Angle("home_facing"),
+            HomeRaisedAtTick = save.ULong("home_raised_at"),
+            HomeRepairedAtTick = save.ULong("home_repaired_at"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),
