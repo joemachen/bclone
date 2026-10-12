@@ -475,7 +475,7 @@ larder is fetched to and burned from by lodgers; shelter follows the larder; a l
 is raised; nobody lodged partners; a fallen-in longhouse shelters nobody; pulling it down turns lodgers out; the three
 re-pointed store guards still pass on the warehouse; hash/save.
 
-> ⭐ **Commit 2 (D566) — `LonghouseTests` (12).** MUTANT_SENTENCE Found while building: a pose that gave the fixture's
+> ⭐ **Commit 2 (D566) — `LonghouseTests` (12).** 18 mutants, 28 reds, no zeros — three found and closed (the pairing rule is checked on the seeker and on the candidate and either check masked a mutant of the other, so `NobodyLodgingPartners` is posed from both sides; the larder's hash was invisible to a save round trip, so `TheLonghousesLarderIsInTheFingerprint` compares two villages). Found while building: a pose that gave the fixture's
 > builders two seasons mended the posed ruin before the assertion (the stamp is now asked of `ConditionRules` for the
 > very next turn); and the winters' half-seasons put a four-year stamp past *ruin* at once — a stamp set by arithmetic
 > is a claim about the rule.
@@ -485,7 +485,7 @@ new; standing houses taken, names kept; the cart restocked (and raised again whe
 while empty and no repair site is raised; repairs raised at the first turn after; the hall owed on the last of them when
 never given, never twice; the empty-village banner still passing (`ColdStartTests` stays green); hash/save.
 
-> ⭐ **Commit 3 (D567) — `RefoundTests` (12).** MUTANT_SENTENCE
+> ⭐ **Commit 3 (D567) — `RefoundTests` (12).** 18 mutants, 52 reds, no zeros — two found and closed (a ghost's surname reused scored zero against the pool of sixty, so `TheRefoundersTakeNamesNoHouseholdEverHeld` poses a pool of four over five seeds; the count's hash was invisible to a save round trip, so `TheRefoundingCountIsInTheFingerprint` clears it and compares). Found while building: three guards that let a village die — the Phase 0 villager, a starving village, a valley with no land — met a re-founding; the Phase 0 fixture switches it off like the knock, and the two village guards say in a line why theirs is off.
 
 Mutants to count (each must redden something): the knock a tick early / late; the floor ignored; the hash replaced by an
 `Rng` draw; a surname reused; the deadline off by a season; `ArrivedAtTick` left out of `MostEverAlive`; a lodger's meal
