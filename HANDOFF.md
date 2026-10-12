@@ -1,4 +1,76 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D567: THE NOMADS, WHOLE — SPECCED, MEASURED, THE BAND, THE LONGHOUSE AND RE-FOUNDING BUILT. NEXT: JOE PLAYS IT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D567 BUILT AND PLAYED BY JOE; HIS SIX NOTES (D568) ARE THE NEXT WORK, IN ORDER, FOR A FRESH SESSION. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (JOE PLAYED THE NOMADS — SIX NOTES, NOTHING BUILT FOR THEM YET) — D568, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, **not pushed, not merged**) = D563–D567: the spec, the
+> band, the longhouse, re-founding — built, every check green (`nomads.md §10`). **Joe played it and sent six notes
+> (D568). They are the next work, in this order, and they are for a NEW session — nothing below is started.** Save
+> format 6.
+>
+> **1. The paths grid instead of wandering — REVIEWED, NOT FIXED (his screenshot: an orthogonal lattice round the
+> market and through the housing block).** The cause is in the design, three decisions deep, and it is written here so
+> the next session does not re-derive it: *(a)* the one cost field routes **4-connected on the tile grid** (Manhattan;
+> `TerrainCostField.cs:147` — "movement is four-way", which is also why Dijkstra there is plain breadth-first); *(b)* a
+> leg is string-pulled to the furthest visible route tile, **but D414 (`desire-paths.md §3.6`, `path_shortcut_grass_allowance` 0)
+> forbids a leg that treads more grass than the route's own tiles** — so once any path exists walkers keep to the
+> route's staircase exactly, and the spec itself recorded the tension: *"the route's metric is Manhattan and the walk is
+> Euclidean"*; *(c)* in the village the obstacles are grid rectangles (buildings, D383; fenced plots, D404) that leave
+> only axis-aligned corridors, so the routes between them are straight rows and columns and the trails wear into a
+> lattice — in the open forest the same routes are string-pulled across grass and the trails curve, which is why the
+> forest paths in his screenshot look fine and the village's do not. **What would fix it is a design call, not a tweak:**
+> an 8-connected (octile) cost field with diagonal lanes (every flow field and `TicksForCost` and the Phase 0 pins move),
+> or a walk-side rule that lets a leg deviate from the route by a bounded curve, or lanes that are not fence-aligned.
+> Spec it (`desire-paths.md` has the measurements) and bring Joe the options before touching the field — D122 froze
+> nineteen people the last time that chain moved by one tile.
+>
+> **2. "The pile" in the arrival moment.** It is the founders' stockpile — `BuildingKind.Pile`, the heap the cold start
+> marks at the founding site (`PlayTheOpening`) — and the band camps at `SimWorld.BandCamp`: the cart while it stands,
+> else the founding site's centre. The word reads as nothing to a player; the moment, the card and the button should say
+> **where** in the village's own words (*"at the founding stockpile"* / the cart). **And rename: NOMADS, not
+> travellers** — every string (`SimWorld.Nomads.cs` moments and log lines, `Main.Cards.cs` the band card's title /
+> status / buttons' tooltips, `Main.cs` the bar button *Travellers (N)* → *Nomads (N)*, the probe line's words, the
+> spec). The type names (`NomadBand`, `NomadPerson`) already say it.
+>
+> **3. Accept / reject, and a switch for the whole feature.** Accept / reject exists — the band's card carries *Let
+> them settle* / *Send them on* (`nomads.md §4.3`). What is missing is **the switch**: Joe's Foundation screenshot has
+> an *Immigration — enabled* toggle under the villagers bar. Build it as a tick in the villagers box or in Settings
+> (`Main.cs` `BuildVillagersBox` ~3800, or the Settings fold), persisted like the other settings (D505,
+> `settings-persistence.md`) **and hashed sim state** — it changes whether a band knocks, so it is `SimWorld.NomadsEnabled`
+> (saved, hashed sparsely when off), read by `KnockIfItIsTime`. Off: no band knocks; a band already waiting still waits
+> its season. Whether re-founding obeys the same switch is his to say (recommend: yes — one switch, *Nomads*).
+>
+> **4. The nomads walk in from off-screen, with a marker over their heads.** Today the band appears at the camp as a
+> huddle (`VillageMap.DrawTheBand`). Joe wants to **see them come**: from the valley's edge (the edge tile the one cost
+> field reaches most cheaply from the camp — a derived, cached point, like `BandCamp`) along the route to the camp, each
+> with an indicator above the dot while walking. Two ways: *(a)* **view only** — the band is sim state at the knock as
+> now; the view animates a walk-in over N seconds from the edge to the camp and draws the marker (a bowl's shape,
+> `DrawTheMealMark`), no sim change, no golden moved; *(b)* **sim** — the band's people are villagers in an `Arriving`
+> state who walk the route and knock on arrival (goldens move, the card's deadline starts on arrival, their arrival is
+> on the map's clock at 4×). Recommend *(a)* first, posed in the probe; bring him both.
+>
+> **5. ⛔ REMOVE THE LONGHOUSE FROM THE GAME** (reversing his call 3, D563, after playing it): *"unhoused immigrants
+> should build new houses in the already painted areas like normal citizens (if there is space) and if not, the game
+> should indicate to the user that there are unhoused people and not enough room to build homes."* The first half is
+> what already happens (a settled family is roofless and `HouseTheRoofless` sites a house in the paint — `nomads.md §4.4`);
+> the second half is **the indicator**: `NeedsMoreResidentialLand` is set and narrated once (`HouseholdSystem.cs` ~210),
+> but nothing on screen stays lit — build a standing warning (the villagers bar's *Unhoused: N* cell, amber, with the
+> sentence *"N people have no roof and the painted land is full — paint more housing"*; the band's card already says
+> *in the open at the pile*). **Removing the longhouse is a real unbuild**, not a flag: `Longhouse.cs`,
+> `SimWorld.Longhouses.cs`, `Household.LodgedIn`, `LarderOf` (collapse to `household.Stockpile`), the hearth's second
+> loop, the pairing checks, the six standing-things arms, the condition walk's arm, the hash block (0x67/0x68), the save
+> keys (`longhouses`, `lodged_in` — **format 7**), the row (back to a store, or deleted — `BuildingKind.Longhouse = 14`
+> stays in the enum, never renumbered, D320's guards keep the three-tile store from data via
+> `BuildFixtures.WithTheOldLonghouseStore`), `WhyNotYet`'s gate, `longhouse_capacity`, the view's shelf / button / draw /
+> card / `cards:` pose, `LonghouseTests` (delete), `nomads.md §4.5` (struck through with the reason), the catalogue
+> guard's buffer and roof rows, `content-inventory.md`, `footprints.md`. ⚠️ Decide with him whether the row goes back
+> to being the D320 three-tile warehouse (then the geometry suites need no fixture) or is deleted (a modder can still
+> type one).
+>
+> **6. This note.** Written here, in `DESIGN.md` D568 and §5/§6, and in `nomads.md §3a`, for the fresh session he asked
+> for. **The branch stays unmerged until the six are done and he has played them**; the three build commits are sound as
+> they stand (every check green) and are the base to build on. Merge and push at his word only.
+>
+> **(the banner below is the state before D568)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, WHOLE — COMMIT 3, RE-FOUNDING) — D567, ON WINDOWS.**
 >
@@ -6513,6 +6585,17 @@ Read `git status` after staging, every time.
   so a ruin in a dead valley is derived *Ruin* and never `Closed` — read `ConditionOf`, not the flag, when measuring one.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **JOE'S PLAYTEST OF THE NOMADS — SIX NOTES (D568, 2026-10-12), THE NEXT SESSION'S WORK, IN ORDER (the top banner has
+  each with its pointers).** **(1)** the paths grid in the village — reviewed: 4-connected routing + D414's keep-to-the-route
+  rule + grid-aligned obstacles; a design call (octile field / a bounded-curve walk rule / non-fence-aligned lanes) to spec and
+  bring him; **(2)** *"the pile"* said in the village's words, and **nomads, not travellers**, everywhere; **(3)** accept / reject
+  stands (the card) — add **a Nomads switch** (Foundation's *Immigration — enabled*), hashed sim state, persisted; whether it also
+  stops re-founding is his (recommend yes); **(4)** the nomads **walk in from off-screen with a marker over their heads** —
+  view-only first (recommended) or sim-side arrival; **(5)** ⛔ **remove the longhouse** (his call 3 reversed after play):
+  the roofless build in the paint as everybody does, and a **standing unhoused warning** when the paint is full; the row
+  back to the D320 store or deleted — his call; **(6)** all of it written down. ⏸️ Still his from before: a quarter of
+  the village at 2–8; 20 food a head; the huddle's look; the two-to-six-year wait.
 
 - ✅ **ANSWERED (D563, 2026-10-11) — Joe, in plan mode: own clock / one or two families scaled / *"learned at first knock,
   but just repurpose the long house thats already in game. there's no other need for it."* / automatic.** ~~NOMADS — FOUR

@@ -5,7 +5,9 @@ D313 (2026-09-06, the empty-village banner does not stop the game *because nomad
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
 **Status:** ✅ **built — all three commits on `slice/nomads` (D565 the band, D566 the longhouse, D567 re-founding),
-sim and view, local, not pushed. Not yet played by Joe** (§10). Bands knock, wait at the pile as a huddle, and settle
+sim and view, local, not pushed. ▶️ Played by Joe (D568, §3a): six notes are the next work — ⛔ the longhouse comes out,
+nomads not travellers, a Nomads switch, a walk-in with a marker, "the pile" in the village's words, the paths' gridding
+reviewed. The branch stays unmerged until they are built and played.** Bands knock, wait at the pile as a huddle, and settle
 or move on from the card's two buttons; the longhouse is a dwelling placed by a button, learned at the first knock,
 lodging roofless families on one larder until their house is raised; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (30), `LonghouseTests` (13) and
@@ -86,6 +88,21 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    other need for it."* Alternatives: in the menu from Year 1; skip it this slice.
 4. **Re-founding a dead valley — how does the foursome arrive?** **Answered: automatically, a few years on** — no
    question asked, nobody is left to speak for the village. Alternatives: they knock like any band; not this slice.
+
+### 3a. Joe's play notes (D568, 2026-10-12) — the next session's work; nothing below is built
+
+1. **The paths grid in the village** — reviewed (4-connected routing, D414's keep-to-the-route rule, grid-aligned
+   obstacles; `HANDOFF.md`'s banner has the review); a design call to spec, not a nomads item, but found here.
+2. **"The pile"** is the founders' stockpile; say *where* in the village's words. **Nomads, not travellers** — every string.
+3. **Accept / reject** stands (§4.3). **Add a Nomads switch** (Foundation's *Immigration — enabled*): hashed sim state read
+   by the knock, persisted with the settings; whether it also stops re-founding is his (recommend yes).
+4. **The nomads walk in from off-screen with a marker over their heads** — from the valley's edge to the camp; view-only
+   first (recommended), or a sim-side `Arriving` state.
+5. ⛔ **The longhouse is removed** — call 3 reversed after play: *"unhoused immigrants should build new houses in the
+   already painted areas like normal citizens (if there is space) and if not, the game should indicate to the user that
+   there are unhoused people and not enough room to build homes."* §4.4 already does the first half; the second is a
+   **standing unhoused warning** when the paint is full. §4.5 below is kept as the record of what was built and why.
+6. All of it written down for a fresh session; the branch unmerged until the six are built and played.
 
 **Settled without asking, stated so he can overrule:** the knock is checked on the spring turn only; a band waits through
 spring and summer and leaves at the autumn turn if unanswered; the band is not villagers until it settles (a huddle at the
