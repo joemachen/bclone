@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D560, PUSHED. `slice/seam-ground` = D561 (A QUARRY OR MINE WORKS THE WHOLE SEAM IT STANDS BY), BUILT, LOCAL, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED; NOTHING OPEN ON A BRANCH. NEXT: ASK JOE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE WHOLE SEAM MERGED) — D562, ON WINDOWS.**
+>
+> **`main` = D562, pushed.** `slice/seam-ground` (D561) merged `--no-ff` at Joe's word (*"tested and approved. merge and
+> push."*); the merged tree is byte-identical to the tip he played. Both branches from today (`slice/maintenance`,
+> `slice/seam-ground`) are kept locally, not pushed. Save format 5.
+>
+> **▶️ NEXT: ask Joe.** Still his, unscheduled: the workshop / carpenter / builder's hammer that follows maintenance
+> (`building-condition.md §4.6`, call 6); nomads (§5 — now also the cure for one-surname villages, D558); stable slots for
+> the crowd fan (D525); full settings (D508); ironman's name (D507); the market's *Keeps up to* row and pin exception
+> guards (D502); clothing, parked (D534).
+>
+> **(the banner below is the state before D562)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE WHOLE SEAM) — D561, ON WINDOWS.**
 >

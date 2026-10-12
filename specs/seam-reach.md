@@ -1,8 +1,8 @@
 # Spec: A quarry or a mine stands near its seam
 
 **Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles), D561 (painting: the whole seam it
-stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); 🔨 D561 — a quarry or a
-mine paints the whole seam it stands by — built on `slice/seam-ground`, not yet played or merged.** `SeamReachTests` (8)
+stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); ✅ D561 — a quarry or a
+mine paints the whole seam it stands by — built, played and merged (D562).** `SeamReachTests` (8)
 green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved.
 
 ---
