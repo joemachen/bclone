@@ -1,4 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D565: THE NOMADS SPECCED, MEASURED, AND COMMIT 1 (THE BAND) BUILT. NEXT: COMMIT 2, THE LONGHOUSE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D566: THE NOMADS SPECCED, MEASURED, THE BAND (D565) AND THE LONGHOUSE (D566) BUILT. NEXT: COMMIT 3, RE-FOUNDING. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, COMMIT 2 — THE LONGHOUSE) — D566, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (spec, measurement), D565 (the
+> band) and **D566, commit 2 of 3 — the longhouse — built, sim and view, committed. Not played by Joe.** Save format 6.
+>
+> **What it is:** the longhouse is a dwelling placed by a button (D42's one exception), learned at the first knock,
+> priced as two houses, holding 8 on **one larder of its own**: a roofless family takes a bed the day after it asks for a
+> house of its own, eats and fetches to the longhouse's larder, warms at its one fire, partners with nobody, and moves out
+> the day its own house is raised; a ruin shelters nobody; a demolition turns its lodgers out. Built as a fifth standing
+> thing (`Longhouse`, the well's shape) with lodging on the family (`Household.LodgedIn`) and every larder read through
+> `SimWorld.LarderOf` — not as a communal household (the plan's shape; a home *is* its household, and the wider change).
+> The old three-tile store lives on as data in `BuildFixtures.WithTheOldLonghouseStore` for the geometry guards.
+>
+> **Verified on this tree:** suite 1673 / 0 / 5 of 1678 (6m20), with the two guards added after that run green (13 / 13); view 0 warnings; probe 84 lines, no ⛔ (the longhouse posed inside
+> `cards:`, `nomads:` ✅, `huddle:` ✅, bar height 151, `done.`); **no golden moved**. `LonghouseTests` (12): 18 mutants, 28 reds, no zeros — three found and closed (the pairing rule is checked on the seeker and on the candidate and either check masked a mutant of the other, so `NobodyLodgingPartners` is posed from both sides; the larder's hash was invisible to a save round trip, so `TheLonghousesLarderIsInTheFingerprint` compares two villages).
+>
+> **▶️ NEXT: commit 3, re-founding** (`nomads.md §4.6`): `SimWorld.RefoundVillage` (four paired founders of a second
+> generation, by hash; the cart restocked or raised again; `HouseTheRoofless` moves them into standing houses keeping their
+> names), `CivicSystem.RefoundIfTheValleyHasWaited` on the spring turn `refound_years_floor` 2 + spread 4 years after the
+> last death (derived from `DiedAtTick`), `TendWhatStands` running in an empty valley (ruins close on time, no repair
+> sites raised with nobody to serve them), `TributeTo` naming both generations and never a second hall, the moment that
+> says what stands. Then Joe plays the whole slice; merge and push at his word.
+>
+> **(the banner below is the state before D566)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS, COMMIT 1 — THE BAND) — D565, ON WINDOWS.**
 >
@@ -6421,6 +6446,25 @@ Read `git status` after staging, every time.
   written, leaving half the edits applied. Use `python -X utf8`, convert anchors to the file's newline, and make every
   edit idempotent (skip when the new text is already there) so a rerun is safe. The long heredoc failed to parse as well
   (D538, D540): write the script with the Write tool and run it.
+
+## ⛔ THE TRAPS THE LONGHOUSE (D566) PAID FOR — AN EDIT SCRIPT RUN TWICE, A BUILDER WHO MENDS YOUR POSE, AND A STAMP SET BY ARITHMETIC
+
+- **An edit script whose anchor survives its own insertion is not idempotent, and a second run doubles the block.** The
+  longhouse's script inserted *after* the well's arm in six switches, after `["home_closed"]`, after the hall's
+  `ConditionOf`; the anchors were all still there, so when the script was re-run to fix one later anchor it inserted every
+  block twice (duplicate members, a duplicate JSON key that would only have failed at runtime). The `new in s and old not
+  in s` skip is no protection when `old` is a neighbour rather than the text replaced. **Check `new in s` alone, or
+  restore the files from the commit and run once** — which is what fixed it: every file the script touched was committed
+  clean, so `git checkout --` and one run was the whole repair.
+- **The fixture's builders mend the ruin you posed.** A longhouse stamped twenty-one years old was *Sound* two seasons
+  later: the season's turn raised the repair, the village had logs and a builder, and the mend reset the stamp before
+  the assertion. A pose about decay in a village that repairs must assert on the turn that sees the crossing, or hold the
+  builders off.
+- **A stamp set by arithmetic is a claim about the rule, and the winters are in the rule.** *Tick − 21 years* underflowed
+  a `ulong` at a Year-10 knock (Sound); *Tick − 4 years + a season* was already Ruin because four winters begun add two
+  seasons of wear. Ask `ConditionRules.Of` which stamp crosses on the turn you will step to, and pose that.
+- **A test run on a failed build is a run of the previous DLL** (D487, again): `dotnet test --no-build` after a build that
+  printed errors reported fifteen failures that were the old binary's. Gate the test on the build's exit, not on its silence.
 
 ## ⛔ THE TRAPS THE NOMADS' MEASUREMENT (D564) PAID FOR — A POSE THAT FORGOT TO PAIR, A RESTOCK THAT WAS NOT CHECKED, AND A SHARE RULE THAT CANNOT SEE A PLAYED VILLAGE
 

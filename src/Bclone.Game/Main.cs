@@ -1823,6 +1823,9 @@ public partial class Main : Control
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
         RefreshALearnedButton(world, BuildingKind.StoneBridge, null, _stoneBridgeButton, ref _stoneBridgeKnown, ref _stoneBridgeTried);
+
+        // ⭐ The longhouse (D566): learned at the first knock, accepted or not — lit until the first is marked. No trade works there.
+        RefreshALearnedButton(world, BuildingKind.Longhouse, null, _longhouseButton, ref _longhouseKnown, ref _longhouseTried);
     }
 
     /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
@@ -1860,6 +1863,9 @@ public partial class Main : Control
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
     private bool _stoneBridgeTried;
+    private Button? _longhouseButton;
+    private bool _longhouseKnown;
+    private bool _longhouseTried;
     private bool _smithyKnown;
 
     /// <summary>
@@ -2706,7 +2712,7 @@ public partial class Main : Control
             || (!_heapAsked && _selectedTile is GridPos at
                 && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null
                     || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))
-                    || world.WellCovering(at) is not null));
+                    || world.WellCovering(at) is not null || world.LonghouseCovering(at) is not null));
         // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
         // furniture is shown (`h`) — this line used to override both every frame. ⭐ And not once
         // the player has shut it (B3): a left-click selects, it does not reopen what they closed.
@@ -2965,6 +2971,10 @@ public partial class Main : Control
         {
             OpenCard(new CardSubject(CardKind.Well, world.Wells.IndexOf(well)));
         }
+        else if (world.LonghouseCovering(tile) is Longhouse longhouse)
+        {
+            OpenCard(new CardSubject(CardKind.Longhouse, world.Longhouses.IndexOf(longhouse)));
+        }
         else if (world.BridgeAt(tile) is Bridge bridge)
         {
             // ⭐ A bridge has a card too (D546): what it is made of, how far it spans, how often it is crossed.
@@ -3060,7 +3070,7 @@ public partial class Main : Control
         // ⭐ The library and the hall are cards now too (D396) — the fourth and fifth lists this
         // method used to describe (D221's finding, twice) have gone where the other three went.
         if (world.LibraryCovering(tile) is not null || (world.TownHall is not null && world.TownHallCovers(tile))
-            || world.WellCovering(tile) is not null)
+            || world.WellCovering(tile) is not null || world.LonghouseCovering(tile) is not null)
         {
             return string.Empty;
         }
@@ -7009,6 +7019,10 @@ public partial class Main : Control
             {
                 _stoneBridgeButton = button;
             }
+            else if (kind == BuildingKind.Longhouse)
+            {
+                _longhouseButton = button;
+            }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
             _stripRow.AddChild(button);
@@ -7127,7 +7141,10 @@ public partial class Main : Control
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
-                or BuildingKind.Market or BuildingKind.Longhouse => BuildCategory.Storage,
+                or BuildingKind.Market => BuildCategory.Storage,
+
+            // ⭐ The longhouse is a dwelling since D566 (Joe: the communal house) — on the Homes shelf beside the well.
+            BuildingKind.Longhouse => BuildCategory.Homes,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
@@ -7499,7 +7516,7 @@ public partial class Main : Control
             var tile = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 5);
             if (world.StoreAt(tile) is null && world.WorkplaceCovering(tile) is null && world.HouseholdAt(tile) is null
                 && world.LibraryCovering(tile) is null && !(world.TownHall is not null && world.TownHallCovers(tile))
-                && world.WellCovering(tile) is null)
+                && world.WellCovering(tile) is null && world.LonghouseCovering(tile) is null)
             {
                 return tile;
             }

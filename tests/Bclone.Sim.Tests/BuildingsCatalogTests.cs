@@ -260,6 +260,9 @@ public sealed class BuildingsCatalogTests
                 BuildingKind.FishingHut => config.FishingHutStoreCap,
                 BuildingKind.HunterLodge => config.HunterLodgeStoreCap,
                 BuildingKind.Home => config.HomeStoreCap,
+
+                // ⭐ And the longhouse's one larder (D566): twice a house's, shared by every family lodging there.
+                BuildingKind.Longhouse => config.HomeStoreCap * 2,
                 _ => 0,
             };
 
@@ -273,7 +276,15 @@ public sealed class BuildingsCatalogTests
             Assert.Equal(
                 kind == BuildingKind.HunterLodge ? config.HuntingRadius : 0,
                 row.HuntingRadius);
-            Assert.Equal(kind == BuildingKind.Home ? config.MaxHouseholdSize : 0,
+            Assert.Equal(
+                kind switch
+                {
+                    BuildingKind.Home => config.MaxHouseholdSize,
+
+                    // ⭐ The longhouse puts travellers up (D566): a roof that is not a family's home, by the same column.
+                    BuildingKind.Longhouse => config.LonghouseCapacity,
+                    _ => 0,
+                },
                 row.HouseCapacity);
         }
     }

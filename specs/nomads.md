@@ -4,10 +4,12 @@
 D313 (2026-09-06, the empty-village banner does not stop the game *because nomads may come back*), D353 (Phase 6 names
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
-**Status:** 🔨 **commit 1 of 3 built — the band (D565): sim and view, on `slice/nomads`, local, not played.** Bands
-knock, wait at the pile as a huddle, and settle or move on from the card's two buttons; `NomadTests` (23) green and
-red-checked (§9); the six fifty-year goldens moved once, proven the knock's alone (§5); save format **6**; the probe's
-`nomads:` and `huddle:` lines ✅. Commits 2 (the longhouse) and 3 (re-founding) are next. Joe's four calls answered (§3);
+**Status:** 🔨 **commits 1 and 2 of 3 built — the band (D565) and the longhouse (D566): sim and view, on
+`slice/nomads`, local, not played.** Bands knock, wait at the pile as a huddle, and settle or move on from the card's two
+buttons; the longhouse is a dwelling placed by a button, learned at the first knock, lodging roofless families on one
+larder until their house is raised. `NomadTests` (30) and `LonghouseTests` (12) green and red-checked (§9); the six
+fifty-year goldens moved once, in commit 1, proven the knock's alone (§5), and none in commit 2; save format **6**; the
+probe's `nomads:` and `huddle:` lines ✅ and the longhouse posed in `cards:`. Commit 3 (re-founding) is next. Joe's four calls answered (§3);
 the rest is mine, stated so he can overrule. Measured first (§8) on 100 shipped valleys and Joe's 27 saves: a knock at
 Year 10 meets eight people in two housed families (every share rule sends a couple; Joe's villages are one surname from
 Year 50); a band of two or four is housed the same year wherever the player has painted, and its cost is food, never a
@@ -199,6 +201,24 @@ raised** (a house of its own is always first; the longhouse is the stopgap). Whi
 the first knock whether the band settled or not, so it is in the menu for the next one. A longhouse with lodgers that is
 pulled down turns them out (a log line); a longhouse fallen in (`HomeClosed`) shelters nobody, and its lodgers are
 roofless again until it is mended.
+
+> ⭐ **As built (D566): a fifth standing thing, not a household.** The plan said *a communal `Household`*; a home is the
+> household itself — its footprint is the house row's, its plot fenced, its site the brush's — and threading a second kind
+> of home through every house reader was the larger change. `World/Longhouse.cs` is the well's shape (D427): id,
+> position, facing, 3×1, stamps, `Closed`, `Capacity` from the row, **and its own `Larder`**. Lodging is on the family:
+> `Household.LodgedIn` (hashed sparsely, saved), derived nowhere else; `SimWorld.LodgingOf` / `LodgersAlive` /
+> `LodgersOf` read it. **Every larder read goes through `SimWorld.LarderOf(household)`** — the fetch, the meal, the hunger
+> line, the firewood demand — which hands a lodging family the longhouse's. `HomePoint` is the longhouse for a lodger;
+> `ShelterAt` its tile is *Fire* while anybody lodges and its larder has firewood, *Roof* else, *Outdoors* fallen in;
+> `HearthSystem` burns one fire a longhouse from its larder and skips the lodging families' own. `HouseTheRoofless`
+> moves a family out the day it has a house (one place, daily), asks for a house of its own first, and only then a bed
+> (`LodgeIfRoom`, the lowest id with room for all of them); `FormNewHouseholds` skips a lodger as seeker and as partner.
+> The row: two houses' logs and stone, twice the work, `longhouse_capacity` 8, twice a house's larder, no store; the gate
+> applies only when the row is a dwelling, so a modder's warehouse row 14 (the old longhouse, which `FootprintTests` and
+> `TileFindersAgreeTests` now pose from data through `BuildFixtures.WithTheOldLonghouseStore`) is not gated. The view:
+> Homes shelf, a learned button lit at the first knock, a long roof weathered and dimmed while empty, a card (beds taken,
+> food, firewood, the lodging families and whether their house is marked), *Lodging* on a lodger's card, and the band's
+> card says *room for all of them in the longhouse* when there is.
 
 ### 4.6 Re-founding — a dead valley, a few years on (call 4)
 
@@ -440,6 +460,11 @@ larder is fetched to and burned from by lodgers; shelter follows the larder; a l
 is raised; nobody lodged partners; a fallen-in longhouse shelters nobody; pulling it down turns lodgers out; the three
 re-pointed store guards still pass on the warehouse; hash/save.
 
+> ⭐ **Commit 2 (D566) — `LonghouseTests` (12).** MUTANT_SENTENCE Found while building: a pose that gave the fixture's
+> builders two seasons mended the posed ruin before the assertion (the stamp is now asked of `ConditionRules` for the
+> very next turn); and the winters' half-seasons put a four-year stamp past *ruin* at once — a stamp set by arithmetic
+> is a claim about the rule.
+
 **Commit 3 — `RefoundTests`:** nothing for the floor years; the four arrive on a spring turn; founders marked, names
 new; standing houses taken, names kept; the cart restocked (and raised again when gone); stores kept; ruins close on time
 while empty and no repair site is raised; repairs raised at the first turn after; the hall owed on the last of them when
@@ -459,7 +484,8 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
 - [◐] §9's guards; mutants listed with their reds; any zero kept and written down — **commit 1 done (§9)**.
 - [x] Goldens moved once, in commit 1, proven by the floor at 0.
 - [◐] The four checks (CLAUDE.md) on every commit: suite, view build read, probe (`nomads:` ✅, bar height 151, `done.`),
-      goldens diffed — **commit 1: 1661 / 0 / 5 of 1666 (7m01); view 0 warnings; probe 84 lines, no ⛔; six goldens.**
+      goldens diffed — **commit 1: 1661 / 0 / 5 of 1666 (7m01); view 0 warnings; probe 84 lines, no ⛔; six goldens.
+      Commit 2: SUITE_SENTENCE; view 0 warnings; probe 84 lines, no ⛔; no golden moved.**
 - [ ] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
       `morale.md`, `content-inventory.md`, `footprints.md`, `save-load.md`; `HANDOFF.md`; this status line made true — in
       the same commit as the code.

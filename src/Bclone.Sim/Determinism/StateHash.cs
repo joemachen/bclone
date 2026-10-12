@@ -287,6 +287,13 @@ public static class StateHash
                 }
             }
 
+            // Where a roofless family lodges (D566) — it decides where they sleep and eat. Sparse, under a tag.
+            if (household.LodgedIn != 0)
+            {
+                hash = MixByte(hash, 0x68);
+                hash = MixUInt32(hash, (uint)household.LodgedIn);
+            }
+
             // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
             // site has none, and hashes as it always did.
             hash = MixUInt32(hash, (uint)household.FencedTiles.Count);
@@ -734,6 +741,29 @@ public static class StateHash
             if (well.Closed)
             {
                 hash = MixByte(hash, 0x64);
+            }
+        }
+
+        // ---- The longhouses (D566) ---- a roof and a larder people walk to; sparse, the wells' rule.
+        if (world.Longhouses.Count > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.Longhouses.Count);
+        }
+
+        for (int i = 0; i < world.Longhouses.Count; i++)
+        {
+            Longhouse longhouse = world.Longhouses[i];
+            hash = MixUInt32(hash, (uint)longhouse.Id);
+            hash = MixFixed(hash, longhouse.Position.X);
+            hash = MixFixed(hash, longhouse.Position.Y);
+            hash = MixAngle(hash, longhouse.Facing);
+            hash = MixUInt32(hash, (uint)longhouse.Capacity);
+            hash = MixUInt64(hash, longhouse.RaisedAtTick);
+            hash = MixUInt64(hash, longhouse.RepairedAtTick);
+            hash = MixStore(hash, longhouse.Larder);
+            if (longhouse.Closed)
+            {
+                hash = MixByte(hash, 0x67);
             }
         }
 

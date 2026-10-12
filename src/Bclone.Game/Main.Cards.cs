@@ -49,6 +49,9 @@ public partial class Main
 
         /// <summary>The band of travellers waiting at the pile (D565) — there is never more than one, Id 0.</summary>
         Band,
+
+        /// <summary>A longhouse (D566) — its Id is its index in <see cref="SimWorld.Longhouses"/>, as a well's is.</summary>
+        Longhouse,
     }
 
     private readonly record struct CardSubject(CardKind Kind, int Id);
@@ -273,6 +276,10 @@ public partial class Main
                 _selectedTile = null;
                 _selectedVillagerId = 0;
                 break;
+            case CardKind.Longhouse:
+                _selectedTile = LonghouseOf(subject)?.Tile;
+                _selectedVillagerId = 0;
+                break;
         }
 
         _map.SelectTheBand(subject.Kind == CardKind.Band);
@@ -281,6 +288,10 @@ public partial class Main
     /// <summary>The bridge a card is about — by index, the well's rule and its caveat (D546).</summary>
     private Bridge? BridgeOf(CardSubject card) =>
         card.Id >= 0 && card.Id < _loop.World.Bridges.Count ? _loop.World.Bridges[card.Id] : null;
+
+    /// <summary>The longhouse a card is about — by index, the well's rule and its caveat.</summary>
+    private Longhouse? LonghouseOf(CardSubject card) =>
+        card.Id >= 0 && card.Id < _loop.World.Longhouses.Count ? _loop.World.Longhouses[card.Id] : null;
 
     /// <summary>The well a card is about — by index, the library's rule (D396) and its caveat.</summary>
     private Well? WellOf(CardSubject card) =>
@@ -693,6 +704,7 @@ public partial class Main
             CardKind.Well => WellOf(card.Subject) is Well well && ShowWell(world, card, well),
             CardKind.Bridge => BridgeOf(card.Subject) is Bridge bridge && ShowBridge(world, card, bridge),
             CardKind.Band => world.Band is NomadBand band && ShowBand(world, card, band),
+            CardKind.Longhouse => LonghouseOf(card.Subject) is Longhouse longhouse && ShowLonghouse(world, card, longhouse),
             _ => false,
         };
 
@@ -1354,6 +1366,10 @@ public partial class Main
         {
             Status(card, working: false, home.HomePosition is null ? "Nobody lives here." : "Nobody lives here now. The next couple to pair up will move in.");
         }
+        else if (home.HomePosition is null && world.LodgingOf(home) is Longhouse lodging)
+        {
+            Status(card, working: true, $"No house yet — lodging at {lodging.Name} until one is raised.");
+        }
         else if (home.HomePosition is null)
         {
             Status(card, working: false, "No house yet — they sleep at the founding cart.");
@@ -1510,8 +1526,11 @@ public partial class Main
         SetNeed(p.Needs[1], villager.Cold == 0, villager.Cold == 0 ? "Warm" : "Cold",
             villager.Cold == 0 ? $"{villager.Name} is warm." : $"{cold}% of the way to freezing — a hearth warms them, a roof slows the cold.");
         bool housed = home.HomePosition is not null;
-        SetNeed(p.Needs[2], housed, housed ? "Housed" : "No roof",
-            housed ? $"Lives with the {home.Name} household." : $"The {home.Name} household has no home yet.");
+        bool lodging = !housed && world.LodgingOf(home) is not null;
+        SetNeed(p.Needs[2], housed || lodging, housed ? "Housed" : lodging ? "Lodging" : "No roof",
+            housed ? $"Lives with the {home.Name} household."
+            : lodging ? $"The {home.Name} household lodges at {world.LodgingOf(home)!.Name} until a house of its own is raised."
+            : $"The {home.Name} household has no home yet.");
 
         // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
         var trades = TheirTrades(world, villager);
@@ -1962,7 +1981,16 @@ public partial class Main
         ulong leaves = world.BandLeavesAtTick;
         string until = SimClock.FromTick(leaves, world.Config).Season.ToString();
         bool winterNext = world.Clock.Season is Season.Fall or Season.Winter;
-        WriteBandCard(card, band.FamilyNames, people, band.FoodCarried(world.Config), population == 0 ? 0 : food / population, until, winterNext);
+        int beds = 0;
+        for (int i = 0; i < world.Longhouses.Count; i++)
+        {
+            if (!world.Longhouses[i].Closed)
+            {
+                beds += world.Longhouses[i].Capacity - world.LodgersAlive(world.Longhouses[i]);
+            }
+        }
+
+        WriteBandCard(card, band.FamilyNames, people, band.FoodCarried(world.Config), population == 0 ? 0 : food / population, until, winterNext, beds >= band.People);
         return true;
     }
 
@@ -1981,20 +2009,23 @@ public partial class Main
     }
 
     /// <summary>The band's card from plain facts — so the probe can pose one where no band waits.</summary>
-    private void WriteBandCard(Card card, string families, IReadOnlyList<(string Name, string Life)> people, int foodCarried, int foodAHead, string leaveBy, bool winterNext)
+    private void WriteBandCard(Card card, string families, IReadOnlyList<(string Name, string Life)> people, int foodCarried, int foodAHead, string leaveBy, bool winterNext, bool aBedForAll = false)
     {
         Title(card, $"Travellers — {families}", renamable: false);
         card.Numbers.Visible = true;
         card.Storage.Visible = false;
         card.WorkersRow.Visible = false;
 
-        // Where they would sleep tonight is the sentence the decision turns on (Joe: they freeze without houses).
+        // Where they would sleep tonight is the sentence the decision turns on (Joe: they freeze without houses) — and
+        // a longhouse with room for them all is the answer the player built (D566).
         Status(
             card,
-            working: !winterNext,
-            winterNext
-                ? "Asking to settle. They would sleep in the open at the pile until a house is raised — and this winter would kill them there."
-                : "Asking to settle. They would sleep in the open at the pile until a house is raised for them; a family is housed in weeks where the paint has room.");
+            working: aBedForAll || !winterNext,
+            aBedForAll
+                ? "Asking to settle. There is room for all of them in the longhouse until houses of their own are raised."
+                : winterNext
+                    ? "Asking to settle. They would sleep in the open at the pile until a house is raised — and this winter would kill them there."
+                    : "Asking to settle. They would sleep in the open at the pile until a house is raised for them; a family is housed in weeks where the paint has room.");
 
         Number(card, 0, $"{people.Count}", "souls");
         Number(card, 1, $"{foodCarried:N0}", "food carried");
@@ -2093,6 +2124,64 @@ public partial class Main
         return faults.Count == 0
             ? "[widths] nomads: ✅ the band's card lists its people, says where they would sleep, and carries Let them settle / Send them on, both wired"
             : $"[widths] nomads: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>The longhouse's card (D566): who lodges, what its larder holds, and its condition.</summary>
+    private bool ShowLonghouse(SimWorld world, Card card, Longhouse longhouse)
+    {
+        var lodgers = new List<(string Name, string Life)>();
+        foreach (Household family in world.LodgersOf(longhouse))
+        {
+            int members = world.LivingMembersOf(family);
+            lodgers.Add((family.Name, $"{members} · {(world.HomeSiteFor(family.Id) is null ? "no house marked" : "house being raised")}"));
+        }
+
+        WriteLonghouseCard(card, longhouse.Name, lodgers, world.LodgersAlive(longhouse), longhouse.Capacity, world.FoodIn(longhouse.Larder),
+            longhouse.Larder.Firewood, longhouse.Closed, longhouse.ExtentWidth, longhouse.ExtentHeight, longhouse.Facing.Raw);
+        Wear(card, world.WearOf(longhouse), world.Config);
+        return true;
+    }
+
+    /// <summary>The longhouse's card from plain facts — so the probe can pose one where none stands.</summary>
+    private void WriteLonghouseCard(Card card, string name, IReadOnlyList<(string Name, string Life)> lodgers, int lodging, int capacity, int food, int firewood, bool closed, int wide, int deep, ushort facing)
+    {
+        Title(card, name, renamable: true);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+
+        Status(
+            card,
+            working: lodging > 0 && !closed,
+            closed ? "Fallen in — it shelters nobody until the builders mend it."
+                : lodging == 0 ? "Empty. A family with no house of its own lodges here until one is raised."
+                : lodging >= capacity ? "Full. The next roofless family sleeps in the open until a bed frees."
+                : $"{lodging} lodging, room for {capacity - lodging} more.");
+
+        Number(card, 0, $"{lodging} / {capacity}", "beds taken");
+        Number(card, 1, $"{food:N0}", "food in the larder");
+        Number(card, 2, $"{firewood:N0}", "firewood");
+
+        card.PeopleScroll.Visible = true;
+        ClearThePeople(card);
+        for (int i = 0; i < lodgers.Count; i++)
+        {
+            var row = new HBoxContainer();
+            Label who = Body($"The {lodgers[i].Name} household");
+            who.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            who.ClipText = true;
+            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            Label life = Muted(lodgers[i].Life);
+            row.AddChild(who);
+            row.AddChild(life);
+            card.People.AddChild(row);
+        }
+
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, lodgers.Count)));
+        card.Portrait.Show(VillageMap.LonghouseColour, wide * 0.85f, deep * 0.8f, facing, null);
+        card.Caption.Text = "Nobody partners or has children while lodging here; a family moves out the day its own house is raised.";
+        card.Caption.TooltipText = string.Empty;
+        card.Records.Visible = false;
     }
 
     /// <summary>How many households draw at each well, counted once a tick — the card refreshes every frame.</summary>
@@ -3052,6 +3141,30 @@ public partial class Main
         if (emptyWell > CardWidth + 1f)
         {
             faults.Add($"a well nobody draws at widens a card's minimum to {emptyWell:F0}");
+        }
+
+        // ⭐ AND A LONGHOUSE (D566), the same two poses — a 40-letter name, full, with four lodging families and the
+        // longest status — then one fallen in and empty.
+        WriteLonghouseCard(posed, new string('L', SimWorld.NameLengthLimit),
+            new[] { ("Hale", "2 · house being raised"), ("Dunn", "3 · no house marked"), (new string('F', 30), "2 · no house marked"), ("Ash", "1 · house being raised") },
+            8, 8, 12_345, 1_234, closed: false, 3, 1, 0);
+        ForceUpdateTransform();
+        float fullLonghouse = posed.Panel.GetCombinedMinimumSize().X;
+        if (fullLonghouse > CardWidth + 1f)
+        {
+            faults.Add($"a full longhouse with a 40-letter name widens a card's minimum to {fullLonghouse:F0}");
+        }
+
+        if (posed.Values[0].Text != "8 / 8" || posed.Values[1].Text != "12,345" || !posed.Status.Text.Contains("Full", StringComparison.Ordinal))
+        {
+            faults.Add($"a full longhouse card reads {posed.Values[0].Text} beds, {posed.Values[1].Text} food and \"{posed.Status.Text}\"");
+        }
+
+        WriteLonghouseCard(posed, "longhouse 1", System.Array.Empty<(string, string)>(), 0, 8, 0, 0, closed: true, 3, 1, 0);
+        ForceUpdateTransform();
+        if (posed.Panel.GetCombinedMinimumSize().X > CardWidth + 1f || !posed.Status.Text.Contains("Fallen in", StringComparison.Ordinal))
+        {
+            faults.Add("a fallen-in longhouse's card widens or does not say so");
         }
 
         // ⭐ AND A BRIDGE (D546), the same two poses — a 40-letter name over the widest span with a lifetime

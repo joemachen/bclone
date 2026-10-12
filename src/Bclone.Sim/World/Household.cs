@@ -128,6 +128,13 @@ public sealed class Household
     public bool HomeClosed { get; set; }
 
     /// <summary>
+    /// The <see cref="Longhouse.Id"/> this roofless family lodges in, or 0 (`nomads.md §4.5`, D566). Meaningful only
+    /// while <see cref="HomePosition"/> is null — a family with a house of its own lodges nowhere, and the daily
+    /// housing pass clears it the day a house is theirs. Hashed sparsely; saved.
+    /// </summary>
+    public int LodgedIn { get; set; }
+
+    /// <summary>
     /// Why the house is where it is, in the chooser's words — *"near the granary, facing the
     /// lane, beside the Ashfords"* (D386). Set with the site; the card reads it. Not hashed: it
     /// restates the choice.
@@ -1301,6 +1308,7 @@ public sealed class Household
         ["home_raised_at"] = SaveWriter.Hex(HomeRaisedAtTick),
         ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
         ["home_closed"] = HomeClosed,
+        ["lodged_in"] = LodgedIn,
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1323,6 +1331,7 @@ public sealed class Household
             HomeRaisedAtTick = save.ULong("home_raised_at"),
             HomeRepairedAtTick = save.ULong("home_repaired_at"),
             HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
+            LodgedIn = save.HasValue("lodged_in") ? save.Int("lodged_in") : 0,
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

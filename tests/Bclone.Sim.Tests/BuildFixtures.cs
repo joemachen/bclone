@@ -1,3 +1,4 @@
+using Bclone.Sim.Config;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Tests;
@@ -14,6 +15,26 @@ namespace Bclone.Sim.Tests;
 /// </remarks>
 internal static class BuildFixtures
 {
+    /// <summary>
+    /// The longhouse as it was before D566 — a three-by-one warehouse — typed as a modder's row, so the footprint
+    /// and tile-finder guards keep the one multi-tile store they were written against. The shipped row is a dwelling.
+    /// </summary>
+    internal static SimConfig WithTheOldLonghouseStore(SimConfig config)
+    {
+        var rows = new List<BuildingRow>(config.BuildingRows);
+        int i = rows.FindIndex(r => r.Id == (int)BuildingKind.Longhouse);
+        rows[i] = rows[i] with
+        {
+            Materials = new[] { new MaterialCost(Goods.Logs, config.WarehouseLogs), new MaterialCost(Goods.Stone, config.WarehouseStone) },
+            WorkTicks = config.WarehouseWorkTicks,
+            Stores = StoreKind.Warehouse,
+            StoreCapacity = VillageEconomy.WarehouseCapacity(config) * 3,
+            HouseCapacity = 0,
+            LocalStoreCap = 0,
+        };
+        return config with { Buildings = rows };
+    }
+
     /// <summary>Deliver everything a site is still waiting for, whatever its recipe asks.</summary>
     internal static void StockTheSite(Workplace site)
     {

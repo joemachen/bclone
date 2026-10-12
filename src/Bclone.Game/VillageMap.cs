@@ -221,6 +221,9 @@ public partial class VillageMap : Control
     // reads as dressed stone rather than a boulder, with the fishery's water at its heart.
     internal static readonly Color WellColour = new("#8d8577");
 
+    /// <summary>The longhouse (D566) — the house's timber, a shade deeper: a dwelling, not a family's.</summary>
+    internal static readonly Color LonghouseColour = new("#a4783f");
+
     /// <summary>A wooden bridge's planks (D546) — weathered timber, darker than a hut so it reads over the water.</summary>
     internal static readonly Color BridgeColour = new("#8a6a48");
 
@@ -2708,6 +2711,7 @@ public partial class VillageMap : Control
         DrawLibraries();
         DrawTheTownHall();
         DrawWells();
+        DrawLonghouses();
         DrawHomes();
 
         // ⚠️ Over the buildings, because a heap beside a full warehouse is the whole point:
@@ -3252,6 +3256,28 @@ public partial class VillageMap : Control
             hall.Facing.Raw,
             TownHallColour with { A = 0.9f },
             TownHallColour);
+    }
+
+    /// <summary>The longhouses (D566): a long roof, weathered like every building, dimmed while nobody lodges there.</summary>
+    private void DrawLonghouses()
+    {
+        SimWorld world = _world!;
+        for (int i = 0; i < world.Longhouses.Count; i++)
+        {
+            Longhouse longhouse = world.Longhouses[i];
+            Vector2 centre = ToScreen(longhouse.Position);
+            Condition worn = world.ConditionOf(longhouse);
+            Color weathered = Weathered(LonghouseColour, worn);
+            Color paint = world.LodgersAlive(longhouse) > 0 ? weathered : weathered with { A = 0.55f };
+            DrawFootprint(
+                centre,
+                longhouse.ExtentWidth * 0.85f,
+                longhouse.ExtentHeight * 0.8f,
+                longhouse.Facing.Raw,
+                paint,
+                weathered.Darkened(0.35f),
+                worn == Condition.Ruin);
+        }
     }
 
     /// <summary>The wells (D427): a ring of stone with water at its heart.</summary>
@@ -5996,6 +6022,8 @@ public partial class VillageMap : Control
 
     internal static Color WellTone => WellColour;
 
+    internal static Color LonghouseTone => LonghouseColour;
+
     internal static Color IronTone => IronColour;
 
     /// <summary>
@@ -6904,6 +6932,11 @@ public partial class VillageMap : Control
         if (world.WellCovering(tile) is Well well)
         {
             return BoxOf(ToScreen(well.Position), well.ExtentWidth * 0.7f, well.ExtentHeight * 0.7f, well.Facing.Raw);
+        }
+
+        if (world.LonghouseCovering(tile) is Longhouse longhouse)
+        {
+            return BoxOf(ToScreen(longhouse.Position), longhouse.ExtentWidth * 0.85f, longhouse.ExtentHeight * 0.8f, longhouse.Facing.Raw);
         }
 
         return null;

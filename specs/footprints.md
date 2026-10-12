@@ -23,7 +23,7 @@ facing are content rather than machinery with nothing behind it. This slice type
 | woodcutter's hut, builder's hut, hunter's lodge | 2×1 | a yard beside the door |
 | granary, warehouse, market, farmhouse, library | 2×2 | the stores and the house-sized civic buildings |
 | town hall | 3×2 | the one building that should dominate |
-| longhouse | 3×1 | as D322 built it |
+| longhouse | 3×1 | as D322 built it — a dwelling since D566 (`nomads.md §4.5`), the footprint unchanged |
 
 The numbers live in `SimConfig.DefaultBuildings()` (`ExtentWidth`, `ExtentHeight`), and a modded
 `buildings` list may say otherwise per row — the validator already refuses an extent under 1.

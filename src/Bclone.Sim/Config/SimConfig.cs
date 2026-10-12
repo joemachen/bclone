@@ -1630,6 +1630,10 @@ public sealed record SimConfig
     [JsonPropertyName("nomads_food_each")]
     public int NomadsFoodEach { get; init; } = 20;
 
+    /// <summary>How many people the longhouse puts up — two families of four, a whole band (`nomads.md §4.5`).</summary>
+    [JsonPropertyName("longhouse_capacity")]
+    public int LonghouseCapacity { get; init; } = 8;
+
     /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
     [JsonPropertyName("failing_deck_slow_percent")]
     public int FailingDeckSlowPercent { get; init; } = 150;
@@ -3624,35 +3628,30 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
-        // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
-        // Three tiles by one, and it exists so that extent and facing are content the player can
-        // place rather than machinery with nothing behind it. Everything else is 1×1, so until
-        // this row nothing shipped could show a footprint covering more than its own tile.
+        // ⭐⭐ THE LONGHOUSE — THE TRAVELLERS' HOUSE (D566, `specs/nomads.md §4.5`; Joe, D563: *"just
+        // repurpose the long house thats already in game. there's no other need for it"*). It was the
+        // first building in this game that was not one tile (D320) — a three-by-one warehouse that existed
+        // so extent and facing were content rather than machinery — and it keeps that footprint.
         //
-        // ⚠️ A STOREHOUSE RATHER THAN A DWELLING, and that is a design constraint rather than a
-        // preference: housing is painted with the land brush and never placed by a button (D42,
-        // D102), so a longhouse that was a home would be a change to how housing works instead of
-        // a demonstration of footprints.
+        // ⭐ A DWELLING PLACED BY A BUTTON, AND D42's ONE EXCEPTION, STATED: housing is painted with the
+        // land brush and never placed (D42, D102); the longhouse is placed, and is never a family's home.
+        // A roofless family lodges here — one larder, a fire, nobody partners — until the brush's house
+        // for them is raised, then moves out. Learned at the first knock (`SimWorld.WhyNotYet`).
         //
-        // ⭐ Priced from the warehouse's own keys rather than new numbers — it is a warehouse that
-        // lies along the ground, so inventing `longhouse_logs` would be a second source of truth
-        // for one building (D16, and the granary's own note about deriving a capacity).
+        // ⭐ Priced as two houses from the house's own keys (D16: no `longhouse_logs`); it holds
+        // `longhouse_capacity` people and twice a house's larder.
         new BuildingRow
         {
             Id = (int)BuildingKind.Longhouse,
             Name = "longhouse",
             Materials = new[]
             {
-                new MaterialCost(World.Goods.Logs, WarehouseLogs),
-                new MaterialCost(World.Goods.Stone, WarehouseStone),
+                new MaterialCost(World.Goods.Logs, LogsPerHouse * 2),
+                new MaterialCost(World.Goods.Stone, HomeStone * 2),
             },
-            WorkTicks = WarehouseWorkTicks,
-            Stores = StoreKind.Warehouse,
-            // ⚠️ STATED, because the economy derives a capacity for exactly three buildings —
-            // the warehouse, the stockpile and the market — and the validator says so out loud.
-            // ⭐ Three warehouses' worth, because it is three tiles of warehouse. *The extent is
-            // the reason for the number rather than a number picked to suit it.*
-            StoreCapacity = VillageEconomy.WarehouseCapacity(this) * 3,
+            WorkTicks = HomeWorkTicks * 2,
+            HouseCapacity = LonghouseCapacity,
+            LocalStoreCap = HomeStoreCap * 2,
             ExtentWidth = 3,
             ExtentHeight = 1,
         },
@@ -4827,15 +4826,15 @@ public sealed record SimConfig
         // one to four seasons, the food carried never negative.
         if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
             || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
-            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0)
+            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0 || LonghouseCapacity < 1)
         {
             throw new SimConfigException(
                 "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
                 + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
                 + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
-                + "nomads_wait_seasons in 1..4, and nomads_food_each cannot be negative (got "
+                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, and longhouse_capacity must be at least 1 (got "
                 + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
-                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}).");
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}, {LonghouseCapacity}).");
         }
 
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)

@@ -254,7 +254,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band", "Longhouses",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -287,7 +287,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
-            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed",
+            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "LodgedIn",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
@@ -352,6 +352,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
         (typeof(NomadBand), Kept.Saved, new[] { "KnockedAtTick", "MetAPopulationOf", "Families" }),
+        (typeof(Longhouse), Kept.Saved, new[] { "Id", "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Capacity", "Larder", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(NomadFamily), Kept.Saved, new[] { "Surname", "People" }),
         (typeof(NomadPerson), Kept.Saved, new[] { "Name", "AgeYears", "Adult", "LifespanYears", "Rhythm", "TradeSkillId" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
