@@ -1,8 +1,9 @@
 # Spec: A quarry or a mine stands near its seam
 
-**Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles). **Status:** 🔨 **built on
-`slice/seam-reach` (D540, D541), sim only, at a reach of 2; NOT played, NOT merged.** `SeamReachTests` (6) green and red-checked: 7 mutants,
-12 reds, no zeros. No golden moved.
+**Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles), D561 (painting: the whole seam it
+stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); 🔨 D561 — a quarry or a
+mine paints the whole seam it stands by — built on `slice/seam-ground`, not yet played or merged.** `SeamReachTests` (8)
+green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved.
 
 ---
 
@@ -108,6 +109,26 @@ not `if`-guarded. Same 7 mutants, same 12 reds.
 
 - **Q1 — How far?** Recommended **4 tiles** for both: a quarry at the edge of its rock, the face a few steps from
   the door. 2 is nearly the fishery's *touch*; 8 lets it stand back in the meadow.
+> ⭐ **Q2 WIDENED (D561, Joe, 2026-10-11): the whole seam it stands by.** Played: *"can you review the volume of
+> give-able ground for iron and stone nodes? it doesn't seem to line up very well with the map and the stone one is very
+> small."* The answer below had made the placement diamond the painting limit too: 2 tiles of the building's one tile, so a
+> quarry beside an outcrop of thirty tiles could paint four of them. Measured, 100 shipped valleys (`ZzSeamGround`): **rock** 3,116 seams, size median 8 / p90 18 / max 66, and the old diamond reached a median 4 (p90 6) of them even from the best site — on seams of 12 or more, 6 of 16; **iron** 992 seams, median 8 / p90 17 / max 38, the diamond 4 (p90 6) — against a face
+> allowance of 12 (quarry) and 6 (mine). His call: placement keeps the 2-tile rule; **painting takes any tile of a seam that
+> has a tile within it** — the rock (or iron) joined to it through any of its eight neighbours, rock and iron never one seam
+> — and still nothing of a seam the building does not stand by (Q2's reason holds). Built as an index on the ground's own
+> counter (`SimWorld.Seams.cs`, `_seamPatch`, rebuilt only when `TerrainGeneration` moves and somebody asks; never hashed
+> or saved). The refusal: *"Not the seam the quarry stands by — it works the rock within 2 tiles of it, and all the rock
+> joined to that."* Guards: `AQuarryPaintsTheWholeSeamItStandsBy`, `AQuarryDoesNotReachThroughIronToTheRockBeyond`,
+> `ASeamClearedInTwoIsTwoSeams`, `ASeamJoinedCornerToCornerIsOneSeam`; mutants — the index never rebuilt 2 (⚠️ first posed
+> so it did not build: zero, re-posed), four neighbours instead of eight 1 (⚠️ **zero** at first — no guard posed a seam
+> joined at a corner; now one does), rock and iron one seam 1, the old diamond restored 3.
+> ⭐ **And the drawing was measured, not changed.** Joe also chose to tighten the drawn seam to its tiles; measured first
+> (`ValleyTexture.SeamsHugTheirTiles`, the probe's `seams drawn:` line), the founding valley already draws **99.8 % of its
+> stone and iron within half a tile of its own seam** (83 % strictly on its own tile) at every rock wander tried — 0.55,
+> 0.30, 0.15, 0.08 — and 91 % of seam tiles as themselves at their centre. The half-tile is the valley's own warp and
+> smoothing, river and woods alike; rock's wander never moved it, so it stays 0.55 and the look is unchanged. The line
+> guards the reading (floors 99.5 % / 85 %; a wander of 3.0 drowns the seam's own tiles to 71 % and fails it).
+
 - **Q2 — Should a quarry's painted faces also have to be within that reach?** Recommended **yes**. Otherwise the
   rule is a formality: stand beside one stray rock, then paint the big seam across the valley, which is exactly
   the walk the rule exists to stop. *"No"* keeps painting as it is and limits only where the building goes.

@@ -96,3 +96,6 @@ against a number from an older commit.
   delete. ⚠️ **Felling is limit-driven**: logs sit at their 200 limit from Year 5, so *demand ÷ logs felled* reads as
   alarming and means nothing — compare to the ~90 a year one woodcutter fells in the opening when something wants them.
   ⚠️ No unattended valley holds any stone in any year; a cost priced in stone can never be served there.
+- `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per
+  seam in 100 shipped valleys (seeds 200–299) — its kind, its size (what a building standing by it may paint since D561) and
+  the most a building could paint under D541's diamond. Copy in, `-c Release --filter ZzSeamGround`, delete.

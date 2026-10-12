@@ -256,7 +256,7 @@ public sealed class SaveLoadTests : IDisposable
             "_freeGroundTodayWalls", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
-            "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
+            "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
             // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
             "ConditionWalks",
         }),

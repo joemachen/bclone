@@ -1,4 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D560 (BUILDING CONDITION AND ITS FIXES, MERGED AND PUSHED). NEXT: D561, A QUARRY OR MINE WORKS THE WHOLE SEAM IT STANDS BY, ON `slice/seam-ground`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D560, PUSHED. `slice/seam-ground` = D561 (A QUARRY OR MINE WORKS THE WHOLE SEAM IT STANDS BY), BUILT, LOCAL, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE WHOLE SEAM) — D561, ON WINDOWS.**
+>
+> **`main` = D560, pushed. `slice/seam-ground`** (off `main`, local, not pushed) = **D561, committed**: a quarry or a mine
+> paints any tile of the seam it stands by (placement unchanged at 2 tiles); a new probe line, `seams drawn:`, guards that
+> the drawn stone and iron lie on their tiles. ⚠️ The drawing was **not** changed: measured, it already lies within half a
+> tile at every wander tried, so the tightening Joe chose would have changed nothing — tell him (D561 says so).
+>
+> **▶️ NEXT: ask Joe to play it** (`.\run.bat`): give a quarry a whole outcrop in one stroke; a second seam nearby is refused
+> in words. Merge and push at his word only.
+>
+> **(the banner below is the state before D561)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (MAINTENANCE MERGED) — D560, ON WINDOWS.**
 >
@@ -6320,6 +6332,10 @@ Read `git status` after staging, every time.
   are gzipped JSON (`%APPDATA%/Godot/app_userdata/bclone/saves/<valley>/autosave-1.save`); the game's own log is
   `src/Bclone.Game/logs/`, Godot's is `%APPDATA%/Godot/app_userdata/bclone/logs/godot.log`. Ten minutes in the files
   saved a speculative fix to code that was never broken.
+- **Measure the claim you made to Joe before building on it.** D561's plan said the baked seam *"spreads up to about a
+  tile past its tiles"* — read off the warp's constants, never measured — and Joe chose a fix on it. The measurement
+  (99.8 % within half a tile, unmoved by the knob) showed the fix would do nothing. Say so, keep the look, and keep the
+  instrument as the guard. *A number derived from constants is a hypothesis.*
 
 ## ⛔ THE TRAPS THE MAINTENANCE SPEC (D552) PAID FOR — A RATIO AGAINST A LIMITED FLOW, A BYTE THAT IS ALREADY THE DIAL'S END, AND A HEREDOC (AGAIN)
 

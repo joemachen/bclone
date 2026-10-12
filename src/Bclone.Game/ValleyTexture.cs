@@ -467,6 +467,14 @@ internal sealed class ValleyTexture
     /// </remarks>
     private Color Blended(GeneratedMap map, int px, int py)
     {
+        Terrain kind = Winner(map, px, py, out float confidence);
+        return Dressed(kind, px, py, confidence);
+    }
+
+    /// <summary>The kind <see cref="Blended"/> paints at one pixel, and how decisively it won — the bake's own answer, which
+    /// the seam check (<see cref="SeamsHugTheirTiles"/>) asks too, so it measures what is drawn and not a copy of it.</summary>
+    private Terrain Winner(GeneratedMap map, int px, int py, out float confidence)
+    {
         // Pixel centre, in tile-centre coordinates: tile i's centre sits at exactly i.
         float cx = ((px + 0.5f) / PixelsPerTile) - 0.5f;
         float cy = ((py + 0.5f) / PixelsPerTile) - 0.5f;
@@ -542,7 +550,8 @@ internal sealed class ValleyTexture
 
         if (found == 0)
         {
-            return Dressed(Terrain.Grass, px, py, 1f);
+            confidence = 1f;
+            return Terrain.Grass;
         }
 
         // ⭐⭐ THE EDGE OF EACH KIND IS JITTERED SEPARATELY, WHICH IS WHAT UN-DIAMONDS
@@ -573,9 +582,9 @@ internal sealed class ValleyTexture
         }
 
         // How decisively it won: ~0.5 at a contour between two kinds, 1 deep inside one.
-        float confidence = total <= 0f ? 1f : Mathf.Clamp(weights[winner] / total, 0f, 1f);
+        confidence = total <= 0f ? 1f : Mathf.Clamp(weights[winner] / total, 0f, 1f);
 
-        return Dressed(kinds[winner], px, py, confidence);
+        return kinds[winner];
     }
 
     /// <summary>
@@ -762,6 +771,116 @@ internal sealed class ValleyTexture
             + $"off, and identical), {moved.Count} felled tiles patched in {patchMs:F1}ms";
     }
 
+    /// <summary>
+    /// ⭐ The probe's <c>seams drawn:</c> line (D561) — <b>the drawn stone and iron lie on their own tiles</b>. Joe: the
+    /// quarry's ground <i>"doesn't seem to line up very well with the map"</i>: the outline is traced from the seam's tiles,
+    /// so the drawn seam has to lie on them. Two shares, over every pixel near a seam in this valley: the
+    /// pixels drawn as a seam that lie on, or within half a tile of, a tile of that seam; and the seam tiles whose centre is
+    /// drawn as themselves.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Measured before it was tuned, and the tuning was dropped.</b> D561 set out to lower rock's and iron's
+    /// <see cref="HowFreeToWander"/> so the seam would hug its tiles. The founding valley read 99.8 % within half a tile and
+    /// 91.1 % of tiles drawn as themselves at 0.55 — and 99.8 / 92.1 / 91.4 / 91.7 % at 0.30 / 0.15 / 0.08: the wander was
+    /// never what moved the edge (83 % lie strictly on their own tile at every value; the rest is the valley's own warp and
+    /// smoothing, river and woods alike). The floors sit just under today's reading; an exaggerated wander (3.0) drowns the
+    /// seam's own tiles to 71 % and fails it.
+    /// </remarks>
+    internal static string SeamsHugTheirTiles(SimWorld world)
+    {
+        System.ArgumentNullException.ThrowIfNull(world);
+        var bake = new ValleyTexture();
+        bake.Refresh(world);
+        (double drawnOnTiles, double tilesDrawn, int pixels, int tiles) = bake.SeamHug(world.Map);
+
+        string said = $"{drawnOnTiles:P1} of {pixels:N0} pixels drawn as stone or iron lie within half a tile of their own seam, "
+            + $"{tilesDrawn:P1} of {tiles:N0} seam tiles are drawn as themselves at their centre (rock and iron wander {HowFreeToWander(Terrain.Rock):F2})";
+        return drawnOnTiles >= SeamDrawnNearItsTilesFloor && tilesDrawn >= SeamTilesDrawnFloor
+            ? $"[widths] seams drawn: ✅ {said}"
+            : $"[widths] seams drawn: ⛔ under {SeamDrawnNearItsTilesFloor:P1} / {SeamTilesDrawnFloor:P0} — {said}";
+    }
+
+    /// <summary>The least share of drawn stone and iron that may lie within half a tile of its own seam (D561; reads 99.8 %).</summary>
+    private const double SeamDrawnNearItsTilesFloor = 0.995;
+
+    /// <summary>The least share of seam tiles drawn as themselves at their centre (D561; reads 91.1 %).</summary>
+    private const double SeamTilesDrawnFloor = 0.85;
+
+    private (double DrawnOnTiles, double TilesDrawn, int Pixels, int Tiles) SeamHug(GeneratedMap map)
+    {
+        int pixels = 0, onTiles = 0, tiles = 0, drawn = 0;
+        int wide = map.Width * PixelsPerTile;
+        int tall = map.Height * PixelsPerTile;
+        for (int py = 0; py < tall; py++)
+        {
+            for (int px = 0; px < wide; px++)
+            {
+                float cx = ((px + 0.5f) / PixelsPerTile) - 0.5f;
+                float cy = ((py + 0.5f) / PixelsPerTile) - 0.5f;
+                int tx = Mathf.RoundToInt(cx);
+                int ty = Mathf.RoundToInt(cy);
+                if (!ASeamWithin(map, tx, ty))
+                {
+                    continue;
+                }
+
+                Terrain kind = Winner(map, px, py, out _);
+                if (!TerrainRules.IsSeam(kind))
+                {
+                    continue;
+                }
+
+                pixels++;
+                bool near = false;
+                for (int oy = -1; oy <= 1 && !near; oy++)
+                {
+                    for (int ox = -1; ox <= 1 && !near; ox++)
+                    {
+                        var at = new GridPos(_minX + Mathf.RoundToInt(cx + (ox * 0.5f)), _minY + Mathf.RoundToInt(cy + (oy * 0.5f)));
+                        near = map.Contains(at) && map.TerrainAt(at) == kind;
+                    }
+                }
+
+                onTiles += near ? 1 : 0;
+            }
+        }
+
+        for (int ty = 0; ty < map.Height; ty++)
+        {
+            for (int tx = 0; tx < map.Width; tx++)
+            {
+                Terrain kind = map.TerrainAt(new GridPos(_minX + tx, _minY + ty));
+                if (!TerrainRules.IsSeam(kind))
+                {
+                    continue;
+                }
+
+                tiles++;
+                int centre = (PixelsPerTile / 2) - 1;
+                drawn += Winner(map, (tx * PixelsPerTile) + centre, (ty * PixelsPerTile) + centre, out _) == kind ? 1 : 0;
+            }
+        }
+
+        return (pixels == 0 ? 1d : onTiles / (double)pixels, tiles == 0 ? 1d : drawn / (double)tiles, pixels, tiles);
+    }
+
+    private bool ASeamWithin(GeneratedMap map, int tx, int ty)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                var at = new GridPos(_minX + tx + dx, _minY + ty + dy);
+                if (map.Contains(at) && TerrainRules.IsSeam(map.TerrainAt(at)))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static bool SamePixels(byte[] left, byte[] right)
     {
         if (left.Length != right.Length)
@@ -804,6 +923,7 @@ internal sealed class ValleyTexture
         Terrain.Water => 0.08f,
         Terrain.Forest or Terrain.Sapling => 0.75f,
         Terrain.Rock or Terrain.IronDeposit => 0.55f,
+
         _ => 0.30f,
     };
 
