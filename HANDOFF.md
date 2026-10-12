@@ -1,4 +1,33 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED; NOTHING OPEN ON A BRANCH. NEXT: ASK JOE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D564: THE NOMADS SPECCED AND MEASURED, NOT BUILT. NEXT: BUILD COMMIT 1 (THE BAND). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS SPECCED) — D564, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = **D563 (Joe's four calls, answered in plan
+> mode) + D564 (`specs/nomads.md`, `tools/harness/ZzNomads.cs` + `nomads.py`, the docs) — no sim or view code, no golden,
+> no save format moved.** The plan is `~/.claude/plans/read-handoff-md-the-bridge-iridescent-beaver.md` (approved).
+>
+> **What it is:** bands knock on a hash clock from a spring around Year 10 (floor 8, spread 4; then every 6–10 years, 4–8
+> and a family more once the town hall stands — D251 *amended*: the hall widens them); a share of the village (candidate a
+> quarter, 2–8) in one or two families with **new surnames** (D558's cure); the band waits at the pile as a huddle with a
+> **card: *Let them settle* / *Send them on*** and leaves at the autumn turn unanswered — ⛔ the sim had **no yes/no
+> decision anywhere** and `Moment` is verb-free by design, so the decision is a card, never a modal; settling makes roofless
+> households the existing queue houses; **the longhouse is repurposed** as the communal house (Joe: *"there's no other need
+> for it"* — a communal `Household`, lodgers, one larder, no partnering, learned at the first knock); a dead valley is
+> **re-founded automatically** 2–6 years on by four paired founders of a second generation. ⛔ No `Rng` draw anywhere in
+> it; the band is derived from (seed, count, population at the knock).
+>
+> **Measured (§8):** a knock at Year 10 meets eight people in two housed families — every share rule sends a couple, and
+> Joe's saves are the number (one surname in every village past Year 50); a band of two or four is housed the same year in
+> 85 of 86 valleys and nobody freezes — the cost is food (starving 197 → 306 / 417), never a roof; **re-founding turns on a
+> roof standing** (nine of eleven froze without one, eight of nine lived with one).
+>
+> **▶️ NEXT: build commit 1, the band** (sim + view), TDD per `nomads.md §9`, on this branch: `NomadBand` derived,
+> `SimWorld.Nomads.cs`, the knock in `CivicSystem` on the spring edge, `Villager.ArrivedAtTick` (and `MostEverAlive` reads
+> it), `NameHash` salts, the config keys (floors 0 in `Phase0Fixtures.Plenty`), hash tags appended, save format **6**, the
+> huddle, the card, the bar button, the `nomads:` probe line. **The six fifty-year goldens move once** — prove it with the
+> floor at 0. Then commit 2 (the longhouse) and commit 3 (re-founding). Joe plays at the end; merge and push at his word.
+>
+> **(the banner below is the state before D563)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE WHOLE SEAM MERGED) — D562, ON WINDOWS.**
 >
@@ -6369,7 +6398,35 @@ Read `git status` after staging, every time.
   edit idempotent (skip when the new text is already there) so a rerun is safe. The long heredoc failed to parse as well
   (D538, D540): write the script with the Write tool and run it.
 
+## ⛔ THE TRAPS THE NOMADS' MEASUREMENT (D564) PAID FOR — A POSE THAT FORGOT TO PAIR, A RESTOCK THAT WAS NOT CHECKED, AND A SHARE RULE THAT CANNOT SEE A PLAYED VILLAGE
+
+- **A posed arrival is not a founding until it does what the founding does.** `FoundVillage` pairs its founders
+  (`PairFounders`); the harness's first pose did not, so on the spring tick they arrived the unpaired adults paired
+  *across* the band, took over the dead households whole (`FindAnEmptyHome(aHouseOnly: false)` — id, larder, surname) and
+  left the larder the pose had filled behind. The run read *"never housed"* off households everybody had walked out of.
+  **Pose a family as the sim makes one — partners set, the larder theirs — before trusting a number about it.** The first
+  `refound` run also posed one family of two adults and two children for *"four adults in two households"*; a measurement
+  of the wrong pose is a number about nothing, and it was thrown away rather than reported.
+- **`Stockpile.Add` / `Receive` return what fit, and a restock that ignores it may have restocked nothing.** The four
+  starved in eleven days beside a cart "restocked with 400"; the return value was never read. Print what the store took.
+- **A share of an unattended village is the minimum, always.** Every unattended valley holds eight people in two housed
+  families at Year 8–12, so *a fifth* and *a quarter* both send a couple and the harness cannot tell them apart. Joe's
+  27 saves are the number for anything that scales with a played village (8–10 at Year 10, 17 at 50, 38–49 at 85–92).
+- **The empty valley keeps wearing but never closes.** `ClockSystem` returns before `TendWhatStands` when nobody is alive,
+  so a ruin in a dead valley is derived *Ruin* and never `Closed` — read `ConditionOf`, not the flag, when measuring one.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **ANSWERED (D563, 2026-10-11) — Joe, in plan mode: own clock / one or two families scaled / *"learned at first knock,
+  but just repurpose the long house thats already in game. there's no other need for it."* / automatic.** ~~NOMADS — FOUR
+  CALLS (asked 2026-10-11, `nomads.md §3`).~~ **(1)** the trigger: their own clock, the town hall widens them (D251 amended);
+  **(2)** the band: one or two families, a share of the village, 2–8, new surnames; **(3)** the communal house: learned at
+  the first knock — **the longhouse, repurposed** (his addition); **(4)** re-founding: automatic, a few years on.
+  ⏸️ **Mine, to overrule in play** (`nomads.md §3`, *settled without asking*): the knock on the spring turn only; a band
+  waits spring and summer and leaves at the autumn turn; the band is a huddle at the pile with a card, two buttons and a
+  bar button — the moment stays verb-free; a quarter of the village (`nomads_share_divisor` 4) rather than a fifth, 2–8;
+  20 food a head carried; nomads bring no techniques; the longhouse holds 8 and is priced as two houses; re-founders are
+  a second generation of founders and the hall, if never given, is owed on the last of them.
 
 - ✅ **ANSWERED (D553, 2026-10-10) — Joe: *"yes to all. commit"*. Every recommendation stands; the build is next.** ~~BUILDING CONDITION AND MAINTENANCE — SEVEN CALLS (D552, asked 2026-10-10, `building-condition.md §3`).~~ Recommended
   first (and decided). **(1)** the D65 reversal itself: wear on a derived clock, the builders repair automatically, no click — yes;

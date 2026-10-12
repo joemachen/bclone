@@ -96,6 +96,16 @@ against a number from an older commit.
   delete. ⚠️ **Felling is limit-driven**: logs sit at their 200 limit from Year 5, so *demand ÷ logs felled* reads as
   alarming and means nothing — compare to the ~90 a year one woodcutter fells in the opening when something wants them.
   ⚠️ No unattended valley holds any stone in any year; a cost priced in stone can never be served there.
+- `ZzNomads.cs` + `nomads.py` — D564's measurement for the nomads (`specs/nomads.md §8`), the arrivals **posed from the
+  test side** before any of it existed: `ZZK` what a knock meets at Spring of Years 8 / 10 / 12 (alive, households, housed,
+  empty houses, food a head, residential paint, the band at a fifth and a quarter); arm `settle` (`ZZS`): `ZZ_SETTLE` people
+  (default the fifth rule's) arrive roofless at Year 10 in one or two families with 20 food each — housed when, died of
+  what; `ZZD` what stands 0 / 2 / 4 / 6 years after a valley dies, by condition state; arm `refound` (`ZZR`): `ZZ_REFOUND`
+  years (3) after the last death four adults in two households arrive and the cart is restocked — alive 1 / 5 / 10 / 20
+  years on. `ZZ_ARMS`, `ZZ_SEEDS`, `ZZ_YEARS`. Copy in, `-c Release --filter ZzNomads`, delete; `python tools/harness/nomads.py
+  <output>`. ⚠️ The first `refound` run posed one family of two adults and two children — the founding's shape is two
+  households of two adults, and a measurement of the wrong pose is a number about nothing. ⚠️ An unattended valley at
+  Year 10 is eight people in two housed families, so every share rule sends the minimum band; Joe's saves are the number.
 - `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per
   seam in 100 shipped valleys (seeds 200–299) — its kind, its size (what a building standing by it may paint since D561) and
   the most a building could paint under D541's diamond. Copy in, `-c Release --filter ZzSeamGround`, delete.
