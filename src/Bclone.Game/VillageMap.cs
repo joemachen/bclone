@@ -6318,13 +6318,30 @@ public partial class VillageMap : Control
     /// ⚠️ <b>View-only, like every other map toggle</b>, so nothing about the village
     /// changes and the hash cannot diverge on it.
     /// </para>
+    /// <para>
+    /// ⛔ <b>AND A BRUSH IN HAND ALWAYS SHOWS WHAT IT PAINTS</b> (D559). Joe, with both shadings switched off in an
+    /// earlier session and saved: <i>"painting doesnt seem to work at all ... it just doesnt paint."</i> It did — his
+    /// autosave held 660 sub-tiles of housing and 305 of harvest — and none of it was drawn. His toggle still decides
+    /// what shows when the brush is put down; it is never changed for him.
+    /// </para>
     /// </remarks>
-    private bool Showing(Layer layer) => layer switch
+    private bool Showing(Layer layer) => HeldLayer == layer || layer switch
     {
         Layer.Residential => _showResidential,
         Layer.WorkGround => _showWorkGround,
         _ => _showHarvest,
     };
+
+    /// <summary>The layer the brush in hand paints, or null with no brush — read off the fields <c>SetTool</c> writes.</summary>
+    private Layer? HeldLayer =>
+        _brush == 0 ? null
+        : _groundFor != 0 ? Layer.WorkGround
+        : _destroying ? Layer.Destroy
+        : _harvestMode is not null ? Layer.Harvest
+        : Layer.Residential;
+
+    /// <summary>Whether the brush in hand is drawing what it paints — the probe's <c>brushes:</c> line (D559). True with no brush.</summary>
+    internal bool ShowsWhatItPaints => HeldLayer is not Layer held || Showing(held);
 
     /// <summary>What the map believes, so the probe can check the ticks against it (D340).</summary>
     public bool GridShown => _showGrid;
@@ -6363,6 +6380,55 @@ public partial class VillageMap : Control
     {
         _showHarvest = on;
         QueueRedraw();
+    }
+
+    /// <summary>
+    /// The probe's <c>brushes:</c> line (D559): with every shading switched off, each brush in hand still shows what it
+    /// paints — and putting it down leaves the player's switches as they were.
+    /// </summary>
+    internal string ABrushShowsWhatItPaints()
+    {
+        var faults = new List<string>();
+        (bool homes, bool ground, bool harvest) = (_showResidential, _showWorkGround, _showHarvest);
+        ShowResidentialLand(false);
+        ShowWorkGround(false);
+        ShowHarvestLand(false);
+
+        var brushes = new List<(string Name, System.Action PickUp)>
+        {
+            ("the houses brush", () => BeginPainting(1)),
+            ("the harvest brush", () => BeginHarvesting(HarvestBrush.Everything, 1)),
+            ("the red brush", () => BeginDestroying(1)),
+            ("the take-back brush", () => BeginPainting(-1)),
+        };
+        if (_world?.Workplaces.Find(w => !w.IsSite) is Workplace hut)
+        {
+            brushes.Add(("a hut's ground brush", () => BeginPaintingGround(hut.Id, 1)));
+        }
+
+        foreach ((string name, System.Action pickUp) in brushes)
+        {
+            pickUp();
+            if (!ShowsWhatItPaints)
+            {
+                faults.Add($"{name} paints a layer the map is not drawing");
+            }
+
+            PutTheToolDown();
+        }
+
+        if (_showResidential || _showWorkGround || _showHarvest)
+        {
+            faults.Add("putting a brush down switched a shading back on");
+        }
+
+        ShowResidentialLand(homes);
+        ShowWorkGround(ground);
+        ShowHarvestLand(harvest);
+
+        return faults.Count == 0
+            ? $"[widths] brushes: ✅ with every shading off, each of {brushes.Count} brushes in hand shows what it paints, and putting it down leaves the switches off"
+            : $"[widths] brushes: ⛔ {string.Join("; ", faults)}";
     }
 
     private void DrawHomes()

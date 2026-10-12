@@ -576,6 +576,7 @@ public partial class Main : Control
 
         ProbeTheControlBar();
         GD.Print(TheRedBrushIsOnTheBar());
+        GD.Print(_map.ABrushShowsWhatItPaints());
         GD.Print(TheAnnounceIsAHintNotALogLine());
         GD.Print(ShiftRSquaresTheGhost());
         GD.Print(ABridgeIsDraggedBankToBank());

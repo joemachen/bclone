@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION BUILT (D554–D556), HOUSES CLEAR OF STONE (D557), SURNAMES LEFT FOR THE NOMADS (D558) — ALL ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION BUILT (D554–D556), HOUSES CLEAR OF STONE (D557), SURNAMES LEFT FOR THE NOMADS (D558), A HELD BRUSH SHOWS ITS PAINT (D559) — ALL ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE INVISIBLE PAINT) — D559, ON WINDOWS.**
+>
+> **`main` = D551, pushed. `slice/maintenance`** (local, not pushed) = D552–D558 and **D559, committed.** Joe reported
+> painting broken; it was not — his saved Settings hid the housing and harvest shading, and the map obeyed the tick even
+> with the brush in hand. A brush in hand now always shows its own layer (his call). ⚠️ **His own Settings still have both
+> ticks off** — tell him: Settings → *shade ground marked for housing* / *…for harvest* to see painted land when no brush
+> is held.
+>
+> **▶️ NEXT: ask Joe to play this branch** (`.\run.bat`): the wear lines and weathering (D556), houses clear of stone
+> (D557), and painting that shows while he paints (D559). Merge and push at his word only.
+>
+> **(the banner below is the state before D559)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (JOE'S YEAR-88 NOTES, ALL THREE DONE) — D557–D558, ON WINDOWS.**
 >
@@ -6289,6 +6302,11 @@ Read `git status` after staging, every time.
   it (0 of 337 homes), because only a player paints homes land against stone. The guard's own village found it.
 - **Bash heredocs over ~20 lines with `\n` inside Python strings still break** — every script this session that did so
   failed to parse. Write the script with the Write tool, always.
+- **"It doesn't work" can be "it isn't drawn" — read the player's files before the code.** Joe's *"painting doesnt seem
+  to work at all"* was 660 painted sub-tiles in his autosave and two shading ticks off in his `settings.json`. The saves
+  are gzipped JSON (`%APPDATA%/Godot/app_userdata/bclone/saves/<valley>/autosave-1.save`); the game's own log is
+  `src/Bclone.Game/logs/`, Godot's is `%APPDATA%/Godot/app_userdata/bclone/logs/godot.log`. Ten minutes in the files
+  saved a speculative fix to code that was never broken.
 
 ## ⛔ THE TRAPS THE MAINTENANCE SPEC (D552) PAID FOR — A RATIO AGAINST A LIMITED FLOW, A BYTE THAT IS ALREADY THE DIAL'S END, AND A HEREDOC (AGAIN)
 
