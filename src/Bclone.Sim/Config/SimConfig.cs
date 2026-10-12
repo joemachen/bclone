@@ -1583,7 +1583,7 @@ public sealed record SimConfig
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// The earliest year a band of travellers knocks (`nomads.md §4.1`): the first knock is this plus a hashed share of
+    /// The earliest year a band of nomads knocks (`nomads.md §4.1`): the first knock is this plus a hashed share of
     /// <see cref="NomadsFirstYearSpread"/>. <b>0: nobody ever knocks</b> (Phase 0's village of one). Joe (D563): their own
     /// clock, around Year 10.
     /// </summary>
@@ -1626,7 +1626,7 @@ public sealed record SimConfig
     [JsonPropertyName("nomads_wait_seasons")]
     public int NomadsWaitSeasons { get; init; } = 2;
 
-    /// <summary>Food each traveller carries into the family's larder on settling — a few days' worth.</summary>
+    /// <summary>Food each nomad carries into the family's larder on settling — a few days' worth.</summary>
     [JsonPropertyName("nomads_food_each")]
     public int NomadsFoodEach { get; init; } = 20;
 
@@ -1635,7 +1635,7 @@ public sealed record SimConfig
     public int LonghouseCapacity { get; init; } = 8;
 
     /// <summary>
-    /// The fewest years after a valley empties before four travellers re-found it (`nomads.md §4.6`; Joe, D563: automatic,
+    /// The fewest years after a valley empties before four nomads re-found it (`nomads.md §4.6`; Joe, D563: automatic,
     /// a few years on). The wait is this plus a hashed share of <see cref="RefoundYearsSpread"/>. <b>0: never</b>.
     /// </summary>
     [JsonPropertyName("refound_years_floor")]
@@ -3639,7 +3639,7 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
-        // ⭐⭐ THE LONGHOUSE — THE TRAVELLERS' HOUSE (D566, `specs/nomads.md §4.5`; Joe, D563: *"just
+        // ⭐⭐ THE LONGHOUSE — THE NOMADS' HOUSE (D566, `specs/nomads.md §4.5`; Joe, D563: *"just
         // repurpose the long house thats already in game. there's no other need for it"*). It was the
         // first building in this game that was not one tile (D320) — a three-by-one warehouse that existed
         // so extent and facing were content rather than machinery — and it keeps that footprint.

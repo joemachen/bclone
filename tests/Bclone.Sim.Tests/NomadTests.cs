@@ -142,7 +142,7 @@ public sealed class NomadTests
         Assert.Equal(1, loop.World.BandsEverKnocked);
         Assert.Equal(loop.World.Population, band.MetAPopulationOf);
 
-        Moment moment = Assert.Single(loop.World.Moments, m => m.Title.Contains("Travellers", StringComparison.Ordinal));
+        Moment moment = Assert.Single(loop.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
         Assert.True(moment.WaitsToBeDismissed, "the knock does not wait — at 4× it slides past unread (D232)");
         Assert.DoesNotContain("settle?", moment.Body, StringComparison.Ordinal);
         Assert.Contains("Click them to decide", moment.Body, StringComparison.Ordinal);
@@ -409,7 +409,7 @@ public sealed class NomadTests
     public void ARooflessFamilyFreezesAtThePileInWinter()
     {
         // A settled family held roofless — its site cancelled daily, as a village with no paint and no logs would
-        // leave it — sleeps in the open at the pile, and the winter kills them where they lie (Joe's rule, §4.4).
+        // leave it — sleeps in the open at the camp, and the winter kills them where they lie (Joe's rule, §4.4).
         (SimLoop loop, _) = Knocked(Village);
         SimWorld world = loop.World;
         int before = world.Villagers.Count;
@@ -526,6 +526,36 @@ public sealed class NomadTests
         }
 
         Assert.Equal(log.Entries.Skip(said).Select(e => e.ToString()), loadedLog.Entries.Select(e => e.ToString()));
+    }
+
+    /// <summary>
+    /// "The pile" said nothing to Joe (D568); the knock names the camp in the village's words (D569) — by the cart
+    /// while it stands, at the founding site where there is none. The warm fixture has no cart; the cold village,
+    /// its opening played, keeps the founders' wagon.
+    /// </summary>
+    [Fact]
+    public void TheKnockSaysWhereTheBandCamps()
+    {
+        (SimLoop warm, _) = Knocked(Village);
+        Assert.Null(warm.World.TheCart);
+        Assert.Equal("at the founding site", warm.World.WhereTheBandCamps);
+        Moment atTheSite = Assert.Single(warm.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
+        Assert.Equal("Nomads at the founding site", atTheSite.Title);
+        Assert.Contains("camp at the founding site", atTheSite.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("pile", atTheSite.Body, StringComparison.Ordinal);
+
+        var log = new InMemoryLogSink();
+        SimLoop cold = SimFactory.CreatePhase0(ColdStartTests.ColdVillage, log);
+        ColdStartTests.PlayTheOpening(cold.World);
+        cold.Step((int)KnockTick(cold.World) + 1);
+        Assert.NotNull(cold.World.TheCart);
+        NomadBand band = Assert.IsType<NomadBand>(cold.World.Band);
+        Assert.Equal(cold.World.TheCart!.Position, cold.World.BandCamp);
+        Assert.Equal("by the cart", cold.World.WhereTheBandCamps);
+        Moment byTheCart = Assert.Single(cold.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
+        Assert.Equal("Nomads by the cart", byTheCart.Title);
+        Assert.Contains("camp by the cart", byTheCart.Body, StringComparison.Ordinal);
+        Assert.True(band.People >= Village.NomadsBandMin);
     }
 
     [Fact]

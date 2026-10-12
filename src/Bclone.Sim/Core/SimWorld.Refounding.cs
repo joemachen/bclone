@@ -5,7 +5,7 @@ namespace Bclone.Sim.Core;
 
 /// <summary>
 /// A dead valley re-founded (`specs/nomads.md §4.6`, D567; Joe's call 4, D563: <i>automatic, a few years on</i>).
-/// With nobody alive, four travellers walk in on the spring turn a hashed few years after the last death — a second
+/// With nobody alive, four nomads walk in on the spring turn a hashed few years after the last death — a second
 /// generation of founders — and the village the player left is theirs: the standing houses, the stores, the ruins.
 /// </summary>
 /// <remarks>
@@ -53,7 +53,7 @@ public sealed partial class SimWorld
             ? 0
             : emptiedInYear + Config.RefoundYearsFloor + NameHash.RefoundOffset(Seed, Refoundings, Config.RefoundYearsSpread);
 
-    /// <summary>On the spring turn of the due year, with nobody alive, four travellers re-found the valley. Called by <c>CivicSystem</c> every tick.</summary>
+    /// <summary>On the spring turn of the due year, with nobody alive, four nomads re-found the valley. Called by <c>CivicSystem</c> every tick.</summary>
     internal void RefoundIfTheValleyHasWaited()
     {
         if (Config.RefoundYearsFloor <= 0 || Tick == 0UL || Tick % (ulong)Config.TicksPerYear != 0UL
@@ -180,7 +180,7 @@ public sealed partial class SimWorld
             ? "nothing standing but the ground"
             : $"{Roofs(sound, "sound")}, {Roofs(worn, "worn")}, {Roofs(failing, "failing")} and {Roofs(ruin, "fallen in")}";
         RaiseMoment(
-            "Four travellers have found the empty valley",
+            "Four nomads have found the empty valley",
             $"{Titled(string.Join(" and ", names))} walked into {Name} and found nobody — {standing}, and {foodInStores:N0} food "
             + $"still in the stores. The valley is theirs now. {Clock.SeasonAndYear()}.",
             stops: true,

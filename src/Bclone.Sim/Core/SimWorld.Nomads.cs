@@ -4,7 +4,7 @@ using Bclone.Sim.World;
 namespace Bclone.Sim.Core;
 
 /// <summary>
-/// The nomads — bands that knock, wait at the pile, and settle or move on (`specs/nomads.md`, D563–D564).
+/// The nomads — bands that knock, wait at the camp, and settle or move on (`specs/nomads.md`, D563–D564).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,11 +32,18 @@ public sealed partial class SimWorld
     /// </summary>
     public int NextKnockYear { get; internal set; }
 
-    /// <summary>The band waiting at the pile, or null. Hashed, saved.</summary>
+    /// <summary>The band waiting at the camp, or null. Hashed, saved.</summary>
     public NomadBand? Band { get; internal set; }
 
-    /// <summary>Where a band camps — the cart while it stands, else the founding site (the pile's ground).</summary>
+    /// <summary>Where a band camps — the cart while it stands, else the founding site's centre.</summary>
     public Point BandCamp => TheCart?.Position ?? Point.CentreOf(Map.FoundingSite);
+
+    /// <summary>
+    /// Where the band camps, in the village's own words — <i>by the cart</i> while it stands, else <i>at the founding
+    /// site</i> (D569; Joe, D568: <i>"what is 'the pile' in the travellers arrival message?"</i>). Derived from
+    /// <see cref="BandCamp"/>'s rule, never stored.
+    /// </summary>
+    public string WhereTheBandCamps => TheCart is not null ? "by the cart" : "at the founding site";
 
     /// <summary>The tick a waiting band leaves if nobody has answered — the season turn `nomads_wait_seasons` on.</summary>
     public ulong BandLeavesAtTick =>
@@ -93,8 +100,8 @@ public sealed partial class SimWorld
         NomadBand band = Band;
         DepartBand();
         RaiseMoment(
-            "The travellers moved on",
-            $"{Titled(band.FamilyNames)} waited at the pile through {Config.NomadsWaitSeasons} seasons and nobody said "
+            "The nomads moved on",
+            $"{Titled(band.FamilyNames)} waited {WhereTheBandCamps} through {Config.NomadsWaitSeasons} seasons and nobody said "
             + $"they could stay; they moved on up the valley. {Clock.SeasonAndYear()}.",
             stops: false,
             LogCategory.Life);
@@ -110,7 +117,7 @@ public sealed partial class SimWorld
 
     /// <summary>
     /// The player lets the waiting band settle: each family becomes a roofless household holding what it
-    /// carried, and its people are villagers at the pile from this tick (`nomads.md §4.4`). From here the
+    /// carried, and its people are villagers at the camp from this tick (`nomads.md §4.4`). From here the
     /// village does what it already does — the roofless queue sites their houses, or they sleep in the open.
     /// </summary>
     public void LetTheBandSettle()
@@ -229,7 +236,7 @@ public sealed partial class SimWorld
         BandsEverKnocked++;
 
         // Two adults a family, the rest children shared round. The hashes are keyed on the band's own
-        // numbers — a million past any villager id — so a traveller's name is as fixed as a founder's and as
+        // numbers — a million past any villager id — so a nomad's name is as fixed as a founder's and as
         // free of the stream (`NameHash`). One journeyman a band, by hash, of a hashed founding trade.
         int adults = families * 2;
         int children = Math.Max(0, people - adults);
@@ -272,10 +279,10 @@ public sealed partial class SimWorld
         int food = FoodTheVillageHolds();
         int perHead = population == 0 ? 0 : food / population;
         RaiseMoment(
-            "Travellers at the pile",
+            $"Nomads {WhereTheBandCamps}",
             $"{Titled(band.FamilyNames)} — {band.People} souls, {band.Adults} grown and {band.Children} "
             + $"{(band.Children == 1 ? "child" : "children")}, carrying a few days' food — have come up the valley asking "
-            + $"for a place to settle. They will camp by the pile until the leaves turn. The village holds {food:N0} food, "
+            + $"for a place to settle. They will camp {WhereTheBandCamps} until the leaves turn. The village holds {food:N0} food, "
             + $"{perHead} a head. Click them to decide. {Clock.SeasonAndYear()}.",
             stops: true,
             LogCategory.Discovery);

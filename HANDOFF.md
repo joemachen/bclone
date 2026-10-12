@@ -1,4 +1,33 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D567 BUILT AND PLAYED BY JOE; HIS SIX NOTES (D568) ARE THE NEXT WORK, IN ORDER, FOR A FRESH SESSION. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D569: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTE 2 DONE (D569), NOTES 3 AND 5 NEXT, THEN 4 AND 1. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 2 BUILT: NOMADS, NOT TRAVELLERS; THE CAMP NAMED) — D569, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D567 the slice, D568 Joe's six notes,
+> **D569 note 2 built**: every string says *nomads*; *"the pile"* is gone from the band's sentences — the band never stood at
+> one (`BandCamp` is the cart or the founding site's centre) — and `SimWorld.WhereTheBandCamps` (*by the cart* / *at the
+> founding site*, derived, unhashed, unsaved) is read by the knock, the move-on line, the card's status (a `where` the
+> probe poses) and the bar button's tooltip. `TheKnockSaysWhereTheBandCamps`, 1 mutant, 1 red. **No golden moved.**
+> Save format still 6.
+>
+> **The plan for the rest is approved** (`~/.claude/plans/read-handoff-md-and-tell-memoized-sunset.md`): Joe's calls in
+> plan mode — **order 2 → 3 → 5**; **the switch = an in-game tick under *How the village runs* (the village's, hashed
+> sparsely when off, saved; the share-out pattern) PLUS a `nomads` levels row on the new-game screen setting a new
+> `nomads_enabled` config key (remembered in `settings.json` as every row is; in the share code)** — ⛔ not a `settings.json`
+> toggle, because `settings-persistence.md §3` says a setting is never sim state and never hashed; **re-founding obeys
+> the switch**; **the longhouse row is deleted** (not reverted to a store; `BuildingKind.Longhouse = 14` stays, never
+> renumbered; the missing-id validator gets a retired-id exemption; `BuildFixtures.WithTheOldLonghouseStore` must ADD a
+> row, since `FindIndex` on a deleted row is −1); **save format 7** with the unbuild. Then note 4 (walk-in, view-only) and
+> note 1 (the paths' gridding — a spec with options for Joe). **The branch stays unmerged until the six are done and he
+> has played them.**
+>
+> ⚠️ **One trap this commit paid for:** dropping a one-line red-check mutant with `git checkout -- file` dropped the
+> whole file's edits with it, silently — the suite had already passed on them, so nothing said so until the next grep.
+> **Revert a mutant by the edit that made it (sed the line back), never by checking the file out.** ⚠️ **And the
+> probe's `pause:` line reads ❌ (*"Esc with nothing open did not open the pause screen"*) — on the D568 tree as well,
+> re-run on a stash to be sure, so it is not D569's.** D567's banner said *"no ⛔"*, which a grep for ⛔ cannot see a ❌
+> through. Joe's Esc worked in play (D518), so it is the probe's headless key path; untouched here, open for a session.
+>
+> **(the banner below is the state before D569)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (JOE PLAYED THE NOMADS — SIX NOTES, NOTHING BUILT FOR THEM YET) — D568, ON WINDOWS.**
 >

@@ -125,7 +125,7 @@ public sealed class MortalitySystem : ISimSystem
         // nomads can potentially revive a village if it hasn't all crumbled from lack of
         // maintenance. So leaving the game going is perfect for now."* **A modal here would have
         // to be dismissed before the thing it announces could be looked at** — and the nomads have
-        // landed (D567): four travellers re-found an empty valley a few years on, through this very door.
+        // landed (D567): four nomads re-found an empty valley a few years on, through this very door.
         //
         // ⚠️ NO "HAVE WE SAID IT YET" FLAG, BECAUSE THE TRANSITION CANNOT REPEAT. `Population`
         // counts the living, and this runs having just marked one dead — so it reads zero on

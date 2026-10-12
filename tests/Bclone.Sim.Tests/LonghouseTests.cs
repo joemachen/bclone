@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace Bclone.Sim.Tests;
 
 /// <summary>
-/// The nomads, commit 2 — the longhouse, the travellers' house (`specs/nomads.md §4.5`, §9): learned at the first
+/// The nomads, commit 2 — the longhouse, the nomads' house (`specs/nomads.md §4.5`, §9): learned at the first
 /// knock, a roof and one larder for roofless families until a house of their own is raised.
 /// </summary>
 /// <remarks>
@@ -151,7 +151,7 @@ public sealed class LonghouseTests
         Longhouse longhouse = RaiseALonghouse(world);
         Assert.Equal(Village.LonghouseCapacity, longhouse.Capacity);
         Assert.Equal(world.BuildingsCatalog[BuildingKind.Longhouse]!.LocalStoreCap, longhouse.Larder.Capacity);
-        Assert.Contains("roof for travellers", Said(log), StringComparison.Ordinal);
+        Assert.Contains("roof for nomads", Said(log), StringComparison.Ordinal);
 
         foreach (GridPos tile in longhouse.Footprint.CoveredTiles())
         {

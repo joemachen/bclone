@@ -7,7 +7,10 @@ condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls)
 **Status:** ✅ **built — all three commits on `slice/nomads` (D565 the band, D566 the longhouse, D567 re-founding),
 sim and view, local, not pushed. ▶️ Played by Joe (D568, §3a): six notes are the next work — ⛔ the longhouse comes out,
 nomads not travellers, a Nomads switch, a walk-in with a marker, "the pile" in the village's words, the paths' gridding
-reviewed. The branch stays unmerged until they are built and played.** Bands knock, wait at the pile as a huddle, and settle
+reviewed. The branch stays unmerged until they are built and played. ✅ Note 2 built (D569): every string says
+*nomads*, and the knock, the card and the bar button name the camp in the village's words — `SimWorld.WhereTheBandCamps`,
+*by the cart* while it stands, else *at the founding site*; `TheKnockSaysWhereTheBandCamps` (1 mutant, 1 red); no golden
+moved.** Bands knock, wait at the camp as a huddle, and settle
 or move on from the card's two buttons; the longhouse is a dwelling placed by a button, learned at the first knock,
 lodging roofless families on one larder until their house is raised; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (30), `LonghouseTests` (13) and
@@ -93,7 +96,11 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
 
 1. **The paths grid in the village** — reviewed (4-connected routing, D414's keep-to-the-route rule, grid-aligned
    obstacles; `HANDOFF.md`'s banner has the review); a design call to spec, not a nomads item, but found here.
-2. **"The pile"** is the founders' stockpile; say *where* in the village's words. **Nomads, not travellers** — every string.
+2. ✅ **Built (D569).** **"The pile"** was the founders' stockpile, and the band never camped at it — `BandCamp` is the
+   cart while it stands, else the founding site's centre. `SimWorld.WhereTheBandCamps` says which in the village's words
+   (*by the cart* / *at the founding site*), and the moment, the move-on line, the card's status and the bar button's
+   tooltip read it. **Nomads, not travellers** — every string, comment and probe line (Joe's own quote in the D569 doc is
+   the one *travellers* left in the code).
 3. **Accept / reject** stands (§4.3). **Add a Nomads switch** (Foundation's *Immigration — enabled*): hashed sim state read
    by the knock, persisted with the settings; whether it also stops re-founding is his (recommend yes).
 4. **The nomads walk in from off-screen with a marker over their heads** — from the valley's edge to the camp; view-only
@@ -127,7 +134,7 @@ nextKnockYear(n) = lastKnockYear + between     + Fold(seed, n, KnockSalt) % (nom
 A floor of `0` means *never* (the Phase 0 fixture's village of one). The hash is `SplitMix64.Fold` as `NameHash` and
 `MapGenerator.StageSeed` use it — **no `Rng` draw anywhere in this feature**, so a village's main stream is byte for byte
 the stream it had, and a knock cannot reshuffle a birth. ⚠️ Random with a floor is Joe's phrase; the "random" is the
-seed's, which is what makes *"this valley's travellers come in Year 11"* a fact a share code reproduces.
+seed's, which is what makes *"this valley's nomads come in Year 11"* a fact a share code reproduces.
 
 State: **`BandsEverKnocked`** (an int, hashed sparsely when non-zero, saved) and **`BandKnockedAtTick`** (0 = no band
 waiting; hashed sparsely, saved). The band's composition is **derived** from (seed, `BandsEverKnocked`, the population at
@@ -161,32 +168,39 @@ They carry `nomads_food_each` food (20 — a few days), which goes into the fami
 
 ### 4.3 The knock, and the decision
 
-On the knock the village **stops** (`RaiseMoment`, waits, `Discovery`): *"Travellers at the pile — the Hales and the
+On the knock the village **stops** (`RaiseMoment`, waits, `Discovery`): *"Nomads by the cart — the Hales and the
 Dunns, seven souls: four grown and three children, carrying a few days' food. They have come up the valley asking for a
-place to settle, and will camp by the pile until the leaves turn. Click them to decide."* The moment carries no verbs
-(§2); the **band's card** does. The band is drawn as a huddle of dots at the pile's doorstep (the view, from the derived
-composition); clicking it, or the bar's **Travellers (7)** button (shown only while a band waits), opens the card: who
+place to settle, and will camp by the cart until the leaves turn. Click them to decide."* The moment carries no verbs
+(§2); the **band's card** does. The band is drawn as a huddle of dots at the camp (the view, from the derived
+composition); clicking it, or the bar's **Nomads (7)** button (shown only while a band waits), opens the card: who
 they are by name, age and trade, what they carry, where they would sleep tonight (a longhouse with room, or *"in the open
-at the pile — and this winter would kill them"*), and two buttons — **Let them settle** → `SimWorld.LetTheBandSettle()`,
+by the cart — and this winter would kill them"*), and two buttons — **Let them settle** → `SimWorld.LetTheBandSettle()`,
 **Send them on** → `SimWorld.SendTheBandOn()`. Unanswered through spring and summer, **they move on at the autumn turn**
-(`nomads_wait_seasons` 2) with a passing line: *"The travellers moved on."* No harm, no foul — the clock just advances.
+(`nomads_wait_seasons` 2) with a passing line: *"The nomads moved on."* No harm, no foul — the clock just advances.
 The unattended paths — the harness, the goldens, a headless run — are *unanswered*.
 
-> ⭐ **As built (D565).** The moment: *"Travellers at the pile — the Hales, 2 souls, 2 grown and 0 children, carrying a
-> few days' food — have come up the valley asking for a place to settle. They will camp by the pile until the leaves turn.
-> The village holds 812 food, 101 a head. Click them to decide."* The huddle: a ring of dun dots inside the camp's tile
-> (`VillageMap.HuddleOffsets`, children smaller), clicked before anything under it, ringed while its card is up. The card
-> (`CardKind.Band`): title *Travellers — the Hales*, a status sentence that says where they would sleep tonight (and, from
-> autumn, *this winter would kill them there*), souls / food carried / food a head here, the people by name, age, grown
-> or child and trade, a caption naming the turn they leave at, and in its fold the row **Travellers: Let them settle ·
-> Send them on**. The band gone, the card closes like a demolished store's. The bar's **Travellers (N)** button shows
-> while a band waits. Probe lines `nomads:` (the card posed from plain facts, both buttons wired) and `huddle:` (2–8 stand
-> in a ring inside the tile, nobody on anybody else).
+> ⭐ **As built (D565; the words D569).** The moment: *"Nomads by the cart — the Hales, 2 souls, 2 grown and 0 children,
+> carrying a few days' food — have come up the valley asking for a place to settle. They will camp by the cart until the
+> leaves turn. The village holds 812 food, 101 a head. Click them to decide."* The huddle: a ring of dun dots inside the
+> camp's tile (`VillageMap.HuddleOffsets`, children smaller), clicked before anything under it, ringed while its card is up.
+> The card (`CardKind.Band`): title *Nomads — the Hales*, a status sentence that says where they would sleep tonight (and,
+> from autumn, *this winter would kill them there*), souls / food carried / food a head here, the people by name, age,
+> grown or child and trade, a caption naming the turn they leave at, and in its fold the row **Nomads: Let them settle ·
+> Send them on**. The band gone, the card closes like a demolished store's. The bar's **Nomads (N)** button shows while
+> a band waits, its tooltip naming the camp. Probe lines `nomads:` (the card posed from plain facts, its status naming the
+> posed camp, both buttons wired) and `huddle:` (2–8 stand in a ring inside the tile, nobody on anybody else).
+>
+> ⭐ **The camp's words (D569).** *"The pile"* was never where they stood: `BandCamp` is the cart's tile while the cart
+> stands, else the founding site's centre, and in real play the stockpile is wherever the player put it. The sim says
+> which in its own words — `SimWorld.WhereTheBandCamps`, *by the cart* / *at the founding site*, derived from the same
+> rule and never stored — and every sentence about the band reads it: the knock's title and body, the move-on line, the
+> card's status (posed from a `where` the probe supplies) and the bar button's tooltip, refreshed because the cart can
+> fall while a band waits.
 
 ### 4.4 Settling — roofless, and then what the village already does
 
 `LetTheBandSettle()` makes each family a `Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
-holding the carried food, `HomePosition = null`) and adds its villagers at the pile, then calls `NoticeTheVillageSize`
+holding the carried food, `HomePosition = null`) and adds its villagers at the camp, then calls `NoticeTheVillageSize`
 (the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads `ArrivedAtTick`, §5).
 ⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would
 pair across the band on the very tick they arrived and take over a dead household whole (§8's trap).
@@ -194,7 +208,7 @@ Log, `Life`: *"The Hales and the Dunns have settled — 7 more souls, and no roo
 
 From there nothing is new: they are roofless families, so `HouseTheRoofless` moves them into an empty standing house the
 next day if one stands, else marks a house in the residential paint (a builder raises it), else says the village has
-nowhere to build; until then they sleep at the pile, `Outdoors`, and a winter there kills (Joe's rule — the card said so
+nowhere to build; until then they sleep at the camp, `Outdoors`, and a winter there kills (Joe's rule — the card said so
 before the click). They work any job the allocator gives them from the day they arrive. No children without a roof (D71).
 
 ### 4.5 The longhouse — the communal house (call 3)
@@ -216,7 +230,7 @@ raised** (a house of its own is always first; the longhouse is the stopgap). Whi
 - **Nobody partners while lodged** (`IsSeekingAHome` excludes them) and nobody is born there (no home of their own, D71).
 - The card says *lodging at the longhouse* and the longhouse's card lists its lodgers, its larder and its condition.
 
-**Unlock:** `WhyNotYet(Longhouse)` → *"No travellers have asked to stay yet."* until `BandsEverKnocked > 0` — learned at
+**Unlock:** `WhyNotYet(Longhouse)` → *"No nomads have asked to stay yet."* until `BandsEverKnocked > 0` — learned at
 the first knock whether the band settled or not, so it is in the menu for the next one. A longhouse with lodgers that is
 pulled down turns them out (a log line); a longhouse fallen in (`HomeClosed`) shelters nobody, and its lodgers are
 roofless again until it is mended.
@@ -243,13 +257,13 @@ roofless again until it is mended.
 
 With nobody alive, the tick the last villager died is **derived** (the greatest `DiedAtTick`). On the spring turn
 `refound_years_floor` 2 + `Fold(seed, BandsEverKnocked, RefoundSalt) % (refound_years_spread + 1)` years after it,
-**four travellers walk in**: two households of two adults, the founding's shape — `Founder = true` (**a second founding
+**four nomads walk in**: two households of two adults, the founding's shape — `Founder = true` (**a second founding
 generation**), new surnames, the founding's tier mix (a master, a journeyman, two novices) — all by hash. The cart, if
 it still stands, is restocked with `cart_food` and `cart_tools`; if it was pulled down it is raised again at the founding
 site. Stores keep what they hold (a ruined store still *gives*, D555). The next day `HouseTheRoofless` moves them into
 the standing empty houses, **keeping their own names** — the house is a house, not a lineage.
 
-The moment (waits, `Discovery`): *"Four travellers have found the empty valley — the Thorns and the Ashes. They walked past
+The moment (waits, `Discovery`): *"Four nomads have found the empty valley — the Thorns and the Ashes. They walked past
 3 roofs still sound, 4 worn, and 2 fallen in, and the granary still holds 600 food. The valley is theirs now. Spring, Year
 31."* The empty-village banner (D313) is untouched: it is a passing line and the game runs on, which is what let this
 happen.
@@ -276,7 +290,7 @@ which founding it mourns and names both generations, and never raises a second h
 
 ### 4.7 Not in this slice, said so
 
-A walk-in from the valley's edge (the band appears at the pile; a walk from the map's edge is a cosmetic later);
+A walk-in from the valley's edge (the band appears at the camp; a walk from the map's edge is note 4, §3a);
 morale's departures (`morale.md` — arrivals now exist, so the valve has two ends when it comes); techniques carried by
 nomads; a band that asks for anything but a place; the longhouse as a trade or a store; livestock or goods in the cart.
 
@@ -311,7 +325,7 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 
 | What | Hashed | Saved | Drawn | Told |
 |---|---|---|---|---|
-| `BandsEverKnocked`, `BandKnockedAtTick`, `BandMetAPopulationOf` | sparsely, tagged, after everything else | `bands_ever_knocked`, `band_knocked_at`, `band_met` | the huddle at the pile; the bar button | the knock moment; *moved on* |
+| `BandsEverKnocked`, `BandKnockedAtTick`, `BandMetAPopulationOf` | sparsely, tagged, after everything else | `bands_ever_knocked`, `band_knocked_at`, `band_met` | the huddle at the camp; the bar button | the knock moment, naming the camp; *moved on* |
 | `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | — | the card: *came to the valley in Year 11* |
 | `Household.Kind`, `Household.LodgedIn` | sparsely (non-default) | `kind`, `lodged_in` | the longhouse (a long house, the house tone); *lodging at* on the card | *settled*, *lodged*, *moved out* |
 | the longhouse's stamps, larder, `HomeClosed` | as a household's | as a household's | weathered like every building | the card's condition line |
@@ -328,7 +342,7 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 | The knock year arrives with nobody alive | No band. The valley is on §4.6's clock instead; the knock clock resumes after the re-founding, counted from it |
 | A band waits and everybody dies | The band moves on at its deadline as usual; §4.6's clock starts from the last death |
 | Settle in autumn | Allowed; the card said *this winter would kill them*. The player chose it (§0.1: a decision with a consequence, not an error) |
-| No residential paint, no longhouse | They settle roofless; `NeedsMoreResidentialLand` says so once; the card says *in the open at the pile* |
+| No residential paint, no longhouse | They settle roofless; `NeedsMoreResidentialLand` says so once; the card says *in the open by the cart* (or *at the founding site*) |
 | The longhouse is full | The ninth sleeps rough until a house is raised or a lodger moves out; its card says *full* |
 | The longhouse falls in with lodgers | `HomeClosed`; they are `Outdoors` there until it is mended — the same rule a ruined house has |
 | The longhouse is pulled down with lodgers | Allowed; they are roofless again; a log line names them |
@@ -470,9 +484,14 @@ as today); the band's size scales and clamps; the hall widens (floor and a famil
 none shared within the band); no `Rng` draw (the stream's state is untouched across a knock); an unanswered band leaves
 at the deadline and the next knock year is set; sending on leaves everything but the count as it was; settling adds
 roofless households holding their food, `MostEverAlive` counts them (a bridge learned by arrivals), a settled family is
-housed when the paint has room and freezes at the pile when not, no birth while roofless; sparse hash before the first
+housed when the paint has room and freezes at the camp when not, no birth while roofless; sparse hash before the first
 knock; save → load → hash == live mid-band, and the year after matches.
 
+> ⭐ **Note 2 (D569) — `NomadTests` (31).** `TheKnockSaysWhereTheBandCamps`: the warm fixture (no cart) reads *at the
+> founding site* in the title and the body and never *pile*; the cold village with its opening played reads *by the cart*,
+> the camp on the cart's tile. Mutant: the camp hard-coded to *by the cart* — **1 red** (the warm pose). No golden moved;
+> the probe's `nomads:` line checks the posed status names the posed camp.
+>
 > ⭐ **Commit 1 (D565) — `NomadTests` (30).** Mutants, each the one line it names: the knock a tick late **13 red**; the
 > floor ignored **2**; the first year drawn from `Rng` instead of hashed **15** (the `Rng`-state assertion and every
 > knock-year guard); a living surname reused — ⚠️ **zero** against the shipped pool of sixty, so

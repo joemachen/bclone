@@ -3742,7 +3742,7 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ THE LONGHOUSE IS LEARNED AT THE FIRST KNOCK, accepted or not (Joe, D563; `nomads.md §4.5`).
         BuildingKind.Longhouse when BandsEverKnocked == 0 && BuildingsCatalog[BuildingKind.Longhouse]?.HouseCapacity > 0 =>
-            "No travellers have asked to stay yet — the village learns to put them up when the first band knocks.",
+            "No nomads have asked to stay yet — the village learns to put them up when the first band knocks.",
 
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
@@ -10063,7 +10063,7 @@ public sealed partial class SimWorld : IObstacles
                 ExtentWidth = row.ExtentWidth,
                 ExtentHeight = row.ExtentHeight,
             });
-            Narrate($"{Capitalised(name)} was finished — a roof for travellers until houses of their own are raised. {Clock.SeasonAndYear()}.", LogCategory.Building);
+            Narrate($"{Capitalised(name)} was finished — a roof for nomads until houses of their own are raised. {Clock.SeasonAndYear()}.", LogCategory.Building);
         }
 
         if (row.DrawsWater)

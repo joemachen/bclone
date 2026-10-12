@@ -62,8 +62,8 @@ public sealed class SaveLoadTests : IDisposable
         new object[] { "established, every store closed (year 1)", 300 },
         new object[] { "unattended, emptied, its moment waiting (year 2)", 600 },
 
-        // D565: a band of travellers waiting at the pile — the one state the nomads add that is not a count.
-        new object[] { "fixture village, a band waiting at the pile", ((FixtureKnockYear - 1) * 480) + 5 },
+        // D565: a band of nomads waiting at the camp — the one state the nomads add that is not a count.
+        new object[] { "fixture village, a band waiting at the camp", ((FixtureKnockYear - 1) * 480) + 5 },
     };
 
     /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
@@ -198,7 +198,7 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Equal(0, emptied.World.Population);
         Assert.NotEmpty(emptied.World.Moments);
 
-        (SimLoop knocked, _) = Played("fixture village, a band waiting at the pile", ((FixtureKnockYear - 1) * 480) + 5);
+        (SimLoop knocked, _) = Played("fixture village, a band waiting at the camp", ((FixtureKnockYear - 1) * 480) + 5);
         Assert.NotNull(knocked.World.Band);
         Assert.True(knocked.World.Band!.People >= 2, "a band with nobody in it is no pose");
     }

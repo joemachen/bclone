@@ -281,7 +281,7 @@ public sealed class BuildingsCatalogTests
                 {
                     BuildingKind.Home => config.MaxHouseholdSize,
 
-                    // ⭐ The longhouse puts travellers up (D566): a roof that is not a family's home, by the same column.
+                    // ⭐ The longhouse puts nomads up (D566): a roof that is not a family's home, by the same column.
                     BuildingKind.Longhouse => config.LonghouseCapacity,
                     _ => 0,
                 },

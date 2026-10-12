@@ -255,7 +255,7 @@ public enum BuildingKind
     HunterLodge = 13,
 
     /// <summary>
-    /// The travellers' house (D566, `specs/nomads.md §4.5`) — and <b>the first building that was not one tile</b> (D320),
+    /// The nomads' house (D566, `specs/nomads.md §4.5`) — and <b>the first building that was not one tile</b> (D320),
     /// a storehouse until Joe repurposed it (D563: <i>"there's no other need for it"</i>).
     /// </summary>
     /// <remarks>

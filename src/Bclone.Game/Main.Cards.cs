@@ -47,7 +47,7 @@ public partial class Main
         /// <summary>A bridge (D546) — its Id is its index in <see cref="SimWorld.Bridges"/>, as a well's is.</summary>
         Bridge,
 
-        /// <summary>The band of travellers waiting at the pile (D565) — there is never more than one, Id 0.</summary>
+        /// <summary>The band of nomads waiting at the camp (D565) — there is never more than one, Id 0.</summary>
         Band,
 
         /// <summary>A longhouse (D566) — its Id is its index in <see cref="SimWorld.Longhouses"/>, as a well's is.</summary>
@@ -886,7 +886,7 @@ public partial class Main
                 // ⭐ THE ONE DECISION THE PLAYER MAKES IN ANSWER TO A STOP, AND IT LIVES HERE (`nomads.md §4.3`, D565):
                 // the moment that announced the band carries no verbs (Moment.cs); the card does. Two buttons, two
                 // calls on the world — the band is gone either way, and the card closes with it.
-                (c.BandRow, HFlowContainer bandControls) = InspectorRow(body, Muted("Travellers:"));
+                (c.BandRow, HFlowContainer bandControls) = InspectorRow(body, Muted("Nomads:"));
                 c.Settle = new Button { Text = "Let them settle", TooltipText = "They become villagers today — roofless until a house is raised, eating from what they carried and the stores." };
                 c.Settle.Pressed += () => Act(card, LetTheBandSettle);
                 bandControls.AddChild(c.Settle);
@@ -1990,7 +1990,7 @@ public partial class Main
             }
         }
 
-        WriteBandCard(card, band.FamilyNames, people, band.FoodCarried(world.Config), population == 0 ? 0 : food / population, until, winterNext, beds >= band.People);
+        WriteBandCard(card, band.FamilyNames, people, band.FoodCarried(world.Config), population == 0 ? 0 : food / population, until, winterNext, world.WhereTheBandCamps, beds >= band.People);
         return true;
     }
 
@@ -2009,9 +2009,9 @@ public partial class Main
     }
 
     /// <summary>The band's card from plain facts — so the probe can pose one where no band waits.</summary>
-    private void WriteBandCard(Card card, string families, IReadOnlyList<(string Name, string Life)> people, int foodCarried, int foodAHead, string leaveBy, bool winterNext, bool aBedForAll = false)
+    private void WriteBandCard(Card card, string families, IReadOnlyList<(string Name, string Life)> people, int foodCarried, int foodAHead, string leaveBy, bool winterNext, string where, bool aBedForAll = false)
     {
-        Title(card, $"Travellers — {families}", renamable: false);
+        Title(card, $"Nomads — {families}", renamable: false);
         card.Numbers.Visible = true;
         card.Storage.Visible = false;
         card.WorkersRow.Visible = false;
@@ -2024,8 +2024,8 @@ public partial class Main
             aBedForAll
                 ? "Asking to settle. There is room for all of them in the longhouse until houses of their own are raised."
                 : winterNext
-                    ? "Asking to settle. They would sleep in the open at the pile until a house is raised — and this winter would kill them there."
-                    : "Asking to settle. They would sleep in the open at the pile until a house is raised for them; a family is housed in weeks where the paint has room.");
+                    ? $"Asking to settle. They would sleep in the open {where} until a house is raised — and this winter would kill them there."
+                    : $"Asking to settle. They would sleep in the open {where} until a house is raised for them; a family is housed in weeks where the paint has room.");
 
         Number(card, 0, $"{people.Count}", "souls");
         Number(card, 1, $"{foodCarried:N0}", "food carried");
@@ -2070,7 +2070,7 @@ public partial class Main
                 card,
                 "the Hales and the Dunns",
                 new[] { ("Agnes Hale", "31 · grown · foraging"), ("Wendell Hale", "29 · grown"), ("Hattie Dunn", "24 · grown"), ("Otto Dunn", "26 · grown"), ("Bess Dunn", "6 · child") },
-                100, 97, "Fall", winterNext: false);
+                100, 97, "Fall", winterNext: false, where: "by the cart");
             BuildSettings(card, _loop.World);
             ForceUpdateTransform();
 
@@ -2101,7 +2101,8 @@ public partial class Main
                 }
             }
 
-            if (!card.Status.Text.Contains("in the open at the pile", StringComparison.Ordinal))
+            // Where they would sleep is named in the village's words (D569): the posed camp, never "the pile".
+            if (!card.Status.Text.Contains("in the open by the cart", StringComparison.Ordinal))
             {
                 faults.Add("the card does not say where they would sleep");
             }

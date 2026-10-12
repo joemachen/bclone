@@ -5,7 +5,7 @@ using Bclone.Sim.Persistence;
 namespace Bclone.Sim.World;
 
 /// <summary>
-/// One traveller in a band that has knocked — a person the village has not taken in yet
+/// One nomad in a band that has knocked — a person the village has not taken in yet
 /// (`specs/nomads.md §4.2`, D564).
 /// </summary>
 /// <remarks>
@@ -101,7 +101,7 @@ public sealed class NomadFamily
 }
 
 /// <summary>
-/// A band of travellers camped at the pile, asking to settle — <b>not villagers yet</b>
+/// A band of nomads camped by the cart or at the founding site, asking to settle — <b>not villagers yet</b>
 /// (`specs/nomads.md §4.3`). The village has until the autumn turn to answer; the player answers on
 /// the band's card, never in the moment that announced them.
 /// </summary>

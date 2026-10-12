@@ -1065,7 +1065,7 @@ public static class StateHash
         // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
         // for a few ticks at the start of a working life; once spent it is inert, and inert
         // state has no business in a fingerprint.
-        // When a traveller came to the valley (D565) — the most-ever-held reads it, so it is state. Sparse, under
+        // When a nomad came to the valley (D565) — the most-ever-held reads it, so it is state. Sparse, under
         // a tag: a founder and anybody born here mix nothing new.
         if (villager.ArrivedAtTick != 0UL)
         {

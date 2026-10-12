@@ -161,7 +161,7 @@ public sealed class ZzNomads
             var household = new Household
             {
                 Id = nextHousehold,
-                Surname = $"Traveller{nextHousehold}",
+                Surname = $"Nomad{nextHousehold}",
                 Stockpile = world.NewLarder(),
                 DayForAChild = NameHash.DayForAChild(world.Seed, nextHousehold, config.DaysPerSeason * 4),
                 HomePosition = null,

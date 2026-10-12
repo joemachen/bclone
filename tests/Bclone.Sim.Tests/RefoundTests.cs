@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 namespace Bclone.Sim.Tests;
 
 /// <summary>
-/// The nomads, commit 3 — a dead valley re-founded (`specs/nomads.md §4.6`, §9): with nobody alive, four travellers
+/// The nomads, commit 3 — a dead valley re-founded (`specs/nomads.md §4.6`, §9): with nobody alive, four nomads
 /// walk in on the spring turn a hashed few years after the last death, a second generation of founders.
 /// </summary>
 /// <remarks>

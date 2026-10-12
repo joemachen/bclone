@@ -1679,7 +1679,7 @@ public partial class Main : Control
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
-    private Button? _travellersButton;
+    private Button? _nomadsButton;
 
     /// <summary>Which tab of the build bar is showing.</summary>
     private BuildTab _tab = BuildTab.Build;
@@ -2029,25 +2029,32 @@ public partial class Main : Control
         _treeView.Show(_loop.World);
     }
 
-    private void RefreshTheTravellersButton(SimWorld world)
+    private void RefreshTheNomadsButton(SimWorld world)
     {
-        if (_travellersButton is null)
+        if (_nomadsButton is null)
         {
             return;
         }
 
         bool waiting = world.Band is NomadBand band;
-        if (_travellersButton.Visible != waiting)
+        if (_nomadsButton.Visible != waiting)
         {
-            _travellersButton.Visible = waiting;
+            _nomadsButton.Visible = waiting;
         }
 
         if (world.Band is NomadBand theBand)
         {
-            string text = $"Travellers ({theBand.People})";
-            if (_travellersButton.Text != text)
+            string text = $"Nomads ({theBand.People})";
+            if (_nomadsButton.Text != text)
             {
-                _travellersButton.Text = text;
+                _nomadsButton.Text = text;
+            }
+
+            // The camp is named in the village's words (D569), and the cart can fall while a band waits.
+            string tooltip = $"A band of nomads is camped {world.WhereTheBandCamps}, asking to settle";
+            if (_nomadsButton.TooltipText != tooltip)
+            {
+                _nomadsButton.TooltipText = tooltip;
             }
         }
     }
@@ -2416,7 +2423,7 @@ public partial class Main : Control
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
-        RefreshTheTravellersButton(world);
+        RefreshTheNomadsButton(world);
         RefreshTheQuarryButton(world);
         RefreshTheSmithyButton(world);
         RefreshTheTree(world);
@@ -4980,11 +4987,11 @@ public partial class Main : Control
         _recordsButton.Pressed += OpenTheRecords;
         controls.AddChild(_recordsButton);
 
-        // ⭐ THE TRAVELLERS, WHILE A BAND WAITS (D565, `nomads.md §4.3`): one click to the card the decision is on,
+        // ⭐ THE NOMADS, WHILE A BAND WAITS (D565, `nomads.md §4.3`): one click to the card the decision is on,
         // for the player who dismissed the moment and lost the huddle among the dots. Hidden otherwise.
-        _travellersButton = new Button { Text = "Travellers", Visible = false, TooltipText = "A band of travellers is camped at the pile, asking to settle" };
-        _travellersButton.Pressed += () => OpenCard(new CardSubject(CardKind.Band, 0));
-        controls.AddChild(_travellersButton);
+        _nomadsButton = new Button { Text = "Nomads", Visible = false };
+        _nomadsButton.Pressed += () => OpenCard(new CardSubject(CardKind.Band, 0));
+        controls.AddChild(_nomadsButton);
 
         // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
         // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.

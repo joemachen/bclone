@@ -48,7 +48,7 @@ public sealed class CivicSystem : ISimSystem
         world.KnockIfItIsTime();
         world.TheBandMovesOnIfUnanswered();
 
-        // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four travellers walk in a hashed few years on.
+        // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four nomads walk in a hashed few years on.
         world.RefoundIfTheValleyHasWaited();
     }
 

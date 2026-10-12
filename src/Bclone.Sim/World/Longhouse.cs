@@ -5,7 +5,7 @@ using Bclone.Sim.Persistence;
 namespace Bclone.Sim.World;
 
 /// <summary>
-/// The longhouse — the travellers' house (`specs/nomads.md §4.5`, D566; Joe: <i>"just repurpose the long house
+/// The longhouse — the nomads' house (`specs/nomads.md §4.5`, D566; Joe: <i>"just repurpose the long house
 /// thats already in game. there's no other need for it"</i>). A roof and one larder for families waiting on a
 /// house of their own.
 /// </summary>

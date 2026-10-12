@@ -275,7 +275,7 @@ public sealed class Villager
     public bool Founder { get; init; }
 
     /// <summary>
-    /// The tick they joined the village as a grown traveller (`nomads.md §4.4`, D564), or 0 for a founder and for
+    /// The tick they joined the village as a grown nomad (`nomads.md §4.4`, D564), or 0 for a founder and for
     /// anybody born here. <see cref="Core.SimWorld.MostEverAlive"/> counts them from it, not from a birth they had
     /// elsewhere. Hashed sparsely; saved.
     /// </summary>

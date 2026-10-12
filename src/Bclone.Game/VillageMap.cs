@@ -355,7 +355,7 @@ public partial class VillageMap : Control
     private static readonly Color GhostRefused = new("#d4685f");
     internal static readonly Color AdultColour = new("#e8e2d4");
 
-    /// <summary>A traveller not yet taken in (D565) — dun, between the ground and a villager's chalk.</summary>
+    /// <summary>A nomad not yet taken in (D565) — dun, between the ground and a villager's chalk.</summary>
     internal static readonly Color BandColour = new("#c9b48a");
     internal static readonly Color ChildColour = new("#8fc7e8");
     internal static readonly Color ElderColour = new("#d9a05b");
@@ -466,7 +466,7 @@ public partial class VillageMap : Control
     /// </remarks>
     public event System.Action<int>? VillagerClicked;
 
-    /// <summary>The huddle of travellers at the pile was clicked (`nomads.md §4.3`, D565) — the band's card opens.</summary>
+    /// <summary>The huddle of nomads at the camp was clicked (`nomads.md §4.3`, D565) — the band's card opens.</summary>
     public event System.Action? BandClicked;
 
     private Vector2 _centreTile;
@@ -1407,7 +1407,7 @@ public partial class VillageMap : Control
         // because the player has one place they look to find out about a thing.
         if (click.ButtonIndex == MouseButton.Left)
         {
-            // ⭐ The travellers' huddle first (D565): they stand on the pile's ground, and the pile is a building.
+            // ⭐ The nomads' huddle first (D565): they stand on the camp's ground, and the camp is a building's tile.
             if (BandUnder(click.Position))
             {
                 BandClicked?.Invoke();
@@ -7402,14 +7402,14 @@ public partial class VillageMap : Control
     }
 
     // ---------------------------------------------------------------
-    //  The travellers' huddle (`nomads.md §4.3`, D565)
+    //  The nomads' huddle (`nomads.md §4.3`, D565)
     // ---------------------------------------------------------------
 
-    /// <summary>How far from the camp's centre the huddle's dots stand, in tiles — inside one tile, so a band reads as a group on the pile's ground.</summary>
+    /// <summary>How far from the camp's centre the huddle's dots stand, in tiles — inside one tile, so a band reads as a group on the camp's ground.</summary>
     internal const float HuddleRadiusTiles = 0.45f;
 
     /// <summary>
-    /// Where each of <paramref name="people"/> travellers stands around the camp, in tile offsets — a ring, evenly spaced,
+    /// Where each of <paramref name="people"/> nomads stands around the camp, in tile offsets — a ring, evenly spaced,
     /// the first at the top; one person stands on the centre. Pure, so the probe can ask it.
     /// </summary>
     internal static Vector2[] HuddleOffsets(int people)
@@ -7429,7 +7429,7 @@ public partial class VillageMap : Control
         return offsets;
     }
 
-    /// <summary>The band waiting at the pile, drawn as a huddle of dun dots — not villagers yet, so not fanned, not interpolated, never a card's dot.</summary>
+    /// <summary>The band waiting at the camp, drawn as a huddle of dun dots — not villagers yet, so not fanned, not interpolated, never a card's dot.</summary>
     private void DrawTheBand()
     {
         if (_world!.Band is not NomadBand band)
@@ -7491,7 +7491,7 @@ public partial class VillageMap : Control
             Vector2[] offsets = HuddleOffsets(people);
             if (offsets.Length != people)
             {
-                faults.Add($"{people} travellers get {offsets.Length} places");
+                faults.Add($"{people} nomads get {offsets.Length} places");
                 continue;
             }
 
@@ -7499,21 +7499,21 @@ public partial class VillageMap : Control
             {
                 if (offsets[i].Length() > 0.5f)
                 {
-                    faults.Add($"a traveller of {people} stands {offsets[i].Length():F2} tiles out — off the pile's ground");
+                    faults.Add($"a nomad of {people} stands {offsets[i].Length():F2} tiles out — off the camp's ground");
                 }
 
                 for (int j = 0; j < i; j++)
                 {
                     if (offsets[i].DistanceTo(offsets[j]) < 0.05f)
                     {
-                        faults.Add($"two travellers of {people} stand on one spot");
+                        faults.Add($"two nomads of {people} stand on one spot");
                     }
                 }
             }
         }
 
         return faults.Count == 0
-            ? "[widths] huddle: ✅ bands of 2–8 stand in a ring inside the pile's tile, nobody on anybody else"
+            ? "[widths] huddle: ✅ bands of 2–8 stand in a ring inside the camp's tile, nobody on anybody else"
             : $"[widths] huddle: ⛔ {string.Join("; ", faults.Distinct())}";
     }
 

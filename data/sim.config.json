@@ -1089,7 +1089,7 @@
   // so a repair priced in stone would never be served there.
   "repair_cost_percent": 25,
   //
-  // THE NOMADS (D563, D564, specs/nomads.md). Bands of travellers knock on a
+  // THE NOMADS (D563, D564, specs/nomads.md). Bands of nomads knock on a
   // clock that is a hash of the seed and the count of bands - never a draw, so a
   // village that sends every band away keeps the stream it had. The first knock
   // is nomads_first_year_floor plus 0..nomads_first_year_spread years (Joe:
@@ -1112,11 +1112,11 @@
   "nomads_band_min": 2,
   "nomads_band_max": 8,
   //
-  // Season turns a band waits at the pile unanswered before it moves on: from a
+  // Season turns a band waits at its camp unanswered before it moves on: from a
   // spring knock, 2 is the autumn turn ("until the leaves turn").
   "nomads_wait_seasons": 2,
   //
-  // Food each traveller carries into the family's larder when they settle - a
+  // Food each nomad carries into the family's larder when they settle - a
   // few days' worth, so a yes in spring is not a famine the same week.
   "nomads_food_each": 20,
   //
