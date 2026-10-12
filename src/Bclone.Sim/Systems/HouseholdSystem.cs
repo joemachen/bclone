@@ -165,10 +165,14 @@ public sealed class HouseholdSystem : ISimSystem
 
                 household.HomePosition = standingEmpty.HomePosition;
                 household.HomeFacing = standingEmpty.HomeFacing;
+                household.HomeRaisedAtTick = standingEmpty.HomeRaisedAtTick;
+                household.HomeRepairedAtTick = standingEmpty.HomeRepairedAtTick;
                 household.WhyHere = standingEmpty.WhyHere;
                 household.FencedTiles = standingEmpty.FencedTiles;
                 standingEmpty.HomePosition = null;
                 standingEmpty.HomeFacing = Angle.Zero;
+                standingEmpty.HomeRaisedAtTick = 0;
+                standingEmpty.HomeRepairedAtTick = 0;
                 standingEmpty.WhyHere = "";
                 standingEmpty.FencedTiles = new List<GridPos>();
 

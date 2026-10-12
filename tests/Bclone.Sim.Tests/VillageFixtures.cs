@@ -22,6 +22,11 @@ public static class VillageFixtures
             // Start from everything except the derived food numbers.
             SimConfig shape = Phase0Fixtures.Plenty with
             {
+                // The shipped wear (D555): Phase 0's fixture switches it off for its village of one; this village
+                // mends its roofs as the game does, so its fifty-year goldens carry the first repairs at Year ~7.
+                BuildingWearsInYears = 8,
+                BuildingFailsInYears = 12,
+                BuildingRuinedInYears = 20,
                 // THE SHIPPED CALENDAR (D49), which this fixture did not have for four
                 // commits. D49 moved `data/sim.config.json` to thirty-day seasons and
                 // re-derived the economy around them; nothing moved the tests, so every

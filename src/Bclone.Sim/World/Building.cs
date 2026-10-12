@@ -354,6 +354,27 @@ public sealed record BuildingRow
     public BuildingKind? Rebuilds { get; init; }
 
     /// <summary>
+    /// Years of mild weather before a building of this row is <em>worn</em> — drawn so, said on its card, and
+    /// a repair queued for the builders (`specs/building-condition.md §4.2`, D552–D553). <b>0 = never
+    /// wears</b>: the stone bridge, the town hall. A winter adds <c>winter_wear_extra_percent</c> of a season.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A row, not a mechanism</b> (the house ladder's rule): a stone cottage that wears slower is a row with
+    /// bigger numbers, and a modder's row that omits the three never wears, so an old `buildings` array loads as
+    /// it did. The validator wants all three 0, or <c>0 &lt; wears &lt; fails &lt; ruined</c>.
+    /// </remarks>
+    [JsonPropertyName("wears_in_years")]
+    public int WearsInYears { get; init; }
+
+    /// <summary>Years before it is <em>failing</em> — the card warns, and a wooden deck slows (§4.4).</summary>
+    [JsonPropertyName("fails_in_years")]
+    public int FailsInYears { get; init; }
+
+    /// <summary>Years before it is a <em>ruin</em> — closed, and standing on the map until repaired or pulled down.</summary>
+    [JsonPropertyName("ruined_in_years")]
+    public int RuinedInYears { get; init; }
+
+    /// <summary>
     /// How many tiles across this building stands, before it is turned. <b>One by default.</b>
     /// </summary>
     /// <remarks>

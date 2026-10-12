@@ -85,6 +85,9 @@ public sealed class TownHall
     /// </remarks>
     public required ulong RaisedAtTick { get; init; }
 
+    /// <summary>The tick the builders last mended it, or 0 never (`building-condition.md §4.1`). The hall's row never wears; kept so every standing thing answers the same questions.</summary>
+    public ulong RepairedAtTick { get; set; }
+
     internal JsonObject ToSave() => new()
     {
         ["at"] = SaveWriter.Point(Position),
@@ -93,6 +96,7 @@ public sealed class TownHall
         ["height"] = ExtentHeight,
         ["name"] = Name,
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
+        ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
     };
 
     internal static TownHall FromSave(SaveReader save) => new()
@@ -103,5 +107,6 @@ public sealed class TownHall
         ExtentHeight = save.Int("height"),
         Name = save.String("name"),
         RaisedAtTick = save.ULong("raised_at"),
+        RepairedAtTick = save.ULong("repaired_at"),
     };
 }

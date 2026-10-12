@@ -40,6 +40,9 @@ public sealed partial class SimWorld
     /// <summary>Whether a bridge or a bridge's site lands on or crosses each tile, by map-order index (derived, never hashed).</summary>
     private bool[]? _bridgeLands;
 
+    /// <summary>Whether each tile is the deck of a <em>failing</em> bridge — a leg over it takes longer (`building-condition.md §4.4`). Derived, never hashed.</summary>
+    private bool[]? _deckSlow;
+
     private int _bridgeIndexBuiltAt = -1;
 
     /// <summary>
@@ -111,12 +114,18 @@ public sealed partial class SimWorld
         int tiles = Map.Width * Map.Height;
         _deckCost ??= new byte[tiles];
         _bridgeLands ??= new bool[tiles];
+        _deckSlow ??= new bool[tiles];
         System.Array.Clear(_deckCost);
         System.Array.Clear(_bridgeLands);
+        System.Array.Clear(_deckSlow);
 
         for (int i = 0; i < Bridges.Count; i++)
         {
+            // ⭐ A closed bridge has no deck — its water is water again (`building-condition.md §4.4`, D555); a failing
+            // one is walked, slower. Read here, at the rebuild, because every transition is a standing change.
             byte cost = (byte)(BuildingsCatalog[Bridges[i].Kind]?.DeckTileCost ?? TravelCostField.BaseTileCost);
+            bool closed = Bridges[i].Closed;
+            bool slow = !closed && ConditionOf(Bridges[i]) == Condition.Failing;
             IReadOnlyList<GridPos> under = Bridges[i].Tiles();
             for (int t = 0; t < under.Count; t++)
             {
@@ -127,9 +136,10 @@ public sealed partial class SimWorld
                 }
 
                 _bridgeLands[index] = true;
-                if (Map.TerrainAt(under[t]) == Terrain.Water)
+                if (Map.TerrainAt(under[t]) == Terrain.Water && !closed)
                 {
                     _deckCost[index] = cost;
+                    _deckSlow[index] = slow;
                 }
             }
         }
@@ -454,6 +464,11 @@ public sealed partial class SimWorld
         if (WhyNotPullDown(bridge) is string why)
         {
             return PlacementVerdict.No(why);
+        }
+
+        if (RepairSiteAt(bridge.Near.ToTile()) is Workplace mending)
+        {
+            CancelConstruction(mending);
         }
 
         StandingChanged();

@@ -646,8 +646,12 @@ public readonly record struct LabourQuota
         // for ever: a begun site with everything delivered owes only its work, so this hand costs
         // that and goes back. Never over the food gate — `buildersWanted` is zero when food
         // comes first. Measured: a fed four-hand village left a warehouse at 43 of 45 for two years.
+        // ⭐ AND A REPAIR WHOSE LOGS ARE IN STORE IS THE SAME SMALL JOB (`building-condition.md §4.3`, D555). Measured
+        // in the fixture's market-off village: at two people, `free / 2` rounded to nobody for thirty years while eleven
+        // repair sites waited with sixty logs in store, and the last two froze in their fallen-in house fifteen years
+        // before they would have aged out. A repair owes a tenth of a hut; one spare hand mends it and goes back.
         if (buildersAfforded == 0 && buildersWanted > 0 && free > 0
-            && world.BegunSiteWithWhatItNeeds() is not null)
+            && (world.BegunSiteWithWhatItNeeds() is not null || world.AServableRepairSite() is not null))
         {
             buildersAfforded = 1;
         }

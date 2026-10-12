@@ -293,7 +293,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D529) — the meal's phase (`skills-catalog.md §3.5a`, Joe: "stop and go - they were eating" / "Yes"): a founder's first hunger is held off for their place on one meal interval instead of starting at the rhythm (ticks written as hunger points, under one tick's worth), and a child starts at a hashed place on the cycle — so the founders no longer eat, and stand still for it, on the same tick. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 8728969007328010656.
     // RE-TAKEN (D537) — the armful and the meal (`armful-and-meals.md`, Joe: "armful 80", "6", "everyone", "proceed with every 4¼ days at 6 a meal"): `carry_capacity` 40 → 80, `hunger_per_tick` 7 → 5, `eat_threshold` and `eat_reduces_hunger` 80 → 85 and `food_per_meal` 4 → 6 (a meal every 17 ticks), the village fixture following the game. Proven the only reason: the parent commit (f3decb0) holds the old value with the suite green, and this commit's sim-facing change is those numbers. Was 4635216801340531294.
     // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 7137397597790898232.
-    private const ulong SeamGoldenHash = 12182673311767804666UL;
+    // RE-TAKEN (D554) — building condition (`building-condition.md §4.1`, D552–D553, Joe: "yes to all"): every standing thing is stamped with the tick it was raised and last mended, and both stamps are hashed — nothing reads them yet. ⭐ PROVEN TO BE THE ONLY REASON: with the thirteen new mix lines switched off, the old value passes (22 of 22 golden guards green). Was 12182673311767804666.
+    // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 15797634979579032686.
+    private const ulong SeamGoldenHash = 2492211130328241921UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -369,7 +371,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D529) with it, for the same reason: the founders' first meals spread over one meal interval. ⭐ PROVEN: the parent commit (3b675ec) holds the old value and this is its only sim change. Was 3902667481052543839.
     // RE-TAKEN (D537) with it, for the same reason: the armful of 80 and a meal of 6 every 17 ticks. Proven by the parent commit (f3decb0), which holds the old value with the suite green. ⚠️ Found only on the second run: it is asserted after `SeamGoldenHash`, so it could not redden until that one passed. Was 17597176157332866743.
     // RE-TAKEN (D543) with it, for the same reason: the seams across the whole valley. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 3928392852916589393.
-    private const ulong SeamBeforeAnybodyGotBetter = 8164107751542196257UL;
+    // RE-TAKEN (D554) with it, for the same reason: every standing thing's raise and repair stamps are hashed. ⭐ PROVEN: with the thirteen new mix lines switched off, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's and D543's did. Was 8164107751542196257.
+    // RE-TAKEN (D555) with it, for the same reason: the season's walk raises repair sites and the builders mend. ⭐ PROVEN: with the walk short-circuited, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 11179517447590911109.
+    private const ulong SeamBeforeAnybodyGotBetter = 17671588798209576222UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

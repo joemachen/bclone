@@ -86,3 +86,13 @@ against a number from an older commit.
   home on the far bank while near-side paint is left, so a bridge nothing needs is an idle bridge, not a measurement.
   ⚠️ Joe's own saves are the better number for growth (three played villages first held 10 at Years 11, 12, 11) — they
   are gzipped JSON under `%APPDATA%/Godot/app_userdata/bclone/saves/`; a founder's `birth_tick` is negative, so read it signed.
+- `ZzMaintenance.cs` — D552's measurement for building condition (`specs/building-condition.md §8`): one `ZZM` line per
+  village per sampled year (5, 10, 20, 30, 40, 50): people alive, every standing building by kind with its age (first
+  year the harness saw it — nothing in the sim stamps a raise but bridges and the town hall), the logs and stone those
+  recipes cost, logs ever felled / split / in store, stone and firewood in store, and the felling since the last sample.
+  Since D555 also `mended` and `fell-in` (counted off the narration), `closed-now`, `repairs-waiting` and the logs already
+  on those waiting repairs (`building-condition.md §8.5`).
+  Arms `shipped` (30 seeds) and `every` (13); `ZZ_SEEDS`, `ZZ_YEARS`. Copy in, `-c Release --filter ZzMaintenance`,
+  delete. ⚠️ **Felling is limit-driven**: logs sit at their 200 limit from Year 5, so *demand ÷ logs felled* reads as
+  alarming and means nothing — compare to the ~90 a year one woodcutter fells in the opening when something wants them.
+  ⚠️ No unattended valley holds any stone in any year; a cost priced in stone can never be served there.

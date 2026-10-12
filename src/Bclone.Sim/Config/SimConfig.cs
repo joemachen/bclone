@@ -1550,6 +1550,38 @@ public sealed record SimConfig
     [JsonPropertyName("bridge_max_length_tiles")]
     public int BridgeMaxLengthTiles { get; init; } = 12;
 
+    // ---------------------------------------------------------------
+    //  Condition and maintenance (D552, D553 — `specs/building-condition.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Years of mild weather before a timber building is <em>worn</em> (`building-condition.md §4.2`) — written onto
+    /// every shipped row but the stone bridge's and the town hall's. Measured feel, not survival (§8.4): at 8 a mature
+    /// played village spends about a fifth of one woodcutter's year on repairs. All three keys 0: nothing wears.
+    /// </summary>
+    [JsonPropertyName("building_wears_in_years")]
+    public int BuildingWearsInYears { get; init; } = 8;
+
+    /// <summary>Years before a timber building is <em>failing</em> — the card warns; a wooden deck slows.</summary>
+    [JsonPropertyName("building_fails_in_years")]
+    public int BuildingFailsInYears { get; init; } = 12;
+
+    /// <summary>Years before an unrepaired timber building is a <em>ruin</em> — closed, and standing until mended or pulled down.</summary>
+    [JsonPropertyName("building_ruined_in_years")]
+    public int BuildingRuinedInYears { get; init; } = 20;
+
+    /// <summary>What each winter begun adds to a building's wear, as a share of a season's ticks (D206's axis). 50: a thing worn at 8 is worn at about 7 calendar years.</summary>
+    [JsonPropertyName("winter_wear_extra_percent")]
+    public int WinterWearExtraPercent { get; init; } = 50;
+
+    /// <summary>A repair's share of the row's logs and work, rounded up — logs only, never stone (`building-condition.md §4.3`; unattended valleys hold no stone, ever).</summary>
+    [JsonPropertyName("repair_cost_percent")]
+    public int RepairCostPercent { get; init; } = 25;
+
+    /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
+    [JsonPropertyName("failing_deck_slow_percent")]
+    public int FailingDeckSlowPercent { get; init; } = 150;
+
     /// <summary>
     /// The village learns to bridge water once it has held this many people (Joe, D546: SCALE). Measured
     /// (D547): Joe's played villages first hold 10 at Years 11–12.
@@ -3104,8 +3136,8 @@ public sealed record SimConfig
     /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
     public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
 
-    /// <summary>The built-in ten, priced from this config's own keys.</summary>
-    private IReadOnlyList<BuildingRow> DefaultBuildings() => new[]
+    /// <summary>The built-in ten, priced from this config's own keys — and wearing at the config's years (D552).</summary>
+    private IReadOnlyList<BuildingRow> DefaultBuildings() => WithTheShippedWear(new[]
     {
         new BuildingRow
         {
@@ -3572,7 +3604,38 @@ public sealed record SimConfig
             ExtentWidth = 3,
             ExtentHeight = 1,
         },
-    };
+    });
+
+    /// <summary>
+    /// Every shipped row wears at <c>building_wears_in_years</c> / <c>building_fails_in_years</c> /
+    /// <c>building_ruined_in_years</c> — except the <b>stone bridge</b> (Joe, D546 call 2: *"it lasts"*), the
+    /// <b>town hall</b> (civic, a singleton, 120 stone — exempt, D553 call 2) and the two free, instant rows
+    /// nobody raises: the stockpile and the builder's hut (`building-condition.md §4.2`).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ One place, so Joe turns three keys and every timber building follows; a modder's `buildings` array is
+    /// taken as typed and wears only where it says so.
+    /// </remarks>
+    private BuildingRow[] WithTheShippedWear(BuildingRow[] rows)
+    {
+        for (int i = 0; i < rows.Length; i++)
+        {
+            BuildingKind id = (BuildingKind)rows[i].Id;
+            if (id is BuildingKind.StoneBridge or BuildingKind.TownHall or BuildingKind.Pile or BuildingKind.BuilderHut)
+            {
+                continue;
+            }
+
+            rows[i] = rows[i] with
+            {
+                WearsInYears = BuildingWearsInYears,
+                FailsInYears = BuildingFailsInYears,
+                RuinedInYears = BuildingRuinedInYears,
+            };
+        }
+
+        return rows;
+    }
 
     [JsonPropertyName("skills")]
     public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
@@ -4696,6 +4759,24 @@ public sealed record SimConfig
                 + $"{BridgeUnlockPopulation}, {StoneBridgeUnlockCrossings}).");
         }
 
+        // All three 0 switches wear off — the rows' own rule (`building-condition.md §4.2`), at the keys: Phase 0's
+        // village of one has nobody to mend anything and its spec rules a second death system out by name.
+        bool nothingWears = BuildingWearsInYears == 0 && BuildingFailsInYears == 0 && BuildingRuinedInYears == 0;
+        if (!nothingWears
+            && (BuildingWearsInYears <= 0 || BuildingFailsInYears <= BuildingWearsInYears || BuildingRuinedInYears <= BuildingFailsInYears))
+        {
+            throw new SimConfigException(
+                "building_wears_in_years, building_fails_in_years and building_ruined_in_years must be positive and "
+                + $"rising, or all 0 for nothing wears (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
+        }
+
+        if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)
+        {
+            throw new SimConfigException(
+                "winter_wear_extra_percent must be zero or more, repair_cost_percent 1 to 100 and failing_deck_slow_percent "
+                + $"at least 100 (got {WinterWearExtraPercent}, {RepairCostPercent}, {FailingDeckSlowPercent}).");
+        }
+
         if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0
             || QuarryDigTicks <= 0 || StonePerDig <= 0 || DigsPerStint <= 0)
         {
@@ -5657,6 +5738,16 @@ public sealed record SimConfig
                     $"buildings[{i}] (id {row.Id}, {row.Name}) spans water, so its deck_tile_cost must be "
                     + $"1 to {World.TravelCostField.BaseTileCost} (got {row.DeckTileCost}) and its extent 1×1 — "
                     + "a bridge's length is the river's, not the row's.");
+            }
+
+            // Condition (D552): a row wears in three rising years, or never.
+            bool wears = row.WearsInYears != 0 || row.FailsInYears != 0 || row.RuinedInYears != 0;
+            if (wears && !(0 < row.WearsInYears && row.WearsInYears < row.FailsInYears && row.FailsInYears < row.RuinedInYears))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) wears in {row.WearsInYears} / {row.FailsInYears} / "
+                    + $"{row.RuinedInYears} years — wears_in_years, fails_in_years and ruined_in_years must all be 0 "
+                    + "(never wears) or positive and rising.");
             }
         }
 

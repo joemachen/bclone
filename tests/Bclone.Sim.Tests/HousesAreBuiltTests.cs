@@ -813,6 +813,26 @@ public sealed class HousesAreBuiltTests
         Assert.Equal(1, LabourQuota.For(world).Builders);
     }
 
+    /// <summary>
+    /// ⭐ And a repair whose logs are in store is the same small job (D555, `building-condition.md §4.3`): the one spare
+    /// hand is kept for it. Measured without it: a two-person village rounded `free / 2` to nobody for thirty years while
+    /// eleven repairs waited with sixty logs in store, and the last two froze under a fallen-in roof.
+    /// </summary>
+    [Fact]
+    public void OneSpareHandIsKeptForARepairWhoseLogsAreInStore()
+    {
+        (SimLoop loop, _, _) = PoseABegunSite(headCanBeFetchedFor: false);
+        SimWorld world = loop.World;
+        Assert.Equal(0, LabourQuota.For(world).Builders);
+        Assert.True(world.InStores(Goods.Logs) > 0, "No logs in store, so the repair cannot be served and this proves nothing.");
+
+        Workplace hut = world.Workplaces.First(w => !w.IsSite && w.Kind == JobKind.Woodcutter);
+        world.RaiseARepairIfNoneFor(
+            BuildingKind.WoodcutterHut, hut.Position, hut.Name, hut.Facing, BuildingRecipe.For(BuildingKind.WoodcutterHut, world.Config));
+        Assert.NotNull(world.AServableRepairSite());
+        Assert.Equal(1, LabourQuota.For(world).Builders);
+    }
+
     /// <summary>⛔ And never over the food gate: a hungry village keeps nobody for it (D453).</summary>
     [Fact]
     public void ABegunSiteKeepsNoBuilderWhileFoodComesFirst()

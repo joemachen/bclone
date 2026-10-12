@@ -277,6 +277,14 @@ public static class StateHash
                 // fronts a different lane. Only with a home, so a homeless family hashes as
                 // it always did.
                 hash = MixAngle(hash, household.HomeFacing);
+
+                // When it was raised and last mended (D552): condition is derived from these two.
+                hash = MixUInt64(hash, household.HomeRaisedAtTick);
+                hash = MixUInt64(hash, household.HomeRepairedAtTick);
+                if (household.HomeClosed)
+                {
+                    hash = MixByte(hash, 0x60);
+                }
             }
 
             // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
@@ -416,6 +424,14 @@ public static class StateHash
                 hash = MixFixed(hash, far.Y);
                 hash = MixByte(hash, bridgeSite.RebuildsBridge ? (byte)1 : (byte)0);
             }
+
+            // When it was raised and last mended (D552): condition is derived from these two.
+            hash = MixUInt64(hash, workplace.RaisedAtTick);
+            hash = MixUInt64(hash, workplace.RepairedAtTick);
+            if (workplace.Closed)
+            {
+                hash = MixByte(hash, 0x61);
+            }
         }
 
         // ---- Storage buildings (D30) ----
@@ -486,6 +502,14 @@ public static class StateHash
                     hash = MixUInt32(hash, (uint)g);
                     hash = MixUInt32(hash, (uint)limit.Value);
                 }
+            }
+
+            // When it was raised and last mended (D552).
+            hash = MixUInt64(hash, world.StoreBuildings[i].RaisedAtTick);
+            hash = MixUInt64(hash, world.StoreBuildings[i].RepairedAtTick);
+            if (world.StoreBuildings[i].Closed)
+            {
+                hash = MixByte(hash, 0x62);
             }
         }
 
@@ -646,6 +670,14 @@ public static class StateHash
                 // cannot make two runs of one seed differ.**
                 hash = MixUInt32(hash, (uint)library.Records[r].TechniqueId);
             }
+
+            // When it was raised and last mended (D552).
+            hash = MixUInt64(hash, library.RaisedAtTick);
+            hash = MixUInt64(hash, library.RepairedAtTick);
+            if (library.Closed)
+            {
+                hash = MixByte(hash, 0x63);
+            }
         }
 
         // ---- The founders' hall: the gift, the moment, and the building (D252) ----
@@ -675,6 +707,10 @@ public static class StateHash
             hash = MixFixed(hash, townHall.Position.X);
             hash = MixFixed(hash, townHall.Position.Y);
             hash = MixAngle(hash, townHall.Facing);
+
+            // When it was raised (never hashed before D552 — it is a fact of the village) and last mended.
+            hash = MixUInt64(hash, townHall.RaisedAtTick);
+            hash = MixUInt64(hash, townHall.RepairedAtTick);
         }
 
         // ---- The wells (D427) ----
@@ -693,6 +729,12 @@ public static class StateHash
             hash = MixFixed(hash, well.Position.Y);
             hash = MixAngle(hash, well.Facing);
             hash = MixUInt32(hash, (uint)well.Kind);
+            hash = MixUInt64(hash, well.RaisedAtTick);
+            hash = MixUInt64(hash, well.RepairedAtTick);
+            if (well.Closed)
+            {
+                hash = MixByte(hash, 0x64);
+            }
         }
 
         // ---- The bridges (D546) ----
@@ -714,6 +756,11 @@ public static class StateHash
             hash = MixFixed(hash, bridge.Far.Y);
             hash = MixUInt32(hash, (uint)bridge.Kind);
             hash = MixUInt64(hash, bridge.RaisedAtTick);
+            hash = MixUInt64(hash, bridge.RepairedAtTick);
+            if (bridge.Closed)
+            {
+                hash = MixByte(hash, 0x65);
+            }
         }
 
         // The stone bridge's unlock reads the crossings (D546), so they are state — sparse, under a tag.

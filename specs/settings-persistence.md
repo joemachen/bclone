@@ -55,6 +55,13 @@ sees it (D330), so nothing about the village depends on it.
 | Windows | where the player **dragged** it | `windows.<title>.side/x/y` |
 | New game | each row's value from the last valley founded | `new_game.<row id>` |
 
+> ⚠️ **A persisted *"shade ground"* tick can hide a brush's own work, so a brush in hand overrides it (D559).** Joe, after
+> unticking the housing and harvest shading in an earlier session: *"painting doesnt seem to work at all ... it just
+> doesnt paint."* It painted — his autosave held 660 sub-tiles of housing and 305 of harvest — and the saved ticks hid
+> every one, every launch. `VillageMap.Showing` now reads *the layer the brush in hand paints, or the tick*: holding the
+> houses, harvest, red or a hut's ground brush shades that layer whatever the tick says; putting it down returns the
+> tick's say. The tick itself is never changed for him. Probe: `[widths] brushes:`.
+
 - **Every key is optional**; an absent key is the view's own default. A toggle or window added later is
   remembered the day it is written, because both come out of the registries that already build the
   Settings panel (`_mapToggles`, `_windows`) — never a hand-kept list.

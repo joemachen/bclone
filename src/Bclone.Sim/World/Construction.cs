@@ -643,6 +643,13 @@ public sealed class ConstructionSite
     /// </summary>
     public bool RebuildsBridge { get; init; }
 
+    /// <summary>
+    /// Whether this site mends the building standing on its tiles rather than raising one (`building-condition.md
+    /// §4.3`, D555) — the demolition site's shape the other way round: it owes a share of the row's logs and work,
+    /// is worked by the builders like any site, and finishing it stamps the building's <c>RepairedAtTick</c>.
+    /// </summary>
+    public bool Repairing { get; init; }
+
     /// <summary>What it costs. Set once, at marking.</summary>
     /// <remarks>
     /// <b>A constructor parameter rather than an <c>init</c> property since D213</b>, because
@@ -889,6 +896,7 @@ public sealed class ConstructionSite
             ["demolishing"] = Demolishing,
             ["bridge_to"] = SaveWriter.Point(BridgeTo),
             ["rebuilds_bridge"] = RebuildsBridge,
+            ["repairing"] = Repairing,
             ["work_ticks"] = Recipe.WorkTicks,
             ["materials"] = materials,
             ["work_done"] = WorkDone,
@@ -915,6 +923,7 @@ public sealed class ConstructionSite
             Demolishing = save.Bool("demolishing"),
             BridgeTo = save.NullablePoint("bridge_to"),
             RebuildsBridge = save.Bool("rebuilds_bridge"),
+            Repairing = save.Bool("repairing"),
             WorkDone = save.Int("work_done"),
         };
 

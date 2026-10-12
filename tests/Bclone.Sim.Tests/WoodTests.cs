@@ -281,8 +281,13 @@ public sealed class WoodTests
         // gated / free over seeds 1–12: 36 / 28 (6 gated dead, 7 free) — the gate still kills
         // nothing — but seed 6's ungated village now dies (5 / 0). Seed 1 is the lowest whose
         // ungated village lives (3 / 9).
-        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 1);
-        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 1);
+        // ⚠️ SEED 9 SINCE BUILDINGS WEAR (D555), BY THE SAME RULE AND ONE STEP STRICTER. Seeds 1–12,
+        // alive at 120, gated / free: 7/0, 0/0, 0/0, 3/7, 0/6, 5/12, 0/0, 0/0, 10/13, 0/0, 1/0, 11/8 —
+        // 37 / 46 against D473's 36 / 28, so the gate still kills nothing, but seed 1's ungated village
+        // now dies (its last two cannot keep a roof, D143's endgame a little earlier). Seed 4 is the
+        // lowest whose ungated village lives, at 3 / 7 — a coin again; seed 9 is the healthiest of both.
+        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 9);
+        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 9);
 
         gated.Step(Config.TicksPerYear * 120);
         free.Step(Config.TicksPerYear * 120);

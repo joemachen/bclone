@@ -82,6 +82,10 @@ public sealed class ClockSystem : ISimSystem
         // fixes it hears nothing more.
         world.SayWhatIsWaitingToBeBuilt();
 
+        // ⭐ AND WHAT STANDS IS LOOKED AT, ONCE A SEASON (`building-condition.md §4.3`, D555): what turned worn gets a
+        // repair site for the builders, what turned ruin is closed. Here and nowhere else — never per tick.
+        world.TendWhatStands();
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             world.Villagers[i].GathersThisSeason = 0;

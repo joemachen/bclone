@@ -38,6 +38,12 @@ to child is the first thing in the game that makes a lineage visible without a s
 - **Surnames are his 60** (*Thatcher, Cooper, Mason … Stout, Sharp*), replacing the six.
 - **A couple carries the older partner's surname** (D465). The sim has no gender, so there is no
   default to inherit; *the elder's name* is a rule the player can read off two cards.
+  - ⚠️ **A closed village ends as one surname — understood, and left for the nomads (D558).** Joe's Year-88 village was
+    all Wright. Two founding households means two names, and nothing brings another. The older-partner rule is lopsided
+    on top: the seeker in `FormNewHouseholds` is the lowest id — the earliest born — and `FindPartner` picks a higher id,
+    so the elder is almost always the seeker, and the family that had children first wins every mixed couple. Even a
+    fair rule drifts to one name in a closed population. Joe's call: **wait for nomads** — new surnames arrive with them
+    (`DESIGN.md §5`), and `FoundingSurnameFor` already skips a name a living household carries.
 - **Hashed, never drawn** (D395). A name is a function of (seed, id) — content can grow without
   reshuffling a seed (D392), and naming takes nothing from the stream the economy draws on.
 

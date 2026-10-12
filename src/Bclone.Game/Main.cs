@@ -533,6 +533,7 @@ public partial class Main : Control
 
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
+        GD.Print(TheWearReadsTrue(_loop.World.Config));
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -575,6 +576,7 @@ public partial class Main : Control
 
         ProbeTheControlBar();
         GD.Print(TheRedBrushIsOnTheBar());
+        GD.Print(_map.ABrushShowsWhatItPaints());
         GD.Print(TheAnnounceIsAHintNotALogLine());
         GD.Print(ShiftRSquaresTheGhost());
         GD.Print(ABridgeIsDraggedBankToBank());

@@ -107,11 +107,11 @@ public sealed class BridgeTests
     }
 
     /// <summary>The water under a bridge.</summary>
-    private static List<GridPos> DeckOf(SimWorld world, Bridge bridge) =>
+    internal static List<GridPos> DeckOf(SimWorld world, Bridge bridge) =>
         bridge.Tiles().Where(t => world.Map.TerrainAt(t) == Terrain.Water).ToList();
 
     /// <summary>Every tile the village can walk to today, from where it lives.</summary>
-    private static HashSet<GridPos> Reached(SimWorld world)
+    internal static HashSet<GridPos> Reached(SimWorld world)
     {
         GridPos village = world.FirstHomeOrFoundingSite();
         var reached = new HashSet<GridPos>();
@@ -131,7 +131,7 @@ public sealed class BridgeTests
     }
 
     /// <summary>A buildable tile across the river from the village, nearest the bridge's far end.</summary>
-    private static GridPos AcrossTheRiver(SimWorld world, HashSet<GridPos> before, Bridge bridge) =>
+    internal static GridPos AcrossTheRiver(SimWorld world, HashSet<GridPos> before, Bridge bridge) =>
         Reached(world).Where(t => !before.Contains(t))
             .OrderBy(t => t.ManhattanDistanceTo(bridge.Far.ToTile()))
             .First(t => world.CanBuildAt(BuildingKind.Well, t).Allowed);

@@ -66,6 +66,28 @@ public partial class VillageMap : Control
     private static readonly Color GridLine = new("#343d3d");
     internal static readonly Color HomeColour = new("#b98a52");
 
+    /// <summary>
+    /// How far each condition pulls a building's paint toward grey, then toward black — sound, worn, failing, fallen in
+    /// (`building-condition.md §6`, D556). Steps, not a gradient: the state is the fact a player reads, and a fill that
+    /// crept darker every season would be a number dressed as a colour.
+    /// </summary>
+    private static readonly float[] WornDulled = { 0f, 0.3f, 0.5f, 0.7f };
+
+    private static readonly float[] WornDarkened = { 0f, 0.12f, 0.25f, 0.4f };
+
+    /// <summary>A building's paint in its condition — the map's fill and the card's portrait both read it.</summary>
+    internal static Color Weathered(Color colour, Condition state)
+    {
+        int step = Mathf.Clamp((int)state, 0, WornDulled.Length - 1);
+        if (step == 0)
+        {
+            return colour;
+        }
+
+        float grey = colour.Luminance;
+        return colour.Lerp(new Color(grey, grey, grey, colour.A), WornDulled[step]).Darkened(WornDarkened[step]);
+    }
+
     /// <summary>A household's fence — the outline of its plot's painted ground (D386).</summary>
     private static readonly Color FenceEdge = new("#7a5a3a", 0.85f);
 
@@ -2150,15 +2172,30 @@ public partial class VillageMap : Control
     /// right one a layer down. *The boundary is the point, not the arithmetic.*
     /// </remarks>
     private void DrawFootprint(
-        Vector2 centre, float widthTiles, float heightTiles, ushort facing, Color fill, Color edge)
+        Vector2 centre, float widthTiles, float heightTiles, ushort facing, Color fill, Color edge, bool fallenIn = false)
     {
         Vector2[] quad = FootprintQuad(centre, widthTiles, heightTiles, facing);
 
         DrawColoredPolygon(quad, fill);
+        DrawEdges(quad, edge, fallenIn);
+    }
 
+    /// <summary>
+    /// A building's four edges — broken, if it has fallen in (`building-condition.md §6`, D556): the one shape on the map
+    /// that says <i>closed</i> without a ring or a word.
+    /// </summary>
+    private void DrawEdges(Vector2[] quad, Color edge, bool fallenIn)
+    {
         for (int i = 0; i < 4; i++)
         {
-            DrawLine(quad[i], quad[(i + 1) % 4], edge, 2f);
+            if (fallenIn)
+            {
+                DrawDashedLine(quad[i], quad[(i + 1) % 4], edge, 2f, Mathf.Max(3f, _pixelsPerTile * 0.15f));
+            }
+            else
+            {
+                DrawLine(quad[i], quad[(i + 1) % 4], edge, 2f);
+            }
         }
     }
 
@@ -3151,13 +3188,16 @@ public partial class VillageMap : Control
             // ⭐ Through the footprint like every other building (D325), so a multi-tile library
             // works the day a modder types one rather than being the class that ignores its own
             // `extent` column. One tile today, so this draws exactly what the rect did.
+            Condition worn = world.ConditionOf(library);
+            Color paint = Weathered(LibraryColour, worn);
             DrawFootprint(
                 centre,
                 library.ExtentWidth * 0.8f,
                 library.ExtentHeight * 0.8f,
                 library.Facing.Raw,
-                LibraryColour with { A = 0.85f },
-                LibraryColour);
+                paint with { A = 0.85f },
+                paint,
+                worn == Condition.Ruin);
 
             // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
             // the consequence of a full shelf is a technique dying with somebody years from now,
@@ -3212,13 +3252,16 @@ public partial class VillageMap : Control
         {
             Well well = world.Wells[i];
             Vector2 centre = ToScreen(well.Position);
+            Condition worn = world.ConditionOf(well);
+            Color paint = Weathered(WellColour, worn);
             DrawFootprint(
                 centre,
                 well.ExtentWidth * 0.7f,
                 well.ExtentHeight * 0.7f,
                 well.Facing.Raw,
-                WellColour with { A = 0.9f },
-                WellColour);
+                paint with { A = 0.9f },
+                paint,
+                worn == Condition.Ruin);
             DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
         }
     }
@@ -3246,10 +3289,10 @@ public partial class VillageMap : Control
     }
 
     /// <summary>A bridge's quad from one end to the other — the ghost, the site and the deck all draw through this.</summary>
-    private void DrawALine(Point from, Point to, float widthTiles, Color fill, Color edge)
+    private void DrawALine(Point from, Point to, float widthTiles, Color fill, Color edge, bool fallenIn = false)
     {
         (Vector2 centre, float length, ushort facing) = LineAsAQuad(from, to);
-        DrawFootprint(centre, widthTiles, Mathf.Max(length, widthTiles), facing, fill, edge);
+        DrawFootprint(centre, widthTiles, Mathf.Max(length, widthTiles), facing, fill, edge, fallenIn);
     }
 
     /// <summary>
@@ -3263,14 +3306,23 @@ public partial class VillageMap : Control
         {
             Bridge bridge = world.Bridges[i];
             bool stone = bridge.Kind == BuildingKind.StoneBridge;
-            Color deck = stone ? StoneBridgeColour : BridgeColour;
-            DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, deck.Darkened(0.35f));
+            Condition worn = world.ConditionOf(bridge);
+            Color deck = Weathered(stone ? StoneBridgeColour : BridgeColour, worn);
+            DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, deck.Darkened(0.35f), bridge.Closed);
 
             // Planks across the deck, three a tile; a stone deck shows its joints a tile apart.
+            // ⭐ A failing or fallen-in deck has lost planks (`building-condition.md §6`, D556): every other one is gone,
+            // the same gaps every frame — nothing random, nothing moving.
             (Vector2 centre, float length, ushort facing) = LineAsAQuad(bridge.Near, bridge.Far);
             int across = Mathf.Max(1, Mathf.RoundToInt(length * (stone ? 1f : 3f)));
+            bool losingPlanks = !stone && worn >= Condition.Failing;
             for (int k = 1; k < across; k++)
             {
+                if (losingPlanks && k % 2 == 0)
+                {
+                    continue;
+                }
+
                 float at = k / (float)across;
                 Vector2[] band = FootprintQuad(centre, BridgeWidth, length, facing, at, at);
                 DrawLine(band[0], band[1], deck.Darkened(stone ? 0.25f : 0.4f), 1f);
@@ -3303,13 +3355,16 @@ public partial class VillageMap : Control
             // ⚠️ THE DATA WAS RIGHT THE WHOLE TIME — the inspector read "24 of 7,500 used", three
             // warehouses' worth — so the extent reached the building and only the drawing never
             // learned it. *A feature can be correct in the sim and absent from the game.*
+            Condition worn = world.ConditionOf(building);
+            colour = Weathered(colour, worn);
             DrawFootprint(
                 centre,
                 building.ExtentWidth * 0.8f,
                 building.ExtentHeight * 0.8f,
                 building.Facing.Raw,
                 colour with { A = 0.85f },
-                colour);
+                colour,
+                worn == Condition.Ruin);
 
             if (ShowsItsStock(building))
             {
@@ -6091,13 +6146,16 @@ public partial class VillageMap : Control
             // identically. It is the ground it stands on now, turned the way it is turned.
             // ⚠️ 0.8 of a tile rather than the full tile, so neighbouring buildings still read as
             // separate things rather than one continuous slab.
+            Condition worn = world.ConditionOf(workplace);
+            Color paint = Weathered(colour, worn);
             DrawFootprint(
                 centre,
                 workplace.ExtentWidth * 0.8f,
                 workplace.ExtentHeight * 0.8f,
                 workplace.Facing.Raw,
-                colour,
-                colour with { A = 0.85f });
+                paint,
+                paint with { A = 0.85f },
+                worn == Condition.Ruin);
 
             // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
             // D140's full-store ring, for the same reason and with the same switches — and it
@@ -6260,13 +6318,30 @@ public partial class VillageMap : Control
     /// ⚠️ <b>View-only, like every other map toggle</b>, so nothing about the village
     /// changes and the hash cannot diverge on it.
     /// </para>
+    /// <para>
+    /// ⛔ <b>AND A BRUSH IN HAND ALWAYS SHOWS WHAT IT PAINTS</b> (D559). Joe, with both shadings switched off in an
+    /// earlier session and saved: <i>"painting doesnt seem to work at all ... it just doesnt paint."</i> It did — his
+    /// autosave held 660 sub-tiles of housing and 305 of harvest — and none of it was drawn. His toggle still decides
+    /// what shows when the brush is put down; it is never changed for him.
+    /// </para>
     /// </remarks>
-    private bool Showing(Layer layer) => layer switch
+    private bool Showing(Layer layer) => HeldLayer == layer || layer switch
     {
         Layer.Residential => _showResidential,
         Layer.WorkGround => _showWorkGround,
         _ => _showHarvest,
     };
+
+    /// <summary>The layer the brush in hand paints, or null with no brush — read off the fields <c>SetTool</c> writes.</summary>
+    private Layer? HeldLayer =>
+        _brush == 0 ? null
+        : _groundFor != 0 ? Layer.WorkGround
+        : _destroying ? Layer.Destroy
+        : _harvestMode is not null ? Layer.Harvest
+        : Layer.Residential;
+
+    /// <summary>Whether the brush in hand is drawing what it paints — the probe's <c>brushes:</c> line (D559). True with no brush.</summary>
+    internal bool ShowsWhatItPaints => HeldLayer is not Layer held || Showing(held);
 
     /// <summary>What the map believes, so the probe can check the ticks against it (D340).</summary>
     public bool GridShown => _showGrid;
@@ -6307,6 +6382,55 @@ public partial class VillageMap : Control
         QueueRedraw();
     }
 
+    /// <summary>
+    /// The probe's <c>brushes:</c> line (D559): with every shading switched off, each brush in hand still shows what it
+    /// paints — and putting it down leaves the player's switches as they were.
+    /// </summary>
+    internal string ABrushShowsWhatItPaints()
+    {
+        var faults = new List<string>();
+        (bool homes, bool ground, bool harvest) = (_showResidential, _showWorkGround, _showHarvest);
+        ShowResidentialLand(false);
+        ShowWorkGround(false);
+        ShowHarvestLand(false);
+
+        var brushes = new List<(string Name, System.Action PickUp)>
+        {
+            ("the houses brush", () => BeginPainting(1)),
+            ("the harvest brush", () => BeginHarvesting(HarvestBrush.Everything, 1)),
+            ("the red brush", () => BeginDestroying(1)),
+            ("the take-back brush", () => BeginPainting(-1)),
+        };
+        if (_world?.Workplaces.Find(w => !w.IsSite) is Workplace hut)
+        {
+            brushes.Add(("a hut's ground brush", () => BeginPaintingGround(hut.Id, 1)));
+        }
+
+        foreach ((string name, System.Action pickUp) in brushes)
+        {
+            pickUp();
+            if (!ShowsWhatItPaints)
+            {
+                faults.Add($"{name} paints a layer the map is not drawing");
+            }
+
+            PutTheToolDown();
+        }
+
+        if (_showResidential || _showWorkGround || _showHarvest)
+        {
+            faults.Add("putting a brush down switched a shading back on");
+        }
+
+        ShowResidentialLand(homes);
+        ShowWorkGround(ground);
+        ShowHarvestLand(harvest);
+
+        return faults.Count == 0
+            ? $"[widths] brushes: ✅ with every shading off, each of {brushes.Count} brushes in hand shows what it paints, and putting it down leaves the switches off"
+            : $"[widths] brushes: ⛔ {string.Join("; ", faults)}";
+    }
+
     private void DrawHomes()
     {
         SimWorld world = _world!;
@@ -6334,10 +6458,19 @@ public partial class VillageMap : Control
             float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
             float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
             ushort facing = household.HomeFacing.Raw;
-            Color paint = occupied ? HomeColour : HomeColour with { A = 0.25f };
+            Condition worn = world.ConditionOf(household);
+            Color weathered = Weathered(HomeColour, worn);
+            Color paint = occupied ? weathered : weathered with { A = 0.25f };
 
-            // A house whose family has died still stands, and reads as abandoned.
-            DrawColoredPolygon(FootprintQuad(centre, wide * 0.8f, deep * 0.8f, facing), paint);
+            // A house whose family has died still stands, and reads as abandoned. One that has fallen in has a broken
+            // edge, as every building does (D556).
+            Vector2[] house = FootprintQuad(centre, wide * 0.8f, deep * 0.8f, facing);
+            DrawColoredPolygon(house, paint);
+            if (worn == Condition.Ruin)
+            {
+                DrawEdges(house, weathered.Darkened(0.35f), fallenIn: true);
+            }
+
             DrawColoredPolygon(
                 FootprintQuad(centre, 0.28f, deep * 0.8f, facing, from: 0f, to: 0.22f),
                 occupied ? DoorColour : DoorColour with { A = 0.25f });

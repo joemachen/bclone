@@ -173,6 +173,9 @@ red each:**
   *(nothing painted: red.)*
 - `ABuilderClearsEveryTileOfTheirSite` — played: a house over two trees with its marks taken off is
   raised on bare ground, by the builder alone (D138). *(the builder's errand on the anchor: red.)*
+- ⭐ **D557:** a house's seam test is by its rectangle, not by the tiles whose centre it covers — a turned house reached
+  stone it did not "cover" (`organic-housing.md §3.3`, `OrganicHousingTests.ATurnedHouseDoesNotReachOntoASeam`). The
+  clearing rule above is unchanged: a site clears the tiles it stands on as an obstacle.
 - `OrganicHousingTests.AHouseGoesRoundASeam` (rock and iron) — a seam under the far tile of the
   chooser's own pick moves the house. *(`TilesClippedOff` blind to seams: red. ⚠️ First posed with
   both tiles seamed, which the front check caught first — **it scored zero**, and was re-posed.)*
