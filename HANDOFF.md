@@ -1,4 +1,17 @@
-# Handoff — bclone: **▶️ PHASE 5 — BUILDING CONDITION BUILT (D554–D556), HOUSES CLEAR OF STONE (D557), SURNAMES LEFT FOR THE NOMADS (D558), A HELD BRUSH SHOWS ITS PAINT (D559) — ALL ON `slice/maintenance`, LOCAL, NOT PUSHED, NOT PLAYED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D560 (BUILDING CONDITION AND ITS FIXES, MERGED AND PUSHED). NEXT: D561, A QUARRY OR MINE WORKS THE WHOLE SEAM IT STANDS BY, ON `slice/seam-ground`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (MAINTENANCE MERGED) — D560, ON WINDOWS.**
+>
+> **`main` = D560, pushed** — `slice/maintenance` (D552–D559) merged `--no-ff` at Joe's word (*"everything else looks good!
+> approved."*); the merged tree is byte-identical to the branch tip. Save format 5.
+>
+> **▶️ NEXT: D561 on `slice/seam-ground`** (plan: `~/.claude/plans/building-wear-needs-to-joyful-chipmunk.md`). Joe: *"the
+> volume of give-able ground for iron and stone nodes ... doesn't seem to line up very well with the map and the stone one is
+> very small."* Painting was capped at 2 tiles of the building's centre tile (D541) — about 3–6 tiles of a 9–44-tile seam. His
+> calls: **the whole seam it stands by** (placement keeps the 2-tile rule) and **tighten the drawing** (rock / iron wander
+> 0.55 → about 0.15, measured by a new `ValleyTexture.SelfCheck` hug line).
+>
+> **(the banner below is the state before D560)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE INVISIBLE PAINT) — D559, ON WINDOWS.**
 >
