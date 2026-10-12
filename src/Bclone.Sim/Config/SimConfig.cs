@@ -1630,6 +1630,15 @@ public sealed record SimConfig
     [JsonPropertyName("nomads_food_each")]
     public int NomadsFoodEach { get; init; } = 20;
 
+    /// <summary>
+    /// Where the Nomads switch starts for a new village (`nomads.md §4.1`, D570; Joe, D568: <i>"enable/disable the
+    /// nomad feature altogether"</i>) — set by the new-game screen's <i>Nomads</i> row. The village's own switch is
+    /// <c>SimWorld.NomadsEnabled</c>, saved and hashed; this is only where it starts, as <c>cart_food</c> is only what
+    /// the cart starts with.
+    /// </summary>
+    [JsonPropertyName("nomads_enabled")]
+    public bool NomadsEnabled { get; init; } = true;
+
     /// <summary>How many people the longhouse puts up — two families of four, a whole band (`nomads.md §4.5`).</summary>
     [JsonPropertyName("longhouse_capacity")]
     public int LonghouseCapacity { get; init; } = 8;

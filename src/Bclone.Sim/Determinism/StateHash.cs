@@ -876,6 +876,13 @@ public static class StateHash
             }
         }
 
+        // The Nomads switch (D570), in the share-out switch's shape: mixed only when it is off, so a village that
+        // never touched it hashes as it did. A preference that changes the sim is sim state.
+        if (!world.NomadsEnabled)
+        {
+            hash = MixByte(hash, 0x6A);
+        }
+
         return hash;
     }
 

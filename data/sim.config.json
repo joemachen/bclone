@@ -1120,6 +1120,13 @@
   // few days' worth, so a yes in spring is not a famine the same week.
   "nomads_food_each": 20,
   //
+  // Where the Nomads switch starts for a new village (D570; Joe: "enable/disable
+  // the nomad feature altogether"). The new-game screen's Nomads row sets it; in
+  // play the tick under Settings > How the village runs is the village's own,
+  // saved and hashed with it. Off: no band knocks and an empty valley is never
+  // found again; a band already waiting still waits its season.
+  "nomads_enabled": true,
+  //
   // How many people the longhouse puts up - two families of four, a whole band
   // (Joe, D563: the longhouse repurposed as the communal house; learned at the
   // first knock, priced as two houses, one larder, nobody partners inside).

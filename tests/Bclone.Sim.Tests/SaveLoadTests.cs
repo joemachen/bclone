@@ -254,7 +254,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band", "Longhouses", "Refoundings",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band", "Longhouses", "Refoundings", "NomadsEnabled",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]

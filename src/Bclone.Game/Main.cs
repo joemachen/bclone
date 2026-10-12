@@ -6250,6 +6250,22 @@ public partial class Main : Control
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
 
+        // ⭐ THE NOMADS SWITCH (Joe, D568; D570) — the village's, exactly as the share-out tick above: hashed when
+        // off, saved with the village, started from the new-game screen's Nomads row. Not a setting
+        // (`settings-persistence.md §3`), so not hooked to SettingsChanged below.
+        var nomads = new CheckBox
+        {
+            Text = "nomads may come to the valley",
+            ButtonPressed = _loop.World.NomadsEnabled,
+        };
+        nomads.AddThemeFontSizeOverride("font_size", 12);
+        nomads.Toggled += on => _loop.World.NomadsEnabled = on;
+        body.AddChild(nomads);
+
+        body.AddChild(Caption(
+            "Off: no band knocks, and an empty valley is never found again. "
+            + "A band already waiting still waits its season, and can still be answered."));
+
         // ⛔ Save is on the pause screen now (D516) — it sat here until the pause screen existed (Joe, D508). The
         // share-out tick above is saved with the village and set from it on a load.
 

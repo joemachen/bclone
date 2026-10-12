@@ -56,7 +56,8 @@ public sealed partial class SimWorld
     /// <summary>On the spring turn of the due year, with nobody alive, four nomads re-found the valley. Called by <c>CivicSystem</c> every tick.</summary>
     internal void RefoundIfTheValleyHasWaited()
     {
-        if (Config.RefoundYearsFloor <= 0 || Tick == 0UL || Tick % (ulong)Config.TicksPerYear != 0UL
+        // One switch (Joe, D570): off, a dead valley stays dead as well.
+        if (Config.RefoundYearsFloor <= 0 || !NomadsEnabled || Tick == 0UL || Tick % (ulong)Config.TicksPerYear != 0UL
             || EmptiedAtTick is not ulong emptied)
         {
             return;

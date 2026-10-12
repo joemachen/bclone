@@ -10,7 +10,9 @@ nomads not travellers, a Nomads switch, a walk-in with a marker, "the pile" in t
 reviewed. The branch stays unmerged until they are built and played. ✅ Note 2 built (D569): every string says
 *nomads*, and the knock, the card and the bar button name the camp in the village's words — `SimWorld.WhereTheBandCamps`,
 *by the cart* while it stands, else *at the founding site*; `TheKnockSaysWhereTheBandCamps` (1 mutant, 1 red); no golden
-moved.** Bands knock, wait at the camp as a huddle, and settle
+moved. ✅ Note 3 built (D570): the Nomads switch — `SimWorld.NomadsEnabled`, the village's own (hashed when off, saved,
+read by the knock and by re-founding), a tick under *How the village runs* and a `nomads` row on the new-game screen
+(`nomads_enabled`); 7 guards, 9 mutants, 15 reds, no zeros; no golden moved.** Bands knock, wait at the camp as a huddle, and settle
 or move on from the card's two buttons; the longhouse is a dwelling placed by a button, learned at the first knock,
 lodging roofless families on one larder until their house is raised; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (30), `LonghouseTests` (13) and
@@ -101,8 +103,12 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    (*by the cart* / *at the founding site*), and the moment, the move-on line, the card's status and the bar button's
    tooltip read it. **Nomads, not travellers** — every string, comment and probe line (Joe's own quote in the D569 doc is
    the one *travellers* left in the code).
-3. **Accept / reject** stands (§4.3). **Add a Nomads switch** (Foundation's *Immigration — enabled*): hashed sim state read
-   by the knock, persisted with the settings; whether it also stops re-founding is his (recommend yes).
+3. ✅ **Built (D570).** **Accept / reject** stands (§4.3). **The Nomads switch** (Foundation's *Immigration — enabled*):
+   `SimWorld.NomadsEnabled`, the village's own — read by the knock **and by re-founding** (Joe: *yes, one switch*),
+   hashed only when off, saved — a tick under Settings → *How the village runs* beside *share the work out*, and its
+   starting position a **row on the new-game screen** (`nomads`: *Come to the valley* / *Never come*, setting
+   `nomads_enabled`), remembered with the valley and carried in the share code. ⛔ Not a `settings.json` toggle: a
+   setting is never sim state (`settings-persistence.md §3`), and this one decides whether a band knocks. §4.1a.
 4. **The nomads walk in from off-screen with a marker over their heads** — from the valley's edge to the camp; view-only
    first (recommended), or a sim-side `Arriving` state.
 5. ⛔ **The longhouse is removed** — call 3 reversed after play: *"unhoused immigrants should build new houses in the
@@ -151,7 +157,19 @@ has what it needs after a load.
 > byte as it did — `AVillageHashesAsBeforeUntilItsFirstKnock` guards it, and the `Rng` state is asserted equal across the
 > knock.
 
-### 4.2 The band — who walks in
+#### 4.1a The switch (D570; Joe, D568: *"enable/disable the nomad feature altogether"*)
+
+**`SimWorld.NomadsEnabled`** gates the knock (`KnockIfItIsTime`) and the re-founding (`RefoundIfTheValleyHasWaited`) —
+one switch, Joe's call. **Off:** no band knocks, and an empty valley is never found again. **What it does not touch:** a
+band already waiting still waits its season, still moves on at its turn, and can still be settled or sent on — the switch
+shuts the door on the *next* band, never on the one standing there. **Back on with a knock year already past,** the band
+knocks on the next year's turn (the due year is compared with `<`): the door was shut, they were on the road. It is **the
+village's**, in the share-out switch's shape (`settings-persistence.md §3`): hashed only when off (tag `0x6A`, appended
+after the band's block), saved as `nomads_enabled`, started from the config key `nomads_enabled` (true) — which the
+new-game screen's **`nomads` row** sets (*Come to the valley* / *Never come*), so the choice is remembered with the valley
+(`new_game.nomads` in the settings file, as every row is) and travels in the share code. In play the tick under
+Settings → *How the village runs* is the village's own, like *share the work out*, and a load shows the save's.
+⛔ No `Rng` draw, no golden moved: on is the default and mixes nothing.
 
 ```
 people   = clamp(populationAtTheKnock / nomads_share_divisor, nomads_band_min, nomads_band_max)   (+ a family if the hall stands)
@@ -327,6 +345,7 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 |---|---|---|---|---|
 | `BandsEverKnocked`, `BandKnockedAtTick`, `BandMetAPopulationOf` | sparsely, tagged, after everything else | `bands_ever_knocked`, `band_knocked_at`, `band_met` | the huddle at the camp; the bar button | the knock moment, naming the camp; *moved on* |
 | `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | — | the card: *came to the valley in Year 11* |
+| `NomadsEnabled` (D570) | sparsely (`0x6A`, when off) | `nomads_enabled` (started from the config key the new-game `nomads` row sets) | the tick under *How the village runs*; the new-game row | the caption under the tick |
 | `Household.Kind`, `Household.LodgedIn` | sparsely (non-default) | `kind`, `lodged_in` | the longhouse (a long house, the house tone); *lodging at* on the card | *settled*, *lodged*, *moved out* |
 | the longhouse's stamps, larder, `HomeClosed` | as a household's | as a household's | weathered like every building | the card's condition line |
 | `SaveGame.Format` | — | **6** — older saves refused in words | — | the title screen's refusal |
@@ -354,6 +373,9 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 | The hall was given before the village died | `SaidTheFoundersAreGone` is set; the second generation's deaths raise nothing |
 | The first founders died with nobody left (no hall) | The hall is owed on the last of the second generation, and the tribute names both |
 | A knock while a band waits | Cannot happen: the next knock year is set when a band leaves or settles |
+| The switch is off (D570) | No band knocks; an empty valley is never re-founded; a band already waiting waits its season, moves on at its turn, and can still be answered |
+| Switched on with a knock year already past | The band knocks on the next year's turn, not never |
+| Founded with the new-game row at *Never come* | `nomads_enabled` false → the village starts switched off; the tick shows it; a save carries it over the config it is loaded with |
 | Nomads and the surname pool run dry | `FoundingSurnameFor`'s attempts loop as today; with 60 names and ≤ 14 living households it never does |
 
 ---
@@ -487,6 +509,16 @@ roofless households holding their food, `MostEverAlive` counts them (a bridge le
 housed when the paint has room and freezes at the camp when not, no birth while roofless; sparse hash before the first
 knock; save → load → hash == live mid-band, and the year after matches.
 
+> ⭐ **Note 3 (D570) — `NomadTests` (37), `RefoundTests` (13), `NewGameScreenTests` (+row).** Off at founding, nobody
+> ever knocks; off with a band waiting, it still waits, still moves on at its turn, and can still be settled; on again
+> with the year past, the band knocks at the next year's turn; hashed only when off (two villages differ, and agree
+> again the moment the flag is on); the save carries it over the config it is loaded with; off, a dead valley is never
+> re-founded; the `nomads` row defaults to *on*, sets `nomads_enabled` false at *off*, is in the share code
+> (`…,nomads=on`). **9 mutants, 15 reds, no zeros:** the knock gate ignoring the switch **3**; the re-founding gate **1**;
+> the hash block dropped **1**; the save read dropped **1**; the overdue knock compared with `==` **1**; the move-on gated
+> on the switch **1**; settling refused while off **1**; the *off* level setting true **1**; the constructor ignoring the
+> config key **5**. No golden moved.
+>
 > ⭐ **Note 2 (D569) — `NomadTests` (31).** `TheKnockSaysWhereTheBandCamps`: the warm fixture (no cart) reads *at the
 > founding site* in the title and the body and never *pile*; the cold village with its opening played reads *by the cart*,
 > the camp on the cart's tile. Mutant: the camp hard-coded to *by the cart* — **1 red** (the warm pose). No golden moved;

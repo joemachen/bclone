@@ -35,6 +35,9 @@ public sealed class NomadTests
 
     private static SimConfig Silent => Village with { NomadsFirstYearFloor = 0 };
 
+    /// <summary>The fixture founded with the Nomads switch off — the new-game row's <i>Never come</i> (D570).</summary>
+    private static SimConfig Off => Village with { NomadsEnabled = false };
+
     private static (SimLoop Loop, InMemoryLogSink Log) Founded(SimConfig config)
     {
         var log = new InMemoryLogSink();
@@ -526,6 +529,94 @@ public sealed class NomadTests
         }
 
         Assert.Equal(log.Entries.Skip(said).Select(e => e.ToString()), loadedLog.Entries.Select(e => e.ToString()));
+    }
+
+    // ---- The Nomads switch (D570; Joe, D568: "enable/disable the nomad feature altogether") ----
+
+    [Fact]
+    public void SwitchedOffNobodyEverKnocks()
+    {
+        (SimLoop loop, _) = Founded(Off);
+        Assert.False(loop.World.NomadsEnabled);
+        loop.Step((int)KnockTick(loop.World) + Village.TicksPerYear + 1);
+        Assert.True(loop.World.Population > 0);
+        Assert.Null(loop.World.Band);
+        Assert.Equal(0, loop.World.BandsEverKnocked);
+    }
+
+    /// <summary>The switch shuts the door on the next band, never on the one already standing there.</summary>
+    [Fact]
+    public void SwitchedOffAWaitingBandStillWaitsAndCanBeAnswered()
+    {
+        (SimLoop loop, _) = Knocked(Village);
+        loop.World.NomadsEnabled = false;
+        ulong leaves = loop.World.BandLeavesAtTick;
+        loop.Step((int)(leaves - loop.World.Tick) - 1);
+        Assert.NotNull(loop.World.Band);
+
+        loop.World.LetTheBandSettle();
+        Assert.Null(loop.World.Band);
+        Assert.Equal(1, loop.World.BandsEverKnocked);
+
+        // And the band after it never comes while the switch is off, though its year is set.
+        Assert.True(loop.World.NextKnockYear > 0);
+        loop.Step(Village.TicksPerYear * 12);
+        Assert.Null(loop.World.Band);
+        Assert.Equal(1, loop.World.BandsEverKnocked);
+    }
+
+    [Fact]
+    public void SwitchedOffAnUnansweredBandStillMovesOnAtItsTurn()
+    {
+        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
+        loop.World.NomadsEnabled = false;
+        loop.Step((int)(loop.World.BandLeavesAtTick - loop.World.Tick) + 1);
+        Assert.Null(loop.World.Band);
+        Assert.Contains("moved on", Said(log), StringComparison.Ordinal);
+    }
+
+    /// <summary>Back on with the knock's year already past: the band knocks on the next year's turn, not never.</summary>
+    [Fact]
+    public void SwitchedOnAgainTheOverdueBandKnocksAtTheNextYearTurn()
+    {
+        (SimLoop loop, _) = Founded(Off);
+        loop.Step((int)KnockTick(loop.World) + (Village.TicksPerYear * 2) + 7);
+        Assert.Null(loop.World.Band);
+
+        loop.World.NomadsEnabled = true;
+        loop.Step(Village.TicksPerYear - (int)(loop.World.Tick % (ulong)Village.TicksPerYear));
+        Assert.Null(loop.World.Band);
+        loop.StepOnce();
+        NomadBand band = Assert.IsType<NomadBand>(loop.World.Band);
+        Assert.Equal(1, loop.World.Clock.DayOfSeason);
+        Assert.Equal(Season.Spring, loop.World.Clock.Season);
+        Assert.Equal(loop.World.Tick - 1, band.KnockedAtTick);
+    }
+
+    /// <summary>Hashed only when off (the share-out shape), so a village that never touched it hashes as it did.</summary>
+    [Fact]
+    public void TheSwitchIsInTheFingerprintOnlyWhenOff()
+    {
+        (SimLoop on, _) = Founded(Village);
+        (SimLoop off, _) = Founded(Off);
+        on.Step(100);
+        off.Step(100);
+        Assert.NotEqual(StateHash.Compute(on.World), StateHash.Compute(off.World));
+
+        off.World.NomadsEnabled = true;
+        Assert.Equal(StateHash.Compute(on.World), StateHash.Compute(off.World));
+    }
+
+    /// <summary>The save carries it, and wins over the config it is loaded with.</summary>
+    [Fact]
+    public void TheSwitchSurvivesASave()
+    {
+        (SimLoop loop, _) = Founded(Off);
+        loop.Step(50);
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-10-12 12:00", "test");
+        SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), Village, new InMemoryLogSink());
+        Assert.False(loaded.World.NomadsEnabled);
+        Assert.Equal(StateHash.Compute(loop.World), StateHash.Compute(loaded.World));
     }
 
     /// <summary>

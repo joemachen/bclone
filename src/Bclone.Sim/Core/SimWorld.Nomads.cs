@@ -27,6 +27,15 @@ public sealed partial class SimWorld
     public int BandsEverKnocked { get; internal set; }
 
     /// <summary>
+    /// ⭐ The Nomads switch (Joe, D568; D570). Off: no band knocks and an empty valley is never found again
+    /// (<see cref="RefoundIfTheValleyHasWaited"/>); a band already waiting still waits its season and can still be
+    /// answered. Back on with a knock year already past, the band knocks on the next year's turn — the door was shut,
+    /// they were on the road. <b>The village's own</b>, in the share-out switch's shape: hashed only when off, saved,
+    /// started from <c>nomads_enabled</c> (the new-game screen's row) — never a setting (`settings-persistence.md §3`).
+    /// </summary>
+    public bool NomadsEnabled { get; set; } = true;
+
+    /// <summary>
     /// The year of the next knock once a band has come and gone, or 0 before the first (whose year is
     /// <see cref="FirstKnockYear"/>, derived — so a village nobody has knocked on hashes as it did). Hashed sparsely, saved.
     /// </summary>
@@ -72,7 +81,7 @@ public sealed partial class SimWorld
     /// </summary>
     internal void KnockIfItIsTime()
     {
-        if (Config.NomadsFirstYearFloor <= 0 || Band is not null || Tick == 0UL
+        if (Config.NomadsFirstYearFloor <= 0 || !NomadsEnabled || Band is not null || Tick == 0UL
             || Tick % (ulong)Config.TicksPerYear != 0UL || Population == 0)
         {
             return;

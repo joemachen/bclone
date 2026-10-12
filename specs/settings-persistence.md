@@ -44,6 +44,12 @@ filed under its own heading there for exactly that reason. It is the village's, 
 *Snap to the grid* is a setting even though it changes placement: it acts on the input before the sim
 sees it (D330), so nothing about the village depends on it.
 
+⛔ **The *nomads may come to the valley* tick (D570) is the same shape as share-out, and for the same reason:**
+`SimWorld.NomadsEnabled` decides whether a band knocks, so it is hashed (when off) and saved, filed under *How the
+village runs*, and never in this file. **Its starting position is a new-game row** (`nomads`, `new-game-screen.md §5`),
+and *that* is remembered here as every row is (§4) — so Joe's *"persisted like the other settings"* is met by a row, not
+by an exception to this line.
+
 ## 4. What is remembered
 
 | Group | What | Key |
@@ -82,7 +88,8 @@ sees it (D330), so nothing about the village depends on it.
   narrows, fall back to the config's default rather than founding something refused. *Default
   settings* on the screen still means the config's own.
 - **Not remembered:** the speed (a village opens as it does today), cards (they belong to a selection),
-  the camera, the seed, the name, and *share the work out* (§3).
+  the camera, the seed, the name, *share the work out* and *nomads may come to the valley* (§3 — the
+  nomads tick's starting position is the `nomads` new-game row, which is).
 
 ## 5. The file
 

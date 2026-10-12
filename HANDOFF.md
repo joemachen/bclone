@@ -1,4 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D569: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTE 2 DONE (D569), NOTES 3 AND 5 NEXT, THEN 4 AND 1. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D570: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTES 2 AND 3 DONE (D569, D570), NOTE 5 NEXT, THEN 4 AND 1. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 3 BUILT: THE NOMADS SWITCH) — D570, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), note 2 (D569) and **note 3 (D570): `SimWorld.NomadsEnabled`** — the village's own switch, read by the knock and
+> by re-founding, hashed only when off (`0x6A`), saved as `nomads_enabled`, started from a new config key of that name;
+> a tick under Settings → *How the village runs* beside share-out; a sixth new-game row `nomads` (*Come to the valley* /
+> *Never come*) remembered with the valley and in the share code. A band already waiting still waits, moves on and can
+> be answered; on again with the year past, the band knocks at the next turn. 9 mutants, 15 reds, no zeros. **Verified:
+> suite 1700 / 0 / 5 of 1705 (7m05, against D569's 1693 / 0 / 5 in 6m57 on the same machine); view 0 warnings; probe
+> `new game:` ✅, `settings:` ✅, `nomads:` ✅, bar height 151, `done.` (the `pause:` ❌ is D568's, see below). No golden
+> moved.** Save format still 6 (`nomads_enabled` read with `HasValue`; **note 5's bump to 7 makes it required**).
+>
+> **▶️ NEXT: note 5 — the longhouse out, a standing *unhoused* cell on the villagers bar, save format 7**, per the
+> approved plan (`~/.claude/plans/read-handoff-md-and-tell-memoized-sunset.md`, "Commit 3"): the row deleted (not a
+> warehouse), `BuildingKind.Longhouse = 14` kept with a retired-id exemption in the missing-id validator, `house_capacity`
+> refused on any row but the house, `BuildingsCatalog.Has(id)` and a null-safe `NameOf`/`StoresAs` (the strip and the
+> `cards:` probe loop every id), `BuildFixtures.WithTheOldLonghouseStore` ADDING a full row, `LonghouseTests` deleted,
+> hash tags 0x67/0x68 retired by comment, G1–G7 red-checked. Then note 4 (walk-in, view-only) and note 1 (paths — a spec
+> with options for Joe). **Merge and push at his word only, after he has played all six.**
+>
+> **(the banner below is the state before D570)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 2 BUILT: NOMADS, NOT TRAVELLERS; THE CAMP NAMED) — D569, ON WINDOWS.**
 >

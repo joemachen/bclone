@@ -94,7 +94,8 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal("35", defaults.Values["woods"]);
         Assert.Equal("moderate", defaults.Values["stone"]);
         Assert.Equal("moderate", defaults.Values["iron"]);
-        Assert.Equal(new[] { "river", "flow", "woods", "stone", "iron" }, Shipped.NewGameOptions.Select(r => r.Id));
+        Assert.Equal("on", defaults.Values["nomads"]);
+        Assert.Equal(new[] { "river", "flow", "woods", "stone", "iron", "nomads" }, Shipped.NewGameOptions.Select(r => r.Id));
     }
 
     // ---- §8.3 West to east is today's river ----------------------------------------------------
@@ -295,7 +296,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
     public void TheShareCodeCarriesEveryRowInOrder()
     {
         string code = NewGame.ShareCode(Shipped, NewGame.Defaults(Shipped, "Mossy  Lantern"));
-        Assert.Equal("mossy lantern#river=3,flow=we,woods=35,stone=moderate,iron=moderate", code);
+        Assert.Equal("mossy lantern#river=3,flow=we,woods=35,stone=moderate,iron=moderate,nomads=on", code);
     }
 
     /// <summary>Every row at both of its ends, written out and read back, is the same settings.</summary>
@@ -380,10 +381,11 @@ public class NewGameScreenTests(ITestOutputHelper output)
         {
             Values = new Dictionary<string, string>(start.Values)
             {
-                ["river"] = "5", ["flow"] = "nwse", ["woods"] = "45", ["stone"] = "rich", ["iron"] = "sparse",
+                ["river"] = "5", ["flow"] = "nwse", ["woods"] = "45", ["stone"] = "rich", ["iron"] = "sparse", ["nomads"] = "off",
             },
         });
 
+        Assert.False(set.NomadsEnabled);
         Assert.Equal(5, set.RiverWidthTiles);
         Assert.Equal("nwse", set.RiverCourse);
         Assert.Equal(45, set.ForestCoveragePercent);

@@ -190,6 +190,17 @@ public static class NewGame
                 Level("rich", "Rich", ("iron_seam_count", "2"), ("extra_iron_seams", "4"), ("scattered_iron_seams", "7")),
             },
         },
+        // ⭐ The Nomads switch's starting position (D570; Joe, D568): a row, so it is remembered with the valley and
+        // travels in the share code; in play the village's own tick (Settings → How the village runs) takes over.
+        new NewGameRow
+        {
+            Id = "nomads", Label = "Nomads", Kind = LevelsKind,
+            Levels = new[]
+            {
+                Level("on", "Come to the valley", ("nomads_enabled", "true")),
+                Level("off", "Never come", ("nomads_enabled", "false")),
+            },
+        },
     };
 
     private static NewGameLevel Level(string value, string label, params (string Key, string Json)[] set)

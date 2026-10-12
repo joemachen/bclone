@@ -11126,6 +11126,7 @@ public sealed partial class SimWorld : IObstacles
     private SimWorld(SimConfig config, ISimLogger logger, ulong seed, SaveReader? save = null)
     {
         Config = config;
+        NomadsEnabled = config.NomadsEnabled;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         Crops = new CropsCatalog(config.Crops);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
@@ -13838,6 +13839,7 @@ public sealed partial class SimWorld : IObstacles
             ["next_knock_year"] = NextKnockYear,
             ["band"] = Band?.ToSave(),
             ["refoundings"] = Refoundings,
+            ["nomads_enabled"] = NomadsEnabled,
         };
     }
 
@@ -14009,6 +14011,7 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Band = save.NullableObject("band") is SaveReader band ? NomadBand.FromSave(band) : null;
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
+        NomadsEnabled = !save.HasValue("nomads_enabled") || save.Bool("nomads_enabled");
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

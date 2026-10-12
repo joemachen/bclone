@@ -115,6 +115,20 @@ public sealed class RefoundTests
         Assert.Equal(0, loop.World.RefoundYearAfter(1));
     }
 
+    /// <summary>One switch (Joe, D570): off, a dead valley stays dead.</summary>
+    [Fact]
+    public void SwitchedOffTheValleyIsNeverRefounded()
+    {
+        (SimLoop loop, _) = Founded(Warm with { NomadsEnabled = false });
+        loop.Step(Warm.TicksPerYear * 2);
+        KillEverybody(loop.World);
+        ulong turn = RefoundTick(loop.World);
+        loop.Step((int)(turn - loop.World.Tick) + 1 + (Warm.TicksPerYear * 3));
+        Assert.Equal(0, loop.World.Population);
+        Assert.Equal(0, loop.World.Refoundings);
+        Assert.NotNull(loop.World.EmptiedAtTick);
+    }
+
     [Fact]
     public void NobodyRefoundsAValleyThatIsNotEmpty()
     {

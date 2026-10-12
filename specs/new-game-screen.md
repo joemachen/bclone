@@ -32,7 +32,9 @@ place played again.* The screen is where that becomes something the player does.
   second archetype is its own generator stage and its own slice.
 - **The rows:** river width · **river direction** · forest cover · stone amount · iron amount · seam
   scatter. **Room for more** — *"ultimately there will be other resources on the map"* — so a row is
-  data, and a new row is a config key and a line of json, never a new screen.
+  data, and a new row is a config key and a line of json, never a new screen. ✅ The first more: the
+  **Nomads** row (D570), the switch's starting position — a row because a setting is never sim state
+  (`settings-persistence.md §3`) and a row is remembered and shared.
 - **River direction: W–E, N–S and the two diagonals**, plus *Any* (the seed picks). W–E is the
   default, so every valley anybody has seen is unchanged.
 - **The seed is any text; the dice roll words.** The screen opens on a fresh roll.
@@ -118,7 +120,7 @@ changes nothing that happens.
 
 ## 5. The rows, and the share code
 
-**A row is data** — `new_game_options`, a config list (`NewGameRow`): the code's defaults are the five
+**A row is data** — `new_game_options`, a config list (`NewGameRow`): the code's defaults are the six
 below (`NewGame.DefaultRows`), and a json's list replaces them wholesale, as `town_names` does. One
 entry per row:
 
@@ -129,6 +131,7 @@ entry per row:
 | `woods` | Forest cover | range, 0–100 % in 5s | `forest_coverage_percent` | shipped (35) |
 | `stone` | Stone | levels | `stone_seam_count` + `extra_stone_seams` per level: Sparse · Moderate · Rich | Moderate = shipped |
 | `iron` | Iron | levels | `iron_seam_count` + `extra_iron_seams` per level | Moderate = shipped |
+| `nomads` | Nomads | levels | `nomads_enabled`: *Come to the valley* (`on`) · *Never come* (`off`) — where `SimWorld.NomadsEnabled` starts (D570, `nomads.md §4.1a`) | on = shipped |
 
 - ~~`scatter` · Seam scatter~~ — **off the screen (D481).** Joe asked what it did (how far the stone and
   iron outcrops stray from an even, compass-like layout; 0 % is D475's refused cross) and chose to
@@ -153,7 +156,7 @@ entry per row:
 rows' order:
 
 ```
-mossy-lantern-41#river=3,flow=we,woods=35,stone=moderate,iron=moderate
+mossy-lantern-41#river=3,flow=we,woods=35,stone=moderate,iron=moderate,nomads=on
 ```
 
 - **Every row, always** — not only the ones that differ — so a code still reproduces its valley after
