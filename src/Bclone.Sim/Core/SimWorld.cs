@@ -13639,7 +13639,9 @@ public sealed partial class SimWorld : IObstacles
         var cart = new StoreBuilding
         {
             Catalog = GoodsCatalog,
-            Id = 1,
+
+            // 1 at the founding, as it always was; a cart raised again for a re-founding (D567) takes the next free id.
+            Id = StoreBuildings.Count == 0 ? 1 : NextStoreId(),
             Kind = StoreKind.Cart,
             Name = "the cart",
             Position = Point.CentreOf(origin),
@@ -13835,6 +13837,7 @@ public sealed partial class SimWorld : IObstacles
             ["bands_ever_knocked"] = BandsEverKnocked,
             ["next_knock_year"] = NextKnockYear,
             ["band"] = Band?.ToSave(),
+            ["refoundings"] = Refoundings,
         };
     }
 
@@ -14005,6 +14008,7 @@ public sealed partial class SimWorld : IObstacles
         BandsEverKnocked = save.Int("bands_ever_knocked");
         NextKnockYear = save.Int("next_knock_year");
         Band = save.NullableObject("band") is SaveReader band ? NomadBand.FromSave(band) : null;
+        Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

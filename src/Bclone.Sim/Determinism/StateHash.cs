@@ -848,6 +848,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.NextKnockYear);
         }
 
+        // How many times the valley has been re-founded (D567) — the next wait is hashed on it. Sparse.
+        if (world.Refoundings != 0)
+        {
+            hash = MixByte(hash, 0x69);
+            hash = MixUInt32(hash, (uint)world.Refoundings);
+        }
+
         if (world.Band is { } band)
         {
             hash = MixByte(hash, 0x6F);

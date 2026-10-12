@@ -1,4 +1,33 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D566: THE NOMADS SPECCED, MEASURED, THE BAND (D565) AND THE LONGHOUSE (D566) BUILT. NEXT: COMMIT 3, RE-FOUNDING. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D567: THE NOMADS, WHOLE — SPECCED, MEASURED, THE BAND, THE LONGHOUSE AND RE-FOUNDING BUILT. NEXT: JOE PLAYS IT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, WHOLE — COMMIT 3, RE-FOUNDING) — D567, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (spec, measurement), D565 (the
+> band), D566 (the longhouse) and **D567, commit 3 of 3 — re-founding — built, committed. The slice is whole. Not played
+> by Joe.** Save format **6** — his saves from before it are refused in words (no migrations, D507).
+>
+> **What it is, in one paragraph:** bands knock on a hash clock from a spring around Year 10 (the town hall widens them —
+> D251 amended), a share of the village in one or two families with new surnames, waiting at the pile as a huddle with a
+> card — *Let them settle* / *Send them on* — and leaving at the autumn turn unanswered; a settled family is roofless and
+> the village's own queue houses it; the **longhouse** (Joe: repurposed) is a dwelling placed by a button, learned at the
+> first knock, lodging roofless families on one larder until their house is raised; and a valley that empties is
+> **re-founded automatically** two to six years on by four paired founders of a second generation, the cart restocked,
+> the standing houses theirs, the hall owed on the last of them if it was never given. ⛔ No `Rng` draw anywhere.
+>
+> **Verified on this tree (D567):** suite 1692 / 0 / 5 of 1697 (5m34); view 0 warnings; probe 84 lines, no ⛔ (`nomads:` ✅,
+> `huddle:` ✅, the longhouse posed inside `cards:`, bar height 151, `tile centres` ✅, `new game` ✅, `done.`); **no golden
+> moved since commit 1's six.** `RefoundTests` (12): 18 mutants, 52 reds, no zeros — two found and closed (a ghost's surname reused scored zero against the pool of sixty, so `TheRefoundersTakeNamesNoHouseholdEverHeld` poses a pool of four over five seeds; the count's hash was invisible to a save round trip, so `TheRefoundingCountIsInTheFingerprint` clears it and compares). Found while building: three guards that let a village die — the Phase 0 villager, a starving village, a valley with no land — met a re-founding; the Phase 0 fixture switches it off like the knock, and the two village guards say in a line why theirs is off.
+>
+> **▶️ NEXT: Joe plays `slice/nomads`** (`git checkout slice/nomads`, `.\run.bat` — he runs PowerShell; **a new village**).
+> At 4×: the first knock around Year 10 (the stop, the huddle of dun dots at the pile, the *Travellers (N)* button), the
+> band's card and its two buttons, a settled family housed within weeks or sleeping rough at the pile, the longhouse on
+> the **Homes** shelf after the knock (raise one before the next band: lodgers on its card, *Lodging* on theirs, moving out
+> when their house is done); then a village left to die at speed and found again a few years on — the moment that says
+> what they found, the four moving into the standing houses. Things his eye decides (OPEN): a quarter of the village,
+> 2–8; 20 food a head; the longhouse's capacity and price; the huddle's look and colour; the two to six years. **Merge
+> `--no-ff` and push at his word only.**
+>
+> **(the banner below is the state before D567)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, COMMIT 2 — THE LONGHOUSE) — D566, ON WINDOWS.**
 >

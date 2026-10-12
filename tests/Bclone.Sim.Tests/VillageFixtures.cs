@@ -33,6 +33,8 @@ public static class VillageFixtures
         // carry it.
         NomadsFirstYearFloor = 8,
         NomadsFirstYearSpread = 4,
+        RefoundYearsFloor = 2,
+        RefoundYearsSpread = 4,
                 // THE SHIPPED CALENDAR (D49), which this fixture did not have for four
                 // commits. D49 moved `data/sim.config.json` to thirty-day seasons and
                 // re-derived the economy around them; nothing moved the tests, so every

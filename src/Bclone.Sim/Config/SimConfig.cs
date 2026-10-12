@@ -1634,6 +1634,17 @@ public sealed record SimConfig
     [JsonPropertyName("longhouse_capacity")]
     public int LonghouseCapacity { get; init; } = 8;
 
+    /// <summary>
+    /// The fewest years after a valley empties before four travellers re-found it (`nomads.md §4.6`; Joe, D563: automatic,
+    /// a few years on). The wait is this plus a hashed share of <see cref="RefoundYearsSpread"/>. <b>0: never</b>.
+    /// </summary>
+    [JsonPropertyName("refound_years_floor")]
+    public int RefoundYearsFloor { get; init; } = 2;
+
+    /// <summary>Years a seed may add to the wait — 2 + 0..4 is two to six years on; measured (§8.4): by then a fifth to a quarter of what stood is failing or fallen in.</summary>
+    [JsonPropertyName("refound_years_spread")]
+    public int RefoundYearsSpread { get; init; } = 4;
+
     /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
     [JsonPropertyName("failing_deck_slow_percent")]
     public int FailingDeckSlowPercent { get; init; } = 150;
@@ -4826,15 +4837,18 @@ public sealed record SimConfig
         // one to four seasons, the food carried never negative.
         if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
             || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
-            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0 || LonghouseCapacity < 1)
+            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0 || LonghouseCapacity < 1
+            || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
         {
             throw new SimConfigException(
                 "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
                 + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
                 + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
-                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, and longhouse_capacity must be at least 1 (got "
+                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, longhouse_capacity must be at least 1, and "
+                + "refound_years_floor and refound_years_spread cannot be negative (got "
                 + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
-                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}, {LonghouseCapacity}).");
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}, "
+                + $"{LonghouseCapacity}, {RefoundYearsFloor}, {RefoundYearsSpread}).");
         }
 
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)

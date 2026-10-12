@@ -47,6 +47,9 @@ public sealed class CivicSystem : ISimSystem
         // tick's deaths have happened, which is why they live here and not before `MortalitySystem`.
         world.KnockIfItIsTime();
         world.TheBandMovesOnIfUnanswered();
+
+        // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four travellers walk in a hashed few years on.
+        world.RefoundIfTheValleyHasWaited();
     }
 
     /// <summary>
@@ -200,8 +203,13 @@ public sealed class CivicSystem : ISimSystem
             ? "The one soul still here was born in this valley."
             : $"All {living} souls still here were born in this valley.";
 
-        return $"{last.Name} was the last of the four who walked into this valley with a cart "
-            + $"and no roof, and is dead at {last.AgeYears}.{beside} {whoIsLeft} "
+        // ⭐ Which founding (D567): the four who walked in with a cart, or the four who found the valley empty and
+        // made it theirs again — a second generation of founders, mourned in the same words with their own story.
+        string arrival = last.ArrivedAtTick == 0UL
+            ? "was the last of the four who walked into this valley with a cart and no roof"
+            : $"was the last of the four who found this valley empty in Year {SimClock.FromTick(last.ArrivedAtTick, world.Config).Year} and made it theirs again";
+
+        return $"{last.Name} {arrival}, and is dead at {last.AgeYears}.{beside} {whoIsLeft} "
             + "The village has gathered timber and stone for a hall in their name — put it "
             + $"wherever you like, and it will cost you nothing. {world.Clock.SeasonAndYear()}.";
     }

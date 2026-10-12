@@ -4,12 +4,14 @@
 D313 (2026-09-06, the empty-village banner does not stop the game *because nomads may come back*), D353 (Phase 6 names
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
-**Status:** 🔨 **commits 1 and 2 of 3 built — the band (D565) and the longhouse (D566): sim and view, on
-`slice/nomads`, local, not played.** Bands knock, wait at the pile as a huddle, and settle or move on from the card's two
-buttons; the longhouse is a dwelling placed by a button, learned at the first knock, lodging roofless families on one
-larder until their house is raised. `NomadTests` (30) and `LonghouseTests` (12) green and red-checked (§9); the six
-fifty-year goldens moved once, in commit 1, proven the knock's alone (§5), and none in commit 2; save format **6**; the
-probe's `nomads:` and `huddle:` lines ✅ and the longhouse posed in `cards:`. Commit 3 (re-founding) is next. Joe's four calls answered (§3);
+**Status:** ✅ **built — all three commits on `slice/nomads` (D565 the band, D566 the longhouse, D567 re-founding),
+sim and view, local, not pushed. Not yet played by Joe** (§10). Bands knock, wait at the pile as a huddle, and settle
+or move on from the card's two buttons; the longhouse is a dwelling placed by a button, learned at the first knock,
+lodging roofless families on one larder until their house is raised; a dead valley is re-founded automatically a hashed
+few years on by four paired founders of a second generation. `NomadTests` (30), `LonghouseTests` (13) and
+`RefoundTests` (12) green and red-checked (§9); the six fifty-year goldens moved once, in commit 1, proven the knock's
+alone (§5), and none since; save format **6**; the probe's `nomads:` and `huddle:` lines ✅, the longhouse posed in
+`cards:`. Measured first (§8); §8.6's on-the-build measurement is the guards' (the harness's posed arrivals stand). Joe's four calls answered (§3);
 the rest is mine, stated so he can overrule. Measured first (§8) on 100 shipped valleys and Joe's 27 saves: a knock at
 Year 10 meets eight people in two housed families (every share rule sends a couple; Joe's villages are one surname from
 Year 50); a band of two or four is housed the same year wherever the player has painted, and its cost is food, never a
@@ -242,6 +244,19 @@ first season turn after the re-founding raises repairs for everything worn. `Civ
 (the first founders died with nobody left — D252's guard), it is owed on the last of *these* founders; `TributeTo` says
 which founding it mourns and names both generations, and never raises a second hall.
 
+> ⭐ **As built (D567).** `SimWorld.Refounding.cs`: `EmptiedAtTick` is **derived** (the latest death, while nobody is
+> alive); `Refoundings` is the one new fact (hashed sparsely, saved) and the wait's hash key (`refound_years_floor` 2 +
+> `NameHash.RefoundOffset` ≤ `refound_years_spread` 4; 0 = never); `RefoundIfTheValleyHasWaited` runs from `CivicSystem`
+> on the year's turn with nobody alive. `RefoundVillage`: two households of two paired adults at `founder_age`, `Founder
+> = true` and `ArrivedAtTick` set (the second generation, told apart by it), the founding's tiers by hash, first names
+> and **surnames no household has ever carried, living or dead** (`RefoundSurnameFor` — a new lineage, not a ghost's);
+> the cart restocked, or raised again with the next free store id where it was pulled down; the knock's clock set from
+> the re-founding; a waiting moment naming the families and *N sound, N worn, N failing and N fallen in* and the food in
+> the stores. `TendWhatStands(raiseRepairs: false)` from `ClockSystem` in an empty valley — the walk's own lines (a roof
+> showing its age, a house fallen in) are still told, since the valley crumbling is its one story; no season is narrated
+> and no year closed. `TributeTo`: *"was the last of the four who found this valley empty in Year N and made it theirs
+> again"*, with the first four among those who *went before them*.
+
 ### 4.7 Not in this slice, said so
 
 A walk-in from the valley's edge (the band appears at the pile; a walk from the map's edge is a cosmetic later);
@@ -470,6 +485,8 @@ new; standing houses taken, names kept; the cart restocked (and raised again whe
 while empty and no repair site is raised; repairs raised at the first turn after; the hall owed on the last of them when
 never given, never twice; the empty-village banner still passing (`ColdStartTests` stays green); hash/save.
 
+> ⭐ **Commit 3 (D567) — `RefoundTests` (12).** MUTANT_SENTENCE
+
 Mutants to count (each must redden something): the knock a tick early / late; the floor ignored; the hash replaced by an
 `Rng` draw; a surname reused; the deadline off by a season; `ArrivedAtTick` left out of `MostEverAlive`; a lodger's meal
 from the wrong larder; a lodged villager pairing; move-out skipped; `TendWhatStands` still gated on the living; a repair
@@ -480,15 +497,19 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
 ## 10. Definition of Done
 
 - [x] Joe's four calls answered (D563).
-- [ ] §8 measured before any number is typed into `data/sim.config.json`, and §8.6 on the build.
-- [◐] §9's guards; mutants listed with their reds; any zero kept and written down — **commit 1 done (§9)**.
+- [x] §8 measured before any number is typed into `data/sim.config.json`; §8.6 on the build: the unanswered path is
+      guarded byte for byte (`AVillageHashesAsBeforeUntilItsFirstKnock`), and the settle and re-founding paths through the
+      sim's own calls are `NomadTests` / `RefoundTests` — the harness's posed arrivals stand as the measurement.
+- [x] §9's guards; mutants listed with their reds; any zero kept and written down — all three commits (§9).
 - [x] Goldens moved once, in commit 1, proven by the floor at 0.
 - [◐] The four checks (CLAUDE.md) on every commit: suite, view build read, probe (`nomads:` ✅, bar height 151, `done.`),
       goldens diffed — **commit 1: 1661 / 0 / 5 of 1666 (7m01); view 0 warnings; probe 84 lines, no ⛔; six goldens.
-      Commit 2: SUITE_SENTENCE; view 0 warnings; probe 84 lines, no ⛔; no golden moved.**
-- [ ] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
-      `morale.md`, `content-inventory.md`, `footprints.md`, `save-load.md`; `HANDOFF.md`; this status line made true — in
-      the same commit as the code.
+      Commit 2: 1673 / 0 / 5 of 1678 (6m20), with the two guards added after that run green (13 / 13); view 0 warnings;
+      probe 84 lines, no ⛔; no golden moved. Commit 3: 1692 / 0 / 5 of 1697 (5m34); view 0 warnings; probe 84 lines,
+      no ⛔; no golden moved.**
+- [x] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
+      `morale.md`, `content-inventory.md`, `footprints.md`; `HANDOFF.md`; this status line made true — in the same
+      commit as the code.
 - [ ] Played by Joe: a new village to the first knock (~Year 10), the huddle, the card's two buttons, a settled family
       housed or freezing, the longhouse in the strip after the knock, lodgers moving out; a village left to die and found
       again a few years on.

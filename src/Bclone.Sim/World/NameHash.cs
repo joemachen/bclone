@@ -111,6 +111,10 @@ public static class NameHash
     public static int KnockOffset(ulong seed, int bandsSoFar, int spread) =>
         spread <= 0 ? 0 : (int)(Mix(seed, bandsSoFar, KnockSalt, 0) % (ulong)(spread + 1));
 
+    /// <summary>A number in <c>[0, spread]</c> for the wait before a dead valley is re-founded, keyed on how many times it has been (`nomads.md §4.6`).</summary>
+    public static int RefoundOffset(ulong seed, int refoundings, int spread) =>
+        spread <= 0 ? 0 : (int)(Mix(seed, refoundings, RefoundSalt, 0) % (ulong)(spread + 1));
+
     /// <summary>A nomad's lifespan — the founders' base and spread, hashed rather than drawn (`nomads.md §4.2`).</summary>
     public static int NomadLifespan(ulong seed, int key, int baseYears, int variance) =>
         variance <= 0 ? baseYears : baseYears - variance + (int)(Mix(seed, key, NomadLifespanSalt, 0) % (ulong)((2 * variance) + 1));

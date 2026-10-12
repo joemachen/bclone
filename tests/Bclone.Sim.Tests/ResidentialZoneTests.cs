@@ -92,7 +92,9 @@ public sealed class ResidentialZoneTests
         // "No need, no houses" has a twin: no room, no houses. Erase the unbuilt land
         // and the village stops spreading — which is the constraint that makes painting
         // a decision rather than a formality.
-        SimConfig config = Config;
+        // ⚠️ A village with no land to build on dies out over sixty years and is re-founded a few years on since D567 —
+        // two new households, roofless. The claim here is about the painted land, so the re-founding is switched off.
+        SimConfig config = Config with { RefoundYearsFloor = 0 };
         SimLoop loop = Build(config);
         loop.Step(config.TicksPerYear * 10);
 

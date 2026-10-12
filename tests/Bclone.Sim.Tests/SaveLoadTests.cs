@@ -254,7 +254,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band", "Longhouses",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band", "Longhouses", "Refoundings",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -271,6 +271,8 @@ public sealed class SaveLoadTests : IDisposable
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
             // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
             "ConditionWalks",
+            // Whether the walk under way may raise repairs (D567): set by the caller on every walk, never read between them.
+            "_raiseRepairs",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {

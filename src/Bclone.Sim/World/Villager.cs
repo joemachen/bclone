@@ -267,9 +267,9 @@ public sealed class Villager
     /// <para>
     /// <b><c>init</c>-only, and that is the model saying it never changes.</b> Nobody becomes a
     /// founder and no founder stops being one — dying does not un-found a village, which is
-    /// exactly why the flag has to outlive the person. ⚠️ The re-founding of a dead village
-    /// (`DESIGN.md §5`, nomads) will want a *second* generation of founders one day; that is a
-    /// different question and this flag deliberately does not answer it.
+    /// exactly why the flag has to outlive the person. ⭐ The re-founding of a dead valley (D567,
+    /// `nomads.md §4.6`) marks its four as founders too — a second generation, told apart by
+    /// <see cref="ArrivedAtTick"/>, which the first four never carry.
     /// </para>
     /// </remarks>
     public bool Founder { get; init; }

@@ -299,7 +299,9 @@ public sealed class VillageTests
     [Fact]
     public void AVillageThatCannotFillItsGranaryNeverHasAChild()
     {
-        var (loop, _) = Build(GrowingVillage with { BirthFoodPercent = 100_000 });
+        // ⚠️ A village that starves itself out is re-founded a few years on since D567 — four new founders with children
+        // to come. The claim here is about the living village's gate, so the re-founding is switched off.
+        var (loop, _) = Build(GrowingVillage with { BirthFoodPercent = 100_000, RefoundYearsFloor = 0 });
         int founding = loop.World.Villagers.Count;
 
         loop.Step(30_000);
