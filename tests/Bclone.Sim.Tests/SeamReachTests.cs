@@ -136,42 +136,183 @@ public sealed class SeamReachTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ A quarry paints rock within reach of it and no further — or the rule is a formality (Joe's Q2).
+    /// ⭐ A QUARRY WORKS THE WHOLE SEAM IT STANDS BY (D561, Joe: <i>"the volume of give-able ground for iron and stone nodes
+    /// ... doesn't seem to line up very well with the map and the stone one is very small"</i>). It stands within reach of its
+    /// rock (D541) and paints any of the rock joined to that — and none of a seam it does not stand by. D540's Q2 answer
+    /// (no painting the big seam across the valley) holds: a separate seam is still refused, in words.
     /// </summary>
     [Fact]
-    public void AQuarryPaintsOnlyTheRockWithinItsReach()
+    public void AQuarryPaintsTheWholeSeamItStandsBy()
+    {
+        (SimWorld world, Workplace quarry, GridPos near) = AQuarryByItsRock();
+        GridPos at = quarry.Position.ToTile();
+        Assert.True(world.CanPaintWorkGround(quarry, near).Allowed, $"rock {Distance(at, near)} tiles away was refused");
+
+        // The seam runs on, well past the reach: all of it is the quarry's to work.
+        List<GridPos> line = LayALine(world, at, near, Reach + 3, _ => Terrain.Rock);
+        GridPos far = line[^1];
+        Assert.True(Distance(at, far) > Reach, $"the far end is only {Distance(at, far)} tiles away");
+        PlacementVerdict joined = world.CanPaintWorkGround(quarry, far);
+        Assert.True(joined.Allowed, $"rock {Distance(at, far)} tiles away on the quarry's own seam was refused: {joined.Reason}");
+
+        // A seam of its own, past the reach, is not this quarry's.
+        GridPos lone = ALoneTile(world, at, line);
+        world.SetTerrain(lone, Terrain.Rock);
+        PlacementVerdict refused = world.CanPaintWorkGround(quarry, lone);
+        _output.WriteLine($"rock {Distance(at, far)} tiles away on its seam: allowed; a lone rock {Distance(at, lone)} away: {refused.Reason}");
+        Assert.False(refused.Allowed);
+        Assert.Contains("Not the seam", refused.Reason, StringComparison.Ordinal);
+    }
+
+    /// <summary>Rock and iron are two seams even where they touch: a quarry does not reach through iron to the rock beyond it.</summary>
+    [Fact]
+    public void AQuarryDoesNotReachThroughIronToTheRockBeyond()
+    {
+        (SimWorld world, Workplace quarry, GridPos near) = AQuarryByItsRock();
+        GridPos at = quarry.Position.ToTile();
+        List<GridPos> line = LayALine(world, at, near, Reach + 5, k => k == 3 ? Terrain.IronDeposit : Terrain.Rock);
+        GridPos beforeTheIron = line[1];
+        GridPos far = line[^1];
+
+        Assert.True(world.CanPaintWorkGround(quarry, beforeTheIron).Allowed, "the rock before the iron is the quarry's own seam");
+        PlacementVerdict refused = world.CanPaintWorkGround(quarry, far);
+        Assert.False(refused.Allowed, "the quarry reached through iron to the rock beyond it");
+        Assert.Contains("Not the seam", refused.Reason, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The seams are an index kept on the ground's own counter (CLAUDE.md: nothing derivable rebuilt per ask) — so clearing
+    /// the one tile that joins two halves makes them two seams at the next ask, and the far half is no longer the quarry's.
+    /// </summary>
+    [Fact]
+    public void ASeamClearedInTwoIsTwoSeams()
+    {
+        (SimWorld world, Workplace quarry, GridPos near) = AQuarryByItsRock();
+        GridPos at = quarry.Position.ToTile();
+        List<GridPos> line = LayALine(world, at, near, Reach + 4, _ => Terrain.Rock);
+        GridPos far = line[^1];
+        Assert.True(world.CanPaintWorkGround(quarry, far).Allowed, "the far end of the quarry's own seam was refused");
+
+        world.SetTerrain(line[2], Terrain.Grass);
+        Assert.False(world.CanPaintWorkGround(quarry, far).Allowed, "the far half is still the quarry's after the seam was cleared in two");
+    }
+
+    /// <summary>
+    /// An outcrop is one seam however its tiles touch — corner to corner too, because that is how a blob of rock is drawn and
+    /// read. A run whose second tile steps aside diagonally is still the quarry's seam to its far end.
+    /// </summary>
+    [Fact]
+    public void ASeamJoinedCornerToCornerIsOneSeam()
+    {
+        (SimWorld world, Workplace quarry, GridPos near) = AQuarryByItsRock();
+        GridPos at = quarry.Position.ToTile();
+        List<GridPos> line = LayALine(world, at, near, Reach + 4, _ => Terrain.Rock);
+
+        // The first tile of the run moved one step aside: it now touches `near` and the run's second tile only at corners.
+        GridPos first = line[0];
+        var step = new GridPos(first.X - near.X, first.Y - near.Y);
+        var aside = new GridPos(first.X + step.Y, first.Y + step.X);
+        world.SetTerrain(first, Terrain.Grass);
+        world.SetTerrain(aside, Terrain.Rock);
+
+        PlacementVerdict verdict = world.CanPaintWorkGround(quarry, line[^1]);
+        Assert.True(verdict.Allowed, $"a run joined corner to corner at {aside} was not one seam: {verdict.Reason}");
+    }
+
+    /// <summary>A quarry raised beside the nearest rock it may stand by, and that rock.</summary>
+    private static (SimWorld World, Workplace Quarry, GridPos Near) AQuarryByItsRock()
     {
         SimWorld world = AValley(Shipped);
         GridPos? site = FindASite(world, BuildingKind.Quarry, at => SeamWithin(world, at, Terrain.Rock, Reach, reachable: true));
         Assert.NotNull(site);
         Workplace quarry = RaiseAQuarryAt(world, site!.Value);
-        GridPos at = quarry.Position.ToTile();
+        GridPos near = TheNearestReachable(world, Terrain.Rock, quarry.Position.ToTile());
+        Assert.True(Distance(quarry.Position.ToTile(), near) <= Reach, "the quarry stands out of reach of its rock");
+        return (world, quarry, near);
+    }
 
-        GridPos near = TheNearestReachable(world, Terrain.Rock, at);
-        Assert.True(Distance(at, near) <= Reach, $"the quarry at {at} stands {Distance(at, near)} tiles from its nearest rock");
-        Assert.True(world.CanPaintWorkGround(quarry, near).Allowed, $"rock {Distance(at, near)} tiles away was refused");
-
-        GridPos? far = null;
-        for (int i = 0; i < world.Map.Tiles.Count && far is null; i++)
+    /// <summary>
+    /// A straight run of seam leading away from <paramref name="near"/>, one tile per step, each step a tile further from
+    /// the building — laid with a cleared corridor round it (grass beside and past the end) so no rock of the valley's own
+    /// joins it but through <paramref name="near"/>. Step k's terrain is <paramref name="kind"/>(k), from 1.
+    /// </summary>
+    private static List<GridPos> LayALine(SimWorld world, GridPos building, GridPos near, int length, Func<int, Terrain> kind)
+    {
+        foreach (GridPos step in new[] { new GridPos(1, 0), new GridPos(-1, 0), new GridPos(0, 1), new GridPos(0, -1) })
         {
-            GridPos p = world.Zones.PositionOf(i);
-            if (world.Map.Tiles[i] == Terrain.Rock && Distance(at, p) > Reach && world.TravelCost.CanReach(world.Map.FoundingSite, p))
+            var side = new GridPos(step.Y, step.X);
+            var box = new List<GridPos>();
+            bool fits = true;
+            for (int k = 1; k <= length + 1 && fits; k++)
             {
-                far = p;
+                var on = new GridPos(near.X + (step.X * k), near.Y + (step.Y * k));
+                fits = Distance(building, on) == Distance(building, near) + k;
+                for (int p = -1; p <= 1 && fits; p++)
+                {
+                    var tile = new GridPos(on.X + (side.X * p), on.Y + (side.Y * p));
+                    fits = world.Map.Contains(tile) && world.Map.TerrainAt(tile) != Terrain.Water && !world.StandsOn(tile);
+                    box.Add(tile);
+                }
+            }
+
+            if (!fits)
+            {
+                continue;
+            }
+
+            foreach (GridPos tile in box)
+            {
+                world.SetTerrain(tile, Terrain.Grass);
+            }
+
+            var line = new List<GridPos>();
+            for (int k = 1; k <= length; k++)
+            {
+                var on = new GridPos(near.X + (step.X * k), near.Y + (step.Y * k));
+                world.SetTerrain(on, kind(k));
+                line.Add(on);
+            }
+
+            Assert.All(line, t => Assert.True(world.TravelCost.CanReach(world.Map.FoundingSite, t), $"{t} cannot be walked to"));
+            return line;
+        }
+
+        Assert.Fail($"No straight run of {length} tiles leads away from {near} on dry, open ground.");
+        return null!;
+    }
+
+    /// <summary>A reachable tile past the reach whose every neighbour is no seam and nowhere near the laid line.</summary>
+    private static GridPos ALoneTile(SimWorld world, GridPos building, IReadOnlyList<GridPos> line)
+    {
+        for (int i = 0; i < world.Map.Tiles.Count; i++)
+        {
+            GridPos at = world.Zones.PositionOf(i);
+            int d = Distance(building, at);
+            if (d <= Reach + 2 || d > Reach + 12 || world.Map.TerrainAt(at) != Terrain.Grass || world.StandsOn(at)
+                || line.Any(t => Math.Abs(t.X - at.X) <= 2 && Math.Abs(t.Y - at.Y) <= 2)
+                || !world.TravelCost.CanReach(world.Map.FoundingSite, at))
+            {
+                continue;
+            }
+
+            bool alone = true;
+            for (int dy = -1; dy <= 1 && alone; dy++)
+            {
+                for (int dx = -1; dx <= 1 && alone; dx++)
+                {
+                    var n = new GridPos(at.X + dx, at.Y + dy);
+                    alone = !world.Map.Contains(n) || !TerrainRules.IsSeam(world.Map.TerrainAt(n));
+                }
+            }
+
+            if (alone)
+            {
+                return at;
             }
         }
 
-        Assert.NotNull(far);
-        PlacementVerdict refused = world.CanPaintWorkGround(quarry, far!.Value);
-        _output.WriteLine($"rock {Distance(at, far.Value)} tiles from the quarry: {refused.Reason}");
-        Assert.False(refused.Allowed);
-        Assert.Contains("Too far", refused.Reason, StringComparison.Ordinal);
-
-        // One past the reach is not near. ⚠️ Asserted, not `if`-guarded (D540's trap): a valley with no rock at exactly
-        // that distance would have skipped it silently.
-        GridPos? onePast = RockAtExactly(world, at, Reach + 1);
-        Assert.NotNull(onePast);
-        Assert.False(world.CanPaintWorkGround(quarry, onePast!.Value).Allowed, $"rock {Reach + 1} tiles away was allowed");
+        Assert.Fail("No lone grass tile past the reach.");
+        return default;
     }
 
     /// <summary>Rock within reach but across the water is no face for this quarry.</summary>
@@ -282,21 +423,6 @@ public sealed class SeamReachTests
                 {
                     return at;
                 }
-            }
-        }
-
-        return null;
-    }
-
-    private static GridPos? RockAtExactly(SimWorld world, GridPos centre, int distance)
-    {
-        for (int i = 0; i < world.Map.Tiles.Count; i++)
-        {
-            GridPos at = world.Zones.PositionOf(i);
-            if (world.Map.Tiles[i] == Terrain.Rock && Distance(centre, at) == distance
-                && world.TravelCost.CanReach(world.Map.FoundingSite, at))
-            {
-                return at;
             }
         }
 

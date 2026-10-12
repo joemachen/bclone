@@ -43,6 +43,7 @@ limited and spent on buildings, while the quarry and the mason do not exist"*).
    iron tools (`tools-and-the-smith.md §9`). **Out:** the mason's yard (it gates the stone
    cottage, D206) and the iron mine.
 6. **Nobody is stranded (§0.1).** Seams are sized and placed so that every valley keeps rock
+   *(D561: a quarry now paints the whole seam it stands by — `seam-reach.md §6`.)*
    within reach after its first seams are cleared, measured (§6), and the harvest brush warns
    when clearing would take the last rock near the village.
 

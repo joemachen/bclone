@@ -563,6 +563,7 @@ public partial class Main : Control
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
+        GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());

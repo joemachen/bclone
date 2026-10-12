@@ -5500,18 +5500,21 @@ public sealed partial class SimWorld : IObstacles
                 + $"{Describe(Map.TerrainAt(tile))}.");
         }
 
-        // ⭐ AND ONLY WITHIN ITS REACH (Joe, D540: *"yes"* to Q2). Otherwise the placement rule is a formality —
-        // stand beside one stray rock, then paint the big seam across the valley, which is the walk the rule exists
-        // to stop. Measured from the building's tile, the same diamond `CanBuildAt` asks.
+        // ⭐ AND ONLY THE SEAM IT STANDS BY (Joe, D540: *"yes"* to Q2; widened in D561). Otherwise the placement rule is a
+        // formality — stand beside one stray rock, then paint the big seam across the valley, which is the walk the rule
+        // exists to stop. Until D561 this was the placement diamond itself, 2 tiles of the building's one tile (D541): a
+        // quarry beside an outcrop of thirty tiles could paint four of them. Joe: *"the volume of give-able ground for iron
+        // and stone nodes ... doesn't seem to line up very well with the map and the stone one is very small."* So: the
+        // seam with a tile in that diamond, ALL of it (`SimWorld.Seams.cs`), and no other.
         if (JobsCatalog.WorksAt(workplace.Kind) is BuildingKind works
             && BuildingsCatalog[works]?.MustBeNear is NearRule near)
         {
-            GridPos at = workplace.Position.ToTile();
             string bare = WithoutArticle(Describe(near.Terrain));
-            if (Math.Abs(tile.X - at.X) + Math.Abs(tile.Y - at.Y) > near.Tiles)
+            if (!IsOnASeamItStandsBy(workplace, near, tile))
             {
                 return PlacementVerdict.No(
-                    $"Too far from the {BuildingsCatalog[works]!.Name} — its {bare} must be within {near.Tiles} tiles of it.");
+                    $"Not the seam the {BuildingsCatalog[works]!.Name} stands by — it works the {bare} within {near.Tiles} "
+                    + $"tiles of it, and all the {bare} joined to that.");
             }
 
             if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), tile))
