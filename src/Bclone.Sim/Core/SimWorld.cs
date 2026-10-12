@@ -13741,6 +13741,9 @@ public sealed partial class SimWorld : IObstacles
             ["bread_ever_baked"] = BreadEverBaked,
             ["tools_ever_taken"] = ToolsEverTaken,
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
+            ["bands_ever_knocked"] = BandsEverKnocked,
+            ["next_knock_year"] = NextKnockYear,
+            ["band"] = Band?.ToSave(),
         };
     }
 
@@ -13903,6 +13906,9 @@ public sealed partial class SimWorld : IObstacles
         BreadEverBaked = save.Int("bread_ever_baked");
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
+        BandsEverKnocked = save.Int("bands_ever_knocked");
+        NextKnockYear = save.Int("next_knock_year");
+        Band = save.NullableObject("band") is SaveReader band ? NomadBand.FromSave(band) : null;
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

@@ -534,6 +534,8 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheWearReadsTrue(_loop.World.Config));
+        GD.Print(TheBandCardHoldsItsShape());
+        GD.Print(VillageMap.TheHuddleHoldsItsShape());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -1677,6 +1679,7 @@ public partial class Main : Control
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
+    private Button? _travellersButton;
 
     /// <summary>Which tab of the build bar is showing.</summary>
     private BuildTab _tab = BuildTab.Build;
@@ -2018,6 +2021,29 @@ public partial class Main : Control
         _treePanel.Visible = true;
         _treeSeason = _loop.World.Tick / (ulong)_loop.World.Config.TicksPerSeason;
         _treeView.Show(_loop.World);
+    }
+
+    private void RefreshTheTravellersButton(SimWorld world)
+    {
+        if (_travellersButton is null)
+        {
+            return;
+        }
+
+        bool waiting = world.Band is NomadBand band;
+        if (_travellersButton.Visible != waiting)
+        {
+            _travellersButton.Visible = waiting;
+        }
+
+        if (world.Band is NomadBand theBand)
+        {
+            string text = $"Travellers ({theBand.People})";
+            if (_travellersButton.Text != text)
+            {
+                _travellersButton.Text = text;
+            }
+        }
     }
 
     private void RefreshTheTownHallButton(SimWorld world)
@@ -2384,6 +2410,7 @@ public partial class Main : Control
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
+        RefreshTheTravellersButton(world);
         RefreshTheQuarryButton(world);
         RefreshTheSmithyButton(world);
         RefreshTheTree(world);
@@ -3487,6 +3514,7 @@ public partial class Main : Control
         _map.WhatsHereAsked += OnWhatsHereAsked;
         _map.HeapClicked += OnHeapClicked;
         _map.VillagerClicked += OnVillagerClicked;
+        _map.BandClicked += () => OpenCard(new CardSubject(CardKind.Band, 0));
         AddChild(_map);
 
         AddTheFrameCounter();
@@ -4941,6 +4969,12 @@ public partial class Main : Control
         _recordsButton = new Button { Text = "Records", Visible = false };
         _recordsButton.Pressed += OpenTheRecords;
         controls.AddChild(_recordsButton);
+
+        // ⭐ THE TRAVELLERS, WHILE A BAND WAITS (D565, `nomads.md §4.3`): one click to the card the decision is on,
+        // for the player who dismissed the moment and lost the huddle among the dots. Hidden otherwise.
+        _travellersButton = new Button { Text = "Travellers", Visible = false, TooltipText = "A band of travellers is camped at the pile, asking to settle" };
+        _travellersButton.Pressed += () => OpenCard(new CardSubject(CardKind.Band, 0));
+        controls.AddChild(_travellersButton);
 
         // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
         // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.

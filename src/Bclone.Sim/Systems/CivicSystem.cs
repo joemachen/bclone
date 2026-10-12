@@ -10,11 +10,12 @@ namespace Bclone.Sim.Systems;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>⭐ ONE THING TODAY: the last founder dies, and the village raises a hall in their name.</b>
-/// It is its own system rather than a branch of <see cref="KnowledgeSystem"/> because D251 is
-/// emphatic that <em>the town hall is not a knowledge building with extras</em> — knowledge is
-/// about a fifth of what it is — and because <b>nomads land here next</b> (`DESIGN.md §5`: the
-/// town hall is what triggers them). *A system named for what it does keeps the next feature from
+/// <b>⭐ TWO THINGS: the last founder dies, and the village raises a hall in their name; and the
+/// nomads knock</b> (D564). It is its own system rather than a branch of <see cref="KnowledgeSystem"/>
+/// because D251 is emphatic that <em>the town hall is not a knowledge building with extras</em> —
+/// knowledge is about a fifth of what it is — and because the nomads were always going to land here.
+/// ⚠️ D251 said the hall <em>triggers</em> them; Joe amended that in D563 — the hall <em>widens</em>
+/// them (`SimWorld.NextKnockYearAfter`). *A system named for what it does keeps the next feature from
 /// being smuggled into a system named for something else.*
 /// </para>
 /// <para>
@@ -26,8 +27,9 @@ namespace Bclone.Sim.Systems;
 /// </para>
 /// <para>
 /// <b>⚠️ It touches no RNG and reads no clock but the sim's.</b> Nothing here can shift the draw
-/// order of anything else, which is what keeps a village that never reaches the trigger
-/// byte-identical to a village from before this system existed.
+/// order of anything else — the nomads are hashed, never drawn (`nomads.md §4.1`) — which is what
+/// keeps a village that never reaches a trigger byte-identical to a village from before this system
+/// existed.
 /// </para>
 /// </remarks>
 public sealed class CivicSystem : ISimSystem
@@ -39,6 +41,12 @@ public sealed class CivicSystem : ISimSystem
         ArgumentNullException.ThrowIfNull(world);
 
         NoticeIfTheFoundersAreAllGone(world);
+
+        // ⭐ AND THE NOMADS (`specs/nomads.md`, D563–D564): a band knocks on the spring turn of its hashed year,
+        // and one left unanswered moves on at the season turn after its wait. Both read a world in which this
+        // tick's deaths have happened, which is why they live here and not before `MortalitySystem`.
+        world.KnockIfItIsTime();
+        world.TheBandMovesOnIfUnanswered();
     }
 
     /// <summary>

@@ -1089,6 +1089,37 @@
   // so a repair priced in stone would never be served there.
   "repair_cost_percent": 25,
   //
+  // THE NOMADS (D563, D564, specs/nomads.md). Bands of travellers knock on a
+  // clock that is a hash of the seed and the count of bands - never a draw, so a
+  // village that sends every band away keeps the stream it had. The first knock
+  // is nomads_first_year_floor plus 0..nomads_first_year_spread years (Joe:
+  // "around year 10"); each later one is the last plus a floor and a spread, the
+  // shorter floor once the town hall stands (Joe: the hall widens them - D251
+  // amended). A band is the population over nomads_share_divisor, clamped to
+  // min..max, two more with the hall; one family up to four people, two above.
+  // Measured first (spec 8): an unattended valley at Year 10 holds eight people
+  // in two housed families, so every share sends a couple; Joe's own villages
+  // hold 17 at Year 50 and 38-49 at Years 85-92 and are one surname from Year
+  // 50 - a quarter sends 4 / 8 there against a fifth's 3 / 8. A band of two or
+  // four at Year 10 is housed the same year in 85 of 86 valleys; its cost is
+  // food, never a roof. 0 for the first floor: nobody ever knocks.
+  "nomads_first_year_floor": 8,
+  "nomads_first_year_spread": 4,
+  "nomads_years_between_floor": 6,
+  "nomads_hall_years_between_floor": 4,
+  "nomads_years_between_spread": 4,
+  "nomads_share_divisor": 4,
+  "nomads_band_min": 2,
+  "nomads_band_max": 8,
+  //
+  // Season turns a band waits at the pile unanswered before it moves on: from a
+  // spring knock, 2 is the autumn turn ("until the leaves turn").
+  "nomads_wait_seasons": 2,
+  //
+  // Food each traveller carries into the family's larder when they settle - a
+  // few days' worth, so a yes in spring is not a famine the same week.
+  "nomads_food_each": 20,
+
   // A leg over a failing wooden deck takes this share of its ticks (D546 call 6,
   // "slows, then closes"). The deck's cost byte is already grass's 10, the dial's
   // maximum, so it is the walk that slows, not the route.

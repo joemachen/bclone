@@ -806,6 +806,39 @@ public static class StateHash
             hash = MixAngle(hash, world.BuildingsWaiting[i].Facing);
         }
 
+        // ---- The nomads (`nomads.md §6`, D565) ----
+        // The count and the next knock's year decide when the next band comes, so they are state; sparse, under
+        // a tag, so a village nobody has ever knocked on hashes as it did. The waiting band is state too — its
+        // ages, lifespans, rhythms and trade are what the village becomes if it says yes — but its names are not,
+        // like every name (D465).
+        if (world.BandsEverKnocked != 0 || world.NextKnockYear != 0)
+        {
+            hash = MixByte(hash, 0x6E);
+            hash = MixUInt32(hash, (uint)world.BandsEverKnocked);
+            hash = MixUInt32(hash, (uint)world.NextKnockYear);
+        }
+
+        if (world.Band is { } band)
+        {
+            hash = MixByte(hash, 0x6F);
+            hash = MixUInt64(hash, band.KnockedAtTick);
+            hash = MixUInt32(hash, (uint)band.MetAPopulationOf);
+            hash = MixUInt32(hash, (uint)band.Families.Count);
+            for (int f = 0; f < band.Families.Count; f++)
+            {
+                hash = MixUInt32(hash, (uint)band.Families[f].People.Count);
+                for (int p = 0; p < band.Families[f].People.Count; p++)
+                {
+                    NomadPerson person = band.Families[f].People[p];
+                    hash = MixUInt32(hash, (uint)person.AgeYears);
+                    hash = MixByte(hash, person.Adult ? (byte)1 : (byte)0);
+                    hash = MixUInt32(hash, (uint)person.LifespanYears);
+                    hash = MixUInt32(hash, (uint)person.Rhythm);
+                    hash = MixUInt32(hash, (uint)person.TradeSkillId);
+                }
+            }
+        }
+
         return hash;
     }
 
@@ -995,6 +1028,14 @@ public static class StateHash
         // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
         // for a few ticks at the start of a working life; once spent it is inert, and inert
         // state has no business in a fingerprint.
+        // When a traveller came to the valley (D565) — the most-ever-held reads it, so it is state. Sparse, under
+        // a tag: a founder and anybody born here mix nothing new.
+        if (villager.ArrivedAtTick != 0UL)
+        {
+            hash = MixByte(hash, 0x4E);
+            hash = MixUInt64(hash, villager.ArrivedAtTick);
+        }
+
         if (villager.Rhythm != 0)
         {
             hash = MixUInt32(hash, (uint)villager.Rhythm);

@@ -61,7 +61,15 @@ public sealed class SaveLoadTests : IDisposable
         // "nowhere to keep it" latch, dropping either from the save scored 0 reds.
         new object[] { "established, every store closed (year 1)", 300 },
         new object[] { "unattended, emptied, its moment waiting (year 2)", 600 },
+
+        // D565: a band of travellers waiting at the pile — the one state the nomads add that is not a count.
+        new object[] { "fixture village, a band waiting at the pile", ((FixtureKnockYear - 1) * 480) + 5 },
     };
+
+    /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
+    private static int FixtureKnockYear =>
+        VillageFixtures.Village.NomadsFirstYearFloor
+        + NameHash.KnockOffset(VillageFixtures.Village.Seed, 0, VillageFixtures.Village.NomadsFirstYearSpread);
 
     private static (SimLoop Loop, InMemoryLogSink Log) Played(string pose, int ticks)
     {
@@ -189,6 +197,10 @@ public sealed class SaveLoadTests : IDisposable
         (SimLoop emptied, _) = Played("unattended, emptied, its moment waiting (year 2)", 600);
         Assert.Equal(0, emptied.World.Population);
         Assert.NotEmpty(emptied.World.Moments);
+
+        (SimLoop knocked, _) = Played("fixture village, a band waiting at the pile", ((FixtureKnockYear - 1) * 480) + 5);
+        Assert.NotNull(knocked.World.Band);
+        Assert.True(knocked.World.Band!.People >= 2, "a band with nobody in it is no pose");
     }
 
     // ---------------------------------------------------------------
@@ -242,7 +254,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
-            "Bridges", "BridgeCrossings",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Band",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -268,7 +280,7 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
-            "BatchesThisStint", "FullFor", "FullFrom",
+            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
@@ -339,6 +351,9 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
+        (typeof(NomadBand), Kept.Saved, new[] { "KnockedAtTick", "MetAPopulationOf", "Families" }),
+        (typeof(NomadFamily), Kept.Saved, new[] { "Surname", "People" }),
+        (typeof(NomadPerson), Kept.Saved, new[] { "Name", "AgeYears", "Adult", "LifespanYears", "Rhythm", "TradeSkillId" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),

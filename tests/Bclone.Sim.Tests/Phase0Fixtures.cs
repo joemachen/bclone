@@ -42,6 +42,11 @@ public static class Phase0Fixtures
         BuildingFailsInYears = 0,
         BuildingRuinedInYears = 0,
 
+        // And nobody knocks (D565): the village of one has no roof to offer and its spec rules a second death
+        // system out by name. `VillageFixtures.Village` keeps the shipped clock, so its fifty-year goldens carry
+        // the first knock at Year 8–12.
+        NomadsFirstYearFloor = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

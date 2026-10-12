@@ -4,11 +4,14 @@
 D313 (2026-09-06, the empty-village banner does not stop the game *because nomads may come back*), D353 (Phase 6 names
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
-**Status:** ✍️ **specced and measured (§8), not built.** Joe's four calls answered (§3); the rest is mine, stated so he
-can overrule. Three commits planned on `slice/nomads` (§9): the band, the longhouse, re-founding. Measured on 100
-shipped valleys and Joe's 27 saves: a knock at Year 10 meets eight people in two housed families (every share rule sends
-a couple; Joe's villages are one surname from Year 50); a band of two or four is housed the same year wherever the
-player has painted, and its cost is food, never a roof; a re-founding's first winter turns on whether a house stands.
+**Status:** 🔨 **commit 1 of 3 built — the band (D565): sim and view, on `slice/nomads`, local, not played.** Bands
+knock, wait at the pile as a huddle, and settle or move on from the card's two buttons; `NomadTests` (23) green and
+red-checked (§9); the six fifty-year goldens moved once, proven the knock's alone (§5); save format **6**; the probe's
+`nomads:` and `huddle:` lines ✅. Commits 2 (the longhouse) and 3 (re-founding) are next. Joe's four calls answered (§3);
+the rest is mine, stated so he can overrule. Measured first (§8) on 100 shipped valleys and Joe's 27 saves: a knock at
+Year 10 meets eight people in two housed families (every share rule sends a couple; Joe's villages are one surname from
+Year 50); a band of two or four is housed the same year wherever the player has painted, and its cost is food, never a
+roof; a re-founding's first winter turns on whether a house stands.
 
 ---
 
@@ -111,6 +114,15 @@ the knock) and re-derived wherever it is read — it is never stored twice (CLAU
 The population at the knock is stored with it (`BandMetAPopulationOf`, saved and hashed with the tick) so the derivation
 has what it needs after a load.
 
+> ⭐ **As built (D565): the band is STORED, not re-derived, and the reason is the names.** Its people's names are picked
+> against the roster *at the knock* (`NameFor`'s rule, keyed a million past any villager id) and a birth during the wait
+> would change a re-derivation, so the card and the settling could disagree about who was standing there. `SimWorld.Band`
+> is a `NomadBand` — the knock tick, the population met, its families and people — hashed as sim state (ages, lifespans,
+> rhythms, the trade; **never the names**, D465's rule) and saved. `NextKnockYear` is stored only once a band has come
+> and gone; **the first knock's year is derived** (`FirstKnockYear()`), so a village nobody has knocked on hashes byte for
+> byte as it did — `AVillageHashesAsBeforeUntilItsFirstKnock` guards it, and the `Rng` state is asserted equal across the
+> knock.
+
 ### 4.2 The band — who walks in
 
 ```
@@ -139,11 +151,24 @@ at the pile — and this winter would kill them"*), and two buttons — **Let th
 (`nomads_wait_seasons` 2) with a passing line: *"The travellers moved on."* No harm, no foul — the clock just advances.
 The unattended paths — the harness, the goldens, a headless run — are *unanswered*.
 
+> ⭐ **As built (D565).** The moment: *"Travellers at the pile — the Hales, 2 souls, 2 grown and 0 children, carrying a
+> few days' food — have come up the valley asking for a place to settle. They will camp by the pile until the leaves turn.
+> The village holds 812 food, 101 a head. Click them to decide."* The huddle: a ring of dun dots inside the camp's tile
+> (`VillageMap.HuddleOffsets`, children smaller), clicked before anything under it, ringed while its card is up. The card
+> (`CardKind.Band`): title *Travellers — the Hales*, a status sentence that says where they would sleep tonight (and, from
+> autumn, *this winter would kill them there*), souls / food carried / food a head here, the people by name, age, grown
+> or child and trade, a caption naming the turn they leave at, and in its fold the row **Travellers: Let them settle ·
+> Send them on**. The band gone, the card closes like a demolished store's. The bar's **Travellers (N)** button shows
+> while a band waits. Probe lines `nomads:` (the card posed from plain facts, both buttons wired) and `huddle:` (2–8 stand
+> in a ring inside the tile, nobody on anybody else).
+
 ### 4.4 Settling — roofless, and then what the village already does
 
 `LetTheBandSettle()` makes each family a `Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
 holding the carried food, `HomePosition = null`) and adds its villagers at the pile, then calls `NoticeTheVillageSize`
 (the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads `ArrivedAtTick`, §5).
+⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would
+pair across the band on the very tick they arrived and take over a dead household whole (§8's trap).
 Log, `Life`: *"The Hales and the Dunns have settled — 7 more souls, and no roof yet. Spring, Year 11."*
 
 From there nothing is new: they are roofless families, so `HouseTheRoofless` moves them into an empty standing house the
@@ -224,6 +249,9 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 - **Goldens.** The six fifty-year goldens move **once**, in commit 1: bands knock from Year 8–12 in the fixture and the
   shipped seed, and `BandsEverKnocked` is hashed even when the band goes unanswered. Proven by setting
   `nomads_first_year_floor` to 0 and watching the old values pass. The map golden and every pose before Year 8 hold.
+  ✅ **Done (D565): exactly six moved** (`FarmGoldenTests` ×2, `StockLimitTests` ×2, `SkillTests` ×2), and with the floor
+  at 0 in both the shipped file and the fixture all five that run first passed on their old values before any was
+  re-taken; the sixth (`SeamBeforeAnybodyGotBetter`) surfaces only once the first is green, as it did in D555.
 
 ---
 
@@ -393,6 +421,20 @@ roofless households holding their food, `MostEverAlive` counts them (a bridge le
 housed when the paint has room and freezes at the pile when not, no birth while roofless; sparse hash before the first
 knock; save → load → hash == live mid-band, and the year after matches.
 
+> ⭐ **Commit 1 (D565) — `NomadTests` (30).** Mutants, each the one line it names: the knock a tick late **13 red**; the
+> floor ignored **2**; the first year drawn from `Rng` instead of hashed **15** (the `Rng`-state assertion and every
+> knock-year guard); a living surname reused — ⚠️ **zero** against the shipped pool of sixty, so
+> `ABandTakesTheOneSurnameNobodyLivingHolds` poses a pool of three over five seeds: **3**; the deadline a season late
+> **1**; arrivals not counted by the bridge — ⚠️ **zero** where the peak was the present, so `AnArrivalCountsFromTheTickItCame`
+> poses a village three below its peak: **1**; the couple left unpaired **1**; the food carried lost **1**; a knock on an
+> empty valley **1**; two families from five **1**; the hall not widening **1**; the civic hook gone **14**; the band not
+> saved **1**; the count's hash block dropped — ⚠️ the first mutant (`if (false)`) **did not build** (D450), re-posed as
+> `> 1000` and caught by the sent-on guard's silent twin **1**; `ArrivedAtTick` not loaded — ⚠️ **zero** with the only
+> save pose made while the band still waited, so `ASettledFamilySurvivesASaveAndItsYearMatches`: **1**. **15 mutants,
+> 57 reds, no zeros.** Found while building: the fixture village inherited Phase 0's floor of 0 and no band ever knocked
+> in the first run — `VillageFixtures.Village` puts the shipped knock back, as it does the wear (D555's shape); and
+> `SimLoop` computes a tick before it advances, so a band raised on the knock tick is there one step past it.
+
 **Commit 2 — `LonghouseTests`:** locked until the first knock; lodges up to capacity and the ninth sleeps rough; the
 larder is fetched to and burned from by lodgers; shelter follows the larder; a lodged family moves out the day its house
 is raised; nobody lodged partners; a fallen-in longhouse shelters nobody; pulling it down turns lodgers out; the three
@@ -414,10 +456,10 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
 
 - [x] Joe's four calls answered (D563).
 - [ ] §8 measured before any number is typed into `data/sim.config.json`, and §8.6 on the build.
-- [ ] §9's guards; mutants listed with their reds; any zero kept and written down.
-- [ ] Goldens moved once, in commit 1, proven by the floor at 0.
-- [ ] The four checks (CLAUDE.md) on every commit: suite, view build read, probe (`nomads:` ✅, bar height 151, `done.`),
-      goldens diffed.
+- [◐] §9's guards; mutants listed with their reds; any zero kept and written down — **commit 1 done (§9)**.
+- [x] Goldens moved once, in commit 1, proven by the floor at 0.
+- [◐] The four checks (CLAUDE.md) on every commit: suite, view build read, probe (`nomads:` ✅, bar height 151, `done.`),
+      goldens diffed — **commit 1: 1661 / 0 / 5 of 1666 (7m01); view 0 warnings; probe 84 lines, no ⛔; six goldens.**
 - [ ] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
       `morale.md`, `content-inventory.md`, `footprints.md`, `save-load.md`; `HANDOFF.md`; this status line made true — in
       the same commit as the code.

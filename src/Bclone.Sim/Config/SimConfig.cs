@@ -1578,6 +1578,58 @@ public sealed record SimConfig
     [JsonPropertyName("repair_cost_percent")]
     public int RepairCostPercent { get; init; } = 25;
 
+    // ---------------------------------------------------------------
+    //  The nomads (D563, D564 — `specs/nomads.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The earliest year a band of travellers knocks (`nomads.md §4.1`): the first knock is this plus a hashed share of
+    /// <see cref="NomadsFirstYearSpread"/>. <b>0: nobody ever knocks</b> (Phase 0's village of one). Joe (D563): their own
+    /// clock, around Year 10.
+    /// </summary>
+    [JsonPropertyName("nomads_first_year_floor")]
+    public int NomadsFirstYearFloor { get; init; } = 8;
+
+    /// <summary>Years a seed may add to the first knock — 8 + 0..4 is Year 8–12.</summary>
+    [JsonPropertyName("nomads_first_year_spread")]
+    public int NomadsFirstYearSpread { get; init; } = 4;
+
+    /// <summary>The fewest years between one band leaving or settling and the next knock, without a town hall.</summary>
+    [JsonPropertyName("nomads_years_between_floor")]
+    public int NomadsYearsBetweenFloor { get; init; } = 6;
+
+    /// <summary>The fewest years between bands once the town hall stands — the hall widens them (Joe, D563).</summary>
+    [JsonPropertyName("nomads_hall_years_between_floor")]
+    public int NomadsHallYearsBetweenFloor { get; init; } = 4;
+
+    /// <summary>Years a seed may add between bands.</summary>
+    [JsonPropertyName("nomads_years_between_spread")]
+    public int NomadsYearsBetweenSpread { get; init; } = 4;
+
+    /// <summary>
+    /// A band is the village's population divided by this, clamped to <see cref="NomadsBandMin"/>..<see cref="NomadsBandMax"/>
+    /// — a quarter (`nomads.md §8.2`: a fifth of a village of eight is the minimum either way; from Year ~50 a quarter sends
+    /// six against five). Two more with the hall standing.
+    /// </summary>
+    [JsonPropertyName("nomads_share_divisor")]
+    public int NomadsShareDivisor { get; init; } = 4;
+
+    /// <summary>The fewest people in a band — a couple.</summary>
+    [JsonPropertyName("nomads_band_min")]
+    public int NomadsBandMin { get; init; } = 2;
+
+    /// <summary>The most people in a band — two families of four.</summary>
+    [JsonPropertyName("nomads_band_max")]
+    public int NomadsBandMax { get; init; } = 8;
+
+    /// <summary>Season turns a band waits at the pile unanswered before it moves on: 2 from a spring knock is the autumn turn.</summary>
+    [JsonPropertyName("nomads_wait_seasons")]
+    public int NomadsWaitSeasons { get; init; } = 2;
+
+    /// <summary>Food each traveller carries into the family's larder on settling — a few days' worth.</summary>
+    [JsonPropertyName("nomads_food_each")]
+    public int NomadsFoodEach { get; init; } = 20;
+
     /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
     [JsonPropertyName("failing_deck_slow_percent")]
     public int FailingDeckSlowPercent { get; init; } = 150;
@@ -4768,6 +4820,22 @@ public sealed record SimConfig
             throw new SimConfigException(
                 "building_wears_in_years, building_fails_in_years and building_ruined_in_years must be positive and "
                 + $"rising, or all 0 for nothing wears (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
+        }
+
+        // The nomads' clock and band (`nomads.md §4`): floors and spreads never negative (a first-year floor of 0 is
+        // "nobody knocks"), the share a divisor, the band at least a couple and never smaller than its floor, a wait of
+        // one to four seasons, the food carried never negative.
+        if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
+            || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
+            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0)
+        {
+            throw new SimConfigException(
+                "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
+                + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
+                + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
+                + "nomads_wait_seasons in 1..4, and nomads_food_each cannot be negative (got "
+                + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}).");
         }
 
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)

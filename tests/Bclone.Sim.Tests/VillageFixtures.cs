@@ -27,6 +27,12 @@ public static class VillageFixtures
                 BuildingWearsInYears = 8,
                 BuildingFailsInYears = 12,
                 BuildingRuinedInYears = 20,
+
+        // And the shipped knock (D565): Phase 0's fixture lets nobody knock on its village of one; here the first
+        // band knocks in a spring of Year 8–12 by the seed's hash, as it does in the game, so the fifty-year goldens
+        // carry it.
+        NomadsFirstYearFloor = 8,
+        NomadsFirstYearSpread = 4,
                 // THE SHIPPED CALENDAR (D49), which this fixture did not have for four
                 // commits. D49 moved `data/sim.config.json` to thirty-day seasons and
                 // re-derived the economy around them; nothing moved the tests, so every

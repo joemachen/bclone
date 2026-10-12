@@ -204,8 +204,9 @@ public enum BuildingKind
     /// </para>
     /// <para>
     /// <b>⛔ AND IT IS NOT A KNOWLEDGE BUILDING WITH EXTRAS</b> (D251, Joe). Knowledge is about a
-    /// fifth of it: it also triggers <b>nomads</b>, <b>itemises everything the village has ever
-    /// met</b> — crops, animals, techniques, buildings, <em>"in a collectors' sort of way"</em> —
+    /// fifth of it: it also <b>widens the nomads</b> (D563 — they knock on their own clock, and come more
+    /// often and a family larger once the hall stands; D251's <em>triggers</em> is amended), <b>itemises
+    /// everything the village has ever met</b> — crops, animals, techniques, buildings, <em>"in a collectors' sort of way"</em> —
     /// and carries the <b>charts</b>. §8's knowledge screen is one tab. <em>A session that builds
     /// "the knowledge screen, in a building" has built the wrong thing.</em>
     /// </para>

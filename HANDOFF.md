@@ -1,4 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D564: THE NOMADS SPECCED AND MEASURED, NOT BUILT. NEXT: BUILD COMMIT 1 (THE BAND). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D565: THE NOMADS SPECCED, MEASURED, AND COMMIT 1 (THE BAND) BUILT. NEXT: COMMIT 2, THE LONGHOUSE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS, COMMIT 1 — THE BAND) — D565, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (the spec and its measurement) +
+> **D565, commit 1 of 3 — the band — built, sim and view, committed. Not played by Joe.** Save format **6**.
+>
+> **What it is:** a band knocks on the spring turn of its hashed year (Year 8–12 first; then every 6–10, 4–8 and a family
+> larger once the town hall stands), waits at the pile as a huddle of dun dots, and settles or moves on from **the card's two
+> buttons** (*Let them settle* / *Send them on*) or the bar's *Travellers (N)*; unanswered, it moves on at the autumn turn.
+> A settled family is a roofless household with a **new surname**, its couple paired, holding 20 food a head; the village's
+> own roofless queue houses it or it sleeps in the open. ⛔ **No `Rng` draw anywhere** — the first knock's year is derived,
+> the band is stored and hashed (never its names), and a village nobody has knocked on hashes as it did.
+>
+> **Verified on this tree:** suite 1661 / 0 / 5 of 1666 (7m01 against D564's 6m06 on the same machine — 34 more guards, the nomad ones forty seconds of them); view 0 warnings; probe 84 lines, no ⛔ (`nomads:` ✅, `huddle:` ✅, bar
+> height 151, `tile centres` ✅, `new game` ✅, `done.`); **exactly six goldens moved** (`FarmGoldenTests` ×2,
+> `StockLimitTests` ×2, `SkillTests` ×2), proven the knock's alone with the floor at 0. `NomadTests` (23): 15 mutants, 57 reds, no zeros — four zeros found and closed with new guards (a surname skip the pool of sixty never exercised, posed on a pool of three; the bridge's count, posed on a village below its peak; a hash block whose mutant did not build, re-posed; an unsaved arrival tick, read by a save after settling).
+>
+> **▶️ NEXT: commit 2, the longhouse** (`nomads.md §4.5`): `HouseholdKind.Communal`, `Household.LodgedIn`, `LarderOf`, the
+> `RaiseFinished` arm, lodging in and out in `HouseTheRoofless`, `IsSeekingAHome`, `ShelterAt`, the hearth, the row
+> (two houses' logs, `longhouse_capacity` 8, `Stores = None`), `WhyNotYet(Longhouse)` on `BandsEverKnocked`, the strip's
+> Homes category, the card, `cards:` pose; re-point `FootprintTests` / `TileFindersAgreeTests` / `ModdedBuildingTests`
+> from the longhouse to the warehouse. Then commit 3 (re-founding). Joe plays at the end; merge and push at his word.
+>
+> **(the banner below is the state before D565)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS SPECCED) — D564, ON WINDOWS.**
 >

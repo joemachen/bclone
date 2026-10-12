@@ -29,7 +29,7 @@ public sealed class ColdStartTests
     public ColdStartTests(ITestOutputHelper output) => _output = output;
 
     /// <summary>The village fixture, but arriving to an empty valley.</summary>
-    private static SimConfig ColdVillage => VillageFixtures.Village with
+    internal static SimConfig ColdVillage => VillageFixtures.Village with
     {
         FoundingBuildings = false,
         CartCapacity = ShippedConfig.Load().CartCapacity,

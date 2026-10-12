@@ -513,7 +513,7 @@ public sealed partial class SimWorld
     /// <summary>
     /// ⭐ The most people the village has ever held at once — what the wooden bridge's unlock reads (Joe,
     /// D546: SCALE). <b>Derived from the villagers' own history</b>, so it is neither saved nor hashed: a
-    /// villager's arrival (a founder at the first tick, everybody else at birth) and death are already
+    /// villager's arrival (a founder at the first tick, a traveller at the tick they settled, everybody else at birth) and death are already
     /// state, and the peak is a function of them.
     /// </summary>
     /// <remarks>
@@ -533,7 +533,9 @@ public sealed partial class SimWorld
             for (int i = 0; i < Villagers.Count; i++)
             {
                 Villager v = Villagers[i];
-                ulong arrived = v.Founder || v.BirthTick < 0 ? 0UL : (ulong)v.BirthTick;
+                // A traveller counts from the tick they came (D564), not from a birth they had elsewhere.
+                ulong arrived = v.ArrivedAtTick != 0UL ? v.ArrivedAtTick
+                    : v.Founder || v.BirthTick < 0 ? 0UL : (ulong)v.BirthTick;
                 events.Add((arrived, +1));
                 if (v.DiedAtTick is ulong died)
                 {

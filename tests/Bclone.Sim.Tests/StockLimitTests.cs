@@ -381,7 +381,7 @@ public sealed class StockLimitTests
     // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 686603967521758927.
     // RE-TAKEN (D554) — building condition (`building-condition.md §4.1`, D552–D553, Joe: "yes to all"): every standing thing is stamped with the tick it was raised and last mended, and both stamps are hashed — nothing reads them yet. ⭐ PROVEN TO BE THE ONLY REASON: with the thirteen new mix lines switched off, the old value passes (22 of 22 golden guards green). Was 13092297679144213687.
     // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 5345712685538059206.
-    private const ulong FixtureFiftyYearHash = 16819246238167576602UL;
+    private const ulong FixtureFiftyYearHash = 12236070833949449948UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -494,7 +494,7 @@ public sealed class StockLimitTests
     // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 15656478682750353969.
     // RE-TAKEN (D554) — building condition (`building-condition.md §4.1`, D552–D553, Joe: "yes to all"): every standing thing is stamped with the tick it was raised and last mended, and both stamps are hashed — nothing reads them yet. ⭐ PROVEN TO BE THE ONLY REASON: with the thirteen new mix lines switched off, the old value passes (22 of 22 golden guards green). Was 12397874138769020261.
     // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 15074371193917247957.
-    private const ulong ShippedFiftyYearHash = 11273171884436206452UL;
+    private const ulong ShippedFiftyYearHash = 9641066101567809358UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

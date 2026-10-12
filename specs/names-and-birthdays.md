@@ -43,7 +43,10 @@ to child is the first thing in the game that makes a lineage visible without a s
     on top: the seeker in `FormNewHouseholds` is the lowest id — the earliest born — and `FindPartner` picks a higher id,
     so the elder is almost always the seeker, and the family that had children first wins every mixed couple. Even a
     fair rule drifts to one name in a closed population. Joe's call: **wait for nomads** — new surnames arrive with them
-    (`DESIGN.md §5`), and `FoundingSurnameFor` already skips a name a living household carries.
+    (`DESIGN.md §5`), and `FoundingSurnameFor` already skips a name a living household carries. ✅ **They do, since D565**
+    (`specs/nomads.md §4.2`): every family in a band carries a surname nobody living holds, picked by the founding's rule
+    keyed on the band (`SimWorld.NomadSurnameFor`), and every one of Joe's 27 saves past Year 50 was one surname (§8.2
+    there) — the first band knocks in a spring of Year 8–12.
 - **Hashed, never drawn** (D395). A name is a function of (seed, id) — content can grow without
   reshuffling a seed (D392), and naming takes nothing from the stream the economy draws on.
 

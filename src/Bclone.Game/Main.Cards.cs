@@ -46,6 +46,9 @@ public partial class Main
 
         /// <summary>A bridge (D546) — its Id is its index in <see cref="SimWorld.Bridges"/>, as a well's is.</summary>
         Bridge,
+
+        /// <summary>The band of travellers waiting at the pile (D565) — there is never more than one, Id 0.</summary>
+        Band,
     }
 
     private readonly record struct CardSubject(CardKind Kind, int Id);
@@ -123,6 +126,9 @@ public partial class Main
         /// <summary>The dropdown's items, in order — every tool a forge makes (D446).</summary>
         public List<Goods> ForgeGoods { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
+        public VBoxContainer? BandRow { get; set; }
+        public Button? Settle { get; set; }
+        public Button? SendOn { get; set; }
         public Label? QueueLabel { get; set; }
     }
 
@@ -263,7 +269,13 @@ public partial class Main
                 _selectedTile = BridgeOf(subject)?.Near.ToTile();
                 _selectedVillagerId = 0;
                 break;
+            case CardKind.Band:
+                _selectedTile = null;
+                _selectedVillagerId = 0;
+                break;
         }
+
+        _map.SelectTheBand(subject.Kind == CardKind.Band);
     }
 
     /// <summary>The bridge a card is about — by index, the well's rule and its caveat (D546).</summary>
@@ -680,6 +692,7 @@ public partial class Main
             CardKind.TownHall => world.TownHall is TownHall hall && ShowTownHall(world, card, hall),
             CardKind.Well => WellOf(card.Subject) is Well well && ShowWell(world, card, well),
             CardKind.Bridge => BridgeOf(card.Subject) is Bridge bridge && ShowBridge(world, card, bridge),
+            CardKind.Band => world.Band is NomadBand band && ShowBand(world, card, band),
             _ => false,
         };
 
@@ -856,11 +869,42 @@ public partial class Main
                 break;
             }
 
+            case CardKind.Band:
+            {
+                // ⭐ THE ONE DECISION THE PLAYER MAKES IN ANSWER TO A STOP, AND IT LIVES HERE (`nomads.md §4.3`, D565):
+                // the moment that announced the band carries no verbs (Moment.cs); the card does. Two buttons, two
+                // calls on the world — the band is gone either way, and the card closes with it.
+                (c.BandRow, HFlowContainer bandControls) = InspectorRow(body, Muted("Travellers:"));
+                c.Settle = new Button { Text = "Let them settle", TooltipText = "They become villagers today — roofless until a house is raised, eating from what they carried and the stores." };
+                c.Settle.Pressed += () => Act(card, LetTheBandSettle);
+                bandControls.AddChild(c.Settle);
+                c.SendOn = new Button { Text = "Send them on", TooltipText = "No harm, no foul: they go on up the valley, and another band comes in a few years." };
+                c.SendOn.Pressed += () => Act(card, SendTheBandOn);
+                bandControls.AddChild(c.SendOn);
+                break;
+            }
+
             default:
                 break;
         }
 
         card.SettingsToggle.Visible = card.Settings.GetChildCount() > 0;
+    }
+
+    private void LetTheBandSettle()
+    {
+        if (_loop.World.Band is not null)
+        {
+            _loop.World.LetTheBandSettle();
+        }
+    }
+
+    private void SendTheBandOn()
+    {
+        if (_loop.World.Band is not null)
+        {
+            _loop.World.SendTheBandOn();
+        }
     }
 
     /// <summary>Select the card so the "selected" handlers act on its subject, then act.</summary>
@@ -1898,6 +1942,157 @@ public partial class Main
         WriteTownHallCard(card, hall.Name, founders, raised, hall.ExtentWidth, hall.ExtentHeight, hall.Facing.Raw);
         Wear(card, world.WearOf(hall), world.Config);
         return true;
+    }
+
+    /// <summary>The band's card (D565): who is asking, what they carry, where they would sleep tonight, and how long they wait.</summary>
+    private bool ShowBand(SimWorld world, Card card, NomadBand band)
+    {
+        var people = new List<(string Name, string Life)>();
+        foreach (NomadFamily family in band.Families)
+        {
+            foreach (NomadPerson person in family.People)
+            {
+                string trade = person.TradeSkillId == 0 ? string.Empty : $" · {TradeNameOf(world, person.TradeSkillId)}";
+                people.Add(($"{person.Name} {family.Surname}", $"{person.AgeYears} · {(person.Adult ? "grown" : "child")}{trade}"));
+            }
+        }
+
+        int food = world.FoodTheVillageHolds();
+        int population = world.Population;
+        ulong leaves = world.BandLeavesAtTick;
+        string until = SimClock.FromTick(leaves, world.Config).Season.ToString();
+        bool winterNext = world.Clock.Season is Season.Fall or Season.Winter;
+        WriteBandCard(card, band.FamilyNames, people, band.FoodCarried(world.Config), population == 0 ? 0 : food / population, until, winterNext);
+        return true;
+    }
+
+    /// <summary>The skill's trade in the card's words — <i>forager</i>, <i>woodcutter</i>.</summary>
+    private static string TradeNameOf(SimWorld world, int skillId)
+    {
+        for (int i = 0; i < world.Config.Skills.Count; i++)
+        {
+            if (world.Config.Skills[i].Id == skillId)
+            {
+                return world.Config.Skills[i].Name;
+            }
+        }
+
+        return "a trade";
+    }
+
+    /// <summary>The band's card from plain facts — so the probe can pose one where no band waits.</summary>
+    private void WriteBandCard(Card card, string families, IReadOnlyList<(string Name, string Life)> people, int foodCarried, int foodAHead, string leaveBy, bool winterNext)
+    {
+        Title(card, $"Travellers — {families}", renamable: false);
+        card.Numbers.Visible = true;
+        card.Storage.Visible = false;
+        card.WorkersRow.Visible = false;
+
+        // Where they would sleep tonight is the sentence the decision turns on (Joe: they freeze without houses).
+        Status(
+            card,
+            working: !winterNext,
+            winterNext
+                ? "Asking to settle. They would sleep in the open at the pile until a house is raised — and this winter would kill them there."
+                : "Asking to settle. They would sleep in the open at the pile until a house is raised for them; a family is housed in weeks where the paint has room.");
+
+        Number(card, 0, $"{people.Count}", "souls");
+        Number(card, 1, $"{foodCarried:N0}", "food carried");
+        Number(card, 2, $"{foodAHead:N0}", "food a head here");
+
+        card.PeopleScroll.Visible = true;
+        ClearThePeople(card);
+        for (int i = 0; i < people.Count; i++)
+        {
+            var row = new HBoxContainer();
+            Label who = Body(people[i].Name);
+            who.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            who.ClipText = true;
+            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            Label life = Muted(people[i].Life);
+            row.AddChild(who);
+            row.AddChild(life);
+            card.People.AddChild(row);
+        }
+
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, people.Count)));
+        card.Portrait.Show(VillageMap.BandColour, 1f, 1f, 0, null);
+        card.Caption.Text = $"They move on at the turn of {leaveBy} if nobody answers.";
+        card.Caption.TooltipText = "The decision is the two buttons below. Dismissing the moment that announced them decides nothing.";
+        card.Records.Visible = false;
+    }
+
+    /// <summary>
+    /// ⭐ The band's card holds its shape and its two buttons are wired (D565, `nomads.md §9`): posed from plain facts,
+    /// it carries <i>Let them settle</i> and <i>Send them on</i>, each with a handler, and says where they would sleep.
+    /// </summary>
+    private string TheBandCardHoldsItsShape()
+    {
+        var faults = new List<string>();
+        var posed = new CardSubject(CardKind.Band, 0);
+        Card card = BuildCard(posed);
+        _cards.Add(card);
+        PlaceNewCard(card);
+        try
+        {
+            WriteBandCard(
+                card,
+                "the Hales and the Dunns",
+                new[] { ("Agnes Hale", "31 · grown · foraging"), ("Wendell Hale", "29 · grown"), ("Hattie Dunn", "24 · grown"), ("Otto Dunn", "26 · grown"), ("Bess Dunn", "6 · child") },
+                100, 97, "Fall", winterNext: false);
+            BuildSettings(card, _loop.World);
+            ForceUpdateTransform();
+
+            if (card.Controls.Settle is not Button settle || card.Controls.SendOn is not Button sendOn)
+            {
+                faults.Add("the card has no buttons");
+            }
+            else
+            {
+                if (settle.Text != "Let them settle" || sendOn.Text != "Send them on")
+                {
+                    faults.Add($"the buttons read \"{settle.Text}\" / \"{sendOn.Text}\"");
+                }
+
+                if (settle.GetSignalConnectionList(BaseButton.SignalName.Pressed).Count == 0)
+                {
+                    faults.Add("Let them settle is wired to nothing");
+                }
+
+                if (sendOn.GetSignalConnectionList(BaseButton.SignalName.Pressed).Count == 0)
+                {
+                    faults.Add("Send them on is wired to nothing");
+                }
+
+                if (!card.Settings.Visible && !card.SettingsToggle.Visible)
+                {
+                    faults.Add("the buttons' fold is neither open nor offered");
+                }
+            }
+
+            if (!card.Status.Text.Contains("in the open at the pile", StringComparison.Ordinal))
+            {
+                faults.Add("the card does not say where they would sleep");
+            }
+
+            if (card.People.GetChildCount() != 5)
+            {
+                faults.Add($"{card.People.GetChildCount()} people listed, not 5");
+            }
+
+            if (Mathf.Abs(card.Panel.Size.X - CardWidth) > 1f)
+            {
+                faults.Add($"the band's card is {card.Panel.Size.X:F0} wide, not {CardWidth:F0}");
+            }
+        }
+        finally
+        {
+            CloseCard(card);
+        }
+
+        return faults.Count == 0
+            ? "[widths] nomads: ✅ the band's card lists its people, says where they would sleep, and carries Let them settle / Send them on, both wired"
+            : $"[widths] nomads: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>How many households draw at each well, counted once a tick — the card refreshes every frame.</summary>

@@ -275,6 +275,13 @@ public sealed class Villager
     public bool Founder { get; init; }
 
     /// <summary>
+    /// The tick they joined the village as a grown traveller (`nomads.md §4.4`, D564), or 0 for a founder and for
+    /// anybody born here. <see cref="Core.SimWorld.MostEverAlive"/> counts them from it, not from a birth they had
+    /// elsewhere. Hashed sparsely; saved.
+    /// </summary>
+    public ulong ArrivedAtTick { get; init; }
+
+    /// <summary>
     /// Years lived — one more on each birthday, not at New Year (D468). Maintained where it changes
     /// (<c>ClockSystem</c>, on the tick a year since <see cref="BirthTick"/> completes), never
     /// recomputed per tick; derived from <see cref="BirthTick"/>, so not hashed (D335). It stops at
@@ -845,6 +852,7 @@ public sealed class Villager
             ["commute_note"] = CommuteNote,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
+            ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
             ["age_years"] = AgeYears,
             ["vigour"] = Vigour,
             ["vigour_stage"] = SaveWriter.Enum(Stage),
@@ -901,6 +909,7 @@ public sealed class Villager
             CommuteNote = save.String("commute_note"),
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
+            ArrivedAtTick = save.ULong("arrived_at"),
             AgeYears = save.Int("age_years"),
             Vigour = save.Int("vigour"),
             Stage = save.Enum<VigourStage>("vigour_stage"),

@@ -295,7 +295,7 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 7137397597790898232.
     // RE-TAKEN (D554) — building condition (`building-condition.md §4.1`, D552–D553, Joe: "yes to all"): every standing thing is stamped with the tick it was raised and last mended, and both stamps are hashed — nothing reads them yet. ⭐ PROVEN TO BE THE ONLY REASON: with the thirteen new mix lines switched off, the old value passes (22 of 22 golden guards green). Was 12182673311767804666.
     // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 15797634979579032686.
-    private const ulong SeamGoldenHash = 2492211130328241921UL;
+    private const ulong SeamGoldenHash = 16789275088886274794UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -373,7 +373,7 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D543) with it, for the same reason: the seams across the whole valley. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 3928392852916589393.
     // RE-TAKEN (D554) with it, for the same reason: every standing thing's raise and repair stamps are hashed. ⭐ PROVEN: with the thirteen new mix lines switched off, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's and D543's did. Was 8164107751542196257.
     // RE-TAKEN (D555) with it, for the same reason: the season's walk raises repair sites and the builders mend. ⭐ PROVEN: with the walk short-circuited, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 11179517447590911109.
-    private const ulong SeamBeforeAnybodyGotBetter = 17671588798209576222UL;
+    private const ulong SeamBeforeAnybodyGotBetter = 11657496301399793127UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
