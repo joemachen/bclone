@@ -1,4 +1,34 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D570: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTES 2 AND 3 DONE (D569, D570), NOTE 5 NEXT, THEN 4 AND 1. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D571: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTES 2, 3 AND 5 DONE (D569–D571), NOTES 4 AND 1 NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 5 BUILT: THE LONGHOUSE IS OUT, SAVE FORMAT 7) — D571, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), the words (D569), the switch (D570) and **note 5 (D571): the longhouse removed** — a real unbuild, the row
+> deleted (Joe's call), `BuildingKind.Longhouse = 14` the first **retired id** (`BuildingKinds.IsRetired`, exempt from the
+> missing-id check; `BuildingsCatalog.Has(id)` — ⚠️ a catalogue slot can be NULL now), `house_capacity` refused on any row
+> but the house, hash tags 0x67 / 0x68 retired by comment, **save format 7** (Joe's saves from the branch's earlier
+> builds are refused in words — a new village). The villagers bar's households line reads *N unhoused*, amber with *"paint
+> more housing"* while `NeedsMoreResidentialLand` is latched. 7 guards, 8 mutants, 42 reds, one zero closed (G1 now pins
+> the retired list to exactly {14}). **No golden moved.** Verified: suite 1690 / 0 / 5 of 1695 (6m52; D570's 1700 less
+> the 13 longhouse guards plus the four new); view 0 warnings; probe `bars:` ✅ (960px, the bar unmoved with *12,345
+> unhoused* posed), `cards:` ✅, `nomads:` ✅, `huddle:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's, below).
+>
+> **▶️ NEXT: note 4 — the nomads walk in from the valley's edge with a marker over their heads, view-only first** (Joe
+> agreed): the edge tile the one cost field reaches most cheaply from `BandCamp` (a derived, cached point), a walk-in
+> animated over N seconds along the route, a marker above each dot (`DrawTheMealMark`'s shape), posed in the probe, no sim
+> change, no golden. **Then note 1 — the paths' gridding**: a design spec with options for Joe (octile field with
+> diagonal lanes; a bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s numbers, before the
+> field is touched (D122). **Then Joe plays all six; merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for (carried below as well):** *(1)* **a sixth bar cell ran the bar 72px under the right
+> column** — the probe's `bars:` line caught it, exactly as the plan said it might; the count went on the households line
+> and the probe poses *12,345 unhoused* beside the widest clock. *(2)* **A widened retired-id exemption scored zero
+> against the missing-id guard**, because its line strike of `"id": 8,` takes the trade with id 8 as well and the jobs
+> validator refuses first — *a guard that asserts "it threw" is as strong as the first thing that throws*; G1 pins the list. *(3)* **A catalogue slot can be null:
+> every `for id < Count` loop over buildings asks `Has(id)` first** — the strip and the `cards:` probe would have died at
+> startup and the suite cannot see either.
+>
+> **(the banner below is the state before D571)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 3 BUILT: THE NOMADS SWITCH) — D570, ON WINDOWS.**
 >
@@ -12,13 +42,8 @@
 > `new game:` ✅, `settings:` ✅, `nomads:` ✅, bar height 151, `done.` (the `pause:` ❌ is D568's, see below). No golden
 > moved.** Save format still 6 (`nomads_enabled` read with `HasValue`; **note 5's bump to 7 makes it required**).
 >
-> **▶️ NEXT: note 5 — the longhouse out, a standing *unhoused* cell on the villagers bar, save format 7**, per the
-> approved plan (`~/.claude/plans/read-handoff-md-and-tell-memoized-sunset.md`, "Commit 3"): the row deleted (not a
-> warehouse), `BuildingKind.Longhouse = 14` kept with a retired-id exemption in the missing-id validator, `house_capacity`
-> refused on any row but the house, `BuildingsCatalog.Has(id)` and a null-safe `NameOf`/`StoresAs` (the strip and the
-> `cards:` probe loop every id), `BuildFixtures.WithTheOldLonghouseStore` ADDING a full row, `LonghouseTests` deleted,
-> hash tags 0x67/0x68 retired by comment, G1–G7 red-checked. Then note 4 (walk-in, view-only) and note 1 (paths — a spec
-> with options for Joe). **Merge and push at his word only, after he has played all six.**
+> **▶️ NEXT (as it stood at D570): note 5 — done in D571, see the banner above.** Then note 4 (walk-in, view-only) and
+> note 1 (paths — a spec with options for Joe). **Merge and push at his word only, after he has played all six.**
 >
 > **(the banner below is the state before D570)**
 

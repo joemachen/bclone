@@ -1259,24 +1259,7 @@ public readonly record struct LabourQuota
             homes++;
 
             int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
-            int missing = wanted - world.LarderOf(household).Firewood;
-            if (missing > 0)
-            {
-                demand += missing;
-            }
-        }
-
-        // A longhouse with lodgers wants a winter's firewood of its own (D566) — one larder, counted once.
-        for (int i = 0; i < world.Longhouses.Count; i++)
-        {
-            Longhouse longhouse = world.Longhouses[i];
-            if (longhouse.Closed || world.LodgersAlive(longhouse) == 0)
-            {
-                continue;
-            }
-
-            homes++;
-            int missing = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config) - longhouse.Larder.Firewood;
+            int missing = wanted - household.Stockpile.Firewood;
             if (missing > 0)
             {
                 demand += missing;

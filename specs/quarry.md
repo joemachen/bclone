@@ -308,7 +308,7 @@ raise the prices over leaving them, and **×3** over ×2 or only the big buildin
 |---|---|---|
 | woodcutter's, forager's, forester's huts, farmhouse, fishing hut | 3 | 9 |
 | well | 5 | 15 |
-| warehouse (and longhouse) | 8 | 24 |
+| warehouse | 8 | 24 |
 | granary, market | 10 | 30 |
 | hunter's lodge, smithy, library | 12 | 36 |
 | town hall | 40 | 120 |

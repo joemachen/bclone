@@ -49,7 +49,7 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | | Count on `main` | Members |
 |---|---|---|
 | Goods | **13** | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools, flour, bread |
-| Buildings | **21** | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, longhouse, smithy, well, quarry, iron mine, mill, bakery — and the founders' cart, a store that is not built |
+| Buildings | **20** | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, ~~longhouse~~ (retired D571 — id 14 ships no row), smithy, well, quarry, iron mine, mill, bakery — and the founders' cart, a store that is not built |
 | Trades | **13**, plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
 | Skills | **8** | foraging, forestry, woodcutting, farming, building, trading, milling, baking. ⚠️ The fisher, hunter, smith, quarrier and miner have **no skill row** (D391) |
 | Techniques | **4** | splitting lumber, coppicing, crop rotation, tended patches — see the knowledge table below |

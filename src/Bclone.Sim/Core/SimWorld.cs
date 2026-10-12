@@ -3740,10 +3740,6 @@ public sealed partial class SimWorld : IObstacles
             $"Nobody here mills or bakes yet — the village has reaped {WheatEverReaped} of the "
             + $"{Config.MillUnlockWheat} wheat it takes to learn.",
 
-        // ⭐ THE LONGHOUSE IS LEARNED AT THE FIRST KNOCK, accepted or not (Joe, D563; `nomads.md §4.5`).
-        BuildingKind.Longhouse when BandsEverKnocked == 0 && BuildingsCatalog[BuildingKind.Longhouse]?.HouseCapacity > 0 =>
-            "No nomads have asked to stay yet — the village learns to put them up when the first band knocks.",
-
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
@@ -7394,14 +7390,6 @@ public sealed partial class SimWorld : IObstacles
             return true;
         }
 
-        if (LonghouseCovering(from) is Longhouse longhouse)
-        {
-            longhouse.MoveTo(to);
-            StandingChanged();
-            TravelCost.Forget();
-            return true;
-        }
-
         if (StandingWorkplaceCovering(from) is Workplace workplace)
         {
             workplace.MoveTo(to);
@@ -7587,11 +7575,6 @@ public sealed partial class SimWorld : IObstacles
             return well.Facing;
         }
 
-        if (LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            return longhouse.Facing;
-        }
-
         return StoreAt(tile) is StoreBuilding store ? store.Facing : Angle.Zero;
     }
 
@@ -7669,12 +7652,6 @@ public sealed partial class SimWorld : IObstacles
             return;
         }
 
-        if (LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            Demolish(longhouse);
-            return;
-        }
-
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
             Demolish(workplace);
@@ -7736,11 +7713,6 @@ public sealed partial class SimWorld : IObstacles
         if (WellCovering(tile) is Well well)
         {
             return well.Kind;
-        }
-
-        if (LonghouseCovering(tile) is not null)
-        {
-            return BuildingKind.Longhouse;
         }
 
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
@@ -7810,11 +7782,6 @@ public sealed partial class SimWorld : IObstacles
             return well.Position;
         }
 
-        if (LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            return longhouse.Position;
-        }
-
         return HouseholdAt(tile)?.HomePosition;
     }
 
@@ -7840,11 +7807,6 @@ public sealed partial class SimWorld : IObstacles
         if (WellCovering(tile) is Well well)
         {
             return well.Name;
-        }
-
-        if (LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            return longhouse.Name;
         }
 
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
@@ -10046,26 +10008,6 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ A well is a sixth (D427) — somewhere households walk for water, and the far end of the
         // lane their feet wear. No water yet (Phase 6); the walk is the point.
-        // ⭐ A dwelling that is not a home (D566): a row with `house_capacity` other than the house row is a longhouse —
-        // a roof and a larder for families waiting on a house of their own.
-        if (row.HouseCapacity > 0 && kind != BuildingKind.Home)
-        {
-            StandingChanged();
-            Longhouses.Add(new Longhouse
-            {
-                Id = NextLonghouseId(),
-                Position = position,
-                Name = name,
-                Capacity = row.HouseCapacity,
-                Larder = row.LocalStoreCap > 0 ? new Stockpile(GoodsCatalog.Count) { Capacity = row.LocalStoreCap } : NewStockpile(),
-                RaisedAtTick = Tick,
-                Facing = facing,
-                ExtentWidth = row.ExtentWidth,
-                ExtentHeight = row.ExtentHeight,
-            });
-            Narrate($"{Capitalised(name)} was finished — a roof for nomads until houses of their own are raised. {Clock.SeasonAndYear()}.", LogCategory.Building);
-        }
-
         if (row.DrawsWater)
         {
             StandingChanged();
@@ -12063,14 +12005,6 @@ public sealed partial class SimWorld : IObstacles
             }
         }
 
-        for (int i = 0; i < Longhouses.Count; i++)
-        {
-            if (Longhouses[i].Footprint.Overlaps(shape))
-            {
-                return true;
-            }
-        }
-
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
             if (StoreBuildings[i].Footprint.Overlaps(shape))
@@ -12310,12 +12244,6 @@ public sealed partial class SimWorld : IObstacles
         for (int i = 0; i < Wells.Count; i++)
         {
             Footprint shape = Wells[i].Footprint;
-            yield return (shape, shape.Origin.ToTile());
-        }
-
-        for (int i = 0; i < Longhouses.Count; i++)
-        {
-            Footprint shape = Longhouses[i].Footprint;
             yield return (shape, shape.Origin.ToTile());
         }
 
@@ -12974,18 +12902,6 @@ public sealed partial class SimWorld : IObstacles
                 : Shelter.Roof;
         }
 
-        // ⭐ The longhouse (D566): a roof for its lodgers, a fire while its own larder has firewood and anybody lodges
-        // there, and nothing once fallen in — a house's rule, one larder over.
-        if (LonghouseCovering(at) is Longhouse longhouse)
-        {
-            if (longhouse.Closed)
-            {
-                return Shelter.Outdoors;
-            }
-
-            return LodgersAlive(longhouse) > 0 && longhouse.Larder.Firewood > 0 ? Shelter.Fire : Shelter.Roof;
-        }
-
         if (StoreAt(at) is not null)
         {
             return Shelter.Roof;
@@ -13450,12 +13366,11 @@ public sealed partial class SimWorld : IObstacles
     /// The same place as a <see cref="Point"/> — the doorstep itself, the cart itself — so a
     /// villager going home stands ON it (gridless slice 3, D354).
     /// </summary>
-    /// <summary>Their house; the longhouse they lodge in (D566); else the cart, else the founding site — no roof.</summary>
+    /// <summary>Their house; else the cart, else the founding site — no roof.</summary>
     public Point HomePoint(Villager villager)
     {
         Household household = HouseholdOf(villager);
         return household.HomePosition
-            ?? LodgingOf(household)?.Position
             ?? TheCart?.Position
             ?? Point.CentreOf(Map.FoundingSite);
     }
@@ -13788,7 +13703,6 @@ public sealed partial class SimWorld : IObstacles
             ["libraries"] = All(Libraries, l => l.ToSave()),
             ["town_hall"] = TownHall?.ToSave(),
             ["wells"] = All(Wells, w => w.ToSave()),
-            ["longhouses"] = All(Longhouses, l => l.ToSave()),
             ["bridges"] = All(Bridges, b => b.ToSave()),
             ["ground_stacks"] = All(GroundStacks, g => g.ToSave()),
             ["buildings_waiting"] = All(_waitingOnTheGround, p => new JsonObject
@@ -13905,10 +13819,6 @@ public sealed partial class SimWorld : IObstacles
             Wells.Add(Well.FromSave(well));
         }
 
-        foreach (SaveReader longhouse in save.Objects("longhouses"))
-        {
-            Longhouses.Add(Longhouse.FromSave(longhouse));
-        }
 
         // ⭐ The deck index is derived from these and rebuilt on the next ask (D546) — never saved.
         foreach (SaveReader bridge in save.Objects("bridges"))
@@ -14011,7 +13921,7 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Band = save.NullableObject("band") is SaveReader band ? NomadBand.FromSave(band) : null;
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
-        NomadsEnabled = !save.HasValue("nomads_enabled") || save.Bool("nomads_enabled");
+        NomadsEnabled = save.Bool("nomads_enabled");
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

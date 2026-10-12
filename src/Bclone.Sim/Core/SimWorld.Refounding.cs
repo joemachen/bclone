@@ -229,7 +229,6 @@ public sealed partial class SimWorld
 
         for (int i = 0; i < Libraries.Count; i++) { Count(ConditionOf(Libraries[i])); }
         for (int i = 0; i < Wells.Count; i++) { Count(ConditionOf(Wells[i])); }
-        for (int i = 0; i < Longhouses.Count; i++) { Count(ConditionOf(Longhouses[i])); }
         for (int i = 0; i < Bridges.Count; i++) { Count(ConditionOf(Bridges[i])); }
         if (TownHall is TownHall hall) { Count(ConditionOf(hall)); }
         return (counts[0], counts[1], counts[2], counts[3]);

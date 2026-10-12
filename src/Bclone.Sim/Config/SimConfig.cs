@@ -1639,10 +1639,6 @@ public sealed record SimConfig
     [JsonPropertyName("nomads_enabled")]
     public bool NomadsEnabled { get; init; } = true;
 
-    /// <summary>How many people the longhouse puts up — two families of four, a whole band (`nomads.md §4.5`).</summary>
-    [JsonPropertyName("longhouse_capacity")]
-    public int LonghouseCapacity { get; init; } = 8;
-
     /// <summary>
     /// The fewest years after a valley empties before four nomads re-found it (`nomads.md §4.6`; Joe, D563: automatic,
     /// a few years on). The wait is this plus a hashed share of <see cref="RefoundYearsSpread"/>. <b>0: never</b>.
@@ -3648,33 +3644,10 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
-        // ⭐⭐ THE LONGHOUSE — THE NOMADS' HOUSE (D566, `specs/nomads.md §4.5`; Joe, D563: *"just
-        // repurpose the long house thats already in game. there's no other need for it"*). It was the
-        // first building in this game that was not one tile (D320) — a three-by-one warehouse that existed
-        // so extent and facing were content rather than machinery — and it keeps that footprint.
-        //
-        // ⭐ A DWELLING PLACED BY A BUTTON, AND D42's ONE EXCEPTION, STATED: housing is painted with the
-        // land brush and never placed (D42, D102); the longhouse is placed, and is never a family's home.
-        // A roofless family lodges here — one larder, a fire, nobody partners — until the brush's house
-        // for them is raised, then moves out. Learned at the first knock (`SimWorld.WhyNotYet`).
-        //
-        // ⭐ Priced as two houses from the house's own keys (D16: no `longhouse_logs`); it holds
-        // `longhouse_capacity` people and twice a house's larder.
-        new BuildingRow
-        {
-            Id = (int)BuildingKind.Longhouse,
-            Name = "longhouse",
-            Materials = new[]
-            {
-                new MaterialCost(World.Goods.Logs, LogsPerHouse * 2),
-                new MaterialCost(World.Goods.Stone, HomeStone * 2),
-            },
-            WorkTicks = HomeWorkTicks * 2,
-            HouseCapacity = LonghouseCapacity,
-            LocalStoreCap = HomeStoreCap * 2,
-            ExtentWidth = 3,
-            ExtentHeight = 1,
-        },
+        // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
+        // Joe, D568: *"longhouse should be removed from the game"*). `BuildingKind.Longhouse = 14` is a RETIRED id:
+        // it ships no row, is never renumbered and never reissued; a modder may type a row with it, which is then
+        // whatever its columns say (`BuildFixtures.WithTheOldLonghouseStore` does, for the geometry guards).
     });
 
     /// <summary>
@@ -4846,18 +4819,18 @@ public sealed record SimConfig
         // one to four seasons, the food carried never negative.
         if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
             || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
-            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0 || LonghouseCapacity < 1
+            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0
             || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
         {
             throw new SimConfigException(
                 "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
                 + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
                 + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
-                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, longhouse_capacity must be at least 1, and "
+                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, and "
                 + "refound_years_floor and refound_years_spread cannot be negative (got "
                 + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
                 + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}, "
-                + $"{LonghouseCapacity}, {RefoundYearsFloor}, {RefoundYearsSpread}).");
+                + $"{RefoundYearsFloor}, {RefoundYearsSpread}).");
         }
 
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)
@@ -5808,6 +5781,17 @@ public sealed record SimConfig
             // **so this guard refused it too**, correctly, before it had a column saying what it
             // was for. *Second building, second time; the validator is earning its keep.*
             // ⭐ AND DRAWING WATER IS A SIXTH (D427) — the well, refused the same way, a third time.
+            // ⛔ ONLY THE HOUSE ROW HOUSES ANYBODY (D571). The longhouse was the one other row that carried
+            // `house_capacity`, and `RaiseFinished` turned any such row into one; with it gone, a modder's
+            // `house_capacity` on any other row would be raised and shelter nobody for ever. Refused at load.
+            // ⚠️ The house ladder (D206: cabin → cottage → manor, three house rows) lifts this when it lands.
+            if (row.HouseCapacity > 0 && row.Id != (int)BuildingKind.Home)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_capacity {row.HouseCapacity}, but only the "
+                    + $"house row (id {(int)BuildingKind.Home}) houses anybody — the longhouse that once did was removed (D571).");
+            }
+
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
                 && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater)
@@ -5844,10 +5828,12 @@ public sealed record SimConfig
         // The enum is an alias for the first ids, exactly as it is for goods and trades. A missing
         // built-in would index a row that is not there, failing deep in a placement rather than
         // here.
+        // ⛔ A RETIRED ID (D571): `BuildingKind.Longhouse = 14` stays in the enum, never renumbered, and ships no
+        // row — a catalogue without it is whole. A modder may type one. Named once, in `BuildingKinds.IsRetired`.
         int builtIn = System.Enum.GetValues<BuildingKind>().Length;
         for (int id = 0; id < builtIn; id++)
         {
-            if (!seen.Contains(id))
+            if (!seen.Contains(id) && !BuildingKinds.IsRetired((BuildingKind)id))
             {
                 throw new SimConfigException(
                     $"buildings is missing id {id} ({(BuildingKind)id}). The built-in buildings are "

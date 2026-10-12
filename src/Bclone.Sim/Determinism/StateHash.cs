@@ -75,7 +75,8 @@ public static class StateHash
         ulong hash = FnvOffsetBasis;
 
         // Order matters and must never change casually — it is part of the
-        // value. Append new fields at the end.
+        // value. Append new fields at the end. A retired tag stays named where it
+        // stood and is never reissued (0x67, 0x68 — the longhouse, D571).
         hash = MixUInt64(hash, world.Tick);
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
@@ -287,12 +288,8 @@ public static class StateHash
                 }
             }
 
-            // Where a roofless family lodges (D566) — it decides where they sleep and eat. Sparse, under a tag.
-            if (household.LodgedIn != 0)
-            {
-                hash = MixByte(hash, 0x68);
-                hash = MixUInt32(hash, (uint)household.LodgedIn);
-            }
+            // 0x68 was `Household.LodgedIn` (D566; retired with the longhouse, D571) — sparse, so a family that never
+            // lodged hashes exactly as it did. The tag is never reused.
 
             // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
             // site has none, and hashes as it always did.
@@ -744,28 +741,8 @@ public static class StateHash
             }
         }
 
-        // ---- The longhouses (D566) ---- a roof and a larder people walk to; sparse, the wells' rule.
-        if (world.Longhouses.Count > 0)
-        {
-            hash = MixUInt32(hash, (uint)world.Longhouses.Count);
-        }
-
-        for (int i = 0; i < world.Longhouses.Count; i++)
-        {
-            Longhouse longhouse = world.Longhouses[i];
-            hash = MixUInt32(hash, (uint)longhouse.Id);
-            hash = MixFixed(hash, longhouse.Position.X);
-            hash = MixFixed(hash, longhouse.Position.Y);
-            hash = MixAngle(hash, longhouse.Facing);
-            hash = MixUInt32(hash, (uint)longhouse.Capacity);
-            hash = MixUInt64(hash, longhouse.RaisedAtTick);
-            hash = MixUInt64(hash, longhouse.RepairedAtTick);
-            hash = MixStore(hash, longhouse.Larder);
-            if (longhouse.Closed)
-            {
-                hash = MixByte(hash, 0x67);
-            }
-        }
+        // ---- 0x67 was the longhouses (D566; retired D571) ---- the block was sparse (the count mixed only when
+        // one stood), so a village that never raised one hashes exactly as it did. The tag is never reused.
 
         // ---- The bridges (D546) ----
         // A deck over the water decides where everybody can walk, so it is sim state. ⛔ Sparse, the

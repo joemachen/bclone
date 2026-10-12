@@ -1127,11 +1127,6 @@
   // found again; a band already waiting still waits its season.
   "nomads_enabled": true,
   //
-  // How many people the longhouse puts up - two families of four, a whole band
-  // (Joe, D563: the longhouse repurposed as the communal house; learned at the
-  // first knock, priced as two houses, one larder, nobody partners inside).
-  "longhouse_capacity": 8,
-  //
   // A valley that empties is re-founded this many years on, plus 0..spread by
   // the seed's hash (Joe, D563: automatic, a few years on - nobody is left to
   // speak for the village). Four paired founders of a second generation walk in

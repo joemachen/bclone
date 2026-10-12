@@ -801,12 +801,15 @@ public partial class Main : Control
 
         string clockWas = _clockLabel.Text;
         _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
+        string unhousedWas = _unhousedLabel.Text;
+        _unhousedLabel.Text = "   ·   12,345 unhoused";
 
         ForceUpdateTransform();
         Vector2 after = _topBar.GetCombinedMinimumSize();
         Vector2 popupAfter = _morePopup.GetContentsMinimumSize();
 
         _clockLabel.Text = clockWas;
+        _unhousedLabel.Text = unhousedWas;
         Refresh();
 
         float barEnds = Edge + (after.X * _uiScale);
@@ -1823,9 +1826,6 @@ public partial class Main : Control
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
         RefreshALearnedButton(world, BuildingKind.StoneBridge, null, _stoneBridgeButton, ref _stoneBridgeKnown, ref _stoneBridgeTried);
-
-        // ⭐ The longhouse (D566): learned at the first knock, accepted or not — lit until the first is marked. No trade works there.
-        RefreshALearnedButton(world, BuildingKind.Longhouse, null, _longhouseButton, ref _longhouseKnown, ref _longhouseTried);
     }
 
     /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
@@ -1863,9 +1863,6 @@ public partial class Main : Control
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
     private bool _stoneBridgeTried;
-    private Button? _longhouseButton;
-    private bool _longhouseKnown;
-    private bool _longhouseTried;
     private bool _smithyKnown;
 
     /// <summary>
@@ -2464,6 +2461,26 @@ public partial class Main : Control
         _childrenCell.Text = children.ToString();
         _eldersCell.Text = elders.ToString();
         _laborersCell.Text = world.Laborers.ToString();
+
+        // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
+        int unhoused = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (!world.Households[i].HasHome)
+            {
+                unhoused += world.LivingMembersOf(world.Households[i]);
+            }
+        }
+
+        bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
+        _unhousedLabel.Text = $"   ·   {unhoused} unhoused";
+        _unhousedLabel.Modulate = nowhereToBuild ? Colors.White : new Color(1, 1, 1, 0.55f);
+        ShowShortfall(
+            _unhousedLabel,
+            nowhereToBuild,
+            unhoused == 1
+                ? "1 person has no roof and the painted land is full — paint more housing"
+                : $"{unhoused} people have no roof and the painted land is full — paint more housing");
         _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
         _seedLabel.Text = TheRunLine(world);
 
@@ -2719,7 +2736,7 @@ public partial class Main : Control
             || (!_heapAsked && _selectedTile is GridPos at
                 && (world.StoreAt(at) is not null || world.WorkplaceCovering(at) is not null || world.HouseholdAt(at) is not null
                     || world.LibraryCovering(at) is not null || (world.TownHall is not null && world.TownHallCovers(at))
-                    || world.WellCovering(at) is not null || world.LonghouseCovering(at) is not null));
+                    || world.WellCovering(at) is not null));
         // ⚠️ And only while the player wants the window at all (its Settings tick, D380) and the
         // furniture is shown (`h`) — this line used to override both every frame. ⭐ And not once
         // the player has shut it (B3): a left-click selects, it does not reopen what they closed.
@@ -2978,10 +2995,6 @@ public partial class Main : Control
         {
             OpenCard(new CardSubject(CardKind.Well, world.Wells.IndexOf(well)));
         }
-        else if (world.LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            OpenCard(new CardSubject(CardKind.Longhouse, world.Longhouses.IndexOf(longhouse)));
-        }
         else if (world.BridgeAt(tile) is Bridge bridge)
         {
             // ⭐ A bridge has a card too (D546): what it is made of, how far it spans, how often it is crossed.
@@ -3077,7 +3090,7 @@ public partial class Main : Control
         // ⭐ The library and the hall are cards now too (D396) — the fourth and fifth lists this
         // method used to describe (D221's finding, twice) have gone where the other three went.
         if (world.LibraryCovering(tile) is not null || (world.TownHall is not null && world.TownHallCovers(tile))
-            || world.WellCovering(tile) is not null || world.LonghouseCovering(tile) is not null)
+            || world.WellCovering(tile) is not null)
         {
             return string.Empty;
         }
@@ -3863,8 +3876,20 @@ public partial class Main : Control
         // The valley's name is the one word that says which run you are watching — derived
         // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
         // seed line in Settings: it is a bug report's number, not a player's.
+        var second = new HBoxContainer();
+        second.AddThemeConstantOverride("separation", 0);
         _clockLabel = Muted(string.Empty);
-        lines.AddChild(_clockLabel);
+        second.AddChild(_clockLabel);
+
+        // ⭐ THE STANDING UNHOUSED WARNING (D571; Joe, D568: *"the game should indicate to the user that there are
+        // unhoused people and not enough room to build homes"*) — on the households' line, not a sixth cell: a sixth
+        // cell ran the bar 72px under the right column at 75 % (the probe's `bars:` line caught it). The count is
+        // always shown; it lights amber only when the sim has said there is nowhere to build
+        // (`NeedsMoreResidentialLand`, the latch `HouseTheRoofless` sets and clears) — a family with a site being
+        // raised is a number, not a warning.
+        _unhousedLabel = Muted(string.Empty);
+        second.AddChild(_unhousedLabel);
+        lines.AddChild(second);
 
         return box;
     }
@@ -3880,6 +3905,7 @@ public partial class Main : Control
     private Label _childrenCell = null!;
     private Label _eldersCell = null!;
     private Label _laborersCell = null!;
+    private Label _unhousedLabel = null!;
 
     /// <summary>
     /// A right-aligned number cell that <b>cannot widen its column</b> (D367).
@@ -6990,8 +7016,9 @@ public partial class Main : Control
         for (int id = 0; id < catalogue.Count; id++)
         {
             var kind = (BuildingKind)id;
-            if (kind == BuildingKind.Home)
+            if (kind == BuildingKind.Home || !catalogue.Has(id))
             {
+                // The house is the brush's; a retired id (D571) has no row to make a button of.
                 continue;
             }
 
@@ -7041,10 +7068,6 @@ public partial class Main : Control
             else if (kind == BuildingKind.StoneBridge)
             {
                 _stoneBridgeButton = button;
-            }
-            else if (kind == BuildingKind.Longhouse)
-            {
-                _longhouseButton = button;
             }
 
             _strip.Add((BuildTab.Build, CategoryOf(kind, known), button, kind, null));
@@ -7165,9 +7188,6 @@ public partial class Main : Control
             // the ground, and a village with nowhere to put things cannot begin.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
                 or BuildingKind.Market => BuildCategory.Storage,
-
-            // ⭐ The longhouse is a dwelling since D566 (Joe: the communal house) — on the Homes shelf beside the well.
-            BuildingKind.Longhouse => BuildCategory.Homes,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
@@ -7539,7 +7559,7 @@ public partial class Main : Control
             var tile = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 5);
             if (world.StoreAt(tile) is null && world.WorkplaceCovering(tile) is null && world.HouseholdAt(tile) is null
                 && world.LibraryCovering(tile) is null && !(world.TownHall is not null && world.TownHallCovers(tile))
-                && world.WellCovering(tile) is null && world.LonghouseCovering(tile) is null)
+                && world.WellCovering(tile) is null)
             {
                 return tile;
             }

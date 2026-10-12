@@ -229,6 +229,19 @@ public sealed class BuildingsCatalogTests
     /// accidental ring gathers from ground nobody painted, and a store with an accidental buffer
     /// keeps goods the market cannot reach.
     /// </remarks>
+    /// <summary>A retired id (D571) has no row: the slot says so, and every reader that needs a row says why.</summary>
+    [Fact]
+    public void ARetiredIdHasNoRowAndSaysSo()
+    {
+        BuildingsCatalog catalog = World(VillageFixtures.Village).BuildingsCatalog;
+        Assert.False(catalog.Has((int)BuildingKind.Longhouse));
+        Assert.True(catalog.Has((int)BuildingKind.Smithy));
+        Assert.False(catalog.Has(catalog.Count));
+        Assert.Throws<ArgumentOutOfRangeException>(() => catalog.NameOf(BuildingKind.Longhouse));
+        Assert.Throws<ArgumentOutOfRangeException>(() => catalog.StoresAs(BuildingKind.Longhouse));
+        Assert.Throws<ArgumentOutOfRangeException>(() => catalog.RecipeOf(BuildingKind.Longhouse));
+    }
+
     [Fact]
     public void TheRingTheBufferAndTheRoofBelongToOneBuildingEach()
     {
@@ -237,6 +250,12 @@ public sealed class BuildingsCatalogTests
 
         for (int id = 0; id < catalog.Count; id++)
         {
+            if (!catalog.Has(id))
+            {
+                // A retired id (D571) has no row to carry anything.
+                continue;
+            }
+
             BuildingRow row = catalog[id];
             var kind = (BuildingKind)id;
 
@@ -260,9 +279,6 @@ public sealed class BuildingsCatalogTests
                 BuildingKind.FishingHut => config.FishingHutStoreCap,
                 BuildingKind.HunterLodge => config.HunterLodgeStoreCap,
                 BuildingKind.Home => config.HomeStoreCap,
-
-                // ⭐ And the longhouse's one larder (D566): twice a house's, shared by every family lodging there.
-                BuildingKind.Longhouse => config.HomeStoreCap * 2,
                 _ => 0,
             };
 
@@ -277,14 +293,7 @@ public sealed class BuildingsCatalogTests
                 kind == BuildingKind.HunterLodge ? config.HuntingRadius : 0,
                 row.HuntingRadius);
             Assert.Equal(
-                kind switch
-                {
-                    BuildingKind.Home => config.MaxHouseholdSize,
-
-                    // ⭐ The longhouse puts nomads up (D566): a roof that is not a family's home, by the same column.
-                    BuildingKind.Longhouse => config.LonghouseCapacity,
-                    _ => 0,
-                },
+                kind == BuildingKind.Home ? config.MaxHouseholdSize : 0,
                 row.HouseCapacity);
         }
     }

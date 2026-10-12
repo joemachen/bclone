@@ -141,14 +141,6 @@ public sealed class HouseholdSystem : ISimSystem
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-
-            // ⭐ A family with a roof of its own moves out of the longhouse (D566) — the day its house was raised, or
-            // the day it took an empty one; one place, daily, so no house-giving path can forget.
-            if (household.HasHome && household.LodgedIn != 0)
-            {
-                world.MoveOutOfTheLonghouse(household);
-            }
-
             if (household.HasHome || world.LivingMembersOf(household) == 0)
             {
                 continue;
@@ -226,14 +218,6 @@ public sealed class HouseholdSystem : ISimSystem
                         + $"{world.Clock.SeasonAndYear()}.", LogCategory.Warning);
                 }
             }
-
-            // ⭐ AND, A HOUSE OF THEIR OWN FIRST ASKED FOR, A BED IN THE LONGHOUSE MEANWHILE (D566, `nomads.md §4.5`):
-            // the stopgap, never the answer — the site above stays marked and they move out the day it is raised.
-            if (household.LodgedIn == 0 || world.LodgingOf(household) is null)
-            {
-                household.LodgedIn = 0;
-                world.LodgeIfRoom(household);
-            }
         }
     }
 
@@ -246,9 +230,8 @@ public sealed class HouseholdSystem : ISimSystem
         for (int i = 0; i < count; i++)
         {
             Villager seeker = world.Villagers[i];
-            if (!IsSeekingAHome(seeker, config) || world.LodgingOf(world.HouseholdOf(seeker)) is not null)
+            if (!IsSeekingAHome(seeker, config))
             {
-                // ⛔ Nobody partners while lodging at the longhouse (Joe, `nomads.md §4.5`).
                 continue;
             }
 
@@ -342,7 +325,7 @@ public sealed class HouseholdSystem : ISimSystem
                 continue;
             }
 
-            if (IsSeekingAHome(candidate, config) && world.LodgingOf(world.HouseholdOf(candidate)) is null)
+            if (IsSeekingAHome(candidate, config))
             {
                 return candidate;
             }

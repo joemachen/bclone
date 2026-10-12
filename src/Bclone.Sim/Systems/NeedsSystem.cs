@@ -68,7 +68,7 @@ public sealed class NeedsSystem : ISimSystem
             // lying to the player"* — and a larder holding nothing but meat is exactly that
             // case, now that a village can live on meat and fish (D277, D283).
             if (!wasAtMax
-                && world.FoodIn(world.LarderOf(villager))
+                && world.FoodIn(world.HouseholdOf(villager).Stockpile)
                     < BehaviorSystem.MealCostFor(villager, config))
             {
                 world.Narrate(

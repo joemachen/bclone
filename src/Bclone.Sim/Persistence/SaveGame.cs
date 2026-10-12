@@ -42,8 +42,10 @@ public static class SaveGame
     /// wheat reaped and flour ground. 3 since D546: the bridges, the crossings walked, and a site's far bank. 4 since D549: a bridge's ends are
     /// points, at any angle — a format-3 save from the branch's first build is refused rather than misread. 5 since D554: when
     /// every standing thing was raised and last mended (`building-condition.md §6`). 6 since D565: the nomads — the bands that
-    /// knocked, the one waiting, the next knock's year, and when a villager came to the valley (`nomads.md §6`).</remarks>
-    public const int Format = 6;
+    /// knocked, the one waiting, the next knock's year, and when a villager came to the valley (`nomads.md §6`). 7 since
+    /// D571: the longhouse removed — `longhouses` and `lodged_in` are gone and `nomads_enabled` (D570) is required; a
+    /// format-6 save is refused rather than read with a thing missing.</remarks>
+    public const int Format = 7;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

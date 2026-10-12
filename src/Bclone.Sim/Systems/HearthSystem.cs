@@ -88,10 +88,9 @@ public sealed class HearthSystem : ISimSystem
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
-            if (world.LivingMembersOf(household) == 0 || household.HomeClosed || world.LodgingOf(household) is not null)
+            if (world.LivingMembersOf(household) == 0 || household.HomeClosed)
             {
                 // Nobody home, or no roof to be home under (`building-condition.md §4.5`): the fire is not lit.
-                // A lodging family's fire is the longhouse's, burned once below (D566).
                 continue;
             }
 
@@ -115,29 +114,6 @@ public sealed class HearthSystem : ISimSystem
             {
                 world.Narrate(
                     $"The {household.Name} household put its last firewood on the fire " +
-                    $"— {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
-            }
-        }
-
-        // ⭐ ONE FIRE A LONGHOUSE (D566), from its own larder, while anybody lodges there and it stands.
-        for (int i = 0; i < world.Longhouses.Count; i++)
-        {
-            Longhouse longhouse = world.Longhouses[i];
-            if (longhouse.Closed || world.LodgersAlive(longhouse) == 0)
-            {
-                continue;
-            }
-
-            int burn = Math.Min(longhouse.Larder.Firewood, config.FirewoodPerWinterDay);
-            if (burn <= 0 || !longhouse.Larder.TryTake(Goods.Firewood, burn))
-            {
-                continue;
-            }
-
-            if (longhouse.Larder.Firewood == 0)
-            {
-                world.Narrate(
-                    $"{char.ToUpperInvariant(longhouse.Name[0])}{longhouse.Name[1..]} put its last firewood on the fire " +
                     $"— {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
             }
         }

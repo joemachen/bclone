@@ -1114,7 +1114,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         int foodFloor = world.TargetFoodFor(household) * share / 100;
-        if (world.FoodIn(world.LarderOf(household)) < foodFloor)
+        if (world.FoodIn(household.Stockpile) < foodFloor)
         {
             return Goods.Produce;
         }
@@ -1129,7 +1129,7 @@ public sealed class BehaviorSystem : ISimSystem
         int fuelFloor =
             VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config) * share / 100;
 
-        return world.LarderOf(household).Firewood < fuelFloor ? Goods.Firewood : null;
+        return household.Stockpile.Firewood < fuelFloor ? Goods.Firewood : null;
     }
 
     /// <summary>Whether a housemate is already away fetching. Asked, never recorded.</summary>
@@ -1172,7 +1172,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// </remarks>
     private static int HeldOnceHome(
         SimWorld world, Household household, Villager villager, Func<Stockpile, int> held) =>
-        held(world.LarderOf(household)) + InHousematesArms(world, household, villager, held);
+        held(household.Stockpile) + InHousematesArms(world, household, villager, held);
 
     /// <summary>What housemates walking home are carrying, as <paramref name="held"/> counts it (D422).</summary>
     private static int InHousematesArms(
@@ -2491,7 +2491,7 @@ public sealed class BehaviorSystem : ISimSystem
             return true;
         }
 
-        Stockpile larder = world.LarderOf(villager);
+        Stockpile larder = world.HouseholdOf(villager).Stockpile;
         if (world.FoodIn(larder) < mealCost)
         {
             return false;
@@ -2514,7 +2514,7 @@ public sealed class BehaviorSystem : ISimSystem
         // the wrong conclusion about how often people eat.
         world.LogVillager(LogLevel.Debug, villager, "needs",
             $"ate {mealCost} from the {world.HouseholdOf(villager).Name} larder " +
-            $"(hunger was {villager.Hunger}, {world.FoodIn(world.LarderOf(villager))} left)");
+            $"(hunger was {villager.Hunger}, {world.FoodIn(world.HouseholdOf(villager).Stockpile)} left)");
 
         Feed(villager, config, mealCost, worth, best);
         return true;
@@ -4285,7 +4285,7 @@ public sealed class BehaviorSystem : ISimSystem
         //
         // ⚠️ AND A LOAD A HOUSEMATE IS CARRYING HOME IS ALREADY IN THE LARDER, FOR THIS SUM (D422).
         int foodShort = world.TargetFoodFor(household) - HeldOnceHome(world, household, villager, world.FoodIn);
-        int foodRoom = world.LarderOf(household).FreeSpace
+        int foodRoom = household.Stockpile.FreeSpace
             - InHousematesArms(world, household, villager, load => world.FoodIn(load) + load.Firewood);
         int foodTaken = world.MoveFood(target.Store, villager.Carried, Smallest(foodShort, load, foodRoom));
         load -= foodTaken;
@@ -4471,7 +4471,7 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
-        Stockpile larder = world.LarderOf(villager);
+        Stockpile larder = world.HouseholdOf(villager).Stockpile;
 
         // Received, not produced — the lifetime counters mean "this household made
         // this much", and a fetch is goods changing hands (see Stockpile.Receive).

@@ -456,8 +456,11 @@ public sealed class BuildingsCatalog
         }
     }
 
-    /// <summary>How many buildings exist.</summary>
+    /// <summary>How many slots the catalogue has — one past the highest id. ⚠️ A slot can be empty (a retired id, D571): ask <see cref="Has"/>.</summary>
     public int Count => _rows.Length;
+
+    /// <summary>Whether a row stands at <paramref name="id"/> — false past the end and at a retired id (D571).</summary>
+    public bool Has(int id) => id >= 0 && id < _rows.Length && _rows[id] is not null;
 
     /// <summary>The row for one building.</summary>
     public BuildingRow this[BuildingKind kind] => _rows[(int)kind];
@@ -466,7 +469,8 @@ public sealed class BuildingsCatalog
     public BuildingRow this[int id] => _rows[id];
 
     /// <summary>What the village calls it.</summary>
-    public string NameOf(BuildingKind kind) => _rows[(int)kind].Name;
+    public string NameOf(BuildingKind kind) =>
+        (_rows[(int)kind] ?? throw new ArgumentOutOfRangeException(nameof(kind), kind, "That building has no row, so it has no name.")).Name;
 
     /// <summary>What it costs to raise.</summary>
     public BuildingRecipe RecipeOf(BuildingKind kind) => RecipeOf((int)kind);
@@ -488,7 +492,8 @@ public sealed class BuildingsCatalog
     }
 
     /// <summary>The store it becomes, or null.</summary>
-    public StoreKind? StoresAs(BuildingKind kind) => _rows[(int)kind].Stores;
+    public StoreKind? StoresAs(BuildingKind kind) =>
+        (_rows[(int)kind] ?? throw new ArgumentOutOfRangeException(nameof(kind), kind, "That building has no row, so it stores nothing.")).Stores;
 
     /// <summary>The trade worked there, or null for a building nobody staffs.</summary>
     /// <remarks>

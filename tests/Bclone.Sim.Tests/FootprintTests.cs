@@ -927,7 +927,6 @@ public sealed class FootprintTests
     [InlineData(BuildingKind.Farmhouse, 2, 2)]
     [InlineData(BuildingKind.Library, 2, 2)]
     [InlineData(BuildingKind.TownHall, 3, 2)]
-    [InlineData(BuildingKind.Longhouse, 3, 1)]
     public void TheCatalogueCarriesTheTable(BuildingKind kind, int width, int height)
     {
         BuildingRow row = ShippedConfig.Load().BuildingRows.Single(r => r.Id == (int)kind);

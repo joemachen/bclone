@@ -66,7 +66,6 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Library => VillageMap.LibraryTone,
         BuildingKind.TownHall => VillageMap.CivicTone,
         BuildingKind.Well => VillageMap.WellTone,
-        BuildingKind.Longhouse => VillageMap.LonghouseTone,
 
         // The workplaces, from the trade that works them.
         BuildingKind.BuilderHut => TradeGlyph.ColourOf(JobKind.Builder),

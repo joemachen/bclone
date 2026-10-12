@@ -1,4 +1,4 @@
-# Spec: Nomads — bands that knock, the longhouse, and a dead valley re-founded
+# Spec: Nomads — bands that knock, and a dead valley re-founded
 
 **Decision:** D251 (2026-08-28, the town hall *triggers nomads* — **amended by call 1 below: the hall widens them**),
 D313 (2026-09-06, the empty-village banner does not stop the game *because nomads may come back*), D353 (Phase 6 names
@@ -12,13 +12,17 @@ reviewed. The branch stays unmerged until they are built and played. ✅ Note 2 
 *by the cart* while it stands, else *at the founding site*; `TheKnockSaysWhereTheBandCamps` (1 mutant, 1 red); no golden
 moved. ✅ Note 3 built (D570): the Nomads switch — `SimWorld.NomadsEnabled`, the village's own (hashed when off, saved,
 read by the knock and by re-founding), a tick under *How the village runs* and a `nomads` row on the new-game screen
-(`nomads_enabled`); 7 guards, 9 mutants, 15 reds, no zeros; no golden moved.** Bands knock, wait at the camp as a huddle, and settle
-or move on from the card's two buttons; the longhouse is a dwelling placed by a button, learned at the first knock,
-lodging roofless families on one larder until their house is raised; a dead valley is re-founded automatically a hashed
-few years on by four paired founders of a second generation. `NomadTests` (30), `LonghouseTests` (13) and
-`RefoundTests` (12) green and red-checked (§9); the six fifty-year goldens moved once, in commit 1, proven the knock's
-alone (§5), and none since; save format **6**; the probe's `nomads:` and `huddle:` lines ✅, the longhouse posed in
-`cards:`. Measured first (§8); §8.6's on-the-build measurement is the guards' (the harness's posed arrivals stand). Joe's four calls answered (§3);
+(`nomads_enabled`); 7 guards, 9 mutants, 15 reds, no zeros; no golden moved. ⛔ Note 5 built (D571): the longhouse is
+REMOVED — `Longhouse.cs`, `SimWorld.Longhouses.cs`, `Household.LodgedIn`, `LarderOf`, the row, `longhouse_capacity`, the
+view's shelf / card / draw, `LonghouseTests` all gone; `BuildingKind.Longhouse = 14` a retired id; **save format 7**; a
+standing *N unhoused* on the villagers bar, amber when the paint is full; 7 guards, 8 mutants, 42 reds, one zero closed
+(§9); no golden moved.** Bands knock, wait at the camp as a huddle, and settle
+or move on from the card's two buttons; a settled family builds in the paint like everybody, and when the paint is full
+the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
+few years on by four paired founders of a second generation. `NomadTests` (38) and
+`RefoundTests` (13) green and red-checked (§9); the six fifty-year goldens moved once, in commit 1, proven the knock's
+alone (§5), and none since; save format **7**; the probe's `nomads:` and `huddle:` lines ✅, `bars:` ✅ with the unhoused
+count posed. Measured first (§8); §8.6's on-the-build measurement is the guards' (the harness's posed arrivals stand). Joe's four calls answered (§3);
 the rest is mine, stated so he can overrule. Measured first (§8) on 100 shipped valleys and Joe's 27 saves: a knock at
 Year 10 meets eight people in two housed families (every share rule sends a couple; Joe's villages are one surname from
 Year 50); a band of two or four is housed the same year wherever the player has painted, and its cost is food, never a
@@ -65,7 +69,7 @@ people on the map with a card, never a counter).
 | a dwelling with a larder, a hearth, stamps and *closed* | `Household` — a home is the household itself, not a building object | `World/Household.cs:104–128, 1237` |
 | a building learned by a village fact | `WhyNotYet(kind)` — one switch read by the bar and by `Mark` | `Core/SimWorld.cs:3725` |
 | the most people ever held (the bridge's unlock) | `MostEverAlive` — ⚠️ assumes arrival = founding or birth | `Core/SimWorld.Bridges.cs:523–558` |
-| a 3×1 building nothing else needs | `BuildingKind.Longhouse = 14`, a warehouse that lies along the ground | `World/Construction.cs:257–273`, `Config/SimConfig.cs:3575–3606` |
+| ~~a 3×1 building nothing else needs~~ | ~~`BuildingKind.Longhouse = 14`, a warehouse that lies along the ground~~ — retired D571; the geometry guards type their own row | `World/Construction.cs`, `BuildFixtures.WithTheOldLonghouseStore` |
 | a flag hashed sparsely and saved | `SaidTheFoundersAreGone`, `IronToolsEverForged`, `Household.HomeClosed` (D555's commit is the template) | `Determinism/StateHash.cs:568–771`, `SaveLoadTests.Fields` |
 | a per-stage seed that moves no other draw | `MapGenerator.StageSeed` = `SplitMix64.Fold(seed, stage)` | `World/MapGenerator.cs:50–64` |
 | what stands and what state it is in | `ConditionOf(…)` per kind; `TendWhatStands` on the season turn — ⚠️ skipped while nobody is alive | `Core/SimWorld.Condition.cs`, `Systems/ClockSystem.cs:57` |
@@ -111,16 +115,26 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    setting is never sim state (`settings-persistence.md §3`), and this one decides whether a band knocks. §4.1a.
 4. **The nomads walk in from off-screen with a marker over their heads** — from the valley's edge to the camp; view-only
    first (recommended), or a sim-side `Arriving` state.
-5. ⛔ **The longhouse is removed** — call 3 reversed after play: *"unhoused immigrants should build new houses in the
-   already painted areas like normal citizens (if there is space) and if not, the game should indicate to the user that
-   there are unhoused people and not enough room to build homes."* §4.4 already does the first half; the second is a
-   **standing unhoused warning** when the paint is full. §4.5 below is kept as the record of what was built and why.
+5. ✅ **Built (D571).** ⛔ **The longhouse is removed** — call 3 reversed after play: *"unhoused immigrants should build new
+   houses in the already painted areas like normal citizens (if there is space) and if not, the game should indicate to
+   the user that there are unhoused people and not enough room to build homes."* §4.4 already did the first half; the
+   second is the **standing unhoused count** on the villagers bar's households line — *N unhoused*, amber with the
+   sentence *"N people have no roof and the painted land is full — paint more housing"* while `NeedsMoreResidentialLand`
+   is latched and anybody is roofless. A real unbuild (Joe: the row **deleted**, not a warehouse again): the class, the
+   list, lodging, the one-larder seam, the hearth's second fire, the pairing gates, the six standing-things arms, the
+   condition walk, the hash blocks (0x67 / 0x68 retired by comment), the save keys (**format 7**), the shipped row and
+   `longhouse_capacity`, the view's shelf, button, draw, card and `cards:` pose, `LonghouseTests`. `BuildingKind.Longhouse
+   = 14` stays as a **retired id** (`BuildingKinds.IsRetired`): never renumbered, never reissued, exempt from the
+   missing-id check, its catalogue slot null (`BuildingsCatalog.Has`); a modder may still type a row with it, which is
+   then whatever its columns say — the geometry guards do (`BuildFixtures.WithTheOldLonghouseStore` now *adds* the old
+   3×1 store). `house_capacity` on any row but the house is refused at load, since nothing is left to raise it as.
+   §4.5 below is kept, struck, as the record of what was built and why.
 6. All of it written down for a fresh session; the branch unmerged until the six are built and played.
 
 **Settled without asking, stated so he can overrule:** the knock is checked on the spring turn only; a band waits through
 spring and summer and leaves at the autumn turn if unanswered; the band is not villagers until it settles (a huddle at the
 pile, a card with two buttons, a bar button while it waits); the moment stays verb-free; nomads bring no techniques; the
-longhouse is the one dwelling placed by a button (D42's exception, §5); a save format bump (no migrations, D507).
+a save format bump (no migrations, D507). ~~The longhouse was the one dwelling placed by a button (D42's exception)~~ — gone, D571.
 
 ---
 
@@ -191,8 +205,8 @@ Dunns, seven souls: four grown and three children, carrying a few days' food. Th
 place to settle, and will camp by the cart until the leaves turn. Click them to decide."* The moment carries no verbs
 (§2); the **band's card** does. The band is drawn as a huddle of dots at the camp (the view, from the derived
 composition); clicking it, or the bar's **Nomads (7)** button (shown only while a band waits), opens the card: who
-they are by name, age and trade, what they carry, where they would sleep tonight (a longhouse with room, or *"in the open
-by the cart — and this winter would kill them"*), and two buttons — **Let them settle** → `SimWorld.LetTheBandSettle()`,
+they are by name, age and trade, what they carry, where they would sleep tonight (*"in the open by the cart — and this
+winter would kill them"*), and two buttons — **Let them settle** → `SimWorld.LetTheBandSettle()`,
 **Send them on** → `SimWorld.SendTheBandOn()`. Unanswered through spring and summer, **they move on at the autumn turn**
 (`nomads_wait_seasons` 2) with a passing line: *"The nomads moved on."* No harm, no foul — the clock just advances.
 The unattended paths — the harness, the goldens, a headless run — are *unanswered*.
@@ -229,7 +243,16 @@ next day if one stands, else marks a house in the residential paint (a builder r
 nowhere to build; until then they sleep at the camp, `Outdoors`, and a winter there kills (Joe's rule — the card said so
 before the click). They work any job the allocator gives them from the day they arrive. No children without a roof (D71).
 
-### 4.5 The longhouse — the communal house (call 3)
+### ~~4.5 The longhouse — the communal house (call 3)~~ — REMOVED (D571)
+
+> ⛔ **Built in D566, taken out in D571 after Joe played it** (§3a note 5): *"longhouse should be removed from the game,
+> actually. unhoused immigrants should build new houses in the already painted areas like normal citizens (if there is
+> space) and if not, the game should indicate to the user that there are unhoused people and not enough room to build
+> homes."* The stopgap hid the decision: a band lodged under a roof the player bought once, and the village never had to
+> say *paint more housing*. What replaced it is nothing new in the sim — §4.4's queue was already the whole mechanism —
+> plus the standing unhoused count on the villagers bar (§3a). Everything below is the record of what was built, kept so
+> the reasoning is not re-derived; none of it stands in the code.
+
 
 `BuildingKind.Longhouse = 14` keeps its 3×1 footprint and stops being a warehouse. It is **a communal `Household`**
 (`HouseholdKind.Communal`): no members of its own, a larder, a hearth, the two stamps, `HomeClosed` — raised through
@@ -316,8 +339,9 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 
 ## 5. What changes meaning
 
-- **D42's rule gains one exception.** Housing is painted with the brush and never placed by a button; the longhouse is
-  placed by a button *and is never a family's home* — a family lodges there and leaves it for a house the brush sited.
+- ~~**D42's rule gains one exception.** Housing is painted with the brush and never placed by a button; the longhouse is
+  placed by a button *and is never a family's home* — a family lodges there and leaves it for a house the brush sited.~~
+  **Revoked (D571):** D42 stands whole again — no dwelling is placed by a button.
 - **D251 is amended, not retired.** The town hall *widens* the nomads (call 1); it no longer triggers them. The hall's
   spec, `Construction.cs:206` and `CivicSystem.cs:16` say so.
 - **`Moment` stays verb-free.** The first decision the player makes in answer to a stop lives on a card, like every
@@ -327,9 +351,17 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
   nobody joins is byte for byte what it was.
 - **The empty valley's season turn.** `TendWhatStands` runs with nobody alive (§4.6). A valley that never empties is
   unchanged.
-- **The longhouse stops storing.** Three test files used it as *the* multi-tile store (`FootprintTests`,
-  `TileFindersAgreeTests`, `ModdedBuildingTests`); they move to the 2×2 warehouse. The footprint geometry they guard is
-  unchanged — the longhouse is still the 3×1.
+- **The longhouse stops storing — and then stops (D571).** Three test files used it as *the* multi-tile store
+  (`FootprintTests`, `TileFindersAgreeTests`, `ModdedBuildingTests`); since D566 they type the old 3×1 store themselves as
+  a modder's row on id 14 (`BuildFixtures.WithTheOldLonghouseStore`), and since D571 that fixture *adds* the row, because
+  the shipped catalogue has none. The footprint geometry they guard is unchanged.
+- **`BuildingKind` gains its first retired id (D571).** Ids are hashed by position and saved by number, so a removed
+  building's id is never renumbered and never reissued; `BuildingKinds.IsRetired` names it, the missing-id check lets it
+  be, `BuildingsCatalog.Has` says the slot is empty, and every `for id < Count` loop asks first (the strip and the
+  `cards:` probe were the two that would have died at startup).
+- **`house_capacity` is the house row's alone (D571).** The longhouse was the one other row that carried it and
+  `RaiseFinished` turned any such row into one; with that gone, a modder's beds on another row would shelter nobody for
+  ever, so the validator refuses them — until the house ladder (D206) lifts it.
 - **Goldens.** The six fifty-year goldens move **once**, in commit 1: bands knock from Year 8–12 in the fixture and the
   shipped seed, and `BandsEverKnocked` is hashed even when the band goes unanswered. Proven by setting
   `nomads_first_year_floor` to 0 and watching the old values pass. The map golden and every pose before Year 8 hold.
@@ -346,9 +378,9 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 | `BandsEverKnocked`, `BandKnockedAtTick`, `BandMetAPopulationOf` | sparsely, tagged, after everything else | `bands_ever_knocked`, `band_knocked_at`, `band_met` | the huddle at the camp; the bar button | the knock moment, naming the camp; *moved on* |
 | `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | — | the card: *came to the valley in Year 11* |
 | `NomadsEnabled` (D570) | sparsely (`0x6A`, when off) | `nomads_enabled` (started from the config key the new-game `nomads` row sets) | the tick under *How the village runs*; the new-game row | the caption under the tick |
-| `Household.Kind`, `Household.LodgedIn` | sparsely (non-default) | `kind`, `lodged_in` | the longhouse (a long house, the house tone); *lodging at* on the card | *settled*, *lodged*, *moved out* |
-| the longhouse's stamps, larder, `HomeClosed` | as a household's | as a household's | weathered like every building | the card's condition line |
-| `SaveGame.Format` | — | **6** — older saves refused in words | — | the title screen's refusal |
+| ~~`Household.LodgedIn`, the longhouses~~ | ~~0x68, 0x67~~ — retired D571, never reused | ~~`lodged_in`, `longhouses`~~ — gone, format 7 | — | — |
+| `NeedsMoreResidentialLand` (the latch, since D381) | not hashed (narration state) | `needs_more_residential_land` | the villagers bar's *N unhoused*, amber while latched and anybody is roofless (D571) | *"has nowhere to build"* once; the amber tooltip standing |
+| `SaveGame.Format` | — | **7** — older saves refused in words | — | the title screen's refusal |
 
 `SaveLoadTests.Fields` names every new field; `EverySavedFieldComesBackAsItWas` and the year-after guard cover them.
 
@@ -361,12 +393,8 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 | The knock year arrives with nobody alive | No band. The valley is on §4.6's clock instead; the knock clock resumes after the re-founding, counted from it |
 | A band waits and everybody dies | The band moves on at its deadline as usual; §4.6's clock starts from the last death |
 | Settle in autumn | Allowed; the card said *this winter would kill them*. The player chose it (§0.1: a decision with a consequence, not an error) |
-| No residential paint, no longhouse | They settle roofless; `NeedsMoreResidentialLand` says so once; the card says *in the open by the cart* (or *at the founding site*) |
-| The longhouse is full | The ninth sleeps rough until a house is raised or a lodger moves out; its card says *full* |
-| The longhouse falls in with lodgers | `HomeClosed`; they are `Outdoors` there until it is mended — the same rule a ruined house has |
-| The longhouse is pulled down with lodgers | Allowed; they are roofless again; a log line names them |
-| A lodged family's house is raised | They move out that day; the longhouse's room frees |
-| A refused band and the longhouse | Still learned — the knock is the lesson, not the yes |
+| No residential paint | They settle roofless; `NeedsMoreResidentialLand` is narrated once and the bar's *N unhoused* stays amber until a site is marked (D571); the card says *in the open by the cart* (or *at the founding site*) |
+| A modder types a row on id 14 | It loads and is whatever its columns say — a store, if it stores (D571); `house_capacity` on it is refused |
 | Save mid-band, load | The band is re-derived from the saved tick, count and population; its deadline is the saved tick's |
 | Load an older format | Refused in words (D507, no migrations) |
 | Re-founders find no house standing | They are roofless at the founding site, as the first founders were; the paint, if any, still stands |
@@ -538,12 +566,28 @@ knock; save → load → hash == live mid-band, and the year after matches.
 > in the first run — `VillageFixtures.Village` puts the shipped knock back, as it does the wear (D555's shape); and
 > `SimLoop` computes a tick before it advances, so a band raised on the knock tick is there one step past it.
 
-**Commit 2 — `LonghouseTests`:** locked until the first knock; lodges up to capacity and the ninth sleeps rough; the
-larder is fetched to and burned from by lodgers; shelter follows the larder; a lodged family moves out the day its house
-is raised; nobody lodged partners; a fallen-in longhouse shelters nobody; pulling it down turns lodgers out; the three
-re-pointed store guards still pass on the warehouse; hash/save.
+**~~Commit 2 — `LonghouseTests`~~ — deleted with the longhouse (D571).** ~~Locked until the first knock; lodges up to
+capacity and the ninth sleeps rough; the larder is fetched to and burned from by lodgers; shelter follows the larder; a
+lodged family moves out the day its house is raised; nobody lodged partners; a fallen-in longhouse shelters nobody;
+pulling it down turns lodgers out; the three re-pointed store guards still pass on the warehouse; hash/save.~~
 
-> ⭐ **Commit 2 (D566) — `LonghouseTests` (12).** 18 mutants, 28 reds, no zeros — three found and closed (the pairing rule is checked on the seeker and on the candidate and either check masked a mutant of the other, so `NobodyLodgingPartners` is posed from both sides; the larder's hash was invisible to a save round trip, so `TheLonghousesLarderIsInTheFingerprint` compares two villages). Found while building: a pose that gave the fixture's
+> ⭐ **Note 5 (D571) — the unbuild's guards.** G1 `ACatalogueWithoutTheRetiredLonghouseRowLoads` (a catalogue without
+> row 14 is whole; the retired list is exactly {14}); G2 a modder's row 14 is an ordinary store (in
+> `AModderCanAddABuildingInDataAlone`); G3 `HouseCapacityOnAnyRowButTheHouseIsRefused`; G4
+> `ASettledFamilyWithNoPaintIsUnhousedAndTheVillageSaysSo` (the latch set with nowhere to build, cleared when the paint
+> comes back); G5 format 7 (`AFormatFourSaveIsRefused` reddened on the bump — the natural red, 1); G6 **no golden moved**,
+> written down as the point: both hash blocks were sparse; G7 `ARetiredIdHasNoRowAndSaysSo`. **8 mutants, 42 reds, one
+> zero found and closed:** the retired list also exempting id 8 scored **zero** against G1 as first written — the
+> missing-id guard's line strike of `"id": 8,` takes the trade with id 8 as well, so the jobs validator refuses first and
+> a widened exemption changes no verdict — closed by G1 asserting the retired list is exactly {14}: **1**; nothing retired (the shipped catalogue
+> refused) **17** (every catalogue guard in scope, G1, G3, G7 among them); the fixture row storing nothing **19** (every footprint and tile-finder guard, and G2);
+> the `house_capacity` clause never firing **1**; the latch never set **1**; the latch never cleared **1**; `NameOf`
+> dereferencing the empty slot **1** (`NullReferenceException` where `ArgumentOutOfRangeException` was promised).
+> ⚠️ The strip's and the `cards:` probe's `Has` guards are the view's: no mutant in the suite can see them, and the
+> probe is their check (D571 ran it both ways — a sixth bar cell ran the bar 72px under the right column, so the count
+> went on the households line).
+>
+> ⭐ **~~Commit 2 (D566) — `LonghouseTests` (12).~~** 18 mutants, 28 reds, no zeros — three found and closed (the pairing rule is checked on the seeker and on the candidate and either check masked a mutant of the other, so `NobodyLodgingPartners` is posed from both sides; the larder's hash was invisible to a save round trip, so `TheLonghousesLarderIsInTheFingerprint` compares two villages). Found while building: a pose that gave the fixture's
 > builders two seasons mended the posed ruin before the assertion (the stamp is now asked of `ConditionRules` for the
 > very next turn); and the winters' half-seasons put a four-year stamp past *ruin* at once — a stamp set by arithmetic
 > is a claim about the rule.
@@ -579,5 +623,6 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
       `morale.md`, `content-inventory.md`, `footprints.md`; `HANDOFF.md`; this status line made true — in the same
       commit as the code.
 - [ ] Played by Joe: a new village to the first knock (~Year 10), the huddle, the card's two buttons, a settled family
-      housed or freezing, the longhouse in the strip after the knock, lodgers moving out; a village left to die and found
-      again a few years on.
+      housed or freezing, ~~the longhouse in the strip after the knock, lodgers moving out~~ (gone, D571) the *N unhoused*
+      count going amber when the paint is full; the Nomads tick and the new-game row (D570); a village left to die and
+      found again a few years on.

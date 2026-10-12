@@ -16,21 +16,25 @@ namespace Bclone.Sim.Tests;
 internal static class BuildFixtures
 {
     /// <summary>
-    /// The longhouse as it was before D566 — a three-by-one warehouse — typed as a modder's row, so the footprint
-    /// and tile-finder guards keep the one multi-tile store they were written against. The shipped row is a dwelling.
+    /// The old three-by-one longhouse store (D320, D322), typed as a modder's row on the retired id 14 (D571), so the
+    /// footprint and tile-finder guards keep the one multi-tile store they were written against. ⛔ ADDED, not edited:
+    /// the shipped catalogue has no row 14 any more, so a <c>FindIndex</c> here would be −1.
     /// </summary>
     internal static SimConfig WithTheOldLonghouseStore(SimConfig config)
     {
-        var rows = new List<BuildingRow>(config.BuildingRows);
-        int i = rows.FindIndex(r => r.Id == (int)BuildingKind.Longhouse);
-        rows[i] = rows[i] with
+        var rows = new List<BuildingRow>(config.BuildingRows)
         {
-            Materials = new[] { new MaterialCost(Goods.Logs, config.WarehouseLogs), new MaterialCost(Goods.Stone, config.WarehouseStone) },
-            WorkTicks = config.WarehouseWorkTicks,
-            Stores = StoreKind.Warehouse,
-            StoreCapacity = VillageEconomy.WarehouseCapacity(config) * 3,
-            HouseCapacity = 0,
-            LocalStoreCap = 0,
+            new BuildingRow
+            {
+                Id = (int)BuildingKind.Longhouse,
+                Name = "longhouse",
+                Materials = new[] { new MaterialCost(Goods.Logs, config.WarehouseLogs), new MaterialCost(Goods.Stone, config.WarehouseStone) },
+                WorkTicks = config.WarehouseWorkTicks,
+                Stores = StoreKind.Warehouse,
+                StoreCapacity = VillageEconomy.WarehouseCapacity(config) * 3,
+                ExtentWidth = 3,
+                ExtentHeight = 1,
+            },
         };
         return config with { Buildings = rows };
     }

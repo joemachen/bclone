@@ -620,6 +620,63 @@ public sealed class NomadTests
     }
 
     /// <summary>
+    /// ⛔ The longhouse is gone (D571; Joe, D568): a settled family builds in the paint like everybody, and when the
+    /// paint is full the village says so and KEEPS saying so — `NeedsMoreResidentialLand` is the latch the villagers
+    /// bar's amber *unhoused* cell reads, set the day there is nowhere to build and cleared the day a site is marked.
+    /// </summary>
+    [Fact]
+    public void ASettledFamilyWithNoPaintIsUnhousedAndTheVillageSaysSo()
+    {
+        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
+        SimWorld world = loop.World;
+        var erased = new List<GridPos>();
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
+        {
+            for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width; x++)
+            {
+                var tile = new GridPos(x, y);
+                bool lived = false;
+                foreach (Household household in world.Households)
+                {
+                    if (world.HomeFootprintOf(household)?.Covers(tile) == true)
+                    {
+                        lived = true;
+                    }
+                }
+
+                if (!lived && world.Zones.IsResidential(tile))
+                {
+                    world.EraseResidential(tile);
+                    erased.Add(tile);
+                }
+            }
+        }
+
+        Assert.NotEmpty(erased);
+        Assert.False(world.NeedsMoreResidentialLand);
+        int families = world.Band!.Families.Count;
+        world.LetTheBandSettle();
+        loop.Step(Village.TicksPerDay * 2);
+
+        var settled = world.Households.Skip(world.Households.Count - families).ToList();
+        Assert.All(settled, h => Assert.False(h.HasHome));
+        Assert.All(settled, h => Assert.Null(world.HomeSiteFor(h.Id)));
+        Assert.All(settled, h => Assert.True(world.LivingMembersOf(h) > 0));
+        Assert.True(world.NeedsMoreResidentialLand, "nowhere to build, and the latch the bar reads is not set");
+        Assert.Contains("has nowhere to build", Said(log), StringComparison.Ordinal);
+
+        // Paint it back: a site is marked the next day and the latch clears — the warning is standing, not sticky.
+        foreach (GridPos tile in erased)
+        {
+            world.PaintResidential(tile);
+        }
+
+        loop.Step(Village.TicksPerDay * 2);
+        Assert.Contains(settled, h => h.HasHome || world.HomeSiteFor(h.Id) is not null);
+        Assert.False(world.NeedsMoreResidentialLand, "a site was marked and the latch did not clear");
+    }
+
+    /// <summary>
     /// "The pile" said nothing to Joe (D568); the knock names the camp in the village's words (D569) — by the cart
     /// while it stands, at the founding site where there is none. The warm fixture has no cart; the cold village,
     /// its opening played, keeps the founders' wagon.

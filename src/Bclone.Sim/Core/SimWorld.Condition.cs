@@ -47,9 +47,6 @@ public sealed partial class SimWorld
     public Condition ConditionOf(Well well) =>
         BuildingsCatalog[well.Kind] is BuildingRow row ? ConditionRules.Of(well.RaisedAtTick, well.RepairedAtTick, Tick, row, Config) : Condition.Sound;
 
-    public Condition ConditionOf(Longhouse longhouse) =>
-        BuildingsCatalog[BuildingKind.Longhouse] is BuildingRow row ? ConditionRules.Of(longhouse.RaisedAtTick, longhouse.RepairedAtTick, Tick, row, Config) : Condition.Sound;
-
     public Condition ConditionOf(TownHall hall) =>
         BuildingsCatalog[BuildingKind.TownHall] is BuildingRow row ? ConditionRules.Of(hall.RaisedAtTick, hall.RepairedAtTick, Tick, row, Config) : Condition.Sound;
 
@@ -80,9 +77,6 @@ public sealed partial class SimWorld
 
     public WearReport? WearOf(Well well) =>
         BuildingsCatalog[well.Kind] is BuildingRow row ? Report(well.RaisedAtTick, well.RepairedAtTick, row) : null;
-
-    public WearReport? WearOf(Longhouse longhouse) =>
-        BuildingsCatalog[BuildingKind.Longhouse] is BuildingRow row ? Report(longhouse.RaisedAtTick, longhouse.RepairedAtTick, row) : null;
 
     public WearReport? WearOf(TownHall hall) =>
         BuildingsCatalog[BuildingKind.TownHall] is BuildingRow row ? Report(hall.RaisedAtTick, hall.RepairedAtTick, row) : null;
@@ -270,30 +264,6 @@ public sealed partial class SimWorld
             if (now == Condition.Ruin && !well.Closed)
             {
                 well.Closed = true;
-                StandingChanged();
-            }
-        }
-
-        // The longhouses (D566): worn gets a repair, a ruin is closed — its lodgers are in the open until it is mended.
-        for (int i = 0; i < Longhouses.Count; i++)
-        {
-            Longhouse longhouse = Longhouses[i];
-            if (BuildingsCatalog[BuildingKind.Longhouse] is not BuildingRow row)
-            {
-                continue;
-            }
-
-            Condition now = ConditionOf(longhouse);
-            Condition before = ConditionRules.Of(longhouse.RaisedAtTick, longhouse.RepairedAtTick, aSeasonAgo, row, Config);
-            SayWhatTurned(longhouse.Name, before, now);
-            if (now >= Condition.Worn)
-            {
-                RaiseARepairIfNoneFor(BuildingKind.Longhouse, longhouse.Position, longhouse.Name, longhouse.Facing, BuildingRecipe.For(BuildingKind.Longhouse, Config));
-            }
-
-            if (now == Condition.Ruin && !longhouse.Closed)
-            {
-                longhouse.Closed = true;
                 StandingChanged();
             }
         }
@@ -490,13 +460,6 @@ public sealed partial class SimWorld
         {
             well.RepairedAtTick = Tick;
             well.Closed = false;
-            mended = true;
-        }
-
-        if (LonghouseCovering(tile) is Longhouse longhouse)
-        {
-            longhouse.RepairedAtTick = Tick;
-            longhouse.Closed = false;
             mended = true;
         }
 
