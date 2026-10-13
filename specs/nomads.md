@@ -22,6 +22,12 @@ the band moved on unanswered), no `nomads_wait_seasons`, no `band` key, 0x6F ret
 is on **settles that tick**; the tick lives on the villagers bar (a third line, with *N unhoused*), not in Settings; the
 new-game row stays as the starting value. **The six fifty-year goldens moved** (a family settles in Year 8–12 of every
 golden run), proven the knock's alone: with the floor at 0 every one reads its pre-D565 value. §9 has the mutants.**
+✅ **Note 4 built (D573): the nomads walk in from the valley's edge, view only** (§4.3a) — the map notices the
+arrivals by `ArrivedAtTick`, works out once the edge tile the one cost field reaches most cheaply from the camp and
+the sim's own route from it, and walks them in over 8 s of real time, filing, a chevron bobbing over each head; the
+arrival moment is held until the last is in and the village kept at 1× (Joe's three calls); paused, they stand still; a
+load never replays it; re-founders walk in too. Three probe lines (`walk-in:`, `arrival:`, `arrived:`); 12 mutants, 11 reds, one zero
+written down (§9). No sim change, no golden moved. **Next: note 1 — the paths' gridding, a spec with options for Joe.**
 Bands knock and settle; a settled family builds in the paint like everybody, and when the paint is full
 the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (28) and
@@ -122,8 +128,11 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    starting position a **row on the new-game screen** (`nomads`: *Come to the valley* / *Never come*, setting
    `nomads_enabled`), remembered with the valley and carried in the share code. ⛔ Not a `settings.json` toggle: a
    setting is never sim state (`settings-persistence.md §3`), and this one decides whether a band knocks. §4.1a.
-4. **The nomads walk in from off-screen with a marker over their heads** — from the valley's edge to the camp; view-only
-   first (recommended), or a sim-side `Arriving` state.
+4. ✅ **Built (D573), view only.** **The nomads walk in from off-screen with a marker over their heads** — from the
+   valley's edge to the camp (§4.3a). Joe's calls in plan mode: **the arrival moment is held until the last of them is
+   in** (it used to show the frame they knocked, which would have covered the walk); **a fixed ~8 seconds of real time**
+   whatever the distance; **a small chevron, bobbing**, not the meal bowl's shape, so eating and arriving never look
+   alike. The sim-side `Arriving` state was the alternative and is not built: the sim is byte for byte what it was.
 5. ✅ **Built (D571).** ⛔ **The longhouse is removed** — call 3 reversed after play: *"unhoused immigrants should build new
    houses in the already painted areas like normal citizens (if there is space) and if not, the game should indicate to
    the user that there are unhoused people and not enough room to build homes."* §4.4 already did the first half; the
@@ -248,6 +257,34 @@ paths — the harness, the goldens, a headless run — now **settle every band**
 > card's status (posed from a `where` the probe supplies) and the bar button's tooltip, refreshed because the cart can
 > fall while a band waits.
 
+#### 4.3a The walk-in — view only (D573; Joe's note 4)
+
+In the sim the band is villagers at the camp from the knock tick; **the view walks them in.** `VillageMap.WalkIn.cs`:
+each refresh the shell asks the map to `WatchForArrivals` **before** it shows any moment (the map's own draw runs
+after the panel would be up); the map looks, once a tick, for anybody alive whose `ArrivedAtTick` fell in
+`(last look, now]` — so a skip that steps a year in one frame still catches the knock inside it — and, at the
+arrival, works out **once**: the edge tile the one cost field reaches most cheaply from the camp
+(`EdgeNearestTheCamp` — every passable perimeter tile asked `TravelCost.Cost(edge, camp)`, ties to the first in a
+fixed sweep; never a second travel system) and the sim's own route from it (`TravelCost.RouteFrom`), smoothed by a
+three-tile mean (`SmoothedPath`) so the four-connected staircase reads as a line — ⭐ a smoothed point never leaves
+its own tile (the two neighbours pull it at most a third of a tile on each axis), so nobody is ever drawn on the water
+the route went round. Then for **`WalkInSeconds` 8 of real time** (the meal mark's clock, D531 — the same at every
+speed) each arrival is drawn along the route by arc length, the lowest id leading and each next setting off
+**0.35 s** later so the band files in, a **chevron** in the huddle's dun bobbing above each head and fading over the
+last half second; over the last 15 % of the walk the point bends to wherever the arrival actually stands (the
+ordinary glide), so the handover never snaps. `DrawnCentre` asks the walk-in first, so a click on a walker lands on
+the dot. **The arrival moment waits** (Joe): `Main.ShowAnyMoment` skips every waiting moment while the map says a walk
+is underway (passing banners drain as ever), the shell drops the village to **1×** the frame a walk begins
+(`SlowDownForAnAlert`, the alert's own hold) and refuses to hand the speed back while anybody is on the road; the
+moment shows the frame the last is in and takes the hold over. **Paused, they stand still** — the walk clock is the
+map's and the shell tells it the village is paused; a skip that crosses a knock pauses on the moment as today, so
+the band waits at the edge until the player unpauses, walks in, and the moment follows. **A load never replays it**:
+a new world is watched from its own tick. Re-founders (§4.6) walk in by the same rule; the founders (`ArrivedAtTick`
+0) never do. An island valley — no edge tile reaches the camp — shows them at the camp as before. Nothing is hashed,
+saved or read by the sim; the view reads the sim's cost field and writes nothing. ⛔ Not built, said so: the camera
+does not move to show the edge (Joe did not ask; the moment is held so there is time to look), and the sim-side
+`Arriving` state (§3a's alternative). Probe lines: `walk-in:`, `arrival:`, `arrived:` (§9).
+
 ### 4.4 Settling — roofless, and then what the village already does
 
 `Settle(band)` — called from `Knock()` the same tick (D572; `LetTheBandSettle()` until then) — makes each family a
@@ -351,7 +388,7 @@ which founding it mourns and names both generations, and never raises a second h
 
 ### 4.7 Not in this slice, said so
 
-A walk-in from the valley's edge (the band appears at the camp; a walk from the map's edge is note 4, §3a);
+~~A walk-in from the valley's edge~~ (built view-only in D573, §4.3a — the sim-side `Arriving` state is what stays out);
 morale's departures (`morale.md` — arrivals now exist, so the valve has two ends when it comes); techniques carried by
 nomads; a band that asks for anything but a place; the longhouse as a trade or a store; livestock or goods in the cart.
 
@@ -402,7 +439,7 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 |---|---|---|---|---|
 | `BandsEverKnocked`, `NextKnockYear` | sparsely (0x6E) | `bands_ever_knocked`, `next_knock_year` | — | the arrival moment, naming the camp |
 | ~~the waiting band (`Band`)~~ | ~~0x6F~~ — retired D572, never reused | ~~`band`~~ — gone (format 7 unchanged: no build that wrote 7 reached Joe) | ~~the huddle; the bar button~~ | ~~*moved on*~~ |
-| `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | — | the card: *came to the valley in Year 11* |
+| `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | the walk-in from the valley's edge, a chevron overhead (D573, §4.3a) | the card: *came to the valley in Year 11* |
 | `NomadsEnabled` (D570; the permission since D572) | sparsely (`0x6A`, when off) | `nomads_enabled` (started from the config key the new-game `nomads` row sets) | the tick on the villagers bar's third line; the new-game row | the tick's tooltip |
 | ~~`Household.LodgedIn`, the longhouses~~ | ~~0x68, 0x67~~ — retired D571, never reused | ~~`lodged_in`, `longhouses`~~ — gone, format 7 | — | — |
 | `NeedsMoreResidentialLand` (the latch, since D381) | not hashed (narration state) | `needs_more_residential_land` | the villagers bar's *N unhoused*, amber while latched and anybody is roofless (D571) | *"has nowhere to build"* once; the amber tooltip standing |
@@ -576,6 +613,32 @@ the count; save → load mid-band~~ — gone with the waiting band (D572).
 > tick's guard (reads the world, drives it, both ways) — no mutant in the suite can see it. **Goldens:** the six moved
 > (§5), proven with the floor at 0.
 
+> ⭐ **Note 4 (D573) — the walk-in, three probe lines; no test, since the sim did not move.** `walk-in:` (the map, on
+> the real valley and pure poses): the edge picked is on the perimeter, passable, and no other passable perimeter tile
+> reaches the camp cheaper (brute-forced in the probe); the route starts there, ends on the camp tile, stays on the
+> map and off the water, one step at a time; a posed staircase with a corner smooths to points inside their own tiles
+> with the ends unmoved and the corner gone; a walker at 0 and 1 is at the ends and half way is on the polyline; the
+> file sets off a gap apart and arrives a gap apart; the mark holds on the road and is half faded a quarter second
+> from the end; arrivals are told from founders, natives and the dead (`ArrivalsSince`, posed); the walk clock stands
+> still paused and runs unpaused; a posed walker on the real route is drawn — and clicked — at the edge tile.
+> `arrival:` (the shell): a posed walk-in with a posed waiting moment — the moment stays queued and the panel hidden
+> at 1×, a banner fading mid-walk does not hand the speed back, the clock run past the walk shows the moment with its
+> title, *Go on* gives the 4× back. `arrived:` (the live door): one tick on, a villager posed as arrived this tick is
+> walking in after the next `Refresh` at 1× — posed, because the probe's unattended valley met no band in its
+> twelve-year run (*0 bands knocked*: the check that depended on the seed scored zero on its first run and was replaced
+> the same hour). **Mutants and reds — 12 mutants, 11 reds, one zero:** the edge pick taking the dearest tile **1**
+> (`walk-in:` — *(-60, 1) reaches the camp for 660 but (-60, 39) was picked at 960*); no smoothing **1**; the ends
+> nudged a tenth of a tile **1** (⚠️ its first form, `i == 0 && i == route.Count - 1`, indexed past the route and threw
+> inside the probe — **a hang, not a red**: the headless Godot never printed `done.` and sat twelve hours; re-posed, and
+> every scripted probe run now goes under `timeout 240` — `HANDOFF.md`); `since` ignored **1** (founders counted, and
+> the tick already seen counted again); `ShowAnyMoment` ignoring the walk **1** (`arrival:`); the clock running paused
+> **1**; `Refresh` never asking the map to watch **1** (`arrived:` — the live door); `DrawnCentre` ignoring the walk
+> **1** (the walker drawn 1,632 px from the edge); the hold forgetting the walk **1** (a banner fading mid-walk gave 4×
+> back); no file gap **1**; the mark never fading **1**. ⛔ **The zero:** `WalkInProgressOf` returning the progress at
+> and past 1 instead of null — equivalent in every pose and very nearly in play: at progress 1 the drawn point is the
+> live glide (the blend is 1) and the mark is already faded, so the only difference is a few `IndexOf` calls a frame
+> until the once-a-tick prune. Kept, and written down.
+
 > ⭐ **Note 3 (D570) — `NomadTests` (37), `RefoundTests` (13), `NewGameScreenTests` (+row).** Off at founding, nobody
 > ever knocks; off with a band waiting, it still waits, still moves on at its turn, and can still be settled; on again
 > with the year past, the band knocks at the next year's turn; hashed only when off (two villages differ, and agree
@@ -657,11 +720,14 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
       goldens diffed — **commit 1: 1661 / 0 / 5 of 1666 (7m01); view 0 warnings; probe 84 lines, no ⛔; six goldens.
       Commit 2: 1673 / 0 / 5 of 1678 (6m20), with the two guards added after that run green (13 / 13); view 0 warnings;
       probe 84 lines, no ⛔; no golden moved. Commit 3: 1692 / 0 / 5 of 1697 (5m34); view 0 warnings; probe 84 lines,
-      no ⛔; no golden moved.**
+      no ⛔; no golden moved. Note 4 (D573): 1686 / 0 / 5 of 1691 (8m37); view 0 warnings; probe 86 lines, no ⛔,
+      `walk-in:` / `arrival:` / `arrived:` ✅, bar height 151, `done.`; no golden moved, no test touched.**
 - [x] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
       `morale.md`, `content-inventory.md`, `footprints.md`; `HANDOFF.md`; this status line made true — in the same
       commit as the code.
-- [ ] Played by Joe: a new village to the first knock (~Year 10) — the arrival moment, the family roofless at the camp
+- [ ] Played by Joe: a new village to the first knock (~Year 10) — **the band walking in from the valley's edge at 1×
+      with chevrons overhead, the moment arriving as the last of them does (D573; pause mid-walk freezes them; a save
+      made after loads with nobody walking)**, the family roofless at the camp
       and a house marked in the paint within days, the *N unhoused* count going amber when the paint is full; the Nomads
       tick on the villagers bar (off: nobody comes) and the new-game row (D570); a village left to die and found again a
       few years on. ~~The huddle, the card's two buttons, the longhouse~~ — gone (D571, D572).

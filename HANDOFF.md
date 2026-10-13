@@ -1,4 +1,40 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D572: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 5, AND HIS SECOND PLAY ANSWERED (D572 — THE SWITCH IS THE PERMISSION). NOTES 4 AND 1 NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D573: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 — THE WALK-IN, VIEW ONLY); HIS PLAY OF D572 APPROVED. NOTE 1 (THE PATHS, A SPEC) NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D573: NOTE 4 — THE NOMADS WALK IN FROM THE EDGE, VIEW ONLY) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), notes 2, 3, 5 (D569–D571), the switch as the permission (D572 — **Joe played it: *"nomads work as expected"***;
+> the harness's starvation number is parked at his word) and **D573: note 4 — the view walks a band in from the valley's
+> edge.** `VillageMap.WalkIn.cs`: the shell asks the map to `WatchForArrivals` in `Refresh`, *before* `ShowAnyMoment`;
+> the map notices anybody alive whose `ArrivedAtTick` fell since it last looked, works out **once** the cheapest passable
+> edge tile to the camp (`TravelCost.Cost` over the perimeter) and the sim's own `RouteFrom` it, smoothed by a three-tile
+> mean that provably stays inside its tiles, and draws them along it for **8 s of real time**, filing 0.35 s apart, a dun
+> chevron bobbing overhead and fading as they arrive, the last 15 % bending to where they really stand so nothing snaps;
+> `DrawnCentre` asks the walk first so a click lands. **The arrival moment is held until the last is in** and the village
+> kept at 1× meanwhile (`ShowAnyMoment` and `LetTheVillageBackUpToSpeed` ask `_map.WalkInUnderway`; the walk's start calls
+> `SlowDownForAnAlert`); paused, they stand still (`_map.Paused`); a load never replays (a new world is watched from its
+> own tick); re-founders walk in too. Joe's calls in plan mode: hold the moment; ~8 s; a chevron, not the bowl. **No sim
+> change, no golden moved, no test touched.** 12 mutants, 11 reds, one equivalent zero written down (`nomads.md §9`).
+> Verified: suite 1686 / 0 / 5 of 1691 (8m37, against D572's 10m47); view 0 warnings; probe 86 lines (83 + the three),
+> no ⛔ (`pause:` ❌ is D568's), `walk-in:` ✅, `arrival:` ✅, `arrived:` ✅, `nomads:` ✅, `bars:` ✅ (960px), bar height
+> 151, `done.`; goldens 362 → 362, nothing under `tests/` or `data/` moved.
+>
+> **▶️ NEXT: note 1 — the paths' gridding**: a design spec with options for Joe (octile field with diagonal lanes; a
+> bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s numbers, before the field is touched
+> (D122). The D568 banner below has the review. **Then Joe plays all six; merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for (carried in the trap list as well):** *(1)* **The shell shows a moment before the map ever
+> draws the tick that raised it** — `Refresh` → `ShowAnyMoment` runs long before `_map.Present` and `_Draw`; anything the
+> view must do ahead of a modal is noticed in `Refresh`, not in the draw. *(2)* **A probe check that depends on the seed is
+> a zero that reads as green**: the first `arrived:` counted the run's natural arrivals and the probe's unattended valley
+> met no band in twelve years (*0 bands knocked*) — the door is posed now (one tick on, a villager posed as arrived).
+> *(3)* **A ~430-line quoted heredoc does not parse in this Git Bash** (*unexpected EOF while looking for matching `''*) —
+> a new source file goes through the Write tool. *(4)* **Do not edit a source file while a red-check script is swapping
+> mutants in and out of it** — docs only while it runs. *(5)* **A mutant that throws inside the probe is a HANG, not a
+> red**: the headless Godot never reaches `done.` and sat twelve hours with the mutant applied — scripted probe runs go
+> under `timeout 240`, check for `done.`, and `taskkill` Godot on a miss.
+>
+> **(the banner below is the state before D573)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D572: BANDS SETTLE ON ARRIVAL; THE TICK ON THE VILLAGERS BAR) — ON WINDOWS.**
 >
@@ -6703,6 +6739,32 @@ Read `git status` after staging, every time.
   27 saves are the number for anything that scales with a played village (8–10 at Year 10, 17 at 50, 38–49 at 85–92).
 - **The empty valley keeps wearing but never closes.** `ClockSystem` returns before `TendWhatStands` when nobody is alive,
   so a ruin in a dead valley is derived *Ruin* and never `Closed` — read `ConditionOf`, not the flag, when measuring one.
+
+## ⛔ THE TRAPS THE WALK-IN (D573) PAID FOR — A MODAL BEFORE THE DRAW, A CHECK THAT DEPENDED ON THE SEED, AND A HEREDOC TOO LONG TO PARSE
+
+- **The shell shows a moment before the map draws the tick that raised it.** `Main.Refresh` calls `ShowAnyMoment` first
+  and `_map.Present` near its end; `_Draw` runs later still. Joe's walk-in had to run *before* the arrival moment, so the
+  arrival is noticed by `_map.WatchForArrivals(world)` in `Refresh`, ahead of `ShowAnyMoment` — not in
+  `AdvanceInterpolation`, which is where every other once-a-tick view fact (the meal mark, the crowd fan) is noticed and
+  where the first draft put it. **Anything the view must do ahead of a modal is noticed in `Refresh`.**
+- **A probe check that depends on the seed is a zero that reads as green.** The first `arrived:` line counted the
+  twelve-year run's natural arrivals and asked whether they were walking in. The probe's valley is founded unattended and
+  met **no band in twelve years** (*0 bands knocked* — D143: it dies, or thins past a knock); the line printed ⚠️ *nobody
+  arrived* and the live door — `Refresh` calling the map — was unchecked. Posed instead: one tick on, a villager with
+  `ArrivedAtTick = Tick` put on the roster, `Refresh()`, then removed. **Pose the state; never wait for the seed to supply it.**
+- **A quoted heredoc of ~430 lines failed to parse in this Git Bash** (`unexpected EOF while looking for matching ''`) on
+  a body with no unbalanced quote. The Write tool wrote the same file first time. The memory rule *edit scripts from a
+  file, never a heredoc* holds for source files as well.
+- **Do not edit a source file while a red-check script is applying and reverting mutants in it.** The script swaps by
+  exact anchor and swaps back; an edit of yours between the two is an anchor it cannot find, and the revert fails loud
+  (good) or lands on the wrong text (worse). Docs only while it runs.
+- **⛔ A MUTANT THAT THROWS INSIDE THE PROBE IS A HANG, NOT A RED — AND IT HELD THE MACHINE TWELVE HOURS.** M3's first form
+  (`i == 0 && i == route.Count - 1`) indexed past the route's end; the probe threw, never reached `GetTree().Quit()`, and
+  the headless Godot sat from 23:23 to 11:10 with the mutant still applied and the chain behind it waiting. CLAUDE.md's
+  line — *if `done.` is missing a headless Godot is still running* — was written for exactly this and a script does not
+  read it. **Every scripted probe run goes under `timeout 240`, checks for `done.`, and `taskkill`s Godot on a miss;
+  a hang is reported as HUNG, never counted as a red.** The mutant was re-posed as one that builds and runs (the ends
+  nudged a tenth of a tile).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

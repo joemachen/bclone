@@ -573,6 +573,9 @@ public partial class VillageMap : Control
         // The meal mark's clock (D531): real seconds, so half a second is half a second at any speed.
         _mealClock += delta;
 
+        // The walk-in's clock (D573): real seconds too, but still while the village is paused.
+        TickTheWalkClock(delta);
+
         // Polled rather than event-driven: held keys have to pan smoothly, and key
         // events only fire on press and repeat.
         // ⛔ AND NOT WHILE SOMEBODY IS TYPING (D379). This used to say polling globally was safe
@@ -7089,6 +7092,12 @@ public partial class VillageMap : Control
                 DrawArc(centre, radius + 4f, 0f, Mathf.Tau, 24, SelectedRing, 2f);
             }
 
+            // ⭐ A nomad walking in carries the chevron (D573, Joe's note 4) until they are in.
+            if (WalkInProgressOf(villager.Id) is float walking)
+            {
+                DrawTheArrivalMark(centre, radius, walking);
+            }
+
             if (_mealShownUntil.TryGetValue(villager.Id, out double until))
             {
                 float left = MealMarkLeft(until, _mealClock);
@@ -7191,6 +7200,9 @@ public partial class VillageMap : Control
         {
             return;
         }
+
+        // A walk whose last nomad is in is forgotten here, once a tick, with the rest of the bookkeeping (D573).
+        PruneTheFinishedWalkIns();
 
         // ⭐ AND WHOEVER ATE THIS TICK IS MARKED (D531) — once a tick, where the sim's fact changes.
         var ate = new List<int>();
@@ -7335,6 +7347,16 @@ public partial class VillageMap : Control
     /// </remarks>
     private Vector2 DrawnCentre(Villager villager)
     {
+        Vector2 live = DrawnTile(villager);
+
+        // ⭐ A nomad walking in is on the road, not at the camp (D573) — asked here, so the click lands on the dot.
+        Vector2 tile = WalkInPlaceOf(villager.Id, live, out _) ?? live;
+        return ToScreen(tile);
+    }
+
+    /// <summary>The ordinary glide, in the view's tile space: from last tick's place toward this one, fanned off a crowded tile.</summary>
+    private Vector2 DrawnTile(Villager villager)
+    {
         Vector2 current = InViewTiles(villager.Position);
         bool seen = _tiles.TryGetValue(villager.Id, out var known);
         Vector2 previous = seen ? known.Previous : current;
@@ -7351,7 +7373,7 @@ public partial class VillageMap : Control
             : snapped ? known.FanCurrent
             : FanDrawn(known.FanPrevious, known.FanCurrent, (float)_alpha);
 
-        return ToScreen(drawTile + fan);
+        return drawTile + fan;
     }
 
     /// <summary>
