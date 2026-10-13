@@ -44,9 +44,9 @@ filed under its own heading there for exactly that reason. It is the village's, 
 *Snap to the grid* is a setting even though it changes placement: it acts on the input before the sim
 sees it (D330), so nothing about the village depends on it.
 
-⛔ **The *nomads may come to the valley* tick (D570) is the same shape as share-out, and for the same reason:**
-`SimWorld.NomadsEnabled` decides whether a band knocks, so it is hashed (when off) and saved, filed under *How the
-village runs*, and never in this file. **Its starting position is a new-game row** (`nomads`, `new-game-screen.md §5`),
+⛔ **The *nomads may come to the valley* tick (D570; on the villagers bar since D572) is the same shape as share-out,
+and for the same reason:** `SimWorld.NomadsEnabled` decides whether a band knocks and settles, so it is hashed (when
+off) and saved, drawn on the villagers bar's third line (Joe: *"not buried in settings"*), and never in this file. **Its starting position is a new-game row** (`nomads`, `new-game-screen.md §5`),
 and *that* is remembered here as every row is (§4) — so Joe's *"persisted like the other settings"* is met by a row, not
 by an exception to this line.
 

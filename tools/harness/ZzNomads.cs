@@ -35,7 +35,9 @@ public sealed class ZzNomads
     [MemberData(nameof(Valleys))]
     public void Valley(string arm, ulong seed)
     {
-        SimConfig config = ShippedConfig.Load() with { Seed = seed };
+        // The arms pose their own arrivals (D564's measurement); since D572 the sim settles bands itself, so the
+        // switch is off here or every arm would count two arrivals. `arms.sh base` measures the sim's own.
+        SimConfig config = ShippedConfig.Load() with { Seed = seed, NomadsEnabled = false };
         SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;

@@ -42,11 +42,10 @@ public sealed class CivicSystem : ISimSystem
 
         NoticeIfTheFoundersAreAllGone(world);
 
-        // ⭐ AND THE NOMADS (`specs/nomads.md`, D563–D564): a band knocks on the spring turn of its hashed year,
-        // and one left unanswered moves on at the season turn after its wait. Both read a world in which this
-        // tick's deaths have happened, which is why they live here and not before `MortalitySystem`.
+        // ⭐ AND THE NOMADS (`specs/nomads.md`, D563–D564; D572): a band knocks on the spring turn of its hashed year
+        // and settles that tick. It reads a world in which this tick's deaths have happened, which is why it lives
+        // here and not before `MortalitySystem`.
         world.KnockIfItIsTime();
-        world.TheBandMovesOnIfUnanswered();
 
         // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four nomads walk in a hashed few years on.
         world.RefoundIfTheValleyHasWaited();

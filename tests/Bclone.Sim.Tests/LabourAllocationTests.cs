@@ -971,7 +971,9 @@ public sealed class LabourAllocationTests
         loop.Step(config.TicksPerYear * 10);
         foreach (Household household in loop.World.Households)
         {
-            if (loop.World.LivingMembersOf(household) == 0)
+            // A roofless family (a band settled this spring, D572) has no home to walk from yet; its house is the
+            // queue's, and the claim is about where the village PUT its homes.
+            if (loop.World.LivingMembersOf(household) == 0 || !household.HasHome)
             {
                 continue;
             }

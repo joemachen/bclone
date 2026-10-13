@@ -352,8 +352,6 @@ public partial class VillageMap : Control
     private static readonly Color GhostRefused = new("#d4685f");
     internal static readonly Color AdultColour = new("#e8e2d4");
 
-    /// <summary>A nomad not yet taken in (D565) — dun, between the ground and a villager's chalk.</summary>
-    internal static readonly Color BandColour = new("#c9b48a");
     internal static readonly Color ChildColour = new("#8fc7e8");
     internal static readonly Color ElderColour = new("#d9a05b");
     private static readonly Color SelectedRing = new("#f2c14e");
@@ -462,9 +460,6 @@ public partial class VillageMap : Control
     /// do all day and buildings do only at D36's seam.
     /// </remarks>
     public event System.Action<int>? VillagerClicked;
-
-    /// <summary>The huddle of nomads at the camp was clicked (`nomads.md §4.3`, D565) — the band's card opens.</summary>
-    public event System.Action? BandClicked;
 
     private Vector2 _centreTile;
 
@@ -1404,14 +1399,6 @@ public partial class VillageMap : Control
         // because the player has one place they look to find out about a thing.
         if (click.ButtonIndex == MouseButton.Left)
         {
-            // ⭐ The nomads' huddle first (D565): they stand on the camp's ground, and the camp is a building's tile.
-            if (BandUnder(click.Position))
-            {
-                BandClicked?.Invoke();
-                AcceptEvent();
-                return;
-            }
-
             // Somebody standing there is what you meant; the ground is the fallback.
             if (VillagerAt(click.Position) is Villager person)
             {
@@ -2719,7 +2706,6 @@ public partial class VillageMap : Control
         // hides them — the same rule the rest of this method follows.
         DrawSelectedTile();
         DrawVillagers();
-        DrawTheBand();
 
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
@@ -7366,122 +7352,6 @@ public partial class VillageMap : Control
             : FanDrawn(known.FanPrevious, known.FanCurrent, (float)_alpha);
 
         return ToScreen(drawTile + fan);
-    }
-
-    // ---------------------------------------------------------------
-    //  The nomads' huddle (`nomads.md §4.3`, D565)
-    // ---------------------------------------------------------------
-
-    /// <summary>How far from the camp's centre the huddle's dots stand, in tiles — inside one tile, so a band reads as a group on the camp's ground.</summary>
-    internal const float HuddleRadiusTiles = 0.45f;
-
-    /// <summary>
-    /// Where each of <paramref name="people"/> nomads stands around the camp, in tile offsets — a ring, evenly spaced,
-    /// the first at the top; one person stands on the centre. Pure, so the probe can ask it.
-    /// </summary>
-    internal static Vector2[] HuddleOffsets(int people)
-    {
-        var offsets = new Vector2[Mathf.Max(0, people)];
-        if (people == 1)
-        {
-            return offsets;
-        }
-
-        for (int i = 0; i < offsets.Length; i++)
-        {
-            float angle = -Mathf.Pi / 2f + (Mathf.Tau * i / offsets.Length);
-            offsets[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * HuddleRadiusTiles;
-        }
-
-        return offsets;
-    }
-
-    /// <summary>The band waiting at the camp, drawn as a huddle of dun dots — not villagers yet, so not fanned, not interpolated, never a card's dot.</summary>
-    private void DrawTheBand()
-    {
-        if (_world!.Band is not NomadBand band)
-        {
-            return;
-        }
-
-        Vector2 camp = ToScreen(_world.BandCamp);
-        Vector2[] offsets = HuddleOffsets(band.People);
-        int i = 0;
-        foreach (NomadFamily family in band.Families)
-        {
-            foreach (NomadPerson person in family.People)
-            {
-                Vector2 at = camp + (offsets[i++] * _pixelsPerTile);
-                DrawCircle(at, person.Adult ? VillagerRadius : VillagerRadius * 0.7f, BandColour);
-            }
-        }
-
-        if (_bandSelected)
-        {
-            DrawArc(camp, (HuddleRadiusTiles * _pixelsPerTile) + VillagerRadius + 3f, 0f, Mathf.Tau, 32, SelectedRing, 2f);
-        }
-    }
-
-    private bool _bandSelected;
-
-    /// <summary>Ring the huddle while its card is up — the band card's selection, as a building's is its tile.</summary>
-    public void SelectTheBand(bool selected)
-    {
-        if (_bandSelected != selected)
-        {
-            _bandSelected = selected;
-            QueueRedraw();
-        }
-    }
-
-    /// <summary>Whether a screen point is on the huddle — within its ring and a dot's reach.</summary>
-    private bool BandUnder(Vector2 screen)
-    {
-        if (_world!.Band is null)
-        {
-            return false;
-        }
-
-        float reach = (HuddleRadiusTiles * _pixelsPerTile) + VillagerRadius + 4f;
-        return ToScreen(_world.BandCamp).DistanceSquaredTo(screen) <= reach * reach;
-    }
-
-    /// <summary>
-    /// ⭐ The huddle holds its shape (D565): every dot of a band of two to eight stands inside one tile of the camp, no
-    /// two on one spot, and a click on any of them hits the band's reach. Pure — posed without a band in the world.
-    /// </summary>
-    public static string TheHuddleHoldsItsShape()
-    {
-        var faults = new List<string>();
-        for (int people = 2; people <= 8; people++)
-        {
-            Vector2[] offsets = HuddleOffsets(people);
-            if (offsets.Length != people)
-            {
-                faults.Add($"{people} nomads get {offsets.Length} places");
-                continue;
-            }
-
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                if (offsets[i].Length() > 0.5f)
-                {
-                    faults.Add($"a nomad of {people} stands {offsets[i].Length():F2} tiles out — off the camp's ground");
-                }
-
-                for (int j = 0; j < i; j++)
-                {
-                    if (offsets[i].DistanceTo(offsets[j]) < 0.05f)
-                    {
-                        faults.Add($"two nomads of {people} stand on one spot");
-                    }
-                }
-            }
-        }
-
-        return faults.Count == 0
-            ? "[widths] huddle: ✅ bands of 2–8 stand in a ring inside the camp's tile, nobody on anybody else"
-            : $"[widths] huddle: ⛔ {string.Join("; ", faults.Distinct())}";
     }
 
     /// <summary>

@@ -76,7 +76,7 @@ public static class StateHash
 
         // Order matters and must never change casually — it is part of the
         // value. Append new fields at the end. A retired tag stays named where it
-        // stood and is never reissued (0x67, 0x68 — the longhouse, D571).
+        // stood and is never reissued (0x67, 0x68 — the longhouse, D571; 0x6F — the waiting band, D572).
         hash = MixUInt64(hash, world.Tick);
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
@@ -815,9 +815,8 @@ public static class StateHash
 
         // ---- The nomads (`nomads.md §6`, D565) ----
         // The count and the next knock's year decide when the next band comes, so they are state; sparse, under
-        // a tag, so a village nobody has ever knocked on hashes as it did. The waiting band is state too — its
-        // ages, lifespans, rhythms and trade are what the village becomes if it says yes — but its names are not,
-        // like every name (D465).
+        // a tag, so a village nobody has ever knocked on hashes as it did. The band itself is not state: it is
+        // derived at the knock and settled the same tick (D572), and the villagers it became are hashed as villagers.
         if (world.BandsEverKnocked != 0 || world.NextKnockYear != 0)
         {
             hash = MixByte(hash, 0x6E);
@@ -832,26 +831,8 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.Refoundings);
         }
 
-        if (world.Band is { } band)
-        {
-            hash = MixByte(hash, 0x6F);
-            hash = MixUInt64(hash, band.KnockedAtTick);
-            hash = MixUInt32(hash, (uint)band.MetAPopulationOf);
-            hash = MixUInt32(hash, (uint)band.Families.Count);
-            for (int f = 0; f < band.Families.Count; f++)
-            {
-                hash = MixUInt32(hash, (uint)band.Families[f].People.Count);
-                for (int p = 0; p < band.Families[f].People.Count; p++)
-                {
-                    NomadPerson person = band.Families[f].People[p];
-                    hash = MixUInt32(hash, (uint)person.AgeYears);
-                    hash = MixByte(hash, person.Adult ? (byte)1 : (byte)0);
-                    hash = MixUInt32(hash, (uint)person.LifespanYears);
-                    hash = MixUInt32(hash, (uint)person.Rhythm);
-                    hash = MixUInt32(hash, (uint)person.TradeSkillId);
-                }
-            }
-        }
+        // 0x6F was the waiting band (D565; retired D572 — the switch is the permission and a band settles the tick it
+        // knocks). It was sparse, so a village between knocks hashes exactly as it did. The tag is never reused.
 
         // The Nomads switch (D570), in the share-out switch's shape: mixed only when it is off, so a village that
         // never touched it hashes as it did. A preference that changes the sim is sim state.

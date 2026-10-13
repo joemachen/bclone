@@ -1,4 +1,48 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D571: JOE'S SIX NOTES (D568) ARE BEING BUILT IN ORDER — NOTES 2, 3 AND 5 DONE (D569–D571), NOTES 4 AND 1 NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D572: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 5, AND HIS SECOND PLAY ANSWERED (D572 — THE SWITCH IS THE PERMISSION). NOTES 4 AND 1 NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D572: BANDS SETTLE ON ARRIVAL; THE TICK ON THE VILLAGERS BAR) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), the words (D569), the switch (D570), the longhouse out (D571) and **D572: Joe played D569–D571 and found that no
+> house was built for the nomads** — because the band never settled: its *Let them settle* / *Send them on* sat in the
+> card's collapsed *Settings ▾* fold, he never saw them, and the Tanners moved on unanswered. His calls: **on = they settle
+> on arrival; off = nobody comes; the tick on the villagers bar, not in Settings.** Built: a band that knocks settles that
+> tick (`Knock()` → `Settle(band)`, the next knock's year set the same tick, one verb-free stopping moment that says
+> they settled and what happens next); **the waiting band is gone** — `SimWorld.Band`, `BandLeavesAtTick`,
+> `TheBandMovesOnIfUnanswered`, `SendTheBandOn`, `LetTheBandSettle` (now private `Settle`), `nomads_wait_seasons`,
+> the `band` save key, the 0x6F hash block (retired), `CardKind.Band` and its card, the huddle, the bar button, the
+> Settings tick; **the tick is a third line of the villagers box** (*N unhoused · ☐ nomads may come to the valley*),
+> `Refresh` keeps it reading the world. Save format stays 7 (no build that wrote 7 reached Joe). **The six fifty-year
+> goldens moved**, proven the knock's alone: with the floor at 0 all six read their **pre-D565** values. Harness, 100
+> shipped valleys × 50 years, D571 → D572: alive at 50 **627 → 719**, dead valleys **12 → 12**, peak **1005 → 1161**, starved **422 → 1353**, froze **585 → 582** — the villages hold more people and the same number die out, and **starvation triples**: bands keep coming to a village nobody paints or plants for (D447: a harness is not a player) — Joe's to read against a played run. Verified: suite 1686 / 0 / 5 of 1691 (10m47 — ⚠️ against D571's 6m52; the fixture villages
+> carry a family more from Year 8–12 and every 150-year guard with nomads on runs longer; the three economy guards run
+> with the switch off); view 0 warnings; probe 83 lines (the `huddle:` line gone), no ⛔, `nomads:` ✅, `bars:` ✅
+> (960px, 1261×78), bar height 151, `done.`; exactly the six goldens moved.
+>
+> **▶️ NEXT: note 4 — the nomads walk in from the valley's edge with a marker over their heads, view-only first** (Joe
+> agreed): the arrivals are villagers with `ArrivedAtTick == now` at `BandCamp`; the view can animate them in from the
+> edge tile the one cost field reaches most cheaply from the camp (a derived, cached point) over N seconds with a marker
+> (`DrawTheMealMark`'s shape), posed in the probe, no sim change, no golden. **Then note 1 — the paths' gridding**: a
+> design spec with options for Joe (octile field with diagonal lanes; a bounded-curve walk rule; lanes not
+> fence-aligned), measured on `desire-paths.md`'s numbers, before the field is touched (D122). **Then Joe plays all six;
+> merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for:** *(1)* **A decision inside a fold is a decision nobody sees.** The `nomads:` probe
+> checked the two buttons were wired and *offered* (the fold's toggle visible) — never that a player would see them.
+> Anything the player must act on goes in the card's body, or it did not ship. *(2)* **A stored waiting state is dead
+> the day the answer is a standing switch** — delete it, do not leave it reachable; the dead code was a class, a card,
+> a probe line, five guards and a save key. *(3)* **The goldens move for a reason this time, and the proof is not "the
+> switch off"**: D565's values were taken *with* a band knocking, waiting and hashed, so no switch recovers them — the
+> proof is the floor at 0 against the values from `git show 4004a49^`, which match to the digit. And D565 had never
+> written its RE-TAKEN lines; D572 wrote both. *(4)* **The villagers box's second line was the bar's widest line**, not
+> the counts row: the tick on it ran the bar 1268 → 1343 at the pose. A third line costs height (58 → 78), never width.
+> *(5)* `arms.sh` calls `python3`, which this box does not have — run its `dead.py` by hand with `python`.
+> *(6)* **Never run the headless probe beside `dotnet test`.** `godot --headless --path` is the editor, and the editor
+> builds the C# project on run — the same `Bclone.Sim` the test build writes. A chained *view build → probe → suite* came
+> back with the probe printing nothing and the suite at 1549 tests with eleven flakes in files nomads never touched;
+> run alone, both were green. One builder at a time.
+>
+> **(the banner below is the state before D572)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 5 BUILT: THE LONGHOUSE IS OUT, SAVE FORMAT 7) — D571, ON WINDOWS.**
 >

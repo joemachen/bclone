@@ -456,7 +456,9 @@ public sealed class PlacementTests
         // witchedOff` was re-posed this way at D385. A village with no granary ever marked ages
         // out; what this guard is actually for is that placement changed nothing for a village
         // that places nothing. So: it GROWS from its founders, and its dead die of old age.
-        SimConfig config = Config;
+        // ⚠️ Nomads off (D572): bands settle unattended since D572 and starve in a village nobody paints for; the
+        // claim here is the derived economy's and the arrivals' cost is the harness's (`nomads.md §8.6`).
+        SimConfig config = Config with { NomadsEnabled = false };
         SimLoop loop = Build(config);
 
         int peak = 0;

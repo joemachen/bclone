@@ -295,7 +295,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 7137397597790898232.
     // RE-TAKEN (D554) — building condition (`building-condition.md §4.1`, D552–D553, Joe: "yes to all"): every standing thing is stamped with the tick it was raised and last mended, and both stamps are hashed — nothing reads them yet. ⭐ PROVEN TO BE THE ONLY REASON: with the thirteen new mix lines switched off, the old value passes (22 of 22 golden guards green). Was 12182673311767804666.
     // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 15797634979579032686.
-    private const ulong SeamGoldenHash = 16789275088886274794UL;
+    // RE-TAKEN (D565) — the nomads (`nomads.md §4.1`): a band knocks in a spring of Year 8–12 by the seed's hash, waits unanswered through the summer and moves on at the autumn turn; the count of bands and the waiting band are hashed. ⚠️ This line was not written when the value was re-taken (4004a49); added at D572 from `git show 4004a49^`. Was 2492211130328241921.
+    // RE-TAKEN (D572) — the switch is the permission (Joe, D572: *"if nomads are on, that is the permission"*): a band that knocks settles that tick, so this village gains a family in Year 8–12 and the waiting band is no longer hashed (0x6F retired). ⭐ PROVEN TO BE THE ONLY REASON: with `nomads_first_year_floor` 0 in the fixture and the shipped file, every one of these reads its pre-D565 value — the sim with no nomads at all is byte for byte what it was before D565, across D565–D572. Was 16789275088886274794.
+    private const ulong SeamGoldenHash = 3047690971634059098UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -373,7 +375,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D543) with it, for the same reason: the seams across the whole valley. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 3928392852916589393.
     // RE-TAKEN (D554) with it, for the same reason: every standing thing's raise and repair stamps are hashed. ⭐ PROVEN: with the thirteen new mix lines switched off, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's and D543's did. Was 8164107751542196257.
     // RE-TAKEN (D555) with it, for the same reason: the season's walk raises repair sites and the builders mend. ⭐ PROVEN: with the walk short-circuited, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 11179517447590911109.
-    private const ulong SeamBeforeAnybodyGotBetter = 11657496301399793127UL;
+    // RE-TAKEN (D565) with it: a band knocks, waits and moves on; the count and the waiting band hashed. ⚠️ The line was not written at the re-take (4004a49); added at D572 from `git show 4004a49^`. Was 17671588798209576222.
+    // RE-TAKEN (D572) with it, for the same reason: a band settles the tick it knocks. ⭐ PROVEN: with the floor at 0 the pre-D565 value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's, D543's, D554's and D555's did. Was 11657496301399793127.
+    private const ulong SeamBeforeAnybodyGotBetter = 7686462258561762435UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

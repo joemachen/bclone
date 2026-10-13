@@ -1622,19 +1622,15 @@ public sealed record SimConfig
     [JsonPropertyName("nomads_band_max")]
     public int NomadsBandMax { get; init; } = 8;
 
-    /// <summary>Season turns a band waits at the pile unanswered before it moves on: 2 from a spring knock is the autumn turn.</summary>
-    [JsonPropertyName("nomads_wait_seasons")]
-    public int NomadsWaitSeasons { get; init; } = 2;
-
     /// <summary>Food each nomad carries into the family's larder on settling — a few days' worth.</summary>
     [JsonPropertyName("nomads_food_each")]
     public int NomadsFoodEach { get; init; } = 20;
 
     /// <summary>
-    /// Where the Nomads switch starts for a new village (`nomads.md §4.1`, D570; Joe, D568: <i>"enable/disable the
-    /// nomad feature altogether"</i>) — set by the new-game screen's <i>Nomads</i> row. The village's own switch is
-    /// <c>SimWorld.NomadsEnabled</c>, saved and hashed; this is only where it starts, as <c>cart_food</c> is only what
-    /// the cart starts with.
+    /// Where the Nomads switch starts for a new village (`nomads.md §4.1a`, D570; Joe, D568: <i>"enable/disable the
+    /// nomad feature altogether"</i>; D572: the switch is the permission — on, a band settles the tick it comes) — set
+    /// by the new-game screen's <i>Nomads</i> row. The village's own switch is <c>SimWorld.NomadsEnabled</c>, saved and
+    /// hashed; this is only where it starts, as <c>cart_food</c> is only what the cart starts with.
     /// </summary>
     [JsonPropertyName("nomads_enabled")]
     public bool NomadsEnabled { get; init; } = true;
@@ -4815,21 +4811,20 @@ public sealed record SimConfig
         }
 
         // The nomads' clock and band (`nomads.md §4`): floors and spreads never negative (a first-year floor of 0 is
-        // "nobody knocks"), the share a divisor, the band at least a couple and never smaller than its floor, a wait of
-        // one to four seasons, the food carried never negative.
+        // "nobody knocks"), the share a divisor, the band at least a couple and never smaller than its floor, the food
+        // carried never negative.
         if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
             || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
-            || NomadsWaitSeasons < 1 || NomadsWaitSeasons > 4 || NomadsFoodEach < 0
-            || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
+            || NomadsFoodEach < 0 || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
         {
             throw new SimConfigException(
                 "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
                 + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
                 + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
-                + "nomads_wait_seasons in 1..4, nomads_food_each cannot be negative, and "
+                + "nomads_food_each cannot be negative, and "
                 + "refound_years_floor and refound_years_spread cannot be negative (got "
                 + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
-                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsWaitSeasons}, {NomadsFoodEach}, "
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsFoodEach}, "
                 + $"{RefoundYearsFloor}, {RefoundYearsSpread}).");
         }
 

@@ -534,8 +534,7 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheWearReadsTrue(_loop.World.Config));
-        GD.Print(TheBandCardHoldsItsShape());
-        GD.Print(VillageMap.TheHuddleHoldsItsShape());
+        GD.Print(TheNomadsTickIsTheVillages());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -775,6 +774,48 @@ public partial class Main : Control
             : $"[widths] limits: ⛔ logs read \"{open}\" unmet and \"{met}\" met, tooltip \"{why}\"";
     }
 
+    /// <summary>
+    /// ⭐ The Nomads tick on the villagers bar is the village's switch (D572): it reads the world, and it drives it.
+    /// </summary>
+    private string TheNomadsTickIsTheVillages()
+    {
+        var faults = new List<string>();
+        bool was = _loop.World.NomadsEnabled;
+
+        _loop.World.NomadsEnabled = false;
+        Refresh();
+        if (_nomadsTick.ButtonPressed)
+        {
+            faults.Add("the village switched off and the tick stayed ticked");
+        }
+
+        _loop.World.NomadsEnabled = true;
+        Refresh();
+        if (!_nomadsTick.ButtonPressed)
+        {
+            faults.Add("the village switched on and the tick stayed clear");
+        }
+
+        _nomadsTick.ButtonPressed = false;
+        if (_loop.World.NomadsEnabled)
+        {
+            faults.Add("the tick cleared and the village stayed on");
+        }
+
+        _nomadsTick.ButtonPressed = true;
+        if (!_loop.World.NomadsEnabled)
+        {
+            faults.Add("the tick set and the village stayed off");
+        }
+
+        _loop.World.NomadsEnabled = was;
+        Refresh();
+
+        return faults.Count == 0
+            ? "[widths] nomads: ✅ the tick on the villagers bar reads the village's switch and drives it, both ways"
+            : $"[widths] nomads: ⛔ {string.Join("; ", faults)}";
+    }
+
     private string TheBarsHoldTheirShape()
     {
         Refresh();
@@ -802,7 +843,7 @@ public partial class Main : Control
         string clockWas = _clockLabel.Text;
         _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
         string unhousedWas = _unhousedLabel.Text;
-        _unhousedLabel.Text = "   ·   12,345 unhoused";
+        _unhousedLabel.Text = "12,345 unhoused";
 
         ForceUpdateTransform();
         Vector2 after = _topBar.GetCombinedMinimumSize();
@@ -1682,7 +1723,6 @@ public partial class Main : Control
 
     /// <summary>The bar's <i>Records</i> (D397) — shown while the hall stands.</summary>
     private Button? _recordsButton;
-    private Button? _nomadsButton;
 
     /// <summary>Which tab of the build bar is showing.</summary>
     private BuildTab _tab = BuildTab.Build;
@@ -2024,36 +2064,6 @@ public partial class Main : Control
         _treePanel.Visible = true;
         _treeSeason = _loop.World.Tick / (ulong)_loop.World.Config.TicksPerSeason;
         _treeView.Show(_loop.World);
-    }
-
-    private void RefreshTheNomadsButton(SimWorld world)
-    {
-        if (_nomadsButton is null)
-        {
-            return;
-        }
-
-        bool waiting = world.Band is NomadBand band;
-        if (_nomadsButton.Visible != waiting)
-        {
-            _nomadsButton.Visible = waiting;
-        }
-
-        if (world.Band is NomadBand theBand)
-        {
-            string text = $"Nomads ({theBand.People})";
-            if (_nomadsButton.Text != text)
-            {
-                _nomadsButton.Text = text;
-            }
-
-            // The camp is named in the village's words (D569), and the cart can fall while a band waits.
-            string tooltip = $"A band of nomads is camped {world.WhereTheBandCamps}, asking to settle";
-            if (_nomadsButton.TooltipText != tooltip)
-            {
-                _nomadsButton.TooltipText = tooltip;
-            }
-        }
     }
 
     private void RefreshTheTownHallButton(SimWorld world)
@@ -2420,7 +2430,6 @@ public partial class Main : Control
         ShowAnyMoment(world);
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
-        RefreshTheNomadsButton(world);
         RefreshTheQuarryButton(world);
         RefreshTheSmithyButton(world);
         RefreshTheTree(world);
@@ -2473,7 +2482,7 @@ public partial class Main : Control
         }
 
         bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
-        _unhousedLabel.Text = $"   ·   {unhoused} unhoused";
+        _unhousedLabel.Text = $"{unhoused} unhoused";
         _unhousedLabel.Modulate = nowhereToBuild ? Colors.White : new Color(1, 1, 1, 0.55f);
         ShowShortfall(
             _unhousedLabel,
@@ -2482,6 +2491,11 @@ public partial class Main : Control
                 ? "1 person has no roof and the painted land is full — paint more housing"
                 : $"{unhoused} people have no roof and the painted land is full — paint more housing");
         _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
+        if (_nomadsTick.ButtonPressed != world.NomadsEnabled)
+        {
+            _nomadsTick.SetPressedNoSignal(world.NomadsEnabled);
+        }
+
         _seedLabel.Text = TheRunLine(world);
 
         // The Settings ticks read the windows' state rather than remembering what they were set
@@ -3544,7 +3558,6 @@ public partial class Main : Control
         _map.WhatsHereAsked += OnWhatsHereAsked;
         _map.HeapClicked += OnHeapClicked;
         _map.VillagerClicked += OnVillagerClicked;
-        _map.BandClicked += () => OpenCard(new CardSubject(CardKind.Band, 0));
         AddChild(_map);
 
         AddTheFrameCounter();
@@ -3887,9 +3900,32 @@ public partial class Main : Control
         // always shown; it lights amber only when the sim has said there is nowhere to build
         // (`NeedsMoreResidentialLand`, the latch `HouseTheRoofless` sets and clears) — a family with a site being
         // raised is a number, not a warning.
-        _unhousedLabel = Muted(string.Empty);
-        second.AddChild(_unhousedLabel);
         lines.AddChild(second);
+
+        // ⭐ A THIRD LINE (D572): the unhoused count and the Nomads tick. Not on the second line — with the tick there the
+        // households line outgrew the counts row and the bar ran under the right column at the probe's widest pose
+        // (`bars:` 1268 → 1343); a line costs the bar height, never width.
+        var third = new HBoxContainer();
+        third.AddThemeConstantOverride("separation", 0);
+        _unhousedLabel = Muted(string.Empty);
+        third.AddChild(_unhousedLabel);
+
+        // ⭐ THE NOMADS TICK (Joe, D568 → D572: *"if nomads are on, that is the permission … there should be a toggle
+        // in the UI in the top info bar that already houses population info. not buried in settings"*). The village's
+        // own switch, exactly as share-out: hashed when off, saved with the village, started from the new-game row;
+        // never a setting (`settings-persistence.md §3`), so not hooked to SettingsChanged. `Refresh` keeps it reading
+        // the world, so a load shows the save's.
+        third.AddChild(Muted("   ·   "));
+        _nomadsTick = new CheckBox
+        {
+            Text = "nomads may come to the valley",
+            ButtonPressed = true,
+            TooltipText = "Bands of nomads come up the valley every few years and settle here. Off: nobody comes, and an empty valley is never found again.",
+        };
+        _nomadsTick.AddThemeFontSizeOverride("font_size", 12);
+        _nomadsTick.Toggled += on => _loop.World.NomadsEnabled = on;
+        third.AddChild(_nomadsTick);
+        lines.AddChild(third);
 
         return box;
     }
@@ -3906,6 +3942,7 @@ public partial class Main : Control
     private Label _eldersCell = null!;
     private Label _laborersCell = null!;
     private Label _unhousedLabel = null!;
+    private CheckBox _nomadsTick = null!;
 
     /// <summary>
     /// A right-aligned number cell that <b>cannot widen its column</b> (D367).
@@ -5012,12 +5049,6 @@ public partial class Main : Control
         _recordsButton = new Button { Text = "Records", Visible = false };
         _recordsButton.Pressed += OpenTheRecords;
         controls.AddChild(_recordsButton);
-
-        // ⭐ THE NOMADS, WHILE A BAND WAITS (D565, `nomads.md §4.3`): one click to the card the decision is on,
-        // for the player who dismissed the moment and lost the huddle among the dots. Hidden otherwise.
-        _nomadsButton = new Button { Text = "Nomads", Visible = false };
-        _nomadsButton.Pressed += () => OpenCard(new CardSubject(CardKind.Band, 0));
-        controls.AddChild(_nomadsButton);
 
         // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
         // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
@@ -6275,22 +6306,6 @@ public partial class Main : Control
         body.AddChild(Caption(
             "Off: nobody is moved between jobs unless you change a professions number. "
             + "Empty seats are still filled and a death is still answered."));
-
-        // ⭐ THE NOMADS SWITCH (Joe, D568; D570) — the village's, exactly as the share-out tick above: hashed when
-        // off, saved with the village, started from the new-game screen's Nomads row. Not a setting
-        // (`settings-persistence.md §3`), so not hooked to SettingsChanged below.
-        var nomads = new CheckBox
-        {
-            Text = "nomads may come to the valley",
-            ButtonPressed = _loop.World.NomadsEnabled,
-        };
-        nomads.AddThemeFontSizeOverride("font_size", 12);
-        nomads.Toggled += on => _loop.World.NomadsEnabled = on;
-        body.AddChild(nomads);
-
-        body.AddChild(Caption(
-            "Off: no band knocks, and an empty valley is never found again. "
-            + "A band already waiting still waits its season, and can still be answered."));
 
         // ⛔ Save is on the pause screen now (D516) — it sat here until the pause screen existed (Joe, D508). The
         // share-out tick above is saved with the village and set from it on a load.

@@ -44,7 +44,8 @@ public static class SaveGame
     /// every standing thing was raised and last mended (`building-condition.md §6`). 6 since D565: the nomads — the bands that
     /// knocked, the one waiting, the next knock's year, and when a villager came to the valley (`nomads.md §6`). 7 since
     /// D571: the longhouse removed — `longhouses` and `lodged_in` are gone and `nomads_enabled` (D570) is required; a
-    /// format-6 save is refused rather than read with a thing missing.</remarks>
+    /// format-6 save is refused rather than read with a thing missing. D572 dropped the waiting band's `band` key
+    /// without a bump: no build that wrote 7 ever reached Joe (D555's precedent — nothing shipped between).</remarks>
     public const int Format = 7;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>

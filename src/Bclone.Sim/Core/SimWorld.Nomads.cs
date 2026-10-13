@@ -4,7 +4,7 @@ using Bclone.Sim.World;
 namespace Bclone.Sim.Core;
 
 /// <summary>
-/// The nomads — bands that knock, wait at the camp, and settle or move on (`specs/nomads.md`, D563–D564).
+/// The nomads — bands that knock and settle the same tick (`specs/nomads.md`, D563–D564, D572).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,10 +15,11 @@ namespace Bclone.Sim.Core;
 /// away keeps the stream it had.
 /// </para>
 /// <para>
-/// <b>⛔ The decision is a method, not a moment.</b> The knock raises a verb-free <see cref="Moment"/>
-/// (`Moment.cs`: a moment never asks the player to choose); the view's band card calls
-/// <see cref="LetTheBandSettle"/> or <see cref="SendTheBandOn"/>, as every other decision in the game is a
-/// call on this class. Unanswered, the band leaves at the autumn turn (`nomads_wait_seasons`).
+/// <b>⛔ The switch is the permission (Joe, D572).</b> D565 stored a waiting band with a card and two buttons; the
+/// buttons sat in a fold nobody opened and the band moved on unanswered. Now a band that knocks while
+/// <see cref="NomadsEnabled"/> is on <b>settles that tick</b>, and the moment that says so is verb-free as every
+/// moment is (`Moment.cs`). Nothing waits, nothing is stored: a band is derived at the knock and gone into the
+/// roster by the end of it.
 /// </para>
 /// </remarks>
 public sealed partial class SimWorld
@@ -27,11 +28,12 @@ public sealed partial class SimWorld
     public int BandsEverKnocked { get; internal set; }
 
     /// <summary>
-    /// ⭐ The Nomads switch (Joe, D568; D570). Off: no band knocks and an empty valley is never found again
-    /// (<see cref="RefoundIfTheValleyHasWaited"/>); a band already waiting still waits its season and can still be
-    /// answered. Back on with a knock year already past, the band knocks on the next year's turn — the door was shut,
-    /// they were on the road. <b>The village's own</b>, in the share-out switch's shape: hashed only when off, saved,
-    /// started from <c>nomads_enabled</c> (the new-game screen's row) — never a setting (`settings-persistence.md §3`).
+    /// ⭐ The Nomads switch (Joe, D568; D570; the permission itself since D572). On: a band that knocks settles that
+    /// tick. Off: no band knocks and an empty valley is never found again (<see cref="RefoundIfTheValleyHasWaited"/>).
+    /// Back on with a knock year already past, the band comes on the next year's turn — the door was shut, they were on
+    /// the road. <b>The village's own</b>, in the share-out switch's shape: hashed only when off, saved, started from
+    /// <c>nomads_enabled</c> (the new-game screen's row); a tick on the villagers bar — never a setting
+    /// (`settings-persistence.md §3`).
     /// </summary>
     public bool NomadsEnabled { get; set; } = true;
 
@@ -40,9 +42,6 @@ public sealed partial class SimWorld
     /// <see cref="FirstKnockYear"/>, derived — so a village nobody has knocked on hashes as it did). Hashed sparsely, saved.
     /// </summary>
     public int NextKnockYear { get; internal set; }
-
-    /// <summary>The band waiting at the camp, or null. Hashed, saved.</summary>
-    public NomadBand? Band { get; internal set; }
 
     /// <summary>Where a band camps — the cart while it stands, else the founding site's centre.</summary>
     public Point BandCamp => TheCart?.Position ?? Point.CentreOf(Map.FoundingSite);
@@ -53,10 +52,6 @@ public sealed partial class SimWorld
     /// <see cref="BandCamp"/>'s rule, never stored.
     /// </summary>
     public string WhereTheBandCamps => TheCart is not null ? "by the cart" : "at the founding site";
-
-    /// <summary>The tick a waiting band leaves if nobody has answered — the season turn `nomads_wait_seasons` on.</summary>
-    public ulong BandLeavesAtTick =>
-        Band is null ? 0UL : Band.KnockedAtTick + ((ulong)Config.NomadsWaitSeasons * (ulong)Config.TicksPerSeason);
 
     /// <summary>The year the first band knocks for this seed — the floor plus a hashed share of the spread; 0 = never.</summary>
     public int FirstKnockYear() =>
@@ -76,12 +71,12 @@ public sealed partial class SimWorld
     }
 
     /// <summary>
-    /// On the spring turn of the knock's year, with somebody alive and nobody already waiting, a band knocks.
+    /// On the spring turn of the knock's year, with somebody alive and the switch on, a band knocks — and settles.
     /// Called by <c>CivicSystem</c> every tick; it returns at once on every tick that is not a spring turn.
     /// </summary>
     internal void KnockIfItIsTime()
     {
-        if (Config.NomadsFirstYearFloor <= 0 || !NomadsEnabled || Band is not null || Tick == 0UL
+        if (Config.NomadsFirstYearFloor <= 0 || !NomadsEnabled || Tick == 0UL
             || Tick % (ulong)Config.TicksPerYear != 0UL || Population == 0)
         {
             return;
@@ -98,40 +93,13 @@ public sealed partial class SimWorld
         Knock();
     }
 
-    /// <summary>A band waiting past its deadline moves on — checked on the season turn, never per tick.</summary>
-    internal void TheBandMovesOnIfUnanswered()
-    {
-        if (Band is null || Tick % (ulong)Config.TicksPerSeason != 0UL || Tick < BandLeavesAtTick)
-        {
-            return;
-        }
-
-        NomadBand band = Band;
-        DepartBand();
-        RaiseMoment(
-            "The nomads moved on",
-            $"{Titled(band.FamilyNames)} waited {WhereTheBandCamps} through {Config.NomadsWaitSeasons} seasons and nobody said "
-            + $"they could stay; they moved on up the valley. {Clock.SeasonAndYear()}.",
-            stops: false,
-            LogCategory.Life);
-    }
-
-    /// <summary>The player sends the waiting band away. No harm, no foul (Joe): the clock just advances.</summary>
-    public void SendTheBandOn()
-    {
-        NomadBand band = Band ?? throw new InvalidOperationException("No band is waiting to be sent on.");
-        DepartBand();
-        Narrate($"{Titled(band.FamilyNames)} were sent on their way — {band.People} souls. {Clock.SeasonAndYear()}.", LogCategory.Life);
-    }
-
     /// <summary>
-    /// The player lets the waiting band settle: each family becomes a roofless household holding what it
-    /// carried, and its people are villagers at the camp from this tick (`nomads.md §4.4`). From here the
-    /// village does what it already does — the roofless queue sites their houses, or they sleep in the open.
+    /// The band settles: each family becomes a roofless household holding what it carried, and its people are
+    /// villagers at the camp from this tick (`nomads.md §4.4`). From here the village does what it already does —
+    /// the roofless queue sites their houses, or they sleep in the open.
     /// </summary>
-    public void LetTheBandSettle()
+    private void Settle(NomadBand band)
     {
-        NomadBand band = Band ?? throw new InvalidOperationException("No band is waiting to settle.");
         bool knewHowToBridge = IsUnlocked(BuildingKind.Bridge);
         int nextVillager = NextVillagerId();
         int nextHousehold = NextHouseholdId();
@@ -147,8 +115,12 @@ public sealed partial class SimWorld
                 HomePosition = null,
             };
 
-            // What they carried, between them: received, not produced here (Stockpile.Receive).
-            household.Stockpile.Receive(Goods.Produce, family.People.Count * Config.NomadsFoodEach);
+            // What they carried, between them: received, not produced here (Stockpile.Receive) — and the village's
+            // ledger sees it come in by its own door (`FoodEverBroughtIn`, D572), or the conservation guard would
+            // see food appear from nowhere.
+            int carried = family.People.Count * Config.NomadsFoodEach;
+            household.Stockpile.Receive(Goods.Produce, carried);
+            FoodEverBroughtIn += carried;
             Households.Add(household);
 
             Villager? firstAdult = null;
@@ -218,7 +190,6 @@ public sealed partial class SimWorld
             }
         }
 
-        DepartBand();
         Narrate(
             $"{Titled(band.FamilyNames)} have settled — {band.People} more souls, and no roof yet. {Clock.SeasonAndYear()}.",
             LogCategory.Life);
@@ -227,18 +198,11 @@ public sealed partial class SimWorld
         NoticeTheVillageSize(knewHowToBridge);
     }
 
-    /// <summary>The band is gone, whichever way; the next knock's year is set from this one.</summary>
-    private void DepartBand()
-    {
-        Band = null;
-        NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
-    }
-
     private void Knock()
     {
         int population = Population;
         bool hall = TownHall is not null;
-        var band = new NomadBand { KnockedAtTick = Tick, MetAPopulationOf = population };
+        var band = new NomadBand();
         int people = NomadBand.PeopleFor(Config, population, hall);
         int families = NomadBand.FamiliesFor(people, hall);
         int knockIndex = BandsEverKnocked;
@@ -281,18 +245,21 @@ public sealed partial class SimWorld
             band.Families.Add(family);
         }
 
-        Band = band;
+        // ⭐ THE SWITCH IS THE PERMISSION (Joe, D572): they settle the tick they come, and the next knock's year is set
+        // from this one. The moment stops (D232: at 4× an arrival that adds people must not slide past unread) and
+        // carries no verbs (Moment.cs) — there is nothing to decide, only something to know.
+        string where = WhereTheBandCamps;
+        Settle(band);
+        NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
 
-        // ⭐ IT WAITS, like the library's and the hall's gifts: there is something to do about it — a card to
-        // open. ⛔ No verbs here (Moment.cs); the card has them.
         int food = FoodTheVillageHolds();
-        int perHead = population == 0 ? 0 : food / population;
+        int perHead = Population == 0 ? 0 : food / Population;
         RaiseMoment(
-            $"Nomads {WhereTheBandCamps}",
+            $"Nomads have settled {where}",
             $"{Titled(band.FamilyNames)} — {band.People} souls, {band.Adults} grown and {band.Children} "
-            + $"{(band.Children == 1 ? "child" : "children")}, carrying a few days' food — have come up the valley asking "
-            + $"for a place to settle. They will camp {WhereTheBandCamps} until the leaves turn. The village holds {food:N0} food, "
-            + $"{perHead} a head. Click them to decide. {Clock.SeasonAndYear()}.",
+            + $"{(band.Children == 1 ? "child" : "children")}, carrying a few days' food — have come up the valley and "
+            + $"settled. They have no roof yet: a house is marked in the painted land where there is room, or they sleep "
+            + $"in the open {where} until there is. The village holds {food:N0} food, {perHead} a head. {Clock.SeasonAndYear()}.",
             stops: true,
             LogCategory.Discovery);
     }

@@ -16,13 +16,17 @@ read by the knock and by re-founding), a tick under *How the village runs* and a
 REMOVED — `Longhouse.cs`, `SimWorld.Longhouses.cs`, `Household.LodgedIn`, `LarderOf`, the row, `longhouse_capacity`, the
 view's shelf / card / draw, `LonghouseTests` all gone; `BuildingKind.Longhouse = 14` a retired id; **save format 7**; a
 standing *N unhoused* on the villagers bar, amber when the paint is full; 7 guards, 8 mutants, 42 reds, one zero closed
-(§9); no golden moved.** Bands knock, wait at the camp as a huddle, and settle
-or move on from the card's two buttons; a settled family builds in the paint like everybody, and when the paint is full
+(§9); no golden moved. ⛔ **D572, after Joe played D569–D571: THE SWITCH IS THE PERMISSION.** The waiting band is
+gone — no card, no huddle, no bar button, no *Let them settle* / *Send them on* (they sat in a fold he never opened and
+the band moved on unanswered), no `nomads_wait_seasons`, no `band` key, 0x6F retired. A band that knocks while the tick
+is on **settles that tick**; the tick lives on the villagers bar (a third line, with *N unhoused*), not in Settings; the
+new-game row stays as the starting value. **The six fifty-year goldens moved** (a family settles in Year 8–12 of every
+golden run), proven the knock's alone: with the floor at 0 every one reads its pre-D565 value. §9 has the mutants.**
+Bands knock and settle; a settled family builds in the paint like everybody, and when the paint is full
 the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
-few years on by four paired founders of a second generation. `NomadTests` (38) and
-`RefoundTests` (13) green and red-checked (§9); the six fifty-year goldens moved once, in commit 1, proven the knock's
-alone (§5), and none since; save format **7**; the probe's `nomads:` and `huddle:` lines ✅, `bars:` ✅ with the unhoused
-count posed. Measured first (§8); §8.6's on-the-build measurement is the guards' (the harness's posed arrivals stand). Joe's four calls answered (§3);
+few years on by four paired founders of a second generation. `NomadTests` (28) and
+`RefoundTests` (13) green and red-checked (§9); save format **7**; the probe's `nomads:` line ✅ (the tick reads and
+drives the village), `bars:` ✅ with the unhoused count posed. Measured first (§8); §8.6's on-the-build measurement is the guards' (the harness's posed arrivals stand). Joe's four calls answered (§3);
 the rest is mine, stated so he can overrule. Measured first (§8) on 100 shipped valleys and Joe's 27 saves: a knock at
 Year 10 meets eight people in two housed families (every share rule sends a couple; Joe's villages are one surname from
 Year 50); a band of two or four is housed the same year wherever the player has painted, and its cost is food, never a
@@ -107,9 +111,14 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    (*by the cart* / *at the founding site*), and the moment, the move-on line, the card's status and the bar button's
    tooltip read it. **Nomads, not travellers** — every string, comment and probe line (Joe's own quote in the D569 doc is
    the one *travellers* left in the code).
-3. ✅ **Built (D570).** **Accept / reject** stands (§4.3). **The Nomads switch** (Foundation's *Immigration — enabled*):
-   `SimWorld.NomadsEnabled`, the village's own — read by the knock **and by re-founding** (Joe: *yes, one switch*),
-   hashed only when off, saved — a tick under Settings → *How the village runs* beside *share the work out*, and its
+3. ✅ **Built (D570), reshaped (D572).** ~~**Accept / reject** stands (§4.3).~~ Joe, after playing it: *"I didn't see an
+   option to give the nomads permission to stay … if nomads are 'on', that is the permission isn't it? instead of
+   settings, there should be a toggle in the UI in the top info bar that already houses population info."* The card's
+   two buttons sat in its collapsed *Settings ▾* fold; he never saw them, and the band moved on. **So the switch is the
+   permission:** on, a band settles the tick it knocks; off, nobody comes. **The Nomads switch** (Foundation's
+   *Immigration — enabled*): `SimWorld.NomadsEnabled`, the village's own — read by the knock **and by re-founding** (Joe:
+   *yes, one switch*), hashed only when off, saved — **a tick on the villagers bar's third line** (*nomads may come to the
+   valley*, beside *N unhoused*; the Settings tick is gone), and its
    starting position a **row on the new-game screen** (`nomads`: *Come to the valley* / *Never come*, setting
    `nomads_enabled`), remembered with the valley and carried in the share code. ⛔ Not a `settings.json` toggle: a
    setting is never sim state (`settings-persistence.md §3`), and this one decides whether a band knocks. §4.1a.
@@ -131,9 +140,10 @@ Every answer below is the decision. Kept in the asked form so the alternatives s
    §4.5 below is kept, struck, as the record of what was built and why.
 6. All of it written down for a fresh session; the branch unmerged until the six are built and played.
 
-**Settled without asking, stated so he can overrule:** the knock is checked on the spring turn only; a band waits through
+**Settled without asking, stated so he can overrule:** the knock is checked on the spring turn only; ~~a band waits through
 spring and summer and leaves at the autumn turn if unanswered; the band is not villagers until it settles (a huddle at the
-pile, a card with two buttons, a bar button while it waits); the moment stays verb-free; nomads bring no techniques; the
+pile, a card with two buttons, a bar button while it waits)~~ — **gone, D572: a band settles the tick it knocks**; the
+moment stays verb-free; nomads bring no techniques;
 a save format bump (no migrations, D507). ~~The longhouse was the one dwelling placed by a button (D42's exception)~~ — gone, D571.
 
 ---
@@ -174,16 +184,17 @@ has what it needs after a load.
 #### 4.1a The switch (D570; Joe, D568: *"enable/disable the nomad feature altogether"*)
 
 **`SimWorld.NomadsEnabled`** gates the knock (`KnockIfItIsTime`) and the re-founding (`RefoundIfTheValleyHasWaited`) —
-one switch, Joe's call. **Off:** no band knocks, and an empty valley is never found again. **What it does not touch:** a
-band already waiting still waits its season, still moves on at its turn, and can still be settled or sent on — the switch
-shuts the door on the *next* band, never on the one standing there. **Back on with a knock year already past,** the band
-knocks on the next year's turn (the due year is compared with `<`): the door was shut, they were on the road. It is **the
-village's**, in the share-out switch's shape (`settings-persistence.md §3`): hashed only when off (tag `0x6A`, appended
-after the band's block), saved as `nomads_enabled`, started from the config key `nomads_enabled` (true) — which the
-new-game screen's **`nomads` row** sets (*Come to the valley* / *Never come*), so the choice is remembered with the valley
-(`new_game.nomads` in the settings file, as every row is) and travels in the share code. In play the tick under
-Settings → *How the village runs* is the village's own, like *share the work out*, and a load shows the save's.
-⛔ No `Rng` draw, no golden moved: on is the default and mixes nothing.
+one switch, Joe's call — **and is the permission (D572): on, a band that knocks settles that tick.** **Off:** no band
+knocks, and an empty valley is never found again. **Back on with a knock year already past,** the band comes on the
+next year's turn (the due year is compared with `<`): the door was shut, they were on the road. It is **the village's**,
+in the share-out switch's shape (`settings-persistence.md §3`): hashed only when off (tag `0x6A`), saved as
+`nomads_enabled`, started from the config key `nomads_enabled` (true) — which the new-game screen's **`nomads` row**
+sets (*Come to the valley* / *Never come*), so the choice is remembered with the valley (`new_game.nomads` in the
+settings file, as every row is) and travels in the share code. In play **the tick on the villagers bar's third line**
+(*nomads may come to the valley*, beside *N unhoused*) is the village's own, like *share the work out*; `Refresh` keeps
+it reading the world, so a load shows the save's. ⛔ Not in Settings (Joe: *"not buried in settings"*), not a sixth
+cell and not on the households line — both ran the bar under the right column at the probe's widest pose; a line costs
+height, never width. ⛔ No `Rng` draw; on is the default and mixes nothing.
 
 ```
 people   = clamp(populationAtTheKnock / nomads_share_divisor, nomads_band_min, nomads_band_max)   (+ a family if the hall stands)
@@ -198,20 +209,28 @@ twenty years on *this* village's work, D174); lifespan `LifespanYears ± varianc
 `NameFor`; **a new surname per family** from the surname pool, skipping every living household's and the other family's.
 They carry `nomads_food_each` food (20 — a few days), which goes into the family's larder on settling; no tools, no logs.
 
-### 4.3 The knock, and the decision
+### 4.3 The knock, and the arrival (D572 — formerly *the knock, and the decision*)
 
-On the knock the village **stops** (`RaiseMoment`, waits, `Discovery`): *"Nomads by the cart — the Hales and the
-Dunns, seven souls: four grown and three children, carrying a few days' food. They have come up the valley asking for a
-place to settle, and will camp by the cart until the leaves turn. Click them to decide."* The moment carries no verbs
-(§2); the **band's card** does. The band is drawn as a huddle of dots at the camp (the view, from the derived
-composition); clicking it, or the bar's **Nomads (7)** button (shown only while a band waits), opens the card: who
-they are by name, age and trade, what they carry, where they would sleep tonight (*"in the open by the cart — and this
-winter would kill them"*), and two buttons — **Let them settle** → `SimWorld.LetTheBandSettle()`,
-**Send them on** → `SimWorld.SendTheBandOn()`. Unanswered through spring and summer, **they move on at the autumn turn**
-(`nomads_wait_seasons` 2) with a passing line: *"The nomads moved on."* No harm, no foul — the clock just advances.
-The unattended paths — the harness, the goldens, a headless run — are *unanswered*.
+On the knock, with the switch on, **the band settles that tick** (§4.4) and the village **stops** (`RaiseMoment`,
+waits, `Discovery`): *"Nomads have settled by the cart — the Hales and the Dunns — 7 souls, 4 grown and 3 children,
+carrying a few days' food — have come up the valley and settled. They have no roof yet: a house is marked in the painted
+land where there is room, or they sleep in the open by the cart until there is. The village holds 812 food, 101 a head.
+Spring, Year 11."* The moment carries no verbs (§2) because there is nothing to decide: the tick on the villagers bar
+is the permission, given or withheld before anybody knocked. Nothing waits, nothing is stored — the band is a value
+derived inside `Knock()` and gone into the roster by the end of it; `NextKnockYear` is set the same tick. The unattended
+paths — the harness, the goldens, a headless run — now **settle every band**, which is what moved the six goldens (§5).
 
-> ⭐ **As built (D565; the words D569).** The moment: *"Nomads by the cart — the Hales, 2 souls, 2 grown and 0 children,
+> ⛔ **What this replaced, and why (D572).** D565 stored a waiting band (`SimWorld.Band`, hashed under 0x6F, saved as
+> `band`), drew it as a huddle, gave it a card with *Let them settle* / *Send them on* in the card's fold, a bar button
+> *Nomads (N)*, and an autumn deadline (`nomads_wait_seasons`). Joe played it and never saw the buttons — the fold was
+> closed — so the Tanners waited two seasons and moved on, and no house was ever marked: *"houses aren't being
+> constructed for the nomads … I didn't see an option to give the nomads permission to stay … if nomads are 'on', that
+> is the permission isn't it?"* **A decision inside a fold is a decision nobody sees; and once the answer is a standing
+> switch, a waiting state is dead state.** All of it came out: the class members, the card kind and its controls, the
+> huddle and its probe, the bar button, the Settings tick, the config key, the save key, the hash block (retired, never
+> reused), five waiting-band guards and the save pose. The as-built record of D565/D569 is kept below, struck.
+>
+> ~~⭐ **As built (D565; the words D569).**~~ The moment: *"Nomads by the cart — the Hales, 2 souls, 2 grown and 0 children,
 > carrying a few days' food — have come up the valley asking for a place to settle. They will camp by the cart until the
 > leaves turn. The village holds 812 food, 101 a head. Click them to decide."* The huddle: a ring of dun dots inside the
 > camp's tile (`VillageMap.HuddleOffsets`, children smaller), clicked before anything under it, ringed while its card is up.
@@ -231,7 +250,8 @@ The unattended paths — the harness, the goldens, a headless run — are *unans
 
 ### 4.4 Settling — roofless, and then what the village already does
 
-`LetTheBandSettle()` makes each family a `Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
+`Settle(band)` — called from `Knock()` the same tick (D572; `LetTheBandSettle()` until then) — makes each family a
+`Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
 holding the carried food, `HomePosition = null`) and adds its villagers at the camp, then calls `NoticeTheVillageSize`
 (the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads `ArrivedAtTick`, §5).
 ⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would
@@ -240,8 +260,8 @@ Log, `Life`: *"The Hales and the Dunns have settled — 7 more souls, and no roo
 
 From there nothing is new: they are roofless families, so `HouseTheRoofless` moves them into an empty standing house the
 next day if one stands, else marks a house in the residential paint (a builder raises it), else says the village has
-nowhere to build; until then they sleep at the camp, `Outdoors`, and a winter there kills (Joe's rule — the card said so
-before the click). They work any job the allocator gives them from the day they arrive. No children without a roof (D71).
+nowhere to build; until then they sleep at the camp, `Outdoors`, and a winter there kills (Joe's rule — the arrival
+moment says so). They work any job the allocator gives them from the day they arrive. No children without a roof (D71).
 
 ### ~~4.5 The longhouse — the communal house (call 3)~~ — REMOVED (D571)
 
@@ -362,6 +382,11 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 - **`house_capacity` is the house row's alone (D571).** The longhouse was the one other row that carried it and
   `RaiseFinished` turned any such row into one; with that gone, a modder's beds on another row would shelter nobody for
   ever, so the validator refuses them — until the house ladder (D206) lifts it.
+- **Goldens, again (D572).** The six move a second time: a band now *settles* in Year 8–12 of every golden run instead
+  of waiting and leaving, so the villages hold a family more from then on, and the waiting band's hash block is gone.
+  ⭐ **Proven the knock's alone:** with `nomads_first_year_floor` 0 in the fixture and the shipped file, all six read
+  their **pre-D565** values (`git show 4004a49^`) — the sim with no nomads at all is byte for byte what it was before
+  bands existed, across D565–D572. ⚠️ The D565 re-take had never written its *RE-TAKEN* lines; D572 wrote both.
 - **Goldens.** The six fifty-year goldens move **once**, in commit 1: bands knock from Year 8–12 in the fixture and the
   shipped seed, and `BandsEverKnocked` is hashed even when the band goes unanswered. Proven by setting
   `nomads_first_year_floor` to 0 and watching the old values pass. The map golden and every pose before Year 8 hold.
@@ -375,9 +400,10 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 
 | What | Hashed | Saved | Drawn | Told |
 |---|---|---|---|---|
-| `BandsEverKnocked`, `BandKnockedAtTick`, `BandMetAPopulationOf` | sparsely, tagged, after everything else | `bands_ever_knocked`, `band_knocked_at`, `band_met` | the huddle at the camp; the bar button | the knock moment, naming the camp; *moved on* |
+| `BandsEverKnocked`, `NextKnockYear` | sparsely (0x6E) | `bands_ever_knocked`, `next_knock_year` | — | the arrival moment, naming the camp |
+| ~~the waiting band (`Band`)~~ | ~~0x6F~~ — retired D572, never reused | ~~`band`~~ — gone (format 7 unchanged: no build that wrote 7 reached Joe) | ~~the huddle; the bar button~~ | ~~*moved on*~~ |
 | `Villager.ArrivedAtTick` | sparsely (non-zero) | `arrived_at` | — | the card: *came to the valley in Year 11* |
-| `NomadsEnabled` (D570) | sparsely (`0x6A`, when off) | `nomads_enabled` (started from the config key the new-game `nomads` row sets) | the tick under *How the village runs*; the new-game row | the caption under the tick |
+| `NomadsEnabled` (D570; the permission since D572) | sparsely (`0x6A`, when off) | `nomads_enabled` (started from the config key the new-game `nomads` row sets) | the tick on the villagers bar's third line; the new-game row | the tick's tooltip |
 | ~~`Household.LodgedIn`, the longhouses~~ | ~~0x68, 0x67~~ — retired D571, never reused | ~~`lodged_in`, `longhouses`~~ — gone, format 7 | — | — |
 | `NeedsMoreResidentialLand` (the latch, since D381) | not hashed (narration state) | `needs_more_residential_land` | the villagers bar's *N unhoused*, amber while latched and anybody is roofless (D571) | *"has nowhere to build"* once; the amber tooltip standing |
 | `SaveGame.Format` | — | **7** — older saves refused in words | — | the title screen's refusal |
@@ -391,18 +417,17 @@ nomads; a band that asks for anything but a place; the longhouse as a trade or a
 | Case | Rule |
 |---|---|
 | The knock year arrives with nobody alive | No band. The valley is on §4.6's clock instead; the knock clock resumes after the re-founding, counted from it |
-| A band waits and everybody dies | The band moves on at its deadline as usual; §4.6's clock starts from the last death |
-| Settle in autumn | Allowed; the card said *this winter would kill them*. The player chose it (§0.1: a decision with a consequence, not an error) |
+| ~~A band waits and everybody dies~~ | Cannot happen (D572): nothing waits |
 | No residential paint | They settle roofless; `NeedsMoreResidentialLand` is narrated once and the bar's *N unhoused* stays amber until a site is marked (D571); the card says *in the open by the cart* (or *at the founding site*) |
 | A modder types a row on id 14 | It loads and is whatever its columns say — a store, if it stores (D571); `house_capacity` on it is refused |
-| Save mid-band, load | The band is re-derived from the saved tick, count and population; its deadline is the saved tick's |
+| ~~Save mid-band, load~~ | Cannot happen (D572): the band is villagers by the end of the knock tick, saved as villagers |
 | Load an older format | Refused in words (D507, no migrations) |
 | Re-founders find no house standing | They are roofless at the founding site, as the first founders were; the paint, if any, still stands |
 | The hall was given before the village died | `SaidTheFoundersAreGone` is set; the second generation's deaths raise nothing |
 | The first founders died with nobody left (no hall) | The hall is owed on the last of the second generation, and the tribute names both |
-| A knock while a band waits | Cannot happen: the next knock year is set when a band leaves or settles |
-| The switch is off (D570) | No band knocks; an empty valley is never re-founded; a band already waiting waits its season, moves on at its turn, and can still be answered |
-| Switched on with a knock year already past | The band knocks on the next year's turn, not never |
+| ~~A knock while a band waits~~ | Cannot happen (D572): the next knock year is set at the knock |
+| The switch is off (D570) | No band knocks; an empty valley is never re-founded |
+| Switched on with a knock year already past | The band comes and settles on the next year's turn, not never |
 | Founded with the new-game row at *Never come* | `nomads_enabled` false → the village starts switched off; the tick shows it; a save carries it over the config it is loaded with |
 | Nomads and the surname pool run dry | `FoundingSurnameFor`'s attempts loop as today; with 60 names and ≤ 14 living households it never does |
 
@@ -517,7 +542,9 @@ starved before Year 9.
 
 - `tools/harness/arms.sh base` before and after each commit, same sitting: dead valleys and alive at 50 on the unanswered
   path must read as today's (the acceptance line is D555's 21 of 100), because an unanswered band changes nothing but a
-  count.
+  count. ⭐ **D572 — bands settle unattended now, and the harness is the measurement of what that does.** On b8dc0ca
+  (D571) and on D572, 100 shipped valleys × 50 years: alive at 50 **627 → 719**, dead valleys **12 → 12**, peak **1005 → 1161**, starved **422 → 1353**, froze **585 → 582** — the villages hold more people and the same number die out, and **starvation triples**: bands keep coming to a village nobody paints or plants for (D447: a harness is not a player) — Joe's to read against a played run
+  (`ZzNomads` runs with the switch off since D572, so its posed arrivals stand alone.)
 - The suite's clock back to back (D426).
 - On commit 1, the `settle` arm run through the sim's own `LetTheBandSettle()` rather than the harness's pose, and the
   knock years of the hundred valleys (p10 / med / p90 of the first knock, and of the second).
@@ -528,14 +555,26 @@ starved before Year 9.
 
 ## 9. Guards (TDD, red first, red-checked and counted — D326)
 
-**Commit 1 — `NomadTests`:** the knock year is a function of the seed and never before the floor; a knock lands on the
-spring turn only, with somebody alive; floor 0 = never (the anti-vacuity twin: a village that never meets a band hashes
-as today); the band's size scales and clamps; the hall widens (floor and a family); every surname is new (none living,
-none shared within the band); no `Rng` draw (the stream's state is untouched across a knock); an unanswered band leaves
-at the deadline and the next knock year is set; sending on leaves everything but the count as it was; settling adds
-roofless households holding their food, `MostEverAlive` counts them (a bridge learned by arrivals), a settled family is
-housed when the paint has room and freezes at the camp when not, no birth while roofless; sparse hash before the first
-knock; save → load → hash == live mid-band, and the year after matches.
+**Commit 1 — `NomadTests` (as reshaped by D572 — the fact every guard reads is the arrivals, villagers whose
+`ArrivedAtTick` is the knock):** the knock year is a function of the seed and never before the floor; a band arrives
+and settles on the spring turn only, with somebody alive, the next knock's year set the same tick, the moment waiting and
+verb-free; a knock never leaves a band waiting and settles once (the share rule's count, no more); floor 0 = never (the
+anti-vacuity twin: a village that never meets a band hashes as today, and on the knock the clocked one has more people);
+the band's size scales and clamps; the hall widens (floor and a family); two adults a family, children 2–11, one
+journeyman; every surname is new (none living, none shared within the band); no `Rng` draw (the stream's state is
+untouched across a knock); the next band comes on its own year; the knock adds roofless households holding their food,
+paired, at the camp; `MostEverAlive` counts arrivals from the tick they came (a bridge learned by arrivals); a settled
+family is housed when the paint has room and freezes at the camp when not, no birth while roofless; the save carries
+the arrivals and the year after matches. ~~An unanswered band leaves at the deadline; sending on leaves everything but
+the count; save → load mid-band~~ — gone with the waiting band (D572).
+
+> ⭐ **D572 — the switch is the permission: `NomadTests` (28), `RefoundTests` (13).** Five waiting-band guards deleted
+> (`AnUnansweredBandMovesOnAtTheAutumnTurn`, `SendingThemOnLeavesTheVillageAsItWasButForTheCount`,
+> `SwitchedOffAWaitingBandStillWaitsAndCanBeAnswered`, `SwitchedOffAnUnansweredBandStillMovesOnAtItsTurn`,
+> `ABandSurvivesASaveAndItsYearMatches`); fifteen re-posed on the arrivals; one new,
+> `AKnockNeverLeavesABandWaitingAndSettlesOnce`. **Mutants and reds:** **7 mutants, 40 reds, no zeros** — the knock never settling **20** (⚠️ the first pose, the call commented out, did not build: IDE0051 refused an unused private `Settle` — the analyzer's own red check; re-posed as a condition never true); settled twice **10**; the next knock's year not set at the knock **3**; the moment saying *Click them to decide* **2**; the carried food entering by no door **3** (`FoodConservationTests`, the ledger's new third door `FoodEverBroughtIn`); the tick driving nothing — the probe's `nomads:` ⛔ *the tick cleared and the village stayed on* **1**; the tick never reading the world — ⛔ *the village switched off and the tick stayed ticked* **1**. Thirteen guards elsewhere reddened for the arrivals and were re-posed, never loosened: the food ledger (three poses) gained the third door; `BirthdayTests` counts the born, not the arrived; `KnowledgeAtRiskTests` and the three 150-year economy guards (`VillageTests`, `PlacementTests`, `LabourTests`) and `ResidentialZoneTests`' no-paint pose run with the switch off (their claims are the economy's and the paint's, not immigration's — the arrivals' cost is §8.6's number); `ResidentialZoneTests` accepts either *nowhere to build* sentence; `LabourAllocationTests` and `ShippedConfigTests` skip a roofless family where they ask for its house. The view's `nomads:` probe line is the
+> tick's guard (reads the world, drives it, both ways) — no mutant in the suite can see it. **Goldens:** the six moved
+> (§5), proven with the floor at 0.
 
 > ⭐ **Note 3 (D570) — `NomadTests` (37), `RefoundTests` (13), `NewGameScreenTests` (+row).** Off at founding, nobody
 > ever knocks; off with a band waiting, it still waits, still moves on at its turn, and can still be settled; on again
@@ -622,7 +661,7 @@ raised in an empty valley; a second hall; a field left out of the hash or the sa
 - [x] `DESIGN.md` §4 (Phase 6, the milestone map), §5 (the nomads entry), §6, §7; `town-hall.md`, `names-and-birthdays.md`,
       `morale.md`, `content-inventory.md`, `footprints.md`; `HANDOFF.md`; this status line made true — in the same
       commit as the code.
-- [ ] Played by Joe: a new village to the first knock (~Year 10), the huddle, the card's two buttons, a settled family
-      housed or freezing, ~~the longhouse in the strip after the knock, lodgers moving out~~ (gone, D571) the *N unhoused*
-      count going amber when the paint is full; the Nomads tick and the new-game row (D570); a village left to die and
-      found again a few years on.
+- [ ] Played by Joe: a new village to the first knock (~Year 10) — the arrival moment, the family roofless at the camp
+      and a house marked in the paint within days, the *N unhoused* count going amber when the paint is full; the Nomads
+      tick on the villagers bar (off: nobody comes) and the new-game row (D570); a village left to die and found again a
+      few years on. ~~The huddle, the card's two buttons, the longhouse~~ — gone (D571, D572).

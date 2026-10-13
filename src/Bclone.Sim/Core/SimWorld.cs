@@ -214,6 +214,12 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public int FoodEverProduced { get; private set; }
 
+    /// <summary>
+    /// Food that came up the valley with a band of nomads (D572) — neither produced nor eaten here, so the ledger's
+    /// third door: produced + brought in − eaten = held. Saved; not hashed, like its siblings.
+    /// </summary>
+    public int FoodEverBroughtIn { get; internal set; }
+
     /// <summary>What each edible good's sources ever produced — the same counter, by good (D397).</summary>
     public int FoodEverProducedOf(Goods goods) =>
         _foodEverProducedOf.TryGetValue(goods, out int amount) ? amount : 0;
@@ -13720,6 +13726,7 @@ public sealed partial class SimWorld : IObstacles
             ["food_eaten_this_year"] = FoodEatenThisYear,
             ["food_eaten_last_year"] = FoodEatenLastYear,
             ["food_ever_produced"] = FoodEverProduced,
+            ["food_ever_brought_in"] = FoodEverBroughtIn,
             ["food_ever_produced_of"] = foodOf,
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
@@ -13751,7 +13758,6 @@ public sealed partial class SimWorld : IObstacles
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
             ["bands_ever_knocked"] = BandsEverKnocked,
             ["next_knock_year"] = NextKnockYear,
-            ["band"] = Band?.ToSave(),
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
         };
@@ -13865,6 +13871,7 @@ public sealed partial class SimWorld : IObstacles
         FoodEatenThisYear = save.Int("food_eaten_this_year");
         FoodEatenLastYear = save.Int("food_eaten_last_year");
         FoodEverProduced = save.Int("food_ever_produced");
+        FoodEverBroughtIn = save.HasValue("food_ever_brought_in") ? save.Int("food_ever_brought_in") : 0;
         foreach ((int Good, int Amount) food in save.Pairs("food_ever_produced_of"))
         {
             if (food.Good < 0 || food.Good >= GoodsCatalog.Count)
@@ -13919,7 +13926,6 @@ public sealed partial class SimWorld : IObstacles
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
         BandsEverKnocked = save.Int("bands_ever_knocked");
         NextKnockYear = save.Int("next_knock_year");
-        Band = save.NullableObject("band") is SaveReader band ? NomadBand.FromSave(band) : null;
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");
 

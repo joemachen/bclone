@@ -106,6 +106,12 @@ public sealed class BirthdayTests
             loop.Step(config.TicksPerDay);
             for (int i = known; i < world.Villagers.Count; i++)
             {
+                // A nomad who settled this day was born elsewhere, years ago (D572): not a birth.
+                if (world.Villagers[i].ArrivedAtTick != 0UL)
+                {
+                    continue;
+                }
+
                 births.Add((world.HouseholdOf(world.Villagers[i]), world.Villagers[i].BirthTick));
             }
         }

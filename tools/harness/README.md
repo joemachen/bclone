@@ -103,7 +103,8 @@ against a number from an older commit.
   what; `ZZD` what stands 0 / 2 / 4 / 6 years after a valley dies, by condition state; arm `refound` (`ZZR`): `ZZ_REFOUND`
   years (3) after the last death four adults in two households arrive and the cart is restocked — alive 1 / 5 / 10 / 20
   years on. `ZZ_ARMS`, `ZZ_SEEDS`, `ZZ_YEARS`. Copy in, `-c Release --filter ZzNomads`, delete; `python tools/harness/nomads.py
-  <output>`. ⚠️ The first `refound` run posed one family of two adults and two children — the founding's shape is two
+  <output>`. ⚠️ Since D572 the sim settles bands itself, so `ZzNomads` runs with `nomads_enabled` off and its posed
+  arrivals stand alone; `arms.sh base` is the measurement of the sim's own. ⚠️ The first `refound` run posed one family of two adults and two children — the founding's shape is two
   households of two adults, and a measurement of the wrong pose is a number about nothing. ⚠️ An unattended valley at
   Year 10 is eight people in two housed families, so every share rule sends the minimum band; Joe's saves are the number.
 - `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per

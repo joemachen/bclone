@@ -517,7 +517,11 @@ public sealed class ShippedConfigTests
         loop.Step(config.TicksPerYear * 15);
 
         SimWorld world = loop.World;
-        GridPos home = world.Households[0].Home();
+
+        // The first household with a house, not the first household: a founder family that died out hands its
+        // empty house to the next roofless family (D386) and keeps no home — and since D572 a settled band can be
+        // that family by Year 15.
+        GridPos home = world.Households.First(h => h.HasHome).Home();
 
         // ⚠️ WITH A SEAM PAINTED, SO THE FOUR CAN BE PAID FOR (D384). Every one of these costs
         // stone (D214), and a village that has painted no seam parks three of its twelve hands

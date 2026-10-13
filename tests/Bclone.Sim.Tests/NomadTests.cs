@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 namespace Bclone.Sim.Tests;
 
 /// <summary>
-/// The nomads, commit 1 — the band that knocks, waits, and settles or moves on (`specs/nomads.md §4.1–4.4`, §9).
+/// The nomads — the band that knocks and settles the same tick (`specs/nomads.md §4.1–4.4`, §9; D565, D572).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,8 +21,10 @@ namespace Bclone.Sim.Tests;
 /// <see cref="KnockTick"/> asks the sim rather than assuming a year.
 /// </para>
 /// <para>
-/// ⛔ The band is posed by <b>stepping to the knock</b>, never by building one by hand: a band built by hand
-/// cannot tell the test that the sim fails to raise one (D157's green-and-blind).
+/// ⛔ The arrivals are posed by <b>stepping to the knock</b>, never by building a band by hand: a band built by hand
+/// cannot tell the test that the sim fails to raise one (D157's green-and-blind). Since D572 nothing waits — the
+/// band is gone into the roster by the end of the knock tick — so the fact every guard reads is the arrivals:
+/// villagers whose <see cref="Villager.ArrivedAtTick"/> is the knock.
 /// </para>
 /// </remarks>
 public sealed class NomadTests
@@ -47,15 +49,26 @@ public sealed class NomadTests
     /// <summary>The spring tick the fixture's first band knocks on.</summary>
     private static ulong KnockTick(SimWorld world) => (ulong)(world.FirstKnockYear() - 1) * (ulong)world.Config.TicksPerYear;
 
+    /// <summary>Everybody who came to the valley on <paramref name="tick"/>.</summary>
+    private static List<Villager> ArrivedAt(SimWorld world, ulong tick) =>
+        world.Villagers.Where(v => v.ArrivedAtTick == tick && tick != 0UL).ToList();
+
+    /// <summary>Everybody who came with the first band.</summary>
+    private static List<Villager> Arrived(SimWorld world) => ArrivedAt(world, KnockTick(world));
+
+    /// <summary>The households the first band became, in the order they were made.</summary>
+    private static List<Household> ArrivedHouseholds(SimWorld world) =>
+        Arrived(world).Select(v => v.HouseholdId).Distinct().Select(id => world.Households.Single(h => h.Id == id)).ToList();
+
     /// <summary>
     /// Step through the knock: the systems compute a tick before the loop advances it (`SimLoop.StepOnce`), so the
-    /// band raised on the knock tick is there once the loop has stepped one tick past it.
+    /// family settled on the knock tick is there once the loop has stepped one tick past it.
     /// </summary>
     private static (SimLoop Loop, InMemoryLogSink Log) Knocked(SimConfig config)
     {
         (SimLoop loop, InMemoryLogSink log) = Founded(config);
         loop.Step((int)KnockTick(loop.World) + 1);
-        Assert.NotNull(loop.World.Band);
+        Assert.NotEmpty(Arrived(loop.World));
         return (loop, log);
     }
 
@@ -97,14 +110,14 @@ public sealed class NomadTests
     {
         (SimLoop loop, _) = Founded(Silent);
         loop.Step(Silent.TicksPerYear * 20);
-        Assert.Null(loop.World.Band);
+        Assert.DoesNotContain(loop.World.Villagers, v => v.ArrivedAtTick != 0UL);
         Assert.Equal(0, loop.World.BandsEverKnocked);
         Assert.Equal(0, loop.World.FirstKnockYear());
     }
 
     /// <summary>
     /// ⭐ THE ANTI-VACUITY TWIN: until the knock, a village on the shipped clock is byte for byte the village with no
-    /// nomads at all — nothing is drawn, nothing is mixed. And on the knock tick they part.
+    /// nomads at all — nothing is drawn, nothing is mixed. And on the knock tick they part: one has more people.
     /// </summary>
     [Fact]
     public void AVillageHashesAsBeforeUntilItsFirstKnock()
@@ -120,7 +133,8 @@ public sealed class NomadTests
 
         clocked.StepOnce();
         silent.StepOnce();
-        Assert.NotNull(clocked.World.Band);
+        Assert.NotEmpty(Arrived(clocked.World));
+        Assert.True(clocked.World.Population > silent.World.Population, "the band settled and nobody was added");
         Assert.NotEqual(StateHash.Compute(silent.World), StateHash.Compute(clocked.World));
 
         // ⛔ And still no draw: the knock is a hash, so the stream is where the silent village's is.
@@ -128,28 +142,60 @@ public sealed class NomadTests
         Assert.Equal(silent.World.Rng.Inc, clocked.World.Rng.Inc);
     }
 
+    /// <summary>The switch is the permission (Joe, D572): on, the band is villagers by the end of the knock tick.</summary>
     [Fact]
-    public void TheBandKnocksOnTheSpringTurnOfItsYearAndStops()
+    public void ABandArrivesAndSettlesOnTheSpringTurnOfItsYear()
     {
         (SimLoop loop, InMemoryLogSink log) = Founded(Village);
         ulong knock = KnockTick(loop.World);
         loop.Step((int)knock);
-        Assert.Null(loop.World.Band);
+        Assert.Empty(ArrivedAt(loop.World, knock));
+        int year = loop.World.Clock.Year;
 
         loop.StepOnce();
-        NomadBand band = Assert.IsType<NomadBand>(loop.World.Band);
-        Assert.Equal(knock, band.KnockedAtTick);
+        List<Villager> arrived = ArrivedAt(loop.World, knock);
+        Assert.NotEmpty(arrived);
         Assert.Equal(Season.Spring, loop.World.Clock.Season);
         Assert.Equal(1, loop.World.Clock.DayOfSeason);
         Assert.Equal(loop.World.FirstKnockYear(), loop.World.Clock.Year);
         Assert.Equal(1, loop.World.BandsEverKnocked);
-        Assert.Equal(loop.World.Population, band.MetAPopulationOf);
+        Assert.True(loop.World.NextKnockYear > year, "the next knock's year was not set at the knock");
+        Assert.All(arrived, v => Assert.False(loop.World.HouseholdOf(v).HasHome));
 
         Moment moment = Assert.Single(loop.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
-        Assert.True(moment.WaitsToBeDismissed, "the knock does not wait — at 4× it slides past unread (D232)");
-        Assert.DoesNotContain("settle?", moment.Body, StringComparison.Ordinal);
-        Assert.Contains("Click them to decide", moment.Body, StringComparison.Ordinal);
-        Assert.Contains("come up the valley", Said(log), StringComparison.Ordinal);
+        Assert.True(moment.WaitsToBeDismissed, "the arrival does not wait — at 4× it slides past unread (D232)");
+        Assert.Contains("have settled", moment.Title, StringComparison.Ordinal);
+        Assert.Contains("settled", moment.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Click", moment.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("decide", moment.Body, StringComparison.Ordinal);
+        Assert.Contains("have settled", Said(log), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⛔ Nothing waits (D572): the band is settled once, that tick, and no moment asks for anything. A band settled
+    /// twice would show as more arrivals than the share rule gives.
+    /// </summary>
+    [Fact]
+    public void AKnockNeverLeavesABandWaitingAndSettlesOnce()
+    {
+        (SimLoop loop, _) = Founded(Village);
+        ulong knock = KnockTick(loop.World);
+        loop.Step((int)knock);
+        int met = loop.World.Population;
+        int householdsBefore = loop.World.Households.Count;
+        loop.StepOnce();
+
+        List<Villager> arrived = ArrivedAt(loop.World, knock);
+        Assert.Equal(NomadBand.PeopleFor(Village, met, townHallStands: false), arrived.Count);
+        Assert.Equal(NomadBand.FamiliesFor(arrived.Count, townHallStands: false), ArrivedHouseholds(loop.World).Count);
+        Assert.Equal(householdsBefore + ArrivedHouseholds(loop.World).Count, loop.World.Households.Count);
+        Assert.DoesNotContain(loop.World.Moments, m => m.Body.Contains("Click", StringComparison.Ordinal));
+        Assert.Equal(1, loop.World.BandsEverKnocked);
+
+        // The tick after: nobody else came, and nothing was settled twice.
+        loop.StepOnce();
+        Assert.Equal(arrived.Count, loop.World.Villagers.Count(v => v.ArrivedAtTick != 0UL));
+        Assert.Equal(1, loop.World.BandsEverKnocked);
     }
 
     [Fact]
@@ -166,7 +212,8 @@ public sealed class NomadTests
         }
 
         loop.Step(20);
-        Assert.Null(loop.World.Band);
+        Assert.Equal(0, loop.World.Population);
+        Assert.Empty(ArrivedAt(loop.World, knock));
         Assert.Equal(0, loop.World.BandsEverKnocked);
     }
 
@@ -208,22 +255,27 @@ public sealed class NomadTests
     public void TheBandIsTwoAdultsAFamilyWithChildrenAndOneJourneyman()
     {
         (SimLoop loop, _) = Knocked(Village);
-        NomadBand band = loop.World.Band!;
-        Assert.Equal(NomadBand.PeopleFor(Village, band.MetAPopulationOf, false), band.People);
-        foreach (NomadFamily family in band.Families)
+        SimWorld world = loop.World;
+        List<Villager> arrived = Arrived(world);
+        Assert.Equal(NomadBand.PeopleFor(Village, world.Population - arrived.Count, false), arrived.Count);
+
+        foreach (Household family in ArrivedHouseholds(world))
         {
-            Assert.Equal(2, family.Adults);
-            foreach (NomadPerson person in family.People)
+            var members = arrived.Where(v => v.HouseholdId == family.Id).ToList();
+            Assert.Equal(2, members.Count(v => v.LifeStage == LifeStage.Adult));
+            foreach (Villager person in members)
             {
-                Assert.InRange(person.AgeYears, person.Adult ? 18 : 2, person.Adult ? 40 : 11);
+                bool adult = person.LifeStage == LifeStage.Adult;
+                Assert.InRange(person.AgeYears, adult ? 18 : 2, adult ? 40 : 11);
                 Assert.InRange(person.LifespanYears, Village.LifespanYearsBase - Village.LifespanYearsVariance, Village.LifespanYearsBase + Village.LifespanYearsVariance);
                 Assert.InRange(person.Rhythm, 0, Village.TicksPerDay - 1);
             }
         }
 
-        int journeymen = band.Families.Sum(f => f.People.Count(p => p.TradeSkillId != 0));
-        Assert.Equal(1, journeymen);
-        Assert.Contains(Village.FoundingSkills(), s => s.Id == band.Families.SelectMany(f => f.People).Single(p => p.TradeSkillId != 0).TradeSkillId);
+        var journeymen = arrived.Where(v => v.Skills.Any(s => s.Work > 0)).ToList();
+        Villager journeyman = Assert.Single(journeymen);
+        SkillProgress progress = Assert.Single(journeyman.Skills, s => s.Work > 0);
+        Assert.Contains(Village.FoundingSkills(), s => s.Id == progress.SkillId);
     }
 
     [Fact]
@@ -231,77 +283,37 @@ public sealed class NomadTests
     {
         // Posed with a village large enough for two families, so the two-family rule is exercised.
         (SimLoop loop, _) = Knocked(Village with { NomadsBandMin = 6 });
-        NomadBand band = loop.World.Band!;
-        Assert.Equal(2, band.Families.Count);
+        SimWorld world = loop.World;
+        List<Household> families = ArrivedHouseholds(world);
+        Assert.Equal(2, families.Count);
 
-        var living = new HashSet<string>(loop.World.Households.Where(h => loop.World.LivingMembersOf(h) > 0).Select(h => h.Surname));
-        Assert.All(band.Families, f => Assert.DoesNotContain(f.Surname, living));
-        Assert.NotEqual(band.Families[0].Surname, band.Families[1].Surname);
+        var arrivedIds = new HashSet<int>(families.Select(f => f.Id));
+        var living = new HashSet<string>(world.Households.Where(h => !arrivedIds.Contains(h.Id) && world.LivingMembersOf(h) > 0).Select(h => h.Surname));
+        Assert.All(families, f => Assert.DoesNotContain(f.Surname, living));
+        Assert.NotEqual(families[0].Surname, families[1].Surname);
 
-        var names = band.Families.SelectMany(f => f.People).Select(p => p.Name).ToList();
+        List<Villager> arrived = Arrived(world);
+        var names = arrived.Select(p => p.Name).ToList();
         Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
-        var alive = new HashSet<string>(loop.World.Villagers.Where(v => v.Alive).Select(v => v.Name));
+        var alive = new HashSet<string>(world.Villagers.Where(v => v.Alive && v.ArrivedAtTick == 0UL).Select(v => v.Name));
         Assert.All(names, n => Assert.DoesNotContain(n, alive));
     }
 
     // ---------------------------------------------------------------
-    //  The wait, and the two answers (§4.3, §4.4)
+    //  The arrival (§4.3, §4.4)
     // ---------------------------------------------------------------
-
-    [Fact]
-    public void AnUnansweredBandMovesOnAtTheAutumnTurn()
-    {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
-        int population = loop.World.Population;
-        int knockYear = loop.World.Clock.Year;
-        ulong leaves = loop.World.BandLeavesAtTick;
-        Assert.Equal(loop.World.Band!.KnockedAtTick + (2UL * (ulong)Village.TicksPerSeason), leaves);
-
-        loop.Step((int)(leaves - loop.World.Tick));
-        Assert.NotNull(loop.World.Band);
-        loop.StepOnce();
-        Assert.Null(loop.World.Band);
-        Assert.Equal(Season.Fall, loop.World.Clock.Season);
-        Assert.Equal(population, loop.World.Population);
-        Assert.Equal(1, loop.World.BandsEverKnocked);
-        Assert.InRange(loop.World.NextKnockYear, knockYear + Village.NomadsYearsBetweenFloor, knockYear + Village.NomadsYearsBetweenFloor + Village.NomadsYearsBetweenSpread);
-        Assert.Contains("moved on", Said(log), StringComparison.Ordinal);
-        Moment gone = Assert.Single(loop.World.Moments, m => m.Title.Contains("moved on", StringComparison.Ordinal));
-        Assert.False(gone.WaitsToBeDismissed, "a band leaving is a passing line, not a stop");
-    }
-
-    [Fact]
-    public void SendingThemOnLeavesTheVillageAsItWasButForTheCount()
-    {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
-        int people = loop.World.Villagers.Count;
-        int households = loop.World.Households.Count;
-        loop.World.SendTheBandOn();
-        Assert.Null(loop.World.Band);
-        Assert.Equal(people, loop.World.Villagers.Count);
-        Assert.Equal(households, loop.World.Households.Count);
-        Assert.True(loop.World.NextKnockYear > loop.World.Clock.Year);
-        Assert.Contains("sent on their way", Said(log), StringComparison.Ordinal);
-        Assert.Throws<InvalidOperationException>(() => loop.World.SendTheBandOn());
-
-        // ⚠️ "But for the count": the count and the next year are state — a village a band came to and left is not the
-        // village nobody ever knocked on, and the fingerprint says so (the hash block that did not build as a mutant).
-        (SimLoop silent, _) = Founded(Silent);
-        silent.Step((int)loop.World.Tick);
-        Assert.NotEqual(StateHash.Compute(silent.World), StateHash.Compute(loop.World));
-    }
 
     [Fact]
     public void TheNextKnockFollowsTheLastOnItsOwnYear()
     {
         (SimLoop loop, _) = Knocked(Village);
-        loop.World.SendTheBandOn();
         int next = loop.World.NextKnockYear;
-        loop.Step((int)(((ulong)(next - 1) * (ulong)Village.TicksPerYear) - loop.World.Tick));
-        Assert.Null(loop.World.Band);
+        ulong secondKnock = (ulong)(next - 1) * (ulong)Village.TicksPerYear;
+        loop.Step((int)(secondKnock - loop.World.Tick));
+        Assert.Empty(ArrivedAt(loop.World, secondKnock));
         loop.StepOnce();
-        Assert.True(loop.World.Population == 0 || loop.World.Band is not null, "the second band did not knock on its year");
-        if (loop.World.Band is not null)
+        Assert.True(loop.World.Population == 0 || ArrivedAt(loop.World, secondKnock).Count > 0, "the second band did not come on its year");
+        if (loop.World.Population > 0)
         {
             Assert.Equal(2, loop.World.BandsEverKnocked);
             Assert.Equal(next, loop.World.Clock.Year);
@@ -309,40 +321,35 @@ public sealed class NomadTests
     }
 
     [Fact]
-    public void SettlingAddsRooflessFamiliesHoldingTheirFood()
+    public void TheKnockAddsRooflessFamiliesHoldingTheirFood()
     {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
+        (SimLoop loop, InMemoryLogSink log) = Founded(Village);
         SimWorld world = loop.World;
-        NomadBand band = world.Band!;
-        int before = world.Population;
-        int mostBefore = world.MostEverAlive;
+        ulong knock = KnockTick(world);
+        loop.Step((int)knock);
         int householdsBefore = world.Households.Count;
-        ulong tick = world.Tick;
+        loop.StepOnce();
 
-        world.LetTheBandSettle();
-
-        Assert.Null(world.Band);
-        Assert.Equal(before + band.People, world.Population);
-        Assert.Equal(mostBefore + band.People, world.MostEverAlive);
-        Assert.Equal(householdsBefore + band.Families.Count, world.Households.Count);
+        List<Villager> arrived = ArrivedAt(world, knock);
+        List<Household> families = ArrivedHouseholds(world);
+        Assert.NotEmpty(arrived);
+        Assert.Equal(householdsBefore + families.Count, world.Households.Count);
         Assert.Contains("have settled", Said(log), StringComparison.Ordinal);
 
-        for (int f = 0; f < band.Families.Count; f++)
+        foreach (Household home in families)
         {
-            Household home = world.Households[householdsBefore + f];
-            Assert.Equal(band.Families[f].Surname, home.Surname);
+            var members = arrived.Where(v => v.HouseholdId == home.Id).ToList();
             Assert.Null(home.HomePosition);
-            Assert.Equal(band.Families[f].People.Count * Village.NomadsFoodEach, home.Stockpile[Goods.Produce]);
-            Assert.Equal(band.Families[f].People.Count, world.LivingMembersOf(home));
+            Assert.Equal(members.Count * Village.NomadsFoodEach, home.Stockpile[Goods.Produce]);
+            Assert.Equal(members.Count, world.LivingMembersOf(home));
 
-            var members = world.Villagers.Where(v => v.HouseholdId == home.Id).ToList();
             var adults = members.Where(v => v.LifeStage == LifeStage.Adult).ToList();
             Assert.Equal(2, adults.Count);
             Assert.Equal(adults[0].Id, adults[1].PartnerId);
             Assert.Equal(adults[1].Id, adults[0].PartnerId);
             foreach (Villager villager in members)
             {
-                Assert.Equal(tick, villager.ArrivedAtTick);
+                Assert.Equal(knock, villager.ArrivedAtTick);
                 Assert.False(villager.Founder);
                 Assert.Equal(home.Surname, villager.Surname);
                 Assert.Equal(world.BandCamp, villager.Position);
@@ -351,19 +358,22 @@ public sealed class NomadTests
         }
 
         Assert.True(world.NextKnockYear > world.Clock.Year);
-        Assert.Throws<InvalidOperationException>(() => world.LetTheBandSettle());
     }
 
     [Fact]
     public void TheWoodenBridgeIsLearnedByArrivals()
     {
-        // The most the village has ever held at the knock, read off a first run; the posed village learns the bridge
-        // at one more than that, so only an arrival can teach it.
-        (SimLoop first, _) = Knocked(Village);
+        // The most the village has ever held the tick before the knock, read off a first run; the posed village learns
+        // the bridge at one more than that, so only an arrival can teach it.
+        (SimLoop first, _) = Founded(Village);
+        first.Step((int)KnockTick(first.World));
         SimConfig config = Village with { BridgeUnlockPopulation = first.World.MostEverAlive + 1 };
-        (SimLoop posed, _) = Knocked(config);
+
+        (SimLoop posed, _) = Founded(config);
+        posed.Step((int)KnockTick(posed.World));
         Assert.False(posed.World.IsUnlocked(BuildingKind.Bridge), "the bridge is known before anybody arrived — the pose is wrong");
-        posed.World.LetTheBandSettle();
+        posed.StepOnce();
+        Assert.NotEmpty(Arrived(posed.World));
         Assert.True(posed.World.IsUnlocked(BuildingKind.Bridge));
         Assert.Contains(posed.World.Moments, m => m.Title.Contains("bridge", StringComparison.Ordinal));
     }
@@ -373,9 +383,7 @@ public sealed class NomadTests
     {
         (SimLoop loop, _) = Knocked(Village);
         SimWorld world = loop.World;
-        int householdsBefore = world.Households.Count;
-        world.LetTheBandSettle();
-        Household home = world.Households[householdsBefore];
+        Household home = ArrivedHouseholds(world)[0];
 
         // The roofless are answered daily (D72): within a season a house is marked for them, or they have one.
         loop.Step(Village.TicksPerSeason);
@@ -388,9 +396,7 @@ public sealed class NomadTests
     {
         (SimLoop loop, _) = Knocked(Village);
         SimWorld world = loop.World;
-        int householdsBefore = world.Households.Count;
-        world.LetTheBandSettle();
-        Household home = world.Households[householdsBefore];
+        Household home = ArrivedHouseholds(world)[0];
         int members = world.LivingMembersOf(home);
 
         // Hold their house off and run a year: no roof, no child (D71).
@@ -415,11 +421,8 @@ public sealed class NomadTests
         // leave it — sleeps in the open at the camp, and the winter kills them where they lie (Joe's rule, §4.4).
         (SimLoop loop, _) = Knocked(Village);
         SimWorld world = loop.World;
-        int before = world.Villagers.Count;
-        int families = world.Band!.Families.Count;
-        world.LetTheBandSettle();
-        var settled = world.Villagers.Skip(before).ToList();
-        Household home = world.Households[^1];
+        List<Villager> settled = Arrived(world);
+        List<Household> families = ArrivedHouseholds(world);
         Assert.All(settled, v => Assert.Equal(Shelter.Outdoors, world.ShelterAt(v.Position.ToTile())));
 
         // Held roofless for a year, the winter chills them in the open; whether it kills them is the exposure
@@ -428,13 +431,13 @@ public sealed class NomadTests
         int coldest = 0;
         for (int day = 0; day < Village.DaysPerSeason * 4; day++)
         {
-            if (world.HomeSiteFor(home.Id) is Workplace site)
+            foreach (Household household in families)
             {
-                world.CancelConstruction(site);
-            }
+                if (world.HomeSiteFor(household.Id) is Workplace site)
+                {
+                    world.CancelConstruction(site);
+                }
 
-            foreach (Household household in world.Households.Skip(world.Households.Count - families))
-            {
                 household.HomePosition = null;
             }
 
@@ -446,7 +449,7 @@ public sealed class NomadTests
         }
 
         Assert.True(coldest > 0, "a family with no roof went a whole winter without feeling the cold");
-        Assert.All(world.Households.Skip(world.Households.Count - families), h => Assert.False(h.HasHome));
+        Assert.All(families, h => Assert.False(h.HasHome));
     }
 
     /// <summary>
@@ -463,10 +466,12 @@ public sealed class NomadTests
     {
         SimConfig config = Village with { Seed = seed, HouseholdNames = new[] { "Ash", "Birch", "Cedar" } };
         (SimLoop loop, _) = Knocked(config);
-        var living = new HashSet<string>(loop.World.Households.Where(h => loop.World.LivingMembersOf(h) > 0).Select(h => h.Surname));
+        SimWorld world = loop.World;
+        Household family = Assert.Single(ArrivedHouseholds(world));
+        var living = new HashSet<string>(world.Households.Where(h => h.Id != family.Id && world.LivingMembersOf(h) > 0).Select(h => h.Surname));
         Assert.Equal(2, living.Count);
         string free = new[] { "Ash", "Birch", "Cedar" }.Single(n => !living.Contains(n));
-        Assert.Equal(free, loop.World.Band!.Families[0].Surname);
+        Assert.Equal(free, family.Surname);
     }
 
     /// <summary>
@@ -496,9 +501,9 @@ public sealed class NomadTests
 
         Assert.Equal(3, killed);
         loop.Step(11);
-        Assert.NotNull(world.Band);
-        Assert.True(world.Band!.People <= 2, "the pose needs a band smaller than the deaths");
-        world.LetTheBandSettle();
+        List<Villager> arrived = Arrived(world);
+        Assert.NotEmpty(arrived);
+        Assert.True(arrived.Count <= 2, "the pose needs a band smaller than the deaths");
         Assert.Equal(peak, world.MostEverAlive);
     }
 
@@ -511,13 +516,12 @@ public sealed class NomadTests
     public void ASettledFamilySurvivesASaveAndItsYearMatches()
     {
         (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
-        loop.World.LetTheBandSettle();
         loop.Step(3);
         JsonObject document = SaveGame.Capture(loop, "test", "2026-10-11 12:00", "test");
         var loadedLog = new InMemoryLogSink();
         SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), loop.World.Config, loadedLog);
         Assert.Equal(StateHash.Compute(loop.World), StateHash.Compute(loaded.World));
-        Assert.Contains(loaded.World.Villagers, v => v.ArrivedAtTick != 0UL);
+        Assert.Equal(Arrived(loop.World).Count, Arrived(loaded.World).Count);
 
         loadedLog.Clear();
         int said = log.Entries.Count;
@@ -531,7 +535,7 @@ public sealed class NomadTests
         Assert.Equal(log.Entries.Skip(said).Select(e => e.ToString()), loadedLog.Entries.Select(e => e.ToString()));
     }
 
-    // ---- The Nomads switch (D570; Joe, D568: "enable/disable the nomad feature altogether") ----
+    // ---- The Nomads switch (D570; Joe, D568 and D572: "if nomads are on, that is the permission") ----
 
     [Fact]
     public void SwitchedOffNobodyEverKnocks()
@@ -540,57 +544,27 @@ public sealed class NomadTests
         Assert.False(loop.World.NomadsEnabled);
         loop.Step((int)KnockTick(loop.World) + Village.TicksPerYear + 1);
         Assert.True(loop.World.Population > 0);
-        Assert.Null(loop.World.Band);
+        Assert.DoesNotContain(loop.World.Villagers, v => v.ArrivedAtTick != 0UL);
         Assert.Equal(0, loop.World.BandsEverKnocked);
     }
 
-    /// <summary>The switch shuts the door on the next band, never on the one already standing there.</summary>
-    [Fact]
-    public void SwitchedOffAWaitingBandStillWaitsAndCanBeAnswered()
-    {
-        (SimLoop loop, _) = Knocked(Village);
-        loop.World.NomadsEnabled = false;
-        ulong leaves = loop.World.BandLeavesAtTick;
-        loop.Step((int)(leaves - loop.World.Tick) - 1);
-        Assert.NotNull(loop.World.Band);
-
-        loop.World.LetTheBandSettle();
-        Assert.Null(loop.World.Band);
-        Assert.Equal(1, loop.World.BandsEverKnocked);
-
-        // And the band after it never comes while the switch is off, though its year is set.
-        Assert.True(loop.World.NextKnockYear > 0);
-        loop.Step(Village.TicksPerYear * 12);
-        Assert.Null(loop.World.Band);
-        Assert.Equal(1, loop.World.BandsEverKnocked);
-    }
-
-    [Fact]
-    public void SwitchedOffAnUnansweredBandStillMovesOnAtItsTurn()
-    {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
-        loop.World.NomadsEnabled = false;
-        loop.Step((int)(loop.World.BandLeavesAtTick - loop.World.Tick) + 1);
-        Assert.Null(loop.World.Band);
-        Assert.Contains("moved on", Said(log), StringComparison.Ordinal);
-    }
-
-    /// <summary>Back on with the knock's year already past: the band knocks on the next year's turn, not never.</summary>
+    /// <summary>Back on with the knock's year already past: the band comes on the next year's turn, not never.</summary>
     [Fact]
     public void SwitchedOnAgainTheOverdueBandKnocksAtTheNextYearTurn()
     {
         (SimLoop loop, _) = Founded(Off);
         loop.Step((int)KnockTick(loop.World) + (Village.TicksPerYear * 2) + 7);
-        Assert.Null(loop.World.Band);
+        Assert.DoesNotContain(loop.World.Villagers, v => v.ArrivedAtTick != 0UL);
 
         loop.World.NomadsEnabled = true;
         loop.Step(Village.TicksPerYear - (int)(loop.World.Tick % (ulong)Village.TicksPerYear));
-        Assert.Null(loop.World.Band);
+        ulong turn = loop.World.Tick;
+        Assert.Empty(ArrivedAt(loop.World, turn));
         loop.StepOnce();
-        NomadBand band = Assert.IsType<NomadBand>(loop.World.Band);
+        Assert.NotEmpty(ArrivedAt(loop.World, turn));
         Assert.Equal(1, loop.World.Clock.DayOfSeason);
         Assert.Equal(Season.Spring, loop.World.Clock.Season);
-        Assert.Equal(loop.World.Tick - 1, band.KnockedAtTick);
+        Assert.Equal(1, loop.World.BandsEverKnocked);
     }
 
     /// <summary>Hashed only when off (the share-out shape), so a village that never touched it hashes as it did.</summary>
@@ -622,13 +596,17 @@ public sealed class NomadTests
     /// <summary>
     /// ⛔ The longhouse is gone (D571; Joe, D568): a settled family builds in the paint like everybody, and when the
     /// paint is full the village says so and KEEPS saying so — `NeedsMoreResidentialLand` is the latch the villagers
-    /// bar's amber *unhoused* cell reads, set the day there is nowhere to build and cleared the day a site is marked.
+    /// bar's amber *unhoused* count reads, set the day there is nowhere to build and cleared the day a site is marked.
     /// </summary>
     [Fact]
     public void ASettledFamilyWithNoPaintIsUnhousedAndTheVillageSaysSo()
     {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
+        (SimLoop loop, InMemoryLogSink log) = Founded(Village);
         SimWorld world = loop.World;
+        ulong knock = KnockTick(world);
+        loop.Step((int)knock);
+
+        // The paint erased the tick before the band comes, everywhere a house does not already stand.
         var erased = new List<GridPos>();
         for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
         {
@@ -654,11 +632,11 @@ public sealed class NomadTests
 
         Assert.NotEmpty(erased);
         Assert.False(world.NeedsMoreResidentialLand);
-        int families = world.Band!.Families.Count;
-        world.LetTheBandSettle();
+        loop.StepOnce();
+        List<Household> settled = ArrivedHouseholds(world);
+        Assert.NotEmpty(settled);
         loop.Step(Village.TicksPerDay * 2);
 
-        var settled = world.Households.Skip(world.Households.Count - families).ToList();
         Assert.All(settled, h => Assert.False(h.HasHome));
         Assert.All(settled, h => Assert.Null(world.HomeSiteFor(h.Id)));
         Assert.All(settled, h => Assert.True(world.LivingMembersOf(h) > 0));
@@ -677,7 +655,7 @@ public sealed class NomadTests
     }
 
     /// <summary>
-    /// "The pile" said nothing to Joe (D568); the knock names the camp in the village's words (D569) — by the cart
+    /// "The pile" said nothing to Joe (D568); the arrival names the camp in the village's words (D569) — by the cart
     /// while it stands, at the founding site where there is none. The warm fixture has no cart; the cold village,
     /// its opening played, keeps the founders' wagon.
     /// </summary>
@@ -688,8 +666,8 @@ public sealed class NomadTests
         Assert.Null(warm.World.TheCart);
         Assert.Equal("at the founding site", warm.World.WhereTheBandCamps);
         Moment atTheSite = Assert.Single(warm.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
-        Assert.Equal("Nomads at the founding site", atTheSite.Title);
-        Assert.Contains("camp at the founding site", atTheSite.Body, StringComparison.Ordinal);
+        Assert.Equal("Nomads have settled at the founding site", atTheSite.Title);
+        Assert.Contains("in the open at the founding site", atTheSite.Body, StringComparison.Ordinal);
         Assert.DoesNotContain("pile", atTheSite.Body, StringComparison.Ordinal);
 
         var log = new InMemoryLogSink();
@@ -697,36 +675,14 @@ public sealed class NomadTests
         ColdStartTests.PlayTheOpening(cold.World);
         cold.Step((int)KnockTick(cold.World) + 1);
         Assert.NotNull(cold.World.TheCart);
-        NomadBand band = Assert.IsType<NomadBand>(cold.World.Band);
+        List<Villager> arrived = Arrived(cold.World);
+        Assert.NotEmpty(arrived);
         Assert.Equal(cold.World.TheCart!.Position, cold.World.BandCamp);
+        Assert.All(arrived, v => Assert.Equal(cold.World.BandCamp, v.Position));
         Assert.Equal("by the cart", cold.World.WhereTheBandCamps);
         Moment byTheCart = Assert.Single(cold.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
-        Assert.Equal("Nomads by the cart", byTheCart.Title);
-        Assert.Contains("camp by the cart", byTheCart.Body, StringComparison.Ordinal);
-        Assert.True(band.People >= Village.NomadsBandMin);
-    }
-
-    [Fact]
-    public void ABandSurvivesASaveAndItsYearMatches()
-    {
-        (SimLoop loop, InMemoryLogSink log) = Knocked(Village);
-        loop.Step(3);
-        JsonObject document = SaveGame.Capture(loop, "test", "2026-10-11 12:00", "test");
-        var loadedLog = new InMemoryLogSink();
-        SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), loop.World.Config, loadedLog);
-        Assert.NotNull(loaded.World.Band);
-        Assert.Equal(loop.World.Band!.FamilyNames, loaded.World.Band!.FamilyNames);
-        Assert.Equal(StateHash.Compute(loop.World), StateHash.Compute(loaded.World));
-
-        loadedLog.Clear();
-        int said = log.Entries.Count;
-        for (int t = 0; t < Village.TicksPerYear; t++)
-        {
-            loop.StepOnce();
-            loaded.StepOnce();
-            Assert.Equal(StateHash.Compute(loop.World), StateHash.Compute(loaded.World));
-        }
-
-        Assert.Equal(log.Entries.Skip(said).Select(e => e.ToString()), loadedLog.Entries.Select(e => e.ToString()));
+        Assert.Equal("Nomads have settled by the cart", byTheCart.Title);
+        Assert.Contains("in the open by the cart", byTheCart.Body, StringComparison.Ordinal);
+        Assert.True(arrived.Count >= Village.NomadsBandMin);
     }
 }

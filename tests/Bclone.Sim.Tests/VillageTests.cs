@@ -306,7 +306,8 @@ public sealed class VillageTests
 
         loop.Step(30_000);
 
-        Assert.Equal(founding, loop.World.Villagers.Count);
+        // The born, not the arrived: a band of nomads settles with children of its own (D572), born elsewhere.
+        Assert.Equal(founding, loop.World.Villagers.Count(v => v.ArrivedAtTick == 0UL));
 
         // Anti-vacuity: the same village with a reachable bar must actually breed, or this
         // passes on a settlement that was never going to have children anyway.
@@ -449,7 +450,11 @@ public sealed class VillageTests
     [Fact]
     public void TheVillageSustainsItselfAcrossGenerations()
     {
-        var (loop, _) = Build(GrowingVillage);
+        // ⚠️ Nomads off (D572): this is the derived economy's guard — it must feed the village IT grows. With bands
+        // settling unattended every few years into a village nobody paints or plants for, this valley peaked at 22
+        // and ended at 6 alive in 20 households with 44 starved — the harness's number to read (`nomads.md §8.6`),
+        // not this guard's claim (D447: a harness is not a player).
+        var (loop, _) = Build(GrowingVillage with { NomadsEnabled = false });
 
         int peak = 0;
         int peakYear = 0;
