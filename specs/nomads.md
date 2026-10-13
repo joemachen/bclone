@@ -29,8 +29,9 @@ arrival moment is held until the last is in and the village kept at 1× (Joe's t
 load never replays it; re-founders walk in too. Three probe lines (`walk-in:`, `arrival:`, `arrived:`); 12 mutants, 11 reds, one zero
 written down (§9). No sim change, no golden moved. ⛔ **D574: Joe played it and the nomads never walked in** — an
 off-by-one in `ArrivalsSince`'s window (`(since, now]` where the sim stamps `now − 1`; the probe's live door posed a stamp
-the sim never writes); the fix is three lines and is the next session's first item (`HANDOFF.md`'s banner, §4.3a).
-**Then note 1 — the paths' gridding, a spec with options for Joe.**
+the sim never writes). ✅ **Fixed in D575** (§4.3a): the window is `[since, now)`, `ArrivedAtTick` 0 refused by name (the
+turned window would have caught the founders on a new game's first step), the live door re-stamped as the sim stamps;
+4 mutants, 5 reds (§9). **Joe has still to see a walk-in — he plays it next. Then note 1 — the paths' gridding, a spec with options for Joe.**
 Bands knock and settle; a settled family builds in the paint like everybody, and when the paint is full
 the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (28) and
@@ -264,11 +265,12 @@ paths — the harness, the goldens, a headless run — now **settle every band**
 
 In the sim the band is villagers at the camp from the knock tick; **the view walks them in.** `VillageMap.WalkIn.cs`:
 each refresh the shell asks the map to `WatchForArrivals` **before** it shows any moment (the map's own draw runs
-after the panel would be up); the map looks, once a tick, for anybody alive whose `ArrivedAtTick` fell in
-`(last look, now]` — ⛔ **wrong as built (D574): the sim stamps a band with the tick it computes and the view first sees
-them one tick later (`SimLoop.StepOnce`: systems at `T`, then `Tick++`), so the window must be the ticks *computed*
-between two looks, `[last look, now)`; as shipped no real band ever matched and Joe saw the moment with nobody walking.
-The fix is the next session's first item** — so a skip that steps a year in one frame still catches the knock inside it — and, at the
+after the panel would be up); the map looks, once a tick, for anybody alive whose `ArrivedAtTick` is a tick
+*computed* between two looks, **`[last look, now)`** (D575) — the sim stamps a band with the tick its systems ran at and
+the view first sees them one tick later (`SimLoop.StepOnce`: systems at `T`, then `Tick++`); ⛔ D573 shipped
+`(last look, now]`, which no real band ever matched, and Joe saw the moment with nobody walking (D574). `ArrivedAtTick`
+0 — *nobody arrived*, founders and the born-here — is refused by name, because a new game is watched from tick 0 and
+`[0, 1)` would otherwise walk the founders in from the edge — so a skip that steps a year in one frame still catches the knock inside it — and, at the
 arrival, works out **once**: the edge tile the one cost field reaches most cheaply from the camp
 (`EdgeNearestTheCamp` — every passable perimeter tile asked `TravelCost.Cost(edge, camp)`, ties to the first in a
 fixed sweep; never a second travel system) and the sim's own route from it (`TravelCost.RouteFrom`), smoothed by a
@@ -634,7 +636,11 @@ the count; save → load mid-band~~ — gone with the waiting band (D572).
 > twelve-year run (*0 bands knocked*: the check that depended on the seed scored zero on its first run and was replaced
 > the same hour). ⛔ **D574: the pose stamped `ArrivedAtTick = world.Tick`, a stamp the sim never writes (it writes
 > `now − 1`), so the live door was green over a window no real band could pass — Joe's play found it.** The re-posed
-> door stamps `world.Tick − 1`, pose (d) reads the arrival stamped 99 for *since 99 by 100*, and the window is `[since, now)`. **Mutants and reds — 12 mutants, 11 reds, one zero:** the edge pick taking the dearest tile **1**
+> door stamps `world.Tick − 1`, pose (d) reads the arrival stamped 99 for *since 99 by 100* (and not the one stamped 100),
+> none for *since 100 by 100*, and none for *since 0 by 1* (the founders), and the window is `[since, now)` with 0 refused.
+> **D575's mutants — 4, 5 reds, no zeros:** `>= since` → `>` **2** (pose (d) and `arrived:`); `< now` → `<=` **1** (pose (d));
+> the `!= 0` dropped **1** (pose (d), the founders); the door re-stamped `world.Tick`, D573's own pose, **1** (`arrived:`).
+> **D573's mutants and reds — 12 mutants, 11 reds, one zero:** the edge pick taking the dearest tile **1**
 > (`walk-in:` — *(-60, 1) reaches the camp for 660 but (-60, 39) was picked at 960*); no smoothing **1**; the ends
 > nudged a tenth of a tile **1** (⚠️ its first form, `i == 0 && i == route.Count - 1`, indexed past the route and threw
 > inside the probe — **a hang, not a red**: the headless Godot never printed `done.` and sat twelve hours; re-posed, and

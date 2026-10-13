@@ -936,9 +936,10 @@ public partial class Main : Control
         _map.ClearWalkInsForTheProbe();
         Refresh();
 
-        // ⭐ THE DOOR ITSELF, POSED: one tick on, a villager who arrived this tick is put on the roster, and the next
-        // refresh — the game's own path — must set them walking and hold the village at 1×. Posed because the natural
-        // band may be dead or unborn by now, and a check that depends on the seed is a check that scores zero quietly.
+        // ⭐ THE DOOR ITSELF, POSED: one tick on, a villager stamped as the sim stamps an arrival in that step is put on
+        // the roster, and the next refresh — the game's own path — must set them walking and hold the village at 1×.
+        // Posed because the natural band may be dead or unborn by now, and a check that depends on the seed is a check
+        // that scores zero quietly.
         double speedWas = _driver.SpeedMultiplier;
         bool slowedWas = _slowedForAnAlert;
         double beforeWas = _speedBeforeTheAlert;
@@ -963,14 +964,17 @@ public partial class Main : Control
             HouseholdId = household,
             BirthTick = (long)world.Tick - (30L * world.Config.TicksPerYear),
             AgeYears = 30,
-            ArrivedAtTick = world.Tick,
+            // ⛔ The stamp the sim would have written in the step just taken — the tick its systems ran at, one
+            // before the clock now (D575). D573 posed `world.Tick`, a stamp the sim never writes, and this line was
+            // green over a window no real band could pass.
+            ArrivedAtTick = world.Tick - 1,
         };
         world.Villagers.Add(posed);
 
         Refresh();
         if (!_map.WalkInUnderway)
         {
-            faults.Add("a villager who arrived this tick is not walking in after the refresh — Refresh is not watching for arrivals");
+            faults.Add("a villager who arrived in the step just taken is not walking in after the refresh — Refresh is not watching for arrivals");
         }
 
         if (_driver.SpeedMultiplier != 1.0)
@@ -988,7 +992,7 @@ public partial class Main : Control
         string natural = $"{world.BandsEverKnocked} band(s) knocked in the run, {arrivedAlive} of theirs alive"
             + (naturalWalk ? ", walking in" : string.Empty);
         return faults.Count == 0
-            ? $"[widths] arrived: ✅ a villager who arrived this tick is walking in from the edge after the next refresh, at 1× — {natural}"
+            ? $"[widths] arrived: ✅ a villager stamped as arrived in the step just taken (the tick before the clock, as the sim stamps it) is walking in from the edge after the next refresh, at 1× — {natural}"
             : $"[widths] arrived: ⛔ {string.Join("; ", faults)} — {natural}";
     }
 

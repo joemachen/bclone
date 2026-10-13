@@ -13,7 +13,7 @@ namespace Bclone.Game;
 /// <para>
 /// <b>View only.</b> In the sim a band is villagers standing at <see cref="SimWorld.BandCamp"/> from the tick they
 /// settle (`SimWorld.Nomads.cs`); nothing here changes that, hashes anything or is saved. The map notices the
-/// arrivals — anybody alive whose <see cref="Villager.ArrivedAtTick"/> fell since it last looked — works out
+/// arrivals — anybody alive whose <see cref="Villager.ArrivedAtTick"/> is a tick computed since it last looked — works out
 /// <b>once, at the arrival</b> (CLAUDE.md: kept where the state changes) the edge tile the one cost field reaches
 /// most cheaply from the camp and the route from it, and for <see cref="WalkInSeconds"/> of real time draws each
 /// of them along that route with a chevron bobbing overhead, filing in one behind the other. The route is the sim's
@@ -103,20 +103,32 @@ public partial class VillageMap
             return false;
         }
 
-        // (since, now], so a skip that steps a year in one frame still catches the knock inside it.
+        // [since, now) — every tick computed since the last look — so a skip that steps a year in one frame still
+        // catches the knock inside it.
         List<int> ids = ArrivalsSince(world.Villagers, _arrivalsSeenThroughTick, world.Tick);
         _arrivalsSeenThroughTick = world.Tick;
         return ids.Count > 0 && BeginWalkIn(world, ids);
     }
 
-    /// <summary>Everybody alive who arrived after <paramref name="since"/> and by <paramref name="now"/>, by id. Pure, so the probe can pose it.</summary>
+    /// <summary>
+    /// Everybody alive who arrived in a tick computed between two looks — <c>[since, now)</c> — by id. Pure, so the
+    /// probe can pose it.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Not <c>(since, now]</c> (D574/D575).</b> <c>SimLoop.StepOnce</c> runs the systems at tick <c>T</c> and then
+    /// moves the clock to <c>T + 1</c>, so a band is stamped <c>T</c> and first seen by a look at <c>T + 1</c>; the
+    /// look before was at <c>T</c>. A load watched from <c>T + 1</c> starts its window there and never replays
+    /// <c>T</c>. <c>ArrivedAtTick</c> 0 means nobody arrived — founders and the born-here — and a new game is
+    /// watched from tick 0, so it is refused by name: without it the founders would walk in from the edge.
+    /// </remarks>
     internal static List<int> ArrivalsSince(IReadOnlyList<Villager> villagers, ulong since, ulong now)
     {
         var ids = new List<int>();
         for (int i = 0; i < villagers.Count; i++)
         {
             Villager villager = villagers[i];
-            if (villager.Alive && villager.ArrivedAtTick > since && villager.ArrivedAtTick <= now)
+            if (villager.Alive && villager.ArrivedAtTick != 0UL
+                && villager.ArrivedAtTick >= since && villager.ArrivedAtTick < now)
             {
                 ids.Add(villager.Id);
             }
@@ -544,24 +556,30 @@ public partial class VillageMap
             faults.Add("the mark does not hold on the road and fade over the last half second");
         }
 
-        // (d) Arrivals, told from founders, natives and the dead.
+        // (d) Arrivals, told from founders, natives and the dead — stamped as the sim stamps them: the tick the
+        // systems ran at, one before the tick the view first sees (D575).
         var roster = new List<Villager>
         {
             Posed(1, arrived: 0UL, alive: true),
             Posed(2, arrived: 0UL, alive: true),
-            Posed(3, arrived: 100UL, alive: true),
-            Posed(4, arrived: 100UL, alive: false),
-            Posed(5, arrived: 101UL, alive: true),
+            Posed(3, arrived: 99UL, alive: true),
+            Posed(4, arrived: 99UL, alive: false),
+            Posed(5, arrived: 100UL, alive: true),
         };
         List<int> arrived = ArrivalsSince(roster, 99UL, 100UL);
         if (arrived.Count != 1 || arrived[0] != 3)
         {
-            faults.Add($"arrivals since 99 by 100 read [{string.Join(", ", arrived)}], want [3]");
+            faults.Add($"arrivals since 99 by 100 read [{string.Join(", ", arrived)}], want [3] — the band stamped 99, not the one stamped 100");
         }
 
         if (ArrivalsSince(roster, 100UL, 100UL).Count != 0)
         {
-            faults.Add("a villager who arrived on the tick already seen counts again");
+            faults.Add("a look at the tick already looked at finds arrivals");
+        }
+
+        if (ArrivalsSince(roster, 0UL, 1UL).Count != 0)
+        {
+            faults.Add("a new game's first look counts the founders (arrived 0) as arrivals");
         }
 
         // (e) Paused, the clock stands still — the frame step run by hand.

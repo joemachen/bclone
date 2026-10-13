@@ -1,4 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D573: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 — THE WALK-IN, VIEW ONLY), ⛔ AND JOE NEVER SAW IT WALK (D574: AN OFF-BY-ONE, DIAGNOSED, NOT FIXED — FIX IT FIRST). THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D575: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 THE WALK-IN; D575 ITS WINDOW FIXED AFTER JOE SAW NOBODY WALK, D574) — ⏸️ JOE TO PLAY THE WALK-IN. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D575: THE WALK-IN FIXED — THE WINDOW IS `[since, now)` AND THE FOUNDERS' 0 IS REFUSED; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D574 as below, plus **D575: D574's
+> fix, built.** `VillageMap.ArrivalsSince` now reads `ArrivedAtTick != 0 && since <= ArrivedAtTick < now` — the ticks the
+> sim *computed* between two looks. ⭐ **The handoff's three-line fix was one line short:** a new game is watched from
+> tick 0, and `[0, 1)` holds every founder (`ArrivedAtTick` 0 = *nobody arrived*), so the turned window alone would have
+> walked the founders in from the edge on the first step. The `!= 0` is in the rule by name and pose (d) reads none for
+> *since 0 by 1*. Pose (d) re-stamped (99 read for *since 99 by 100*, 100 not yet); `Main.TheArrivalsWalkedIn` stamps
+> `world.Tick - 1`, as the sim does. **4 mutants, 5 reds, no zeros** (`nomads.md §9`). **View only: no sim change, no
+> golden moved, no test touched.**
+>
+> **Verified:** suite 1686 / 0 / 5 of 1691 (7m59, against D573's 8m37); view 0 warnings; probe 86 lines, `walk-in:` ✅, `arrival:` ✅, `arrived:` ✅,
+> `nomads:` ✅, `new game:` ✅, `tile centres` ✅, bar height 151, `done.` (`pause:` ❌ is D568's, unchanged); goldens
+> 362 → 362, nothing under `tests/` or `data/` moved.
+>
+> ⚠️ **Not done, said so:** the D574 trap's *natural* door (step the probe's valley to its first knock turn and watch a
+> real band) — the probe's unattended valley met no band in twelve years, so it stays information (`0 band(s) knocked
+> in the run`); the pose now copies the sim's stamp from `SimWorld.Nomads.cs:150`, which is what the trap asked a pose to do.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** — a new village with nomads on, to the first knock (Year 8–12): the band should appear at
+> the valley's edge with a chevron over each head, file in over ~8 s at 1×, and *then* the moment shows. **The walk-in has
+> still never been seen by a person.** Then note 1 — the paths' gridding, a design spec with options for Joe (D568
+> banner below), then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D574, before the fix)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D574: JOE PLAYED D573 — THE NOMADS NEVER WALKED IN; THE CAUSE IS FOUND, THE FIX IS THREE LINES, NOT BUILT) — ON WINDOWS.**
 >
@@ -6796,6 +6822,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAP D575 NEARLY PAID FOR — A WINDOW TURNED TO CLOSE ONE EDGE OPENS THE OTHER
+
+- **D574's diagnosis was right and its fix was one clause short.** Turning `(since, now]` into `[since, now)` lets a
+  stamp equal to the last look in — and the very first look of a new game is tick 0, which is also the value every
+  founder and every born-here villager carries in `ArrivedAtTick` (*nobody arrived*). The written fix would have walked
+  the founders in from the valley's edge on the first step of every new game — the next thing Joe saw. **When a range
+  changes which end it includes, ask what value sits on that end before anything happens — a field's default is a
+  sentinel more often than not** (`CivicSystem.cs:207` already read 0 that way). The rule refuses 0 by name now and a
+  pose (*since 0 by 1*) holds it, red-checked.
+- **A handoff's fix is a hypothesis like a filed finding** (D452): read it against the code before typing it, even when
+  the diagnosis is confirmed.
 
 ## ⛔ THE TRAPS THE WALK-IN (D573) PAID FOR — A MODAL BEFORE THE DRAW, A CHECK THAT DEPENDED ON THE SEED, AND A HEREDOC TOO LONG TO PARSE
 
