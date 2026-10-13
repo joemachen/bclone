@@ -1,4 +1,47 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D573: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 — THE WALK-IN, VIEW ONLY); HIS PLAY OF D572 APPROVED. NOTE 1 (THE PATHS, A SPEC) NEXT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D573: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 — THE WALK-IN, VIEW ONLY), ⛔ AND JOE NEVER SAW IT WALK (D574: AN OFF-BY-ONE, DIAGNOSED, NOT FIXED — FIX IT FIRST). THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D574: JOE PLAYED D573 — THE NOMADS NEVER WALKED IN; THE CAUSE IS FOUND, THE FIX IS THREE LINES, NOT BUILT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D573 as the banner below says.
+> **Joe played D573** (a new village to the knock): *"i never ever see them walk onto the map from offscreen. the alert
+> pops up telling me there are nomads and then they are just in the village."* He asked for a fresh session; this
+> banner is the handoff. **Nothing is built for it; the diagnosis is confirmed by reading, not by a run.**
+>
+> **⛔ THE CAUSE — AN OFF-BY-ONE IN THE WINDOW `VillageMap.ArrivalsSince` LOOKS THROUGH.** `SimLoop.StepOnce` runs the
+> systems with `World.Tick == T` and *then* `World.Tick++` (`SimLoop.cs:98`; `nomads.md §9` already said it in D565's
+> words: *"a band raised on the knock tick is there one step past it"*). So a band's people carry `ArrivedAtTick == T`
+> and the view first sees them when `world.Tick == T + 1`. `WatchForArrivals` remembers the tick it last looked at
+> (`T`, the frame before the step) and asks for arrivals in **`(since, now]` = `(T, T+1]`** — which excludes `T`. No
+> real band ever matches; `BeginWalkIn` is never called; `WalkInUnderway` stays false; `ShowAnyMoment` shows the moment
+> at once. Exactly what Joe saw. **The probe's `arrived:` line passed because its pose stamped the arrival with the
+> *current* tick (`ArrivedAtTick = world.Tick` after `_loop.Step(1)`) — a stamp the sim never writes.** A pose that
+> does not copy the sim's own timing proves the pure rule against itself (trap, below).
+>
+> **▶️ THE FIX, FIRST THING (D575):** *(1)* `VillageMap.WalkIn.cs`, `ArrivalsSince`: the window is the ticks **computed**
+> between two looks, `since <= ArrivedAtTick < now` — a look at `T` then a look at `T+1` sees the band stamped `T`; a
+> save made at `T+1` loaded fresh starts its window at `T+1` and never replays `T` (unchanged). *(2)* The same file's
+> pose (d) in `TheNomadsWalkInFromTheEdge`: since 99 by 100 must read the arrival stamped **99**, and one stamped 100
+> must not count yet; since 100 by 100 reads none. *(3)* `Main.TheArrivalsWalkedIn`: after `_loop.Step(1)` the posed
+> villager is stamped **`world.Tick - 1`** — the stamp the sim would have written in that step — not `world.Tick`.
+> ⭐ *Better still, make the live door honest without a pose:* step the probe's valley to its first knock turn
+> (`FirstKnockYear()`, `Config.TicksPerYear`) with the switch on and ask after one `Refresh` — but the probe's
+> unattended valley may be dead by Year 8 (*0 bands knocked in twelve years* on this seed, D573), so keep the pose
+> and add the natural check as information. Then the four checks (no sim change: the suite is for the verdict, the
+> probe is the instrument), red-check the window both ways (`>=` → `>` must redden `arrived:` *and* pose (d);
+> `< now` → `<= now` must redden pose (d)), and **Joe plays it again** — the walk-in has still never been seen by a
+> person. Then note 1.
+>
+> **Joe's other question (2026-10-13, from his screenshot): *"should the home and the cart be this close?"*** — a house
+> about three tiles from the cart, both in the open. The sim put it there on purpose: `ChooseSite` scores a home's
+> site by travel cost to the stores (D120 — *"a home beyond it is a family the village feeds less well, not one it
+> refuses to house"*), so nearer the cart is the sim's own preference, and the only rules between buildings are that
+> footprints do not overlap (SAT, D331), a house never sits on a seam (D497), and every building keeps a route out
+> (`TravelCostField.CostLeaving` — a building walled in on every side reads *Unreachable*, which is the one failure
+> the gap could cause and which placement already refuses). Nothing known breaks at three tiles; nothing reads the
+> gap. **If something ever does, it is the heap at a store's door (D370), which wants a free tile beside the store.**
+> Told to him in chat; not a task.
+>
+> **(the banner below is the state at D573, before Joe played it)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D573: NOTE 4 — THE NOMADS WALK IN FROM THE EDGE, VIEW ONLY) — ON WINDOWS.**
 >
@@ -6739,6 +6782,20 @@ Read `git status` after staging, every time.
   27 saves are the number for anything that scales with a played village (8–10 at Year 10, 17 at 50, 38–49 at 85–92).
 - **The empty valley keeps wearing but never closes.** `ClockSystem` returns before `TendWhatStands` when nobody is alive,
   so a ruin in a dead valley is derived *Ruin* and never `Closed` — read `ConditionOf`, not the flag, when measuring one.
+
+## ⛔⛔ THE TRAP JOE'S PLAY OF D573 PAID FOR (D574) — A POSE THAT STAMPS ITS OWN TICK PROVES THE RULE AGAINST ITSELF
+
+- **The view asked for arrivals in `(last look, now]`; the sim stamps them with the tick it computed, which is `now − 1`
+  by the time the view looks** (`SimLoop.StepOnce`: systems at `T`, then `Tick++`). No real band ever matched, and Joe
+  saw the moment with nobody walking. **The probe's live door was green the whole time**, because its pose wrote
+  `ArrivedAtTick = world.Tick` — a stamp the sim never writes — so it checked the window against an arrival shaped to
+  fit it. **A pose must copy the sim's own stamp, from the sim's own code, not from the rule being tested.** The spec
+  had the sentence already (*"a band raised on the knock tick is there one step past it"*, D565) and nobody read it
+  against the new window.
+- **And the natural check that would have caught it printed `0 bands knocked` and was downgraded to information.**
+  When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
+  the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
+  closes the mutant; the natural path closes the premise.
 
 ## ⛔ THE TRAPS THE WALK-IN (D573) PAID FOR — A MODAL BEFORE THE DRAW, A CHECK THAT DEPENDED ON THE SEED, AND A HEREDOC TOO LONG TO PARSE
 
