@@ -82,6 +82,9 @@ against a number from an older commit.
   year a village holds 10 / 12 / 15 / 20 / 25 people. `Crossings` (`ZZX`): a played opening, a wooden bridge raised free at
   Year 5 at the crossing nearest the founding, a forager's hut marked on the far bank and an 8×8 patch painted for homes
   beyond it; crossings per year, Years 5–35. Copy in, `-c Release --filter ZzBridges.<method>`, delete.
+- `ZzBridgeKnock.cs` — D576's measurement: the first year each village held 10 / 12 / 15 / 20 people with nomads on, and
+  whether that tick was a knock (`K`). Needs `ZzBridges.cs` copied in beside it for the seed list. Copy both in,
+  `-c Release --filter ZzBridgeKnock`, delete both.
   ⚠️ Without the hut across, every village crossed **zero** times in thirty years: the unattended chooser never sites a
   home on the far bank while near-side paint is left, so a bridge nothing needs is an idle bridge, not a measurement.
   ⚠️ Joe's own saves are the better number for growth (three played villages first held 10 at Years 11, 12, 11) — they

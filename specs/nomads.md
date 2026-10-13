@@ -31,7 +31,8 @@ written down (§9). No sim change, no golden moved. ⛔ **D574: Joe played it an
 off-by-one in `ArrivalsSince`'s window (`(since, now]` where the sim stamps `now − 1`; the probe's live door posed a stamp
 the sim never writes). ✅ **Fixed in D575** (§4.3a): the window is `[since, now)`, `ArrivedAtTick` 0 refused by name (the
 turned window would have caught the founders on a new game's first step), the live door re-stamped as the sim stamps;
-4 mutants, 5 reds (§9). **Joe has still to see a walk-in — he plays it next. Then note 1 — the paths' gridding, a spec with options for Joe.**
+4 mutants, 5 reds (§9). ✅ **Joe saw them walk in (2026-10-13).** His one note — the bridge's stop and the nomads' popped
+up together — is D576: when a band teaches the bridge, the nomads' moment says it and the bridge raises none (§4.4). **Then note 1 — the paths' gridding, a spec with options for Joe.**
 Bands knock and settle; a settled family builds in the paint like everybody, and when the paint is full
 the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (28) and
@@ -297,8 +298,11 @@ does not move to show the edge (Joe did not ask; the moment is held so there is 
 
 `Settle(band)` — called from `Knock()` the same tick (D572; `LetTheBandSettle()` until then) — makes each family a
 `Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
-holding the carried food, `HomePosition = null`) and adds its villagers at the camp, then calls `NoticeTheVillageSize`
-(the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads `ArrivedAtTick`, §5).
+holding the carried food, `HomePosition = null`) and adds its villagers at the camp, then returns
+`LearnedToBridgeJustNow` (the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads
+`ArrivedAtTick`, §5). ⭐ **D576: when the band taught it, the knock's moment says so** (*"With them the village has grown
+to N people, and somebody has worked out how to put a span of timber across the water…"*) and the bridge raises no
+moment of its own — Joe got both at once; a band crosses the number in nearly every village (`bridges.md §8.2a`).
 ⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would
 pair across the band on the very tick they arrived and take over a dead household whole (§8's trap).
 Log, `Life`: *"The Hales and the Dunns have settled — 7 more souls, and no roof yet. Spring, Year 11."*
@@ -621,6 +625,8 @@ the count; save → load mid-band~~ — gone with the waiting band (D572).
 > tick's guard (reads the world, drives it, both ways) — no mutant in the suite can see it. **Goldens:** the six moved
 > (§5), proven with the floor at 0.
 
+> ⭐ **D576 — one stop when a band teaches the bridge (`NomadTests`, one re-posed and one new).** `TheWoodenBridgeIsLearnedByArrivals` (the bridge posed at one more than the village held the tick before the knock): learned, no *"The village learned to bridge water"* moment, exactly one nomads' moment and its body says *build a wooden bridge at the narrows* and the number held. `TheNomadsMomentSaysNothingOfABridgeAlreadyKnown` (the number 0): the body never says *bridge*. **4 mutants, 4 reds, no zeros:** the sentence never appended **1**; always appended **1**; `Settle` still calling `NoticeTheVillageSize` as well (two stops) **1**; `LearnedToBridgeJustNow` ignoring what was known **1** (⚠️ its first form dropped the parameter's only use and did not build — `IDE0060` is an error here; re-posed, not counted).
+>
 > ⭐ **Note 4 (D573) — the walk-in, three probe lines; no test, since the sim did not move.** `walk-in:` (the map, on
 > the real valley and pure poses): the edge picked is on the perimeter, passable, and no other passable perimeter tile
 > reaches the camp cheaper (brute-forced in the probe); the route starts there, ends on the camp tile, stays on the

@@ -1,4 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D575: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (D573 THE WALK-IN; D575 ITS WINDOW FIXED AFTER JOE SAW NOBODY WALK, D574) — ⏸️ JOE TO PLAY THE WALK-IN. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D576: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN — D573, FIXED D575, SEEN BY JOE); D576 FOLDS THE BRIDGE'S NEWS INTO THE NOMADS' STOP — ⏸️ JOE TO PLAY IT. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D576: JOE SAW THE WALK-IN; THE BRIDGE'S NEWS FOLDED INTO THE NOMADS' STOP; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D575 as below, plus **D576.**
+> Joe played D575: *"i saw them walk in."* — **the walk-in is seen by a person; note 4 is done.** His one note: the
+> bridge's stop (learned at 10 people) and the nomads' popped up together, because the band took the village to 10; he
+> asked for `bridge_unlock_population` 15. **Measured before typing** (`tools/harness/ZzBridgeKnock.cs`, new;
+> `bridges.md §8.2a`): a band is what crosses the number in 24 of 25 shipped villages at 10 and **27 of 27 at 15** —
+> 15 would only have moved the double stop to ~Year 25. **His call: one stop, the number stays 10.** When a band
+> teaches the bridge, the nomads' moment carries the sentence and the bridge raises none (`Settle` returns
+> `LearnedToBridgeJustNow`; `Knock` appends `TheVillageLearnedToBridge(…)`); a birth that teaches it still stops on its
+> own. `NomadTests` one re-posed, one new; 4 mutants, 4 reds. Moments are not hashed — **no golden moved.**
+>
+> **Verified:** suite 1687 / 0 / 5 of 1692 (7m58; D575 + the one new guard); view 0 warnings; probe 86 lines, no ⛔,
+> `walk-in:` / `arrival:` / `arrived:` / `nomads:` / `bridge:` / `new game:` / `tile centres` ✅, bar height 151, `done.`
+> (`pause:` ❌ is D568's); goldens 362 → 362, none in the diff.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** (a village to the first knock: one pop-up, its text ending in the bridge sentence when the
+> band takes the village to 10). **Then note 1 — the paths' gridding**: a design spec with options for Joe (octile
+> field with diagonal lanes; a bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s
+> numbers, before the field is touched (D122). Then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D575)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D575: THE WALK-IN FIXED — THE WINDOW IS `[since, now)` AND THE FOUNDERS' 0 IS REFUSED; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
 >
@@ -6822,6 +6845,16 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D576 NEARLY PAID FOR — A NUMBER A PLAYER NAMES MAY NOT BE THE CAUSE, AND `IDE0060` IS A BUILD ERROR
+
+- **Joe asked for the bridge at 15 to part two pop-ups. Measured, a band crosses *any* number on its knock tick** (27 of
+  27 at 15) — the coincidence was structural, and 15 would have moved it a decade later and put the bridge off with it.
+  Fifty seconds of harness turned a config change that would not have worked into a call he could make with numbers.
+  **When a player's fix is a number, measure whether the number is the cause before typing it.**
+- **A red-check mutant that leaves a parameter unused does not build** — `.editorconfig` promotes `IDE0060` to an error,
+  and a script grepping for `error CS` prints nothing at all. The red-check script greps `error (CS|IDE)` now; a
+  mutant that cannot build is re-posed (`(knew || !knew) &&`) and never counted.
 
 ## ⛔ THE TRAP D575 NEARLY PAID FOR — A WINDOW TURNED TO CLOSE ONE EDGE OPENS THE OTHER
 

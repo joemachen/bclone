@@ -96,9 +96,10 @@ public sealed partial class SimWorld
     /// <summary>
     /// The band settles: each family becomes a roofless household holding what it carried, and its people are
     /// villagers at the camp from this tick (`nomads.md §4.4`). From here the village does what it already does —
-    /// the roofless queue sites their houses, or they sleep in the open.
+    /// the roofless queue sites their houses, or they sleep in the open. Returns whether their coming taught the
+    /// village to bridge water — said in the nomads' moment, not a second one (D576).
     /// </summary>
-    private void Settle(NomadBand band)
+    private bool Settle(NomadBand band)
     {
         bool knewHowToBridge = IsUnlocked(BuildingKind.Bridge);
         int nextVillager = NextVillagerId();
@@ -195,7 +196,9 @@ public sealed partial class SimWorld
             LogCategory.Life);
 
         // Arrivals count toward the most the village has ever held, which the wooden bridge is learned by (D546).
-        NoticeTheVillageSize(knewHowToBridge);
+        // ⭐ Not `NoticeTheVillageSize`: its stop and the nomads' popped up together (Joe, D576) — and a band is what
+        // carries the village past the number in nearly every village that reaches it — so the knock says it.
+        return LearnedToBridgeJustNow(knewHowToBridge);
     }
 
     private void Knock()
@@ -249,7 +252,7 @@ public sealed partial class SimWorld
         // from this one. The moment stops (D232: at 4× an arrival that adds people must not slide past unread) and
         // carries no verbs (Moment.cs) — there is nothing to decide, only something to know.
         string where = WhereTheBandCamps;
-        Settle(band);
+        bool learnedToBridge = Settle(band);
         NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
 
         int food = FoodTheVillageHolds();
@@ -259,7 +262,9 @@ public sealed partial class SimWorld
             $"{Titled(band.FamilyNames)} — {band.People} souls, {band.Adults} grown and {band.Children} "
             + $"{(band.Children == 1 ? "child" : "children")}, carrying a few days' food — have come up the valley and "
             + $"settled. They have no roof yet: a house is marked in the painted land where there is room, or they sleep "
-            + $"in the open {where} until there is. The village holds {food:N0} food, {perHead} a head. {Clock.SeasonAndYear()}.",
+            + $"in the open {where} until there is. The village holds {food:N0} food, {perHead} a head. "
+            + (learnedToBridge ? $"{TheVillageLearnedToBridge("With them the village has grown to")} " : string.Empty)
+            + $"{Clock.SeasonAndYear()}.",
             stops: true,
             LogCategory.Discovery);
     }

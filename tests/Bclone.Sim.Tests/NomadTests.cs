@@ -375,7 +375,23 @@ public sealed class NomadTests
         posed.StepOnce();
         Assert.NotEmpty(Arrived(posed.World));
         Assert.True(posed.World.IsUnlocked(BuildingKind.Bridge));
-        Assert.Contains(posed.World.Moments, m => m.Title.Contains("bridge", StringComparison.Ordinal));
+
+        // ⭐ ONE STOP, NOT TWO (Joe, D576): the bridge and the nomads popped up together. A band carries the village
+        // past the bridge's number on its knock tick in every measured village that got there, so the news goes in
+        // the nomads' moment and the bridge raises none of its own.
+        Assert.DoesNotContain(posed.World.Moments, m => m.Title == "The village learned to bridge water");
+        Moment settled = Assert.Single(posed.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
+        Assert.Contains("build a wooden bridge at the narrows", settled.Body, StringComparison.Ordinal);
+        Assert.Contains($"{posed.World.MostEverAlive} people", settled.Body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheNomadsMomentSaysNothingOfABridgeAlreadyKnown()
+    {
+        // Known from the founding (the number 0), so the band teaches nothing and the moment says nothing of it.
+        (SimLoop loop, _) = Knocked(Village with { BridgeUnlockPopulation = 0 });
+        Moment settled = Assert.Single(loop.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
+        Assert.DoesNotContain("bridge", settled.Body, StringComparison.Ordinal);
     }
 
     [Fact]
