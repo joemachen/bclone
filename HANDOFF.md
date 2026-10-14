@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D576: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN — D573, FIXED D575, SEEN BY JOE); D576 FOLDS THE BRIDGE'S NEWS INTO THE NOMADS' STOP — ⏸️ JOE TO PLAY IT. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D577: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN, SEEN BY JOE); THE BRIDGE'S NEWS IN THE NOMADS' STOP (D576), THAT STOP IN TWO SHORT MARKED PARAGRAPHS (D577) — ⏸️ JOE TO PLAY IT. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D576: JOE SAW THE WALK-IN; THE BRIDGE'S NEWS FOLDED INTO THE NOMADS' STOP; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D577: THE NOMADS' MOMENT IN TWO SHORT PARAGRAPHS, EACH WITH ITS MARK; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D576 as below, plus **D577.** Joe
+> played D576 (one pop-up, as asked) and sent the panel: *"too verbose … 1 word wall. break it into 2 paragraphs. maybe
+> even a bridge icon and a nomad icon."* Now two paragraphs, 1–2 sentences each — *"The Brooks, 2 souls, have come up
+> the valley to make a home here. Until a house is raised for them in the painted land, they sleep in the open at the
+> founding site. Spring, Year 11."* beside the walk-in's chevron over a villager's dot, and (only when their coming
+> taught it) *"On the long road here they learned to lay timber across running water. The village can build wooden
+> bridges now, and the far bank is within reach."* beside a timber deck over water. **A moment has paragraphs and
+> marks now**: `Moment.Marks` (`MomentMark`: `None`, `Nomads`, `Bridge` — append only, saved by number, optional on
+> read), `Moment.ParagraphBreak`, `Moment.LogLine` (what the log gets — one line); the view's `MomentGlyph` draws the
+> marks, the panel one block a paragraph, the text column 420px as before. 7 mutants, 7 reds. **No golden moved.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (9m04 — ⚠️ against D576's 7m58 for one more fast guard; the sim adds a split and join per moment, which are rare, so read as the machine until a back-to-back run says otherwise); view 0 warnings; probe 87 lines (the new `moment:`), no ⛔, `moment:` / `walk-in:` / `arrival:` / `arrived:` / `nomads:` / `bridge:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362, none in the diff.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** (a village to its first knock; the words are his to change — they live in
+> `SimWorld.Nomads.cs`, `Knock` and `TheyBroughtTheBridge`). **Then note 1 — the paths' gridding**, a design spec with
+> options for Joe (D568 banner, far below). Then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D576)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D576: JOE SAW THE WALK-IN; THE BRIDGE'S NEWS FOLDED INTO THE NOMADS' STOP — PLAYED, ITS WORDS ARE D577) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D575 as below, plus **D576.**
 > Joe played D575: *"i saw them walk in."* — **the walk-in is seen by a person; note 4 is done.** His one note: the
@@ -6845,6 +6866,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D577 PAID FOR — A FLOOR HIDES A WIDENING, AND THE HEREDOC ATE `\n` THREE TIMES
+
+- **A width check on a panel with a minimum size is as strong as the minimum.** The probe's first `moment:` compared the
+  moment panel's width with and without marks; the panel's own 460px floor swallowed a text column 38px too wide, and
+  the mutant scored **zero**. Measure the thing that would widen — the text column — not the container with a floor.
+- **A Python edit script fed through a Bash heredoc turned every `\n` into a real newline** — in a C# string constant,
+  in a test literal, and again in the fix for the test literal (the memory rule, *"edit scripts from a file, never a
+  heredoc"*, written down and broken anyway). A string with an escape in it goes through the Edit tool or a script
+  written by the Write tool.
+- **`EverySavedFieldComesBackAsItWas` compares collection types**: a `List` saved and an array loaded is a fail. Store
+  the one type both ways (`RaiseMoment` takes any list and keeps an array).
 
 ## ⛔ THE TRAPS D576 NEARLY PAID FOR — A NUMBER A PLAYER NAMES MAY NOT BE THE CAUSE, AND `IDE0060` IS A BUILD ERROR
 

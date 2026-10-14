@@ -92,10 +92,12 @@ public sealed partial class SimWorld : IObstacles
         string title,
         string body,
         bool stops = true,
-        LogCategory category = LogCategory.Discovery)
+        LogCategory category = LogCategory.Discovery,
+        IReadOnlyList<MomentMark>? marks = null)
     {
-        Moments.Add(new Moment { Title = title, Body = body, WaitsToBeDismissed = stops });
-        Narrate(body, category);
+        var moment = new Moment { Title = title, Body = body, WaitsToBeDismissed = stops, Marks = marks?.ToArray() ?? Array.Empty<MomentMark>() };
+        Moments.Add(moment);
+        Narrate(moment.LogLine, category);
     }
 
     /// <summary>The libraries standing in the village, and what is written in them.</summary>

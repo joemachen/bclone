@@ -165,7 +165,7 @@ public sealed class NomadTests
         Moment moment = Assert.Single(loop.World.Moments, m => m.Title.Contains("Nomads", StringComparison.Ordinal));
         Assert.True(moment.WaitsToBeDismissed, "the arrival does not wait — at 4× it slides past unread (D232)");
         Assert.Contains("have settled", moment.Title, StringComparison.Ordinal);
-        Assert.Contains("settled", moment.Body, StringComparison.Ordinal);
+        Assert.Contains("make a home here", moment.Body, StringComparison.Ordinal);
         Assert.DoesNotContain("Click", moment.Body, StringComparison.Ordinal);
         Assert.DoesNotContain("decide", moment.Body, StringComparison.Ordinal);
         Assert.Contains("have settled", Said(log), StringComparison.Ordinal);
@@ -369,7 +369,7 @@ public sealed class NomadTests
         first.Step((int)KnockTick(first.World));
         SimConfig config = Village with { BridgeUnlockPopulation = first.World.MostEverAlive + 1 };
 
-        (SimLoop posed, _) = Founded(config);
+        (SimLoop posed, InMemoryLogSink posedLog) = Founded(config);
         posed.Step((int)KnockTick(posed.World));
         Assert.False(posed.World.IsUnlocked(BuildingKind.Bridge), "the bridge is known before anybody arrived — the pose is wrong");
         posed.StepOnce();
@@ -381,8 +381,15 @@ public sealed class NomadTests
         // the nomads' moment and the bridge raises none of its own.
         Assert.DoesNotContain(posed.World.Moments, m => m.Title == "The village learned to bridge water");
         Moment settled = Assert.Single(posed.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
-        Assert.Contains("build a wooden bridge at the narrows", settled.Body, StringComparison.Ordinal);
-        Assert.Contains($"{posed.World.MostEverAlive} people", settled.Body, StringComparison.Ordinal);
+
+        // ⭐ TWO SHORT PARAGRAPHS, EACH WITH ITS MARK (Joe, D577: "1 word wall. break it into 2 paragraphs"): who came,
+        // then what they brought — the bridge credited to their road, not to a head count.
+        Assert.Equal(new[] { MomentMark.Nomads, MomentMark.Bridge }, settled.Marks);
+        Assert.Equal(2, settled.Paragraphs.Count);
+        Assert.DoesNotContain("bridge", settled.Paragraphs[0], StringComparison.Ordinal);
+        Assert.Contains("wooden bridges", settled.Paragraphs[1], StringComparison.Ordinal);
+        Assert.DoesNotContain(Moment.ParagraphBreak, settled.LogLine, StringComparison.Ordinal);
+        Assert.Contains(posedLog.Entries, e => e.Message == settled.LogLine);
     }
 
     [Fact]
@@ -392,6 +399,21 @@ public sealed class NomadTests
         (SimLoop loop, _) = Knocked(Village with { BridgeUnlockPopulation = 0 });
         Moment settled = Assert.Single(loop.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
         Assert.DoesNotContain("bridge", settled.Body, StringComparison.Ordinal);
+        Assert.Equal(new[] { MomentMark.Nomads }, settled.Marks);
+        Assert.Single(settled.Paragraphs);
+    }
+
+    [Fact]
+    public void AMomentsMarksSurviveASave()
+    {
+        // A pending moment is saved (D509); its marks with it, or a loaded village shows the panel without its icons.
+        (SimLoop loop, _) = Knocked(Village with { BridgeUnlockPopulation = 0 });
+        Moment before = Assert.Single(loop.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-10-13 12:00", "test");
+        SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), loop.World.Config, new InMemoryLogSink());
+        Moment after = Assert.Single(loaded.World.Moments, m => m.Title == before.Title);
+        Assert.Equal(before.Marks, after.Marks);
+        Assert.Equal(before.Body, after.Body);
     }
 
     [Fact]

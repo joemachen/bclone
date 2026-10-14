@@ -31,8 +31,29 @@ public sealed record Moment
     /// <summary>A few words the player reads first — <em>"The village can write."</em></summary>
     public required string Title { get; init; }
 
-    /// <summary>A sentence or two saying what happened and why it happened now.</summary>
+    /// <summary>
+    /// A sentence or two saying what happened and why it happened now — in paragraphs split by
+    /// <see cref="ParagraphBreak"/> when there is more than one thing to say (D577).
+    /// </summary>
     public required string Body { get; init; }
+
+    /// <summary>
+    /// One mark for each paragraph of <see cref="Body"/>, in order — or none at all (D577, Joe: <i>"maybe even a bridge
+    /// icon and a nomad icon"</i>).
+    /// </summary>
+    public IReadOnlyList<MomentMark> Marks { get; init; } = Array.Empty<MomentMark>();
+
+    /// <summary>Between two paragraphs of <see cref="Body"/>.</summary>
+    public const string ParagraphBreak = "\n\n";
+
+    /// <summary>The paragraphs of <see cref="Body"/>, in order.</summary>
+    public IReadOnlyList<string> Paragraphs => Body.Split(ParagraphBreak);
+
+    /// <summary>
+    /// The body as one line, for the village log: a log entry is a line, and the view finds a moment's own line by
+    /// this text to set it in the celebrated weight.
+    /// </summary>
+    public string LogLine => string.Join(" ", Paragraphs);
 
     /// <summary>Whether the village holds its breath for this one.</summary>
     /// <remarks>
@@ -70,6 +91,7 @@ public sealed record Moment
         ["title"] = Title,
         ["body"] = Body,
         ["waits"] = WaitsToBeDismissed,
+        ["marks"] = new JsonArray(Marks.Select(m => (JsonNode)(int)m).ToArray()),
     };
 
     internal static Moment FromSave(SaveReader save) => new()
@@ -77,5 +99,12 @@ public sealed record Moment
         Title = save.String("title"),
         Body = save.String("body"),
         WaitsToBeDismissed = save.Bool("waits"),
+
+        // ⚠️ Optional: a save from before D577 has no marks, and a moment without them is drawn plain.
+        Marks = save.HasValue("marks") ? save.Ints("marks").Select(MarkFrom).ToArray() : Array.Empty<MomentMark>(),
     };
+
+    private static MomentMark MarkFrom(int mark) => Enum.IsDefined((MomentMark)mark)
+        ? (MomentMark)mark
+        : throw new SaveFormatException($"moment mark {mark} is not one this build knows.");
 }

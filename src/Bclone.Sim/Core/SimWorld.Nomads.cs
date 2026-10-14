@@ -255,19 +255,24 @@ public sealed partial class SimWorld
         bool learnedToBridge = Settle(band);
         NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
 
-        int food = FoodTheVillageHolds();
-        int perHead = Population == 0 ? 0 : food / Population;
-        RaiseMoment(
-            $"Nomads have settled {where}",
-            $"{Titled(band.FamilyNames)} — {band.People} souls, {band.Adults} grown and {band.Children} "
-            + $"{(band.Children == 1 ? "child" : "children")}, carrying a few days' food — have come up the valley and "
-            + $"settled. They have no roof yet: a house is marked in the painted land where there is room, or they sleep "
-            + $"in the open {where} until there is. The village holds {food:N0} food, {perHead} a head. "
-            + (learnedToBridge ? $"{TheVillageLearnedToBridge("With them the village has grown to")} " : string.Empty)
-            + $"{Clock.SeasonAndYear()}.",
-            stops: true,
-            LogCategory.Discovery);
+        // ⭐ TWO SHORT PARAGRAPHS, NOT A WALL (Joe, D577, from a screenshot: *"too verbose … 1-2 sentences only"*): who
+        // came and where they sleep; then, only when their coming taught it, the bridge — credited to their road.
+        // The food a head went with the wall; the bar carries it.
+        string body = $"{Titled(band.FamilyNames)}, {band.People} souls, have come up the valley to make a home here. "
+            + $"Until a house is raised for them in the painted land, they sleep in the open {where}. {Clock.SeasonAndYear()}.";
+        var marks = new List<MomentMark> { MomentMark.Nomads };
+        if (learnedToBridge)
+        {
+            body += Moment.ParagraphBreak + TheyBroughtTheBridge;
+            marks.Add(MomentMark.Bridge);
+        }
+
+        RaiseMoment($"Nomads have settled {where}", body, stops: true, LogCategory.Discovery, marks);
     }
+
+    /// <summary>The bridge, when a band's coming is what teaches it (D576) — said as theirs (Joe, D577).</summary>
+    private const string TheyBroughtTheBridge = "On the long road here they learned to lay timber across running water. "
+        + "The village can build wooden bridges now, and the far bank is within reach.";
 
     private string NomadNameFor(int key, HashSet<string> taken)
     {

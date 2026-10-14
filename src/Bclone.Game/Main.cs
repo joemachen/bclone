@@ -536,6 +536,7 @@ public partial class Main : Control
         GD.Print(TheWearReadsTrue(_loop.World.Config));
         GD.Print(TheNomadsTickIsTheVillages());
         GD.Print(TheArrivalMomentWaitsForTheWalkIn());
+        GD.Print(TheMomentSpeaksInParagraphs());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -896,7 +897,7 @@ public partial class Main : Control
 
         _map.ClearWalkInsForTheProbe();
         world.Moments.Remove(posed);
-        _celebrated.Remove(posed.Body);
+        _celebrated.Remove(posed.LogLine);
         _slowedForAnAlert = slowedWas;
         _speedBeforeTheAlert = beforeWas;
         SetSpeed(speedWas);
@@ -904,6 +905,75 @@ public partial class Main : Control
         return faults.Count == 0
             ? "[widths] arrival: ✅ a waiting moment waits for the band to walk in at 1×, shows the frame they are in, and Go on gives the speed back"
             : $"[widths] arrival: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ A moment in paragraphs, each with its mark (D577): a posed two-paragraph moment marked nomads then bridge
+    /// shows two rows, each led by its own mark and holding its own paragraph; a posed plain moment shows its one
+    /// paragraph with no mark; and the text column is no wider for the marks — ⚠️ the column, not the panel, whose
+    /// own 460px floor hid a 38px widening (a zero, D577).
+    /// </summary>
+    private string TheMomentSpeaksInParagraphs()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        DismissTheMoment();
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+
+        var plain = new Moment { Title = "Posed plain", Body = "One paragraph, posed by the probe." };
+        world.Moments.Add(plain);
+        ShowAnyMoment(world);
+        ForceUpdateTransform();
+        float plainWidth = _momentParagraphs.GetCombinedMinimumSize().X;
+        Node[] plainRows = _momentParagraphs.GetChildren().ToArray();
+        if (plainRows.Length != 1 || plainRows[0] is not Label { Text: "One paragraph, posed by the probe." })
+        {
+            faults.Add($"a plain moment shows {plainRows.Length} block(s), not its one paragraph as a label");
+        }
+
+        DismissTheMoment();
+
+        string first = "The Posed, 4 souls, have come up the valley to make a home here.";
+        string second = "On the long road here they learned to lay timber across running water.";
+        var marked = new Moment
+        {
+            Title = "Posed nomads",
+            Body = first + Moment.ParagraphBreak + second,
+            Marks = new[] { MomentMark.Nomads, MomentMark.Bridge },
+        };
+        world.Moments.Add(marked);
+        ShowAnyMoment(world);
+        ForceUpdateTransform();
+        float markedWidth = _momentParagraphs.GetCombinedMinimumSize().X;
+        Node[] rows = _momentParagraphs.GetChildren().ToArray();
+        string Row(int i) => i < rows.Length && rows[i] is HBoxContainer row && row.GetChildCount() == 2
+            && row.GetChild(0) is MomentGlyph glyph && row.GetChild(1) is Label text
+                ? $"{glyph.Mark}:{text.Text}"
+                : "not a mark and a paragraph";
+        if (rows.Length != 2 || Row(0) != $"Nomads:{first}" || Row(1) != $"Bridge:{second}")
+        {
+            faults.Add($"a marked moment shows [{string.Join(" | ", Enumerable.Range(0, rows.Length).Select(Row))}]");
+        }
+
+        if (Mathf.Abs(markedWidth - plainWidth) > 0.5f)
+        {
+            faults.Add($"the marks widen the text column {plainWidth:F0} → {markedWidth:F0}px");
+        }
+
+        DismissTheMoment();
+        world.Moments.Remove(plain);
+        world.Moments.Remove(marked);
+        _celebrated.Remove(plain.LogLine);
+        _celebrated.Remove(marked.LogLine);
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        SetSpeed(speedWas);
+
+        return faults.Count == 0
+            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a plain moment one label; the text column {markedWidth:F0}px either way"
+            : $"[widths] moment: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -2275,7 +2345,7 @@ public partial class Main : Control
 
     private PanelContainer? _momentPanel;
     private Label _momentTitle = null!;
-    private Label _momentBody = null!;
+    private VBoxContainer _momentParagraphs = null!;
     /// <summary>The speed the player had set before an alert slowed the village down.</summary>
     /// <remarks>
     /// <para>
@@ -2378,7 +2448,7 @@ public partial class Main : Control
             }
 
             world.Moments.RemoveAt(i);
-            _celebrated.Add(passing.Body);
+            _celebrated.Add(passing.LogLine);
 
             // ⚠️ THE NEWEST WINS RATHER THAN A QUEUE. Two discoveries in one season is already
             // unusual; showing them in sequence would hold the second banner up long after its
@@ -2427,10 +2497,10 @@ public partial class Main : Control
 
             Moment moment = world.Moments[i];
             world.Moments.RemoveAt(i);
-            _celebrated.Add(moment.Body);
+            _celebrated.Add(moment.LogLine);
 
             _momentTitle.Text = moment.Title;
-            _momentBody.Text = moment.Body;
+            ShowTheParagraphs(moment);
             _seeTheTree!.Visible = world.ShownTheTechTree && !_treeEverOpened;
 
             // ⭐⭐ SLOWED TO 1×, NOT PAUSED (Joe, 2026-08-30). See `_speedBeforeTheAlert`.
@@ -2493,6 +2563,47 @@ public partial class Main : Control
         _passingPanel = panel;
     }
 
+    /// <summary>
+    /// A moment's paragraphs, each its own block with the mark the sim named beside it (D577, Joe: <i>"1 word wall.
+    /// break it into 2 paragraphs. maybe even a bridge icon and a nomad icon"</i>). A moment without marks is its
+    /// paragraphs alone, as wide as the one label used to be.
+    /// </summary>
+    private void ShowTheParagraphs(Moment moment)
+    {
+        foreach (Node old in _momentParagraphs.GetChildren())
+        {
+            _momentParagraphs.RemoveChild(old);
+            old.QueueFree();
+        }
+
+        IReadOnlyList<string> paragraphs = moment.Paragraphs;
+        bool marked = moment.Marks.Count > 0;
+        for (int i = 0; i < paragraphs.Count; i++)
+        {
+            Label text = Wrapped(Body(paragraphs[i]));
+            if (!marked)
+            {
+                text.CustomMinimumSize = new Vector2(MomentTextWidth, 0f);
+                _momentParagraphs.AddChild(text);
+                continue;
+            }
+
+            // Every paragraph keeps the mark's column, marked or not, so the text of each starts at the same edge.
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", MomentMarkGap);
+            row.AddChild(new MomentGlyph(i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None));
+            text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
+            row.AddChild(text);
+            _momentParagraphs.AddChild(row);
+        }
+    }
+
+    /// <summary>The moment panel's text column, as wide as its one label was before D577.</summary>
+    private const float MomentTextWidth = 420f;
+
+    /// <summary>Between a paragraph's mark and its text.</summary>
+    private const int MomentMarkGap = 12;
+
     private void BuildTheMomentPanel()
     {
         // ⚠️ CENTRED PROPERLY, WHICH IT WAS NOT (Joe, from play: *"it should be centered"*).
@@ -2515,9 +2626,9 @@ public partial class Main : Control
         _momentTitle = Heading(string.Empty);
         box.AddChild(_momentTitle);
 
-        _momentBody = Wrapped(Body(string.Empty));
-        _momentBody.CustomMinimumSize = new Vector2(420f, 0f);
-        box.AddChild(_momentBody);
+        _momentParagraphs = new VBoxContainer();
+        _momentParagraphs.AddThemeConstantOverride("separation", 12);
+        box.AddChild(_momentParagraphs);
 
         var go = new Button { Text = "Go on" };
         go.Pressed += DismissTheMoment;

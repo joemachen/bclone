@@ -171,9 +171,11 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
   - ⭐ **When a band's arrival is what teaches it, the nomads' moment says it and the bridge raises none (D576).**
     Joe played it and got two stops at once — the bridge's and the nomads'. The number stays **10** (he asked for 15;
     measured first, §8.2a, 15 would not have parted them and would have put the bridge off a decade or more). `Settle`
-    returns `LearnedToBridgeJustNow` and `Knock` appends `TheVillageLearnedToBridge("With them the village has grown
-    to")` to its body — the same sentence `NoticeTheVillageSize` uses, one wording. A birth that teaches it still raises
-    *"The village learned to bridge water"*. Moments are not hashed: no golden moved.
+    returns `LearnedToBridgeJustNow` and `Knock` adds a second paragraph to its body, marked with the bridge
+    (D577, Joe: *"break it into 2 paragraphs … a bridge icon and a nomad icon"*) and crediting the bridge to the
+    band: *"On the long road here they learned to lay timber across running water. The village can build wooden
+    bridges now, and the far bank is within reach."* A birth that teaches it still raises *"The village learned to
+    bridge water"*, now marked with the bridge too. Moments are not hashed: no golden moved.
   - ⚠️ **Its stop is `RaiseMoment`, not `LearnedByDoing`**: it is learned by the village's size, not by anybody's
     hands, so it does not introduce the tech-tree map — the library's and the town hall's rule (D440). Through
     `LearnedByDoing` it set the hashed `ShownTheTechTree` in every village that reached ten first and **moved four

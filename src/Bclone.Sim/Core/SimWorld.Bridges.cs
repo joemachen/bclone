@@ -576,19 +576,17 @@ public sealed partial class SimWorld
         // that reached ten before it had dug a quarry's stone, and moved four goldens for a popup.
         RaiseMoment(
             "The village learned to bridge water",
-            $"{TheVillageLearnedToBridge("The village has grown to")} {Clock.SeasonAndYear()}.");
+            $"The village has grown to {MostEverAlive} people, and somebody has worked out how to put a span of "
+            + "timber across the water. The far bank is there to be used: build a wooden bridge at the narrows. "
+            + $"{Clock.SeasonAndYear()}.",
+            marks: new[] { MomentMark.Bridge });
     }
 
     /// <summary>
     /// Whether the wooden bridge was learned by the people just added — asked by the knock, which says it in the
-    /// nomads' own moment rather than raising a second one beside it (Joe, D576).
+    /// nomads' own moment rather than raising a second one beside it (Joe, D576), in its own words (D577).
     /// </summary>
     internal bool LearnedToBridgeJustNow(bool knewHowToBridge) => !knewHowToBridge && IsUnlocked(BuildingKind.Bridge);
-
-    /// <summary>The bridge's news, one wording for its own moment and for the nomads' (D576).</summary>
-    internal string TheVillageLearnedToBridge(string grownTo) =>
-        $"{grownTo} {MostEverAlive} people, and somebody has worked out how to put a span of timber across the "
-        + "water. The far bank is there to be used: build a wooden bridge at the narrows.";
 
     /// <summary>
     /// A walker has stepped from a bank onto this deck — counted on the bridge and the village, and the

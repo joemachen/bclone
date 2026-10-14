@@ -32,7 +32,8 @@ off-by-one in `ArrivalsSince`'s window (`(since, now]` where the sim stamps `now
 the sim never writes). ✅ **Fixed in D575** (§4.3a): the window is `[since, now)`, `ArrivedAtTick` 0 refused by name (the
 turned window would have caught the founders on a new game's first step), the live door re-stamped as the sim stamps;
 4 mutants, 5 reds (§9). ✅ **Joe saw them walk in (2026-10-13).** His one note — the bridge's stop and the nomads' popped
-up together — is D576: when a band teaches the bridge, the nomads' moment says it and the bridge raises none (§4.4). **Then note 1 — the paths' gridding, a spec with options for Joe.**
+up together — is D576: when a band teaches the bridge, the nomads' moment says it and the bridge raises none (§4.4);
+his next — *"too verbose … break it into 2 paragraphs"* — is D577, two short marked paragraphs (§4.4). **Then note 1 — the paths' gridding, a spec with options for Joe.**
 Bands knock and settle; a settled family builds in the paint like everybody, and when the paint is full
 the village says so and keeps saying so; a dead valley is re-founded automatically a hashed
 few years on by four paired founders of a second generation. `NomadTests` (28) and
@@ -300,9 +301,18 @@ does not move to show the edge (Joe did not ask; the moment is held so there is 
 `Household` (`NextHouseholdId`, the surname, `DayForAChild` hashed, the larder
 holding the carried food, `HomePosition = null`) and adds its villagers at the camp, then returns
 `LearnedToBridgeJustNow` (the wooden bridge is learned by the most ever held, and arrivals count — `MostEverAlive` reads
-`ArrivedAtTick`, §5). ⭐ **D576: when the band taught it, the knock's moment says so** (*"With them the village has grown
-to N people, and somebody has worked out how to put a span of timber across the water…"*) and the bridge raises no
+`ArrivedAtTick`, §5). ⭐ **D576: when the band taught it, the knock's moment says so** and the bridge raises no
 moment of its own — Joe got both at once; a band crosses the number in nearly every village (`bridges.md §8.2a`).
+⭐ **D577: the knock's moment is two short paragraphs, each with its mark** (Joe, from a screenshot: *"too verbose …
+1 word wall. break it into 2 paragraphs. maybe even a bridge icon and a nomad icon"*). The first, marked *nomads*
+(the walk-in's chevron over a villager's dot): *"The Brooks, 2 souls, have come up the valley to make a home here.
+Until a house is raised for them in the painted land, they sleep in the open at the founding site. Spring, Year 11."*
+The second, only when their coming taught it, marked *bridge*: *"On the long road here they learned to lay timber
+across running water. The village can build wooden bridges now, and the far bank is within reach."* The food-a-head
+sentence went with the wall (the bar carries it). `Moment.Marks` (one `MomentMark` a paragraph, saved, optional on
+read), paragraphs split by `Moment.ParagraphBreak`, the log given `Moment.LogLine` — one line, so a log entry stays a
+line and the view still finds a moment's own line to set in the celebrated weight. The view draws the marks
+(`MomentGlyph`) and gives each paragraph its own block, the text column 420px as before.
 ⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would
 pair across the band on the very tick they arrived and take over a dead household whole (§8's trap).
 Log, `Life`: *"The Hales and the Dunns have settled — 7 more souls, and no roof yet. Spring, Year 11."*
@@ -625,6 +635,8 @@ the count; save → load mid-band~~ — gone with the waiting band (D572).
 > tick's guard (reads the world, drives it, both ways) — no mutant in the suite can see it. **Goldens:** the six moved
 > (§5), proven with the floor at 0.
 
+> ⭐ **D577 — the knock's moment in two marked paragraphs (`NomadTests` +1, `SaveLoadTests`' registry +`Marks`, probe `moment:`).** `TheWoodenBridgeIsLearnedByArrivals`: marks `[Nomads, Bridge]`, two paragraphs, the first never says *bridge*, the second says *wooden bridges*, the log line has no paragraph break and is the line logged. `TheNomadsMomentSaysNothingOfABridgeAlreadyKnown`: marks `[Nomads]`, one paragraph. `AMomentsMarksSurviveASave` (new). `ABandArrivesAndSettles…` re-posed (*settled* is in the title now; the body says *make a home here*). Probe `moment:` (87 lines): a posed marked moment shows two rows, each its mark then its paragraph; a plain one a single label; the text column 420px either way. **7 mutants, 7 reds, one zero closed:** the bridge mark dropped **1**; one paragraph **1**; the log given the body **1**; the marks unsaved **1** (`AMomentsMarksSurviveASave`); the view ignoring marks **1**, the first mark on every row **1**, the text not narrowed for the mark **0 → 1** — ⛔ the probe first measured the *panel*, whose own 460px floor hid the 38px widening; it measures the text column now.
+>
 > ⭐ **D576 — one stop when a band teaches the bridge (`NomadTests`, one re-posed and one new).** `TheWoodenBridgeIsLearnedByArrivals` (the bridge posed at one more than the village held the tick before the knock): learned, no *"The village learned to bridge water"* moment, exactly one nomads' moment and its body says *build a wooden bridge at the narrows* and the number held. `TheNomadsMomentSaysNothingOfABridgeAlreadyKnown` (the number 0): the body never says *bridge*. **4 mutants, 4 reds, no zeros:** the sentence never appended **1**; always appended **1**; `Settle` still calling `NoticeTheVillageSize` as well (two stops) **1**; `LearnedToBridgeJustNow` ignoring what was known **1** (⚠️ its first form dropped the parameter's only use and did not build — `IDE0060` is an error here; re-posed, not counted).
 >
 > ⭐ **Note 4 (D573) — the walk-in, three probe lines; no test, since the sim did not move.** `walk-in:` (the map, on
