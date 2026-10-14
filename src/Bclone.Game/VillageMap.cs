@@ -4910,6 +4910,105 @@ public partial class VillageMap : Control
         return new Vector2(tile.X, tile.Y);
     }
 
+    /// <summary>The most a drawn lane wanders from its true point on each axis, in tiles (D580).</summary>
+    /// <remarks>
+    /// ⭐ Chosen so a lane never leaves the tiles that are worn: a centre ± 0.18 on both axes is at most 0.25 out, and
+    /// with the packed half-width of 0.17 the ribbon's edge is 0.42 from the centre — inside its tile. The probe's
+    /// <c>paths:</c> line holds it to that.
+    /// </remarks>
+    internal const float TrailWobble = 0.18f;
+
+    /// <summary>Tiles across one swell of the wander: long enough to read as a curve, short enough to show in a village.</summary>
+    private const float TrailWobbleWavelength = 4f;
+
+    /// <summary>Half a lightly worn lane's width — thinner than a packed one (D580).</summary>
+    private const float WornTrailHalfWidth = 0.14f;
+
+    /// <summary>How much of its width a dead end keeps at its tip (D580).</summary>
+    private const float TrailEndWidthShare = 0.35f;
+
+    /// <summary>
+    /// ⭐ Where a worn tile's lane is DRAWN (D580, Joe's note 1 — option A, <c>specs/path-shapes.md</c>): its true point
+    /// (<see cref="TrailPointOf"/>) moved a little by a smooth, seeded wander, so a corridor between two buildings reads
+    /// as a walked footpath rather than a ruled line.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The wander is a function of the true POINT, not the tile</b>, so the two rows of a corridor (D415), which share
+    /// a point, still share a drawn point and still draw one lane. <b>Nothing that pins a point moves it</b>: a junction
+    /// fills as a yard, and a lone L's corner sits on the corner of the unworn tile — both draw exactly where they were.
+    /// A staircase's points, a quarter-tile from their centres, get a little less room.
+    /// </para>
+    /// <para>
+    /// Seeded from the valley, so the same village draws the same lanes on every rebuild and on every machine; view
+    /// floats, no clock, no RNG draw. Read only while the trail mesh is rebuilt (on the paths' generation), never a
+    /// frame. Where the paths ARE — the tiles worn, the joins, the grades — is untouched; this is how they look.
+    /// </para>
+    /// </remarks>
+    private Vector2 DrawnTrailPointOf(GridPos tile)
+    {
+        Vector2 point = TrailPointOf(tile);
+        float room = TrailWobbleRoomAt(tile);
+        return room == 0f ? point : point + (TrailWander(point) * room);
+    }
+
+    /// <summary>How far <see cref="DrawnTrailPointOf"/> may move this tile's point — by the branch <see cref="TrailPointOf"/> took.</summary>
+    internal float TrailWobbleRoomAt(GridPos tile)
+    {
+        if (IsJunctionTile(tile))
+        {
+            return 0f;
+        }
+
+        if (IsInAFullSquare(tile))
+        {
+            return TrailWobble;
+        }
+
+        if (LCornerOf(tile) is not null)
+        {
+            return IsStaircaseCorner(tile) ? TrailWobble * 0.6f : 0f;
+        }
+
+        return TrailWobble;
+    }
+
+    /// <summary>Smooth value noise of a point, each axis in [−1, 1], seeded from the valley — the lanes' wander.</summary>
+    private Vector2 TrailWander(Vector2 point)
+    {
+        float u = point.X / TrailWobbleWavelength;
+        float v = point.Y / TrailWobbleWavelength;
+        return new Vector2(SmoothNoise(u, v, 0UL), SmoothNoise(u, v, 1UL));
+    }
+
+    private float SmoothNoise(float u, float v, ulong channel)
+    {
+        int i = Mathf.FloorToInt(u);
+        int j = Mathf.FloorToInt(v);
+        float fu = u - i;
+        float fv = v - j;
+        float su = fu * fu * (3f - (2f * fu));
+        float sv = fv * fv * (3f - (2f * fv));
+        float top = Mathf.Lerp(LatticeNoise(i, j, channel), LatticeNoise(i + 1, j, channel), su);
+        float bottom = Mathf.Lerp(LatticeNoise(i, j + 1, channel), LatticeNoise(i + 1, j + 1, channel), su);
+        return Mathf.Lerp(top, bottom, sv);
+    }
+
+    /// <summary>A lattice corner's value in [−1, 1]: a splitmix finish over the valley's seed, the corner and the axis.</summary>
+    private float LatticeNoise(int i, int j, ulong channel)
+    {
+        ulong h = _world!.Seed
+            ^ unchecked((ulong)(uint)i * 0x9E3779B97F4A7C15UL)
+            ^ unchecked((ulong)(uint)j * 0xC2B2AE3D27D4EB4FUL)
+            ^ unchecked(channel * 0x165667B19E3779F9UL);
+        h ^= h >> 30;
+        h = unchecked(h * 0xBF58476D1CE4E5B9UL);
+        h ^= h >> 27;
+        h = unchecked(h * 0x94D049BB133111EBUL);
+        h ^= h >> 31;
+        return ((h >> 40) / (float)(1UL << 24) * 2f) - 1f;
+    }
+
     /// <summary>
     /// Whether this tile is the corner of an L one of whose arms is itself the corner of an L that
     /// has this tile for an arm — the inside of a STAIRCASE, which is how a diagonal walk is trodden.
@@ -5592,6 +5691,115 @@ public partial class VillageMap : Control
                 + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
                 + "trails are drawing something the ground does not hold";
+    }
+
+    /// <summary>
+    /// ⭐ The lanes are drawn as walked (D580, Joe's note 1 — option A): on the lanes <see cref="TheTrailsLieOnTheGround"/>
+    /// posed, the posed row no longer draws as a ruled line; every drawn point stays within its room of the true one and
+    /// its ribbon on worn tiles; a corridor's two rows still share a drawn point; and a junction and a lone L's corner
+    /// draw exactly where they did. Run after the <c>trails:</c> line, which poses the lanes.
+    /// </summary>
+    public string TheTrailsAreDrawnAsWalked()
+    {
+        SimWorld world = _world!;
+        GridPos site = world.Map.FoundingSite;
+        var faults = new List<string>();
+
+        // Every drawn point: within its room of the true one, and its ribbon (the packed half-width, the wider) on
+        // tiles that are worn. A point the wander may not move must not move.
+        int strays = 0;
+        int overreach = 0;
+        int pinnedMoved = 0;
+        foreach ((GridPos tile, byte _) in _trail)
+        {
+            Vector2 truth = TrailPointOf(tile);
+            Vector2 drawn = DrawnTrailPointOf(tile);
+            float room = TrailWobbleRoomAt(tile);
+            if (room == 0f)
+            {
+                pinnedMoved += drawn == truth ? 0 : 1;
+                continue;
+            }
+
+            if (Mathf.Abs(drawn.X - truth.X) > room + 1e-4f || Mathf.Abs(drawn.Y - truth.Y) > room + 1e-4f)
+            {
+                overreach++;
+            }
+
+            foreach (Vector2 edge in new[] { new Vector2(TrailHalfWidth, 0f), new Vector2(-TrailHalfWidth, 0f), new Vector2(0f, TrailHalfWidth), new Vector2(0f, -TrailHalfWidth) })
+            {
+                Vector2 at = drawn + edge;
+                if (TrailGradeAt(new GridPos(Mathf.RoundToInt(at.X), Mathf.RoundToInt(at.Y))) == 0)
+                {
+                    strays++;
+                    break;
+                }
+            }
+        }
+
+        if (overreach > 0 || strays > 0 || pinnedMoved > 0)
+        {
+            faults.Add($"{overreach} drawn points past their room, {strays} ribbons off the worn tiles, {pinnedMoved} pinned points moved");
+        }
+
+        // The posed row — nine tiles along the founding row — is not drawn as a ruled line.
+        float wander = 0f;
+        int rowTiles = 0;
+        for (int i = 0; i < 9; i++)
+        {
+            var tile = new GridPos(site.X + i, site.Y);
+            if (TrailGradeAt(tile) > 0)
+            {
+                rowTiles++;
+                wander = Mathf.Max(wander, Mathf.Abs(DrawnTrailPointOf(tile).Y - site.Y));
+            }
+        }
+
+        if (rowTiles < 9)
+        {
+            faults.Add($"the posed row is {rowTiles} of 9 tiles — the pose is wrong");
+        }
+        else if (wander < 0.05f)
+        {
+            faults.Add($"the posed row is still drawn ruled (it wanders {wander:F3} of a tile at most)");
+        }
+
+        // ⚠️ And the MESH draws them: a worn tile mid-row lays a disc centred on its drawn point. Asking only
+        // `DrawnTrailPointOf` scored zero against a mesh still laid from the true points (D580's red-check).
+        var middle = new GridPos(site.X + 5, site.Y);
+        Vector2[] worn = _trailMesh.GetSurfaceCount() > 0
+            ? _trailMesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector2Array()
+            : System.Array.Empty<Vector2>();
+        if (DrawnTrailPointOf(middle) != TrailPointOf(middle) && System.Array.IndexOf(worn, DrawnTrailPointOf(middle)) < 0)
+        {
+            faults.Add("the mesh is not laid from the drawn points — the wander is computed and never drawn");
+        }
+
+        // The corridor's two rows share a drawn point, column by column (D415 kept).
+        int parted = 0;
+        for (int dx = 0; dx < 5; dx++)
+        {
+            var top = new GridPos(site.X + dx, site.Y + 11);
+            parted += DrawnTrailPointOf(top) == DrawnTrailPointOf(new GridPos(top.X, top.Y + 1)) ? 0 : 1;
+        }
+
+        if (parted > 0)
+        {
+            faults.Add($"the 2×5 corridor's rows draw apart in {parted} of 5 columns — two rails, not one lane");
+        }
+
+        // The lone L's corner and the junction's centre draw exactly where they did.
+        var corner = new GridPos(site.X + 2, site.Y + 4);
+        var junction = new GridPos(site.X + 6, site.Y + 7);
+        if (DrawnTrailPointOf(corner) != TrailPointOf(corner) || DrawnTrailPointOf(junction) != TrailPointOf(junction))
+        {
+            faults.Add("a lone L's corner or a junction moved — it sits on an unworn corner, or fills as a yard");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] paths: ✅ drawn as walked — the posed row wanders {wander:F2} of a tile, every ribbon on worn tiles, "
+                + $"a corridor one lane, corners and junctions where they were; {_trail.Count} tiles meshed in {LastTrailBuildMs:F2}ms"
+            : $"[widths] paths: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>

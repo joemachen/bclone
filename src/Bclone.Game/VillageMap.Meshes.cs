@@ -766,6 +766,9 @@ public partial class VillageMap
         for (byte pass = 1; pass <= 2; pass++)
         {
             Color colour = pass == 2 ? PackedPath : WornPath;
+
+            // ⭐ A lightly worn lane reads thinner than the main street (D580, Joe's note 1 — option A).
+            float half = pass == 2 ? TrailHalfWidth : WornTrailHalfWidth;
             _trailBuilder.Clear();
             _trailDiscsDrawn.Clear();
             _trailBendsDrawn.Clear();
@@ -813,7 +816,11 @@ public partial class VillageMap
                     continue;
                 }
 
-                Vector2 here = TrailPointOf(tile);
+                // ⭐ THE DRAWN POINT, NOT THE TRUE ONE (D580): the lane wanders a little inside its own tiles, so a
+                // corridor between two buildings reads as a footpath rather than a ruled line. `TrailPointOf` is
+                // still the geometry — the joins, the corridor's shared point, an L's corner — and the wander is a
+                // function of that point, so whatever shared a point still does.
+                Vector2 here = DrawnTrailPointOf(tile);
                 int count = JoinedNeighbours(tile, joined);
 
                 // A block tile is drawn by its yard: no disc, no bends — only a bridge from its
@@ -826,7 +833,7 @@ public partial class VillageMap
                         if (!_blockTiles.Contains(new Vector2I(joined[k].X, joined[k].Y))
                             && Lesser(grade, TrailGradeAt(joined[k])) == pass)
                         {
-                            _trailBuilder.Band(here, MidwayInTiles(tile, joined[k]), TrailHalfWidth, colour);
+                            _trailBuilder.Band(here, MidwayInTiles(tile, joined[k]), half, colour);
                         }
                     }
 
@@ -840,16 +847,18 @@ public partial class VillageMap
                 int kept = 0;
                 for (int k = 0; k < count; k++)
                 {
-                    if (TrailPointOf(joined[k]) != here)
+                    if (DrawnTrailPointOf(joined[k]) != here)
                     {
                         joined[kept++] = joined[k];
                     }
                 }
 
                 count = kept;
-                if (grade == pass && _trailDiscsDrawn.Add(here))
+
+                // A dead end has no disc: it tapers off (D580) — a path peters out where the last feet turned back.
+                if (grade == pass && count != 1 && _trailDiscsDrawn.Add(here))
                 {
-                    _trailBuilder.Disc(here, TrailHalfWidth, colour);
+                    _trailBuilder.Disc(here, half, colour);
                 }
 
                 if (count == 1)
@@ -857,7 +866,7 @@ public partial class VillageMap
                     Vector2 midway = MidwayInTiles(tile, joined[0]);
                     if (Lesser(grade, TrailGradeAt(joined[0])) == pass && _trailBendsDrawn.Add(Shape(midway, here, here)))
                     {
-                        _trailBuilder.Band(midway, here, TrailHalfWidth, colour);
+                        _trailBuilder.Taper(midway, here, half, half * TrailEndWidthShare, colour);
                     }
 
                     continue;
@@ -876,7 +885,7 @@ public partial class VillageMap
                         }
 
                         Bend(from, here, to, bend);
-                        _trailBuilder.Strip(bend, TrailHalfWidth, colour);
+                        _trailBuilder.Strip(bend, half, colour);
                     }
                 }
             }
@@ -917,8 +926,8 @@ public partial class VillageMap
     /// <summary>Segments a bend is sampled at. Eight: a quarter turn in twelve-degree steps.</summary>
     private const int BendSegments = 8;
 
-    /// <summary>The tile point halfway between two tiles' trail points — where one tile's curve hands over to the next.</summary>
-    private Vector2 MidwayInTiles(GridPos a, GridPos b) => (TrailPointOf(a) + TrailPointOf(b)) / 2f;
+    /// <summary>The tile point halfway between two tiles' drawn points — where one tile's curve hands over to the next.</summary>
+    private Vector2 MidwayInTiles(GridPos a, GridPos b) => (DrawnTrailPointOf(a) + DrawnTrailPointOf(b)) / 2f;
 
     /// <summary>A quadratic Bézier from <paramref name="from"/> to <paramref name="to"/> bent round <paramref name="control"/>, sampled into <paramref name="into"/>.</summary>
     private static void Bend(Vector2 from, Vector2 control, Vector2 to, System.Span<Vector2> into)

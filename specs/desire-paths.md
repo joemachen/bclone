@@ -298,6 +298,13 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] An inspector sentence for trodden, worn and packed ground (`DescribeBareGround`).
 - [x] Outcomes before/after: six shipped seeds × fifty years, twenty fixture years (§6).
 - [x] Probe line `trails:` — every drawn trail tile is worn in the sim.
+- [x] ⭐ **D580 — drawn as walked (Joe's note 1, option A of `path-shapes.md`).** Every lane is laid from a tile's
+  *drawn* point — `DrawnTrailPointOf` = the true point (`TrailPointOf`, unchanged, still the geometry every rule here
+  reads) moved by a smooth value-noise wander of **the point**, seeded from the valley, at most `TrailWobble` 0.18 of a
+  tile an axis (0.6 of that on a staircase; none for a junction or a lone L's exact corner) — so a corridor between
+  two buildings reads as a footpath, not a ruled line, and never leaves its worn tiles. A lightly worn lane is
+  `WornTrailHalfWidth` 0.14 against the packed 0.17; a dead end has no disc and tapers to 0.35 of its width
+  (`MeshBuilder.Taper`). Rebuilt with the mesh, on the paths' generation. Probe `paths:`.
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
   *"-50% line thickness"* → `TrailHalfWidth` 0.17.

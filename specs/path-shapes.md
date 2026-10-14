@@ -4,9 +4,9 @@
 and through the housing block*), **D579 (this spec and its measurement, 2026-10-13)**. Neighbours: D41 (one cost
 field), D122 (the last time the route chain moved by a tile it froze nineteen people), D358 / D414 / D415 / D424
 (`desire-paths.md`), D383 (buildings are obstacles).
-**Status:** 📏 **MEASURED (D579). ⭐ JOE'S CALL (2026-10-14): *"A then C"* — option A (§4, the view draws paths as
-walked) is next, as one view-only commit; he plays it, and if the village still reads as a grid, option C (staggered
-house siting) gets its own spec.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
+**Status:** 📏 **MEASURED (D579). ⭐ JOE'S CALL (2026-10-14): *"A then C"*. ✅ OPTION A BUILT (D580) — view only:
+`VillageMap.DrawnTrailPointOf`, `WornTrailHalfWidth`, `MeshBuilder.Taper`, probe `paths:` (`desire-paths.md` slice 2
+says how). ⏸️ Joe plays it; if the village still reads as a grid, option C (staggered house siting) gets its own spec.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
 in a throwaway worktree and are gone.
 Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 

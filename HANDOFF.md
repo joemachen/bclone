@@ -1,6 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D578: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN, SEEN BY JOE); THE NOMADS' STOP IN TWO SHORT MARKED PARAGRAPHS (D576–D577); EVERY ALERT LEAVES THE VILLAGE AT 1× (D578) — ⏸️ JOE TO PLAY D577–D578. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D580: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED, NOTE 1 MEASURED (D579) AND ITS OPTION A BUILT (D580, VIEW ONLY); THE NOMADS' STOP IN TWO MARKED PARAGRAPHS (D577); EVERY ALERT LEAVES THE VILLAGE AT 1× (D578) — ⏸️ JOE TO PLAY D577–D580; OPTION C NEXT IF THE VILLAGE STILL READS AS A GRID. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D578: EVERY ALERT LEAVES THE VILLAGE AT 1×; THE OLD SPEED BACK IS A SETTINGS TICK, OFF BY DEFAULT; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D579–D580: NOTE 1 MEASURED — THE GRID IS THE VILLAGE'S OWN SHAPE; JOE: *"A THEN C"*; A BUILT, VIEW ONLY; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D578 as below, plus:
+> **D579** — note 1 measured (`specs/path-shapes.md`, `tools/harness/ZzPathShape.cs` + `pathshape.py`) on **copies** of
+> Joe's seven format-7 saves: 58–95 % of the village's path tiles are straight axis lanes, 47–66 % beside a building —
+> the paths are the corridors between tile-aligned buildings. A route tie-break toward the diagonal (prototyped in a
+> throwaway worktree, gone) moved nothing; loosening D414 made it worse. Options A (draw as walked) / B (eight-way field,
+> not recommended) / C (stagger the houses) / D (leave it). **Joe: *"A then C"*.**
+> **D580** — option A, view only: `VillageMap.DrawnTrailPointOf` (the true point + a seeded smooth wander of the
+> point, ≤ 0.18 a tile an axis; none for a junction or a lone L's corner), worn lanes 0.14 wide against packed 0.17,
+> dead ends taper (`MeshBuilder.Taper`). `TrailPointOf` unchanged — still the geometry. Probe `paths:`; 5 mutants, 5
+> reds (one zero closed). **No sim change, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m45); view 0 warnings; probe 89 lines (the new `paths:`), no ⛔, `paths:` / `trails:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's; ⚠️ the clean probe was run after a fresh build — the trap below); goldens 362 → 362, nothing under `src/Bclone.Sim`, `tests/` or `data/` moved.
+>
+> **▶️ NEXT: ⏸️ Joe plays D577, D578 and D580 together** (`.\run.bat`, his newest save or a new village to Year 10+):
+> the paths in the village — do they still read as a grid? If **yes → option C**: a spec of its own for staggered house
+> siting (`ChooseSite`, `organic-housing.md`, D411–D413, D497's seams, D331's overlap, every reachable-door guarantee),
+> measured with `ZzPathShape` on the same saves before a line moves. If **no → note 1 is done**, and the branch waits
+> on Joe's play of all six notes; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D578)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D578: EVERY ALERT LEAVES THE VILLAGE AT 1×; THE OLD SPEED BACK IS A SETTINGS TICK, OFF BY DEFAULT; ⏸️ JOE TO PLAY IT WITH D580) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D577 as below, plus **D578**, asked
 > before note 1: *"anything there is a pop-up alert … it should take the game speed to 1x. after the pop-up is dismissed,
@@ -6887,6 +6910,21 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D579–D580 PAID FOR — A "CLEAN" RUN THAT WAS THE MUTANT, A GUARD THAT ASKED THE FUNCTION, AND A SAVE OPENED IN PLACE
+
+- **Headless Godot runs the last DLL that was built — it does not build on run here.** The red-check script builds the
+  game with the mutant in, probes, and reverts the source; a probe run straight after that, with no build, ran the
+  **mutant** and failed a sound check for twenty minutes of debugging. **After any red-check, `dotnet build
+  src/Bclone.Game` before the clean probe**, every time. (The earlier commits' final probes were all built first.)
+- **A probe that asks the function scores zero against a mesh that never calls it.** `paths:` first checked
+  `DrawnTrailPointOf` only; laying the mesh from the true points left it green. It reads the worn surface's vertices for
+  a mid-row tile's drawn point now. Check the thing drawn, not the thing that would be drawn.
+- **`SaveFile.Open` copies a damaged save to `.bad` beside it** — a harness pointed at Joe's save folder can write into
+  it. `ZzPathShape` reads copies in the scratchpad; any harness that opens his saves must.
+- **The review ranked causes by how deep they are in the code; the measurement ranked them by what they do.** The
+  handoff's three causes for the grid were four-way routing, D414, and tile obstacles, in that order — and the one that
+  mattered was the last. Two of the three fixes would have moved every golden for nothing.
 
 ## ⛔ THE TRAP D578 NEARLY PAID FOR — A RULE MADE OPTIONAL TURNS ITS OLD GUARD INTO A ZERO
 
