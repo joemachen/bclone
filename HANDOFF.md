@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D577: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN, SEEN BY JOE); THE BRIDGE'S NEWS IN THE NOMADS' STOP (D576), THAT STOP IN TWO SHORT MARKED PARAGRAPHS (D577) — ⏸️ JOE TO PLAY IT. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D578: JOE'S SIX NOTES (D568) BUILT THROUGH NOTE 4 (THE WALK-IN, SEEN BY JOE); THE NOMADS' STOP IN TWO SHORT MARKED PARAGRAPHS (D576–D577); EVERY ALERT LEAVES THE VILLAGE AT 1× (D578) — ⏸️ JOE TO PLAY D577–D578. THEN NOTE 1 (THE PATHS, A SPEC). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D577: THE NOMADS' MOMENT IN TWO SHORT PARAGRAPHS, EACH WITH ITS MARK; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D578: EVERY ALERT LEAVES THE VILLAGE AT 1×; THE OLD SPEED BACK IS A SETTINGS TICK, OFF BY DEFAULT; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D577 as below, plus **D578**, asked
+> before note 1: *"anything there is a pop-up alert … it should take the game speed to 1x. after the pop-up is dismissed,
+> it should leave the timer at 1x … that should be an option in game settings … default to off."* Every alert already
+> slowed the village (D268, `SlowDownForAnAlert`, waiting and passing alike; paused stays paused). Now
+> `LetTheVillageBackUpToSpeed` lets go of the hold but sets the old speed only when `_alertsGiveTheSpeedBack` — the tick
+> *Alerts → go back to my speed after an alert*, default **off**, remembered as `toggles.alert_speed_back` in
+> `settings.json` (the player's, never the village's). The registry is `_viewToggles` now (was `_mapToggles`). The pause
+> screen's *Resume* still gives the speed back — a menu, not an alert. Probe `alert speed:`; `arrival:` runs with the tick
+> on so its hold checks bite. 4 mutants, 5 reds. **View only, no golden moved.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (9m25 — the sim identical to D577's 9m04, so ~20 s is the run, and D577's jump from 7m58 reads as the machine more than the code); view 0 warnings; probe 88 lines (the new `alert speed:`), no ⛔, `alert speed:` / `arrival:` / `moment:` / `settings:` (11 toggles) / `map toggles:` (10) ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe plays D577 and D578 together** (a knock at 4×: one pop-up, two short paragraphs with their marks, and
+> the village left at 1× after *Go on*; the tick in Settings brings the old behaviour back). **Then note 1 — the paths'
+> gridding**, a design spec with options for Joe (D568 banner, far below). Then Joe plays all six; merge `--no-ff` and
+> push at his word only.
+>
+> **(the banner below is the state at D577)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D577: THE NOMADS' MOMENT IN TWO SHORT PARAGRAPHS, EACH WITH ITS MARK; ⏸️ JOE TO PLAY IT WITH D578) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D576 as below, plus **D577.** Joe
 > played D576 (one pop-up, as asked) and sent the panel: *"too verbose … 1 word wall. break it into 2 paragraphs. maybe
@@ -6866,6 +6887,15 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAP D578 NEARLY PAID FOR — A RULE MADE OPTIONAL TURNS ITS OLD GUARD INTO A ZERO
+
+- **`arrival:` checked that a banner fading mid-walk does not hand the 4× back.** With the hand-back off by default, that
+  check passes whether or not the walk keeps the hold — a guard that can no longer fail. When a behaviour becomes a
+  setting, find every guard that depended on the old default and pin the setting it needs (`arrival:` runs with the tick
+  on and puts it back); then guard the new default separately (`alert speed:`, both ways).
+- **A registry named for what it first held** (`_mapToggles`) misleads the day it holds something else. Renamed with the
+  first tick that was not the map's, rather than kept as a list beside it — a second list is a second thing to forget.
 
 ## ⛔ THE TRAPS D577 PAID FOR — A FLOOR HIDES A WIDENING, AND THE HEREDOC ATE `\n` THREE TIMES
 

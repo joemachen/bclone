@@ -57,6 +57,7 @@ by an exception to this line.
 | View | UI size (55–115 %, steps of 5; default 75) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
+| View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
 | Windows | each window's Settings tick (*shown*) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
 | Windows | where the player **dragged** it | `windows.<title>.side/x/y` |
 | New game | each row's value from the last valley founded | `new_game.<row id>` |
@@ -70,7 +71,8 @@ by an exception to this line.
 
 - **Every key is optional**; an absent key is the view's own default. A toggle or window added later is
   remembered the day it is written, because both come out of the registries that already build the
-  Settings panel (`_mapToggles`, `_windows`) — never a hand-kept list.
+  Settings panel (`_viewToggles` — `_mapToggles` until D578 filed the alerts' tick in it — and `_windows`) — never a
+  hand-kept list.
 - ⚠️ **A window is keyed by its title.** Renaming one forgets its place and fold, which falls back to
   the default: harmless, and said here so nobody calls it a bug.
 - ⭐ **A place is stored only once the player has dragged that window** — intent at the gesture

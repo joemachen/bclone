@@ -537,6 +537,7 @@ public partial class Main : Control
         GD.Print(TheNomadsTickIsTheVillages());
         GD.Print(TheArrivalMomentWaitsForTheWalkIn());
         GD.Print(TheMomentSpeaksInParagraphs());
+        GD.Print(TheAlertLeavesTheVillageAt1x());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -839,6 +840,10 @@ public partial class Main : Control
         _slowedForAnAlert = false;
         SetSpeed(4.0);
 
+        // ⚠️ With the speed handed back (D578's tick on): off, every "the hold kept 1×" below would pass for nothing.
+        bool givesBackWas = _alertsGiveTheSpeedBack;
+        _alertsGiveTheSpeedBack = true;
+
         var ids = new List<int>();
         for (int i = 0; i < world.Villagers.Count && ids.Count < 2; i++)
         {
@@ -900,11 +905,94 @@ public partial class Main : Control
         _celebrated.Remove(posed.LogLine);
         _slowedForAnAlert = slowedWas;
         _speedBeforeTheAlert = beforeWas;
+        _alertsGiveTheSpeedBack = givesBackWas;
         SetSpeed(speedWas);
 
         return faults.Count == 0
-            ? "[widths] arrival: ✅ a waiting moment waits for the band to walk in at 1×, shows the frame they are in, and Go on gives the speed back"
+            ? "[widths] arrival: ✅ a waiting moment waits for the band to walk in at 1×, shows the frame they are in, and Go on gives the speed back (the tick on)"
             : $"[widths] arrival: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The alerts' speed (Joe, D578): a waiting moment and a passing banner each bring a 4× village to 1×; with the
+    /// Settings tick off — the default — it stays at 1× once the alert is gone; on, the 4× comes back; and the tick
+    /// drives the switch and reads it, both ways.
+    /// </summary>
+    private string TheAlertLeavesTheVillageAt1x()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        DismissTheMoment();
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+        bool givesBackWas = _alertsGiveTheSpeedBack;
+        CheckBox tick = _viewToggles.Find(t => t.Key == AlertSpeedToggle).Box;
+
+        if (tick.ButtonPressed)
+        {
+            faults.Add("the tick starts on — the default is off");
+        }
+
+        foreach (bool givesBack in new[] { false, true })
+        {
+            tick.ButtonPressed = givesBack;
+            if (_alertsGiveTheSpeedBack != givesBack)
+            {
+                faults.Add($"the tick set {givesBack} and the switch reads {_alertsGiveTheSpeedBack}");
+            }
+
+            double after = givesBack ? 4.0 : 1.0;
+
+            // A waiting moment, and Go on.
+            _slowedForAnAlert = false;
+            SetSpeed(4.0);
+            var waits = new Moment { Title = "Posed alert", Body = "posed by the probe", WaitsToBeDismissed = true };
+            world.Moments.Add(waits);
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != 1.0)
+            {
+                faults.Add($"a waiting alert left the village at {_driver.SpeedMultiplier}x");
+            }
+
+            DismissTheMoment();
+            if (_driver.SpeedMultiplier != after)
+            {
+                faults.Add($"tick {(givesBack ? "on" : "off")}: Go on left {_driver.SpeedMultiplier}x, not {after}x");
+            }
+
+            // A passing banner, and its fade (the clock run past it by hand).
+            _slowedForAnAlert = false;
+            SetSpeed(4.0);
+            var passes = new Moment { Title = "Posed banner", Body = "posed by the probe, passing", WaitsToBeDismissed = false };
+            world.Moments.Add(passes);
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != 1.0)
+            {
+                faults.Add($"a passing alert left the village at {_driver.SpeedMultiplier}x");
+            }
+
+            _passingUntilMsec = 0;
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != after)
+            {
+                faults.Add($"tick {(givesBack ? "on" : "off")}: the banner faded at {_driver.SpeedMultiplier}x, not {after}x");
+            }
+
+            world.Moments.Remove(waits);
+            world.Moments.Remove(passes);
+            _celebrated.Remove(waits.LogLine);
+            _celebrated.Remove(passes.LogLine);
+        }
+
+        tick.ButtonPressed = givesBackWas;
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        SetSpeed(speedWas);
+
+        return faults.Count == 0
+            ? "[widths] alert speed: ✅ waiting and passing alerts slow a 4× village to 1×; tick off (the default) it stays at 1×, on the 4× comes back; the tick drives the switch"
+            : $"[widths] alert speed: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -2375,6 +2463,17 @@ public partial class Main : Control
     /// <summary>True while an alert is holding the village at 1×.</summary>
     private bool _slowedForAnAlert;
 
+    /// <summary>Whether the village goes back to the player's speed once the alerts are gone — the player's choice, off by default.</summary>
+    /// <remarks>
+    /// ⭐ <b>D578 amends D268</b> (Joe, 2026-10-13): <i>"after the pop-up is dismissed, it should leave the timer at 1x. it
+    /// should not remember/revert to the previous game speed as i have previously asked for. ive play tested a lot and
+    /// its kind of weird to go back to max speed. actually, that should be an option in game settings … default to
+    /// off."</i> Every alert still slows the village to 1× and the hold is still shared (the remarks above); only the
+    /// hand-back asks this. A tick under <i>Alerts</i> in Settings, remembered in <c>settings.json</c> — the player's,
+    /// never the village's (`settings-persistence.md §3`).
+    /// </remarks>
+    private bool _alertsGiveTheSpeedBack;
+
     /// <summary>The passing moment — celebrated, but the village keeps working.</summary>
     private PanelContainer? _passingPanel;
     private Label _passingTitle = null!;
@@ -2687,7 +2786,10 @@ public partial class Main : Control
         SetSpeed(1.0);
     }
 
-    /// <summary>Give the player their speed back, once no alert is still holding it.</summary>
+    /// <summary>
+    /// Let go of the hold once no alert is still holding it — and give the player their speed back only if they asked
+    /// for that in Settings (D578); by default the village stays at 1×.
+    /// </summary>
     /// <remarks>
     /// <b>⚠️ BOTH PANELS ARE ASKED, NOT JUST THE ONE BEING CLOSED.</b> Dismissing a gift while a
     /// discovery banner is still on screen would otherwise jump straight back to 10× and leave
@@ -2704,7 +2806,10 @@ public partial class Main : Control
         }
 
         _slowedForAnAlert = false;
-        SetSpeed(_speedBeforeTheAlert);
+        if (_alertsGiveTheSpeedBack)
+        {
+            SetSpeed(_speedBeforeTheAlert);
+        }
     }
 
     /// <summary>Whether the last refresh saw a band on the road (D573) — so the refresh that sees it end can hand the speed back.</summary>
@@ -6511,7 +6616,7 @@ public partial class Main : Control
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
-        _mapToggles.Add(("full_markers", "stores with no room", markers, () => _map.FullMarkersShown));
+        _viewToggles.Add(("full_markers", "stores with no room", markers, () => _map.FullMarkersShown));
 
         // The global half of D147's idle ring, beside the global half of D140's, because they
         // are the same kind of preference and a player looking for one will look for the other.
@@ -6519,7 +6624,7 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
-        _mapToggles.Add(("idle_markers", "buildings that cannot work", idle, () => _map.IdleMarkersShown));
+        _viewToggles.Add(("idle_markers", "buildings that cannot work", idle, () => _map.IdleMarkersShown));
 
         // ⭐ The wildlife is scenery rather than a marker, but it belongs with the other two:
         // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
@@ -6537,7 +6642,7 @@ public partial class Main : Control
         snap.AddThemeFontSizeOverride("font_size", 12);
         snap.Toggled += on => _map.SnapToGrid(on);
         body.AddChild(snap);
-        _mapToggles.Add(("snap", "snap to the grid", snap, () => _map.SnapsToGrid));
+        _viewToggles.Add(("snap", "snap to the grid", snap, () => _map.SnapsToGrid));
 
         // ⚠️ This caption used to promise that the ghost shows the tiles a building will
         // claim when snap is off. **The code never did that** — it showed them always, and
@@ -6555,7 +6660,7 @@ public partial class Main : Control
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
-        _mapToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
+        _viewToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
 
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in
@@ -6569,7 +6674,7 @@ public partial class Main : Control
         homes.AddThemeFontSizeOverride("font_size", 12);
         homes.Toggled += on => _map.ShowResidentialLand(on);
         body.AddChild(homes);
-        _mapToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
+        _viewToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
 
         var fields = new CheckBox
         {
@@ -6579,7 +6684,7 @@ public partial class Main : Control
         fields.AddThemeFontSizeOverride("font_size", 12);
         fields.Toggled += on => _map.ShowWorkGround(on);
         body.AddChild(fields);
-        _mapToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
+        _viewToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
 
         var marked = new CheckBox
         {
@@ -6589,13 +6694,13 @@ public partial class Main : Control
         marked.AddThemeFontSizeOverride("font_size", 12);
         marked.Toggled += on => _map.ShowHarvestLand(on);
         body.AddChild(marked);
-        _mapToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
+        _viewToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
 
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
-        _mapToggles.Add(("animals", "animals in the woods", wildlife, () => _map.GameShown));
+        _viewToggles.Add(("animals", "animals in the woods", wildlife, () => _map.GameShown));
 
         // Its own switch rather than one "scenery" tick, because the two answer different
         // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
@@ -6604,7 +6709,17 @@ public partial class Main : Control
         forage.AddThemeFontSizeOverride("font_size", 12);
         forage.Toggled += on => _map.ShowForage(on);
         body.AddChild(forage);
-        _mapToggles.Add(("berries", "berry patches in the woods", forage, () => _map.ForageShown));
+        _viewToggles.Add(("berries", "berry patches in the woods", forage, () => _map.ForageShown));
+
+        // ⭐ THE ALERTS' SPEED (Joe, D578): every pop-up brings the village to 1×, and by default it stays there. The
+        // player's own preference — under its own heading, not *How the village runs*, which is the village's rules.
+        body.AddChild(Muted("Alerts"));
+        var speedBack = new CheckBox { Text = "go back to my speed after an alert", ButtonPressed = false };
+        speedBack.AddThemeFontSizeOverride("font_size", 12);
+        speedBack.Toggled += on => _alertsGiveTheSpeedBack = on;
+        body.AddChild(speedBack);
+        _viewToggles.Add((AlertSpeedToggle, "go back to my speed after an alert", speedBack, () => _alertsGiveTheSpeedBack));
+        body.AddChild(Caption("Off: every alert slows the village to 1×, and it stays at 1× once you have read it."));
 
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
@@ -6635,7 +6750,7 @@ public partial class Main : Control
         // ⭐ Every map tick is remembered (D504) — hooked here, once, off the registry, so a tick added
         // above is remembered the day it is written. ⛔ The share-out tick is NOT: it is the village's
         // (hashed), and goes with save/load (`settings-persistence.md §3`).
-        foreach ((_, _, CheckBox box, _) in _mapToggles)
+        foreach ((_, _, CheckBox box, _) in _viewToggles)
         {
             box.Toggled += _ => SettingsChanged();
         }
@@ -7801,7 +7916,7 @@ public partial class Main : Control
     /// halves of a fact that is stated twice and asks whether they match.*
     /// </para>
     /// <para>
-    /// ⚠️ It only covers the toggles registered in <c>_mapToggles</c>, and a fifth
+    /// ⚠️ It only covers the toggles registered in <c>_viewToggles</c>, and a fifth
     /// toggle that forgets to register is invisible to it. *The list is one line beside the
     /// control; there is no way to make it automatic without reflection, which this project does
     /// not use.*
@@ -7818,9 +7933,9 @@ public partial class Main : Control
     {
         var wrong = new System.Collections.Generic.List<string>();
 
-        for (int i = 0; i < _mapToggles.Count; i++)
+        for (int i = 0; i < _viewToggles.Count; i++)
         {
-            (_, string name, CheckBox box, System.Func<bool> mapSays) = _mapToggles[i];
+            (_, string name, CheckBox box, System.Func<bool> mapSays) = _viewToggles[i];
 
             if (box.ButtonPressed != mapSays())
             {
@@ -7829,7 +7944,7 @@ public partial class Main : Control
         }
 
         return wrong.Count == 0
-            ? $"[widths] map toggles: ✅ all {_mapToggles.Count} ticks match the map"
+            ? $"[widths] map toggles: ✅ all {_viewToggles.Count} ticks match the map"
             : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
     }
 
@@ -8088,11 +8203,11 @@ public partial class Main : Control
     }
 
     /// <summary>
-    /// Each map toggle: the id the settings file remembers it by (D504), its name, its tick, and what
-    /// the map itself believes — for the probe.
+    /// Each view toggle: the id the settings file remembers it by (D504), its name, its tick, and what
+    /// the thing it drives believes — for the probe. The map's ticks, and since D578 the alerts' one.
     /// </summary>
     private readonly System.Collections.Generic.List<(
-        string Key, string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
+        string Key, string Name, CheckBox Box, System.Func<bool> MapSays)> _viewToggles = new();
 
     /// <summary>
     /// ⭐ Write the baked valley out as a PNG — <b>the only way anything but Joe has ever

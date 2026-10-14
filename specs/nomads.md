@@ -285,7 +285,8 @@ last half second; over the last 15 % of the walk the point bends to wherever the
 ordinary glide), so the handover never snaps. `DrawnCentre` asks the walk-in first, so a click on a walker lands on
 the dot. **The arrival moment waits** (Joe): `Main.ShowAnyMoment` skips every waiting moment while the map says a walk
 is underway (passing banners drain as ever), the shell drops the village to **1×** the frame a walk begins
-(`SlowDownForAnAlert`, the alert's own hold) and refuses to hand the speed back while anybody is on the road; the
+(`SlowDownForAnAlert`, the alert's own hold) and refuses to hand the speed back while anybody is on the road (since
+D578 the speed comes back at all only when the player ticked *go back to my speed after an alert*); the
 moment shows the frame the last is in and takes the hold over. **Paused, they stand still** — the walk clock is the
 map's and the shell tells it the village is paused; a skip that crosses a knock pauses on the moment as today, so
 the band waits at the edge until the player unpauses, walks in, and the moment follows. **A load never replays it**:
