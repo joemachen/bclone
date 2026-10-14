@@ -82,6 +82,13 @@ against a number from an older commit.
   year a village holds 10 / 12 / 15 / 20 / 25 people. `Crossings` (`ZZX`): a played opening, a wooden bridge raised free at
   Year 5 at the crossing nearest the founding, a forager's hut marked on the far bank and an 8×8 patch painted for homes
   beyond it; crossings per year, Years 5–35. Copy in, `-c Release --filter ZzBridges.<method>`, delete.
+- `ZzPathShape.cs` + `pathshape.py` — D579's measurement of the paths' gridding (`specs/path-shapes.md`): opens each save
+  in `ZZ_SAVES` (⚠️ a COPY of Joe's folder — `SaveFile.Open` keeps a damaged file as `.bad` beside it), runs it `ZZ_YEARS`
+  (10) more under each of `ZZ_ARMS` (`now` = as saved, `base`, `allowN` = `path_shortcut_grass_allowance` N; a code arm
+  is the same harness on a tree carrying the change), and prints `ZZP`: the village's path tiles, the share in straight
+  axis lanes of five or more, sharp corners, diagonal links, the share beside a building, and the same outside the
+  village. `ZZ_OUT` writes each village as a character grid; `python -X utf8 -I tools/harness/pathshape.py OUT.png
+  A.grid B.grid …` draws them side by side (PIL). Copy in, `-c Release --filter ZzPathShape`, delete.
 - `ZzBridgeKnock.cs` — D576's measurement: the first year each village held 10 / 12 / 15 / 20 people with nomads on, and
   whether that tick was a knock (`K`). Needs `ZzBridges.cs` copied in beside it for the seed list. Copy both in,
   `-c Release --filter ZzBridgeKnock`, delete both.

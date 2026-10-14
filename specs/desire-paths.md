@@ -187,6 +187,9 @@ lane the route prefers can be a longer walk than the chord it replaces — §3.3
 the field, not this. Measured it does not bite (the thirty-year runs walked *fewer* villager-ticks),
 because a worn lane is where straight walks already went. If a village ever shows walkers going the
 long way round on a lane, this is where to look.
+⭐ **And the lattice Joe saw in the village (D568) is not this tension** — measured in `path-shapes.md` (D579): the
+village's paths are the corridors between tile-aligned buildings, and neither loosening this rule nor turning the
+route's ties toward the diagonal unbends them. Loosening it made the lattice worse.
 
 ### 3.7 The well is a destination (D427, `organic-housing.md §9.12`)
 
