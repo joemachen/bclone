@@ -33,11 +33,21 @@ internal sealed class TrailNetwork
     /// <summary>Smoothing passes over each lane (Chaikin): enough to round a corner, few enough to keep its place.</summary>
     private const int SmoothingPasses = 2;
 
-    private TrailNetwork(List<Lane> lanes, List<(Vector2 At, byte Grade)> junctions, int bridged)
+    /// <summary>How far round a building a detour may look, in tiles beyond either end of the step (D583).</summary>
+    private const int DetourReach = 4;
+
+    /// <summary>A detour's step on unworn ground against 1 on worn: it keeps to where people walked (D583).</summary>
+    private const int DetourBareGroundCost = 4;
+
+    /// <summary>The detour's four ways, in a fixed order.</summary>
+    private static readonly (int, int)[] FourWays = { (1, 0), (-1, 0), (0, 1), (0, -1) };
+
+    private TrailNetwork(List<Lane> lanes, List<(Vector2 At, byte Grade)> junctions, int bridged, int cuts)
     {
         Lanes = lanes;
         Junctions = junctions;
         BridgedTiles = bridged;
+        CutSteps = cuts;
     }
 
     /// <summary>The lanes, in the order traced.</summary>
@@ -49,8 +59,11 @@ internal sealed class TrailNetwork
     /// <summary>How many one-tile gaps were bridged — for the probe.</summary>
     public int BridgedTiles { get; }
 
+    /// <summary>How many steps had no way round a building and were cut at its walls (D583: the last resort) — for the probe.</summary>
+    public int CutSteps { get; }
+
     /// <summary>A network with nothing in it.</summary>
-    public static TrailNetwork Empty { get; } = new(new List<Lane>(), new List<(Vector2, byte)>(), 0);
+    public static TrailNetwork Empty { get; } = new(new List<Lane>(), new List<(Vector2, byte)>(), 0, 0);
 
     /// <summary>
     /// The network of the worn ground in a window of the valley.
@@ -329,6 +342,7 @@ internal sealed class TrailNetwork
         Walk();
 
         var hubPoints = new Dictionary<int, Vector2>();
+        int cuts = 0;
         var lanes = new List<Lane>();
         for (int p = 0; p < paths.Count; p++)
         {
@@ -351,7 +365,7 @@ internal sealed class TrailNetwork
             }
         }
 
-        return new TrailNetwork(lanes, junctions, bridged);
+        return new TrailNetwork(lanes, junctions, bridged, cuts);
 
         int Key(int i) => hub[i] >= 0 ? hub[i] : i;
 
@@ -583,8 +597,30 @@ internal sealed class TrailNetwork
                 }
             }
 
-            Vector2[] points = placed.ToArray();
-            byte[] grades = graded.ToArray();
+            // ⭐⭐ ROUND THE BUILDING, NOT ACROSS IT, AND NOT CUT AT ITS WALLS (D583, Joe: "the path should go around the
+            // building"). A step that would still cross one is replaced by the ground round it — the worn ground first —
+            // from tile centre to tile centre, four ways, so no step of the detour clips a corner.
+            var routed = new List<Vector2>(placed.Count + 8);
+            var routedGrades = new List<byte>(placed.Count + 8);
+            steps = loop ? placed.Count : placed.Count - 1;
+            for (int k = 0; k < placed.Count; k++)
+            {
+                routed.Add(placed[k]);
+                routedGrades.Add(graded[k]);
+                int next = (k + 1) % placed.Count;
+                if (k < steps && Crosses(placed[k], placed[next]) && Detour(placed[k], placed[next]) is List<Vector2> round)
+                {
+                    byte g = Math.Min(graded[k], graded[next]);
+                    foreach (Vector2 point in round)
+                    {
+                        routed.Add(point);
+                        routedGrades.Add(g);
+                    }
+                }
+            }
+
+            Vector2[] points = routed.ToArray();
+            byte[] grades = routedGrades.ToArray();
 
             for (int pass = 0; pass < SmoothingPasses && points.Length > 2; pass++)
             {
@@ -594,9 +630,84 @@ internal sealed class TrailNetwork
             return CutAtBuildings(points, grades, loop, startsDead, endsDead);
         }
 
-        // ⛔ THE INVARIANT, LAST (D582): a step that would still cross a building — a lane leaving a junction that rings a
-        // one-tile store, say — is not drawn. The lane stops at the wall on each side, which is what a path to a door
-        // looks like; a line over a building is a path nobody could walk.
+        // ⛔ THE LAST RESORT (D582; since D583 only when there is no way round — a building walled in on every side, which
+        // placement refuses): a step that would still cross a building is not drawn, and the lane stops at its walls.
+        // A line over a building is a path nobody could walk.
+
+        // The tiles round a building from a's tile to b's: Dijkstra, four ways, over unblocked tiles within four of
+        // either end — a worn tile costs 1, bare ground 4, so the detour keeps to where people walked. Tile centres, both
+        // ends included; null if nothing goes round.
+        List<Vector2>? Detour(Vector2 a, Vector2 b)
+        {
+            int ax = Mathf.RoundToInt(a.X) - originX, ay = Mathf.RoundToInt(a.Y) - originY;
+            int bx = Mathf.RoundToInt(b.X) - originX, by = Mathf.RoundToInt(b.Y) - originY;
+            int x0 = Math.Max(0, Math.Min(ax, bx) - DetourReach), x1 = Math.Min(width - 1, Math.Max(ax, bx) + DetourReach);
+            int y0 = Math.Max(0, Math.Min(ay, by) - DetourReach), y1 = Math.Min(height - 1, Math.Max(ay, by) + DetourReach);
+            if (!Inside(ax, ay) || !Inside(bx, by) || blocked[(ay * width) + ax] || blocked[(by * width) + bx])
+            {
+                return null;
+            }
+
+            int start = (ay * width) + ax, goal = (by * width) + bx;
+            var cost = new Dictionary<int, int> { [start] = 0 };
+            var back = new Dictionary<int, int>();
+            var open = new PriorityQueue<int, long>();
+            open.Enqueue(start, start);
+            while (open.TryDequeue(out int here, out long priority))
+            {
+                int settled = (int)(priority / n);
+                if (settled != cost[here])
+                {
+                    continue;
+                }
+
+                if (here == goal)
+                {
+                    break;
+                }
+
+                int hx = here % width, hy = here / width;
+                foreach ((int dx, int dy) in FourWays)
+                {
+                    int nx = hx + dx, ny = hy + dy;
+                    if (!Inside(nx, ny) || nx < x0 || nx > x1 || ny < y0 || ny > y1 || blocked[(ny * width) + nx])
+                    {
+                        continue;
+                    }
+
+                    int there = (ny * width) + nx;
+                    int step = settled + (shape[there] > 0 ? 1 : DetourBareGroundCost);
+                    if (!cost.TryGetValue(there, out int known) || step < known || (step == known && here < back[there]))
+                    {
+                        cost[there] = step;
+                        back[there] = here;
+                        open.Enqueue(there, ((long)step * n) + there);
+                    }
+                }
+            }
+
+            if (!back.ContainsKey(goal) && goal != start)
+            {
+                return null;
+            }
+
+            var tiles = new List<int> { goal };
+            while (tiles[^1] != start)
+            {
+                tiles.Add(back[tiles[^1]]);
+            }
+
+            tiles.Reverse();
+            var round = new List<Vector2>(tiles.Count);
+            foreach (int t in tiles)
+            {
+                round.Add(new Vector2(originX + (t % width), originY + (t / width)));
+            }
+
+            return round;
+
+            bool Inside(int x, int y) => x >= 0 && y >= 0 && x < width && y < height;
+        }
         List<Lane> CutAtBuildings(Vector2[] points, byte[] grades, bool loop, bool startsDead, bool endsDead)
         {
             int count = points.Length;
@@ -610,6 +721,11 @@ internal sealed class TrailNetwork
             if (firstCut < 0)
             {
                 return new List<Lane> { new(points, grades, loop, startsDead, endsDead) };
+            }
+
+            for (int k = 0; k < segments; k++)
+            {
+                cuts += Crosses(points[k], points[(k + 1) % count]) ? 1 : 0;
             }
 
             // Walk once round (a loop starts just past its first cut), starting a new piece after every cut.
@@ -706,18 +822,50 @@ internal sealed class TrailNetwork
             return x >= 0 && y >= 0 && x < width && y < height && blocked[(y * width) + x];
         }
 
-        // Whether the line from a to b passes over a building — sampled at quarter steps, as the probe asks.
+        // Whether the line from a to b passes over a building — every tile it enters, walked exactly (a tile is the unit
+        // square round its integer centre). ⚠️ Not sampled: five samples along a long diagonal slipped past a building's
+        // corner on Joe's village, and the smoothing then cut the shorter step it made (D583).
         bool Crosses(Vector2 a, Vector2 b)
         {
-            for (int q = 0; q <= 4; q++)
+            int x = Mathf.RoundToInt(a.X), y = Mathf.RoundToInt(a.Y);
+            int endX = Mathf.RoundToInt(b.X), endY = Mathf.RoundToInt(b.Y);
+            if (TileBlocked(x, y))
             {
-                if (OnABuilding(a.Lerp(b, q / 4f)))
+                return true;
+            }
+
+            float dx = b.X - a.X, dy = b.Y - a.Y;
+            int stepX = Math.Sign(dx), stepY = Math.Sign(dy);
+            float tMaxX = stepX == 0 ? float.MaxValue : (x + (stepX * 0.5f) - a.X) / dx;
+            float tMaxY = stepY == 0 ? float.MaxValue : (y + (stepY * 0.5f) - a.Y) / dy;
+            float tDeltaX = stepX == 0 ? float.MaxValue : stepX / dx;
+            float tDeltaY = stepY == 0 ? float.MaxValue : stepY / dy;
+            for (int guard = 0; (x != endX || y != endY) && guard < 64; guard++)
+            {
+                if (tMaxX < tMaxY)
+                {
+                    x += stepX;
+                    tMaxX += tDeltaX;
+                }
+                else
+                {
+                    y += stepY;
+                    tMaxY += tDeltaY;
+                }
+
+                if (TileBlocked(x, y))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        bool TileBlocked(int x, int y)
+        {
+            int wx = x - originX, wy = y - originY;
+            return wx >= 0 && wy >= 0 && wx < width && wy < height && blocked[(wy * width) + wx];
         }
 
         List<int> NeighboursOf(int i)

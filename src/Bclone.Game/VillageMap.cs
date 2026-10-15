@@ -5211,9 +5211,43 @@ public partial class VillageMap : Control
         string[] past = { "wwwwwww", "..wBw..", "..www.." };
         TrailNetwork passing = Shape(past);
         int acrossIt = OnTheBuildings(passing, past);
-        if (acrossIt > 0)
+        if (acrossIt > 0 || passing.CutSteps > 0)
         {
-            faults.Add($"a lane past a one-tile building is drawn across it ({acrossIt} samples on it)");
+            faults.Add($"a lane past a one-tile building is drawn across it ({acrossIt} samples on it) or cut at its walls ({passing.CutSteps})");
+        }
+
+        // ⭐⭐ JOE'S OWN VILLAGE (D583, `thornfield-crow-birch-49`, Spring Year 9 — worn ground and footprints as the game
+        // read them): the lane from the south-west passes a one-tile store inside a ring of worn ground. D582 cut it at the
+        // store's walls (Joe: "the path should go around the building"); it goes round now, on the worn ground, uncut.
+        string[] thornfield =
+        {
+            "...BBBBBBBBBBB......B",
+            ".....BBBBBBB.........",
+            "......BBBBpp.........",
+            "..BB....BB.p.........",
+            ".........p.p...BB..B.",
+            "..BB..BBwppppppppppB.",
+            "......BBBpppp........",
+            "......BwBwwBpB.......",
+            "....pppppppppB.......",
+            "..wpppp..............",
+            ".wwwBB...............",
+            ".wwwBB...............",
+            ".....................",
+        };
+        TrailNetwork village = Shape(thornfield);
+        int onHisStores = OnTheBuildings(village, thornfield);
+        if (onHisStores > 0 || village.CutSteps > 0)
+        {
+            faults.Add($"Joe's village draws {onHisStores} samples across a building and cuts {village.CutSteps} steps at a wall");
+        }
+
+        // And where the only way round is ground nobody wore, the lane still goes round — not across, not cut.
+        string[] bare = { "...w...", "wwwBwww", "......." };
+        TrailNetwork unworn = Shape(bare);
+        if (OnTheBuildings(unworn, bare) > 0 || unworn.CutSteps > 0)
+        {
+            faults.Add($"a lane whose only way round a building is bare ground crosses it ({OnTheBuildings(unworn, bare)} samples) or is cut ({unworn.CutSteps} cuts)");
         }
 
         // A packed hub with four lanes out: a junction and its spokes — lines, never a fill.
@@ -5293,7 +5327,8 @@ public partial class VillageMap : Control
         return faults.Count == 0
             ? "[widths] trails: ✅ the network reads a row, a staircase and a corridor as one lane each, a ladder as one lane, "
                 + $"a ring round a hut as one loop off the hut, a packed hub as {hub.Lanes.Count} spokes and {hub.Junctions.Count} junction; two lanes apart or walled "
-                + "stay two; a short lane up to a door stays; a lone 2×2 draws; the same shape draws the same"
+                + "stay two; a short lane up to a door stays; a lane past a one-tile store, and Joe's own village, go round it uncut; "
+                + "a lone 2×2 draws; the same shape draws the same"
             : $"[widths] trails: ⛔ {string.Join("; ", faults)}";
 
         TrailNetwork Shape(params string[] rows) => ShapeWith(false, rows);

@@ -328,6 +328,13 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   ⚠️ *Keeping* the corner pixel was tried first and made every pixel of the ring a junction, whose middle was the
   building. On Joe's own village (a copy of his save, opened through the game for one run): 2 samples across a building
   before, 0 after.
+- [x] ⭐ **D583 — ROUND the building, not cut at its walls.** Joe on D582: *"Nope. Doesn't look good. The path should go
+  around the building."* The cut left two pieces still aimed through it. Now a step that would cross a building is
+  **rerouted** before smoothing: a small Dijkstra from one end's tile to the other's, four ways (so no step of it clips a
+  corner), worn ground 1 and bare ground 4, within four tiles; its tile centres go into the lane, and the smoothing
+  rounds them. The crossing test walks every tile a step enters, exactly — five samples a step slipped past a building's
+  corner on his village. The cut is the last resort (no way round at all) and `CutSteps` counts it; his village draws 0.
+  His village is a probe shape now (`trails:`), as the game read it in Spring Year 9.
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
   *"-50% line thickness"* → `TrailHalfWidth` 0.17.

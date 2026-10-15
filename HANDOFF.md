@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D582: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED (D577's TWO PARAGRAPHS APPROVED); NOTE 1 ON ITS FOURTH PASS — THE PATHS DRAWN AS A NETWORK (D581), NEVER ACROSS A BUILDING (D582) — ⏸️ JOE TO LOOK AGAIN, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D583: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED (D577 APPROVED); NOTE 1 ON ITS FIFTH PASS — THE PATHS DRAWN AS A NETWORK (D581) THAT GOES ROUND BUILDINGS (D582–D583) — ⏸️ JOE TO LOOK AGAIN, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D582: A LANE NEVER DRAWN ACROSS A BUILDING; D577 APPROVED; ⏸️ JOE TO LOOK AGAIN) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D583: A LANE GOES ROUND A BUILDING, NOT CUT AT ITS WALLS; ⏸️ JOE TO LOOK AGAIN) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D582 as below, plus **D583.** Joe on
+> D582: *"Nope. Doesn't look good. The path should go around the building."* D582 cut a crossing step at the walls, so the
+> two pieces still aimed through. Now `TrailNetwork` **reroutes** such a step round the building on the worn ground (a
+> small four-way Dijkstra, worn 1 / bare 4, within four tiles), the smoothing rounds it, and the crossing test walks every
+> tile a step enters exactly; the cut is the last resort (`CutSteps`). His village (`thornfield-crow-birch-49`, Spring Year
+> 9, as the game read it) is now a `trails:` shape: 0 cuts, nothing across a building. 5 mutants, 3 reds, 2 zeros written
+> down. **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (⚠️ 10m29 against D582's 8m43 — no sim code changed since D581, and Joe's wordgame Godot ran beside it, so read as the machine); view 0 warnings; probe after a fresh build 89 lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.`; goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe looks at the same store** (`thornfield-crow-birch-49`, *Continue*): the lane from the south-west should
+> bend up through the gap and run along the north side of the small store, one lane, not cut. Then the branch waits on his
+> word to merge `--no-ff` and push.
+>
+> **(the banner below is the state at D582)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D582: A LANE NEVER DRAWN ACROSS A BUILDING; D577 APPROVED — LOOKED: *"should go around"*, SO D583) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D581 as below, plus **D582.** Joe
 > played D581: *"what do you think?"* — the network reads as walked paths (ladders, rings, blob gone), but one lane ran
@@ -6949,6 +6967,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D583 PAID FOR — THE WRONG INVARIANT, AND A SAMPLED LINE
+
+- **"Never crosses a building" was an invariant Joe never asked for; "goes round it" was.** D582 satisfied the first by
+  cutting the lane at the walls, and the two pieces read exactly as the crossing it prevented. A safety net that removes
+  the drawing reads as the thing it guards against — ask what the player should *see*, not what the code must not do.
+- **Sampling a segment is not walking it.** Five samples along a long diagonal slipped past a building's corner on Joe's
+  village; a shorter step made later by the smoothing was then caught and cut. The crossing test walks every tile the
+  step enters (a grid traversal); the probe's quarter-step sampler is looser on purpose — the network must be stricter
+  than the guard that checks it.
+- **A player's own village makes the best probe shape.** His worn ground and footprints, printed once through the game
+  from a copy of his save, are a `trails:` shape now — the exact place he pointed at, forever.
 
 ## ⛔ THE TRAPS D582 PAID FOR — A POSE SIZED TO PASS, THE LINE BETWEEN THE POINTS, AND A FIX THAT BECAME THE BUG
 
