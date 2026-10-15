@@ -319,6 +319,15 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   — measured on Joe's own village it cut the three-tile lane up to a store's door and changed nothing else. Probes
   `trails:` (hand-drawn shapes straight into `TrailNetwork`), `paths:` (the valley's own network on its own ground, never on
   a building), `field lanes:` (D512 on the network).
+- [x] ⛔ **D582 — a lane is never drawn across a building.** Joe's screenshot of D581: a lane straight across a one-tile
+  store. Points never stood on a building, but the line between them could: tidying a ring's corner pixels round a
+  one-tile building left a diamond through its corners, and smoothing and the wander pulled lanes inward. Now a dropped
+  corner that the line would cut a building's corner without is **remembered** and the lane is laid round it; the
+  wander and the smoothing are not taken where they would cross; a junction's middle on a building moves to its nearest
+  own pixel; and, last, **a step that would still cross a building is cut** — the lane stops at the wall on each side.
+  ⚠️ *Keeping* the corner pixel was tried first and made every pixel of the ring a junction, whose middle was the
+  building. On Joe's own village (a copy of his save, opened through the game for one run): 2 samples across a building
+  before, 0 after.
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
   *"-50% line thickness"* → `TrailHalfWidth` 0.17.

@@ -309,7 +309,8 @@ moment of its own — Joe got both at once; a band crosses the number in nearly 
 (the walk-in's chevron over a villager's dot): *"The Brooks, 2 souls, have come up the valley to make a home here.
 Until a house is raised for them in the painted land, they sleep in the open at the founding site. Spring, Year 11."*
 The second, only when their coming taught it, marked *bridge*: *"On the long road here they learned to lay timber
-across running water. The village can build wooden bridges now, and the far bank is within reach."* The food-a-head
+across running water. The village can build wooden bridges now, and the far bank is within reach."* ✅ **Played and
+approved** (Joe, 2026-10-14: *"2 paragraph nomads/bridge — approved"*). The food-a-head
 sentence went with the wall (the bar carries it). `Moment.Marks` (one `MomentMark` a paragraph, saved, optional on
 read), paragraphs split by `Moment.ParagraphBreak`, the log given `Moment.LogLine` — one line, so a log entry stays a
 line and the view still finds a moment's own line to set in the celebrated weight. The view draws the marks

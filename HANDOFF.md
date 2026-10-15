@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D581: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED; NOTE 1: MEASURED (D579), OPTION A (D580) PLAYED AND NOT ENOUGH, OPTION E — THE PATHS DRAWN AS A NETWORK (D581, VIEW ONLY) — ⏸️ JOE TO PLAY D581 (AND D577–D578). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D582: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED (D577's TWO PARAGRAPHS APPROVED); NOTE 1 ON ITS FOURTH PASS — THE PATHS DRAWN AS A NETWORK (D581), NEVER ACROSS A BUILDING (D582) — ⏸️ JOE TO LOOK AGAIN, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D581: THE PATHS DRAWN AS A NETWORK — OPTION E; C NOT BUILT; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D582: A LANE NEVER DRAWN ACROSS A BUILDING; D577 APPROVED; ⏸️ JOE TO LOOK AGAIN) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D581 as below, plus **D582.** Joe
+> played D581: *"what do you think?"* — the network reads as walked paths (ladders, rings, blob gone), but one lane ran
+> straight across a one-tile store; and *"2 paragraph nomads/bridge — approved"* (D577 played). Fixed in
+> `TrailNetwork.cs`: remembered corners round a building, the wander and smoothing kept off buildings, a junction's middle
+> off one, and a final cut at the wall for any step that still crosses. On a copy of his village: 2 samples across a
+> building before, 0 after. 5 mutants, 2 reds, 3 zeros written down (`DESIGN.md` D582). **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m43); view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe looks at the same spot** (`thornfield-crow-birch-49`, *Continue*): the lane should stop at the
+> small store's walls instead of crossing it. Then **the branch waits on his word**: notes 2–5 are built and played, note 1
+> is on its fourth pass (D579–D582). Merge `--no-ff` and push only when he says so.
+>
+> **(the banner below is the state at D581)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D581: THE PATHS DRAWN AS A NETWORK — OPTION E; C NOT BUILT — PLAYED, ONE FAULT, D582) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D580 as below, plus **D581.** Joe
 > played D580: *"still looks like a grid. proceed with C."* Before spec'ing C his newest save was read (read-only):
@@ -6931,6 +6949,21 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D582 PAID FOR — A POSE SIZED TO PASS, THE LINE BETWEEN THE POINTS, AND A FIX THAT BECAME THE BUG
+
+- **A pose sized to pass hides the case that fails.** The ring check was round a 2×2 hut; Joe's screenshot was a
+  one-tile store, where the corner tidy-up leaves a diamond through the building. Pose the smallest case of the shape.
+- **A probe that checks points cannot see the line between them.** `paths:` and `trails:` asked whether drawn points
+  stood on buildings; the lane crossed between two points that did not. Both sample every quarter-step now.
+- **The first fix made it worse.** Keeping the corner pixel gave every pixel of a small ring three neighbours, the whole
+  ring merged into one junction, and the junction's middle was the building (236 samples on it, from 1). Keep the
+  topology simple and fix the geometry — the corner is remembered, not kept.
+- **A safety net masks the refinements above it.** The final cut-at-the-wall makes the smoothing and wander guards
+  unobservable by any "never on a building" check — their mutants score zero, and that is written down rather than
+  presented as evidence.
+- **Not every Godot is ours.** A Godot process after a probe run was Joe's wordgame (`--path D:\Projects\wordgame\game`);
+  check the command line (`Get-CimInstance Win32_Process`) before killing anything.
 
 ## ⛔ THE TRAPS D581 PAID FOR — THE PLAYER'S FIX, THE TEXTBOOK'S CLEAN-UP, AND A CHECK THAT COULD NOT FAIL
 

@@ -5191,19 +5191,29 @@ public partial class VillageMap : Control
             "wBBw",
             "wBBw",
             "wwww");
-        int onTheHut = 0;
-        foreach (TrailNetwork.Lane lane in ring.Lanes)
-        {
-            foreach (Vector2 point in lane.Points)
-            {
-                int x = Mathf.RoundToInt(point.X), y = Mathf.RoundToInt(point.Y);
-                onTheHut += x is >= 1 and <= 2 && y is >= 1 and <= 2 ? 1 : 0;
-            }
-        }
-
+        int onTheHut = OnTheBuildings(ring, "wwww", "wBBw", "wBBw", "wwww");
         if (ring.Lanes.Count != 1 || !ring.Lanes[0].Closed || onTheHut > 0)
         {
-            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes (closed: {ring.Lanes.Count == 1 && ring.Lanes[0].Closed}), {onTheHut} points on the hut");
+            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes (closed: {ring.Lanes.Count == 1 && ring.Lanes[0].Closed}), {onTheHut} samples on the hut");
+        }
+
+        // ⛔ AND ROUND A ONE-TILE BUILDING (D582, Joe's screenshot: a lane drawn straight across a small store). A ring
+        // round one tile is where tidying the line's corners and smoothing it pulled the loop onto the building; and a
+        // lane passing one with worn ground on three sides of it must go round, not through.
+        string[] small = { "www", "wBw", "www" };
+        TrailNetwork smallRing = Shape(small);
+        int onTheStore = OnTheBuildings(smallRing, small);
+        if (smallRing.Lanes.Count != 1 || !smallRing.Lanes[0].Closed || onTheStore > 0)
+        {
+            faults.Add($"a ring round a one-tile building is {smallRing.Lanes.Count} lanes with {onTheStore} samples on the building");
+        }
+
+        string[] past = { "wwwwwww", "..wBw..", "..www.." };
+        TrailNetwork passing = Shape(past);
+        int acrossIt = OnTheBuildings(passing, past);
+        if (acrossIt > 0)
+        {
+            faults.Add($"a lane past a one-tile building is drawn across it ({acrossIt} samples on it)");
         }
 
         // A packed hub with four lanes out: a junction and its spokes — lines, never a fill.
@@ -5307,6 +5317,35 @@ public partial class VillageMap : Control
             }
 
             return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null);
+        }
+
+        // Every point of every lane, and every quarter-step along the line between two — on a building's tile (D582: a
+        // probe that asked the points could not see the line between them).
+        static int OnTheBuildings(TrailNetwork network, params string[] rows)
+        {
+            int on = 0;
+            foreach (TrailNetwork.Lane lane in network.Lanes)
+            {
+                int segments = lane.Closed ? lane.Points.Length : lane.Points.Length - 1;
+                for (int k = 0; k < Math.Max(1, segments); k++)
+                {
+                    Vector2 a = lane.Points[k];
+                    Vector2 b = lane.Points[Math.Min(lane.Points.Length - 1, k + 1) % lane.Points.Length];
+                    if (lane.Closed)
+                    {
+                        b = lane.Points[(k + 1) % lane.Points.Length];
+                    }
+
+                    for (int q = 0; q < 4; q++)
+                    {
+                        Vector2 at = a.Lerp(b, q / 4f);
+                        int x = Mathf.RoundToInt(at.X), y = Mathf.RoundToInt(at.Y);
+                        on += y >= 0 && y < rows.Length && x >= 0 && x < rows[y].Length && rows[y][x] == 'B' ? 1 : 0;
+                    }
+                }
+            }
+
+            return on;
         }
 
         static float Furthest(TrailNetwork network, Func<Vector2, float> off)
@@ -5428,7 +5467,6 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                onABuilding += blocked[(y * width) + x] ? 1 : 0;
                 bool nearWorn = false;
                 for (int dy = -1; dy <= 1 && !nearWorn; dy++)
                 {
@@ -5441,11 +5479,25 @@ public partial class VillageMap : Control
 
                 offTheGround += nearWorn ? 0 : 1;
             }
+
+            // ⛔ And the line between the points (D582): a probe that asked the points could not see a lane drawn across a
+            // one-tile store. Every quarter-step of every step.
+            int steps = lane.Closed ? lane.Points.Length : lane.Points.Length - 1;
+            for (int k = 0; k < steps; k++)
+            {
+                for (int q = 0; q < 4; q++)
+                {
+                    Vector2 at = lane.Points[k].Lerp(lane.Points[(k + 1) % lane.Points.Length], q / 4f);
+                    int x = Mathf.RoundToInt(at.X) - minX;
+                    int y = Mathf.RoundToInt(at.Y) - minY;
+                    onABuilding += x >= 0 && y >= 0 && x < width && y < height && blocked[(y * width) + x] ? 1 : 0;
+                }
+            }
         }
 
         if (onABuilding > 0 || offTheGround > 0)
         {
-            faults.Add($"{onABuilding} of {points} drawn points on a building or water, {offTheGround} away from any worn ground");
+            faults.Add($"{onABuilding} samples of the lanes on a building or water, {offTheGround} of {points} points away from any worn ground");
         }
 
         // And the mesh is laid from the network: a lone-point lane or a junction lays a disc centred on its point, and
@@ -5457,7 +5509,7 @@ public partial class VillageMap : Control
 
         return faults.Count == 0
             ? $"[widths] paths: ✅ {_trail.Count} worn tiles ({packed} packed) read as {_network.Lanes.Count} lanes and "
-                + $"{_network.Junctions.Count} junctions ({_network.BridgedTiles} gaps bridged), every point on worn ground and none on "
+                + $"{_network.Junctions.Count} junctions ({_network.BridgedTiles} gaps bridged), every point on worn ground and no line across "
                 + $"a building; built in {LastNetworkBuildMs:F2}ms, meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} "
                 + $"packed vertices in {LastTrailBuildMs:F2}ms"
             : $"[widths] paths: ⛔ {string.Join("; ", faults)}";

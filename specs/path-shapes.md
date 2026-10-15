@@ -6,7 +6,8 @@ field), D122 (the last time the route chain moved by a tile it froze nineteen pe
 (`desire-paths.md`), D383 (buildings are obstacles).
 **Status:** 📏 **MEASURED (D579). ✅ OPTION A BUILT (D580); Joe: *"still looks like a grid. proceed with C."* ⛔ C
 NOT BUILT — his newest save showed it would not reach what he saw (§4.E); his call: E. ✅ OPTION E BUILT (D581) — view
-only, `TrailNetwork` (`desire-paths.md` slice 2 says how). ⏸️ Joe plays it. C stays here for villages of many homes.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
+only, `TrailNetwork` (`desire-paths.md` slice 2 says how). ✅ Played: *"what do you think?"* — the ladders, rings and
+blob gone; one lane drawn across a one-tile store, fixed in D582. ⏸️ Joe looks again. C stays here for villages of many homes.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
 in a throwaway worktree and are gone.
 Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 

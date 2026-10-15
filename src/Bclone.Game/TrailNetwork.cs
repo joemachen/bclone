@@ -102,10 +102,10 @@ internal sealed class TrailNetwork
 
         // 3. A staircase on the line keeps a pixel at each corner it does not need; drop them, so a diagonal is a
         // diagonal and not a run of tiny junctions.
-        DropCornerPixels(line, width, height);
+        Dictionary<(int, int), int> wraps = DropCornerPixels(line, blocked, width, height);
 
         // 4. Trace, prune one-pixel spurs, place and smooth.
-        return Trace(line, shape, originX, originY, width, height, wander, bridged);
+        return Trace(line, shape, blocked, wraps, originX, originY, width, height, wander, bridged);
 
         byte Facing(int x, int y, int dx, int dy)
         {
@@ -230,9 +230,15 @@ internal sealed class TrailNetwork
         static int Rise(bool from, bool to) => !from && to ? 1 : 0;
     }
 
-    /// <summary>A pixel whose only two neighbours already touch each other joins nothing — a staircase's corner, or a nub.</summary>
-    private static void DropCornerPixels(bool[] line, int width, int height)
+    /// <summary>
+    /// A pixel whose only two neighbours already touch each other joins nothing — a staircase's corner, or a nub — and goes.
+    /// ⛔ <b>But a dropped corner that the line between its neighbours would cut a building's corner without is
+    /// remembered</b>, by that pair (D582): the line's shape loses it, the drawing goes round it. Kept as a pixel, it
+    /// gave every pixel of a ring three neighbours and the whole ring became one junction at the building's middle.
+    /// </summary>
+    private static Dictionary<(int, int), int> DropCornerPixels(bool[] line, bool[] blocked, int width, int height)
     {
+        var wraps = new Dictionary<(int, int), int>();
         for (int i = 0; i < line.Length; i++)
         {
             if (!line[i] || Degree(line, i, width, height) != 2)
@@ -262,11 +268,25 @@ internal sealed class TrailNetwork
                 }
             }
 
-            if (Math.Abs((first % width) - (second % width)) <= 1 && Math.Abs((first / width) - (second / width)) <= 1)
+            int fx = first % width, fy = first / width, sx = second % width, sy = second / width;
+            if (Math.Abs(fx - sx) > 1 || Math.Abs(fy - sy) > 1)
             {
-                line[i] = false;
+                continue;
+            }
+
+            // Diagonal to each other, the two neighbours and this pixel are three of a square; the fourth is the tile the
+            // line between them would cut the corner of.
+            int ox = fx + sx - x, oy = fy + sy - y;
+            bool wrapsABuilding = Math.Abs(fx - sx) == 1 && Math.Abs(fy - sy) == 1
+                && ox >= 0 && oy >= 0 && ox < width && oy < height && blocked[(oy * width) + ox];
+            line[i] = false;
+            if (wrapsABuilding)
+            {
+                wraps[first < second ? (first, second) : (second, first)] = i;
             }
         }
+
+        return wraps;
     }
 
     private static int Degree(bool[] line, int i, int width, int height)
@@ -290,7 +310,7 @@ internal sealed class TrailNetwork
     }
 
     /// <summary>The line traced into lanes between its ends and junctions, every point placed and smoothed.</summary>
-    private static TrailNetwork Trace(bool[] line, byte[] shape, int originX, int originY, int width, int height, Func<Vector2, Vector2>? wander, int bridged)
+    private static TrailNetwork Trace(bool[] line, byte[] shape, bool[] blocked, Dictionary<(int, int), int> wraps, int originX, int originY, int width, int height, Func<Vector2, Vector2>? wander, int bridged)
     {
         int n = line.Length;
         var paths = new List<List<int>>();
@@ -313,7 +333,7 @@ internal sealed class TrailNetwork
         for (int p = 0; p < paths.Count; p++)
         {
             List<int> path = paths[p];
-            lanes.Add(Placed(path, closed[p], !closed[p] && path.Count > 1 && End(path[0]) == 1, !closed[p] && path.Count > 1 && End(path[^1]) == 1));
+            lanes.AddRange(Placed(path, closed[p], !closed[p] && path.Count > 1 && End(path[0]) == 1, !closed[p] && path.Count > 1 && End(path[^1]) == 1));
         }
 
         var junctions = new List<(Vector2, byte)>();
@@ -355,8 +375,25 @@ internal sealed class TrailNetwork
                 }
             }
 
-            hubPoints[rep] = sum / count;
-            return hubPoints[rep];
+            Vector2 middle = sum / count;
+            if (OnABuilding(middle))
+            {
+                // A clump round a building has its middle on it; the clump's own pixel nearest that middle instead.
+                float nearest = float.MaxValue;
+                for (int k = 0; k < n; k++)
+                {
+                    if (hub[k] == rep && PointOf(k).DistanceSquaredTo(middle) < nearest)
+                    {
+                        nearest = PointOf(k).DistanceSquaredTo(middle);
+                        sum = PointOf(k);
+                    }
+                }
+
+                middle = sum;
+            }
+
+            hubPoints[rep] = middle;
+            return middle;
         }
 
         void Walk()
@@ -510,23 +547,99 @@ internal sealed class TrailNetwork
             }
         }
 
-        Lane Placed(List<int> path, bool loop, bool startsDead, bool endsDead)
+        List<Lane> Placed(List<int> path, bool loop, bool startsDead, bool endsDead)
         {
-            var points = new Vector2[path.Count];
-            var grades = new byte[path.Count];
+            // Each point, and the pixel it came from (−1 for a junction's middle, which stays put).
+            var placed = new List<Vector2>(path.Count + 4);
+            var from = new List<int>(path.Count + 4);
+            var graded = new List<byte>(path.Count + 4);
+            int last = loop ? path.Count : path.Count - 1;
             for (int k = 0; k < path.Count; k++)
             {
                 bool atAHub = (k == 0 || k == path.Count - 1) && hub[path[k]] >= 0;
-                points[k] = atAHub ? HubPoint(hub[path[k]]) : PointOf(path[k]);
-                grades[k] = shape[path[k]];
+                placed.Add(atAHub ? HubPoint(hub[path[k]]) : PointOf(path[k]));
+                from.Add(atAHub ? -1 : path[k]);
+                graded.Add(shape[path[k]]);
+                int next = path[(k + 1) % path.Count];
+                if (k < last && wraps.TryGetValue(path[k] < next ? (path[k], next) : (next, path[k]), out int corner))
+                {
+                    // ⛔ Round the building's corner, not across it (D582).
+                    placed.Add(Unwandered(corner));
+                    from.Add(corner);
+                    graded.Add(Math.Min(shape[path[k]], shape[next]));
+                }
             }
+
+            // ⛔ A wander that would carry the line across a building is not taken (D582): both ends of that step go back
+            // to where they were placed.
+            int steps = loop ? placed.Count : placed.Count - 1;
+            for (int k = 0; k < steps; k++)
+            {
+                int next = (k + 1) % placed.Count;
+                if (Crosses(placed[k], placed[next]))
+                {
+                    placed[k] = from[k] < 0 ? placed[k] : Unwandered(from[k]);
+                    placed[next] = from[next] < 0 ? placed[next] : Unwandered(from[next]);
+                }
+            }
+
+            Vector2[] points = placed.ToArray();
+            byte[] grades = graded.ToArray();
 
             for (int pass = 0; pass < SmoothingPasses && points.Length > 2; pass++)
             {
-                (points, grades) = Chaikin(points, grades, loop);
+                (points, grades) = Chaikin(points, grades, loop, Crosses);
             }
 
-            return new Lane(points, grades, loop, startsDead, endsDead);
+            return CutAtBuildings(points, grades, loop, startsDead, endsDead);
+        }
+
+        // ⛔ THE INVARIANT, LAST (D582): a step that would still cross a building — a lane leaving a junction that rings a
+        // one-tile store, say — is not drawn. The lane stops at the wall on each side, which is what a path to a door
+        // looks like; a line over a building is a path nobody could walk.
+        List<Lane> CutAtBuildings(Vector2[] points, byte[] grades, bool loop, bool startsDead, bool endsDead)
+        {
+            int count = points.Length;
+            int segments = loop ? count : count - 1;
+            int firstCut = -1;
+            for (int k = 0; k < segments && firstCut < 0; k++)
+            {
+                firstCut = Crosses(points[k], points[(k + 1) % count]) ? k : -1;
+            }
+
+            if (firstCut < 0)
+            {
+                return new List<Lane> { new(points, grades, loop, startsDead, endsDead) };
+            }
+
+            // Walk once round (a loop starts just past its first cut), starting a new piece after every cut.
+            var pieces = new List<Lane>();
+            var piecePoints = new List<Vector2>();
+            var pieceGrades = new List<byte>();
+            int start = loop ? (firstCut + 1) % count : 0;
+            bool atTheStart = !loop;
+            for (int step = 0; step < count; step++)
+            {
+                int k = (start + step) % count;
+                piecePoints.Add(points[k]);
+                pieceGrades.Add(grades[k]);
+                bool lastPoint = step == count - 1;
+                bool cutAfter = !lastPoint && Crosses(points[k], points[(k + 1) % count]);
+                if (cutAfter || lastPoint)
+                {
+                    if (piecePoints.Count > 1)
+                    {
+                        pieces.Add(new Lane(piecePoints.ToArray(), pieceGrades.ToArray(), false,
+                            atTheStart && startsDead, lastPoint && !loop && endsDead));
+                    }
+
+                    piecePoints.Clear();
+                    pieceGrades.Clear();
+                    atTheStart = false;
+                }
+            }
+
+            return pieces;
         }
 
         // ⭐ The middle of the worn ground round the pixel, so a two-wide corridor lands on its midline and a lane beside a
@@ -551,8 +664,60 @@ internal sealed class TrailNetwork
                 }
             }
 
-            var at = new Vector2(originX + (sx / count), originY + (sy / count));
-            return wander is null ? at : at + wander(at);
+            Vector2 at = Unwandered(i);
+            if (wander is null)
+            {
+                return at;
+            }
+
+            Vector2 wandered = at + wander(at);
+            return OnABuilding(wandered) ? at : wandered;
+        }
+
+        // The middle of the worn ground round the pixel — or, should that middle fall on a building, the pixel's own centre.
+        Vector2 Unwandered(int i)
+        {
+            int x = i % width;
+            int y = i / width;
+            float sx = 0f, sy = 0f;
+            int count = 0;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0)
+                    {
+                        sx += nx;
+                        sy += ny;
+                        count++;
+                    }
+                }
+            }
+
+            var middle = new Vector2(originX + (sx / count), originY + (sy / count));
+            return OnABuilding(middle) ? new Vector2(originX + x, originY + y) : middle;
+        }
+
+        bool OnABuilding(Vector2 point)
+        {
+            int x = Mathf.RoundToInt(point.X) - originX;
+            int y = Mathf.RoundToInt(point.Y) - originY;
+            return x >= 0 && y >= 0 && x < width && y < height && blocked[(y * width) + x];
+        }
+
+        // Whether the line from a to b passes over a building — sampled at quarter steps, as the probe asks.
+        bool Crosses(Vector2 a, Vector2 b)
+        {
+            for (int q = 0; q <= 4; q++)
+            {
+                if (OnABuilding(a.Lerp(b, q / 4f)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         List<int> NeighboursOf(int i)
@@ -591,8 +756,11 @@ internal sealed class TrailNetwork
         static (int, int) Edge(int a, int b) => a < b ? (a, b) : (b, a);
     }
 
-    /// <summary>One pass of corner cutting: each segment's quarter and three-quarter points; an open lane keeps its ends.</summary>
-    private static (Vector2[], byte[]) Chaikin(Vector2[] points, byte[] grades, bool loop)
+    /// <summary>
+    /// One pass of corner cutting: each segment's quarter and three-quarter points; an open lane keeps its ends; ⛔ and a
+    /// corner whose cut would cross a building is kept, not cut (D582).
+    /// </summary>
+    private static (Vector2[], byte[]) Chaikin(Vector2[] points, byte[] grades, bool loop, Func<Vector2, Vector2, bool> crosses)
     {
         var outPoints = new List<Vector2>(points.Length * 2);
         var outGrades = new List<byte>(points.Length * 2);
@@ -612,6 +780,18 @@ internal sealed class TrailNetwork
             outGrades.Add(g);
             outPoints.Add(a.Lerp(b, 0.75f));
             outGrades.Add(g);
+
+            // The corner at b, cut from here to the next segment's quarter point — unless that cut crosses a building.
+            bool cornerAhead = loop || s + 1 < segments;
+            if (cornerAhead)
+            {
+                Vector2 c = points[(s + 2) % points.Length];
+                if (crosses(a.Lerp(b, 0.75f), b.Lerp(c, 0.25f)))
+                {
+                    outPoints.Add(b);
+                    outGrades.Add(grades[(s + 1) % points.Length]);
+                }
+            }
         }
 
         if (!loop)
