@@ -605,8 +605,8 @@ public partial class Main : Control
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
+        GD.Print(_map.TheTrailNetworkReadsTheShapes());
         GD.Print(_map.TheTrailsLieOnTheGround());
-        GD.Print(_map.TheTrailsAreDrawnAsWalked());
         GD.Print(_map.ALaneThroughAFieldIsDrawn());
 
         // Asked again here (D419): the founding has only the cart, twelve years in the granaries and

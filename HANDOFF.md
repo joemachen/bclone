@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D580: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED, NOTE 1 MEASURED (D579) AND ITS OPTION A BUILT (D580, VIEW ONLY); THE NOMADS' STOP IN TWO MARKED PARAGRAPHS (D577); EVERY ALERT LEAVES THE VILLAGE AT 1× (D578) — ⏸️ JOE TO PLAY D577–D580; OPTION C NEXT IF THE VILLAGE STILL READS AS A GRID. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D581: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED; NOTE 1: MEASURED (D579), OPTION A (D580) PLAYED AND NOT ENOUGH, OPTION E — THE PATHS DRAWN AS A NETWORK (D581, VIEW ONLY) — ⏸️ JOE TO PLAY D581 (AND D577–D578). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D579–D580: NOTE 1 MEASURED — THE GRID IS THE VILLAGE'S OWN SHAPE; JOE: *"A THEN C"*; A BUILT, VIEW ONLY; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D581: THE PATHS DRAWN AS A NETWORK — OPTION E; C NOT BUILT; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D580 as below, plus **D581.** Joe
+> played D580: *"still looks like a grid. proceed with C."* Before spec'ing C his newest save was read (read-only):
+> `thornfield-crow-birch-49` has **14 buildings, 2 homes** — the grid runs through the stores and workplaces he placed, and
+> C moves only homes. His screenshots showed the per-tile drawing (ladders, rings round huts, the hub yard). Put to him;
+> **his call: E.** `src/Bclone.Game/TrailNetwork.cs` (pure: bridge one-tile gaps, thin, merge touching junction pixels,
+> trace, place on the middle of the worn ground, wander, smooth) and `LayTrails` drawing its lanes; the per-tile machinery
+> of D359/D360/D368/D374/D415/D580 deleted. Stub pruning tried and refused — on Joe's village it cut a lane to a door.
+> Probes `trails:` (twelve hand-drawn shapes), `paths:` (the valley's network), `field lanes:`. 9 mutants, 11 reds.
+> **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m35); view 0 warnings on `--no-incremental`; probe after a fresh build 89 lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362, nothing under `src/Bclone.Sim`, `tests/` or `data/` moved. The network builds in 0.3 ms on the probe's lanes.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** on `thornfield-crow-birch-49` (`.\run.bat`, *Continue*) — the village in his screenshot:
+> are the ladders, the rings round the huts and the hub's blob gone, and does it read as walked paths? Then the branch
+> waits on his play of all six notes; merge `--no-ff` and push at his word only. **C stays parked** in `path-shapes.md` for
+> villages of many homes — raise it only if a homes-heavy village still reads as a grid.
+>
+> **(the banner below is the state at D580)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D579–D580: NOTE 1 MEASURED; JOE: *"A THEN C"*; A BUILT, VIEW ONLY — PLAYED: *"still looks like a grid"*, SO D581) — ON WINDOWS.**
 >
 > **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D578 as below, plus:
 > **D579** — note 1 measured (`specs/path-shapes.md`, `tools/harness/ZzPathShape.cs` + `pathshape.py`) on **copies** of
@@ -6910,6 +6931,24 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D581 PAID FOR — THE PLAYER'S FIX, THE TEXTBOOK'S CLEAN-UP, AND A CHECK THAT COULD NOT FAIL
+
+- **A player's named fix is a hypothesis about the cause.** Joe said *"proceed with C"* (stagger the houses); his own
+  newest save had 2 homes among 14 buildings, and the grid in his screenshot was the drawing, not the layout. Reading the
+  save took a minute and saved building a medium-large sim change that could not have shown. **Read the village in the
+  screenshot before building the fix named for it** — the newest autosave is in `%APPDATA%/Godot/app_userdata/bclone/saves`,
+  and it can be read with Python without opening it through `SaveFile` (which writes `.bad` copies).
+- **A textbook clean-up is a hypothesis too.** Pruning short spurs off a skeleton's junctions is standard; on Joe's
+  village it cut the three-tile lane up to a store's door, and in every hand-drawn shape it changed nothing. Found by
+  feeding his real grids through the probe with the rule on and off (a temporary hook, removed). **Run a clean-up on the
+  player's own data before trusting it.**
+- **A bound wide enough to pass both ways is not a check.** The hub's *"4 to 8 lanes"* passed with the pruning on and off;
+  only counting exactly showed the pruning was doing nothing. And a `Furthest` helper that starts at 0 cannot measure how
+  far a lane reaches upward (negative) — it read *0* for a lane that reached the door. Check the number, not a range that
+  happens to hold it.
+- **A pose that touches nothing cannot guard it.** `paths:`'s *"never on a building"* scored zero until the pose wore a
+  lane into a building's footprint.
 
 ## ⛔ THE TRAPS D579–D580 PAID FOR — A "CLEAN" RUN THAT WAS THE MUTANT, A GUARD THAT ASKED THE FUNCTION, AND A SAVE OPENED IN PLACE
 

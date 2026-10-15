@@ -305,6 +305,20 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   two buildings reads as a footpath, not a ruled line, and never leaves its worn tiles. A lightly worn lane is
   `WornTrailHalfWidth` 0.14 against the packed 0.17; a dead end has no disc and tapers to 0.35 of its width
   (`MeshBuilder.Taper`). Rebuilt with the mesh, on the paths' generation. Probe `paths:`.
+- [x] ⭐⭐ **D581 — the NETWORK, not the tiles (Joe's note 1, option E of `path-shapes.md`).** Joe played D580: *"still
+  looks like a grid"*. His screenshots were the per-tile drawing itself — ladders (two lanes a tile apart, every walk
+  between them a rung), square rings round a hut's outline, the hub's packed yard. **`TrailNetwork`** (pure, in the view)
+  now reads the worn tiles as a shape: a one-tile gap with worn ground facing across it is **bridged** (never across a
+  building or water, never a two-tile gap), the shape is **thinned** to its centre line (Zhang–Suen, every connection
+  and hole kept; a 2×2 it would erase keeps its middle pixel), a staircase's spare corner pixels dropped, **touching
+  junction pixels merged into one junction**, the line **traced** into lanes, each point **placed** at the middle of the
+  worn ground round it (a two-wide corridor lands on its midline, as D415 did), the valley's **wander** added (D580) and
+  **smoothed** (Chaikin ×2). `LayTrails` draws lanes (worn 0.14, packed runs 0.17 over them), a disc a little wider at a
+  junction, and a taper at a dead end. **Superseded and deleted:** the per-tile points and joins — D359's L-corner,
+  D360's bends, D368/D374's yards, D415's corridor point, the staircase line, D580's per-tile room. ⛔ **No stub pruning**
+  — measured on Joe's own village it cut the three-tile lane up to a store's door and changed nothing else. Probes
+  `trails:` (hand-drawn shapes straight into `TrailNetwork`), `paths:` (the valley's own network on its own ground, never on
+  a building), `field lanes:` (D512 on the network).
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
   *"-50% line thickness"* → `TrailHalfWidth` 0.17.

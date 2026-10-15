@@ -4,9 +4,9 @@
 and through the housing block*), **D579 (this spec and its measurement, 2026-10-13)**. Neighbours: D41 (one cost
 field), D122 (the last time the route chain moved by a tile it froze nineteen people), D358 / D414 / D415 / D424
 (`desire-paths.md`), D383 (buildings are obstacles).
-**Status:** 📏 **MEASURED (D579). ⭐ JOE'S CALL (2026-10-14): *"A then C"*. ✅ OPTION A BUILT (D580) — view only:
-`VillageMap.DrawnTrailPointOf`, `WornTrailHalfWidth`, `MeshBuilder.Taper`, probe `paths:` (`desire-paths.md` slice 2
-says how). ⏸️ Joe plays it; if the village still reads as a grid, option C (staggered house siting) gets its own spec.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
+**Status:** 📏 **MEASURED (D579). ✅ OPTION A BUILT (D580); Joe: *"still looks like a grid. proceed with C."* ⛔ C
+NOT BUILT — his newest save showed it would not reach what he saw (§4.E); his call: E. ✅ OPTION E BUILT (D581) — view
+only, `TrailNetwork` (`desire-paths.md` slice 2 says how). ⏸️ Joe plays it. C stays here for villages of many homes.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
 in a throwaway worktree and are gone.
 Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 
@@ -109,3 +109,16 @@ Measured worse (§3), and it is the rule that ended the blobs.
 
 A: one commit, view only (`VillageMap.Meshes.cs` `LayTrails` / `TrailPointOf`, a `paths:` probe line), then Joe plays it.
 B or C: a spec of its own, measured on the same seven saves and the 100-valley harness before a line of the field moves.
+
+## 4.E The network, not the tiles (D581) — what Joe's screenshots actually showed
+
+Joe played A (D580) and sent two screenshots: *"still looks like a grid. proceed with C."* Read before C was spec'd: his
+newest save (`thornfield-crow-birch-49`, read-only) holds **14 buildings, 2 of them homes** — the grid runs through the
+cluster of stores and workplaces he placed round the cart, where C (the sim's *house* siting) reaches nothing. What the
+screenshots show is the per-tile drawing: **ladders** (two lanes a tile apart; every walk crossing between them drawn as
+a rung), **square rings** round a hut's outline (the `#` knots), and the **hub's packed yard**. Put to him with that
+evidence; **his call: E** — the view reads the worn tiles as a shape and draws its centre lines (`TrailNetwork`: bridge
+one-tile gaps, thin, merge touching junction pixels, trace, place on the middle of the worn ground, wander, smooth).
+⛔ **The textbook clean-up was measured and refused:** pruning short dead ends off a junction cut the three-tile lane up
+to a store's door on Joe's own village and changed nothing in any drawn shape. ⭐ *The lesson: a player's description of
+a fix ("proceed with C") is a hypothesis about the cause — read the village in the screenshot before building it.*
