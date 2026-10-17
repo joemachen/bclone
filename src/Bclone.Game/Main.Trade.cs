@@ -203,6 +203,78 @@ public partial class Main
         }
     }
 
+    /// <summary>
+    /// <c>fence:</c> (D599) — a posed pasture's fence drawn as one tile-long segment an edge, <b>none across the gate</b>;
+    /// and the barn card's fence row in each state: <i>Fence the pasture</i> (disabled with its reason when refused),
+    /// <i>Cancel the fence</i>, <i>Take the fence down</i>. The view cannot raise a barn (D596), so both are posed facts.
+    /// </summary>
+    private string TheFenceIsDrawnAndItsButtonFollowsIt()
+    {
+        var faults = new List<string>();
+        var pasture = new List<GridPos>();
+        for (int y = 10; y < 12; y++)
+        {
+            for (int x = 10; x < 13; x++)
+            {
+                pasture.Add(new GridPos(x, y));
+            }
+        }
+
+        var gate = new GridPos(13, 10);
+        List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(pasture, new[] { gate }, System.Array.Empty<GridPos>(), out _);
+        List<(Vector2 From, Vector2 To)> segments = VillageMap.PastureFenceSegments(edges);
+        int p = SubTile.PerTile;
+        var gateSide = (new Vector2(13 * p, 10 * p), new Vector2(13 * p, 11 * p));
+        if (edges.Count != 9 || segments.Count != edges.Count)
+        {
+            faults.Add($"a 3 × 2 pasture with a gate drew {segments.Count} segments for {edges.Count} edges, not 9");
+        }
+
+        if (segments.Any(s => Mathf.Abs(s.From.DistanceTo(s.To) - p) > 0.01f))
+        {
+            faults.Add("a segment is not one tile long");
+        }
+
+        if (segments.Any(s => (s.From, s.To) == gateSide || (s.To, s.From) == gateSide))
+        {
+            faults.Add("the fence is drawn across its gate");
+        }
+
+        if (WithAPosedCard(card =>
+            {
+                CardControls c = card.Controls;
+                if (c.FenceRow is null)
+                {
+                    return "a workplace card has no fence row";
+                }
+
+                var said = new List<string>();
+                foreach ((PastureFenceState state, bool refused, string expected) in new[]
+                {
+                    (PastureFenceState.None, false, "Fence the pasture"),
+                    (PastureFenceState.None, true, "Fence the pasture"),
+                    (PastureFenceState.Site, false, "Cancel the fence"),
+                    (PastureFenceState.Standing, false, "Take the fence down"),
+                })
+                {
+                    WriteTheFenceRow(c, new FenceFacts(state, "posed", refused));
+                    if (c.FenceButton!.Text != expected || c.FenceButton.Disabled != refused)
+                    {
+                        said.Add($"{state}{(refused ? " refused" : string.Empty)} reads \"{c.FenceButton.Text}\"{(c.FenceButton.Disabled ? " (disabled)" : string.Empty)}");
+                    }
+                }
+
+                return said.Count == 0 ? null : string.Join("; ", said);
+            }) is string rowFault)
+        {
+            faults.Add("the fence row: " + rowFault);
+        }
+
+        return faults.Count == 0
+            ? "[widths] fence: ✅ a 3 × 2 pasture's fence drawn as 9 one-tile segments with its gate open; the barn card's button reads Fence the pasture (disabled when refused) / Cancel the fence / Take the fence down"
+            : $"[widths] fence: ❌ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Open a card on the first workplace, hand it to <paramref name="pose"/>, and close it again.</summary>
     private string? WithAPosedCard(System.Func<Card, string?> pose)
     {

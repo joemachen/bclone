@@ -2877,6 +2877,13 @@ public partial class VillageMap : Control
     {
         SimWorld world = _world!;
 
+        // ⛔ Except a fenced pasture's (D599): its ground is locked, and the rubber says so before the stroke does nothing.
+        if (direction < 0 && _groundFor != 0 && world.FindWorkplace(_groundFor) is Workplace eraser
+            && world.Zones.WorkGroundOwner(tile) == eraser.Id && !world.CanEraseWorkGround(eraser, tile).Allowed)
+        {
+            return GhostRefused;
+        }
+
         if (direction < 0)
         {
             return GhostWarned;
@@ -3913,9 +3920,13 @@ public partial class VillageMap : Control
         // ⚠️ And on the buildings since D350, because a site's own clearing mark is left undrawn
         // (see `underASite` below) and a site can arrive on, or leave, ground the paint counter
         // never saw change.
+        // ⚠️ And on the walls and the standing since D599: a pasture's fence goes up at its finishing and comes down at a
+        // take-down — neither moves the paint counter at the moment the fence changes.
         if (_outlinesTracedAt == zones.Edits
             && _outlinesTracedAtTerrain == _world!.TerrainGeneration
-            && _outlinesTracedAtBuildings == _world.BuildingGeneration)
+            && _outlinesTracedAtBuildings == _world.BuildingGeneration
+            && _outlinesTracedAtWalls == zones.WallGeneration
+            && _outlinesTracedAtStanding == _world.StandingGeneration)
         {
             return;
         }
@@ -3925,6 +3936,8 @@ public partial class VillageMap : Control
         _outlinesTracedAt = zones.Edits;
         _outlinesTracedAtTerrain = _world!.TerrainGeneration;
         _outlinesTracedAtBuildings = _world.BuildingGeneration;
+        _outlinesTracedAtWalls = zones.WallGeneration;
+        _outlinesTracedAtStanding = _world.StandingGeneration;
         _zoneOutlines.Clear();
         _zoneFills.Clear();
         _fieldFills.Clear();
@@ -4063,6 +4076,42 @@ public partial class VillageMap : Control
                 AddFenceSide(tile, 1, 0, 2, ground, walls, edge);
                 AddFenceSide(tile, 0, 1, 4, ground, walls, edge);
                 AddFenceSide(tile, -1, 0, 8, ground, walls, edge);
+            }
+        }
+
+        // ⭐ THE PASTURES' FENCES (D599, `livestock.md §0.2`) — drawn from the walls a standing fence raised, as a yard's are,
+        // so the line IS the rule and the gate is a gap; while its site is being built, the edges it will run are drawn
+        // faint, as a yard's fence is while its house is a site. With the work-ground layer: a barn's ground is work ground.
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            Workplace barn = _world.Workplaces[i];
+            if (barn.FencedTiles.Count == 0 || barn.FenceGate is not GridPos gate)
+            {
+                continue;
+            }
+
+            IReadOnlyList<(GridPos From, GridPos To)> fence;
+            Color colour;
+            if (barn.FenceStands)
+            {
+                fence = zones.PastureFenceOf(barn.Id);
+                colour = FenceEdge;
+            }
+            else
+            {
+                var tiles = new List<GridPos>(barn.FencedTiles.Count);
+                for (int t = 0; t < barn.FencedTiles.Count; t++)
+                {
+                    tiles.Add(zones.PositionOf(barn.FencedTiles[t]));
+                }
+
+                fence = ZoneMap.FenceEdges(tiles, new[] { gate }, Array.Empty<GridPos>(), out _);
+                colour = FenceEdge with { A = 0.35f };
+            }
+
+            foreach ((Vector2 from, Vector2 to) in PastureFenceSegments(fence))
+            {
+                _zoneOutlines.Add((Layer.WorkGround, colour, new[] { from, to }));
             }
         }
 
@@ -4229,6 +4278,31 @@ public partial class VillageMap : Control
     /// One side of a fenced tile as a line, if a wall stands on it and the ground beyond is not
     /// this household's own (D404) — in sub-tile space, like every other outline.
     /// </summary>
+    /// <summary>
+    /// A fence's edges as line segments in sub-tile space — each the side two tiles share (D599). Pure, so the probe asks
+    /// it of a posed fence: one segment an edge, a tile long, and none on the gate.
+    /// </summary>
+    internal static List<(Vector2 From, Vector2 To)> PastureFenceSegments(IReadOnlyList<(GridPos From, GridPos To)> edges)
+    {
+        int p = SubTile.PerTile;
+        var segments = new List<(Vector2, Vector2)>(edges.Count);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            (GridPos a, GridPos b) = edges[e];
+            float left = a.X * p;
+            float top = a.Y * p;
+            segments.Add((b.X - a.X, b.Y - a.Y) switch
+            {
+                (0, -1) => (new Vector2(left, top), new Vector2(left + p, top)),
+                (1, 0) => (new Vector2(left + p, top), new Vector2(left + p, top + p)),
+                (0, 1) => (new Vector2(left, top + p), new Vector2(left + p, top + p)),
+                _ => (new Vector2(left, top), new Vector2(left, top + p)),
+            });
+        }
+
+        return segments;
+    }
+
     private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge)
     {
         if ((walls & bit) == 0 || ground.Contains(new GridPos(tile.X + dx, tile.Y + dy)))
@@ -6201,6 +6275,10 @@ public partial class VillageMap : Control
     private int _outlinesTracedAtTerrain = -1;
 
     private int _outlinesTracedAtBuildings = -1;
+
+    private int _outlinesTracedAtWalls = -1;
+
+    private int _outlinesTracedAtStanding = -1;
 
     /// <summary>
     /// The fill of every painted region as triangles in tile space — <b>cached beside the

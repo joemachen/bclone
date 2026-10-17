@@ -1,6 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D597 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–6 BUILT, VIEW I PLAYED AND FIXED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: FENCED PASTURES (SPEC FIRST), THEN THE PATHS, THEN COMMIT 7 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D599 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE SPECCED AND BUILT) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS THE FENCE, THEN THE PATHS, THEN COMMIT 7 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D598: THE FENCED PASTURE, SPECCED; F1 — ITS SIM — BUILT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D599: THE FENCED PASTURE, BUILT — SIM AND VIEW) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D599**, local. **The fenced pasture can be played**: the barn's card (Settings) has a fence
+> row — *Fence the pasture* says first what it would do (*"Fence 40 tiles: 25 lengths and a gate, 25 logs"* for an 8 × 5 block, and any stray
+> tiles it would give back) or why it cannot; pressed, it locks the ground and the builders get a site at the gate; the
+> button becomes *Cancel the fence*, then *Take the fence down* once it stands. The fence is drawn from its walls, the
+> gate a gap, faint while being built (with the work-ground layer). The brush's rubber shows red over a fenced pasture.
+> Probe `fence:` ✅; F2's mutants 3 / 3 red; suite 1771 / 0 / 5 of 1776 (9m26); probe 92 lines clean; goldens 362 → 362.
+>
+> **▶️ NEXT: Joe plays it** (`.\run.bat`: a barn, paint a pasture, *Fence the pasture*, watch the builders, walk the gate).
+> ⚠️ Not probed — the press against a real barn, the fence's draw, the rubber's colour. **Then the paths** (the plan's
+> piece 3), **then commit 7**.
+>
+> **(the banner below is the state at D598)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D598: THE FENCED PASTURE, SPECCED; F1 — ITS SIM — BUILT) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D598**, local. `specs/livestock.md §0.2` is the fenced pasture's spec, with Joe's calls.
 > **F1, the sim, is built** (`SimWorld.Pasture.cs`): `FenceThePasture` locks a barn's painted ground (paint, erase, building
@@ -7231,6 +7246,14 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D599 PAID FOR — A MUTANT'S ANCHOR THAT MATCHED THE YARD'S COPY
+
+- **`VillageMap.PastureFenceSegments` and the yard's `AddFenceSide` carry the same edge-to-segment switch** — a mutant
+  anchored on one line matched both. The pasture's copy is pure (the probe asks it); the yard's draws straight into the
+  outline list. ⏸️ One switch would be better; not merged here, because the yard's path is D404's and probed already.
+- **The outlines' cache now keys on the walls and the standing too** — a fence goes up at its finishing and comes down
+  at a take-down, and neither moves `ZoneMap.Edits` at that moment.
 
 ## ⛔ THE TRAPS D598 PAID FOR — A RULE MEASURED ON JOE'S PASTURE, A ROW THAT LOCKED HIS SAVES OUT
 

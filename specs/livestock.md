@@ -102,10 +102,12 @@ the barn's room derived."*
 
 ## 0.2 The fenced pasture (D597 calls; D598 spec) — a barn's pasture locked in, fenced, gated
 
-**Status:** 🔨 **F1 BUILT (D598): the sim** — *Fence the pasture*, the lock, the fence's site, its walls, cancel and
-take-down, the barn taking its fence with it, saved and hashed (`SimWorld.Pasture.cs`, `ZoneMap.RaiseAPastureFence`,
-`PastureFenceTests`). **F2 (the view: the barn card's buttons, the fence drawn, the probe's `fence:`) NOT BUILT — so the
-fence cannot be put up in play yet.**
+**Status:** ✅ **BUILT (D598 the sim, D599 the view) — waiting for Joe to play it.** *Fence the pasture*, the lock, the
+fence's site, its walls, cancel and take-down, the barn taking its fence with it, saved and hashed (`SimWorld.Pasture.cs`,
+`ZoneMap.RaiseAPastureFence`, `PastureFenceTests`); the barn card's fence row (its one button follows the state), the
+fence drawn from its walls (faint while a site, the gate a gap), the brush's rubber refusing a fenced pasture, the probe's
+`fence:` (`Main.Trade.cs`). ⚠️ Not probed: the button's press against a real barn, the fence's draw call, the rubber's
+colour — Joe's eyes.
 
 ### 0.2.1 Joe's calls (2026-10-17)
 

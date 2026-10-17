@@ -128,6 +128,12 @@ public partial class Main
         /// <summary>What the post's orders will do (D596) — the orders themselves are the post's window (D597).</summary>
         public VBoxContainer? PostRow { get; set; }
         public Label? PostNote { get; set; }
+
+        /// <summary>The barn's fence (D599): what fencing would do or why it cannot, the one button, and its last refusal.</summary>
+        public VBoxContainer? FenceRow { get; set; }
+        public Label? FenceLabel { get; set; }
+        public Button? FenceButton { get; set; }
+        public Label? FenceNote { get; set; }
     }
 
     /// <summary>
@@ -871,6 +877,16 @@ public partial class Main
                 // What the post's orders will do (D596); the orders are its window, opened from the card (D597).
                 c.PostNote = Muted(string.Empty);
                 (c.PostRow, _) = InspectorRow(body, c.PostNote);
+
+                // ⭐ The barn's fence (D599, `livestock.md §0.2`): one button, its words the fence's state.
+                c.FenceLabel = Muted(string.Empty);
+                (c.FenceRow, HFlowContainer fenceControls) = InspectorRow(body, c.FenceLabel);
+                c.FenceButton = new Button { Text = "Fence the pasture" };
+                c.FenceButton.Pressed += () => Act(card, () => FenceOrTakeDown(card));
+                fenceControls.AddChild(c.FenceButton);
+                c.FenceNote = Wrapped(Muted(string.Empty));
+                c.FenceNote.Visible = false;
+                c.FenceRow.AddChild(c.FenceNote);
                 break;
             }
 
@@ -988,6 +1004,12 @@ public partial class Main
                 if (place.IsSite)
                 {
                     c.QueueLabel!.Text = $"Build queue — {world.QueuePositionOf(place)} of {world.BuildQueue().Count}:";
+                }
+
+                c.FenceRow!.Visible = built && place.Kind == JobKind.Herdsman;
+                if (c.FenceRow.Visible)
+                {
+                    WriteTheFenceRow(c, FenceFactsOf(world, place));
                 }
 
                 c.PostRow!.Visible = built && place.Kind == JobKind.Merchant;
@@ -1338,6 +1360,56 @@ public partial class Main
         Status(card, working: f.Well, f.Sentence);
         Number(card, 1, $"{f.Head} / {f.Room}", $"head · {f.Tiles} tiles");
         Number(card, 2, $"{f.Hay:N0}", f.Head > 0 ? $"hay · {f.Days} winter days" : "hay");
+    }
+
+    /// <summary>What the barn card's fence row says — read from the sim once, written by <see cref="WriteTheFenceRow"/>.</summary>
+    private readonly record struct FenceFacts(PastureFenceState State, string Sentence, bool Refused);
+
+    private static FenceFacts FenceFactsOf(SimWorld world, Workplace barn)
+    {
+        PastureFenceState state = world.FenceStateOf(barn);
+        return state switch
+        {
+            PastureFenceState.Site => new FenceFacts(state, world.FenceSiteOf(barn) is Workplace site
+                ? $"The fence is being built — {Ordinal(world.QueuePositionOf(site))} in the builders' queue. The pasture is locked until it is up, or cancelled."
+                : "The fence is being built.", false),
+            PastureFenceState.Standing => new FenceFacts(state,
+                $"Fenced — {barn.FencedTiles.Count} tiles and one gate. To change the pasture, take the fence down: half its logs come back, and the ground is unpainted.",
+                false),
+            _ => world.WhyNotFence(barn) is string why
+                ? new FenceFacts(state, why, true)
+                : new FenceFacts(state, world.SayWhatFencingWouldDo(barn) ?? string.Empty, false),
+        };
+    }
+
+    /// <summary>The fence row from its facts — the button's words follow the state (D599).</summary>
+    private static void WriteTheFenceRow(CardControls c, FenceFacts f)
+    {
+        c.FenceLabel!.Text = f.Sentence;
+        c.FenceButton!.Text = f.State switch
+        {
+            PastureFenceState.Site => "Cancel the fence",
+            PastureFenceState.Standing => "Take the fence down",
+            _ => "Fence the pasture",
+        };
+        c.FenceButton.Disabled = f.Refused;
+        c.FenceButton.TooltipText = f.Refused ? f.Sentence : string.Empty;
+    }
+
+    /// <summary>The fence button pressed: fence the pasture, or cancel or take its fence down — and say a refusal.</summary>
+    private void FenceOrTakeDown(Card card)
+    {
+        SimWorld world = _loop.World;
+        if (world.FindWorkplace(card.Subject.Id) is not Workplace barn || card.Controls.FenceNote is not Label note)
+        {
+            return;
+        }
+
+        PlacementVerdict verdict = world.FenceStateOf(barn) == PastureFenceState.None
+            ? world.FenceThePasture(barn)
+            : world.TakeTheFenceDown(barn);
+        note.Text = verdict.Allowed ? string.Empty : verdict.Reason;
+        note.Visible = !verdict.Allowed;
     }
 
     /// <summary>How many goods carry an order of this kind.</summary>
