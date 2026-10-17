@@ -185,6 +185,12 @@ public sealed class TradeRowsTests
             () => world.NeighbourStocks[2].Held[(int)Goods.Logs] = 40,
             () => world.NeighbourStocks[2].Held[(int)Goods.Logs] = 0);
         Differs("a neighbour's animals", () => world.NeighbourStocks[0].Animals = 3, () => world.NeighbourStocks[0].Animals = 0);
+        Differs("the region awake (D594)", () => world.RegionAwakeSince = 480, () => world.RegionAwakeSince = 0);
+        world.RegionAwakeSince = 480;
+        ulong wokeInYearTwo = StateHash.Compute(world);
+        world.RegionAwakeSince = 960;
+        Assert.True(StateHash.Compute(world) != wokeInYearTwo, "when the region woke does not reach the hash, only that it did");
+        world.RegionAwakeSince = 0;
 
         Workplace any = world.Workplaces[0];
         Differs("a herd", () => any.HerdHead = 5, () => any.HerdHead = 0);
@@ -226,6 +232,7 @@ public sealed class TradeRowsTests
         Assert.Equal(2, loaded.BoatsEverCame);
         Assert.Equal(40, loaded.NeighbourStocks[2].Held[(int)Goods.Logs]);
         Assert.Equal(3, loaded.NeighbourStocks[0].Animals);
+        Assert.Equal(1UL, loaded.RegionAwakeSince);
         Assert.Equal(5, loaded.Workplaces[0].HerdHead);
         Assert.Equal(7, loaded.Workplaces[0].HerdGrowth);
     }
@@ -240,6 +247,7 @@ public sealed class TradeRowsTests
         world.BoatsEverCame = 2;
         world.NeighbourStocks[2].Held[(int)Goods.Logs] = 40;
         world.NeighbourStocks[0].Animals = 3;
+        world.RegionAwakeSince = 1; // D594: awake, so a posed run steps the stocks at its season turns
         world.Workplaces[0].HerdHead = 5;
         world.Workplaces[0].HerdGrowth = 7;
     }

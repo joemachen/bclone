@@ -76,11 +76,12 @@ public sealed record AnimalRow
 /// <remarks>
 /// <para>
 /// ⭐ <b>Neighbours with reasons</b> (Joe, D587 call 7): a boat brings what its neighbour has plenty of, and the rates
-/// follow what it is short of — so the region panel can say why. Its name is the village's town-name list, by hash.
+/// follow what it is short of — so the region panel can say why.
 /// </para>
 /// <para>
-/// ⚠️ The sizes are provisional until commit 4 measures them against what a played village has spare
-/// (`trade.md §8.2a`); nothing reads them before then.
+/// ⭐ A size is half the shipped starting limit of its good (D594, `trade.md §8.4`) — what a hall-era village at its
+/// limits has to sell with a <i>keep</i> at half. Asleep until a post stands; stepped at each season turn after.
+/// Its name is <c>SimWorld.NeighbourName</c>: the town names after the village's own.
 /// </para>
 /// </remarks>
 public sealed record NeighbourRow

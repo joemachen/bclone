@@ -232,7 +232,9 @@ public sealed class SaveLoadTests : IDisposable
         Assert.NotNull(traded.World.Boat);
         Assert.Equal(300, traded.World.TradeKeep.For(Goods.Firewood));
         Assert.Equal(5, traded.World.Workplaces[0].HerdHead);
-        Assert.Equal(3, traded.World.NeighbourStocks[0].Animals);
+        // The region posed awake (D594): its three posed animals step back toward the neighbour's six at each season turn.
+        Assert.Equal(1UL, traded.World.RegionAwakeSince);
+        Assert.InRange(traded.World.NeighbourStocks[0].Animals, 4, traded.World.Config.Neighbours[0].MakesAnimals);
 
         (SimLoop herded, _) = Played("established, a barn's herd in winter (year 1)", (120 * 3) + 21);
         Assert.Equal(Season.Winter, herded.World.Clock.Season);
@@ -294,7 +296,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
-            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks",
+            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]

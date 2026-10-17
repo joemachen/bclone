@@ -962,11 +962,11 @@
   "bakery_work_ticks": 40,
   "bakery_capacity": 2,
 
-  // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). PROVISIONAL, every
-  // one: the rows need a price to exist, and nothing can raise a barn or a post until the view gives
-  // them buttons (commit 6). The barn's room is derived from the herd in commit 2; all of these are
-  // re-measured before Joe plays (trade.md §11.3). The animals and the neighbours are rows in
-  // SimConfig, for a modder to replace.
+  // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
+  // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the
+  // post's logs and stone were measured against hall-era holdings (D594, trade.md §8.4); the work
+  // ticks and seats are still provisional. The animals and the neighbours are rows in SimConfig, for a
+  // modder to replace.
   "barn_logs": 40,
   "barn_work_ticks": 40,
   "barn_capacity": 2,
@@ -982,6 +982,10 @@
   "trading_post_work_ticks": 40,
   "trading_post_capacity": 1,
   "trading_post_store_capacity": 800,
+  // The region (D594, trade.md §4.2): seasons a neighbour takes to come back from a boat -- its makes
+  // recover this share of the way to their size each season, its wants are used this share. Eight, so
+  // the next boat (2-3 years on) still feels a heavy sale; at four every boat found the region rested.
+  "region_seasons_to_recover": 8,
 
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only

@@ -51,7 +51,8 @@ public readonly record struct LabourQuota
         int miners = 0,
         int millers = 0,
         int bakers = 0,
-        int herdsmen = 0)
+        int herdsmen = 0,
+        int merchants = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -76,6 +77,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Miller] = millers;
         _byJob[(int)JobKind.Baker] = bakers;
         _byJob[(int)JobKind.Herdsman] = herdsmen;
+        _byJob[(int)JobKind.Merchant] = merchants;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -171,6 +173,9 @@ public readonly record struct LabourQuota
 
     /// <summary>Herdsmen the village keeps (D593).</summary>
     public int Herdsmen => _byJob[(int)JobKind.Herdsman];
+
+    /// <summary>Merchants the village keeps at its trading posts (D594).</summary>
+    public int Merchants => _byJob[(int)JobKind.Merchant];
 
     /// <summary>Quarriers the village wants (D434).</summary>
     public int Quarriers => _byJob[(int)JobKind.Quarrier];
@@ -319,6 +324,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Miller] = millersWanted;
         needed[(int)JobKind.Baker] = bakersWanted;
         needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
+        needed[(int)JobKind.Merchant] = MerchantsWanted(world);
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -377,6 +383,9 @@ public readonly record struct LabourQuota
         // The herd (D593): its hay is cut from what the food floor leaves spare (`livestock.md §10`), so while food
         // comes first only a cull is asked for — that is meat.
         int herdsmenWanted = HerdsmenWanted(world, foodComesFirst);
+
+        // Trade waits while food comes first (D594), as every trade that is not food does.
+        int merchantsWanted = foodComesFirst ? 0 : MerchantsWanted(world);
 
         // ---- Survival first, in the order things kill you -------------
         //
@@ -602,6 +611,7 @@ public readonly record struct LabourQuota
         int millers = Take(ref free, Cap(millersWanted, TotalCapacityFor(world, JobKind.Miller)));
         int bakers = Take(ref free, Cap(bakersWanted, TotalCapacityFor(world, JobKind.Baker)));
         int herdsmen = Take(ref free, Cap(herdsmenWanted, TotalCapacityFor(world, JobKind.Herdsman)));
+        int merchants = Take(ref free, Cap(merchantsWanted, TotalCapacityFor(world, JobKind.Merchant)));
 
         // And the market, last of all, out of hands nobody else needs (D14).
         //
@@ -771,6 +781,7 @@ public readonly record struct LabourQuota
         millers = Asked(world, JobKind.Miller, millers, hands);
         bakers = Asked(world, JobKind.Baker, bakers, hands);
         herdsmen = Asked(world, JobKind.Herdsman, herdsmen, hands);
+        merchants = Asked(world, JobKind.Merchant, merchants, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -797,11 +808,12 @@ public readonly record struct LabourQuota
         millers = AtLeastPinned(world, JobKind.Miller, millers);
         bakers = AtLeastPinned(world, JobKind.Baker, bakers);
         herdsmen = AtLeastPinned(world, JobKind.Herdsman, herdsmen);
+        merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
-            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen);
+            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen, merchants: merchants);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1414,6 +1426,30 @@ public readonly record struct LabourQuota
 
     /// <summary>Bakers the village wants — every seat of every standing bakery with work to do (D522).</summary>
     public static int BakersWanted(SimWorld world) => BatchSeatsWanted(world, JobKind.Baker);
+
+    /// <summary>
+    /// ⭐ Merchants the posts want (D594, `trade.md §4.5`): one a standing post while there is something to carry — a good
+    /// above its keep with room at the post, or something at the post nobody means to sell. The reasons are
+    /// <c>SimWorld.GoodToSell</c> and <c>SimWorld.GoodToBringHome</c>, the merchant's own, so the quota cannot ask for
+    /// a hand the merchant would find no errand for.
+    /// </summary>
+    public static int MerchantsWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace post = world.Workplaces[i];
+            if (post.Kind == JobKind.Merchant && !post.IsSite && post.Places > 0
+                && world.PostStoreOf(post) is StoreBuilding store
+                && (world.GoodToBringHome(store) is not null || world.GoodToSell(store) is not null))
+            {
+                wanted++;
+            }
+        }
+
+        return wanted;
+    }
 
     /// <summary>
     /// ⭐ Herdsmen the herds want (D593, `livestock.md §0.1`) — only where a herd stands: one a barn through winter

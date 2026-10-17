@@ -125,6 +125,8 @@ against a number from an older commit.
   fishery's rule) and the walk from the founding site to the nearest. `Village` (seeds 200–299, the played opening,
   unattended, `ZZH` / `ZZB`): the year the last founder died (the town hall owed) and every good held in stores against
   its limit then and 10 and 20 years on. ZZ_SEEDS, ZZ_YEARS (100). Copy in, `-c Release --filter ZzTrade`, delete.
+  `Region` (D594, `ZZM`, needs `TradeTests` in the project): every neighbour left as a boat would leave it at its worst,
+  stepped 4, 8 and 12 seasons — how far its stocks and rates come back between boats (`trade.md §8.4`).
   ⚠️ An unattended village builds almost nothing, so its surplus is thin; what a played village holds came from copies
   of Joe's saves (`trade.md §8.2a`).
 - `ZzHerd.cs` — D589's measurements for the herd (`specs/livestock.md §10.1`, commit 0 of `trade.md §11`). `Cold` (`ZZK`,

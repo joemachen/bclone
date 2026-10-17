@@ -6,7 +6,7 @@ founder's death), `buildings-plan.md §6` (gold cut: *"no combat, no score, no w
 a deck over the river), D553 call 6 (the workshop, carpenter and hammer: the follow-on carts wait for), D563–D584
 (nomads — the clock-by-hash and the walk-in from the valley's edge this copies), **D586 (Joe's calls for this spec,
 2026-10-16 — §3.1)**, **D587 (his answers to the nine calls, the same day — §3.2)**.
-**Status:** 🔨 **COMMITS 1–3 OF §11 BUILT (D590 the rows and the state; D592 the herd lives; D593 the herdsman); EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
+**Status:** 🔨 **COMMITS 1–4 OF §11 BUILT (D590 the rows and the state; D592 the herd lives; D593 the herdsman; D594 the post and the region — no boat yet, so nothing is ever sold); EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
 `tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**; the build is planned commit by
 commit in **§11 (D588)**, with `livestock.md` re-read against today's code (its §0). Owner: Joe + Claude Code.
 
@@ -102,8 +102,16 @@ asked the same day; those answers are in the last column.
   and animals. A good added later is given to a neighbour's row the day its system is built, so the region grows with
   the game. ⛔ A good with no system yet is never offered (asked, D587).
 - **Each neighbour keeps a stock per good**, in integers, **stepped once at each season turn** — its makes add, its wants
-  take away, clamped to its size. ⛔ Never per tick (CLAUDE.md: nothing derivable is rebuilt per tick, and nothing in the
-  region changes between season turns).
+  take away, held between nothing and **double** its size. ⛔ Never per tick (CLAUDE.md: nothing derivable is rebuilt per
+  tick, and nothing in the region changes between season turns).
+  - ✅ **As built (D594, `SimWorld.Region.cs`, `RegionSystem`):** the region **sleeps until a finished post stands** and
+    wakes at the next season turn (`RegionAwakeSince`, hashed sparsely under `0x78`) with everything it makes at its size,
+    its animals, and nothing of what it wants — so a woken neighbour starts short of its wants. Each turn after, a make
+    comes back `max(1, gap ÷ region_seasons_to_recover)` toward its size (animals the same) and a want is used
+    `max(1, size ÷ region_seasons_to_recover)`. **`region_seasons_to_recover` is 8** (§8.4). Double, not the size, is
+    the ceiling because a sale can push a want past it — and the rate's floor (half) is reached at one and a half.
+  - A neighbour's **name** is the town names after the village's own (`SimWorld.NeighbourName`) — a pure function of the
+    seed, never hashed, as the village's own name is not.
 - **Hashed and saved** (save format **8**). A neighbour's stock is a fact about the world; the rate (§4.3) is derived
   from it and **not hashed** (D335).
 - **Read on a region panel** (a town hall tab, when the tabs land; a window until then): each neighbour, what it has
@@ -114,6 +122,12 @@ asked the same day; those answers are in the last column.
 - A neighbour **gives what it has plenty of for what it is short of**. The rate for a pair is derived from the two
   stocks against the neighbour's size, clamped to a band (e.g. 1:4 to 4:1), in integers.
 - **Said in words, with the reason:** *"Ashford is short of firewood after the winter: 3 firewood buys 1 stone."*
+  - ✅ **As built (D594):** a good's base is its row's **`trade_worth`** (gathered goods 1; stone, flour, bread 2; iron
+    and leather 3; stone tools 8; iron tools 20 — ⚠️ Joe's to tune, he gave none). A neighbour **offers** for what it wants
+    and **asks** for what it makes `worth × scarcity`, scarcity `200 − 100 × held ÷ size` clamped to **50–200 %**, so
+    every rate is within a quarter and four times the worths. `RateFor` gives the pair in the smallest whole numbers;
+    `SayTheRate` says it: *"Ashford is short of firewood and has plenty of stone: 3 firewood buys 1 stone."* Derived,
+    never hashed (D335).
 - Rates change only at season turns, so the region panel can be read and planned against long before a boat comes.
 - ⭐ **What a boat carries — Joe's *"random assortment"* (call 5).** A boat brings a share of **what its neighbour has
   plenty of on the day it sets out**, the share and the mix picked **by hash** of the seed, the neighbour and the visit
@@ -265,6 +279,33 @@ good with a waiting system is animals (D61, `livestock.md`).** That is what call
 The 36 younger villages (Years 1–23) lean the same way at a smaller size: from about Year 7 most sit at or near their
 limits for forage, logs and firewood, and those with a fishery for fish.
 
+### 8.4 Measured on the build — commit 4 (D594)
+
+**The neighbours' sizes — half the shipped starting limit of each good.** §8.2a: every played village at the hall's era
+holds nearly everything at its limit. A *keep* at half the limit leaves half the limit to sell, so a size of half the
+limit means one boat's worth of a village's spare takes a neighbour from short (it offers double) to rested (it offers
+the worth). So: forage 1,000; wheat and bread 500; fish and meat 125; logs, stone, iron, leather and flour 100; firewood
+200; stone and iron tools 12. Hay has no limit; 400 is a quarter of a barn's room. Animals stay 6.
+
+**The post's price — 30 logs, 24 stone, kept.** All four hall-era villages held logs at their limit (200) and stone at
+120–200: the post is a sixth of their logs and at most a fifth of their stone. Its 800 room is about a quarter of
+everything a village at its limits could sell with every *keep* at half (≈ 2,970); the boat's hold is commit 5's.
+
+**How fast the region comes back — `region_seasons_to_recover`, 8** (`ZzTrade.Region`: every neighbour left as a boat
+would leave it at its worst — every make bought out, every want sold to it at double — and stepped 4, 8 and 12 seasons;
+the boat gap is 8–12):
+
+| Seasons | At 4 (first built): makes / wants / hills' wheat-for-logs | At 8 (shipped): makes / wants / the same rate |
+|---|---|---|
+| 4 | 67 % / at size / 133 wheat for 100 logs | 40 % / 1.5× size / 16 for 5 |
+| 8 | 88 % / empty / 14 for 25 | 63 % / at size / 137 for 100 |
+| 12 | 95 % / empty / 21 for 40 | 77 % / half size / 123 for 149 |
+| rested | | 1 for 2 |
+
+At 4 every boat, even one two years on, found the region back at its best rate: selling everything above the keep never
+cost the village anything (the trap in §7). At 8 a heavy sale is still felt two years on (the rate nearly three times
+worse) and mostly gone at three. ⚠️ Joe's to tune in play, with the worths.
+
 ### 8.3 To measure on the build, before any number is typed
 
 - The post's price and the merchant's walk (logs, stone, seats).
@@ -318,7 +359,7 @@ is raised, not at the founding. That makes the goldens themselves the guard for 
 | 1 ✅ D590 | **Rows and state, nothing behaves** — done. The prices and the neighbours' sizes are provisional and labelled so; the view hides both buildings until the hall stands (`Main.EarnedYet`). `Goods.Hay` 13; `BuildingKind.Barn` 23 and `TradingPost` 24; `JobKind.Herdsman` 13 and `Merchant` 14; the animal row (one kind); neighbour rows; the herd on the barn; standing orders; the boat's three ticks; the neighbours' stocks. Saved (**format 8**) and hashed sparsely. Both buildings in `WhyNotYet`: *not until the town hall stands* | sim | every new field saved or named derived (the reflection guard); save → load → hash equal; **all 362 goldens unchanged** |
 | 2 ✅ D592 | **The herd lives** — done (`SimWorld.Herd.cs`, `HerdSystem`); ⚠️ the barn's room is derived in commit 3, from the hay a herdsman cuts. Growth by an integer accumulator at the day turn, capped at what the pasture holds (tiles ÷ tiles a beast); free grazing spring–autumn; hay eaten each winter day from the barn; a beast lost for each day's hay short; the cull above capacity into meat and leather in the barn's buffer | sim | a herd with its winter's hay survives 300 winters on both configs; an over-stocked one loses beasts (anti-vacuity, D7); growth stops at capacity; the cull's goods appear; all goldens unchanged |
 | 3 ✅ D593 | **The herdsman** — done (`BehaviorSystem.Herd.cs`, `LabourQuota.HerdsmenWanted`, `VillageEconomy.BarnHayRoom`); the herd eats only hay put out (`livestock.md §0.1`). Growing seasons: cut hay on the pasture, carry it to the barn (the farm's reap-and-carry). Winter: carry hay out and feed — outdoors. The cull. The quota asks for herdsmen from the hay the herd will need (derived, never the barn's room — D52's lesson) | sim | the quota wants herdsmen only for a herd; **a herdsman never freezes** over the shipped seeds; winter outdoor work rises above the re-taken baseline (`livestock.md §9.5–9.6`); a village with no herd unchanged |
-| 4 | **The post and the region.** The merchant carries what is above *keep N* to the post and bought goods out (the marketer's two states); neighbours wake when the post stands and step at each season turn; rates derived, in words | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the merchant never takes a good below *keep N* |
+| 4 ✅ D594 | **The post and the region** — done (`SimWorld.Region.cs`, `RegionSystem`, `BehaviorSystem.Trade.cs`, `LabourQuota.MerchantsWanted`). The merchant's three errands: to the store holding a good above its *keep N* (`CollectingForThePost`), down to the post (`StockingThePost`), and to the post for anything there with no keep order — what a boat left — and home (`FetchingFromThePost`); one copy of the reasons (`SimWorld.GoodToSell` / `GoodToBringHome` / `AboveTheKeep`) read by the merchant and the quota alike. Neighbours wake when the post stands and step at each season turn; rates derived from `trade_worth` and scarcity, in words with the reason; sizes, the post's price and the recovery measured (§8.4) | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the merchant never takes a good below *keep N* |
 | 5 | **The boat.** Its clock by hash (every 2–3 years, spring–autumn, either direction); appears / docks / leaves; settles the orders at the day's rate, integers conserved, the remainder kept at the post; animals only to a barn with room; *Send the boat on* moves the leaving tick; the passing banner and the log lines | sim | gaps of 2–3 years; both directions over a run; never in winter; same seed, same boats; a save with a boat in dock loads and sails on; a year run after loading matches one that never stopped |
 | 6 | **View I.** The barn and its pasture paint (trees kept), the animals grazing (a hash scatter, like the trees), the barn's card (*N head, hay for N days, why*); the post's window (orders, the boat in dock, *Send the boat on*, when the next is due); the herdsman's and merchant's states in words | view | probe `herd:`, `post:` |
 | 7 | **View II.** The boat sailing: the water path from its edge to the post and on off the far edge, **found once per post** (the river never changes — CLAUDE.md's rule), the boat's place derived from its ticks; the region panel | view | probe `boat:`, `region:` |

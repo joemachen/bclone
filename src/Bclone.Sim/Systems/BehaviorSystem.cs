@@ -145,6 +145,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.FetchingHay => "fetching hay from the barn",
         VillagerState.FeedingTheHerd => "feeding the herd",
         VillagerState.Culling => "culling a beast",
+        VillagerState.CollectingForThePost => "collecting goods to sell",
+        VillagerState.StockingThePost => "carrying goods to the trading post",
+        VillagerState.FetchingFromThePost => "bringing goods home from the trading post",
         _ => state.ToString(),
     };
 
@@ -497,6 +500,22 @@ public sealed partial class BehaviorSystem : ISimSystem
                         : villager.State);
                 return;
 
+            // The merchant's errands (D594): to the store that holds the good, or to the post.
+            case VillagerState.CollectingForThePost:
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY), villager.State);
+                return;
+
+            case VillagerState.StockingThePost:
+            case VillagerState.FetchingFromThePost:
+                if (WorkplaceOf(world, villager) is not Workplace tradingPost)
+                {
+                    HaulOrSetDown(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, tradingPost.Position, villager.State);
+                return;
+
             // The herdsman's errands (D593): out to a pasture tile, or to the barn.
             case VillagerState.CuttingHay:
             case VillagerState.FeedingTheHerd:
@@ -619,7 +638,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
         || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state)
-        || IsHerding(state);
+        || IsHerding(state) || IsTradingAtThePost(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -692,6 +711,11 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (IsHerding(state))
         {
             return JobKind.Herdsman;
+        }
+
+        if (IsTradingAtThePost(state))
+        {
+            return JobKind.Merchant;
         }
 
         // ⛔ D281, a fourth time: without this arm a quarrier is recalled home every tick.
@@ -3165,6 +3189,22 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         // Timber. Fellable year-round, unlike berries, so a logger still has
         // something to do in winter - which is part of why the job is worth holding.
+        // ⭐ THE MERCHANT (D594, `trade.md §4.5`): what a boat left goes home; what is above the keep goes down.
+        if (villager.CanWork && job?.Kind == JobKind.Merchant)
+        {
+            if (TryTrade(world, villager, job))
+            {
+                return;
+            }
+
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
+        }
+
         // ⭐ THE HERDSMAN (D593, `livestock.md §0.1`): a cull owed, winter's feeding, the growing seasons' hay.
         if (villager.CanWork && job?.Kind == JobKind.Herdsman)
         {
@@ -4746,6 +4786,11 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         if (ArriveToKeepTheHerd(world, villager, onArrival))
+        {
+            return;
+        }
+
+        if (ArriveToTrade(world, villager, onArrival))
         {
             return;
         }

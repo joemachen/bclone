@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D593 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–3 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 4 OF `trade.md §11` (THE POST AND THE REGION). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D594 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–4 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 5 OF `trade.md §11` (THE BOAT). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D593: COMMIT 3 — THE HERDSMAN) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D594: COMMIT 4 — THE POST AND THE REGION) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D594**, local. The merchant carries what the village holds above *keep N* down to the
+> trading post — **never below it** — and brings home anything at the post with no keep order (what a boat will leave);
+> the quota asks for him only where a post has work, and the allocator walks him. The three neighbours **sleep until a
+> post stands**, wake at the next season turn and step a season at a time; rates come from `trade_worth` and scarcity,
+> within a quarter and four times the worths, said with their reason (*"… is short of firewood and has plenty of stone:
+> 3 firewood buys 1 stone."*). Measured (`trade.md §8.4`): neighbours sized at half the shipped limits; the post's 30 logs
+> and 24 stone kept; **`region_seasons_to_recover` 8**, because at 4 every boat found the region rested and selling
+> everything cost nothing. **Nothing is sold yet — that is the boat.** `TradeTests` (11); **18 mutants, 28 reds, two zeros
+> closed** (the band, the wake's hash — traps below); suite 1732 / 0 / 5 of 1737 (9m42; this session's runs 8m40–9m42 on near-identical code, the new guards ~3 s — noise, not a regression); probe clean; goldens 362 → 362.
+>
+> **▶️ NEXT: commit 5 — the boat** (`trade.md §11` row 5): its clock by hash, appear / dock / leave, settle the orders at
+> the day's rate (integers conserved, the remainder at the post), animals only to a barn with room, *Send the boat on*.
+> ⚠️ **A good the boat leaves must have no keep order**, or the merchant leaves it at the post for sale — the post's
+> window must not let one good carry both a keep and a buy order (trap below).
+>
+> **(the banner below is the state at D593)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D593: COMMIT 3 — THE HERDSMAN) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D593**, local. The herdsman cuts the pasture and carries the hay to the barn until it holds
 > the winter of the pasture's full herd; from five days before winter he carries armfuls out — **the herd eats only hay
@@ -7129,11 +7148,37 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D594 PAID FOR — A DAY IS STILL FOUR TICKS, THE ESTABLISHED VILLAGE HAS NO STONE, AND TWO SIDES FILLED AS ONE
+
+- **A day is four ticks** — D427's trap, paid again. `TicksPerDay * 4` is sixteen ticks, not four days of work: three
+  merchant guards read *"nobody carried anything"* because the merchant had not finished walking home from his rest.
+  Give an errand **a season** (`TicksPerSeason`), and when a guard says *nobody did it*, trace before believing it.
+- **`ShippedConfig.Established()` holds no stone, iron, fish, meat, leather, wheat or bread at tick 0** — only forage,
+  stone tools, and logs and firewood once the first days run. A guard about a good must **give** it (into the warehouse,
+  `StoreBuilding.Put`), not assume the village has some.
+- **A good at the post with a keep order stays there; one without goes home.** That is how the merchant tells what is for
+  sale from what a boat left. Commit 5 must never leave a good the village also sells — or forbid both orders on one good.
+- ⭐ **Fill the two sides of a ratio apart.** The band guard filled a neighbour's wants and makes to the same level, so the
+  offer and the ask always moved together and a band widened to 20–500 % passed (T7 scored zero). Wants and makes now go
+  through every pair of fills. D423's lesson in a new shape: *pose the shape that makes the claim bite.*
+- ⛔ **A mutant's filter must be green before the mutant, or its reds are not its own.** Posing the region awake in the
+  save pose made `ThePosesCatchTheMomentsTheyAreNamedFor` fail on its own (3 posed animals had stepped to 6) — and the
+  mutant pass counted that failure as a red for T15 and T16. T16 really scored zero. **Run each mutant's filter on the
+  clean tree first**, or read every red's name, not just its count.
+- **A sparse hash's tag byte hides its value**: zeroing `RegionAwakeSince` inside the mix still moved the hash, because
+  `0x78` was mixed whenever the region was awake. Its guard now also asks that *two different wake ticks* hash apart,
+  and a second mutant (T16b) drops the whole block.
+- **An edit script's "already applied" check misfires on a deletion** — when the new text is a substring of the old, the
+  new text is always "present". Check that the old text is gone, not that the new text is there.
+- **The quota and the merchant read one copy of the reasons** (`SimWorld.GoodToSell` / `GoodToBringHome` /
+  `AboveTheKeep`). The first draft had the quota restate them, and a quota that disagrees with its worker asks for a hand
+  who then finds nothing to do (D52's lesson). Keep it one copy.
+
 ## ⛔ THE TRAPS D593 PAID FOR — A TRADE THE ALLOCATOR NEVER WALKS, A YEAR STEPPED BY ACCIDENT, AND A HERDSMAN WHO RESTED ALL AUTUMN
 
 - **A new trade must be in `LabourAllocator.KindsInOrder`** as well as the quota — *"two halves of one fact and neither
   compiles against the other"*. The herdsman was asked for, pinned, and never seated; every herdsman test read *"nobody
-  cut the pasture"* until the list had him. **The merchant joins it in commit 4.**
+  cut the pasture"* until the list had him. **The merchant joined it in commit 4 (D594); T13 is its red check.**
 - **`SkillSystem`'s state table throws on a state it does not know** — loud by design. Every new `VillagerState` needs its
   row there, and `ErrandKind` / `IsOnAWorkErrand` in `BehaviorSystem` (D281: or the worker is recalled home every tick).
 - **`StepToTheStartOf(Season.Spring)` from tick 0 steps a whole year** — tick 0 *is* the first day of spring. Three herdsman

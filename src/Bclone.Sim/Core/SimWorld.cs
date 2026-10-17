@@ -642,7 +642,8 @@ public sealed partial class SimWorld : IObstacles
     /// </summary>
     /// <remarks>
     /// ⭐ <b>A stock limit's shape exactly</b> — a nullable number a good, null and zero different instructions — so it
-    /// <i>is</i> one: the same class, saved and hashed the same sparse way (D590). Nothing reads it before commit 4.
+    /// <i>is</i> one: the same class, saved and hashed the same sparse way (D590). The merchant reads it (D594):
+    /// <c>SimWorld.AboveTheKeep</c> is the most he carries down.
     /// </remarks>
     public StockLimits TradeKeep { get; }
 
@@ -13803,6 +13804,7 @@ public sealed partial class SimWorld : IObstacles
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
+            ["region_awake_since"] = SaveWriter.Hex(RegionAwakeSince),
             ["trade_keep"] = TradeKeep.ToSave(),
             ["trade_buy"] = TradeBuy.ToSave(),
             ["boat"] = Boat is TradeBoat boat
@@ -13986,6 +13988,7 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");
+        RegionAwakeSince = save.ULong("region_awake_since");
 
         // Trade and the herd (D590, format 8).
         TradeKeep.ReadSave(save, "trade_keep");

@@ -305,6 +305,15 @@ public enum VillagerState
 
     /// <summary>At the barn, culling a beast the pasture cannot hold (D593; Joe, D588: meat and leather).</summary>
     Culling,
+
+    /// <summary>To the store that holds a good the village sells, for an armful above the keep (D594, `trade.md §4.5`).</summary>
+    CollectingForThePost,
+
+    /// <summary>Carrying goods to sell down to the trading post (D594).</summary>
+    StockingThePost,
+
+    /// <summary>To the trading post for what a boat left, to carry it home (D594).</summary>
+    FetchingFromThePost,
 }
 
 /// <summary>

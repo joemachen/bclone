@@ -19,6 +19,8 @@ namespace Bclone.Sim.Tests;
 //         the year the last founder died (the town hall owed, D252), the people then, and every good held in stores
 //         against its limit at that year and 10 and 20 years on — what a valley has spare when trade opens.
 //   ZZB — the usual survival line so dead.py reads it.
+//   ZZM — Region (D594, commit 4; needs TradeTests): each neighbour as a boat would leave it at its worst, stepped 4, 8
+//         and 12 seasons — how far its stocks and its rates come back between boats.
 // Seeds: River 1–100 per course; Village 200–299 (ZZ_SEEDS narrows); ZZ_YEARS caps the run (default 100).
 public sealed class ZzTrade
 {
@@ -145,6 +147,46 @@ public sealed class ZzTrade
         int cold = world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Cold);
         _o.WriteLine($"ZZB {arm} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} "
             + $"hall-year {hallYear} dead-year {deadYear} hash {StateHash.Compute(world)}");
+    }
+
+    /// <summary>
+    /// ZZM (D594, commit 4): how far the region comes back between boats. A post raised, the region woken, then every
+    /// neighbour as a boat would leave it at its worst — everything it makes bought out, everything it wants sold to it
+    /// at double its size — and stepped for the gap between boats (8 or 12 seasons, `trade.md §4.4`). One line per
+    /// neighbour per good: held / size after the gap; and the first want-for-first-make rate after the gap against the
+    /// rate a rested region gives.
+    /// </summary>
+    [Theory]
+    [InlineData(4)]
+    [InlineData(8)]
+    [InlineData(12)]
+    public void Region(int seasons)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new Bclone.Sim.Logging.InMemoryLogSink());
+        SimWorld world = loop.World;
+        TradeTests.RaiseAPost(world);
+        while (world.RegionAwakeSince == 0) { loop.StepOnce(); }
+
+        var rested = new List<(int, int)?>();
+        for (int n = 0; n < world.Config.Neighbours.Count; n++)
+        {
+            NeighbourRow row = world.Config.Neighbours[n];
+            rested.Add(world.RateFor(n, row.Wants[0].Goods, row.Makes[0].Goods));
+            foreach (MaterialCost made in row.Makes) { world.NeighbourStocks[n].Held[(int)made.Goods] = 0; }
+            foreach (MaterialCost wanted in row.Wants) { world.NeighbourStocks[n].Held[(int)wanted.Goods] = wanted.Amount * 2; }
+            world.NeighbourStocks[n].Animals = 0;
+        }
+
+        loop.Step(world.Config.TicksPerSeason * seasons);
+        for (int n = 0; n < world.Config.Neighbours.Count; n++)
+        {
+            NeighbourRow row = world.Config.Neighbours[n];
+            int[] held = world.NeighbourStocks[n].Held;
+            string makes = string.Join(" ", row.Makes.Select(m => $"{world.GoodsCatalog.NameOf(m.Goods).Replace(' ', '_')}={held[(int)m.Goods]}/{m.Amount}"));
+            string wants = string.Join(" ", row.Wants.Select(m => $"{world.GoodsCatalog.NameOf(m.Goods).Replace(' ', '_')}={held[(int)m.Goods]}/{m.Amount}"));
+            _o.WriteLine($"ZZM {seasons} n{n} makes {makes} animals={world.NeighbourStocks[n].Animals}/{row.MakesAnimals} "
+                + $"wants {wants} rate {world.RateFor(n, row.Wants[0].Goods, row.Makes[0].Goods)} rested {rested[n]}");
+        }
     }
 
     /// <summary>Every good in the catalogue: held in stores / its limit (− for none).</summary>

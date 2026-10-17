@@ -896,6 +896,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.BoatsEverCame);
         }
 
+        // When the region woke (D594) — sparse: a village that never built a post mixes nothing.
+        if (world.RegionAwakeSince != 0)
+        {
+            hash = MixByte(hash, 0x78);
+            hash = MixUInt64(hash, world.RegionAwakeSince);
+        }
+
         // A neighbour's stock: each held good with its index, and its animals — only what is not zero.
         for (int n = 0; n < world.NeighbourStocks.Count; n++)
         {

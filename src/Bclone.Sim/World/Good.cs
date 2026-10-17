@@ -160,6 +160,17 @@ public sealed record GoodRow
     [JsonPropertyName("nutrition")]
     public int Nutrition { get; init; }
 
+    /// <summary>
+    /// What one unit is worth in barter, before a neighbour's plenty or need moves it (D594, `trade.md §4.3`): the rate
+    /// between two goods starts from these and stays within half to double of them.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Provisional, and Joe's to tune</b> — he gave no worths, and barter needs some. Gathered goods 1; worked
+    /// materials and processed food 2–3; tools as many units as the work and iron in them. Default 1.
+    /// </remarks>
+    [JsonPropertyName("trade_worth")]
+    public int TradeWorth { get; init; } = 1;
+
     /// <summary>Whether anybody can eat it. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool Edible => Nutrition > 0;

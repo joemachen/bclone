@@ -187,7 +187,7 @@ public enum JobKind
     /// after (D590, `specs/trade.md §4.5`). Works at a trading post.
     /// </summary>
     /// <remarks>
-    /// ⛔ Appended at 14. Asked for by nothing until trade behaves (`trade.md §11` commit 4). <b>The merchant</b>, not
+    /// ⛔ Appended at 14. Asked for by <c>LabourQuota.MerchantsWanted</c> where a post has work (D594). <b>The merchant</b>, not
     /// the trader (Joe, D591): the marketer's plural is <i>traders</i> (D188), and so is half this codebase's prose.
     /// </remarks>
     Merchant = 14,

@@ -1450,11 +1450,17 @@ public sealed record SimConfig
     [JsonPropertyName("cull_ticks")]
     public int CullTicks { get; init; } = 8;
 
-    /// <summary>Logs a trading post takes to raise (provisional, D590).</summary>
+    /// <summary>
+    /// Logs a trading post takes to raise (D590) — measured at D594 (`trade.md §8.4`): every hall-era village holds its
+    /// logs at the limit, 200, so the post costs at most a sixth of them.
+    /// </summary>
     [JsonPropertyName("trading_post_logs")]
     public int TradingPostLogs { get; init; } = 30;
 
-    /// <summary>Stone in a trading post — a quay to tie a boat to (provisional, D590).</summary>
+    /// <summary>
+    /// Stone in a trading post — a quay to tie a boat to (D590). Measured at D594 (`trade.md §8.4`): the poorest
+    /// hall-era village held 120 stone, so the quay is a fifth of it.
+    /// </summary>
     [JsonPropertyName("trading_post_stone")]
     public int TradingPostStone { get; init; } = 24;
 
@@ -1471,6 +1477,20 @@ public sealed record SimConfig
     public int TradingPostStoreCapacity { get; init; } = 800;
 
     /// <summary>
+    /// How many seasons a neighbour takes to come back from a boat (D594, `trade.md §4.2`, §8.4): each season a good it
+    /// makes recovers this share of the way back to its size, and a good it wants is used up this share of its size.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Eight — two years — so the next boat remembers the last.</b> Measured (`ZzTrade.Region`): at four, a
+    /// neighbour sold its fill twice over was hungry again within eight seasons and back to its best rate by every boat,
+    /// so selling everything above the keep never cost the village anything — the trap of a boat that empties the stores
+    /// (§7). At eight, a heavy sale is still felt by a boat two years on and mostly gone by one three years on.
+    /// ⚠️ Joe's to tune in play.
+    /// </remarks>
+    [JsonPropertyName("region_seasons_to_recover")]
+    public int RegionSeasonsToRecover { get; init; } = 8;
+
+    /// <summary>
     /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
     /// `TECH-EXAMPLE.md`'s list is added without restructuring.
     /// </summary>
@@ -1485,8 +1505,11 @@ public sealed record SimConfig
     /// every good the game has, and animals (call 5), so a boat can bring any of it.
     /// </summary>
     /// <remarks>
-    /// ⚠️ The sizes are provisional until commit 4 measures them; nothing reads them before then. ⭐ A good added
-    /// later joins a neighbour's <c>makes</c> the day its system lands (D587: never a good with no use yet).
+    /// ⭐ <b>A size is half the shipped starting limit of its good</b> (D594, `trade.md §8.4`): every played village at
+    /// the hall's era holds nearly everything at its limit (§8.2a), so a <i>keep</i> at half the limit leaves half the
+    /// limit to sell — one boat's worth of a village's spare takes a neighbour from short (double) to rested (its worth).
+    /// Hay has no limit: 400 is a quarter of a barn's room. ⚠️ Joe's to tune in play. ⭐ A good added later joins a
+    /// neighbour's <c>makes</c> the day its system lands (D587: never a good with no use yet).
     /// </remarks>
     [JsonPropertyName("neighbours")]
     public IReadOnlyList<NeighbourRow> Neighbours { get; init; } = new[]
@@ -1498,15 +1521,15 @@ public sealed record SimConfig
             Direction = NeighbourDirection.Upriver,
             Makes = new[]
             {
-                new MaterialCost(World.Goods.Logs, 200), new MaterialCost(World.Goods.Stone, 200),
-                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Tools, 20),
-                new MaterialCost(World.Goods.IronTools, 20), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Tools, 12),
+                new MaterialCost(World.Goods.IronTools, 12), new MaterialCost(World.Goods.Leather, 100),
             },
             MakesAnimals = 6,
             Wants = new[]
             {
-                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Flour, 100),
-                new MaterialCost(World.Goods.Bread, 100), new MaterialCost(World.Goods.Fish, 100),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Fish, 125),
                 new MaterialCost(World.Goods.Firewood, 200),
             },
         },
@@ -1518,15 +1541,15 @@ public sealed record SimConfig
             Direction = NeighbourDirection.Downriver,
             Makes = new[]
             {
-                new MaterialCost(World.Goods.Produce, 200), new MaterialCost(World.Goods.Fish, 200),
-                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Flour, 100),
-                new MaterialCost(World.Goods.Bread, 100), new MaterialCost(World.Goods.Firewood, 200),
+                new MaterialCost(World.Goods.Produce, 1000), new MaterialCost(World.Goods.Fish, 125),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Firewood, 200),
             },
             Wants = new[]
             {
-                new MaterialCost(World.Goods.Logs, 200), new MaterialCost(World.Goods.Stone, 200),
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
                 new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Leather, 100),
-                new MaterialCost(World.Goods.Meat, 100),
+                new MaterialCost(World.Goods.Meat, 125),
             },
         },
 
@@ -1537,14 +1560,14 @@ public sealed record SimConfig
             Direction = NeighbourDirection.Overland,
             Makes = new[]
             {
-                new MaterialCost(World.Goods.Meat, 200), new MaterialCost(World.Goods.Leather, 100),
-                new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 20),
+                new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 12),
             },
             MakesAnimals = 6,
             Wants = new[]
             {
-                new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 100),
-                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 500),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Stone, 100),
             },
         },
     };
@@ -2959,6 +2982,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Stone,
             Category = World.GoodCategory.Materials,
             Name = "stone",
+            TradeWorth = 2,
             SourceName = "a stone seam",
             YieldPerTile = 12,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
@@ -2978,6 +3002,7 @@ public sealed record SimConfig
             // priced from the three keys that priced every tool before iron (§9.2), so a village
             // with only stone tools plays and hashes exactly as before.
             Name = "stone tools",
+            TradeWorth = 8,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
             ToolUses = ToolUses,
             ToolSpeedBonusPercent = ToolSpeedBonusPercent,
@@ -2993,6 +3018,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Iron,
             Category = World.GoodCategory.Materials,
             Name = "iron",
+            TradeWorth = 3,
             SourceName = "an iron seam",
             YieldPerTile = 8,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
@@ -3036,6 +3062,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Leather,
             Category = World.GoodCategory.Materials,
             Name = "leather",
+            TradeWorth = 3,
             SourceName = "the woods",
 
             // ⚠️ A WAREHOUSE, NOT A GRANARY. It is a material, not a meal, and putting it where food
@@ -3060,6 +3087,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.IronTools,
             Category = World.GoodCategory.FuelAndGoods,
             Name = "iron tools",
+            TradeWorth = 20,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
             ToolUses = IronToolUses,
             ToolSpeedBonusPercent = IronToolSpeedBonusPercent,
@@ -3076,6 +3104,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Flour,
             Category = World.GoodCategory.Materials,
             Name = "flour",
+            TradeWorth = 2,
 
             // ⚠️ KEPT DRY, AND NEVER IN A GRANARY (`food-chain.md §4.1`): it is not food, and a granary's
             // room is what the birth gate measures. A warehouse holds the oven's firewood too, so a bake
@@ -3087,6 +3116,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Bread,
             Category = World.GoodCategory.Food,
             Name = "bread",
+            TradeWorth = 2,
 
             // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
@@ -5471,7 +5501,7 @@ public sealed record SimConfig
             ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
             ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
-            ("cull_ticks", CullTicks),
+            ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
         })
         {
             if (value < 1)
@@ -5744,6 +5774,12 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') names no store kind in stored_by, so nothing "
                     + "in the village could ever hold it.");
+            }
+
+            if (good.TradeWorth < 1)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has trade_worth {good.TradeWorth}; a good worth nothing cannot be bartered.");
             }
 
             if (good.Nutrition < 0)

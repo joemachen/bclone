@@ -819,6 +819,9 @@ public sealed class Villager
             VillagerState.FetchingHay => $"fetching hay from {where}",
             VillagerState.FeedingTheHerd => $"carrying hay out to the herd at {where}",
             VillagerState.Culling => $"culling a beast the pasture at {where} cannot hold",
+            VillagerState.CollectingForThePost => "collecting goods the village sells",
+            VillagerState.StockingThePost => $"carrying goods down to {where} to sell",
+            VillagerState.FetchingFromThePost => $"bringing home what a boat left at {where}",
             _ => State.ToString(),
         };
     }
