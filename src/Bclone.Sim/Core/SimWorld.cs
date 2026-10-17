@@ -2023,7 +2023,35 @@ public sealed partial class SimWorld : IObstacles
             ? $", and ground painted for harvest in {GoodsCatalog.SourceNameOf(goods)} is left standing"
             : string.Empty;
         return $"At your limit of {limit.Grouped()} {GoodsCatalog.NameOf(goods)} ({HeldAgainstItsLimit(goods).Grouped()} stored, not counting home larders) — "
-            + $"{who}{paint}. Raise it under Stock limits.";
+            + $"{who}{paint}. Raise it under Stock limits." + (goods == Goods.Firewood ? TheWinterOutgrewTheLimit() is string winter ? " " + winter : string.Empty : string.Empty);
+    }
+
+    /// <summary>
+    /// ⭐ When the player's firewood limit is what keeps the village short of its winter (D600) — said in those words, or
+    /// null. The limit is met, so the woodcutters have stopped; and the winter the homes are about to burn, with their
+    /// larders topped up, is more than the stores hold (<c>LabourQuota.FirewoodShortfall</c>, the one copy of that sum).
+    /// </summary>
+    /// <remarks>
+    /// Joe's village (D600, willowdale-dove-flint-67, Year 70): a limit of 600 set when it was small, 37 households
+    /// needing 1,631 — short by 1,011 for ever, its smithy cold (iron tools burn firewood and wait on that shortfall) and its
+    /// people "dangerously cold" each winter, while the limit's own sentence said only that the woodcutters had stopped.
+    /// </remarks>
+    public string? TheWinterOutgrewTheLimit()
+    {
+        int short_ = LabourQuota.FirewoodShortfall(this);
+        if (short_ <= 0 || !LimitIsMet(Goods.Firewood) || StockLimits.For(Goods.Firewood) is not int limit)
+        {
+            return null;
+        }
+
+        int homes = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            homes += LivingMembersOf(Households[i]) > 0 ? 1 : 0;
+        }
+
+        return $"The village has outgrown it: {homes} households need {(HeldAgainstItsLimit(Goods.Firewood) + short_).Grouped()} "
+            + $"firewood for the winter and the limit of {limit.Grouped()} stops the woodcutters {short_.Grouped()} short.";
     }
 
     /// <summary>
@@ -4172,7 +4200,11 @@ public sealed partial class SimWorld : IObstacles
         // takes none, so it never waits on the homes' woodpile.
         if (TakesFirewood(row) && LabourQuota.FirewoodShortfall(this) > 0)
         {
-            return "Nothing to forge — the village needs its firewood for the winter.";
+            // ⭐ And when it is the player's own limit that keeps the village short, the forge says so (D600) — the
+            // smithy was the place Joe looked, and *"needs its firewood for the winter"* did not name his limit.
+            return TheWinterOutgrewTheLimit() is string limitIsWhy
+                ? $"Nothing to forge — the firewood limit is too low. {limitIsWhy} Raise it under Stock limits, or set the smithy to stone tools, which take no fire."
+                : "Nothing to forge — the village needs its firewood for the winter.";
         }
 
         if (NearestStoreForTheForge(smithy.Tile, tool) is null)
@@ -9824,7 +9856,8 @@ public sealed partial class SimWorld : IObstacles
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
 
         // A fence never raised unlocks its pasture, which stays painted (D598, `livestock.md §0.2.3` rule 6).
-        if (site.Construction.FencesBarnId != 0 && FindWorkplace(site.Construction.FencesBarnId) is Workplace unfenced)
+        if (site.Construction.FencesBarnId != 0 && !site.Construction.Demolishing
+            && FindWorkplace(site.Construction.FencesBarnId) is Workplace unfenced)
         {
             UnlockThePasture(unfenced);
         }
@@ -9862,6 +9895,13 @@ public sealed partial class SimWorld : IObstacles
         // first one down.
         if (plan.Demolishing)
         {
+            // A fence's take-down (D600) takes the fence, not whatever stands at its gate.
+            if (plan.FencesBarnId != 0)
+            {
+                FinishTakingAFenceDown(site, plan);
+                return;
+            }
+
             RetireWorkplace(site);
             PullDownWhatStandsAt(site.Tile);
             return;

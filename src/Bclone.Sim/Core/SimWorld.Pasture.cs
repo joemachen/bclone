@@ -14,6 +14,9 @@ public enum PastureFenceState
 
     /// <summary>The fence stands: its edges are walls, the gate the one way in.</summary>
     Standing = 2,
+
+    /// <summary>The fence still stands and the builders have a site to take it down (D600) — the walls stay till they finish.</summary>
+    ComingDown = 3,
 }
 
 /// <summary>
@@ -46,17 +49,23 @@ public sealed partial class SimWorld
     {
         ArgumentNullException.ThrowIfNull(barn);
         return barn.FencedTiles.Count == 0 ? PastureFenceState.None
-            : barn.FenceStands ? PastureFenceState.Standing
-            : PastureFenceState.Site;
+            : !barn.FenceStands ? PastureFenceState.Site
+            : FenceDemolitionOf(barn) is not null ? PastureFenceState.ComingDown
+            : PastureFenceState.Standing;
     }
 
     /// <summary>The site raising this barn's fence, if one stands.</summary>
-    public Workplace? FenceSiteOf(Workplace barn)
+    public Workplace? FenceSiteOf(Workplace barn) => FenceSite(barn, demolishing: false);
+
+    /// <summary>The site taking this barn's fence down, if one stands (D600).</summary>
+    public Workplace? FenceDemolitionOf(Workplace barn) => FenceSite(barn, demolishing: true);
+
+    private Workplace? FenceSite(Workplace barn, bool demolishing)
     {
         ArgumentNullException.ThrowIfNull(barn);
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Construction?.FencesBarnId == barn.Id)
+            if (Workplaces[i].Construction is { } site && site.FencesBarnId == barn.Id && site.Demolishing == demolishing)
             {
                 return Workplaces[i];
             }
@@ -299,23 +308,84 @@ public sealed partial class SimWorld
 
                 return PlacementVerdict.Fine;
 
+            // ⭐ A STANDING FENCE IS TAKEN DOWN BY THE BUILDERS (Joe, D600: *"builders should demolish it like they do with
+            // other buildings"*) — a demolition site at the gate owing the demolition share of the fence's work; the walls
+            // stand until they finish (`FinishTakingAFenceDown`).
             case PastureFenceState.Standing:
             {
                 int edges = Zones.PastureFenceOf(barn.Id).Count;
-                Zones.PullAPastureFenceDown(barn.Id);
-                UnlockThePasture(barn);
-                string recovered = ReturnToStore(barn.Tile, RefundFor(PastureFenceRecipe(edges)));
-                UnpaintThePasture(barn);
-                Narrate($"{Capitalised(barn.Name)}'s fence was taken down — {recovered} went back to store, and its "
-                    + "pasture with it: paint new ground and fence it again"
-                    + (barn.HerdHead > 0 ? $", or the {barn.HerdHead} head will go hungry" : string.Empty)
-                    + $". {Clock.SeasonAndYear()}.", LogCategory.Building);
+                int work = PastureFenceRecipe(edges).WorkTicks * Config.DemolitionWorkPercent / 100;
+                if (work <= 0)
+                {
+                    TakeTheWallsDown(barn, edges);
+                    return PlacementVerdict.Fine;
+                }
+
+                StandingChanged();
+                Workplaces.Add(new Workplace
+                {
+                    Store = NewStockpile(),
+                    Id = NextWorkplaceId(),
+                    Kind = JobKind.Builder,
+                    Name = $"{Capitalised(barn.Name)}'s fence (being taken down)",
+                    Position = Point.CentreOf(barn.FenceGate!.Value),
+                    Capacity = 0,
+                    Construction = new ConstructionSite(new BuildingRecipe(work))
+                    {
+                        Kind = BuildingKind.PastureFence,
+                        Name = $"{Capitalised(barn.Name)}'s fence",
+                        Demolishing = true,
+                        FencesBarnId = barn.Id,
+                    },
+                });
+                Narrate($"{Capitalised(barn.Name)}'s fence is to be taken down — the builders will see to it, and the "
+                    + $"pasture goes with it. {Clock.SeasonAndYear()}.", LogCategory.Building);
                 return PlacementVerdict.Fine;
             }
+
+            case PastureFenceState.ComingDown:
+                return PlacementVerdict.No("The fence is coming down already — keep it, or let the builders finish.");
 
             default:
                 return PlacementVerdict.No("There is no fence to take down.");
         }
+    }
+
+    /// <summary><i>Keep the fence</i> (D600): the builders' take-down is called off; the fence stands as it was.</summary>
+    public PlacementVerdict KeepTheFence(Workplace barn)
+    {
+        ArgumentNullException.ThrowIfNull(barn);
+        if (FenceDemolitionOf(barn) is not Workplace site)
+        {
+            return PlacementVerdict.No("The fence is not coming down.");
+        }
+
+        CancelConstruction(site);
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>The builders have taken the fence down: its walls go, half its logs come back, the ground with it (D600).</summary>
+    private void FinishTakingAFenceDown(Workplace site, ConstructionSite plan)
+    {
+        RetireWorkplace(site);
+        if (FindWorkplace(plan.FencesBarnId) is not { } barn || !barn.FenceStands)
+        {
+            return;
+        }
+
+        TakeTheWallsDown(barn, Zones.PastureFenceOf(barn.Id).Count);
+    }
+
+    private void TakeTheWallsDown(Workplace barn, int edges)
+    {
+        Zones.PullAPastureFenceDown(barn.Id);
+        UnlockThePasture(barn);
+        string recovered = ReturnToStore(barn.Tile, RefundFor(PastureFenceRecipe(edges)));
+        UnpaintThePasture(barn);
+        Narrate($"{Capitalised(barn.Name)}'s fence was taken down — {recovered} went back to store, and its "
+            + "pasture with it: paint new ground and fence it again"
+            + (barn.HerdHead > 0 ? $", or the {barn.HerdHead} head will go hungry" : string.Empty)
+            + $". {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>Take every tile of the barn's ground back, through the brush's own door (the field's un-ploughing with it).</summary>
@@ -374,6 +444,11 @@ public sealed partial class SimWorld
         if (FenceSiteOf(barn) is Workplace site)
         {
             CancelConstruction(site);
+        }
+
+        if (FenceDemolitionOf(barn) is Workplace coming)
+        {
+            CancelConstruction(coming);
         }
 
         Zones.PullAPastureFenceDown(barn.Id);

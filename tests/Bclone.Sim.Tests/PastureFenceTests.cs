@@ -287,8 +287,9 @@ public sealed class PastureFenceTests
     }
 
     /// <summary>
-    /// ⭐ A standing fence taken down: its walls go, half its logs come back, and the pasture is unpainted with it (Joe:
-    /// <i>"completely unpainted"</i>) — ready to paint and fence again.
+    /// ⭐ A standing fence taken down: <b>the builders take it down</b> (Joe, D600) — a demolition site, the walls up and
+    /// the pasture locked till they finish; then its walls go, half its logs come back, and the pasture is unpainted with
+    /// it (Joe: <i>"completely unpainted"</i>) — ready to paint and fence again.
     /// </summary>
     [Fact]
     public void AStandingFenceTakenDownUnpaintsAndRefundsHalf()
@@ -302,12 +303,46 @@ public sealed class PastureFenceTests
 
         Assert.True(world.TakeTheFenceDown(barn).Allowed);
 
+        // A builders' job: the fence still stands, the ground still locked, until the site is worked through.
+        Assert.Equal(PastureFenceState.ComingDown, world.FenceStateOf(barn));
+        Workplace coming = world.FenceDemolitionOf(barn) ?? throw new Xunit.Sdk.XunitException("No demolition site.");
+        Assert.True(coming.Construction!.Demolishing);
+        Assert.Equal(edges * world.Config.PastureFenceWorkTicksPerEdge * world.Config.DemolitionWorkPercent / 100, coming.Construction.Recipe.WorkTicks);
+        Assert.NotEmpty(world.Zones.PastureFenceOf(barn.Id));
+        Assert.Equal(logs, world.InStores(Goods.Logs));
+        Assert.False(world.CanPaintWorkGround(barn, pasture[0]).Allowed);
+        for (int i = 0; i <= coming.Construction.Recipe.WorkTicks; i++)
+        {
+            coming.Construction.Work();
+        }
+
+        world.Complete(coming);
+
         Assert.Equal(PastureFenceState.None, world.FenceStateOf(barn));
         Assert.Empty(world.Zones.PastureFenceOf(barn.Id));
         Assert.Equal(0, world.Zones.WorkGroundTiles(barn.Id));
         Assert.DoesNotContain(pasture, t => world.Zones.WallsOn(t) != 0 && world.Zones.PlotOwner(t) == 0);
         Assert.Equal(logs + (edges * world.Config.PastureFenceLogsPerEdge * world.Config.DemolitionReturnsPercent / 100), world.InStores(Goods.Logs));
         Assert.Equal("There is no fence to take down.", world.TakeTheFenceDown(barn).Reason);
+    }
+
+    /// <summary><i>Keep the fence</i> calls the builders' take-down off: the fence stands as it was (D600).</summary>
+    [Fact]
+    public void KeepingTheFenceCallsTheTakeDownOff()
+    {
+        (SimWorld world, Workplace barn) = ABarnWithPasture();
+        Assert.True(world.FenceThePasture(barn).Allowed);
+        FinishTheFence(world, barn);
+        int walls = world.Zones.PastureFenceOf(barn.Id).Count;
+        Assert.True(world.TakeTheFenceDown(barn).Allowed);
+        Assert.False(world.TakeTheFenceDown(barn).Allowed);
+
+        Assert.True(world.KeepTheFence(barn).Allowed);
+
+        Assert.Equal(PastureFenceState.Standing, world.FenceStateOf(barn));
+        Assert.Null(world.FenceDemolitionOf(barn));
+        Assert.Equal(walls, world.Zones.PastureFenceOf(barn.Id).Count);
+        Assert.False(world.KeepTheFence(barn).Allowed);
     }
 
     /// <summary>

@@ -1374,8 +1374,11 @@ public partial class Main
                 ? $"The fence is being built — {Ordinal(world.QueuePositionOf(site))} in the builders' queue. The pasture is locked until it is up, or cancelled."
                 : "The fence is being built.", false),
             PastureFenceState.Standing => new FenceFacts(state,
-                $"Fenced — {barn.FencedTiles.Count} tiles and one gate. To change the pasture, take the fence down: half its logs come back, and the ground is unpainted.",
+                $"Fenced — {barn.FencedTiles.Count} tiles and one gate. To change the pasture, take the fence down: the builders do it, half its logs come back, and the ground is unpainted.",
                 false),
+            PastureFenceState.ComingDown => new FenceFacts(state, world.FenceDemolitionOf(barn) is Workplace coming
+                ? $"Being taken down — {Ordinal(world.QueuePositionOf(coming))} in the builders' queue. It stands, and the pasture stays locked, until they finish."
+                : "Being taken down.", false),
             _ => world.WhyNotFence(barn) is string why
                 ? new FenceFacts(state, why, true)
                 : new FenceFacts(state, world.SayWhatFencingWouldDo(barn) ?? string.Empty, false),
@@ -1390,6 +1393,7 @@ public partial class Main
         {
             PastureFenceState.Site => "Cancel the fence",
             PastureFenceState.Standing => "Take the fence down",
+            PastureFenceState.ComingDown => "Keep the fence",
             _ => "Fence the pasture",
         };
         c.FenceButton.Disabled = f.Refused;
@@ -1405,9 +1409,12 @@ public partial class Main
             return;
         }
 
-        PlacementVerdict verdict = world.FenceStateOf(barn) == PastureFenceState.None
-            ? world.FenceThePasture(barn)
-            : world.TakeTheFenceDown(barn);
+        PlacementVerdict verdict = world.FenceStateOf(barn) switch
+        {
+            PastureFenceState.None => world.FenceThePasture(barn),
+            PastureFenceState.ComingDown => world.KeepTheFence(barn),
+            _ => world.TakeTheFenceDown(barn),
+        };
         note.Text = verdict.Allowed ? string.Empty : verdict.Reason;
         note.Visible = !verdict.Allowed;
     }

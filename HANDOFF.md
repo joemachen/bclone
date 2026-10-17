@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D599 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE SPECCED AND BUILT) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS THE FENCE, THEN THE PATHS, THEN COMMIT 7 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D600 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES BEGUN) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE MARKET, THE BUILDERS, THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D599: THE FENCED PASTURE, BUILT — SIM AND VIEW) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D600: JOE'S PLAY NOTES — THE FENCE BY BUILDERS, THE COLD FORGE) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D600**, local. Joe played the fence (*"the process goes pretty well"*) and sent a long list.
+> Investigated on a copy of his newest autosave (willowdale-dove-flint-67, Year 70; `scratchpad/joesaves`, trace
+> `ZzJoeTrace.cs.keep`): **the forge** was idle all year — his firewood limit 600, 37 households needing 1,631, short by
+> 1,011 for ever, so iron tools (which burn firewood) never forged; 52 of 74 able adults hold a tool, 39 iron. **The
+> market** fills with whatever is nearest (cost-first, every counter limit 2,700 so always "short"): 545 of his 620
+> firewood, no meat. **The builders** all work the head of the queue (D108): 9 sites one at a time, the last 415 ticks
+> later, 31–46 laborers idle. **The 4.3 s frames** are *Skip 10y* itself (`[skip] ran 2972 ticks … in 4.29s`).
+>
+> **Built (D600):** a standing fence is taken down **by the builders** (a demolition site; *Keep the fence* calls it off);
+> the firewood limit the village outgrew is **named** on the limit's sentence and on the cold forge. 5 mutants, 6 reds.
+>
+> **▶️ NEXT — Joe's calls (asked 2026-10-17):** (1) **the market stocks its emptiest shelf first** (furthest below its
+> limit as a share, ties to the nearest store); (2) **builders spread across queued sites** in queue order; (3) **seat
+> defaults** forester 2 / forager 3 / farmhouse 3 — **the goldens move: measure survival, re-take once**; (4) **the paths**
+> (walls ignored by the drawing, the star hub, the wiggle, and *"the shorter sections of pathways to-and-from entrances"*
+> that never show); (5) commit 7. Each of (1)–(3) moves behaviour: its own commit, survival measured before/after.
+>
+> **(the banner below is the state at D599)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D599: THE FENCED PASTURE, BUILT — SIM AND VIEW) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D599**, local. **The fenced pasture can be played**: the barn's card (Settings) has a fence
 > row — *Fence the pasture* says first what it would do (*"Fence 40 tiles: 25 lengths and a gate, 25 logs"* for an 8 × 5 block, and any stray
@@ -7246,6 +7267,17 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D600 PAID FOR — A LIMIT SET WHEN SMALL, AND A SENTENCE THAT BLAMED THE WINTER
+
+- ⭐ **A limit set when the village was small outlives it.** Joe's firewood limit (600) was fine at 10 households and
+  starved 37: the woodcutters stopped, the shortfall never closed, the forge waited on it all year and the people froze —
+  while every sentence on screen told the truth about its own corner (*"the woodcutters have stopped"*, *"the village
+  needs its firewood for the winter"*) and none said **the limit is the cause**. When a gate waits on a shortfall, ask
+  whether the player's own limit is what keeps it open, and say so where they look.
+- **A demolition site is told apart by `Demolishing`, not by kind** — a fence's raising and its take-down both carry
+  `FencesBarnId`; `FenceSiteOf` / `FenceDemolitionOf` ask the flag, and cancelling a take-down must not unlock the pasture.
+- **Copy Joe's `godot.log` first** (D597's trap) — this time it was there: `logs/godot.log`, 460 KB, his whole session.
 
 ## ⛔ THE TRAPS D599 PAID FOR — A MUTANT'S ANCHOR THAT MATCHED THE YARD'S COPY
 

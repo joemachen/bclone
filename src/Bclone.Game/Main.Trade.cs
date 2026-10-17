@@ -255,6 +255,7 @@ public partial class Main
                     (PastureFenceState.None, true, "Fence the pasture"),
                     (PastureFenceState.Site, false, "Cancel the fence"),
                     (PastureFenceState.Standing, false, "Take the fence down"),
+                    (PastureFenceState.ComingDown, false, "Keep the fence"),
                 })
                 {
                     WriteTheFenceRow(c, new FenceFacts(state, "posed", refused));
@@ -271,7 +272,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] fence: ✅ a 3 × 2 pasture's fence drawn as 9 one-tile segments with its gate open; the barn card's button reads Fence the pasture (disabled when refused) / Cancel the fence / Take the fence down"
+            ? "[widths] fence: ✅ a 3 × 2 pasture's fence drawn as 9 one-tile segments with its gate open; the barn card's button reads Fence the pasture (disabled when refused) / Cancel the fence / Take the fence down / Keep the fence"
             : $"[widths] fence: ❌ {string.Join("; ", faults)}";
     }
 

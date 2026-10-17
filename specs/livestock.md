@@ -157,8 +157,11 @@ pastures."* Asked the same day:
    everybody — the herdsman cutting hay, hay put out, a laborer at a tree — goes in and out by the gate.
 6. **Cancelled while a site:** the builders' delivered logs come back (`CancelConstruction`), the ground unlocks and
    **stays painted** (nothing was built).
-7. **Taken down when it stands** (a player input, instant — as a bridge is pulled down): the walls come down, **half its
-   logs** come back to the nearest store, and **the ground is unpainted** (Joe: *"completely unpainted"*). The barn and its
+7. **Taken down when it stands** — ✅ **by the builders (Joe, D600: *"builders should demolish it like they do with other
+   buildings"*; it was instant, as a bridge is pulled down)**: a demolition site at the gate owing the demolition share of
+   the fence's work; the walls stand and the ground stays locked until they finish, and *Keep the fence* calls it off.
+   Then the walls come down, **half its logs** come back to the nearest store, and **the ground is unpainted** (Joe:
+   *"completely unpainted"*). The barn and its
    herd stay; with no pasture the herd starves at the next feeding until a new one is painted and fenced — said in the log.
    ⚠️ Taking a wall down must **put back every other fence's wall on a shared edge** — a yard's or another pasture's.
    (`ZoneMap.PullTheFenceDown` today puts back only *plots'* walls; both pulls are taught the other.)

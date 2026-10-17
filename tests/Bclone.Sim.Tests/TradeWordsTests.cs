@@ -96,6 +96,45 @@ public sealed class TradeWordsTests
     }
 
     // ---------------------------------------------------------------
+    //  A firewood limit the village has outgrown (D600)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ <b>A firewood limit below what the winter needs is named</b> — on the limit's sentence and on a forge it keeps
+    /// cold — and never while the village has enough (D600: Joe's 600 against 1,631, the smithy idle all year).
+    /// </summary>
+    [Fact]
+    public void AFirewoodLimitTheVillageOutgrewIsNamed()
+    {
+        SimWorld world = AVillage().World;
+        world.SetStockLimit(Goods.Firewood, null);
+        Assert.Null(world.TheWinterOutgrewTheLimit());
+
+        // A limit met far below what the homes will burn: the woodcutters stop short of the winter.
+        world.SetStockLimit(Goods.Firewood, 0);
+        int shortfall = LabourQuota.FirewoodShortfall(world);
+        Assert.True(shortfall > 0, "The pose's premise: the village is short of its winter's firewood.");
+        string said = world.TheWinterOutgrewTheLimit() ?? throw new Xunit.Sdk.XunitException("Nothing named the limit.");
+        Assert.Contains("the limit of 0 stops the woodcutters", said, StringComparison.Ordinal);
+        Assert.EndsWith(said, world.WhyTheLimitIsMet(Goods.Firewood), StringComparison.Ordinal);
+
+        Workplace smithy = SmithyForging(world, Goods.IronTools);
+        Assert.StartsWith("Nothing to forge — the firewood limit is too low.", world.WhyTheForgeIsCold(smithy), StringComparison.Ordinal);
+
+        // Enough firewood for the winter: nothing to name, whatever the limit.
+        world.SetStockLimit(Goods.Firewood, null);
+        Assert.DoesNotContain("firewood limit", world.WhyTheForgeIsCold(smithy) ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    /// <summary>A standing smithy set to forge <paramref name="tool"/> — the suite's own (`ToolsTests.RaiseASmithy`).</summary>
+    private static Workplace SmithyForging(SimWorld world, Goods tool)
+    {
+        Workplace smithy = ToolsTests.RaiseASmithy(world);
+        smithy.ForgeGood = tool;
+        return smithy;
+    }
+
+    // ---------------------------------------------------------------
     //  The post's orders and what they will do
     // ---------------------------------------------------------------
 
