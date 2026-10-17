@@ -1490,6 +1490,39 @@ public sealed record SimConfig
     [JsonPropertyName("region_seasons_to_recover")]
     public int RegionSeasonsToRecover { get; init; } = 8;
 
+    // ---------------------------------------------------------------
+    //  The boat (D595, `trade.md §4.4`) — a clock by hash, three ticks, a hold
+    // ---------------------------------------------------------------
+
+    /// <summary>The fewest years between one boat's year and the next's (Joe, D587 call 3: <i>"every 2-3 years"</i>).</summary>
+    [JsonPropertyName("trade_boat_gap_years_floor")]
+    public int TradeBoatGapYearsFloor { get; init; } = 2;
+
+    /// <summary>Years the hash may add to the floor — 1, so a boat comes two or three years after the last.</summary>
+    [JsonPropertyName("trade_boat_gap_years_spread")]
+    public int TradeBoatGapYearsSpread { get; init; } = 1;
+
+    /// <summary>
+    /// Days a boat sails on the map before it ties up — from its neighbour's edge to the post, and again from the post
+    /// off the far edge when it leaves. The view draws it on the river between those ticks (commit 7).
+    /// </summary>
+    [JsonPropertyName("trade_boat_sail_days")]
+    public int TradeBoatSailDays { get; init; } = 2;
+
+    /// <summary>
+    /// Days a boat stays tied up at the post (Joe, D587 call 6: <i>"a reasonable amount of time to be noticed by player
+    /// (will likely have to test)"</i>). ⚠️ <b>Joe's, found in play</b> — ten days is about fifty seconds at 1×.
+    /// </summary>
+    [JsonPropertyName("trade_boat_dock_days")]
+    public int TradeBoatDockDays { get; init; } = 10;
+
+    /// <summary>
+    /// The most a boat takes from the post, and the most it leaves, in units of goods (animals apart) — half the post's
+    /// room, so a visit at its fullest still leaves the post room for what it brings (`trade.md §8.5`).
+    /// </summary>
+    [JsonPropertyName("trade_boat_hold")]
+    public int TradeBoatHold { get; init; } = 400;
+
     /// <summary>
     /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
     /// `TECH-EXAMPLE.md`'s list is added without restructuring.
@@ -5502,12 +5535,23 @@ public sealed record SimConfig
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
             ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
             ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
+            ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
+            ("trade_boat_hold", TradeBoatHold), ("trade_boat_gap_years_floor", TradeBoatGapYearsFloor),
         })
         {
             if (value < 1)
             {
                 throw new SimConfigException($"{key} must be at least one (got {value}).");
             }
+        }
+
+        // A boat's whole visit — in, tied up, out — must fit spring to autumn, or it would be on the river in winter.
+        if (TradeBoatGapYearsSpread < 0 || (2 * TradeBoatSailDays) + TradeBoatDockDays > 3 * DaysPerSeason)
+        {
+            throw new SimConfigException(
+                $"trade_boat_gap_years_spread cannot be negative (got {TradeBoatGapYearsSpread}), and a boat's visit — "
+                + $"twice trade_boat_sail_days ({TradeBoatSailDays}) and trade_boat_dock_days ({TradeBoatDockDays}) — "
+                + $"must fit the three seasons before winter ({3 * DaysPerSeason} days).");
         }
 
         foreach ((string key, int value) in new[]

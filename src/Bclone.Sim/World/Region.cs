@@ -68,6 +68,14 @@ public sealed record AnimalRow
     /// <summary>The hide off one culled head — a hunted animal's (`leather_yield`).</summary>
     [JsonPropertyName("leather_per_head")]
     public int LeatherPerHead { get; init; } = 10;
+
+    /// <summary>
+    /// A live head's worth in barter (D595, `trade.md §4.3`) — the goods' <c>trade_worth</c> scale. ⚠️ Provisional and
+    /// Joe's to tune: a third of what its carcass gives (900 meat at 1, 10 leather at 3), so a hall-era village's spare
+    /// buys its first beasts in one visit.
+    /// </summary>
+    [JsonPropertyName("trade_worth")]
+    public int TradeWorth { get; init; } = 300;
 }
 
 /// <summary>

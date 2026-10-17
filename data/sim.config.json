@@ -986,6 +986,14 @@
   // recover this share of the way to their size each season, its wants are used this share. Eight, so
   // the next boat (2-3 years on) still feels a heavy sale; at four every boat found the region rested.
   "region_seasons_to_recover": 8,
+  // The boat (D595, trade.md §4.4): every 2-3 years (Joe, call 3), spring to autumn; days on the
+  // river each way and tied up at the post (dock days are Joe's, found in play); the most it takes
+  // from the post and the most it leaves, in units -- half the post's room.
+  "trade_boat_gap_years_floor": 2,
+  "trade_boat_gap_years_spread": 1,
+  "trade_boat_sail_days": 2,
+  "trade_boat_dock_days": 10,
+  "trade_boat_hold": 400,
 
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only

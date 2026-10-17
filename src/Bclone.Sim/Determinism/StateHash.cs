@@ -896,6 +896,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.BoatsEverCame);
         }
 
+        // The post's order for animals (D595) — sparse; none and zero are different orders, as a keep order's are.
+        if (world.TradeBuyHead is int head)
+        {
+            hash = MixByte(hash, 0x79);
+            hash = MixUInt32(hash, (uint)head);
+        }
+
         // When the region woke (D594) — sparse: a village that never built a post mixes nothing.
         if (world.RegionAwakeSince != 0)
         {

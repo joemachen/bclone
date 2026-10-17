@@ -57,6 +57,12 @@ public static class NameHash
     /// <summary>What the wait before a dead valley is re-founded is picked by (`nomads.md §4.6`).</summary>
     public const int RefoundSalt = 12;
 
+    /// <summary>What a boat's year, day and neighbour are picked by, keyed on the visit count (`trade.md §4.4`, D595).</summary>
+    public const int TradeBoatSalt = 13;
+
+    /// <summary>What a boat's share of each good its neighbour makes is picked by (`trade.md §4.3`, D595).</summary>
+    public const int TradeCargoSalt = 14;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>SplitMix64.Fold</c>, well spread even for adjacent ids.
@@ -114,6 +120,17 @@ public static class NameHash
     /// <summary>A number in <c>[0, spread]</c> for the wait before a dead valley is re-founded, keyed on how many times it has been (`nomads.md §4.6`).</summary>
     public static int RefoundOffset(ulong seed, int refoundings, int spread) =>
         spread <= 0 ? 0 : (int)(Mix(seed, refoundings, RefoundSalt, 0) % (ulong)(spread + 1));
+
+    /// <summary>
+    /// A number in <c>[0, spread]</c> for a boat — its gap in years (<paramref name="attempt"/> 0), its day in the
+    /// sailing seasons (1) and its neighbour (2) — keyed on how many boats have come, as the knock's year is.
+    /// </summary>
+    public static int BoatRoll(ulong seed, int visit, int attempt, int spread) =>
+        spread <= 0 ? 0 : (int)(Mix(seed, visit, TradeBoatSalt, attempt) % (ulong)(spread + 1));
+
+    /// <summary>A boat's share of one good, in percent <c>[from, to]</c>, keyed on the visit and the good.</summary>
+    public static int CargoShare(ulong seed, int visit, int good, int from, int to) =>
+        to <= from ? from : from + (int)(Mix(seed, visit, TradeCargoSalt, good) % (ulong)(to - from + 1));
 
     /// <summary>A nomad's lifespan — the founders' base and spread, hashed rather than drawn (`nomads.md §4.2`).</summary>
     public static int NomadLifespan(ulong seed, int key, int baseYears, int variance) =>

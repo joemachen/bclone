@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D594 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–4 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 5 OF `trade.md §11` (THE BOAT). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D595 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–5 BUILT — THE SIM IS WHOLE, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 6 OF `trade.md §11` (VIEW I — THE BARN, THE POST'S WINDOW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D594: COMMIT 4 — THE POST AND THE REGION) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D595: COMMIT 5 — THE BOAT) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D595**, local. **Trade's sim is whole.** A boat comes every two or three years, spring to
+> autumn, from one end of the river or the other — its year, day and neighbour a hash of the seed and the visit count
+> (`SimWorld.NextBoat`); `Boat` is always the *next* boat once the region is awake, so the post's window can say when one
+> is due. It is told coming, docking and leaving; it settles the day it docks — **barter**: the goods for sale (keep
+> orders) that its neighbour wants are the credit, the buy orders are met from its cargo (25–75 % of what the neighbour
+> makes, by hash) as far as that pays, and the boat takes just enough to cover it; every unit conserved, ≤ 400 each way,
+> never a good the village sells, beasts only to a pasture with room (`TradeBuyHead`, refused with no pasture).
+> *Send the boat on* sets its leaving tick to now. `TradeBoatTests` (12) and a save pose with a boat in dock;
+> **21 mutants, 26 reds; one zero closed** (B7, a no-keep good sold — posed behind the good that paid) **and one equivalent zero written down** (B14); suite 1748 / 0 / 5 of 1753 (8m37); probe clean; goldens 362 → 362.
+>
+> **▶️ NEXT: commit 6 — View I** (`trade.md §11` row 6): the barn and the post as buttons once the hall stands, the
+> pasture paint, the animals grazing, the barn's card, **the post's window** (orders, the boat in dock, *Send the boat
+> on*, `SayWhenTheBoatIsDue`), the passing banner off the boat's log lines, the merchant's and herdsman's states in words.
+> ⚠️ **Joe has one new call** (⏸️ below): as built, a *keep N* with no *buy* order sells nothing.
+>
+> **(the banner below is the state at D594)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D594: COMMIT 4 — THE POST AND THE REGION) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D594**, local. The merchant carries what the village holds above *keep N* down to the
 > trading post — **never below it** — and brings home anything at the post with no keep order (what a boat will leave);
@@ -7148,6 +7167,31 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D595 PAID FOR — A ROUND RATE HIDES ROUNDING, AND THE POST'S ROOM IS A LIMIT TOO
+
+- **A rate of 1:1 hides a payment rounded the wrong way and a wrong "wanted"** — the first settle guard traded firewood
+  at 200 for stone at 200 with no stone held, so taking `floor` or `ceil` units, and forgetting what the village already
+  held, all gave the same answer. It now holds ten stone and the hills a quarter stocked with firewood (offered at 175),
+  and **asserts its own premise** — that the payment does not come out even.
+- **A trade has four limits — the hold each way, the post's free room, the credit, the order — and a guard for one must
+  make the others slack.** The first hold guard was bound by the post's room (780 of 800 full), then by a 1:1 rate;
+  it now buys leather at half its worth, and asserts that all the firewood would buy more than the room holds and the
+  hold's worth buys less. Write the premise down as an `Assert` and the next session cannot pose it away.
+- **The post's free room is shared by every good the boat leaves** — `RoomFor` answers for one good at a time, so the
+  first draft could have promised two goods the same free space. One running count (`free`) now.
+- **`Boat` is never null once the region wakes** — the next boat is scheduled the tick the last has gone. A view that
+  draws *"a boat"* must ask `BoatIsDocked` / the three ticks, not `Boat != null` (commit 6–7).
+- **A guard that a do-nothing passes is not a guard** — `TheBoatNeverLeavesAGoodTheVillageSells` passed on the stubs (a
+  boat that does nothing leaves nothing). It now also orders leather and asserts it came. Run the guards against stubs
+  before the real code: the one that stays green is the one to fix.
+- **The boat pays good by good in id order, so a wrong good posed after the right one is never reached** — B7 (a good
+  with no keep order sold) scored zero while the posed no-keep fish (6) sat behind the firewood (2) that paid. The pose
+  now puts the good that must stay *first* in id order and asserts it. Any guard over an id-order loop: pose the trap
+  where the loop reaches it first.
+- **An equivalent mutant is a zero to write down, not to chase** — B14 let the payment loop run on past the debt, but
+  its rounding then gives 0 units, so nothing changes. Recorded as equivalent; B14b (the boat takes all it may) is the
+  real mutant, and red.
+
 ## ⛔ THE TRAPS D594 PAID FOR — A DAY IS STILL FOUR TICKS, THE ESTABLISHED VILLAGE HAS NO STONE, AND TWO SIDES FILLED AS ONE
 
 - **A day is four ticks** — D427's trap, paid again. `TicksPerDay * 4` is sixteen ticks, not four days of work: three
@@ -7381,6 +7425,14 @@ Read `git status` after staging, every time.
   nudged a tenth of a tile).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **A KEEP ORDER ALONE SELLS NOTHING (D595, `trade.md §4.5`).** Barter with no coin: the boat takes from the post only
+  as much as pays for what the *buy* orders ask, so *"sell firewood above 400"* with no buy order sends nothing. Built
+  that way because the alternative gives the village nothing back for what leaves. Options: (a) **as built** — the post's
+  window says *"set what to buy, and the boat takes enough to pay"*; (b) the boat takes the surplus anyway and leaves a
+  share of its cargo for it, picked by hash (the village receives an assortment it did not order — stores may fill);
+  (c) unspent credit is kept at the post as *goodwill* toward the next boat (a new number to hash and save). Needed
+  before Joe plays commit 6; nothing in the view shows orders yet.
 
 - ✅ **ANSWERED (D591) — Joe: *"keep the marketer's plural as traders and call the new job merchant / merchants."* Built.** ~~TWO TRADES WOULD BOTH BE "TRADERS" (D590).~~ The marketer's plural has been *traders* since D188 (a tail the doc
   left as Joe's), and trade's new job is *trader* / *traders* (his D587 call 4). The Professions panel would list

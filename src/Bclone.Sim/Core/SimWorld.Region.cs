@@ -103,6 +103,7 @@ public sealed partial class SimWorld
             {
                 RegionAwakeSince = Tick == 0 ? 1UL : Tick;
                 SeedTheRegion();
+                Boat = NextBoat(RegionAwakeSince, BoatsEverCame);
             }
 
             return;

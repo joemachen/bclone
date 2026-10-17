@@ -6,7 +6,7 @@ founder's death), `buildings-plan.md §6` (gold cut: *"no combat, no score, no w
 a deck over the river), D553 call 6 (the workshop, carpenter and hammer: the follow-on carts wait for), D563–D584
 (nomads — the clock-by-hash and the walk-in from the valley's edge this copies), **D586 (Joe's calls for this spec,
 2026-10-16 — §3.1)**, **D587 (his answers to the nine calls, the same day — §3.2)**.
-**Status:** 🔨 **COMMITS 1–4 OF §11 BUILT (D590 the rows and the state; D592 the herd lives; D593 the herdsman; D594 the post and the region — no boat yet, so nothing is ever sold); EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
+**Status:** 🔨 **COMMITS 1–5 OF §11 BUILT — THE SIM IS WHOLE (D590 the rows and the state; D592 the herd lives; D593 the herdsman; D594 the post and the region; D595 the boat); THE VIEW (commits 6–7) NOT STARTED, SO NOTHING CAN BE PLACED OR SEEN IN PLAY; EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
 `tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**; the build is planned commit by
 commit in **§11 (D588)**, with `livestock.md` re-read against today's code (its §0). Owner: Joe + Claude Code.
 
@@ -151,6 +151,14 @@ asked the same day; those answers are in the last column.
 - **Send the boat on** (call 6): a button in the post's window lets it leave sooner — a player input like any other,
   so it is in the sim and the hash (its leaving tick moves), never a view-only trick.
 - Nothing is lost if the post is empty: the boat says it called and found nothing to take.
+- ✅ **As built (D595, `SimWorld.Boat.cs`, `SailTheBoat` in `RegionSystem`):** `Boat` is **always the next boat** once
+  the region is awake — scheduled the season turn the post wakes it, and again the tick the last one has sailed off the
+  map — so *when is the next one due* is a read (`SayWhenTheBoatIsDue`), not a second fact. `NextBoat(after, visit)` is a
+  pure function of the seed and the visit count (`NameHash.BoatRoll`, salt 13): the year is `trade_boat_gap_years_floor`
+  (2) plus 0–`spread` (1) after the last boat's going; the day lets the whole visit — `trade_boat_sail_days` (2) in,
+  `trade_boat_dock_days` (10, ⚠️ Joe's to find in play) tied up, the sail out — finish before winter; the neighbour is
+  one of the two on the river. The coming, the docking and the leaving are each a log line; the passing banner is the
+  view's (commit 6). *Send the boat on* sets the leaving tick to now — hashed with the boat.
 
 ### 4.5 Standing orders and the merchant
 
@@ -160,8 +168,18 @@ asked the same day; those answers are in the last column.
   after — the marketer's two states, re-used. A load to the post is a load **to a store** (D385).
 - **At the visit:** the boat takes what is at the post, up to its hold, at the day's rate, and leaves what the
   orders asked for, as far as its neighbour has plenty. Both halves are integers; a remainder stays at the post.
+  - ✅ **As built (D595) — barter, so nothing is sold for nothing.** The goods at the post **with a keep order** that the
+    neighbour wants, up to `trade_boat_hold` (400), are the village's credit at the day's offers. The buy orders are met
+    from the boat's **cargo** (`CargoOf`: 25–75 % of each good the neighbour makes, and of its beasts, by hash —
+    `NameHash.CargoShare`, salt 14 — Joe's *random assortment*), good by good in id order, as far as the credit pays,
+    up to the hold and the post's free room, **never a good with a keep order** (it would sit at the post for sale), and
+    only up to *M* less what the village already holds. Then the boat takes, good by good, **just enough** to cover what
+    it left — the last unit may overpay by less than its own worth. Every unit is conserved: what left the post the
+    neighbour gained; what came it lost. ⚠️ **With no buy order the boat takes nothing** — a *keep N* alone sells nothing,
+    because there is no coin to be paid in. **Joe's to overrule** if he meant the boat to take the surplus regardless.
+  - What came lands **at the post with no keep order**, so the merchant carries it home (D594).
 - **Told** (call 6): what went and what came is the docking log line: *"The boat from Ashford took 60 firewood and left
-  20 stone and two oxen."*
+  20 stone and two oxen."* ✅ As built (the settle guard's pose): *"The boat from … took 23 firewood and left 20 stone."*, then the season and year.
 - **The post's window** (call 6): the standing orders, the boat in dock and what it carries, when the next boat is due
   as far as the post knows (*"no boat is expected before the spring after next"*), and **Send the boat on**.
 
@@ -306,6 +324,21 @@ At 4 every boat, even one two years on, found the region back at its best rate: 
 cost the village anything (the trap in §7). At 8 a heavy sale is still felt two years on (the rate nearly three times
 worse) and mostly gone at three. ⚠️ Joe's to tune in play, with the worths.
 
+### 8.5 Measured on the build — commit 5 (D595)
+
+**The hold — 400 units each way, half the post's room.** §8.4: a hall-era village at its limits with every *keep* at
+half has about 2,970 units to sell. A boat every 2–3 years taking at most 400 takes at most an eighth of that spare a
+visit — a twentieth of it a year — and **only as much as pays for what the orders asked**, never below a keep (the
+merchant carries nothing below it, D594). §7's trap, *a boat that empties the stores every visit*, cannot happen by
+construction. Half the post's room keeps space for what the boat leaves even when the post was full for sale.
+
+**A beast's worth — 300** (a third of its carcass, 900 meat at 1 and 10 leather at 3): at the region's rested rates a
+hall-era village pays for its first two head with 300 firewood to a neighbour short of it. ⚠️ Joe's to tune with the
+goods' worths.
+
+**The clock** (`TradeBoatTests`): over 200 visits each gap is 2 or 3 years, both river neighbours send boats, the
+overland one never, and every visit is off the river before winter.
+
 ### 8.3 To measure on the build, before any number is typed
 
 - The post's price and the merchant's walk (logs, stone, seats).
@@ -360,7 +393,7 @@ is raised, not at the founding. That makes the goldens themselves the guard for 
 | 2 ✅ D592 | **The herd lives** — done (`SimWorld.Herd.cs`, `HerdSystem`); ⚠️ the barn's room is derived in commit 3, from the hay a herdsman cuts. Growth by an integer accumulator at the day turn, capped at what the pasture holds (tiles ÷ tiles a beast); free grazing spring–autumn; hay eaten each winter day from the barn; a beast lost for each day's hay short; the cull above capacity into meat and leather in the barn's buffer | sim | a herd with its winter's hay survives 300 winters on both configs; an over-stocked one loses beasts (anti-vacuity, D7); growth stops at capacity; the cull's goods appear; all goldens unchanged |
 | 3 ✅ D593 | **The herdsman** — done (`BehaviorSystem.Herd.cs`, `LabourQuota.HerdsmenWanted`, `VillageEconomy.BarnHayRoom`); the herd eats only hay put out (`livestock.md §0.1`). Growing seasons: cut hay on the pasture, carry it to the barn (the farm's reap-and-carry). Winter: carry hay out and feed — outdoors. The cull. The quota asks for herdsmen from the hay the herd will need (derived, never the barn's room — D52's lesson) | sim | the quota wants herdsmen only for a herd; **a herdsman never freezes** over the shipped seeds; winter outdoor work rises above the re-taken baseline (`livestock.md §9.5–9.6`); a village with no herd unchanged |
 | 4 ✅ D594 | **The post and the region** — done (`SimWorld.Region.cs`, `RegionSystem`, `BehaviorSystem.Trade.cs`, `LabourQuota.MerchantsWanted`). The merchant's three errands: to the store holding a good above its *keep N* (`CollectingForThePost`), down to the post (`StockingThePost`), and to the post for anything there with no keep order — what a boat left — and home (`FetchingFromThePost`); one copy of the reasons (`SimWorld.GoodToSell` / `GoodToBringHome` / `AboveTheKeep`) read by the merchant and the quota alike. Neighbours wake when the post stands and step at each season turn; rates derived from `trade_worth` and scarcity, in words with the reason; sizes, the post's price and the recovery measured (§8.4) | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the merchant never takes a good below *keep N* |
-| 5 | **The boat.** Its clock by hash (every 2–3 years, spring–autumn, either direction); appears / docks / leaves; settles the orders at the day's rate, integers conserved, the remainder kept at the post; animals only to a barn with room; *Send the boat on* moves the leaving tick; the passing banner and the log lines | sim | gaps of 2–3 years; both directions over a run; never in winter; same seed, same boats; a save with a boat in dock loads and sails on; a year run after loading matches one that never stopped |
+| 5 ✅ D595 | **The boat** — done (`SimWorld.Boat.cs`; `TradeBuyHead`, the animal order, saved and hashed under `0x79`). Its clock by hash (every 2–3 years, spring–autumn, either direction); appears / docks / leaves; settles the orders at the day's rate, integers conserved, the remainder kept at the post; animals only to a barn with room; *Send the boat on* moves the leaving tick; the passing banner and the log lines | sim | gaps of 2–3 years; both directions over a run; never in winter; same seed, same boats; a save with a boat in dock loads and sails on; a year run after loading matches one that never stopped |
 | 6 | **View I.** The barn and its pasture paint (trees kept), the animals grazing (a hash scatter, like the trees), the barn's card (*N head, hay for N days, why*); the post's window (orders, the boat in dock, *Send the boat on*, when the next is due); the herdsman's and merchant's states in words | view | probe `herd:`, `post:` |
 | 7 | **View II.** The boat sailing: the water path from its edge to the post and on off the far edge, **found once per post** (the river never changes — CLAUDE.md's rule), the boat's place derived from its ticks; the region panel | view | probe `boat:`, `region:` |
 

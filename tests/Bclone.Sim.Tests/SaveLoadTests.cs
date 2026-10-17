@@ -72,6 +72,10 @@ public sealed class SaveLoadTests : IDisposable
 
         // D592: a real barn, its pasture and a herd eating its hay in winter — the herd system across a load and a year.
         new object[] { "established, a barn's herd in winter (year 1)", (120 * 3) + 21 },
+
+        // D595: a post, a barn and a boat tied up mid-visit with orders for goods and beasts — settled before the save,
+        // leaving after it, and the next boat scheduled within the loaded year.
+        new object[] { "established, a boat in dock (year 1)", 60 },
     };
 
     /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
@@ -98,6 +102,11 @@ public sealed class SaveLoadTests : IDisposable
             // Hay already out on the pasture (D593): a pose holding none would let `hay_put_out` drop from the save
             // unseen (its red check scored zero until this line).
             barn.HayPutOut = 200;
+        }
+        else if (pose.StartsWith("established, a boat in dock", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            TradeBoatTests.PoseABoatInDock(loop);
         }
         else if (pose.StartsWith("established, trade and a herd posed", StringComparison.Ordinal))
         {
@@ -242,6 +251,11 @@ public sealed class SaveLoadTests : IDisposable
         Assert.True(herd.HerdHead > 0, "the herd is gone — the pose saves no herd");
         Assert.True(herded.World.BarnStoreOf(herd)!.Store[Goods.Hay] > 0, "the barn is empty — the pose saves no hay");
         Assert.True(herd.HayPutOut > 0, "no hay out on the pasture — the pose saves none of it");
+
+        (SimLoop docked, _) = Played("established, a boat in dock (year 1)", 60);
+        Assert.True(docked.World.BoatIsDocked, "the boat is not tied up — the pose saves no visit");
+        Assert.Equal(1, docked.World.BoatsEverCame);
+        Assert.NotNull(docked.World.TradeBuyHead);
     }
 
     // ---------------------------------------------------------------
@@ -296,7 +310,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
-            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince",
+            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]

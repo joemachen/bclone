@@ -650,7 +650,10 @@ public sealed partial class SimWorld : IObstacles
     /// <summary>The trading post's standing orders, <i>buy up to M</i> (`trade.md §4.5`) — <see cref="TradeKeep"/>'s twin.</summary>
     public StockLimits TradeBuy { get; }
 
-    /// <summary>The boat on its way, at the post, or leaving — null between visits (`trade.md §4.4`, D590).</summary>
+    /// <summary>
+    /// The next boat — due, on its way, at the post, or leaving (`trade.md §4.4`, D590). Null only until the region
+    /// wakes: from then on the next is scheduled the tick the last has gone (D595), so it is never null between visits.
+    /// </summary>
     public TradeBoat? Boat { get; internal set; }
 
     /// <summary>How many boats have come — the count the boat's clock hashes on, as the knock's does (`trade.md §4.4`).</summary>
@@ -13817,6 +13820,7 @@ public sealed partial class SimWorld : IObstacles
                 }
                 : null,
             ["boats_ever_came"] = BoatsEverCame,
+            ["trade_buy_head"] = TradeBuyHead,
             ["neighbours"] = new JsonArray(NeighbourStocks
                 .Select(n => (JsonNode)new JsonObject { ["held"] = SaveWriter.Ints(n.Held), ["animals"] = n.Animals })
                 .ToArray()),
@@ -14005,6 +14009,7 @@ public sealed partial class SimWorld : IObstacles
         }
 
         BoatsEverCame = save.Int("boats_ever_came");
+        TradeBuyHead = save.NullableInt("trade_buy_head");
         List<SaveReader> neighbours = save.Objects("neighbours").ToList();
         if (neighbours.Count != NeighbourStocks.Count)
         {
