@@ -94,6 +94,10 @@ public sealed class SaveLoadTests : IDisposable
             HerdTests.GivePasture(loop.World, barn, 40);
             barn.HerdHead = 6;
             loop.World.BarnStoreOf(barn)!.Store.Receive(Goods.Hay, 300);
+
+            // Hay already out on the pasture (D593): a pose holding none would let `hay_put_out` drop from the save
+            // unseen (its red check scored zero until this line).
+            barn.HayPutOut = 200;
         }
         else if (pose.StartsWith("established, trade and a herd posed", StringComparison.Ordinal))
         {
@@ -235,6 +239,7 @@ public sealed class SaveLoadTests : IDisposable
         Workplace herd = Assert.Single(herded.World.Workplaces, w => w.Kind == JobKind.Herdsman && !w.IsSite);
         Assert.True(herd.HerdHead > 0, "the herd is gone — the pose saves no herd");
         Assert.True(herded.World.BarnStoreOf(herd)!.Store[Goods.Hay] > 0, "the barn is empty — the pose saves no hay");
+        Assert.True(herd.HayPutOut > 0, "no hay out on the pasture — the pose saves none of it");
     }
 
     // ---------------------------------------------------------------
@@ -332,7 +337,7 @@ public sealed class SaveLoadTests : IDisposable
             "GatheringRadius", "Mode", "ForgeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
-            "HerdHead", "HerdGrowth",
+            "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]

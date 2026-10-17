@@ -815,6 +815,10 @@ public sealed class Villager
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
             VillagerState.Tending => $"tending the wheat at {where}",
             VillagerState.WalkingBackToTheSteading => $"walking back to {where}",
+            VillagerState.CuttingHay => $"cutting hay on the pasture of {where}",
+            VillagerState.FetchingHay => $"fetching hay from {where}",
+            VillagerState.FeedingTheHerd => $"carrying hay out to the herd at {where}",
+            VillagerState.Culling => $"culling a beast the pasture at {where} cannot hold",
             _ => State.ToString(),
         };
     }

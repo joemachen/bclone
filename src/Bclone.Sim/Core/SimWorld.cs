@@ -10142,6 +10142,7 @@ public sealed partial class SimWorld : IObstacles
         {
             BuildingKind.Warehouse => VillageEconomy.WarehouseCapacity(Config),
             BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
+            BuildingKind.Barn => VillageEconomy.BarnHayRoom(Config),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind), kind, "That store states no capacity and the economy derives none."),
         };

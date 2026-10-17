@@ -1420,9 +1420,35 @@ public sealed record SimConfig
     [JsonPropertyName("barn_capacity")]
     public int BarnCapacity { get; init; } = 2;
 
-    /// <summary>How much hay a barn holds — stated until commit 2 derives it from the herd (provisional, D590).</summary>
-    [JsonPropertyName("barn_store_capacity")]
-    public int BarnStoreCapacity { get; init; } = 1200;
+    /// <summary>
+    /// Hay off one cut pasture tile — wheat's <c>crop_yield_per_tile</c> until a played herd says otherwise (D593).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ It is what makes one herdsman's 13-tile cut feed 8 head a winter with the buffer — Joe's own timber barn
+    /// (`livestock.md §10.1.6`). The barn's room is derived from it (<c>VillageEconomy.BarnHayRoom</c>).
+    /// </remarks>
+    [JsonPropertyName("hay_per_tile")]
+    public int HayPerTile { get; init; } = 67;
+
+    /// <summary>
+    /// Days of the herd's hay a herdsman keeps out on the pasture in winter before carrying more (D593) — and how many
+    /// days before winter he starts carrying it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Five, not three: at three a traced herd lost a beast on winter's first day (the first armful still on the road)
+    /// and another mid-winter between refills — a herdsman finishes his rest before he re-decides, and spends winter
+    /// going in to get warm. Five days of a full herd of eight is one armful (80), so the pasture is kept topped up.
+    /// </remarks>
+    [JsonPropertyName("hay_feed_ahead_days")]
+    public int HayFeedAheadDays { get; init; } = 5;
+
+    /// <summary>Ticks to put an armful of hay out — a cut tile's (<c>reap_ticks</c>), outdoors (D593).</summary>
+    [JsonPropertyName("hay_feed_ticks")]
+    public int HayFeedTicks { get; init; } = 3;
+
+    /// <summary>Ticks to cull a beast at the barn — a hunt's dressing, about two days' work (D593, provisional).</summary>
+    [JsonPropertyName("cull_ticks")]
+    public int CullTicks { get; init; } = 8;
 
     /// <summary>Logs a trading post takes to raise (provisional, D590).</summary>
     [JsonPropertyName("trading_post_logs")]
@@ -3809,7 +3835,9 @@ public sealed record SimConfig
             WorkTicks = BarnWorkTicks,
             Seats = BarnCapacity,
             Stores = StoreKind.Barn,
-            StoreCapacity = BarnStoreCapacity,
+
+            // ⭐ No stated room: the economy derives it from the herd its hands can keep (D593, `livestock.md §0.1`).
+            StoreCapacity = null,
             ExtentWidth = 3,
             ExtentHeight = 2,
         },
@@ -5442,6 +5470,8 @@ public sealed record SimConfig
             ("grind_ticks", GrindTicks), ("grinds_per_stint", GrindsPerStint), ("flour_per_bake", FlourPerBake),
             ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
+            ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
+            ("cull_ticks", CullTicks),
         })
         {
             if (value < 1)
@@ -5996,7 +6026,7 @@ public sealed record SimConfig
             var kind = (BuildingKind)row.Id;
 
             bool economyDerivesTheStore =
-                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market;
+                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market or BuildingKind.Barn;
             if (row.Stores is not null && row.StoreCapacity is null && !economyDerivesTheStore)
             {
                 throw new SimConfigException(

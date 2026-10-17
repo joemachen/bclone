@@ -10,7 +10,9 @@ namespace Bclone.Sim.Tests;
 /// ⭐ Commit 2 of `specs/trade.md §11` (D592): <b>the herd lives</b> — `specs/livestock.md` as re-read in its §0. Free
 /// grazing spring to autumn, hay eaten from the barn every winter day, a beast lost for each day the hay is short,
 /// growth to what the pasture holds and the cull above it into meat and leather. No herdsman yet (commit 3): these
-/// guards feed the barn by hand, which is what makes each rule visible on its own.
+/// guards feed the herd by hand, which is what makes each rule visible on its own. ⭐ Since D593 the herd eats only
+/// hay <i>put out</i> on its pasture (<see cref="Workplace.HayPutOut"/>), and a beast born beyond the pasture waits for a
+/// herdsman's cull — with nobody keeping the herd, it starves on the overgrazed ground instead.
 /// </summary>
 public sealed class HerdTests
 {
@@ -22,7 +24,16 @@ public sealed class HerdTests
     //  The pose: an established village, its hall, a barn, a pasture, a herd
     // ---------------------------------------------------------------
 
-    private static SimLoop AVillage() => SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink());
+    /// <summary>
+    /// An established village where <b>nobody keeps the herd</b> (the herdsman's target at nought, D106): these guards
+    /// are the herd's own rules (D592); the herdsman's are <c>HerdsmanTests</c> (D593).
+    /// </summary>
+    private static SimLoop AVillage()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink());
+        Assert.True(loop.World.SetJobLimit(JobKind.Herdsman, 0).Allowed);
+        return loop;
+    }
 
     private static AnimalRow Cattle(SimWorld world) => world.Config.Animals[0];
 
@@ -162,9 +173,11 @@ public sealed class HerdTests
         barn.HerdHead = 6;
         StepToTheStartOf(loop, Season.Spring);
         BarnOf(loop.World, barn).Store.Receive(Goods.Hay, 500);
+        barn.HayPutOut = 300;
 
         StepToTheStartOf(loop, Season.Winter);
         Assert.Equal(500, BarnOf(loop.World, barn).Store[Goods.Hay]);
+        Assert.Equal(300, barn.HayPutOut);
     }
 
     /// <summary>
@@ -187,17 +200,15 @@ public sealed class HerdTests
             StepToTheStartOf(loop, Season.Winter);
             int head = barn.HerdHead;
             int growth = barn.HerdGrowth;
-            Assert.InRange(head, 1, world.PastureFor(barn));
-            StoreBuilding store = BarnOf(world, barn);
-            store.Store.TakeAll(Goods.Hay);
-            store.Store.Receive(Goods.Hay, head * cattle.HayPerHeadPerWinterDay * winterDays);
+            Assert.InRange(head, 1, world.PastureFor(barn) + 1);
+            barn.HayPutOut = head * cattle.HayPerHeadPerWinterDay * winterDays;
 
             StepToTheStartOf(loop, Season.Spring);
             Assert.True(barn.HerdHead == head, $"year {year}: {head} head went into winter fed and {barn.HerdHead} came out");
 
             // ⭐ Nothing is born in winter: the grass is gone and so is the growth (`livestock.md §3`).
             Assert.True(barn.HerdGrowth == growth, $"year {year}: the herd grew over winter ({growth} → {barn.HerdGrowth})");
-            Assert.Equal(0, store.Store[Goods.Hay]);
+            Assert.Equal(0, barn.HayPutOut);
         }
     }
 
@@ -216,14 +227,12 @@ public sealed class HerdTests
         AnimalRow cattle = Cattle(world);
         StepToTheStartOf(loop, Season.Winter);
 
-        // Ten days' hay for the whole herd.
-        StoreBuilding store = BarnOf(world, barn);
-        store.Store.TakeAll(Goods.Hay);
-        store.Store.Receive(Goods.Hay, 8 * cattle.HayPerHeadPerWinterDay * 10);
+        // Ten days' hay for the whole herd, out on the pasture.
+        barn.HayPutOut = 8 * cattle.HayPerHeadPerWinterDay * 10;
 
         loop.Step(world.Config.TicksPerDay * 10);
         Assert.Equal(8, barn.HerdHead);
-        Assert.Equal(0, store.Store[Goods.Hay]);
+        Assert.Equal(0, barn.HayPutOut);
 
         loop.Step(world.Config.TicksPerDay * 3);
         Assert.Equal(5, barn.HerdHead);
@@ -237,11 +246,12 @@ public sealed class HerdTests
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// Growth: the herd's head count added each growing day, a beast for every <c>head_days_per_birth</c> — and at what
-    /// the pasture holds, the beast is culled into meat and leather in the barn's buffer instead (Joe, D588).
+    /// Growth: the herd's head count added each growing day, a beast for every <c>head_days_per_birth</c>, while the
+    /// pasture has room and one beast beyond it — and with nobody keeping the herd that one starves on the overgrazed
+    /// ground the next day, with no yield (D593: the cull is the herdsman's work).
     /// </summary>
     [Fact]
-    public void TheHerdGrowsToItsPastureAndTheRestIsCulled()
+    public void TheHerdGrowsToItsPastureAndNobodyKeepingItLosesTheExtra()
     {
         SimLoop loop = AVillage();
         SimWorld world = loop.World;
@@ -252,30 +262,35 @@ public sealed class HerdTests
         barn.HerdHead = 2;
         barn.HerdGrowth = 0;
         int meatBefore = world.FoodEverProducedOf(Goods.Meat);
-        int leatherBefore = barn.Store.Produced(Goods.Leather);
 
         // Two head: a birth every 120 days of grazing — none in this spring's thirty.
         StepToTheStartOf(loop, Season.Summer);
         Assert.Equal(2, barn.HerdHead);
         Assert.Equal(2 * world.Config.DaysPerSeason, barn.HerdGrowth);
 
-        // Fill it to its pasture, then a growing year more: every birth from here on is culled.
+        // At its pasture, a growing year more: the births go one beyond it, and the overgrazed ground takes that one.
         barn.HerdHead = 4;
-        barn.HerdGrowth = 0;
-        StepToTheStartOf(loop, Season.Winter);
-        int grazingDays = 2 * world.Config.DaysPerSeason;
-        int culls = 4 * grazingDays / cattle.HeadDaysPerBirth;
+
+        // Half a birth's growth already in: the calf comes mid-summer, so a grazing day follows it (a birth on the year's
+        // last grazing day would go into winter one beyond the pasture, where the overgrazing rule does not run).
+        barn.HerdGrowth = cattle.HeadDaysPerBirth / 2;
+        bool beyond = false;
+        while (world.Clock.Season != Season.Winter)
+        {
+            loop.StepOnce();
+            beyond |= barn.HerdHead == 5;
+            Assert.InRange(barn.HerdHead, 4, 5);
+        }
+
+        Assert.True(beyond, "no calf was born beyond the pasture — the guard would be vacuous");
         Assert.Equal(4, barn.HerdHead);
-        Assert.Equal(4 * grazingDays % cattle.HeadDaysPerBirth, barn.HerdGrowth);
-        Assert.True(culls >= 1, "the pose culled nothing — the guard would be vacuous");
-        Assert.Equal(culls * cattle.MeatPerHead, world.FoodEverProducedOf(Goods.Meat) - meatBefore);
-        Assert.Equal(culls * cattle.LeatherPerHead, barn.Store.Produced(Goods.Leather) - leatherBefore);
-        _output.WriteLine($"{culls} culled over {grazingDays} grazing days: {culls * cattle.MeatPerHead} meat, {culls * cattle.LeatherPerHead} leather");
+        Assert.True(world.FoodEverProducedOf(Goods.Meat) == meatBefore, "meat came of a beast nobody culled");
+        _output.WriteLine($"herd {barn.HerdHead}, growth {barn.HerdGrowth} of {cattle.HeadDaysPerBirth}");
     }
 
-    /// <summary>A herd larger than its pasture (the paint taken back) is culled down, a beast a grazing day.</summary>
+    /// <summary>A herd larger than its pasture, with nobody keeping it, starves down a beast a grazing day — no yield.</summary>
     [Fact]
-    public void AHerdLargerThanItsPastureIsCulledDown()
+    public void AHerdLargerThanItsPastureStarvesDownWithNobodyKeepingIt()
     {
         SimLoop loop = AVillage();
         SimWorld world = loop.World;
@@ -283,9 +298,11 @@ public sealed class HerdTests
         GivePasture(world, barn, 10); // two head
         StepToTheStartOf(loop, Season.Spring);
         barn.HerdHead = 6;
+        int meatBefore = world.FoodEverProducedOf(Goods.Meat);
 
         loop.Step(world.Config.TicksPerDay * 4);
         Assert.Equal(2, barn.HerdHead);
+        Assert.Equal(meatBefore, world.FoodEverProducedOf(Goods.Meat));
     }
 
     /// <summary>Nothing happens to a herd that is not on a barn — the herd lives on the barn (`livestock.md §0`).</summary>

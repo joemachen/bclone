@@ -657,6 +657,15 @@ public sealed class Workplace
     /// </summary>
     public int HerdGrowth { get; set; }
 
+    /// <summary>
+    /// Hay a herdsman has put out on the pasture and the herd has not yet eaten (D593) — what the herd eats in winter,
+    /// never the barn's store directly.
+    /// </summary>
+    public int HayPutOut { get; set; }
+
+    /// <summary>Pasture tiles cut for hay this year, in the pasture's own order — back to none each spring (D593).</summary>
+    public int HayCutThisYear { get; set; }
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village
@@ -796,6 +805,8 @@ public sealed class Workplace
         ["queue_rank"] = QueueRank,
         ["herd_head"] = HerdHead,
         ["herd_growth"] = HerdGrowth,
+        ["hay_put_out"] = HayPutOut,
+        ["hay_cut_this_year"] = HayCutThisYear,
     };
 
     internal static Workplace FromSave(SaveReader save)
@@ -830,6 +841,8 @@ public sealed class Workplace
             QueueRank = save.NullableInt("queue_rank"),
             HerdHead = save.Int("herd_head"),
             HerdGrowth = save.Int("herd_growth"),
+            HayPutOut = save.Int("hay_put_out"),
+            HayCutThisYear = save.Int("hay_cut_this_year"),
         };
 
         workplace.Rename(save.NullableString("given_name"));

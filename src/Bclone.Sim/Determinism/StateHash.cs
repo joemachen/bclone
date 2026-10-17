@@ -437,6 +437,14 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.HerdGrowth);
             }
 
+            // What a herdsman has put out and cut this year (D593) — sparse under its own tag.
+            if (workplace.HayPutOut != 0 || workplace.HayCutThisYear != 0)
+            {
+                hash = MixByte(hash, 0x77);
+                hash = MixUInt32(hash, (uint)workplace.HayPutOut);
+                hash = MixUInt32(hash, (uint)workplace.HayCutThisYear);
+            }
+
             // When it was raised and last mended (D552): condition is derived from these two.
             hash = MixUInt64(hash, workplace.RaisedAtTick);
             hash = MixUInt64(hash, workplace.RepairedAtTick);

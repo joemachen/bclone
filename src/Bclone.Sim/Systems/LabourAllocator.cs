@@ -1143,6 +1143,9 @@ internal static class LabourAllocator
     {
         JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
         JobKind.Woodcutter, JobKind.Smith, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
+
+        // The herdsman after the baker, as the quota takes hands (D593). ⚠️ The merchant joins in commit 4.
+        JobKind.Herdsman,
         JobKind.Marketer, JobKind.Builder,
     };
 

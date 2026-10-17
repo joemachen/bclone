@@ -2,7 +2,7 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — nobody tends it yet (the herdsman is commit 3).** Animals come
+**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — ✅ **And it is kept (D593)**: the herdsman cuts and carries hay, feeds it out in winter, culls what the pasture cannot hold; the barn's room is derived (§0.1).** Animals come
 only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
 **§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
 later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.
@@ -56,6 +56,46 @@ for the build (D588): **one kind of animal first**, **the herd gives meat and le
 > ⚠️ **And one thing to carry:** `TECH-EXAMPLE.md` has fodder rotting *"5% per day"* uncovered.
 > **D208 refused that** — hay and silage exist because **grass stops growing**, not because anything
 > decays. *A seasonal fact, not a rot tax.* D37 stands.
+
+## 0.1 The herdsman — commit 3 of `trade.md §11` (D593)
+
+Joe: *"the herdsman — cutting and carrying hay, feeding it out in winter, the cull as work, the quota, the freeze guard,
+the barn's room derived."*
+
+- ⭐ **The herd eats only hay put out on the pasture** (`Workplace.HayPutOut`), no longer straight from the barn's store as
+  commit 2 had it. So the woodpile's sentence holds whole: *the herd starved because nobody fed it out* is as true a
+  failure as *the barn ran dry*, and feeding is real winter work, outdoors.
+- **Cutting (spring to autumn):** while the barn holds less than its winter's hay — what its pasture's full herd eats,
+  with `winter_buffer_percent` — a herdsman walks to the next uncut pasture tile, cuts it (`reap_ticks`, tool and vigour as
+  the farmer's), and carries the armful home with the ordinary haul errand (hay is barn-only, so the barn is where it
+  goes). Each tile once a year: a counter, `HayCutThisYear`, with the tiles taken in the pasture's own order — never a
+  per-tile memory. `hay_per_tile` 67, wheat's, until measured otherwise.
+- **Feeding (winter):** while less than `hay_feed_ahead_days` of the herd's hay is out, a herdsman fetches an armful from
+  the barn and puts it out on the pasture (`hay_feed_ticks`, outdoors — D53's exposure applies).
+- **The cull, as work:** a beast born to a full pasture waits; a herdsman walks to the barn and culls it
+  (`cull_ticks`): 900 meat and 10 leather in the barn's buffer. ⚠️ **With nobody seated at the barn, the overgrazed extra
+  starves instead** — a beast a grazing day, no yield (*nobody is keeping the herd*), the same sentence as hay short.
+- **The quota:** herdsmen are asked for only where a herd stands — one in winter while there is a herd to feed; in the
+  growing seasons, while hay is short, as many as the pasture's full herd needs (`head one herdsman keeps`), up to the
+  barn's seats; at least one when a cull is owed. Cutting yields to *food first*, as every non-food trade does
+  (§10: the summer hands come out of what the food floor leaves spare).
+- **The barn's room is derived** (§10), never typed: its seats × the head one herdsman keeps × a head's winter hay with
+  the buffer. One herdsman keeps `FieldTilesOneFarmerKeeps` × `hay_per_tile` ÷ (`hay_per_head_per_winter_day` × days of
+  winter × `winter_buffer_percent`) head — 8 today.
+- **A herdsman never freezes** (§7, a hard guard): posed with a barn and pasture by the village on shipped valleys
+  through winters of feeding; the margin is 30 tiles from the work to a lit hearth (§10.1.3).
+
+**What building it taught (D593, traced, not guessed):**
+- ⚠️ **`hay_feed_ahead_days` is 5, and the carrying starts that many days before winter.** At 3 a traced herd lost a beast
+  on winter's first day (the first armful still on the road) and another between refills: a herdsman finishes his rest
+  before he re-decides and spends winter going in to get warm. Five days of a full herd is one armful.
+- ⚠️ **A tile painted once may since be unworkable** — a house on it, rock, out of reach. The cut cursor passes over it
+  (`SimWorld.IsWorkablePasture`); before that a herdsman stalled a whole autumn on one tile and the herd starved.
+- ⚠️ **A cull is long work, and a household nearly out of food sends its herdsman to fetch mid-cull**, as it sends
+  anybody (`TryEmergencyRestock`). The cull stays owed and he comes back to it.
+- **A calf born on the year's last grazing day goes into winter one beyond the pasture**: a herdsman culls it then (a cull
+  comes first in any season); with nobody keeping the herd it eats its share.
+- The tile scan runs only when the herdsman decides; the quota asks the scan-free `HayIsShort` every tick (CLAUDE.md).
 
 ---
 

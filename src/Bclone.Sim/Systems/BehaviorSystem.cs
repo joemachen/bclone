@@ -23,7 +23,7 @@ namespace Bclone.Sim.Systems;
 /// of reasons can be explained in one sentence in the UI and a weighted score cannot.
 /// </para>
 /// </remarks>
-public sealed class BehaviorSystem : ISimSystem
+public sealed partial class BehaviorSystem : ISimSystem
 {
     /// <summary>Scratch for the audit trail's before-and-after. See <see cref="Snapshot"/>.</summary>
     private int[] _carriedBefore = System.Array.Empty<int>();
@@ -141,6 +141,10 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.WalkingOutToTend => "walking out to tend the field",
         VillagerState.Tending => "tending the field",
         VillagerState.WalkingBackToTheSteading => "walking back to the steading",
+        VillagerState.CuttingHay => "cutting hay",
+        VillagerState.FetchingHay => "fetching hay from the barn",
+        VillagerState.FeedingTheHerd => "feeding the herd",
+        VillagerState.Culling => "culling a beast",
         _ => state.ToString(),
     };
 
@@ -493,6 +497,23 @@ public sealed class BehaviorSystem : ISimSystem
                         : villager.State);
                 return;
 
+            // The herdsman's errands (D593): out to a pasture tile, or to the barn.
+            case VillagerState.CuttingHay:
+            case VillagerState.FeedingTheHerd:
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY), villager.State);
+                return;
+
+            case VillagerState.FetchingHay:
+            case VillagerState.Culling:
+                if (WorkplaceOf(world, villager) is not Workplace herdBarn)
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, herdBarn.Position, villager.State);
+                return;
+
             case VillagerState.HaulingToFarm:
                 if (WorkplaceOf(world, villager) is not Workplace barn)
                 {
@@ -597,7 +618,8 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state);
+        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state)
+        || IsHerding(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -664,6 +686,12 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsBaking(state))
         {
             return JobKind.Baker;
+        }
+
+        // ⛔ D281's lesson, the fifth time: without this arm a herdsman is recalled home every tick.
+        if (IsHerding(state))
+        {
+            return JobKind.Herdsman;
         }
 
         // ⛔ D281, a fourth time: without this arm a quarrier is recalled home every tick.
@@ -3137,6 +3165,22 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Timber. Fellable year-round, unlike berries, so a logger still has
         // something to do in winter - which is part of why the job is worth holding.
+        // ⭐ THE HERDSMAN (D593, `livestock.md §0.1`): a cull owed, winter's feeding, the growing seasons' hay.
+        if (villager.CanWork && job?.Kind == JobKind.Herdsman)
+        {
+            if (TryKeepTheHerd(world, villager, job))
+            {
+                return;
+            }
+
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
+        }
+
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
             // ⭐ A MET LIMIT STOPS THE FELLING AND NOT THE FORESTER (Joe, D146). D145 found that
@@ -4701,6 +4745,11 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (ArriveToKeepTheHerd(world, villager, onArrival))
+        {
+            return;
+        }
+
         // ⚠️ A CAST HAS TO BE STARTED THE SAME WAY A GATHER IS. Arriving in the `Fishing` state
         // is not fishing — without a duration the villager stands on the bank holding the state
         // and `CompleteAction` is never reached, which is exactly what shipped.
@@ -4799,6 +4848,14 @@ public sealed class BehaviorSystem : ISimSystem
             if (SeasonRules.IsReaping(world.Clock.Season)
                 && WorkplaceOf(world, villager) is { Kind: JobKind.Farmer } farm
                 && world.NextFieldToWork(farm, villager.Tile) is not null)
+            {
+                Decide(world, villager);
+                return;
+            }
+
+            // And a herdsman with the winter's hay still to cut goes back out to the pasture (D593).
+            if (WorkplaceOf(world, villager) is { Kind: JobKind.Herdsman } pastured
+                && world.NextPastureToCut(pastured) is not null)
             {
                 Decide(world, villager);
                 return;
@@ -5623,6 +5680,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>Apply the effect of a timed action that just finished.</summary>
     private static void CompleteAction(SimWorld world, Villager villager)
     {
+        if (FinishKeepingTheHerd(world, villager))
+        {
+            return;
+        }
+
         switch (villager.State)
         {
             case VillagerState.Resting:

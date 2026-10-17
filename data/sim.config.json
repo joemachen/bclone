@@ -970,7 +970,13 @@
   "barn_logs": 40,
   "barn_work_ticks": 40,
   "barn_capacity": 2,
-  "barn_store_capacity": 1200,
+  // The herdsman (D593, livestock.md §0.1): hay a cut tile gives (wheat's, until a played herd says
+  // otherwise), days of hay kept out in winter, and the work of feeding out and culling. The barn's
+  // room is DERIVED from the herd its hands can keep (VillageEconomy.BarnHayRoom), never typed.
+  "hay_per_tile": 67,
+  "hay_feed_ahead_days": 5,
+  "hay_feed_ticks": 3,
+  "cull_ticks": 8,
   "trading_post_logs": 30,
   "trading_post_stone": 24,
   "trading_post_work_ticks": 40,

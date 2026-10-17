@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D592 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–2 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 3 OF `trade.md §11` (THE HERDSMAN). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D593 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–3 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 4 OF `trade.md §11` (THE POST AND THE REGION). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D592: COMMIT 2 — THE HERD LIVES) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D593: COMMIT 3 — THE HERDSMAN) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D593**, local. The herdsman cuts the pasture and carries the hay to the barn until it holds
+> the winter of the pasture's full herd; from five days before winter he carries armfuls out — **the herd eats only hay
+> put out** — and he culls a beast born beyond the pasture into meat and leather. The quota asks for him only where a herd
+> stands (cutting yields to food first; a cull does not). The barn's room is derived (1,728 = 2 seats × 8 head × 108).
+> **A herdsman never freezes** (three shipped valleys, three winters). Traced and fixed on the way: a herdsman resting a
+> whole autumn on an unworkable tile; a herd starving at the first frost on a 3-day feed-ahead; a trade the allocator
+> never walked. `HerdsmanTests` (9); **12 mutants, 18 reds, no zeros**; suite 1721 / 0 / 5 of 1726 (8m27); probe clean;
+> goldens 362 → 362.
+>
+> **▶️ NEXT: commit 4 — the post and the region**: the merchant carries what is above *keep N* to the post and bought goods
+> home (the marketer's states; ⚠️ **add `JobKind.Merchant` to `LabourAllocator.KindsInOrder`** — trap D593); the
+> neighbours wake when a post stands and step at each season turn; rates derived, in words. The neighbours' sizes and the
+> post's prices are measured there before Joe plays.
+>
+> **(the banner below is the state at D592)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D592: COMMIT 2 — THE HERD LIVES) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D592**, local. `SimWorld.Herd.cs` + `HerdSystem` (once a day, after the hearth): free grazing
 > spring–autumn; winter hay from the barn's store, **a beast lost each day the barn comes up short**; growth to what the
@@ -7110,6 +7128,23 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D593 PAID FOR — A TRADE THE ALLOCATOR NEVER WALKS, A YEAR STEPPED BY ACCIDENT, AND A HERDSMAN WHO RESTED ALL AUTUMN
+
+- **A new trade must be in `LabourAllocator.KindsInOrder`** as well as the quota — *"two halves of one fact and neither
+  compiles against the other"*. The herdsman was asked for, pinned, and never seated; every herdsman test read *"nobody
+  cut the pasture"* until the list had him. **The merchant joins it in commit 4.**
+- **`SkillSystem`'s state table throws on a state it does not know** — loud by design. Every new `VillagerState` needs its
+  row there, and `ErrandKind` / `IsOnAWorkErrand` in `BehaviorSystem` (D281: or the worker is recalled home every tick).
+- **`StepToTheStartOf(Season.Spring)` from tick 0 steps a whole year** — tick 0 *is* the first day of spring. Three herdsman
+  poses ran a year they did not mean to and measured a herd that had already starved.
+- **On tick 0 nobody is seated** — the herd system runs before the labour system, so a pose that puts a cull owed at
+  tick 0 meets the *nobody keeps the herd* rule first. Let a day pass.
+- **A herdsman rested a whole autumn with pasture still to cut**: the next tile in the pasture's order had become
+  unworkable, the walk to it failed every time, and he went home. Found by tracing the villager's state each tick, not
+  by reading — a throwaway `Zz…Trace` test, deleted before the commit, is the fastest instrument this project has.
+- **The household emergency restock interrupts any action** (`TryEmergencyRestock`), so long work (a cull's 8 ticks) is
+  sometimes abandoned and redone. Not a bug; a test window must allow for it.
 
 ## ⛔ THE TRAPS D592 PAID FOR — A FULL HERD HIDES ITS GROWTH, AND A MUTANT THIS BUILD WILL NOT COMPILE
 
