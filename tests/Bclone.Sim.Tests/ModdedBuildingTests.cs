@@ -43,7 +43,7 @@ public sealed class ModdedBuildingTests
     /// </remarks>
     // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped.
     // ⚠️ 11 since the miner took 10 (D449); 13 since the miller and the baker took 11 and 12 (D522); 15 since the
-    // herdsman and the trader took 13 and 14 (D590).
+    // herdsman and the merchant took 13 and 14 (D590, D591).
     private static JobKind Boatman => (JobKind)15;
 
     /// <summary>
@@ -93,7 +93,7 @@ public sealed class ModdedBuildingTests
         { "id": 11, "name": "miller",    "plural": "millers",     "doing": "grinding wheat",     "works_at": "Mill",          "limited_by": "Flour" },
         { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",       "works_at": "Bakery",        "limited_by": "Bread" },
         { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
-        { "id": 14, "name": "trader",    "plural": "traders",     "doing": "trading at the post", "works_at": "TradingPost" },
+        { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
 
         // ⚠️ 9 → 10 WHEN THE QUARRIER SHIPPED (D434) — this row's job is to be an id the enum
         // cannot name, and 9 stopped being one. The fisherman's move, again.
@@ -420,7 +420,7 @@ public sealed class ModdedBuildingTests
         var kept = new System.Text.StringBuilder();
         foreach (string line in JsonWithABoathouse.Split('\n'))
         {
-            // By name, not by id: since D590 the trader's job row is id 14 too, and dropping it is a different test.
+            // By name, not by id: since D590 the merchant's job row is id 14 too, and dropping it is a different test.
             if (!line.Contains("\"name\": \"longhouse\"", System.StringComparison.Ordinal))
             {
                 kept.Append(line).Append('\n');

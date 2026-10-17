@@ -1436,7 +1436,7 @@ public sealed record SimConfig
     [JsonPropertyName("trading_post_work_ticks")]
     public int TradingPostWorkTicks { get; init; } = 40;
 
-    /// <summary>How many traders a trading post seats (Joe, D587 call 4: a trader job; one seat, provisional).</summary>
+    /// <summary>How many merchants a trading post seats (Joe, D587 call 4 and D591's name; one seat, provisional).</summary>
     [JsonPropertyName("trading_post_capacity")]
     public int TradingPostCapacity { get; init; } = 1;
 
@@ -3311,14 +3311,15 @@ public sealed record SimConfig
         },
         new JobRow
         {
-            Id = (int)JobKind.Trader,
-            Name = "trader",
-            Plural = "traders",
+            Id = (int)JobKind.Merchant,
+
+            // ⭐ THE MERCHANT, NOT THE TRADER (Joe, D591): the marketer keeps its plural, *traders* (D188).
+            Name = "merchant",
+            Plural = "merchants",
             Doing = "trading at the post",
             WorksAt = BuildingKind.TradingPost,
 
-            // ⚠️ Makes no good of its own, so nothing limits it — the marketer's shape. ⚠️ And the marketer's plural is
-            // *traders* too (D188, a tail that is Joe's): to settle before the view shows both (commit 6).
+            // Makes no good of its own, so nothing limits it — the marketer's shape.
             LimitedBy = null,
         },
     };
@@ -3813,7 +3814,7 @@ public sealed record SimConfig
             ExtentHeight = 2,
         },
 
-        // On the river bank — the fishery's rule (`trade.md §4.1`). Its store takes only what the trader carries.
+        // On the river bank — the fishery's rule (`trade.md §4.1`). Its store takes only what the merchant carries.
         new BuildingRow
         {
             Id = (int)BuildingKind.TradingPost,

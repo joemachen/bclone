@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D590 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMIT 1 BUILT) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 2 OF `trade.md §11` (THE HERD LIVES). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D591 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMIT 1 BUILT, THE MERCHANT NAMED — D591) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 2 OF `trade.md §11` (THE HERD LIVES). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D590: COMMIT 1 — THE ROWS AND THE STATE FOR TRADE AND THE HERD, NOTHING BEHAVES; SAVE FORMAT 8) — ON WINDOWS.**
 >
@@ -15,8 +15,8 @@
 > (one probe zero written down in D590).
 >
 > **▶️ NEXT: commit 2 — the herd lives** (growth, grazing, hay eaten in winter, starvation, the cull into meat and leather),
-> measured first by its own arms; the barn's room derived from the herd, not typed. ⏸️ **And a word Joe owes before commit
-> 6:** the marketer's plural is already *traders* (⏸️ OPEN below).
+> measured first by its own arms; the barn's room derived from the herd, not typed. ✅ **D591: the new job is the
+> merchant** (`JobKind.Merchant` 14); the marketer keeps *traders* (Joe).
 >
 > **(the banner below is the state at D589)**
 
@@ -7274,7 +7274,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **TWO TRADES WOULD BOTH BE "TRADERS" (D590).** The marketer's plural has been *traders* since D188 (a tail the doc
+- ✅ **ANSWERED (D591) — Joe: *"keep the marketer's plural as traders and call the new job merchant / merchants."* Built.** ~~TWO TRADES WOULD BOTH BE "TRADERS" (D590).~~ The marketer's plural has been *traders* since D188 (a tail the doc
   left as Joe's), and trade's new job is *trader* / *traders* (his D587 call 4). The Professions panel would list
   "traders" twice once the view shows the trader (commit 6 of `trade.md §11`). Options: the marketer becomes
   *marketers* (D188's own ruling was "marketer wins"), or the new job takes another name (*merchant*). Needed before

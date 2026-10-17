@@ -368,7 +368,7 @@ public enum BuildingKind
     Barn = 23,
 
     /// <summary>
-    /// A trading post on the river bank — where the trader carries the village's goods to sell and a boat docks
+    /// A trading post on the river bank — where the merchant carries the village's goods to sell and a boat docks
     /// (D590, `specs/trade.md §4.1`).
     /// </summary>
     /// <remarks>

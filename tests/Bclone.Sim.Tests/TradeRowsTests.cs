@@ -37,12 +37,22 @@ public sealed class TradeRowsTests
         Assert.Equal("trading post", post.Name);
         Assert.Equal(StoreKind.TradingPost, post.Stores);
         Assert.Equal(Terrain.Water, post.MustTouch);
-        Assert.True(post.Seats > 0, "the post employs nobody — the trader would have nowhere to work");
+        Assert.True(post.Seats > 0, "the post employs nobody — the merchant would have nowhere to work");
 
         Assert.Equal(BuildingKind.Barn, world.JobsCatalog.WorksAt(JobKind.Herdsman));
         Assert.Equal("herdsman", world.JobsCatalog[JobKind.Herdsman].Name);
-        Assert.Equal(BuildingKind.TradingPost, world.JobsCatalog.WorksAt(JobKind.Trader));
-        Assert.Equal("trader", world.JobsCatalog[JobKind.Trader].Name);
+        Assert.Equal(BuildingKind.TradingPost, world.JobsCatalog.WorksAt(JobKind.Merchant));
+
+        // ⭐ The merchant, never a second "traders" (Joe, D591): the marketer's plural is traders (D188).
+        Assert.Equal("merchant", world.JobsCatalog[JobKind.Merchant].Name);
+        Assert.Equal("merchants", world.JobsCatalog.PluralOf(JobKind.Merchant));
+        for (int id = 0; id < world.JobsCatalog.Count; id++)
+        {
+            for (int other = id + 1; other < world.JobsCatalog.Count; other++)
+            {
+                Assert.NotEqual(world.JobsCatalog[id].Plural, world.JobsCatalog[other].Plural);
+            }
+        }
     }
 
     /// <summary>Hay is kept only in a barn (D52's lesson: a good that shares a room is a shortage nobody can read).</summary>
@@ -132,8 +142,8 @@ public sealed class TradeRowsTests
 
         LabourQuota quota = LabourQuota.For(world);
         Assert.Equal(0, quota.For(JobKind.Herdsman));
-        Assert.Equal(0, quota.For(JobKind.Trader));
-        Assert.DoesNotContain(world.Workplaces, w => w.Kind is JobKind.Herdsman or JobKind.Trader);
+        Assert.Equal(0, quota.For(JobKind.Merchant));
+        Assert.DoesNotContain(world.Workplaces, w => w.Kind is JobKind.Herdsman or JobKind.Merchant);
         Assert.Null(world.Boat);
         Assert.Equal(0, world.BoatsEverCame);
         Assert.All(world.NeighbourStocks, n => Assert.True(n.IsEmpty));

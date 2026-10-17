@@ -186,8 +186,11 @@ public enum JobKind
     /// Carry what the village sells down to the trading post before a boat, and what it bought back to the stores
     /// after (D590, `specs/trade.md §4.5`). Works at a trading post.
     /// </summary>
-    /// <remarks>⛔ Appended at 14. Asked for by nothing until trade behaves (`trade.md §11` commit 4).</remarks>
-    Trader = 14,
+    /// <remarks>
+    /// ⛔ Appended at 14. Asked for by nothing until trade behaves (`trade.md §11` commit 4). <b>The merchant</b>, not
+    /// the trader (Joe, D591): the marketer's plural is <i>traders</i> (D188), and so is half this codebase's prose.
+    /// </remarks>
+    Merchant = 14,
 }
 
 /// <summary>

@@ -92,11 +92,11 @@ public enum StoreKind
     Barn = 5,
 
     /// <summary>
-    /// A trading post — what the trader has carried down to sell, and what a boat left (D590, `trade.md §4.5`).
+    /// A trading post — what the merchant has carried down to sell, and what a boat left (D590, `trade.md §4.5`).
     /// </summary>
     /// <remarks>
     /// ⛔ <b>No good names it in <c>stored_by</c></b>, so no hauler ever carries a load there on the way to the
-    /// nearest store; only the trader's errands fill and empty it.
+    /// nearest store; only the merchant's errands fill and empty it.
     /// </remarks>
     TradingPost = 6,
 }

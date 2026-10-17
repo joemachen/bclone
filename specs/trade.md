@@ -74,7 +74,7 @@ asked the same day; those answers are in the last column.
 | 1 | Post learned when the hall is owed, or raised? | **Raised** (*"yes"*) | Not on the build menu until the town hall stands |
 | 2 | How many neighbours? | **3** (*"yes"*) — upriver, downriver, overland | The overland one waits for carts (tier 2) |
 | 3 | How often does the boat come? | ***"every 2-3 years"*** | A clock by hash: the next visit 2 or 3 years on (§4.4). Rare, so each visit is an event |
-| 4 | Who works the post? | **A trader job** (*"yes"*) | The marketer's machinery (§4.5) |
+| 4 | Who works the post? | **A trader job** (*"yes"*) — ⭐ **named the merchant (Joe, D591)**: the marketer's plural is *traders* (D188) | The marketer's machinery (§4.5) |
 | 5 | What can be bought? | ***"a random assortment that includes everything that is or will be in the game - build trade and herd together"*** | Each boat brings an assortment from **every good the game has** — and each new good joins it the day its system is built (asked: *only goods in the game*, never a good that does nothing yet). **Trade and `livestock.md`'s first slice are one build**, so the first boat can bring animals (D61). "Random" is seeded: decided by hash, the same for the same seed (§4.3) |
 | 6 | How is a visit told and seen? | *"trade boat visibly sails down river from one direction or the other (should be able to come from both directions), passing banner and log line. boat stops at trading post for a reasonable amount of time to be noticed by player (will likely have to test) and then a log line announcing it is leaving and it sails down the river off-screen. Or the user can dismiss it in the trade window/screen and it will sail away sooner."* | The boat **sails on the river from either edge**, a passing banner and a log line when it arrives, **docks long enough to be noticed** (a number found in play), a log line as it leaves, and it sails off the far edge. **The post's window** (asked: the post's own window, not a per-visit screen) shows the boat in dock and has **Send the boat on** (§4.4) |
 | 7 | Do neighbours change? | (asked again, plainer) **Neighbours with reasons** | Each boat belongs to a neighbour with its own stock and needs; what it carries is what it has plenty of, its rates follow what it is short of, and the region panel says why (§4.2–4.3) |
@@ -138,11 +138,11 @@ asked the same day; those answers are in the last column.
   so it is in the sim and the hash (its leaving tick moves), never a view-only trick.
 - Nothing is lost if the post is empty: the boat says it called and found nothing to take.
 
-### 4.5 Standing orders and the trader
+### 4.5 Standing orders and the merchant
 
 - **The post's card, per good:** *keep N* (sell what the village holds above N) and *buy up to M* (buy until the village
   holds M). Hashed, saved, the village's own (like stock limits, never the player's settings file).
-- **The trader** (call 4) carries goods above *keep N* to the post before a visit and carries bought goods to stores
+- **The merchant** (call 4) carries goods above *keep N* to the post before a visit and carries bought goods to stores
   after — the marketer's two states, re-used. A load to the post is a load **to a store** (D385).
 - **At the visit:** the boat takes what is at the post, up to its hold, at the day's rate, and leaves what the
   orders asked for, as far as its neighbour has plenty. Both halves are integers; a remainder stays at the post.
@@ -185,7 +185,7 @@ asked the same day; those answers are in the last column.
 
 ## 5. What changes meaning
 
-- **A stock limit stops meaning "the most the village will ever hold"** for a good with a *keep N* order: the trader
+- **A stock limit stops meaning "the most the village will ever hold"** for a good with a *keep N* order: the merchant
   moves the excess out. The limit still governs production; *keep N* governs selling. The card says both.
 - **The town hall becomes a door**, not only a tribute (D252).
 - **A valley's seams stop being fate**: stone and iron can be bought.
@@ -214,7 +214,7 @@ asked the same day; those answers are in the last column.
   orders reset.
 - **A neighbour has nothing to give:** the boat takes nothing either. No debt, no credit.
 - **Nothing at the post:** the boat calls, says so in the log, and leaves.
-- **The trader dies or is reassigned mid-carry:** the load goes to the nearest store, as any carried load does.
+- **The merchant dies or is reassigned mid-carry:** the load goes to the nearest store, as any carried load does.
 - ⚠️ **The trap D61 named:** a market that buys everything makes every surplus worth the same and the stores
   meaningless. The band on rates (§4.3) and the neighbours' limited wants are the guard; measured at build.
 
@@ -267,7 +267,7 @@ limits for forage, logs and firewood, and those with a fishery for fish.
 
 ### 8.3 To measure on the build, before any number is typed
 
-- The post's price and the trader's walk (logs, stone, seats).
+- The post's price and the merchant's walk (logs, stone, seats).
 - The boat's hold, and the rate band, against §8.2's surpluses — a boat that empties the stores every visit is the
   trap in §7.
 - Survival with trade on and every order empty (must equal off), and with firewood sold down to its *keep N*.
@@ -278,7 +278,7 @@ limits for forage, logs and firewood, and those with a fishery for fish.
 ⭐ Call 5 makes the first build **trade and the herd together**. It is still built as separate commits, each green on
 its own, and played as one:
 
-1. **The post and the boat.** The row, the unlock on the raised hall, standing orders on the card, the trader, the two
+1. **The post and the boat.** The row, the unlock on the raised hall, standing orders on the card, the merchant, the two
    river neighbours with their stocks and rates, the boat's clock (every 2–3 years, either direction), its three
    ticks, settlement, *Send the boat on*, the banner and log lines, the post's window. Sim and view; save format 8.
 2. **The boat on the water.** The view draws it sailing from its edge to the post and on off the far edge.
@@ -315,12 +315,12 @@ is raised, not at the founding. That makes the goldens themselves the guard for 
 | # | What | Sim / view | Its guards (red first) |
 |---|---|---|---|
 | 0 ✅ D589 | **Measure** — done, `livestock.md §10.1` (`tools/harness/ZzHerd.cs`, copies of Joe's saves): summer spare hands and winter work at a fire / outdoors on today's code (D533's baseline, re-taken); how far a played village's homes stand from a fire in winter (the freeze risk §7 of `livestock.md` used to wave away); the hay a tile gives against a day's walk; Joe's saves for pasture-able ground near a hall-era village | — | — (numbers go into `livestock.md §10` before anything is typed) |
-| 1 ✅ D590 | **Rows and state, nothing behaves** — done. The prices and the neighbours' sizes are provisional and labelled so; the view hides both buildings until the hall stands (`Main.EarnedYet`). `Goods.Hay` 13; `BuildingKind.Barn` 23 and `TradingPost` 24; `JobKind.Herdsman` 13 and `Trader` 14; the animal row (one kind); neighbour rows; the herd on the barn; standing orders; the boat's three ticks; the neighbours' stocks. Saved (**format 8**) and hashed sparsely. Both buildings in `WhyNotYet`: *not until the town hall stands* | sim | every new field saved or named derived (the reflection guard); save → load → hash equal; **all 362 goldens unchanged** |
+| 1 ✅ D590 | **Rows and state, nothing behaves** — done. The prices and the neighbours' sizes are provisional and labelled so; the view hides both buildings until the hall stands (`Main.EarnedYet`). `Goods.Hay` 13; `BuildingKind.Barn` 23 and `TradingPost` 24; `JobKind.Herdsman` 13 and `Merchant` 14; the animal row (one kind); neighbour rows; the herd on the barn; standing orders; the boat's three ticks; the neighbours' stocks. Saved (**format 8**) and hashed sparsely. Both buildings in `WhyNotYet`: *not until the town hall stands* | sim | every new field saved or named derived (the reflection guard); save → load → hash equal; **all 362 goldens unchanged** |
 | 2 | **The herd lives.** Growth by an integer accumulator at the day turn, capped at what the pasture holds (tiles ÷ tiles a beast); free grazing spring–autumn; hay eaten each winter day from the barn; a beast lost for each day's hay short; the cull above capacity into meat and leather in the barn's buffer | sim | a herd with its winter's hay survives 300 winters on both configs; an over-stocked one loses beasts (anti-vacuity, D7); growth stops at capacity; the cull's goods appear; all goldens unchanged |
 | 3 | **The herdsman.** Growing seasons: cut hay on the pasture, carry it to the barn (the farm's reap-and-carry). Winter: carry hay out and feed — outdoors. The cull. The quota asks for herdsmen from the hay the herd will need (derived, never the barn's room — D52's lesson) | sim | the quota wants herdsmen only for a herd; **a herdsman never freezes** over the shipped seeds; winter outdoor work rises above the re-taken baseline (`livestock.md §9.5–9.6`); a village with no herd unchanged |
-| 4 | **The post and the region.** The trader carries what is above *keep N* to the post and bought goods out (the marketer's two states); neighbours wake when the post stands and step at each season turn; rates derived, in words | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the trader never takes a good below *keep N* |
+| 4 | **The post and the region.** The merchant carries what is above *keep N* to the post and bought goods out (the marketer's two states); neighbours wake when the post stands and step at each season turn; rates derived, in words | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the merchant never takes a good below *keep N* |
 | 5 | **The boat.** Its clock by hash (every 2–3 years, spring–autumn, either direction); appears / docks / leaves; settles the orders at the day's rate, integers conserved, the remainder kept at the post; animals only to a barn with room; *Send the boat on* moves the leaving tick; the passing banner and the log lines | sim | gaps of 2–3 years; both directions over a run; never in winter; same seed, same boats; a save with a boat in dock loads and sails on; a year run after loading matches one that never stopped |
-| 6 | **View I.** The barn and its pasture paint (trees kept), the animals grazing (a hash scatter, like the trees), the barn's card (*N head, hay for N days, why*); the post's window (orders, the boat in dock, *Send the boat on*, when the next is due); the herdsman's and trader's states in words | view | probe `herd:`, `post:` |
+| 6 | **View I.** The barn and its pasture paint (trees kept), the animals grazing (a hash scatter, like the trees), the barn's card (*N head, hay for N days, why*); the post's window (orders, the boat in dock, *Send the boat on*, when the next is due); the herdsman's and merchant's states in words | view | probe `herd:`, `post:` |
 | 7 | **View II.** The boat sailing: the water path from its edge to the post and on off the far edge, **found once per post** (the river never changes — CLAUDE.md's rule), the boat's place derived from its ticks; the region panel | view | probe `boat:`, `region:` |
 
 ### 11.3 Numbers — measured before typed
