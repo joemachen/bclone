@@ -39,6 +39,35 @@ public sealed record AnimalRow
     /// <summary>What the herd card calls more than one.</summary>
     [JsonPropertyName("plural")]
     public string Plural { get; init; } = string.Empty;
+
+    // ⭐ THE HERD'S NUMBERS (D592, commit 2 of `trade.md §11`) — Joe's own, from `TECH-EXAMPLE.md §3`, and the hunt's.
+
+    /// <summary>Pasture tiles one head grazes — Joe's <i>"Large Ruminants (Cow) — 5 Tiles"</i> (`TECH-EXAMPLE.md §3`).</summary>
+    [JsonPropertyName("pasture_tiles_per_head")]
+    public int PastureTilesPerHead { get; init; } = 5;
+
+    /// <summary>Hay one head eats a winter day — Joe's <i>"Large animals (Cows) consume 2 Feed Units/day"</i>.</summary>
+    [JsonPropertyName("hay_per_head_per_winter_day")]
+    public int HayPerHeadPerWinterDay { get; init; } = 2;
+
+    /// <summary>
+    /// Grazing head-days to a new head: the herd's head count is added each grazing day, a beast for every this many.
+    /// </summary>
+    /// <remarks>
+    /// Joe's cow (`TECH-EXAMPLE.md §3`): a 90-day gestation, one calf, 120 days to maturity — on a 120-day year about one
+    /// calf a cow a year, and with half the herd cows, half a head a head a year. Grazing is 90 days of the 120, so 240
+    /// head-days: a herd of eight grazing a year adds three. One kind, one row, no sexes (`livestock.md §0`).
+    /// </remarks>
+    [JsonPropertyName("head_days_per_birth")]
+    public int HeadDaysPerBirth { get; init; } = 240;
+
+    /// <summary>Meat off one culled head — a hunted animal's, the same beast (`meat_yield`).</summary>
+    [JsonPropertyName("meat_per_head")]
+    public int MeatPerHead { get; init; } = 900;
+
+    /// <summary>The hide off one culled head — a hunted animal's (`leather_yield`).</summary>
+    [JsonPropertyName("leather_per_head")]
+    public int LeatherPerHead { get; init; } = 10;
 }
 
 /// <summary>

@@ -5491,6 +5491,15 @@ public sealed record SimConfig
             {
                 throw new SimConfigException($"animals[{i}] (id {animal.Id}) needs a name and a plural.");
             }
+
+            // ⛔ A head that grazes no ground, eats nothing or is born of nothing divides by zero or never ends (D592).
+            if (animal.PastureTilesPerHead < 1 || animal.HayPerHeadPerWinterDay < 1 || animal.HeadDaysPerBirth < 1
+                || animal.MeatPerHead < 0 || animal.LeatherPerHead < 0)
+            {
+                throw new SimConfigException(
+                    $"animals[{i}] (id {animal.Id}) needs pasture_tiles_per_head, hay_per_head_per_winter_day and "
+                    + "head_days_per_birth of at least one, and no negative meat or leather.");
+            }
         }
 
         int goods = GoodsCatalog.Count;

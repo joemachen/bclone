@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D591 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMIT 1 BUILT, THE MERCHANT NAMED — D591) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 2 OF `trade.md §11` (THE HERD LIVES). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D592 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–2 BUILT, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 3 OF `trade.md §11` (THE HERDSMAN). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D590: COMMIT 1 — THE ROWS AND THE STATE FOR TRADE AND THE HERD, NOTHING BEHAVES; SAVE FORMAT 8) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D592: COMMIT 2 — THE HERD LIVES) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D592**, local. `SimWorld.Herd.cs` + `HerdSystem` (once a day, after the hearth): free grazing
+> spring–autumn; winter hay from the barn's store, **a beast lost each day the barn comes up short**; growth to what the
+> pasture holds (painted tiles ÷ 5), **the cull above it into 900 meat and 10 leather** in the barn's buffer; an oversized
+> herd culled down a beast a day; a pasture never a seam, its trees kept. Joe's cattle (5 tiles, 2 hay a day, 240
+> head-days a calf) and the hunt's yields — and one herdsman's cut feeds 8 head, Joe's own barn's *"8 large"*
+> (`livestock.md §10.1.6`). Nobody tends the herd yet. `HerdTests` (8) and a save pose with a real barn's herd mid-winter;
+> **12 mutants, 16 reds, no zeros** (four closed: trap below). See D592 for the check numbers.
+>
+> **▶️ NEXT: commit 3 — the herdsman** (cut and carry hay in the growing seasons, feed it out in winter, the cull as work;
+> the quota asks from the hay the herd will need; *a herdsman never freezes*, posed at the 30-tile margin; the barn's room
+> derived from the hay a herdsman cuts).
+>
+> **(the banner below is the state at D590–D591)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D590: COMMIT 1 — THE ROWS AND THE STATE FOR TRADE AND THE HERD, NOTHING BEHAVES; SAVE FORMAT 8) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D590**, local. Hay (good 13, barn-only), the barn (23) and the trading post (24), the herdsman
 > (13) and the trader (14), one animal (*cattle*) and three neighbours are rows (`World/Region.cs`, `SimConfig`); the
@@ -7094,6 +7110,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D592 PAID FOR — A FULL HERD HIDES ITS GROWTH, AND A MUTANT THIS BUILD WILL NOT COMPILE
+
+- **A herd at its pasture's limit looks the same whether it grows or not** — every calf is culled, the head count never
+  moves. The guard *"fed through winter, no beast lost"* passed with growth running all winter (H1 scored zero); it now
+  also holds the growth accumulator still across winter. When a rule's effect is capped, assert the hidden counter, not
+  the capped total.
+- **This repo's build refuses the classic mutants**: `if (false)` / `if (true)` is CS0162 (unreachable) and emptying a
+  method leaves IDE0060 (unused parameter) — all errors here, so three of eleven herd mutants never built and scored
+  zero silently (D420's trap, again). Mutate with arithmetic that compiles: `pasture + 1000`, an argument to 0.
+- **A `\\n` inside an inline `python -c` through bash became a real newline** in the mutant file — the backslash trap,
+  the fourth time. Edit scripts go through the Write tool, always.
 
 ## ⛔ THE TRAPS D590 PAID FOR — A MODDED ROW IN A BUILT-IN'S SEAT, A FILTER BY ID, A DEFAULT THAT SAYS "KNOWN", AND A PROBE THAT HANGS
 

@@ -5571,7 +5571,7 @@ public sealed partial class SimWorld : IObstacles
         // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
         // the laborers' to clear (`AfterGivingGround`); stone and iron are dug or destroyed first,
         // and the cleared ground is grass the brush then takes.
-        if (workplace.Kind == JobKind.Farmer && TerrainRules.IsSeam(Map.TerrainAt(tile)))
+        if (workplace.Kind is JobKind.Farmer or JobKind.Herdsman && TerrainRules.IsSeam(Map.TerrainAt(tile)))
         {
             return PlacementVerdict.No("Not on a seam — clear it first.");
         }

@@ -69,6 +69,9 @@ public sealed class SaveLoadTests : IDisposable
         // D590: trade orders, a boat, the neighbours' stocks and a herd, posed — nothing reads them yet (commit 1 of
         // `trade.md §11`), so a year later they are still what was posed and the save must keep every one.
         new object[] { "established, trade and a herd posed (year 2)", 500 },
+
+        // D592: a real barn, its pasture and a herd eating its hay in winter — the herd system across a load and a year.
+        new object[] { "established, a barn's herd in winter (year 1)", (120 * 3) + 21 },
     };
 
     /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
@@ -83,6 +86,14 @@ public sealed class SaveLoadTests : IDisposable
         if (pose.StartsWith("fixture", StringComparison.Ordinal))
         {
             loop = SimFactory.CreatePhase0(VillageFixtures.Village, log);
+        }
+        else if (pose.StartsWith("established, a barn's herd", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            Workplace barn = HerdTests.RaiseABarn(loop.World);
+            HerdTests.GivePasture(loop.World, barn, 40);
+            barn.HerdHead = 6;
+            loop.World.BarnStoreOf(barn)!.Store.Receive(Goods.Hay, 300);
         }
         else if (pose.StartsWith("established, trade and a herd posed", StringComparison.Ordinal))
         {
@@ -218,6 +229,12 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Equal(300, traded.World.TradeKeep.For(Goods.Firewood));
         Assert.Equal(5, traded.World.Workplaces[0].HerdHead);
         Assert.Equal(3, traded.World.NeighbourStocks[0].Animals);
+
+        (SimLoop herded, _) = Played("established, a barn's herd in winter (year 1)", (120 * 3) + 21);
+        Assert.Equal(Season.Winter, herded.World.Clock.Season);
+        Workplace herd = Assert.Single(herded.World.Workplaces, w => w.Kind == JobKind.Herdsman && !w.IsSite);
+        Assert.True(herd.HerdHead > 0, "the herd is gone — the pose saves no herd");
+        Assert.True(herded.World.BarnStoreOf(herd)!.Store[Goods.Hay] > 0, "the barn is empty — the pose saves no hay");
     }
 
     // ---------------------------------------------------------------

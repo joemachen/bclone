@@ -2,7 +2,7 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). The herd lives in commit 2.** Animals come
+**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — nobody tends it yet (the herdsman is commit 3).** Animals come
 only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
 **§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
 later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.
@@ -357,6 +357,25 @@ biggest diamond one pair of hands reaps in an autumn, walking each armful home);
 so the herdsman's field comes from the same derivation, not a new one. *Illustration only:* hay at wheat's 67 a tile
 gives one herdsman ~870 a summer; at 2 hay a beast a winter day with the buffer, that feeds about 8 head. The real
 numbers come from commit 2's arms.
+
+**6. Commit 2's numbers, and what they add up to (D592).** Joe's own (`TECH-EXAMPLE.md §3`) where he gave one, the hunt's
+where he did not, on the `animals` row:
+
+| Number | Value | From |
+|---|---|---|
+| `pasture_tiles_per_head` | 5 | Joe: *"Large Ruminants (Cow) — 5 Tiles"* |
+| `hay_per_head_per_winter_day` | 2 | Joe: *"Large animals (Cows) consume 2 Feed Units/day"* |
+| `head_days_per_birth` | 240 | Joe's cow: 90-day gestation, 1 calf, 120 days to maturity — about a calf a cow a year; half the herd cows; 90 grazing days of 120 |
+| `meat_per_head` / `leather_per_head` | 900 / 10 | the hunt's `meat_yield` / `leather_yield` — one animal is one animal |
+
+⭐ **Three independent numbers agree.** One herdsman's cut — `FieldTilesOneFarmerKeeps` 13 tiles at wheat's 67 a tile, if
+hay yields as wheat does (commit 3 measures it) — is ~871 hay; a head's winter with the buffer is 2 × 30 × 180 % = 108;
+so one herdsman keeps **8 head**, which is exactly Joe's timber barn (*"16 Small / 8 Large"*). At capacity 8 head add 8 ×
+90 ÷ 240 = **3 calves a year, culled: 2,700 meat and 30 leather a herdsman-year**, beside the winter's work. Against a
+hunter's ~1,319 meat per hundred ticks worked (D361) that is a modest food source and a real winter job — which is what
+D59 asked of herding (*"an optional food source"*). ⚠️ **Derived, not yet played**: commit 3 puts a herdsman on it and
+measures a played village's herd; the barn's room is derived there too, from the hay a herdsman can cut (it needs hay a
+tile, which needs cutting).
 
 ---
 
