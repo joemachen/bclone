@@ -429,6 +429,14 @@ public static class StateHash
                 hash = MixByte(hash, bridgeSite.RebuildsBridge ? (byte)1 : (byte)0);
             }
 
+            // The herd on a barn (D590) — sparse, so a workplace with no herd mixes nothing.
+            if (workplace.HerdHead != 0 || workplace.HerdGrowth != 0)
+            {
+                hash = MixByte(hash, 0x76);
+                hash = MixUInt32(hash, (uint)workplace.HerdHead);
+                hash = MixUInt32(hash, (uint)workplace.HerdGrowth);
+            }
+
             // When it was raised and last mended (D552): condition is derived from these two.
             hash = MixUInt64(hash, workplace.RaisedAtTick);
             hash = MixUInt64(hash, workplace.RepairedAtTick);
@@ -839,6 +847,68 @@ public static class StateHash
         if (!world.NomadsEnabled)
         {
             hash = MixByte(hash, 0x6A);
+        }
+
+        // ---- Trade (D590, `trade.md §11` commit 1) ----
+        // ⭐ ALL SPARSE, AND THAT IS WHAT HOLDS THE GOLDENS (`trade.md §11.1`): a village that never set an order, saw a
+        // boat or woke the region mixes nothing here at all. Each block under its own tag so two facts cannot collide.
+        // The orders are a stock limit's shape and hash its way: the good with its value, null nothing, zero a zero.
+        for (int i = 0; i < world.TradeKeep.Slots; i++)
+        {
+            if (world.TradeKeep.For((Goods)i) is int keep)
+            {
+                hash = MixByte(hash, 0x70);
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)keep);
+            }
+        }
+
+        for (int i = 0; i < world.TradeBuy.Slots; i++)
+        {
+            if (world.TradeBuy.For((Goods)i) is int buy)
+            {
+                hash = MixByte(hash, 0x71);
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)buy);
+            }
+        }
+
+        if (world.Boat is TradeBoat boat)
+        {
+            hash = MixByte(hash, 0x72);
+            hash = MixUInt32(hash, (uint)boat.NeighbourId);
+            hash = MixUInt64(hash, boat.AppearsAtTick);
+            hash = MixUInt64(hash, boat.DocksAtTick);
+            hash = MixUInt64(hash, boat.LeavesAtTick);
+        }
+
+        if (world.BoatsEverCame != 0)
+        {
+            hash = MixByte(hash, 0x73);
+            hash = MixUInt32(hash, (uint)world.BoatsEverCame);
+        }
+
+        // A neighbour's stock: each held good with its index, and its animals — only what is not zero.
+        for (int n = 0; n < world.NeighbourStocks.Count; n++)
+        {
+            NeighbourStock stock = world.NeighbourStocks[n];
+            for (int i = 0; i < stock.Held.Length; i++)
+            {
+                if (stock.Held[i] != 0)
+                {
+                    hash = MixByte(hash, 0x74);
+                    hash = MixUInt32(hash, (uint)n);
+                    hash = MixUInt32(hash, (uint)i);
+                    hash = MixUInt32(hash, (uint)stock.Held[i]);
+                }
+            }
+
+            if (stock.Animals != 0)
+            {
+                hash = MixByte(hash, 0x75);
+                hash = MixUInt32(hash, (uint)n);
+                hash = MixUInt32(hash, (uint)stock.Animals);
+            }
         }
 
         return hash;

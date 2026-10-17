@@ -65,6 +65,10 @@ public sealed class SaveLoadTests : IDisposable
         // D565/D572: the day after the first band settled — roofless arrivals with their arrival tick, the one state
         // the nomads add that is not a count.
         new object[] { "fixture village, the day after the first band settled", ((FixtureKnockYear - 1) * 480) + 5 },
+
+        // D590: trade orders, a boat, the neighbours' stocks and a herd, posed — nothing reads them yet (commit 1 of
+        // `trade.md §11`), so a year later they are still what was posed and the save must keep every one.
+        new object[] { "established, trade and a herd posed (year 2)", 500 },
     };
 
     /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
@@ -79,6 +83,11 @@ public sealed class SaveLoadTests : IDisposable
         if (pose.StartsWith("fixture", StringComparison.Ordinal))
         {
             loop = SimFactory.CreatePhase0(VillageFixtures.Village, log);
+        }
+        else if (pose.StartsWith("established, trade and a herd posed", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            TradeRowsTests.PoseTradeAndAHerd(loop.World);
         }
         else if (pose.StartsWith("established, every store closed", StringComparison.Ordinal))
         {
@@ -203,6 +212,12 @@ public sealed class SaveLoadTests : IDisposable
         var arrived = knocked.World.Villagers.Where(v => v.ArrivedAtTick != 0UL).ToList();
         Assert.True(arrived.Count >= 2, "nobody arrived — the pose is not the day after a band settled");
         Assert.All(arrived, v => Assert.False(knocked.World.HouseholdOf(v).HasHome));
+
+        (SimLoop traded, _) = Played("established, trade and a herd posed (year 2)", 500);
+        Assert.NotNull(traded.World.Boat);
+        Assert.Equal(300, traded.World.TradeKeep.For(Goods.Firewood));
+        Assert.Equal(5, traded.World.Workplaces[0].HerdHead);
+        Assert.Equal(3, traded.World.NeighbourStocks[0].Animals);
     }
 
     // ---------------------------------------------------------------
@@ -257,6 +272,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
+            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -299,6 +315,7 @@ public sealed class SaveLoadTests : IDisposable
             "GatheringRadius", "Mode", "ForgeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
+            "HerdHead", "HerdGrowth",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]
@@ -361,6 +378,8 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
         (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
+        (typeof(TradeBoat), Kept.Saved, new[] { "NeighbourId", "AppearsAtTick", "DocksAtTick", "LeavesAtTick" }),
+        (typeof(NeighbourStock), Kept.Saved, new[] { "Held", "Animals" }),
         (typeof(JobLimits), Kept.Saved, new[] { "_targets" }));
 
     /// <summary>

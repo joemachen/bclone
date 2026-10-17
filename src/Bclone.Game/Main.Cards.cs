@@ -2417,7 +2417,9 @@ public partial class Main
                     faults.Add($"{when}: the cart's {world.GoodsCatalog.NameOf(goods)} row is {(offered ? "shown" : "hidden")}");
                 }
 
-                if (unknownGoods.Contains(goods) && offered != learned)
+                // Only a good the cart can hold appears on it when learned — hay never does (D590: a barn's alone); the
+                // check above already holds every row to `CanEverHold`.
+                if (unknownGoods.Contains(goods) && cart.CanEverHold(goods) && offered != learned)
                 {
                     faults.Add($"{when}: the cart {(offered ? "offers" : "hides")} {world.GoodsCatalog.NameOf(goods)}");
                 }
@@ -2449,11 +2451,11 @@ public partial class Main
 
         Ask("at the founding", learned: false);
 
-        (bool quarry, bool mine, bool smithy, bool mill, bool bakery) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (true, true, true, true, true);
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (true, true, true, true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (quarry, mine, smithy, mill, bakery);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (quarry, mine, smithy, mill, bakery, trade);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);

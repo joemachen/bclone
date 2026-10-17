@@ -636,6 +636,31 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public StockLimits StockLimits { get; }
 
+    /// <summary>
+    /// The trading post's standing orders, <i>keep N</i>: sell what the village holds above N (Joe, D586 call 3;
+    /// `trade.md §4.5`).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A stock limit's shape exactly</b> — a nullable number a good, null and zero different instructions — so it
+    /// <i>is</i> one: the same class, saved and hashed the same sparse way (D590). Nothing reads it before commit 4.
+    /// </remarks>
+    public StockLimits TradeKeep { get; }
+
+    /// <summary>The trading post's standing orders, <i>buy up to M</i> (`trade.md §4.5`) — <see cref="TradeKeep"/>'s twin.</summary>
+    public StockLimits TradeBuy { get; }
+
+    /// <summary>The boat on its way, at the post, or leaving — null between visits (`trade.md §4.4`, D590).</summary>
+    public TradeBoat? Boat { get; internal set; }
+
+    /// <summary>How many boats have come — the count the boat's clock hashes on, as the knock's does (`trade.md §4.4`).</summary>
+    public int BoatsEverCame { get; internal set; }
+
+    /// <summary>
+    /// What each neighbour holds, in <c>neighbours</c> row order (`trade.md §4.2`, D590) — all zero until the region
+    /// wakes with the first trading post.
+    /// </summary>
+    public IReadOnlyList<NeighbourStock> NeighbourStocks { get; }
+
     /// <summary>How many people the player wants on each kind of work (D106).</summary>
     /// <remarks>
     /// Banished's professions panel. <b>The player always has an opinion</b> — every
@@ -3752,6 +3777,11 @@ public sealed partial class SimWorld : IObstacles
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
 
+        // ⭐ TRADE AND THE HERD WAIT FOR THE TOWN HALL (Joe, D587 call 1: *"once the Town Hall is built"*; D590). The
+        // hall raised, not owed: a village that has not placed it is not yet a recognised settlement.
+        BuildingKind.Barn or BuildingKind.TradingPost when TownHall is null =>
+            "Strangers do not trade with a homestead — the village needs its town hall standing first.",
+
         // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
         _ => WhyNoBridgeYet(kind),
     };
@@ -3820,6 +3850,13 @@ public sealed partial class SimWorld : IObstacles
             {
                 return known(maker);
             }
+        }
+
+        // ⭐ A good only a barn keeps waits on the barn (D590): hay, which nothing else may hold. By its row, so a
+        // modder's silage stored by barns alone waits too.
+        if (GoodsCatalog[goods].StoredBy is [StoreKind.Barn])
+        {
+            return known(BuildingKind.Barn);
         }
 
         return true;
@@ -11092,6 +11129,9 @@ public sealed partial class SimWorld : IObstacles
         LastKnowerIds = new int[TechniquesCatalog.Count];
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
+        TradeKeep = new StockLimits(GoodsCatalog.Count);
+        TradeBuy = new StockLimits(GoodsCatalog.Count);
+        NeighbourStocks = config.Neighbours.Select(_ => new NeighbourStock(GoodsCatalog.Count)).ToArray();
         _onTheGround = new int[GoodsCatalog.Count];
 
         // ⭐ THE PLAYER'S STARTING LIMITS, HELD BY THE SIM FROM THE FIRST TICK (D409). They lived
@@ -13762,6 +13802,21 @@ public sealed partial class SimWorld : IObstacles
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
+            ["trade_keep"] = TradeKeep.ToSave(),
+            ["trade_buy"] = TradeBuy.ToSave(),
+            ["boat"] = Boat is TradeBoat boat
+                ? new JsonObject
+                {
+                    ["neighbour"] = boat.NeighbourId,
+                    ["appears_at"] = SaveWriter.Hex(boat.AppearsAtTick),
+                    ["docks_at"] = SaveWriter.Hex(boat.DocksAtTick),
+                    ["leaves_at"] = SaveWriter.Hex(boat.LeavesAtTick),
+                }
+                : null,
+            ["boats_ever_came"] = BoatsEverCame,
+            ["neighbours"] = new JsonArray(NeighbourStocks
+                .Select(n => (JsonNode)new JsonObject { ["held"] = SaveWriter.Ints(n.Held), ["animals"] = n.Animals })
+                .ToArray()),
         };
     }
 
@@ -13930,6 +13985,41 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");
+
+        // Trade and the herd (D590, format 8).
+        TradeKeep.ReadSave(save, "trade_keep");
+        TradeBuy.ReadSave(save, "trade_buy");
+        if (save.NullableObject("boat") is SaveReader boat)
+        {
+            Boat = new TradeBoat
+            {
+                NeighbourId = boat.Int("neighbour"),
+                AppearsAtTick = boat.ULong("appears_at"),
+                DocksAtTick = boat.ULong("docks_at"),
+                LeavesAtTick = boat.ULong("leaves_at"),
+            };
+        }
+
+        BoatsEverCame = save.Int("boats_ever_came");
+        List<SaveReader> neighbours = save.Objects("neighbours").ToList();
+        if (neighbours.Count != NeighbourStocks.Count)
+        {
+            throw new SaveFormatException(
+                $"The save knows {neighbours.Count} neighbours and today's data has {NeighbourStocks.Count}.");
+        }
+
+        for (int i = 0; i < neighbours.Count; i++)
+        {
+            List<int> held = neighbours[i].Ints("held");
+            if (held.Count != NeighbourStocks[i].Held.Length)
+            {
+                throw new SaveFormatException(
+                    $"Neighbour {i} in the save holds {held.Count} goods and today's data has {NeighbourStocks[i].Held.Length}.");
+            }
+
+            held.CopyTo(NeighbourStocks[i].Held);
+            NeighbourStocks[i].Animals = neighbours[i].Int("animals");
+        }
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

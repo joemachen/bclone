@@ -2,7 +2,7 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** ✍️ **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588, 2026-10-16) — NOT BUILT.** Animals come
+**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). The herd lives in commit 2.** Animals come
 only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
 **§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
 later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.

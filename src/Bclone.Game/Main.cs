@@ -2075,6 +2075,12 @@ public partial class Main : Control
     /// <summary>True once the founders are gone, so the town hall has one (D252).</summary>
     private bool _foundersGone;
 
+    /// <summary>
+    /// True once the town hall stands — the sim's gate for the barn and the trading post (D590, `trade.md §4.1`),
+    /// latched like every learned building so the probe can pose it.
+    /// </summary>
+    private bool _hallTradeKnown;
+
     /// <summary>Every button on the strip, with what decides whether it is showing.</summary>
     /// <remarks>
     /// ⭐ <b>Built once and shown or hidden, never rebuilt.</b> Tearing the strip down on every
@@ -2410,6 +2416,14 @@ public partial class Main : Control
         if (_foundersGone != world.SaidTheFoundersAreGone)
         {
             _foundersGone = world.SaidTheFoundersAreGone;
+            RefreshTheStrip();
+        }
+
+        // The barn and the post wait for the hall to stand (D590) — the sim's `WhyNotYet`, latched here.
+        bool tradeKnown = world.IsUnlocked(BuildingKind.TradingPost);
+        if (_hallTradeKnown != tradeKnown)
+        {
+            _hallTradeKnown = tradeKnown;
             RefreshTheStrip();
         }
 
@@ -7765,6 +7779,11 @@ public partial class Main : Control
         BuildingKind.Bakery => _bakeryKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
+
+        // ⛔ THE BARN AND THE POST WAIT FOR THE TOWN HALL (D590) — without this arm the `_ => true` below lit a tab at
+        // the founding for buildings nobody may place (the probe's `filters:` line caught it). Their buttons come in
+        // commit 6 of `trade.md §11`.
+        BuildingKind.Barn or BuildingKind.TradingPost => _hallTradeKnown,
         _ => true,
     };
 

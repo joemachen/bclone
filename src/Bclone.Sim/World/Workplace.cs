@@ -174,6 +174,20 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 12, never inserted — hashed by position.</remarks>
     Baker = 12,
+
+    /// <summary>
+    /// Keep the herd: cut and carry hay in the growing seasons, feed it out in winter, cull above what the pasture
+    /// holds (D590, `specs/livestock.md §0`). Works at a barn.
+    /// </summary>
+    /// <remarks>⛔ Appended at 13. Asked for by nothing until the herd behaves (`trade.md §11` commit 3).</remarks>
+    Herdsman = 13,
+
+    /// <summary>
+    /// Carry what the village sells down to the trading post before a boat, and what it bought back to the stores
+    /// after (D590, `specs/trade.md §4.5`). Works at a trading post.
+    /// </summary>
+    /// <remarks>⛔ Appended at 14. Asked for by nothing until trade behaves (`trade.md §11` commit 4).</remarks>
+    Trader = 14,
 }
 
 /// <summary>
@@ -628,6 +642,18 @@ public sealed class Workplace
     /// </summary>
     public bool FieldProbeFailed { get; set; }
 
+    /// <summary>
+    /// How many head the herd on this barn has (D590, `livestock.md §0`: the herd lives on the barn). Zero on every
+    /// other workplace, and on a barn until a boat brings one.
+    /// </summary>
+    public int HerdHead { get; set; }
+
+    /// <summary>
+    /// The herd's growth toward its next head — an integer accumulator with a stated threshold (`livestock.md §6.2`),
+    /// stepped in commit 2.
+    /// </summary>
+    public int HerdGrowth { get; set; }
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village
@@ -765,6 +791,8 @@ public sealed class Workplace
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
         ["queue_rank"] = QueueRank,
+        ["herd_head"] = HerdHead,
+        ["herd_growth"] = HerdGrowth,
     };
 
     internal static Workplace FromSave(SaveReader save)
@@ -797,6 +825,8 @@ public sealed class Workplace
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),
             QueueRank = save.NullableInt("queue_rank"),
+            HerdHead = save.Int("herd_head"),
+            HerdGrowth = save.Int("herd_growth"),
         };
 
         workplace.Rename(save.NullableString("given_name"));

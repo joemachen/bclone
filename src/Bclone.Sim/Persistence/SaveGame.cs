@@ -45,8 +45,10 @@ public static class SaveGame
     /// knocked, the one waiting, the next knock's year, and when a villager came to the valley (`nomads.md §6`). 7 since
     /// D571: the longhouse removed — `longhouses` and `lodged_in` are gone and `nomads_enabled` (D570) is required; a
     /// format-6 save is refused rather than read with a thing missing. D572 dropped the waiting band's `band` key
-    /// without a bump: no build that wrote 7 ever reached Joe (D555's precedent — nothing shipped between).</remarks>
-    public const int Format = 7;
+    /// without a bump: no build that wrote 7 ever reached Joe (D555's precedent — nothing shipped between). 8 since D590:
+    /// trade and the herd — the post's standing orders, the boat, the boats that came, the neighbours' stocks, and a
+    /// workplace's herd (`trade.md §11` commit 1); every format-7 save Joe has is refused (no migrations before v1).</remarks>
+    public const int Format = 8;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

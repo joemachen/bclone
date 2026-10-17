@@ -36,7 +36,7 @@ public sealed class StartingStockLimitsTests
     {
         SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Load(), new InMemoryLogSink()).World;
 
-        var expected = new Dictionary<Goods, int>
+        var expected = new Dictionary<Goods, int?>
         {
             [Goods.Produce] = 2000,
             [Goods.Wheat] = 1000,
@@ -53,6 +53,10 @@ public sealed class StartingStockLimitsTests
             // The food chain (D522): flour by Joe's "200 for everything else", bread at wheat's own.
             [Goods.Flour] = 200,
             [Goods.Bread] = 1000,
+
+            // ⛔ Hay ships with NO limit (D590, `trade.md §11.1`): D522 moved the shipped golden by adding two starting
+            // limits, and a village with no barn must hash as it did.
+            [Goods.Hay] = null,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

@@ -117,8 +117,11 @@ public sealed class TechTreeTests
 
             // ⭐ And the mill's and the oven's goods wait on their buildings (D522).
             bool milled = goods is Goods.Flour or Goods.Bread;
+
+            // ⭐ And hay waits on the barn, which waits on the town hall (D590).
+            bool barned = goods == Goods.Hay;
             _output.WriteLine($"day one: {world.GoodsCatalog.NameOf(goods)} {(world.KnowsOf(goods) ? "known" : "unknown")}");
-            Assert.Equal((!forged || goods == Goods.Tools) && !milled, world.KnowsOf(goods));
+            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned, world.KnowsOf(goods));
         }
 
         world.IronEverDug = world.Config.SmithyUnlockIron;
@@ -130,6 +133,8 @@ public sealed class TechTreeTests
 
         // The mill and the bakery are learned together (Joe, D523), so flour and bread are known together.
         world.WheatEverReaped = world.Config.MillUnlockWheat;
+        Assert.False(world.KnowsOf(Goods.Hay), "Hay was known before the barn.");
+        world.TownHall = new TownHall { Position = Point.CentreOf(world.Map.FoundingSite), Name = "the hall", RaisedAtTick = 1 };
         Assert.All(Enumerable.Range(0, world.GoodsCatalog.Count), g => Assert.True(world.KnowsOf((Goods)g)));
     }
 

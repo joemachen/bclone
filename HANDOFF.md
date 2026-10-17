@@ -1,4 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D589 (THE TRADE SPEC, THE TRADE-AND-HERD PLAN, COMMIT 0 MEASURED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 1 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D590 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMIT 1 BUILT) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 2 OF `trade.md §11` (THE HERD LIVES). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D590: COMMIT 1 — THE ROWS AND THE STATE FOR TRADE AND THE HERD, NOTHING BEHAVES; SAVE FORMAT 8) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D590**, local. Hay (good 13, barn-only), the barn (23) and the trading post (24), the herdsman
+> (13) and the trader (14), one animal (*cattle*) and three neighbours are rows (`World/Region.cs`, `SimConfig`); the
+> post's orders (two `StockLimits`), the boat (three ticks), the boats that came, the neighbours' stocks and a barn's
+> herd are saved (**format 8 — every save Joe has is refused**) and hashed sparsely (tags 0x70–0x76). Both buildings wait
+> for the town hall in the sim (`WhyNotYet`) and the view (`EarnedYet` → `_hallTradeKnown`); hay is unknown until the
+> barn is. Nobody is asked to herd or trade. ⚠️ **Prices and neighbour sizes are provisional and labelled so.**
+>
+> **Verified:** suite **1700 / 0 / 5 of 1705 (7m48)**; view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, **no ⛔ or ❌**, `spoilers:` (hay, herdsman, trader hidden at the founding) / `filters:` / `new game:` / `tile
+> centres` ✅, bar height 151, `done.`; **goldens 362 → 362, none in the diff.** 11 mutants, 16 reds, no mutant uncaught
+> (one probe zero written down in D590).
+>
+> **▶️ NEXT: commit 2 — the herd lives** (growth, grazing, hay eaten in winter, starvation, the cull into meat and leather),
+> measured first by its own arms; the barn's room derived from the herd, not typed. ⏸️ **And a word Joe owes before commit
+> 6:** the marketer's plural is already *traders* (⏸️ OPEN below).
+>
+> **(the banner below is the state at D589)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D589: COMMIT 0 — THE HERD MEASURED) — ON WINDOWS.**
 >
@@ -7075,6 +7095,25 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D590 PAID FOR — A MODDED ROW IN A BUILT-IN'S SEAT, A FILTER BY ID, A DEFAULT THAT SAYS "KNOWN", AND A PROBE THAT HANGS
+
+- **A modded test row sitting at the next free id silently becomes the next built-in.** `ModdedGoodTests`' *pitch* was
+  id 13; the day hay took 13, the modded catalogue had no hay row and *pitch* answered for hay — the herdsman's
+  `limited_by: Hay` read pitch, and **nothing failed**. Only the jobs and buildings validators refuse a missing
+  built-in id; goods do not. When a built-in is appended, move every modded row above it in the same commit and grep
+  each modded file for the new id.
+- **A test that filters JSON lines by `"id": 14,` drops whatever else is 14.** The retired-longhouse test removed the
+  new *trader* job row along with the longhouse and failed on "missing id 14". Filter by name.
+- **The view's `_ => true` in `EarnedYet` makes every new building known.** A gated row with no button yet lit the
+  *Other* tab at the founding; the probe's `filters:` line saw it and no unit test could. Every new building row needs
+  its arm in `EarnedYet` the day the row lands, button or not.
+- **A failed game build hangs the headless probe instead of failing it** — Godot cannot find `Main`, prints one error
+  and waits forever. A name clash (`_tradeKnown` already existed as an array) did exactly that for ten minutes. Read the
+  game build's `Error(s)` before starting the probe; kill only *your* `--headless` Godot (check its command line).
+- **A probe check can carry a premise no good had broken yet.** `spoilers:` expected every newly learned good to appear on
+  the cart's card — true until hay, which only a barn holds. The check now asks only of goods the cart can hold; the
+  line above it already holds every row to `CanEverHold`, so nothing it guarded is lost.
+
 ## ⛔ THE TRAP D588 FOUND — A BLOCKED SPEC KEEPS ITS OLD PROMISES
 
 - **`livestock.md` sat blocked for eleven weeks and its safety claims aged in place.** *"Nobody can freeze doing it at the
@@ -7234,6 +7273,12 @@ Read `git status` after staging, every time.
   nudged a tenth of a tile).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **TWO TRADES WOULD BOTH BE "TRADERS" (D590).** The marketer's plural has been *traders* since D188 (a tail the doc
+  left as Joe's), and trade's new job is *trader* / *traders* (his D587 call 4). The Professions panel would list
+  "traders" twice once the view shows the trader (commit 6 of `trade.md §11`). Options: the marketer becomes
+  *marketers* (D188's own ruling was "marketer wins"), or the new job takes another name (*merchant*). Needed before
+  commit 6; nothing shows either word for the new job today.
 
 - ⏸️ **PATHS, OPTION C — STAGGERED HOUSE SITING, PARKED (D581, `path-shapes.md §4`).** Homes the sim sites set at varied
   offsets and small angles on their plots, so the gaps between them do not line up. Not built: Joe's grid was the per-tile

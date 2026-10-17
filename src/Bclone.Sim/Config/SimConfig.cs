@@ -1402,6 +1402,128 @@ public sealed record SimConfig
     public int BakeryCapacity { get; init; } = 2;
 
     // ---------------------------------------------------------------
+    //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
+    // ---------------------------------------------------------------
+    // ⚠️ PROVISIONAL, EVERY ONE, AND SAID SO: the rows need a price to exist, and nothing can raise either building
+    // until the view gives it a button (commit 6). The barn's room is derived from the herd in commit 2 and these are
+    // re-measured before Joe plays (`trade.md §11.3`). A mill's prices, the nearest building of their size.
+
+    /// <summary>Logs a barn takes to raise — timber, as a farmhouse is (provisional, D590).</summary>
+    [JsonPropertyName("barn_logs")]
+    public int BarnLogs { get; init; } = 40;
+
+    /// <summary>Ticks of a builder's work a barn takes (provisional, D590).</summary>
+    [JsonPropertyName("barn_work_ticks")]
+    public int BarnWorkTicks { get; init; } = 40;
+
+    /// <summary>How many herdsmen a barn seats (provisional, D590).</summary>
+    [JsonPropertyName("barn_capacity")]
+    public int BarnCapacity { get; init; } = 2;
+
+    /// <summary>How much hay a barn holds — stated until commit 2 derives it from the herd (provisional, D590).</summary>
+    [JsonPropertyName("barn_store_capacity")]
+    public int BarnStoreCapacity { get; init; } = 1200;
+
+    /// <summary>Logs a trading post takes to raise (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_logs")]
+    public int TradingPostLogs { get; init; } = 30;
+
+    /// <summary>Stone in a trading post — a quay to tie a boat to (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_stone")]
+    public int TradingPostStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a trading post takes (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_work_ticks")]
+    public int TradingPostWorkTicks { get; init; } = 40;
+
+    /// <summary>How many traders a trading post seats (Joe, D587 call 4: a trader job; one seat, provisional).</summary>
+    [JsonPropertyName("trading_post_capacity")]
+    public int TradingPostCapacity { get; init; } = 1;
+
+    /// <summary>How much a trading post holds, sold and bought together (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_store_capacity")]
+    public int TradingPostStoreCapacity { get; init; } = 800;
+
+    /// <summary>
+    /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
+    /// `TECH-EXAMPLE.md`'s list is added without restructuring.
+    /// </summary>
+    [JsonPropertyName("animals")]
+    public IReadOnlyList<AnimalRow> Animals { get; init; } = new[]
+    {
+        new AnimalRow { Id = 0, Name = "cattle", Plural = "cattle" },
+    };
+
+    /// <summary>
+    /// The region (Joe, D587: <b>three neighbours, with reasons</b>; `trade.md §4.2`) — and between them they make
+    /// every good the game has, and animals (call 5), so a boat can bring any of it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The sizes are provisional until commit 4 measures them; nothing reads them before then. ⭐ A good added
+    /// later joins a neighbour's <c>makes</c> the day its system lands (D587: never a good with no use yet).
+    /// </remarks>
+    [JsonPropertyName("neighbours")]
+    public IReadOnlyList<NeighbourRow> Neighbours { get; init; } = new[]
+    {
+        // Up the river: the hills — timber, stone, iron and what a smith makes of it, hides, and cattle.
+        new NeighbourRow
+        {
+            Id = 0,
+            Direction = NeighbourDirection.Upriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 200), new MaterialCost(World.Goods.Stone, 200),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Tools, 20),
+                new MaterialCost(World.Goods.IronTools, 20), new MaterialCost(World.Goods.Leather, 100),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 100), new MaterialCost(World.Goods.Fish, 100),
+                new MaterialCost(World.Goods.Firewood, 200),
+            },
+        },
+
+        // Down the river: the lowlands — grain, flour and bread, fish, forage and firewood.
+        new NeighbourRow
+        {
+            Id = 1,
+            Direction = NeighbourDirection.Downriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Produce, 200), new MaterialCost(World.Goods.Fish, 200),
+                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 100), new MaterialCost(World.Goods.Firewood, 200),
+            },
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 200), new MaterialCost(World.Goods.Stone, 200),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Meat, 100),
+            },
+        },
+
+        // Overland: the grazing country — meat, hides, hay and cattle; its caravan waits for carts (tier 2).
+        new NeighbourRow
+        {
+            Id = 2,
+            Direction = NeighbourDirection.Overland,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Meat, 200), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 20),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 100),
+                new MaterialCost(World.Goods.Wheat, 200), new MaterialCost(World.Goods.Stone, 100),
+            },
+        },
+    };
+
+    // ---------------------------------------------------------------
     //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
     // ---------------------------------------------------------------
 
@@ -2947,6 +3069,16 @@ public sealed record SimConfig
             // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
             Nutrition = BreadNutrition,
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Hay,
+            Category = World.GoodCategory.Materials,
+            Name = "hay",
+
+            // ⛔ ONLY A BARN (D590, `livestock.md §0`): D52 is the argument — a good that shares the warehouse is a
+            // shortage nobody can read. Nobody eats it but the herd.
+            StoredBy = new[] { StoreKind.Barn },
+        },
     };
 
     /// <summary>
@@ -3162,6 +3294,32 @@ public sealed record SimConfig
             // A met bread limit lets the oven go cold (D139).
             LimitedBy = World.Goods.Bread,
             UsesTool = true,
+        },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
+        // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
+        new JobRow
+        {
+            Id = (int)JobKind.Herdsman,
+            Name = "herdsman",
+            Plural = "herdsmen",
+            Doing = "keeping the herd",
+            WorksAt = BuildingKind.Barn,
+
+            // A met hay limit stops the cutting, as a met limit stops every trade (D139).
+            LimitedBy = World.Goods.Hay,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Trader,
+            Name = "trader",
+            Plural = "traders",
+            Doing = "trading at the post",
+            WorksAt = BuildingKind.TradingPost,
+
+            // ⚠️ Makes no good of its own, so nothing limits it — the marketer's shape. ⚠️ And the marketer's plural is
+            // *traders* too (D188, a tail that is Joe's): to settle before the view shows both (commit 6).
+            LimitedBy = null,
         },
     };
 
@@ -3636,6 +3794,40 @@ public sealed record SimConfig
             },
             WorkTicks = BakeryWorkTicks,
             Seats = BakeryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
+        // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Barn,
+            Name = "barn",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, BarnLogs) },
+            WorkTicks = BarnWorkTicks,
+            Seats = BarnCapacity,
+            Stores = StoreKind.Barn,
+            StoreCapacity = BarnStoreCapacity,
+            ExtentWidth = 3,
+            ExtentHeight = 2,
+        },
+
+        // On the river bank — the fishery's rule (`trade.md §4.1`). Its store takes only what the trader carries.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TradingPost,
+            Name = "trading post",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TradingPostLogs),
+                new MaterialCost(World.Goods.Stone, TradingPostStone),
+            },
+            WorkTicks = TradingPostWorkTicks,
+            Seats = TradingPostCapacity,
+            Stores = StoreKind.TradingPost,
+            StoreCapacity = TradingPostStoreCapacity,
+            MustTouch = Terrain.Water,
             ExtentWidth = 2,
             ExtentHeight = 1,
         },
@@ -5234,6 +5426,7 @@ public sealed record SimConfig
         ValidateCrops();
         ValidateJobs();
         ValidateBuildings();
+        ValidateTheRegion();
         TechTree.Validate(TechNodeRows);
         if (SmithyUnlockIron < 0)
         {
@@ -5279,6 +5472,61 @@ public sealed record SimConfig
     /// simply never appeared. <em>A plausible default, not a crash</em>, which is the shape of
     /// almost every near-miss in this project.
     /// </remarks>
+    /// <summary>
+    /// The animals and the neighbours (D590): ids unique, names given, goods the catalogue has, amounts that count.
+    /// </summary>
+    private void ValidateTheRegion()
+    {
+        var animalIds = new HashSet<int>();
+        for (int i = 0; i < Animals.Count; i++)
+        {
+            AnimalRow animal = Animals[i];
+            if (!animalIds.Add(animal.Id))
+            {
+                throw new SimConfigException($"animals[{i}] repeats id {animal.Id}.");
+            }
+
+            if (string.IsNullOrWhiteSpace(animal.Name) || string.IsNullOrWhiteSpace(animal.Plural))
+            {
+                throw new SimConfigException($"animals[{i}] (id {animal.Id}) needs a name and a plural.");
+            }
+        }
+
+        int goods = GoodsCatalog.Count;
+        var neighbourIds = new HashSet<int>();
+        for (int i = 0; i < Neighbours.Count; i++)
+        {
+            NeighbourRow neighbour = Neighbours[i];
+            if (!neighbourIds.Add(neighbour.Id))
+            {
+                throw new SimConfigException($"neighbours[{i}] repeats id {neighbour.Id}.");
+            }
+
+            if (!Enum.IsDefined(neighbour.Direction))
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) has no direction the game knows.");
+            }
+
+            if (neighbour.MakesAnimals < 0)
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) makes {neighbour.MakesAnimals} animals.");
+            }
+
+            foreach ((string list, IReadOnlyList<MaterialCost> rows) in new[] { ("makes", neighbour.Makes), ("wants", neighbour.Wants) })
+            {
+                foreach (MaterialCost row in rows)
+                {
+                    if ((int)row.Goods < 0 || (int)row.Goods >= goods || row.Amount < 1)
+                    {
+                        throw new SimConfigException(
+                            $"neighbours[{i}] (id {neighbour.Id}) {list} {row.Amount} of good {(int)row.Goods}: the good "
+                            + "must be one the catalogue has, and the amount at least one.");
+                    }
+                }
+            }
+        }
+    }
+
     private void ValidateTechniques()
     {
         if (Techniques is null)

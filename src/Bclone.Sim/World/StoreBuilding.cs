@@ -87,6 +87,18 @@ public enum StoreKind
     /// </para>
     /// </remarks>
     Pile = 4,
+
+    /// <summary>A barn — where the herd's hay is kept (D590, `livestock.md §0`). Hay is the only good it takes.</summary>
+    Barn = 5,
+
+    /// <summary>
+    /// A trading post — what the trader has carried down to sell, and what a boat left (D590, `trade.md §4.5`).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>No good names it in <c>stored_by</c></b>, so no hauler ever carries a load there on the way to the
+    /// nearest store; only the trader's errands fill and empty it.
+    /// </remarks>
+    TradingPost = 6,
 }
 
 /// <summary>
@@ -761,4 +773,14 @@ public enum Goods
     /// (<c>Villager.FullFor</c>); stored where food is stored, because the birth gate reads granaries.
     /// </remarks>
     Bread = 12,
+
+    /// <summary>
+    /// ⭐ <b>Hay</b> — cut on a barn's pasture in the growing seasons, fed to the herd in winter (D590,
+    /// `specs/livestock.md §0`).
+    /// </summary>
+    /// <remarks>
+    /// Kept only in a barn (D52: a good sharing a room is a shortage nobody can read), never eaten by a villager.
+    /// Ships with no starting limit, so no golden moves for it existing (`trade.md §11.1`). <b>Appended at 13.</b>
+    /// </remarks>
+    Hay = 13,
 }

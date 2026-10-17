@@ -359,6 +359,22 @@ public enum BuildingKind
     /// finished. Learned by crossings walked (<c>stone_bridge_unlock_crossings</c>). <b>Appended at 22.</b>
     /// </remarks>
     StoneBridge = 22,
+
+    /// <summary>
+    /// A barn — the herdsman's workplace, the hay store, and its painted ground the pasture (D590; Joe, D588:
+    /// *one barn*; `specs/livestock.md §0`).
+    /// </summary>
+    /// <remarks>Learned once the town hall stands, with the post. <b>Appended at 23.</b></remarks>
+    Barn = 23,
+
+    /// <summary>
+    /// A trading post on the river bank — where the trader carries the village's goods to sell and a boat docks
+    /// (D590, `specs/trade.md §4.1`).
+    /// </summary>
+    /// <remarks>
+    /// Must touch water (the fishery's rule); learned once the town hall stands (Joe, D587 call 1). <b>Appended at 24.</b>
+    /// </remarks>
+    TradingPost = 24,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>
