@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED. `slice/nomads` = D563–D583: JOE'S SIX NOTES (D568) — NOTES 2–5 BUILT AND PLAYED (D577 APPROVED); NOTE 1 ON ITS FIFTH PASS — THE PATHS DRAWN AS A NETWORK (D581) THAT GOES ROUND BUILDINGS (D582–D583) — ⏸️ JOE TO LOOK AGAIN, THEN MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED: THE NOMADS SLICE AND JOE'S SIX NOTES MERGED (D563–D584). NEXT IS JOE'S CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D584: THE NOMADS SLICE AND JOE'S SIX NOTES — MERGED AND PUSHED) — ON WINDOWS.**
+>
+> **`main` = D584, pushed.** Joe looked at D583 — the lane bending round the north side of the small store in
+> `thornfield-crow-birch-49` — and said *"merge and push"*. `slice/nomads` (D563–D584) is merged `--no-ff` into `main` and
+> pushed; `main` had not moved since D562, so the merge is the D583 tip exactly and its four checks stand (suite 1688 / 0 /
+> 5, view 0 warnings, probe 89 lines no ⛔, bar height 151, goldens 362 → 362). In it: bands and re-founding, nomads not
+> travellers, the camp named, the switch as the permission, the longhouse out (save format 7), the walk-in, the bridge's
+> news in the nomads' two-paragraph stop with its marks, every alert leaving the village at 1× (a Settings tick brings the
+> old speed back), and the paths drawn as a network that goes round buildings (`TrailNetwork`).
+>
+> **▶️ NEXT: Joe's call.** Nothing is queued. Parked and his: option C (staggered house siting, `path-shapes.md §4`), the
+> probe's `pause:` ❌ (D568, headless Esc), and everything in **⏸️ OPEN, AND JOE'S TO CALL** below. A new branch for
+> whatever he picks; never work on `main` directly.
+>
+> **(the banner below is the state at D583, before the merge)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D583: A LANE GOES ROUND A BUILDING, NOT CUT AT ITS WALLS; ⏸️ JOE TO LOOK AGAIN) — ON WINDOWS.**
 >
