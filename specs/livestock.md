@@ -4,7 +4,9 @@
 shelter-and-exposure slice.
 **Status:** ⛔ **specced and STILL BLOCKED — animals may only be acquired by trade (D61), and
 there is no trade.** ✍️ **Trade is specced now (D586, `trade.md`)**: it opens with the town hall (the last founder's
-death, Year 51 at the median), and whether animals ride in trade's first slice or follow it is `trade.md §3.2` call 5.
+death, Year 51 at the median). ⭐ **Joe (D587): trade and the herd are built together** — this spec's first slice
+(pasture, herd, hay, the barn) ships with trade's, and the first boat can bring a beast. ⚠️ Written 2026-08-01, before
+gridless, plots, condition and the armful: re-read against today's code before that build is planned.
 Everything below is still the design; §12.1 is the blocker. Slices
 in §11.
 

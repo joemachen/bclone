@@ -5,9 +5,10 @@ to the user until they trade for it"* — livestock is blocked on this), D252 (2
 founder's death), `buildings-plan.md §6` (gold cut: *"no combat, no score, no wealth condition"*), D546–D551 (bridges —
 a deck over the river), D553 call 6 (the workshop, carpenter and hammer: the follow-on carts wait for), D563–D584
 (nomads — the clock-by-hash and the walk-in from the valley's edge this copies), **D586 (Joe's calls for this spec,
-2026-10-16 — §3)**.
-**Status:** ✍️ **SPECCED, NOT BUILT (D586), on `slice/trade`.** Measured first (§8, `tools/harness/ZzTrade.cs`). **§3.2's
-calls are Joe's and open; no sim code until he answers them.** Owner: Joe + Claude Code.
+2026-10-16 — §3.1)**, **D587 (his answers to the nine calls, the same day — §3.2)**.
+**Status:** ✍️ **SPECCED, NOT BUILT, EVERY CALL ANSWERED (D586–D587), on `slice/trade`.** Measured first (§8,
+`tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**, so the first build carries `livestock.md`'s
+first slice; its plan comes next. Owner: Joe + Claude Code.
 
 ---
 
@@ -52,7 +53,8 @@ order.
 2. **Barter, no coin.** Goods for goods at a stated rate. `buildings-plan.md §6`'s cut of gold stands, and
    `tech-tree.md §9a`'s *"gold and barter value"* row is answered: barter.
 3. **Standing orders.** On the post's card the player sets, per good, *keep N, sell the rest* and *buy up to M*. The
-   village carries the goods; each visit settles; the player is told what changed hands. No trade screen.
+   village carries the goods; each visit settles; the player is told what changed hands. No per-visit trade screen
+   (D587 call 6 keeps it so: the post's window shows the boat in dock and can send it on, nothing more).
 4. **The unlock, in Joe's words:**
    - **The civic permission:** the town hall gift (the last founder's death, D252) — *"the village transitioning from
      a fragile homestead into an official, recognized settlement … granting the conceptual authorization for foreign
@@ -62,19 +64,22 @@ order.
    - **Tier 2:** once carts exist (the workshop + carpenter + hammer slice), *"another wheeled caravan type-trader
      should show up from off-map, and connect a major cart path from off-map leading to the town hall."*
 
-### 3.2 Open — Joe's to call (each with a recommendation)
+### 3.2 The nine calls — ANSWERED (2026-10-16, D587)
 
-| # | Question | Recommended | Why |
+Asked with recommendations (D586); his answers, and what each means for the build. Four needed one more question,
+asked the same day; those answers are in the last column.
+
+| # | Question | Joe's answer | So |
 |---|---|---|---|
-| 1 | Is the post learned when the hall is **owed** (the founder dies) or when it is **raised**? | **Raised** | Joe said *"once the Town Hall is built"*; a village that never places its hall has not become a recognised settlement |
-| 2 | How many neighbours? | **3** — two by the river (one upriver, one down), one overland that waits for tier 2 | §2.4's *"keep the region small and readable"*; one per direction a trader can come from |
-| 3 | How often does the boat come? | **Once in each of spring, summer and autumn; never in winter** | Seasonal rhythm the player learns (§0's *"winter is a rhythm"*); winter is already the season with nothing coming in |
-| 4 | Who works the post? | **A trader job (1 seat, 2 later)** that carries the goods to sell to the post before a visit and the bought goods to stores after — the marketer's machinery | §2.2: labour, not a click; a person the player can see doing it |
-| 5 | What can be bought first? ⭐ §8.2a: a played village at the hall's era already holds nearly every good at its limit | **Slice 1 buys goods the game already has** (useful to a village short of a seam or a harvest, and the cheapest way to prove the machinery); **the first new good is animals, built with `livestock.md`'s first slice right after** (D61's beast, bought) | Nothing bought may do nothing (§1.1), and an import of what the village already holds at its limit does nothing. The alternative is to build trade and the herd together as one slice — larger, but the first boat brings something new |
-| 6 | How is a visit told? | **A passing banner and a log line**, never a waiting pop-up: *"The boat from Ashford took 60 firewood and left 20 stone."* | Three visits a year at 4× would be a pop-up every few minutes; D578 brings every alert to 1× |
-| 7 | Do neighbours change over generations? | **Slowly: their wants drift with the seasons and the years they had; no events** | Traceable (§2.3): a rate moves because a neighbour's stock moved, never because a die was rolled |
-| 8 | The cart road (tier 2): laid at once, or **built** by the builders as a line of sites? | **Built**, over seasons, from the map's edge to the hall | Work the player watches; a road that appears is the sort of thing this project deletes |
-| 9 | Trade opens late (§8.2: the last founder dies in **Year 51** at the median, 22–59 for most valleys; Joe's played halls stand at Years 51, 85, 92). Keep it there? | **Keep it** — trade is a late-game answer to a full village | It is Joe's own design; the cost is that animals (D61) wait as long, about two generations. Said here so it is chosen, not discovered |
+| 1 | Post learned when the hall is owed, or raised? | **Raised** (*"yes"*) | Not on the build menu until the town hall stands |
+| 2 | How many neighbours? | **3** (*"yes"*) — upriver, downriver, overland | The overland one waits for carts (tier 2) |
+| 3 | How often does the boat come? | ***"every 2-3 years"*** | A clock by hash: the next visit 2 or 3 years on (§4.4). Rare, so each visit is an event |
+| 4 | Who works the post? | **A trader job** (*"yes"*) | The marketer's machinery (§4.5) |
+| 5 | What can be bought? | ***"a random assortment that includes everything that is or will be in the game - build trade and herd together"*** | Each boat brings an assortment from **every good the game has** — and each new good joins it the day its system is built (asked: *only goods in the game*, never a good that does nothing yet). **Trade and `livestock.md`'s first slice are one build**, so the first boat can bring animals (D61). "Random" is seeded: decided by hash, the same for the same seed (§4.3) |
+| 6 | How is a visit told and seen? | *"trade boat visibly sails down river from one direction or the other (should be able to come from both directions), passing banner and log line. boat stops at trading post for a reasonable amount of time to be noticed by player (will likely have to test) and then a log line announcing it is leaving and it sails down the river off-screen. Or the user can dismiss it in the trade window/screen and it will sail away sooner."* | The boat **sails on the river from either edge**, a passing banner and a log line when it arrives, **docks long enough to be noticed** (a number found in play), a log line as it leaves, and it sails off the far edge. **The post's window** (asked: the post's own window, not a per-visit screen) shows the boat in dock and has **Send the boat on** (§4.4) |
+| 7 | Do neighbours change? | (asked again, plainer) **Neighbours with reasons** | Each boat belongs to a neighbour with its own stock and needs; what it carries is what it has plenty of, its rates follow what it is short of, and the region panel says why (§4.2–4.3) |
+| 8 | The cart road | ***"carts will eventually automatically create pathways as they are used (like 100% immediate heatmap pathing vs. whatever the villagers have) so one pass in a direction by a cart makes a path. so the trading cart drives in from off screen and makes a path as it goes."*** | **No road sites.** A cart's single pass wears its tiles all the way to a path. Asked when it speeds walking: **drawn at once, faster at the next spring re-pricing**, the rule every path follows (D358) (§4.7) |
+| 9 | Keep trade at the hall (Year 51 at the median)? | **Yes** | Trade, and so animals, are late-game |
 
 ## 4. The rule
 
@@ -90,9 +95,12 @@ order.
 
 ### 4.2 The region
 
-- **Neighbours are rows** (`data/`), so a modder can add one: a name (from `town_names`, by hash), a direction
-  (*upriver*, *downriver*, *overland*), **what it makes** (goods it has plenty of) and **what it wants** (goods it lacks),
-  each with a size.
+- **Three neighbours** (call 2): one upriver, one downriver, one overland (tier 2). **Neighbours are rows** (`data/`),
+  so a modder can add one: a name (from `town_names`, by hash), a direction, **what it makes** (goods it has plenty of)
+  and **what it wants** (goods it lacks), each with a size.
+- ⭐ **Between them the three make every good the game has** (call 5: *"everything that is or will be in the game"*),
+  and animals. A good added later is given to a neighbour's row the day its system is built, so the region grows with
+  the game. ⛔ A good with no system yet is never offered (asked, D587).
 - **Each neighbour keeps a stock per good**, in integers, **stepped once at each season turn** — its makes add, its wants
   take away, clamped to its size. ⛔ Never per tick (CLAUDE.md: nothing derivable is rebuilt per tick, and nothing in the
   region changes between season turns).
@@ -106,17 +114,29 @@ order.
 - A neighbour **gives what it has plenty of for what it is short of**. The rate for a pair is derived from the two
   stocks against the neighbour's size, clamped to a band (e.g. 1:4 to 4:1), in integers.
 - **Said in words, with the reason:** *"Ashford is short of firewood after the winter: 3 firewood buys 1 stone."*
-- Rates change only at season turns, so a player who reads them in spring can plan the summer boat.
+- Rates change only at season turns, so the region panel can be read and planned against long before a boat comes.
+- ⭐ **What a boat carries — Joe's *"random assortment"* (call 5).** A boat brings a share of **what its neighbour has
+  plenty of on the day it sets out**, the share and the mix picked **by hash** of the seed, the neighbour and the visit
+  count — so it reads as chance, and the same seed brings the same boat. ⛔ Never an `Rng` draw: a cosmetic-looking
+  choice that drew from the stream would reshuffle every seed (D344's rule).
 
 ### 4.4 The boat (tier 1)
 
-- **A clock by hash, never a draw** (the knock's shape): a boat from each river neighbour once in each of spring,
-  summer and autumn (call 3), on a day from a hash of the seed, the neighbour and the visit count.
-- **It comes along the river from the neighbour's edge** — upriver from one edge, downriver from the other. The sim
-  decides the docking day and settles there; **the view draws the boat on the water from the edge to the post, view
-  only**, as the walk-in draws the nomads (D573).
-- **It docks for a day, settles the standing orders, and leaves.** Nothing is lost if the post is empty: the boat says
-  it called and found nothing to take.
+- **A clock by hash, never a draw** (the knock's shape): **one boat every 2 or 3 years** (call 3), the gap and the day
+  from a hash of the seed and the visit count, landing in spring, summer or autumn. ⚠️ The season window is decided for
+  Joe, to overrule in play. The first boat comes 2–3 years after the post stands.
+- **From either direction** (call 6): each visit's neighbour, upriver or downriver, is picked by the same hash, so a
+  village sees boats from both.
+- **It sails.** A boat is **sim state with three ticks** — it appears at its neighbour's map edge, docks at the post,
+  leaves — and its place on the water between them is **derived** from the ticks and the river's course (nothing is
+  stepped per tick). The view draws it sailing the river from its edge to the post, and on past the post off the far
+  edge when it leaves.
+- **It is told** (call 6): a passing banner and a log line when it comes into view; a log line when it leaves.
+- **It docks long enough to be noticed** (call 6), a number Joe finds in play: `trade_boat_dock_days` in
+  `data/sim.config.json`. It settles the standing orders the day it docks.
+- **Send the boat on** (call 6): a button in the post's window lets it leave sooner — a player input like any other,
+  so it is in the sim and the hash (its leaving tick moves), never a view-only trick.
+- Nothing is lost if the post is empty: the boat says it called and found nothing to take.
 
 ### 4.5 Standing orders and the trader
 
@@ -126,30 +146,40 @@ order.
   after — the marketer's two states, re-used. A load to the post is a load **to a store** (D385).
 - **At the visit:** the boat takes what is at the post, up to its hold, at the day's rate, and leaves what the
   orders asked for, as far as its neighbour has plenty. Both halves are integers; a remainder stays at the post.
-- **Told** (call 6): a passing banner and a log line naming the neighbour, what went and what came.
+- **Told** (call 6): what went and what came is the docking log line: *"The boat from Ashford took 60 firewood and left
+  20 stone and two oxen."*
+- **The post's window** (call 6): the standing orders, the boat in dock and what it carries, when the next boat is due
+  as far as the post knows (*"no boat is expected before the spring after next"*), and **Send the boat on**.
 
-### 4.6 What is traded first (call 5)
+### 4.6 What is traded (call 5)
 
 - **Out:** anything the village makes. Firewood is the first named (D29); §8.2a finds a played village at the hall's era
   holding nearly every good at its limit, so there is always something to sell.
-- **In (slice 1):** goods the game already uses — the answer for a valley short of a seam or a harvest.
-- **In (next):** ⛔ **no new good arrives without the system that uses it** — animals with `livestock.md`'s pasture and
-  barn first (D61), then salt with salting, wool with weaving. Call 5 decides whether animals ride in slice 1.
+- **In:** whatever the boat carries (§4.3) — any good the game has, **and animals**. ⭐ **Trade and the herd are one
+  build** (call 5): `livestock.md`'s first slice (pasture, herd, hay and the barn) ships with trade's first slice, so
+  D61's *"until they trade for it"* is answered by the first boat that can bring a beast. A bought animal is landed at
+  the post and walks to the pasture; with no pasture painted, a *buy* order for animals cannot be set and the card
+  says why.
+- ⛔ **No good arrives without the system that uses it** (asked, D587): salt, wool and the rest join the region the day
+  their systems do.
 
-### 4.7 Tier 2 — carts, the caravan and the cart road
+### 4.7 Tier 2 — carts, the caravan and the cart path
 
 - ⛔ **Blocked on carts**, which need the workshop + carpenter + hammer slice (D553 call 6), unbuilt.
-- When carts are learned: **the overland neighbour's caravan** comes from the map edge its road meets, on the boat's
-  clock, to the town hall; and **a cart road** is laid from that edge to the hall — **built by the builders as a line of
-  road sites** (call 8), a road tile costing less than packed ground **in the one cost field** (§2.6's paving half;
-  D358's 9 / 8 against grass's 10). ⚠️ Routes change, so the economy moves and the goldens move once, deliberately,
-  measured first.
+- ⭐ **A cart makes its path as it drives** (call 8: *"one pass in a direction by a cart makes a path"*). A cart's step
+  treads its tile **all the way to a path at once** — the wear a villager's thousand steps would give. No road sites.
+- ⚠️ **Drawn at once, faster next spring** (asked, D587): the path shows the moment the cart passes; its cost enters the
+  one field at the next spring re-pricing (D358), the same rule as every path. ⛔ Never a re-price per pass: every cost
+  change clears every flow field, and village carts will drive daily.
+- When carts are learned: **the overland neighbour's caravan** drives in from off the map, on the boat's clock, to the
+  town hall, and **its pass lays the path** from the edge to the hall. ⚠️ Routes change, so the economy moves and the
+  goldens move once, deliberately, measured first.
 
 ### 4.8 Not in this spec
 
 - Coin, gold, a wealth score — cut (§3.1 call 2).
 - Raids, bandits, piracy, tolls by force — **no combat** (Non-Negotiable 3).
-- A haggling screen or per-visit choices — standing orders only (§3.1 call 3).
+- A haggling screen or per-visit choices — standing orders only (§3.1 call 3); the post's window can only send a boat on.
 - Sending a youth away to learn (`tech-tree.md`'s IMPORT route) — a later slice that can ride on the region.
 - Lakes, docks on a lake, sea trade.
 
@@ -168,14 +198,18 @@ order.
 | Standing orders | ✅ | ✅ | — | the post's card |
 | Each neighbour's stock | ✅ | ✅ | — | region panel |
 | Rates | ⛔ derived | ⛔ | — | region panel, in words |
-| The next visit's day | ⛔ derived from the clock | ⛔ | — | the post's card: *"the Ashford boat is due in summer"* |
-| The boat on the river | ⛔ view only | ⛔ | ✅ | — |
-| A visit's settlement | ✅ (the goods moved) | ✅ | — | banner + log |
+| The next visit's day | ⛔ derived from the clock | ⛔ | — | the post's window |
+| A boat (neighbour, appear / dock / leave ticks) | ✅ | ✅ | — | banner + log on coming and going |
+| A boat's place on the river | ⛔ derived from its ticks | ⛔ | ✅ | — |
+| *Send the boat on* | ✅ (the leave tick moves) | ✅ | — | the post's window |
+| A visit's settlement | ✅ (the goods moved) | ✅ | — | the docking log line |
+| The herd (with `livestock.md`) | ✅ | ✅ | ✅ | its own spec |
 
 ## 7. Edge cases and failure modes
 
 - **The post is cut off** (no route from the village): refused in words, as every building is.
-- **Winter:** no boat; orders wait. **A village paused** waits too — a visit is a tick, not a clock.
+- **Winter:** no boat sets out; orders wait. **A village paused** waits too — a visit is a tick, not a clock.
+- **A boat in dock when the village is saved:** saved with its ticks, and sails on from where it was when loaded.
 - **The village dies:** the post stands as a ruin like everything else (D555); re-founders (D567) inherit it and its
   orders reset.
 - **A neighbour has nothing to give:** the boat takes nothing either. No debt, no credit.
@@ -226,7 +260,7 @@ The four that reached the hall's era (Joe's own play, read from copies, never th
 ⭐ **A played village at the hall's era holds nearly everything it makes at its limit.** So trade has a great deal to
 **sell** — and, if it may only **buy** goods the game already has (call 5), almost nothing worth buying: the village
 already has them, and the limit stops production of each. **The import side's payoff is new goods, and the first new
-good with a waiting system is animals (D61, `livestock.md`).** That is why call 5 is open, not settled (§3.2).
+good with a waiting system is animals (D61, `livestock.md`).** That is what call 5 turned on; Joe answered it (D587): trade and the herd are one build (§3.2).
 
 The 36 younger villages (Years 1–23) lean the same way at a smaller size: from about Year 7 most sit at or near their
 limits for forage, logs and firewood, and those with a fishery for fish.
@@ -241,13 +275,20 @@ limits for forage, logs and firewood, and those with a fishery for fish.
 
 ## 9. Slices (each playable; each its own commit, red-first, red-checked and counted — D326)
 
-1. **The post and one boat.** The row, the unlock on the raised hall, standing orders on the card, the trader, one
-   river neighbour with fixed rates, the boat's clock and settlement, the banner. Sim and view; save format 8.
-2. **The region.** Three neighbours, stocks stepped at season turns, rates that move, the region panel.
-3. **The boat on the water.** The view draws it from the edge to the post (the walk-in's shape).
-4. **Tier 2** — after the workshop slice: the caravan and the cart road.
-5. **New goods with their systems** — animals with `livestock.md` (D61), then salt, wool and the rest as each system
-   lands.
+⭐ Call 5 makes the first build **trade and the herd together**. It is still built as separate commits, each green on
+its own, and played as one:
+
+1. **The post and the boat.** The row, the unlock on the raised hall, standing orders on the card, the trader, the two
+   river neighbours with their stocks and rates, the boat's clock (every 2–3 years, either direction), its three
+   ticks, settlement, *Send the boat on*, the banner and log lines, the post's window. Sim and view; save format 8.
+2. **The boat on the water.** The view draws it sailing from its edge to the post and on off the far edge.
+3. **The herd** — `livestock.md`'s first slice (pasture, herd, hay, the barn), re-read against today's code first (it
+   was written 2026-08-01, before gridless, plots, condition and the armful), with animals in the region's goods.
+4. **The region panel** — each neighbour, its plenty and its wants, its rates in words.
+5. **Tier 2** — after the workshop slice: carts, the caravan, and paths made by a cart's pass.
+6. **New goods join the region** as each of their systems lands (salt, wool and the rest).
+
+Slices 1–4 are played together before `slice/trade` merges.
 
 ## 10. Definition of Done (per slice)
 

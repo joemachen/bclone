@@ -1,4 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586 (THE TRADE SPEC) ON TOP OF IT — BOTH LOCAL, UNMERGED. ⏸️ JOE ANSWERS `trade.md §3.2`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D587 (THE TRADE SPEC, EVERY CALL ANSWERED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: PLAN THE FIRST BUILD — TRADE AND THE HERD TOGETHER. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D587: JOE ANSWERED TRADE'S NINE CALLS — TRADE AND THE HERD ARE ONE BUILD) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** = D585, **`slice/trade`** = D585 + D586 + **D587**. Both local, not
+> pushed, not merged. `specs/trade.md §3.2` now holds his answers: a post learned once the hall stands; three neighbours
+> with reasons; **a boat every 2–3 years from either river edge, seen sailing, docked long enough to notice
+> (`trade_boat_dock_days`, his to tune in play), sent on from the post's window**; a seeded assortment of every good the
+> game has (never one with no system yet); a trader job; **trade and `livestock.md`'s first slice built together**; a
+> cart's pass makes a path (drawn at once, faster next spring). Docs only; no code changed.
+>
+> **▶️ NEXT: plan the first build** (`trade.md §9` slices 1–4). ⚠️ **Re-read `livestock.md` against today's code first**:
+> it was written 2026-08-01, before gridless, plots, building condition and the armful, and the herd is half of this
+> build. Tests first; the boat is sim state with three ticks and a derived place on the water — never stepped per tick.
+> `slice/pause-probe` still waits on Joe's word to merge.
+>
+> **(the banner below is the state at D586)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D586: TRADE — THE LIVING REGION, SPECCED AND MEASURED, NOT BUILT; ⏸️ NINE CALLS ARE JOE'S) — ON WINDOWS.**
 >
