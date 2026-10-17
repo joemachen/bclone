@@ -125,17 +125,9 @@ public partial class Main
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
 
-        /// <summary>The post's window (D596): what its orders will do, the boat, and the verdict of the last order set.</summary>
+        /// <summary>What the post's orders will do (D596) — the orders themselves are the post's window (D597).</summary>
         public VBoxContainer? PostRow { get; set; }
         public Label? PostNote { get; set; }
-        public Label? PostVerdict { get; set; }
-        public Label? BoatLine { get; set; }
-        public Button? SendOn { get; set; }
-
-        /// <summary>One row a good: what the village holds, the order's kind (— / sell above / buy up to) and its number.</summary>
-        public List<(Goods Goods, HBoxContainer Row, Label Held, OptionButton Order, SpinBox Amount)> Orders { get; } = new();
-        public CheckBox? HeadOn { get; set; }
-        public SpinBox? HeadAmount { get; set; }
     }
 
     /// <summary>
@@ -542,7 +534,17 @@ public partial class Main
             pin.TooltipText = on ? "Pinned — stays when you click elsewhere" : "Pin: keep this card when you click elsewhere";
         };
         close.Pressed += () => CloseCard(card);
-        records.Pressed += OpenTheRecords;
+        records.Pressed += () =>
+        {
+            if (card.Subject.Kind == CardKind.Workplace)
+            {
+                OpenThePostsWindow(card.Subject.Id);
+            }
+            else
+            {
+                OpenTheRecords();
+            }
+        };
         edit.Pressed += () =>
         {
             rename.Text = card.Title.Text;
@@ -633,6 +635,7 @@ public partial class Main
 
     private void RefreshCards(SimWorld world)
     {
+        RefreshThePostsWindow(world);
         for (int i = _cards.Count - 1; i >= 0; i--)
         {
             Card card = _cards[i];
@@ -865,7 +868,9 @@ public partial class Main
                 var later = new Button { Text = "▼ Later" };
                 later.Pressed += () => Act(card, () => MoveSelectedInQueue(+1));
                 queueControls.AddChild(later);
-                BuildThePostsWindow(card, world, body, c);
+                // What the post's orders will do (D596); the orders are its window, opened from the card (D597).
+                c.PostNote = Muted(string.Empty);
+                (c.PostRow, _) = InspectorRow(body, c.PostNote);
                 break;
             }
 
@@ -988,7 +993,7 @@ public partial class Main
                 c.PostRow!.Visible = built && place.Kind == JobKind.Merchant;
                 if (c.PostRow.Visible)
                 {
-                    ShowThePostsWindow(world, c);
+                    c.PostNote!.Text = world.SayWhatThePostWillDo();
                 }
 
                 break;
@@ -1255,7 +1260,8 @@ public partial class Main
                     : $"Working — {place.WorkerIds.Count} of {place.Places} at it."));
 
             card.WorkersRow.Visible = true;
-            card.WorkersLabel.Text = ProfessionName(world, place.Kind) + "s";
+            // The catalogue's plural (D597 — the barn's card read "Herdsmans").
+            card.WorkersLabel.Text = Titled(world.JobsCatalog.PluralOf(place.Kind));
             card.Workers.Text = $"{place.WorkerIds.Count} / {place.Places}";
 
             // ⭐ WHAT IT HOLDS, GOOD BY GOOD (D422, Joe's D421 note: the lodge read *"18 of 2,700 hel…"*,
@@ -1290,8 +1296,13 @@ public partial class Main
                 Status(card, working: world.BoatIsDocked || world.TradeKeep.AnySet || world.TradeBuy.AnySet, world.SayWhenTheBoatIsDue());
                 (string atPost, string atPostNames) = WhatItHolds(world, post.Store, caption => FitsItsCell(card, card.Keys[0], caption));
                 Number(card, 0, atPost, atPostNames == "held here" ? "at the post" : atPostNames);
-                Number(card, 1, $"{OrdersSet(world.TradeKeep, world)} · {OrdersSet(world.TradeBuy, world)}", "selling · buying");
-                Number(card, 2, $"{world.BoatsEverCame}", world.BoatsEverCame == 1 ? "boat has come" : "boats have come");
+                Number(card, 1, $"{OrdersSet(world.TradeKeep, world)} · {OrdersSet(world.TradeBuy, world)}", "sell · buy");
+                Number(card, 2, $"{world.BoatsEverCame}", "boats came");
+
+                // ⭐ The orders are the post's window (D597, Joe: "way too long… multiple columns"); the hall's records
+                // button is the card's one button, so it is this card's too.
+                card.Records.Text = "Open the post's window";
+                card.Records.Visible = true;
             }
         }
 
@@ -1339,201 +1350,6 @@ public partial class Main
         }
 
         return set;
-    }
-
-    /// <summary>The order dropdown's items, by index.</summary>
-    private const int NoOrder = 0;
-    private const int SellAbove = 1;
-    private const int BuyUpTo = 2;
-
-    /// <summary>
-    /// ⭐ The post's window (D596, `trade.md §4.5`; Joe, D587 call 6), built into the post's Settings fold: what its orders
-    /// will do (Joe, D596: a keep alone sells nothing — the window says to set what to buy), the boat and <i>Send the boat
-    /// on</i>, one row a good — <b>one dropdown, so a good is bought or sold, never both</b> — and the beasts.
-    /// </summary>
-    private void BuildThePostsWindow(Card card, SimWorld world, VBoxContainer body, CardControls c)
-    {
-        c.PostNote = Muted(string.Empty);
-        (c.PostRow, HFlowContainer boatControls) = InspectorRow(body, c.PostNote);
-        c.BoatLine = Wrapped(Muted(string.Empty));
-        boatControls.AddChild(c.BoatLine);
-        c.SendOn = new Button { Text = "Send the boat on" };
-        c.SendOn.Pressed += () => Act(card, () => SayTheVerdict(card, _loop.World.SendTheBoatOn()));
-        boatControls.AddChild(c.SendOn);
-        c.PostVerdict = Wrapped(Muted(string.Empty));
-        c.PostVerdict.Visible = false;
-        c.PostRow.AddChild(c.PostVerdict);
-
-        for (int g = 0; g < world.GoodsCatalog.Count; g++)
-        {
-            var goods = (Goods)g;
-            var row = new HBoxContainer { Visible = false };
-            row.AddThemeConstantOverride("separation", 4);
-            row.AddChild(Chip(ChipColour(goods)));
-            Label name = Body(GoodsName(world, goods));
-            name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            name.ClipText = true;
-            name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-            row.AddChild(name);
-            Label held = Amount();
-            held.TooltipText = $"what the village holds of {GoodsName(world, goods)}, not counting the post";
-            row.AddChild(held);
-            var order = new OptionButton { FitToLongestItem = false, CustomMinimumSize = new Vector2(84, 0), ClipText = true };
-            order.AddItem("—", NoOrder);
-            order.AddItem("sell above", SellAbove);
-            order.AddItem("buy up to", BuyUpTo);
-            row.AddChild(order);
-            var amount = new SpinBox { MinValue = 0, MaxValue = 100_000, Step = 10, CustomMinimumSize = new Vector2(64, 0) };
-            row.AddChild(amount);
-            order.ItemSelected += index => Act(card, () => SetTheOrder(card, goods, (int)index, (int)amount.Value));
-            amount.ValueChanged += value => Act(card, () => SetTheOrder(card, goods, order.Selected, (int)value));
-            c.PostRow.AddChild(row);
-            c.Orders.Add((goods, row, held, order, amount));
-        }
-
-        // The beasts' row, a good's shape (D596): their name, then the order and its number in head.
-        var beasts = new HBoxContainer();
-        beasts.AddThemeConstantOverride("separation", 4);
-        Label herd = Body(BeastsCaption(world));
-        herd.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        herd.ClipText = true;
-        herd.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-        beasts.AddChild(herd);
-        c.HeadOn = new CheckBox { Text = "buy up to", TooltipText = "head of cattle the village's herds should hold" };
-        c.HeadAmount = new SpinBox { MinValue = 0, MaxValue = 1_000, Step = 1, CustomMinimumSize = new Vector2(74, 0) };
-        c.HeadOn.Toggled += on => Act(card, () => SayTheVerdict(card, _loop.World.SetTradeBuyHead(on ? (int)c.HeadAmount.Value : null)));
-        c.HeadAmount.ValueChanged += value => Act(card, () =>
-        {
-            if (_loop.World.TradeBuyHead is not null)
-            {
-                SayTheVerdict(card, _loop.World.SetTradeBuyHead((int)value));
-            }
-        });
-        beasts.AddChild(c.HeadOn);
-        beasts.AddChild(c.HeadAmount);
-        c.PostRow.AddChild(beasts);
-    }
-
-    private static string BeastsCaption(SimWorld world) =>
-        world.Config.Animals.Count == 0 ? "beasts" : world.Config.Animals[0].Plural;
-
-    /// <summary>Set one good's order from its row: the dropdown's kind and the row's number (D596).</summary>
-    private void SetTheOrder(Card card, Goods goods, int kind, int amount)
-    {
-        SimWorld world = _loop.World;
-        PlacementVerdict verdict = kind switch
-        {
-            SellAbove => world.SetTradeBuy(goods, null) is var cleared && cleared.Allowed ? world.SetTradeKeep(goods, amount) : cleared,
-            BuyUpTo => world.SetTradeKeep(goods, null) is var cleared && cleared.Allowed ? world.SetTradeBuy(goods, amount) : cleared,
-            _ => Both(world.SetTradeKeep(goods, null), world.SetTradeBuy(goods, null)),
-        };
-        SayTheVerdict(card, verdict);
-
-        static PlacementVerdict Both(PlacementVerdict keep, PlacementVerdict buy) => keep.Allowed ? buy : keep;
-    }
-
-    /// <summary>The last order's refusal or warning, under the window's sentence — empty when it was simply done.</summary>
-    private static void SayTheVerdict(Card card, PlacementVerdict verdict)
-    {
-        if (card.Controls.PostVerdict is not Label said)
-        {
-            return;
-        }
-
-        said.Text = !verdict.Allowed ? verdict.Reason : verdict.Warning;
-        said.Visible = said.Text.Length > 0;
-    }
-
-    /// <summary>One good's line in the post's window.</summary>
-    private readonly record struct OrderFacts(bool Shown, int Held, int? Keep, int? Buy, string Waits);
-
-    /// <summary>What the post's window says — read from the sim once, written by <see cref="WriteThePostsWindow"/>.</summary>
-    private readonly record struct PostFacts(string Note, string BoatLine, bool Docked, OrderFacts[] Orders, int? Head);
-
-    /// <summary>Write the post's window as the village stands.</summary>
-    private void ShowThePostsWindow(SimWorld world, CardControls c)
-    {
-        var orders = new OrderFacts[c.Orders.Count];
-        for (int i = 0; i < c.Orders.Count; i++)
-        {
-            Goods goods = c.Orders[i].Goods;
-            int? keep = world.TradeKeep.For(goods), buy = world.TradeBuy.For(goods);
-            orders[i] = new OrderFacts(
-                GoodKnown(goods) || keep is not null || buy is not null,
-                world.InStores(goods),
-                keep,
-                buy,
-                buy is not null && !world.ABoatCanBring(goods) ? $"No boat brings {GoodsName(world, goods)} — the order waits for carts." : string.Empty);
-        }
-
-        string due = world.SayWhenTheBoatIsDue();
-        string boatLine = world.Boat is TradeBoat boat && world.Tick >= boat.AppearsAtTick && world.Tick <= boat.LeavesAtTick
-            ? $"{due} It carries {WhatTheBoatCarries(world, boat)}."
-            : due;
-        WriteThePostsWindow(c, new PostFacts(world.SayWhatThePostWillDo(), boatLine, world.BoatIsDocked, orders, world.TradeBuyHead));
-    }
-
-    private static void WriteThePostsWindow(CardControls c, PostFacts f)
-    {
-        c.PostNote!.Text = f.Note;
-        c.SendOn!.Disabled = !f.Docked;
-        c.SendOn.TooltipText = f.Docked ? "The boat leaves on the next tick." : "No boat is tied up at the post.";
-        c.BoatLine!.Text = f.BoatLine;
-
-        for (int i = 0; i < c.Orders.Count; i++)
-        {
-            (Goods _, HBoxContainer row, Label held, OptionButton order, SpinBox amount) = c.Orders[i];
-            OrderFacts o = f.Orders[i];
-            row.Visible = o.Shown;
-            if (!o.Shown)
-            {
-                continue;
-            }
-
-            held.Text = o.Held.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-            int kind = o.Keep is not null ? SellAbove : o.Buy is not null ? BuyUpTo : NoOrder;
-            if (order.Selected != kind)
-            {
-                order.Select(kind);
-            }
-
-            if ((o.Keep ?? o.Buy) is int set)
-            {
-                amount.SetValueNoSignal(set);
-            }
-
-            amount.Editable = kind != NoOrder;
-            order.TooltipText = o.Waits;
-        }
-
-        c.HeadOn!.SetPressedNoSignal(f.Head is not null);
-        if (f.Head is int head)
-        {
-            c.HeadAmount!.SetValueNoSignal(head);
-        }
-
-        c.HeadAmount!.Editable = f.Head is not null;
-    }
-
-    /// <summary>What a boat on the river carries, in words — its cargo, derived (`SimWorld.CargoOf`).</summary>
-    private static string WhatTheBoatCarries(SimWorld world, TradeBoat boat)
-    {
-        (int[] goods, int animals) = world.CargoOf(boat);
-        var parts = new List<string>();
-        for (int g = 0; g < goods.Length; g++)
-        {
-            if (goods[g] > 0)
-            {
-                parts.Add($"{goods[g]:N0} {world.GoodsCatalog.NameOf((Goods)g)}");
-            }
-        }
-
-        if (animals > 0 && world.Config.Animals.Count > 0)
-        {
-            parts.Add($"{animals} {(animals == 1 ? world.Config.Animals[0].Name : world.Config.Animals[0].Plural)}");
-        }
-
-        return parts.Count == 0 ? "nothing" : string.Join(", ", parts);
     }
 
     private static string Workers(SimWorld world, Workplace place)
@@ -2295,6 +2111,7 @@ public partial class Main
         // The caption's sentence became the button (D397): the records are what it opens.
         card.Caption.Text = string.Empty;
         card.Caption.TooltipText = string.Empty;
+        card.Records.Text = "View records";
         card.Records.Visible = true;
     }
 

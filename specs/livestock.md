@@ -99,6 +99,17 @@ the barn's room derived."*
 
 ---
 
+
+## 0.2 The fenced pasture — Joe's calls (D597, 2026-10-17); the spec is the next piece
+
+Joe, after playing View I: *"when the player places/gives the ground for a barn, it should trigger a builder to build a
+fence around that area with an entrance/exit. once painted it has to be completely unpainted (and demolished) and then
+repainted to created new/bigger pastures."* His calls, asked the same day:
+- **A *Fence it* button** on the barn's card: paint and repaint freely; the button locks the ground and queues a fence site.
+- **The fence blocks walking except at its gate** — in the one shared cost field (D404's walls).
+- **Logs by the fence's length**, measured against hall-era holdings before a number is typed.
+- To change a pasture: take the fence down (the ground is unpainted), then repaint. ⚠️ Not built yet.
+
 ## 1. Goal
 
 A **herd of animals on painted pasture**, kept alive across generations by hay cut the

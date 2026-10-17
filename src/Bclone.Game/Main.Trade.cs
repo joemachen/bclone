@@ -107,28 +107,24 @@ public partial class Main
     }
 
     /// <summary>
-    /// <c>post:</c> — the post's window posed at its fullest fits a card and reads its orders back; then its real controls
-    /// against the real world: a good's dropdown sells, buys and clears it (never both at once), <i>Send the boat on</i>
-    /// with no boat docked says why, and an order for beasts with no pasture is refused with the reason.
+    /// <c>post:</c> — the post's window (D597) posed at its fullest: two columns, <b>every good's name showing in words</b>
+    /// (Joe: <i>"the colors … dont tell me anything. they need text labels"</i> — D596's rows clipped every name to nothing,
+    /// and this line measured only widths, so it passed), the window inside the game's, its orders read back; then its
+    /// real controls against the real world: a good's dropdown sells, buys and clears it (never both at once), <i>Send the
+    /// boat on</i> with no boat docked says why, and an order for beasts with no pasture is refused with the reason.
     /// </summary>
     private string ThePostsWindowWorks()
     {
-        var faults = new List<string>();
         SimWorld world = _loop.World;
-        string? fault = WithAPosedCard(card =>
+        PostWindow w = EnsureThePostsWindow();
+        bool wasOpen = w.Panel.Visible;
+        w.Panel.Visible = true;
+        try
         {
-            CardControls c = card.Controls;
-            if (c.PostRow is null || c.Orders.Count != world.GoodsCatalog.Count)
-            {
-                return "a workplace card has no post's window to pose";
-            }
-
-            card.Settings.Visible = true;
-            c.PostRow.Visible = true;
-            var orders = new OrderFacts[c.Orders.Count];
+            var orders = new OrderFacts[w.Orders.Count];
             for (int i = 0; i < orders.Length; i++)
             {
-                Goods goods = c.Orders[i].Goods;
+                Goods goods = w.Orders[i].Goods;
                 orders[i] = new OrderFacts(
                     true,
                     123_456,
@@ -137,7 +133,8 @@ public partial class Main
                     goods == Goods.Stone ? "No boat brings stone — the order waits for carts." : string.Empty);
             }
 
-            WriteThePostsWindow(c, new PostFacts(
+            WriteThePostsWindow(w, new PostFacts(
+                new string('P', SimWorld.NameLengthLimit),
                 "The merchant carries what is above each keep down to the post; the next boat takes enough of it to pay for what you asked.",
                 "The boat from Ashford is tied up at the post for 10 more days. It carries 1,234 stone, 56 leather, 7 iron tools and 3 cattle.",
                 true,
@@ -145,20 +142,26 @@ public partial class Main
                 4));
             ForceUpdateTransform();
 
-            (Goods _, HBoxContainer fireRow, Label _, OptionButton fire, SpinBox fireAmount) = c.Orders[(int)Goods.Firewood];
-            (Goods _, HBoxContainer _, Label _, OptionButton stone, SpinBox _) = c.Orders[(int)Goods.Stone];
-            float wide = c.PostRow.GetCombinedMinimumSize().X;
-            string? posed = c.Orders.Count(o => o.Row.Visible) != orders.Length ? "not every good's row shows"
+            // ⭐ Every name shows, in words — its text is its good's, and it keeps the width a name needs.
+            var nameless = w.Orders
+                .Where(o => !o.Name.Visible || o.Name.Text != GoodsName(world, o.Goods) || o.Name.GetCombinedMinimumSize().X < PostNameWidth - 1f)
+                .Select(o => GoodsName(world, o.Goods))
+                .ToList();
+            (Goods _, HBoxContainer _, Label _, Label _, OptionButton fire, SpinBox fireAmount) = w.Orders[(int)Goods.Firewood];
+            (Goods _, HBoxContainer _, Label _, Label _, OptionButton stone, SpinBox _) = w.Orders[(int)Goods.Stone];
+            Vector2 wants = w.Panel.GetCombinedMinimumSize();
+            string? posed = nameless.Count > 0 ? $"{nameless.Count} goods show no name ({string.Join(", ", nameless.Take(3))})"
+                : w.Orders.Count(o => o.Row.Visible) != orders.Length ? "not every good's row shows"
                 : fire.Selected != SellAbove || (int)fireAmount.Value != 400 ? $"firewood reads {fire.Selected} at {fireAmount.Value}"
                 : stone.Selected != BuyUpTo ? $"stone reads {stone.Selected}"
-                : c.SendOn!.Disabled ? "Send the boat on is disabled with a boat docked"
-                : !c.HeadOn!.ButtonPressed ? "the order for beasts is not shown"
-                : wide > CardWidth + 1f ? $"the window wants {wide:F0} of a {CardWidth:F0} card ({string.Join(", ", c.PostRow.GetChildren().OfType<Control>().Where(k => k.Visible).Select(k => $"{k.GetClass()} {k.GetCombinedMinimumSize().X:F0}").Distinct())})"
-                : fireRow.GetCombinedMinimumSize().X > CardWidth + 1f ? $"a good's row wants {fireRow.GetCombinedMinimumSize().X:F0}"
+                : w.SendOn.Disabled ? "Send the boat on is disabled with a boat docked"
+                : !w.HeadOn.ButtonPressed ? "the order for beasts is not shown"
+                : wants.X > Size.X - (2f * Edge) ? $"the window wants {wants.X:F0} of a {Size.X:F0} game"
+                : wants.Y > PostWindowTallest ? $"the window is {wants.Y:F0} tall, past {PostWindowTallest:F0} — too long again ({string.Join(", ", w.Panel.GetChild(0).GetChildren().OfType<Control>().Select(k => $"{k.GetClass()} {k.GetCombinedMinimumSize().Y:F0}"))})"
                 : null;
             if (posed is not null)
             {
-                return posed;
+                return $"[widths] post: ❌ {posed}";
             }
 
             // ⭐ The real controls against the real world.
@@ -173,33 +176,31 @@ public partial class Main
             fire.EmitSignal(OptionButton.SignalName.ItemSelected, (long)NoOrder);
             bool cleared = world.TradeKeep.For(Goods.Firewood) is null && world.TradeBuy.For(Goods.Firewood) is null;
 
-            c.SendOn!.EmitSignal(BaseButton.SignalName.Pressed);
-            string sendSaid = c.PostVerdict!.Text;
+            w.SendOn.EmitSignal(BaseButton.SignalName.Pressed);
+            string sendSaid = w.Verdict.Text;
             bool hadNoPasture = world.SetTradeBuyHead(1).Allowed is false;
             world.SetTradeBuyHead(null);
-            c.HeadOn!.EmitSignal(BaseButton.SignalName.Toggled, true);
-            string headSaid = c.PostVerdict.Text;
+            w.HeadOn.EmitSignal(BaseButton.SignalName.Toggled, true);
+            string headSaid = w.Verdict.Text;
             if (!hadNoPasture)
             {
                 world.SetTradeBuyHead(null);
             }
 
-            return !sold ? "choosing sell above did not set the keep"
+            string? driven = !sold ? "choosing sell above did not set the keep"
                 : !bought ? "choosing buy up to did not swap the keep for a buy"
                 : !cleared ? "choosing — left an order"
                 : world.BoatIsDocked || sendSaid != "No boat is tied up at the post." ? $"Send the boat on with no boat said \"{sendSaid}\""
                 : hadNoPasture && !headSaid.Contains("pasture", System.StringComparison.Ordinal) ? $"beasts with no pasture said \"{headSaid}\""
                 : null;
-        });
-
-        if (fault is not null)
-        {
-            faults.Add(fault);
+            return driven is null
+                ? $"[widths] post: ✅ the window in two columns, {orders.Length} goods each named in words, {wants.X:F0} × {wants.Y:F0} inside the game's {Size.X:F0} × {Size.Y:F0}; its orders read back; a good's dropdown sells, buys and clears it, never both; Send the boat on with no boat says why; beasts with no pasture are refused with the reason"
+                : $"[widths] post: ❌ {driven}";
         }
-
-        return faults.Count == 0
-            ? "[widths] post: ✅ the window at its fullest fits a card and reads its orders back; a good's dropdown sells, buys and clears it, never both; Send the boat on with no boat says why; beasts with no pasture are refused with the reason"
-            : $"[widths] post: ❌ {string.Join("; ", faults)}";
+        finally
+        {
+            w.Panel.Visible = wasOpen;
+        }
     }
 
     /// <summary>Open a card on the first workplace, hand it to <paramref name="pose"/>, and close it again.</summary>

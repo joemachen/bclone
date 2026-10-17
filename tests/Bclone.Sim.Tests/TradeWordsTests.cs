@@ -65,14 +65,34 @@ public sealed class TradeWordsTests
     }
 
     /// <summary>
-    /// ⭐ The barn keeps painted ground (its card's brush), and its hands are priced as a farm's — the hay cut is a reap.
+    /// ⭐ The barn keeps painted ground (its card's brush), priced by the herd one herdsman's hay feeds — eight head at
+    /// five tiles, forty (D597; D596 priced it as a farm's thirteen).
     /// </summary>
     [Fact]
-    public void TheBarnKeepsGroundPricedAsAFarms()
+    public void TheBarnKeepsGroundPricedByTheHeadItHolds()
     {
         SimWorld world = AVillage().World;
         Assert.True(SimWorld.KeepsWorkGround(JobKind.Herdsman));
-        Assert.Equal(world.TilesOneWorkerKeeps(JobKind.Farmer), world.TilesOneWorkerKeeps(JobKind.Herdsman));
+        Assert.Equal(
+            VillageEconomy.HeadOneHerdsmanKeeps(world.Config) * world.Config.Animals[0].PastureTilesPerHead,
+            world.TilesOneWorkerKeeps(JobKind.Herdsman));
+        Assert.Equal(40, world.TilesOneWorkerKeeps(JobKind.Herdsman));
+    }
+
+    /// <summary>
+    /// ⭐ An overstretched pasture says so in head and in the herdsman's trade (D597 — Joe's barn read <i>"put another
+    /// forester on"</i>).
+    /// </summary>
+    [Fact]
+    public void AnOverstretchedPastureIsSaidInHead()
+    {
+        SimWorld world = AVillage().World;
+        Workplace barn = HerdTests.RaiseABarn(world);
+        HerdTests.GivePasture(world, barn, 60);
+        Assert.Equal(
+            "Barn 1's pasture has room for 12 head and no herdsman, so no hay will be cut for them. Put a herdsman on, or paint less.",
+            world.OverstretchedNote(barn));
+        Assert.DoesNotContain("forester", world.OverstretchedNote(barn), StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------

@@ -1,6 +1,31 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D596 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–6 BUILT — THE SIM WHOLE, VIEW I PLAYABLE, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS VIEW I, THEN COMMIT 7 OF `trade.md §11` (THE BOAT SAILING, THE REGION PANEL). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D597 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–6 BUILT, VIEW I PLAYED AND FIXED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: FENCED PASTURES (SPEC FIRST), THEN THE PATHS, THEN COMMIT 7 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D596: COMMIT 6 — VIEW I, THE BARN AND THE POST) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D597: VIEW I, PLAYED AND FIXED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D597**, local. Joe played View I (willowdale-flint-thrush-27, to Year 70: five boats came, no
+> orders ever set — the post's rows had no names). Fixed: **the post's window** — the card's button opens it — holds the
+> orders in **two columns, every good named in words** (720 × 415); **the hall's standing announces** the trading post
+> and the barn; a barn's ground is priced by the head it holds (**40 tiles a herdsman**) and its overstretch is said in
+> head and the herdsman's trade; workers' labels take the catalogue's plural (*"Herdsmans"*). 13 mutants, 13 reds, no
+> zeros; suite 1755 / 0 / 5 of 1760 (10m50, then 9m53 — a game was running on the machine since 15:40; nothing in D597 runs in a village with no hall or barn); probe 91 lines clean; goldens 362 → 362.
+>
+> **▶️ NEXT — the plan Joe approved** (`C:\Users\joema\.claude\plans\review-handoff-md-and-tell-zany-curry.md`):
+> 1. **Fenced pastures, spec first** (`specs/livestock.md`). Joe's calls: a **Fence it** button on the barn's card locks
+>    the painted ground and queues a fence site; the fence **blocks walking except at its gate** (one cost field);
+>    **logs by its length**; to change it, take it down (ground unpainted) and repaint. Build on D404's walls
+>    (`ZoneMap.Wall`, `FenceEdges`, `WhatThisWouldWallOff`) and the bridge's per-length site — and mind the two traps the
+>    exploration found: `_fenceByOwner` is keyed by **household** id; `PullTheFenceDown` restores only *plots'* walls.
+> 2. **The paths** — all three of Joe's notes are the view's `TrailNetwork`: it ignores yard **walls** (the sim
+>    respects them), merges every junction pixel round a small building into **one hub** (the star), and the detour
+>    into that hub plus Chaikin makes the **wiggle** to the well.
+> 3. Commit 7 (the boat sailing, the region panel).
+>
+> ⚠️ Joe's screenshot showed a **4.26 s frame** at tick 23,049 (Year 49 — before his post or barn), all in *other*
+> (not sim, refresh or draw). Not trade. His session's `godot.log` had already been rotated out by probe runs (trap below).
+>
+> **(the banner below is the state at D596)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D596: COMMIT 6 — VIEW I, THE BARN AND THE POST) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D596**, local. **Trade and the herd can be played** once the hall stands (New village, *Skip
 > 10y* until the last founder dies — `trade.md §11.4`): the barn is on **Food**, the post on **Storage**, each drawn in its
@@ -7184,6 +7209,20 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D597 PAID FOR — A PROBE THAT MEASURED WIDTHS PASSED A WINDOW WITH NO NAMES
+
+- ⛔ **A clipped label's minimum width is zero, so a width check passes a row whose words have vanished.** D596's
+  `post:` line asserted the window *fit*; every good's name had clipped to nothing and it passed — Joe saw only colour
+  chips. **Assert that the words show**: the label is visible, its text is the good's name, and it keeps the width a
+  name needs (`PostNameWidth`). Red-checked: P1 (names clip) and P3 (names empty) both turn the line ❌.
+- **An autowrapping label measures its height at its own width** — with no width yet, a word a line. The post's window
+  stood 641 tall until each sentence got a `CustomMinimumSize.X` to wrap at (165 → 39). When a panel is mysteriously
+  tall, have the probe list each child's minimum height (`post:` does, on failure).
+- **The game's `godot.log` keeps only a few files, and every headless probe run rotates one out.** Joe's session log
+  (for the 4.26 s frame) was gone after a morning of probes. **Copy his newest log before running the probe.**
+- **A one-line `python -c` inside bash breaks on any `"` in the text** — the shell ends the string. Write the script to a
+  file (the memory rule already says so for heredocs; it holds for `-c` too).
 
 ## ⛔ THE TRAPS D596 PAID FOR — THE VIEW CANNOT RAISE A BUILDING, AND A CARD IS 268 WIDE
 

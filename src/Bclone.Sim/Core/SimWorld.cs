@@ -5376,8 +5376,11 @@ public sealed partial class SimWorld : IObstacles
     {
         JobKind.Farmer => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
 
-        // A herdsman cuts his pasture as a farmer reaps — one visit a tile, in the growing seasons (D593, D596).
-        JobKind.Herdsman => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
+        // ⭐ A herd GRAZES its pasture; the herdsman cuts the winter's hay off part of it (D593). So the ground one
+        // herdsman keeps is the pasture of the herd his hay feeds — eight head at five tiles (D597; D596 priced it as a
+        // farm's thirteen, which is what he cuts, and told Joe 89 of 102 tiles would go untended).
+        JobKind.Herdsman => VillageEconomy.HeadOneHerdsmanKeeps(Config)
+            * (Config.Animals.Count == 0 ? 1 : Config.Animals[0].PastureTilesPerHead),
 
         // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
         JobKind.Quarrier => Config.QuarryTilesPerWorker,
@@ -5471,6 +5474,18 @@ public sealed partial class SimWorld : IObstacles
                 : $"{name} is {tiles} tiles of field and {Hands(hands)} can sow "
                   + $"{allowance} of them. The other {tiles - allowance} will lie fallow — "
                   + "put another farmer on, or paint a smaller field.";
+        }
+
+        // A barn's pasture is said in head, and in the herdsman's trade (D597 — it said "put another forester on").
+        if (workplace.Kind == JobKind.Herdsman)
+        {
+            int perHead = Config.Animals.Count == 0 ? 1 : Config.Animals[0].PastureTilesPerHead;
+            return hands == 0
+                ? $"{name}'s pasture has room for {tiles / perHead} head and no herdsman, so no hay will be cut for them. "
+                  + "Put a herdsman on, or paint less."
+                : $"{name}'s pasture has room for {tiles / perHead} head, and {Hands(hands)} can cut the hay for "
+                  + $"{allowance / perHead}. A herd grown past that runs short in winter — put another herdsman on, "
+                  + "or paint less.";
         }
 
         if (FaceOf(workplace) is Terrain face)
@@ -10053,9 +10068,16 @@ public sealed partial class SimWorld : IObstacles
                 ExtentHeight = row.ExtentHeight,
             };
 
-            Narrate($"{Capitalised(name)} stands. The founders' names are cut into the lintel, "
-                + $"and the village has somewhere to keep what it has been. "
-                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+            // ⭐ AND IT SAYS WHAT IT OPENS (Joe, D597: *"announce that trading post is now available — alert player.
+            // same for barn"*). The hall is the permission for both (D587 call 1, D590), so its standing is the moment.
+            RaiseMoment(
+                "The town hall stands",
+                $"{Capitalised(name)} stands. The founders' names are cut into the lintel, and the village has somewhere "
+                + $"to keep what it has been. {Clock.SeasonAndYear()}."
+                + Moment.ParagraphBreak
+                + "Strangers will trade with a village that has a hall. Build a trading post on a river bank, and boats "
+                + "will call every two or three years; build a barn and give it pasture, and a boat can bring cattle.");
+
         }
 
         // ⭐ A well is a sixth (D427) — somewhere households walk for water, and the far end of the

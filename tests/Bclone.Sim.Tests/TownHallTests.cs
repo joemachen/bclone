@@ -338,6 +338,12 @@ public sealed class TownHallTests
         Assert.NotNull(world.TownHall);
         Assert.Equal(spot, world.TownHall!.Tile);
         Assert.Equal(BuildingKind.TownHall, world.WhatStandsAt(spot));
+
+        // ⭐ And it says what it opens (Joe, D597): the trading post and the barn, in a moment that stops the village.
+        Moment stands = Assert.Single(world.Moments, m => m.Title == "The town hall stands");
+        Assert.True(stands.WaitsToBeDismissed);
+        Assert.Contains("trading post on a river bank", stands.Paragraphs[1], System.StringComparison.Ordinal);
+        Assert.Contains("barn", stands.Paragraphs[1], System.StringComparison.Ordinal);
     }
 
     /// <summary>
