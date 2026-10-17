@@ -168,6 +168,14 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
   history it is read from is already state. Recomputed only when somebody is added. A stop (*"The village learned to
   bridge water"*), `WhyNotYet` while locked (*"Nobody here has bridged water yet — the village has held N people, and
   learns it once it has held 10."*). Tech node `bridging` (SCALE).
+  - ⭐ **When a band's arrival is what teaches it, the nomads' moment says it and the bridge raises none (D576).**
+    Joe played it and got two stops at once — the bridge's and the nomads'. The number stays **10** (he asked for 15;
+    measured first, §8.2a, 15 would not have parted them and would have put the bridge off a decade or more). `Settle`
+    returns `LearnedToBridgeJustNow` and `Knock` adds a second paragraph to its body, marked with the bridge
+    (D577, Joe: *"break it into 2 paragraphs … a bridge icon and a nomad icon"*) and crediting the bridge to the
+    band: *"On the long road here they learned to lay timber across running water. The village can build wooden
+    bridges now, and the far bank is within reach."* A birth that teaches it still raises *"The village learned to
+    bridge water"*, now marked with the bridge too. Moments are not hashed: no golden moved.
   - ⚠️ **Its stop is `RaiseMoment`, not `LearnedByDoing`**: it is learned by the village's size, not by anybody's
     hands, so it does not introduce the tech-tree map — the library's and the town hall's rule (D440). Through
     `LearnedByDoing` it set the hashed `ShownTheTechTree` in every village that reached ten first and **moved four
@@ -258,6 +266,20 @@ The founding's land is a flood fill from the founding site; "across" is every ot
 - **10 lands at Year 11–12 in play**, the D546 target window (years 8–12). 12 would be Year 27: the second
   generation's children, a long wait. ⚠️ A harness is not a player (D447); Joe's saves are the number, the harness
   the floor under it.
+
+### 8.2a With nomads on — `ZzBridgeKnock`, the same 43 villages, fifty years (D576)
+
+The first year each village held N people, and whether that tick was a knock (a band's arrival carried it over):
+
+| | reached 10 | on a knock | reached 15 | on a knock | first year at 15 |
+|---|---|---|---|---|---|
+| `shipped` (30, unattended) | 25 | **24** | 16 | **16** | 17–45, median ~25 |
+| `every` (13) | 11 | 6 | 11 | **11** | 13–23 |
+
+- **A band adds about four people in one tick, so whatever the number, a band is what crosses it** — 27 of 27 at 15.
+  Raising the number moves the double stop later; it does not part it. Hence one stop (§5.2), not a bigger number.
+- 14 of 30 shipped valleys never hold 15 in fifty years. ⚠️ Unattended, and a harness is not a player (D447) — Joe's
+  pre-nomad saves held 15 at Years 31–33 (§8.2).
 
 ### 8.3 Crossings a year — `ZzBridges.Crossings`, 43 villages (30 shipped, 13 `every`), Years 5–35
 

@@ -59,6 +59,9 @@ public partial class Main
     /// <summary>The id the Paths overlay is remembered by, beside the map's ticks.</summary>
     private const string PathsToggle = "paths";
 
+    /// <summary>The alerts' tick (D578): whether the village goes back to the player's speed after an alert.</summary>
+    private const string AlertSpeedToggle = "alert_speed_back";
+
     private static bool TheProbeIsRunning => System.Environment.GetEnvironmentVariable("BCLONE_PROBE_WIDTHS") is not null;
 
     /// <summary>Read the player's settings before anything is built — the UI size and the new-game rows are needed first.</summary>
@@ -144,9 +147,9 @@ public partial class Main
             _map.ShowWear(settings.Toggles.TryGetValue(PathsToggle, out bool paths) && paths);
             RefreshWearButton();
 
-            for (int i = 0; i < _mapToggles.Count; i++)
+            for (int i = 0; i < _viewToggles.Count; i++)
             {
-                (string key, _, CheckBox box, _) = _mapToggles[i];
+                (string key, _, CheckBox box, _) = _viewToggles[i];
                 if (settings.Toggles.TryGetValue(key, out bool on))
                 {
                     box.ButtonPressed = on;
@@ -287,9 +290,9 @@ public partial class Main
     private PlayerSettings CaptureSettings()
     {
         var toggles = new Dictionary<string, bool>(_settings.Toggles, StringComparer.Ordinal);
-        for (int i = 0; i < _mapToggles.Count; i++)
+        for (int i = 0; i < _viewToggles.Count; i++)
         {
-            (string key, _, CheckBox box, _) = _mapToggles[i];
+            (string key, _, CheckBox box, _) = _viewToggles[i];
             toggles[key] = box.ButtonPressed;
         }
 
@@ -396,8 +399,8 @@ public partial class Main
         // ⛔⛔ THE POSE COMES FROM THE REGISTRIES, NEVER FROM THE CAPTURE (D419's trap, paid again in
         // D505). The first draft flipped `founding.Toggles` — so a tick the capture forgot was missing
         // from the pose too, and the round trip agreed with itself: that mutant scored ZERO. The truth
-        // is what the screen has (`_mapToggles`, `_titled`); the claim is what the capture says.
-        foreach ((string key, _, _, _) in _mapToggles)
+        // is what the screen has (`_viewToggles`, `_titled`); the claim is what the capture says.
+        foreach ((string key, _, _, _) in _viewToggles)
         {
             if (!founding.Toggles.ContainsKey(key))
             {
@@ -420,7 +423,7 @@ public partial class Main
 
         // ---- everything but places ----
         var toggles = new Dictionary<string, bool>(StringComparer.Ordinal) { [PathsToggle] = !_map.WearShown };
-        foreach ((string key, _, CheckBox box, _) in _mapToggles)
+        foreach ((string key, _, CheckBox box, _) in _viewToggles)
         {
             toggles[key] = !box.ButtonPressed;
         }

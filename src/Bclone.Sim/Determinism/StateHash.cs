@@ -75,7 +75,8 @@ public static class StateHash
         ulong hash = FnvOffsetBasis;
 
         // Order matters and must never change casually — it is part of the
-        // value. Append new fields at the end.
+        // value. Append new fields at the end. A retired tag stays named where it
+        // stood and is never reissued (0x67, 0x68 — the longhouse, D571; 0x6F — the waiting band, D572).
         hash = MixUInt64(hash, world.Tick);
         hash = MixUInt64(hash, world.Rng.State);
         hash = MixUInt64(hash, world.Rng.Inc);
@@ -286,6 +287,9 @@ public static class StateHash
                     hash = MixByte(hash, 0x60);
                 }
             }
+
+            // 0x68 was `Household.LodgedIn` (D566; retired with the longhouse, D571) — sparse, so a family that never
+            // lodged hashes exactly as it did. The tag is never reused.
 
             // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
             // site has none, and hashes as it always did.
@@ -737,6 +741,9 @@ public static class StateHash
             }
         }
 
+        // ---- 0x67 was the longhouses (D566; retired D571) ---- the block was sparse (the count mixed only when
+        // one stood), so a village that never raised one hashes exactly as it did. The tag is never reused.
+
         // ---- The bridges (D546) ----
         // A deck over the water decides where everybody can walk, so it is sim state. ⛔ Sparse, the
         // well's rule: a village with no bridge hashes as it did before bridges existed. The deck index
@@ -804,6 +811,34 @@ public static class StateHash
             hash = MixFixed(hash, world.BuildingsWaiting[i].Position.Y);
             hash = MixUInt32(hash, (uint)world.BuildingsWaiting[i].Kind);
             hash = MixAngle(hash, world.BuildingsWaiting[i].Facing);
+        }
+
+        // ---- The nomads (`nomads.md §6`, D565) ----
+        // The count and the next knock's year decide when the next band comes, so they are state; sparse, under
+        // a tag, so a village nobody has ever knocked on hashes as it did. The band itself is not state: it is
+        // derived at the knock and settled the same tick (D572), and the villagers it became are hashed as villagers.
+        if (world.BandsEverKnocked != 0 || world.NextKnockYear != 0)
+        {
+            hash = MixByte(hash, 0x6E);
+            hash = MixUInt32(hash, (uint)world.BandsEverKnocked);
+            hash = MixUInt32(hash, (uint)world.NextKnockYear);
+        }
+
+        // How many times the valley has been re-founded (D567) — the next wait is hashed on it. Sparse.
+        if (world.Refoundings != 0)
+        {
+            hash = MixByte(hash, 0x69);
+            hash = MixUInt32(hash, (uint)world.Refoundings);
+        }
+
+        // 0x6F was the waiting band (D565; retired D572 — the switch is the permission and a band settles the tick it
+        // knocks). It was sparse, so a village between knocks hashes exactly as it did. The tag is never reused.
+
+        // The Nomads switch (D570), in the share-out switch's shape: mixed only when it is off, so a village that
+        // never touched it hashes as it did. A preference that changes the sim is sim state.
+        if (!world.NomadsEnabled)
+        {
+            hash = MixByte(hash, 0x6A);
         }
 
         return hash;
@@ -995,6 +1030,14 @@ public static class StateHash
         // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
         // for a few ticks at the start of a working life; once spent it is inert, and inert
         // state has no business in a fingerprint.
+        // When a nomad came to the valley (D565) — the most-ever-held reads it, so it is state. Sparse, under
+        // a tag: a founder and anybody born here mix nothing new.
+        if (villager.ArrivedAtTick != 0UL)
+        {
+            hash = MixByte(hash, 0x4E);
+            hash = MixUInt64(hash, villager.ArrivedAtTick);
+        }
+
         if (villager.Rhythm != 0)
         {
             hash = MixUInt32(hash, (uint)villager.Rhythm);

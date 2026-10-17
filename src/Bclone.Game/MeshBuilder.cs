@@ -73,6 +73,19 @@ internal sealed class MeshBuilder
         Quad(from + side, to + side, to - side, from - side, colour);
     }
 
+    /// <summary>A straight band that narrows from <paramref name="halfFrom"/> to <paramref name="halfTo"/> — a path petering out (D580).</summary>
+    public void Taper(Vector2 from, Vector2 to, float halfFrom, float halfTo, Color colour)
+    {
+        Vector2 along = to - from;
+        if (along.LengthSquared() < 1e-12f)
+        {
+            return;
+        }
+
+        Vector2 side = new Vector2(-along.Y, along.X).Normalized();
+        Quad(from + (side * halfFrom), to + (side * halfTo), to - (side * halfTo), from - (side * halfFrom), colour);
+    }
+
     /// <summary>
     /// A band of the given half-width along a polyline — <c>DrawPolyline</c> with a width, as one
     /// strip whose joints share an averaged normal so consecutive quads neither gap nor overlap.

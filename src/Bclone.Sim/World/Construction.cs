@@ -5,6 +5,17 @@ using Bclone.Sim.Persistence;
 
 namespace Bclone.Sim.World;
 
+/// <summary>The ids that stay in <see cref="BuildingKind"/> after their building left the game (D571).</summary>
+/// <remarks>
+/// ⛔ A kind is hashed by position and saved by number, so a removed building's id is never renumbered and never
+/// reissued — it ships no row, the catalogue's slot is null, and the missing-id check lets it be. Named once, here.
+/// </remarks>
+public static class BuildingKinds
+{
+    /// <summary>Whether <paramref name="kind"/> is a retired id — one that ships no row and may be absent from any catalogue.</summary>
+    public static bool IsRetired(BuildingKind kind) => kind == BuildingKind.Longhouse;
+}
+
 /// <summary>What the player can put up.</summary>
 /// <remarks>
 /// Deliberately a small closed set rather than "any building". Forage sites and tree
@@ -204,8 +215,9 @@ public enum BuildingKind
     /// </para>
     /// <para>
     /// <b>⛔ AND IT IS NOT A KNOWLEDGE BUILDING WITH EXTRAS</b> (D251, Joe). Knowledge is about a
-    /// fifth of it: it also triggers <b>nomads</b>, <b>itemises everything the village has ever
-    /// met</b> — crops, animals, techniques, buildings, <em>"in a collectors' sort of way"</em> —
+    /// fifth of it: it also <b>widens the nomads</b> (D563 — they knock on their own clock, and come more
+    /// often and a family larger once the hall stands; D251's <em>triggers</em> is amended), <b>itemises
+    /// everything the village has ever met</b> — crops, animals, techniques, buildings, <em>"in a collectors' sort of way"</em> —
     /// and carries the <b>charts</b>. §8's knowledge screen is one tab. <em>A session that builds
     /// "the knowledge screen, in a building" has built the wrong thing.</em>
     /// </para>
@@ -254,20 +266,20 @@ public enum BuildingKind
     HunterLodge = 13,
 
     /// <summary>
-    /// A long communal storehouse — <b>the first building that is not one tile</b> (D320).
+    /// ⛔ <b>Retired (D571).</b> The longhouse — D320's three-by-one store, the first building that was not one tile;
+    /// D566's nomads' house — was removed after play (Joe, D568: <i>"longhouse should be removed from the game"</i>).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>⭐ Joe asked for a multi-tile longhouse</b>, and it is a storehouse rather than a
-    /// dwelling for a reason worth stating: housing in this game is painted with the land brush and
-    /// never placed by a button (D42, D102), so a longhouse that was a *home* would be a change to
-    /// how housing works rather than a demonstration of footprints.
+    /// <b>The id stays, ships no row, is never renumbered and never reissued</b> — kinds are hashed by position and
+    /// saved by number, and a save or a share code from the branch that had one must not read as a different
+    /// building. <see cref="BuildingKinds.IsRetired"/> exempts it from the catalogue's missing-id check; the
+    /// catalogue's slot is null and <c>BuildingsCatalog.Has</c> says so.
     /// </para>
     /// <para>
-    /// ⭐⭐ <b>It exists to make extent and facing REAL rather than machinery with no content behind
-    /// it.</b> Every other building is 1×1, so until this row was typed nothing in the shipped game
-    /// could show that a building covers more than one tile or that turning it means anything —
-    /// which is D98's rule about a number that is always zero, one level up.
+    /// A modder may type a row with this id, which is then whatever its columns say — the geometry guards do
+    /// (`BuildFixtures.WithTheOldLonghouseStore`, the three-tile warehouse D322 built), so extent and facing keep
+    /// their one shipped-shape proof in the suite even though nothing in the shipped game is wider than two.
     /// </para>
     /// </remarks>
     Longhouse = 14,

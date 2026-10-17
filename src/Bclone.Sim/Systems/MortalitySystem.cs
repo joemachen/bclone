@@ -124,8 +124,8 @@ public sealed class MortalitySystem : ISimSystem
         // default: *"eventually we will add nomads to the game — and after a village dies out
         // nomads can potentially revive a village if it hasn't all crumbled from lack of
         // maintenance. So leaving the game going is perfect for now."* **A modal here would have
-        // to be dismissed before the thing it announces could be looked at**, and it would have
-        // to be un-designed the day nomads land.
+        // to be dismissed before the thing it announces could be looked at** — and the nomads have
+        // landed (D567): four nomads re-found an empty valley a few years on, through this very door.
         //
         // ⚠️ NO "HAVE WE SAID IT YET" FLAG, BECAUSE THE TRANSITION CANNOT REPEAT. `Population`
         // counts the living, and this runs having just marked one dead — so it reads zero on

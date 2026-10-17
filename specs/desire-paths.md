@@ -187,6 +187,9 @@ lane the route prefers can be a longer walk than the chord it replaces — §3.3
 the field, not this. Measured it does not bite (the thirty-year runs walked *fewer* villager-ticks),
 because a worn lane is where straight walks already went. If a village ever shows walkers going the
 long way round on a lane, this is where to look.
+⭐ **And the lattice Joe saw in the village (D568) is not this tension** — measured in `path-shapes.md` (D579): the
+village's paths are the corridors between tile-aligned buildings, and neither loosening this rule nor turning the
+route's ties toward the diagonal unbends them. Loosening it made the lattice worse.
 
 ### 3.7 The well is a destination (D427, `organic-housing.md §9.12`)
 
@@ -295,6 +298,43 @@ with the reason that worn ground is now faster — **the first deliberate clock 
 - [x] An inspector sentence for trodden, worn and packed ground (`DescribeBareGround`).
 - [x] Outcomes before/after: six shipped seeds × fifty years, twenty fixture years (§6).
 - [x] Probe line `trails:` — every drawn trail tile is worn in the sim.
+- [x] ⭐ **D580 — drawn as walked (Joe's note 1, option A of `path-shapes.md`).** Every lane is laid from a tile's
+  *drawn* point — `DrawnTrailPointOf` = the true point (`TrailPointOf`, unchanged, still the geometry every rule here
+  reads) moved by a smooth value-noise wander of **the point**, seeded from the valley, at most `TrailWobble` 0.18 of a
+  tile an axis (0.6 of that on a staircase; none for a junction or a lone L's exact corner) — so a corridor between
+  two buildings reads as a footpath, not a ruled line, and never leaves its worn tiles. A lightly worn lane is
+  `WornTrailHalfWidth` 0.14 against the packed 0.17; a dead end has no disc and tapers to 0.35 of its width
+  (`MeshBuilder.Taper`). Rebuilt with the mesh, on the paths' generation. Probe `paths:`.
+- [x] ⭐⭐ **D581 — the NETWORK, not the tiles (Joe's note 1, option E of `path-shapes.md`).** Joe played D580: *"still
+  looks like a grid"*. His screenshots were the per-tile drawing itself — ladders (two lanes a tile apart, every walk
+  between them a rung), square rings round a hut's outline, the hub's packed yard. **`TrailNetwork`** (pure, in the view)
+  now reads the worn tiles as a shape: a one-tile gap with worn ground facing across it is **bridged** (never across a
+  building or water, never a two-tile gap), the shape is **thinned** to its centre line (Zhang–Suen, every connection
+  and hole kept; a 2×2 it would erase keeps its middle pixel), a staircase's spare corner pixels dropped, **touching
+  junction pixels merged into one junction**, the line **traced** into lanes, each point **placed** at the middle of the
+  worn ground round it (a two-wide corridor lands on its midline, as D415 did), the valley's **wander** added (D580) and
+  **smoothed** (Chaikin ×2). `LayTrails` draws lanes (worn 0.14, packed runs 0.17 over them), a disc a little wider at a
+  junction, and a taper at a dead end. **Superseded and deleted:** the per-tile points and joins — D359's L-corner,
+  D360's bends, D368/D374's yards, D415's corridor point, the staircase line, D580's per-tile room. ⛔ **No stub pruning**
+  — measured on Joe's own village it cut the three-tile lane up to a store's door and changed nothing else. Probes
+  `trails:` (hand-drawn shapes straight into `TrailNetwork`), `paths:` (the valley's own network on its own ground, never on
+  a building), `field lanes:` (D512 on the network).
+- [x] ⛔ **D582 — a lane is never drawn across a building.** Joe's screenshot of D581: a lane straight across a one-tile
+  store. Points never stood on a building, but the line between them could: tidying a ring's corner pixels round a
+  one-tile building left a diamond through its corners, and smoothing and the wander pulled lanes inward. Now a dropped
+  corner that the line would cut a building's corner without is **remembered** and the lane is laid round it; the
+  wander and the smoothing are not taken where they would cross; a junction's middle on a building moves to its nearest
+  own pixel; and, last, **a step that would still cross a building is cut** — the lane stops at the wall on each side.
+  ⚠️ *Keeping* the corner pixel was tried first and made every pixel of the ring a junction, whose middle was the
+  building. On Joe's own village (a copy of his save, opened through the game for one run): 2 samples across a building
+  before, 0 after.
+- [x] ⭐ **D583 — ROUND the building, not cut at its walls.** Joe on D582: *"Nope. Doesn't look good. The path should go
+  around the building."* The cut left two pieces still aimed through it. Now a step that would cross a building is
+  **rerouted** before smoothing: a small Dijkstra from one end's tile to the other's, four ways (so no step of it clips a
+  corner), worn ground 1 and bare ground 4, within four tiles; its tile centres go into the lane, and the smoothing
+  rounds them. The crossing test walks every tile a step enters, exactly — five samples a step slipped past a building's
+  corner on his village. The cut is the last resort (no way round at all) and `CutSteps` counts it; his village draws 0.
+  His village is a probe shape now (`trails:`), as the game read it in Spring Year 9.
 - [x] ⚠️ **Joe plays it (D359, 2026-09-12, first pass):** *"draws staircase style"* → a clipped
   L-corner tile draws at the square's shared corner and the trail runs through it diagonally;
   *"-50% line thickness"* → `TrailHalfWidth` 0.17.

@@ -39,7 +39,7 @@ public sealed class TileFindersAgreeTests
     public TileFindersAgreeTests(ITestOutputHelper output) => _output = output;
 
     private static SimWorld World() =>
-        SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
 
     /// <summary>
     /// ⭐⭐ Every tile of a turned longhouse answers the same way to every question.

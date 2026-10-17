@@ -300,7 +300,7 @@ public sealed class FootprintTests
     public void AThreeTileBuildingRefusesANeighbourOnItsSecondTile()
     {
         // A stockpile is the one-tile neighbour posed here (D382): the granary this used to pose is 2×2.
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
         GridPos anchor = SomewhereBuildable(world);
@@ -370,7 +370,7 @@ public sealed class FootprintTests
     [Fact]
     public void AMarkedBuildingReservesTheSameGroundItWillStandOn()
     {
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
         GridPos anchor = SomewhereBuildable(world);
@@ -412,7 +412,7 @@ public sealed class FootprintTests
     [Fact]
     public void ADemolitionSiteKeepsTheAngleOfWhatItTakesDown()
     {
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
         Angle turned = Angle.FromTurnFraction(1, 4);
         GridPos anchor = RaiseALonghouse(world, turned);
@@ -441,7 +441,7 @@ public sealed class FootprintTests
     [Fact]
     public void AMovedLonghouseIsPutBackALonghouse()
     {
-        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
         Angle turned = Angle.FromTurnFraction(1, 4);
         GridPos from = RaiseALonghouse(world, turned);
         GridPos to = SomewhereBuildable(world);
@@ -462,7 +462,7 @@ public sealed class FootprintTests
     [Fact]
     public void TheBuildingAStoreWasRaisedAsIsInTheFingerprint()
     {
-        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
         GridPos anchor = RaiseALonghouse(world, Angle.Zero);
         StoreBuilding longhouse = world.StoreAt(anchor)!;
         System.Reflection.PropertyInfo raisedAs = typeof(StoreBuilding).GetProperty(nameof(StoreBuilding.RaisedAs))!;
@@ -555,7 +555,7 @@ public sealed class FootprintTests
     [Fact]
     public void EveryTileOfALongBuildingAnswersWhenAsked()
     {
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
         GridPos anchor = SomewhereBuildable(world);
@@ -601,7 +601,7 @@ public sealed class FootprintTests
     [Fact]
     public void AFreeBuildingKeepsTheFacingItWasPlacedWith()
     {
-        SimConfig config = VillageFixtures.Village;
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
         GridPos at = SomewhereBuildable(world);
@@ -888,7 +888,7 @@ public sealed class FootprintTests
     [Fact]
     public void AnEvenExtentAnchoredOnATileCoversExactlyItsTiles()
     {
-        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
         var at = new GridPos(20, 20);
 
         Footprint granary = world.FootprintOf(BuildingKind.Granary, at);
@@ -927,7 +927,6 @@ public sealed class FootprintTests
     [InlineData(BuildingKind.Farmhouse, 2, 2)]
     [InlineData(BuildingKind.Library, 2, 2)]
     [InlineData(BuildingKind.TownHall, 3, 2)]
-    [InlineData(BuildingKind.Longhouse, 3, 1)]
     public void TheCatalogueCarriesTheTable(BuildingKind kind, int width, int height)
     {
         BuildingRow row = ShippedConfig.Load().BuildingRows.Single(r => r.Id == (int)kind);
@@ -944,7 +943,7 @@ public sealed class FootprintTests
     [Fact]
     public void TheFoundingLayoutOverlapsNothing()
     {
-        SimWorld world = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
         var seen = new Dictionary<GridPos, string>();
         var twice = new List<string>();
 

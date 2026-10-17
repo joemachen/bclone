@@ -160,16 +160,16 @@ public sealed class MaintenanceTests
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
     }
 
-    /// <summary>A save from before the stamps (format 4) is refused in words — no migrations before v1 (D507).</summary>
+    /// <summary>A save from before the stamps (format 4) is refused in words — no migrations before v1 (D507). Format 6 since the nomads (D565); 7 since the longhouse came out (D571).</summary>
     [Fact]
     public void AFormatFourSaveIsRefused()
     {
         SimLoop loop = AVillage();
         JsonObject doc = SaveGame.Capture(loop, "test", "now", "code");
-        Assert.Equal(5, SaveGame.Format);
+        Assert.Equal(7, SaveGame.Format);
         doc["format"] = 4;
         SaveFormatException refused = Assert.Throws<SaveFormatException>(() => SaveGame.Load(doc, loop.World.Config));
         Assert.Contains("Format 4", refused.Message, StringComparison.Ordinal);
-        Assert.Contains("reads 5", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("reads 7", refused.Message, StringComparison.Ordinal);
     }
 }

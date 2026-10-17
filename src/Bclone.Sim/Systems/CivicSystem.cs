@@ -10,11 +10,12 @@ namespace Bclone.Sim.Systems;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>⭐ ONE THING TODAY: the last founder dies, and the village raises a hall in their name.</b>
-/// It is its own system rather than a branch of <see cref="KnowledgeSystem"/> because D251 is
-/// emphatic that <em>the town hall is not a knowledge building with extras</em> — knowledge is
-/// about a fifth of what it is — and because <b>nomads land here next</b> (`DESIGN.md §5`: the
-/// town hall is what triggers them). *A system named for what it does keeps the next feature from
+/// <b>⭐ TWO THINGS: the last founder dies, and the village raises a hall in their name; and the
+/// nomads knock</b> (D564). It is its own system rather than a branch of <see cref="KnowledgeSystem"/>
+/// because D251 is emphatic that <em>the town hall is not a knowledge building with extras</em> —
+/// knowledge is about a fifth of what it is — and because the nomads were always going to land here.
+/// ⚠️ D251 said the hall <em>triggers</em> them; Joe amended that in D563 — the hall <em>widens</em>
+/// them (`SimWorld.NextKnockYearAfter`). *A system named for what it does keeps the next feature from
 /// being smuggled into a system named for something else.*
 /// </para>
 /// <para>
@@ -26,8 +27,9 @@ namespace Bclone.Sim.Systems;
 /// </para>
 /// <para>
 /// <b>⚠️ It touches no RNG and reads no clock but the sim's.</b> Nothing here can shift the draw
-/// order of anything else, which is what keeps a village that never reaches the trigger
-/// byte-identical to a village from before this system existed.
+/// order of anything else — the nomads are hashed, never drawn (`nomads.md §4.1`) — which is what
+/// keeps a village that never reaches a trigger byte-identical to a village from before this system
+/// existed.
 /// </para>
 /// </remarks>
 public sealed class CivicSystem : ISimSystem
@@ -39,6 +41,14 @@ public sealed class CivicSystem : ISimSystem
         ArgumentNullException.ThrowIfNull(world);
 
         NoticeIfTheFoundersAreAllGone(world);
+
+        // ⭐ AND THE NOMADS (`specs/nomads.md`, D563–D564; D572): a band knocks on the spring turn of its hashed year
+        // and settles that tick. It reads a world in which this tick's deaths have happened, which is why it lives
+        // here and not before `MortalitySystem`.
+        world.KnockIfItIsTime();
+
+        // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four nomads walk in a hashed few years on.
+        world.RefoundIfTheValleyHasWaited();
     }
 
     /// <summary>
@@ -192,8 +202,13 @@ public sealed class CivicSystem : ISimSystem
             ? "The one soul still here was born in this valley."
             : $"All {living} souls still here were born in this valley.";
 
-        return $"{last.Name} was the last of the four who walked into this valley with a cart "
-            + $"and no roof, and is dead at {last.AgeYears}.{beside} {whoIsLeft} "
+        // ⭐ Which founding (D567): the four who walked in with a cart, or the four who found the valley empty and
+        // made it theirs again — a second generation of founders, mourned in the same words with their own story.
+        string arrival = last.ArrivedAtTick == 0UL
+            ? "was the last of the four who walked into this valley with a cart and no roof"
+            : $"was the last of the four who found this valley empty in Year {SimClock.FromTick(last.ArrivedAtTick, world.Config).Year} and made it theirs again";
+
+        return $"{last.Name} {arrival}, and is dead at {last.AgeYears}.{beside} {whoIsLeft} "
             + "The village has gathered timber and stone for a hall in their name — put it "
             + $"wherever you like, and it will cost you nothing. {world.Clock.SeasonAndYear()}.";
     }

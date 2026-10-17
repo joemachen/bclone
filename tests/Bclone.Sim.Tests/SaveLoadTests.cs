@@ -61,7 +61,16 @@ public sealed class SaveLoadTests : IDisposable
         // "nowhere to keep it" latch, dropping either from the save scored 0 reds.
         new object[] { "established, every store closed (year 1)", 300 },
         new object[] { "unattended, emptied, its moment waiting (year 2)", 600 },
+
+        // D565/D572: the day after the first band settled — roofless arrivals with their arrival tick, the one state
+        // the nomads add that is not a count.
+        new object[] { "fixture village, the day after the first band settled", ((FixtureKnockYear - 1) * 480) + 5 },
     };
+
+    /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
+    private static int FixtureKnockYear =>
+        VillageFixtures.Village.NomadsFirstYearFloor
+        + NameHash.KnockOffset(VillageFixtures.Village.Seed, 0, VillageFixtures.Village.NomadsFirstYearSpread);
 
     private static (SimLoop Loop, InMemoryLogSink Log) Played(string pose, int ticks)
     {
@@ -189,6 +198,11 @@ public sealed class SaveLoadTests : IDisposable
         (SimLoop emptied, _) = Played("unattended, emptied, its moment waiting (year 2)", 600);
         Assert.Equal(0, emptied.World.Population);
         Assert.NotEmpty(emptied.World.Moments);
+
+        (SimLoop knocked, _) = Played("fixture village, the day after the first band settled", ((FixtureKnockYear - 1) * 480) + 5);
+        var arrived = knocked.World.Villagers.Where(v => v.ArrivedAtTick != 0UL).ToList();
+        Assert.True(arrived.Count >= 2, "nobody arrived — the pose is not the day after a band settled");
+        Assert.All(arrived, v => Assert.False(knocked.World.HouseholdOf(v).HasHome));
     }
 
     // ---------------------------------------------------------------
@@ -234,7 +248,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Tick", "Rng", "Moments", "Libraries", "TownHall", "Wells", "FirstGranaryTick", "SaidTheyCanWrite",
             "FoodProducedThisYear", "FoodProducedLastYear", "FoodLedgerYears", "FoodEatenThisYear", "FoodEatenLastYear",
-            "FoodEverProduced", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed",
+            "FoodEverProduced", "FoodEverBroughtIn", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed",
             "AFirstPathHasWorn", "ATownHallIsOwed", "SaidTheFoundersAreGone", "KnowledgeStates", "LastKnowerIds",
             "Villagers", "Households", "TravelCost", "Map", "Zones", "Paths", "StockLimits", "JobLimits",
             "VillageSharesOutWork", "Workplaces", "StoreBuildings", "GroundStacks", "_waitingOnTheGround",
@@ -242,7 +256,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
-            "Bridges", "BridgeCrossings",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -259,6 +273,8 @@ public sealed class SaveLoadTests : IDisposable
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
             // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
             "ConditionWalks",
+            // Whether the walk under way may raise repairs (D567): set by the caller on every walk, never read between them.
+            "_raiseRepairs",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {
@@ -268,7 +284,7 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
-            "BatchesThisStint", "FullFor", "FullFrom",
+            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
@@ -338,7 +354,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Stockpile), Kept.Saved, new[] { "_held", "_produced", "Capacity" }),
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
-        (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed" }),
+        (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed", "Marks" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),

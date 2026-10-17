@@ -44,6 +44,12 @@ filed under its own heading there for exactly that reason. It is the village's, 
 *Snap to the grid* is a setting even though it changes placement: it acts on the input before the sim
 sees it (D330), so nothing about the village depends on it.
 
+⛔ **The *nomads may come to the valley* tick (D570; on the villagers bar since D572) is the same shape as share-out,
+and for the same reason:** `SimWorld.NomadsEnabled` decides whether a band knocks and settles, so it is hashed (when
+off) and saved, drawn on the villagers bar's third line (Joe: *"not buried in settings"*), and never in this file. **Its starting position is a new-game row** (`nomads`, `new-game-screen.md §5`),
+and *that* is remembered here as every row is (§4) — so Joe's *"persisted like the other settings"* is met by a row, not
+by an exception to this line.
+
 ## 4. What is remembered
 
 | Group | What | Key |
@@ -51,6 +57,7 @@ sees it (D330), so nothing about the village depends on it.
 | View | UI size (55–115 %, steps of 5; default 75) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
+| View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
 | Windows | each window's Settings tick (*shown*) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
 | Windows | where the player **dragged** it | `windows.<title>.side/x/y` |
 | New game | each row's value from the last valley founded | `new_game.<row id>` |
@@ -64,7 +71,8 @@ sees it (D330), so nothing about the village depends on it.
 
 - **Every key is optional**; an absent key is the view's own default. A toggle or window added later is
   remembered the day it is written, because both come out of the registries that already build the
-  Settings panel (`_mapToggles`, `_windows`) — never a hand-kept list.
+  Settings panel (`_viewToggles` — `_mapToggles` until D578 filed the alerts' tick in it — and `_windows`) — never a
+  hand-kept list.
 - ⚠️ **A window is keyed by its title.** Renaming one forgets its place and fold, which falls back to
   the default: harmless, and said here so nobody calls it a bug.
 - ⭐ **A place is stored only once the player has dragged that window** — intent at the gesture
@@ -82,7 +90,8 @@ sees it (D330), so nothing about the village depends on it.
   narrows, fall back to the config's default rather than founding something refused. *Default
   settings* on the screen still means the config's own.
 - **Not remembered:** the speed (a village opens as it does today), cards (they belong to a selection),
-  the camera, the seed, the name, and *share the work out* (§3).
+  the camera, the seed, the name, *share the work out* and *nomads may come to the valley* (§3 — the
+  nomads tick's starting position is the `nomads` new-game row, which is).
 
 ## 5. The file
 

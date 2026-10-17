@@ -203,6 +203,12 @@ public sealed class ModdedBuildingTests
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
         Assert.Equal("boathouse", catalog.NameOf(Boathouse));
+
+        // ⭐ And a modder's row on the RETIRED id 14 (D571) is an ordinary store — nothing of the longhouse's
+        // dwelling machinery is left to make it anything else.
+        Assert.True(catalog.Has((int)BuildingKind.Longhouse));
+        Assert.Equal(StoreKind.Warehouse, catalog.StoresAs(BuildingKind.Longhouse));
+        Assert.Equal(0, catalog[BuildingKind.Longhouse].HouseCapacity);
         Assert.Equal(StoreKind.Warehouse, catalog.StoresAs(Boathouse));
         Assert.Equal(200, catalog[Boathouse].StoreCapacity);
         Assert.Equal(2, catalog[Boathouse].Seats);
@@ -399,6 +405,53 @@ public sealed class ModdedBuildingTests
     /// correct and the guard was proving the wrong sentence. <em>A test that goes red for the wrong
     /// reason is a test that is not watching what it says it watches.</em>
     /// </remarks>
+    /// <summary>⛔ Row 14 is RETIRED (D571): a catalogue without it is whole, and the slot answers empty.</summary>
+    [Fact]
+    public void ACatalogueWithoutTheRetiredLonghouseRowLoads()
+    {
+        var kept = new System.Text.StringBuilder();
+        foreach (string line in JsonWithABoathouse.Split('\n'))
+        {
+            if (!line.Contains("\"id\": 14,", System.StringComparison.Ordinal))
+            {
+                kept.Append(line).Append('\n');
+            }
+        }
+
+        string without = kept.ToString();
+        Assert.DoesNotContain("longhouse", without, System.StringComparison.Ordinal);
+
+        SimConfig config = SimConfigLoader.Parse(without, "<retired>");
+        var catalog = new BuildingsCatalog(config.BuildingRows, new JobsCatalog(config.JobsCatalog));
+        Assert.Equal(23, catalog.Count);
+        Assert.False(catalog.Has((int)BuildingKind.Longhouse));
+        Assert.True(catalog.Has((int)BuildingKind.Smithy));
+
+        // ⛔ And the retired list is exactly that one id: a widened exemption scored zero against this file's
+        // missing-id guard as first written (its id-8 strike is refused by another check first), so the list is pinned.
+        Assert.Equal(
+            new[] { BuildingKind.Longhouse },
+            System.Enum.GetValues<BuildingKind>().Where(BuildingKinds.IsRetired).ToArray());
+    }
+
+    /// <summary>⛔ Only the house row houses anybody (D571): `house_capacity` anywhere else is refused in words.</summary>
+    [Fact]
+    public void HouseCapacityOnAnyRowButTheHouseIsRefused()
+    {
+        string withBeds = JsonWithABoathouse.Replace(
+            "\"name\": \"boathouse\", \"stores\": \"Warehouse\",",
+            "\"name\": \"boathouse\", \"house_capacity\": 4, \"stores\": \"Warehouse\",",
+            System.StringComparison.Ordinal);
+        Assert.NotEqual(JsonWithABoathouse, withBeds);
+
+        SimConfigException blew = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse(withBeds, "<beds>"));
+        Assert.Contains("house_capacity", blew.Message, System.StringComparison.Ordinal);
+        Assert.Contains("id 10", blew.Message, System.StringComparison.Ordinal);
+
+        // And the shipped file, which has beds only on the house, still loads.
+        Assert.NotNull(ShippedConfig.Load().BuildingRows);
+    }
+
     [Fact]
     public void ACatalogueMissingABuiltInIsRefusedAtLoad()
     {

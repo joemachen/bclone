@@ -679,24 +679,16 @@ public partial class VillageMap
     /// <summary>Vertices the last trail build laid down, worn then packed — for the probe.</summary>
     public int TrailVerticesWorn { get; private set; }
 
-    /// <summary>The area, in tiles, the yards covered on each surface (D368) — for the probe.</summary>
-    public float TrailBlockAreaWorn { get; private set; }
-
-    public float TrailBlockAreaPacked { get; private set; }
-
     public int TrailVerticesPacked { get; private set; }
 
     public double LastTrailBuildMs { get; private set; }
 
     /// <summary>
-    /// The trails as one mesh, a surface per grade — <b>the D359/D360 rules run once a
-    /// season, not once a tile a frame</b> (D366).
+    /// The trails as one mesh, a surface per grade — <b>built once a collection, not once a tile a frame</b> (D366).
     /// </summary>
     /// <remarks>
-    /// Exactly what the live pass drew: a disc at every worn tile's point, a band from a lone
-    /// neighbour's midway to the point, and a bent band through the point between every pair of
-    /// joined neighbours — each on the surface of the least-worn of the tiles it touches, worn
-    /// under packed. In tile space; the transform does the zoom.
+    /// Since D581 the network's lanes (<see cref="TrailNetwork"/>): worn under packed, in tile space; the transform does
+    /// the zoom.
     /// </remarks>
     private void BuildTheTrailMesh()
     {
@@ -750,7 +742,16 @@ public partial class VillageMap
     /// <summary>The worn tiles the last field-overlay build found on a field.</summary>
     private readonly HashSet<Vector2I> _fieldTrailTiles = new();
 
-    /// <summary>Lay the trails into <paramref name="into"/> — every worn tile, or only those in <paramref name="only"/>.</summary>
+    /// <summary>
+    /// Lay the network into <paramref name="into"/> — every lane, or only the runs of it standing on the tiles in
+    /// <paramref name="only"/> (the field overlay, D512).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The lanes, not the tiles (D581, Joe's note 1 — option E).</b> The worn pass lays every lane at the worn
+    /// half-width; the packed pass lays the packed runs over it at the packed half-width; a junction is a disc a little
+    /// wider than its lanes; a dead end tapers off (D580). The per-tile discs, bends, L-corners, corridor midlines and
+    /// yards this replaces (D359, D360, D368, D374, D415) drew the tiles, which is what drew Joe's ladders and rings.
+    /// </remarks>
     private void LayTrails(ArrayMesh into, HashSet<Vector2I>? only)
     {
         into.ClearSurfaces();
@@ -760,124 +761,57 @@ public partial class VillageMap
             TrailVerticesPacked = 0;
         }
 
-        System.Span<GridPos> joined = stackalloc GridPos[8];
-        System.Span<Vector2> bend = stackalloc Vector2[BendSegments + 1];
-
+        var run = new List<Vector2>();
         for (byte pass = 1; pass <= 2; pass++)
         {
             Color colour = pass == 2 ? PackedPath : WornPath;
+            float half = pass == 2 ? TrailHalfWidth : WornTrailHalfWidth;
             _trailBuilder.Clear();
-            _trailDiscsDrawn.Clear();
-            _trailBendsDrawn.Clear();
 
-            // ⭐⭐ THE YARDS FIRST (D368): every block of worn tiles as one smoothed patch — the
-            // paint's tracer at a cell a tile, ear-clipped — on this pass's surface for the tiles
-            // of this grade (worn is the whole block; packed the packed part of it, over it).
-            HashSet<Vector2I> yard = pass == 2 ? _packedBlockTiles : _blockTiles;
-            if (only is not null)
+            foreach (TrailNetwork.Lane lane in _network.Lanes)
             {
-                yard = new HashSet<Vector2I>(yard);
-                yard.IntersectWith(only);
-            }
-
-            float area = 0f;
-            if (yard.Count > 0)
-            {
-                // ⭐ EVERY CORNER CUT (D374). Traced at one cell a tile, a small yard's sides are
-                // two tiles — `SharpCornerTiles` exactly — so its corners were kept as if a player
-                // had drawn them, and a 3×3 junction drew as the big square Joe asked about.
-                Vector2[] patch = ZoneOutline.Fill(ZoneOutline.Trace(yard, 1, float.PositiveInfinity), yard);
-                _trailBuilder.Triangles(patch, colour);
-                for (int i = 0; i + 2 < patch.Length; i += 3)
+                Vector2[] points = lane.Points;
+                if (points.Length == 1)
                 {
-                    Vector2 a = patch[i + 1] - patch[i];
-                    Vector2 b = patch[i + 2] - patch[i];
-                    area += Mathf.Abs((a.X * b.Y) - (a.Y * b.X)) / 2f;
-                }
-            }
+                    if (lane.Grades[0] >= pass && Stands(points[0]))
+                    {
+                        _trailBuilder.Disc(points[0], half, colour);
+                    }
 
-            if (only is null && pass == 1)
-            {
-                TrailBlockAreaWorn = area;
-            }
-            else if (only is null)
-            {
-                TrailBlockAreaPacked = area;
-            }
-
-            for (int i = 0; i < _trail.Count; i++)
-            {
-                (GridPos tile, byte grade) = _trail[i];
-                if (only is not null && !only.Contains(new Vector2I(tile.X, tile.Y)))
-                {
                     continue;
                 }
 
-                Vector2 here = TrailPointOf(tile);
-                int count = JoinedNeighbours(tile, joined);
-
-                // A block tile is drawn by its yard: no disc, no bends — only a bridge from its
-                // centre to the midway of each lane that meets it, so the lane's half-bend and
-                // the smoothed patch never leave a gap between them.
-                if (_blockTiles.Contains(new Vector2I(tile.X, tile.Y)))
+                // Runs of consecutive points this pass draws: packed only on the packed pass, on the given tiles only.
+                int count = lane.Closed ? points.Length + 1 : points.Length;
+                int from = -1;
+                for (int k = 0; k <= count; k++)
                 {
-                    for (int k = 0; k < count; k++)
+                    bool takes = k < count && lane.Grades[k % points.Length] >= pass && Stands(points[k % points.Length]);
+                    if (takes && from < 0)
                     {
-                        if (!_blockTiles.Contains(new Vector2I(joined[k].X, joined[k].Y))
-                            && Lesser(grade, TrailGradeAt(joined[k])) == pass)
+                        from = k;
+                    }
+                    else if (!takes && from >= 0)
+                    {
+                        run.Clear();
+                        for (int q = from; q < k; q++)
                         {
-                            _trailBuilder.Band(here, MidwayInTiles(tile, joined[k]), TrailHalfWidth, colour);
-                        }
-                    }
-
-                    continue;
-                }
-
-                // ⭐ A CORRIDOR'S TWO ROWS SHARE A POINT (D415), so the neighbour across the corridor
-                // is no step at all — dropped — and each row draws the same ribbon along the midline,
-                // which is drawn ONCE: the trail colours are translucent, and the same shape laid
-                // twice would draw the corridor darker than the lane it is.
-                int kept = 0;
-                for (int k = 0; k < count; k++)
-                {
-                    if (TrailPointOf(joined[k]) != here)
-                    {
-                        joined[kept++] = joined[k];
-                    }
-                }
-
-                count = kept;
-                if (grade == pass && _trailDiscsDrawn.Add(here))
-                {
-                    _trailBuilder.Disc(here, TrailHalfWidth, colour);
-                }
-
-                if (count == 1)
-                {
-                    Vector2 midway = MidwayInTiles(tile, joined[0]);
-                    if (Lesser(grade, TrailGradeAt(joined[0])) == pass && _trailBendsDrawn.Add(Shape(midway, here, here)))
-                    {
-                        _trailBuilder.Band(midway, here, TrailHalfWidth, colour);
-                    }
-
-                    continue;
-                }
-
-                for (int p = 0; p < count; p++)
-                {
-                    for (int q = p + 1; q < count; q++)
-                    {
-                        byte least = Lesser(grade, Lesser(TrailGradeAt(joined[p]), TrailGradeAt(joined[q])));
-                        Vector2 from = MidwayInTiles(tile, joined[p]);
-                        Vector2 to = MidwayInTiles(tile, joined[q]);
-                        if (least != pass || !_trailBendsDrawn.Add(Shape(from, here, to)))
-                        {
-                            continue;
+                            run.Add(points[q % points.Length]);
                         }
 
-                        Bend(from, here, to, bend);
-                        _trailBuilder.Strip(bend, TrailHalfWidth, colour);
+                        bool startsDead = from == 0 && lane.StartsAtADeadEnd;
+                        bool endsDead = k == count && lane.EndsAtADeadEnd;
+                        LayARun(run, startsDead, endsDead, half, colour);
+                        from = -1;
                     }
+                }
+            }
+
+            foreach ((Vector2 at, byte grade) in _network.Junctions)
+            {
+                if (grade >= pass && Stands(at))
+                {
+                    _trailBuilder.Disc(at, half * TrailJunctionWidening, colour);
                 }
             }
 
@@ -900,34 +834,48 @@ public partial class VillageMap
 
             _trailBuilder.AddSurfaceTo(into);
         }
+
+        bool Stands(Vector2 point) => only is null || only.Contains(new Vector2I(Mathf.RoundToInt(point.X), Mathf.RoundToInt(point.Y)));
     }
+
+    /// <summary>One run of a lane: a strip, its dead ends tapered off (D580).</summary>
+    private void LayARun(List<Vector2> run, bool startsDead, bool endsDead, float half, Color colour)
+    {
+        if (run.Count == 1)
+        {
+            _trailBuilder.Disc(run[0], half, colour);
+            return;
+        }
+
+        if (run.Count == 2 && startsDead && endsDead)
+        {
+            Vector2 middle = (run[0] + run[1]) / 2f;
+            _trailBuilder.Taper(middle, run[0], half, half * TrailEndWidthShare, colour);
+            _trailBuilder.Taper(middle, run[1], half, half * TrailEndWidthShare, colour);
+            return;
+        }
+
+        int first = startsDead ? 1 : 0;
+        int last = endsDead ? run.Count - 2 : run.Count - 1;
+        if (last > first)
+        {
+            _trailBuilder.Strip(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(run)[first..(last + 1)], half, colour);
+        }
+
+        if (startsDead)
+        {
+            _trailBuilder.Taper(run[1], run[0], half, half * TrailEndWidthShare, colour);
+        }
+
+        if (endsDead)
+        {
+            _trailBuilder.Taper(run[^2], run[^1], half, half * TrailEndWidthShare, colour);
+        }
+    }
+
+    /// <summary>A junction's disc against its lanes' width — the meeting of several lanes reads as a place (D581).</summary>
+    private const float TrailJunctionWidening = 1.4f;
 
     /// <summary>Vertices the last field-overlay build laid down, both grades — for the probe (D512).</summary>
     public int FieldTrailVertices { get; private set; }
-
-    /// <summary>A bend (or a band, whose control is its own end) the same whichever end it is read from.</summary>
-    private static (Vector2, Vector2, Vector2) Shape(Vector2 from, Vector2 control, Vector2 to) =>
-        from.X < to.X || (from.X == to.X && from.Y <= to.Y) ? (from, control, to) : (to, control, from);
-
-    /// <summary>The discs and bends laid on this pass so far — a corridor's two rows would lay each twice (D415).</summary>
-    private readonly HashSet<Vector2> _trailDiscsDrawn = new();
-
-    private readonly HashSet<(Vector2, Vector2, Vector2)> _trailBendsDrawn = new();
-
-    /// <summary>Segments a bend is sampled at. Eight: a quarter turn in twelve-degree steps.</summary>
-    private const int BendSegments = 8;
-
-    /// <summary>The tile point halfway between two tiles' trail points — where one tile's curve hands over to the next.</summary>
-    private Vector2 MidwayInTiles(GridPos a, GridPos b) => (TrailPointOf(a) + TrailPointOf(b)) / 2f;
-
-    /// <summary>A quadratic Bézier from <paramref name="from"/> to <paramref name="to"/> bent round <paramref name="control"/>, sampled into <paramref name="into"/>.</summary>
-    private static void Bend(Vector2 from, Vector2 control, Vector2 to, System.Span<Vector2> into)
-    {
-        for (int i = 0; i <= BendSegments; i++)
-        {
-            float t = i / (float)BendSegments;
-            float u = 1f - t;
-            into[i] = (u * u * from) + (2f * u * t * control) + (t * t * to);
-        }
-    }
 }

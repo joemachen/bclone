@@ -315,7 +315,9 @@ public sealed class LabourTests
     [Fact]
     public void TheVillageStillSustainsItselfOnJobBasedForaging()
     {
-        SimLoop loop = Build(Config);
+        // ⚠️ Nomads off (D572): the claim is what job-based foraging feeds of the village it grows; bands settling
+        // unattended are the harness's number (`nomads.md §8.6`), not this guard's.
+        SimLoop loop = Build(Config with { NomadsEnabled = false });
 
         int peak = 0;
         for (int year = 1; year <= 150; year++)

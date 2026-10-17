@@ -92,10 +92,12 @@ public sealed partial class SimWorld : IObstacles
         string title,
         string body,
         bool stops = true,
-        LogCategory category = LogCategory.Discovery)
+        LogCategory category = LogCategory.Discovery,
+        IReadOnlyList<MomentMark>? marks = null)
     {
-        Moments.Add(new Moment { Title = title, Body = body, WaitsToBeDismissed = stops });
-        Narrate(body, category);
+        var moment = new Moment { Title = title, Body = body, WaitsToBeDismissed = stops, Marks = marks?.ToArray() ?? Array.Empty<MomentMark>() };
+        Moments.Add(moment);
+        Narrate(moment.LogLine, category);
     }
 
     /// <summary>The libraries standing in the village, and what is written in them.</summary>
@@ -213,6 +215,12 @@ public sealed partial class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public int FoodEverProduced { get; private set; }
+
+    /// <summary>
+    /// Food that came up the valley with a band of nomads (D572) — neither produced nor eaten here, so the ledger's
+    /// third door: produced + brought in − eaten = held. Saved; not hashed, like its siblings.
+    /// </summary>
+    public int FoodEverBroughtIn { get; internal set; }
 
     /// <summary>What each edible good's sources ever produced — the same counter, by good (D397).</summary>
     public int FoodEverProducedOf(Goods goods) =>
@@ -9416,7 +9424,7 @@ public sealed partial class SimWorld : IObstacles
     /// thing that can be set and not cleared, and a household whose site was cancelled while
     /// it still believed one was coming would wait for a house forever.
     /// </remarks>
-    internal Workplace? HomeSiteFor(int householdId)
+    public Workplace? HomeSiteFor(int householdId)
     {
         for (int i = 0; i < Workplaces.Count; i++)
         {
@@ -11068,6 +11076,7 @@ public sealed partial class SimWorld : IObstacles
     private SimWorld(SimConfig config, ISimLogger logger, ulong seed, SaveReader? save = null)
     {
         Config = config;
+        NomadsEnabled = config.NomadsEnabled;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         Crops = new CropsCatalog(config.Crops);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
@@ -13359,15 +13368,20 @@ public sealed partial class SimWorld : IObstacles
     /// would ever move them. One name for two questions is D148's finding.
     /// </para>
     /// </remarks>
-    public GridPos HomePlaceOf(Villager villager) =>
-        HouseholdOf(villager).HomeTile ?? TheCart?.Tile ?? Map.FoundingSite;
+    public GridPos HomePlaceOf(Villager villager) => HomePoint(villager).ToTile();
 
     /// <summary>
     /// The same place as a <see cref="Point"/> — the doorstep itself, the cart itself — so a
     /// villager going home stands ON it (gridless slice 3, D354).
     /// </summary>
-    public Point HomePoint(Villager villager) =>
-        HouseholdOf(villager).HomePosition ?? TheCart?.Position ?? Point.CentreOf(Map.FoundingSite);
+    /// <summary>Their house; else the cart, else the founding site — no roof.</summary>
+    public Point HomePoint(Villager villager)
+    {
+        Household household = HouseholdOf(villager);
+        return household.HomePosition
+            ?? TheCart?.Position
+            ?? Point.CentreOf(Map.FoundingSite);
+    }
 
     /// <summary>
     /// Where a villager stops when there is nothing to do <b>right now</b> — home, except a
@@ -13549,7 +13563,9 @@ public sealed partial class SimWorld : IObstacles
         var cart = new StoreBuilding
         {
             Catalog = GoodsCatalog,
-            Id = 1,
+
+            // 1 at the founding, as it always was; a cart raised again for a re-founding (D567) takes the next free id.
+            Id = StoreBuildings.Count == 0 ? 1 : NextStoreId(),
             Kind = StoreKind.Cart,
             Name = "the cart",
             Position = Point.CentreOf(origin),
@@ -13712,6 +13728,7 @@ public sealed partial class SimWorld : IObstacles
             ["food_eaten_this_year"] = FoodEatenThisYear,
             ["food_eaten_last_year"] = FoodEatenLastYear,
             ["food_ever_produced"] = FoodEverProduced,
+            ["food_ever_brought_in"] = FoodEverBroughtIn,
             ["food_ever_produced_of"] = foodOf,
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
@@ -13741,6 +13758,10 @@ public sealed partial class SimWorld : IObstacles
             ["bread_ever_baked"] = BreadEverBaked,
             ["tools_ever_taken"] = ToolsEverTaken,
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
+            ["bands_ever_knocked"] = BandsEverKnocked,
+            ["next_knock_year"] = NextKnockYear,
+            ["refoundings"] = Refoundings,
+            ["nomads_enabled"] = NomadsEnabled,
         };
     }
 
@@ -13806,6 +13827,7 @@ public sealed partial class SimWorld : IObstacles
             Wells.Add(Well.FromSave(well));
         }
 
+
         // ⭐ The deck index is derived from these and rebuilt on the next ask (D546) — never saved.
         foreach (SaveReader bridge in save.Objects("bridges"))
         {
@@ -13851,6 +13873,7 @@ public sealed partial class SimWorld : IObstacles
         FoodEatenThisYear = save.Int("food_eaten_this_year");
         FoodEatenLastYear = save.Int("food_eaten_last_year");
         FoodEverProduced = save.Int("food_ever_produced");
+        FoodEverBroughtIn = save.HasValue("food_ever_brought_in") ? save.Int("food_ever_brought_in") : 0;
         foreach ((int Good, int Amount) food in save.Pairs("food_ever_produced_of"))
         {
             if (food.Good < 0 || food.Good >= GoodsCatalog.Count)
@@ -13903,6 +13926,10 @@ public sealed partial class SimWorld : IObstacles
         BreadEverBaked = save.Int("bread_ever_baked");
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
+        BandsEverKnocked = save.Int("bands_ever_knocked");
+        NextKnockYear = save.Int("next_knock_year");
+        Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
+        NomadsEnabled = save.Bool("nomads_enabled");
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;

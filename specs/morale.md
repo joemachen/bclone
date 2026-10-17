@@ -126,7 +126,7 @@ already exist).
 | Births gate | ✅ **Exists** — scales with food against a household target. §3.2's second effect follows it |
 | `Villager` need fields | ✅ Hunger and cold are the shape to copy |
 | Departure | ⛔ **Nothing in the game removes a living villager.** This is the one genuinely new mechanism |
-| Arrivals / nomads | ⛔ Sketched in `DESIGN.md §5`, unbuilt. **Departures without arrivals is a one-way valve** — worth sequencing together |
+| Arrivals / nomads | 🔨 Bands knock and settle since D565 (`specs/nomads.md`) — the valve has its other end now. **Departures without arrivals is a one-way valve** — no longer the case |
 | The town hall | ⛔ Phase 4. The distribution view (§3.1) lives there |
 
 ---

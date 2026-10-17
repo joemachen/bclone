@@ -1,4 +1,569 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D562, PUSHED; NOTHING OPEN ON A BRANCH. NEXT: ASK JOE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED: THE NOMADS SLICE AND JOE'S SIX NOTES MERGED (D563–D584). NEXT IS JOE'S CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D584: THE NOMADS SLICE AND JOE'S SIX NOTES — MERGED AND PUSHED) — ON WINDOWS.**
+>
+> **`main` = D584, pushed.** Joe looked at D583 — the lane bending round the north side of the small store in
+> `thornfield-crow-birch-49` — and said *"merge and push"*. `slice/nomads` (D563–D584) is merged `--no-ff` into `main` and
+> pushed; `main` had not moved since D562, so the merge is the D583 tip exactly and its four checks stand (suite 1688 / 0 /
+> 5, view 0 warnings, probe 89 lines no ⛔, bar height 151, goldens 362 → 362). In it: bands and re-founding, nomads not
+> travellers, the camp named, the switch as the permission, the longhouse out (save format 7), the walk-in, the bridge's
+> news in the nomads' two-paragraph stop with its marks, every alert leaving the village at 1× (a Settings tick brings the
+> old speed back), and the paths drawn as a network that goes round buildings (`TrailNetwork`).
+>
+> **▶️ NEXT: Joe's call.** Nothing is queued. Parked and his: option C (staggered house siting, `path-shapes.md §4`), the
+> probe's `pause:` ❌ (D568, headless Esc), and everything in **⏸️ OPEN, AND JOE'S TO CALL** below. A new branch for
+> whatever he picks; never work on `main` directly.
+>
+> **(the banner below is the state at D583, before the merge)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D583: A LANE GOES ROUND A BUILDING, NOT CUT AT ITS WALLS; ⏸️ JOE TO LOOK AGAIN) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D582 as below, plus **D583.** Joe on
+> D582: *"Nope. Doesn't look good. The path should go around the building."* D582 cut a crossing step at the walls, so the
+> two pieces still aimed through. Now `TrailNetwork` **reroutes** such a step round the building on the worn ground (a
+> small four-way Dijkstra, worn 1 / bare 4, within four tiles), the smoothing rounds it, and the crossing test walks every
+> tile a step enters exactly; the cut is the last resort (`CutSteps`). His village (`thornfield-crow-birch-49`, Spring Year
+> 9, as the game read it) is now a `trails:` shape: 0 cuts, nothing across a building. 5 mutants, 3 reds, 2 zeros written
+> down. **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (⚠️ 10m29 against D582's 8m43 — no sim code changed since D581, and Joe's wordgame Godot ran beside it, so read as the machine); view 0 warnings; probe after a fresh build 89 lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.`; goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe looks at the same store** (`thornfield-crow-birch-49`, *Continue*): the lane from the south-west should
+> bend up through the gap and run along the north side of the small store, one lane, not cut. Then the branch waits on his
+> word to merge `--no-ff` and push.
+>
+> **(the banner below is the state at D582)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D582: A LANE NEVER DRAWN ACROSS A BUILDING; D577 APPROVED — LOOKED: *"should go around"*, SO D583) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D581 as below, plus **D582.** Joe
+> played D581: *"what do you think?"* — the network reads as walked paths (ladders, rings, blob gone), but one lane ran
+> straight across a one-tile store; and *"2 paragraph nomads/bridge — approved"* (D577 played). Fixed in
+> `TrailNetwork.cs`: remembered corners round a building, the wander and smoothing kept off buildings, a junction's middle
+> off one, and a final cut at the wall for any step that still crosses. On a copy of his village: 2 samples across a
+> building before, 0 after. 5 mutants, 2 reds, 3 zeros written down (`DESIGN.md` D582). **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m43); view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe looks at the same spot** (`thornfield-crow-birch-49`, *Continue*): the lane should stop at the
+> small store's walls instead of crossing it. Then **the branch waits on his word**: notes 2–5 are built and played, note 1
+> is on its fourth pass (D579–D582). Merge `--no-ff` and push only when he says so.
+>
+> **(the banner below is the state at D581)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D581: THE PATHS DRAWN AS A NETWORK — OPTION E; C NOT BUILT — PLAYED, ONE FAULT, D582) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D580 as below, plus **D581.** Joe
+> played D580: *"still looks like a grid. proceed with C."* Before spec'ing C his newest save was read (read-only):
+> `thornfield-crow-birch-49` has **14 buildings, 2 homes** — the grid runs through the stores and workplaces he placed, and
+> C moves only homes. His screenshots showed the per-tile drawing (ladders, rings round huts, the hub yard). Put to him;
+> **his call: E.** `src/Bclone.Game/TrailNetwork.cs` (pure: bridge one-tile gaps, thin, merge touching junction pixels,
+> trace, place on the middle of the worn ground, wander, smooth) and `LayTrails` drawing its lanes; the per-tile machinery
+> of D359/D360/D368/D374/D415/D580 deleted. Stub pruning tried and refused — on Joe's village it cut a lane to a door.
+> Probes `trails:` (twelve hand-drawn shapes), `paths:` (the valley's network), `field lanes:`. 9 mutants, 11 reds.
+> **View only, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m35); view 0 warnings on `--no-incremental`; probe after a fresh build 89 lines, no ⛔, `trails:` / `paths:` / `field lanes:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362, nothing under `src/Bclone.Sim`, `tests/` or `data/` moved. The network builds in 0.3 ms on the probe's lanes.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** on `thornfield-crow-birch-49` (`.\run.bat`, *Continue*) — the village in his screenshot:
+> are the ladders, the rings round the huts and the hub's blob gone, and does it read as walked paths? Then the branch
+> waits on his play of all six notes; merge `--no-ff` and push at his word only. **C stays parked** in `path-shapes.md` for
+> villages of many homes — raise it only if a homes-heavy village still reads as a grid.
+>
+> **(the banner below is the state at D580)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-14 (D579–D580: NOTE 1 MEASURED; JOE: *"A THEN C"*; A BUILT, VIEW ONLY — PLAYED: *"still looks like a grid"*, SO D581) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D578 as below, plus:
+> **D579** — note 1 measured (`specs/path-shapes.md`, `tools/harness/ZzPathShape.cs` + `pathshape.py`) on **copies** of
+> Joe's seven format-7 saves: 58–95 % of the village's path tiles are straight axis lanes, 47–66 % beside a building —
+> the paths are the corridors between tile-aligned buildings. A route tie-break toward the diagonal (prototyped in a
+> throwaway worktree, gone) moved nothing; loosening D414 made it worse. Options A (draw as walked) / B (eight-way field,
+> not recommended) / C (stagger the houses) / D (leave it). **Joe: *"A then C"*.**
+> **D580** — option A, view only: `VillageMap.DrawnTrailPointOf` (the true point + a seeded smooth wander of the
+> point, ≤ 0.18 a tile an axis; none for a junction or a lone L's corner), worn lanes 0.14 wide against packed 0.17,
+> dead ends taper (`MeshBuilder.Taper`). `TrailPointOf` unchanged — still the geometry. Probe `paths:`; 5 mutants, 5
+> reds (one zero closed). **No sim change, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m45); view 0 warnings; probe 89 lines (the new `paths:`), no ⛔, `paths:` / `trails:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's; ⚠️ the clean probe was run after a fresh build — the trap below); goldens 362 → 362, nothing under `src/Bclone.Sim`, `tests/` or `data/` moved.
+>
+> **▶️ NEXT: ⏸️ Joe plays D577, D578 and D580 together** (`.\run.bat`, his newest save or a new village to Year 10+):
+> the paths in the village — do they still read as a grid? If **yes → option C**: a spec of its own for staggered house
+> siting (`ChooseSite`, `organic-housing.md`, D411–D413, D497's seams, D331's overlap, every reachable-door guarantee),
+> measured with `ZzPathShape` on the same saves before a line moves. If **no → note 1 is done**, and the branch waits
+> on Joe's play of all six notes; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D578)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D578: EVERY ALERT LEAVES THE VILLAGE AT 1×; THE OLD SPEED BACK IS A SETTINGS TICK, OFF BY DEFAULT; ⏸️ JOE TO PLAY IT WITH D580) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D577 as below, plus **D578**, asked
+> before note 1: *"anything there is a pop-up alert … it should take the game speed to 1x. after the pop-up is dismissed,
+> it should leave the timer at 1x … that should be an option in game settings … default to off."* Every alert already
+> slowed the village (D268, `SlowDownForAnAlert`, waiting and passing alike; paused stays paused). Now
+> `LetTheVillageBackUpToSpeed` lets go of the hold but sets the old speed only when `_alertsGiveTheSpeedBack` — the tick
+> *Alerts → go back to my speed after an alert*, default **off**, remembered as `toggles.alert_speed_back` in
+> `settings.json` (the player's, never the village's). The registry is `_viewToggles` now (was `_mapToggles`). The pause
+> screen's *Resume* still gives the speed back — a menu, not an alert. Probe `alert speed:`; `arrival:` runs with the tick
+> on so its hold checks bite. 4 mutants, 5 reds. **View only, no golden moved.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (9m25 — the sim identical to D577's 9m04, so ~20 s is the run, and D577's jump from 7m58 reads as the machine more than the code); view 0 warnings; probe 88 lines (the new `alert speed:`), no ⛔, `alert speed:` / `arrival:` / `moment:` / `settings:` (11 toggles) / `map toggles:` (10) ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362.
+>
+> **▶️ NEXT: ⏸️ Joe plays D577 and D578 together** (a knock at 4×: one pop-up, two short paragraphs with their marks, and
+> the village left at 1× after *Go on*; the tick in Settings brings the old behaviour back). **Then note 1 — the paths'
+> gridding**, a design spec with options for Joe (D568 banner, far below). Then Joe plays all six; merge `--no-ff` and
+> push at his word only.
+>
+> **(the banner below is the state at D577)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D577: THE NOMADS' MOMENT IN TWO SHORT PARAGRAPHS, EACH WITH ITS MARK; ⏸️ JOE TO PLAY IT WITH D578) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D576 as below, plus **D577.** Joe
+> played D576 (one pop-up, as asked) and sent the panel: *"too verbose … 1 word wall. break it into 2 paragraphs. maybe
+> even a bridge icon and a nomad icon."* Now two paragraphs, 1–2 sentences each — *"The Brooks, 2 souls, have come up
+> the valley to make a home here. Until a house is raised for them in the painted land, they sleep in the open at the
+> founding site. Spring, Year 11."* beside the walk-in's chevron over a villager's dot, and (only when their coming
+> taught it) *"On the long road here they learned to lay timber across running water. The village can build wooden
+> bridges now, and the far bank is within reach."* beside a timber deck over water. **A moment has paragraphs and
+> marks now**: `Moment.Marks` (`MomentMark`: `None`, `Nomads`, `Bridge` — append only, saved by number, optional on
+> read), `Moment.ParagraphBreak`, `Moment.LogLine` (what the log gets — one line); the view's `MomentGlyph` draws the
+> marks, the panel one block a paragraph, the text column 420px as before. 7 mutants, 7 reds. **No golden moved.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (9m04 — ⚠️ against D576's 7m58 for one more fast guard; the sim adds a split and join per moment, which are rare, so read as the machine until a back-to-back run says otherwise); view 0 warnings; probe 87 lines (the new `moment:`), no ⛔, `moment:` / `walk-in:` / `arrival:` / `arrived:` / `nomads:` / `bridge:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's); goldens 362 → 362, none in the diff.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** (a village to its first knock; the words are his to change — they live in
+> `SimWorld.Nomads.cs`, `Knock` and `TheyBroughtTheBridge`). **Then note 1 — the paths' gridding**, a design spec with
+> options for Joe (D568 banner, far below). Then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D576)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D576: JOE SAW THE WALK-IN; THE BRIDGE'S NEWS FOLDED INTO THE NOMADS' STOP — PLAYED, ITS WORDS ARE D577) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D575 as below, plus **D576.**
+> Joe played D575: *"i saw them walk in."* — **the walk-in is seen by a person; note 4 is done.** His one note: the
+> bridge's stop (learned at 10 people) and the nomads' popped up together, because the band took the village to 10; he
+> asked for `bridge_unlock_population` 15. **Measured before typing** (`tools/harness/ZzBridgeKnock.cs`, new;
+> `bridges.md §8.2a`): a band is what crosses the number in 24 of 25 shipped villages at 10 and **27 of 27 at 15** —
+> 15 would only have moved the double stop to ~Year 25. **His call: one stop, the number stays 10.** When a band
+> teaches the bridge, the nomads' moment carries the sentence and the bridge raises none (`Settle` returns
+> `LearnedToBridgeJustNow`; `Knock` appends `TheVillageLearnedToBridge(…)`); a birth that teaches it still stops on its
+> own. `NomadTests` one re-posed, one new; 4 mutants, 4 reds. Moments are not hashed — **no golden moved.**
+>
+> **Verified:** suite 1687 / 0 / 5 of 1692 (7m58; D575 + the one new guard); view 0 warnings; probe 86 lines, no ⛔,
+> `walk-in:` / `arrival:` / `arrived:` / `nomads:` / `bridge:` / `new game:` / `tile centres` ✅, bar height 151, `done.`
+> (`pause:` ❌ is D568's); goldens 362 → 362, none in the diff.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** (a village to the first knock: one pop-up, its text ending in the bridge sentence when the
+> band takes the village to 10). **Then note 1 — the paths' gridding**: a design spec with options for Joe (octile
+> field with diagonal lanes; a bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s
+> numbers, before the field is touched (D122). Then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D575)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D575: THE WALK-IN FIXED — THE WINDOW IS `[since, now)` AND THE FOUNDERS' 0 IS REFUSED; ⏸️ JOE TO PLAY IT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D574 as below, plus **D575: D574's
+> fix, built.** `VillageMap.ArrivalsSince` now reads `ArrivedAtTick != 0 && since <= ArrivedAtTick < now` — the ticks the
+> sim *computed* between two looks. ⭐ **The handoff's three-line fix was one line short:** a new game is watched from
+> tick 0, and `[0, 1)` holds every founder (`ArrivedAtTick` 0 = *nobody arrived*), so the turned window alone would have
+> walked the founders in from the edge on the first step. The `!= 0` is in the rule by name and pose (d) reads none for
+> *since 0 by 1*. Pose (d) re-stamped (99 read for *since 99 by 100*, 100 not yet); `Main.TheArrivalsWalkedIn` stamps
+> `world.Tick - 1`, as the sim does. **4 mutants, 5 reds, no zeros** (`nomads.md §9`). **View only: no sim change, no
+> golden moved, no test touched.**
+>
+> **Verified:** suite 1686 / 0 / 5 of 1691 (7m59, against D573's 8m37); view 0 warnings; probe 86 lines, `walk-in:` ✅, `arrival:` ✅, `arrived:` ✅,
+> `nomads:` ✅, `new game:` ✅, `tile centres` ✅, bar height 151, `done.` (`pause:` ❌ is D568's, unchanged); goldens
+> 362 → 362, nothing under `tests/` or `data/` moved.
+>
+> ⚠️ **Not done, said so:** the D574 trap's *natural* door (step the probe's valley to its first knock turn and watch a
+> real band) — the probe's unattended valley met no band in twelve years, so it stays information (`0 band(s) knocked
+> in the run`); the pose now copies the sim's stamp from `SimWorld.Nomads.cs:150`, which is what the trap asked a pose to do.
+>
+> **▶️ NEXT: ⏸️ Joe plays it** — a new village with nomads on, to the first knock (Year 8–12): the band should appear at
+> the valley's edge with a chevron over each head, file in over ~8 s at 1×, and *then* the moment shows. **The walk-in has
+> still never been seen by a person.** Then note 1 — the paths' gridding, a design spec with options for Joe (D568
+> banner below), then Joe plays all six; merge `--no-ff` and push at his word only.
+>
+> **(the banner below is the state at D574, before the fix)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-13 (D574: JOE PLAYED D573 — THE NOMADS NEVER WALKED IN; THE CAUSE IS FOUND, THE FIX IS THREE LINES, NOT BUILT) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D573 as the banner below says.
+> **Joe played D573** (a new village to the knock): *"i never ever see them walk onto the map from offscreen. the alert
+> pops up telling me there are nomads and then they are just in the village."* He asked for a fresh session; this
+> banner is the handoff. **Nothing is built for it; the diagnosis is confirmed by reading, not by a run.**
+>
+> **⛔ THE CAUSE — AN OFF-BY-ONE IN THE WINDOW `VillageMap.ArrivalsSince` LOOKS THROUGH.** `SimLoop.StepOnce` runs the
+> systems with `World.Tick == T` and *then* `World.Tick++` (`SimLoop.cs:98`; `nomads.md §9` already said it in D565's
+> words: *"a band raised on the knock tick is there one step past it"*). So a band's people carry `ArrivedAtTick == T`
+> and the view first sees them when `world.Tick == T + 1`. `WatchForArrivals` remembers the tick it last looked at
+> (`T`, the frame before the step) and asks for arrivals in **`(since, now]` = `(T, T+1]`** — which excludes `T`. No
+> real band ever matches; `BeginWalkIn` is never called; `WalkInUnderway` stays false; `ShowAnyMoment` shows the moment
+> at once. Exactly what Joe saw. **The probe's `arrived:` line passed because its pose stamped the arrival with the
+> *current* tick (`ArrivedAtTick = world.Tick` after `_loop.Step(1)`) — a stamp the sim never writes.** A pose that
+> does not copy the sim's own timing proves the pure rule against itself (trap, below).
+>
+> **▶️ THE FIX, FIRST THING (D575):** *(1)* `VillageMap.WalkIn.cs`, `ArrivalsSince`: the window is the ticks **computed**
+> between two looks, `since <= ArrivedAtTick < now` — a look at `T` then a look at `T+1` sees the band stamped `T`; a
+> save made at `T+1` loaded fresh starts its window at `T+1` and never replays `T` (unchanged). *(2)* The same file's
+> pose (d) in `TheNomadsWalkInFromTheEdge`: since 99 by 100 must read the arrival stamped **99**, and one stamped 100
+> must not count yet; since 100 by 100 reads none. *(3)* `Main.TheArrivalsWalkedIn`: after `_loop.Step(1)` the posed
+> villager is stamped **`world.Tick - 1`** — the stamp the sim would have written in that step — not `world.Tick`.
+> ⭐ *Better still, make the live door honest without a pose:* step the probe's valley to its first knock turn
+> (`FirstKnockYear()`, `Config.TicksPerYear`) with the switch on and ask after one `Refresh` — but the probe's
+> unattended valley may be dead by Year 8 (*0 bands knocked in twelve years* on this seed, D573), so keep the pose
+> and add the natural check as information. Then the four checks (no sim change: the suite is for the verdict, the
+> probe is the instrument), red-check the window both ways (`>=` → `>` must redden `arrived:` *and* pose (d);
+> `< now` → `<= now` must redden pose (d)), and **Joe plays it again** — the walk-in has still never been seen by a
+> person. Then note 1.
+>
+> **Joe's other question (2026-10-13, from his screenshot): *"should the home and the cart be this close?"*** — a house
+> about three tiles from the cart, both in the open. The sim put it there on purpose: `ChooseSite` scores a home's
+> site by travel cost to the stores (D120 — *"a home beyond it is a family the village feeds less well, not one it
+> refuses to house"*), so nearer the cart is the sim's own preference, and the only rules between buildings are that
+> footprints do not overlap (SAT, D331), a house never sits on a seam (D497), and every building keeps a route out
+> (`TravelCostField.CostLeaving` — a building walled in on every side reads *Unreachable*, which is the one failure
+> the gap could cause and which placement already refuses). Nothing known breaks at three tiles; nothing reads the
+> gap. **If something ever does, it is the heap at a store's door (D370), which wants a free tile beside the store.**
+> Told to him in chat; not a task.
+>
+> **(the banner below is the state at D573, before Joe played it)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D573: NOTE 4 — THE NOMADS WALK IN FROM THE EDGE, VIEW ONLY) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), notes 2, 3, 5 (D569–D571), the switch as the permission (D572 — **Joe played it: *"nomads work as expected"***;
+> the harness's starvation number is parked at his word) and **D573: note 4 — the view walks a band in from the valley's
+> edge.** `VillageMap.WalkIn.cs`: the shell asks the map to `WatchForArrivals` in `Refresh`, *before* `ShowAnyMoment`;
+> the map notices anybody alive whose `ArrivedAtTick` fell since it last looked, works out **once** the cheapest passable
+> edge tile to the camp (`TravelCost.Cost` over the perimeter) and the sim's own `RouteFrom` it, smoothed by a three-tile
+> mean that provably stays inside its tiles, and draws them along it for **8 s of real time**, filing 0.35 s apart, a dun
+> chevron bobbing overhead and fading as they arrive, the last 15 % bending to where they really stand so nothing snaps;
+> `DrawnCentre` asks the walk first so a click lands. **The arrival moment is held until the last is in** and the village
+> kept at 1× meanwhile (`ShowAnyMoment` and `LetTheVillageBackUpToSpeed` ask `_map.WalkInUnderway`; the walk's start calls
+> `SlowDownForAnAlert`); paused, they stand still (`_map.Paused`); a load never replays (a new world is watched from its
+> own tick); re-founders walk in too. Joe's calls in plan mode: hold the moment; ~8 s; a chevron, not the bowl. **No sim
+> change, no golden moved, no test touched.** 12 mutants, 11 reds, one equivalent zero written down (`nomads.md §9`).
+> Verified: suite 1686 / 0 / 5 of 1691 (8m37, against D572's 10m47); view 0 warnings; probe 86 lines (83 + the three),
+> no ⛔ (`pause:` ❌ is D568's), `walk-in:` ✅, `arrival:` ✅, `arrived:` ✅, `nomads:` ✅, `bars:` ✅ (960px), bar height
+> 151, `done.`; goldens 362 → 362, nothing under `tests/` or `data/` moved.
+>
+> **▶️ NEXT: note 1 — the paths' gridding**: a design spec with options for Joe (octile field with diagonal lanes; a
+> bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s numbers, before the field is touched
+> (D122). The D568 banner below has the review. **Then Joe plays all six; merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for (carried in the trap list as well):** *(1)* **The shell shows a moment before the map ever
+> draws the tick that raised it** — `Refresh` → `ShowAnyMoment` runs long before `_map.Present` and `_Draw`; anything the
+> view must do ahead of a modal is noticed in `Refresh`, not in the draw. *(2)* **A probe check that depends on the seed is
+> a zero that reads as green**: the first `arrived:` counted the run's natural arrivals and the probe's unattended valley
+> met no band in twelve years (*0 bands knocked*) — the door is posed now (one tick on, a villager posed as arrived).
+> *(3)* **A ~430-line quoted heredoc does not parse in this Git Bash** (*unexpected EOF while looking for matching `''*) —
+> a new source file goes through the Write tool. *(4)* **Do not edit a source file while a red-check script is swapping
+> mutants in and out of it** — docs only while it runs. *(5)* **A mutant that throws inside the probe is a HANG, not a
+> red**: the headless Godot never reaches `done.` and sat twelve hours with the mutant applied — scripted probe runs go
+> under `timeout 240`, check for `done.`, and `taskkill` Godot on a miss.
+>
+> **(the banner below is the state before D573)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (D572: BANDS SETTLE ON ARRIVAL; THE TICK ON THE VILLAGERS BAR) — ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), the words (D569), the switch (D570), the longhouse out (D571) and **D572: Joe played D569–D571 and found that no
+> house was built for the nomads** — because the band never settled: its *Let them settle* / *Send them on* sat in the
+> card's collapsed *Settings ▾* fold, he never saw them, and the Tanners moved on unanswered. His calls: **on = they settle
+> on arrival; off = nobody comes; the tick on the villagers bar, not in Settings.** Built: a band that knocks settles that
+> tick (`Knock()` → `Settle(band)`, the next knock's year set the same tick, one verb-free stopping moment that says
+> they settled and what happens next); **the waiting band is gone** — `SimWorld.Band`, `BandLeavesAtTick`,
+> `TheBandMovesOnIfUnanswered`, `SendTheBandOn`, `LetTheBandSettle` (now private `Settle`), `nomads_wait_seasons`,
+> the `band` save key, the 0x6F hash block (retired), `CardKind.Band` and its card, the huddle, the bar button, the
+> Settings tick; **the tick is a third line of the villagers box** (*N unhoused · ☐ nomads may come to the valley*),
+> `Refresh` keeps it reading the world. Save format stays 7 (no build that wrote 7 reached Joe). **The six fifty-year
+> goldens moved**, proven the knock's alone: with the floor at 0 all six read their **pre-D565** values. Harness, 100
+> shipped valleys × 50 years, D571 → D572: alive at 50 **627 → 719**, dead valleys **12 → 12**, peak **1005 → 1161**, starved **422 → 1353**, froze **585 → 582** — the villages hold more people and the same number die out, and **starvation triples**: bands keep coming to a village nobody paints or plants for (D447: a harness is not a player) — Joe's to read against a played run. Verified: suite 1686 / 0 / 5 of 1691 (10m47 — ⚠️ against D571's 6m52; the fixture villages
+> carry a family more from Year 8–12 and every 150-year guard with nomads on runs longer; the three economy guards run
+> with the switch off); view 0 warnings; probe 83 lines (the `huddle:` line gone), no ⛔, `nomads:` ✅, `bars:` ✅
+> (960px, 1261×78), bar height 151, `done.`; exactly the six goldens moved.
+>
+> **▶️ NEXT: note 4 — the nomads walk in from the valley's edge with a marker over their heads, view-only first** (Joe
+> agreed): the arrivals are villagers with `ArrivedAtTick == now` at `BandCamp`; the view can animate them in from the
+> edge tile the one cost field reaches most cheaply from the camp (a derived, cached point) over N seconds with a marker
+> (`DrawTheMealMark`'s shape), posed in the probe, no sim change, no golden. **Then note 1 — the paths' gridding**: a
+> design spec with options for Joe (octile field with diagonal lanes; a bounded-curve walk rule; lanes not
+> fence-aligned), measured on `desire-paths.md`'s numbers, before the field is touched (D122). **Then Joe plays all six;
+> merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for:** *(1)* **A decision inside a fold is a decision nobody sees.** The `nomads:` probe
+> checked the two buttons were wired and *offered* (the fold's toggle visible) — never that a player would see them.
+> Anything the player must act on goes in the card's body, or it did not ship. *(2)* **A stored waiting state is dead
+> the day the answer is a standing switch** — delete it, do not leave it reachable; the dead code was a class, a card,
+> a probe line, five guards and a save key. *(3)* **The goldens move for a reason this time, and the proof is not "the
+> switch off"**: D565's values were taken *with* a band knocking, waiting and hashed, so no switch recovers them — the
+> proof is the floor at 0 against the values from `git show 4004a49^`, which match to the digit. And D565 had never
+> written its RE-TAKEN lines; D572 wrote both. *(4)* **The villagers box's second line was the bar's widest line**, not
+> the counts row: the tick on it ran the bar 1268 → 1343 at the pose. A third line costs height (58 → 78), never width.
+> *(5)* `arms.sh` calls `python3`, which this box does not have — run its `dead.py` by hand with `python`.
+> *(6)* **Never run the headless probe beside `dotnet test`.** `godot --headless --path` is the editor, and the editor
+> builds the C# project on run — the same `Bclone.Sim` the test build writes. A chained *view build → probe → suite* came
+> back with the probe printing nothing and the suite at 1549 tests with eleven flakes in files nomads never touched;
+> run alone, both were green. One builder at a time.
+>
+> **(the banner below is the state before D572)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 5 BUILT: THE LONGHOUSE IS OUT, SAVE FORMAT 7) — D571, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), the words (D569), the switch (D570) and **note 5 (D571): the longhouse removed** — a real unbuild, the row
+> deleted (Joe's call), `BuildingKind.Longhouse = 14` the first **retired id** (`BuildingKinds.IsRetired`, exempt from the
+> missing-id check; `BuildingsCatalog.Has(id)` — ⚠️ a catalogue slot can be NULL now), `house_capacity` refused on any row
+> but the house, hash tags 0x67 / 0x68 retired by comment, **save format 7** (Joe's saves from the branch's earlier
+> builds are refused in words — a new village). The villagers bar's households line reads *N unhoused*, amber with *"paint
+> more housing"* while `NeedsMoreResidentialLand` is latched. 7 guards, 8 mutants, 42 reds, one zero closed (G1 now pins
+> the retired list to exactly {14}). **No golden moved.** Verified: suite 1690 / 0 / 5 of 1695 (6m52; D570's 1700 less
+> the 13 longhouse guards plus the four new); view 0 warnings; probe `bars:` ✅ (960px, the bar unmoved with *12,345
+> unhoused* posed), `cards:` ✅, `nomads:` ✅, `huddle:` ✅, bar height 151, `done.` (`pause:` ❌ is D568's, below).
+>
+> **▶️ NEXT: note 4 — the nomads walk in from the valley's edge with a marker over their heads, view-only first** (Joe
+> agreed): the edge tile the one cost field reaches most cheaply from `BandCamp` (a derived, cached point), a walk-in
+> animated over N seconds along the route, a marker above each dot (`DrawTheMealMark`'s shape), posed in the probe, no sim
+> change, no golden. **Then note 1 — the paths' gridding**: a design spec with options for Joe (octile field with
+> diagonal lanes; a bounded-curve walk rule; lanes not fence-aligned), measured on `desire-paths.md`'s numbers, before the
+> field is touched (D122). **Then Joe plays all six; merge `--no-ff` and push at his word only.**
+>
+> ⚠️ **Traps this commit paid for (carried below as well):** *(1)* **a sixth bar cell ran the bar 72px under the right
+> column** — the probe's `bars:` line caught it, exactly as the plan said it might; the count went on the households line
+> and the probe poses *12,345 unhoused* beside the widest clock. *(2)* **A widened retired-id exemption scored zero
+> against the missing-id guard**, because its line strike of `"id": 8,` takes the trade with id 8 as well and the jobs
+> validator refuses first — *a guard that asserts "it threw" is as strong as the first thing that throws*; G1 pins the list. *(3)* **A catalogue slot can be null:
+> every `for id < Count` loop over buildings asks `Has(id)` first** — the strip and the `cards:` probe would have died at
+> startup and the suite cannot see either.
+>
+> **(the banner below is the state before D571)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 3 BUILT: THE NOMADS SWITCH) — D570, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = the slice (D563–D567), Joe's six notes
+> (D568), note 2 (D569) and **note 3 (D570): `SimWorld.NomadsEnabled`** — the village's own switch, read by the knock and
+> by re-founding, hashed only when off (`0x6A`), saved as `nomads_enabled`, started from a new config key of that name;
+> a tick under Settings → *How the village runs* beside share-out; a sixth new-game row `nomads` (*Come to the valley* /
+> *Never come*) remembered with the valley and in the share code. A band already waiting still waits, moves on and can
+> be answered; on again with the year past, the band knocks at the next turn. 9 mutants, 15 reds, no zeros. **Verified:
+> suite 1700 / 0 / 5 of 1705 (7m05, against D569's 1693 / 0 / 5 in 6m57 on the same machine); view 0 warnings; probe
+> `new game:` ✅, `settings:` ✅, `nomads:` ✅, bar height 151, `done.` (the `pause:` ❌ is D568's, see below). No golden
+> moved.** Save format still 6 (`nomads_enabled` read with `HasValue`; **note 5's bump to 7 makes it required**).
+>
+> **▶️ NEXT (as it stood at D570): note 5 — done in D571, see the banner above.** Then note 4 (walk-in, view-only) and
+> note 1 (paths — a spec with options for Joe). **Merge and push at his word only, after he has played all six.**
+>
+> **(the banner below is the state before D570)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOTE 2 BUILT: NOMADS, NOT TRAVELLERS; THE CAMP NAMED) — D569, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (local, **not pushed, not merged**) = D563–D567 the slice, D568 Joe's six notes,
+> **D569 note 2 built**: every string says *nomads*; *"the pile"* is gone from the band's sentences — the band never stood at
+> one (`BandCamp` is the cart or the founding site's centre) — and `SimWorld.WhereTheBandCamps` (*by the cart* / *at the
+> founding site*, derived, unhashed, unsaved) is read by the knock, the move-on line, the card's status (a `where` the
+> probe poses) and the bar button's tooltip. `TheKnockSaysWhereTheBandCamps`, 1 mutant, 1 red. **No golden moved.**
+> Save format still 6.
+>
+> **The plan for the rest is approved** (`~/.claude/plans/read-handoff-md-and-tell-memoized-sunset.md`): Joe's calls in
+> plan mode — **order 2 → 3 → 5**; **the switch = an in-game tick under *How the village runs* (the village's, hashed
+> sparsely when off, saved; the share-out pattern) PLUS a `nomads` levels row on the new-game screen setting a new
+> `nomads_enabled` config key (remembered in `settings.json` as every row is; in the share code)** — ⛔ not a `settings.json`
+> toggle, because `settings-persistence.md §3` says a setting is never sim state and never hashed; **re-founding obeys
+> the switch**; **the longhouse row is deleted** (not reverted to a store; `BuildingKind.Longhouse = 14` stays, never
+> renumbered; the missing-id validator gets a retired-id exemption; `BuildFixtures.WithTheOldLonghouseStore` must ADD a
+> row, since `FindIndex` on a deleted row is −1); **save format 7** with the unbuild. Then note 4 (walk-in, view-only) and
+> note 1 (the paths' gridding — a spec with options for Joe). **The branch stays unmerged until the six are done and he
+> has played them.**
+>
+> ⚠️ **One trap this commit paid for:** dropping a one-line red-check mutant with `git checkout -- file` dropped the
+> whole file's edits with it, silently — the suite had already passed on them, so nothing said so until the next grep.
+> **Revert a mutant by the edit that made it (sed the line back), never by checking the file out.** ⚠️ **And the
+> probe's `pause:` line reads ❌ (*"Esc with nothing open did not open the pause screen"*) — on the D568 tree as well,
+> re-run on a stash to be sure, so it is not D569's.** D567's banner said *"no ⛔"*, which a grep for ⛔ cannot see a ❌
+> through. Joe's Esc worked in play (D518), so it is the probe's headless key path; untouched here, open for a session.
+>
+> **(the banner below is the state before D569)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (JOE PLAYED THE NOMADS — SIX NOTES, NOTHING BUILT FOR THEM YET) — D568, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, **not pushed, not merged**) = D563–D567: the spec, the
+> band, the longhouse, re-founding — built, every check green (`nomads.md §10`). **Joe played it and sent six notes
+> (D568). They are the next work, in this order, and they are for a NEW session — nothing below is started.** Save
+> format 6.
+>
+> **1. The paths grid instead of wandering — REVIEWED, NOT FIXED (his screenshot: an orthogonal lattice round the
+> market and through the housing block).** The cause is in the design, three decisions deep, and it is written here so
+> the next session does not re-derive it: *(a)* the one cost field routes **4-connected on the tile grid** (Manhattan;
+> `TerrainCostField.cs:147` — "movement is four-way", which is also why Dijkstra there is plain breadth-first); *(b)* a
+> leg is string-pulled to the furthest visible route tile, **but D414 (`desire-paths.md §3.6`, `path_shortcut_grass_allowance` 0)
+> forbids a leg that treads more grass than the route's own tiles** — so once any path exists walkers keep to the
+> route's staircase exactly, and the spec itself recorded the tension: *"the route's metric is Manhattan and the walk is
+> Euclidean"*; *(c)* in the village the obstacles are grid rectangles (buildings, D383; fenced plots, D404) that leave
+> only axis-aligned corridors, so the routes between them are straight rows and columns and the trails wear into a
+> lattice — in the open forest the same routes are string-pulled across grass and the trails curve, which is why the
+> forest paths in his screenshot look fine and the village's do not. **What would fix it is a design call, not a tweak:**
+> an 8-connected (octile) cost field with diagonal lanes (every flow field and `TicksForCost` and the Phase 0 pins move),
+> or a walk-side rule that lets a leg deviate from the route by a bounded curve, or lanes that are not fence-aligned.
+> Spec it (`desire-paths.md` has the measurements) and bring Joe the options before touching the field — D122 froze
+> nineteen people the last time that chain moved by one tile.
+>
+> **2. "The pile" in the arrival moment.** It is the founders' stockpile — `BuildingKind.Pile`, the heap the cold start
+> marks at the founding site (`PlayTheOpening`) — and the band camps at `SimWorld.BandCamp`: the cart while it stands,
+> else the founding site's centre. The word reads as nothing to a player; the moment, the card and the button should say
+> **where** in the village's own words (*"at the founding stockpile"* / the cart). **And rename: NOMADS, not
+> travellers** — every string (`SimWorld.Nomads.cs` moments and log lines, `Main.Cards.cs` the band card's title /
+> status / buttons' tooltips, `Main.cs` the bar button *Travellers (N)* → *Nomads (N)*, the probe line's words, the
+> spec). The type names (`NomadBand`, `NomadPerson`) already say it.
+>
+> **3. Accept / reject, and a switch for the whole feature.** Accept / reject exists — the band's card carries *Let
+> them settle* / *Send them on* (`nomads.md §4.3`). What is missing is **the switch**: Joe's Foundation screenshot has
+> an *Immigration — enabled* toggle under the villagers bar. Build it as a tick in the villagers box or in Settings
+> (`Main.cs` `BuildVillagersBox` ~3800, or the Settings fold), persisted like the other settings (D505,
+> `settings-persistence.md`) **and hashed sim state** — it changes whether a band knocks, so it is `SimWorld.NomadsEnabled`
+> (saved, hashed sparsely when off), read by `KnockIfItIsTime`. Off: no band knocks; a band already waiting still waits
+> its season. Whether re-founding obeys the same switch is his to say (recommend: yes — one switch, *Nomads*).
+>
+> **4. The nomads walk in from off-screen, with a marker over their heads.** Today the band appears at the camp as a
+> huddle (`VillageMap.DrawTheBand`). Joe wants to **see them come**: from the valley's edge (the edge tile the one cost
+> field reaches most cheaply from the camp — a derived, cached point, like `BandCamp`) along the route to the camp, each
+> with an indicator above the dot while walking. Two ways: *(a)* **view only** — the band is sim state at the knock as
+> now; the view animates a walk-in over N seconds from the edge to the camp and draws the marker (a bowl's shape,
+> `DrawTheMealMark`), no sim change, no golden moved; *(b)* **sim** — the band's people are villagers in an `Arriving`
+> state who walk the route and knock on arrival (goldens move, the card's deadline starts on arrival, their arrival is
+> on the map's clock at 4×). Recommend *(a)* first, posed in the probe; bring him both.
+>
+> **5. ⛔ REMOVE THE LONGHOUSE FROM THE GAME** (reversing his call 3, D563, after playing it): *"unhoused immigrants
+> should build new houses in the already painted areas like normal citizens (if there is space) and if not, the game
+> should indicate to the user that there are unhoused people and not enough room to build homes."* The first half is
+> what already happens (a settled family is roofless and `HouseTheRoofless` sites a house in the paint — `nomads.md §4.4`);
+> the second half is **the indicator**: `NeedsMoreResidentialLand` is set and narrated once (`HouseholdSystem.cs` ~210),
+> but nothing on screen stays lit — build a standing warning (the villagers bar's *Unhoused: N* cell, amber, with the
+> sentence *"N people have no roof and the painted land is full — paint more housing"*; the band's card already says
+> *in the open at the pile*). **Removing the longhouse is a real unbuild**, not a flag: `Longhouse.cs`,
+> `SimWorld.Longhouses.cs`, `Household.LodgedIn`, `LarderOf` (collapse to `household.Stockpile`), the hearth's second
+> loop, the pairing checks, the six standing-things arms, the condition walk's arm, the hash block (0x67/0x68), the save
+> keys (`longhouses`, `lodged_in` — **format 7**), the row (back to a store, or deleted — `BuildingKind.Longhouse = 14`
+> stays in the enum, never renumbered, D320's guards keep the three-tile store from data via
+> `BuildFixtures.WithTheOldLonghouseStore`), `WhyNotYet`'s gate, `longhouse_capacity`, the view's shelf / button / draw /
+> card / `cards:` pose, `LonghouseTests` (delete), `nomads.md §4.5` (struck through with the reason), the catalogue
+> guard's buffer and roof rows, `content-inventory.md`, `footprints.md`. ⚠️ Decide with him whether the row goes back
+> to being the D320 three-tile warehouse (then the geometry suites need no fixture) or is deleted (a modder can still
+> type one).
+>
+> **6. This note.** Written here, in `DESIGN.md` D568 and §5/§6, and in `nomads.md §3a`, for the fresh session he asked
+> for. **The branch stays unmerged until the six are done and he has played them**; the three build commits are sound as
+> they stand (every check green) and are the base to build on. Merge and push at his word only.
+>
+> **(the banner below is the state before D568)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, WHOLE — COMMIT 3, RE-FOUNDING) — D567, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (spec, measurement), D565 (the
+> band), D566 (the longhouse) and **D567, commit 3 of 3 — re-founding — built, committed. The slice is whole. Not played
+> by Joe.** Save format **6** — his saves from before it are refused in words (no migrations, D507).
+>
+> **What it is, in one paragraph:** bands knock on a hash clock from a spring around Year 10 (the town hall widens them —
+> D251 amended), a share of the village in one or two families with new surnames, waiting at the pile as a huddle with a
+> card — *Let them settle* / *Send them on* — and leaving at the autumn turn unanswered; a settled family is roofless and
+> the village's own queue houses it; the **longhouse** (Joe: repurposed) is a dwelling placed by a button, learned at the
+> first knock, lodging roofless families on one larder until their house is raised; and a valley that empties is
+> **re-founded automatically** two to six years on by four paired founders of a second generation, the cart restocked,
+> the standing houses theirs, the hall owed on the last of them if it was never given. ⛔ No `Rng` draw anywhere.
+>
+> **Verified on this tree (D567):** suite 1692 / 0 / 5 of 1697 (5m34); view 0 warnings; probe 84 lines, no ⛔ (`nomads:` ✅,
+> `huddle:` ✅, the longhouse posed inside `cards:`, bar height 151, `tile centres` ✅, `new game` ✅, `done.`); **no golden
+> moved since commit 1's six.** `RefoundTests` (12): 18 mutants, 52 reds, no zeros — two found and closed (a ghost's surname reused scored zero against the pool of sixty, so `TheRefoundersTakeNamesNoHouseholdEverHeld` poses a pool of four over five seeds; the count's hash was invisible to a save round trip, so `TheRefoundingCountIsInTheFingerprint` clears it and compares). Found while building: three guards that let a village die — the Phase 0 villager, a starving village, a valley with no land — met a re-founding; the Phase 0 fixture switches it off like the knock, and the two village guards say in a line why theirs is off.
+>
+> **▶️ NEXT: Joe plays `slice/nomads`** (`git checkout slice/nomads`, `.\run.bat` — he runs PowerShell; **a new village**).
+> At 4×: the first knock around Year 10 (the stop, the huddle of dun dots at the pile, the *Travellers (N)* button), the
+> band's card and its two buttons, a settled family housed within weeks or sleeping rough at the pile, the longhouse on
+> the **Homes** shelf after the knock (raise one before the next band: lodgers on its card, *Lodging* on theirs, moving out
+> when their house is done); then a village left to die at speed and found again a few years on — the moment that says
+> what they found, the four moving into the standing houses. Things his eye decides (OPEN): a quarter of the village,
+> 2–8; 20 food a head; the longhouse's capacity and price; the huddle's look and colour; the two to six years. **Merge
+> `--no-ff` and push at his word only.**
+>
+> **(the banner below is the state before D567)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-12 (NOMADS, COMMIT 2 — THE LONGHOUSE) — D566, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (spec, measurement), D565 (the
+> band) and **D566, commit 2 of 3 — the longhouse — built, sim and view, committed. Not played by Joe.** Save format 6.
+>
+> **What it is:** the longhouse is a dwelling placed by a button (D42's one exception), learned at the first knock,
+> priced as two houses, holding 8 on **one larder of its own**: a roofless family takes a bed the day after it asks for a
+> house of its own, eats and fetches to the longhouse's larder, warms at its one fire, partners with nobody, and moves out
+> the day its own house is raised; a ruin shelters nobody; a demolition turns its lodgers out. Built as a fifth standing
+> thing (`Longhouse`, the well's shape) with lodging on the family (`Household.LodgedIn`) and every larder read through
+> `SimWorld.LarderOf` — not as a communal household (the plan's shape; a home *is* its household, and the wider change).
+> The old three-tile store lives on as data in `BuildFixtures.WithTheOldLonghouseStore` for the geometry guards.
+>
+> **Verified on this tree:** suite 1673 / 0 / 5 of 1678 (6m20), with the two guards added after that run green (13 / 13); view 0 warnings; probe 84 lines, no ⛔ (the longhouse posed inside
+> `cards:`, `nomads:` ✅, `huddle:` ✅, bar height 151, `done.`); **no golden moved**. `LonghouseTests` (12): 18 mutants, 28 reds, no zeros — three found and closed (the pairing rule is checked on the seeker and on the candidate and either check masked a mutant of the other, so `NobodyLodgingPartners` is posed from both sides; the larder's hash was invisible to a save round trip, so `TheLonghousesLarderIsInTheFingerprint` compares two villages).
+>
+> **▶️ NEXT: commit 3, re-founding** (`nomads.md §4.6`): `SimWorld.RefoundVillage` (four paired founders of a second
+> generation, by hash; the cart restocked or raised again; `HouseTheRoofless` moves them into standing houses keeping their
+> names), `CivicSystem.RefoundIfTheValleyHasWaited` on the spring turn `refound_years_floor` 2 + spread 4 years after the
+> last death (derived from `DiedAtTick`), `TendWhatStands` running in an empty valley (ruins close on time, no repair
+> sites raised with nobody to serve them), `TributeTo` naming both generations and never a second hall, the moment that
+> says what stands. Then Joe plays the whole slice; merge and push at his word.
+>
+> **(the banner below is the state before D566)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS, COMMIT 1 — THE BAND) — D565, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = D563–D564 (the spec and its measurement) +
+> **D565, commit 1 of 3 — the band — built, sim and view, committed. Not played by Joe.** Save format **6**.
+>
+> **What it is:** a band knocks on the spring turn of its hashed year (Year 8–12 first; then every 6–10, 4–8 and a family
+> larger once the town hall stands), waits at the pile as a huddle of dun dots, and settles or moves on from **the card's two
+> buttons** (*Let them settle* / *Send them on*) or the bar's *Travellers (N)*; unanswered, it moves on at the autumn turn.
+> A settled family is a roofless household with a **new surname**, its couple paired, holding 20 food a head; the village's
+> own roofless queue houses it or it sleeps in the open. ⛔ **No `Rng` draw anywhere** — the first knock's year is derived,
+> the band is stored and hashed (never its names), and a village nobody has knocked on hashes as it did.
+>
+> **Verified on this tree:** suite 1661 / 0 / 5 of 1666 (7m01 against D564's 6m06 on the same machine — 34 more guards, the nomad ones forty seconds of them); view 0 warnings; probe 84 lines, no ⛔ (`nomads:` ✅, `huddle:` ✅, bar
+> height 151, `tile centres` ✅, `new game` ✅, `done.`); **exactly six goldens moved** (`FarmGoldenTests` ×2,
+> `StockLimitTests` ×2, `SkillTests` ×2), proven the knock's alone with the floor at 0. `NomadTests` (23): 15 mutants, 57 reds, no zeros — four zeros found and closed with new guards (a surname skip the pool of sixty never exercised, posed on a pool of three; the bridge's count, posed on a village below its peak; a hash block whose mutant did not build, re-posed; an unsaved arrival tick, read by a save after settling).
+>
+> **▶️ NEXT: commit 2, the longhouse** (`nomads.md §4.5`): `HouseholdKind.Communal`, `Household.LodgedIn`, `LarderOf`, the
+> `RaiseFinished` arm, lodging in and out in `HouseTheRoofless`, `IsSeekingAHome`, `ShelterAt`, the hearth, the row
+> (two houses' logs, `longhouse_capacity` 8, `Stores = None`), `WhyNotYet(Longhouse)` on `BandsEverKnocked`, the strip's
+> Homes category, the card, `cards:` pose; re-point `FootprintTests` / `TileFindersAgreeTests` / `ModdedBuildingTests`
+> from the longhouse to the warehouse. Then commit 3 (re-founding). Joe plays at the end; merge and push at his word.
+>
+> **(the banner below is the state before D565)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (NOMADS SPECCED) — D564, ON WINDOWS.**
+>
+> **`main` = D562, pushed. `slice/nomads`** (off `main`, local, not pushed) = **D563 (Joe's four calls, answered in plan
+> mode) + D564 (`specs/nomads.md`, `tools/harness/ZzNomads.cs` + `nomads.py`, the docs) — no sim or view code, no golden,
+> no save format moved.** The plan is `~/.claude/plans/read-handoff-md-the-bridge-iridescent-beaver.md` (approved).
+>
+> **What it is:** bands knock on a hash clock from a spring around Year 10 (floor 8, spread 4; then every 6–10 years, 4–8
+> and a family more once the town hall stands — D251 *amended*: the hall widens them); a share of the village (candidate a
+> quarter, 2–8) in one or two families with **new surnames** (D558's cure); the band waits at the pile as a huddle with a
+> **card: *Let them settle* / *Send them on*** and leaves at the autumn turn unanswered — ⛔ the sim had **no yes/no
+> decision anywhere** and `Moment` is verb-free by design, so the decision is a card, never a modal; settling makes roofless
+> households the existing queue houses; **the longhouse is repurposed** as the communal house (Joe: *"there's no other need
+> for it"* — a communal `Household`, lodgers, one larder, no partnering, learned at the first knock); a dead valley is
+> **re-founded automatically** 2–6 years on by four paired founders of a second generation. ⛔ No `Rng` draw anywhere in
+> it; the band is derived from (seed, count, population at the knock).
+>
+> **Measured (§8):** a knock at Year 10 meets eight people in two housed families — every share rule sends a couple, and
+> Joe's saves are the number (one surname in every village past Year 50); a band of two or four is housed the same year in
+> 85 of 86 valleys and nobody freezes — the cost is food (starving 197 → 306 / 417), never a roof; **re-founding turns on a
+> roof standing** (nine of eleven froze without one, eight of nine lived with one).
+>
+> **▶️ NEXT: build commit 1, the band** (sim + view), TDD per `nomads.md §9`, on this branch: `NomadBand` derived,
+> `SimWorld.Nomads.cs`, the knock in `CivicSystem` on the spring edge, `Villager.ArrivedAtTick` (and `MostEverAlive` reads
+> it), `NameHash` salts, the config keys (floors 0 in `Phase0Fixtures.Plenty`), hash tags appended, save format **6**, the
+> huddle, the card, the bar button, the `nomads:` probe line. **The six fifty-year goldens move once** — prove it with the
+> floor at 0. Then commit 2 (the longhouse) and commit 3 (re-founding). Joe plays at the end; merge and push at his word.
+>
+> **(the banner below is the state before D563)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-11 (THE WHOLE SEAM MERGED) — D562, ON WINDOWS.**
 >
@@ -6369,7 +6934,208 @@ Read `git status` after staging, every time.
   edit idempotent (skip when the new text is already there) so a rerun is safe. The long heredoc failed to parse as well
   (D538, D540): write the script with the Write tool and run it.
 
+## ⛔ THE TRAPS THE LONGHOUSE (D566) PAID FOR — AN EDIT SCRIPT RUN TWICE, A BUILDER WHO MENDS YOUR POSE, AND A STAMP SET BY ARITHMETIC
+
+- **An edit script whose anchor survives its own insertion is not idempotent, and a second run doubles the block.** The
+  longhouse's script inserted *after* the well's arm in six switches, after `["home_closed"]`, after the hall's
+  `ConditionOf`; the anchors were all still there, so when the script was re-run to fix one later anchor it inserted every
+  block twice (duplicate members, a duplicate JSON key that would only have failed at runtime). The `new in s and old not
+  in s` skip is no protection when `old` is a neighbour rather than the text replaced. **Check `new in s` alone, or
+  restore the files from the commit and run once** — which is what fixed it: every file the script touched was committed
+  clean, so `git checkout --` and one run was the whole repair.
+- **The fixture's builders mend the ruin you posed.** A longhouse stamped twenty-one years old was *Sound* two seasons
+  later: the season's turn raised the repair, the village had logs and a builder, and the mend reset the stamp before
+  the assertion. A pose about decay in a village that repairs must assert on the turn that sees the crossing, or hold the
+  builders off.
+- **A stamp set by arithmetic is a claim about the rule, and the winters are in the rule.** *Tick − 21 years* underflowed
+  a `ulong` at a Year-10 knock (Sound); *Tick − 4 years + a season* was already Ruin because four winters begun add two
+  seasons of wear. Ask `ConditionRules.Of` which stamp crosses on the turn you will step to, and pose that.
+- **A test run on a failed build is a run of the previous DLL** (D487, again): `dotnet test --no-build` after a build that
+  printed errors reported fifteen failures that were the old binary's. Gate the test on the build's exit, not on its silence.
+
+## ⛔ THE TRAPS THE NOMADS' MEASUREMENT (D564) PAID FOR — A POSE THAT FORGOT TO PAIR, A RESTOCK THAT WAS NOT CHECKED, AND A SHARE RULE THAT CANNOT SEE A PLAYED VILLAGE
+
+- **A posed arrival is not a founding until it does what the founding does.** `FoundVillage` pairs its founders
+  (`PairFounders`); the harness's first pose did not, so on the spring tick they arrived the unpaired adults paired
+  *across* the band, took over the dead households whole (`FindAnEmptyHome(aHouseOnly: false)` — id, larder, surname) and
+  left the larder the pose had filled behind. The run read *"never housed"* off households everybody had walked out of.
+  **Pose a family as the sim makes one — partners set, the larder theirs — before trusting a number about it.** The first
+  `refound` run also posed one family of two adults and two children for *"four adults in two households"*; a measurement
+  of the wrong pose is a number about nothing, and it was thrown away rather than reported.
+- **`Stockpile.Add` / `Receive` return what fit, and a restock that ignores it may have restocked nothing.** The four
+  starved in eleven days beside a cart "restocked with 400"; the return value was never read. Print what the store took.
+- **A share of an unattended village is the minimum, always.** Every unattended valley holds eight people in two housed
+  families at Year 8–12, so *a fifth* and *a quarter* both send a couple and the harness cannot tell them apart. Joe's
+  27 saves are the number for anything that scales with a played village (8–10 at Year 10, 17 at 50, 38–49 at 85–92).
+- **The empty valley keeps wearing but never closes.** `ClockSystem` returns before `TendWhatStands` when nobody is alive,
+  so a ruin in a dead valley is derived *Ruin* and never `Closed` — read `ConditionOf`, not the flag, when measuring one.
+
+## ⛔⛔ THE TRAP JOE'S PLAY OF D573 PAID FOR (D574) — A POSE THAT STAMPS ITS OWN TICK PROVES THE RULE AGAINST ITSELF
+
+- **The view asked for arrivals in `(last look, now]`; the sim stamps them with the tick it computed, which is `now − 1`
+  by the time the view looks** (`SimLoop.StepOnce`: systems at `T`, then `Tick++`). No real band ever matched, and Joe
+  saw the moment with nobody walking. **The probe's live door was green the whole time**, because its pose wrote
+  `ArrivedAtTick = world.Tick` — a stamp the sim never writes — so it checked the window against an arrival shaped to
+  fit it. **A pose must copy the sim's own stamp, from the sim's own code, not from the rule being tested.** The spec
+  had the sentence already (*"a band raised on the knock tick is there one step past it"*, D565) and nobody read it
+  against the new window.
+- **And the natural check that would have caught it printed `0 bands knocked` and was downgraded to information.**
+  When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
+  the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
+  closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D583 PAID FOR — THE WRONG INVARIANT, AND A SAMPLED LINE
+
+- **"Never crosses a building" was an invariant Joe never asked for; "goes round it" was.** D582 satisfied the first by
+  cutting the lane at the walls, and the two pieces read exactly as the crossing it prevented. A safety net that removes
+  the drawing reads as the thing it guards against — ask what the player should *see*, not what the code must not do.
+- **Sampling a segment is not walking it.** Five samples along a long diagonal slipped past a building's corner on Joe's
+  village; a shorter step made later by the smoothing was then caught and cut. The crossing test walks every tile the
+  step enters (a grid traversal); the probe's quarter-step sampler is looser on purpose — the network must be stricter
+  than the guard that checks it.
+- **A player's own village makes the best probe shape.** His worn ground and footprints, printed once through the game
+  from a copy of his save, are a `trails:` shape now — the exact place he pointed at, forever.
+
+## ⛔ THE TRAPS D582 PAID FOR — A POSE SIZED TO PASS, THE LINE BETWEEN THE POINTS, AND A FIX THAT BECAME THE BUG
+
+- **A pose sized to pass hides the case that fails.** The ring check was round a 2×2 hut; Joe's screenshot was a
+  one-tile store, where the corner tidy-up leaves a diamond through the building. Pose the smallest case of the shape.
+- **A probe that checks points cannot see the line between them.** `paths:` and `trails:` asked whether drawn points
+  stood on buildings; the lane crossed between two points that did not. Both sample every quarter-step now.
+- **The first fix made it worse.** Keeping the corner pixel gave every pixel of a small ring three neighbours, the whole
+  ring merged into one junction, and the junction's middle was the building (236 samples on it, from 1). Keep the
+  topology simple and fix the geometry — the corner is remembered, not kept.
+- **A safety net masks the refinements above it.** The final cut-at-the-wall makes the smoothing and wander guards
+  unobservable by any "never on a building" check — their mutants score zero, and that is written down rather than
+  presented as evidence.
+- **Not every Godot is ours.** A Godot process after a probe run was Joe's wordgame (`--path D:\Projects\wordgame\game`);
+  check the command line (`Get-CimInstance Win32_Process`) before killing anything.
+
+## ⛔ THE TRAPS D581 PAID FOR — THE PLAYER'S FIX, THE TEXTBOOK'S CLEAN-UP, AND A CHECK THAT COULD NOT FAIL
+
+- **A player's named fix is a hypothesis about the cause.** Joe said *"proceed with C"* (stagger the houses); his own
+  newest save had 2 homes among 14 buildings, and the grid in his screenshot was the drawing, not the layout. Reading the
+  save took a minute and saved building a medium-large sim change that could not have shown. **Read the village in the
+  screenshot before building the fix named for it** — the newest autosave is in `%APPDATA%/Godot/app_userdata/bclone/saves`,
+  and it can be read with Python without opening it through `SaveFile` (which writes `.bad` copies).
+- **A textbook clean-up is a hypothesis too.** Pruning short spurs off a skeleton's junctions is standard; on Joe's
+  village it cut the three-tile lane up to a store's door, and in every hand-drawn shape it changed nothing. Found by
+  feeding his real grids through the probe with the rule on and off (a temporary hook, removed). **Run a clean-up on the
+  player's own data before trusting it.**
+- **A bound wide enough to pass both ways is not a check.** The hub's *"4 to 8 lanes"* passed with the pruning on and off;
+  only counting exactly showed the pruning was doing nothing. And a `Furthest` helper that starts at 0 cannot measure how
+  far a lane reaches upward (negative) — it read *0* for a lane that reached the door. Check the number, not a range that
+  happens to hold it.
+- **A pose that touches nothing cannot guard it.** `paths:`'s *"never on a building"* scored zero until the pose wore a
+  lane into a building's footprint.
+
+## ⛔ THE TRAPS D579–D580 PAID FOR — A "CLEAN" RUN THAT WAS THE MUTANT, A GUARD THAT ASKED THE FUNCTION, AND A SAVE OPENED IN PLACE
+
+- **Headless Godot runs the last DLL that was built — it does not build on run here.** The red-check script builds the
+  game with the mutant in, probes, and reverts the source; a probe run straight after that, with no build, ran the
+  **mutant** and failed a sound check for twenty minutes of debugging. **After any red-check, `dotnet build
+  src/Bclone.Game` before the clean probe**, every time. (The earlier commits' final probes were all built first.)
+- **A probe that asks the function scores zero against a mesh that never calls it.** `paths:` first checked
+  `DrawnTrailPointOf` only; laying the mesh from the true points left it green. It reads the worn surface's vertices for
+  a mid-row tile's drawn point now. Check the thing drawn, not the thing that would be drawn.
+- **`SaveFile.Open` copies a damaged save to `.bad` beside it** — a harness pointed at Joe's save folder can write into
+  it. `ZzPathShape` reads copies in the scratchpad; any harness that opens his saves must.
+- **The review ranked causes by how deep they are in the code; the measurement ranked them by what they do.** The
+  handoff's three causes for the grid were four-way routing, D414, and tile obstacles, in that order — and the one that
+  mattered was the last. Two of the three fixes would have moved every golden for nothing.
+
+## ⛔ THE TRAP D578 NEARLY PAID FOR — A RULE MADE OPTIONAL TURNS ITS OLD GUARD INTO A ZERO
+
+- **`arrival:` checked that a banner fading mid-walk does not hand the 4× back.** With the hand-back off by default, that
+  check passes whether or not the walk keeps the hold — a guard that can no longer fail. When a behaviour becomes a
+  setting, find every guard that depended on the old default and pin the setting it needs (`arrival:` runs with the tick
+  on and puts it back); then guard the new default separately (`alert speed:`, both ways).
+- **A registry named for what it first held** (`_mapToggles`) misleads the day it holds something else. Renamed with the
+  first tick that was not the map's, rather than kept as a list beside it — a second list is a second thing to forget.
+
+## ⛔ THE TRAPS D577 PAID FOR — A FLOOR HIDES A WIDENING, AND THE HEREDOC ATE `\n` THREE TIMES
+
+- **A width check on a panel with a minimum size is as strong as the minimum.** The probe's first `moment:` compared the
+  moment panel's width with and without marks; the panel's own 460px floor swallowed a text column 38px too wide, and
+  the mutant scored **zero**. Measure the thing that would widen — the text column — not the container with a floor.
+- **A Python edit script fed through a Bash heredoc turned every `\n` into a real newline** — in a C# string constant,
+  in a test literal, and again in the fix for the test literal (the memory rule, *"edit scripts from a file, never a
+  heredoc"*, written down and broken anyway). A string with an escape in it goes through the Edit tool or a script
+  written by the Write tool.
+- **`EverySavedFieldComesBackAsItWas` compares collection types**: a `List` saved and an array loaded is a fail. Store
+  the one type both ways (`RaiseMoment` takes any list and keeps an array).
+
+## ⛔ THE TRAPS D576 NEARLY PAID FOR — A NUMBER A PLAYER NAMES MAY NOT BE THE CAUSE, AND `IDE0060` IS A BUILD ERROR
+
+- **Joe asked for the bridge at 15 to part two pop-ups. Measured, a band crosses *any* number on its knock tick** (27 of
+  27 at 15) — the coincidence was structural, and 15 would have moved it a decade later and put the bridge off with it.
+  Fifty seconds of harness turned a config change that would not have worked into a call he could make with numbers.
+  **When a player's fix is a number, measure whether the number is the cause before typing it.**
+- **A red-check mutant that leaves a parameter unused does not build** — `.editorconfig` promotes `IDE0060` to an error,
+  and a script grepping for `error CS` prints nothing at all. The red-check script greps `error (CS|IDE)` now; a
+  mutant that cannot build is re-posed (`(knew || !knew) &&`) and never counted.
+
+## ⛔ THE TRAP D575 NEARLY PAID FOR — A WINDOW TURNED TO CLOSE ONE EDGE OPENS THE OTHER
+
+- **D574's diagnosis was right and its fix was one clause short.** Turning `(since, now]` into `[since, now)` lets a
+  stamp equal to the last look in — and the very first look of a new game is tick 0, which is also the value every
+  founder and every born-here villager carries in `ArrivedAtTick` (*nobody arrived*). The written fix would have walked
+  the founders in from the valley's edge on the first step of every new game — the next thing Joe saw. **When a range
+  changes which end it includes, ask what value sits on that end before anything happens — a field's default is a
+  sentinel more often than not** (`CivicSystem.cs:207` already read 0 that way). The rule refuses 0 by name now and a
+  pose (*since 0 by 1*) holds it, red-checked.
+- **A handoff's fix is a hypothesis like a filed finding** (D452): read it against the code before typing it, even when
+  the diagnosis is confirmed.
+
+## ⛔ THE TRAPS THE WALK-IN (D573) PAID FOR — A MODAL BEFORE THE DRAW, A CHECK THAT DEPENDED ON THE SEED, AND A HEREDOC TOO LONG TO PARSE
+
+- **The shell shows a moment before the map draws the tick that raised it.** `Main.Refresh` calls `ShowAnyMoment` first
+  and `_map.Present` near its end; `_Draw` runs later still. Joe's walk-in had to run *before* the arrival moment, so the
+  arrival is noticed by `_map.WatchForArrivals(world)` in `Refresh`, ahead of `ShowAnyMoment` — not in
+  `AdvanceInterpolation`, which is where every other once-a-tick view fact (the meal mark, the crowd fan) is noticed and
+  where the first draft put it. **Anything the view must do ahead of a modal is noticed in `Refresh`.**
+- **A probe check that depends on the seed is a zero that reads as green.** The first `arrived:` line counted the
+  twelve-year run's natural arrivals and asked whether they were walking in. The probe's valley is founded unattended and
+  met **no band in twelve years** (*0 bands knocked* — D143: it dies, or thins past a knock); the line printed ⚠️ *nobody
+  arrived* and the live door — `Refresh` calling the map — was unchecked. Posed instead: one tick on, a villager with
+  `ArrivedAtTick = Tick` put on the roster, `Refresh()`, then removed. **Pose the state; never wait for the seed to supply it.**
+- **A quoted heredoc of ~430 lines failed to parse in this Git Bash** (`unexpected EOF while looking for matching ''`) on
+  a body with no unbalanced quote. The Write tool wrote the same file first time. The memory rule *edit scripts from a
+  file, never a heredoc* holds for source files as well.
+- **Do not edit a source file while a red-check script is applying and reverting mutants in it.** The script swaps by
+  exact anchor and swaps back; an edit of yours between the two is an anchor it cannot find, and the revert fails loud
+  (good) or lands on the wrong text (worse). Docs only while it runs.
+- **⛔ A MUTANT THAT THROWS INSIDE THE PROBE IS A HANG, NOT A RED — AND IT HELD THE MACHINE TWELVE HOURS.** M3's first form
+  (`i == 0 && i == route.Count - 1`) indexed past the route's end; the probe threw, never reached `GetTree().Quit()`, and
+  the headless Godot sat from 23:23 to 11:10 with the mutant still applied and the chain behind it waiting. CLAUDE.md's
+  line — *if `done.` is missing a headless Godot is still running* — was written for exactly this and a script does not
+  read it. **Every scripted probe run goes under `timeout 240`, checks for `done.`, and `taskkill`s Godot on a miss;
+  a hang is reported as HUNG, never counted as a red.** The mutant was re-posed as one that builds and runs (the ends
+  nudged a tenth of a tile).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **JOE'S PLAYTEST OF THE NOMADS — SIX NOTES (D568, 2026-10-12), THE NEXT SESSION'S WORK, IN ORDER (the top banner has
+  each with its pointers).** **(1)** the paths grid in the village — reviewed: 4-connected routing + D414's keep-to-the-route
+  rule + grid-aligned obstacles; a design call (octile field / a bounded-curve walk rule / non-fence-aligned lanes) to spec and
+  bring him; **(2)** *"the pile"* said in the village's words, and **nomads, not travellers**, everywhere; **(3)** accept / reject
+  stands (the card) — add **a Nomads switch** (Foundation's *Immigration — enabled*), hashed sim state, persisted; whether it also
+  stops re-founding is his (recommend yes); **(4)** the nomads **walk in from off-screen with a marker over their heads** —
+  view-only first (recommended) or sim-side arrival; **(5)** ⛔ **remove the longhouse** (his call 3 reversed after play):
+  the roofless build in the paint as everybody does, and a **standing unhoused warning** when the paint is full; the row
+  back to the D320 store or deleted — his call; **(6)** all of it written down. ⏸️ Still his from before: a quarter of
+  the village at 2–8; 20 food a head; the huddle's look; the two-to-six-year wait.
+
+- ✅ **ANSWERED (D563, 2026-10-11) — Joe, in plan mode: own clock / one or two families scaled / *"learned at first knock,
+  but just repurpose the long house thats already in game. there's no other need for it."* / automatic.** ~~NOMADS — FOUR
+  CALLS (asked 2026-10-11, `nomads.md §3`).~~ **(1)** the trigger: their own clock, the town hall widens them (D251 amended);
+  **(2)** the band: one or two families, a share of the village, 2–8, new surnames; **(3)** the communal house: learned at
+  the first knock — **the longhouse, repurposed** (his addition); **(4)** re-founding: automatic, a few years on.
+  ⏸️ **Mine, to overrule in play** (`nomads.md §3`, *settled without asking*): the knock on the spring turn only; a band
+  waits spring and summer and leaves at the autumn turn; the band is a huddle at the pile with a card, two buttons and a
+  bar button — the moment stays verb-free; a quarter of the village (`nomads_share_divisor` 4) rather than a fifth, 2–8;
+  20 food a head carried; nomads bring no techniques; the longhouse holds 8 and is priced as two houses; re-founders are
+  a second generation of founders and the hall, if never given, is owed on the last of them.
 
 - ✅ **ANSWERED (D553, 2026-10-10) — Joe: *"yes to all. commit"*. Every recommendation stands; the build is next.** ~~BUILDING CONDITION AND MAINTENANCE — SEVEN CALLS (D552, asked 2026-10-10, `building-condition.md §3`).~~ Recommended
   first (and decided). **(1)** the D65 reversal itself: wear on a derived clock, the builders repair automatically, no click — yes;

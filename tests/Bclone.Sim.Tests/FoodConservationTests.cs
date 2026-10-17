@@ -103,19 +103,23 @@ public sealed class FoodConservationTests
         // ⚠️ The cart's food was never produced, so the ledger starts from what is held now.
         int held0 = world.FoodHeldAnywhere();
         int produced0 = world.FoodEverProduced;
+        int broughtIn0 = world.FoodEverBroughtIn;
         int eaten0 = world.FoodEverEaten;
 
+        // ⭐ A third door since D572: a band of nomads settles with a few days' food each, neither produced nor eaten
+        // here (`FoodEverBroughtIn`). The first run without it said 40 food appeared on the spring turn of Year 8–12.
         for (int tick = 0; tick < config.TicksPerYear * 50; tick++)
         {
             loop.StepOnce();
             int produced = world.FoodEverProduced - produced0;
+            int broughtIn = world.FoodEverBroughtIn - broughtIn0;
             int eaten = world.FoodEverEaten - eaten0;
             int held = world.FoodHeldAnywhere() - held0;
-            int drift = produced - eaten - held;
+            int drift = produced + broughtIn - eaten - held;
             Assert.True(
                 drift == 0,
                 $"At tick {world.Tick} ({world.Clock.SeasonAndYear()}) {Math.Abs(drift)} food "
-                + $"{(drift > 0 ? "vanished" : "appeared")}: produced {produced}, eaten {eaten}, "
+                + $"{(drift > 0 ? "vanished" : "appeared")}: produced {produced}, brought in {broughtIn}, eaten {eaten}, "
                 + $"held {held} more than at the start. Something moved food by a door the ledger does not see.");
         }
 

@@ -82,6 +82,16 @@ against a number from an older commit.
   year a village holds 10 / 12 / 15 / 20 / 25 people. `Crossings` (`ZZX`): a played opening, a wooden bridge raised free at
   Year 5 at the crossing nearest the founding, a forager's hut marked on the far bank and an 8×8 patch painted for homes
   beyond it; crossings per year, Years 5–35. Copy in, `-c Release --filter ZzBridges.<method>`, delete.
+- `ZzPathShape.cs` + `pathshape.py` — D579's measurement of the paths' gridding (`specs/path-shapes.md`): opens each save
+  in `ZZ_SAVES` (⚠️ a COPY of Joe's folder — `SaveFile.Open` keeps a damaged file as `.bad` beside it), runs it `ZZ_YEARS`
+  (10) more under each of `ZZ_ARMS` (`now` = as saved, `base`, `allowN` = `path_shortcut_grass_allowance` N; a code arm
+  is the same harness on a tree carrying the change), and prints `ZZP`: the village's path tiles, the share in straight
+  axis lanes of five or more, sharp corners, diagonal links, the share beside a building, and the same outside the
+  village. `ZZ_OUT` writes each village as a character grid; `python -X utf8 -I tools/harness/pathshape.py OUT.png
+  A.grid B.grid …` draws them side by side (PIL). Copy in, `-c Release --filter ZzPathShape`, delete.
+- `ZzBridgeKnock.cs` — D576's measurement: the first year each village held 10 / 12 / 15 / 20 people with nomads on, and
+  whether that tick was a knock (`K`). Needs `ZzBridges.cs` copied in beside it for the seed list. Copy both in,
+  `-c Release --filter ZzBridgeKnock`, delete both.
   ⚠️ Without the hut across, every village crossed **zero** times in thirty years: the unattended chooser never sites a
   home on the far bank while near-side paint is left, so a bridge nothing needs is an idle bridge, not a measurement.
   ⚠️ Joe's own saves are the better number for growth (three played villages first held 10 at Years 11, 12, 11) — they
@@ -96,6 +106,17 @@ against a number from an older commit.
   delete. ⚠️ **Felling is limit-driven**: logs sit at their 200 limit from Year 5, so *demand ÷ logs felled* reads as
   alarming and means nothing — compare to the ~90 a year one woodcutter fells in the opening when something wants them.
   ⚠️ No unattended valley holds any stone in any year; a cost priced in stone can never be served there.
+- `ZzNomads.cs` + `nomads.py` — D564's measurement for the nomads (`specs/nomads.md §8`), the arrivals **posed from the
+  test side** before any of it existed: `ZZK` what a knock meets at Spring of Years 8 / 10 / 12 (alive, households, housed,
+  empty houses, food a head, residential paint, the band at a fifth and a quarter); arm `settle` (`ZZS`): `ZZ_SETTLE` people
+  (default the fifth rule's) arrive roofless at Year 10 in one or two families with 20 food each — housed when, died of
+  what; `ZZD` what stands 0 / 2 / 4 / 6 years after a valley dies, by condition state; arm `refound` (`ZZR`): `ZZ_REFOUND`
+  years (3) after the last death four adults in two households arrive and the cart is restocked — alive 1 / 5 / 10 / 20
+  years on. `ZZ_ARMS`, `ZZ_SEEDS`, `ZZ_YEARS`. Copy in, `-c Release --filter ZzNomads`, delete; `python tools/harness/nomads.py
+  <output>`. ⚠️ Since D572 the sim settles bands itself, so `ZzNomads` runs with `nomads_enabled` off and its posed
+  arrivals stand alone; `arms.sh base` is the measurement of the sim's own. ⚠️ The first `refound` run posed one family of two adults and two children — the founding's shape is two
+  households of two adults, and a measurement of the wrong pose is a number about nothing. ⚠️ An unattended valley at
+  Year 10 is eight people in two housed families, so every share rule sends the minimum band; Joe's saves are the number.
 - `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per
   seam in 100 shipped valleys (seeds 200–299) — its kind, its size (what a building standing by it may paint since D561) and
   the most a building could paint under D541's diamond. Copy in, `-c Release --filter ZzSeamGround`, delete.

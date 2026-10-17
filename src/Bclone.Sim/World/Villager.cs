@@ -267,12 +267,19 @@ public sealed class Villager
     /// <para>
     /// <b><c>init</c>-only, and that is the model saying it never changes.</b> Nobody becomes a
     /// founder and no founder stops being one — dying does not un-found a village, which is
-    /// exactly why the flag has to outlive the person. ⚠️ The re-founding of a dead village
-    /// (`DESIGN.md §5`, nomads) will want a *second* generation of founders one day; that is a
-    /// different question and this flag deliberately does not answer it.
+    /// exactly why the flag has to outlive the person. ⭐ The re-founding of a dead valley (D567,
+    /// `nomads.md §4.6`) marks its four as founders too — a second generation, told apart by
+    /// <see cref="ArrivedAtTick"/>, which the first four never carry.
     /// </para>
     /// </remarks>
     public bool Founder { get; init; }
+
+    /// <summary>
+    /// The tick they joined the village as a grown nomad (`nomads.md §4.4`, D564), or 0 for a founder and for
+    /// anybody born here. <see cref="Core.SimWorld.MostEverAlive"/> counts them from it, not from a birth they had
+    /// elsewhere. Hashed sparsely; saved.
+    /// </summary>
+    public ulong ArrivedAtTick { get; init; }
 
     /// <summary>
     /// Years lived — one more on each birthday, not at New Year (D468). Maintained where it changes
@@ -845,6 +852,7 @@ public sealed class Villager
             ["commute_note"] = CommuteNote,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
+            ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
             ["age_years"] = AgeYears,
             ["vigour"] = Vigour,
             ["vigour_stage"] = SaveWriter.Enum(Stage),
@@ -901,6 +909,7 @@ public sealed class Villager
             CommuteNote = save.String("commute_note"),
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
+            ArrivedAtTick = save.ULong("arrived_at"),
             AgeYears = save.Int("age_years"),
             Vigour = save.Int("vigour"),
             Stage = save.Enum<VigourStage>("vigour_stage"),

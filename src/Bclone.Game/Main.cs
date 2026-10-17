@@ -534,6 +534,10 @@ public partial class Main : Control
         ProbePanelWidths("at the founding");
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheWearReadsTrue(_loop.World.Config));
+        GD.Print(TheNomadsTickIsTheVillages());
+        GD.Print(TheArrivalMomentWaitsForTheWalkIn());
+        GD.Print(TheMomentSpeaksInParagraphs());
+        GD.Print(TheAlertLeavesTheVillageAt1x());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheTreeHoldsItsShape());
@@ -559,6 +563,7 @@ public partial class Main : Control
         GD.Print(_map.AVillagerDrawsWhereTheyStand());
         GD.Print(VillageMap.TheCrowdDoesNotSkip());
         GD.Print(VillageMap.AMealIsSeen());
+        GD.Print(_map.TheNomadsWalkInFromTheEdge());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
@@ -590,12 +595,17 @@ public partial class Main : Control
         // widen the Overview; this one can. The ground row under `more ▾` is posed as well, in
         // case the run happens to have nothing on the ground.
         Refresh();
+
+        // ⭐ The live door (D573): that refresh is the first since the run, so the band that knocked in it must be
+        // on the road now — and then swept away, so every line after reads as it did.
+        GD.Print(TheArrivalsWalkedIn());
         _onTheGround.Text = "+1,234";
         ForceUpdateTransform();
         ProbePanelWidths("twelve years in, with heaps posed");
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
+        GD.Print(_map.TheTrailNetworkReadsTheShapes());
         GD.Print(_map.TheTrailsLieOnTheGround());
         GD.Print(_map.ALaneThroughAFieldIsDrawn());
 
@@ -773,6 +783,378 @@ public partial class Main : Control
             : $"[widths] limits: ⛔ logs read \"{open}\" unmet and \"{met}\" met, tooltip \"{why}\"";
     }
 
+    /// <summary>
+    /// ⭐ The Nomads tick on the villagers bar is the village's switch (D572): it reads the world, and it drives it.
+    /// </summary>
+    private string TheNomadsTickIsTheVillages()
+    {
+        var faults = new List<string>();
+        bool was = _loop.World.NomadsEnabled;
+
+        _loop.World.NomadsEnabled = false;
+        Refresh();
+        if (_nomadsTick.ButtonPressed)
+        {
+            faults.Add("the village switched off and the tick stayed ticked");
+        }
+
+        _loop.World.NomadsEnabled = true;
+        Refresh();
+        if (!_nomadsTick.ButtonPressed)
+        {
+            faults.Add("the village switched on and the tick stayed clear");
+        }
+
+        _nomadsTick.ButtonPressed = false;
+        if (_loop.World.NomadsEnabled)
+        {
+            faults.Add("the tick cleared and the village stayed on");
+        }
+
+        _nomadsTick.ButtonPressed = true;
+        if (!_loop.World.NomadsEnabled)
+        {
+            faults.Add("the tick set and the village stayed off");
+        }
+
+        _loop.World.NomadsEnabled = was;
+        Refresh();
+
+        return faults.Count == 0
+            ? "[widths] nomads: ✅ the tick on the villagers bar reads the village's switch and drives it, both ways"
+            : $"[widths] nomads: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The arrival moment waits for the walk-in (D573, Joe): while a band is on the road a waiting moment stays in
+    /// the queue and the village is held at 1×; the frame the last of them is in, the moment shows; dismissed, the
+    /// player's speed comes back.
+    /// </summary>
+    private string TheArrivalMomentWaitsForTheWalkIn()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        DismissTheMoment();
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+        _slowedForAnAlert = false;
+        SetSpeed(4.0);
+
+        // ⚠️ With the speed handed back (D578's tick on): off, every "the hold kept 1×" below would pass for nothing.
+        bool givesBackWas = _alertsGiveTheSpeedBack;
+        _alertsGiveTheSpeedBack = true;
+
+        var ids = new List<int>();
+        for (int i = 0; i < world.Villagers.Count && ids.Count < 2; i++)
+        {
+            if (world.Villagers[i].Alive)
+            {
+                ids.Add(world.Villagers[i].Id);
+            }
+        }
+
+        _map.BeginWalkIn(new List<GridPos> { new(0, 0), new(1, 0), new(2, 0) }, ids);
+        if (!_map.WalkInUnderway)
+        {
+            faults.Add("a walk-in just begun is not underway");
+        }
+
+        // What `Refresh` does the frame a walk begins.
+        SlowDownForAnAlert();
+
+        var posed = new Moment { Title = "Posed arrival", Body = "posed by the probe", WaitsToBeDismissed = true };
+        world.Moments.Add(posed);
+        ShowAnyMoment(world);
+        if (!world.Moments.Contains(posed) || _momentPanel is { Visible: true })
+        {
+            faults.Add("the moment showed while the band was still on the road");
+        }
+
+        if (_driver.SpeedMultiplier != 1.0)
+        {
+            faults.Add($"the village ran at {_driver.SpeedMultiplier}x while the band walked in");
+        }
+
+        // A discovery banner fading mid-walk asks for the speed back; the walk keeps the hold.
+        LetTheVillageBackUpToSpeed();
+        if (_driver.SpeedMultiplier != 1.0)
+        {
+            faults.Add($"a banner fading mid-walk let the village back up to {_driver.SpeedMultiplier}x");
+        }
+
+        _map.AdvanceTheWalkClockForTheProbe(VillageMap.WalkInSeconds + (ids.Count * VillageMap.WalkInFileGapSeconds) + 0.01);
+        if (_map.WalkInUnderway)
+        {
+            faults.Add("the walk-in did not end when the last was in");
+        }
+
+        ShowAnyMoment(world);
+        if (world.Moments.Contains(posed) || _momentPanel is not { Visible: true } || _momentTitle.Text != posed.Title)
+        {
+            faults.Add("the moment did not show once the band was in");
+        }
+
+        DismissTheMoment();
+        if (_driver.SpeedMultiplier != 4.0)
+        {
+            faults.Add($"Go on gave back {_driver.SpeedMultiplier}x, not the 4x the walk found");
+        }
+
+        _map.ClearWalkInsForTheProbe();
+        world.Moments.Remove(posed);
+        _celebrated.Remove(posed.LogLine);
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        _alertsGiveTheSpeedBack = givesBackWas;
+        SetSpeed(speedWas);
+
+        return faults.Count == 0
+            ? "[widths] arrival: ✅ a waiting moment waits for the band to walk in at 1×, shows the frame they are in, and Go on gives the speed back (the tick on)"
+            : $"[widths] arrival: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The alerts' speed (Joe, D578): a waiting moment and a passing banner each bring a 4× village to 1×; with the
+    /// Settings tick off — the default — it stays at 1× once the alert is gone; on, the 4× comes back; and the tick
+    /// drives the switch and reads it, both ways.
+    /// </summary>
+    private string TheAlertLeavesTheVillageAt1x()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        DismissTheMoment();
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+        bool givesBackWas = _alertsGiveTheSpeedBack;
+        CheckBox tick = _viewToggles.Find(t => t.Key == AlertSpeedToggle).Box;
+
+        if (tick.ButtonPressed)
+        {
+            faults.Add("the tick starts on — the default is off");
+        }
+
+        foreach (bool givesBack in new[] { false, true })
+        {
+            tick.ButtonPressed = givesBack;
+            if (_alertsGiveTheSpeedBack != givesBack)
+            {
+                faults.Add($"the tick set {givesBack} and the switch reads {_alertsGiveTheSpeedBack}");
+            }
+
+            double after = givesBack ? 4.0 : 1.0;
+
+            // A waiting moment, and Go on.
+            _slowedForAnAlert = false;
+            SetSpeed(4.0);
+            var waits = new Moment { Title = "Posed alert", Body = "posed by the probe", WaitsToBeDismissed = true };
+            world.Moments.Add(waits);
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != 1.0)
+            {
+                faults.Add($"a waiting alert left the village at {_driver.SpeedMultiplier}x");
+            }
+
+            DismissTheMoment();
+            if (_driver.SpeedMultiplier != after)
+            {
+                faults.Add($"tick {(givesBack ? "on" : "off")}: Go on left {_driver.SpeedMultiplier}x, not {after}x");
+            }
+
+            // A passing banner, and its fade (the clock run past it by hand).
+            _slowedForAnAlert = false;
+            SetSpeed(4.0);
+            var passes = new Moment { Title = "Posed banner", Body = "posed by the probe, passing", WaitsToBeDismissed = false };
+            world.Moments.Add(passes);
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != 1.0)
+            {
+                faults.Add($"a passing alert left the village at {_driver.SpeedMultiplier}x");
+            }
+
+            _passingUntilMsec = 0;
+            ShowAnyMoment(world);
+            if (_driver.SpeedMultiplier != after)
+            {
+                faults.Add($"tick {(givesBack ? "on" : "off")}: the banner faded at {_driver.SpeedMultiplier}x, not {after}x");
+            }
+
+            world.Moments.Remove(waits);
+            world.Moments.Remove(passes);
+            _celebrated.Remove(waits.LogLine);
+            _celebrated.Remove(passes.LogLine);
+        }
+
+        tick.ButtonPressed = givesBackWas;
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        SetSpeed(speedWas);
+
+        return faults.Count == 0
+            ? "[widths] alert speed: ✅ waiting and passing alerts slow a 4× village to 1×; tick off (the default) it stays at 1×, on the 4× comes back; the tick drives the switch"
+            : $"[widths] alert speed: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ A moment in paragraphs, each with its mark (D577): a posed two-paragraph moment marked nomads then bridge
+    /// shows two rows, each led by its own mark and holding its own paragraph; a posed plain moment shows its one
+    /// paragraph with no mark; and the text column is no wider for the marks — ⚠️ the column, not the panel, whose
+    /// own 460px floor hid a 38px widening (a zero, D577).
+    /// </summary>
+    private string TheMomentSpeaksInParagraphs()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        DismissTheMoment();
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+
+        var plain = new Moment { Title = "Posed plain", Body = "One paragraph, posed by the probe." };
+        world.Moments.Add(plain);
+        ShowAnyMoment(world);
+        ForceUpdateTransform();
+        float plainWidth = _momentParagraphs.GetCombinedMinimumSize().X;
+        Node[] plainRows = _momentParagraphs.GetChildren().ToArray();
+        if (plainRows.Length != 1 || plainRows[0] is not Label { Text: "One paragraph, posed by the probe." })
+        {
+            faults.Add($"a plain moment shows {plainRows.Length} block(s), not its one paragraph as a label");
+        }
+
+        DismissTheMoment();
+
+        string first = "The Posed, 4 souls, have come up the valley to make a home here.";
+        string second = "On the long road here they learned to lay timber across running water.";
+        var marked = new Moment
+        {
+            Title = "Posed nomads",
+            Body = first + Moment.ParagraphBreak + second,
+            Marks = new[] { MomentMark.Nomads, MomentMark.Bridge },
+        };
+        world.Moments.Add(marked);
+        ShowAnyMoment(world);
+        ForceUpdateTransform();
+        float markedWidth = _momentParagraphs.GetCombinedMinimumSize().X;
+        Node[] rows = _momentParagraphs.GetChildren().ToArray();
+        string Row(int i) => i < rows.Length && rows[i] is HBoxContainer row && row.GetChildCount() == 2
+            && row.GetChild(0) is MomentGlyph glyph && row.GetChild(1) is Label text
+                ? $"{glyph.Mark}:{text.Text}"
+                : "not a mark and a paragraph";
+        if (rows.Length != 2 || Row(0) != $"Nomads:{first}" || Row(1) != $"Bridge:{second}")
+        {
+            faults.Add($"a marked moment shows [{string.Join(" | ", Enumerable.Range(0, rows.Length).Select(Row))}]");
+        }
+
+        if (Mathf.Abs(markedWidth - plainWidth) > 0.5f)
+        {
+            faults.Add($"the marks widen the text column {plainWidth:F0} → {markedWidth:F0}px");
+        }
+
+        DismissTheMoment();
+        world.Moments.Remove(plain);
+        world.Moments.Remove(marked);
+        _celebrated.Remove(plain.LogLine);
+        _celebrated.Remove(marked.LogLine);
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        SetSpeed(speedWas);
+
+        return faults.Count == 0
+            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a plain moment one label; the text column {markedWidth:F0}px either way"
+            : $"[widths] moment: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The live door (D573): after the twelve-year run the shipped valley has met its first band (Year 8–12), and the
+    /// refresh that followed must have set them walking — the one check that can see <c>Refresh</c> asking the map to
+    /// watch for arrivals. Then the broom and a refresh, so the held moment drains and every later line reads as it did.
+    /// </summary>
+    private string TheArrivalsWalkedIn()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+
+        // What the run itself did: how many bands knocked, and how many who came are still alive. On the shipped
+        // seed the unattended valley is thin by Year 12, so this is information, not the check.
+        int arrivedAlive = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].Alive && world.Villagers[i].ArrivedAtTick != 0UL)
+            {
+                arrivedAlive++;
+            }
+        }
+
+        bool naturalWalk = _map.WalkInUnderway;
+        if (arrivedAlive > 0 && !naturalWalk)
+        {
+            faults.Add($"{arrivedAlive} who arrived in the run are alive and nobody is walking in");
+        }
+
+        _map.ClearWalkInsForTheProbe();
+        Refresh();
+
+        // ⭐ THE DOOR ITSELF, POSED: one tick on, a villager stamped as the sim stamps an arrival in that step is put on
+        // the roster, and the next refresh — the game's own path — must set them walking and hold the village at 1×.
+        // Posed because the natural band may be dead or unborn by now, and a check that depends on the seed is a check
+        // that scores zero quietly.
+        double speedWas = _driver.SpeedMultiplier;
+        bool slowedWas = _slowedForAnAlert;
+        double beforeWas = _speedBeforeTheAlert;
+        _slowedForAnAlert = false;
+        SetSpeed(4.0);
+        _loop.Step(1);
+
+        int household = world.Households.Count > 0 ? world.Households[0].Id : 0;
+        int nextId = 1;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            nextId = Math.Max(nextId, world.Villagers[i].Id + 1);
+        }
+
+        var posed = new Villager
+        {
+            Id = nextId,
+            Name = "Posed",
+            LifespanYears = 60,
+            Carried = new Stockpile(world.GoodsCatalog.Count),
+            Position = world.BandCamp,
+            HouseholdId = household,
+            BirthTick = (long)world.Tick - (30L * world.Config.TicksPerYear),
+            AgeYears = 30,
+            // ⛔ The stamp the sim would have written in the step just taken — the tick its systems ran at, one
+            // before the clock now (D575). D573 posed `world.Tick`, a stamp the sim never writes, and this line was
+            // green over a window no real band could pass.
+            ArrivedAtTick = world.Tick - 1,
+        };
+        world.Villagers.Add(posed);
+
+        Refresh();
+        if (!_map.WalkInUnderway)
+        {
+            faults.Add("a villager who arrived in the step just taken is not walking in after the refresh — Refresh is not watching for arrivals");
+        }
+
+        if (_driver.SpeedMultiplier != 1.0)
+        {
+            faults.Add($"the village ran at {_driver.SpeedMultiplier}x while the posed arrival walked in");
+        }
+
+        world.Villagers.Remove(posed);
+        _map.ClearWalkInsForTheProbe();
+        _slowedForAnAlert = slowedWas;
+        _speedBeforeTheAlert = beforeWas;
+        SetSpeed(speedWas);
+        Refresh();
+
+        string natural = $"{world.BandsEverKnocked} band(s) knocked in the run, {arrivedAlive} of theirs alive"
+            + (naturalWalk ? ", walking in" : string.Empty);
+        return faults.Count == 0
+            ? $"[widths] arrived: ✅ a villager stamped as arrived in the step just taken (the tick before the clock, as the sim stamps it) is walking in from the edge after the next refresh, at 1× — {natural}"
+            : $"[widths] arrived: ⛔ {string.Join("; ", faults)} — {natural}";
+    }
+
     private string TheBarsHoldTheirShape()
     {
         Refresh();
@@ -799,12 +1181,15 @@ public partial class Main : Control
 
         string clockWas = _clockLabel.Text;
         _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
+        string unhousedWas = _unhousedLabel.Text;
+        _unhousedLabel.Text = "12,345 unhoused";
 
         ForceUpdateTransform();
         Vector2 after = _topBar.GetCombinedMinimumSize();
         Vector2 popupAfter = _morePopup.GetContentsMinimumSize();
 
         _clockLabel.Text = clockWas;
+        _unhousedLabel.Text = unhousedWas;
         Refresh();
 
         float barEnds = Edge + (after.X * _uiScale);
@@ -2049,7 +2434,7 @@ public partial class Main : Control
 
     private PanelContainer? _momentPanel;
     private Label _momentTitle = null!;
-    private Label _momentBody = null!;
+    private VBoxContainer _momentParagraphs = null!;
     /// <summary>The speed the player had set before an alert slowed the village down.</summary>
     /// <remarks>
     /// <para>
@@ -2078,6 +2463,17 @@ public partial class Main : Control
 
     /// <summary>True while an alert is holding the village at 1×.</summary>
     private bool _slowedForAnAlert;
+
+    /// <summary>Whether the village goes back to the player's speed once the alerts are gone — the player's choice, off by default.</summary>
+    /// <remarks>
+    /// ⭐ <b>D578 amends D268</b> (Joe, 2026-10-13): <i>"after the pop-up is dismissed, it should leave the timer at 1x. it
+    /// should not remember/revert to the previous game speed as i have previously asked for. ive play tested a lot and
+    /// its kind of weird to go back to max speed. actually, that should be an option in game settings … default to
+    /// off."</i> Every alert still slows the village to 1× and the hold is still shared (the remarks above); only the
+    /// hand-back asks this. A tick under <i>Alerts</i> in Settings, remembered in <c>settings.json</c> — the player's,
+    /// never the village's (`settings-persistence.md §3`).
+    /// </remarks>
+    private bool _alertsGiveTheSpeedBack;
 
     /// <summary>The passing moment — celebrated, but the village keeps working.</summary>
     private PanelContainer? _passingPanel;
@@ -2152,7 +2548,7 @@ public partial class Main : Control
             }
 
             world.Moments.RemoveAt(i);
-            _celebrated.Add(passing.Body);
+            _celebrated.Add(passing.LogLine);
 
             // ⚠️ THE NEWEST WINS RATHER THAN A QUEUE. Two discoveries in one season is already
             // unusual; showing them in sequence would hold the second banner up long after its
@@ -2184,6 +2580,14 @@ public partial class Main : Control
             return;
         }
 
+        // ⭐ THE ARRIVAL MOMENT WAITS FOR THE WALK-IN (D573, Joe): a band on the road is the thing to watch, and the
+        // panel saying they have settled would cover it. Every waiting moment waits those few seconds; the passing
+        // banners drained above as ever.
+        if (_map.WalkInUnderway)
+        {
+            return;
+        }
+
         for (int i = 0; i < world.Moments.Count; i++)
         {
             if (!world.Moments[i].WaitsToBeDismissed)
@@ -2193,10 +2597,10 @@ public partial class Main : Control
 
             Moment moment = world.Moments[i];
             world.Moments.RemoveAt(i);
-            _celebrated.Add(moment.Body);
+            _celebrated.Add(moment.LogLine);
 
             _momentTitle.Text = moment.Title;
-            _momentBody.Text = moment.Body;
+            ShowTheParagraphs(moment);
             _seeTheTree!.Visible = world.ShownTheTechTree && !_treeEverOpened;
 
             // ⭐⭐ SLOWED TO 1×, NOT PAUSED (Joe, 2026-08-30). See `_speedBeforeTheAlert`.
@@ -2259,6 +2663,47 @@ public partial class Main : Control
         _passingPanel = panel;
     }
 
+    /// <summary>
+    /// A moment's paragraphs, each its own block with the mark the sim named beside it (D577, Joe: <i>"1 word wall.
+    /// break it into 2 paragraphs. maybe even a bridge icon and a nomad icon"</i>). A moment without marks is its
+    /// paragraphs alone, as wide as the one label used to be.
+    /// </summary>
+    private void ShowTheParagraphs(Moment moment)
+    {
+        foreach (Node old in _momentParagraphs.GetChildren())
+        {
+            _momentParagraphs.RemoveChild(old);
+            old.QueueFree();
+        }
+
+        IReadOnlyList<string> paragraphs = moment.Paragraphs;
+        bool marked = moment.Marks.Count > 0;
+        for (int i = 0; i < paragraphs.Count; i++)
+        {
+            Label text = Wrapped(Body(paragraphs[i]));
+            if (!marked)
+            {
+                text.CustomMinimumSize = new Vector2(MomentTextWidth, 0f);
+                _momentParagraphs.AddChild(text);
+                continue;
+            }
+
+            // Every paragraph keeps the mark's column, marked or not, so the text of each starts at the same edge.
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", MomentMarkGap);
+            row.AddChild(new MomentGlyph(i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None));
+            text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
+            row.AddChild(text);
+            _momentParagraphs.AddChild(row);
+        }
+    }
+
+    /// <summary>The moment panel's text column, as wide as its one label was before D577.</summary>
+    private const float MomentTextWidth = 420f;
+
+    /// <summary>Between a paragraph's mark and its text.</summary>
+    private const int MomentMarkGap = 12;
+
     private void BuildTheMomentPanel()
     {
         // ⚠️ CENTRED PROPERLY, WHICH IT WAS NOT (Joe, from play: *"it should be centered"*).
@@ -2281,9 +2726,9 @@ public partial class Main : Control
         _momentTitle = Heading(string.Empty);
         box.AddChild(_momentTitle);
 
-        _momentBody = Wrapped(Body(string.Empty));
-        _momentBody.CustomMinimumSize = new Vector2(420f, 0f);
-        box.AddChild(_momentBody);
+        _momentParagraphs = new VBoxContainer();
+        _momentParagraphs.AddThemeConstantOverride("separation", 12);
+        box.AddChild(_momentParagraphs);
 
         var go = new Button { Text = "Go on" };
         go.Pressed += DismissTheMoment;
@@ -2342,7 +2787,10 @@ public partial class Main : Control
         SetSpeed(1.0);
     }
 
-    /// <summary>Give the player their speed back, once no alert is still holding it.</summary>
+    /// <summary>
+    /// Let go of the hold once no alert is still holding it — and give the player their speed back only if they asked
+    /// for that in Settings (D578); by default the village stays at 1×.
+    /// </summary>
     /// <remarks>
     /// <b>⚠️ BOTH PANELS ARE ASKED, NOT JUST THE ONE BEING CLOSED.</b> Dismissing a gift while a
     /// discovery banner is still on screen would otherwise jump straight back to 10× and leave
@@ -2352,14 +2800,21 @@ public partial class Main : Control
     {
         if (!_slowedForAnAlert
             || _momentPanel is { Visible: true }
-            || _passingPanel is { Visible: true })
+            || _passingPanel is { Visible: true }
+            || _map.WalkInUnderway)
         {
             return;
         }
 
         _slowedForAnAlert = false;
-        SetSpeed(_speedBeforeTheAlert);
+        if (_alertsGiveTheSpeedBack)
+        {
+            SetSpeed(_speedBeforeTheAlert);
+        }
     }
+
+    /// <summary>Whether the last refresh saw a band on the road (D573) — so the refresh that sees it end can hand the speed back.</summary>
+    private bool _walkInWasUnderway;
 
     private void SetSpeed(double multiplier)
     {
@@ -2381,7 +2836,26 @@ public partial class Main : Control
     {
         SimWorld world = _loop.World;
 
+        // ⭐ THE NOMADS' WALK-IN IS NOTICED HERE, BEFORE ANY MOMENT (D573): the map's own draw runs after the moment
+        // panel would already be up, and the arrival moment waits for the band to be in (Joe). A walk that begins
+        // holds the village at 1× as an alert does; the moment takes the hold over the frame it shows.
+        _map.Paused = _driver.IsPaused;
+        if (_map.WatchForArrivals(world))
+        {
+            SlowDownForAnAlert();
+        }
+
         ShowAnyMoment(world);
+
+        // A walk that ended with no moment behind it (there always is one) hands the speed back itself.
+        bool walkInUnderway = _map.WalkInUnderway;
+        if (_walkInWasUnderway && !walkInUnderway)
+        {
+            LetTheVillageBackUpToSpeed();
+        }
+
+        _walkInWasUnderway = walkInUnderway;
+
         RefreshTheLibraryButton(world);
         RefreshTheTownHallButton(world);
         RefreshTheQuarryButton(world);
@@ -2424,7 +2898,32 @@ public partial class Main : Control
         _childrenCell.Text = children.ToString();
         _eldersCell.Text = elders.ToString();
         _laborersCell.Text = world.Laborers.ToString();
+
+        // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
+        int unhoused = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            if (!world.Households[i].HasHome)
+            {
+                unhoused += world.LivingMembersOf(world.Households[i]);
+            }
+        }
+
+        bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
+        _unhousedLabel.Text = $"{unhoused} unhoused";
+        _unhousedLabel.Modulate = nowhereToBuild ? Colors.White : new Color(1, 1, 1, 0.55f);
+        ShowShortfall(
+            _unhousedLabel,
+            nowhereToBuild,
+            unhoused == 1
+                ? "1 person has no roof and the painted land is full — paint more housing"
+                : $"{unhoused} people have no roof and the painted land is full — paint more housing");
         _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
+        if (_nomadsTick.ButtonPressed != world.NomadsEnabled)
+        {
+            _nomadsTick.SetPressedNoSignal(world.NomadsEnabled);
+        }
+
         _seedLabel.Text = TheRunLine(world);
 
         // The Settings ticks read the windows' state rather than remembering what they were set
@@ -3818,8 +4317,43 @@ public partial class Main : Control
         // The valley's name is the one word that says which run you are watching — derived
         // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
         // seed line in Settings: it is a bug report's number, not a player's.
+        var second = new HBoxContainer();
+        second.AddThemeConstantOverride("separation", 0);
         _clockLabel = Muted(string.Empty);
-        lines.AddChild(_clockLabel);
+        second.AddChild(_clockLabel);
+
+        // ⭐ THE STANDING UNHOUSED WARNING (D571; Joe, D568: *"the game should indicate to the user that there are
+        // unhoused people and not enough room to build homes"*) — on the households' line, not a sixth cell: a sixth
+        // cell ran the bar 72px under the right column at 75 % (the probe's `bars:` line caught it). The count is
+        // always shown; it lights amber only when the sim has said there is nowhere to build
+        // (`NeedsMoreResidentialLand`, the latch `HouseTheRoofless` sets and clears) — a family with a site being
+        // raised is a number, not a warning.
+        lines.AddChild(second);
+
+        // ⭐ A THIRD LINE (D572): the unhoused count and the Nomads tick. Not on the second line — with the tick there the
+        // households line outgrew the counts row and the bar ran under the right column at the probe's widest pose
+        // (`bars:` 1268 → 1343); a line costs the bar height, never width.
+        var third = new HBoxContainer();
+        third.AddThemeConstantOverride("separation", 0);
+        _unhousedLabel = Muted(string.Empty);
+        third.AddChild(_unhousedLabel);
+
+        // ⭐ THE NOMADS TICK (Joe, D568 → D572: *"if nomads are on, that is the permission … there should be a toggle
+        // in the UI in the top info bar that already houses population info. not buried in settings"*). The village's
+        // own switch, exactly as share-out: hashed when off, saved with the village, started from the new-game row;
+        // never a setting (`settings-persistence.md §3`), so not hooked to SettingsChanged. `Refresh` keeps it reading
+        // the world, so a load shows the save's.
+        third.AddChild(Muted("   ·   "));
+        _nomadsTick = new CheckBox
+        {
+            Text = "nomads may come to the valley",
+            ButtonPressed = true,
+            TooltipText = "Bands of nomads come up the valley every few years and settle here. Off: nobody comes, and an empty valley is never found again.",
+        };
+        _nomadsTick.AddThemeFontSizeOverride("font_size", 12);
+        _nomadsTick.Toggled += on => _loop.World.NomadsEnabled = on;
+        third.AddChild(_nomadsTick);
+        lines.AddChild(third);
 
         return box;
     }
@@ -3835,6 +4369,8 @@ public partial class Main : Control
     private Label _childrenCell = null!;
     private Label _eldersCell = null!;
     private Label _laborersCell = null!;
+    private Label _unhousedLabel = null!;
+    private CheckBox _nomadsTick = null!;
 
     /// <summary>
     /// A right-aligned number cell that <b>cannot widen its column</b> (D367).
@@ -6081,7 +6617,7 @@ public partial class Main : Control
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
-        _mapToggles.Add(("full_markers", "stores with no room", markers, () => _map.FullMarkersShown));
+        _viewToggles.Add(("full_markers", "stores with no room", markers, () => _map.FullMarkersShown));
 
         // The global half of D147's idle ring, beside the global half of D140's, because they
         // are the same kind of preference and a player looking for one will look for the other.
@@ -6089,7 +6625,7 @@ public partial class Main : Control
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
-        _mapToggles.Add(("idle_markers", "buildings that cannot work", idle, () => _map.IdleMarkersShown));
+        _viewToggles.Add(("idle_markers", "buildings that cannot work", idle, () => _map.IdleMarkersShown));
 
         // ⭐ The wildlife is scenery rather than a marker, but it belongs with the other two:
         // all three answer *"what is drawn on the valley"*, and a player who wants a plainer
@@ -6107,7 +6643,7 @@ public partial class Main : Control
         snap.AddThemeFontSizeOverride("font_size", 12);
         snap.Toggled += on => _map.SnapToGrid(on);
         body.AddChild(snap);
-        _mapToggles.Add(("snap", "snap to the grid", snap, () => _map.SnapsToGrid));
+        _viewToggles.Add(("snap", "snap to the grid", snap, () => _map.SnapsToGrid));
 
         // ⚠️ This caption used to promise that the ghost shows the tiles a building will
         // claim when snap is off. **The code never did that** — it showed them always, and
@@ -6125,7 +6661,7 @@ public partial class Main : Control
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
-        _mapToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
+        _viewToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
 
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in
@@ -6139,7 +6675,7 @@ public partial class Main : Control
         homes.AddThemeFontSizeOverride("font_size", 12);
         homes.Toggled += on => _map.ShowResidentialLand(on);
         body.AddChild(homes);
-        _mapToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
+        _viewToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
 
         var fields = new CheckBox
         {
@@ -6149,7 +6685,7 @@ public partial class Main : Control
         fields.AddThemeFontSizeOverride("font_size", 12);
         fields.Toggled += on => _map.ShowWorkGround(on);
         body.AddChild(fields);
-        _mapToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
+        _viewToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
 
         var marked = new CheckBox
         {
@@ -6159,13 +6695,13 @@ public partial class Main : Control
         marked.AddThemeFontSizeOverride("font_size", 12);
         marked.Toggled += on => _map.ShowHarvestLand(on);
         body.AddChild(marked);
-        _mapToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
+        _viewToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
 
         var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
-        _mapToggles.Add(("animals", "animals in the woods", wildlife, () => _map.GameShown));
+        _viewToggles.Add(("animals", "animals in the woods", wildlife, () => _map.GameShown));
 
         // Its own switch rather than one "scenery" tick, because the two answer different
         // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
@@ -6174,7 +6710,17 @@ public partial class Main : Control
         forage.AddThemeFontSizeOverride("font_size", 12);
         forage.Toggled += on => _map.ShowForage(on);
         body.AddChild(forage);
-        _mapToggles.Add(("berries", "berry patches in the woods", forage, () => _map.ForageShown));
+        _viewToggles.Add(("berries", "berry patches in the woods", forage, () => _map.ForageShown));
+
+        // ⭐ THE ALERTS' SPEED (Joe, D578): every pop-up brings the village to 1×, and by default it stays there. The
+        // player's own preference — under its own heading, not *How the village runs*, which is the village's rules.
+        body.AddChild(Muted("Alerts"));
+        var speedBack = new CheckBox { Text = "go back to my speed after an alert", ButtonPressed = false };
+        speedBack.AddThemeFontSizeOverride("font_size", 12);
+        speedBack.Toggled += on => _alertsGiveTheSpeedBack = on;
+        body.AddChild(speedBack);
+        _viewToggles.Add((AlertSpeedToggle, "go back to my speed after an alert", speedBack, () => _alertsGiveTheSpeedBack));
+        body.AddChild(Caption("Off: every alert slows the village to 1×, and it stays at 1× once you have read it."));
 
         // ⭐ THE SHARE-OUT SWITCH (Joe, 2026-09-03): *"give the user the option to toggle the
         // 'work share' function on/off."* Every three years the village tears every allocation
@@ -6205,7 +6751,7 @@ public partial class Main : Control
         // ⭐ Every map tick is remembered (D504) — hooked here, once, off the registry, so a tick added
         // above is remembered the day it is written. ⛔ The share-out tick is NOT: it is the village's
         // (hashed), and goes with save/load (`settings-persistence.md §3`).
-        foreach ((_, _, CheckBox box, _) in _mapToggles)
+        foreach ((_, _, CheckBox box, _) in _viewToggles)
         {
             box.Toggled += _ => SettingsChanged();
         }
@@ -6923,8 +7469,9 @@ public partial class Main : Control
         for (int id = 0; id < catalogue.Count; id++)
         {
             var kind = (BuildingKind)id;
-            if (kind == BuildingKind.Home)
+            if (kind == BuildingKind.Home || !catalogue.Has(id))
             {
+                // The house is the brush's; a retired id (D571) has no row to make a button of.
                 continue;
             }
 
@@ -7093,7 +7640,7 @@ public partial class Main : Control
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
-                or BuildingKind.Market or BuildingKind.Longhouse => BuildCategory.Storage,
+                or BuildingKind.Market => BuildCategory.Storage,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
@@ -7370,7 +7917,7 @@ public partial class Main : Control
     /// halves of a fact that is stated twice and asks whether they match.*
     /// </para>
     /// <para>
-    /// ⚠️ It only covers the toggles registered in <c>_mapToggles</c>, and a fifth
+    /// ⚠️ It only covers the toggles registered in <c>_viewToggles</c>, and a fifth
     /// toggle that forgets to register is invisible to it. *The list is one line beside the
     /// control; there is no way to make it automatic without reflection, which this project does
     /// not use.*
@@ -7387,9 +7934,9 @@ public partial class Main : Control
     {
         var wrong = new System.Collections.Generic.List<string>();
 
-        for (int i = 0; i < _mapToggles.Count; i++)
+        for (int i = 0; i < _viewToggles.Count; i++)
         {
-            (_, string name, CheckBox box, System.Func<bool> mapSays) = _mapToggles[i];
+            (_, string name, CheckBox box, System.Func<bool> mapSays) = _viewToggles[i];
 
             if (box.ButtonPressed != mapSays())
             {
@@ -7398,7 +7945,7 @@ public partial class Main : Control
         }
 
         return wrong.Count == 0
-            ? $"[widths] map toggles: ✅ all {_mapToggles.Count} ticks match the map"
+            ? $"[widths] map toggles: ✅ all {_viewToggles.Count} ticks match the map"
             : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
     }
 
@@ -7657,11 +8204,11 @@ public partial class Main : Control
     }
 
     /// <summary>
-    /// Each map toggle: the id the settings file remembers it by (D504), its name, its tick, and what
-    /// the map itself believes — for the probe.
+    /// Each view toggle: the id the settings file remembers it by (D504), its name, its tick, and what
+    /// the thing it drives believes — for the probe. The map's ticks, and since D578 the alerts' one.
     /// </summary>
     private readonly System.Collections.Generic.List<(
-        string Key, string Name, CheckBox Box, System.Func<bool> MapSays)> _mapToggles = new();
+        string Key, string Name, CheckBox Box, System.Func<bool> MapSays)> _viewToggles = new();
 
     /// <summary>
     /// ⭐ Write the baked valley out as a PNG — <b>the only way anything but Joe has ever

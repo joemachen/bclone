@@ -194,10 +194,11 @@ public sealed class StoreBuilding
     /// The building it was raised as, or null for the founders' stores and the cart (D455).
     /// </summary>
     /// <remarks>
-    /// ⛔ <b>A STORE KIND IS NOT A BUILDING.</b> A longhouse stores as a warehouse, and three places
-    /// asked the catalogue for <em>the</em> building of a store kind — which answers the first row,
-    /// the warehouse — so a longhouse being pulled down was a 2×2 warehouse site and a moved one
-    /// would have been rebuilt a warehouse. Read through <c>SimWorld.BuildingKindOf</c>.
+    /// ⛔ <b>A STORE KIND IS NOT A BUILDING.</b> The longhouse (the 3×1 store, retired D571) stored as a
+    /// warehouse, and three places asked the catalogue for <em>the</em> building of a store kind — which answers
+    /// the first row, the warehouse — so a longhouse being pulled down was a 2×2 warehouse site and a moved one
+    /// would have been rebuilt a warehouse. Read through <c>SimWorld.BuildingKindOf</c>; a modder's wide store
+    /// keeps the mechanism honest.
     /// </remarks>
     public BuildingKind? RaisedAs { get; init; }
 

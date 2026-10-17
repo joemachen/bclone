@@ -33,7 +33,9 @@ raises for a reason that is not production.
 
 It arrives **as a tribute to the founders, on the death of the last of them** (D252, Joe), and what
 it becomes afterwards is the village's administrative self-awareness: the collections, the charts,
-the knowledge roster, and the door nomads knock on.
+the knowledge roster — and, since D563, the thing that *widens* the nomads (they knock on their own clock from Year
+8–12; once the hall stands they come a little more often and a family larger — `specs/nomads.md §4.1`; D251's *"the hall
+triggers nomads"* is amended, not retired).
 
 > **⛔ IT IS NOT A KNOWLEDGE BUILDING WITH EXTRAS** (D251). Knowledge is roughly a fifth of it.
 > A session that builds "the knowledge screen, in a building" has built the wrong thing.

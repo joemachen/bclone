@@ -351,6 +351,7 @@ public partial class VillageMap : Control
     private static readonly Color GhostWarned = new("#e0b755");
     private static readonly Color GhostRefused = new("#d4685f");
     internal static readonly Color AdultColour = new("#e8e2d4");
+
     internal static readonly Color ChildColour = new("#8fc7e8");
     internal static readonly Color ElderColour = new("#d9a05b");
     private static readonly Color SelectedRing = new("#f2c14e");
@@ -571,6 +572,9 @@ public partial class VillageMap : Control
 
         // The meal mark's clock (D531): real seconds, so half a second is half a second at any speed.
         _mealClock += delta;
+
+        // The walk-in's clock (D573): real seconds too, but still while the village is paused.
+        TickTheWalkClock(delta);
 
         // Polled rather than event-driven: held keys have to pan smoothly, and key
         // events only fire on press and repeat.
@@ -4836,338 +4840,60 @@ public partial class VillageMap : Control
         RenderingServer.CanvasItemAddMesh(GetCanvasItem(), _trailMesh.GetRid(), TileToScreen());
     }
 
-    private static byte Lesser(byte a, byte b) => a < b ? a : b;
-
-    /// <summary>The worn neighbours this tile's trail runs to, by the D359 rules; how many were written.</summary>
-    private int JoinedNeighbours(GridPos tile, Span<GridPos> into)
-    {
-        int count = 0;
-        for (int dy = -1; dy <= 1; dy++)
-        {
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                if (dx == 0 && dy == 0)
-                {
-                    continue;
-                }
-
-                var neighbour = new GridPos(tile.X + dx, tile.Y + dy);
-                if (TrailGradeAt(neighbour) > 0 && ShouldJoin(tile, neighbour))
-                {
-                    into[count++] = neighbour;
-                }
-            }
-        }
-
-        return count;
-    }
-
     /// <summary>Half a trail's width, in tiles. A quarter of a tile: a path, not a road.</summary>
     private const float TrailHalfWidth = 0.17f;
 
-    /// <summary>
-    /// Where a worn tile's mark is drawn: its centre — or, for the corner of an L, the square's
-    /// shared corner the line actually passed through — or, in a CORRIDOR, the corridor's midline.
-    /// </summary>
-    private Vector2 TrailPointOf(GridPos tile)
-    {
-        // ⚠️ The square before the L (D368): a tile in a fully worn 2×2 with one lone arm on its far
-        // side is the corner of exactly one L by the rule below, and would be pulled to that corner —
-        // then every lane meeting it would aim at the wrong point.
-        if (IsJunctionTile(tile))
-        {
-            return new Vector2(tile.X, tile.Y);
-        }
-
-        if (IsInAFullSquare(tile))
-        {
-            return CorridorPointOf(tile);
-        }
-
-        if (LCornerOf(tile) is (GridPos armA, GridPos armC))
-        {
-            var corner = new Vector2((armA.X + armC.X) / 2f, (armA.Y + armC.Y) / 2f);
-
-            // ⭐⭐ A STAIRCASE IS ONE LANE, NOT TWO (Joe's dashed lanes, 2026-09-30). A diagonal walk
-            // treads a staircase — (0,0) (1,0) (1,1) (2,1)… — and every tile of a long one is the
-            // corner of exactly one L, so D359's rule pulled every tile to its corner and dropped every
-            // straight step: two interleaved chains on y = x and y = x − 1 that never met, drawn as
-            // short offset pieces. Halfway between its centre and its corner puts every staircase
-            // tile on the staircase's own centre line (y = x − ½ here), and its straight steps join
-            // them into one band. A lone L — one bend — keeps D359's corner exactly.
-            if (IsStaircaseCorner(tile))
-            {
-                return (new Vector2(tile.X, tile.Y) + corner) / 2f;
-            }
-
-            return corner;
-        }
-
-        return new Vector2(tile.X, tile.Y);
-    }
-
-    /// <summary>
-    /// Whether this tile is the corner of an L one of whose arms is itself the corner of an L that
-    /// has this tile for an arm — the inside of a STAIRCASE, which is how a diagonal walk is trodden.
-    /// </summary>
-    private bool IsStaircaseCorner(GridPos tile) =>
-        LCornerOf(tile) is (GridPos a, GridPos c)
-        && ((LCornerOf(a) is (GridPos a1, GridPos a2) && (a1 == tile || a2 == tile))
-            || (LCornerOf(c) is (GridPos c1, GridPos c2) && (c1 == tile || c2 == tile)));
-
-    /// <summary>Whether a straight step is a step along a staircase — one end a staircase corner, the other its arm.</summary>
-    private bool IsAStaircaseStep(GridPos a, GridPos b) =>
-        (IsStaircaseCorner(a) && LCornerOf(a) is (GridPos p, GridPos q) && (p == b || q == b))
-        || (IsStaircaseCorner(b) && LCornerOf(b) is (GridPos r, GridPos t) && (r == a || t == a));
-
-    /// <summary>
-    /// The two arms if <paramref name="tile"/> is the corner of exactly one L of worn tiles — two
-    /// worn orthogonal neighbours at right angles whose diagonal fourth tile is NOT worn. A tile
-    /// that is the corner of two Ls, or part of a block, is drawn at its centre like any other.
-    /// </summary>
-    private (GridPos, GridPos)? LCornerOf(GridPos tile)
-    {
-        (GridPos, GridPos)? found = null;
-        int count = 0;
-        for (int k = 0; k < 4; k++)
-        {
-            // Arms: (+x,+y), (+y,−x), (−x,−y), (−y,+x) — the four right angles round the tile.
-            (int ax, int ay) = Arm(k);
-            (int cx, int cy) = Arm(k + 1);
-            var a = new GridPos(tile.X + ax, tile.Y + ay);
-            var c = new GridPos(tile.X + cx, tile.Y + cy);
-            var d = new GridPos(tile.X + ax + cx, tile.Y + ay + cy);
-            if (TrailGradeAt(a) > 0 && TrailGradeAt(c) > 0 && TrailGradeAt(d) == 0)
-            {
-                count++;
-                found = (a, c);
-            }
-        }
-
-        return count == 1 ? found : null;
-    }
-
-    /// <summary>The four right angles round a tile: (+x,+y), (+y,−x), (−x,−y), (−y,+x).</summary>
-    private static (int, int) Arm(int k) => (k & 3) switch
-    {
-        0 => (1, 0),
-        1 => (0, 1),
-        2 => (-1, 0),
-        _ => (0, -1),
-    };
-
-    /// <summary>
-    /// ⭐⭐ Where a CORRIDOR tile draws (D415): the mean centre of the fully worn 2×2 squares it
-    /// belongs to.
-    /// </summary>
+    /// <summary>The most a lane's drawn point wanders on each axis, in tiles (D580; on the network's points since D581).</summary>
     /// <remarks>
-    /// <para>
-    /// <b>Joe: *"i want them to look more like thinner walked paths … a few exceptions in the
-    /// highest traffic intersections."*</b> D368 filled every tile of any fully worn 2×2 as one yard,
-    /// so a two-tile-wide lane between two buildings — the commonest shape round a hub, and walked
-    /// for real (D414 measured it) — drew as a fat patch. A corridor two tiles wide is one lane
-    /// walked a little either side of its middle, and this draws it so: both rows' tiles sit in the
-    /// same two squares, so both land on the same point on the midline, the rails merge into one
-    /// ribbon and the rung between them has no length. A 3×3 of worn collapses to within a tile.
-    /// </para>
-    /// <para>
-    /// ⚠️ Four wide and wider, worn but not packed, the points spread a tile apart and would draw
-    /// D368's lattice again. Measured on the D414 villages it does not occur (the widest such area
-    /// was 3×3); a packed one is a junction and fills (<see cref="IsJunctionTile"/>).
-    /// </para>
+    /// A point at the middle of its worn ground ± 0.18 on both axes is at most 0.25 out, and with the packed half-width
+    /// of 0.17 the ribbon's edge stays on the worn tiles round it. The probe's <c>paths:</c> line holds every point to them.
     /// </remarks>
-    private Vector2 CorridorPointOf(GridPos tile)
-    {
-        Vector2 sum = Vector2.Zero;
-        int squares = 0;
-        for (int k = 0; k < 4; k++)
-        {
-            (int ax, int ay) = Arm(k);
-            (int cx, int cy) = Arm(k + 1);
-            if (TrailGradeAt(new GridPos(tile.X + ax, tile.Y + ay)) > 0
-                && TrailGradeAt(new GridPos(tile.X + cx, tile.Y + cy)) > 0
-                && TrailGradeAt(new GridPos(tile.X + ax + cx, tile.Y + ay + cy)) > 0)
-            {
-                sum += new Vector2(tile.X + ((ax + cx) / 2f), tile.Y + ((ay + cy) / 2f));
-                squares++;
-            }
-        }
+    internal const float TrailWobble = 0.18f;
 
-        return squares == 0 ? new Vector2(tile.X, tile.Y) : sum / squares;
+    /// <summary>Tiles across one swell of the wander: long enough to read as a curve, short enough to show in a village.</summary>
+    private const float TrailWobbleWavelength = 4f;
+
+    /// <summary>Half a lightly worn lane's width — thinner than a packed one (D580).</summary>
+    private const float WornTrailHalfWidth = 0.14f;
+
+    /// <summary>How much of its width a dead end keeps at its tip (D580).</summary>
+    private const float TrailEndWidthShare = 0.35f;
+
+    /// <summary>Smooth value noise of a point, each axis in [−1, 1], seeded from the valley — the lanes' wander.</summary>
+    private Vector2 TrailWander(Vector2 point)
+    {
+        float u = point.X / TrailWobbleWavelength;
+        float v = point.Y / TrailWobbleWavelength;
+        return new Vector2(SmoothNoise(u, v, 0UL), SmoothNoise(u, v, 1UL));
     }
 
-    /// <summary>
-    /// ⭐⭐ Whether a packed tile is part of a <b>junction</b> — any fully PACKED 3×3 — and so part
-    /// of a filled yard (D415; D368 filled any fully worn 2×2).
-    /// </summary>
-    /// <remarks>
-    /// The yard is kept for what Joe's Foundation screenshot kept it for: wide packed ground only at
-    /// the busiest crossroads. Everything narrower is a corridor and draws as a lane
-    /// (<see cref="CorridorPointOf"/>). D368's reasoning still holds inside a junction — a per-tile
-    /// rule cannot draw an area — so a junction is traced and filled exactly as the yard was.
-    /// </remarks>
-    private bool IsJunctionTile(GridPos tile)
+    private float SmoothNoise(float u, float v, ulong channel)
     {
-        if (TrailGradeAt(tile) != 2)
-        {
-            return false;
-        }
-
-        for (int oy = -2; oy <= 0; oy++)
-        {
-            for (int ox = -2; ox <= 0; ox++)
-            {
-                bool packed = true;
-                for (int dy = 0; dy < 3 && packed; dy++)
-                {
-                    for (int dx = 0; dx < 3 && packed; dx++)
-                    {
-                        packed = TrailGradeAt(new GridPos(tile.X + ox + dx, tile.Y + oy + dy)) == 2;
-                    }
-                }
-
-                if (packed)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        int i = Mathf.FloorToInt(u);
+        int j = Mathf.FloorToInt(v);
+        float fu = u - i;
+        float fv = v - j;
+        float su = fu * fu * (3f - (2f * fu));
+        float sv = fv * fv * (3f - (2f * fv));
+        float top = Mathf.Lerp(LatticeNoise(i, j, channel), LatticeNoise(i + 1, j, channel), su);
+        float bottom = Mathf.Lerp(LatticeNoise(i, j + 1, channel), LatticeNoise(i + 1, j + 1, channel), su);
+        return Mathf.Lerp(top, bottom, sv);
     }
 
-    /// <summary>
-    /// ⭐⭐ Whether a worn tile is in any fully worn 2×2 square: itself, a right-angle pair of
-    /// neighbours and their diagonal, all worn (D368) — a junction's tile or a corridor's (D415).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Joe: *"the paths are showing very visible grid/staircase patterns. why? the villagers
-    /// dont walk in staircase patterns."*</b> They do not; the drawing did. Founding-site traffic
-    /// — many villagers, many distinct straight lines converging on the cart — wears a solid
-    /// block of tiles, and the per-tile rules (a disc, a band to each joined neighbour) drew that
-    /// block as rails and rungs: a 0.34-tile ribbon along every orthogonal adjacency and a
-    /// 0.66-tile hole in every cell of the ladder. A lattice, exactly. Years later decay thins the
-    /// block to single lanes and the picture "fixes itself" — which is what he saw.
-    /// </para>
-    /// <para>
-    /// ⭐ A block is a YARD, not a set of lanes: the block tiles are traced and filled as one
-    /// smoothed patch (<see cref="ZoneOutline.Trace"/>, the paint's own tracer at one cell a
-    /// tile) and draw no disc and no strips of their own; a lane meeting the block still bends to
-    /// the midway on the block's edge, and the block tile bridges from its centre to that midway
-    /// so a smoothed corner leaves no gap. *A per-tile rule cannot draw an area.*
-    /// </para>
-    /// </remarks>
-    private bool IsInAFullSquare(GridPos tile)
+    /// <summary>A lattice corner's value in [−1, 1]: a splitmix finish over the valley's seed, the corner and the axis.</summary>
+    private float LatticeNoise(int i, int j, ulong channel)
     {
-        if (TrailGradeAt(tile) == 0)
-        {
-            return false;
-        }
-
-        for (int k = 0; k < 4; k++)
-        {
-            (int ax, int ay) = Arm(k);
-            (int cx, int cy) = Arm(k + 1);
-            if (TrailGradeAt(new GridPos(tile.X + ax, tile.Y + ay)) > 0
-                && TrailGradeAt(new GridPos(tile.X + cx, tile.Y + cy)) > 0
-                && TrailGradeAt(new GridPos(tile.X + ax + cx, tile.Y + ay + cy)) > 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        ulong h = _world!.Seed
+            ^ unchecked((ulong)(uint)i * 0x9E3779B97F4A7C15UL)
+            ^ unchecked((ulong)(uint)j * 0xC2B2AE3D27D4EB4FUL)
+            ^ unchecked(channel * 0x165667B19E3779F9UL);
+        h ^= h >> 30;
+        h = unchecked(h * 0xBF58476D1CE4E5B9UL);
+        h ^= h >> 27;
+        h = unchecked(h * 0x94D049BB133111EBUL);
+        h ^= h >> 31;
+        return ((h >> 40) / (float)(1UL << 24) * 2f) - 1f;
     }
-
-    /// <summary>Whether the orthogonal pair <paramref name="a"/>–<paramref name="b"/> is an arm of an L whose corner is drawn diagonally instead.</summary>
-    private bool IsAnArm(GridPos a, GridPos b) =>
-        (LCornerOf(a) is (GridPos p, GridPos q) && (p == b || q == b))
-        || (LCornerOf(b) is (GridPos r, GridPos t) && (r == a || t == a));
-
-    /// <summary>
-    /// Whether the trail runs directly between two adjacent worn tiles (D359) — symmetric, and it
-    /// draws nothing.
-    /// </summary>
-    private bool ShouldJoin(GridPos tile, GridPos neighbour)
-    {
-        bool diagonal = neighbour.X != tile.X && neighbour.Y != tile.Y;
-        if (!diagonal)
-        {
-            // A straight step — unless it is the arm of an L, whose corner the diagonal replaces,
-            // or a RUNG between two parallel diagonal lanes (D368): two villagers walking the same
-            // diagonal a tile apart tread two staircases side by side, and joining every row-mate
-            // pair drew a ladder up the hill. Neither tile is a block tile (no 2×2 is fully worn),
-            // so the yard rule cannot see it; this one can — both tiles step on diagonally in the
-            // same direction, so the straight step between them is not a walk anybody took.
-            // ⚠️ Not beside a yard: every tile of a block continues diagonally into it, so the
-            // rule would cut every lane off at the yard's edge.
-            // ⭐ But a staircase's straight steps ARE the walk (see `TrailPointOf`): its tiles sit on
-            // one centre line, and these steps are what join them — so neither the arm rule nor the
-            // rung rule below may drop them.
-            if (IsAStaircaseStep(tile, neighbour))
-            {
-                return true;
-            }
-
-            if (IsAnArm(tile, neighbour))
-            {
-                return false;
-            }
-
-            return IsInAFullSquare(tile) || IsInAFullSquare(neighbour) || !ParallelDiagonals(tile, neighbour);
-        }
-
-        // A diagonal runs through the corner of an L (one off-corner worn and it is that L's
-        // corner), or across a pure diagonal step (neither off-corner worn). Two worn off-corners
-        // are a block, and a block is joined by its straight steps.
-        var offA = new GridPos(tile.X, neighbour.Y);
-        var offB = new GridPos(neighbour.X, tile.Y);
-        bool wornA = TrailGradeAt(offA) > 0;
-        bool wornB = TrailGradeAt(offB) > 0;
-        if (wornA && wornB)
-        {
-            return false;
-        }
-
-        if (wornA && !IsCornerBetween(offA, tile, neighbour))
-        {
-            return false;
-        }
-
-        if (wornB && !IsCornerBetween(offB, tile, neighbour))
-        {
-            return false;
-        }
-
-        // ⭐ And not across a staircase's corner: its straight steps carry the lane through it, and a
-        // diagonal skipping it as well is the second, offset chain Joe saw as dashes.
-        if ((wornA && IsStaircaseCorner(offA)) || (wornB && IsStaircaseCorner(offB)))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>Whether two orthogonal neighbours both continue diagonally in one common direction — row-mates on parallel lanes.</summary>
-    private bool ParallelDiagonals(GridPos a, GridPos b)
-    {
-        foreach ((int dx, int dy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
-        {
-            if (TrailGradeAt(new GridPos(a.X + dx, a.Y + dy)) > 0
-                && TrailGradeAt(new GridPos(b.X + dx, b.Y + dy)) > 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>Whether <paramref name="corner"/> is the L-corner whose arms are exactly the two given tiles.</summary>
-    private bool IsCornerBetween(GridPos corner, GridPos a, GridPos c) =>
-        LCornerOf(corner) is (GridPos p, GridPos q) && ((p == a && q == c) || (p == c && q == a));
 
     /// <summary>The trail grade the last collection gave a tile: 0 grass, 1 worn, 2 packed.</summary>
     private byte TrailGradeAt(GridPos tile)
@@ -5219,31 +4945,71 @@ public partial class VillageMap : Control
             }
         }
 
-        // ⭐ The junctions — the yards — once a season with the grades (D368; D415 keeps a yard for
-        // a fully packed 3×3 only). Asked after every grade is in, because a junction is a fact
-        // about nine tiles.
-        _blockTiles.Clear();
-        _packedBlockTiles.Clear();
-        for (int i = 0; i < _trail.Count; i++)
-        {
-            (GridPos tile, byte grade) = _trail[i];
-            if (IsJunctionTile(tile))
-            {
-                _blockTiles.Add(new Vector2I(tile.X, tile.Y));
-                if (grade == 2)
-                {
-                    _packedBlockTiles.Add(new Vector2I(tile.X, tile.Y));
-                }
-            }
-        }
+        // ⭐ AND THE NETWORK (D581): the worn ground read as its lanes, once a collection — never a frame.
+        BuildTheNetwork(world);
 
         // ⭐ And the picture is built here too, once a season, not once a tile a frame (D366).
         BuildTheTrailMesh();
     }
 
+    /// <summary>
+    /// ⭐ The worn ground as a network of lanes (D581, Joe's note 1 — option E): a window round every worn tile, the
+    /// buildings and the water nobody walks marked blocked and their grades zeroed, handed to <see cref="TrailNetwork"/>
+    /// with the valley's wander.
+    /// </summary>
+    private void BuildTheNetwork(SimWorld world)
+    {
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (_trail.Count == 0)
+        {
+            _network = TrailNetwork.Empty;
+            _networkWindow = (0, 0, 0, 0, System.Array.Empty<byte>(), System.Array.Empty<bool>());
+            LastNetworkBuildMs = 0;
+            return;
+        }
+
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        foreach ((GridPos tile, byte _) in _trail)
+        {
+            minX = Math.Min(minX, tile.X);
+            minY = Math.Min(minY, tile.Y);
+            maxX = Math.Max(maxX, tile.X);
+            maxY = Math.Max(maxY, tile.Y);
+        }
+
+        minX -= 2;
+        minY -= 2;
+        int width = maxX - minX + 5;
+        int height = maxY - minY + 5;
+        var grade = new byte[width * height];
+        var blocked = new bool[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                var tile = new GridPos(minX + x, minY + y);
+                int i = (y * width) + x;
+                blocked[i] = !world.IsWalkable(tile) || world.FootprintCovering(tile).Count > 0;
+                grade[i] = blocked[i] ? (byte)0 : TrailGradeAt(tile);
+            }
+        }
+
+        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble);
+        _networkWindow = (minX, minY, width, height, grade, blocked);
+        LastNetworkBuildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+    }
+
     private readonly List<(GridPos Tile, byte Grade)> _trail = new();
-    private readonly HashSet<Vector2I> _blockTiles = new();
-    private readonly HashSet<Vector2I> _packedBlockTiles = new();
+
+    /// <summary>The worn ground as lanes — rebuilt with the collection, drawn by <c>LayTrails</c> (D581).</summary>
+    private TrailNetwork _network = TrailNetwork.Empty;
+
+    /// <summary>Where the network's window lay, and its grades — for the probe's <c>paths:</c> line.</summary>
+    private (int MinX, int MinY, int Width, int Height, byte[] Shape, bool[] Blocked) _networkWindow =
+        (0, 0, 0, 0, System.Array.Empty<byte>(), System.Array.Empty<bool>());
+
+    /// <summary>How long the last network build took, ms (D581).</summary>
+    public double LastNetworkBuildMs { get; private set; }
     private byte[] _trailGrade = System.Array.Empty<byte>();
     private PathWear? _trailsOf;
 
@@ -5371,17 +5137,272 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
-    /// The trails draw where the paths are — <b>a probe line for the headless run</b> (D358).
+    /// ⭐ The network reads the shapes the village wears as lanes (D581) — <b>a probe line on shapes drawn by hand</b>,
+    /// handed straight to <see cref="TrailNetwork"/>: no valley, no posing, every rule asked of the shape it is for.
     /// </summary>
     /// <remarks>
-    /// ⚠️ The probe's valley is the unattended cold start and dies out in its first year (D143), so
-    /// nobody walks it and nothing is worn — asked bare, this read *"0 worn tiles"* twelve years in
-    /// and proved nothing. So it POSES a lane the way the villager probe poses a villager: nine
-    /// tiles trodden along the founding row, three of them packed, handed over as a season would.
-    /// The line then says that every collected trail tile is worn in the sim and the grades agree,
-    /// so the picture and the ground cannot disagree (the trees' and fields' probes, D337, D349,
-    /// are the same shape).
+    /// <c>w</c> worn, <c>p</c> packed, <c>B</c> blocked (a building or water), anything else bare ground. No wander, so a
+    /// lane's place is the rule's alone; one shape is built twice with the wander, to show the same input draws the same.
     /// </remarks>
+    public string TheTrailNetworkReadsTheShapes()
+    {
+        var faults = new List<string>();
+
+        // A row: one lane, on its row, ending in two dead ends.
+        TrailNetwork row = Shape("wwwwwwwww");
+        if (row.Lanes.Count != 1 || !row.Lanes[0].StartsAtADeadEnd || !row.Lanes[0].EndsAtADeadEnd || Furthest(row, p => Mathf.Abs(p.Y)) > 0.01f)
+        {
+            faults.Add($"a row is {row.Lanes.Count} lanes, not one on its row");
+        }
+
+        // A long staircase — what a diagonal walk treads: one lane, near its diagonal.
+        TrailNetwork stair = Shape(
+            "ww.....",
+            ".ww....",
+            "..ww...",
+            "...ww..",
+            "....ww.",
+            ".....ww");
+        if (stair.Lanes.Count != 1 || Furthest(stair, p => Mathf.Abs(p.Y - (p.X - 0.5f)) / Mathf.Sqrt2) > 0.5f)
+        {
+            faults.Add($"a staircase is {stair.Lanes.Count} lanes, or strays from its diagonal by {Furthest(stair, p => Mathf.Abs(p.Y - (p.X - 0.5f)) / Mathf.Sqrt2):F2}");
+        }
+
+        // A two-wide corridor: one lane down its middle (D415's rule, kept).
+        TrailNetwork corridor = Shape("wwwww", "wwwww");
+        if (corridor.Lanes.Count != 1 || Furthest(corridor, p => Mathf.Abs(p.Y - 0.5f)) > 0.26f)
+        {
+            faults.Add($"a 2×5 corridor is {corridor.Lanes.Count} lanes, or off its midline by {Furthest(corridor, p => Mathf.Abs(p.Y - 0.5f)):F2}");
+        }
+
+        // ⭐ A LADDER — two lanes a tile apart, walks crossing between them (Joe's screenshots): one lane down the middle.
+        TrailNetwork ladder = Shape(
+            "wwwwwwwwww",
+            "w...w....w",
+            "wwwwwwwwww");
+        if (ladder.Lanes.Count > 3 || Furthest(ladder, p => Mathf.Abs(p.Y - 1f)) > 0.6f || ladder.BridgedTiles == 0)
+        {
+            faults.Add($"a ladder draws as {ladder.Lanes.Count} lanes up to {Furthest(ladder, p => Mathf.Abs(p.Y - 1f)):F2} off its middle — rails and rungs, not one lane");
+        }
+
+        // ⭐ A RING ROUND A HUT (Joe's # knots): one closed loop, never on the hut.
+        TrailNetwork ring = Shape(
+            "wwww",
+            "wBBw",
+            "wBBw",
+            "wwww");
+        int onTheHut = OnTheBuildings(ring, "wwww", "wBBw", "wBBw", "wwww");
+        if (ring.Lanes.Count != 1 || !ring.Lanes[0].Closed || onTheHut > 0)
+        {
+            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes (closed: {ring.Lanes.Count == 1 && ring.Lanes[0].Closed}), {onTheHut} samples on the hut");
+        }
+
+        // ⛔ AND ROUND A ONE-TILE BUILDING (D582, Joe's screenshot: a lane drawn straight across a small store). A ring
+        // round one tile is where tidying the line's corners and smoothing it pulled the loop onto the building; and a
+        // lane passing one with worn ground on three sides of it must go round, not through.
+        string[] small = { "www", "wBw", "www" };
+        TrailNetwork smallRing = Shape(small);
+        int onTheStore = OnTheBuildings(smallRing, small);
+        if (smallRing.Lanes.Count != 1 || !smallRing.Lanes[0].Closed || onTheStore > 0)
+        {
+            faults.Add($"a ring round a one-tile building is {smallRing.Lanes.Count} lanes with {onTheStore} samples on the building");
+        }
+
+        string[] past = { "wwwwwww", "..wBw..", "..www.." };
+        TrailNetwork passing = Shape(past);
+        int acrossIt = OnTheBuildings(passing, past);
+        if (acrossIt > 0 || passing.CutSteps > 0)
+        {
+            faults.Add($"a lane past a one-tile building is drawn across it ({acrossIt} samples on it) or cut at its walls ({passing.CutSteps})");
+        }
+
+        // ⭐⭐ JOE'S OWN VILLAGE (D583, `thornfield-crow-birch-49`, Spring Year 9 — worn ground and footprints as the game
+        // read them): the lane from the south-west passes a one-tile store inside a ring of worn ground. D582 cut it at the
+        // store's walls (Joe: "the path should go around the building"); it goes round now, on the worn ground, uncut.
+        string[] thornfield =
+        {
+            "...BBBBBBBBBBB......B",
+            ".....BBBBBBB.........",
+            "......BBBBpp.........",
+            "..BB....BB.p.........",
+            ".........p.p...BB..B.",
+            "..BB..BBwppppppppppB.",
+            "......BBBpppp........",
+            "......BwBwwBpB.......",
+            "....pppppppppB.......",
+            "..wpppp..............",
+            ".wwwBB...............",
+            ".wwwBB...............",
+            ".....................",
+        };
+        TrailNetwork village = Shape(thornfield);
+        int onHisStores = OnTheBuildings(village, thornfield);
+        if (onHisStores > 0 || village.CutSteps > 0)
+        {
+            faults.Add($"Joe's village draws {onHisStores} samples across a building and cuts {village.CutSteps} steps at a wall");
+        }
+
+        // And where the only way round is ground nobody wore, the lane still goes round — not across, not cut.
+        string[] bare = { "...w...", "wwwBwww", "......." };
+        TrailNetwork unworn = Shape(bare);
+        if (OnTheBuildings(unworn, bare) > 0 || unworn.CutSteps > 0)
+        {
+            faults.Add($"a lane whose only way round a building is bare ground crosses it ({OnTheBuildings(unworn, bare)} samples) or is cut ({unworn.CutSteps} cuts)");
+        }
+
+        // A packed hub with four lanes out: a junction and its spokes — lines, never a fill.
+        TrailNetwork hub = Shape(
+            "....w....",
+            "....w....",
+            "..ppppp..",
+            "..ppppp..",
+            "wwppppppw",
+            "..ppppp..",
+            "..ppppp..",
+            "....w....",
+            "....w....");
+        if (hub.Junctions.Count == 0 || hub.Lanes.Count < 4 || hub.Lanes.Count > 8)
+        {
+            faults.Add($"a packed hub with four lanes out reads as {hub.Lanes.Count} lanes and {hub.Junctions.Count} junctions");
+        }
+
+        // A lane with a bulge of wear beside it — feet straying round a doorstep — is one lane: the bulge thins to a stub,
+        // and a stub off a junction is the thinning's, not a lane anybody walked.
+        TrailNetwork bulge = Shape(
+            "wwwwwwwwwww",
+            "....www....",
+            "....www....");
+        if (bulge.Lanes.Count != 1 || bulge.Junctions.Count != 0)
+        {
+            faults.Add($"a lane with a bulge beside it reads as {bulge.Lanes.Count} lanes and {bulge.Junctions.Count} junctions, not one lane");
+        }
+
+        // ⛔ A short lane up to a door, off a lane, is a lane — not a stub to prune (Joe's own village, D581: the lane to a
+        // store's door was cut by the first draft). Three lanes meet at the junction, and one of them reaches the door.
+        TrailNetwork door = Shape(
+            "....B....",
+            "....w....",
+            "....w....",
+            "wwwwwwwww");
+        float reaches = door.Lanes.SelectMany(lane => lane.Points).Select(point => point.Y).DefaultIfEmpty(9f).Min();
+        if (door.Lanes.Count != 3 || door.Junctions.Count != 1 || reaches > 1.75f)
+        {
+            faults.Add($"a short lane up to a door reads as {door.Lanes.Count} lanes and {door.Junctions.Count} junctions, reaching row {reaches:F2} (the door is row 0)");
+        }
+
+        // Two lanes two tiles apart stay two; and lanes a tile apart with a building between are not joined across it.
+        TrailNetwork apart = Shape("wwwwwwww", "........", "........", "wwwwwwww");
+        TrailNetwork walled = Shape("wwwwwwww", "BBBBBBBB", "wwwwwwww");
+        if (apart.Lanes.Count != 2 || apart.BridgedTiles != 0)
+        {
+            faults.Add($"two lanes two tiles apart drew as {apart.Lanes.Count} ({apart.BridgedTiles} gap tiles bridged)");
+        }
+
+        if (walled.Lanes.Count != 2 || walled.BridgedTiles != 0)
+        {
+            faults.Add($"two lanes with a building between drew as {walled.Lanes.Count} ({walled.BridgedTiles} bridged across it)");
+        }
+
+        // A lone 2×2 of wear — which thinning erases whole — still draws.
+        TrailNetwork patch = Shape("ww", "ww");
+        if (patch.Lanes.Count == 0)
+        {
+            faults.Add("a lone 2×2 of wear drew nothing — the thinning erased it");
+        }
+
+        // The same shape twice, with the valley's wander, draws the same.
+        TrailNetwork once = Wandering("wwwwwwwwwwww", "w.........w.", "wwwwwwwwwwww");
+        TrailNetwork twice = Wandering("wwwwwwwwwwww", "w.........w.", "wwwwwwwwwwww");
+        bool same = once.Lanes.Count == twice.Lanes.Count;
+        for (int l = 0; same && l < once.Lanes.Count; l++)
+        {
+            same = once.Lanes[l].Points.AsSpan().SequenceEqual(twice.Lanes[l].Points);
+        }
+
+        if (!same)
+        {
+            faults.Add("the same shape drew two different ways");
+        }
+
+        return faults.Count == 0
+            ? "[widths] trails: ✅ the network reads a row, a staircase and a corridor as one lane each, a ladder as one lane, "
+                + $"a ring round a hut as one loop off the hut, a packed hub as {hub.Lanes.Count} spokes and {hub.Junctions.Count} junction; two lanes apart or walled "
+                + "stay two; a short lane up to a door stays; a lane past a one-tile store, and Joe's own village, go round it uncut; "
+                + "a lone 2×2 draws; the same shape draws the same"
+            : $"[widths] trails: ⛔ {string.Join("; ", faults)}";
+
+        TrailNetwork Shape(params string[] rows) => ShapeWith(false, rows);
+
+        TrailNetwork Wandering(params string[] rows) => ShapeWith(true, rows);
+
+        TrailNetwork ShapeWith(bool wander, string[] rows)
+        {
+            int width = rows[0].Length + 2;
+            int height = rows.Length + 2;
+            var grade = new byte[width * height];
+            var blocked = new bool[width * height];
+            for (int y = 0; y < rows.Length; y++)
+            {
+                for (int x = 0; x < rows[y].Length; x++)
+                {
+                    int i = ((y + 1) * width) + x + 1;
+                    grade[i] = rows[y][x] switch { 'w' => (byte)1, 'p' => (byte)2, _ => (byte)0 };
+                    blocked[i] = rows[y][x] == 'B';
+                }
+            }
+
+            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null);
+        }
+
+        // Every point of every lane, and every quarter-step along the line between two — on a building's tile (D582: a
+        // probe that asked the points could not see the line between them).
+        static int OnTheBuildings(TrailNetwork network, params string[] rows)
+        {
+            int on = 0;
+            foreach (TrailNetwork.Lane lane in network.Lanes)
+            {
+                int segments = lane.Closed ? lane.Points.Length : lane.Points.Length - 1;
+                for (int k = 0; k < Math.Max(1, segments); k++)
+                {
+                    Vector2 a = lane.Points[k];
+                    Vector2 b = lane.Points[Math.Min(lane.Points.Length - 1, k + 1) % lane.Points.Length];
+                    if (lane.Closed)
+                    {
+                        b = lane.Points[(k + 1) % lane.Points.Length];
+                    }
+
+                    for (int q = 0; q < 4; q++)
+                    {
+                        Vector2 at = a.Lerp(b, q / 4f);
+                        int x = Mathf.RoundToInt(at.X), y = Mathf.RoundToInt(at.Y);
+                        on += y >= 0 && y < rows.Length && x >= 0 && x < rows[y].Length && rows[y][x] == 'B' ? 1 : 0;
+                    }
+                }
+            }
+
+            return on;
+        }
+
+        static float Furthest(TrailNetwork network, Func<Vector2, float> off)
+        {
+            float worst = 0f;
+            foreach (TrailNetwork.Lane lane in network.Lanes)
+            {
+                foreach (Vector2 point in lane.Points)
+                {
+                    worst = Mathf.Max(worst, off(point));
+                }
+            }
+
+            return worst;
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The valley's own network draws on its own worn ground (D581) — <b>a probe line on the collected trails</b>. The
+    /// probe's valley is the unattended cold start and has nobody walking (D143), so a few lanes are trodden by hand first
+    /// if nothing is worn: a row, a staircase, a packed 3×3 and a corridor, handed over as a season would.
+    /// </summary>
     public string TheTrailsLieOnTheGround()
     {
         SimWorld world = _world!;
@@ -5393,15 +5414,12 @@ public partial class VillageMap : Control
                 world.Paths.Tread(new GridPos(from.X + i, from.Y), i < 3 ? world.Config.PathPackedAt : world.Config.PathWornAt);
             }
 
-            // And a staircase two rows up — what a diagonal walk actually treads — so the L-corner
-            // rule (D359) is exercised: (0,0) (1,1) (2,1) (2,2), where (2,1) is the clipped corner.
-            foreach ((int dx, int dy) in new[] { (0, 0), (1, 1), (2, 1), (2, 2) })
+            for (int k = 0; k < 6; k++)
             {
-                world.Paths.Tread(new GridPos(from.X + dx, from.Y + 3 + dy), world.Config.PathWornAt);
+                world.Paths.Tread(new GridPos(from.X + 12 + k, from.Y + k), world.Config.PathWornAt);
+                world.Paths.Tread(new GridPos(from.X + 13 + k, from.Y + k), world.Config.PathWornAt);
             }
 
-            // And a PACKED 3×3 further down — a junction, the busiest crossroads — so the yard rule
-            // (D368, a junction since D415) is exercised: one patch, not rails and rungs.
             for (int dy = 0; dy < 3; dy++)
             {
                 for (int dx = 0; dx < 3; dx++)
@@ -5410,9 +5428,6 @@ public partial class VillageMap : Control
                 }
             }
 
-            // And a WORN corridor two tiles wide and five long below it — the commonest shape round a
-            // hub (D414 measured it) — so the corridor rule (D415) is exercised: one lane down its
-            // middle, no yard.
             for (int dy = 0; dy < 2; dy++)
             {
                 for (int dx = 0; dx < 5; dx++)
@@ -5421,192 +5436,120 @@ public partial class VillageMap : Control
                 }
             }
 
-            // ⭐ And a LONG staircase off to the side — what a diagonal walk treads since D424 —
-            // so the staircase rule is exercised (Joe's dashed lanes, 2026-09-30): every tile of it
-            // the corner of one L, which D359 alone drew as two offset chains.
-            for (int k = 0; k < 6; k++)
+            // And a lane worn INTO a building — feet cross the footprint they leave (D383) — which the network must stop
+            // at the wall: a building is never drawn on.
+            GridPos? inside = null;
+            for (int r = 0; r < 30 && inside is null; r++)
             {
-                world.Paths.Tread(new GridPos(from.X + 12 + k, from.Y + k), world.Config.PathWornAt);
-                world.Paths.Tread(new GridPos(from.X + 13 + k, from.Y + k), world.Config.PathWornAt);
+                for (int dy = -r; dy <= r && inside is null; dy++)
+                {
+                    for (int dx = -r; dx <= r && inside is null; dx++)
+                    {
+                        var tile = new GridPos(from.X + dx, from.Y + dy);
+                        if (world.FootprintCovering(tile).Count > 0)
+                        {
+                            inside = tile;
+                        }
+                    }
+                }
+            }
+
+            if (inside is GridPos door)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    world.Paths.Tread(new GridPos(door.X - k, door.Y), world.Config.PathWornAt);
+                }
             }
 
             world.Paths.Decay(0);
         }
 
         CollectTheTrailsIfTheyMoved(world);
+        var faults = new List<string>();
 
-        // The long staircase is ONE chain on its own centre line: every tile but the two ends joins
-        // exactly its two neighbours along the stair, and every point lies on y = x − ½ (from the
-        // staircase's first tile). Asked only of the pose — a real valley has no staircase here.
-        int stairOffLine = 0;
-        int stairBroken = 0;
-        int stairChecked = 0;
-        var stairStart = new GridPos(world.Map.FoundingSite.X + 12, world.Map.FoundingSite.Y);
-        Span<GridPos> stairJoins = stackalloc GridPos[8];
-        for (int k = 0; k < 12; k++)
-        {
-            var step = new GridPos(stairStart.X + ((k + 1) / 2), stairStart.Y + (k / 2));
-            if (TrailGradeAt(step) == 0)
-            {
-                break;
-            }
-
-            stairChecked++;
-            Vector2 at = TrailPointOf(step) - new Vector2(stairStart.X, stairStart.Y);
-            if (Mathf.Abs(at.Y - (at.X - 0.5f)) > 0.01f && k > 0 && k < 11)
-            {
-                stairOffLine++;
-            }
-
-            var next = new GridPos(stairStart.X + ((k + 2) / 2), stairStart.Y + ((k + 1) / 2));
-            int n = JoinedNeighbours(step, stairJoins);
-            bool joinsNext = false;
-            for (int q = 0; q < n; q++)
-            {
-                joinsNext |= stairJoins[q] == next;
-            }
-
-            if (k < 11 && (!joinsNext || n > 2))
-            {
-                stairBroken++;
-            }
-        }
-
-        // The clipped corner draws at the square's shared corner, on the line; the row draws at centres.
-        GridPos corner = new(world.Map.FoundingSite.X + 2, world.Map.FoundingSite.Y + 4);
-        Vector2 cornerAt = TrailPointOf(corner);
-        Vector2 onTheLine = new(world.Map.FoundingSite.X + 1.5f, world.Map.FoundingSite.Y + 4.5f);
-        bool cornerOnTheLine = cornerAt.DistanceTo(onTheLine) < 0.01f
-            && TrailPointOf(world.Map.FoundingSite) == new Vector2(world.Map.FoundingSite.X, world.Map.FoundingSite.Y);
-
-        // And the row is one chain: every tile of it joins its neighbour on the row (D360).
-        int broken = 0;
-        Span<GridPos> joined = stackalloc GridPos[8];
-        for (int i = 0; i < 8; i++)
-        {
-            var here = new GridPos(world.Map.FoundingSite.X + i, world.Map.FoundingSite.Y);
-            var next = new GridPos(here.X + 1, here.Y);
-            int count = JoinedNeighbours(here, joined);
-            bool joinsNext = false;
-            for (int k = 0; k < count; k++)
-            {
-                joinsNext |= joined[k] == next;
-            }
-
-            if (!joinsNext)
-            {
-                broken++;
-            }
-        }
-
-        int packed = 0;
+        // The collected grades are the sim's.
         int adrift = 0;
-        for (int i = 0; i < _trail.Count; i++)
+        int packed = 0;
+        foreach ((GridPos tile, byte grade) in _trail)
         {
-            (GridPos tile, byte grade) = _trail[i];
-            if (grade == 2)
-            {
-                packed++;
-            }
-
+            packed += grade == 2 ? 1 : 0;
             int wear = world.Paths.At(tile);
             byte truth = wear >= world.Config.PathPackedAt ? (byte)2 : wear >= world.Config.PathWornAt ? (byte)1 : (byte)0;
-            if (truth != grade)
+            adrift += truth == grade ? 0 : 1;
+        }
+
+        if (adrift > 0)
+        {
+            faults.Add($"{adrift} collected trail tiles disagree with the sim's wear");
+        }
+
+        // Every point the network draws stands on its shape — worn ground or a bridged gap — never on a building or water.
+        (int minX, int minY, int width, int height, byte[] shape, bool[] blocked) = _networkWindow;
+        int offTheGround = 0;
+        int onABuilding = 0;
+        int points = 0;
+        foreach (TrailNetwork.Lane lane in _network.Lanes)
+        {
+            foreach (Vector2 point in lane.Points)
             {
-                adrift++;
-            }
-        }
-
-        if (broken > 0)
-        {
-            return $"[widths] trails: ⛔ the posed row breaks {broken} times — a lane people walk is drawn in pieces";
-        }
-
-        if (stairChecked < 12 || stairOffLine > 0 || stairBroken > 0)
-        {
-            return $"[widths] trails: ⛔ a long staircase ({stairChecked} of 12 tiles found) draws {stairOffLine} tiles off its centre line and breaks "
-                + $"{stairBroken} times — a diagonal lane drawn as two offset chains of dashes (Joe, 2026-09-30)";
-        }
-
-        // The block: nine tiles, filled as one patch of about nine MINUS its four cut corners (D374:
-        // a full nine is a square with its corners kept — Joe's *"big square"*), and its centre is a
-        // block tile with no disc and no L-corner of its own.
-        GridPos blockCentre = new(world.Map.FoundingSite.X + 6, world.Map.FoundingSite.Y + 7);
-        bool blockIsAYard = IsJunctionTile(blockCentre) && LCornerOf(blockCentre) is null
-            && _blockTiles.Count >= 9 && TrailBlockAreaWorn > 7f && TrailBlockAreaWorn < 9f;
-        if (!blockIsAYard)
-        {
-            return $"[widths] trails: ⛔ a packed 3×3 junction draws as {(TrailBlockAreaWorn >= 9f ? "a square with its corners kept" : "ribbons")} "
-                + $"(patch area {TrailBlockAreaWorn:F1} of 9, {_blockTiles.Count} block tiles)";
-        }
-
-        // ⭐ The corridor (D415): no tile of it is a yard, each column's two tiles draw at ONE point
-        // on the midline, and the lane along it is one chain.
-        int corridorInAYard = 0;
-        int corridorOffTheMidline = 0;
-        int corridorBreaks = 0;
-        for (int dx = 0; dx < 5; dx++)
-        {
-            var top = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + 11);
-            var bottom = new GridPos(top.X, top.Y + 1);
-            corridorInAYard += (_blockTiles.Contains(new Vector2I(top.X, top.Y)) ? 1 : 0) + (_blockTiles.Contains(new Vector2I(bottom.X, bottom.Y)) ? 1 : 0);
-            corridorOffTheMidline += TrailPointOf(top) == TrailPointOf(bottom) && Mathf.IsEqualApprox(TrailPointOf(top).Y, top.Y + 0.5f) ? 0 : 1;
-            if (dx < 4)
-            {
-                var next = new GridPos(top.X + 1, top.Y);
-                int count = JoinedNeighbours(top, joined);
-                bool joinsNext = false;
-                for (int k = 0; k < count; k++)
+                points++;
+                int x = Mathf.RoundToInt(point.X) - minX;
+                int y = Mathf.RoundToInt(point.Y) - minY;
+                if (x < 0 || y < 0 || x >= width || y >= height)
                 {
-                    joinsNext |= joined[k] == next;
+                    offTheGround++;
+                    continue;
                 }
 
-                corridorBreaks += joinsNext ? 0 : 1;
+                bool nearWorn = false;
+                for (int dy = -1; dy <= 1 && !nearWorn; dy++)
+                {
+                    for (int dx = -1; dx <= 1 && !nearWorn; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy;
+                        nearWorn = nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0;
+                    }
+                }
+
+                offTheGround += nearWorn ? 0 : 1;
+            }
+
+            // ⛔ And the line between the points (D582): a probe that asked the points could not see a lane drawn across a
+            // one-tile store. Every quarter-step of every step.
+            int steps = lane.Closed ? lane.Points.Length : lane.Points.Length - 1;
+            for (int k = 0; k < steps; k++)
+            {
+                for (int q = 0; q < 4; q++)
+                {
+                    Vector2 at = lane.Points[k].Lerp(lane.Points[(k + 1) % lane.Points.Length], q / 4f);
+                    int x = Mathf.RoundToInt(at.X) - minX;
+                    int y = Mathf.RoundToInt(at.Y) - minY;
+                    onABuilding += x >= 0 && y >= 0 && x < width && y < height && blocked[(y * width) + x] ? 1 : 0;
+                }
             }
         }
 
-        if (corridorInAYard > 0 || corridorOffTheMidline > 0 || corridorBreaks > 0)
+        if (onABuilding > 0 || offTheGround > 0)
         {
-            return $"[widths] trails: ⛔ a 2×5 worn corridor draws as {(corridorInAYard > 0 ? $"a yard ({corridorInAYard} of 10 tiles filled)" : corridorOffTheMidline > 0 ? $"two rails ({corridorOffTheMidline} of 5 columns off the midline)" : $"a lane in pieces ({corridorBreaks} breaks)")} — not one walked lane";
+            faults.Add($"{onABuilding} samples of the lanes on a building or water, {offTheGround} of {points} points away from any worn ground");
         }
 
-        if (!cornerOnTheLine)
+        // And the mesh is laid from the network: a lone-point lane or a junction lays a disc centred on its point, and
+        // every lane lays vertices; an empty mesh over a non-empty network draws nothing.
+        if (_network.Lanes.Count > 0 && (_trailMesh.GetSurfaceCount() == 0 || TrailVerticesWorn == 0))
         {
-            return $"[widths] trails: ⛔ the clipped corner of a staircase draws at {cornerAt}, not on the "
-                + $"line at {onTheLine} — the trail is drawing the index, not the walk";
+            faults.Add($"{_network.Lanes.Count} lanes in the network and nothing meshed");
         }
 
-        if (_trailMesh.GetSurfaceCount() == 0 || TrailVerticesWorn + TrailVerticesPacked == 0)
-        {
-            return "[widths] trails: ⛔ the paths are collected but the mesh is empty — nothing would draw";
-        }
-
-        return adrift == 0
-            ? $"[widths] trails: ✅ {_trail.Count} worn tiles drawn as paths, {packed} of them packed, "
-                + $"{world.Paths.TroddenTiles} tiles trodden at all; the row is one chain, a staircase's clipped corner draws on the line, "
-                + $"a long staircase is one chain on its centre line, a packed 3×3 junction is one yard of {TrailBlockAreaWorn:F1} tiles, and a 2×5 worn corridor is one lane down its middle; "
-                + $"meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} packed vertices in {LastTrailBuildMs:F2}ms"
-            : $"[widths] trails: ⛔ {adrift} drawn trail tiles disagree with the sim's wear — the "
-                + "trails are drawing something the ground does not hold";
+        return faults.Count == 0
+            ? $"[widths] paths: ✅ {_trail.Count} worn tiles ({packed} packed) read as {_network.Lanes.Count} lanes and "
+                + $"{_network.Junctions.Count} junctions ({_network.BridgedTiles} gaps bridged), every point on worn ground and no line across "
+                + $"a building; built in {LastNetworkBuildMs:F2}ms, meshed as {TrailVerticesWorn} worn and {TrailVerticesPacked} "
+                + $"packed vertices in {LastTrailBuildMs:F2}ms"
+            : $"[widths] paths: ⛔ {string.Join("; ", faults)}";
     }
 
-    /// <summary>
-    /// ⭐ The lanes the village actually walked draw whole — <b>a probe line over the real valley</b>,
-    /// not a posed shape (Joe, 2026-09-30: *"there are still a few instances of the segmented
-    /// lines"*).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <see cref="TheTrailsLieOnTheGround"/> poses its shapes only when nothing has been walked, so
-    /// the lanes of a real twelve-year valley were never asked about. This asks two things of every
-    /// pair of graded tiles that touch (eight-way), using the drawing's own join rule:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><b>One-sided joins</b> — each tile lays its own half of a step, a band to the midway,
-    /// so a join one tile makes and its neighbour refuses draws half a step and a gap: a dash.</item>
-    /// <item><b>Pieces</b> — tiles that touch on the ground but fall in different drawn pieces.</item>
-    /// </list>
-    /// </remarks>
     /// <summary>
     /// ⭐⭐ Ground the village has WORKED — <b>a farm's field is its paint, filled along the
     /// paint's own curve</b> (D342, D352).
@@ -7088,6 +7031,12 @@ public partial class VillageMap : Control
                 DrawArc(centre, radius + 4f, 0f, Mathf.Tau, 24, SelectedRing, 2f);
             }
 
+            // ⭐ A nomad walking in carries the chevron (D573, Joe's note 4) until they are in.
+            if (WalkInProgressOf(villager.Id) is float walking)
+            {
+                DrawTheArrivalMark(centre, radius, walking);
+            }
+
             if (_mealShownUntil.TryGetValue(villager.Id, out double until))
             {
                 float left = MealMarkLeft(until, _mealClock);
@@ -7190,6 +7139,9 @@ public partial class VillageMap : Control
         {
             return;
         }
+
+        // A walk whose last nomad is in is forgotten here, once a tick, with the rest of the bookkeeping (D573).
+        PruneTheFinishedWalkIns();
 
         // ⭐ AND WHOEVER ATE THIS TICK IS MARKED (D531) — once a tick, where the sim's fact changes.
         var ate = new List<int>();
@@ -7334,6 +7286,16 @@ public partial class VillageMap : Control
     /// </remarks>
     private Vector2 DrawnCentre(Villager villager)
     {
+        Vector2 live = DrawnTile(villager);
+
+        // ⭐ A nomad walking in is on the road, not at the camp (D573) — asked here, so the click lands on the dot.
+        Vector2 tile = WalkInPlaceOf(villager.Id, live, out _) ?? live;
+        return ToScreen(tile);
+    }
+
+    /// <summary>The ordinary glide, in the view's tile space: from last tick's place toward this one, fanned off a crowded tile.</summary>
+    private Vector2 DrawnTile(Villager villager)
+    {
         Vector2 current = InViewTiles(villager.Position);
         bool seen = _tiles.TryGetValue(villager.Id, out var known);
         Vector2 previous = seen ? known.Previous : current;
@@ -7350,7 +7312,7 @@ public partial class VillageMap : Control
             : snapped ? known.FanCurrent
             : FanDrawn(known.FanPrevious, known.FanCurrent, (float)_alpha);
 
-        return ToScreen(drawTile + fan);
+        return drawTile + fan;
     }
 
     /// <summary>

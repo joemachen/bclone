@@ -181,7 +181,10 @@ public sealed class KnowledgeAtRiskTests
     public void AndToldAgainIfTheTradeFallsBackToOneHolder()
     {
         var sink = new InMemoryLogSink();
-        SimConfig config = Config;
+
+        // ⚠️ Nomads off (D572): a band settles unattended in Year 8–12 with a journeyman of a founding trade, three
+        // quarters of the way to mastering it — a holder this test never made, who masters it inside the pose.
+        SimConfig config = Config with { NomadsEnabled = false };
         SimLoop loop = SimFactory.CreatePhase0(config, sink);
         SimWorld world = loop.World;
 

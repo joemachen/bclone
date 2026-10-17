@@ -10,7 +10,7 @@
 Joe, 2026-09-12, from a Foundation screenshot: *"see how the buildings take up more than one
 square? … bakeries are different height, width, and depth than a blacksmith."* Every building in
 this game is one tile because nobody typed the numbers: `Footprint` has carried width × height
-with rotation and SAT collision since D331, and the longhouse (3×1, D322) exists so extent and
+with rotation and SAT collision since D331, and the longhouse (3×1, D322 — a test-fixture row since D571, the id retired) exists so extent and
 facing are content rather than machinery with nothing behind it. This slice types the rest.
 
 ## 2. The table (tiles, width × depth before turning)
@@ -23,7 +23,7 @@ facing are content rather than machinery with nothing behind it. This slice type
 | woodcutter's hut, builder's hut, hunter's lodge | 2×1 | a yard beside the door |
 | granary, warehouse, market, farmhouse, library | 2×2 | the stores and the house-sized civic buildings |
 | town hall | 3×2 | the one building that should dominate |
-| longhouse | 3×1 | as D322 built it |
+| longhouse | 3×1 | as D322 built it — a dwelling in D566, **removed from the shipped catalogue in D571**: the row lives in `BuildFixtures.WithTheOldLonghouseStore` for the geometry guards, on the retired id 14 |
 
 The numbers live in `SimConfig.DefaultBuildings()` (`ExtentWidth`, `ExtentHeight`), and a modded
 `buildings` list may say otherwise per row — the validator already refuses an extent under 1.

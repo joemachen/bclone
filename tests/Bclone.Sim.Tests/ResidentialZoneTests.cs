@@ -92,7 +92,10 @@ public sealed class ResidentialZoneTests
         // "No need, no houses" has a twin: no room, no houses. Erase the unbuilt land
         // and the village stops spreading — which is the constraint that makes painting
         // a decision rather than a formality.
-        SimConfig config = Config;
+        // ⚠️ A village with no land to build on dies out over sixty years and is re-founded a few years on since D567 —
+        // two new households, roofless. The claim here is about the painted land, so the re-founding is switched off —
+        // and the nomads with it (D572): a band settles as roofless households, which is `NomadTests`' claim, not this one's.
+        SimConfig config = Config with { RefoundYearsFloor = 0, NomadsEnabled = false };
         SimLoop loop = Build(config);
         loop.Step(config.TicksPerYear * 10);
 
@@ -173,7 +176,10 @@ public sealed class ResidentialZoneTests
         string? asked = null;
         foreach (LogEntry entry in sink.Entries)
         {
-            if (entry.Message.Contains("needs somewhere new to build", System.StringComparison.Ordinal))
+            // Either sentence is the village asking: a couple's ("needs somewhere new to build") or a roofless
+            // family's ("has nowhere to build", D381 — a settled band's since D572, which latches first).
+            if (entry.Message.Contains("needs somewhere new to build", System.StringComparison.Ordinal)
+                || entry.Message.Contains("has nowhere to build", System.StringComparison.Ordinal))
             {
                 asked = entry.Message;
                 break;

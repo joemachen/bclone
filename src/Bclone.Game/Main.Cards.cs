@@ -2563,7 +2563,8 @@ public partial class Main
         string siteShape = "no site siteToShow";
         foreach (BuildingKind kind in System.Enum.GetValues<BuildingKind>())
         {
-            if (kind == BuildingKind.Home || BuildingRecipe.For(kind, world.Config).Materials.Count < 2)
+            // A retired id (D571) has no row and no recipe to ask about.
+            if (kind == BuildingKind.Home || !world.BuildingsCatalog.Has((int)kind) || BuildingRecipe.For(kind, world.Config).Materials.Count < 2)
             {
                 continue;
             }

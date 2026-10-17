@@ -54,8 +54,18 @@ public sealed class ClockSystem : ISimSystem
             foragedThisSeason += villager.GathersThisSeason;
         }
 
-        if (livingCount == 0 || current.Season == previous.Season)
+        if (current.Season == previous.Season)
         {
+            return;
+        }
+
+        // ⭐ AN EMPTY VALLEY KEEPS TIME (D567, `nomads.md §4.6`): what stands goes on wearing and a ruin closes in the
+        // season it is due — never all at once the day somebody returns — but no repair site is raised, since nobody
+        // could serve one. No season is narrated and no year is closed — there is nobody to say it to — but the walk's
+        // own lines (a roof showing its age, a house fallen in) are still told: the valley crumbling is its one story.
+        if (livingCount == 0)
+        {
+            world.TendWhatStands(raiseRepairs: false);
             return;
         }
 

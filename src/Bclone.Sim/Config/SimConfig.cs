@@ -1578,6 +1578,74 @@ public sealed record SimConfig
     [JsonPropertyName("repair_cost_percent")]
     public int RepairCostPercent { get; init; } = 25;
 
+    // ---------------------------------------------------------------
+    //  The nomads (D563, D564 — `specs/nomads.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The earliest year a band of nomads knocks (`nomads.md §4.1`): the first knock is this plus a hashed share of
+    /// <see cref="NomadsFirstYearSpread"/>. <b>0: nobody ever knocks</b> (Phase 0's village of one). Joe (D563): their own
+    /// clock, around Year 10.
+    /// </summary>
+    [JsonPropertyName("nomads_first_year_floor")]
+    public int NomadsFirstYearFloor { get; init; } = 8;
+
+    /// <summary>Years a seed may add to the first knock — 8 + 0..4 is Year 8–12.</summary>
+    [JsonPropertyName("nomads_first_year_spread")]
+    public int NomadsFirstYearSpread { get; init; } = 4;
+
+    /// <summary>The fewest years between one band leaving or settling and the next knock, without a town hall.</summary>
+    [JsonPropertyName("nomads_years_between_floor")]
+    public int NomadsYearsBetweenFloor { get; init; } = 6;
+
+    /// <summary>The fewest years between bands once the town hall stands — the hall widens them (Joe, D563).</summary>
+    [JsonPropertyName("nomads_hall_years_between_floor")]
+    public int NomadsHallYearsBetweenFloor { get; init; } = 4;
+
+    /// <summary>Years a seed may add between bands.</summary>
+    [JsonPropertyName("nomads_years_between_spread")]
+    public int NomadsYearsBetweenSpread { get; init; } = 4;
+
+    /// <summary>
+    /// A band is the village's population divided by this, clamped to <see cref="NomadsBandMin"/>..<see cref="NomadsBandMax"/>
+    /// — a quarter (`nomads.md §8.2`: a fifth of a village of eight is the minimum either way; from Year ~50 a quarter sends
+    /// six against five). Two more with the hall standing.
+    /// </summary>
+    [JsonPropertyName("nomads_share_divisor")]
+    public int NomadsShareDivisor { get; init; } = 4;
+
+    /// <summary>The fewest people in a band — a couple.</summary>
+    [JsonPropertyName("nomads_band_min")]
+    public int NomadsBandMin { get; init; } = 2;
+
+    /// <summary>The most people in a band — two families of four.</summary>
+    [JsonPropertyName("nomads_band_max")]
+    public int NomadsBandMax { get; init; } = 8;
+
+    /// <summary>Food each nomad carries into the family's larder on settling — a few days' worth.</summary>
+    [JsonPropertyName("nomads_food_each")]
+    public int NomadsFoodEach { get; init; } = 20;
+
+    /// <summary>
+    /// Where the Nomads switch starts for a new village (`nomads.md §4.1a`, D570; Joe, D568: <i>"enable/disable the
+    /// nomad feature altogether"</i>; D572: the switch is the permission — on, a band settles the tick it comes) — set
+    /// by the new-game screen's <i>Nomads</i> row. The village's own switch is <c>SimWorld.NomadsEnabled</c>, saved and
+    /// hashed; this is only where it starts, as <c>cart_food</c> is only what the cart starts with.
+    /// </summary>
+    [JsonPropertyName("nomads_enabled")]
+    public bool NomadsEnabled { get; init; } = true;
+
+    /// <summary>
+    /// The fewest years after a valley empties before four nomads re-found it (`nomads.md §4.6`; Joe, D563: automatic,
+    /// a few years on). The wait is this plus a hashed share of <see cref="RefoundYearsSpread"/>. <b>0: never</b>.
+    /// </summary>
+    [JsonPropertyName("refound_years_floor")]
+    public int RefoundYearsFloor { get; init; } = 2;
+
+    /// <summary>Years a seed may add to the wait — 2 + 0..4 is two to six years on; measured (§8.4): by then a fifth to a quarter of what stood is failing or fallen in.</summary>
+    [JsonPropertyName("refound_years_spread")]
+    public int RefoundYearsSpread { get; init; } = 4;
+
     /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
     [JsonPropertyName("failing_deck_slow_percent")]
     public int FailingDeckSlowPercent { get; init; } = 150;
@@ -3572,38 +3640,10 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
-        // ⭐⭐ THE LONGHOUSE — THE FIRST BUILDING IN THIS GAME THAT IS NOT ONE TILE (D320, Joe).
-        // Three tiles by one, and it exists so that extent and facing are content the player can
-        // place rather than machinery with nothing behind it. Everything else is 1×1, so until
-        // this row nothing shipped could show a footprint covering more than its own tile.
-        //
-        // ⚠️ A STOREHOUSE RATHER THAN A DWELLING, and that is a design constraint rather than a
-        // preference: housing is painted with the land brush and never placed by a button (D42,
-        // D102), so a longhouse that was a home would be a change to how housing works instead of
-        // a demonstration of footprints.
-        //
-        // ⭐ Priced from the warehouse's own keys rather than new numbers — it is a warehouse that
-        // lies along the ground, so inventing `longhouse_logs` would be a second source of truth
-        // for one building (D16, and the granary's own note about deriving a capacity).
-        new BuildingRow
-        {
-            Id = (int)BuildingKind.Longhouse,
-            Name = "longhouse",
-            Materials = new[]
-            {
-                new MaterialCost(World.Goods.Logs, WarehouseLogs),
-                new MaterialCost(World.Goods.Stone, WarehouseStone),
-            },
-            WorkTicks = WarehouseWorkTicks,
-            Stores = StoreKind.Warehouse,
-            // ⚠️ STATED, because the economy derives a capacity for exactly three buildings —
-            // the warehouse, the stockpile and the market — and the validator says so out loud.
-            // ⭐ Three warehouses' worth, because it is three tiles of warehouse. *The extent is
-            // the reason for the number rather than a number picked to suit it.*
-            StoreCapacity = VillageEconomy.WarehouseCapacity(this) * 3,
-            ExtentWidth = 3,
-            ExtentHeight = 1,
-        },
+        // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
+        // Joe, D568: *"longhouse should be removed from the game"*). `BuildingKind.Longhouse = 14` is a RETIRED id:
+        // it ships no row, is never renumbered and never reissued; a modder may type a row with it, which is then
+        // whatever its columns say (`BuildFixtures.WithTheOldLonghouseStore` does, for the geometry guards).
     });
 
     /// <summary>
@@ -4770,6 +4810,24 @@ public sealed record SimConfig
                 + $"rising, or all 0 for nothing wears (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
         }
 
+        // The nomads' clock and band (`nomads.md §4`): floors and spreads never negative (a first-year floor of 0 is
+        // "nobody knocks"), the share a divisor, the band at least a couple and never smaller than its floor, the food
+        // carried never negative.
+        if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
+            || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
+            || NomadsFoodEach < 0 || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
+        {
+            throw new SimConfigException(
+                "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
+                + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
+                + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
+                + "nomads_food_each cannot be negative, and "
+                + "refound_years_floor and refound_years_spread cannot be negative (got "
+                + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsFoodEach}, "
+                + $"{RefoundYearsFloor}, {RefoundYearsSpread}).");
+        }
+
         if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)
         {
             throw new SimConfigException(
@@ -5718,6 +5776,17 @@ public sealed record SimConfig
             // **so this guard refused it too**, correctly, before it had a column saying what it
             // was for. *Second building, second time; the validator is earning its keep.*
             // ⭐ AND DRAWING WATER IS A SIXTH (D427) — the well, refused the same way, a third time.
+            // ⛔ ONLY THE HOUSE ROW HOUSES ANYBODY (D571). The longhouse was the one other row that carried
+            // `house_capacity`, and `RaiseFinished` turned any such row into one; with it gone, a modder's
+            // `house_capacity` on any other row would be raised and shelter nobody for ever. Refused at load.
+            // ⚠️ The house ladder (D206: cabin → cottage → manor, three house rows) lifts this when it lands.
+            if (row.HouseCapacity > 0 && row.Id != (int)BuildingKind.Home)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_capacity {row.HouseCapacity}, but only the "
+                    + $"house row (id {(int)BuildingKind.Home}) houses anybody — the longhouse that once did was removed (D571).");
+            }
+
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
                 && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater)
@@ -5754,10 +5823,12 @@ public sealed record SimConfig
         // The enum is an alias for the first ids, exactly as it is for goods and trades. A missing
         // built-in would index a row that is not there, failing deep in a placement rather than
         // here.
+        // ⛔ A RETIRED ID (D571): `BuildingKind.Longhouse = 14` stays in the enum, never renumbered, and ships no
+        // row — a catalogue without it is whole. A modder may type one. Named once, in `BuildingKinds.IsRetired`.
         int builtIn = System.Enum.GetValues<BuildingKind>().Length;
         for (int id = 0; id < builtIn; id++)
         {
-            if (!seen.Contains(id))
+            if (!seen.Contains(id) && !BuildingKinds.IsRetired((BuildingKind)id))
             {
                 throw new SimConfigException(
                     $"buildings is missing id {id} ({(BuildingKind)id}). The built-in buildings are "

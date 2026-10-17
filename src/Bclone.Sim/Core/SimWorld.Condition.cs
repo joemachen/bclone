@@ -10,7 +10,7 @@ namespace Bclone.Sim.Core;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⛔ <b>ONCE A SEASON, NEVER PER TICK</b> (CLAUDE.md). <see cref="TendWhatStands"/> runs from <c>ClockSystem</c>
+/// ⛔ <b>ONCE A SEASON, NEVER PER TICK</b> (CLAUDE.md). <see cref="TendWhatStands()"/> runs from <c>ClockSystem</c>
 /// on the season's turn only, and compares two <em>derived</em> answers — the state now and the state a season
 /// ago, both read off the same two stamps — so nothing is stored to know that something changed.
 /// </para>
@@ -121,8 +121,14 @@ public sealed partial class SimWorld
     /// Look at everything standing, once, at the season's turn: narrate what turned worn, failing or ruined since the
     /// last turn, raise a repair site for anything worn that has none, and close what has become a ruin.
     /// </summary>
-    internal void TendWhatStands()
+    /// <summary>Whether this season's walk may raise repair sites — not in an empty valley (D567), where nobody could serve one.</summary>
+    private bool _raiseRepairs = true;
+
+    internal void TendWhatStands() => TendWhatStands(raiseRepairs: true);
+
+    internal void TendWhatStands(bool raiseRepairs)
     {
+        _raiseRepairs = raiseRepairs;
         ConditionWalks++;
         ulong aSeasonAgo = Tick >= (ulong)Config.TicksPerSeason ? Tick - (ulong)Config.TicksPerSeason : 0UL;
 
@@ -385,7 +391,7 @@ public sealed partial class SimWorld
     internal void RaiseARepairIfNoneFor(BuildingKind kind, Point position, string name, Angle facing, BuildingRecipe whole)
     {
         GridPos tile = position.ToTile();
-        if (RepairSiteAt(tile) is not null || DemolitionSiteAt(tile) is not null)
+        if (!_raiseRepairs || RepairSiteAt(tile) is not null || DemolitionSiteAt(tile) is not null)
         {
             return;
         }
