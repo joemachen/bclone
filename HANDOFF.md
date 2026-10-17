@@ -1,4 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED: THE NOMADS SLICE AND JOE'S SIX NOTES MERGED (D563–D584). NEXT IS JOE'S CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` LINE GREEN AGAIN), LOCAL, UNMERGED. NEXT: THE TRADE SPEC (JOE: THE FULL LIVING REGION). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D585: THE PROBE'S `pause:` ❌ WAS THE PROBE'S OWN MOMENT; FIXED IN THE POSE) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** (off `main`, local, **not pushed, not merged**) = **D585.** Joe: *"fix the
+> probe's pause: line first, then i want to start on trading."* The fault was made to name what was open and said *a
+> moment was up: "Four nomads have found the empty valley"* — the probe's own valley empties and is re-founded in its
+> twelve-year run (D567), the late `Refresh` shows that moment (two were queued), and Esc dismissed it, which is the
+> game's rule. `ThePauseOpensAndCloses` now lets the run's moments go by, poses its own, and guards that a moment takes
+> Esc before the pause does. 3 mutants, 3 reds, no zeros. **View only (`Main.Pause.cs`); no sim change, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m11); view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, `pause:` ✅, no ⛔ or ❌ anywhere, `title:` / `new game:` / `tile centres` / `trails:` / `paths:` ✅, bar height 151,
+> `done.` (the posed bar's ⚠️ wrap was there before the change); goldens 362 → 362, nothing under `src/Bclone.Sim`,
+> `tests/` or `data/` moved.
+>
+> **▶️ NEXT: the trade spec**, on `slice/trade` cut from this branch so D585 and D586 do not collide in `DESIGN.md`.
+> Joe's calls (2026-10-16): **the full living region; barter, no coin; standing orders on the post's card; the town
+> hall gift is the permission, then a trading post on the river bank; a cart caravan and a cart road from the map's edge
+> to the town hall once carts exist (the workshop slice).** Spec and measurement first; no sim code until he answers
+> its calls. `slice/pause-probe` merges at his word only.
+>
+> **(the banner below is the state at D584)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D584: THE NOMADS SLICE AND JOE'S SIX NOTES — MERGED AND PUSHED) — ON WINDOWS.**
 >
@@ -6985,6 +7007,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D585 PAID FOR — A PROBE LINE THAT INHERITS THE RUN, AND A ❌ NOBODY GREPS FOR
+
+- **A late probe line inherits everything the run before it raised.** `pause:` pressed Esc *"with nothing open"* —
+  but the twelve-year log probe had emptied and re-founded the probe's own valley (D567), and the `Refresh` just before
+  it put the re-founders' moment up. Esc dismissed it, correctly, and the line read ❌ for seventeen commits. **A line
+  that says "with nothing open" must make it so**, and a fault must name what *was* open (`WhatIsOpen`) — the
+  one-sentence diagnosis came from that, not from reading.
+- **Queued moments come one at a time.** Dismissing the visible moment and asking `ShowAnyMoment` again showed a
+  second of the same title. Clearing "the moment" once is not clearing them; let them go by in a loop, as a player would.
+- **"No ⛔" is not "green".** Summaries grepped for ⛔ while this line printed ❌; D569 found it only by reading every
+  line. Read every probe line, as CLAUDE.md says — the symbol a line uses for failure is the line's choice.
 
 ## ⛔ THE TRAPS D583 PAID FOR — THE WRONG INVARIANT, AND A SAMPLED LINE
 
