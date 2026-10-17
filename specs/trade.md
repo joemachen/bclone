@@ -7,8 +7,8 @@ a deck over the river), D553 call 6 (the workshop, carpenter and hammer: the fol
 (nomads — the clock-by-hash and the walk-in from the valley's edge this copies), **D586 (Joe's calls for this spec,
 2026-10-16 — §3.1)**, **D587 (his answers to the nine calls, the same day — §3.2)**.
 **Status:** ✍️ **SPECCED, NOT BUILT, EVERY CALL ANSWERED (D586–D587), on `slice/trade`.** Measured first (§8,
-`tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**, so the first build carries `livestock.md`'s
-first slice; its plan comes next. Owner: Joe + Claude Code.
+`tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**; the build is planned commit by
+commit in **§11 (D588)**, with `livestock.md` re-read against today's code (its §0). Owner: Joe + Claude Code.
 
 ---
 
@@ -282,8 +282,8 @@ its own, and played as one:
    river neighbours with their stocks and rates, the boat's clock (every 2–3 years, either direction), its three
    ticks, settlement, *Send the boat on*, the banner and log lines, the post's window. Sim and view; save format 8.
 2. **The boat on the water.** The view draws it sailing from its edge to the post and on off the far edge.
-3. **The herd** — `livestock.md`'s first slice (pasture, herd, hay, the barn), re-read against today's code first (it
-   was written 2026-08-01, before gridless, plots, condition and the armful), with animals in the region's goods.
+3. **The herd** — `livestock.md`'s first slice as re-read against today's code (`livestock.md §0`, D588): one barn,
+   one kind of animal, meat and leather from the cull, with animals in the region's goods.
 4. **The region panel** — each neighbour, its plenty and its wants, its rates in words.
 5. **Tier 2** — after the workshop slice: carts, the caravan, and paths made by a cart's pass.
 6. **New goods join the region** as each of their systems lands (salt, wool and the rest).
@@ -295,3 +295,47 @@ Slices 1–4 are played together before `slice/trade` merges.
 The four checks (CLAUDE.md): the suite including determinism; the game build with its warnings read; the probe with
 every line read (a `trade:` line per slice); the goldens before and after, any that move proven to move for this slice
 alone. Docs in the same commit. Joe plays it before it merges.
+
+## 11. The first build — trade and the herd, commit by commit (D588)
+
+Joe's calls for it (D588): **one kind of animal first**, **the herd gives meat and leather**, **one barn**. The herd's
+half is `livestock.md` as re-read in its §0. Every commit is red-first, red-checked and counted (D326), and passes the
+four checks on its own. All on `slice/trade`.
+
+### 11.1 The rule every commit keeps: a village without a barn or a post is today's village
+
+⭐ **All 362 goldens stay where they are** until a test raises a barn or a post. Everything new is hashed **sparsely**
+(as goods, work ground and the well already are), hay gets **no starting stock limit** (D522 moved the shipped golden by
+adding two), and **the region sleeps until a post stands** — the neighbours' stocks start stepping the season the post
+is raised, not at the founding. That makes the goldens themselves the guard for *herding is optional* (`livestock.md
+§5`) and *trade changes nothing until it exists*. Any golden that moves is a bug until it is proven otherwise.
+
+### 11.2 The commits
+
+| # | What | Sim / view | Its guards (red first) |
+|---|---|---|---|
+| 0 | **Measure** (`tools/harness/ZzHerd.cs`, copies of Joe's saves): summer spare hands and winter work at a fire / outdoors on today's code (D533's baseline, re-taken); how far a played village's homes stand from a fire in winter (the freeze risk §7 of `livestock.md` used to wave away); the hay a tile gives against a day's walk; Joe's saves for pasture-able ground near a hall-era village | — | — (numbers go into `livestock.md §10` before anything is typed) |
+| 1 | **Rows and state, nothing behaves.** `Goods.Hay` 13; `BuildingKind.Barn` 23 and `TradingPost` 24; `JobKind.Herdsman` 13 and `Trader` 14; the animal row (one kind); neighbour rows; the herd on the barn; standing orders; the boat's three ticks; the neighbours' stocks. Saved (**format 8**) and hashed sparsely. Both buildings in `WhyNotYet`: *not until the town hall stands* | sim | every new field saved or named derived (the reflection guard); save → load → hash equal; **all 362 goldens unchanged** |
+| 2 | **The herd lives.** Growth by an integer accumulator at the day turn, capped at what the pasture holds (tiles ÷ tiles a beast); free grazing spring–autumn; hay eaten each winter day from the barn; a beast lost for each day's hay short; the cull above capacity into meat and leather in the barn's buffer | sim | a herd with its winter's hay survives 300 winters on both configs; an over-stocked one loses beasts (anti-vacuity, D7); growth stops at capacity; the cull's goods appear; all goldens unchanged |
+| 3 | **The herdsman.** Growing seasons: cut hay on the pasture, carry it to the barn (the farm's reap-and-carry). Winter: carry hay out and feed — outdoors. The cull. The quota asks for herdsmen from the hay the herd will need (derived, never the barn's room — D52's lesson) | sim | the quota wants herdsmen only for a herd; **a herdsman never freezes** over the shipped seeds; winter outdoor work rises above the re-taken baseline (`livestock.md §9.5–9.6`); a village with no herd unchanged |
+| 4 | **The post and the region.** The trader carries what is above *keep N* to the post and bought goods out (the marketer's two states); neighbours wake when the post stands and step at each season turn; rates derived, in words | sim | the region sleeps before the post; stocks step only at season turns; rates stay in the band; the trader never takes a good below *keep N* |
+| 5 | **The boat.** Its clock by hash (every 2–3 years, spring–autumn, either direction); appears / docks / leaves; settles the orders at the day's rate, integers conserved, the remainder kept at the post; animals only to a barn with room; *Send the boat on* moves the leaving tick; the passing banner and the log lines | sim | gaps of 2–3 years; both directions over a run; never in winter; same seed, same boats; a save with a boat in dock loads and sails on; a year run after loading matches one that never stopped |
+| 6 | **View I.** The barn and its pasture paint (trees kept), the animals grazing (a hash scatter, like the trees), the barn's card (*N head, hay for N days, why*); the post's window (orders, the boat in dock, *Send the boat on*, when the next is due); the herdsman's and trader's states in words | view | probe `herd:`, `post:` |
+| 7 | **View II.** The boat sailing: the water path from its edge to the post and on off the far edge, **found once per post** (the river never changes — CLAUDE.md's rule), the boat's place derived from its ticks; the region panel | view | probe `boat:`, `region:` |
+
+### 11.3 Numbers — measured before typed
+
+`livestock.md §10`'s targets stand: hay cut in a growing year feeds the herd through one winter with the margin the
+larder and the woodpile carry (`winter_buffer_percent`); a pasture must be affordable in the season it costs. Typed
+only after commit 0 and the build's own arms: tiles a beast, hay a beast a winter day, the breeding time, a culled
+beast's meat and leather, hay a tile, the barn's and the post's prices, the boat's hold and the rate band.
+**`trade_boat_dock_days` is Joe's, found in play.**
+
+### 11.4 Said now, so nobody is surprised later
+
+- ⚠️ **Save format 8 refuses every save Joe has**, as D571's format 7 did (no migrations before v1). His hall-era
+  villages are already older formats.
+- ⚠️ **Playing it means reaching the town hall** — Year 51 at the median. A new village and *Skip 10y* until the last
+  founder dies is the way in; nothing here adds a shortcut.
+- ⚠️ **The suite's clock is an instrument** (CLAUDE.md): 300-winter herd guards are long runs. Kept to the fewest seeds
+  that bite, and timed against the D585 suite (8m11) at every commit.

@@ -1,4 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D587 (THE TRADE SPEC, EVERY CALL ANSWERED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: PLAN THE FIRST BUILD — TRADE AND THE HERD TOGETHER. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D588 (THE TRADE SPEC, ANSWERED, AND THE TRADE-AND-HERD BUILD PLANNED) ON TOP OF IT — BOTH LOCAL, UNMERGED. ⏸️ JOE'S GO-AHEAD, THEN COMMIT 0 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D588: THE TRADE-AND-HERD BUILD PLANNED; `livestock.md` RE-READ) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D588**, local. `livestock.md §0` is the re-read (what it said in August, what is true now,
+> what the build does); `trade.md §11` is the build: **eight commits** — 0 measure (`ZzHerd`), 1 rows and state (save
+> format 8), 2 the herd lives, 3 the herdsman, 4 the post and the region, 5 the boat, 6–7 the view. Joe's calls (D588):
+> **one kind of animal**, **meat and leather from the cull**, **one barn** (workplace, hay store, its painted ground the
+> pasture). ⭐ **All 362 goldens must hold until a test raises a barn or a post** — sparse hashing, no starting limit for
+> hay, the region asleep until a post stands. Docs only.
+>
+> **▶️ NEXT: ⏸️ Joe's go-ahead, then commit 0** — measure before typing: D533's winter baseline re-taken, the freeze risk
+> for outdoor winter work, hay a tile against a walk. ⚠️ Format 8 refuses every save Joe has; playing it means reaching the
+> hall (*Skip 10y*). `slice/pause-probe` still waits on his word to merge.
+>
+> **(the banner below is the state at D587)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D587: JOE ANSWERED TRADE'S NINE CALLS — TRADE AND THE HERD ARE ONE BUILD) — ON WINDOWS.**
 >
@@ -7045,6 +7060,13 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAP D588 FOUND — A BLOCKED SPEC KEEPS ITS OLD PROMISES
+
+- **`livestock.md` sat blocked for eleven weeks and its safety claims aged in place.** *"Nobody can freeze doing it at the
+  7-tile bound"* was true on 2026-08-01; the bound went in D120 and D533 measured outdoor winter freezes. A spec that was
+  never built is never re-checked by a red test, so **re-read a blocked spec against the code before building it** —
+  claim by claim, as `livestock.md §0` does — and turn each safety claim into a guard rather than carrying it as prose.
 
 ## ⛔ THE TRAP D586 NEARLY PAID FOR — A HARNESS'S SURPLUS IS NOT A PLAYER'S
 

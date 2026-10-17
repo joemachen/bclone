@@ -2,13 +2,31 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** ⛔ **specced and STILL BLOCKED — animals may only be acquired by trade (D61), and
-there is no trade.** ✍️ **Trade is specced now (D586, `trade.md`)**: it opens with the town hall (the last founder's
-death, Year 51 at the median). ⭐ **Joe (D587): trade and the herd are built together** — this spec's first slice
-(pasture, herd, hay, the barn) ships with trade's, and the first boat can bring a beast. ⚠️ Written 2026-08-01, before
-gridless, plots, condition and the armful: re-read against today's code before that build is planned.
-Everything below is still the design; §12.1 is the blocker. Slices
-in §11.
+**Status:** ✍️ **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588, 2026-10-16) — NOT BUILT.** Animals come
+only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
+**§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
+later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.
+
+## 0. Re-read against today's code (D588) — read this first
+
+Written 2026-08-01. Since then: gridless and buildings as obstacles, plots, painted work ground per owner, the farm's
+seasons, building condition, the armful, the food chain, the clothing re-measure, nomads and trade. Joe's three calls
+for the build (D588): **one kind of animal first**, **the herd gives meat and leather**, **one barn**.
+
+| § | What it said | What is true now | So the build |
+|---|---|---|---|
+| 3, 12.1 | Blocked: no way to get a beast (D61) | Trade is specced; a boat every 2–3 years brings an assortment that can include animals (D587) | **Animals arrive by boat only**, landed at the post, walking to a barn with room |
+| 4 | Two buildings: pasture as a zone, a barn as a store | One building is enough: today a workplace **owns painted work ground** (`ZoneMap.SetWorkGround` / `WorkGroundOf`, the farmhouse's field, the forester's ground) | **One barn** (Joe): the herdsman's workplace, the hay store, and its painted ground is the pasture |
+| 6.1 | `ZoneMap` grows a second layer beside `_residential` | Owned work ground already is that layer, sparse in the hash | The pasture is the barn's work ground; **trees stay** (D490) |
+| 6.2 | One herd per contiguous pasture, a `Herd` class | A workplace already carries per-site state (the farm's field memory) | **The herd lives on the barn**: head count, a growth accumulator, hay eaten — integers, hashed sparsely |
+| 6.3 | `Stockpile.Hay`, its own store | Goods are rows in a catalogue (`GoodRow`) and an enum, hashed **sparsely** (a new row moves no golden unless it gets a starting limit) | **`Goods.Hay` = 13**, held in the barn's own store; no starting limit, so no golden moves for it |
+| 6.4 | `JobKind.Herdsman`, two seasonal faces | The farmer already works by season (sow, tend, reap; rest at the steading, D513) | **`JobKind.Herdsman` = 13**: cut and carry hay in the growing seasons, feed the herd in winter, cull above capacity |
+| 7 | *"Nobody can freeze doing it at the 7-tile bound"* | ⛔ **No longer true:** the bound went in D120; D533 measured outdoor winter freezes in played valleys (7 in its runs, 2 with a coat) | **Re-measured before the build**, and a guard: a herdsman never freezes (§9.6 kept, made a hard guard) |
+| 9.5 | Baseline: 86 % idle in winter, 12.7 of 14.7 | D533 re-measured: winter ~71 % at a fire, ~1 % outdoor work | **The baseline is D533's**, re-taken in the same sitting as the arm |
+| 10 | Numbers derived, the barn's capacity derived | Still the rule | Measured first (`trade.md §11`, commit 0): tiles a beast, hay a winter day, the breeding time, the cull's yield |
+| 11 | Slice 1 has no output; butchering is slice 2 | Meat and leather exist (hunting) | **Joe: the herd gives meat and leather now** — the herdsman culls above what the pasture holds |
+| 12.2 | One generic beast | Joe's `TECH-EXAMPLE.md` names eleven | **Joe: one kind first**, a data row, so the rest are added without restructuring |
+| — | — | ⚠️ *Decided for Joe, to overrule in play* | **The barn is learned with the trading post** (once the town hall stands): there is nothing to keep in it before a boat can bring a beast |
 
 > **⭐ THE CONTENT IT WAS MISSING NOW EXISTS (D206, `TECH-EXAMPLE.md`) — BUT THE BLOCKER IS
 > UNTOUCHED, AND JOE'S OWN DOCUMENT CONTRADICTS HIS OWN RULING.**
