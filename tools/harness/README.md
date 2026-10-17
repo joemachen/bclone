@@ -127,3 +127,10 @@ against a number from an older commit.
   its limit then and 10 and 20 years on. ZZ_SEEDS, ZZ_YEARS (100). Copy in, `-c Release --filter ZzTrade`, delete.
   ⚠️ An unattended village builds almost nothing, so its surplus is thin; what a played village holds came from copies
   of Joe's saves (`trade.md §8.2a`).
+- `ZzHerd.cs` — D589's measurements for the herd (`specs/livestock.md §10.1`, commit 0 of `trade.md §11`). `Cold` (`ZZK`,
+  once): the shipped exposure numbers as ticks — break-off, freeze, and the tiles a walk covers between them — plus the
+  farm's field anchors. `Seasons` (ZzClothing's `played` valleys, 60 years): working-age villager-ticks per season in three
+  twenty-year windows, split work / walking / at home or a fire / other (`ZZS`); and at the year the last founder dies, free
+  grass or forest within 10 / 20 / 30 tiles' walk of the founding site and the nearest from a home (`ZZP`). Copy in,
+  `-c Release --filter ZzHerd`, delete. ⚠️ Its "walking" bucket is any `Travel*` or `-ing` state not resting — hauling
+  counts as walking, so read work + walking as *busy*.

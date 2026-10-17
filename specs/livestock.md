@@ -113,6 +113,9 @@ cattle die?"* is **the hay chain failed**, in the same way the honest answer to 
 somebody freeze?"* is **the fuel chain failed**. One proven shape, twice, rather than a
 second invention.
 
+> ⚠️ **Re-measured (D589, §10.1.2): today's village has spare hands in summer too** (55–63 % of summer at home against
+> 77–81 % of winter), so the inversion below is gentler than written. The design stands; the claim's size does not.
+
 **And the seasonal inversion is the whole design.** Hay is cut in **summer**, when the
 probe says the village has **0.7 spare hands**. It is spent in **winter**, when it has
 **12.7**. So a pasture is a bet: labour borrowed from the season that has none, repaid in
@@ -308,6 +311,52 @@ Content numbers that live in the config where a modder can reach them: how many 
 one animal, how much hay one animal eats a winter day, how long a beast takes to raise, what
 a butchered animal yields. **Consequences that must never be typed in:** the pasture the
 village can sustain, the barn's capacity, and the herdsmen the quota asks for.
+
+### 10.1 Measured on today's code — commit 0 of `trade.md §11` (D589, 2026-10-16)
+
+`tools/harness/ZzHerd.cs`, `tools/harness/ZzClothing.cs` re-run, and copies of Joe's saves. Unattended harness villages
+are not players (D447): they answer *how the village spends its time*, not *what a player builds*.
+
+**1. Winter, today — D533's baseline re-taken** (`ZzClothing`, `played`, the shipped cold, 30 valleys × 50 years):
+working-age villagers spend winter **74.7 % at a fire**, 17.8 % walking, 2.3 % going in to get warm, **2.1 % working
+outdoors** and 0.7 % under a roof (D533 read ~71 % and ~1 %). Winter is idle; the herd's feeding is the first real work
+it gets. ⚠️ *Side finding, recorded and not chased:* 196 cold deaths, every one in 5 valleys whose founders froze in
+Year 1 (the founding race, D538) and which were then **re-founded every 4–6 years by parties that froze in turn** — 49
+parties of four. An unattended valley never paints houses for its re-founders; a played one would. Harness, not player.
+
+**2. ⚠️ The seasonal inversion is weaker than §3 says.** Share of working-age villager-ticks at home or a fire
+(`ZzHerd.Seasons`, the same 30 valleys, 60 years):
+
+| Years | Spring | Summer | Autumn | Winter |
+|---|---|---|---|---|
+| 1–20 | 47.5 % | 54.6 % | 54.7 % | 77.4 % |
+| 21–40 | 57.1 % | 63.1 % | 60.2 % | 81.5 % |
+| 41–60 | 57.1 % | 62.1 % | 59.6 % | 80.2 % |
+
+§3 was written against a probe that read **0.7 spare hands in summer and 12.7 in winter**. Today's village has spare
+hands in summer too — its stock limits are met and the quota asks for nothing (`trade.md §8.2a` found the same in Joe's
+saves). **So hay will find hands, and a pasture's summer cost is smaller than §3 promised: the bet is gentler.** The
+pressure the herd adds is the winter's (the feeding, the cold) and the hay chain's, not a scarce summer. Not a reason to
+change the design; a reason not to sell it as *"labour borrowed from the season that has none"*.
+
+**3. The cold margin — §7's claim, re-taken** (`ZzHerd.Cold`, the shipped numbers): outdoors in winter a villager
+**breaks off for a fire after 30 ticks** (7½ days) and **freezes at 60**; a grass tile is 1 tick's walk, so the margin
+is **30 tiles** from wherever the work is to a lit home. A herdsman freezes only if the pasture lies more than ~30 tiles'
+walk from any hearth with firewood. The guard in commit 3 poses exactly that edge (a barn within the margin never freezes
+its herdsman), and the barn's card warns when it stands beyond it.
+
+**4. Ground for a pasture when the hall comes.** Harness (`ZzHerd`, 26 of 30 valleys reached the hall, median Year 52,
+median 7 people): free grass or forest — not painted, not residential, not a plot, nothing standing — **within 10 tiles'
+walk of the founding site: median 145 (87–185); within 20: 617 (413–848)**; the nearest such tile is 0–4 tiles from a
+home. Joe's four hall-era villages (copies; straight-line from the hall, buildings not subtracted): **118–210 within 10
+tiles, 565–822 within 20**, his biggest village (49 people) the tightest. Pasture is never short and never far.
+
+**5. Anchors for hay — not yet typed.** A farmer keeps **13** field tiles (`VillageEconomy.FieldTilesOneFarmerKeeps`, the
+biggest diamond one pair of hands reaps in an autumn, walking each armful home); a tile reaps **67** wheat; winter is
+**30 days** (120 ticks); `winter_buffer_percent` is **180**. ⭐ **A hay field is that same question asked of the barn**,
+so the herdsman's field comes from the same derivation, not a new one. *Illustration only:* hay at wheat's 67 a tile
+gives one herdsman ~870 a summer; at 2 hay a beast a winter day with the buffer, that feeds about 8 head. The real
+numbers come from commit 2's arms.
 
 ---
 

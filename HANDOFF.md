@@ -1,4 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D588 (THE TRADE SPEC, ANSWERED, AND THE TRADE-AND-HERD BUILD PLANNED) ON TOP OF IT — BOTH LOCAL, UNMERGED. ⏸️ JOE'S GO-AHEAD, THEN COMMIT 0 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D589 (THE TRADE SPEC, THE TRADE-AND-HERD PLAN, COMMIT 0 MEASURED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 1 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D589: COMMIT 0 — THE HERD MEASURED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D589**, local. `livestock.md §10.1` holds the numbers (`tools/harness/ZzHerd.cs`, `ZzClothing`
+> re-run, copies of Joe's saves): winter **75 % at a fire, 2 % outdoor work**; ⚠️ **summer is idle too (55–63 % at
+> home)**, so the herd's summer cost is smaller than `livestock.md §3` claimed — hay will find hands; the **cold margin is
+> 30 tiles** from the work to a lit hearth; free pasture ground lies within 10 tiles of every hall-era village; the hay
+> field is `FieldTilesOneFarmerKeeps`' question asked of the barn. Measurement only; no code.
+>
+> **▶️ NEXT: commit 1** — rows and state, nothing behaves: `Goods.Hay` 13, `BuildingKind.Barn` 23 / `TradingPost` 24,
+> `JobKind.Herdsman` 13 / `Trader` 14, the animal and neighbour rows, the herd on the barn, standing orders, the boat's
+> ticks; save format 8; sparse hashing; both buildings gated on the hall. **All 362 goldens must not move.**
+>
+> **(the banner below is the state at D588)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D588: THE TRADE-AND-HERD BUILD PLANNED; `livestock.md` RE-READ) — ON WINDOWS.**
 >
