@@ -3,7 +3,9 @@
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
 **Status:** ⛔ **specced and STILL BLOCKED — animals may only be acquired by trade (D61), and
-there is no trade.** Everything below is still the design; §12.1 is the blocker. Slices
+there is no trade.** ✍️ **Trade is specced now (D586, `trade.md`)**: it opens with the town hall (the last founder's
+death, Year 51 at the median), and whether animals ride in trade's first slice or follow it is `trade.md §3.2` call 5.
+Everything below is still the design; §12.1 is the blocker. Slices
 in §11.
 
 > **⭐ THE CONTENT IT WAS MISSING NOW EXISTS (D206, `TECH-EXAMPLE.md`) — BUT THE BLOCKER IS

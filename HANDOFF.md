@@ -1,4 +1,26 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` LINE GREEN AGAIN), LOCAL, UNMERGED. NEXT: THE TRADE SPEC (JOE: THE FULL LIVING REGION). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586 (THE TRADE SPEC) ON TOP OF IT — BOTH LOCAL, UNMERGED. ⏸️ JOE ANSWERS `trade.md §3.2`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D586: TRADE — THE LIVING REGION, SPECCED AND MEASURED, NOT BUILT; ⏸️ NINE CALLS ARE JOE'S) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** = D585 (below), **`slice/trade`** = D585 + **D586**, cut from it so the
+> two do not collide in `DESIGN.md`. Both local, not pushed, not merged.
+>
+> **D586:** `specs/trade.md` and `tools/harness/ZzTrade.cs`. Joe's calls (asked in plan mode): the **full living
+> region**; **barter, no coin**; **standing orders** on the post's card; the **town hall gift** is the permission, then
+> a **trading post on the river bank**, a boat along the river; once carts exist (the unbuilt workshop slice) a
+> **caravan and a built cart road** from the map's edge to the hall. Measured: every valley's river reaches two edges
+> with 30+ bank tiles on the village's side; the last founder dies in **Year 51** at the median; ⭐ copies of his saves
+> show a played village at the hall's era holding **nearly every good at its limit** — plenty to sell, little worth
+> buying on today's goods — which is why call 5 (animals with trade, or after) is open.
+>
+> **Verified:** a spec — nothing under `src/`, `tests/` or `data/` changed; the suite and the game build were run on
+> the D585 tree (below), and the harness copy was deleted from `tests/` before the commit.
+>
+> **▶️ NEXT: ⏸️ Joe answers `trade.md §3.2`** (nine calls, each with a recommendation). Then slice 1 (§9): the post,
+> standing orders, the trader, one river neighbour, the boat's clock — tests first. And `slice/pause-probe` waits on his
+> word to merge.
+>
+> **(the banner below is the state at D585)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D585: THE PROBE'S `pause:` ❌ WAS THE PROBE'S OWN MOMENT; FIXED IN THE POSE) — ON WINDOWS.**
 >
@@ -7007,6 +7029,16 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAP D586 NEARLY PAID FOR — A HARNESS'S SURPLUS IS NOT A PLAYER'S
+
+- **"What does a village have spare when trade opens?" has two answers, and the harness gives the wrong one.** The
+  unattended `Village` arm never paints a seam or marks a farm, fishery or lodge, so at the hall's era it held no stone,
+  iron, fish, wheat or bread at all, and logs at their limit in only half. Copies of Joe's saves said the opposite:
+  nearly every good at its limit. The spec's recommendation for what trade should buy flipped on that. **Ask the
+  harness *when*; ask Joe's saves *what*** (D447, again).
+- **A save is gzipped JSON** (`saves/<village>/autosave-N.save`, format 1–7 all readable as JSON); goods are arrays in
+  `Goods` order. Copy the folder to the scratchpad and read the copy — never open his files in place (D580's trap).
 
 ## ⛔ THE TRAPS D585 PAID FOR — A PROBE LINE THAT INHERITS THE RUN, AND A ❌ NOBODY GREPS FOR
 

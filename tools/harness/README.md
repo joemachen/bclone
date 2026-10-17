@@ -120,3 +120,10 @@ against a number from an older commit.
 - `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per
   seam in 100 shipped valleys (seeds 200–299) — its kind, its size (what a building standing by it may paint since D561) and
   the most a building could paint under D541's diamond. Copy in, `-c Release --filter ZzSeamGround`, delete.
+- `ZzTrade.cs` — D586's measurements for trade (`specs/trade.md §8`). `River` (pure map generation, 100 seeds × the four
+  courses, `ZZR`): which map edges the river touches, the bank tiles on the founding's side (grass touching water, the
+  fishery's rule) and the walk from the founding site to the nearest. `Village` (seeds 200–299, the played opening,
+  unattended, `ZZH` / `ZZB`): the year the last founder died (the town hall owed) and every good held in stores against
+  its limit then and 10 and 20 years on. ZZ_SEEDS, ZZ_YEARS (100). Copy in, `-c Release --filter ZzTrade`, delete.
+  ⚠️ An unattended village builds almost nothing, so its surplus is thin; what a played village holds came from copies
+  of Joe's saves (`trade.md §8.2a`).

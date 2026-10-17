@@ -501,7 +501,7 @@ because each is a conflict between `TECH-EXAMPLE.md` and something already ruled
 |---|---|
 | ~~**"+50% apprentice XP"**~~ | ✅ **RESOLVED — removed (Joe, D209).** It failed `skills-catalog.md §3.1` (*"Time on the task, counted in ticks. **Not experience points**"*) and was ten times the soft ratchet D196 flagged at +5%. **The library keeps records; it does not teach.** Education moved to the school, where it is paid for |
 | **"and weapons"** (Blacksmith Forge) | **Non-Negotiable 3: No combat.** Hunting equipment has a use; weapons do not. Recommend narrowing the word |
-| **Gold and barter value** | `buildings-plan.md §6` cut gold outright — *"No combat, no score, no wealth condition. Nothing for them to attach to."* **Trade arriving may legitimately reopen this**, but it is a reversal rather than an addition |
+| ~~**Gold and barter value**~~ | ✅ **RESOLVED — barter, no coin (Joe, D586, `trade.md §3.1`).** `buildings-plan.md §6`'s cut of gold stands: *"No combat, no score, no wealth condition. Nothing for them to attach to."* |
 | **Temperatures in °C** | Cold in this game is **a place you are standing**, not degrees (D45/D53) — `BehaviorSystem` states it *"as a share of the way to dying rather than as a temperature."* Recommend translating the thresholds into season-and-shelter terms rather than building a temperature model |
 | **The barn arrives before trade** | **D61: animals only by trade.** `TECH-EXAMPLE.md` puts the Timber Barn at T2 and the Trading Post at T3 |
 | **Crop cycles of 20–40 days** | Against sow-in-spring/reap-in-autumn (~90 days) on a **120-day year**. Means **multiple harvests annually** — a real change to `crops-and-orchards.md` |
