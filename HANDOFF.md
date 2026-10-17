@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D595 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–5 BUILT — THE SIM IS WHOLE, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: COMMIT 6 OF `trade.md §11` (VIEW I — THE BARN, THE POST'S WINDOW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D596 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–6 BUILT — THE SIM WHOLE, VIEW I PLAYABLE, THE MERCHANT NAMED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS VIEW I, THEN COMMIT 7 OF `trade.md §11` (THE BOAT SAILING, THE REGION PANEL). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D595: COMMIT 5 — THE BOAT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D596: COMMIT 6 — VIEW I, THE BARN AND THE POST) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D596**, local. **Trade and the herd can be played** once the hall stands (New village, *Skip
+> 10y* until the last founder dies — `trade.md §11.4`): the barn is on **Food**, the post on **Storage**, each drawn in its
+> trade's colour (barn red-brown, the post a river slate). **Click either and its card opens** — the barn's says its herd
+> (*"5 head grazing 40 tiles (room for 8) — hay for 30 winter days of 30; the herdsman is cutting the pasture."*) and has
+> **Give ground** for the pasture (a barn keeps ground like a farm); cattle graze it, a pale circle a head. The post's
+> card is its window: what it holds, when the next boat is due, and in Settings **one dropdown a good** (*— / sell above /
+> buy up to* — a good is bought or sold, never both), the cattle order, the cargo, **Send the boat on**, and what the
+> orders will do (Joe's D596 call: a keep alone sells nothing, and the window says to set what to buy). A boat's coming is
+> a passing banner. **18 mutants, 18 reds, no zeros** (9 in the sim against the suite, 9 in the view against the probe); suite 1754 / 0 / 5 of 1759 (9m31, inside this session's 8m37–9m42); probe 91 lines with `herd:` ✅ and `post:` ✅; goldens 362 → 362.
+>
+> **▶️ NEXT: Joe plays it** (`.\run.bat`) — ⚠️ **not probed**: the click that opens the barn's and post's cards, the herd's
+> draw call, the banner on screen. **Then commit 7** (`trade.md §11` row 7): the boat sailing the river (its path found
+> once per post), the region panel.
+>
+> **(the banner below is the state at D595)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D595: COMMIT 5 — THE BOAT) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D595**, local. **Trade's sim is whole.** A boat comes every two or three years, spring to
 > autumn, from one end of the river or the other — its year, day and neighbour a hash of the seed and the visit count
@@ -7167,6 +7185,21 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D596 PAID FOR — THE VIEW CANNOT RAISE A BUILDING, AND A CARD IS 268 WIDE
+
+- **The view cannot raise a barn or a post** — `SimWorld.Complete` and the hall are internal, and a probe hook with a side
+  effect is what D160 deleted. A view feature over a building the probe's valley does not have is probed through
+  **writers of facts** (`WriteBarnCard`, `WriteThePostsWindow`, the pure `VillageMap.HerdSpots`) — the library's and the
+  hall's shape — plus the real controls driven against the real world where the sim can answer without the building
+  (the order setters, *Send the boat on* refusing). ⚠️ What that cannot reach is written down as unprobed, not implied.
+- **By the end of the probe the valley may have no standing workplace** — the save/load and pause lines leave a different
+  village. A card posed at the end opens on *any* workplace, a site included (its Settings fold is the same).
+- **A card is 268 wide, and a row of five controls is near it** — the first post's window wanted 295 (a checkbox's long
+  caption) and 278 (the goods rows). The probe line now names each child's minimum width when it fails: *read the
+  widest, do not guess.* A long caption goes on its own label that clips; a dropdown takes a fixed minimum and clips.
+- **A Python script written through a bash heredoc loses its `\n` escapes** — twice this session the mutant script came
+  out with real newlines inside string literals. The memory note says so; it was not obeyed. Write scripts with the editor.
+
 ## ⛔ THE TRAPS D595 PAID FOR — A ROUND RATE HIDES ROUNDING, AND THE POST'S ROOM IS A LIMIT TOO
 
 - **A rate of 1:1 hides a payment rounded the wrong way and a wrong "wanted"** — the first settle guard traded firewood
@@ -7426,7 +7459,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **A KEEP ORDER ALONE SELLS NOTHING (D595, `trade.md §4.5`).** Barter with no coin: the boat takes from the post only
+- ✅ **ANSWERED (D596) — Joe: *"keep it as built: a keep order alone sells nothing, and the post's window says to set what to buy."* Built** (`SimWorld.SayWhatThePostWillDo`). ~~A KEEP ORDER ALONE SELLS NOTHING (D595, `trade.md §4.5`).~~ Barter with no coin: the boat takes from the post only
   as much as pays for what the *buy* orders ask, so *"sell firewood above 400"* with no buy order sends nothing. Built
   that way because the alternative gives the village nothing back for what leaves. Options: (a) **as built** — the post's
   window says *"set what to buy, and the boat takes enough to pay"*; (b) the boat takes the surplus anyway and leaves a

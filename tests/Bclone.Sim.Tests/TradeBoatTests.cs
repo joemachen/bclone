@@ -171,6 +171,7 @@ public sealed class TradeBoatTests
         Assert.True(world.BoatIsDocked);
         Assert.Equal(1, world.BoatsEverCame);
         Assert.Contains(log.Entries, e => e.Message.StartsWith($"A boat from {name} is coming ", StringComparison.Ordinal));
+        Assert.Contains(world.Moments, m => m.Title == $"A boat from {name}" && !m.WaitsToBeDismissed); // the passing banner (D596)
         Assert.Contains(log.Entries, e => e.Message.StartsWith($"The boat from {name} ", StringComparison.Ordinal) && e.Tick == boat.DocksAtTick);
 
         while (world.Tick < boat.LeavesAtTick + world.BoatSailTicks + 1)

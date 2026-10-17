@@ -615,6 +615,10 @@ public partial class Main : Control
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());
+
+        // Trade and the herd (D596): last but one, so the orders they set and clear disturb no other line.
+        GD.Print(TheHerdGrazesItsPasture());
+        GD.Print(ThePostsWindowWorks());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -3425,7 +3429,15 @@ public partial class Main : Control
         // ⭐ A CARD FOR WHAT WAS CLICKED (D376): a store, a workplace or a home; bare ground still
         // reads in the Settings panel's line and opens nothing.
         SimWorld world = _loop.World;
-        if (world.StoreAt(tile) is StoreBuilding store)
+
+        // ⭐ The barn and the post are workplaces whose store is their own building (D596): their card is the
+        // workplace's — the herd, the post's window — and it reads the store from there.
+        if (world.StoreAt(tile) is { Kind: StoreKind.Barn or StoreKind.TradingPost }
+            && world.WorkplaceCovering(tile) is { Kind: JobKind.Herdsman or JobKind.Merchant } trade)
+        {
+            OpenCard(new CardSubject(CardKind.Workplace, trade.Id));
+        }
+        else if (world.StoreAt(tile) is StoreBuilding store)
         {
             OpenCard(new CardSubject(CardKind.Store, store.Id));
         }
@@ -7644,17 +7656,19 @@ public partial class Main : Control
             BuildingKind.Bridge or BuildingKind.StoneBridge => BuildCategory.Works,
 
             // The mill and the bakery beside the farm they turn the wheat of (D522).
+            // The barn with them (D596): a herd is meat, kept on its pasture as a field is.
             BuildingKind.GathererHut or BuildingKind.Farmhouse
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge
-                or BuildingKind.Mill or BuildingKind.Bakery => BuildCategory.Food,
+                or BuildingKind.Mill or BuildingKind.Bakery or BuildingKind.Barn => BuildCategory.Food,
 
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
                 or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
+            // ⭐ And the post beside the market (D596): both are where goods go to leave the stores.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
-                or BuildingKind.Market => BuildCategory.Storage,
+                or BuildingKind.Market or BuildingKind.TradingPost => BuildCategory.Storage,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is

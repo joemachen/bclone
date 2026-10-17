@@ -207,9 +207,14 @@ public sealed partial class SimWorld
 
         string name = NeighbourName(boat.NeighbourId);
         bool fromUpriver = Config.Neighbours[boat.NeighbourId].Direction == NeighbourDirection.Upriver;
+        // ⭐ The passing banner (Joe, D587 call 6): a moment the village does not stop for, and its log line (D596).
         if (Tick == boat.AppearsAtTick)
         {
-            Narrate($"A boat from {name} is coming {(fromUpriver ? "down" : "up")} the river. {Clock.SeasonAndYear()}.");
+            RaiseMoment(
+                $"A boat from {name}",
+                $"A boat from {name} is coming {(fromUpriver ? "down" : "up")} the river to the trading post. {Clock.SeasonAndYear()}.",
+                stops: false,
+                Logging.LogCategory.Ordinary);
         }
 
         if (Tick == boat.DocksAtTick)

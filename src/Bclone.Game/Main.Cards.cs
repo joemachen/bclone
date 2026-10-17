@@ -124,6 +124,18 @@ public partial class Main
         public List<Goods> ForgeGoods { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
+
+        /// <summary>The post's window (D596): what its orders will do, the boat, and the verdict of the last order set.</summary>
+        public VBoxContainer? PostRow { get; set; }
+        public Label? PostNote { get; set; }
+        public Label? PostVerdict { get; set; }
+        public Label? BoatLine { get; set; }
+        public Button? SendOn { get; set; }
+
+        /// <summary>One row a good: what the village holds, the order's kind (— / sell above / buy up to) and its number.</summary>
+        public List<(Goods Goods, HBoxContainer Row, Label Held, OptionButton Order, SpinBox Amount)> Orders { get; } = new();
+        public CheckBox? HeadOn { get; set; }
+        public SpinBox? HeadAmount { get; set; }
     }
 
     /// <summary>
@@ -853,6 +865,7 @@ public partial class Main
                 var later = new Button { Text = "▼ Later" };
                 later.Pressed += () => Act(card, () => MoveSelectedInQueue(+1));
                 queueControls.AddChild(later);
+                BuildThePostsWindow(card, world, body, c);
                 break;
             }
 
@@ -970,6 +983,12 @@ public partial class Main
                 if (place.IsSite)
                 {
                     c.QueueLabel!.Text = $"Build queue — {world.QueuePositionOf(place)} of {world.BuildQueue().Count}:";
+                }
+
+                c.PostRow!.Visible = built && place.Kind == JobKind.Merchant;
+                if (c.PostRow.Visible)
+                {
+                    ShowThePostsWindow(world, c);
                 }
 
                 break;
@@ -1260,6 +1279,20 @@ public partial class Main
             // D422; the Workers row above already says *"1 / 2"*.
             (string wall, string wallKey) = WallCell(place.Store.Capacity, place.Places);
             Number(card, 2, wall, wallKey);
+
+            // ⭐ THE BARN AND THE POST SAY WHAT THEY ARE FOR (D596) — the sim's sentences, never the view's.
+            if (place.Kind == JobKind.Herdsman)
+            {
+                ShowTheBarn(world, card, place);
+            }
+            else if (place.Kind == JobKind.Merchant && world.PostStoreOf(place) is StoreBuilding post)
+            {
+                Status(card, working: world.BoatIsDocked || world.TradeKeep.AnySet || world.TradeBuy.AnySet, world.SayWhenTheBoatIsDue());
+                (string atPost, string atPostNames) = WhatItHolds(world, post.Store, caption => FitsItsCell(card, card.Keys[0], caption));
+                Number(card, 0, atPost, atPostNames == "held here" ? "at the post" : atPostNames);
+                Number(card, 1, $"{OrdersSet(world.TradeKeep, world)} · {OrdersSet(world.TradeBuy, world)}", "selling · buying");
+                Number(card, 2, $"{world.BoatsEverCame}", world.BoatsEverCame == 1 ? "boat has come" : "boats have come");
+            }
         }
 
         card.PeopleScroll.Visible = false;
@@ -1271,6 +1304,236 @@ public partial class Main
         card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
             : place.IsSite ? "a building site" : Workers(world, place);
         return true;
+    }
+
+    /// <summary>What the barn's card says — read from the sim once, written by <see cref="WriteBarnCard"/>.</summary>
+    private readonly record struct BarnFacts(string Sentence, bool Well, int Head, int Room, int Tiles, int Hay, int Days);
+
+    /// <summary>The barn's card (D596): the herd and the hay, in the sim's sentence (`SimWorld.SayTheHerd`).</summary>
+    private static void ShowTheBarn(SimWorld world, Card card, Workplace barn)
+    {
+        int days = world.HayDaysFor(barn) ?? 0;
+        bool well = barn.HerdHead > 0
+            && (world.Clock.IsWinter
+                ? days >= world.Config.DaysPerSeason - world.Clock.DayOfSeason + 1
+                : world.HayHeldFor(barn) >= world.WinterHayWanted(barn) || barn.WorkerIds.Count > 0);
+        WriteBarnCard(card, new BarnFacts(
+            world.SayTheHerd(barn), well, barn.HerdHead, world.PastureFor(barn), world.Zones.WorkGroundTiles(barn.Id),
+            world.HayHeldFor(barn), days));
+    }
+
+    private static void WriteBarnCard(Card card, BarnFacts f)
+    {
+        Status(card, working: f.Well, f.Sentence);
+        Number(card, 1, $"{f.Head} / {f.Room}", $"head · {f.Tiles} tiles");
+        Number(card, 2, $"{f.Hay:N0}", f.Head > 0 ? $"hay · {f.Days} winter days" : "hay");
+    }
+
+    /// <summary>How many goods carry an order of this kind.</summary>
+    private static int OrdersSet(StockLimits orders, SimWorld world)
+    {
+        int set = 0;
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            set += orders.For((Goods)g) is null ? 0 : 1;
+        }
+
+        return set;
+    }
+
+    /// <summary>The order dropdown's items, by index.</summary>
+    private const int NoOrder = 0;
+    private const int SellAbove = 1;
+    private const int BuyUpTo = 2;
+
+    /// <summary>
+    /// ⭐ The post's window (D596, `trade.md §4.5`; Joe, D587 call 6), built into the post's Settings fold: what its orders
+    /// will do (Joe, D596: a keep alone sells nothing — the window says to set what to buy), the boat and <i>Send the boat
+    /// on</i>, one row a good — <b>one dropdown, so a good is bought or sold, never both</b> — and the beasts.
+    /// </summary>
+    private void BuildThePostsWindow(Card card, SimWorld world, VBoxContainer body, CardControls c)
+    {
+        c.PostNote = Muted(string.Empty);
+        (c.PostRow, HFlowContainer boatControls) = InspectorRow(body, c.PostNote);
+        c.BoatLine = Wrapped(Muted(string.Empty));
+        boatControls.AddChild(c.BoatLine);
+        c.SendOn = new Button { Text = "Send the boat on" };
+        c.SendOn.Pressed += () => Act(card, () => SayTheVerdict(card, _loop.World.SendTheBoatOn()));
+        boatControls.AddChild(c.SendOn);
+        c.PostVerdict = Wrapped(Muted(string.Empty));
+        c.PostVerdict.Visible = false;
+        c.PostRow.AddChild(c.PostVerdict);
+
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            var goods = (Goods)g;
+            var row = new HBoxContainer { Visible = false };
+            row.AddThemeConstantOverride("separation", 4);
+            row.AddChild(Chip(ChipColour(goods)));
+            Label name = Body(GoodsName(world, goods));
+            name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            name.ClipText = true;
+            name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            row.AddChild(name);
+            Label held = Amount();
+            held.TooltipText = $"what the village holds of {GoodsName(world, goods)}, not counting the post";
+            row.AddChild(held);
+            var order = new OptionButton { FitToLongestItem = false, CustomMinimumSize = new Vector2(84, 0), ClipText = true };
+            order.AddItem("—", NoOrder);
+            order.AddItem("sell above", SellAbove);
+            order.AddItem("buy up to", BuyUpTo);
+            row.AddChild(order);
+            var amount = new SpinBox { MinValue = 0, MaxValue = 100_000, Step = 10, CustomMinimumSize = new Vector2(64, 0) };
+            row.AddChild(amount);
+            order.ItemSelected += index => Act(card, () => SetTheOrder(card, goods, (int)index, (int)amount.Value));
+            amount.ValueChanged += value => Act(card, () => SetTheOrder(card, goods, order.Selected, (int)value));
+            c.PostRow.AddChild(row);
+            c.Orders.Add((goods, row, held, order, amount));
+        }
+
+        // The beasts' row, a good's shape (D596): their name, then the order and its number in head.
+        var beasts = new HBoxContainer();
+        beasts.AddThemeConstantOverride("separation", 4);
+        Label herd = Body(BeastsCaption(world));
+        herd.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        herd.ClipText = true;
+        herd.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        beasts.AddChild(herd);
+        c.HeadOn = new CheckBox { Text = "buy up to", TooltipText = "head of cattle the village's herds should hold" };
+        c.HeadAmount = new SpinBox { MinValue = 0, MaxValue = 1_000, Step = 1, CustomMinimumSize = new Vector2(74, 0) };
+        c.HeadOn.Toggled += on => Act(card, () => SayTheVerdict(card, _loop.World.SetTradeBuyHead(on ? (int)c.HeadAmount.Value : null)));
+        c.HeadAmount.ValueChanged += value => Act(card, () =>
+        {
+            if (_loop.World.TradeBuyHead is not null)
+            {
+                SayTheVerdict(card, _loop.World.SetTradeBuyHead((int)value));
+            }
+        });
+        beasts.AddChild(c.HeadOn);
+        beasts.AddChild(c.HeadAmount);
+        c.PostRow.AddChild(beasts);
+    }
+
+    private static string BeastsCaption(SimWorld world) =>
+        world.Config.Animals.Count == 0 ? "beasts" : world.Config.Animals[0].Plural;
+
+    /// <summary>Set one good's order from its row: the dropdown's kind and the row's number (D596).</summary>
+    private void SetTheOrder(Card card, Goods goods, int kind, int amount)
+    {
+        SimWorld world = _loop.World;
+        PlacementVerdict verdict = kind switch
+        {
+            SellAbove => world.SetTradeBuy(goods, null) is var cleared && cleared.Allowed ? world.SetTradeKeep(goods, amount) : cleared,
+            BuyUpTo => world.SetTradeKeep(goods, null) is var cleared && cleared.Allowed ? world.SetTradeBuy(goods, amount) : cleared,
+            _ => Both(world.SetTradeKeep(goods, null), world.SetTradeBuy(goods, null)),
+        };
+        SayTheVerdict(card, verdict);
+
+        static PlacementVerdict Both(PlacementVerdict keep, PlacementVerdict buy) => keep.Allowed ? buy : keep;
+    }
+
+    /// <summary>The last order's refusal or warning, under the window's sentence — empty when it was simply done.</summary>
+    private static void SayTheVerdict(Card card, PlacementVerdict verdict)
+    {
+        if (card.Controls.PostVerdict is not Label said)
+        {
+            return;
+        }
+
+        said.Text = !verdict.Allowed ? verdict.Reason : verdict.Warning;
+        said.Visible = said.Text.Length > 0;
+    }
+
+    /// <summary>One good's line in the post's window.</summary>
+    private readonly record struct OrderFacts(bool Shown, int Held, int? Keep, int? Buy, string Waits);
+
+    /// <summary>What the post's window says — read from the sim once, written by <see cref="WriteThePostsWindow"/>.</summary>
+    private readonly record struct PostFacts(string Note, string BoatLine, bool Docked, OrderFacts[] Orders, int? Head);
+
+    /// <summary>Write the post's window as the village stands.</summary>
+    private void ShowThePostsWindow(SimWorld world, CardControls c)
+    {
+        var orders = new OrderFacts[c.Orders.Count];
+        for (int i = 0; i < c.Orders.Count; i++)
+        {
+            Goods goods = c.Orders[i].Goods;
+            int? keep = world.TradeKeep.For(goods), buy = world.TradeBuy.For(goods);
+            orders[i] = new OrderFacts(
+                GoodKnown(goods) || keep is not null || buy is not null,
+                world.InStores(goods),
+                keep,
+                buy,
+                buy is not null && !world.ABoatCanBring(goods) ? $"No boat brings {GoodsName(world, goods)} — the order waits for carts." : string.Empty);
+        }
+
+        string due = world.SayWhenTheBoatIsDue();
+        string boatLine = world.Boat is TradeBoat boat && world.Tick >= boat.AppearsAtTick && world.Tick <= boat.LeavesAtTick
+            ? $"{due} It carries {WhatTheBoatCarries(world, boat)}."
+            : due;
+        WriteThePostsWindow(c, new PostFacts(world.SayWhatThePostWillDo(), boatLine, world.BoatIsDocked, orders, world.TradeBuyHead));
+    }
+
+    private static void WriteThePostsWindow(CardControls c, PostFacts f)
+    {
+        c.PostNote!.Text = f.Note;
+        c.SendOn!.Disabled = !f.Docked;
+        c.SendOn.TooltipText = f.Docked ? "The boat leaves on the next tick." : "No boat is tied up at the post.";
+        c.BoatLine!.Text = f.BoatLine;
+
+        for (int i = 0; i < c.Orders.Count; i++)
+        {
+            (Goods _, HBoxContainer row, Label held, OptionButton order, SpinBox amount) = c.Orders[i];
+            OrderFacts o = f.Orders[i];
+            row.Visible = o.Shown;
+            if (!o.Shown)
+            {
+                continue;
+            }
+
+            held.Text = o.Held.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+            int kind = o.Keep is not null ? SellAbove : o.Buy is not null ? BuyUpTo : NoOrder;
+            if (order.Selected != kind)
+            {
+                order.Select(kind);
+            }
+
+            if ((o.Keep ?? o.Buy) is int set)
+            {
+                amount.SetValueNoSignal(set);
+            }
+
+            amount.Editable = kind != NoOrder;
+            order.TooltipText = o.Waits;
+        }
+
+        c.HeadOn!.SetPressedNoSignal(f.Head is not null);
+        if (f.Head is int head)
+        {
+            c.HeadAmount!.SetValueNoSignal(head);
+        }
+
+        c.HeadAmount!.Editable = f.Head is not null;
+    }
+
+    /// <summary>What a boat on the river carries, in words — its cargo, derived (`SimWorld.CargoOf`).</summary>
+    private static string WhatTheBoatCarries(SimWorld world, TradeBoat boat)
+    {
+        (int[] goods, int animals) = world.CargoOf(boat);
+        var parts = new List<string>();
+        for (int g = 0; g < goods.Length; g++)
+        {
+            if (goods[g] > 0)
+            {
+                parts.Add($"{goods[g]:N0} {world.GoodsCatalog.NameOf((Goods)g)}");
+            }
+        }
+
+        if (animals > 0 && world.Config.Animals.Count > 0)
+        {
+            parts.Add($"{animals} {(animals == 1 ? world.Config.Animals[0].Name : world.Config.Animals[0].Plural)}");
+        }
+
+        return parts.Count == 0 ? "nothing" : string.Join(", ", parts);
     }
 
     private static string Workers(SimWorld world, Workplace place)

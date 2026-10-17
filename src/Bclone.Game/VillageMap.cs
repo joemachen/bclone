@@ -245,6 +245,10 @@ public partial class VillageMap : Control
     {
         StoreKind.Granary => GranaryColour,
         StoreKind.Warehouse => WarehouseColour,
+
+        // The barn and the post draw as their trades (D596): the store IS the building the herdsman and merchant work at.
+        StoreKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
+        StoreKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
         _ => MarketColour,
     };
 
@@ -2687,6 +2691,9 @@ public partial class VillageMap : Control
         // mistaken for a villager or hide a building, so it goes down with the terrain.
         DrawTheWoods();
 
+        // ⭐ The herds graze their pastures with the woods' game, under the buildings (D596).
+        DrawTheHerds();
+
         // ⭐ The bridges lie on the water, under everything that stands and everyone who walks (D546).
         DrawBridges();
 
@@ -3344,12 +3351,8 @@ public partial class VillageMap : Control
 
             Vector2 centre = ToScreen(building.Position);
             float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
-            Color colour = building.Kind switch
-            {
-                StoreKind.Granary => GranaryColour,
-                StoreKind.Warehouse => WarehouseColour,
-                _ => MarketColour,
-            };
+            // One table (D596): the card's picture and the map asked two copies of it, and the barn was missing from one.
+            Color colour = ColourOf(building.Kind);
 
             // ⛔⛔ THE LONGHOUSE DREW AS ONE SQUARE, AND THIS IS WHERE (D321, Joe: *"that's what a
             // built longhouse looks like. 1 square."*). A `Rect2` through `DrawRect` can neither
@@ -3447,7 +3450,13 @@ public partial class VillageMap : Control
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
-            if (world.GoodsCatalog.StoredBy(goods, store.Kind))
+
+            // ⭐ The post holds whatever is carried to it or a boat leaves — no good's `stored_by` names it (D594) — so its
+            // shelf is what it holds, in catalogue order (D596).
+            bool shelved = store.Kind == StoreKind.TradingPost
+                ? store.Store[goods] > 0
+                : world.GoodsCatalog.StoredBy(goods, store.Kind);
+            if (shelved)
             {
                 int measure = store.Kind == StoreKind.Market
                     ? world.MarketStockLimit(store, goods)
@@ -6449,6 +6458,102 @@ public partial class VillageMap : Control
     /// </remarks>
     private const int TilesPerBerryPatch = 16;
 
+    /// <summary>A grazing beast — pale against the pasture's green, outlined so it never reads as the woods' game (D596).</summary>
+    private static readonly Color CattleColour = new("#e6dcc4");
+
+    /// <summary>Its outline — the barn's own red-brown.</summary>
+    private static readonly Color CattleEdge = new("#5a3424");
+
+    /// <summary>Salts a herd's scatter apart from the trees' and the game's (D596).</summary>
+    private const int HerdSalt = 0x4E7D;
+
+    /// <summary>How far a beast strays from the pasture tile it belongs to, in tiles — less than the woods' game.</summary>
+    private const float GrazeTiles = 0.9f;
+
+    /// <summary>
+    /// ⭐⭐ Where each head of a barn's herd stands now — <b>a picture of a number, as the woods' game is</b> (D596).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>The sim tracks no beast.</b> A herd is a head count on its barn (D592); each head is drawn on one of the barn's
+    /// pasture tiles picked by a scramble of the barn and the head's number, and wanders on the SIM's clock — so a paused
+    /// game is a still herd, and one more calf is one more circle, with nothing to desync.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Never off its pasture</b>: the wander tries its full offset, then half, then the tile itself, and keeps the
+    /// first that is still this barn's ground — the woods' step-back (<see cref="Roam"/>), asked of the zone map.
+    /// </para>
+    /// <para>
+    /// Few enough to draw live — a barn's pasture holds eight head a herdsman (D593) — so the list it reads, the barn's
+    /// own tiles, is the sim's index (<c>ZoneMap.WorkGroundOf</c>), never a walk of the valley.
+    /// </para>
+    /// </remarks>
+    internal static List<Vector2> HerdSpots(int barnId, int head, Func<int, GridPos> pastureTile, int pastureTiles, Func<GridPos, bool> onPasture, double season)
+    {
+        var spots = new List<Vector2>();
+        if (pastureTiles == 0)
+        {
+            return spots;
+        }
+
+        for (int beast = 0; beast < head; beast++)
+        {
+            uint seed = Scramble(barnId + HerdSalt, beast);
+            GridPos tile = pastureTile((int)(seed % (uint)pastureTiles));
+            var home = new Vector2(tile.X, tile.Y);
+            double drift = (season * 0.009) + ((seed % 628) / 100.0);
+            var offset = new Vector2((float)Math.Cos(drift) * GrazeTiles, (float)Math.Sin(drift * 0.7) * GrazeTiles);
+            Vector2 at = home;
+            for (float reach = 1f; reach > 0.4f; reach -= 0.5f)
+            {
+                Vector2 spot = home + (offset * reach);
+                if (onPasture(new GridPos(Mathf.RoundToInt(spot.X), Mathf.RoundToInt(spot.Y))))
+                {
+                    at = spot;
+                    break;
+                }
+            }
+
+            spots.Add(at);
+        }
+
+        return spots;
+    }
+
+    /// <summary>A real barn's herd, asked of the sim's index of its tiles.</summary>
+    private List<Vector2> HerdSpots(Workplace barn, double season)
+    {
+        IReadOnlyList<int> owned = _world!.Zones.WorkGroundOf(barn.Id);
+        ZoneMap zones = _world.Zones;
+        return HerdSpots(barn.Id, barn.HerdHead, i => zones.PositionOf(owned[i]), owned.Count, tile => zones.WorkGroundOwner(tile) == barn.Id, season);
+    }
+
+    /// <summary>The herds on their pastures — a circle a head, live (they move every frame, and there are a few dozen).</summary>
+    private void DrawTheHerds()
+    {
+        if (_world is null || _pixelsPerTile < WoodsZoomFloor)
+        {
+            return;
+        }
+
+        float radius = Mathf.Max(2.5f, _pixelsPerTile * 0.17f);
+        double season = _world.Tick + _alpha;
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            if (_world.Workplaces[i] is not { Kind: JobKind.Herdsman, IsSite: false, HerdHead: > 0 } barn)
+            {
+                continue;
+            }
+
+            foreach (Vector2 spot in HerdSpots(barn, season))
+            {
+                Vector2 at = ToScreen(spot);
+                DrawCircle(at, radius, CattleColour);
+                DrawArc(at, radius, 0f, Mathf.Tau, 12, CattleEdge, 1f);
+            }
+        }
+    }
+
     /// <summary>Salts the second selection so berries do not land where animals do by accident.</summary>
     /// <remarks>
     /// ⛔ <b>They ARE allowed to share a tile</b> — Joe: *"animals and berries can be in the same
@@ -7386,7 +7491,7 @@ public partial class VillageMap : Control
         // ⭐ The smith, the quarrier and the miner take their trade's own colour (D449) — they fell
         // to the market's until the mine, so a quarry drew as a stall.
         JobKind.Smith or JobKind.Quarrier or JobKind.Miner
-            or JobKind.Miller or JobKind.Baker => TradeGlyph.ColourOf(kind),
+            or JobKind.Miller or JobKind.Baker or JobKind.Herdsman or JobKind.Merchant => TradeGlyph.ColourOf(kind),
         _ => MarketColour,
     };
 

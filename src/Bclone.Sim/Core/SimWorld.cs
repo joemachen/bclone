@@ -5376,6 +5376,9 @@ public sealed partial class SimWorld : IObstacles
     {
         JobKind.Farmer => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
 
+        // A herdsman cuts his pasture as a farmer reaps — one visit a tile, in the growing seasons (D593, D596).
+        JobKind.Herdsman => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
+
         // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
         JobKind.Quarrier => Config.QuarryTilesPerWorker,
 
@@ -5405,7 +5408,7 @@ public sealed partial class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public static bool KeepsWorkGround(JobKind kind) =>
-        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier or JobKind.Miner;
+        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier or JobKind.Miner or JobKind.Herdsman;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>

@@ -80,6 +80,8 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Mine => TradeGlyph.ColourOf(JobKind.Miner),
         BuildingKind.Mill => TradeGlyph.ColourOf(JobKind.Miller),
         BuildingKind.Bakery => TradeGlyph.ColourOf(JobKind.Baker),
+        BuildingKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
+        BuildingKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
 
         _ => Unchosen,
     };
@@ -263,6 +265,28 @@ public sealed partial class BuildingGlyph : Control
                 DrawRect(new Rect2(s * 0.69f, s * 0.28f, s * 0.07f, s * 0.34f), ink);
                 DrawRect(new Rect2(s * 0.14f, s * 0.60f, s * 0.72f, s * 0.28f), ink);
                 DrawRect(new Rect2(s * 0.26f, s * 0.64f, s * 0.48f, s * 0.10f), VillageMap.WaterTone);
+                break;
+
+            // A barn (D596): the long roof, the wide doors, and a bale of hay at its side.
+            case BuildingKind.Barn:
+                Roof(new Rect2(s * 0.10f, s * 0.20f, s * 0.80f, s * 0.24f), ink);
+                DrawRect(new Rect2(s * 0.16f, s * 0.44f, s * 0.68f, s * 0.40f), ink);
+                DrawRect(new Rect2(s * 0.38f, s * 0.56f, s * 0.24f, s * 0.28f), VillageMap.BeyondColour);
+                break;
+
+            // A trading post (D596): a hut on the bank, a jetty into the water, and a sail tied up at it.
+            case BuildingKind.TradingPost:
+                Roof(new Rect2(s * 0.08f, s * 0.24f, s * 0.46f, s * 0.20f), ink);
+                DrawRect(new Rect2(s * 0.14f, s * 0.44f, s * 0.34f, s * 0.30f), ink);
+                DrawRect(new Rect2(s * 0.48f, s * 0.66f, s * 0.42f, s * 0.08f), ink);
+                DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), VillageMap.WaterTone);
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.74f, s * 0.20f),
+                        new Vector2(s * 0.90f, s * 0.60f),
+                        new Vector2(s * 0.74f, s * 0.60f),
+                    }, ink);
                 break;
 
             // A built-in nobody has drawn yet — the same honest mark a modder's building gets.
