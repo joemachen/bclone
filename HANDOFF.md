@@ -10,6 +10,8 @@
 > news in the nomads' two-paragraph stop with its marks, every alert leaving the village at 1× (a Settings tick brings the
 > old speed back), and the paths drawn as a network that goes round buildings (`TrailNetwork`).
 >
+> `slice/nomads` itself was never pushed and stays local (it is fully in `main`).
+>
 > **▶️ NEXT: Joe's call.** Nothing is queued. Parked and his: option C (staggered house siting, `path-shapes.md §4`), the
 > probe's `pause:` ❌ (D568, headless Esc), and everything in **⏸️ OPEN, AND JOE'S TO CALL** below. A new branch for
 > whatever he picks; never work on `main` directly.
@@ -7115,8 +7117,22 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **JOE'S PLAYTEST OF THE NOMADS — SIX NOTES (D568, 2026-10-12), THE NEXT SESSION'S WORK, IN ORDER (the top banner has
-  each with its pointers).** **(1)** the paths grid in the village — reviewed: 4-connected routing + D414's keep-to-the-route
+- ⏸️ **PATHS, OPTION C — STAGGERED HOUSE SITING, PARKED (D581, `path-shapes.md §4`).** Homes the sim sites set at varied
+  offsets and small angles on their plots, so the gaps between them do not line up. Not built: Joe's grid was the per-tile
+  drawing, not the houses (his village had 2 homes in 14 buildings), and E (D581–D583) answered it. Raise only if a
+  homes-heavy village still reads as a grid. Medium–large; its own spec, measured with `ZzPathShape` first.
+
+- ✅ **DONE AND MERGED (D569–D584, 2026-10-12 → 16): JOE'S SIX NOTES ON THE NOMADS.** (1) the paths' grid — measured
+  (D579), wander (D580), drawn as a network (D581), never across a building (D582), round it (D583), approved (D584);
+  (2) *nomads*, and the camp in the village's words (D569); (3) the switch — first a Settings tick and a new-game row
+  (D570), then the switch as the permission: a band settles on arrival, the tick on the villagers bar (D572); (4) the
+  walk-in from the valley's edge (D573, its window fixed D575, seen by Joe); (5) the longhouse removed, a standing
+  unhoused count, save format 7 (D571); (6) written down throughout. Plus, from his play: one stop when a band teaches the
+  bridge (D576), that stop in two marked paragraphs (D577, approved), every alert leaving the village at 1× (D578).
+  ⏸️ **Still his from before, unchanged:** a quarter of the village at 2–8; 20 food a head. (*The huddle's look and the
+  band's wait are moot — D572 removed both: a band settles the tick it knocks.*)
+  ~~JOE'S PLAYTEST OF THE NOMADS — SIX NOTES (D568, 2026-10-12), THE NEXT SESSION'S WORK, IN ORDER.~~ The original note,
+  kept as it was asked: **(1)** the paths grid in the village — reviewed: 4-connected routing + D414's keep-to-the-route
   rule + grid-aligned obstacles; a design call (octile field / a bounded-curve walk rule / non-fence-aligned lanes) to spec and
   bring him; **(2)** *"the pile"* said in the village's words, and **nomads, not travellers**, everywhere; **(3)** accept / reject
   stands (the card) — add **a Nomads switch** (Foundation's *Immigration — enabled*), hashed sim state, persisted; whether it also
@@ -7131,6 +7147,8 @@ Read `git status` after staging, every time.
   CALLS (asked 2026-10-11, `nomads.md §3`).~~ **(1)** the trigger: their own clock, the town hall widens them (D251 amended);
   **(2)** the band: one or two families, a share of the village, 2–8, new surnames; **(3)** the communal house: learned at
   the first knock — **the longhouse, repurposed** (his addition); **(4)** re-founding: automatic, a few years on.
+  ⚠️ **Since D571–D572 several of these are gone:** the longhouse (removed, D571), the waiting band, its card, the huddle,
+  the bar button and the autumn move-on (a band settles the tick it knocks, D572).
   ⏸️ **Mine, to overrule in play** (`nomads.md §3`, *settled without asking*): the knock on the spring turn only; a band
   waits spring and summer and leaves at the autumn turn; the band is a huddle at the pile with a card, two buttons and a
   bar button — the moment stays verb-free; a quarter of the village (`nomads_share_divisor` 4) rather than a fifth, 2–8;
