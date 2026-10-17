@@ -1524,6 +1524,17 @@ public sealed record SimConfig
     public int TradeBoatHold { get; init; } = 400;
 
     /// <summary>
+    /// Logs one length of pasture fence costs (D598, `livestock.md §0.2.5`) — the yard fence's own price, a log a tile
+    /// (D388). Measured: Joe's 102-tile pasture is 46 lengths, about a barn's 40 logs, from a village holding 207.
+    /// </summary>
+    [JsonPropertyName("pasture_fence_logs_per_edge")]
+    public int PastureFenceLogsPerEdge { get; init; } = 1;
+
+    /// <summary>A builder's ticks a length of pasture fence takes (D598) — Joe's pasture, 92 ticks: 23 days for one builder.</summary>
+    [JsonPropertyName("pasture_fence_work_ticks_per_edge")]
+    public int PastureFenceWorkTicksPerEdge { get; init; } = 2;
+
+    /// <summary>
     /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
     /// `TECH-EXAMPLE.md`'s list is added without restructuring.
     /// </summary>
@@ -3924,6 +3935,16 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
+        // ⭐ A pasture's fence (D598, `livestock.md §0.2`): one length of it — put up from the barn's card, never placed.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.PastureFence,
+            Name = "pasture fence",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, PastureFenceLogsPerEdge) },
+            WorkTicks = PastureFenceWorkTicksPerEdge,
+            EnclosesPasture = true,
+        },
+
         // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
         // Joe, D568: *"longhouse should be removed from the game"*). `BuildingKind.Longhouse = 14` is a RETIRED id:
         // it ships no row, is never renumbered and never reissued; a modder may type a row with it, which is then
@@ -5537,6 +5558,7 @@ public sealed record SimConfig
             ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
             ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
             ("trade_boat_hold", TradeBoatHold), ("trade_boat_gap_years_floor", TradeBoatGapYearsFloor),
+            ("pasture_fence_logs_per_edge", PastureFenceLogsPerEdge), ("pasture_fence_work_ticks_per_edge", PastureFenceWorkTicksPerEdge),
         })
         {
             if (value < 1)
@@ -6157,7 +6179,7 @@ public sealed record SimConfig
 
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
-                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater)
+                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater && !row.EnclosesPasture)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "

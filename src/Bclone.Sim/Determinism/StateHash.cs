@@ -437,6 +437,28 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.HerdGrowth);
             }
 
+            // A pasture's fence (D598) — the fact, never the walls it raises (D335); sparse, so no other workplace mixes a byte.
+            if (workplace.FencedTiles.Count > 0)
+            {
+                hash = MixByte(hash, 0x7A);
+                hash = MixUInt32(hash, (uint)workplace.FencedTiles.Count);
+                for (int t = 0; t < workplace.FencedTiles.Count; t++)
+                {
+                    hash = MixUInt32(hash, (uint)workplace.FencedTiles[t]);
+                }
+
+                hash = MixUInt32(hash, (uint)(workplace.FenceGate?.X ?? 0));
+                hash = MixUInt32(hash, (uint)(workplace.FenceGate?.Y ?? 0));
+                hash = MixByte(hash, workplace.FenceStands ? (byte)1 : (byte)0);
+            }
+
+            // A fence's site carries its barn (D598) — sparse, as a bridge site's far bank is.
+            if (workplace.Construction is { FencesBarnId: not 0 } fenceSite)
+            {
+                hash = MixByte(hash, 0x7B);
+                hash = MixUInt32(hash, (uint)fenceSite.FencesBarnId);
+            }
+
             // What a herdsman has put out and cut this year (D593) — sparse under its own tag.
             if (workplace.HayPutOut != 0 || workplace.HayCutThisYear != 0)
             {

@@ -1,6 +1,9 @@
 # fences-as-walls.md — a fence is a wall the cost field routes around
 
-**Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400).
+**Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400). ⭐ **§10's player-built
+fence arrived as a barn's pasture fence (D598, `livestock.md §0.2`)** — through `ZoneMap.Wall`, its own index keyed by
+the barn, its source hashed and the layer not, exactly as §10 asked; and a pull-down of either kind now puts back the
+other's wall on a shared edge.
 Sixteen guards green and red-checked; §6 filled in from the run; six goldens moved once; the
 fixture premises re-posed with Joe's words — *"let longer walks be the price of fences."*
 Joe's yes, 2026-09-18, ordered

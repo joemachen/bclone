@@ -144,7 +144,8 @@ public sealed class ModdedBuildingTests
         { "id": 21, "name": "wooden bridge", "spans_water": true, "deck_tile_cost": 10, "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
         { "id": 22, "name": "stone bridge", "spans_water": true, "deck_tile_cost": 8, "rebuilds": "Bridge", "work_ticks": 15, "materials": [ { "goods": "Stone", "amount": 12 } ] },
         { "id": 23, "name": "barn", "stores": "Barn", "store_capacity": 1200, "seats": 2, "extent_width": 3, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
-        { "id": 24, "name": "trading post", "stores": "TradingPost", "store_capacity": 800, "seats": 1, "must_touch": "Water", "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] }
+        { "id": 24, "name": "trading post", "stores": "TradingPost", "store_capacity": 800, "seats": 1, "must_touch": "Water", "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+        { "id": 25, "name": "pasture fence", "encloses_pasture": true, "work_ticks": 2, "materials": [ { "goods": "Logs", "amount": 1 } ] }
       ]
     }
     """;
@@ -202,9 +203,9 @@ public sealed class ModdedBuildingTests
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
         // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391); → 17 with the well (D427);
         // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522); → 23 with the two
-        // bridges (D546); → 25 with the barn and the trading post (D590). The modder's boathouse sits inside the range,
-        // at the library's id, on purpose.
-        Assert.Equal(25, catalog.Count);
+        // bridges (D546); → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598). The modder's
+        // boathouse sits inside the range, at the library's id, on purpose.
+        Assert.Equal(26, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -350,6 +351,7 @@ public sealed class ModdedBuildingTests
             { "id": 22, "name": "stone bridge",   "spans_water": true, "deck_tile_cost": 8,        "work_ticks": 15, "materials": [ { "goods": "Stone", "amount": 12 } ] },
             { "id": 23, "name": "barn", "stores": "Barn", "store_capacity": 1200, "seats": 2, "extent_width": 3, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
             { "id": 24, "name": "trading post", "stores": "TradingPost", "store_capacity": 800, "seats": 1, "must_touch": "Water", "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
+            { "id": 25, "name": "pasture fence", "encloses_pasture": true, "work_ticks": 2, "materials": [ { "goods": "Logs", "amount": 1 } ] },
             { "id": 21, "name": "wooden bridge",  "spans_water": true, "deck_tile_cost": 10,       "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
@@ -432,7 +434,7 @@ public sealed class ModdedBuildingTests
 
         SimConfig config = SimConfigLoader.Parse(without, "<retired>");
         var catalog = new BuildingsCatalog(config.BuildingRows, new JobsCatalog(config.JobsCatalog));
-        Assert.Equal(25, catalog.Count); // 23 → 25 with the barn and the trading post (D590)
+        Assert.Equal(26, catalog.Count); // 23 → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598)
         Assert.False(catalog.Has((int)BuildingKind.Longhouse));
         Assert.True(catalog.Has((int)BuildingKind.Smithy));
 

@@ -666,6 +666,19 @@ public sealed class Workplace
     /// <summary>Pasture tiles cut for hay this year, in the pasture's own order — back to none each spring (D593).</summary>
     public int HayCutThisYear { get; set; }
 
+    /// <summary>
+    /// The pasture a barn's fence closes round — its tiles as the zone map indexes them, sorted, frozen at <i>Fence the
+    /// pasture</i> (D598, `livestock.md §0.2`). Empty on every other workplace and on an unfenced barn. A fact: saved,
+    /// hashed sparsely. ⛔ Never follows the paint — the ground is locked while it is not empty.
+    /// </summary>
+    public List<int> FencedTiles { get; set; } = new();
+
+    /// <summary>The tile outside the fence's gate — the lane into the pasture (D598). Null with no fence.</summary>
+    public GridPos? FenceGate { get; set; }
+
+    /// <summary>Whether the fence stands (its walls are up) — false while its site is being built (D598).</summary>
+    public bool FenceStands { get; set; }
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village
@@ -807,6 +820,9 @@ public sealed class Workplace
         ["herd_growth"] = HerdGrowth,
         ["hay_put_out"] = HayPutOut,
         ["hay_cut_this_year"] = HayCutThisYear,
+        ["fenced_tiles"] = FencedTiles.Count == 0 ? null : SaveWriter.Ints(FencedTiles),
+        ["fence_gate"] = SaveWriter.GridPos(FenceGate),
+        ["fence_stands"] = FenceStands,
     };
 
     internal static Workplace FromSave(SaveReader save)
@@ -843,6 +859,11 @@ public sealed class Workplace
             HerdGrowth = save.Int("herd_growth"),
             HayPutOut = save.Int("hay_put_out"),
             HayCutThisYear = save.Int("hay_cut_this_year"),
+
+            // Read tolerantly (D598): a format-8 save written before fences has none of the three.
+            FencedTiles = save.HasValue("fenced_tiles") ? save.Ints("fenced_tiles") : new List<int>(),
+            FenceGate = save.HasValue("fence_gate") ? save.NullableGridPos("fence_gate") : null,
+            FenceStands = save.HasValue("fence_stands") && save.Bool("fence_stands"),
         };
 
         workplace.Rename(save.NullableString("given_name"));

@@ -5590,6 +5590,12 @@ public sealed partial class SimWorld : IObstacles
             }
         }
 
+        // ⛔ A FENCED PASTURE IS LOCKED (D598, `livestock.md §0.2.3` rule 3) — take the fence down to change it.
+        if (WhyThePastureIsLocked(workplace) is string locked)
+        {
+            return PlacementVerdict.No(locked);
+        }
+
         // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
         // the laborers' to clear (`AfterGivingGround`); stone and iron are dug or destroyed first,
         // and the cleared ground is grass the brush then takes.
@@ -5774,7 +5780,7 @@ public sealed partial class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (Zones.WorkGroundOwner(at.Tile) != workplace.Id || !Zones.SetWorkGround(at, 0))
+        if (!CanEraseWorkGround(workplace, at.Tile).Allowed || !Zones.SetWorkGround(at, 0))
         {
             return false;
         }
@@ -5794,7 +5800,7 @@ public sealed partial class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (Zones.WorkGroundOwner(tile) != workplace.Id || !Zones.SetWorkGround(tile, 0))
+        if (!CanEraseWorkGround(workplace, tile).Allowed || !Zones.SetWorkGround(tile, 0))
         {
             return false;
         }
@@ -7339,6 +7345,12 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing there to move.");
         }
 
+        // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
+        if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
+        {
+            return PlacementVerdict.No($"{Capitalised(fencedBarn.Name)}'s pasture is fenced — take the fence down to move it.");
+        }
+
         // ⛔ A FULL STORE CANNOT BE CARRIED, AND THIS IS THE SENTENCE THAT SAYS SO RATHER THAN A
         // DISABLED CONTROL (D43). Joe named it as the second half of the feature: *"storage
         // buildings must be 'emptied' first."*
@@ -8471,6 +8483,12 @@ public sealed partial class SimWorld : IObstacles
             return CanBridgeAt(kind, where);
         }
 
+        // ⭐ A PASTURE FENCE IS PUT UP FROM ITS BARN (D598) — round the ground it was given, never placed by hand.
+        if (BuildingsCatalog[kind]?.EnclosesPasture == true)
+        {
+            return PlacementVerdict.No("A pasture fence is put up from its barn's card — give the barn ground, then fence it.");
+        }
+
         if (Map.TerrainAt(position) == Terrain.Water)
         {
             return PlacementVerdict.No("The ground there is under water.");
@@ -8515,6 +8533,14 @@ public sealed partial class SimWorld : IObstacles
             {
                 string whose = FindHousehold(gated) is Household family ? $"the {family.Name}s'" : "a family's";
                 return PlacementVerdict.No($"That is the lane in front of {whose} gate — it would shut their yard.");
+            }
+
+            // ⛔ NOR INSIDE A FENCED PASTURE, NOR ON THE LANE AT ITS GATE (D598, `livestock.md §0.2.3` rule 3).
+            if (FencedPastureAt(onTheGround[i]) is Workplace fenced)
+            {
+                return PlacementVerdict.No(onTheGround[i] == fenced.FenceGate
+                    ? $"That is the way into {fenced.Name}'s pasture — it would shut the gate."
+                    : $"That is inside {fenced.Name}'s fence.");
             }
         }
 
@@ -9518,7 +9544,8 @@ public sealed partial class SimWorld : IObstacles
         GridPos? movingFrom = null,
         Angle facing = default,
         Point? bridgeTo = null,
-        bool rebuildsBridge = false)
+        bool rebuildsBridge = false,
+        int fencesBarnId = 0)
     {
         BuildingGeneration++;
         StandingChanged();
@@ -9547,6 +9574,7 @@ public sealed partial class SimWorld : IObstacles
                 Facing = facing,
                 BridgeTo = bridgeTo,
                 RebuildsBridge = rebuildsBridge,
+                FencesBarnId = fencesBarnId,
             },
         });
 
@@ -9611,11 +9639,13 @@ public sealed partial class SimWorld : IObstacles
         StandingChanged();
         StoreBuildings.Remove(building);
 
-        // Any market workplace standing on it goes too — the stall cannot outlive the
-        // building it is part of.
+        // Any workplace that is part of it goes too — the market's stall, the barn's herdsmen, the post's merchant: none
+        // can outlive the building it is part of. ⚠️ This asked for the marketer by name until D598, so a barn or a
+        // trading post pulled down since D590 left its workplace standing on nothing (found by the fence's guard).
         for (int i = Workplaces.Count - 1; i >= 0; i--)
         {
-            if (Workplaces[i].Position == building.Position && Workplaces[i].Kind == JobKind.Marketer)
+            if (Workplaces[i].Position == building.Position && Workplaces[i].Construction is null
+                && Workplaces[i].Kind is JobKind.Marketer or JobKind.Herdsman or JobKind.Merchant)
             {
                 RetireWorkplace(Workplaces[i]);
             }
@@ -9792,6 +9822,13 @@ public sealed partial class SimWorld : IObstacles
         }
 
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
+
+        // A fence never raised unlocks its pasture, which stays painted (D598, `livestock.md §0.2.3` rule 6).
+        if (site.Construction.FencesBarnId != 0 && FindWorkplace(site.Construction.FencesBarnId) is Workplace unfenced)
+        {
+            UnlockThePasture(unfenced);
+        }
+
         if (site.Construction.Kind == BuildingKind.Home)
         {
             // The plot was the family's from the marking (D386); the ground is free again, and
@@ -9843,6 +9880,13 @@ public sealed partial class SimWorld : IObstacles
         if (plan.BridgeTo is not null)
         {
             FinishABridge(site, plan);
+            return;
+        }
+
+        // ⭐ AND A FENCE'S WALLS ITS PASTURE (D598, `livestock.md §0.2.3` rule 5).
+        if (plan.FencesBarnId != 0)
+        {
+            FinishAFence(site, plan);
             return;
         }
 
@@ -10229,6 +10273,12 @@ public sealed partial class SimWorld : IObstacles
     private void RetireWorkplace(Workplace workplace)
     {
         ReleaseWorkers(workplace);
+
+        // A barn pulled down takes its fence with it — the walls, or the site (D598, `livestock.md §0.2.3` rule 8).
+        if (workplace.Kind == JobKind.Herdsman)
+        {
+            DropTheFenceWith(workplace);
+        }
 
         // ⛔⛔ AND WHATEVER WAS IN ITS OWN STORE GOES ON THE GROUND (D162). This method did
         // nothing about `Workplace.Store` for five phases and was right not to, because
@@ -12370,8 +12420,20 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     internal string? WhatThisWouldWallOff(Footprint proposed, IReadOnlyDictionary<GridPos, byte>? fence = null)
     {
+        List<GridPos> covered = proposed.CoveredTiles();
+        return WhatWouldBeWalledOff(covered, fence, covered);
+    }
+
+    /// <summary>
+    /// The same question for a fence alone (D598, a pasture's): nothing stands where it goes, and its gate's outside tile
+    /// must still be reached.
+    /// </summary>
+    internal string? WhatAFenceWouldWallOff(IReadOnlyDictionary<GridPos, byte> fence, GridPos gateFront) =>
+        WhatWouldBeWalledOff(new List<GridPos>(), fence, new List<GridPos> { gateFront });
+
+    private string? WhatWouldBeWalledOff(List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, List<GridPos> mustStayReached)
+    {
         RebuildTheStandingIndexIfStale();
-        List<GridPos> proposedTiles = proposed.CoveredTiles();
 
         // ⚠️ AGAINST TODAY, NOT AGAINST PERFECTION. A shape nothing reaches today — a hut the
         // generator put across the water (seed 42's forager's hut) — is not something this
@@ -12416,7 +12478,7 @@ public sealed partial class SimWorld : IObstacles
             }
         }
 
-        if (!HasAReachedNeighbour(after, proposedTiles, fence))
+        if (!HasAReachedNeighbour(after, mustStayReached, fence))
         {
             return "Nobody could reach that spot — it is walled in.";
         }
@@ -13995,7 +14057,12 @@ public sealed partial class SimWorld : IObstacles
 
         _nextWorkplaceId = save.Int("next_workplace_id");
         List<int> named = save.Ints("buildings_named");
-        if (named.Count != _buildingsNamed.Length)
+
+        // ⭐ FEWER IS A SAVE FROM BEFORE A KIND WAS APPENDED (D598) — `BuildingKind` is appended to and never renumbered,
+        // so the kinds it lacks are the newest, and nothing of theirs was ever named: their counters start at none. The
+        // pasture fence (25) arrived inside format 8, and Joe's saves from that morning must still open. ⛔ More is a
+        // save from data that had a kind this data has lost — still refused.
+        if (named.Count > _buildingsNamed.Length)
         {
             throw new SaveDataException("a different list of buildings", $"{save.Path}.buildings_named: {named.Count} kinds of building where this game's data has {_buildingsNamed.Length}.");
         }
@@ -14057,6 +14124,9 @@ public sealed partial class SimWorld : IObstacles
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;
+
+        // ⭐ The pastures' fences (D598): their locks, and the walls of those that stand — derived from the barns' facts.
+        RebuildThePastureFences();
     }
 
     /// <summary>

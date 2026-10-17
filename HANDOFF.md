@@ -1,6 +1,28 @@
 # Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D597 (THE TRADE SPEC, THE PLAN, COMMIT 0 MEASURED, COMMITS 1–6 BUILT, VIEW I PLAYED AND FIXED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: FENCED PASTURES (SPEC FIRST), THEN THE PATHS, THEN COMMIT 7 OF `trade.md §11`. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D597: VIEW I, PLAYED AND FIXED) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D598: THE FENCED PASTURE, SPECCED; F1 — ITS SIM — BUILT) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D598**, local. `specs/livestock.md §0.2` is the fenced pasture's spec, with Joe's calls.
+> **F1, the sim, is built** (`SimWorld.Pasture.cs`): `FenceThePasture` locks a barn's painted ground (paint, erase, building
+> inside it or on its gate's lane, moving the barn — each refused in words), freezes its tiles, picks the gate (the edge
+> nearest the barn with open, reached ground outside), refuses a fence that would shut anyone in, and queues a
+> `PastureFence` site at the gate priced **a log and two ticks a length** (Joe's 102-tile pasture: 46 lengths). Finished,
+> the walls go up through D404's `ZoneMap.Wall` (its own index, keyed by the barn) and the gate is the one way in.
+> `TakeTheFenceDown` cancels a site (logs back, paint kept) or takes a standing fence down (half back, ground unpainted).
+> A pasture in pieces is fenced round its main piece, the strays given back — **Joe's own pasture was 100 tiles and 2
+> apart**, and the first rule (a refusal) would have refused it. **21 mutants, 28 reds; one zero closed** (F18, the fence unhashed — fencing also raises a site, so *before and after the button* proved nothing; the guard now changes each fact alone) and four rewritten to compile (an unused member is an error here); suite 1771 / 0 / 5 of 1776 (9m26, with F2's view on top); goldens 362 → 362.
+>
+> **Found on the way, and fixed:** pulling down a **barn or a trading post left its workplace standing** (since D590 —
+> the store's demolition retired only a marketer); and adding a building row made **every format-8 save refuse to
+> open** (the naming counter's length) — a shorter counter is now padded, a longer one still refused.
+>
+> **▶️ NEXT: F2, the view** — the barn card's *Fence the pasture* / *Cancel the fence* / *Take the fence down* (with
+> `SayWhatFencingWouldDo` as the button's sentence), the fence drawn from `ZoneMap.PastureFenceOf` (faint while a site),
+> the brush's erase preview asking `CanEraseWorkGround`, and the probe's `fence:`. Then the paths, then commit 7.
+>
+> **(the banner below is the state at D597)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D597: VIEW I, PLAYED AND FIXED) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D597**, local. Joe played View I (willowdale-flint-thrush-27, to Year 70: five boats came, no
 > orders ever set — the post's rows had no names). Fixed: **the post's window** — the card's button opens it — holds the
@@ -7209,6 +7231,23 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D598 PAID FOR — A RULE MEASURED ON JOE'S PASTURE, A ROW THAT LOCKED HIS SAVES OUT
+
+- ⭐ **Measure a refusal against Joe's own data before shipping it.** *"A pasture in pieces is refused"* read well in the
+  spec; Joe's real pasture was 100 tiles and 2 strays, and it would have refused his barn. Now the main piece is fenced
+  and the strays given back. *Load his newest autosave (a copy) and ask the rule what it would say.*
+- ⛔ **Appending a building row refused every save Joe had** — `buildings_named` is one counter per kind and the load
+  demanded the lengths match. Kinds are appended, never renumbered, so a shorter counter is a save from before the row:
+  padded now (`ASaveFromBeforeAnAppendedKindOpensAndOneFromLostDataDoesNot`). **Any new per-kind array in a save needs
+  the same tolerance** — check the load, not just the save, when a row is added.
+- **A store's demolition retired only a workplace of kind Marketer** — the barn's herdsmen and the post's merchant
+  outlived their buildings from D590 to D598. Found because the fence's guard demolished a barn and its fence stayed up.
+- **The herd's ring painting (`HerdTests.GivePasture`) runs among the houses** — fine for a herd, wrong for a fence: the
+  wall-off refusal rightly refused to fence a family in. Fence guards pose a compact block on open ground
+  (`PastureFenceTests.GiveACompactPasture`), and the ring pose is kept as the wall-off refusal's own guard.
+- **The fence's site stands on the gate's lane tile until it is finished**, so *"is the gate's lane refused?"* reads
+  *"Something already stands there"* while it is a site — ask it after finishing.
 
 ## ⛔ THE TRAPS D597 PAID FOR — A PROBE THAT MEASURED WIDTHS PASSED A WINDOW WITH NO NAMES
 

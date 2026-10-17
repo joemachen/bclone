@@ -994,6 +994,10 @@
   "trade_boat_sail_days": 2,
   "trade_boat_dock_days": 10,
   "trade_boat_hold": 400,
+  // The pasture fence (D598, livestock.md §0.2): a log and two ticks a length -- the yard fence's
+  // price. Joe's 102-tile pasture is 46 lengths: 46 logs, about a barn, from the 207 his village held.
+  "pasture_fence_logs_per_edge": 1,
+  "pasture_fence_work_ticks_per_edge": 2,
 
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only

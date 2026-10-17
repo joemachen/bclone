@@ -100,15 +100,105 @@ the barn's room derived."*
 ---
 
 
-## 0.2 The fenced pasture — Joe's calls (D597, 2026-10-17); the spec is the next piece
+## 0.2 The fenced pasture (D597 calls; D598 spec) — a barn's pasture locked in, fenced, gated
 
-Joe, after playing View I: *"when the player places/gives the ground for a barn, it should trigger a builder to build a
-fence around that area with an entrance/exit. once painted it has to be completely unpainted (and demolished) and then
-repainted to created new/bigger pastures."* His calls, asked the same day:
-- **A *Fence it* button** on the barn's card: paint and repaint freely; the button locks the ground and queues a fence site.
-- **The fence blocks walking except at its gate** — in the one shared cost field (D404's walls).
-- **Logs by the fence's length**, measured against hall-era holdings before a number is typed.
-- To change a pasture: take the fence down (the ground is unpainted), then repaint. ⚠️ Not built yet.
+**Status:** 🔨 **F1 BUILT (D598): the sim** — *Fence the pasture*, the lock, the fence's site, its walls, cancel and
+take-down, the barn taking its fence with it, saved and hashed (`SimWorld.Pasture.cs`, `ZoneMap.RaiseAPastureFence`,
+`PastureFenceTests`). **F2 (the view: the barn card's buttons, the fence drawn, the probe's `fence:`) NOT BUILT — so the
+fence cannot be put up in play yet.**
+
+### 0.2.1 Joe's calls (2026-10-17)
+
+*"when the player places/gives the ground for a barn, it should trigger a builder to build a fence around that area with
+an entrance/exit. once painted it has to be completely unpainted (and demolished) and then repainted to created new/bigger
+pastures."* Asked the same day:
+- **A *Fence the pasture* button** on the barn's card: paint and repaint freely; the button **locks** the painted ground and
+  queues a fence site for the builders.
+- **The fence blocks walking except at its gate** — D404's walls, in the **one shared cost field** (§2.6).
+- **Logs by the fence's length**, measured before typed (§0.2.5).
+- **To change a pasture, take the fence down** — the ground is unpainted with it — then repaint and fence again.
+
+### 0.2.2 What already exists (and is reused, not rebuilt)
+
+- **D404's wall layer** (`specs/fences-as-walls.md`): `ZoneMap._walls`, one bit an edge, written only through
+  `ZoneMap.Wall`; read by `TerrainCostField` / `TravelCostField` (rebuilt on `WallGeneration`) and
+  `LineOfSight.ClearOfWalls`. ⭐ **Its §10 was written for exactly this** — *"a player-built fence … will write through the
+  same method; the field asks is there a wall here? and never whose?"* — and fixed the hashing rule in advance: **hash the
+  source, never the layer.** This fence is that source.
+- **`ZoneMap.FenceEdges(tiles, lane, house, out gate)`** — the edges round a set of tiles, the first edge onto a *lane*
+  tile left open as the gate. The pasture passes its fenced tiles, its gate's outside tile as the lane, and no house.
+- **`SimWorld.WhatThisWouldWallOff`** and its trial fences — the refusal for a fence that shuts somebody in.
+- **The bridge's site** (`MarkBridge`, `BridgeRecipe`): a construction that is not a footprint, priced per length,
+  finished by its own branch in `Complete`.
+
+### 0.2.3 The rules
+
+1. **Fence the pasture** (a player input on the barn): refused, with the reason, when —
+   - the barn has **no pasture painted**, or a fence already stands or is being built;
+   - **no way in**: no fenced edge whose outside tile is free, walkable and reached from the village (the gate needs one);
+   - it would **wall somebody off** — `WhatThisWouldWallOff` with the fence as a trial (a building inside the pasture is
+     fine: it is reached through the gate).
+   Otherwise: **a pasture in pieces is fenced round its main piece** (the largest; ties to the one nearest the barn) and
+   the tiles apart from it are **given back** — said on the button before it is pressed and in the log after. ⚠️ First
+   written as a refusal; measured on Joe's own pasture — **100 tiles and 2 apart** — it would have refused his barn. The
+   main piece is **frozen** as the fenced tiles (whole tiles, `ZoneMap.WorkGroundOf` — never the quarter-tile curve), the
+   **gate** is chosen, and a **fence site** is queued at the gate's outside tile.
+2. **The gate** is the fenced edge whose outside tile is nearest the barn (taxicab to the barn's position; ties by the
+   stated tile order, then N/E/S/W) among those whose outside tile is free, walkable and reached. One gate, as a yard's.
+3. **Locked from the button on.** While a fence stands or is being built: the barn's ground can be neither painted nor
+   erased (`CanPaintWorkGround` / `CanEraseWorkGround` say *"The pasture is fenced — take the fence down to change it."*),
+   no building may be marked on a fenced tile or on the gate's outside tile, and the barn cannot be moved.
+4. **The site** is a builder's site like a bridge's: `BuildingKind.PastureFence`, one tile at the gate's outside tile,
+   **logs × the fence's edges** and **work × its edges** (the gate edge is not fenced, so not paid for). The walls go up
+   **when it is finished** — as a bridge's deck opens at the end — so the builders never fence themselves in.
+5. **Finished:** the fence's edges are walled (`ZoneMap.Wall`), the site retires, and the log says so. From then on
+   everybody — the herdsman cutting hay, hay put out, a laborer at a tree — goes in and out by the gate.
+6. **Cancelled while a site:** the builders' delivered logs come back (`CancelConstruction`), the ground unlocks and
+   **stays painted** (nothing was built).
+7. **Taken down when it stands** (a player input, instant — as a bridge is pulled down): the walls come down, **half its
+   logs** come back to the nearest store, and **the ground is unpainted** (Joe: *"completely unpainted"*). The barn and its
+   herd stay; with no pasture the herd starves at the next feeding until a new one is painted and fenced — said in the log.
+   ⚠️ Taking a wall down must **put back every other fence's wall on a shared edge** — a yard's or another pasture's.
+   (`ZoneMap.PullTheFenceDown` today puts back only *plots'* walls; both pulls are taught the other.)
+8. **The barn pulled down** takes its fence with it (walls down, no extra refund) and cancels a fence site.
+9. **Nothing walks the fence.** The herd is a number on the barn (D592) and is drawn on its own tiles (`HerdSpots`); the
+   fence keeps villagers' paths out, not animals in.
+
+### 0.2.4 The data
+
+- **On the barn (a fact — saved, hashed sparsely under `0x7A`):** `FencedTiles` (tile indices, sorted), `FenceGate`
+  (the gate's outside tile), `FenceStands`. *Empty* = no fence; tiles and not standing = a site; standing = built.
+- **On the site (saved, hashed sparsely under `0x7B`, as a bridge site's far bank is):** `FencesBarnId`.
+- **Derived, never hashed (D335):** the walls; `ZoneMap`'s per-barn edge list (its own index, keyed by **workplace id**
+  — ⛔ never the yards' `_fenceByOwner`, which is keyed by household id and saved inside `plots`). Rebuilt on load from
+  the barns.
+- **Save:** read tolerantly (`HasValue`), so format-8 saves still open — no format bump.
+- **Config:** `pasture_fence_logs_per_edge` **1** and `pasture_fence_work_ticks_per_edge` **2** (§0.2.5); the
+  `PastureFence` building row prices one edge, as the bridge's prices one tile.
+
+### 0.2.5 Measured (D598, `ZzFenceMeasure`, thrown away)
+
+| Pasture | Tiles | Fence edges | Logs at 1 an edge | Work at 2 an edge |
+|---|---|---|---|---|
+| **Joe's barn 1** (willowdale-flint-thrush-27, Year 70; box 17 × 13) | 102 | **46** | 46 | 92 ticks (23 days, one builder) |
+| painted by the brush round a barn, established valley | 20 / 40 / 80 / 120 | 34 / 56 / 88 / 118 | 34–118 | 68–236 |
+
+Joe's village held **207 logs** (limit 200) with two builders. A log an edge — the yard fence's own price
+(`fence_logs_per_tile`, D388) — makes his fence about a barn (40 logs): felt, not a tax. A fence round a brush-painted
+pasture runs longer than a square's, because the brush skips rough ground; a compact pasture is the cheaper one, and
+that is the right lesson. ⚠️ Both numbers Joe's to tune in play.
+
+### 0.2.6 Guards (red first, counted)
+
+Sim (`PastureFenceTests`): the refusals (none painted, in pieces, no way in, walls someone off, already fenced); the lock
+(paint, erase, build on a fenced tile and on the gate front, move the barn); the site's recipe is the edges × the
+prices; **no wall until it is finished**; finished, every fenced edge but the gate is a wall and the pasture is reached
+only through the gate (a walk from outside to an inside tile crosses the gate); cancel unlocks and keeps the paint and
+refunds; take-down unlocks, unpaints, refunds half and **leaves a neighbouring yard's wall standing on a shared edge**;
+the barn pulled down takes its fence; save → load → hash equal with a site and with a standing fence; a village with no
+fence hashes as before (all 362 goldens).
+View (probe `fence:`): the fence drawn on its edges with the gate open; faint while a site; the barn card's button
+reads the state (*Fence the pasture* / *Cancel the fence* / *Take the fence down*).
 
 ## 1. Goal
 
