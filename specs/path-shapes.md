@@ -8,7 +8,7 @@ field), D122 (the last time the route chain moved by a tile it froze nineteen pe
 NOT BUILT — his newest save showed it would not reach what he saw (§4.E); his call: E. ✅ OPTION E BUILT (D581) — view
 only, `TrailNetwork` (`desire-paths.md` slice 2 says how). ✅ Played: *"what do you think?"* — the ladders, rings and
 blob gone; one lane drawn across a one-tile store — D582 cut it at the walls, and Joe: *"the path should go around the
-building"* — D583 routes it round on the worn ground. ✅ Joe looked and approved (*"merge and push"*, D584). C stays here for villages of many homes.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
+building"* — D583 routes it round on the worn ground. ✅ Joe looked and approved (*"merge and push"*, D584). C stays here for villages of many homes.** · ✅ **§4.F — fences, the plaza, doorsteps (D605), built, NOT YET PLAYED.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
 in a throwaway worktree and are gone.
 Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 
@@ -124,3 +124,63 @@ one-tile gaps, thin, merge touching junction pixels, trace, place on the middle 
 ⛔ **The textbook clean-up was measured and refused:** pruning short dead ends off a junction cut the three-tile lane up
 to a store's door on Joe's own village and changed nothing in any drawn shape. ⭐ *The lesson: a player's description of
 a fix ("proceed with C") is a hypothesis about the cause — read the village in the screenshot before building it.*
+
+## 4.F Fences, stars, wiggles and doorsteps (D605) — Joe's notes on View I and the fence
+
+Joe, on View I and again after the fence: *"What is this wiggly path to the well"*, a path *"going through a house fence"*,
+*"the big intersection … doesn't look organic - how would real humans behave on those paths?"*, *"more examples of
+ridiculous pathing"*, and *"we're missing some of the shorter sections of pathways to-and-from entrances, etc. nothing
+shows, even after decades."* Read before building: his three newest villages dumped tile by tile (worn grade,
+footprints, fence walls) and drawn by the real `TrailNetwork` in the probe (dove Y58 · willow Y71 · ash Y62):
+
+| | dove | willow | ash |
+|---|---|---|---|
+| drawn segments crossing a fence | 11 | 7 | 18 |
+| the biggest junction (lanes meeting at one point) | 15 | 17 | 9 |
+| lanes more than 1.6× the way between their ends | 9 | 6 | 6 |
+| buildings with worn ground beside them that no lane reaches | 17 of 49 | 12 of 32 | 11 of 42 |
+
+**The walking was never the fault.** Nobody walks through a yard (D404's walls hold in the sim); the worn tiles sit in
+the lanes between yards with a wall either side. And the ground in front of a building *is* worn — 48 of 54, 35 of 41,
+45 of 47 buildings have a worn tile touching them. Every fault is the drawing's:
+
+1. **The drawing could not see a fence.** It was given buildings and water as blocked and nothing else, so it bridged
+   gaps, thinned, placed points and smoothed straight across walls. ⛔ **Now a wall separates two tiles everywhere the
+   network looks:** no bridge across one, the thinning and the tracing treat tiles either side as not touching, a point
+   is placed on the worn ground on its own side, and a step that would cross one is not taken — wandered back, not
+   smoothed across, routed round (`Crosses`, the D583 detour, four ways, never through a wall).
+2. **The star was one hub made of a whole busy patch.** Every touching junction pixel was merged into one junction
+   (D581), so a packed square of ground thinned to a mesh became one point with fifteen or seventeen lanes — many of them
+   loops leaving it and coming back, which are most of the "wiggly" lanes too. ⚠️ **Capping the clump at 3 × 3 was
+   tried and measured worse:** it drew the mesh itself — 95, 88 and 91 lanes, 42, 32 and 39 junctions, fourteen to
+   twenty-three of them with five lanes or more. ⭐ **A clump wider than 3 × 3 is a plaza:** each lane stops where it
+   arrives, and the arrivals are joined by a **tree on the plaza's own worn skeleton** (`PlazaTree`: from the first
+   arrival, the nearest one not yet joined, reached from the whole tree at once by its pixel path) — nothing loops,
+   branches part where the ground does, and every step is worn ground. A clump of 3 × 3 or less is still one crossing.
+3. **A doorstep is drawn.** A building with worn ground beside it and no lane *drawn* against one of its faces (a line
+   pixel beside the face, placed within 1.2 tiles of it — past a corner is passing, not arriving) gets a short lane along
+   the worn tiles from the nearest lane to its doorstep, ending 0.4 short of the wall — never over unworn ground (§1.1),
+   never through a wall, at most six tiles long. ⛔ D581's lesson stands: nothing is pruned; this only adds what the
+   thinning absorbed into the lane beside it.
+4. **The wiggle** was mostly the star's loops and the fences' detours: with 1–3 in, the lanes more than 1.6× their
+   span fell to 4, 3 and 1, hairpins to 0, 1 and 0, and turning per tile from 0.59 / 0.42 / 0.50 to 0.35 / 0.34 / 0.29.
+   What is left was read point by point: lanes running round a whole block of buildings on its worn ring (two), and one
+   small kink. Nothing more was built for it.
+
+**Measured after (the same three villages, the real network):**
+
+| | dove | willow | ash |
+|---|---|---|---|
+| drawn segments crossing a fence | 11 → **0** | 7 → **0** | 18 → **1** |
+| the biggest junction | 15 → **4** | 17 → **4** | 9 → **4** |
+| lanes more than 1.6× their span | 9 → 4 | 6 → 3 | 6 → 1 |
+| buildings with worn ground beside them reached by a lane | 32 → **46** of 49 | 20 → **31** of 32 | 31 → **42** of 42 |
+
+The one fence crossing left (ash, at (18.6, 14.4)) is the measurement's sampling against the network's exact walk at a
+tile corner; the four doorsteps left are worn patches no worn ground joins to a lane (left undrawn, rightly).
+⭐ *The lesson: the cap that looked like the fix drew the thing it was hiding. Measure the cure on the village, not on
+the shape you imagined.*
+
+**Unchanged:** the sim, its walks and its wear; one cost field; no golden. View only, rebuilt on the paths' generation and
+now the walls' (`ZoneMap.WallGeneration`), never per frame. Probe `trails:` gains a fence (and a gate), a plaza and a
+doorstep, each red-checked (D605).

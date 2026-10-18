@@ -23,6 +23,14 @@ namespace Bclone.Game;
 /// <para>
 /// ⛔ <b>What it never does:</b> draw on a blocked tile (a building's footprint, or water nobody can walk) — the caller
 /// zeroes the grade there and a gap is never bridged across one; or bridge a gap two tiles wide, which is two lanes.
+/// ⛔ <b>Nor cross a fence</b> (D605): a wall separates two tiles in the bridging, the thinning, the tracing, the
+/// placing and every step drawn (<see cref="Linkage"/>).
+/// </para>
+/// <para>
+/// ⭐ <b>And since D605</b> (Joe's star, his doorsteps — <c>specs/path-shapes.md §4.F</c>): a clump of junction pixels
+/// wider than 3 × 3 is a <b>plaza</b>, its arrivals joined by a tree on its own worn skeleton rather than all meeting at
+/// one point; and a building with worn ground beside it that no lane is drawn against gets its <b>doorstep</b> — a short
+/// lane along the worn ground from the nearest lane to its wall.
 /// </para>
 /// </remarks>
 internal sealed class TrailNetwork
@@ -38,6 +46,15 @@ internal sealed class TrailNetwork
 
     /// <summary>A detour's step on unworn ground against 1 on worn: it keeps to where people walked (D583).</summary>
     private const int DetourBareGroundCost = 4;
+
+    /// <summary>How far a doorstep lane may run along the worn ground to meet the nearest lane, in tiles (D605).</summary>
+    private const int DoorstepReach = 6;
+
+    /// <summary>How near a building's tile a lane must be drawn to have reached it, in tiles — a doorstep's centre is 1 (D605).</summary>
+    private const float DoorstepReachedWithin = 1.2f;
+
+    /// <summary>How far past the doorstep's centre toward the wall a doorstep lane ends — short of the wall (D605).</summary>
+    private const float DoorstepToTheWall = 0.4f;
 
     /// <summary>The detour's four ways, in a fixed order.</summary>
     private static readonly (int, int)[] FourWays = { (1, 0), (-1, 0), (0, 1), (0, -1) };
@@ -75,16 +92,29 @@ internal sealed class TrailNetwork
     /// <param name="grade">0 unworn, 1 worn, 2 packed — row-major; already 0 on every blocked tile.</param>
     /// <param name="blocked">Tiles no lane may be drawn on or bridged across.</param>
     /// <param name="wander">The offset a point is moved by (the valley's seeded wander), or null for none.</param>
-    public static TrailNetwork Build(int originX, int originY, int width, int height, byte[] grade, bool[] blocked, Func<Vector2, Vector2>? wander)
+    /// <param name="walls">
+    /// Each tile's walls as <c>ZoneMap</c>'s bits (1 north, 2 east, 4 south, 8 west), or null for none (D605): a wall
+    /// separates two tiles everywhere the network looks — no bridge, no touching in the thinning or the trace, no point
+    /// pulled across, no step drawn through.
+    /// </param>
+    /// <param name="buildingOf">
+    /// Which building stands on each tile (0 for none), or null to draw no doorsteps (D605): a building with worn ground
+    /// beside it that no lane comes within a tile of gets a short lane to its doorstep along the worn ground.
+    /// </param>
+    public static TrailNetwork Build(
+        int originX, int originY, int width, int height, byte[] grade, bool[] blocked, Func<Vector2, Vector2>? wander,
+        byte[]? walls = null, int[]? buildingOf = null)
     {
         int n = width * height;
-        if (grade.Length != n || blocked.Length != n)
+        if (grade.Length != n || blocked.Length != n || (walls is not null && walls.Length != n) || (buildingOf is not null && buildingOf.Length != n))
         {
-            throw new ArgumentException($"A {width}×{height} window wants {n} grades and {n} blocked flags, not {grade.Length} and {blocked.Length}.");
+            throw new ArgumentException($"A {width}×{height} window wants {n} grades, blocked flags, walls and buildings, not {grade.Length}, {blocked.Length}, {walls?.Length} and {buildingOf?.Length}.");
         }
 
+        var linked = new Linkage(width, height, walls);
+
         // 1. The shape: worn ground, and every one-tile gap with worn ground facing across it — measured on the worn
-        // ground alone, so a bridged tile never bridges the next (a two-tile gap is two lanes).
+        // ground alone, so a bridged tile never bridges the next (a two-tile gap is two lanes). ⛔ Never across a wall.
         var shape = new byte[n];
         int bridged = 0;
         for (int i = 0; i < n; i++)
@@ -111,27 +141,83 @@ internal sealed class TrailNetwork
         }
 
         // 2. Thin it to its centre line, keeping a pixel for any piece the thinning would have erased whole.
-        bool[] line = Thin(shape, width, height);
+        bool[] line = Thin(shape, width, height, linked);
 
         // 3. A staircase on the line keeps a pixel at each corner it does not need; drop them, so a diagonal is a
         // diagonal and not a run of tiny junctions.
-        Dictionary<(int, int), int> wraps = DropCornerPixels(line, blocked, width, height);
+        Dictionary<(int, int), int> wraps = DropCornerPixels(line, blocked, width, height, linked);
 
-        // 4. Trace, prune one-pixel spurs, place and smooth.
-        return Trace(line, shape, blocked, wraps, originX, originY, width, height, wander, bridged);
+        // 4. Trace, place and smooth; then the doorsteps.
+        return Trace(line, shape, blocked, wraps, originX, originY, width, height, wander, bridged, linked, buildingOf);
 
         byte Facing(int x, int y, int dx, int dy)
         {
             byte a = GradeAt(x - dx, y - dy);
             byte b = GradeAt(x + dx, y + dy);
-            return a > 0 && b > 0 ? Math.Min(a, b) : (byte)0;
+            int gap = (y * width) + x;
+            return a > 0 && b > 0 && linked.Step(gap, -dx, -dy) && linked.Step(gap, dx, dy) ? Math.Min(a, b) : (byte)0;
         }
 
         byte GradeAt(int x, int y) => x < 0 || y < 0 || x >= width || y >= height ? (byte)0 : grade[(y * width) + x];
     }
 
+    /// <summary>
+    /// ⛔ Which tiles touch, with the fences in (D605): two tiles side by side touch unless a wall runs between them;
+    /// two corner to corner touch if either way round the corner is open. Without walls, every neighbour touches.
+    /// </summary>
+    private sealed class Linkage
+    {
+        private readonly int _width;
+        private readonly int _height;
+        private readonly byte[]? _walls;
+
+        public Linkage(int width, int height, byte[]? walls)
+        {
+            _width = width;
+            _height = height;
+            _walls = walls;
+        }
+
+        /// <summary>Whether a step from tile <paramref name="i"/> one tile across or down crosses no wall.</summary>
+        public bool Step(int i, int dx, int dy)
+        {
+            if (_walls is null)
+            {
+                return true;
+            }
+
+            int x = (i % _width) + dx, y = (i / _width) + dy;
+            if (x < 0 || y < 0 || x >= _width || y >= _height)
+            {
+                return true;
+            }
+
+            int j = (y * _width) + x;
+            return (_walls[i] & Bit(dx, dy)) == 0 && (_walls[j] & Bit(-dx, -dy)) == 0;
+        }
+
+        /// <summary>Whether two of the eight neighbours touch.</summary>
+        public bool Touch(int i, int j)
+        {
+            if (_walls is null)
+            {
+                return true;
+            }
+
+            int dx = (j % _width) - (i % _width), dy = (j / _width) - (i / _width);
+            if (dx == 0 || dy == 0)
+            {
+                return Step(i, dx, dy);
+            }
+
+            return (Step(i, dx, 0) && Step(i + dx, 0, dy)) || (Step(i, 0, dy) && Step(i + (dy * _width), dx, 0));
+        }
+
+        private static byte Bit(int dx, int dy) => (dx, dy) switch { (0, -1) => 1, (1, 0) => 2, (0, 1) => 4, (-1, 0) => 8, _ => 0 };
+    }
+
     /// <summary>Zhang–Suen thinning of the shape; a piece it would erase whole keeps the pixel nearest its middle.</summary>
-    private static bool[] Thin(byte[] shape, int width, int height)
+    private static bool[] Thin(byte[] shape, int width, int height, Linkage linked)
     {
         int n = width * height;
         var on = new bool[n];
@@ -158,9 +244,9 @@ internal sealed class TrailNetwork
                     int x = i % width;
                     int y = i / width;
 
-                    // P2..P9 clockwise from north (screen y runs down).
-                    bool p2 = At(x, y - 1), p3 = At(x + 1, y - 1), p4 = At(x + 1, y), p5 = At(x + 1, y + 1);
-                    bool p6 = At(x, y + 1), p7 = At(x - 1, y + 1), p8 = At(x - 1, y), p9 = At(x - 1, y - 1);
+                    // P2..P9 clockwise from north (screen y runs down) — ⛔ a neighbour across a fence is not on (D605).
+                    bool p2 = From(i, x, y - 1), p3 = From(i, x + 1, y - 1), p4 = From(i, x + 1, y), p5 = From(i, x + 1, y + 1);
+                    bool p6 = From(i, x, y + 1), p7 = From(i, x - 1, y + 1), p8 = From(i, x - 1, y), p9 = From(i, x - 1, y - 1);
                     int b = (p2 ? 1 : 0) + (p3 ? 1 : 0) + (p4 ? 1 : 0) + (p5 ? 1 : 0) + (p6 ? 1 : 0) + (p7 ? 1 : 0) + (p8 ? 1 : 0) + (p9 ? 1 : 0);
                     int a = Rise(p2, p3) + Rise(p3, p4) + Rise(p4, p5) + Rise(p5, p6) + Rise(p6, p7) + Rise(p7, p8) + Rise(p8, p9) + Rise(p9, p2);
                     bool outer = step == 0 ? !(p2 && p4 && p6) && !(p4 && p6 && p8) : !(p2 && p4 && p8) && !(p2 && p6 && p8);
@@ -208,7 +294,8 @@ internal sealed class TrailNetwork
                     {
                         int x = (i % width) + dx;
                         int y = (i / width) + dy;
-                        if (x >= 0 && y >= 0 && x < width && y < height && shape[(y * width) + x] > 0 && !seen[(y * width) + x])
+                        if (x >= 0 && y >= 0 && x < width && y < height && shape[(y * width) + x] > 0 && !seen[(y * width) + x]
+                            && linked.Touch(i, (y * width) + x))
                         {
                             seen[(y * width) + x] = true;
                             queue.Enqueue((y * width) + x);
@@ -238,7 +325,7 @@ internal sealed class TrailNetwork
 
         return on;
 
-        bool At(int x, int y) => x >= 0 && y >= 0 && x < width && y < height && on[(y * width) + x];
+        bool From(int i, int x, int y) => x >= 0 && y >= 0 && x < width && y < height && on[(y * width) + x] && linked.Touch(i, (y * width) + x);
 
         static int Rise(bool from, bool to) => !from && to ? 1 : 0;
     }
@@ -249,12 +336,12 @@ internal sealed class TrailNetwork
     /// remembered</b>, by that pair (D582): the line's shape loses it, the drawing goes round it. Kept as a pixel, it
     /// gave every pixel of a ring three neighbours and the whole ring became one junction at the building's middle.
     /// </summary>
-    private static Dictionary<(int, int), int> DropCornerPixels(bool[] line, bool[] blocked, int width, int height)
+    private static Dictionary<(int, int), int> DropCornerPixels(bool[] line, bool[] blocked, int width, int height, Linkage linked)
     {
         var wraps = new Dictionary<(int, int), int>();
         for (int i = 0; i < line.Length; i++)
         {
-            if (!line[i] || Degree(line, i, width, height) != 2)
+            if (!line[i] || Degree(line, i, width, height, linked) != 2)
             {
                 continue;
             }
@@ -267,7 +354,8 @@ internal sealed class TrailNetwork
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     int nx = x + dx, ny = y + dy;
-                    if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx])
+                    if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx]
+                        && linked.Touch(i, (ny * width) + nx))
                     {
                         if (first < 0)
                         {
@@ -281,8 +369,10 @@ internal sealed class TrailNetwork
                 }
             }
 
+            // ⛔ Only when the two neighbours touch each other without it (D605): a corner pixel that is the way round a
+            // fence's end is a link, not a nub.
             int fx = first % width, fy = first / width, sx = second % width, sy = second / width;
-            if (Math.Abs(fx - sx) > 1 || Math.Abs(fy - sy) > 1)
+            if (Math.Abs(fx - sx) > 1 || Math.Abs(fy - sy) > 1 || !linked.Touch(first, second))
             {
                 continue;
             }
@@ -302,7 +392,7 @@ internal sealed class TrailNetwork
         return wraps;
     }
 
-    private static int Degree(bool[] line, int i, int width, int height)
+    private static int Degree(bool[] line, int i, int width, int height, Linkage linked)
     {
         int x = i % width;
         int y = i / width;
@@ -312,7 +402,8 @@ internal sealed class TrailNetwork
             for (int dx = -1; dx <= 1; dx++)
             {
                 int nx = x + dx, ny = y + dy;
-                if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx])
+                if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx]
+                    && linked.Touch(i, (ny * width) + nx))
                 {
                     degree++;
                 }
@@ -323,7 +414,9 @@ internal sealed class TrailNetwork
     }
 
     /// <summary>The line traced into lanes between its ends and junctions, every point placed and smoothed.</summary>
-    private static TrailNetwork Trace(bool[] line, byte[] shape, bool[] blocked, Dictionary<(int, int), int> wraps, int originX, int originY, int width, int height, Func<Vector2, Vector2>? wander, int bridged)
+    private static TrailNetwork Trace(
+        bool[] line, byte[] shape, bool[] blocked, Dictionary<(int, int), int> wraps, int originX, int originY, int width, int height,
+        Func<Vector2, Vector2>? wander, int bridged, Linkage linked, int[]? buildingOf)
     {
         int n = line.Length;
         var paths = new List<List<int>>();
@@ -341,6 +434,32 @@ internal sealed class TrailNetwork
         // in any shape the probe draws. The clumps above are what keep a hub tidy.
         Walk();
 
+        // ⭐⭐ BUT A CLUMP WIDER THAN 3 × 3 IS A PLAZA, NOT A CROSSING (D605, Joe's star: "doesn't look organic - how would
+        // real humans behave on those paths?"). A packed square thins to a mesh whose junction pixels all touch, so it was one
+        // junction — fifteen and seventeen lanes meeting at one point on his villages, half of them loops out of it and back.
+        // Capped at 3 × 3 the mesh drew as forty junctions. Neither is how people cross a square: each lane stops where it
+        // arrives, and the arrivals are joined by a TREE on the plaza's own worn skeleton — the nearest arrival added one
+        // at a time by its pixel path — so nothing loops, branches part where the ground does, and every step is worn.
+        var plaza = new bool[n];
+        var extent = new Dictionary<int, (int MinX, int MinY, int MaxX, int MaxY)>();
+        for (int i = 0; i < n; i++)
+        {
+            if (hub[i] < 0)
+            {
+                continue;
+            }
+
+            int x = i % width, y = i / width;
+            extent[hub[i]] = extent.TryGetValue(hub[i], out var e)
+                ? (Math.Min(e.MinX, x), Math.Min(e.MinY, y), Math.Max(e.MaxX, x), Math.Max(e.MaxY, y))
+                : (x, y, x, y);
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            plaza[i] = hub[i] >= 0 && extent[hub[i]] is var e && (e.MaxX - e.MinX > 2 || e.MaxY - e.MinY > 2);
+        }
+
         var hubPoints = new Dictionary<int, Vector2>();
         int cuts = 0;
         var lanes = new List<Lane>();
@@ -350,10 +469,41 @@ internal sealed class TrailNetwork
             lanes.AddRange(Placed(path, closed[p], !closed[p] && path.Count > 1 && End(path[0]) == 1, !closed[p] && path.Count > 1 && End(path[^1]) == 1));
         }
 
+        // The plazas' trees, and how many lanes and branches meet at each of their pixels.
+        var meetAt = new Dictionary<int, int>();
+        foreach (List<int> path in paths)
+        {
+            if (path.Count > 1)
+            {
+                foreach (int end in new[] { path[0], path[^1] })
+                {
+                    if (plaza[end])
+                    {
+                        meetAt[end] = meetAt.GetValueOrDefault(end) + 1;
+                    }
+                }
+            }
+        }
+
+        foreach (int rep in extent.Keys.Order())
+        {
+            if (!plaza[rep])
+            {
+                continue;
+            }
+
+            foreach (List<int> branch in PlazaTree(rep, meetAt.Keys.Where(a => hub[a] == rep).Order().ToList()))
+            {
+                meetAt[branch[0]] = meetAt.GetValueOrDefault(branch[0]) + 1;
+                meetAt[branch[^1]] = meetAt.GetValueOrDefault(branch[^1]) + 1;
+                lanes.AddRange(Placed(branch, false, false, false));
+            }
+        }
+
         var junctions = new List<(Vector2, byte)>();
         for (int i = 0; i < n; i++)
         {
-            if (hub[i] == i && ends[i] >= 3)
+            if (hub[i] == i && !plaza[i] && ends[i] >= 3)
             {
                 byte best = 0;
                 for (int k = 0; k < n; k++)
@@ -363,9 +513,268 @@ internal sealed class TrailNetwork
 
                 junctions.Add((HubPoint(i), best));
             }
+            else if (plaza[i] && meetAt.GetValueOrDefault(i) >= 3)
+            {
+                junctions.Add((PointOf(i), shape[i]));
+            }
+        }
+
+        if (buildingOf is not null)
+        {
+            lanes.AddRange(Doorsteps(buildingOf));
         }
 
         return new TrailNetwork(lanes, junctions, bridged, cuts);
+
+        // The tree joining a plaza's arrivals along its own pixels (D605): from the first arrival, the nearest one not yet
+        // joined is reached from the whole tree at once, lowest pixel first, and its path becomes part of the tree; then the
+        // tree is walked into branches between its forks and its arrivals.
+        List<List<int>> PlazaTree(int rep, List<int> arrivals)
+        {
+            var branches = new List<List<int>>();
+            if (arrivals.Count < 2)
+            {
+                return branches;
+            }
+
+            var isArrival = new HashSet<int>(arrivals);
+            var inTree = new SortedSet<int> { arrivals[0] };
+            var adjacency = new SortedDictionary<int, SortedSet<int>>();
+            var waiting = new SortedSet<int>(arrivals.Skip(1));
+            while (waiting.Count > 0)
+            {
+                var back = new Dictionary<int, int>();
+                var queue = new Queue<int>();
+                foreach (int t in inTree)
+                {
+                    back[t] = -1;
+                    queue.Enqueue(t);
+                }
+
+                int found = -1;
+                while (queue.Count > 0)
+                {
+                    int here = queue.Dequeue();
+                    if (waiting.Contains(here))
+                    {
+                        found = here;
+                        break;
+                    }
+
+                    foreach (int next in NeighboursOf(here))
+                    {
+                        if (hub[next] == rep && !back.ContainsKey(next))
+                        {
+                            back[next] = here;
+                            queue.Enqueue(next);
+                        }
+                    }
+                }
+
+                if (found < 0)
+                {
+                    break;
+                }
+
+                for (int at = found; back[at] >= 0; at = back[at])
+                {
+                    Link(at, back[at]);
+                    inTree.Add(at);
+                }
+
+                waiting.Remove(found);
+            }
+
+            var walkedTree = new HashSet<(int, int)>();
+            foreach (int start in adjacency.Keys)
+            {
+                if (adjacency[start].Count == 2 && !isArrival.Contains(start))
+                {
+                    continue;
+                }
+
+                foreach (int first in adjacency[start])
+                {
+                    if (!walkedTree.Add(Edge(start, first)))
+                    {
+                        continue;
+                    }
+
+                    var branch = new List<int> { start };
+                    int previous = start, here = first;
+                    while (true)
+                    {
+                        branch.Add(here);
+                        if (adjacency[here].Count != 2 || isArrival.Contains(here))
+                        {
+                            break;
+                        }
+
+                        int onward = adjacency[here].First(c => c != previous);
+                        walkedTree.Add(Edge(here, onward));
+                        previous = here;
+                        here = onward;
+                    }
+
+                    branches.Add(branch);
+                }
+            }
+
+            return branches;
+
+            void Link(int a, int b)
+            {
+                Add(a, b);
+                Add(b, a);
+            }
+
+            void Add(int a, int b)
+            {
+                if (!adjacency.TryGetValue(a, out SortedSet<int>? set))
+                {
+                    adjacency[a] = set = new SortedSet<int>();
+                }
+
+                set.Add(b);
+            }
+        }
+
+        // ⭐ THE DOORSTEPS (D605, Joe: "we're missing some of the shorter sections of pathways to-and-from entrances ...
+        // nothing shows, even after decades"). The ground in front of a building is worn — 48 of 54 buildings on his
+        // Year-58 village — but a lane passing a tile or two off thins its doorstep into itself. A building with worn
+        // ground beside it and no line pixel within a tile of it gets a short lane: from the nearest line pixel, along the
+        // worn ground (four ways, through no wall, at most `DoorstepReach` steps), to the worn tile against its wall, and on
+        // to the wall. Never over unworn ground (§1.1), nothing pruned (D581) — only what the thinning absorbed, drawn.
+        List<Lane> Doorsteps(int[] buildings)
+        {
+            var tilesOf = new SortedDictionary<int, List<int>>();
+            for (int i = 0; i < n; i++)
+            {
+                if (buildings[i] > 0)
+                {
+                    if (!tilesOf.TryGetValue(buildings[i], out List<int>? tiles))
+                    {
+                        tilesOf[buildings[i]] = tiles = new List<int>();
+                    }
+
+                    tiles.Add(i);
+                }
+            }
+
+            var added = new List<Lane>();
+            foreach (List<int> tiles in tilesOf.Values)
+            {
+                bool reached = false;
+                var steps = new SortedDictionary<int, int>();
+                // Reached when a lane runs against one of its faces AND is drawn there — past a corner is passing, not
+                // arriving; and a lane through a packed patch is placed on the patch's middle, a tile off the wall.
+                foreach (int t in tiles)
+                {
+                    int tx = t % width, ty = t / width;
+                    var wallTile = new Vector2(originX + tx, originY + ty);
+                    foreach ((int dx, int dy) in FourWays)
+                    {
+                        int nx = tx + dx, ny = ty + dy;
+                        int step = (ny * width) + nx;
+                        reached |= nx >= 0 && ny >= 0 && nx < width && ny < height && line[step] && linked.Step(t, dx, dy)
+                            && PointOf(step).DistanceTo(wallTile) <= DoorstepReachedWithin;
+                        if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[step] > 0 && !blocked[step]
+                            && linked.Step(t, dx, dy) && !steps.ContainsKey(step))
+                        {
+                            steps[step] = t;
+                        }
+                    }
+                }
+
+                if (reached || steps.Count == 0)
+                {
+                    continue;
+                }
+
+                // From every doorstep at once, lowest first, to the nearest line pixel.
+                var back = new Dictionary<int, int>();
+                var depth = new Dictionary<int, int>();
+                var queue = new Queue<int>();
+                foreach (int step in steps.Keys)
+                {
+                    depth[step] = 0;
+                    queue.Enqueue(step);
+                }
+
+                int joined = -1;
+                while (queue.Count > 0 && joined < 0)
+                {
+                    int here = queue.Dequeue();
+                    if (line[here])
+                    {
+                        joined = here;
+                        break;
+                    }
+
+                    if (depth[here] >= DoorstepReach)
+                    {
+                        continue;
+                    }
+
+                    foreach ((int dx, int dy) in FourWays)
+                    {
+                        int nx = (here % width) + dx, ny = (here / width) + dy;
+                        int there = (ny * width) + nx;
+                        if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[there] > 0 && !blocked[there]
+                            && linked.Step(here, dx, dy) && !depth.ContainsKey(there))
+                        {
+                            depth[there] = depth[here] + 1;
+                            back[there] = here;
+                            queue.Enqueue(there);
+                        }
+                    }
+                }
+
+                if (joined < 0)
+                {
+                    continue;
+                }
+
+                // The line pixel first, as the lane through it is placed; then tile centres to the doorstep, and on to the wall.
+                var route = new List<int> { joined };
+                while (back.TryGetValue(route[^1], out int previous))
+                {
+                    route.Add(previous);
+                }
+
+                int doorstep = route[^1];
+                int wall = steps[doorstep];
+                var points = new List<Vector2> { PointOf(joined) };
+                var grades = new List<byte> { shape[joined] };
+                for (int k = 1; k < route.Count; k++)
+                {
+                    points.Add(new Vector2(originX + (route[k] % width), originY + (route[k] / width)));
+                    grades.Add(shape[route[k]]);
+                }
+
+                if (route.Count == 1)
+                {
+                    points.Add(new Vector2(originX + (doorstep % width), originY + (doorstep / width)));
+                    grades.Add(shape[doorstep]);
+                }
+
+                Vector2 step0 = new(originX + (doorstep % width), originY + (doorstep / width));
+                Vector2 against = new(originX + (wall % width), originY + (wall / width));
+                points.Add(step0.Lerp(against, DoorstepToTheWall));
+                grades.Add(shape[doorstep]);
+
+                Vector2[] drawn = points.ToArray();
+                byte[] graded = grades.ToArray();
+                for (int pass = 0; pass < SmoothingPasses && drawn.Length > 2; pass++)
+                {
+                    (drawn, graded) = Chaikin(drawn, graded, false, Crosses);
+                }
+
+                added.Add(new Lane(drawn, graded, false, false, true));
+            }
+
+            return added;
+        }
 
         int Key(int i) => hub[i] >= 0 ? hub[i] : i;
 
@@ -422,18 +831,19 @@ internal sealed class TrailNetwork
             var clump = new Queue<int>();
             for (int i = 0; i < n; i++)
             {
-                if (!line[i] || hub[i] >= 0 || Degree(line, i, width, height) < 3)
+                if (!line[i] || hub[i] >= 0 || Degree(line, i, width, height, linked) < 3)
                 {
                     continue;
                 }
 
+                // Grown whole: a clump wider than 3 × 3 is a plaza, joined by its tree (D605, above).
                 hub[i] = i;
                 clump.Enqueue(i);
                 while (clump.Count > 0)
                 {
                     foreach (int other in NeighboursOf(clump.Dequeue()))
                     {
-                        if (hub[other] < 0 && Degree(line, other, width, height) >= 3)
+                        if (hub[other] < 0 && Degree(line, other, width, height, linked) >= 3)
                         {
                             hub[other] = i;
                             clump.Enqueue(other);
@@ -450,7 +860,7 @@ internal sealed class TrailNetwork
                     continue;
                 }
 
-                int degree = Degree(line, i, width, height);
+                int degree = Degree(line, i, width, height, linked);
                 if (degree == 0)
                 {
                     paths.Add(new List<int> { i });
@@ -482,7 +892,7 @@ internal sealed class TrailNetwork
                     while (true)
                     {
                         path.Add(here);
-                        if (Degree(line, here, width, height) != 2)
+                        if (Degree(line, here, width, height, linked) != 2)
                         {
                             break;
                         }
@@ -515,7 +925,7 @@ internal sealed class TrailNetwork
             // Whatever is left is loops of plain links — each started at its lowest pixel.
             for (int i = 0; i < n; i++)
             {
-                if (!line[i] || Degree(line, i, width, height) != 2 || AnyWalked(i))
+                if (!line[i] || Degree(line, i, width, height, linked) != 2 || AnyWalked(i))
                 {
                     continue;
                 }
@@ -570,7 +980,7 @@ internal sealed class TrailNetwork
             int last = loop ? path.Count : path.Count - 1;
             for (int k = 0; k < path.Count; k++)
             {
-                bool atAHub = (k == 0 || k == path.Count - 1) && hub[path[k]] >= 0;
+                bool atAHub = (k == 0 || k == path.Count - 1) && hub[path[k]] >= 0 && !plaza[path[k]];
                 placed.Add(atAHub ? HubPoint(hub[path[k]]) : PointOf(path[k]));
                 from.Add(atAHub ? -1 : path[k]);
                 graded.Add(shape[path[k]]);
@@ -670,7 +1080,7 @@ internal sealed class TrailNetwork
                 foreach ((int dx, int dy) in FourWays)
                 {
                     int nx = hx + dx, ny = hy + dy;
-                    if (!Inside(nx, ny) || nx < x0 || nx > x1 || ny < y0 || ny > y1 || blocked[(ny * width) + nx])
+                    if (!Inside(nx, ny) || nx < x0 || nx > x1 || ny < y0 || ny > y1 || blocked[(ny * width) + nx] || !linked.Step(here, dx, dy))
                     {
                         continue;
                     }
@@ -771,7 +1181,7 @@ internal sealed class TrailNetwork
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     int nx = x + dx, ny = y + dy;
-                    if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0)
+                    if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0 && linked.Touch(i, (ny * width) + nx))
                     {
                         sx += nx;
                         sy += ny;
@@ -802,7 +1212,7 @@ internal sealed class TrailNetwork
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     int nx = x + dx, ny = y + dy;
-                    if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0)
+                    if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[(ny * width) + nx] > 0 && linked.Touch(i, (ny * width) + nx))
                     {
                         sx += nx;
                         sy += ny;
@@ -842,6 +1252,7 @@ internal sealed class TrailNetwork
             float tDeltaY = stepY == 0 ? float.MaxValue : stepY / dy;
             for (int guard = 0; (x != endX || y != endY) && guard < 64; guard++)
             {
+                int fromX = x, fromY = y;
                 if (tMaxX < tMaxY)
                 {
                     x += stepX;
@@ -853,7 +1264,8 @@ internal sealed class TrailNetwork
                     tMaxY += tDeltaY;
                 }
 
-                if (TileBlocked(x, y))
+                // ⛔ A fence crossed is a building crossed (D605): the line must go round it, through the gate.
+                if (TileBlocked(x, y) || Walled(fromX, fromY, x - fromX, y - fromY))
                 {
                     return true;
                 }
@@ -868,6 +1280,12 @@ internal sealed class TrailNetwork
             return wx >= 0 && wy >= 0 && wx < width && wy < height && blocked[(wy * width) + wx];
         }
 
+        bool Walled(int x, int y, int dx, int dy)
+        {
+            int wx = x - originX, wy = y - originY;
+            return wx >= 0 && wy >= 0 && wx < width && wy < height && !linked.Step((wy * width) + wx, dx, dy);
+        }
+
         List<int> NeighboursOf(int i)
         {
             var found = new List<int>(8);
@@ -878,7 +1296,8 @@ internal sealed class TrailNetwork
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     int nx = x + dx, ny = y + dy;
-                    if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx])
+                    if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height && line[(ny * width) + nx]
+                        && linked.Touch(i, (ny * width) + nx))
                     {
                         found.Add((ny * width) + nx);
                     }

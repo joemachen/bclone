@@ -1,6 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D604 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D605 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D604: A WELL KEEPS A RING OF PUBLIC GROUND) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D605: THE PATHS, DRAWN AS WALKED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D605**, local. **Built (D605, view only):** the trail drawing sees fences, draws a plaza as
+> a tree on its worn ground instead of a star, and draws the doorsteps a lane passing by had swallowed. On Joe's three
+> newest villages: fence crossings 11 / 7 / 18 → 0 / 0 / 1; the biggest junction 15 / 17 / 9 → 4; buildings reached
+> 32 / 20 / 31 → 46 / 31 / 42. Probe `trails:` has his own square. **Unplayed** — how it LOOKS is Joe's call.
+>
+> **▶️ NEXT:** Joe plays the paths (`.\run.bat`, any village with fences and a busy middle); then commit 7 (the boat
+> sailing, the region panel).
+>
+> **(the banner below is the state at D604)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D604: A WELL KEEPS A RING OF PUBLIC GROUND) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D604**, local. Joe played D601–D603: *"homes built on top of a well - that shouldnt
 > happens. other than that, all looks good for now."* His Year-62 save showed yards wrapped round both wells (no house
@@ -7323,6 +7335,19 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D605 PAID FOR — THE CAP THAT DREW WHAT IT HID, AND A SQUARE DRAWN BY HAND
+
+- ⭐ **Measure the drawing on Joe's own ground.** The trail network runs only in the game (Godot types), so the
+  instrument was: dump a save's worn grade, footprints and walls from a sim test into a grid file, and have the game,
+  headless, build the real network on it and count faults (fence crossings, lanes at a junction, span ratio,
+  buildings reached). Both throwaways are gone; rebuild them from D605's description if the paths come back.
+- ⛔ **The obvious cure for the star — cap the junction clump at 3 × 3 — drew the mesh the giant hub was hiding**
+  (90-odd lanes, 40 junctions). Measure each piece alone before believing the bundle.
+- **A hand-drawn shape can miss the case** — the 5 × 5 packed square thinned to a small cross and its mutant scored
+  zero; the guard holds now because it carries Joe's own square with its fences.
+- **"Reached" must be judged where the lane is drawn, not where its pixel is** — a lane's points sit on the middle
+  of the worn ground, a tile off a building's wall in a packed patch.
 
 ## ⛔ THE TRAPS D604 PAID FOR — WHAT JOE CALLED A HOUSE WAS A YARD
 
