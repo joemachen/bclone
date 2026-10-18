@@ -178,9 +178,13 @@ public sealed record SimConfig
     public int GathersPerThinnedTile { get; init; }
 
     /// <summary>
-    /// How many people can work one gathering hut at once — <b>two</b> (D262, Joe).
+    /// How many people can work one gathering hut at once — <b>three</b> (Joe, D603; two from D262).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>⭐ THREE SINCE D603 (Joe):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. D262's sentence still holds — a village that wants to live on gathering
+    /// builds more huts — and one more hand a hut is his call on how much one ring carries.
+    /// </para>
     /// <para>
     /// <b>⭐⭐ ASKED FOR FOUR TIMES, AND THE FOURTH CAME WITH THE DESIGN SENTENCE THAT SETTLES IT:</b>
     /// <em>"the user must build more forests and huts to grow (if it wants to focus on gathering —
@@ -207,7 +211,7 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("gatherer_hut_capacity")]
-    public int GathererHutCapacity { get; init; } = 2;
+    public int GathererHutCapacity { get; init; } = 3;
 
     /// <summary>
     /// How many gathering huts a village founded WITH buildings starts with (D262).
@@ -497,8 +501,14 @@ public sealed record SimConfig
     /// deleted mechanic is the D56 and D148 shape, so it is named for what it does.
     /// </para>
     /// </remarks>
+    /// <para>
+    /// <b>⭐ STATED AT TWO, AND READ AT LAST (Joe, D603):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. Until D603 nothing read this number for the seats —
+    /// the row stated none, so <c>SeatsIn</c> asked <c>VillageEconomy.RequiredForesterSeats</c> (3), and the data
+    /// file's 2 and this description were both untrue. The row states it now, and the warm start's hut reads it too.
+    /// The derivation stays as the economy's estimate of the trade's appetite; a village wanting more builds a second hut.
+    /// </para>
     [JsonPropertyName("forester_hut_capacity")]
-    public int ForesterHutCapacity { get; init; } = 3;
+    public int ForesterHutCapacity { get; init; } = 2;
 
     // ---------------------------------------------------------------
     //  Firewood (D29) — the woodcutter's hut
@@ -990,8 +1000,10 @@ public sealed record SimConfig
     [JsonPropertyName("fetch_below_share_percent")]
     public int FetchBelowSharePercent { get; init; } = 50;
 
+    /// <summary>How many people work one farmhouse — <b>three</b> (Joe, D603; two before).</summary>
+    /// <remarks><i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>.</remarks>
     [JsonPropertyName("farmhouse_seats")]
-    public int FarmhouseSeats { get; init; } = 2;
+    public int FarmhouseSeats { get; init; } = 3;
 
     [JsonPropertyName("farm_store_cap")]
     public int FarmStoreCap { get; init; } = 100;
@@ -3628,8 +3640,8 @@ public sealed record SimConfig
             },
             WorkTicks = GathererHutWorkTicks,
 
-            // ⛔⛔ STATED AT TWO (D262, Joe, asked four times). See GathererHutCapacity — and note it
-            // only means anything beside D260's competing rings.
+            // ⛔⛔ STATED (D262, Joe, asked four times — two; three since D603, Joe again). See GathererHutCapacity — and
+            // note it only means anything beside D260's competing rings.
             Seats = GathererHutCapacity,
             GatheringRadius = GathererHutRingTiles,
         },
@@ -3644,8 +3656,9 @@ public sealed record SimConfig
             },
             WorkTicks = ForesterHutWorkTicks,
 
-            // ⛔ Derived from what the woodcutters can eat, plus a hand for building.
-            Seats = null,
+            // ⭐ STATED (Joe, D603): two seats. It was derived — the woodcutters' appetite plus a hand, three — and
+            // `forester_hut_capacity` sat in the data unread. See ForesterHutCapacity.
+            Seats = ForesterHutCapacity < 1 ? 1 : ForesterHutCapacity,
         },
         new BuildingRow
         {

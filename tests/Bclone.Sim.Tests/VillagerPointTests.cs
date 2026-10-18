@@ -347,8 +347,12 @@ public sealed class VillagerPointTests
         // the households' fetches land differently and the later trips with them — 52 trips, the 1st/10th/20th at
         // 7 / 192 / 493; the first ten untouched. Proven the only reason: with that one comparison put back to cost-first,
         // 51 at 7 / 192 / 499 return. Were 51 at 7 / 192 / 499.
-        Assert.Equal(52, entries);
-        Assert.Equal(new ulong[] { 7, 192, 493 }, at);
+        // ⚠️ RE-PINNED (D603), not for the clock: Joe's seat defaults (a third forager a hut, a third farmhand, the
+        // forester stated at two) put more hands at the gathering, so trips begin sooner and more often — 55 trips, the
+        // 1st/10th/20th at 7 / 119 / 313; the first untouched. Proven the only reason: the parent commit (9aea43a, D602)
+        // holds 52 at 7 / 192 / 493 with the suite green, and this is its only sim change. Were 52 at 7 / 192 / 493.
+        Assert.Equal(55, entries);
+        Assert.Equal(new ulong[] { 7, 119, 313 }, at);
     }
 
     /// <summary>

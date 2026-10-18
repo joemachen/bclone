@@ -312,7 +312,7 @@ public sealed class BuildingsCatalogTests
     /// exemption becoming a hole a modder falls into.
     /// </remarks>
     [Fact]
-    public void OnlyTheFiveTheEconomySolvesForMayLeaveACapacityUnstated()
+    public void OnlyTheStoresTheEconomySolvesForMayLeaveACapacityUnstated()
     {
         SimConfig config = VillageFixtures.Village;
         BuildingsCatalog catalog = World(config).BuildingsCatalog;
@@ -327,14 +327,14 @@ public sealed class BuildingsCatalogTests
         Assert.Equal(config.WoodcutterHutCapacity, catalog[BuildingKind.WoodcutterHut].Seats);
         Assert.Equal(config.MarketCapacity, catalog[BuildingKind.Market].Seats);
         Assert.Equal(config.FarmhouseSeats, catalog[BuildingKind.Farmhouse].Seats);
-        // ⛔⛔ THE DERIVED SET IS DOWN TO ONE BUILDING, AND IT LOST TWO IN TWO DAYS. The
-        // forager's hut states its seats since D262 and **the builder's hut since 2026-08-30**
-        // (Joe: *"one builder's hut should have 3 employees only"* — it was solving for every
-        // hand a 20-household village could spare, which came to 21). ⭐ Only the forester's hut
-        // still derives: what the woodcutters can eat, plus a hand for building.
+        // ⛔⛔ THE DERIVED SET OF SEATS IS EMPTY SINCE D603. The forager's hut states its seats since
+        // D262, **the builder's hut since 2026-08-30** (Joe: *"one builder's hut should have 3 employees
+        // only"*), and **the forester's hut since D603** (Joe: *"each forester huts only need a max of 2
+        // workers"*) — it derived three, what the woodcutters can eat plus a hand, while
+        // `forester_hut_capacity` sat in the data unread. Only stores are solved for now.
         Assert.Equal(config.GathererHutCapacity, catalog[BuildingKind.GathererHut].Seats);
         Assert.Equal(config.BuilderHutSeats, catalog[BuildingKind.BuilderHut].Seats);
-        Assert.Null(catalog[BuildingKind.ForesterHut].Seats);
+        Assert.Equal(config.ForesterHutCapacity, catalog[BuildingKind.ForesterHut].Seats);
     }
 
     /// <summary>

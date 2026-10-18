@@ -911,7 +911,8 @@ public sealed class FarmTests
 
         // Deliberately more ground than the hands can keep — the case Joe was playing, and the
         // one where an uncapped spring does the damage.
-        int painted = FarmFixtures.GiveItGround(world, farm, reach: 3);
+        // ⚠️ REACH 4 SINCE D603: three seats a farmhouse (Joe) keep 39 tiles, and reach 3 no longer over-paints them.
+        int painted = FarmFixtures.GiveItGround(world, farm, reach: 4);
         Assert.True(painted > VillageEconomy.FieldTilesOneFarmerKeeps(config) * farm.Capacity,
             "The farm was not over-painted, so this measures nothing.");
         FarmFixtures.PinAFarmhand(world, farm);

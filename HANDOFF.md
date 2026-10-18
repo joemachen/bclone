@@ -1,6 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D602 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D603 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS D601–D603, THEN THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D602: BUILDERS SPREAD ACROSS THE QUEUE) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D603: JOE'S SEAT DEFAULTS) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D603**, local. **Built (D603):** forester 2 (stated at last — its row stated none and
+> `forester_hut_capacity` sat unread), forager 3, farmhouse 3. The harness's villages end half as big again (alive
+> 1,408 → 2,155, dead valleys 23 → 22). A market-off scare on twelve seeds (324 vs 256 starved) was **seed noise on
+> thirty-six** (903 vs 865 over the same population; t ≈ 0.5) — traced death by death, nearly all with the granary
+> empty. The two market guards re-posed on the 36. **The suite is slower: 8m51 → 12m52** (bigger villages; the
+> fixture's 200-year run 24 s → 45 s at mean 10 → 15 people). 5 mutants, 6 reds.
+>
+> **▶️ NEXT:** Joe plays D601–D603 (`.\run.bat`); then the paths (walls ignored by the drawing, the star hub, the
+> wiggle, the missing short stubs to entrances); then commit 7. Say to him: the market's volume is two marketers'
+> throughput — more seats is his lever.
+>
+> **(the banner below is the state at D602)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D602: BUILDERS SPREAD ACROSS THE QUEUE) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D602**, local. **Built (D602):** each builder takes the first site nobody else serves —
 > the head first, and a site behind it only out of surplus (D102's line: the head's timber is never split). On 20
@@ -7296,6 +7311,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D603 PAID FOR — TWELVE SEEDS THAT LIED, A KEY NOBODY READ, AND A CLOCK THAT WAS THE MACHINE
+
+- ⭐ **Twelve seeds cannot carry a market-vs-none survival claim** — the per-seed spread is ~14 deaths, and four
+  failed valleys made a 27 % "gap" that thirty-six seeds erased. Before telling Joe a change costs lives, run 36
+  and give the per-seed spread; and ask first whether the dead died beside food (distribution) or with the granary
+  empty (production) — the answer changes what the change could possibly have done.
+- **A config key with a confident doc can be dead.** `forester_hut_capacity` claimed to size the hut; the row stated
+  nothing and `SeatsIn` derived 3. When Joe names a number, find where the game reads it, not where it is written.
+- **Read the suite clock on a quiet machine before believing it** — 18m15 with the machine busy, 12m52 quiet. Time
+  both builds with `--logger "console;verbosity=normal"` and diff per test (`scratchpad/suite_diff.py`); its minute
+  regex once missed `[2 m]`, which made one test look new.
 
 ## ⛔ THE TRAPS D602 PAID FOR — A RULE THAT UNDID THE NEW ONE, AND A SURVIVAL BAR ON ONE SEED
 

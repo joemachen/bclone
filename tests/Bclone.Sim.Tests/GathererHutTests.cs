@@ -149,7 +149,8 @@ public sealed class GathererHutTests
         Assert.True(recipe.WorkTicks > 0, "A hut that owes no work is an instant hut.");
     }
 
-    /// <summary>⛔ It seats two, and a bigger ring does not buy a third (D262, Joe).</summary>
+    /// <summary>⛔ It seats what it states — three since D603, two from D262 (Joe both times) — and a bigger ring buys
+    /// no more.</summary>
     /// <remarks>
     /// <b>⭐⭐ THIS GUARD USED TO ASSERT THE OPPOSITE, AND THE REVERSAL IS THE POINT.</b> It was
     /// <c>ItsSeatsAreItsRingPricedInWorkers</c>, with an anti-vacuity arm proving *a wider ring is
@@ -160,7 +161,7 @@ public sealed class GathererHutTests
     /// with reach is exactly how one hut carries a whole game.
     /// </remarks>
     [Fact]
-    public void ItSeatsTwoHoweverBigItsRingIs()
+    public void ItSeatsWhatItStatesHoweverBigItsRingIs()
     {
         SimConfig config = Config;
         SimWorld world = Loop(config).World;
@@ -178,7 +179,9 @@ public sealed class GathererHutTests
             + $"ring {wider.GathererHutRingTiles} → {widerHut.Capacity} seats");
 
         Assert.Equal(hut.Capacity, widerHut.Capacity);
-        Assert.Equal(config.MarketCapacity, hut.Capacity);
+
+        // Joe's number, D603: *"each forager hut should have a max of 3 workers"* (it matched the market's two until then).
+        Assert.Equal(3, hut.Capacity);
     }
 
     /// <summary>A gatherer's hut is a forager's workplace — the job kind is reused, not added to.</summary>

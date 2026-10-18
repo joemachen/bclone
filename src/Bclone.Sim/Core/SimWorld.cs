@@ -10384,12 +10384,9 @@ public sealed partial class SimWorld : IObstacles
             return stated;
         }
 
-        return kind switch
-        {
-            BuildingKind.ForesterHut => VillageEconomy.RequiredForesterSeats(Config),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That workplace states no seats and the economy derives none."),
-        };
+        // ⚠️ The forester's arm went at D603 (its row states its seats now): every workplace row states them.
+        throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That workplace states no seats and the economy derives none.");
     }
 
     /// <summary>
@@ -11541,7 +11538,7 @@ public sealed partial class SimWorld : IObstacles
             // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
             // forester does not compete for gathered food.
             Position = Point.CentreOf(WhereTheTreesAre(BuildingKind.ForesterHut, origin, config)!.Value),
-            Capacity = VillageEconomy.RequiredForesterSeats(config),
+            Capacity = config.ForesterHutCapacity,
         };
 
         StandingChanged();

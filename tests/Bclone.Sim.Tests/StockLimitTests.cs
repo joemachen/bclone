@@ -385,7 +385,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D572) — the switch is the permission (Joe, D572: *"if nomads are on, that is the permission"*): a band that knocks settles that tick, so this village gains a family in Year 8–12 and the waiting band is no longer hashed (0x6F retired). ⭐ PROVEN TO BE THE ONLY REASON: with `nomads_first_year_floor` 0 in the fixture and the shipped file, every one of these reads its pre-D565 value — the sim with no nomads at all is byte for byte what it was before D565, across D565–D572. Was 12236070833949449948.
     // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 18077535368486915593.
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 15494584510038838764.
-    private const ulong FixtureFiftyYearHash = 11303534331429093217UL;
+    // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 11303534331429093217.
+    private const ulong FixtureFiftyYearHash = 13986730816975584371UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -502,7 +503,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D572) — the switch is the permission (Joe, D572: *"if nomads are on, that is the permission"*): a band that knocks settles that tick, so this village gains a family in Year 8–12 and the waiting band is no longer hashed (0x6F retired). ⭐ PROVEN TO BE THE ONLY REASON: with `nomads_first_year_floor` 0 in the fixture and the shipped file, every one of these reads its pre-D565 value — the sim with no nomads at all is byte for byte what it was before D565, across D565–D572. Was 9641066101567809358.
     // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 10848813117593108683.
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 17115696696510155642.
-    private const ulong ShippedFiftyYearHash = 1409568693810175691UL;
+    // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 1409568693810175691.
+    private const ulong ShippedFiftyYearHash = 6485759654357553653UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

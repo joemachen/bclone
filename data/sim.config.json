@@ -554,14 +554,11 @@
   // clearing it (cut_ticks covers a tree, a rock and a seam alike), so destroying is never a
   // faster way to spend a seam than digging it.
   "destroy_ticks_per_tile": 4,
-  // DERIVED (VillageEconomy.RequiredForesterSeats), not picked. 3 -> 6.
-  // Enough hands to keep the woodcutters in logs and still leave one for
-  // building - the "+1" in the derivation is what stops the village
-  // heating itself and never growing.
-  //
-  // It sizes the FORESTER'S HUT, and was called tree_stand_capacity until
-  // D159 - the same question wearing the name of a mechanic that step C
-  // deleted. Renamed for what it does.
+  // How many work one FORESTER'S HUT. STATED (Joe, D603): "each forester
+  // huts only need a max of 2 workers". Until D603 nothing read this - the
+  // seats were derived (VillageEconomy.RequiredForesterSeats, 3) - so this
+  // 2 was a number on paper. A village that wants more builds a second hut.
+  // (Called tree_stand_capacity until D159.)
   "forester_hut_capacity": 2,
 
   // A home has to be built, out of LOGS. Wood is two resources now
@@ -633,6 +630,10 @@
   // work_ground_tiles_per_worker rather than inventing a second number
   // that could drift from it.
   "gatherer_hut_ring_tiles": 8,
+
+  // How many work one forager's hut: THREE (Joe, D603: "each forager hut
+  // should have a max of 3 workers"; two since D262).
+  "gatherer_hut_capacity": 3,
 
   // What it costs. A real price, unlike the pile and the builder's hut
   // -- neither of those can be charged, because nothing can be built
@@ -734,7 +735,8 @@
   // seat reads as broken rather than as small. How many pairs of
   // hands fit in a steading is a fact about the world; what they
   // produce is what gets derived.
-  "farmhouse_seats": 2,
+  // THREE (Joe, D603: "each farmhouse should have a max of 3 workers").
+  "farmhouse_seats": 3,
 
   "farm_store_cap": 100,
 
