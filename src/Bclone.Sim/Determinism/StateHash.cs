@@ -1217,6 +1217,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)villager.BatchesThisStint);
         }
 
+        // The site a builder serves (D602) — it decides where the next builder goes. Sparse and tagged like the stints.
+        if (villager.ServingSiteId != 0)
+        {
+            hash = MixUInt32(hash, 7u);
+            hash = MixUInt32(hash, (uint)villager.ServingSiteId);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

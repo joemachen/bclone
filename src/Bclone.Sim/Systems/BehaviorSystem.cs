@@ -1499,10 +1499,15 @@ public sealed partial class BehaviorSystem : ISimSystem
             // A builder with nothing marked out. Not idle — they fall through to the spare
             // errands at the bottom of Decide, like the woodcutter with an empty yard.
             villager.WorkNote = "Nothing is marked out to build.";
+            villager.ServingSiteId = 0;
             return false;
         }
 
         ConstructionSite site = standing.Construction!;
+
+        // ⭐ THE SITE THIS BUILDER SERVES (Joe, D602): the first in queue order nobody else is on, paid for out of surplus
+        // only — or the head's answer when every site has somebody (`SimWorld.NextSiteToServe(Villager)`).
+        Workplace? mine = world.NextSiteToServe(villager);
 
         // ⭐ NOTHING IS BUILT ON GROUND THAT IS STILL STANDING (Joe, D101). The trees under a
         // marked site come down first, and the mark is what asked for them (D100).
@@ -1541,21 +1546,28 @@ public sealed partial class BehaviorSystem : ISimSystem
         // standing at **t150 to t394**, past a winter that starts at t360. Painted ground has
         // somebody coming for it; unpainted ground has nobody, for ever.
         // ⭐ EVERY TILE OF IT (B5, D497): the far half of a house is ground it stands on too.
-        if (!world.FootprintIsClear(standing))
+        // ⚠️ D602: a head whose ground another builder is already clearing is left to them while there is another site to
+        // serve; and a head whose ground the laborers are clearing no longer idles a builder who has one.
+        if (!world.FootprintIsClear(standing) && (mine is null || !world.SitesOtherBuildersServe(villager).Contains(standing.Id)))
         {
-            if (FirstUnpaintedStandingUnder(world, standing) is not GridPos ground)
+            if (FirstUnpaintedStandingUnder(world, standing) is GridPos ground)
+            {
+                villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
+                villager.ErrandX = ground.X;
+                villager.ErrandY = ground.Y;
+                villager.ServingSiteId = standing.Id;
+                HeadFor(world, villager, ground, VillagerState.Clearing);
+                return true;
+            }
+
+            if (mine is null)
             {
                 villager.WorkNote =
                     $"{site.Name} cannot be started yet — the ground it stands on is still being "
                     + "cleared.";
+                villager.ServingSiteId = 0;
                 return false;
             }
-
-            villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
-            villager.ErrandX = ground.X;
-            villager.ErrandY = ground.Y;
-            HeadFor(world, villager, ground, VillagerState.Clearing);
-            return true;
         }
 
         // ⭐⭐ AND FROM HERE ON, THE SITE THEY SERVE IS THE FIRST ONE THEY CAN ACTUALLY MOVE
@@ -1563,9 +1575,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         // refusal on everything — `NextSiteToServe` walks the same queue order — but a head
         // waiting on stone the village has not got no longer holds up the houses behind it.
         // See `SimWorld.NextSiteToServe` for the founding this killed before it existed.
-        if (world.NextSiteToServe() is Workplace servable && servable.Id != standing.Id)
+        if (mine is not null && mine.Id != standing.Id)
         {
-            standing = servable;
+            standing = mine;
             site = standing.Construction!;
         }
 
@@ -1573,9 +1585,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         // builder — one carrying a load takes it where it was fetched for. It moves no timber, so
         // the queue above still decides where materials go; and it is the work the quota keeps a
         // hand for when half the spare hands rounds to nobody (`SimWorld.BegunSiteWithWhatItNeeds`).
+        // ⚠️ D602: unless another builder is already finishing it — then this one goes to their own site, or the second
+        // builder of a two-site village spent its whole life helping the first finish.
         if (!site.HasMaterials
             && !CarryingSomethingFor(site, villager)
-            && world.BegunSiteWithWhatItNeeds() is Workplace begun)
+            && world.BegunSiteWithWhatItNeeds() is Workplace begun
+            && !world.SitesOtherBuildersServe(villager).Contains(begun.Id))
         {
             standing = begun;
             site = standing.Construction!;
@@ -1589,6 +1604,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (site.HasMaterials || CarryingSomethingFor(site, villager))
         {
             villager.WorkNote = string.Empty;
+            villager.ServingSiteId = standing.Id;
             HeadFor(world, villager, standing.Tile, VillagerState.Building);
             return true;
         }
@@ -1629,6 +1645,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"{site.Name} is waiting on {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
                     + $"nobody has, so {ready.Construction!.Name} is getting the day instead.";
+                villager.ServingSiteId = ready.Id;
                 HeadFor(world, villager, ready.Tile, VillagerState.Building);
                 return true;
             }
@@ -1637,6 +1654,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 $"Nothing to build with — {site.Name} still wants "
                 + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)}, "
                 + "and nowhere within reach has any.";
+            villager.ServingSiteId = 0;
 
             // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
             // there — Joe's rule: *"if there are no materials available, the builder should
@@ -1653,6 +1671,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         villager.WorkNote = string.Empty;
+        villager.ServingSiteId = standing.Id;
         HeadFor(world, villager, warehouse.Tile, VillagerState.FetchingMaterials);
         return true;
     }
@@ -1703,7 +1722,11 @@ public sealed partial class BehaviorSystem : ISimSystem
         // `NextToBuild` — the head — which stopped being the site they were walking for the
         // moment a head could be stuck on a material nobody has. Two orderings over one list is
         // D157's shape for half the bugs here; there is one.
-        ConstructionSite? site = world.NextSiteToServe()?.Construction;
+        // ⭐ AND SINCE D602, THE SITE THEY SET OUT FOR: other builders' choices move the queue's answer under them, so a
+        // fresh ask could load for a site somebody else is serving. Re-asked only if that site has gone.
+        ConstructionSite? site = world.FindWorkplace(villager.ServingSiteId)?.Construction is { IsFinished: false } set
+            ? set
+            : world.NextSiteToServe(villager)?.Construction;
 
         if (site is null)
         {

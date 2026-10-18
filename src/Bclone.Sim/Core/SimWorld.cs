@@ -9333,6 +9333,113 @@ public sealed partial class SimWorld : IObstacles
     }
 
     /// <summary>
+    /// ⭐ The site <b>this</b> builder should serve: the first in queue order that no other builder is serving (Joe, D602)
+    /// — or, when every site a builder could serve already has one, <see cref="NextSiteToServe()"/>'s answer, the head
+    /// first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, on his Year-70 village: <i>"despite having 3 builders, it takes a long time (months!) for a builder to start
+    /// building after a building blueprint/ghost is placed."</i> Every builder served the head, so nine sites went up one
+    /// at a time — the last 415 ticks after it was marked — with the timber for all of them in store.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ D102'S LINE HOLDS: SCARCE MATERIALS STILL GO WHERE THE QUEUE POINTS.</b> A site behind others is served only
+    /// when the stores hold what every reachable site ahead of it still owes of the good it next wants — their whole
+    /// recipes, not an armful — and its own share on top. So spreading spends surplus only: timber for one house raises
+    /// the first, as it always did.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Not an index, and it need not be one:</b> the served set is gathered from the villagers each time a builder
+    /// decides — a handful of builders over a handful of sites, never per tick or per frame
+    /// (`multi-material-construction.md §4.1`).
+    /// </para>
+    /// </remarks>
+    public Workplace? NextSiteToServe(Villager builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        HashSet<int> served = SitesOtherBuildersServe(builder);
+        List<Workplace> queue = BuildQueue();
+        GridPos village = FirstHomeOrFoundingSite();
+        int[] owedAhead = new int[builder.Carried.Slots];
+        bool behind = false;
+        for (int i = 0; i < queue.Count; i++)
+        {
+            Workplace candidate = queue[i];
+            ConstructionSite plan = candidate.Construction!;
+            if (!FootprintIsClear(candidate) || !TravelCost.CanReach(village, candidate.Tile))
+            {
+                continue;
+            }
+
+            // The head is D213's: anything of what it wants in store will do. Behind it, the surplus over what the sites
+            // ahead still owe must pay this site's own share of that good — a site half-paid with the last spare log only
+            // sits there while its builder doubles back.
+            Goods? wanted = plan.NextMaterialWanted();
+            bool affordable = wanted is not Goods good
+                || (behind
+                    ? HeldForBuilding(good) >= owedAhead[(int)good] + plan.StillNeeded(good)
+                    : HeldForBuilding(good) > 0);
+            if (affordable && !served.Contains(candidate.Id))
+            {
+                return candidate;
+            }
+
+            behind = true;
+            for (int g = 0; g < owedAhead.Length; g++)
+            {
+                owedAhead[g] += plan.StillNeeded((Goods)g);
+            }
+        }
+
+        return NextSiteToServe();
+    }
+
+    /// <summary>
+    /// The sites builders other than this one are serving (D602) — counted only while alive and seated at a builder's hut,
+    /// so a stale id on somebody who has changed trade holds nothing. The one place that says it.
+    /// </summary>
+    public HashSet<int> SitesOtherBuildersServe(Villager builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        var huts = new List<int>();
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == JobKind.Builder && !Workplaces[i].IsSite)
+            {
+                huts.Add(Workplaces[i].Id);
+            }
+        }
+
+        var served = new HashSet<int>();
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager other = Villagers[i];
+            if (other.Alive && other.Id != builder.Id && other.ServingSiteId != 0 && huts.Contains(other.WorkplaceId))
+            {
+                served.Add(other.ServingSiteId);
+            }
+        }
+
+        return served;
+    }
+
+    /// <summary>How much of a good the stores a builder fetches from hold between them (D602).</summary>
+    private int HeldForBuilding(Goods goods)
+    {
+        int held = 0;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Gives(goods))
+            {
+                held += StoreBuildings[i].Store[goods];
+            }
+        }
+
+        return held;
+    }
+
+    /// <summary>
     /// The first site, in queue order, that is paid for and already begun — work owed and
     /// nothing else (D453).
     /// </summary>

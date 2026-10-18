@@ -357,7 +357,7 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
-            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick",
+            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]

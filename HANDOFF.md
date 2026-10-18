@@ -1,6 +1,20 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D601 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE BUILDERS, THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D602 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D601: THE MARKET STOCKS ITS EMPTIEST SHELF FIRST) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D602: BUILDERS SPREAD ACROSS THE QUEUE) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D602**, local. **Built (D602):** each builder takes the first site nobody else serves —
+> the head first, and a site behind it only out of surplus (D102's line: the head's timber is never split). On 20
+> established valleys the sites wait 30 % less (alive 227 → 236); the harness and the market-off fixture read level.
+> Two guards re-posed (the queue race with one builder; the market-off bar, on a 12-seed measurement), six goldens
+> re-taken. 7 mutants, 18 reds, one zero written down.
+>
+> **▶️ NEXT — Joe's remaining calls:** (3) **seat defaults** forester 2 / forager 3 / farmhouse 3 — goldens move;
+> measure on the harness AND established valleys, re-take once; (4) the paths; (5) commit 7. **Joe has not played
+> D601 or D602.** Say to him: the market's volume is two marketers' throughput — more seats is his lever.
+>
+> **(the banner below is the state at D601)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D601: THE MARKET STOCKS ITS EMPTIEST SHELF FIRST) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D601**, local. **Built (D601):** the marketer carries the good furthest below its counter
 > limit as a share, ties to the nearest store (Joe's call). On his save the shelf goes from firewood 647 · fish 90 to
@@ -7282,6 +7296,19 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D602 PAID FOR — A RULE THAT UNDID THE NEW ONE, AND A SURVIVAL BAR ON ONE SEED
+
+- ⭐ **An older rule can silently cancel a new one.** The spread worked in the planner and did nothing in the valley:
+  D453's *finish what's begun first* sent every empty-handed builder back to the paid-for head. Trace the villager,
+  not the planner — `ServingSiteId` per tick showed it in one screen.
+- **`TheVillageSurvivesWithTheMarketSwitchedOff` is one valley over 150 years, and its ratio is a knife edge** — the
+  quarter bar failed 3 of 12 seeds on D601. When it goes red, measure the twelve seeds on both builds before
+  touching the code or the bar (worktrees: `git worktree add --detach <scratch>/wt HEAD`, apply the diff to a second).
+- **Never build in the main tree while the harness runs** — it builds once and runs `--no-build`; measure in a
+  worktree instead. And `python -` in a command waits on stdin until the timeout.
+- **A race guard posed with materials to spare stops meaning "the queue decides"** once builders spread: pose the
+  race for hands (one seat) or for scarce materials, not for both sites at once.
 
 ## ⛔ THE TRAPS D601 PAID FOR — A HARNESS THAT COULD NOT SEE, AND THREE GUARDS THAT LOOKED A TICK LATE
 
