@@ -205,6 +205,14 @@ so the brush moved a fence for free. Now:
   day* (the house's own two tiles always), and stores it on the household. A yard tile the paint had
   not reached is outside the fence for good, even painted the day after; a fenced tile stays fenced
   when its paint goes.
+- ⛔ **A well keeps a ring of public ground (D604).** Joe: *"homes built on top of a well - that
+  shouldnt happens."* The clip took what stood on a tile and nothing round it, so a yard laid by a well
+  wrapped it on three sides — both wells in his Year-62 village, the fence down the well's sides and
+  under it. Now no yard tile and no house tile may be a well's or one of the eight round it
+  (`SimWorld.BesideAWell`): the yard clips them (counted as `clipped` in the score, §3.3, so the
+  chooser and the fence agree) and a house standing on one does not fit. Fences already built are not
+  moved (the rule above); only houses marked from now on keep the ring. Guarded by
+  `OrganicHousingTests.NoYardIsFencedRoundAWell`.
 - **The fence is on the recipe.** `fence_logs_per_tile` (1) × yard tiles is added to the house's
   logs (`HomeRecipeWithFence`), hauled and worked by the builders like the rest; the site is named
   for it — *"a house and 4 tiles of fence"* — and the marking line prices it. The founders' fences

@@ -8400,6 +8400,7 @@ public sealed partial class SimWorld : IObstacles
                     && Map.TerrainAt(tile) != Terrain.Water
                     && Zones.IsResidential(tile)
                     && !SomethingStandsAt(tile)
+                    && !BesideAWell(tile)
                     && Zones.PlotOwner(tile) == 0
                     && !Zones.IsLane(tile)))
             {
@@ -8408,6 +8409,35 @@ public sealed partial class SimWorld : IObstacles
         }
 
         return fenced;
+    }
+
+    /// <summary>
+    /// Whether a tile is a well's or one of the eight round it — <b>a well keeps a ring of public ground</b> (Joe, D604:
+    /// <i>"homes built on top of a well - that shouldnt happens"</i>; `organic-housing.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// The yard clip took what stood on a tile and nothing round it, so a yard laid by a well wrapped it on three sides —
+    /// both wells in Joe's Year-62 village, the fence down the well's sides and under it. A handful of wells, nine
+    /// `Covers` each (the fast path, D329): cheap enough for the chooser, which asks this of every candidate's yard.
+    /// </remarks>
+    internal bool BesideAWell(GridPos tile)
+    {
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            Footprint well = Wells[i].Footprint;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (well.Covers(new GridPos(tile.X + dx, tile.Y + dy)))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

@@ -603,6 +603,7 @@ public sealed class Household
                 || TerrainRules.IsSeam(world.Map.TerrainAt(tile))
                 || !world.Zones.WholeResidentialTiles.Contains(tile)
                 || world.SomethingStandsAt(tile)
+                || world.BesideAWell(tile)
                 || world.Zones.PlotOwner(tile) != 0
                 || world.Zones.IsLane(tile))
             {
@@ -645,7 +646,8 @@ public sealed class Household
             if (!world.Map.Contains(tile)
                 || world.Map.TerrainAt(tile) == Terrain.Water
                 || !world.Zones.IsResidential(tile)
-                || world.SomethingStandsAt(tile))
+                || world.SomethingStandsAt(tile)
+                || world.BesideAWell(tile))
             {
                 clipped++;
             }

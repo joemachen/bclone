@@ -1,6 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D603 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS D601–D603, THEN THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D604 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D603: JOE'S SEAT DEFAULTS) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D604: A WELL KEEPS A RING OF PUBLIC GROUND) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D604**, local. Joe played D601–D603: *"homes built on top of a well - that shouldnt
+> happens. other than that, all looks good for now."* His Year-62 save showed yards wrapped round both wells (no house
+> on one). **Built (D604):** no yard tile and no house tile within one of a well (`SimWorld.BesideAWell`); his two
+> existing yards stay (built fences never move). No golden moved. 4 mutants, 3 reds, one zero written down.
+>
+> **▶️ NEXT:** the paths (walls ignored by the drawing, the star hub, the wiggle, the missing short stubs to entrances),
+> then commit 7.
+>
+> **(the banner below is the state at D603)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D603: JOE'S SEAT DEFAULTS) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D603**, local. **Built (D603):** forester 2 (stated at last — its row stated none and
 > `forester_hut_capacity` sat unread), forager 3, farmhouse 3. The harness's villages end half as big again (alive
@@ -7311,6 +7323,15 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D604 PAID FOR — WHAT JOE CALLED A HOUSE WAS A YARD
+
+- ⭐ **"A home on a well" was a yard round one.** Footprints said nothing overlapped; zooming into his screenshot
+  and printing the plot owners tile by tile round each well showed the U of fence. When the footprints say "clean",
+  map the plots and the walls before telling Joe it can't happen.
+- **A house's own tiles are always inside its fence**, so a clip on the yard alone cannot keep anything clear of a
+  house — the house check has to refuse it too, and a guard on the chooser's outcome may never exercise that check
+  (W2 scored zero until it was asked of the plot directly).
 
 ## ⛔ THE TRAPS D603 PAID FOR — TWELVE SEEDS THAT LIED, A KEY NOBODY READ, AND A CLOCK THAT WAS THE MACHINE
 
