@@ -343,8 +343,12 @@ public sealed class VillagerPointTests
         // (`armful-and-meals.md`), so the founders stop to eat and fetch less often and the later trips
         // land differently — still 51 trips, the 1st/10th/20th at 7 / 192 / 499; the first unchanged.
         // Proven the only reason: the parent commit (f3decb0) holds 7 / 213 / 489. Were 7 / 213 / 489.
-        Assert.Equal(51, entries);
-        Assert.Equal(new ulong[] { 7, 192, 499 }, at);
+        // ⚠️ RE-PINNED (D601), not for the clock: the market stocks its emptiest shelf first, so the marketer's loads and
+        // the households' fetches land differently and the later trips with them — 52 trips, the 1st/10th/20th at
+        // 7 / 192 / 493; the first ten untouched. Proven the only reason: with that one comparison put back to cost-first,
+        // 51 at 7 / 192 / 499 return. Were 51 at 7 / 192 / 499.
+        Assert.Equal(52, entries);
+        Assert.Equal(new ulong[] { 7, 192, 493 }, at);
     }
 
     /// <summary>

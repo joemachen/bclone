@@ -383,6 +383,22 @@ public sealed class FoodLimitTests
                 }
             }
 
+            // ⚠️ THE NOTE OF A DECISION TAKEN UNDER THE LIMIT, READ ON THE TICK THE SPELL ENDED TOO (D601). A forager's
+            // note is written when they decide, at the start of the step; the households' fetches in the same step can take
+            // the stores back under the limit before this loop looks. Traced at D601: a forager decided under 139 held
+            // ("you asked the village to keep 100 forage and it has 139 stored") in the step a fetch took it to 86 — read
+            // only on met ticks, two years of the market's new rule never once showed the sentence that was there.
+            if (wasMet && !met)
+            {
+                foreach (Villager v in world.Villagers)
+                {
+                    if (v.Alive && KindOf(world, v) == JobKind.Forager && v.WorkNote.Contains("asked the village to keep", StringComparison.Ordinal))
+                    {
+                        note = v.WorkNote;
+                    }
+                }
+            }
+
             wasMet = met;
             if (!met)
             {

@@ -150,14 +150,32 @@ public sealed class HerdsmanTests
         SimWorld world = loop.World;
         Villager herdsman = PinAHerdsman(world);
 
+        // ⚠️ His household's larder kept at its target through the autumn, so his last days of it are the herd's (D601).
+        // The market's emptiest-shelf rule left the household 82 food on the pose's day instead of 175 — under half its
+        // target (`fetch_below_share_percent`) — and he spent the five days shopping across the valley; winter came with
+        // nothing out. That is the household's errand beating the herd's, which this guard does not ask about. Filling the
+        // larder on the pose's day alone was too late: he had set out the day before.
+        Household home = world.HouseholdOf(herdsman);
+        void KeepHisLarderFull()
+        {
+            home.Stockpile.Receive(Goods.Produce, Math.Max(0, world.TargetFoodFor(home) - world.FoodIn(home.Stockpile)));
+            home.ToppingUpFood = false;
+        }
+
         // Five days before winter, when he starts carrying hay out (`hay_feed_ahead_days`): six head, the winter's hay in.
         StepToTheStartOf(loop, Season.Fall);
-        loop.Step(world.Config.TicksPerDay * (world.Config.DaysPerSeason - world.Config.HayFeedAheadDays - 1));
+        for (int t = 0; t < world.Config.TicksPerDay * (world.Config.DaysPerSeason - world.Config.HayFeedAheadDays - 1); t++)
+        {
+            KeepHisLarderFull();
+            loop.StepOnce();
+        }
+
         StoreBuilding store = world.BarnStoreOf(barn)!;
         store.Store.TakeAll(Goods.Hay);
         store.Store.Receive(Goods.Hay, world.WinterHayWanted(barn));
         barn.HerdHead = 6;
         barn.HayPutOut = 0;
+        KeepHisLarderFull();
         StepToTheStartOf(loop, Season.Winter);
         int head = barn.HerdHead;
         Assert.True(head < world.PastureFor(barn), "the pose is at its pasture — a cull could hide a starved beast");

@@ -1,6 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D600 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES BEGUN) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE MARKET, THE BUILDERS, THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D601 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: THE BUILDERS, THE SEATS (GOLDENS MOVE), THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D600: JOE'S PLAY NOTES — THE FENCE BY BUILDERS, THE COLD FORGE) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-17 (D601: THE MARKET STOCKS ITS EMPTIEST SHELF FIRST) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D601**, local. **Built (D601):** the marketer carries the good furthest below its counter
+> limit as a share, ties to the nearest store (Joe's call). On his save the shelf goes from firewood 647 · fish 90 to
+> firewood 234 · fish 28 · meat 18 · forage 14 — spread, not fuller: **two marketers carry what two can; more seats is
+> his lever** (said to him). Survival neutral on 20 established valleys and 20 fixture seeds; seven goldens and the walk
+> pin re-taken with proof; three guards re-posed after tracing each (see D601). 5 mutants, 5 reds.
+>
+> **▶️ NEXT — Joe's remaining calls (asked 2026-10-17):** (2) **builders spread across queued sites** in queue order —
+> `SimWorld.NextSiteToServe` / `NextToBuild` and `BehaviorSystem.WorkTheSite`; D102's *materials go to the head* must
+> survive it; (3) **seat defaults** forester 2 / forager 3 / farmhouse 3 — goldens move, measure, re-take once; (4) the
+> paths; (5) commit 7. ⚠️ **Measure (2) and (3) with the harness AND an established valley** — see D601's trap.
+>
+> **(the banner below is the state at D600)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D600: JOE'S PLAY NOTES — THE FENCE BY BUILDERS, THE COLD FORGE) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D600**, local. Joe played the fence (*"the process goes pretty well"*) and sent a long list.
 > Investigated on a copy of his newest autosave (willowdale-dove-flint-67, Year 70; `scratchpad/joesaves`, trace
@@ -7267,6 +7282,22 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D601 PAID FOR — A HARNESS THAT COULD NOT SEE, AND THREE GUARDS THAT LOOKED A TICK LATE
+
+- ⭐ **The 200-valley harness never places a market** — every unattended founding runs without one, so a market rule
+  came out byte-identical across all 200 runs. *Byte-identical is not "neutral", it is "not measured".* Before
+  trusting the harness on a change, ask whether its villages ever reach the code; for the market, measure on
+  `ShippedConfig.Established()` and `VillageFixtures.Village` (both start with one).
+- **A guard that reads a villager's note must read it on the tick the decision was taken** — the note is written at
+  the start of the step, and that same step's fetches can change the very condition the guard filters on.
+- **"A site on this tile" is not "never built"** — a standing building ages into a repair site on the same tile.
+  Watch the raise site (`Repairing: false`), and when a guard fails late in a long run, trace whether the village is
+  even alive (the seam fixture's eight starved; the failing line said only *"wants 10 logs"*).
+- **A pinned worker's household errands are part of his day** — a herdsman whose larder sits under half goes shopping
+  in the herd's prep window. If a guard is about the trade, pose the household's larder; don't loosen the claim.
+- **A stepped pose cannot say where a villager will stand when they decide** (they rest or eat first and choose from
+  home) — K1 scored zero twice that way. Ask the planner directly from a posed spot.
 
 ## ⛔ THE TRAPS D600 PAID FOR — A LIMIT SET WHEN SMALL, AND A SENTENCE THAT BLAMED THE WINTER
 

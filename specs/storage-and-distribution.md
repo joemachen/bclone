@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT (D422), all three rules on Joe's call — PLAYED AND MERGED (D425)** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.16, the emptiest shelf first (Joe, 2026-10-17), BUILT (D601)** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT (D422), all three rules on Joe's call — PLAYED AND MERGED (D425)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -1036,6 +1036,35 @@ behavioural evidence.
   food trips, the logs are not split before winter, and the founding freezes. The same rule
   alone flips `AFarmWithAutumnToSpareTriesOneMoreFieldAndStepsBackIfItRots` (the farmer's autumn
   fills with fetches). **Joe: *"ship all three parts"*** — the every-source loss accepted with the reason above.
+
+### 14.16 ✅ THE EMPTIEST SHELF FIRST — Joe's call, 2026-10-17 (D601), built
+
+> Joe, playing D599: *"the market can barely keep anything in it - is that because we dont ahve enough market worker
+> slots available?"*
+
+**What was wrong, found on a copy of his Year-70 autosave (D600):** the marketer chose each load **cost-first** — of
+every good the counter was short of, the one in the nearest store. *Short* is "below its counter limit", and his
+limits were all 2,700 (the derived 100 a household), so every good was short all the time and **the nearest good won
+every trip**: the market held 545 of his 620 firewood and **no meat**. Seats were not the cause — two marketers carried
+all year; they carried the wrong thing.
+
+**The rule (Joe: *"Emptiest shelf first"*):** of the goods the counter is short of, the marketer carries the one
+**furthest below its counter limit, as a share of that limit** (`held × 1000 / limit`, integer — a per-mille share, so
+a shelf of 40 under a limit of 100 and one of 400 under 1,000 tie); **ties go to the nearest store** (the old rule, now
+the tie-break). One comparison in `OfferMarketRestock`; what may be carried, from where, and how much are unchanged.
+
+**What it did to his village (his save, one year on, the same seats):** the year's average shelf went from firewood
+647 · fish 90 to firewood 234 · fish 28 · meat 18 · forage 14 · wheat 1. The **volume** did not rise: two marketers
+move what two marketers can, and now spread it across the goods. A fuller market is a seat question, put to Joe.
+
+**Measured (survival, as a reshuffle, not a cure):** 20 established valleys × 30 years, old → new: alive 224 → 227,
+starved 178 → 173, cold 0 → 0, dead valleys 1 → 1; household fetch-ticks 78,316 → 79,079.
+The small fixture village (`VillageFixtures.Village`, 20 seeds × 30 years), old → new: alive 123 → 124, starved 167 → 167, cold 3 → 3, dead valleys 2 → 3 (seed 3: one lone survivor → none). ⚠️ **The 200-valley harness (`tools/harness/arms.sh`) cannot see this rule**: an unattended founding never places a market, and all 200 runs came out byte-identical to the baseline (alive 1,425, dead valleys 25) — measure a market change on a valley that starts with one.
+
+**Guarded by** `MarketRestockTests.TheMarketerStocksTheEmptiestShelfFirst` — meat's shelf three-quarters full in the
+granary beside the marketer, firewood's empty in the farther warehouse: the next load is firewood. ⚠️ Asked of
+`PlanMarketErrand` directly from a posed spot: a stepped pose could not say where the marketer would stand when they
+chose (they rest or eat first and choose from home), and its red check scored zero twice.
 
 ## 13. What actually happened (measured after building it, 2026-07-27)
 

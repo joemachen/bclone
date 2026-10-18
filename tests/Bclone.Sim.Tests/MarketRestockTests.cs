@@ -35,6 +35,47 @@ public sealed class MarketRestockTests
     private static StoreBuilding TheMarket(SimWorld world) =>
         world.StoreBuildings.Single(s => s.Kind == StoreKind.Market);
 
+    /// <summary>
+    /// ⭐ <b>The emptiest shelf first</b> (Joe, D601): meat's shelf three-quarters full and in the granary beside the
+    /// marketer, firewood's empty and in the farther warehouse — the marketer's next load is firewood. Cost-first carried
+    /// the nearer good every trip: Joe's market held 545 of his 620 firewood and no meat.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Asked of the planner directly, from a posed spot: a stepped pose could not say where the marketer would be
+    /// standing when they chose — they rest or eat first and choose from home — and its red check scored zero twice.
+    /// </remarks>
+    [Fact]
+    public void TheMarketerStocksTheEmptiestShelfFirst()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        StoreBuilding market = TheMarket(world);
+        StoreBuilding granary = world.StoreBuildings.Single(s => s.Kind == StoreKind.Granary);
+        StoreBuilding warehouse = world.StoreBuildings.Single(s => s.Kind == StoreKind.Warehouse);
+        granary.Put(Goods.Meat, 200);
+        warehouse.Put(Goods.Firewood, 200);
+        world.SetMarketLimit(market, Goods.Meat, 1000);
+        world.SetMarketLimit(market, Goods.Firewood, 1000);
+        Assert.Equal(750, market.Put(Goods.Meat, 750));
+
+        // Every other shelf full to its limit, so only these two are short.
+        foreach (Goods other in new[] { Goods.Produce, Goods.Fish, Goods.Wheat, Goods.Bread })
+        {
+            world.SetMarketLimit(market, other, 0);
+        }
+
+        Villager marketer = world.Villagers.First(v => v.Alive && v.CanWork);
+        marketer.Position = Point.CentreOf(granary.Tile);
+
+        // ⚠️ The premise: from where the marketer stands the meat is the nearer.
+        Assert.True(world.TravelCost.TicksBetween(marketer.Tile, granary.Tile) < world.TravelCost.TicksBetween(marketer.Tile, warehouse.Tile));
+        Assert.True(world.CounterShortOf(market, Goods.Meat) && world.CounterShortOf(market, Goods.Firewood));
+
+        Bclone.Sim.Systems.BehaviorSystem.MarketErrand? next = Bclone.Sim.Systems.BehaviorSystem.PlanMarketErrand(world, marketer);
+
+        Assert.Equal(Goods.Firewood, next?.Goods);
+        Assert.Equal(warehouse.Tile, next?.Source);
+    }
+
     // ---------------------------------------------------------------
     //  ⭐⭐ The one that says the feature is real
     // ---------------------------------------------------------------

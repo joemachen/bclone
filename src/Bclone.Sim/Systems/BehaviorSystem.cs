@@ -1859,7 +1859,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// and <c>Delivering</c> this record carried from D14 to D371 went with the delivery leg;
     /// what the load is for is derived where it is picked up (<see cref="LoadForTheRound"/>).
     /// </remarks>
-    private readonly record struct MarketErrand(GridPos Source, Goods Goods);
+    internal readonly record struct MarketErrand(GridPos Source, Goods Goods);
 
     /// <summary>
     /// What a marketer does next.
@@ -1932,6 +1932,11 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static void OfferMarketRestock(
         SimWorld world, Villager villager, ref MarketErrand? best, ref int bestCost)
     {
+        // ⭐⭐ THE EMPTIEST SHELF FIRST (Joe, D601) — the good furthest below its counter limit, as a share of the limit
+        // (per mille, integers), and only between goods equally short does the nearer store win. Cost-first alone let
+        // the nearest good win every trip while every limit stood far above what was held: Joe's market held 545 of the
+        // village's 620 firewood, and no meat, with 2,500 in the granaries.
+        int bestShare = int.MaxValue;
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding market = world.StoreBuildings[i];
@@ -1964,11 +1969,13 @@ public sealed partial class BehaviorSystem : ISimSystem
                 }
 
                 int cost = world.TravelCost.TicksBetween(villager.Tile, source.Tile);
-                if (cost >= bestCost)
+                int share = market.Store[goods] * 1000 / Math.Max(1, world.MarketStockLimit(market, goods));
+                if (share > bestShare || (share == bestShare && cost >= bestCost))
                 {
                     continue;
                 }
 
+                bestShare = share;
                 bestCost = cost;
                 best = new MarketErrand(source.Tile, goods);
             }
@@ -2170,7 +2177,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// order on a tie (D15).
     /// </para>
     /// </remarks>
-    private static MarketErrand? PlanMarketErrand(SimWorld world, Villager villager)
+    /// <remarks>Internal for one guard (D601): what a marketer would carry next, asked from where they stand.</remarks>
+    internal static MarketErrand? PlanMarketErrand(SimWorld world, Villager villager)
     {
         MarketErrand? best = null;
         int bestCost = int.MaxValue;
