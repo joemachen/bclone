@@ -2340,7 +2340,7 @@ public partial class VillageMap : Control
     /// it only ever tested the tracer.
     /// </para>
     /// </remarks>
-    private static Vector2 InTileSpace(Vector2 traced, int cellsPerTile) =>
+    internal static Vector2 InTileSpace(Vector2 traced, int cellsPerTile) =>
         ((traced + new Vector2(0.5f, 0.5f)) / cellsPerTile) - new Vector2(0.5f, 0.5f);
 
     /// <summary>One sub-tile's rectangle, snapped to whole pixels for the same reason (D336).</summary>
@@ -4082,9 +4082,14 @@ public partial class VillageMap : Control
             }
         }
 
-        // ⭐ THE PASTURES' FENCES (D599, `livestock.md §0.2`) — drawn from the walls a standing fence raised, as a yard's are,
-        // so the line IS the rule and the gate is a gap; while its site is being built, the edges it will run are drawn
-        // faint, as a yard's fence is while its house is a site. With the work-ground layer: a barn's ground is work ground.
+        // ⭐ THE PASTURES' FENCES (D599, `livestock.md §0.2`) — faint while the site is being built, as a yard's fence is
+        // while its house is a site. With the work-ground layer: a barn's ground is work ground.
+        //
+        // ⭐⭐ ROUND, NOT STAIR-STEPPED (D610). Joe: *"barns that have round fences should be round, not stairstep."* The
+        // fence was one straight segment per wall, so a pasture painted with the round brush stood behind a staircase. It
+        // is now the fenced tiles traced and rounded as a yard's outline is, **with the gate cut out of it** — the same
+        // walls, the same tiles and the same one way in, drawn as a curve that stays within a third of a tile of where a
+        // beast or a walker is actually stopped (the probe measures it). The walls themselves are the sim's and unmoved.
         for (int i = 0; i < _world.Workplaces.Count; i++)
         {
             Workplace barn = _world.Workplaces[i];
@@ -4093,28 +4098,18 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            IReadOnlyList<(GridPos From, GridPos To)> fence;
-            Color colour;
-            if (barn.FenceStands)
+            var tiles = new List<GridPos>(barn.FencedTiles.Count);
+            for (int t = 0; t < barn.FencedTiles.Count; t++)
             {
-                fence = zones.PastureFenceOf(barn.Id);
-                colour = FenceEdge;
-            }
-            else
-            {
-                var tiles = new List<GridPos>(barn.FencedTiles.Count);
-                for (int t = 0; t < barn.FencedTiles.Count; t++)
-                {
-                    tiles.Add(zones.PositionOf(barn.FencedTiles[t]));
-                }
-
-                fence = ZoneMap.FenceEdges(tiles, new[] { gate }, Array.Empty<GridPos>(), out _);
-                colour = FenceEdge with { A = 0.35f };
+                tiles.Add(zones.PositionOf(barn.FencedTiles[t]));
             }
 
-            foreach ((Vector2 from, Vector2 to) in PastureFenceSegments(fence))
+            // The gate edge the walls left open — asked of the walls' own rule, so the gap is drawn where they have none.
+            ZoneMap.FenceEdges(tiles, new[] { gate }, Array.Empty<GridPos>(), out (GridPos Yard, GridPos Lane)? opening);
+            Color colour = barn.FenceStands ? FenceEdge : FenceEdge with { A = 0.35f };
+            foreach (Vector2[] line in PastureFenceLines(tiles, opening))
             {
-                _zoneOutlines.Add((Layer.WorkGround, colour, new[] { from, to }));
+                _zoneOutlines.Add((Layer.WorkGround, colour, line));
             }
         }
 
@@ -4278,34 +4273,141 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
+    /// A pasture's fence as drawn (D610): its tiles traced and rounded as a yard's outline is, the gate's span cut out —
+    /// in sub-tile space, like every other outline. Pure, so the probe poses a round pasture and measures it.
+    /// </summary>
+    /// <param name="tiles">The fenced tiles.</param>
+    /// <param name="gate">The edge the walls leave open, inside tile then outside; none, and every loop stays closed.</param>
+    internal static List<Vector2[]> PastureFenceLines(IReadOnlyList<GridPos> tiles, (GridPos Inside, GridPos Outside)? gate)
+    {
+        var set = new HashSet<Vector2I>(tiles.Count);
+        for (int t = 0; t < tiles.Count; t++)
+        {
+            set.Add(new Vector2I(tiles[t].X, tiles[t].Y));
+        }
+
+        // In tile space: a tile's centre is its whole coordinate, so the gate's middle is the two tiles' midpoint.
+        Vector2? gap = gate is { } g
+            ? new Vector2((g.Inside.X + g.Outside.X) / 2f, (g.Inside.Y + g.Outside.Y) / 2f)
+            : null;
+
+        var lines = new List<Vector2[]>();
+        foreach (Vector2[] loop in ZoneOutline.Trace(set, 1, float.PositiveInfinity))
+        {
+            foreach (List<Vector2> line in CutAtTheGate(loop, gap))
+            {
+                // Tile space to sub-tile space, the inverse of `InTileSpace(…, SubTile.PerTile)`.
+                var stored = new Vector2[line.Count];
+                for (int k = 0; k < line.Count; k++)
+                {
+                    stored[k] = (line[k] * SubTile.PerTile) + (Vector2.One * ((SubTile.PerTile - 1) / 2f));
+                }
+
+                lines.Add(stored);
+            }
+        }
+
+        return lines;
+    }
+
+    /// <summary>Half a tile either side of the gate's middle — the gate is one tile wide.</summary>
+    private const float GateHalfWidth = 0.5f;
+
+    /// <summary>
+    /// A closed loop (first point repeated) with everything within half a tile of the gate's middle taken out: the
+    /// loop whole if the gate is not on it, otherwise the open runs either side, each ending exactly at the gatepost.
+    /// </summary>
+    private static List<List<Vector2>> CutAtTheGate(Vector2[] traced, Vector2? gap)
+    {
+        if (gap is not Vector2 middle || traced.Length < 4)
+        {
+            return new List<List<Vector2>> { new(traced) };
+        }
+
+        // ⛔ A rounded loop has points at its corners and none along a straight run, so a gate in the middle of a long
+        // side had no point within its half-width and was drawn shut (found red-checking D610). Every side that passes
+        // near the gate is cut into steps a tenth of a tile long first, so the gap is always found and always one wide.
+        Vector2[] loop = FineNear(traced, middle);
+        int n = loop.Length - 1;
+
+        int firstIn = -1;
+        for (int k = 0; k < n; k++)
+        {
+            if (loop[k].DistanceTo(middle) < GateHalfWidth)
+            {
+                firstIn = k;
+                break;
+            }
+        }
+
+        if (firstIn < 0)
+        {
+            return new List<List<Vector2>> { new(loop) };
+        }
+
+        // Walk once round from a point inside the gap, so every run of kept points is met whole.
+        var runs = new List<List<Vector2>>();
+        List<Vector2>? run = null;
+        for (int step = 1; step <= n; step++)
+        {
+            Vector2 previous = loop[(firstIn + step - 1) % n];
+            Vector2 here = loop[(firstIn + step) % n];
+            bool previousIn = previous.DistanceTo(middle) < GateHalfWidth;
+            bool hereIn = here.DistanceTo(middle) < GateHalfWidth;
+            if (previousIn && !hereIn)
+            {
+                run = new List<Vector2> { Gatepost(here, previous, middle) };
+                runs.Add(run);
+            }
+
+            if (!hereIn)
+            {
+                run!.Add(here);
+            }
+            else if (!previousIn)
+            {
+                run!.Add(Gatepost(previous, here, middle));
+            }
+        }
+
+        return runs;
+    }
+
+    /// <summary>The closed loop with every side that comes within a tile of the gate's middle cut into tenth-of-a-tile steps.</summary>
+    private static Vector2[] FineNear(Vector2[] loop, Vector2 middle)
+    {
+        var fine = new List<Vector2>(loop.Length) { loop[0] };
+        for (int k = 1; k < loop.Length; k++)
+        {
+            Vector2 a = loop[k - 1];
+            Vector2 b = loop[k];
+            if (Geometry2D.GetClosestPointToSegment(middle, a, b).DistanceTo(middle) < 1f)
+            {
+                int steps = Mathf.CeilToInt(a.DistanceTo(b) / 0.1f);
+                for (int s = 1; s < steps; s++)
+                {
+                    fine.Add(a.Lerp(b, s / (float)steps));
+                }
+            }
+
+            fine.Add(b);
+        }
+
+        return fine.ToArray();
+    }
+
+    /// <summary>Where the side from <paramref name="outside"/> to <paramref name="inside"/> crosses the gate's half-width.</summary>
+    private static Vector2 Gatepost(Vector2 outside, Vector2 inside, Vector2 middle)
+    {
+        float from = outside.DistanceTo(middle);
+        float to = inside.DistanceTo(middle);
+        return outside.Lerp(inside, (from - GateHalfWidth) / (from - to));
+    }
+
+    /// <summary>
     /// One side of a fenced tile as a line, if a wall stands on it and the ground beyond is not
     /// this household's own (D404) — in sub-tile space, like every other outline.
     /// </summary>
-    /// <summary>
-    /// A fence's edges as line segments in sub-tile space — each the side two tiles share (D599). Pure, so the probe asks
-    /// it of a posed fence: one segment an edge, a tile long, and none on the gate.
-    /// </summary>
-    internal static List<(Vector2 From, Vector2 To)> PastureFenceSegments(IReadOnlyList<(GridPos From, GridPos To)> edges)
-    {
-        int p = SubTile.PerTile;
-        var segments = new List<(Vector2, Vector2)>(edges.Count);
-        for (int e = 0; e < edges.Count; e++)
-        {
-            (GridPos a, GridPos b) = edges[e];
-            float left = a.X * p;
-            float top = a.Y * p;
-            segments.Add((b.X - a.X, b.Y - a.Y) switch
-            {
-                (0, -1) => (new Vector2(left, top), new Vector2(left + p, top)),
-                (1, 0) => (new Vector2(left + p, top), new Vector2(left + p, top + p)),
-                (0, 1) => (new Vector2(left, top + p), new Vector2(left + p, top + p)),
-                _ => (new Vector2(left, top), new Vector2(left, top + p)),
-            });
-        }
-
-        return segments;
-    }
-
     private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge)
     {
         if ((walls & bit) == 0 || ground.Contains(new GridPos(tile.X + dx, tile.Y + dy)))
@@ -4313,17 +4415,31 @@ public partial class VillageMap : Control
             return;
         }
 
+        (Vector2 from, Vector2 to) = FenceSide(tile, dx, dy);
+        _zoneOutlines.Add((Layer.Residential, edge, new[] { from, to }));
+    }
+
+    /// <summary>
+    /// The side of <paramref name="tile"/> toward (dx, dy), in sub-tile space.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A tile's left edge is cell <c>x·4 − ½</c> in sub-tile space, not <c>x·4</c></b> — D338's eighth of a tile,
+    /// found again (D610): <see cref="InTileSpace"/> reads a traced value whose cell <c>c</c> spans <c>[c − ½, c + ½]</c>,
+    /// and this wrote the tile's first cell's CENTRE, so every yard and pasture fence since D404 stood an eighth of a
+    /// tile right of and below its own wall. The probe's <c>fence:</c> line reads the side back onto the tile's corners.
+    /// </remarks>
+    internal static (Vector2 From, Vector2 To) FenceSide(GridPos tile, int dx, int dy)
+    {
         int p = SubTile.PerTile;
-        float left = tile.X * p;
-        float top = tile.Y * p;
-        (Vector2 from, Vector2 to) = (dx, dy) switch
+        float left = (tile.X * p) - 0.5f;
+        float top = (tile.Y * p) - 0.5f;
+        return (dx, dy) switch
         {
             (0, -1) => (new Vector2(left, top), new Vector2(left + p, top)),
             (1, 0) => (new Vector2(left + p, top), new Vector2(left + p, top + p)),
             (0, 1) => (new Vector2(left, top + p), new Vector2(left + p, top + p)),
             _ => (new Vector2(left, top), new Vector2(left, top + p)),
         };
-        _zoneOutlines.Add((Layer.Residential, edge, new[] { from, to }));
     }
 
     /// <summary>

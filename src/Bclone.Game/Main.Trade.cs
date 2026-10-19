@@ -262,40 +262,117 @@ public partial class Main
     }
 
     /// <summary>
-    /// <c>fence:</c> (D599) — a posed pasture's fence drawn as one tile-long segment an edge, <b>none across the gate</b>;
-    /// and the barn card's fence row in each state: <i>Fence the pasture</i> (disabled with its reason when refused),
-    /// <i>Cancel the fence</i>, <i>Take the fence down</i>. The view cannot raise a barn (D596), so both are posed facts.
+    /// <c>fence:</c> (D599, D610) — a posed round pasture's fence drawn <b>round</b>: one open line, no corner sharper than
+    /// 45°, every point within half a tile of a wall, every wall reached, and the gap exactly at the gate; a yard's fence
+    /// side on its tile's real edge; and the barn card's fence row in each state: <i>Fence the pasture</i> (disabled with
+    /// its reason when refused), <i>Cancel the fence</i>, <i>Take the fence down</i>. The view cannot raise a barn (D596),
+    /// so both are posed facts.
     /// </summary>
     private string TheFenceIsDrawnAndItsButtonFollowsIt()
     {
         var faults = new List<string>();
+
+        // A disc 3.6 tiles across its radius, as the round brush paints one, with the gate on the east of its middle row.
         var pasture = new List<GridPos>();
-        for (int y = 10; y < 12; y++)
+        for (int y = 15; y <= 25; y++)
         {
-            for (int x = 10; x < 13; x++)
+            for (int x = 15; x <= 25; x++)
             {
-                pasture.Add(new GridPos(x, y));
+                if (((x - 20) * (x - 20)) + ((y - 20) * (y - 20)) <= 12.96f)
+                {
+                    pasture.Add(new GridPos(x, y));
+                }
             }
         }
 
-        var gate = new GridPos(13, 10);
-        List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(pasture, new[] { gate }, System.Array.Empty<GridPos>(), out _);
-        List<(Vector2 From, Vector2 To)> segments = VillageMap.PastureFenceSegments(edges);
-        int p = SubTile.PerTile;
-        var gateSide = (new Vector2(13 * p, 10 * p), new Vector2(13 * p, 11 * p));
-        if (edges.Count != 9 || segments.Count != edges.Count)
+        var gate = new GridPos(24, 20);
+        List<(GridPos From, GridPos To)> edges = ZoneMap.FenceEdges(
+            pasture, new[] { gate }, System.Array.Empty<GridPos>(), out (GridPos Yard, GridPos Lane)? opening);
+        var middle = new Vector2(23.5f, 20f);
+        List<Vector2[]> lines = VillageMap.PastureFenceLines(pasture, opening);
+        var drawn = lines.Select(l => l.Select(v => VillageMap.InTileSpace(v, SubTile.PerTile)).ToArray()).ToList();
+
+        // The walls in tile space: the side two tiles share, a tile long.
+        var walls = edges.Select(e => WallSide(e.From, e.To)).ToList();
+        if (opening is not { } g || g.Lane != gate)
         {
-            faults.Add($"a 3 × 2 pasture with a gate drew {segments.Count} segments for {edges.Count} edges, not 9");
+            faults.Add("the posed pasture has no gate where it was asked for");
         }
 
-        if (segments.Any(s => Mathf.Abs(s.From.DistanceTo(s.To) - p) > 0.01f))
+        if (drawn.Count != 1 || drawn[0].Length < 8 || drawn[0][0].DistanceTo(drawn[0][^1]) < 0.9f)
         {
-            faults.Add("a segment is not one tile long");
+            faults.Add($"the round pasture drew {drawn.Count} line(s), not one open line");
+        }
+        else
+        {
+            Vector2[] line = drawn[0];
+            float sharpest = 0f;
+            for (int k = 1; k < line.Length - 1; k++)
+            {
+                Vector2 into = line[k] - line[k - 1];
+                Vector2 outOf = line[k + 1] - line[k];
+                if (into.LengthSquared() > 1e-8f && outOf.LengthSquared() > 1e-8f)
+                {
+                    sharpest = Mathf.Max(sharpest, Mathf.RadToDeg(Mathf.Abs(into.AngleTo(outOf))));
+                }
+            }
+
+            if (sharpest >= 45f)
+            {
+                faults.Add($"a corner turns {sharpest:F0}° — a stair, not a curve");
+            }
+
+            float furthest = line.Max(v => walls.Min(w => v.DistanceTo(Geometry2D.GetClosestPointToSegment(v, w.A, w.B))));
+            if (furthest > 0.5f)
+            {
+                faults.Add($"a point stands {furthest:F2} tiles from any wall");
+            }
+
+            int unreached = walls.Count(w => line.All(v => v.DistanceTo((w.A + w.B) / 2f) > 0.6f));
+            if (unreached > 0)
+            {
+                faults.Add($"{unreached} of {walls.Count} walls have no fence drawn by them");
+            }
+
+            if (line.Any(v => v.DistanceTo(middle) < 0.49f))
+            {
+                faults.Add("the fence is drawn across its gate");
+            }
+
+            if (Mathf.Abs(line[0].DistanceTo(middle) - 0.5f) > 0.01f || Mathf.Abs(line[^1].DistanceTo(middle) - 0.5f) > 0.01f)
+            {
+                faults.Add($"the line ends {line[0].DistanceTo(middle):F2} and {line[^1].DistanceTo(middle):F2} from the gate's middle, not at its posts");
+            }
         }
 
-        if (segments.Any(s => (s.From, s.To) == gateSide || (s.To, s.From) == gateSide))
+        // ⛔ And a block with the gate in the middle of a long straight side, where a rounded loop has no points of its own
+        // (`livestock.md §0.2`'s 8 × 5 example). The first draft drew this gate shut; the disc above could not see it.
+        var block = new List<GridPos>();
+        for (int y = 40; y < 45; y++)
         {
-            faults.Add("the fence is drawn across its gate");
+            for (int x = 40; x < 48; x++)
+            {
+                block.Add(new GridPos(x, y));
+            }
+        }
+
+        ZoneMap.FenceEdges(block, new[] { new GridPos(44, 39) }, System.Array.Empty<GridPos>(), out (GridPos Yard, GridPos Lane)? blockGate);
+        List<Vector2[]> blockLines = VillageMap.PastureFenceLines(block, blockGate);
+        var blockMiddle = new Vector2(44f, 39.5f);
+        if (blockLines.Count != 1
+            || blockLines[0].Select(v => VillageMap.InTileSpace(v, SubTile.PerTile)).Any(v => v.DistanceTo(blockMiddle) < 0.49f)
+            || Mathf.Abs(VillageMap.InTileSpace(blockLines[0][0], SubTile.PerTile).DistanceTo(blockMiddle) - 0.5f) > 0.01f)
+        {
+            faults.Add("an 8 × 5 block's gate, in the middle of its long side, is not drawn open at its posts");
+        }
+
+        // A yard's fence side on its tile's real edge — the tile at (10, 10) spans 9.5 to 10.5 (D338's eighth, D610).
+        (Vector2 from, Vector2 to) = VillageMap.FenceSide(new GridPos(10, 10), 0, -1);
+        Vector2 a = VillageMap.InTileSpace(from, SubTile.PerTile);
+        Vector2 b = VillageMap.InTileSpace(to, SubTile.PerTile);
+        if (a.DistanceTo(new Vector2(9.5f, 9.5f)) > 0.001f || b.DistanceTo(new Vector2(10.5f, 9.5f)) > 0.001f)
+        {
+            faults.Add($"a yard's north side is drawn from {a} to {b}, not along its tile's edge");
         }
 
         if (WithAPosedCard(card =>
@@ -330,8 +407,16 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] fence: ✅ a 3 × 2 pasture's fence drawn as 9 one-tile segments with its gate open; the barn card's button reads Fence the pasture (disabled when refused) / Cancel the fence / Take the fence down / Keep the fence"
+            ? $"[widths] fence: ✅ a round pasture's fence drawn as one curve ({pasture.Count} tiles, {edges.Count} walls; no corner past 45°, within half a tile of its walls, open at the gate's posts) and an 8 × 5 block's open mid-side; a yard's side on its tile's edge; the barn card's button reads Fence the pasture (disabled when refused) / Cancel the fence / Take the fence down / Keep the fence"
             : $"[widths] fence: ❌ {string.Join("; ", faults)}";
+
+        // The side two tiles share, in tile space (a tile's centre is its whole coordinate).
+        static (Vector2 A, Vector2 B) WallSide(GridPos from, GridPos to)
+        {
+            var mid = new Vector2((from.X + to.X) / 2f, (from.Y + to.Y) / 2f);
+            var along = from.X == to.X ? new Vector2(0.5f, 0f) : new Vector2(0f, 0.5f);
+            return (mid - along, mid + along);
+        }
     }
 
     /// <summary>Open a card on the first workplace, hand it to <paramref name="pose"/>, and close it again.</summary>

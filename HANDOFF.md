@@ -7,8 +7,8 @@
 > better job of reaching buildings."*).
 >
 > **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
-> panel sorts by first name, age and trade — ✅ **built (D609), unplayed**; (2) a round pasture's fence drawn round (traced from the fenced tiles,
-> the gate cut out — view only); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
+> panel sorts by first name, age and trade — ✅ **built (D609), unplayed**; (2) a round pasture's fence drawn round — ✅ **built
+> (D610), unplayed** (and every fence moved an eighth of a tile onto its real edge); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
 > 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
 > at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
@@ -7385,6 +7385,18 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D610 PAID FOR — A MUTANT RED FOR THE WRONG REASON, AND A POINT-BASED CUT ON A CURVE WITH NO POINTS
+
+- ⭐ **Read WHY a mutant went red, not only that it did.** The stair mutant (corners kept sharp) was meant to trip the
+  45° check and tripped *"not one open line"* instead — because a straightened loop has no point near the gate, so the
+  gate was never cut. That was a real bug in the shipped code (a block's mid-side gate drawn shut), not a quirk of the
+  mutant, and the disc pose could not see it. Re-posed with a block, fixed, and the stair mutant re-run to see the
+  corner check bite on its own.
+- ⛔ **A rounded loop's points sit at its corners** (`ZoneOutline.Straighten` merges every straight run). Anything that
+  asks *"which points are near X?"* of a traced outline must densify near X first, or a long side is invisible to it.
+- ⛔ **D338's eighth of a tile, a third time**: a hand-written segment in sub-tile space starts a tile at `x·4 − ½`, not
+  `x·4`. Read any hand-made outline back through `InTileSpace` onto the tile's corners before trusting it.
 
 ## ⛔ THE TRAPS D608–D609 PAID FOR — A MERGE THAT READ NO MESSAGE, AN EMPTY MUTANT, AND A POSE WHOSE IDS AGREED
 
