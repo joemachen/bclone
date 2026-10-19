@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D607 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS, COMMIT 7, TRADE PLAYED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS D607; DOORS SPEC'D; MERGING HIS CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED (TRADE AND THE HERD MERGED: D585–D607, PLAYED). NEXT: JOE'S D607 NOTES ON `slice/d607-notes`, ONE COMMIT EACH — THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D607: JOE PLAYED TRADE — THE POST'S WINDOW, SPURS, RINGS) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
+>
+> **`main`** = D608, pushed: trade and the herd (D585–D607) merged at Joe's word after he played D607 (*"the
+> trading post window opens, i set an order. i sent the boat on. the region button works … Paths seem to do a
+> better job of reaching buildings."*).
+>
+> **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
+> panel sorts by first name, age and trade; (2) a round pasture's fence drawn round (traced from the fenced tiles,
+> the gate cut out — view only); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
+> 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
+> 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
+> at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
+> by, spec first. His tools question was answered from the code (D608). Then **doors**, spec first.
+>
+> **(the banner below is the state at D607)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D607: JOE PLAYED TRADE — THE POST'S WINDOW, SPURS, RINGS) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D607**, local. Joe played trade: his village never set an order (the window was behind the
 > card). **Built (D607):** a click on the post opens its window, the region in brief at its top; a spur from a passing
@@ -7772,7 +7788,7 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main`** — both local, unmerged, unpushed.
+- ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
   builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
   the well's ring), the paths (D605, played and approved) and D607. His word only.
