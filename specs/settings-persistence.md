@@ -9,6 +9,7 @@ never hashed).
 **Status:** ✍️ **SPECCED (D504). ✅ BUILT (D505) on `slice/settings-persistence` — the sim half and the
 view, guards §8 red-checked; no golden moved. ✅ PLAYED by Joe (*"it holds up"*) and merged (D506, 2026-10-05)** —
 his play is what saw a real launch write the file and a drag remembered; the probe is hermetic by design (§7) and cannot drag.
+✅ **`roster_sort` added (D609, unplayed):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
 Owner: Joe + Claude Code.
 
 ---
@@ -56,6 +57,7 @@ by an exception to this line.
 |---|---|---|
 | View | UI size (55–115 %, steps of 5; default 75) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
+| View | *The village* panel's order (D609): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
 | View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
 | Windows | each window's Settings tick (*shown*) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
@@ -115,7 +117,7 @@ by an exception to this line.
   `NewGame` in `Bclone.Sim.Config`.)
 - **Written atomically**: to `settings.json.tmp`, then moved over `settings.json`. A crash mid-write
   leaves the old file, never half of a new one.
-- **Written on each change, never per frame**: a tick, the size dial, Routes, Paths, a window's tick or
+- **Written on each change, never per frame**: a tick, the size dial, Routes, a roster sort button, Paths, a window's tick or
   ✕, a fold, the **release** of a drag, Reset window positions, and founding a valley.
 
 ## 6. Edge cases and failure modes (METHODOLOGY §4 — nothing is swallowed)
@@ -126,6 +128,7 @@ by an exception to this line.
 | Not JSON / not an object | Defaults. The file is **copied to `settings.json.bad` first**, so the next save cannot destroy what the player may want to read; Godot's error stream and the audit log say which file and why. |
 | `ui_scale_percent` out of range or off the step | Clamped to 55–115 and rounded to the nearest 5; a warning says what was read and what is used. |
 | `routes` not one of the three | Default; a warning. |
+| `roster_sort` not one of the three | Default (`name`); a warning. |
 | A value of the wrong type (`"grid": "yes"`) | That key is default; a warning. The rest of the file still counts. |
 | Unknown keys; a newer `version` | Ignored, with one warning naming them; what is known is read. |
 | A window or toggle id the game does not have | Ignored silently — it is an older build's, or a renamed window's (§4). |
@@ -150,7 +153,7 @@ file it deletes.
 2. A record with every field set survives save → load unchanged.
 3. Not JSON → defaults, one problem naming the file, and `settings.json.bad` holds the original bytes.
 4. Scale 30 / 200 / 77 → 55 / 115 / 75, each with a warning.
-5. An unknown `routes` → default, a warning.
+5. An unknown `routes` → default, a warning. An unknown `roster_sort` likewise, and each of the three read as written (D609).
 6. A wrong-typed value → that key default, the others read, a warning.
 7. Unknown keys and `version: 99` → what is known is read, a warning.
 8. Saving leaves no `.tmp` behind and replaces an existing file.
@@ -159,7 +162,7 @@ file it deletes.
 
 **View (probe line `settings:`):**
 1. Under the probe the player's file was not read.
-2. A posed record — every toggle flipped, 100 %, Routes all, every shown window rolled up and moved —
+2. A posed record — every toggle flipped, 100 %, Routes all, the roster by trade, every shown window rolled up and moved —
    goes through a scratch file, is applied, and is captured back **equal** (places to the pixel); then
    the founding's own capture is applied and comes back equal. This is what catches a toggle or window
    that apply or capture forgets.

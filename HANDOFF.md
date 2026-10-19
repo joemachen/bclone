@@ -7,7 +7,7 @@
 > better job of reaching buildings."*).
 >
 > **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
-> panel sorts by first name, age and trade; (2) a round pasture's fence drawn round (traced from the fenced tiles,
+> panel sorts by first name, age and trade — ✅ **built (D609), unplayed**; (2) a round pasture's fence drawn round (traced from the fenced tiles,
 > the gate cut out — view only); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
 > 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
@@ -7385,6 +7385,20 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D608–D609 PAID FOR — A MERGE THAT READ NO MESSAGE, AN EMPTY MUTANT, AND A POSE WHOSE IDS AGREED
+
+- ⛔ **`git commit -F -` reads its message from stdin; `git merge -F -` does not** (*"could not read file '-'"*). The
+  merge never ran, and the `git push` chained after it said *"Everything up-to-date"* — a merge that had not happened
+  read like one that had. Write the message to a file in the scratchpad, and read `git log` before pushing.
+- ⛔ **A mutant whose text is empty cannot be reverted by text.** V3 deleted a line (`""`); the reverse replacement
+  found the empty string 13,377 times and refused, so the mutant stayed in for the next three runs — each of which
+  then showed its own fault *plus* the stale one, which is the only reason it was noticed. The scratchpad's
+  `mutate.py` now refuses an empty side: replace the line with a comment instead. **After any mutant batch, grep each
+  mutated line back to its original before believing the next green.**
+- ⚠️ **A tiebreak guard must pose the next tiebreak against it.** The twins (same name, same birth) had their ids in
+  surname order, so dropping the surname tiebreak fell through to the id and came out right: a zero by construction.
+  Re-posed with the highest id on the earliest surname before the run.
 
 ## ⛔ THE TRAPS D607 PAID FOR — A CARD READ AS THE WINDOW, AND AN ESCAPE THAT BECAME A NEWLINE
 

@@ -64,11 +64,17 @@ public sealed record PlayerSettings
     /// <summary>What the Routes button cycles through, in its order.</summary>
     public static IReadOnlyList<string> RoutesLevels { get; } = new[] { "off", "selected", "all" };
 
+    /// <summary>How <i>The village</i> panel orders its people (D609), in its buttons' order — the first is the default.</summary>
+    public static IReadOnlyList<string> RosterSorts { get; } = new[] { "name", "age", "trade" };
+
     /// <summary>The UI size, a whole percent on the dial's steps.</summary>
     public int? UiScalePercent { get; init; }
 
     /// <summary>One of <see cref="RoutesLevels"/>.</summary>
     public string? Routes { get; init; }
+
+    /// <summary>One of <see cref="RosterSorts"/>.</summary>
+    public string? RosterSort { get; init; }
 
     /// <summary>The view's on/off switches by id — the Paths overlay and every <i>On the map</i> tick.</summary>
     public IReadOnlyDictionary<string, bool> Toggles { get; init; } = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -95,6 +101,11 @@ public sealed record PlayerSettings
         if (Routes is not null)
         {
             doc["routes"] = Routes;
+        }
+
+        if (RosterSort is not null)
+        {
+            doc["roster_sort"] = RosterSort;
         }
 
         if (Toggles.Count > 0)
@@ -285,7 +296,7 @@ public static class PlayerSettingsFile
 
     private static readonly HashSet<string> KnownKeys = new(StringComparer.Ordinal)
     {
-        "version", "ui_scale_percent", "routes", "toggles", "windows", "new_game",
+        "version", "ui_scale_percent", "routes", "roster_sort", "toggles", "windows", "new_game",
     };
 
     private static readonly HashSet<string> KnownWindowKeys = new(StringComparer.Ordinal)
@@ -333,6 +344,19 @@ public static class PlayerSettingsFile
             else
             {
                 Warn($"routes should be one of {string.Join(", ", PlayerSettings.RoutesLevels)}, not {routesNode.ToJsonString()}; using the default.");
+            }
+        }
+
+        string? rosterSort = null;
+        if (doc["roster_sort"] is JsonNode sortNode)
+        {
+            if (TryString(sortNode, out string read) && PlayerSettings.RosterSorts.Contains(read, StringComparer.Ordinal))
+            {
+                rosterSort = read;
+            }
+            else
+            {
+                Warn($"roster_sort should be one of {string.Join(", ", PlayerSettings.RosterSorts)}, not {sortNode.ToJsonString()}; using the default.");
             }
         }
 
@@ -391,6 +415,7 @@ public static class PlayerSettingsFile
         {
             UiScalePercent = scale,
             Routes = routes,
+            RosterSort = rosterSort,
             Toggles = toggles,
             Windows = windows,
             NewGameRows = rows,

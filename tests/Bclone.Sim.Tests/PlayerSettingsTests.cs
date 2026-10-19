@@ -28,6 +28,7 @@ public sealed class PlayerSettingsTests : IDisposable
     {
         UiScalePercent = 95,
         Routes = "all",
+        RosterSort = "age",
         Toggles = new Dictionary<string, bool> { ["grid"] = true, ["snap"] = true, ["animals"] = false, ["paths"] = true },
         Windows = new Dictionary<string, WindowPrefs>
         {
@@ -65,6 +66,7 @@ public sealed class PlayerSettingsTests : IDisposable
         Assert.Equal(saved.ToJson(), read.ToJson());
         Assert.Equal(95, read.UiScalePercent);
         Assert.Equal("all", read.Routes);
+        Assert.Equal("age", read.RosterSort);
         Assert.False(read.Toggles["animals"]);
         Assert.Equal(new WindowPlace(PlayerSettings.RightSide, 12, 300), read.Windows["What's here"].Place);
         Assert.Null(read.Windows["What's here"].Open);
@@ -136,6 +138,29 @@ public sealed class PlayerSettingsTests : IDisposable
         Assert.Null(read.Routes);
         Assert.Equal(90, read.UiScalePercent);
         Assert.Contains("routes", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+    }
+
+    /// <summary>The village panel's order (D609): a word the buttons do not have is the default, said once.</summary>
+    [Fact]
+    public void ARosterSortThatIsNotAButtonIsTheDefault()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings read = LoadText("{ \"roster_sort\": \"height\", \"routes\": \"off\" }", problems);
+
+        Assert.Null(read.RosterSort);
+        Assert.Equal("off", read.Routes);
+        Assert.Contains("roster_sort", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("name")]
+    [InlineData("age")]
+    [InlineData("trade")]
+    public void EveryRosterSortIsReadAsWritten(string sort)
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        Assert.Equal(sort, LoadText($"{{ \"roster_sort\": \"{sort}\" }}", problems).RosterSort);
+        Assert.Empty(problems);
     }
 
     // ---- §8.6 ---------------------------------------------------------------------------------

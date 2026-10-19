@@ -551,6 +551,7 @@ public partial class Main : Control
         // a blank roster beside "6 villagers in 2 households".** *A count beside a drawn height
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.ItemCount, "items");
+        GD.Print(TheRosterSortsAsAsked());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
 
         ProbeFolding();
@@ -3146,52 +3147,6 @@ public partial class Main : Control
         _minimap.Present(world, _map.VisibleTiles);
     }
 
-    private void RefreshRoster(SimWorld world)
-    {
-        // Rebuilt each frame rather than diffed. A village is tens of people, not
-        // thousands, and a rebuilt list cannot drift out of sync with the sim —
-        // which matters more here than the handful of allocations.
-        int previousSelection = _selectedVillagerId;
-        _roster.Clear();
-
-        for (int i = 0; i < world.Villagers.Count; i++)
-        {
-            Villager villager = world.Villagers[i];
-            if (!villager.Alive)
-            {
-                continue;
-            }
-
-            string stage = villager.LifeStage switch
-            {
-                LifeStage.Child => "child",
-                LifeStage.Elder => "elder",
-                _ => "adult",
-            };
-
-            // WHAT THEY ARE, NOT WHAT THEY ARE DOING RIGHT NOW (D80).
-            //
-            // This said "working" for anybody who HELD a job, while the panel two feet away
-            // said "resting at home" about the same person on the same tick. Both were true
-            // and the pair was a lie: Joe read them side by side and reasonably concluded
-            // something was broken. One word cannot answer two questions.
-            //
-            // The roster answers "who is this?" — their trade — and the panel answers "what
-            // are they doing?". Exactly the distinction the vacancy alert settled: holding a
-            // job and being at it this instant are different facts.
-            string work = villager.IsLaborer ? "laborer"
-                : villager.HasJob ? TradeOf(villager)
-                : "not working yet";
-            int index = _roster.AddItem($"{villager.FullName}, {villager.AgeYears} ({stage}) — {work}");
-            _roster.SetItemMetadata(index, villager.Id);
-
-            if (villager.Id == previousSelection)
-            {
-                _roster.Select(index);
-            }
-        }
-    }
-
     private void RefreshInspector(SimWorld world)
     {
         // The docked panel is for what has no card (D377): hidden the moment the selection has one.
@@ -4772,6 +4727,7 @@ public partial class Main : Control
         };
         _roster.AddThemeFontSizeOverride("font_size", RowSize);
         _roster.ItemSelected += OnVillagerSelected;
+        AddTheRosterSorts(body);
         body.AddChild(_roster);
     }
 
