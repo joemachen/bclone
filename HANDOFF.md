@@ -11,6 +11,15 @@
 > door on its front, walkers in and out through it, paths wearing to doors; goldens move, survival measured).
 > Merging `slice/pause-probe` and `slice/trade` stays his word.
 >
+> **The numbers a session checks against (as of D607, 2026-10-19):** suite **1781 / 0 / 5 of 1786**; its clock
+> **≈ 11–13 min** since D603 (bigger villages — the fixture's 200-year run 24 s → 45 s; it was 8m51 at D602; read it on a
+> quiet machine, Joe's game running beside it adds a minute or two); probe **94 `[widths]` lines**, bar 151; the goldens
+> grep **377 lines** (362 values + 15 RE-TAKEN comment lines carrying old ones). ⚠️ A Godot left running after the
+> probe may be **Joe's own game** — read its command line before killing it (D606's trap).
+>
+> **Proposed, not started:** *Spec: building doors* — a session card (`task_a4066d55`, expires 2026-10-26) that writes
+> `specs/doors.md` only; it starts when Joe clicks it or says so.
+>
 > **(the banner below is the state at D606)**
 >
 > **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D606: COMMIT 7 — THE BOAT SAILS, THE REGION IS SAID) — ON WINDOWS.**
@@ -7762,6 +7771,22 @@ Read `git status` after staging, every time.
   nudged a tenth of a tile).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main`** — both local, unmerged, unpushed.
+  `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
+  builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
+  the well's ring), the paths (D605, played and approved) and D607. His word only.
+
+- ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
+  building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
+  session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
+
+- ⏸️ **THE MARKET'S VOLUME IS ITS MARKETERS' (D601).** The emptiest-shelf rule spreads two marketers' loads across the
+  goods; it cannot make the shelf fuller. More market seats is Joe's lever — said to him, not yet tried in play.
+
+- ⏸️ **A RING THAT THINS INTO A PLAZA IS NOT OPENED (D607).** Round a 2 × 2 building the worn ring becomes one junction
+  clump wider than 3 × 3 — a plaza — drawn as its tree plus a lane round the building. `KeepTheBusierSides` sees only
+  lanes; the three rings opened on Joe's villages were all lane rings. Raise only if he sees one.
 
 - ✅ **ANSWERED (D596) — Joe: *"keep it as built: a keep order alone sells nothing, and the post's window says to set what to buy."* Built** (`SimWorld.SayWhatThePostWillDo`). ~~A KEEP ORDER ALONE SELLS NOTHING (D595, `trade.md §4.5`).~~ Barter with no coin: the boat takes from the post only
   as much as pays for what the *buy* orders ask, so *"sell firewood above 400"* with no buy order sends nothing. Built
