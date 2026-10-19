@@ -2694,6 +2694,9 @@ public partial class VillageMap : Control
         // ⭐ The herds graze their pastures with the woods' game, under the buildings (D596).
         DrawTheHerds();
 
+        // ⭐ The trading boat sails the river under the bridges (D606).
+        DrawTheBoat();
+
         // ⭐ The bridges lie on the water, under everything that stands and everyone who walks (D546).
         DrawBridges();
 

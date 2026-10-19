@@ -619,6 +619,8 @@ public partial class Main : Control
         // Trade and the herd (D596): last but one, so the orders they set and clear disturb no other line.
         GD.Print(TheHerdGrazesItsPasture());
         GD.Print(ThePostsWindowWorks());
+        GD.Print(TheRegionIsSaid());
+        GD.Print(_map.TheBoatSailsTheRiver());
         GD.Print(TheFenceIsDrawnAndItsButtonFollowsIt());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");

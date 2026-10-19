@@ -92,6 +92,11 @@ public partial class Main
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         title.MouseFilter = MouseFilterEnum.Stop;
         head.AddChild(title);
+
+        // ⭐ The region's window (commit 7): the neighbours, what they have and want, and the rates for these orders.
+        var region = new Button { Text = "The region", TooltipText = "The neighbours: what they have plenty of, what they are short of, and their rates for these orders." };
+        region.Pressed += OpenTheRegionWindow;
+        head.AddChild(region);
         var close = new Button { Text = "✕", Flat = true, TooltipText = "Close" };
         head.AddChild(close);
         column.AddChild(head);

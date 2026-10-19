@@ -642,6 +642,7 @@ public partial class Main
     private void RefreshCards(SimWorld world)
     {
         RefreshThePostsWindow(world);
+        RefreshTheRegionWindow(world);
         for (int i = _cards.Count - 1; i >= 0; i--)
         {
             Card card = _cards[i];

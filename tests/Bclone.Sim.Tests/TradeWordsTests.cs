@@ -189,4 +189,47 @@ public sealed class TradeWordsTests
         world.SetTradeKeep(Goods.Firewood, null);
         Assert.StartsWith("Nothing is for sale to pay with", world.SayWhatThePostWillDo(), StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// ⭐ The region panel's words (commit 7, `trade.md §4.2`): nothing while the region sleeps; woken, a paragraph a
+    /// neighbour — which way it lies, plenty of what it makes and short of what it wants — and with the village's orders
+    /// set, the rate for each in words with its reason; the overland neighbour waits for carts.
+    /// </summary>
+    [Fact]
+    public void TheRegionSaysEachNeighbourAndItsRates()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Assert.Empty(world.SayTheRegion());
+
+        TradeTests.RaiseAPost(world);
+        for (int t = 0; t <= world.Config.TicksPerSeason && world.RegionAwakeSince == 0UL; t++)
+        {
+            loop.StepOnce();
+        }
+
+        Assert.NotEqual(0UL, world.RegionAwakeSince);
+        IReadOnlyList<(string Name, string Words)> region = world.SayTheRegion();
+        Assert.Equal(world.Config.Neighbours.Count, region.Count);
+
+        int up = Enumerable.Range(0, world.Config.Neighbours.Count).First(n => world.Config.Neighbours[n].Direction == NeighbourDirection.Upriver);
+        NeighbourRow row = world.Config.Neighbours[up];
+        (string name, string words) = region[up];
+        Assert.Equal(world.NeighbourName(up), name);
+        Assert.StartsWith("Up the river.", words, StringComparison.Ordinal);
+        Assert.Contains($"Has plenty of {world.GoodsCatalog.NameOf(row.Makes[0].Goods)}", words, StringComparison.Ordinal);
+        Assert.Contains("Short of", words, StringComparison.Ordinal);
+        Assert.EndsWith("its rates are said here.", words, StringComparison.Ordinal);
+
+        Goods sell = row.Wants[0].Goods, buy = row.Makes[0].Goods;
+        Assert.True(world.SetTradeKeep(sell, 0).Allowed);
+        Assert.True(world.SetTradeBuy(buy, 100).Allowed);
+        Assert.Contains(world.SayTheRate(up, sell, buy)!, world.SayTheRegion()[up].Words, StringComparison.Ordinal);
+
+        int overland = Enumerable.Range(0, world.Config.Neighbours.Count).FirstOrDefault(n => world.Config.Neighbours[n].Direction == NeighbourDirection.Overland, -1);
+        if (overland >= 0)
+        {
+            Assert.EndsWith("its trade waits for carts.", world.SayTheRegion()[overland].Words, StringComparison.Ordinal);
+        }
+    }
 }

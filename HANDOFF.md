@@ -1,6 +1,18 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D605 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS THE PATHS, THEN COMMIT 7. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D606 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS, COMMIT 7) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS TRADE END TO END, THEN HIS CALL ON MERGING. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-18 (D605: THE PATHS, DRAWN AS WALKED) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D606: COMMIT 7 — THE BOAT SAILS, THE REGION IS SAID) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D606**, local. Joe played the paths (D605): *"everything looks good. proceed."* **Built
+> (D606, `trade.md §11` commit 7 — the first trade build is complete):** the boat sails the river from its edge past the
+> post and off the far edge (`BoatRoute`, found once per post; its place derived from its ticks), and the region window
+> (*The region* on the post's window) says each neighbour and its rates in words (`SimWorld.SayTheRegion`).
+>
+> **▶️ NEXT:** Joe plays trade end to end (a hall-era village: the post, orders, a boat in and out, the region window).
+> Then his call: merge `slice/pause-probe` and `slice/trade` to `main` (both local, unmerged — his word only).
+>
+> **(the banner below is the state at D605)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D605: THE PATHS, DRAWN AS WALKED) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D605**, local. **Built (D605, view only):** the trail drawing sees fences, draws a plaza as
 > a tree on its worn ground instead of a star, and draws the doorsteps a lane passing by had swallowed. On Joe's three
@@ -7335,6 +7347,13 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D606 PAID FOR — A GODOT THAT WAS JOE'S
+
+- ⛔ **A Godot still running after the probe's `done.` may be Joe's own game** — he plays while sessions run. Read its
+  command line before `taskkill`: the probe's has `--headless`; `run.bat`'s does not (D606: PID 9796, his, left alone).
+- **The view cannot raise a post**, so *found once per post* is held by one cache key and said unprobed — if a future
+  probe can pose a post, add it.
 
 ## ⛔ THE TRAPS D605 PAID FOR — THE CAP THAT DREW WHAT IT HID, AND A SQUARE DRAWN BY HAND
 

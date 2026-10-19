@@ -126,6 +126,99 @@ public sealed partial class SimWorld
     }
 
     /// <summary>
+    /// ⭐ The region in the village's words (`trade.md §4.2`, commit 7: the region panel) — one paragraph a neighbour, its
+    /// name beside it: which way it lies, what it has plenty of and is running low on, what it is short of, and the rates
+    /// for the village's own orders, each with its reason (<see cref="SayTheRate"/>). Empty while the region sleeps.
+    /// </summary>
+    /// <remarks>
+    /// Read from the neighbours' stocks as they stand: a make at or above its size is plenty and below it running low; a
+    /// want below its size is short and at or above it enough — the same lines <see cref="SayTheRate"/> draws. Derived,
+    /// never hashed (D335).
+    /// </remarks>
+    public IReadOnlyList<(string Name, string Words)> SayTheRegion()
+    {
+        var said = new List<(string Name, string Words)>();
+        if (RegionAwakeSince == 0UL)
+        {
+            return said;
+        }
+
+        for (int n = 0; n < Config.Neighbours.Count; n++)
+        {
+            NeighbourRow row = Config.Neighbours[n];
+            NeighbourStock stock = NeighbourStocks[n];
+            var plenty = new List<string>();
+            var low = new List<string>();
+            var shortOf = new List<string>();
+            var enough = new List<string>();
+            foreach (MaterialCost made in row.Makes)
+            {
+                (stock.Held[(int)made.Goods] >= made.Amount ? plenty : low).Add(GoodsCatalog.NameOf(made.Goods));
+            }
+
+            if (row.MakesAnimals > 0 && Config.Animals.Count > 0)
+            {
+                (stock.Animals >= row.MakesAnimals ? plenty : low).Add(Config.Animals[0].Plural);
+            }
+
+            foreach (MaterialCost wanted in row.Wants)
+            {
+                (stock.Held[(int)wanted.Goods] < wanted.Amount ? shortOf : enough).Add(GoodsCatalog.NameOf(wanted.Goods));
+            }
+
+            var words = new List<string>
+            {
+                row.Direction switch
+                {
+                    NeighbourDirection.Upriver => "Up the river.",
+                    NeighbourDirection.Downriver => "Down the river.",
+                    _ => "Overland.",
+                },
+            };
+            AddIfAny(words, "Has plenty of", plenty);
+            AddIfAny(words, "Running low on", low);
+            AddIfAny(words, "Short of", shortOf);
+            AddIfAny(words, "Has enough", enough);
+
+            var rates = new List<string>();
+            for (int sell = 0; sell < TradeKeep.Slots; sell++)
+            {
+                for (int buy = 0; buy < TradeBuy.Slots; buy++)
+                {
+                    if (TradeKeep.For((Goods)sell) is not null && TradeBuy.For((Goods)buy) is not null
+                        && SayTheRate(n, (Goods)sell, (Goods)buy) is string rate)
+                    {
+                        rates.Add(rate);
+                    }
+                }
+            }
+
+            bool ordered = TradeKeep.AnySet && TradeBuy.AnySet;
+            words.Add(row.Direction == NeighbourDirection.Overland
+                ? "No road reaches it yet — its trade waits for carts."
+                : !ordered
+                    ? "Set what the village sells and what it buys at the post, and its rates are said here."
+                    : rates.Count == 0
+                        ? "It wants none of what the village sells, or makes none of what it buys."
+                        : string.Join(" ", rates));
+            said.Add((NeighbourName(n), string.Join(" ", words)));
+        }
+
+        return said;
+
+        static void AddIfAny(List<string> words, string lead, List<string> goods)
+        {
+            if (goods.Count > 0)
+            {
+                words.Add($"{lead} {ListedTogether(goods)}.");
+            }
+        }
+
+        static string ListedTogether(List<string> goods) =>
+            goods.Count == 1 ? goods[0] : string.Join(", ", goods.Take(goods.Count - 1)) + " and " + goods[^1];
+    }
+
+    /// <summary>
     /// What the post's orders will do, in one sentence — the post's window (Joe, D596: <i>"a keep order alone sells
     /// nothing, and the post's window says to set what to buy"</i>).
     /// </summary>

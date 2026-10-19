@@ -204,6 +204,58 @@ public partial class Main
     }
 
     /// <summary>
+    /// <c>region:</c> (D606) — the region's window posed at its fullest (three neighbours with the longest names and every
+    /// sentence they can say), each name showing and its words wrapped inside the window; asleep, the one sentence that says
+    /// when it wakes; and the post's window's button opens it.
+    /// </summary>
+    private string TheRegionIsSaid()
+    {
+        RegionWindow w = EnsureTheRegionWindow();
+        bool wasOpen = w.Panel.Visible;
+        w.Panel.Visible = true;
+        try
+        {
+            string words = "Up the river. Has plenty of stone, iron, iron tools, leather and cattle. Running low on bread. "
+                + "Short of firewood, fish, wheat and flour. Has enough logs. Ashford is short of firewood and has plenty of "
+                + "stone: 3 firewood buys 1 stone. Ashford is short of fish and has plenty of iron: 7 fish buys 2 iron.";
+            var said = Enumerable.Range(0, 3).Select(n => (new string((char)('A' + n), SimWorld.NameLengthLimit), words)).ToList();
+            WriteTheRegionWindow(w, said);
+            ForceUpdateTransform();
+            Vector2 wants = w.Panel.GetCombinedMinimumSize();
+            var nameless = w.Rows.Take(3).Where(r => !r.Name.Visible || r.Name.Text.Length == 0 || r.Name.GetCombinedMinimumSize().X < 10f).Count();
+            string? fault = nameless > 0 ? $"{nameless} neighbours show no name"
+                : w.Rows.Take(3).Any(r => !r.Words.Visible || r.Words.Text != words) ? "a neighbour's words do not show"
+                : w.Asleep.Visible ? "the sleeping sentence shows over a woken region"
+                : wants.X > Size.X - (2f * Edge) ? $"the window wants {wants.X:F0} of a {Size.X:F0} game"
+                : wants.Y > RegionWindowTallest ? $"the window is {wants.Y:F0} tall with three neighbours, past {RegionWindowTallest:F0}"
+                : null;
+            if (fault is not null)
+            {
+                return $"[widths] region: ❌ {fault}";
+            }
+
+            WriteTheRegionWindow(w, System.Array.Empty<(string, string)>());
+            if (!w.Asleep.Visible || w.Rows.Any(r => r.Name.Visible || r.Words.Visible))
+            {
+                return "[widths] region: ❌ asleep, the window still shows neighbours or not the sentence that says when it wakes";
+            }
+
+            // The post's window's button opens it.
+            w.Panel.Visible = false;
+            PostWindow post = EnsureThePostsWindow();
+            Button? button = post.Panel.FindChildren("*", nameof(Button), true, false).OfType<Button>().FirstOrDefault(b => b.Text == "The region");
+            button?.EmitSignal(BaseButton.SignalName.Pressed);
+            return button is null ? "[widths] region: ❌ the post's window has no button for the region"
+                : !w.Panel.Visible ? "[widths] region: ❌ the post's window's button did not open the region"
+                : $"[widths] region: ✅ three neighbours with the longest names, each named and its words wrapped, {wants.X:F0} × {wants.Y:F0}; asleep, the sentence that says when it wakes; the post's window opens it";
+        }
+        finally
+        {
+            w.Panel.Visible = wasOpen;
+        }
+    }
+
+    /// <summary>
     /// <c>fence:</c> (D599) — a posed pasture's fence drawn as one tile-long segment an edge, <b>none across the gate</b>;
     /// and the barn card's fence row in each state: <i>Fence the pasture</i> (disabled with its reason when refused),
     /// <i>Cancel the fence</i>, <i>Take the fence down</i>. The view cannot raise a barn (D596), so both are posed facts.
