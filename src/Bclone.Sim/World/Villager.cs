@@ -92,6 +92,17 @@ public sealed class Villager
     public int WorkplaceId { get; set; }
 
     /// <summary>
+    /// The construction site this builder is serving — clearing, carrying to, fetching for or working — or 0 (D602).
+    /// </summary>
+    /// <remarks>
+    /// Set whenever a builder chooses a site and cleared when they find nothing to build, so the next builder to decide
+    /// can take a site nobody is on (Joe: <i>"despite having 3 builders, it takes … months! for a builder to start"</i>;
+    /// `multi-material-construction.md §4.1`). Only counted while they are alive and seated at a builder's hut, so a
+    /// stale id on somebody who has since changed trade holds nothing. Saved, and hashed sparsely.
+    /// </remarks>
+    public int ServingSiteId { get; set; }
+
+    /// <summary>
     /// The last place they actually worked — <b>memory that survives the labourer pool</b>.
     /// </summary>
     /// <remarks>
@@ -815,6 +826,13 @@ public sealed class Villager
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
             VillagerState.Tending => $"tending the wheat at {where}",
             VillagerState.WalkingBackToTheSteading => $"walking back to {where}",
+            VillagerState.CuttingHay => $"cutting hay on the pasture of {where}",
+            VillagerState.FetchingHay => $"fetching hay from {where}",
+            VillagerState.FeedingTheHerd => $"carrying hay out to the herd at {where}",
+            VillagerState.Culling => $"culling a beast the pasture at {where} cannot hold",
+            VillagerState.CollectingForThePost => "collecting goods the village sells",
+            VillagerState.StockingThePost => $"carrying goods down to {where} to sell",
+            VillagerState.FetchingFromThePost => $"bringing home what a boat left at {where}",
             _ => State.ToString(),
         };
     }
@@ -846,6 +864,7 @@ public sealed class Villager
             ["life_stage"] = SaveWriter.Enum(LifeStage),
             ["workplace"] = WorkplaceId,
             ["last_workplace"] = LastWorkplaceId,
+            ["serving_site"] = ServingSiteId,
             ["pinned_trade"] = SaveWriter.Enum(PinnedTrade),
             ["job_reason"] = JobReason,
             ["work_note"] = WorkNote,
@@ -903,6 +922,7 @@ public sealed class Villager
             LifeStage = save.Enum<LifeStage>("life_stage"),
             WorkplaceId = save.Int("workplace"),
             LastWorkplaceId = save.Int("last_workplace"),
+            ServingSiteId = save.HasValue("serving_site") ? save.Int("serving_site") : 0,
             PinnedTrade = save.NullableEnum<JobKind>("pinned_trade"),
             JobReason = save.String("job_reason"),
             WorkNote = save.String("work_note"),

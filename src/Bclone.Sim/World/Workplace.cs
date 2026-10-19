@@ -174,6 +174,23 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 12, never inserted — hashed by position.</remarks>
     Baker = 12,
+
+    /// <summary>
+    /// Keep the herd: cut and carry hay in the growing seasons, feed it out in winter, cull above what the pasture
+    /// holds (D590, `specs/livestock.md §0`). Works at a barn.
+    /// </summary>
+    /// <remarks>⛔ Appended at 13. Asked for by nothing until the herd behaves (`trade.md §11` commit 3).</remarks>
+    Herdsman = 13,
+
+    /// <summary>
+    /// Carry what the village sells down to the trading post before a boat, and what it bought back to the stores
+    /// after (D590, `specs/trade.md §4.5`). Works at a trading post.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Appended at 14. Asked for by <c>LabourQuota.MerchantsWanted</c> where a post has work (D594). <b>The merchant</b>, not
+    /// the trader (Joe, D591): the marketer's plural is <i>traders</i> (D188), and so is half this codebase's prose.
+    /// </remarks>
+    Merchant = 14,
 }
 
 /// <summary>
@@ -628,6 +645,40 @@ public sealed class Workplace
     /// </summary>
     public bool FieldProbeFailed { get; set; }
 
+    /// <summary>
+    /// How many head the herd on this barn has (D590, `livestock.md §0`: the herd lives on the barn). Zero on every
+    /// other workplace, and on a barn until a boat brings one.
+    /// </summary>
+    public int HerdHead { get; set; }
+
+    /// <summary>
+    /// The herd's growth toward its next head — an integer accumulator with a stated threshold (`livestock.md §6.2`),
+    /// stepped in commit 2.
+    /// </summary>
+    public int HerdGrowth { get; set; }
+
+    /// <summary>
+    /// Hay a herdsman has put out on the pasture and the herd has not yet eaten (D593) — what the herd eats in winter,
+    /// never the barn's store directly.
+    /// </summary>
+    public int HayPutOut { get; set; }
+
+    /// <summary>Pasture tiles cut for hay this year, in the pasture's own order — back to none each spring (D593).</summary>
+    public int HayCutThisYear { get; set; }
+
+    /// <summary>
+    /// The pasture a barn's fence closes round — its tiles as the zone map indexes them, sorted, frozen at <i>Fence the
+    /// pasture</i> (D598, `livestock.md §0.2`). Empty on every other workplace and on an unfenced barn. A fact: saved,
+    /// hashed sparsely. ⛔ Never follows the paint — the ground is locked while it is not empty.
+    /// </summary>
+    public List<int> FencedTiles { get; set; } = new();
+
+    /// <summary>The tile outside the fence's gate — the lane into the pasture (D598). Null with no fence.</summary>
+    public GridPos? FenceGate { get; set; }
+
+    /// <summary>Whether the fence stands (its walls are up) — false while its site is being built (D598).</summary>
+    public bool FenceStands { get; set; }
+
     /// <summary>True when there is no room for anyone else.</summary>
     /// <summary>
     /// How many hands the player has insisted on here, or null to let the village
@@ -765,6 +816,13 @@ public sealed class Workplace
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
         ["queue_rank"] = QueueRank,
+        ["herd_head"] = HerdHead,
+        ["herd_growth"] = HerdGrowth,
+        ["hay_put_out"] = HayPutOut,
+        ["hay_cut_this_year"] = HayCutThisYear,
+        ["fenced_tiles"] = FencedTiles.Count == 0 ? null : SaveWriter.Ints(FencedTiles),
+        ["fence_gate"] = SaveWriter.GridPos(FenceGate),
+        ["fence_stands"] = FenceStands,
     };
 
     internal static Workplace FromSave(SaveReader save)
@@ -797,6 +855,15 @@ public sealed class Workplace
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),
             QueueRank = save.NullableInt("queue_rank"),
+            HerdHead = save.Int("herd_head"),
+            HerdGrowth = save.Int("herd_growth"),
+            HayPutOut = save.Int("hay_put_out"),
+            HayCutThisYear = save.Int("hay_cut_this_year"),
+
+            // Read tolerantly (D598): a format-8 save written before fences has none of the three.
+            FencedTiles = save.HasValue("fenced_tiles") ? save.Ints("fenced_tiles") : new List<int>(),
+            FenceGate = save.HasValue("fence_gate") ? save.NullableGridPos("fence_gate") : null,
+            FenceStands = save.HasValue("fence_stands") && save.Bool("fence_stands"),
         };
 
         workplace.Rename(save.NullableString("given_name"));

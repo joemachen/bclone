@@ -359,6 +359,28 @@ public enum BuildingKind
     /// finished. Learned by crossings walked (<c>stone_bridge_unlock_crossings</c>). <b>Appended at 22.</b>
     /// </remarks>
     StoneBridge = 22,
+
+    /// <summary>
+    /// A barn — the herdsman's workplace, the hay store, and its painted ground the pasture (D590; Joe, D588:
+    /// *one barn*; `specs/livestock.md §0`).
+    /// </summary>
+    /// <remarks>Learned once the town hall stands, with the post. <b>Appended at 23.</b></remarks>
+    Barn = 23,
+
+    /// <summary>
+    /// A trading post on the river bank — where the merchant carries the village's goods to sell and a boat docks
+    /// (D590, `specs/trade.md §4.1`).
+    /// </summary>
+    /// <remarks>
+    /// Must touch water (the fishery's rule); learned once the town hall stands (Joe, D587 call 1). <b>Appended at 24.</b>
+    /// </remarks>
+    TradingPost = 24,
+
+    /// <summary>
+    /// A fence round a barn's pasture, with one gate (D598, `specs/livestock.md §0.2`) — put up from the barn's card, never
+    /// placed by hand; its row prices one length of fence. <b>Appended at 25.</b>
+    /// </summary>
+    PastureFence = 25,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>
@@ -656,6 +678,12 @@ public sealed class ConstructionSite
     public bool RebuildsBridge { get; init; }
 
     /// <summary>
+    /// For a pasture's fence, its barn's workplace id (D598, `livestock.md §0.2`) — the site stands at the gate's outside
+    /// tile and finishing it walls that barn's fenced tiles. Zero for every other site.
+    /// </summary>
+    public int FencesBarnId { get; init; }
+
+    /// <summary>
     /// Whether this site mends the building standing on its tiles rather than raising one (`building-condition.md
     /// §4.3`, D555) — the demolition site's shape the other way round: it owes a share of the row's logs and work,
     /// is worked by the builders like any site, and finishing it stamps the building's <c>RepairedAtTick</c>.
@@ -908,6 +936,7 @@ public sealed class ConstructionSite
             ["demolishing"] = Demolishing,
             ["bridge_to"] = SaveWriter.Point(BridgeTo),
             ["rebuilds_bridge"] = RebuildsBridge,
+            ["fences_barn"] = FencesBarnId,
             ["repairing"] = Repairing,
             ["work_ticks"] = Recipe.WorkTicks,
             ["materials"] = materials,
@@ -935,6 +964,7 @@ public sealed class ConstructionSite
             Demolishing = save.Bool("demolishing"),
             BridgeTo = save.NullablePoint("bridge_to"),
             RebuildsBridge = save.Bool("rebuilds_bridge"),
+            FencesBarnId = save.HasValue("fences_barn") ? save.Int("fences_barn") : 0,
             Repairing = save.Bool("repairing"),
             WorkDone = save.Int("work_done"),
         };

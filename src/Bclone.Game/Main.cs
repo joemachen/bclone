@@ -615,6 +615,13 @@ public partial class Main : Control
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());
+
+        // Trade and the herd (D596): last but one, so the orders they set and clear disturb no other line.
+        GD.Print(TheHerdGrazesItsPasture());
+        GD.Print(ThePostsWindowWorks());
+        GD.Print(TheRegionIsSaid());
+        GD.Print(_map.TheBoatSailsTheRiver());
+        GD.Print(TheFenceIsDrawnAndItsButtonFollowsIt());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -2075,6 +2082,12 @@ public partial class Main : Control
     /// <summary>True once the founders are gone, so the town hall has one (D252).</summary>
     private bool _foundersGone;
 
+    /// <summary>
+    /// True once the town hall stands — the sim's gate for the barn and the trading post (D590, `trade.md §4.1`),
+    /// latched like every learned building so the probe can pose it.
+    /// </summary>
+    private bool _hallTradeKnown;
+
     /// <summary>Every button on the strip, with what decides whether it is showing.</summary>
     /// <remarks>
     /// ⭐ <b>Built once and shown or hidden, never rebuilt.</b> Tearing the strip down on every
@@ -2410,6 +2423,14 @@ public partial class Main : Control
         if (_foundersGone != world.SaidTheFoundersAreGone)
         {
             _foundersGone = world.SaidTheFoundersAreGone;
+            RefreshTheStrip();
+        }
+
+        // The barn and the post wait for the hall to stand (D590) — the sim's `WhyNotYet`, latched here.
+        bool tradeKnown = world.IsUnlocked(BuildingKind.TradingPost);
+        if (_hallTradeKnown != tradeKnown)
+        {
+            _hallTradeKnown = tradeKnown;
             RefreshTheStrip();
         }
 
@@ -3411,7 +3432,22 @@ public partial class Main : Control
         // ⭐ A CARD FOR WHAT WAS CLICKED (D376): a store, a workplace or a home; bare ground still
         // reads in the Settings panel's line and opens nothing.
         SimWorld world = _loop.World;
-        if (world.StoreAt(tile) is StoreBuilding store)
+
+        // ⭐ The barn and the post are workplaces whose store is their own building (D596): their card is the
+        // workplace's — the herd, the post's window — and it reads the store from there.
+        // ⭐ AND THE POST OPENS ITS WINDOW (Joe, D607: "the trading post's window is missing a lot of important information
+        // … no region, no items to sell" — he was reading the card; the window was a button away, and no order was ever
+        // set). The card is a button on the window.
+        if (world.StoreAt(tile) is { Kind: StoreKind.TradingPost } && world.WorkplaceCovering(tile) is { Kind: JobKind.Merchant } post)
+        {
+            OpenThePostsWindow(post.Id);
+        }
+        else if (world.StoreAt(tile) is { Kind: StoreKind.Barn or StoreKind.TradingPost }
+            && world.WorkplaceCovering(tile) is { Kind: JobKind.Herdsman or JobKind.Merchant } trade)
+        {
+            OpenCard(new CardSubject(CardKind.Workplace, trade.Id));
+        }
+        else if (world.StoreAt(tile) is StoreBuilding store)
         {
             OpenCard(new CardSubject(CardKind.Store, store.Id));
         }
@@ -7469,7 +7505,8 @@ public partial class Main : Control
         for (int id = 0; id < catalogue.Count; id++)
         {
             var kind = (BuildingKind)id;
-            if (kind == BuildingKind.Home || !catalogue.Has(id))
+            // ⭐ Nor a pasture's fence (D598): it is put up from its barn's card, round the ground the barn was given.
+            if (kind == BuildingKind.Home || !catalogue.Has(id) || catalogue[kind]?.EnclosesPasture == true)
             {
                 // The house is the brush's; a retired id (D571) has no row to make a button of.
                 continue;
@@ -7630,17 +7667,19 @@ public partial class Main : Control
             BuildingKind.Bridge or BuildingKind.StoneBridge => BuildCategory.Works,
 
             // The mill and the bakery beside the farm they turn the wheat of (D522).
+            // The barn with them (D596): a herd is meat, kept on its pasture as a field is.
             BuildingKind.GathererHut or BuildingKind.Farmhouse
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge
-                or BuildingKind.Mill or BuildingKind.Bakery => BuildCategory.Food,
+                or BuildingKind.Mill or BuildingKind.Bakery or BuildingKind.Barn => BuildCategory.Food,
 
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
                 or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
 
             // The pile leads its group because it leads the game (D76): it costs nothing but
             // the ground, and a village with nowhere to put things cannot begin.
+            // ⭐ And the post beside the market (D596): both are where goods go to leave the stores.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
-                or BuildingKind.Market => BuildCategory.Storage,
+                or BuildingKind.Market or BuildingKind.TradingPost => BuildCategory.Storage,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
@@ -7765,6 +7804,11 @@ public partial class Main : Control
         BuildingKind.Bakery => _bakeryKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
+
+        // ⛔ THE BARN AND THE POST WAIT FOR THE TOWN HALL (D590) — without this arm the `_ => true` below lit a tab at
+        // the founding for buildings nobody may place (the probe's `filters:` line caught it). Their buttons come in
+        // commit 6 of `trade.md §11`.
+        BuildingKind.Barn or BuildingKind.TradingPost => _hallTradeKnown,
         _ => true,
     };
 

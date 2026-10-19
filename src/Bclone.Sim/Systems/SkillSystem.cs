@@ -293,6 +293,17 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.Tending => false,
         VillagerState.WalkingBackToTheSteading => false,
 
+        // The herdsman's errands are his work (D593); no skill row grows from them yet, as the fisher's did not at first.
+        VillagerState.CuttingHay => true,
+        VillagerState.FetchingHay => true,
+        VillagerState.FeedingTheHerd => true,
+        VillagerState.Culling => true,
+
+        // The merchant's errands are his work (D594).
+        VillagerState.CollectingForThePost => true,
+        VillagerState.StockingThePost => true,
+        VillagerState.FetchingFromThePost => true,
+
         // Only reachable by casting an integer that is not a state at all. Loud rather than
         // swallowed (METHODOLOGY §4), and the walking test above is what catches a real new
         // state long before this could.

@@ -245,6 +245,10 @@ public partial class VillageMap : Control
     {
         StoreKind.Granary => GranaryColour,
         StoreKind.Warehouse => WarehouseColour,
+
+        // The barn and the post draw as their trades (D596): the store IS the building the herdsman and merchant work at.
+        StoreKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
+        StoreKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
         _ => MarketColour,
     };
 
@@ -2687,6 +2691,12 @@ public partial class VillageMap : Control
         // mistaken for a villager or hide a building, so it goes down with the terrain.
         DrawTheWoods();
 
+        // ⭐ The herds graze their pastures with the woods' game, under the buildings (D596).
+        DrawTheHerds();
+
+        // ⭐ The trading boat sails the river under the bridges (D606).
+        DrawTheBoat();
+
         // ⭐ The bridges lie on the water, under everything that stands and everyone who walks (D546).
         DrawBridges();
 
@@ -2869,6 +2879,13 @@ public partial class VillageMap : Control
     private Color ColourForTheBrushOn(GridPos tile, int direction)
     {
         SimWorld world = _world!;
+
+        // ⛔ Except a fenced pasture's (D599): its ground is locked, and the rubber says so before the stroke does nothing.
+        if (direction < 0 && _groundFor != 0 && world.FindWorkplace(_groundFor) is Workplace eraser
+            && world.Zones.WorkGroundOwner(tile) == eraser.Id && !world.CanEraseWorkGround(eraser, tile).Allowed)
+        {
+            return GhostRefused;
+        }
 
         if (direction < 0)
         {
@@ -3344,12 +3361,8 @@ public partial class VillageMap : Control
 
             Vector2 centre = ToScreen(building.Position);
             float size = Mathf.Max(8f, _pixelsPerTile * 0.8f);
-            Color colour = building.Kind switch
-            {
-                StoreKind.Granary => GranaryColour,
-                StoreKind.Warehouse => WarehouseColour,
-                _ => MarketColour,
-            };
+            // One table (D596): the card's picture and the map asked two copies of it, and the barn was missing from one.
+            Color colour = ColourOf(building.Kind);
 
             // ⛔⛔ THE LONGHOUSE DREW AS ONE SQUARE, AND THIS IS WHERE (D321, Joe: *"that's what a
             // built longhouse looks like. 1 square."*). A `Rect2` through `DrawRect` can neither
@@ -3447,7 +3460,13 @@ public partial class VillageMap : Control
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
-            if (world.GoodsCatalog.StoredBy(goods, store.Kind))
+
+            // ⭐ The post holds whatever is carried to it or a boat leaves — no good's `stored_by` names it (D594) — so its
+            // shelf is what it holds, in catalogue order (D596).
+            bool shelved = store.Kind == StoreKind.TradingPost
+                ? store.Store[goods] > 0
+                : world.GoodsCatalog.StoredBy(goods, store.Kind);
+            if (shelved)
             {
                 int measure = store.Kind == StoreKind.Market
                     ? world.MarketStockLimit(store, goods)
@@ -3904,9 +3923,13 @@ public partial class VillageMap : Control
         // ⚠️ And on the buildings since D350, because a site's own clearing mark is left undrawn
         // (see `underASite` below) and a site can arrive on, or leave, ground the paint counter
         // never saw change.
+        // ⚠️ And on the walls and the standing since D599: a pasture's fence goes up at its finishing and comes down at a
+        // take-down — neither moves the paint counter at the moment the fence changes.
         if (_outlinesTracedAt == zones.Edits
             && _outlinesTracedAtTerrain == _world!.TerrainGeneration
-            && _outlinesTracedAtBuildings == _world.BuildingGeneration)
+            && _outlinesTracedAtBuildings == _world.BuildingGeneration
+            && _outlinesTracedAtWalls == zones.WallGeneration
+            && _outlinesTracedAtStanding == _world.StandingGeneration)
         {
             return;
         }
@@ -3916,6 +3939,8 @@ public partial class VillageMap : Control
         _outlinesTracedAt = zones.Edits;
         _outlinesTracedAtTerrain = _world!.TerrainGeneration;
         _outlinesTracedAtBuildings = _world.BuildingGeneration;
+        _outlinesTracedAtWalls = zones.WallGeneration;
+        _outlinesTracedAtStanding = _world.StandingGeneration;
         _zoneOutlines.Clear();
         _zoneFills.Clear();
         _fieldFills.Clear();
@@ -4054,6 +4079,42 @@ public partial class VillageMap : Control
                 AddFenceSide(tile, 1, 0, 2, ground, walls, edge);
                 AddFenceSide(tile, 0, 1, 4, ground, walls, edge);
                 AddFenceSide(tile, -1, 0, 8, ground, walls, edge);
+            }
+        }
+
+        // ⭐ THE PASTURES' FENCES (D599, `livestock.md §0.2`) — drawn from the walls a standing fence raised, as a yard's are,
+        // so the line IS the rule and the gate is a gap; while its site is being built, the edges it will run are drawn
+        // faint, as a yard's fence is while its house is a site. With the work-ground layer: a barn's ground is work ground.
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            Workplace barn = _world.Workplaces[i];
+            if (barn.FencedTiles.Count == 0 || barn.FenceGate is not GridPos gate)
+            {
+                continue;
+            }
+
+            IReadOnlyList<(GridPos From, GridPos To)> fence;
+            Color colour;
+            if (barn.FenceStands)
+            {
+                fence = zones.PastureFenceOf(barn.Id);
+                colour = FenceEdge;
+            }
+            else
+            {
+                var tiles = new List<GridPos>(barn.FencedTiles.Count);
+                for (int t = 0; t < barn.FencedTiles.Count; t++)
+                {
+                    tiles.Add(zones.PositionOf(barn.FencedTiles[t]));
+                }
+
+                fence = ZoneMap.FenceEdges(tiles, new[] { gate }, Array.Empty<GridPos>(), out _);
+                colour = FenceEdge with { A = 0.35f };
+            }
+
+            foreach ((Vector2 from, Vector2 to) in PastureFenceSegments(fence))
+            {
+                _zoneOutlines.Add((Layer.WorkGround, colour, new[] { from, to }));
             }
         }
 
@@ -4220,6 +4281,31 @@ public partial class VillageMap : Control
     /// One side of a fenced tile as a line, if a wall stands on it and the ground beyond is not
     /// this household's own (D404) — in sub-tile space, like every other outline.
     /// </summary>
+    /// <summary>
+    /// A fence's edges as line segments in sub-tile space — each the side two tiles share (D599). Pure, so the probe asks
+    /// it of a posed fence: one segment an edge, a tile long, and none on the gate.
+    /// </summary>
+    internal static List<(Vector2 From, Vector2 To)> PastureFenceSegments(IReadOnlyList<(GridPos From, GridPos To)> edges)
+    {
+        int p = SubTile.PerTile;
+        var segments = new List<(Vector2, Vector2)>(edges.Count);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            (GridPos a, GridPos b) = edges[e];
+            float left = a.X * p;
+            float top = a.Y * p;
+            segments.Add((b.X - a.X, b.Y - a.Y) switch
+            {
+                (0, -1) => (new Vector2(left, top), new Vector2(left + p, top)),
+                (1, 0) => (new Vector2(left + p, top), new Vector2(left + p, top + p)),
+                (0, 1) => (new Vector2(left, top + p), new Vector2(left + p, top + p)),
+                _ => (new Vector2(left, top), new Vector2(left, top + p)),
+            });
+        }
+
+        return segments;
+    }
+
     private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge)
     {
         if ((walls & bit) == 0 || ground.Contains(new GridPos(tile.X + dx, tile.Y + dy)))
@@ -4914,14 +5000,16 @@ public partial class VillageMap : Control
     /// </summary>
     private void CollectTheTrailsIfTheyMoved(SimWorld world)
     {
+        // ⭐ And when a fence goes up or comes down (D605): the network reads the walls now.
         PathWear paths = world.Paths;
-        if (ReferenceEquals(paths, _trailsOf) && paths.Generation == _trailsCollectedAt)
+        if (ReferenceEquals(paths, _trailsOf) && paths.Generation == _trailsCollectedAt && world.Zones.WallGeneration == _trailsWallsAt)
         {
             return;
         }
 
         _trailsOf = paths;
         _trailsCollectedAt = paths.Generation;
+        _trailsWallsAt = world.Zones.WallGeneration;
         _trailCollections++;
         _trail.Clear();
 
@@ -4983,18 +5071,36 @@ public partial class VillageMap : Control
         int height = maxY - minY + 5;
         var grade = new byte[width * height];
         var blocked = new bool[width * height];
+
+        // ⭐ AND THE FENCES AND WHICH BUILDING STANDS WHERE (D605): a fence separates two tiles everywhere the network
+        // looks, and a building with worn ground beside it gets its doorstep drawn. A building is told apart by the anchor
+        // its footprint is known by, numbered in the order the window meets it.
+        var walls = new byte[width * height];
+        var buildingOf = new int[width * height];
+        var numbered = new Dictionary<GridPos, int>();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
                 var tile = new GridPos(minX + x, minY + y);
                 int i = (y * width) + x;
-                blocked[i] = !world.IsWalkable(tile) || world.FootprintCovering(tile).Count > 0;
+                IReadOnlyList<GridPos> standing = world.FootprintCovering(tile);
+                blocked[i] = !world.IsWalkable(tile) || standing.Count > 0;
                 grade[i] = blocked[i] ? (byte)0 : TrailGradeAt(tile);
+                walls[i] = world.Zones.WallsOn(tile);
+                if (standing.Count > 0)
+                {
+                    if (!numbered.TryGetValue(standing[0], out int id))
+                    {
+                        numbered[standing[0]] = id = numbered.Count + 1;
+                    }
+
+                    buildingOf[i] = id;
+                }
             }
         }
 
-        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble);
+        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble, walls, buildingOf);
         _networkWindow = (minX, minY, width, height, grade, blocked);
         LastNetworkBuildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
     }
@@ -5021,6 +5127,9 @@ public partial class VillageMap : Control
 
     private int _fieldTrailsAtTerrain = -1;
     private int _trailsCollectedAt = -1;
+
+    /// <summary>The walls' generation the trails were last read at (D605) — a fence going up redraws the lanes.</summary>
+    private int _trailsWallsAt = -1;
 
     /// <summary>
     /// How trodden every tile is — <b>the wear overlay</b> (D358).
@@ -5192,9 +5301,11 @@ public partial class VillageMap : Control
             "wBBw",
             "wwww");
         int onTheHut = OnTheBuildings(ring, "wwww", "wBBw", "wBBw", "wwww");
-        if (ring.Lanes.Count != 1 || !ring.Lanes[0].Closed || onTheHut > 0)
+        // ⚠️ One closed loop, and since D607 a spur from it to the hut's wall besides — the loop is drawn on its own
+        // tiles' middles, a tile off the wall, so it goes round the hut without touching it.
+        if (ring.Lanes.Count(lane => lane.Closed) != 1 || ring.Lanes.Count > 2 || onTheHut > 0)
         {
-            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes (closed: {ring.Lanes.Count == 1 && ring.Lanes[0].Closed}), {onTheHut} samples on the hut");
+            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes ({ring.Lanes.Count(lane => lane.Closed)} closed), {onTheHut} samples on the hut");
         }
 
         // ⛔ AND ROUND A ONE-TILE BUILDING (D582, Joe's screenshot: a lane drawn straight across a small store). A ring
@@ -5284,8 +5395,10 @@ public partial class VillageMap : Control
             "....w....",
             "....w....",
             "wwwwwwwww");
+        // ⚠️ At least three since D605: the lane's end is placed on the middle of its two worn tiles, half a tile back from
+        // the doorstep, so a doorstep is drawn on from it to the wall — the door reached at 0.6 where it stopped at 1.5.
         float reaches = door.Lanes.SelectMany(lane => lane.Points).Select(point => point.Y).DefaultIfEmpty(9f).Min();
-        if (door.Lanes.Count != 3 || door.Junctions.Count != 1 || reaches > 1.75f)
+        if (door.Lanes.Count < 3 || door.Junctions.Count != 1 || reaches > 1.75f)
         {
             faults.Add($"a short lane up to a door reads as {door.Lanes.Count} lanes and {door.Junctions.Count} junctions, reaching row {reaches:F2} (the door is row 0)");
         }
@@ -5298,7 +5411,8 @@ public partial class VillageMap : Control
             faults.Add($"two lanes two tiles apart drew as {apart.Lanes.Count} ({apart.BridgedTiles} gap tiles bridged)");
         }
 
-        if (walled.Lanes.Count != 2 || walled.BridgedTiles != 0)
+        // ⚠️ Two lanes and, since D607, one spur to the building's wall — never a lane across it or a bridge over it.
+        if (walled.Lanes.Count < 2 || walled.Lanes.Count > 3 || walled.BridgedTiles != 0 || OnTheBuildings(walled, "wwwwwwww", "BBBBBBBB", "wwwwwwww") > 0)
         {
             faults.Add($"two lanes with a building between drew as {walled.Lanes.Count} ({walled.BridgedTiles} bridged across it)");
         }
@@ -5308,6 +5422,124 @@ public partial class VillageMap : Control
         if (patch.Lanes.Count == 0)
         {
             faults.Add("a lone 2×2 of wear drew nothing — the thinning erased it");
+        }
+
+        // ⛔ A FENCE IS A WALL TO THE DRAWING TOO (D605, Joe: a path "going through a house fence"). Two lanes worn either side
+        // of a fence — a yard's edge against a lane — stay two, and nothing is drawn across it; with a gate in the fence
+        // the two may join, only through the gate.
+        var fence = Enumerable.Range(0, 9).Select(x => (x, 0, 0, 1)).ToArray();
+        TrailNetwork fenced = ShapeWith(false, new[] { "wwwwwwwww", "wwwwwwwww" }, fence);
+        int throughTheFence = AcrossTheFences(fenced, fence);
+        if (fenced.Lanes.Count < 2 || throughTheFence > 0)
+        {
+            faults.Add($"two lanes either side of a fence draw as {fenced.Lanes.Count} with {throughTheFence} steps through the fence");
+        }
+
+        var gated = fence.Where(f => f.Item1 != 4).ToArray();
+        TrailNetwork withAGate = ShapeWith(false, new[] { "wwwwwwwww", "wwwwwwwww" }, gated);
+        if (AcrossTheFences(withAGate, gated) > 0)
+        {
+            faults.Add($"lanes either side of a fence with a gate cross it {AcrossTheFences(withAGate, gated)} times away from the gate");
+        }
+
+        // ⛔ A PLAZA IS NOT A STAR (D605, Joe: "doesn't look organic"): a packed square with six lanes into it was one junction
+        // where all six met. Each lane stops where it arrives and the arrivals are joined by a tree on the square's worn
+        // ground — no junction of five or more, and still one network.
+        string[] square =
+        {
+            "..w...w..",
+            "..w...w..",
+            "..ppppp..",
+            "wwppppp..",
+            "..pppppww",
+            "..ppppp..",
+            "..ppppp..",
+            "...w.w...",
+            "...w.w...",
+        };
+        TrailNetwork plazaNetwork = Shape(square);
+        int mostMeeting = MostLanesAtOneJunction(plazaNetwork);
+        int pieces = Pieces(plazaNetwork);
+        if (mostMeeting >= 5 || pieces != 1)
+        {
+            faults.Add($"a packed square with six lanes in draws {mostMeeting} lanes meeting at one junction in {pieces} pieces");
+        }
+
+        // ⭐⭐ AND JOE'S OWN SQUARE (D605, `willowdale-dove-flint-67`, Spring Year 71 — worn ground, footprints and fences as
+        // the game read them): seventeen lanes met at one point here. The hand-drawn square above thins to a small cross and
+        // could not tell (its red check scored zero); this one is the star he saw.
+        string[] willow =
+        {
+            "BBpBBp..........",
+            "ppppBpB......B..",
+            "p.pppp.......w.w",
+            "p.pppp.......pBp",
+            "pppppppppppppppp",
+            "p.BBppppBBBBppBB",
+            "p....pppwppppp..",
+            "p....BppBpBBpppp",
+            "p....BppBppppppp",
+            "pww...pppp.BBppB",
+            "B.wwwwppBB.BBpp.",
+            ".......pBBppppp.",
+        };
+        (int, int, int, int)[] willowFences =
+        {
+            (0, 5, 1, 0), (0, 6, 1, 0), (1, 6, 0, 1), (1, 7, 1, 0), (1, 10, 1, 0), (1, 11, 1, 0), (2, 6, 0, 1), (2, 7, 0, 1),
+            (2, 8, 1, 0), (2, 9, 1, 0), (3, 6, 0, 1), (3, 6, 1, 0), (3, 9, 0, 1), (4, 5, 0, 1), (4, 9, 0, 1), (5, 6, 1, 0),
+            (5, 9, 0, 1), (5, 9, 1, 0), (14, 10, 1, 0), (14, 11, 1, 0),
+        };
+        TrailNetwork hisSquare = ShapeWith(false, willow, willowFences);
+        int mostOnHisSquare = MostLanesAtOneJunction(hisSquare);
+        if (mostOnHisSquare >= 5 || OnTheBuildings(hisSquare, willow) > 0 || AcrossTheFences(hisSquare, willowFences) > 0)
+        {
+            faults.Add($"Joe's own square draws {mostOnHisSquare} lanes meeting at one junction, {OnTheBuildings(hisSquare, willow)} samples on a building and {AcrossTheFences(hisSquare, willowFences)} steps through a fence");
+        }
+
+        // ⭐ A DOORSTEP IS DRAWN (D605, Joe: "we're missing some of the shorter sections of pathways to-and-from entrances").
+        // A lane passing a tile off a building, its doorstep worn wide: the thinning folds the doorstep into the lane, and
+        // the lane must still reach the building's wall.
+        string[] doorway = { "....B....", "...www...", "wwwwwwwww" };
+        TrailNetwork toTheDoor = Shape(doorway);
+        float nearestToTheDoor = toTheDoor.Lanes.SelectMany(lane => lane.Points).Select(point => point.DistanceTo(new Vector2(4f, 0f))).DefaultIfEmpty(9f).Min();
+        if (nearestToTheDoor > 0.7f)
+        {
+            faults.Add($"a lane a tile off a building comes no nearer its wall than {nearestToTheDoor:F2} of its centre");
+        }
+
+        // ⭐ A SPUR TO A WALL THE LANE ONLY PASSES (D607, Joe: "paths not connecting to building entrances"): a lane down
+        // the next row, its own tile's middle a tile from the building — it goes by, so a spur is drawn up to the wall.
+        string[] byTheWall = { "....B....", "wwwwwwwww" };
+        TrailNetwork passingBy = Shape(byTheWall);
+        float spurReaches = passingBy.Lanes.SelectMany(lane => lane.Points).Select(point => point.DistanceTo(new Vector2(4f, 0f))).DefaultIfEmpty(9f).Min();
+        if (spurReaches > 0.6f || OnTheBuildings(passingBy, byTheWall) > 0)
+        {
+            faults.Add($"a lane passing a building comes no nearer its wall than {spurReaches:F2} of its centre, or is drawn on it");
+        }
+
+        // ⭐ A RING ROUND ONE BUILDING KEEPS ITS BUSIER SIDE (D607, Joe's call). JOE'S OWN RING (`oakhaven-ash-otter-53`, Y60:
+        // worn ground, footprints and fences round the smithy's corner as the game read them), its left side posed only
+        // worn so the busier side is the right: the right is drawn beside the building, the left is not. ⚠️ A ring drawn
+        // by hand thinned to one arc and never formed (D607's first two red checks scored zero) — this one is his.
+        string[] hisRing =
+        {
+            "pppppBBp..",
+            "pppppppppp",
+            "pppppppppp",
+            "BB.w.BpBB.",
+            "...w.BpBBp",
+            "...w..p...",
+            "ppppppp...",
+            "Bp.BBBpp..",
+            "B.BBBBBpBB",
+        };
+        (int, int, int, int)[] hisRingFences = { (0, 5, 0, 1), (1, 5, 0, 1), (2, 2, 0, 1), (2, 3, 1, 0), (2, 4, 1, 0), (2, 5, 0, 1), (2, 5, 1, 0) };
+        TrailNetwork aroundIt = ShapeWith(false, hisRing, hisRingFences);
+        bool quieterDrawn = aroundIt.Lanes.SelectMany(lane => lane.Points).Any(point => Mathf.Abs(point.X - 3f) < 0.35f && point.Y > 3.2f && point.Y < 4.8f);
+        bool busierDrawn = aroundIt.Lanes.SelectMany(lane => lane.Points).Any(point => Mathf.Abs(point.X - 6f) < 0.35f && point.Y > 3.2f && point.Y < 4.8f);
+        if (quieterDrawn || !busierDrawn || aroundIt.RingsOpened == 0)
+        {
+            faults.Add($"Joe's ring round the smithy's corner draws its quieter side ({quieterDrawn}), loses its busier one ({!busierDrawn}), or opened none ({aroundIt.RingsOpened})");
         }
 
         // The same shape twice, with the valley's wander, draws the same.
@@ -5328,19 +5560,26 @@ public partial class VillageMap : Control
             ? "[widths] trails: ✅ the network reads a row, a staircase and a corridor as one lane each, a ladder as one lane, "
                 + $"a ring round a hut as one loop off the hut, a packed hub as {hub.Lanes.Count} spokes and {hub.Junctions.Count} junction; two lanes apart or walled "
                 + "stay two; a short lane up to a door stays; a lane past a one-tile store, and Joe's own village, go round it uncut; "
+                + $"lanes either side of a fence stay {fenced.Lanes.Count} and cross it only at its gate; a packed square with six lanes in "
+                + $"meets at most {mostMeeting} at a junction, in one piece, and Joe's own square (seventeen once) at most {mostOnHisSquare}; "
+                + $"a doorstep is drawn to {nearestToTheDoor:F2} of the wall's tile, and a spur from a lane only passing to {spurReaches:F2}; "
+                + "a ring round one store keeps its busier side; "
                 + "a lone 2×2 draws; the same shape draws the same"
             : $"[widths] trails: ⛔ {string.Join("; ", faults)}";
 
-        TrailNetwork Shape(params string[] rows) => ShapeWith(false, rows);
+        TrailNetwork Shape(params string[] rows) => ShapeWith(false, rows, null);
 
-        TrailNetwork Wandering(params string[] rows) => ShapeWith(true, rows);
+        TrailNetwork Wandering(params string[] rows) => ShapeWith(true, rows, null);
 
-        TrailNetwork ShapeWith(bool wander, string[] rows)
+        // ⭐ Every shape is built as the game builds it (D605): its buildings told apart (each block of B one building, for
+        // the doorsteps), and — where a case gives them — walls between tiles, as (x, y) and the step across the wall.
+        TrailNetwork ShapeWith(bool wander, string[] rows, (int X, int Y, int DX, int DY)[]? fences)
         {
             int width = rows[0].Length + 2;
             int height = rows.Length + 2;
             var grade = new byte[width * height];
             var blocked = new bool[width * height];
+            var buildingOf = new int[width * height];
             for (int y = 0; y < rows.Length; y++)
             {
                 for (int x = 0; x < rows[y].Length; x++)
@@ -5351,7 +5590,85 @@ public partial class VillageMap : Control
                 }
             }
 
-            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null);
+            int buildings = 0;
+            for (int s = 0; s < width * height; s++)
+            {
+                if (!blocked[s] || buildingOf[s] != 0)
+                {
+                    continue;
+                }
+
+                buildingOf[s] = ++buildings;
+                var queue = new Queue<int>();
+                queue.Enqueue(s);
+                while (queue.Count > 0)
+                {
+                    int i = queue.Dequeue();
+                    foreach (int next in new[] { i - 1, i + 1, i - width, i + width })
+                    {
+                        if (next >= 0 && next < width * height && blocked[next] && buildingOf[next] == 0)
+                        {
+                            buildingOf[next] = buildings;
+                            queue.Enqueue(next);
+                        }
+                    }
+                }
+            }
+
+            byte[]? walls = null;
+            if (fences is not null)
+            {
+                walls = new byte[width * height];
+                foreach ((int fx, int fy, int dx, int dy) in fences)
+                {
+                    int from = ((fy + 1) * width) + fx + 1, to = ((fy + dy + 1) * width) + fx + dx + 1;
+                    walls[from] |= WallBit(dx, dy);
+                    walls[to] |= WallBit(-dx, -dy);
+                }
+            }
+
+            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null, walls, buildingOf);
+
+            static byte WallBit(int dx, int dy) => (dx, dy) switch { (0, -1) => 1, (1, 0) => 2, (0, 1) => 4, (-1, 0) => 8, _ => 0 };
+        }
+
+        // How many drawn steps cross one of the given walls — every quarter-tile along each step, a tile change across a
+        // walled edge (D605).
+        static int AcrossTheFences(TrailNetwork network, (int X, int Y, int DX, int DY)[] fences)
+        {
+            var walled = new HashSet<(int, int, int, int)>();
+            foreach ((int x, int y, int dx, int dy) in fences)
+            {
+                walled.Add((x, y, x + dx, y + dy));
+                walled.Add((x + dx, y + dy, x, y));
+            }
+
+            int across = 0;
+            foreach (TrailNetwork.Lane lane in network.Lanes)
+            {
+                int segments = lane.Closed ? lane.Points.Length : lane.Points.Length - 1;
+                for (int k = 0; k < segments; k++)
+                {
+                    Vector2 a = lane.Points[k], b = lane.Points[(k + 1) % lane.Points.Length];
+                    int px = Mathf.RoundToInt(a.X), py = Mathf.RoundToInt(a.Y);
+                    for (int q = 1; q <= 8; q++)
+                    {
+                        Vector2 at = a.Lerp(b, q / 8f);
+                        int x = Mathf.RoundToInt(at.X), y = Mathf.RoundToInt(at.Y);
+                        bool firstAcross = walled.Contains((px, py, x, py)) || walled.Contains((x, py, x, y));
+                        bool firstDown = walled.Contains((px, py, px, y)) || walled.Contains((px, y, x, y));
+                        if ((x != px || y != py) && firstAcross && firstDown)
+                        {
+                            across++;
+                        }
+
+                        px = x;
+                        py = y;
+                    }
+                }
+            }
+
+            return across;
         }
 
         // Every point of every lane, and every quarter-step along the line between two — on a building's tile (D582: a
@@ -5381,6 +5698,47 @@ public partial class VillageMap : Control
             }
 
             return on;
+        }
+
+        // The most lane ends at any one junction (D605).
+        static int MostLanesAtOneJunction(TrailNetwork network)
+        {
+            int most = 0;
+            foreach ((Vector2 at, byte _) in network.Junctions)
+            {
+                int meeting = 0;
+                foreach (TrailNetwork.Lane lane in network.Lanes)
+                {
+                    meeting += lane.Points[0].DistanceTo(at) < 0.01f ? 1 : 0;
+                    meeting += !lane.Closed && lane.Points[^1].DistanceTo(at) < 0.01f ? 1 : 0;
+                }
+
+                most = Math.Max(most, meeting);
+            }
+
+            return most;
+        }
+
+        // How many separate pieces the lanes make, joined where one's end is another's end (D605).
+        static int Pieces(TrailNetwork network)
+        {
+            int count = network.Lanes.Count;
+            var root = Enumerable.Range(0, count).ToArray();
+            for (int a = 0; a < count; a++)
+            {
+                for (int b = a + 1; b < count; b++)
+                {
+                    Vector2[] p = network.Lanes[a].Points, q = network.Lanes[b].Points;
+                    if (new[] { p[0], p[^1] }.Any(e => e.DistanceTo(q[0]) < 0.05f || e.DistanceTo(q[^1]) < 0.05f))
+                    {
+                        root[Find(a)] = Find(b);
+                    }
+                }
+            }
+
+            return Enumerable.Range(0, count).Select(Find).Distinct().Count();
+
+            int Find(int i) => root[i] == i ? i : root[i] = Find(root[i]);
         }
 
         static float Furthest(TrailNetwork network, Func<Vector2, float> off)
@@ -6193,6 +6551,10 @@ public partial class VillageMap : Control
 
     private int _outlinesTracedAtBuildings = -1;
 
+    private int _outlinesTracedAtWalls = -1;
+
+    private int _outlinesTracedAtStanding = -1;
+
     /// <summary>
     /// The fill of every painted region as triangles in tile space — <b>cached beside the
     /// loops, on the same counters</b> (D345).
@@ -6448,6 +6810,102 @@ public partial class VillageMap : Control
     /// <see cref="TilesPerAnimal"/>.
     /// </remarks>
     private const int TilesPerBerryPatch = 16;
+
+    /// <summary>A grazing beast — pale against the pasture's green, outlined so it never reads as the woods' game (D596).</summary>
+    private static readonly Color CattleColour = new("#e6dcc4");
+
+    /// <summary>Its outline — the barn's own red-brown.</summary>
+    private static readonly Color CattleEdge = new("#5a3424");
+
+    /// <summary>Salts a herd's scatter apart from the trees' and the game's (D596).</summary>
+    private const int HerdSalt = 0x4E7D;
+
+    /// <summary>How far a beast strays from the pasture tile it belongs to, in tiles — less than the woods' game.</summary>
+    private const float GrazeTiles = 0.9f;
+
+    /// <summary>
+    /// ⭐⭐ Where each head of a barn's herd stands now — <b>a picture of a number, as the woods' game is</b> (D596).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔ <b>The sim tracks no beast.</b> A herd is a head count on its barn (D592); each head is drawn on one of the barn's
+    /// pasture tiles picked by a scramble of the barn and the head's number, and wanders on the SIM's clock — so a paused
+    /// game is a still herd, and one more calf is one more circle, with nothing to desync.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Never off its pasture</b>: the wander tries its full offset, then half, then the tile itself, and keeps the
+    /// first that is still this barn's ground — the woods' step-back (<see cref="Roam"/>), asked of the zone map.
+    /// </para>
+    /// <para>
+    /// Few enough to draw live — a barn's pasture holds eight head a herdsman (D593) — so the list it reads, the barn's
+    /// own tiles, is the sim's index (<c>ZoneMap.WorkGroundOf</c>), never a walk of the valley.
+    /// </para>
+    /// </remarks>
+    internal static List<Vector2> HerdSpots(int barnId, int head, Func<int, GridPos> pastureTile, int pastureTiles, Func<GridPos, bool> onPasture, double season)
+    {
+        var spots = new List<Vector2>();
+        if (pastureTiles == 0)
+        {
+            return spots;
+        }
+
+        for (int beast = 0; beast < head; beast++)
+        {
+            uint seed = Scramble(barnId + HerdSalt, beast);
+            GridPos tile = pastureTile((int)(seed % (uint)pastureTiles));
+            var home = new Vector2(tile.X, tile.Y);
+            double drift = (season * 0.009) + ((seed % 628) / 100.0);
+            var offset = new Vector2((float)Math.Cos(drift) * GrazeTiles, (float)Math.Sin(drift * 0.7) * GrazeTiles);
+            Vector2 at = home;
+            for (float reach = 1f; reach > 0.4f; reach -= 0.5f)
+            {
+                Vector2 spot = home + (offset * reach);
+                if (onPasture(new GridPos(Mathf.RoundToInt(spot.X), Mathf.RoundToInt(spot.Y))))
+                {
+                    at = spot;
+                    break;
+                }
+            }
+
+            spots.Add(at);
+        }
+
+        return spots;
+    }
+
+    /// <summary>A real barn's herd, asked of the sim's index of its tiles.</summary>
+    private List<Vector2> HerdSpots(Workplace barn, double season)
+    {
+        IReadOnlyList<int> owned = _world!.Zones.WorkGroundOf(barn.Id);
+        ZoneMap zones = _world.Zones;
+        return HerdSpots(barn.Id, barn.HerdHead, i => zones.PositionOf(owned[i]), owned.Count, tile => zones.WorkGroundOwner(tile) == barn.Id, season);
+    }
+
+    /// <summary>The herds on their pastures — a circle a head, live (they move every frame, and there are a few dozen).</summary>
+    private void DrawTheHerds()
+    {
+        if (_world is null || _pixelsPerTile < WoodsZoomFloor)
+        {
+            return;
+        }
+
+        float radius = Mathf.Max(2.5f, _pixelsPerTile * 0.17f);
+        double season = _world.Tick + _alpha;
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            if (_world.Workplaces[i] is not { Kind: JobKind.Herdsman, IsSite: false, HerdHead: > 0 } barn)
+            {
+                continue;
+            }
+
+            foreach (Vector2 spot in HerdSpots(barn, season))
+            {
+                Vector2 at = ToScreen(spot);
+                DrawCircle(at, radius, CattleColour);
+                DrawArc(at, radius, 0f, Mathf.Tau, 12, CattleEdge, 1f);
+            }
+        }
+    }
 
     /// <summary>Salts the second selection so berries do not land where animals do by accident.</summary>
     /// <remarks>
@@ -7386,7 +7844,7 @@ public partial class VillageMap : Control
         // ⭐ The smith, the quarrier and the miner take their trade's own colour (D449) — they fell
         // to the market's until the mine, so a quarry drew as a stall.
         JobKind.Smith or JobKind.Quarrier or JobKind.Miner
-            or JobKind.Miller or JobKind.Baker => TradeGlyph.ColourOf(kind),
+            or JobKind.Miller or JobKind.Baker or JobKind.Herdsman or JobKind.Merchant => TradeGlyph.ColourOf(kind),
         _ => MarketColour,
     };
 

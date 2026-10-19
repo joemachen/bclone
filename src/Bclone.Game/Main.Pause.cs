@@ -1,3 +1,4 @@
+using Bclone.Sim.Core;
 using Bclone.Sim.World;
 using Godot;
 
@@ -101,14 +102,56 @@ public partial class Main
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ Esc's third step, through the game's own key path: with nothing in hand and <i>What's here</i> closed, Esc
-    /// opens the pause screen and the village stops; Esc again closes it and gives back the speed it found (posed at
-    /// 4×). And <i>Save</i> has moved: on the pause screen, not in Settings. Never presses Save, Load or a quit.
+    /// ⭐ Esc's order, through the game's own key path: a moment up takes Esc first — it goes and the pause does
+    /// not come; then, with nothing in hand and <i>What's here</i> closed, Esc opens the pause screen and the village
+    /// stops; Esc again closes it and gives back the speed it found (posed at 4×). And <i>Save</i> has moved: on the
+    /// pause screen, not in Settings. Never presses Save, Load or a quit.
     /// </summary>
+    /// <remarks>
+    /// ⛔ <b>THE MOMENT IS POSED, NOT LEFT TO THE RUN (D585).</b> The late <c>Refresh</c> shows whatever waiting moment
+    /// the twelve-year run raised — from D567 on, the re-founders of the probe's own emptied valley — and this line
+    /// read ❌ for seventeen commits because its Esc dismissed that moment, correctly, instead of pausing. A pose
+    /// that depends on what the run happened to raise is a check that depends on the seed.
+    /// </remarks>
     private string ThePauseOpensAndCloses()
     {
         var faults = new List<string>();
+        SimWorld world = _loop.World;
         double speedBefore = _driver.SpeedMultiplier;
+
+        // Every waiting moment the run raised goes by first, as a player pressing *Go on* would — there can be more
+        // than one queued (the re-founders' came twice) — so the pose below is the only moment there is.
+        for (int i = 0; i < 100 && _momentPanel is { Visible: true }; i++)
+        {
+            DismissTheMoment();
+            ShowAnyMoment(world);
+        }
+
+        var posed = new Moment { Title = "Posed for the pause", Body = "posed by the probe", WaitsToBeDismissed = true };
+        world.Moments.Add(posed);
+        ShowAnyMoment(world);
+        if (_momentPanel is not { Visible: true } || _momentTitle.Text != posed.Title)
+        {
+            faults.Add($"the posed moment did not show ({WhatIsOpen()})");
+        }
+        else
+        {
+            PressAKey(Key.Escape);
+            if (_momentPanel.Visible)
+            {
+                faults.Add("Esc over a moment did not dismiss it");
+            }
+
+            if (ThePauseIsUp)
+            {
+                faults.Add("Esc paused over a moment instead of dismissing it");
+                CloseThePause(resume: false);
+            }
+        }
+
+        world.Moments.Remove(posed);
+        _celebrated.Remove(posed.LogLine);
+
         if (_map.IsPlacing)
         {
             _map.PutTheToolDown();
@@ -120,10 +163,11 @@ public partial class Main
         }
 
         SetSpeed(4.0);
+        string open = WhatIsOpen();
         PressAKey(Key.Escape);
         if (!ThePauseIsUp)
         {
-            faults.Add("Esc with nothing open did not open the pause screen");
+            faults.Add($"Esc did not open the pause screen ({open})");
         }
         else
         {
@@ -169,10 +213,40 @@ public partial class Main
 
         SetSpeed(speedBefore);
         return faults.Count == 0
-            ? "[widths] pause: ✅ Esc with nothing open pauses under the dim, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen, says what it did, and is not in Settings"
+            ? "[widths] pause: ✅ Esc over a moment dismisses it and does not pause; with nothing open Esc pauses under the dim, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen, says what it did, and is not in Settings"
             : $"[widths] pause: ❌ {string.Join("; ", faults)}";
 
         void PressAKey(Key key) => _UnhandledKeyInput(new InputEventKey { Keycode = key, Pressed = true });
+    }
+
+    /// <summary>
+    /// For the probe's faults: everything Esc would deal with before it pauses, by name — so a ❌ says which door
+    /// was in the way rather than only that the pause did not come.
+    /// </summary>
+    private string WhatIsOpen()
+    {
+        var open = new List<string>();
+        if (_momentPanel is { Visible: true })
+        {
+            open.Add($"a moment was up: \"{_momentTitle.Text}\"");
+        }
+
+        if (_map.IsPlacing)
+        {
+            open.Add("a tool was in hand");
+        }
+
+        if (_whatsHerePanel.Visible)
+        {
+            open.Add("What's here was open");
+        }
+
+        if (_title is not null || _newGame is not null)
+        {
+            open.Add("the title or new-game screen was up");
+        }
+
+        return open.Count == 0 ? "nothing was open" : string.Join(", ", open);
     }
 
     private static bool HasASaveButton(Node under)

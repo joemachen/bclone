@@ -178,9 +178,13 @@ public sealed record SimConfig
     public int GathersPerThinnedTile { get; init; }
 
     /// <summary>
-    /// How many people can work one gathering hut at once — <b>two</b> (D262, Joe).
+    /// How many people can work one gathering hut at once — <b>three</b> (Joe, D603; two from D262).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>⭐ THREE SINCE D603 (Joe):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. D262's sentence still holds — a village that wants to live on gathering
+    /// builds more huts — and one more hand a hut is his call on how much one ring carries.
+    /// </para>
     /// <para>
     /// <b>⭐⭐ ASKED FOR FOUR TIMES, AND THE FOURTH CAME WITH THE DESIGN SENTENCE THAT SETTLES IT:</b>
     /// <em>"the user must build more forests and huts to grow (if it wants to focus on gathering —
@@ -207,7 +211,7 @@ public sealed record SimConfig
     /// </para>
     /// </remarks>
     [JsonPropertyName("gatherer_hut_capacity")]
-    public int GathererHutCapacity { get; init; } = 2;
+    public int GathererHutCapacity { get; init; } = 3;
 
     /// <summary>
     /// How many gathering huts a village founded WITH buildings starts with (D262).
@@ -497,8 +501,14 @@ public sealed record SimConfig
     /// deleted mechanic is the D56 and D148 shape, so it is named for what it does.
     /// </para>
     /// </remarks>
+    /// <para>
+    /// <b>⭐ STATED AT TWO, AND READ AT LAST (Joe, D603):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. Until D603 nothing read this number for the seats —
+    /// the row stated none, so <c>SeatsIn</c> asked <c>VillageEconomy.RequiredForesterSeats</c> (3), and the data
+    /// file's 2 and this description were both untrue. The row states it now, and the warm start's hut reads it too.
+    /// The derivation stays as the economy's estimate of the trade's appetite; a village wanting more builds a second hut.
+    /// </para>
     [JsonPropertyName("forester_hut_capacity")]
-    public int ForesterHutCapacity { get; init; } = 3;
+    public int ForesterHutCapacity { get; init; } = 2;
 
     // ---------------------------------------------------------------
     //  Firewood (D29) — the woodcutter's hut
@@ -990,8 +1000,10 @@ public sealed record SimConfig
     [JsonPropertyName("fetch_below_share_percent")]
     public int FetchBelowSharePercent { get; init; } = 50;
 
+    /// <summary>How many people work one farmhouse — <b>three</b> (Joe, D603; two before).</summary>
+    /// <remarks><i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>.</remarks>
     [JsonPropertyName("farmhouse_seats")]
-    public int FarmhouseSeats { get; init; } = 2;
+    public int FarmhouseSeats { get; init; } = 3;
 
     [JsonPropertyName("farm_store_cap")]
     public int FarmStoreCap { get; init; } = 100;
@@ -1400,6 +1412,221 @@ public sealed record SimConfig
     /// <summary>How many bakers a bakery seats.</summary>
     [JsonPropertyName("bakery_capacity")]
     public int BakeryCapacity { get; init; } = 2;
+
+    // ---------------------------------------------------------------
+    //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
+    // ---------------------------------------------------------------
+    // ⚠️ PROVISIONAL, EVERY ONE, AND SAID SO: the rows need a price to exist, and nothing can raise either building
+    // until the view gives it a button (commit 6). The barn's room is derived from the herd in commit 2 and these are
+    // re-measured before Joe plays (`trade.md §11.3`). A mill's prices, the nearest building of their size.
+
+    /// <summary>Logs a barn takes to raise — timber, as a farmhouse is (provisional, D590).</summary>
+    [JsonPropertyName("barn_logs")]
+    public int BarnLogs { get; init; } = 40;
+
+    /// <summary>Ticks of a builder's work a barn takes (provisional, D590).</summary>
+    [JsonPropertyName("barn_work_ticks")]
+    public int BarnWorkTicks { get; init; } = 40;
+
+    /// <summary>How many herdsmen a barn seats (provisional, D590).</summary>
+    [JsonPropertyName("barn_capacity")]
+    public int BarnCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Hay off one cut pasture tile — wheat's <c>crop_yield_per_tile</c> until a played herd says otherwise (D593).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ It is what makes one herdsman's 13-tile cut feed 8 head a winter with the buffer — Joe's own timber barn
+    /// (`livestock.md §10.1.6`). The barn's room is derived from it (<c>VillageEconomy.BarnHayRoom</c>).
+    /// </remarks>
+    [JsonPropertyName("hay_per_tile")]
+    public int HayPerTile { get; init; } = 67;
+
+    /// <summary>
+    /// Days of the herd's hay a herdsman keeps out on the pasture in winter before carrying more (D593) — and how many
+    /// days before winter he starts carrying it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Five, not three: at three a traced herd lost a beast on winter's first day (the first armful still on the road)
+    /// and another mid-winter between refills — a herdsman finishes his rest before he re-decides, and spends winter
+    /// going in to get warm. Five days of a full herd of eight is one armful (80), so the pasture is kept topped up.
+    /// </remarks>
+    [JsonPropertyName("hay_feed_ahead_days")]
+    public int HayFeedAheadDays { get; init; } = 5;
+
+    /// <summary>Ticks to put an armful of hay out — a cut tile's (<c>reap_ticks</c>), outdoors (D593).</summary>
+    [JsonPropertyName("hay_feed_ticks")]
+    public int HayFeedTicks { get; init; } = 3;
+
+    /// <summary>Ticks to cull a beast at the barn — a hunt's dressing, about two days' work (D593, provisional).</summary>
+    [JsonPropertyName("cull_ticks")]
+    public int CullTicks { get; init; } = 8;
+
+    /// <summary>
+    /// Logs a trading post takes to raise (D590) — measured at D594 (`trade.md §8.4`): every hall-era village holds its
+    /// logs at the limit, 200, so the post costs at most a sixth of them.
+    /// </summary>
+    [JsonPropertyName("trading_post_logs")]
+    public int TradingPostLogs { get; init; } = 30;
+
+    /// <summary>
+    /// Stone in a trading post — a quay to tie a boat to (D590). Measured at D594 (`trade.md §8.4`): the poorest
+    /// hall-era village held 120 stone, so the quay is a fifth of it.
+    /// </summary>
+    [JsonPropertyName("trading_post_stone")]
+    public int TradingPostStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a trading post takes (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_work_ticks")]
+    public int TradingPostWorkTicks { get; init; } = 40;
+
+    /// <summary>How many merchants a trading post seats (Joe, D587 call 4 and D591's name; one seat, provisional).</summary>
+    [JsonPropertyName("trading_post_capacity")]
+    public int TradingPostCapacity { get; init; } = 1;
+
+    /// <summary>How much a trading post holds, sold and bought together (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_store_capacity")]
+    public int TradingPostStoreCapacity { get; init; } = 800;
+
+    /// <summary>
+    /// How many seasons a neighbour takes to come back from a boat (D594, `trade.md §4.2`, §8.4): each season a good it
+    /// makes recovers this share of the way back to its size, and a good it wants is used up this share of its size.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Eight — two years — so the next boat remembers the last.</b> Measured (`ZzTrade.Region`): at four, a
+    /// neighbour sold its fill twice over was hungry again within eight seasons and back to its best rate by every boat,
+    /// so selling everything above the keep never cost the village anything — the trap of a boat that empties the stores
+    /// (§7). At eight, a heavy sale is still felt by a boat two years on and mostly gone by one three years on.
+    /// ⚠️ Joe's to tune in play.
+    /// </remarks>
+    [JsonPropertyName("region_seasons_to_recover")]
+    public int RegionSeasonsToRecover { get; init; } = 8;
+
+    // ---------------------------------------------------------------
+    //  The boat (D595, `trade.md §4.4`) — a clock by hash, three ticks, a hold
+    // ---------------------------------------------------------------
+
+    /// <summary>The fewest years between one boat's year and the next's (Joe, D587 call 3: <i>"every 2-3 years"</i>).</summary>
+    [JsonPropertyName("trade_boat_gap_years_floor")]
+    public int TradeBoatGapYearsFloor { get; init; } = 2;
+
+    /// <summary>Years the hash may add to the floor — 1, so a boat comes two or three years after the last.</summary>
+    [JsonPropertyName("trade_boat_gap_years_spread")]
+    public int TradeBoatGapYearsSpread { get; init; } = 1;
+
+    /// <summary>
+    /// Days a boat sails on the map before it ties up — from its neighbour's edge to the post, and again from the post
+    /// off the far edge when it leaves. The view draws it on the river between those ticks (commit 7).
+    /// </summary>
+    [JsonPropertyName("trade_boat_sail_days")]
+    public int TradeBoatSailDays { get; init; } = 2;
+
+    /// <summary>
+    /// Days a boat stays tied up at the post (Joe, D587 call 6: <i>"a reasonable amount of time to be noticed by player
+    /// (will likely have to test)"</i>). ⚠️ <b>Joe's, found in play</b> — ten days is about fifty seconds at 1×.
+    /// </summary>
+    [JsonPropertyName("trade_boat_dock_days")]
+    public int TradeBoatDockDays { get; init; } = 10;
+
+    /// <summary>
+    /// The most a boat takes from the post, and the most it leaves, in units of goods (animals apart) — half the post's
+    /// room, so a visit at its fullest still leaves the post room for what it brings (`trade.md §8.5`).
+    /// </summary>
+    [JsonPropertyName("trade_boat_hold")]
+    public int TradeBoatHold { get; init; } = 400;
+
+    /// <summary>
+    /// Logs one length of pasture fence costs (D598, `livestock.md §0.2.5`) — the yard fence's own price, a log a tile
+    /// (D388). Measured: Joe's 102-tile pasture is 46 lengths, about a barn's 40 logs, from a village holding 207.
+    /// </summary>
+    [JsonPropertyName("pasture_fence_logs_per_edge")]
+    public int PastureFenceLogsPerEdge { get; init; } = 1;
+
+    /// <summary>A builder's ticks a length of pasture fence takes (D598) — Joe's pasture, 92 ticks: 23 days for one builder.</summary>
+    [JsonPropertyName("pasture_fence_work_ticks_per_edge")]
+    public int PastureFenceWorkTicksPerEdge { get; init; } = 2;
+
+    /// <summary>
+    /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
+    /// `TECH-EXAMPLE.md`'s list is added without restructuring.
+    /// </summary>
+    [JsonPropertyName("animals")]
+    public IReadOnlyList<AnimalRow> Animals { get; init; } = new[]
+    {
+        new AnimalRow { Id = 0, Name = "cattle", Plural = "cattle" },
+    };
+
+    /// <summary>
+    /// The region (Joe, D587: <b>three neighbours, with reasons</b>; `trade.md §4.2`) — and between them they make
+    /// every good the game has, and animals (call 5), so a boat can bring any of it.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A size is half the shipped starting limit of its good</b> (D594, `trade.md §8.4`): every played village at
+    /// the hall's era holds nearly everything at its limit (§8.2a), so a <i>keep</i> at half the limit leaves half the
+    /// limit to sell — one boat's worth of a village's spare takes a neighbour from short (double) to rested (its worth).
+    /// Hay has no limit: 400 is a quarter of a barn's room. ⚠️ Joe's to tune in play. ⭐ A good added later joins a
+    /// neighbour's <c>makes</c> the day its system lands (D587: never a good with no use yet).
+    /// </remarks>
+    [JsonPropertyName("neighbours")]
+    public IReadOnlyList<NeighbourRow> Neighbours { get; init; } = new[]
+    {
+        // Up the river: the hills — timber, stone, iron and what a smith makes of it, hides, and cattle.
+        new NeighbourRow
+        {
+            Id = 0,
+            Direction = NeighbourDirection.Upriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Tools, 12),
+                new MaterialCost(World.Goods.IronTools, 12), new MaterialCost(World.Goods.Leather, 100),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Fish, 125),
+                new MaterialCost(World.Goods.Firewood, 200),
+            },
+        },
+
+        // Down the river: the lowlands — grain, flour and bread, fish, forage and firewood.
+        new NeighbourRow
+        {
+            Id = 1,
+            Direction = NeighbourDirection.Downriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Produce, 1000), new MaterialCost(World.Goods.Fish, 125),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Firewood, 200),
+            },
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Meat, 125),
+            },
+        },
+
+        // Overland: the grazing country — meat, hides, hay and cattle; its caravan waits for carts (tier 2).
+        new NeighbourRow
+        {
+            Id = 2,
+            Direction = NeighbourDirection.Overland,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 12),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 500),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Stone, 100),
+            },
+        },
+    };
 
     // ---------------------------------------------------------------
     //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
@@ -2811,6 +3038,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Stone,
             Category = World.GoodCategory.Materials,
             Name = "stone",
+            TradeWorth = 2,
             SourceName = "a stone seam",
             YieldPerTile = 12,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
@@ -2830,6 +3058,7 @@ public sealed record SimConfig
             // priced from the three keys that priced every tool before iron (§9.2), so a village
             // with only stone tools plays and hashes exactly as before.
             Name = "stone tools",
+            TradeWorth = 8,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
             ToolUses = ToolUses,
             ToolSpeedBonusPercent = ToolSpeedBonusPercent,
@@ -2845,6 +3074,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Iron,
             Category = World.GoodCategory.Materials,
             Name = "iron",
+            TradeWorth = 3,
             SourceName = "an iron seam",
             YieldPerTile = 8,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
@@ -2888,6 +3118,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Leather,
             Category = World.GoodCategory.Materials,
             Name = "leather",
+            TradeWorth = 3,
             SourceName = "the woods",
 
             // ⚠️ A WAREHOUSE, NOT A GRANARY. It is a material, not a meal, and putting it where food
@@ -2912,6 +3143,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.IronTools,
             Category = World.GoodCategory.FuelAndGoods,
             Name = "iron tools",
+            TradeWorth = 20,
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
             ToolUses = IronToolUses,
             ToolSpeedBonusPercent = IronToolSpeedBonusPercent,
@@ -2928,6 +3160,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Flour,
             Category = World.GoodCategory.Materials,
             Name = "flour",
+            TradeWorth = 2,
 
             // ⚠️ KEPT DRY, AND NEVER IN A GRANARY (`food-chain.md §4.1`): it is not food, and a granary's
             // room is what the birth gate measures. A warehouse holds the oven's firewood too, so a bake
@@ -2939,6 +3172,7 @@ public sealed record SimConfig
             Id = (int)World.Goods.Bread,
             Category = World.GoodCategory.Food,
             Name = "bread",
+            TradeWorth = 2,
 
             // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
@@ -2946,6 +3180,16 @@ public sealed record SimConfig
             // ⭐ THE FIRST FOOD WORTH MORE THAN ONE (`food-chain.md §3`): a meal of bread holds hunger off
             // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
             Nutrition = BreadNutrition,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Hay,
+            Category = World.GoodCategory.Materials,
+            Name = "hay",
+
+            // ⛔ ONLY A BARN (D590, `livestock.md §0`): D52 is the argument — a good that shares the warehouse is a
+            // shortage nobody can read. Nobody eats it but the herd.
+            StoredBy = new[] { StoreKind.Barn },
         },
     };
 
@@ -3163,6 +3407,33 @@ public sealed record SimConfig
             LimitedBy = World.Goods.Bread,
             UsesTool = true,
         },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
+        // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
+        new JobRow
+        {
+            Id = (int)JobKind.Herdsman,
+            Name = "herdsman",
+            Plural = "herdsmen",
+            Doing = "keeping the herd",
+            WorksAt = BuildingKind.Barn,
+
+            // A met hay limit stops the cutting, as a met limit stops every trade (D139).
+            LimitedBy = World.Goods.Hay,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Merchant,
+
+            // ⭐ THE MERCHANT, NOT THE TRADER (Joe, D591): the marketer keeps its plural, *traders* (D188).
+            Name = "merchant",
+            Plural = "merchants",
+            Doing = "trading at the post",
+            WorksAt = BuildingKind.TradingPost,
+
+            // Makes no good of its own, so nothing limits it — the marketer's shape.
+            LimitedBy = null,
+        },
     };
 
     /// <summary>
@@ -3369,8 +3640,8 @@ public sealed record SimConfig
             },
             WorkTicks = GathererHutWorkTicks,
 
-            // ⛔⛔ STATED AT TWO (D262, Joe, asked four times). See GathererHutCapacity — and note it
-            // only means anything beside D260's competing rings.
+            // ⛔⛔ STATED (D262, Joe, asked four times — two; three since D603, Joe again). See GathererHutCapacity — and
+            // note it only means anything beside D260's competing rings.
             Seats = GathererHutCapacity,
             GatheringRadius = GathererHutRingTiles,
         },
@@ -3385,8 +3656,9 @@ public sealed record SimConfig
             },
             WorkTicks = ForesterHutWorkTicks,
 
-            // ⛔ Derived from what the woodcutters can eat, plus a hand for building.
-            Seats = null,
+            // ⭐ STATED (Joe, D603): two seats. It was derived — the woodcutters' appetite plus a hand, three — and
+            // `forester_hut_capacity` sat in the data unread. See ForesterHutCapacity.
+            Seats = ForesterHutCapacity < 1 ? 1 : ForesterHutCapacity,
         },
         new BuildingRow
         {
@@ -3638,6 +3910,52 @@ public sealed record SimConfig
             Seats = BakeryCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
+        },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
+        // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Barn,
+            Name = "barn",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, BarnLogs) },
+            WorkTicks = BarnWorkTicks,
+            Seats = BarnCapacity,
+            Stores = StoreKind.Barn,
+
+            // ⭐ No stated room: the economy derives it from the herd its hands can keep (D593, `livestock.md §0.1`).
+            StoreCapacity = null,
+            ExtentWidth = 3,
+            ExtentHeight = 2,
+        },
+
+        // On the river bank — the fishery's rule (`trade.md §4.1`). Its store takes only what the merchant carries.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TradingPost,
+            Name = "trading post",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TradingPostLogs),
+                new MaterialCost(World.Goods.Stone, TradingPostStone),
+            },
+            WorkTicks = TradingPostWorkTicks,
+            Seats = TradingPostCapacity,
+            Stores = StoreKind.TradingPost,
+            StoreCapacity = TradingPostStoreCapacity,
+            MustTouch = Terrain.Water,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ A pasture's fence (D598, `livestock.md §0.2`): one length of it — put up from the barn's card, never placed.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.PastureFence,
+            Name = "pasture fence",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, PastureFenceLogsPerEdge) },
+            WorkTicks = PastureFenceWorkTicksPerEdge,
+            EnclosesPasture = true,
         },
 
         // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
@@ -5234,6 +5552,7 @@ public sealed record SimConfig
         ValidateCrops();
         ValidateJobs();
         ValidateBuildings();
+        ValidateTheRegion();
         TechTree.Validate(TechNodeRows);
         if (SmithyUnlockIron < 0)
         {
@@ -5248,12 +5567,26 @@ public sealed record SimConfig
             ("grind_ticks", GrindTicks), ("grinds_per_stint", GrindsPerStint), ("flour_per_bake", FlourPerBake),
             ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
+            ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
+            ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
+            ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
+            ("trade_boat_hold", TradeBoatHold), ("trade_boat_gap_years_floor", TradeBoatGapYearsFloor),
+            ("pasture_fence_logs_per_edge", PastureFenceLogsPerEdge), ("pasture_fence_work_ticks_per_edge", PastureFenceWorkTicksPerEdge),
         })
         {
             if (value < 1)
             {
                 throw new SimConfigException($"{key} must be at least one (got {value}).");
             }
+        }
+
+        // A boat's whole visit — in, tied up, out — must fit spring to autumn, or it would be on the river in winter.
+        if (TradeBoatGapYearsSpread < 0 || (2 * TradeBoatSailDays) + TradeBoatDockDays > 3 * DaysPerSeason)
+        {
+            throw new SimConfigException(
+                $"trade_boat_gap_years_spread cannot be negative (got {TradeBoatGapYearsSpread}), and a boat's visit — "
+                + $"twice trade_boat_sail_days ({TradeBoatSailDays}) and trade_boat_dock_days ({TradeBoatDockDays}) — "
+                + $"must fit the three seasons before winter ({3 * DaysPerSeason} days).");
         }
 
         foreach ((string key, int value) in new[]
@@ -5279,6 +5612,70 @@ public sealed record SimConfig
     /// simply never appeared. <em>A plausible default, not a crash</em>, which is the shape of
     /// almost every near-miss in this project.
     /// </remarks>
+    /// <summary>
+    /// The animals and the neighbours (D590): ids unique, names given, goods the catalogue has, amounts that count.
+    /// </summary>
+    private void ValidateTheRegion()
+    {
+        var animalIds = new HashSet<int>();
+        for (int i = 0; i < Animals.Count; i++)
+        {
+            AnimalRow animal = Animals[i];
+            if (!animalIds.Add(animal.Id))
+            {
+                throw new SimConfigException($"animals[{i}] repeats id {animal.Id}.");
+            }
+
+            if (string.IsNullOrWhiteSpace(animal.Name) || string.IsNullOrWhiteSpace(animal.Plural))
+            {
+                throw new SimConfigException($"animals[{i}] (id {animal.Id}) needs a name and a plural.");
+            }
+
+            // ⛔ A head that grazes no ground, eats nothing or is born of nothing divides by zero or never ends (D592).
+            if (animal.PastureTilesPerHead < 1 || animal.HayPerHeadPerWinterDay < 1 || animal.HeadDaysPerBirth < 1
+                || animal.MeatPerHead < 0 || animal.LeatherPerHead < 0)
+            {
+                throw new SimConfigException(
+                    $"animals[{i}] (id {animal.Id}) needs pasture_tiles_per_head, hay_per_head_per_winter_day and "
+                    + "head_days_per_birth of at least one, and no negative meat or leather.");
+            }
+        }
+
+        int goods = GoodsCatalog.Count;
+        var neighbourIds = new HashSet<int>();
+        for (int i = 0; i < Neighbours.Count; i++)
+        {
+            NeighbourRow neighbour = Neighbours[i];
+            if (!neighbourIds.Add(neighbour.Id))
+            {
+                throw new SimConfigException($"neighbours[{i}] repeats id {neighbour.Id}.");
+            }
+
+            if (!Enum.IsDefined(neighbour.Direction))
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) has no direction the game knows.");
+            }
+
+            if (neighbour.MakesAnimals < 0)
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) makes {neighbour.MakesAnimals} animals.");
+            }
+
+            foreach ((string list, IReadOnlyList<MaterialCost> rows) in new[] { ("makes", neighbour.Makes), ("wants", neighbour.Wants) })
+            {
+                foreach (MaterialCost row in rows)
+                {
+                    if ((int)row.Goods < 0 || (int)row.Goods >= goods || row.Amount < 1)
+                    {
+                        throw new SimConfigException(
+                            $"neighbours[{i}] (id {neighbour.Id}) {list} {row.Amount} of good {(int)row.Goods}: the good "
+                            + "must be one the catalogue has, and the amount at least one.");
+                    }
+                }
+            }
+        }
+    }
+
     private void ValidateTechniques()
     {
         if (Techniques is null)
@@ -5456,6 +5853,12 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') names no store kind in stored_by, so nothing "
                     + "in the village could ever hold it.");
+            }
+
+            if (good.TradeWorth < 1)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has trade_worth {good.TradeWorth}; a good worth nothing cannot be bartered.");
             }
 
             if (good.Nutrition < 0)
@@ -5738,7 +6141,7 @@ public sealed record SimConfig
             var kind = (BuildingKind)row.Id;
 
             bool economyDerivesTheStore =
-                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market;
+                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market or BuildingKind.Barn;
             if (row.Stores is not null && row.StoreCapacity is null && !economyDerivesTheStore)
             {
                 throw new SimConfigException(
@@ -5789,7 +6192,7 @@ public sealed record SimConfig
 
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
             if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
-                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater)
+                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater && !row.EnclosesPasture)
             {
                 throw new SimConfigException(
                     $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "

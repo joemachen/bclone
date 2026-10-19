@@ -124,6 +124,16 @@ public partial class Main
         public List<Goods> ForgeGoods { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
+
+        /// <summary>What the post's orders will do (D596) — the orders themselves are the post's window (D597).</summary>
+        public VBoxContainer? PostRow { get; set; }
+        public Label? PostNote { get; set; }
+
+        /// <summary>The barn's fence (D599): what fencing would do or why it cannot, the one button, and its last refusal.</summary>
+        public VBoxContainer? FenceRow { get; set; }
+        public Label? FenceLabel { get; set; }
+        public Button? FenceButton { get; set; }
+        public Label? FenceNote { get; set; }
     }
 
     /// <summary>
@@ -530,7 +540,17 @@ public partial class Main
             pin.TooltipText = on ? "Pinned — stays when you click elsewhere" : "Pin: keep this card when you click elsewhere";
         };
         close.Pressed += () => CloseCard(card);
-        records.Pressed += OpenTheRecords;
+        records.Pressed += () =>
+        {
+            if (card.Subject.Kind == CardKind.Workplace)
+            {
+                OpenThePostsWindow(card.Subject.Id);
+            }
+            else
+            {
+                OpenTheRecords();
+            }
+        };
         edit.Pressed += () =>
         {
             rename.Text = card.Title.Text;
@@ -621,6 +641,8 @@ public partial class Main
 
     private void RefreshCards(SimWorld world)
     {
+        RefreshThePostsWindow(world);
+        RefreshTheRegionWindow(world);
         for (int i = _cards.Count - 1; i >= 0; i--)
         {
             Card card = _cards[i];
@@ -853,6 +875,19 @@ public partial class Main
                 var later = new Button { Text = "▼ Later" };
                 later.Pressed += () => Act(card, () => MoveSelectedInQueue(+1));
                 queueControls.AddChild(later);
+                // What the post's orders will do (D596); the orders are its window, opened from the card (D597).
+                c.PostNote = Muted(string.Empty);
+                (c.PostRow, _) = InspectorRow(body, c.PostNote);
+
+                // ⭐ The barn's fence (D599, `livestock.md §0.2`): one button, its words the fence's state.
+                c.FenceLabel = Muted(string.Empty);
+                (c.FenceRow, HFlowContainer fenceControls) = InspectorRow(body, c.FenceLabel);
+                c.FenceButton = new Button { Text = "Fence the pasture" };
+                c.FenceButton.Pressed += () => Act(card, () => FenceOrTakeDown(card));
+                fenceControls.AddChild(c.FenceButton);
+                c.FenceNote = Wrapped(Muted(string.Empty));
+                c.FenceNote.Visible = false;
+                c.FenceRow.AddChild(c.FenceNote);
                 break;
             }
 
@@ -970,6 +1005,18 @@ public partial class Main
                 if (place.IsSite)
                 {
                     c.QueueLabel!.Text = $"Build queue — {world.QueuePositionOf(place)} of {world.BuildQueue().Count}:";
+                }
+
+                c.FenceRow!.Visible = built && place.Kind == JobKind.Herdsman;
+                if (c.FenceRow.Visible)
+                {
+                    WriteTheFenceRow(c, FenceFactsOf(world, place));
+                }
+
+                c.PostRow!.Visible = built && place.Kind == JobKind.Merchant;
+                if (c.PostRow.Visible)
+                {
+                    c.PostNote!.Text = world.SayWhatThePostWillDo();
                 }
 
                 break;
@@ -1236,7 +1283,8 @@ public partial class Main
                     : $"Working — {place.WorkerIds.Count} of {place.Places} at it."));
 
             card.WorkersRow.Visible = true;
-            card.WorkersLabel.Text = ProfessionName(world, place.Kind) + "s";
+            // The catalogue's plural (D597 — the barn's card read "Herdsmans").
+            card.WorkersLabel.Text = Titled(world.JobsCatalog.PluralOf(place.Kind));
             card.Workers.Text = $"{place.WorkerIds.Count} / {place.Places}";
 
             // ⭐ WHAT IT HOLDS, GOOD BY GOOD (D422, Joe's D421 note: the lodge read *"18 of 2,700 hel…"*,
@@ -1260,6 +1308,25 @@ public partial class Main
             // D422; the Workers row above already says *"1 / 2"*.
             (string wall, string wallKey) = WallCell(place.Store.Capacity, place.Places);
             Number(card, 2, wall, wallKey);
+
+            // ⭐ THE BARN AND THE POST SAY WHAT THEY ARE FOR (D596) — the sim's sentences, never the view's.
+            if (place.Kind == JobKind.Herdsman)
+            {
+                ShowTheBarn(world, card, place);
+            }
+            else if (place.Kind == JobKind.Merchant && world.PostStoreOf(place) is StoreBuilding post)
+            {
+                Status(card, working: world.BoatIsDocked || world.TradeKeep.AnySet || world.TradeBuy.AnySet, world.SayWhenTheBoatIsDue());
+                (string atPost, string atPostNames) = WhatItHolds(world, post.Store, caption => FitsItsCell(card, card.Keys[0], caption));
+                Number(card, 0, atPost, atPostNames == "held here" ? "at the post" : atPostNames);
+                Number(card, 1, $"{OrdersSet(world.TradeKeep, world)} · {OrdersSet(world.TradeBuy, world)}", "sell · buy");
+                Number(card, 2, $"{world.BoatsEverCame}", "boats came");
+
+                // ⭐ The orders are the post's window (D597, Joe: "way too long… multiple columns"); the hall's records
+                // button is the card's one button, so it is this card's too.
+                card.Records.Text = "Open the post's window";
+                card.Records.Visible = true;
+            }
         }
 
         card.PeopleScroll.Visible = false;
@@ -1271,6 +1338,98 @@ public partial class Main
         card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
             : place.IsSite ? "a building site" : Workers(world, place);
         return true;
+    }
+
+    /// <summary>What the barn's card says — read from the sim once, written by <see cref="WriteBarnCard"/>.</summary>
+    private readonly record struct BarnFacts(string Sentence, bool Well, int Head, int Room, int Tiles, int Hay, int Days);
+
+    /// <summary>The barn's card (D596): the herd and the hay, in the sim's sentence (`SimWorld.SayTheHerd`).</summary>
+    private static void ShowTheBarn(SimWorld world, Card card, Workplace barn)
+    {
+        int days = world.HayDaysFor(barn) ?? 0;
+        bool well = barn.HerdHead > 0
+            && (world.Clock.IsWinter
+                ? days >= world.Config.DaysPerSeason - world.Clock.DayOfSeason + 1
+                : world.HayHeldFor(barn) >= world.WinterHayWanted(barn) || barn.WorkerIds.Count > 0);
+        WriteBarnCard(card, new BarnFacts(
+            world.SayTheHerd(barn), well, barn.HerdHead, world.PastureFor(barn), world.Zones.WorkGroundTiles(barn.Id),
+            world.HayHeldFor(barn), days));
+    }
+
+    private static void WriteBarnCard(Card card, BarnFacts f)
+    {
+        Status(card, working: f.Well, f.Sentence);
+        Number(card, 1, $"{f.Head} / {f.Room}", $"head · {f.Tiles} tiles");
+        Number(card, 2, $"{f.Hay:N0}", f.Head > 0 ? $"hay · {f.Days} winter days" : "hay");
+    }
+
+    /// <summary>What the barn card's fence row says — read from the sim once, written by <see cref="WriteTheFenceRow"/>.</summary>
+    private readonly record struct FenceFacts(PastureFenceState State, string Sentence, bool Refused);
+
+    private static FenceFacts FenceFactsOf(SimWorld world, Workplace barn)
+    {
+        PastureFenceState state = world.FenceStateOf(barn);
+        return state switch
+        {
+            PastureFenceState.Site => new FenceFacts(state, world.FenceSiteOf(barn) is Workplace site
+                ? $"The fence is being built — {Ordinal(world.QueuePositionOf(site))} in the builders' queue. The pasture is locked until it is up, or cancelled."
+                : "The fence is being built.", false),
+            PastureFenceState.Standing => new FenceFacts(state,
+                $"Fenced — {barn.FencedTiles.Count} tiles and one gate. To change the pasture, take the fence down: the builders do it, half its logs come back, and the ground is unpainted.",
+                false),
+            PastureFenceState.ComingDown => new FenceFacts(state, world.FenceDemolitionOf(barn) is Workplace coming
+                ? $"Being taken down — {Ordinal(world.QueuePositionOf(coming))} in the builders' queue. It stands, and the pasture stays locked, until they finish."
+                : "Being taken down.", false),
+            _ => world.WhyNotFence(barn) is string why
+                ? new FenceFacts(state, why, true)
+                : new FenceFacts(state, world.SayWhatFencingWouldDo(barn) ?? string.Empty, false),
+        };
+    }
+
+    /// <summary>The fence row from its facts — the button's words follow the state (D599).</summary>
+    private static void WriteTheFenceRow(CardControls c, FenceFacts f)
+    {
+        c.FenceLabel!.Text = f.Sentence;
+        c.FenceButton!.Text = f.State switch
+        {
+            PastureFenceState.Site => "Cancel the fence",
+            PastureFenceState.Standing => "Take the fence down",
+            PastureFenceState.ComingDown => "Keep the fence",
+            _ => "Fence the pasture",
+        };
+        c.FenceButton.Disabled = f.Refused;
+        c.FenceButton.TooltipText = f.Refused ? f.Sentence : string.Empty;
+    }
+
+    /// <summary>The fence button pressed: fence the pasture, or cancel or take its fence down — and say a refusal.</summary>
+    private void FenceOrTakeDown(Card card)
+    {
+        SimWorld world = _loop.World;
+        if (world.FindWorkplace(card.Subject.Id) is not Workplace barn || card.Controls.FenceNote is not Label note)
+        {
+            return;
+        }
+
+        PlacementVerdict verdict = world.FenceStateOf(barn) switch
+        {
+            PastureFenceState.None => world.FenceThePasture(barn),
+            PastureFenceState.ComingDown => world.KeepTheFence(barn),
+            _ => world.TakeTheFenceDown(barn),
+        };
+        note.Text = verdict.Allowed ? string.Empty : verdict.Reason;
+        note.Visible = !verdict.Allowed;
+    }
+
+    /// <summary>How many goods carry an order of this kind.</summary>
+    private static int OrdersSet(StockLimits orders, SimWorld world)
+    {
+        int set = 0;
+        for (int g = 0; g < world.GoodsCatalog.Count; g++)
+        {
+            set += orders.For((Goods)g) is null ? 0 : 1;
+        }
+
+        return set;
     }
 
     private static string Workers(SimWorld world, Workplace place)
@@ -2032,6 +2191,7 @@ public partial class Main
         // The caption's sentence became the button (D397): the records are what it opens.
         card.Caption.Text = string.Empty;
         card.Caption.TooltipText = string.Empty;
+        card.Records.Text = "View records";
         card.Records.Visible = true;
     }
 
@@ -2417,7 +2577,9 @@ public partial class Main
                     faults.Add($"{when}: the cart's {world.GoodsCatalog.NameOf(goods)} row is {(offered ? "shown" : "hidden")}");
                 }
 
-                if (unknownGoods.Contains(goods) && offered != learned)
+                // Only a good the cart can hold appears on it when learned — hay never does (D590: a barn's alone); the
+                // check above already holds every row to `CanEverHold`.
+                if (unknownGoods.Contains(goods) && cart.CanEverHold(goods) && offered != learned)
                 {
                     faults.Add($"{when}: the cart {(offered ? "offers" : "hides")} {world.GoodsCatalog.NameOf(goods)}");
                 }
@@ -2449,11 +2611,11 @@ public partial class Main
 
         Ask("at the founding", learned: false);
 
-        (bool quarry, bool mine, bool smithy, bool mill, bool bakery) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (true, true, true, true, true);
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (true, true, true, true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown) = (quarry, mine, smithy, mill, bakery);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (quarry, mine, smithy, mill, bakery, trade);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);

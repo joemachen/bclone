@@ -85,6 +85,10 @@ public sealed partial class TradeGlyph : Control
         JobKind.Miller => new Color(0.86f, 0.82f, 0.70f),
         JobKind.Baker => new Color(0.72f, 0.48f, 0.24f),
 
+        // The herdsman takes the barn's red-brown, the merchant the slate of a river boat (D596).
+        JobKind.Herdsman => new Color("#8a4b32"),
+        JobKind.Merchant => new Color("#5f6f8c"),
+
         // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
         // same answer `GoodsPalette` gives a good nobody has chosen a colour for.
         _ => new Color(0.70f, 0.70f, 0.70f),
@@ -214,6 +218,37 @@ public sealed partial class TradeGlyph : Control
             case JobKind.Hunter:
                 DrawArc(new Vector2(s * 0.34f, s * 0.5f), s * 0.36f, -Mathf.Pi / 2.2f, Mathf.Pi / 2.2f, 12, ink, 1.8f);
                 DrawLine(new Vector2(s * 0.66f, s * 0.18f), new Vector2(s * 0.66f, s * 0.82f), ink, 1.2f);
+                break;
+
+            // A beast (D596): the body, the head lowered to graze, and four legs.
+            case JobKind.Herdsman:
+                DrawRect(new Rect2(s * 0.22f, s * 0.36f, s * 0.50f, s * 0.26f), ink);
+                DrawRect(new Rect2(s * 0.68f, s * 0.46f, s * 0.18f, s * 0.16f), ink);
+                for (int leg = 0; leg < 4; leg++)
+                {
+                    DrawRect(new Rect2(s * (0.24f + (leg * 0.14f)), s * 0.62f, s * 0.06f, s * 0.20f), ink);
+                }
+
+                break;
+
+            // A boat (D596): the hull, the mast and its sail.
+            case JobKind.Merchant:
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.12f, s * 0.64f),
+                        new Vector2(s * 0.88f, s * 0.64f),
+                        new Vector2(s * 0.72f, s * 0.82f),
+                        new Vector2(s * 0.28f, s * 0.82f),
+                    }, ink);
+                DrawLine(new Vector2(s * 0.50f, s * 0.64f), new Vector2(s * 0.50f, s * 0.14f), ink, 1.6f);
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.54f, s * 0.18f),
+                        new Vector2(s * 0.80f, s * 0.56f),
+                        new Vector2(s * 0.54f, s * 0.56f),
+                    }, ink);
                 break;
 
             // A modder's trade: a plain mark, honestly nobody's shape.

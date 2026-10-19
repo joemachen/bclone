@@ -23,7 +23,7 @@ namespace Bclone.Sim.Systems;
 /// of reasons can be explained in one sentence in the UI and a weighted score cannot.
 /// </para>
 /// </remarks>
-public sealed class BehaviorSystem : ISimSystem
+public sealed partial class BehaviorSystem : ISimSystem
 {
     /// <summary>Scratch for the audit trail's before-and-after. See <see cref="Snapshot"/>.</summary>
     private int[] _carriedBefore = System.Array.Empty<int>();
@@ -141,6 +141,13 @@ public sealed class BehaviorSystem : ISimSystem
         VillagerState.WalkingOutToTend => "walking out to tend the field",
         VillagerState.Tending => "tending the field",
         VillagerState.WalkingBackToTheSteading => "walking back to the steading",
+        VillagerState.CuttingHay => "cutting hay",
+        VillagerState.FetchingHay => "fetching hay from the barn",
+        VillagerState.FeedingTheHerd => "feeding the herd",
+        VillagerState.Culling => "culling a beast",
+        VillagerState.CollectingForThePost => "collecting goods to sell",
+        VillagerState.StockingThePost => "carrying goods to the trading post",
+        VillagerState.FetchingFromThePost => "bringing goods home from the trading post",
         _ => state.ToString(),
     };
 
@@ -493,6 +500,39 @@ public sealed class BehaviorSystem : ISimSystem
                         : villager.State);
                 return;
 
+            // The merchant's errands (D594): to the store that holds the good, or to the post.
+            case VillagerState.CollectingForThePost:
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY), villager.State);
+                return;
+
+            case VillagerState.StockingThePost:
+            case VillagerState.FetchingFromThePost:
+                if (WorkplaceOf(world, villager) is not Workplace tradingPost)
+                {
+                    HaulOrSetDown(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, tradingPost.Position, villager.State);
+                return;
+
+            // The herdsman's errands (D593): out to a pasture tile, or to the barn.
+            case VillagerState.CuttingHay:
+            case VillagerState.FeedingTheHerd:
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY), villager.State);
+                return;
+
+            case VillagerState.FetchingHay:
+            case VillagerState.Culling:
+                if (WorkplaceOf(world, villager) is not Workplace herdBarn)
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, herdBarn.Position, villager.State);
+                return;
+
             case VillagerState.HaulingToFarm:
                 if (WorkplaceOf(world, villager) is not Workplace barn)
                 {
@@ -597,7 +637,8 @@ public sealed class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state);
+        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state)
+        || IsHerding(state) || IsTradingAtThePost(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -664,6 +705,17 @@ public sealed class BehaviorSystem : ISimSystem
         if (IsBaking(state))
         {
             return JobKind.Baker;
+        }
+
+        // ⛔ D281's lesson, the fifth time: without this arm a herdsman is recalled home every tick.
+        if (IsHerding(state))
+        {
+            return JobKind.Herdsman;
+        }
+
+        if (IsTradingAtThePost(state))
+        {
+            return JobKind.Merchant;
         }
 
         // ⛔ D281, a fourth time: without this arm a quarrier is recalled home every tick.
@@ -1447,10 +1499,15 @@ public sealed class BehaviorSystem : ISimSystem
             // A builder with nothing marked out. Not idle — they fall through to the spare
             // errands at the bottom of Decide, like the woodcutter with an empty yard.
             villager.WorkNote = "Nothing is marked out to build.";
+            villager.ServingSiteId = 0;
             return false;
         }
 
         ConstructionSite site = standing.Construction!;
+
+        // ⭐ THE SITE THIS BUILDER SERVES (Joe, D602): the first in queue order nobody else is on, paid for out of surplus
+        // only — or the head's answer when every site has somebody (`SimWorld.NextSiteToServe(Villager)`).
+        Workplace? mine = world.NextSiteToServe(villager);
 
         // ⭐ NOTHING IS BUILT ON GROUND THAT IS STILL STANDING (Joe, D101). The trees under a
         // marked site come down first, and the mark is what asked for them (D100).
@@ -1489,21 +1546,28 @@ public sealed class BehaviorSystem : ISimSystem
         // standing at **t150 to t394**, past a winter that starts at t360. Painted ground has
         // somebody coming for it; unpainted ground has nobody, for ever.
         // ⭐ EVERY TILE OF IT (B5, D497): the far half of a house is ground it stands on too.
-        if (!world.FootprintIsClear(standing))
+        // ⚠️ D602: a head whose ground another builder is already clearing is left to them while there is another site to
+        // serve; and a head whose ground the laborers are clearing no longer idles a builder who has one.
+        if (!world.FootprintIsClear(standing) && (mine is null || !world.SitesOtherBuildersServe(villager).Contains(standing.Id)))
         {
-            if (FirstUnpaintedStandingUnder(world, standing) is not GridPos ground)
+            if (FirstUnpaintedStandingUnder(world, standing) is GridPos ground)
+            {
+                villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
+                villager.ErrandX = ground.X;
+                villager.ErrandY = ground.Y;
+                villager.ServingSiteId = standing.Id;
+                HeadFor(world, villager, ground, VillagerState.Clearing);
+                return true;
+            }
+
+            if (mine is null)
             {
                 villager.WorkNote =
                     $"{site.Name} cannot be started yet — the ground it stands on is still being "
                     + "cleared.";
+                villager.ServingSiteId = 0;
                 return false;
             }
-
-            villager.WorkNote = $"Clearing the ground {site.Name} is to stand on.";
-            villager.ErrandX = ground.X;
-            villager.ErrandY = ground.Y;
-            HeadFor(world, villager, ground, VillagerState.Clearing);
-            return true;
         }
 
         // ⭐⭐ AND FROM HERE ON, THE SITE THEY SERVE IS THE FIRST ONE THEY CAN ACTUALLY MOVE
@@ -1511,9 +1575,9 @@ public sealed class BehaviorSystem : ISimSystem
         // refusal on everything — `NextSiteToServe` walks the same queue order — but a head
         // waiting on stone the village has not got no longer holds up the houses behind it.
         // See `SimWorld.NextSiteToServe` for the founding this killed before it existed.
-        if (world.NextSiteToServe() is Workplace servable && servable.Id != standing.Id)
+        if (mine is not null && mine.Id != standing.Id)
         {
-            standing = servable;
+            standing = mine;
             site = standing.Construction!;
         }
 
@@ -1521,9 +1585,12 @@ public sealed class BehaviorSystem : ISimSystem
         // builder — one carrying a load takes it where it was fetched for. It moves no timber, so
         // the queue above still decides where materials go; and it is the work the quota keeps a
         // hand for when half the spare hands rounds to nobody (`SimWorld.BegunSiteWithWhatItNeeds`).
+        // ⚠️ D602: unless another builder is already finishing it — then this one goes to their own site, or the second
+        // builder of a two-site village spent its whole life helping the first finish.
         if (!site.HasMaterials
             && !CarryingSomethingFor(site, villager)
-            && world.BegunSiteWithWhatItNeeds() is Workplace begun)
+            && world.BegunSiteWithWhatItNeeds() is Workplace begun
+            && !world.SitesOtherBuildersServe(villager).Contains(begun.Id))
         {
             standing = begun;
             site = standing.Construction!;
@@ -1537,6 +1604,7 @@ public sealed class BehaviorSystem : ISimSystem
         if (site.HasMaterials || CarryingSomethingFor(site, villager))
         {
             villager.WorkNote = string.Empty;
+            villager.ServingSiteId = standing.Id;
             HeadFor(world, villager, standing.Tile, VillagerState.Building);
             return true;
         }
@@ -1577,6 +1645,7 @@ public sealed class BehaviorSystem : ISimSystem
                 villager.WorkNote =
                     $"{site.Name} is waiting on {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
                     + $"nobody has, so {ready.Construction!.Name} is getting the day instead.";
+                villager.ServingSiteId = ready.Id;
                 HeadFor(world, villager, ready.Tile, VillagerState.Building);
                 return true;
             }
@@ -1585,6 +1654,7 @@ public sealed class BehaviorSystem : ISimSystem
                 $"Nothing to build with — {site.Name} still wants "
                 + $"{site.DescribeWhatIsMissing(world.GoodsCatalog)}, "
                 + "and nowhere within reach has any.";
+            villager.ServingSiteId = 0;
 
             // ⭐ AND NOTHING TO BUILD EITHER, so they go and MAKE materials rather than stand
             // there — Joe's rule: *"if there are no materials available, the builder should
@@ -1601,6 +1671,7 @@ public sealed class BehaviorSystem : ISimSystem
         }
 
         villager.WorkNote = string.Empty;
+        villager.ServingSiteId = standing.Id;
         HeadFor(world, villager, warehouse.Tile, VillagerState.FetchingMaterials);
         return true;
     }
@@ -1651,7 +1722,11 @@ public sealed class BehaviorSystem : ISimSystem
         // `NextToBuild` — the head — which stopped being the site they were walking for the
         // moment a head could be stuck on a material nobody has. Two orderings over one list is
         // D157's shape for half the bugs here; there is one.
-        ConstructionSite? site = world.NextSiteToServe()?.Construction;
+        // ⭐ AND SINCE D602, THE SITE THEY SET OUT FOR: other builders' choices move the queue's answer under them, so a
+        // fresh ask could load for a site somebody else is serving. Re-asked only if that site has gone.
+        ConstructionSite? site = world.FindWorkplace(villager.ServingSiteId)?.Construction is { IsFinished: false } set
+            ? set
+            : world.NextSiteToServe(villager)?.Construction;
 
         if (site is null)
         {
@@ -1807,7 +1882,7 @@ public sealed class BehaviorSystem : ISimSystem
     /// and <c>Delivering</c> this record carried from D14 to D371 went with the delivery leg;
     /// what the load is for is derived where it is picked up (<see cref="LoadForTheRound"/>).
     /// </remarks>
-    private readonly record struct MarketErrand(GridPos Source, Goods Goods);
+    internal readonly record struct MarketErrand(GridPos Source, Goods Goods);
 
     /// <summary>
     /// What a marketer does next.
@@ -1880,6 +1955,11 @@ public sealed class BehaviorSystem : ISimSystem
     private static void OfferMarketRestock(
         SimWorld world, Villager villager, ref MarketErrand? best, ref int bestCost)
     {
+        // ⭐⭐ THE EMPTIEST SHELF FIRST (Joe, D601) — the good furthest below its counter limit, as a share of the limit
+        // (per mille, integers), and only between goods equally short does the nearer store win. Cost-first alone let
+        // the nearest good win every trip while every limit stood far above what was held: Joe's market held 545 of the
+        // village's 620 firewood, and no meat, with 2,500 in the granaries.
+        int bestShare = int.MaxValue;
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding market = world.StoreBuildings[i];
@@ -1912,11 +1992,13 @@ public sealed class BehaviorSystem : ISimSystem
                 }
 
                 int cost = world.TravelCost.TicksBetween(villager.Tile, source.Tile);
-                if (cost >= bestCost)
+                int share = market.Store[goods] * 1000 / Math.Max(1, world.MarketStockLimit(market, goods));
+                if (share > bestShare || (share == bestShare && cost >= bestCost))
                 {
                     continue;
                 }
 
+                bestShare = share;
                 bestCost = cost;
                 best = new MarketErrand(source.Tile, goods);
             }
@@ -2118,7 +2200,8 @@ public sealed class BehaviorSystem : ISimSystem
     /// order on a tie (D15).
     /// </para>
     /// </remarks>
-    private static MarketErrand? PlanMarketErrand(SimWorld world, Villager villager)
+    /// <remarks>Internal for one guard (D601): what a marketer would carry next, asked from where they stand.</remarks>
+    internal static MarketErrand? PlanMarketErrand(SimWorld world, Villager villager)
     {
         MarketErrand? best = null;
         int bestCost = int.MaxValue;
@@ -3137,6 +3220,38 @@ public sealed class BehaviorSystem : ISimSystem
 
         // Timber. Fellable year-round, unlike berries, so a logger still has
         // something to do in winter - which is part of why the job is worth holding.
+        // ⭐ THE MERCHANT (D594, `trade.md §4.5`): what a boat left goes home; what is above the keep goes down.
+        if (villager.CanWork && job?.Kind == JobKind.Merchant)
+        {
+            if (TryTrade(world, villager, job))
+            {
+                return;
+            }
+
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
+        }
+
+        // ⭐ THE HERDSMAN (D593, `livestock.md §0.1`): a cull owed, winter's feeding, the growing seasons' hay.
+        if (villager.CanWork && job?.Kind == JobKind.Herdsman)
+        {
+            if (TryKeepTheHerd(world, villager, job))
+            {
+                return;
+            }
+
+            if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
+            {
+                GoHome(world, villager);
+            }
+
+            return;
+        }
+
         if (villager.CanWork && job?.Kind == JobKind.Forester)
         {
             // ⭐ A MET LIMIT STOPS THE FELLING AND NOT THE FORESTER (Joe, D146). D145 found that
@@ -4701,6 +4816,16 @@ public sealed class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (ArriveToKeepTheHerd(world, villager, onArrival))
+        {
+            return;
+        }
+
+        if (ArriveToTrade(world, villager, onArrival))
+        {
+            return;
+        }
+
         // ⚠️ A CAST HAS TO BE STARTED THE SAME WAY A GATHER IS. Arriving in the `Fishing` state
         // is not fishing — without a duration the villager stands on the bank holding the state
         // and `CompleteAction` is never reached, which is exactly what shipped.
@@ -4799,6 +4924,14 @@ public sealed class BehaviorSystem : ISimSystem
             if (SeasonRules.IsReaping(world.Clock.Season)
                 && WorkplaceOf(world, villager) is { Kind: JobKind.Farmer } farm
                 && world.NextFieldToWork(farm, villager.Tile) is not null)
+            {
+                Decide(world, villager);
+                return;
+            }
+
+            // And a herdsman with the winter's hay still to cut goes back out to the pasture (D593).
+            if (WorkplaceOf(world, villager) is { Kind: JobKind.Herdsman } pastured
+                && world.NextPastureToCut(pastured) is not null)
             {
                 Decide(world, villager);
                 return;
@@ -5623,6 +5756,11 @@ public sealed class BehaviorSystem : ISimSystem
     /// <summary>Apply the effect of a timed action that just finished.</summary>
     private static void CompleteAction(SimWorld world, Villager villager)
     {
+        if (FinishKeepingTheHerd(world, villager))
+        {
+            return;
+        }
+
         switch (villager.State)
         {
             case VillagerState.Resting:

@@ -334,16 +334,23 @@ public sealed class StoneCostsTests
         GridPos? where = MarkAGranary(world);
         Assert.NotNull(where);
 
-        loop.Step(config.TicksPerYear * 10);
+        // ⚠️ THE RAISE SITE WATCHED UNTIL IT GOES, NOT "NO SITE AT ALL" TEN YEARS ON (D601). A standing building ages
+        // into a repair, and a repair is a site on the same tile: at D601 this granary stood in under two years, the
+        // fixture's eight starved out years later, and the repair raised after them wanted 10 logs nobody was left to
+        // carry — read at year ten as "the granary never went up".
+        for (int t = 0; t < config.TicksPerYear * 10 && world.SiteAt(where!.Value)?.Construction is { Repairing: false }; t++)
+        {
+            loop.StepOnce();
+        }
 
         ConstructionSite? plan = world.SiteAt(where!.Value)?.Construction;
         _output.WriteLine(
-            $"seam painted: {world.InStores(Goods.Stone)} stone reached a store; granary "
-            + (plan is null
-                ? "built"
+            $"seam painted: {world.InStores(Goods.Stone)} stone in store; granary "
+            + (plan is not { Repairing: false }
+                ? $"built by tick {world.Tick}"
                 : $"unfinished — wants {plan.DescribeWhatIsMissing(world.GoodsCatalog)}"));
 
-        Assert.Null(plan);
+        Assert.False(plan is { Repairing: false }, "The granary was never built, with a seam painted.");
     }
 
     private static int CountAlive(SimWorld world)

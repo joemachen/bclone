@@ -125,6 +125,26 @@ public sealed class ShippedConfigTests
             + "getting cold, which is the fifteen-day thaw Joe asked to be rid of.");
     }
 
+    /// <summary>
+    /// ⭐ Joe's seats (D603): <i>"each forester huts only need a max of 2 workers / each forager hut should have a max of
+    /// 3 workers / each farmhouse should have a max of 3 workers"</i> — in the file the game loads, and in a village standing
+    /// on it (the warm start raises its own forester's and forager's huts, by a road of its own).
+    /// </summary>
+    [Fact]
+    public void TheSeatsAreJoesNumbers()
+    {
+        SimConfig shipped = Shipped;
+        Assert.Equal(2, shipped.ForesterHutCapacity);
+        Assert.Equal(3, shipped.GathererHutCapacity);
+        Assert.Equal(3, shipped.FarmhouseSeats);
+        Assert.Equal(3, shipped.BuildingRows.Single(row => row.Id == (int)BuildingKind.Farmhouse).Seats);
+
+        SimWorld world = SimFactory.CreatePhase0(shipped, new InMemoryLogSink()).World;
+        Assert.All(world.Workplaces.Where(w => w.Kind == JobKind.Forester && !w.IsSite), hut => Assert.Equal(2, hut.Capacity));
+        Assert.All(world.Workplaces.Where(w => w.Kind == JobKind.Forager && !w.IsSite), hut => Assert.Equal(3, hut.Capacity));
+        Assert.Contains(world.Workplaces, w => w.Kind == JobKind.Forester && !w.IsSite);
+    }
+
     [Fact]
     public void TheShippedBuildingsAreBigEnoughForTheEconomyTheyServe()
     {
@@ -176,12 +196,21 @@ public sealed class ShippedConfigTests
         // fail by someone editing a dead number, and it duly failed the moment the firewood burn
         // doubled (2026-09-01) while the hut was already seating the 3 it needed.
         //
-        // ⭐ So the claim becomes the one that is actually load-bearing: **the hut must still be
+        // ⭐ So the claim became the one that is actually load-bearing: **the hut must still be
         // deriving**, because the instant somebody states its seats it inherits `woodcutter_hut_
         // capacity`'s whole history (D16, D50 — yields moved, capacities did not, thirty-six
         // people froze). *A guard comparing a number the game does not use is worse than no
         // guard: it reads as protection.*
-        Assert.Null(
+        //
+        // ⛔⛔ AND JOE STATED THEM ANYWAY, AT D603, KNOWING THE RECOURSE: *"each forester huts only need a
+        // max of 2 workers."* That is the woodcutter's ruling of 2026-09-01 again — a hut is a cap and
+        // the answer to needing more is another hut — so the forester's arm becomes the woodcutter's:
+        // the row states the key it names (no dead number this time), the economy still says what the
+        // trade wants, and `LabourQuota.Needed` keeps the honest figure beside the capped one for the
+        // professions panel. Measured before typed: the 200-valley harness went 1,408 → 2,155 alive
+        // with the seats (dead valleys 23 → 22, cold 1,169 → 1,187) — the cap starved nobody of logs.
+        Assert.Equal(
+            shipped.ForesterHutCapacity,
             shipped.BuildingRows.Single(row => row.Id == (int)BuildingKind.ForesterHut).Seats);
 
         // ⭐⭐ AND THE VILLAGE SAYS SO OUT LOUD — the half that makes "build another hut" an
@@ -202,8 +231,7 @@ public sealed class ShippedConfigTests
             "The honest need is below the capped figure, so `Needed` is not the uncapped one.");
 
         _output.WriteLine(
-            $"forester's hut states no seats and is handed {foresterSeats} by the economy; "
-            + $"forester_hut_capacity ({shipped.ForesterHutCapacity}) seats nobody.");
+            $"forester's hut states {shipped.ForesterHutCapacity} seats; the economy would derive {foresterSeats}.");
     }
 
     /// <summary>

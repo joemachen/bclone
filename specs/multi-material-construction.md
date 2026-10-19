@@ -1,7 +1,7 @@
 # Spec: Multi-material construction — a building can ask for more than one thing
 
 > Status: **✅ BUILT (D213 → D215, 2026-08-25), in four commits: the machinery as a provable
-> no-op, the store prices, the huts on Joe's call, then the stone taken back out of the cart.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
+> no-op, the store prices, the huts on Joe's call, then the stone taken back out of the cart.** · ✅ **§4.1, builders spread across the queue (Joe, 2026-10-17), BUILT (D602)** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven), `§2.3`
 > (systemic pressure traceable to a player decision) · Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `content-inventory.md` **finding 2** (which scheduled this),
@@ -195,6 +195,41 @@ holds.
   materials go. Measured: a fed four-hand village left a warehouse at 43 of 45 work for two years;
   D420's 55 villages read level (484 → 480 alive, 106 → 103 starved, 40 of 55 identical). Guards
   in `HousesAreBuiltTests` (the quota, the behaviour and the food gate, each posed alone).
+
+### 4.1 ✅ Builders spread across the queue — Joe's call, 2026-10-17 (D602)
+
+> Joe, playing D599: *"despite having 3 builders, it takes a long time (months!) for a builder to start building after
+> a building blueprint/ghost is placed."*
+
+**Why (found on his Year-70 save, D600):** every builder served the head (D108's *"the whole crew works the front of
+the queue"*), so his nine sites went up **one at a time** — the last 415 ticks after it was marked — while the stores
+held the timber for all of them. Joe's call: **spread across sites**.
+
+**The rule.** A builder deciding serves **the first site in queue order that no other builder is serving**
+(`SimWorld.NextSiteToServe(builder)`), of the sites D213 already lets them serve (ground clear, reachable, and either
+paid for or short of something a store holds). When every such site has a builder, they double up as before — the
+head first. **The head stays first**: the first builder to decide takes it, and a builder further back moves up the
+moment a site ahead loses its builder.
+
+**⚠️ D102's line holds — scarce materials still go where the queue points.** A site behind others is served only when
+the stores hold **what every reachable site ahead of it still owes of the good it next wants** (their whole recipes,
+not an armful) **and its own share on top** — a site half-paid with the last spare log only sits there while its
+builder doubles back. Short of that, its builder doubles up at the front. The head itself is D213's: anything of what
+it wants in store will do. So spreading spends only surplus: a village
+with timber for three houses raises three at once; a village with timber for one raises the first, as it always did.
+
+**Who serves what is a fact, not a guess.** `Villager.ServingSiteId` is set whenever a builder chooses (to clear its
+ground, carry to it, fetch for it or work it) and cleared when they find nothing; saved, and hashed sparsely (villager
+tag 7). A builder counts as serving only while alive and seated at a builder's hut. **`LoadMaterials` loads for the site
+the builder set out for** — not a fresh ask — so the store trip and the delivery cannot disagree (D157), even while
+other builders' choices move under them. ⛔ **Not an index:** the served set is gathered from the villagers each time a
+builder decides — a handful of builders over a handful of sites, never per tick or per frame.
+
+**Unchanged:** the D138 ground-clearing for the head (now skipped when another builder is already on it), D453's
+begun-site-first, D135's starved-head fallback.
+
+**Guarded by** `BuilderSpreadTests` — two builders, two affordable sites: the second is begun before the first stands;
+the head is taken first; a site behind a head that would eat the last of the timber is not served.
 
 ---
 

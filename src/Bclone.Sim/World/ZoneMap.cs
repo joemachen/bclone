@@ -977,7 +977,112 @@ public sealed class ZoneMap
                 }
             }
         }
+
+        // ⭐ And any pasture's fence that shared one of these edges (D598) — the layer is a union of every source.
+        PutBackPastureWallsOn(edges, exceptBarn: 0);
     }
+
+    // ---------------------------------------------------------------
+    //  A barn's pasture fence (D598, `livestock.md §0.2`) — a player-built fence, `fences-as-walls.md §10`
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Each standing pasture fence's edges, keyed by its barn's <b>workplace</b> id (D598). ⛔ Never the yards'
+    /// <see cref="_fenceByOwner"/>, which is keyed by household id — the two numberings collide. Derived from the barn's
+    /// <c>FencedTiles</c> and gate, never hashed (D335), rebuilt on load.
+    /// </summary>
+    private readonly Dictionary<int, List<(GridPos From, GridPos To)>> _pastureFenceByBarn = new();
+
+    /// <summary>The edges a standing pasture fence holds, or none — what the view draws.</summary>
+    public IReadOnlyList<(GridPos From, GridPos To)> PastureFenceOf(int barnId) =>
+        _pastureFenceByBarn.TryGetValue(barnId, out List<(GridPos From, GridPos To)>? edges)
+            ? edges
+            : Array.Empty<(GridPos, GridPos)>();
+
+    /// <summary>
+    /// Wall a pasture: every edge from its tiles to a tile outside, but the gate's — the yard's rule, with the gate's
+    /// outside tile as the lane and no house (<see cref="FenceEdges"/>).
+    /// </summary>
+    public void RaiseAPastureFence(int barnId, IReadOnlyList<GridPos> tiles, GridPos gateFront)
+    {
+        PullAPastureFenceDown(barnId);
+        List<(GridPos From, GridPos To)> edges = FenceEdges(tiles, new[] { gateFront }, Array.Empty<GridPos>(), out _);
+        for (int e = 0; e < edges.Count; e++)
+        {
+            Wall(edges[e].From, edges[e].To, up: true);
+        }
+
+        _pastureFenceByBarn[barnId] = edges;
+    }
+
+    /// <summary>Take a pasture's walls down — and put back every other fence's wall on an edge it shared.</summary>
+    public void PullAPastureFenceDown(int barnId)
+    {
+        if (!_pastureFenceByBarn.Remove(barnId, out List<(GridPos From, GridPos To)>? edges))
+        {
+            return;
+        }
+
+        for (int e = 0; e < edges.Count; e++)
+        {
+            Wall(edges[e].From, edges[e].To, up: false);
+        }
+
+        // Yards that shared an edge — each raised again whole, as a plot's pull-down does for its neighbours.
+        var shared = new HashSet<(GridPos, GridPos)>();
+        for (int e = 0; e < edges.Count; e++)
+        {
+            shared.Add(Unordered(edges[e].From, edges[e].To));
+        }
+
+        foreach ((int _, List<(GridPos From, GridPos To)> yard) in _fenceByOwner)
+        {
+            for (int e = 0; e < yard.Count; e++)
+            {
+                if (shared.Contains(Unordered(yard[e].From, yard[e].To)))
+                {
+                    Wall(yard[e].From, yard[e].To, up: true);
+                }
+            }
+        }
+
+        PutBackPastureWallsOn(edges, exceptBarn: barnId);
+    }
+
+    /// <summary>Raise again every other pasture fence's wall that lies on one of these edges.</summary>
+    private void PutBackPastureWallsOn(IReadOnlyList<(GridPos From, GridPos To)> edges, int exceptBarn)
+    {
+        if (_pastureFenceByBarn.Count == 0)
+        {
+            return;
+        }
+
+        var shared = new HashSet<(GridPos, GridPos)>();
+        for (int e = 0; e < edges.Count; e++)
+        {
+            shared.Add(Unordered(edges[e].From, edges[e].To));
+        }
+
+        foreach ((int barn, List<(GridPos From, GridPos To)> theirs) in _pastureFenceByBarn)
+        {
+            if (barn == exceptBarn)
+            {
+                continue;
+            }
+
+            for (int e = 0; e < theirs.Count; e++)
+            {
+                if (shared.Contains(Unordered(theirs[e].From, theirs[e].To)))
+                {
+                    Wall(theirs[e].From, theirs[e].To, up: true);
+                }
+            }
+        }
+    }
+
+    /// <summary>An edge named the same whichever side it is walked from.</summary>
+    private static (GridPos, GridPos) Unordered(GridPos a, GridPos b) =>
+        a.Y < b.Y || (a.Y == b.Y && a.X <= b.X) ? (a, b) : (b, a);
 
     /// <summary>Take a household's plot and its lane back. Returns the tiles freed.</summary>
     public int ReleasePlot(int ownerId)

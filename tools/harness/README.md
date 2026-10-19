@@ -120,3 +120,19 @@ against a number from an older commit.
 - `ZzSeamGround.cs` — D561's measurement for the quarry's and the mine's ground (`specs/seam-reach.md §6`): one `ZZG` line per
   seam in 100 shipped valleys (seeds 200–299) — its kind, its size (what a building standing by it may paint since D561) and
   the most a building could paint under D541's diamond. Copy in, `-c Release --filter ZzSeamGround`, delete.
+- `ZzTrade.cs` — D586's measurements for trade (`specs/trade.md §8`). `River` (pure map generation, 100 seeds × the four
+  courses, `ZZR`): which map edges the river touches, the bank tiles on the founding's side (grass touching water, the
+  fishery's rule) and the walk from the founding site to the nearest. `Village` (seeds 200–299, the played opening,
+  unattended, `ZZH` / `ZZB`): the year the last founder died (the town hall owed) and every good held in stores against
+  its limit then and 10 and 20 years on. ZZ_SEEDS, ZZ_YEARS (100). Copy in, `-c Release --filter ZzTrade`, delete.
+  `Region` (D594, `ZZM`, needs `TradeTests` in the project): every neighbour left as a boat would leave it at its worst,
+  stepped 4, 8 and 12 seasons — how far its stocks and rates come back between boats (`trade.md §8.4`).
+  ⚠️ An unattended village builds almost nothing, so its surplus is thin; what a played village holds came from copies
+  of Joe's saves (`trade.md §8.2a`).
+- `ZzHerd.cs` — D589's measurements for the herd (`specs/livestock.md §10.1`, commit 0 of `trade.md §11`). `Cold` (`ZZK`,
+  once): the shipped exposure numbers as ticks — break-off, freeze, and the tiles a walk covers between them — plus the
+  farm's field anchors. `Seasons` (ZzClothing's `played` valleys, 60 years): working-age villager-ticks per season in three
+  twenty-year windows, split work / walking / at home or a fire / other (`ZZS`); and at the year the last founder dies, free
+  grass or forest within 10 / 20 / 30 tiles' walk of the founding site and the nearest from a home (`ZZP`). Copy in,
+  `-c Release --filter ZzHerd`, delete. ⚠️ Its "walking" bucket is any `Travel*` or `-ing` state not resting — hauling
+  counts as walking, so read work + walking as *busy*.

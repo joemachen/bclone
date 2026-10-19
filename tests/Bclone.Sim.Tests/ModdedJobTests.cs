@@ -36,7 +36,8 @@ public sealed class ModdedJobTests
     // sit ABOVE every built-in or it is not testing what this file claims to test.
     // ⚠️ 11 since the miner took 10 (D449) — the fifth move, for the fifth reason.
     // ⚠️ 13 since the miller and the baker took 11 and 12 (D522) — the sixth.
-    private static JobKind Boatman => (JobKind)13;
+    // ⚠️ 15 since the herdsman and the merchant took 13 and 14 (D590) — the seventh.
+    private static JobKind Boatman => (JobKind)15;
 
     /// <summary>
     /// A catalogue with a seventh trade, written the way a modder would write it.
@@ -64,6 +65,8 @@ public sealed class ModdedJobTests
         { "id": 10, "name": "miner",     "plural": "miners",      "doing": "digging iron",       "works_at": "Mine",          "limited_by": "Iron", "uses_tool": true },
         { "id": 11, "name": "miller",    "plural": "millers",     "doing": "grinding wheat",     "works_at": "Mill",          "limited_by": "Flour", "uses_tool": true },
         { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",       "works_at": "Bakery",        "limited_by": "Bread", "uses_tool": true },
+        { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
+        { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
 
         // The modder's own trade. Nothing in the sim has ever heard of it.
         //
@@ -72,7 +75,7 @@ public sealed class ModdedJobTests
         // to be an id the enum cannot name, and 6 stopped being one the day `JobKind.Boatman`
         // existed. **The example mod was a fisherman; the game grew one.** Renamed too — two
         // trades called "fisher" is a failure message nobody can read.
-        { "id": 13, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
+        { "id": 15, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
       ]
     }
     """;
@@ -88,8 +91,8 @@ public sealed class ModdedJobTests
         var catalog = new JobsCatalog(ConfigWithBoatman().JobsCatalog);
 
         // 7 → 8 when the built-in fisher shipped (2026-09-02); 9 → 10 for the smith (D391); → 11
-        // for the quarrier (D434); → 12 for the miner (D449); → 14 for the miller and the baker (D522).
-        Assert.Equal(14, catalog.Count);
+        // for the quarrier (D434); → 12 for the miner (D449); → 14 for the miller and the baker (D522); → 16 for the herdsman and the trader (D590).
+        Assert.Equal(16, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a trade no switch has
         // ever named.
@@ -155,8 +158,10 @@ public sealed class ModdedJobTests
           "jobs": [
             { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing", "works_at": "FishingHut", "limited_by": "Fish" },
             { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting", "works_at": "HunterLodge", "limited_by": "Meat" },
-            { "id": 13, "name": "boatman",   "plural": "boatmen",     "doing": "at the water" },
+            { "id": 15, "name": "boatman",   "plural": "boatmen",     "doing": "at the water" },
             { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",   "works_at": "Bakery", "limited_by": "Bread" },
+            { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
+            { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
             { "id": 11, "name": "miller",    "plural": "millers",     "doing": "grinding wheat", "works_at": "Mill",   "limited_by": "Flour" },
             { "id": 10, "name": "miner",     "plural": "miners",      "doing": "digging iron",  "works_at": "Mine",   "limited_by": "Iron" },
             { "id": 9, "name": "quarrier",   "plural": "quarriers",   "doing": "cutting stone", "works_at": "Quarry", "limited_by": "Stone" },
@@ -201,8 +206,8 @@ public sealed class ModdedJobTests
             foragers: 2, foresters: 1, woodcutters: 1, marketers: 1, builders: 1, farmers: 2,
             slots: 7);
 
-        // The built-ins' count since the miller and the baker (D522) — thirteen; the seven asked for is fewer.
-        Assert.Equal(13, quota.Slots);
+        // The built-ins' count since the herdsman and the merchant (D590) — fifteen; the seven asked for is fewer.
+        Assert.Equal(15, quota.Slots);
 
         // The built-ins still read exactly as they did, through the named readers.
         Assert.Equal(2, quota.Foragers);

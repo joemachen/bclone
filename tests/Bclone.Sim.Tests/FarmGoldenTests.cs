@@ -297,7 +297,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D555) — building condition, commit 2 (`building-condition.md §4.3–4.5`): at each season's turn the village raises a repair site for what is worn and closes what has fallen in, and the builders mend — the first repairs land at Year ~7. ⭐ PROVEN TO BE THE ONLY REASON: with the season's walk short-circuited, the old value passes (65 of 65 golden and determinism guards green). Was 15797634979579032686.
     // RE-TAKEN (D565) — the nomads (`nomads.md §4.1`): a band knocks in a spring of Year 8–12 by the seed's hash, waits unanswered through the summer and moves on at the autumn turn; the count of bands and the waiting band are hashed. ⚠️ This line was not written when the value was re-taken (4004a49); added at D572 from `git show 4004a49^`. Was 2492211130328241921.
     // RE-TAKEN (D572) — the switch is the permission (Joe, D572: *"if nomads are on, that is the permission"*): a band that knocks settles that tick, so this village gains a family in Year 8–12 and the waiting band is no longer hashed (0x6F retired). ⭐ PROVEN TO BE THE ONLY REASON: with `nomads_first_year_floor` 0 in the fixture and the shipped file, every one of these reads its pre-D565 value — the sim with no nomads at all is byte for byte what it was before D565, across D565–D572. Was 16789275088886274794.
-    private const ulong SeamGoldenHash = 3047690971634059098UL;
+    // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 3047690971634059098.
+    // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 6173447274466564153.
+    // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 15516440239506033514.
+    private const ulong SeamGoldenHash = 17250329924685123549UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -377,7 +380,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D555) with it, for the same reason: the season's walk raises repair sites and the builders mend. ⭐ PROVEN: with the walk short-circuited, the old value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 11179517447590911109.
     // RE-TAKEN (D565) with it: a band knocks, waits and moves on; the count and the waiting band hashed. ⚠️ The line was not written at the re-take (4004a49); added at D572 from `git show 4004a49^`. Was 17671588798209576222.
     // RE-TAKEN (D572) with it, for the same reason: a band settles the tick it knocks. ⭐ PROVEN: with the floor at 0 the pre-D565 value passes. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's, D543's, D554's and D555's did. Was 11657496301399793127.
-    private const ulong SeamBeforeAnybodyGotBetter = 7686462258561762435UL;
+    // RE-TAKEN (D601) with it, for the same reason: the market stocks its emptiest shelf first. ⭐ PROVEN: with that one comparison put back to cost-first, the old value passes (the 73-of-73 run, which asserts it after `SeamGoldenHash`'s old value). Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's and D543's did. Was 7686462258561762435.
+    // RE-TAKEN (D602) with it, for the same reason: builders spread across the queue. ⭐ PROVEN: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 16045020298154782036.
+    // RE-TAKEN (D603) with it, for the same reason: Joe's seat defaults. PROVEN: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 10584260321345854200.
+    private const ulong SeamBeforeAnybodyGotBetter = 7581925007179817567UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

@@ -402,7 +402,12 @@ public sealed class HousesAreBuiltTests
     [Fact]
     public void MovingASiteToTheFrontIsWhatTheVillageBuildsFirst()
     {
-        SimConfig config = VillageFixtures.Village;
+        // ⚠️ ONE BUILDER'S SEAT, SO THE RACE IS FOR HANDS (D602). Since builders spread across the queue, two sites with
+        // the timber for both go up side by side and the smaller finishes first whatever the order: the promoted
+        // warehouse read "granary first", year 21, in both arms. The queue decides who gets the hands when there are more
+        // sites than builders, and where scarce materials go (`BuilderSpreadTests.ScarceTimberStaysWithTheHead`) — so
+        // this race is posed with one builder, and the order is the queue's alone.
+        SimConfig config = VillageFixtures.Village with { BuilderHutSeats = 1 };
 
         static BuildingKind? FirstRaised(SimConfig config, bool promote, ITestOutputHelper output)
         {

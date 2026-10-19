@@ -114,10 +114,10 @@ says capacity is *mostly* data, which is true of **stores** and not of **seats**
 | Warehouse | ⛔ **derived** — a horizon of households, their firewood, the logs to split it, a house's timber, floored at a granary | — |
 | Stockpile | ⛔ **derived** — the first buildings' logs *and stone*, plus the founders' firewood | — |
 | Woodcutter's hut | — | ✅ **stated** — `woodcutter_hut_capacity` |
-| Farmhouse | — | ✅ **stated** — `farmhouse_seats` |
-| Gatherer's hut | — | ⛔ **derived** — tiles in the ring ÷ tiles per worker |
-| Forester's hut | — | ⛔ **derived** — the woodcutters' appetite, plus a hand for building |
-| Builder's hut | — | ⛔ **derived** |
+| Farmhouse | — | ✅ **stated** — `farmhouse_seats` (**3** since D603, Joe; 2 before) |
+| Gatherer's hut | — | ✅ **stated** — `gatherer_hut_capacity` (2 from D262, Joe; **3** since D603, Joe) — *this row read "derived" until D603, three hundred decisions stale* |
+| Forester's hut | — | ✅ **stated** — `forester_hut_capacity` (**2**, Joe, D603). Derived until D603 (the woodcutters' appetite plus a hand, 3), while the stated key sat in the data unread |
+| Builder's hut | — | ✅ **stated** — `builder_hut_seats` — *this row read "derived" until D603* |
 | Home | — | ✅ **stated** — `max_household_size` |
 
 > **⭐ The rule, and it is principled rather than a shortcut: a STATED capacity is data; a DERIVED

@@ -834,6 +834,43 @@ public static class VillageEconomy
     }
 
     /// <summary>
+    /// Hay one head eats over a winter with the larder's margin — <c>hay_per_head_per_winter_day</c> × the days of a
+    /// season × <c>winter_buffer_percent</c> (D593, `livestock.md §10`: the same margin the larder and the woodpile carry).
+    /// </summary>
+    public static int HayOneHeadEatsAWinter(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        return config.Animals.Count == 0
+            ? 0
+            : config.Animals[0].HayPerHeadPerWinterDay * config.DaysPerSeason * config.WinterBufferPercent / 100;
+    }
+
+    /// <summary>
+    /// How many head one herdsman keeps: the hay one pair of hands cuts in a year over a head's winter (D593).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b><see cref="FieldTilesOneFarmerKeeps"/>'s question asked of the barn</b> — the biggest field one pair of hands
+    /// brings in, here at <c>hay_per_tile</c> — so no second derivation of what a pair of hands can cut. 8 today: Joe's own
+    /// timber barn's <i>"8 Large"</i> (`livestock.md §10.1.6`).
+    /// </remarks>
+    public static int HeadOneHerdsmanKeeps(SimConfig config)
+    {
+        int winter = HayOneHeadEatsAWinter(config);
+        return winter <= 0 ? 0 : FieldTilesOneFarmerKeeps(config) * config.HayPerTile / winter;
+    }
+
+    /// <summary>
+    /// ⭐ The barn's room, derived and never typed (`livestock.md §10`): its seats × the head one herdsman keeps × a head's
+    /// winter with the margin — a full barn is the winter of the herd its hands can keep (D593).
+    /// </summary>
+    public static int BarnHayRoom(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        int room = config.BarnCapacity * HeadOneHerdsmanKeeps(config) * HayOneHeadEatsAWinter(config);
+        return room < config.CarryCapacity ? config.CarryCapacity : room;
+    }
+
+    /// <summary>
     /// The last radius whose diamond one farmer can sow in a spring and reap in an autumn — the
     /// loop <see cref="FieldTilesOneFarmerKeeps"/> and <see cref="FieldHaulTicksBudgeted"/> both
     /// read, so the two cannot drift. Zero when not even the first ring fits.

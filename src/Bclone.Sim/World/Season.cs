@@ -291,6 +291,29 @@ public enum VillagerState
 
     /// <summary>At the oven, baking flour into bread — the stint (D522).</summary>
     Baking,
+
+    /// <summary>
+    /// Out to a pasture tile and cutting it for hay — the herdsman's growing seasons (D593, `livestock.md §0.1`).
+    /// </summary>
+    CuttingHay,
+
+    /// <summary>To the barn for an armful of hay to feed out (D593).</summary>
+    FetchingHay,
+
+    /// <summary>Carrying the hay out to the herd and putting it out — winter's work, outdoors (D593).</summary>
+    FeedingTheHerd,
+
+    /// <summary>At the barn, culling a beast the pasture cannot hold (D593; Joe, D588: meat and leather).</summary>
+    Culling,
+
+    /// <summary>To the store that holds a good the village sells, for an armful above the keep (D594, `trade.md §4.5`).</summary>
+    CollectingForThePost,
+
+    /// <summary>Carrying goods to sell down to the trading post (D594).</summary>
+    StockingThePost,
+
+    /// <summary>To the trading post for what a boat left, to carry it home (D594).</summary>
+    FetchingFromThePost,
 }
 
 /// <summary>

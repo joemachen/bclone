@@ -7,7 +7,8 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
 **Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** View only; nothing in
-`Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros**. ⚠️ What
+`Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
+❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
 *Quit to desktop* — they wait for §10.5. Owner: Joe + Claude Code.
 
@@ -155,6 +156,20 @@ Two new lines, each red-checked (D326) by breaking the thing it claims and count
 
   **11 mutants, 11 reds, one zero (M2, written down).** ⚠️ The ways out (*Quit to title*, *Load…* through the copy aside, *Quit to
   desktop*) and *Continue* are not probed: a probe that pressed them would end itself or touch the player's saves.
+- ⛔ **D585 — `pause:` read ❌ from D567 to D584, and the game was right.** The probe's late `Refresh` shows any waiting
+  moment the twelve-year run raised; from D567 the probe's own valley empties and is re-founded, and *"Four nomads
+  have found the empty valley"* was up (twice queued) when the line pressed Esc. Esc dismissed it — the nearer
+  meaning, as `_UnhandledKeyInput` orders it — and the pause never came. **The pose now lets every waiting moment go
+  by first, then poses its own and guards the order a moment and the pause share:** a moment takes Esc and the pause does not come; then
+  nothing in hand and *What's here* closed, Esc pauses. A fault names what was open (`WhatIsOpen`).
+
+  | Mutant | Broke | Read |
+  |---|---|---|
+  | E1 (D585) | the run's moments not let go by | `pause:` ❌ the posed moment did not show (a moment was up: "Four nomads …") |
+  | E2 (D585) | a moment no longer takes Esc | `pause:` ❌ did not dismiss it; paused over a moment (2 reds) |
+  | E3 (D585) | Esc's pause arm emptied | `pause:` ❌ did not open (nothing was open) |
+
+  **3 mutants, 3 reds, no zeros.**
 - **Joe plays it** (§10).
 
 ## 9. Not in this slice

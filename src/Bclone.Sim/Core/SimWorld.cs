@@ -636,6 +636,35 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public StockLimits StockLimits { get; }
 
+    /// <summary>
+    /// The trading post's standing orders, <i>keep N</i>: sell what the village holds above N (Joe, D586 call 3;
+    /// `trade.md §4.5`).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A stock limit's shape exactly</b> — a nullable number a good, null and zero different instructions — so it
+    /// <i>is</i> one: the same class, saved and hashed the same sparse way (D590). The merchant reads it (D594):
+    /// <c>SimWorld.AboveTheKeep</c> is the most he carries down.
+    /// </remarks>
+    public StockLimits TradeKeep { get; }
+
+    /// <summary>The trading post's standing orders, <i>buy up to M</i> (`trade.md §4.5`) — <see cref="TradeKeep"/>'s twin.</summary>
+    public StockLimits TradeBuy { get; }
+
+    /// <summary>
+    /// The next boat — due, on its way, at the post, or leaving (`trade.md §4.4`, D590). Null only until the region
+    /// wakes: from then on the next is scheduled the tick the last has gone (D595), so it is never null between visits.
+    /// </summary>
+    public TradeBoat? Boat { get; internal set; }
+
+    /// <summary>How many boats have come — the count the boat's clock hashes on, as the knock's does (`trade.md §4.4`).</summary>
+    public int BoatsEverCame { get; internal set; }
+
+    /// <summary>
+    /// What each neighbour holds, in <c>neighbours</c> row order (`trade.md §4.2`, D590) — all zero until the region
+    /// wakes with the first trading post.
+    /// </summary>
+    public IReadOnlyList<NeighbourStock> NeighbourStocks { get; }
+
     /// <summary>How many people the player wants on each kind of work (D106).</summary>
     /// <remarks>
     /// Banished's professions panel. <b>The player always has an opinion</b> — every
@@ -1994,7 +2023,35 @@ public sealed partial class SimWorld : IObstacles
             ? $", and ground painted for harvest in {GoodsCatalog.SourceNameOf(goods)} is left standing"
             : string.Empty;
         return $"At your limit of {limit.Grouped()} {GoodsCatalog.NameOf(goods)} ({HeldAgainstItsLimit(goods).Grouped()} stored, not counting home larders) — "
-            + $"{who}{paint}. Raise it under Stock limits.";
+            + $"{who}{paint}. Raise it under Stock limits." + (goods == Goods.Firewood ? TheWinterOutgrewTheLimit() is string winter ? " " + winter : string.Empty : string.Empty);
+    }
+
+    /// <summary>
+    /// ⭐ When the player's firewood limit is what keeps the village short of its winter (D600) — said in those words, or
+    /// null. The limit is met, so the woodcutters have stopped; and the winter the homes are about to burn, with their
+    /// larders topped up, is more than the stores hold (<c>LabourQuota.FirewoodShortfall</c>, the one copy of that sum).
+    /// </summary>
+    /// <remarks>
+    /// Joe's village (D600, willowdale-dove-flint-67, Year 70): a limit of 600 set when it was small, 37 households
+    /// needing 1,631 — short by 1,011 for ever, its smithy cold (iron tools burn firewood and wait on that shortfall) and its
+    /// people "dangerously cold" each winter, while the limit's own sentence said only that the woodcutters had stopped.
+    /// </remarks>
+    public string? TheWinterOutgrewTheLimit()
+    {
+        int short_ = LabourQuota.FirewoodShortfall(this);
+        if (short_ <= 0 || !LimitIsMet(Goods.Firewood) || StockLimits.For(Goods.Firewood) is not int limit)
+        {
+            return null;
+        }
+
+        int homes = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            homes += LivingMembersOf(Households[i]) > 0 ? 1 : 0;
+        }
+
+        return $"The village has outgrown it: {homes} households need {(HeldAgainstItsLimit(Goods.Firewood) + short_).Grouped()} "
+            + $"firewood for the winter and the limit of {limit.Grouped()} stops the woodcutters {short_.Grouped()} short.";
     }
 
     /// <summary>
@@ -3752,6 +3809,11 @@ public sealed partial class SimWorld : IObstacles
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
 
+        // ⭐ TRADE AND THE HERD WAIT FOR THE TOWN HALL (Joe, D587 call 1: *"once the Town Hall is built"*; D590). The
+        // hall raised, not owed: a village that has not placed it is not yet a recognised settlement.
+        BuildingKind.Barn or BuildingKind.TradingPost when TownHall is null =>
+            "Strangers do not trade with a homestead — the village needs its town hall standing first.",
+
         // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
         _ => WhyNoBridgeYet(kind),
     };
@@ -3820,6 +3882,13 @@ public sealed partial class SimWorld : IObstacles
             {
                 return known(maker);
             }
+        }
+
+        // ⭐ A good only a barn keeps waits on the barn (D590): hay, which nothing else may hold. By its row, so a
+        // modder's silage stored by barns alone waits too.
+        if (GoodsCatalog[goods].StoredBy is [StoreKind.Barn])
+        {
+            return known(BuildingKind.Barn);
         }
 
         return true;
@@ -4131,7 +4200,11 @@ public sealed partial class SimWorld : IObstacles
         // takes none, so it never waits on the homes' woodpile.
         if (TakesFirewood(row) && LabourQuota.FirewoodShortfall(this) > 0)
         {
-            return "Nothing to forge — the village needs its firewood for the winter.";
+            // ⭐ And when it is the player's own limit that keeps the village short, the forge says so (D600) — the
+            // smithy was the place Joe looked, and *"needs its firewood for the winter"* did not name his limit.
+            return TheWinterOutgrewTheLimit() is string limitIsWhy
+                ? $"Nothing to forge — the firewood limit is too low. {limitIsWhy} Raise it under Stock limits, or set the smithy to stone tools, which take no fire."
+                : "Nothing to forge — the village needs its firewood for the winter.";
         }
 
         if (NearestStoreForTheForge(smithy.Tile, tool) is null)
@@ -5335,6 +5408,12 @@ public sealed partial class SimWorld : IObstacles
     {
         JobKind.Farmer => VillageEconomy.FieldTilesOneFarmerKeeps(Config),
 
+        // ⭐ A herd GRAZES its pasture; the herdsman cuts the winter's hay off part of it (D593). So the ground one
+        // herdsman keeps is the pasture of the herd his hay feeds — eight head at five tiles (D597; D596 priced it as a
+        // farm's thirteen, which is what he cuts, and told Joe 89 of 102 tiles would go untended).
+        JobKind.Herdsman => VillageEconomy.HeadOneHerdsmanKeeps(Config)
+            * (Config.Animals.Count == 0 ? 1 : Config.Animals[0].PastureTilesPerHead),
+
         // A face never empties, so a quarrier needs a few to stand at, not a wood to tend (D434).
         JobKind.Quarrier => Config.QuarryTilesPerWorker,
 
@@ -5364,7 +5443,7 @@ public sealed partial class SimWorld : IObstacles
     /// </para>
     /// </remarks>
     public static bool KeepsWorkGround(JobKind kind) =>
-        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier or JobKind.Miner;
+        kind is JobKind.Forester or JobKind.Farmer or JobKind.Quarrier or JobKind.Miner or JobKind.Herdsman;
 
     /// <summary>Whether a workplace has been given more ground than it has hands for.</summary>
     /// <remarks>
@@ -5427,6 +5506,18 @@ public sealed partial class SimWorld : IObstacles
                 : $"{name} is {tiles} tiles of field and {Hands(hands)} can sow "
                   + $"{allowance} of them. The other {tiles - allowance} will lie fallow — "
                   + "put another farmer on, or paint a smaller field.";
+        }
+
+        // A barn's pasture is said in head, and in the herdsman's trade (D597 — it said "put another forester on").
+        if (workplace.Kind == JobKind.Herdsman)
+        {
+            int perHead = Config.Animals.Count == 0 ? 1 : Config.Animals[0].PastureTilesPerHead;
+            return hands == 0
+                ? $"{name}'s pasture has room for {tiles / perHead} head and no herdsman, so no hay will be cut for them. "
+                  + "Put a herdsman on, or paint less."
+                : $"{name}'s pasture has room for {tiles / perHead} head, and {Hands(hands)} can cut the hay for "
+                  + $"{allowance / perHead}. A herd grown past that runs short in winter — put another herdsman on, "
+                  + "or paint less.";
         }
 
         if (FaceOf(workplace) is Terrain face)
@@ -5531,10 +5622,16 @@ public sealed partial class SimWorld : IObstacles
             }
         }
 
+        // ⛔ A FENCED PASTURE IS LOCKED (D598, `livestock.md §0.2.3` rule 3) — take the fence down to change it.
+        if (WhyThePastureIsLocked(workplace) is string locked)
+        {
+            return PlacementVerdict.No(locked);
+        }
+
         // ⛔ A FIELD IS NEVER PAINTED ON A SEAM (Joe, B4, D491): the stroke goes round it. Trees are
         // the laborers' to clear (`AfterGivingGround`); stone and iron are dug or destroyed first,
         // and the cleared ground is grass the brush then takes.
-        if (workplace.Kind == JobKind.Farmer && TerrainRules.IsSeam(Map.TerrainAt(tile)))
+        if (workplace.Kind is JobKind.Farmer or JobKind.Herdsman && TerrainRules.IsSeam(Map.TerrainAt(tile)))
         {
             return PlacementVerdict.No("Not on a seam — clear it first.");
         }
@@ -5715,7 +5812,7 @@ public sealed partial class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (Zones.WorkGroundOwner(at.Tile) != workplace.Id || !Zones.SetWorkGround(at, 0))
+        if (!CanEraseWorkGround(workplace, at.Tile).Allowed || !Zones.SetWorkGround(at, 0))
         {
             return false;
         }
@@ -5735,7 +5832,7 @@ public sealed partial class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(workplace);
 
-        if (Zones.WorkGroundOwner(tile) != workplace.Id || !Zones.SetWorkGround(tile, 0))
+        if (!CanEraseWorkGround(workplace, tile).Allowed || !Zones.SetWorkGround(tile, 0))
         {
             return false;
         }
@@ -7280,6 +7377,12 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing there to move.");
         }
 
+        // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
+        if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
+        {
+            return PlacementVerdict.No($"{Capitalised(fencedBarn.Name)}'s pasture is fenced — take the fence down to move it.");
+        }
+
         // ⛔ A FULL STORE CANNOT BE CARRIED, AND THIS IS THE SENTENCE THAT SAYS SO RATHER THAN A
         // DISABLED CONTROL (D43). Joe named it as the second half of the feature: *"storage
         // buildings must be 'emptied' first."*
@@ -8297,6 +8400,7 @@ public sealed partial class SimWorld : IObstacles
                     && Map.TerrainAt(tile) != Terrain.Water
                     && Zones.IsResidential(tile)
                     && !SomethingStandsAt(tile)
+                    && !BesideAWell(tile)
                     && Zones.PlotOwner(tile) == 0
                     && !Zones.IsLane(tile)))
             {
@@ -8305,6 +8409,35 @@ public sealed partial class SimWorld : IObstacles
         }
 
         return fenced;
+    }
+
+    /// <summary>
+    /// Whether a tile is a well's or one of the eight round it — <b>a well keeps a ring of public ground</b> (Joe, D604:
+    /// <i>"homes built on top of a well - that shouldnt happens"</i>; `organic-housing.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// The yard clip took what stood on a tile and nothing round it, so a yard laid by a well wrapped it on three sides —
+    /// both wells in Joe's Year-62 village, the fence down the well's sides and under it. A handful of wells, nine
+    /// `Covers` each (the fast path, D329): cheap enough for the chooser, which asks this of every candidate's yard.
+    /// </remarks>
+    internal bool BesideAWell(GridPos tile)
+    {
+        for (int i = 0; i < Wells.Count; i++)
+        {
+            Footprint well = Wells[i].Footprint;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (well.Covers(new GridPos(tile.X + dx, tile.Y + dy)))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -8412,6 +8545,12 @@ public sealed partial class SimWorld : IObstacles
             return CanBridgeAt(kind, where);
         }
 
+        // ⭐ A PASTURE FENCE IS PUT UP FROM ITS BARN (D598) — round the ground it was given, never placed by hand.
+        if (BuildingsCatalog[kind]?.EnclosesPasture == true)
+        {
+            return PlacementVerdict.No("A pasture fence is put up from its barn's card — give the barn ground, then fence it.");
+        }
+
         if (Map.TerrainAt(position) == Terrain.Water)
         {
             return PlacementVerdict.No("The ground there is under water.");
@@ -8456,6 +8595,14 @@ public sealed partial class SimWorld : IObstacles
             {
                 string whose = FindHousehold(gated) is Household family ? $"the {family.Name}s'" : "a family's";
                 return PlacementVerdict.No($"That is the lane in front of {whose} gate — it would shut their yard.");
+            }
+
+            // ⛔ NOR INSIDE A FENCED PASTURE, NOR ON THE LANE AT ITS GATE (D598, `livestock.md §0.2.3` rule 3).
+            if (FencedPastureAt(onTheGround[i]) is Workplace fenced)
+            {
+                return PlacementVerdict.No(onTheGround[i] == fenced.FenceGate
+                    ? $"That is the way into {fenced.Name}'s pasture — it would shut the gate."
+                    : $"That is inside {fenced.Name}'s fence.");
             }
         }
 
@@ -9216,6 +9363,113 @@ public sealed partial class SimWorld : IObstacles
     }
 
     /// <summary>
+    /// ⭐ The site <b>this</b> builder should serve: the first in queue order that no other builder is serving (Joe, D602)
+    /// — or, when every site a builder could serve already has one, <see cref="NextSiteToServe()"/>'s answer, the head
+    /// first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, on his Year-70 village: <i>"despite having 3 builders, it takes a long time (months!) for a builder to start
+    /// building after a building blueprint/ghost is placed."</i> Every builder served the head, so nine sites went up one
+    /// at a time — the last 415 ticks after it was marked — with the timber for all of them in store.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ D102'S LINE HOLDS: SCARCE MATERIALS STILL GO WHERE THE QUEUE POINTS.</b> A site behind others is served only
+    /// when the stores hold what every reachable site ahead of it still owes of the good it next wants — their whole
+    /// recipes, not an armful — and its own share on top. So spreading spends surplus only: timber for one house raises
+    /// the first, as it always did.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Not an index, and it need not be one:</b> the served set is gathered from the villagers each time a builder
+    /// decides — a handful of builders over a handful of sites, never per tick or per frame
+    /// (`multi-material-construction.md §4.1`).
+    /// </para>
+    /// </remarks>
+    public Workplace? NextSiteToServe(Villager builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        HashSet<int> served = SitesOtherBuildersServe(builder);
+        List<Workplace> queue = BuildQueue();
+        GridPos village = FirstHomeOrFoundingSite();
+        int[] owedAhead = new int[builder.Carried.Slots];
+        bool behind = false;
+        for (int i = 0; i < queue.Count; i++)
+        {
+            Workplace candidate = queue[i];
+            ConstructionSite plan = candidate.Construction!;
+            if (!FootprintIsClear(candidate) || !TravelCost.CanReach(village, candidate.Tile))
+            {
+                continue;
+            }
+
+            // The head is D213's: anything of what it wants in store will do. Behind it, the surplus over what the sites
+            // ahead still owe must pay this site's own share of that good — a site half-paid with the last spare log only
+            // sits there while its builder doubles back.
+            Goods? wanted = plan.NextMaterialWanted();
+            bool affordable = wanted is not Goods good
+                || (behind
+                    ? HeldForBuilding(good) >= owedAhead[(int)good] + plan.StillNeeded(good)
+                    : HeldForBuilding(good) > 0);
+            if (affordable && !served.Contains(candidate.Id))
+            {
+                return candidate;
+            }
+
+            behind = true;
+            for (int g = 0; g < owedAhead.Length; g++)
+            {
+                owedAhead[g] += plan.StillNeeded((Goods)g);
+            }
+        }
+
+        return NextSiteToServe();
+    }
+
+    /// <summary>
+    /// The sites builders other than this one are serving (D602) — counted only while alive and seated at a builder's hut,
+    /// so a stale id on somebody who has changed trade holds nothing. The one place that says it.
+    /// </summary>
+    public HashSet<int> SitesOtherBuildersServe(Villager builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        var huts = new List<int>();
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == JobKind.Builder && !Workplaces[i].IsSite)
+            {
+                huts.Add(Workplaces[i].Id);
+            }
+        }
+
+        var served = new HashSet<int>();
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager other = Villagers[i];
+            if (other.Alive && other.Id != builder.Id && other.ServingSiteId != 0 && huts.Contains(other.WorkplaceId))
+            {
+                served.Add(other.ServingSiteId);
+            }
+        }
+
+        return served;
+    }
+
+    /// <summary>How much of a good the stores a builder fetches from hold between them (D602).</summary>
+    private int HeldForBuilding(Goods goods)
+    {
+        int held = 0;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            if (StoreBuildings[i].Gives(goods))
+            {
+                held += StoreBuildings[i].Store[goods];
+            }
+        }
+
+        return held;
+    }
+
+    /// <summary>
     /// The first site, in queue order, that is paid for and already begun — work owed and
     /// nothing else (D453).
     /// </summary>
@@ -9459,7 +9713,8 @@ public sealed partial class SimWorld : IObstacles
         GridPos? movingFrom = null,
         Angle facing = default,
         Point? bridgeTo = null,
-        bool rebuildsBridge = false)
+        bool rebuildsBridge = false,
+        int fencesBarnId = 0)
     {
         BuildingGeneration++;
         StandingChanged();
@@ -9488,6 +9743,7 @@ public sealed partial class SimWorld : IObstacles
                 Facing = facing,
                 BridgeTo = bridgeTo,
                 RebuildsBridge = rebuildsBridge,
+                FencesBarnId = fencesBarnId,
             },
         });
 
@@ -9552,11 +9808,13 @@ public sealed partial class SimWorld : IObstacles
         StandingChanged();
         StoreBuildings.Remove(building);
 
-        // Any market workplace standing on it goes too — the stall cannot outlive the
-        // building it is part of.
+        // Any workplace that is part of it goes too — the market's stall, the barn's herdsmen, the post's merchant: none
+        // can outlive the building it is part of. ⚠️ This asked for the marketer by name until D598, so a barn or a
+        // trading post pulled down since D590 left its workplace standing on nothing (found by the fence's guard).
         for (int i = Workplaces.Count - 1; i >= 0; i--)
         {
-            if (Workplaces[i].Position == building.Position && Workplaces[i].Kind == JobKind.Marketer)
+            if (Workplaces[i].Position == building.Position && Workplaces[i].Construction is null
+                && Workplaces[i].Kind is JobKind.Marketer or JobKind.Herdsman or JobKind.Merchant)
             {
                 RetireWorkplace(Workplaces[i]);
             }
@@ -9733,6 +9991,14 @@ public sealed partial class SimWorld : IObstacles
         }
 
         IReadOnlyList<MaterialCost> back = site.Construction.Abandon();
+
+        // A fence never raised unlocks its pasture, which stays painted (D598, `livestock.md §0.2.3` rule 6).
+        if (site.Construction.FencesBarnId != 0 && !site.Construction.Demolishing
+            && FindWorkplace(site.Construction.FencesBarnId) is Workplace unfenced)
+        {
+            UnlockThePasture(unfenced);
+        }
+
         if (site.Construction.Kind == BuildingKind.Home)
         {
             // The plot was the family's from the marking (D386); the ground is free again, and
@@ -9766,6 +10032,13 @@ public sealed partial class SimWorld : IObstacles
         // first one down.
         if (plan.Demolishing)
         {
+            // A fence's take-down (D600) takes the fence, not whatever stands at its gate.
+            if (plan.FencesBarnId != 0)
+            {
+                FinishTakingAFenceDown(site, plan);
+                return;
+            }
+
             RetireWorkplace(site);
             PullDownWhatStandsAt(site.Tile);
             return;
@@ -9784,6 +10057,13 @@ public sealed partial class SimWorld : IObstacles
         if (plan.BridgeTo is not null)
         {
             FinishABridge(site, plan);
+            return;
+        }
+
+        // ⭐ AND A FENCE'S WALLS ITS PASTURE (D598, `livestock.md §0.2.3` rule 5).
+        if (plan.FencesBarnId != 0)
+        {
+            FinishAFence(site, plan);
             return;
         }
 
@@ -10009,9 +10289,16 @@ public sealed partial class SimWorld : IObstacles
                 ExtentHeight = row.ExtentHeight,
             };
 
-            Narrate($"{Capitalised(name)} stands. The founders' names are cut into the lintel, "
-                + $"and the village has somewhere to keep what it has been. "
-                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+            // ⭐ AND IT SAYS WHAT IT OPENS (Joe, D597: *"announce that trading post is now available — alert player.
+            // same for barn"*). The hall is the permission for both (D587 call 1, D590), so its standing is the moment.
+            RaiseMoment(
+                "The town hall stands",
+                $"{Capitalised(name)} stands. The founders' names are cut into the lintel, and the village has somewhere "
+                + $"to keep what it has been. {Clock.SeasonAndYear()}."
+                + Moment.ParagraphBreak
+                + "Strangers will trade with a village that has a hall. Build a trading post on a river bank, and boats "
+                + "will call every two or three years; build a barn and give it pasture, and a boat can bring cattle.");
+
         }
 
         // ⭐ A well is a sixth (D427) — somewhere households walk for water, and the far end of the
@@ -10105,6 +10392,7 @@ public sealed partial class SimWorld : IObstacles
         {
             BuildingKind.Warehouse => VillageEconomy.WarehouseCapacity(Config),
             BuildingKind.Pile => VillageEconomy.PileCapacity(Config),
+            BuildingKind.Barn => VillageEconomy.BarnHayRoom(Config),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind), kind, "That store states no capacity and the economy derives none."),
         };
@@ -10126,12 +10414,9 @@ public sealed partial class SimWorld : IObstacles
             return stated;
         }
 
-        return kind switch
-        {
-            BuildingKind.ForesterHut => VillageEconomy.RequiredForesterSeats(Config),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "That workplace states no seats and the economy derives none."),
-        };
+        // ⚠️ The forester's arm went at D603 (its row states its seats now): every workplace row states them.
+        throw new ArgumentOutOfRangeException(
+            nameof(kind), kind, "That workplace states no seats and the economy derives none.");
     }
 
     /// <summary>
@@ -10162,6 +10447,12 @@ public sealed partial class SimWorld : IObstacles
     private void RetireWorkplace(Workplace workplace)
     {
         ReleaseWorkers(workplace);
+
+        // A barn pulled down takes its fence with it — the walls, or the site (D598, `livestock.md §0.2.3` rule 8).
+        if (workplace.Kind == JobKind.Herdsman)
+        {
+            DropTheFenceWith(workplace);
+        }
 
         // ⛔⛔ AND WHATEVER WAS IN ITS OWN STORE GOES ON THE GROUND (D162). This method did
         // nothing about `Workplace.Store` for five phases and was right not to, because
@@ -11092,6 +11383,9 @@ public sealed partial class SimWorld : IObstacles
         LastKnowerIds = new int[TechniquesCatalog.Count];
         _saidThereIsNowhereFor = new bool[GoodsCatalog.Count];
         StockLimits = new StockLimits(GoodsCatalog.Count);
+        TradeKeep = new StockLimits(GoodsCatalog.Count);
+        TradeBuy = new StockLimits(GoodsCatalog.Count);
+        NeighbourStocks = config.Neighbours.Select(_ => new NeighbourStock(GoodsCatalog.Count)).ToArray();
         _onTheGround = new int[GoodsCatalog.Count];
 
         // ⭐ THE PLAYER'S STARTING LIMITS, HELD BY THE SIM FROM THE FIRST TICK (D409). They lived
@@ -11274,7 +11568,7 @@ public sealed partial class SimWorld : IObstacles
             // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
             // forester does not compete for gathered food.
             Position = Point.CentreOf(WhereTheTreesAre(BuildingKind.ForesterHut, origin, config)!.Value),
-            Capacity = VillageEconomy.RequiredForesterSeats(config),
+            Capacity = config.ForesterHutCapacity,
         };
 
         StandingChanged();
@@ -12300,8 +12594,20 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     internal string? WhatThisWouldWallOff(Footprint proposed, IReadOnlyDictionary<GridPos, byte>? fence = null)
     {
+        List<GridPos> covered = proposed.CoveredTiles();
+        return WhatWouldBeWalledOff(covered, fence, covered);
+    }
+
+    /// <summary>
+    /// The same question for a fence alone (D598, a pasture's): nothing stands where it goes, and its gate's outside tile
+    /// must still be reached.
+    /// </summary>
+    internal string? WhatAFenceWouldWallOff(IReadOnlyDictionary<GridPos, byte> fence, GridPos gateFront) =>
+        WhatWouldBeWalledOff(new List<GridPos>(), fence, new List<GridPos> { gateFront });
+
+    private string? WhatWouldBeWalledOff(List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, List<GridPos> mustStayReached)
+    {
         RebuildTheStandingIndexIfStale();
-        List<GridPos> proposedTiles = proposed.CoveredTiles();
 
         // ⚠️ AGAINST TODAY, NOT AGAINST PERFECTION. A shape nothing reaches today — a hut the
         // generator put across the water (seed 42's forager's hut) — is not something this
@@ -12346,7 +12652,7 @@ public sealed partial class SimWorld : IObstacles
             }
         }
 
-        if (!HasAReachedNeighbour(after, proposedTiles, fence))
+        if (!HasAReachedNeighbour(after, mustStayReached, fence))
         {
             return "Nobody could reach that spot — it is walled in.";
         }
@@ -13762,6 +14068,23 @@ public sealed partial class SimWorld : IObstacles
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
+            ["region_awake_since"] = SaveWriter.Hex(RegionAwakeSince),
+            ["trade_keep"] = TradeKeep.ToSave(),
+            ["trade_buy"] = TradeBuy.ToSave(),
+            ["boat"] = Boat is TradeBoat boat
+                ? new JsonObject
+                {
+                    ["neighbour"] = boat.NeighbourId,
+                    ["appears_at"] = SaveWriter.Hex(boat.AppearsAtTick),
+                    ["docks_at"] = SaveWriter.Hex(boat.DocksAtTick),
+                    ["leaves_at"] = SaveWriter.Hex(boat.LeavesAtTick),
+                }
+                : null,
+            ["boats_ever_came"] = BoatsEverCame,
+            ["trade_buy_head"] = TradeBuyHead,
+            ["neighbours"] = new JsonArray(NeighbourStocks
+                .Select(n => (JsonNode)new JsonObject { ["held"] = SaveWriter.Ints(n.Held), ["animals"] = n.Animals })
+                .ToArray()),
         };
     }
 
@@ -13908,7 +14231,12 @@ public sealed partial class SimWorld : IObstacles
 
         _nextWorkplaceId = save.Int("next_workplace_id");
         List<int> named = save.Ints("buildings_named");
-        if (named.Count != _buildingsNamed.Length)
+
+        // ⭐ FEWER IS A SAVE FROM BEFORE A KIND WAS APPENDED (D598) — `BuildingKind` is appended to and never renumbered,
+        // so the kinds it lacks are the newest, and nothing of theirs was ever named: their counters start at none. The
+        // pasture fence (25) arrived inside format 8, and Joe's saves from that morning must still open. ⛔ More is a
+        // save from data that had a kind this data has lost — still refused.
+        if (named.Count > _buildingsNamed.Length)
         {
             throw new SaveDataException("a different list of buildings", $"{save.Path}.buildings_named: {named.Count} kinds of building where this game's data has {_buildingsNamed.Length}.");
         }
@@ -13930,9 +14258,49 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");
+        RegionAwakeSince = save.ULong("region_awake_since");
+
+        // Trade and the herd (D590, format 8).
+        TradeKeep.ReadSave(save, "trade_keep");
+        TradeBuy.ReadSave(save, "trade_buy");
+        if (save.NullableObject("boat") is SaveReader boat)
+        {
+            Boat = new TradeBoat
+            {
+                NeighbourId = boat.Int("neighbour"),
+                AppearsAtTick = boat.ULong("appears_at"),
+                DocksAtTick = boat.ULong("docks_at"),
+                LeavesAtTick = boat.ULong("leaves_at"),
+            };
+        }
+
+        BoatsEverCame = save.Int("boats_ever_came");
+        TradeBuyHead = save.NullableInt("trade_buy_head");
+        List<SaveReader> neighbours = save.Objects("neighbours").ToList();
+        if (neighbours.Count != NeighbourStocks.Count)
+        {
+            throw new SaveFormatException(
+                $"The save knows {neighbours.Count} neighbours and today's data has {NeighbourStocks.Count}.");
+        }
+
+        for (int i = 0; i < neighbours.Count; i++)
+        {
+            List<int> held = neighbours[i].Ints("held");
+            if (held.Count != NeighbourStocks[i].Held.Length)
+            {
+                throw new SaveFormatException(
+                    $"Neighbour {i} in the save holds {held.Count} goods and today's data has {NeighbourStocks[i].Held.Length}.");
+            }
+
+            held.CopyTo(NeighbourStocks[i].Held);
+            NeighbourStocks[i].Animals = neighbours[i].Int("animals");
+        }
 
         // The bridges came in after anything that might have asked: the deck index is rebuilt on the next ask.
         _bridgeIndexBuiltAt = -1;
+
+        // ⭐ The pastures' fences (D598): their locks, and the walls of those that stand — derived from the barns' facts.
+        RebuildThePastureFences();
     }
 
     /// <summary>

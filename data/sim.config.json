@@ -554,14 +554,11 @@
   // clearing it (cut_ticks covers a tree, a rock and a seam alike), so destroying is never a
   // faster way to spend a seam than digging it.
   "destroy_ticks_per_tile": 4,
-  // DERIVED (VillageEconomy.RequiredForesterSeats), not picked. 3 -> 6.
-  // Enough hands to keep the woodcutters in logs and still leave one for
-  // building - the "+1" in the derivation is what stops the village
-  // heating itself and never growing.
-  //
-  // It sizes the FORESTER'S HUT, and was called tree_stand_capacity until
-  // D159 - the same question wearing the name of a mechanic that step C
-  // deleted. Renamed for what it does.
+  // How many work one FORESTER'S HUT. STATED (Joe, D603): "each forester
+  // huts only need a max of 2 workers". Until D603 nothing read this - the
+  // seats were derived (VillageEconomy.RequiredForesterSeats, 3) - so this
+  // 2 was a number on paper. A village that wants more builds a second hut.
+  // (Called tree_stand_capacity until D159.)
   "forester_hut_capacity": 2,
 
   // A home has to be built, out of LOGS. Wood is two resources now
@@ -633,6 +630,10 @@
   // work_ground_tiles_per_worker rather than inventing a second number
   // that could drift from it.
   "gatherer_hut_ring_tiles": 8,
+
+  // How many work one forager's hut: THREE (Joe, D603: "each forager hut
+  // should have a max of 3 workers"; two since D262).
+  "gatherer_hut_capacity": 3,
 
   // What it costs. A real price, unlike the pile and the builder's hut
   // -- neither of those can be charged, because nothing can be built
@@ -734,7 +735,8 @@
   // seat reads as broken rather than as small. How many pairs of
   // hands fit in a steading is a fact about the world; what they
   // produce is what gets derived.
-  "farmhouse_seats": 2,
+  // THREE (Joe, D603: "each farmhouse should have a max of 3 workers").
+  "farmhouse_seats": 3,
 
   "farm_store_cap": 100,
 
@@ -961,6 +963,43 @@
   "bakery_stone": 24,
   "bakery_work_ticks": 40,
   "bakery_capacity": 2,
+
+  // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
+  // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the
+  // post's logs and stone were measured against hall-era holdings (D594, trade.md §8.4); the work
+  // ticks and seats are still provisional. The animals and the neighbours are rows in SimConfig, for a
+  // modder to replace.
+  "barn_logs": 40,
+  "barn_work_ticks": 40,
+  "barn_capacity": 2,
+  // The herdsman (D593, livestock.md §0.1): hay a cut tile gives (wheat's, until a played herd says
+  // otherwise), days of hay kept out in winter, and the work of feeding out and culling. The barn's
+  // room is DERIVED from the herd its hands can keep (VillageEconomy.BarnHayRoom), never typed.
+  "hay_per_tile": 67,
+  "hay_feed_ahead_days": 5,
+  "hay_feed_ticks": 3,
+  "cull_ticks": 8,
+  "trading_post_logs": 30,
+  "trading_post_stone": 24,
+  "trading_post_work_ticks": 40,
+  "trading_post_capacity": 1,
+  "trading_post_store_capacity": 800,
+  // The region (D594, trade.md §4.2): seasons a neighbour takes to come back from a boat -- its makes
+  // recover this share of the way to their size each season, its wants are used this share. Eight, so
+  // the next boat (2-3 years on) still feels a heavy sale; at four every boat found the region rested.
+  "region_seasons_to_recover": 8,
+  // The boat (D595, trade.md §4.4): every 2-3 years (Joe, call 3), spring to autumn; days on the
+  // river each way and tied up at the post (dock days are Joe's, found in play); the most it takes
+  // from the post and the most it leaves, in units -- half the post's room.
+  "trade_boat_gap_years_floor": 2,
+  "trade_boat_gap_years_spread": 1,
+  "trade_boat_sail_days": 2,
+  "trade_boat_dock_days": 10,
+  "trade_boat_hold": 400,
+  // The pasture fence (D598, livestock.md §0.2): a log and two ticks a length -- the yard fence's
+  // price. Joe's 102-tile pasture is 46 lengths: 46 logs, about a barn, from the 207 his village held.
+  "pasture_fence_logs_per_edge": 1,
+  "pasture_fence_work_ticks_per_edge": 2,
 
   // THE QUARRY (quarry.md, D434 -- Joe's calls, every number measured first).
   // Painted rock that never runs out: a hut beside its own rock, which only

@@ -1,4 +1,404 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED: THE NOMADS SLICE AND JOE'S SIX NOTES MERGED (D563–D584). NEXT IS JOE'S CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED (TRADE AND THE HERD MERGED: D585–D607, PLAYED). NEXT: JOE'S D607 NOTES ON `slice/d607-notes`, ONE COMMIT EACH — THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
+>
+> **`main`** = D608, pushed: trade and the herd (D585–D607) merged at Joe's word after he played D607 (*"the
+> trading post window opens, i set an order. i sent the boat on. the region button works … Paths seem to do a
+> better job of reaching buildings."*).
+>
+> **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
+> panel sorts by first name, age and trade; (2) a round pasture's fence drawn round (traced from the fenced tiles,
+> the gate cut out — view only); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
+> 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
+> 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
+> at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
+> by, spec first. His tools question was answered from the code (D608). Then **doors**, spec first.
+>
+> **(the banner below is the state at D607)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D607: JOE PLAYED TRADE — THE POST'S WINDOW, SPURS, RINGS) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D607**, local. Joe played trade: his village never set an order (the window was behind the
+> card). **Built (D607):** a click on the post opens its window, the region in brief at its top; a spur from a passing
+> lane to every building's wall; a ring round one building opened to its busier side. Walls touched by a lane on his
+> villages: 23 → 46 of 48, 23 → 30 of 31, 17 → 42 of 42, 17 → 31 of 31. **Unplayed.**
+>
+> **▶️ NEXT:** Joe plays D607; **doors** get a spec of their own (his call: spurs now, doors later — every building a
+> door on its front, walkers in and out through it, paths wearing to doors; goldens move, survival measured).
+> Merging `slice/pause-probe` and `slice/trade` stays his word.
+>
+> **The numbers a session checks against (as of D607, 2026-10-19):** suite **1781 / 0 / 5 of 1786**; its clock
+> **≈ 11–13 min** since D603 (bigger villages — the fixture's 200-year run 24 s → 45 s; it was 8m51 at D602; read it on a
+> quiet machine, Joe's game running beside it adds a minute or two); probe **94 `[widths]` lines**, bar 151; the goldens
+> grep **377 lines** (362 values + 15 RE-TAKEN comment lines carrying old ones). ⚠️ A Godot left running after the
+> probe may be **Joe's own game** — read its command line before killing it (D606's trap).
+>
+> **Proposed, not started:** *Spec: building doors* — a session card (`task_a4066d55`, expires 2026-10-26) that writes
+> `specs/doors.md` only; it starts when Joe clicks it or says so.
+>
+> **(the banner below is the state at D606)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D606: COMMIT 7 — THE BOAT SAILS, THE REGION IS SAID) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D606**, local. Joe played the paths (D605): *"everything looks good. proceed."* **Built
+> (D606, `trade.md §11` commit 7 — the first trade build is complete):** the boat sails the river from its edge past the
+> post and off the far edge (`BoatRoute`, found once per post; its place derived from its ticks), and the region window
+> (*The region* on the post's window) says each neighbour and its rates in words (`SimWorld.SayTheRegion`).
+>
+> **▶️ NEXT:** Joe plays trade end to end (a hall-era village: the post, orders, a boat in and out, the region window).
+> Then his call: merge `slice/pause-probe` and `slice/trade` to `main` (both local, unmerged — his word only).
+>
+> **(the banner below is the state at D605)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D605: THE PATHS, DRAWN AS WALKED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D605**, local. **Built (D605, view only):** the trail drawing sees fences, draws a plaza as
+> a tree on its worn ground instead of a star, and draws the doorsteps a lane passing by had swallowed. On Joe's three
+> newest villages: fence crossings 11 / 7 / 18 → 0 / 0 / 1; the biggest junction 15 / 17 / 9 → 4; buildings reached
+> 32 / 20 / 31 → 46 / 31 / 42. Probe `trails:` has his own square. **Unplayed** — how it LOOKS is Joe's call.
+>
+> **▶️ NEXT:** Joe plays the paths (`.\run.bat`, any village with fences and a busy middle); then commit 7 (the boat
+> sailing, the region panel).
+>
+> **(the banner below is the state at D604)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D604: A WELL KEEPS A RING OF PUBLIC GROUND) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D604**, local. Joe played D601–D603: *"homes built on top of a well - that shouldnt
+> happens. other than that, all looks good for now."* His Year-62 save showed yards wrapped round both wells (no house
+> on one). **Built (D604):** no yard tile and no house tile within one of a well (`SimWorld.BesideAWell`); his two
+> existing yards stay (built fences never move). No golden moved. 4 mutants, 3 reds, one zero written down.
+>
+> **▶️ NEXT:** the paths (walls ignored by the drawing, the star hub, the wiggle, the missing short stubs to entrances),
+> then commit 7.
+>
+> **(the banner below is the state at D603)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-18 (D603: JOE'S SEAT DEFAULTS) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D603**, local. **Built (D603):** forester 2 (stated at last — its row stated none and
+> `forester_hut_capacity` sat unread), forager 3, farmhouse 3. The harness's villages end half as big again (alive
+> 1,408 → 2,155, dead valleys 23 → 22). A market-off scare on twelve seeds (324 vs 256 starved) was **seed noise on
+> thirty-six** (903 vs 865 over the same population; t ≈ 0.5) — traced death by death, nearly all with the granary
+> empty. The two market guards re-posed on the 36. **The suite is slower: 8m51 → 12m52** (bigger villages; the
+> fixture's 200-year run 24 s → 45 s at mean 10 → 15 people). 5 mutants, 6 reds.
+>
+> **▶️ NEXT:** Joe plays D601–D603 (`.\run.bat`); then the paths (walls ignored by the drawing, the star hub, the
+> wiggle, the missing short stubs to entrances); then commit 7. Say to him: the market's volume is two marketers'
+> throughput — more seats is his lever.
+>
+> **(the banner below is the state at D602)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D602: BUILDERS SPREAD ACROSS THE QUEUE) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D602**, local. **Built (D602):** each builder takes the first site nobody else serves —
+> the head first, and a site behind it only out of surplus (D102's line: the head's timber is never split). On 20
+> established valleys the sites wait 30 % less (alive 227 → 236); the harness and the market-off fixture read level.
+> Two guards re-posed (the queue race with one builder; the market-off bar, on a 12-seed measurement), six goldens
+> re-taken. 7 mutants, 18 reds, one zero written down.
+>
+> **▶️ NEXT — Joe's remaining calls:** (3) **seat defaults** forester 2 / forager 3 / farmhouse 3 — goldens move;
+> measure on the harness AND established valleys, re-take once; (4) the paths; (5) commit 7. **Joe has not played
+> D601 or D602.** Say to him: the market's volume is two marketers' throughput — more seats is his lever.
+>
+> **(the banner below is the state at D601)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D601: THE MARKET STOCKS ITS EMPTIEST SHELF FIRST) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D601**, local. **Built (D601):** the marketer carries the good furthest below its counter
+> limit as a share, ties to the nearest store (Joe's call). On his save the shelf goes from firewood 647 · fish 90 to
+> firewood 234 · fish 28 · meat 18 · forage 14 — spread, not fuller: **two marketers carry what two can; more seats is
+> his lever** (said to him). Survival neutral on 20 established valleys and 20 fixture seeds; seven goldens and the walk
+> pin re-taken with proof; three guards re-posed after tracing each (see D601). 5 mutants, 5 reds.
+>
+> **▶️ NEXT — Joe's remaining calls (asked 2026-10-17):** (2) **builders spread across queued sites** in queue order —
+> `SimWorld.NextSiteToServe` / `NextToBuild` and `BehaviorSystem.WorkTheSite`; D102's *materials go to the head* must
+> survive it; (3) **seat defaults** forester 2 / forager 3 / farmhouse 3 — goldens move, measure, re-take once; (4) the
+> paths; (5) commit 7. ⚠️ **Measure (2) and (3) with the harness AND an established valley** — see D601's trap.
+>
+> **(the banner below is the state at D600)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D600: JOE'S PLAY NOTES — THE FENCE BY BUILDERS, THE COLD FORGE) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D600**, local. Joe played the fence (*"the process goes pretty well"*) and sent a long list.
+> Investigated on a copy of his newest autosave (willowdale-dove-flint-67, Year 70; `scratchpad/joesaves`, trace
+> `ZzJoeTrace.cs.keep`): **the forge** was idle all year — his firewood limit 600, 37 households needing 1,631, short by
+> 1,011 for ever, so iron tools (which burn firewood) never forged; 52 of 74 able adults hold a tool, 39 iron. **The
+> market** fills with whatever is nearest (cost-first, every counter limit 2,700 so always "short"): 545 of his 620
+> firewood, no meat. **The builders** all work the head of the queue (D108): 9 sites one at a time, the last 415 ticks
+> later, 31–46 laborers idle. **The 4.3 s frames** are *Skip 10y* itself (`[skip] ran 2972 ticks … in 4.29s`).
+>
+> **Built (D600):** a standing fence is taken down **by the builders** (a demolition site; *Keep the fence* calls it off);
+> the firewood limit the village outgrew is **named** on the limit's sentence and on the cold forge. 5 mutants, 6 reds.
+>
+> **▶️ NEXT — Joe's calls (asked 2026-10-17):** (1) **the market stocks its emptiest shelf first** (furthest below its
+> limit as a share, ties to the nearest store); (2) **builders spread across queued sites** in queue order; (3) **seat
+> defaults** forester 2 / forager 3 / farmhouse 3 — **the goldens move: measure survival, re-take once**; (4) **the paths**
+> (walls ignored by the drawing, the star hub, the wiggle, and *"the shorter sections of pathways to-and-from entrances"*
+> that never show); (5) commit 7. Each of (1)–(3) moves behaviour: its own commit, survival measured before/after.
+>
+> **(the banner below is the state at D599)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D599: THE FENCED PASTURE, BUILT — SIM AND VIEW) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D599**, local. **The fenced pasture can be played**: the barn's card (Settings) has a fence
+> row — *Fence the pasture* says first what it would do (*"Fence 40 tiles: 25 lengths and a gate, 25 logs"* for an 8 × 5 block, and any stray
+> tiles it would give back) or why it cannot; pressed, it locks the ground and the builders get a site at the gate; the
+> button becomes *Cancel the fence*, then *Take the fence down* once it stands. The fence is drawn from its walls, the
+> gate a gap, faint while being built (with the work-ground layer). The brush's rubber shows red over a fenced pasture.
+> Probe `fence:` ✅; F2's mutants 3 / 3 red; suite 1771 / 0 / 5 of 1776 (9m26); probe 92 lines clean; goldens 362 → 362.
+>
+> **▶️ NEXT: Joe plays it** (`.\run.bat`: a barn, paint a pasture, *Fence the pasture*, watch the builders, walk the gate).
+> ⚠️ Not probed — the press against a real barn, the fence's draw, the rubber's colour. **Then the paths** (the plan's
+> piece 3), **then commit 7**.
+>
+> **(the banner below is the state at D598)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D598: THE FENCED PASTURE, SPECCED; F1 — ITS SIM — BUILT) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D598**, local. `specs/livestock.md §0.2` is the fenced pasture's spec, with Joe's calls.
+> **F1, the sim, is built** (`SimWorld.Pasture.cs`): `FenceThePasture` locks a barn's painted ground (paint, erase, building
+> inside it or on its gate's lane, moving the barn — each refused in words), freezes its tiles, picks the gate (the edge
+> nearest the barn with open, reached ground outside), refuses a fence that would shut anyone in, and queues a
+> `PastureFence` site at the gate priced **a log and two ticks a length** (Joe's 102-tile pasture: 46 lengths). Finished,
+> the walls go up through D404's `ZoneMap.Wall` (its own index, keyed by the barn) and the gate is the one way in.
+> `TakeTheFenceDown` cancels a site (logs back, paint kept) or takes a standing fence down (half back, ground unpainted).
+> A pasture in pieces is fenced round its main piece, the strays given back — **Joe's own pasture was 100 tiles and 2
+> apart**, and the first rule (a refusal) would have refused it. **21 mutants, 28 reds; one zero closed** (F18, the fence unhashed — fencing also raises a site, so *before and after the button* proved nothing; the guard now changes each fact alone) and four rewritten to compile (an unused member is an error here); suite 1771 / 0 / 5 of 1776 (9m26, with F2's view on top); goldens 362 → 362.
+>
+> **Found on the way, and fixed:** pulling down a **barn or a trading post left its workplace standing** (since D590 —
+> the store's demolition retired only a marketer); and adding a building row made **every format-8 save refuse to
+> open** (the naming counter's length) — a shorter counter is now padded, a longer one still refused.
+>
+> **▶️ NEXT: F2, the view** — the barn card's *Fence the pasture* / *Cancel the fence* / *Take the fence down* (with
+> `SayWhatFencingWouldDo` as the button's sentence), the fence drawn from `ZoneMap.PastureFenceOf` (faint while a site),
+> the brush's erase preview asking `CanEraseWorkGround`, and the probe's `fence:`. Then the paths, then commit 7.
+>
+> **(the banner below is the state at D597)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D597: VIEW I, PLAYED AND FIXED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D597**, local. Joe played View I (willowdale-flint-thrush-27, to Year 70: five boats came, no
+> orders ever set — the post's rows had no names). Fixed: **the post's window** — the card's button opens it — holds the
+> orders in **two columns, every good named in words** (720 × 415); **the hall's standing announces** the trading post
+> and the barn; a barn's ground is priced by the head it holds (**40 tiles a herdsman**) and its overstretch is said in
+> head and the herdsman's trade; workers' labels take the catalogue's plural (*"Herdsmans"*). 13 mutants, 13 reds, no
+> zeros; suite 1755 / 0 / 5 of 1760 (10m50, then 9m53 — a game was running on the machine since 15:40; nothing in D597 runs in a village with no hall or barn); probe 91 lines clean; goldens 362 → 362.
+>
+> **▶️ NEXT — the plan Joe approved** (`C:\Users\joema\.claude\plans\review-handoff-md-and-tell-zany-curry.md`):
+> 1. **Fenced pastures, spec first** (`specs/livestock.md`). Joe's calls: a **Fence it** button on the barn's card locks
+>    the painted ground and queues a fence site; the fence **blocks walking except at its gate** (one cost field);
+>    **logs by its length**; to change it, take it down (ground unpainted) and repaint. Build on D404's walls
+>    (`ZoneMap.Wall`, `FenceEdges`, `WhatThisWouldWallOff`) and the bridge's per-length site — and mind the two traps the
+>    exploration found: `_fenceByOwner` is keyed by **household** id; `PullTheFenceDown` restores only *plots'* walls.
+> 2. **The paths** — all three of Joe's notes are the view's `TrailNetwork`: it ignores yard **walls** (the sim
+>    respects them), merges every junction pixel round a small building into **one hub** (the star), and the detour
+>    into that hub plus Chaikin makes the **wiggle** to the well.
+> 3. Commit 7 (the boat sailing, the region panel).
+>
+> ⚠️ Joe's screenshot showed a **4.26 s frame** at tick 23,049 (Year 49 — before his post or barn), all in *other*
+> (not sim, refresh or draw). Not trade. His session's `godot.log` had already been rotated out by probe runs (trap below).
+>
+> **(the banner below is the state at D596)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D596: COMMIT 6 — VIEW I, THE BARN AND THE POST) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D596**, local. **Trade and the herd can be played** once the hall stands (New village, *Skip
+> 10y* until the last founder dies — `trade.md §11.4`): the barn is on **Food**, the post on **Storage**, each drawn in its
+> trade's colour (barn red-brown, the post a river slate). **Click either and its card opens** — the barn's says its herd
+> (*"5 head grazing 40 tiles (room for 8) — hay for 30 winter days of 30; the herdsman is cutting the pasture."*) and has
+> **Give ground** for the pasture (a barn keeps ground like a farm); cattle graze it, a pale circle a head. The post's
+> card is its window: what it holds, when the next boat is due, and in Settings **one dropdown a good** (*— / sell above /
+> buy up to* — a good is bought or sold, never both), the cattle order, the cargo, **Send the boat on**, and what the
+> orders will do (Joe's D596 call: a keep alone sells nothing, and the window says to set what to buy). A boat's coming is
+> a passing banner. **18 mutants, 18 reds, no zeros** (9 in the sim against the suite, 9 in the view against the probe); suite 1754 / 0 / 5 of 1759 (9m31, inside this session's 8m37–9m42); probe 91 lines with `herd:` ✅ and `post:` ✅; goldens 362 → 362.
+>
+> **▶️ NEXT: Joe plays it** (`.\run.bat`) — ⚠️ **not probed**: the click that opens the barn's and post's cards, the herd's
+> draw call, the banner on screen. **Then commit 7** (`trade.md §11` row 7): the boat sailing the river (its path found
+> once per post), the region panel.
+>
+> **(the banner below is the state at D595)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D595: COMMIT 5 — THE BOAT) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D595**, local. **Trade's sim is whole.** A boat comes every two or three years, spring to
+> autumn, from one end of the river or the other — its year, day and neighbour a hash of the seed and the visit count
+> (`SimWorld.NextBoat`); `Boat` is always the *next* boat once the region is awake, so the post's window can say when one
+> is due. It is told coming, docking and leaving; it settles the day it docks — **barter**: the goods for sale (keep
+> orders) that its neighbour wants are the credit, the buy orders are met from its cargo (25–75 % of what the neighbour
+> makes, by hash) as far as that pays, and the boat takes just enough to cover it; every unit conserved, ≤ 400 each way,
+> never a good the village sells, beasts only to a pasture with room (`TradeBuyHead`, refused with no pasture).
+> *Send the boat on* sets its leaving tick to now. `TradeBoatTests` (12) and a save pose with a boat in dock;
+> **21 mutants, 26 reds; one zero closed** (B7, a no-keep good sold — posed behind the good that paid) **and one equivalent zero written down** (B14); suite 1748 / 0 / 5 of 1753 (8m37); probe clean; goldens 362 → 362.
+>
+> **▶️ NEXT: commit 6 — View I** (`trade.md §11` row 6): the barn and the post as buttons once the hall stands, the
+> pasture paint, the animals grazing, the barn's card, **the post's window** (orders, the boat in dock, *Send the boat
+> on*, `SayWhenTheBoatIsDue`), the passing banner off the boat's log lines, the merchant's and herdsman's states in words.
+> ⚠️ **Joe has one new call** (⏸️ below): as built, a *keep N* with no *buy* order sells nothing.
+>
+> **(the banner below is the state at D594)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D594: COMMIT 4 — THE POST AND THE REGION) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D594**, local. The merchant carries what the village holds above *keep N* down to the
+> trading post — **never below it** — and brings home anything at the post with no keep order (what a boat will leave);
+> the quota asks for him only where a post has work, and the allocator walks him. The three neighbours **sleep until a
+> post stands**, wake at the next season turn and step a season at a time; rates come from `trade_worth` and scarcity,
+> within a quarter and four times the worths, said with their reason (*"… is short of firewood and has plenty of stone:
+> 3 firewood buys 1 stone."*). Measured (`trade.md §8.4`): neighbours sized at half the shipped limits; the post's 30 logs
+> and 24 stone kept; **`region_seasons_to_recover` 8**, because at 4 every boat found the region rested and selling
+> everything cost nothing. **Nothing is sold yet — that is the boat.** `TradeTests` (11); **18 mutants, 28 reds, two zeros
+> closed** (the band, the wake's hash — traps below); suite 1732 / 0 / 5 of 1737 (9m42; this session's runs 8m40–9m42 on near-identical code, the new guards ~3 s — noise, not a regression); probe clean; goldens 362 → 362.
+>
+> **▶️ NEXT: commit 5 — the boat** (`trade.md §11` row 5): its clock by hash, appear / dock / leave, settle the orders at
+> the day's rate (integers conserved, the remainder at the post), animals only to a barn with room, *Send the boat on*.
+> ⚠️ **A good the boat leaves must have no keep order**, or the merchant leaves it at the post for sale — the post's
+> window must not let one good carry both a keep and a buy order (trap below).
+>
+> **(the banner below is the state at D593)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D593: COMMIT 3 — THE HERDSMAN) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D593**, local. The herdsman cuts the pasture and carries the hay to the barn until it holds
+> the winter of the pasture's full herd; from five days before winter he carries armfuls out — **the herd eats only hay
+> put out** — and he culls a beast born beyond the pasture into meat and leather. The quota asks for him only where a herd
+> stands (cutting yields to food first; a cull does not). The barn's room is derived (1,728 = 2 seats × 8 head × 108).
+> **A herdsman never freezes** (three shipped valleys, three winters). Traced and fixed on the way: a herdsman resting a
+> whole autumn on an unworkable tile; a herd starving at the first frost on a 3-day feed-ahead; a trade the allocator
+> never walked. `HerdsmanTests` (9); **12 mutants, 18 reds, no zeros**; suite 1721 / 0 / 5 of 1726 (8m27); probe clean;
+> goldens 362 → 362.
+>
+> **▶️ NEXT: commit 4 — the post and the region**: the merchant carries what is above *keep N* to the post and bought goods
+> home (the marketer's states; ⚠️ **add `JobKind.Merchant` to `LabourAllocator.KindsInOrder`** — trap D593); the
+> neighbours wake when a post stands and step at each season turn; rates derived, in words. The neighbours' sizes and the
+> post's prices are measured there before Joe plays.
+>
+> **(the banner below is the state at D592)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D592: COMMIT 2 — THE HERD LIVES) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D592**, local. `SimWorld.Herd.cs` + `HerdSystem` (once a day, after the hearth): free grazing
+> spring–autumn; winter hay from the barn's store, **a beast lost each day the barn comes up short**; growth to what the
+> pasture holds (painted tiles ÷ 5), **the cull above it into 900 meat and 10 leather** in the barn's buffer; an oversized
+> herd culled down a beast a day; a pasture never a seam, its trees kept. Joe's cattle (5 tiles, 2 hay a day, 240
+> head-days a calf) and the hunt's yields — and one herdsman's cut feeds 8 head, Joe's own barn's *"8 large"*
+> (`livestock.md §10.1.6`). Nobody tends the herd yet. `HerdTests` (8) and a save pose with a real barn's herd mid-winter;
+> **12 mutants, 16 reds, no zeros** (four closed: trap below). See D592 for the check numbers.
+>
+> **▶️ NEXT: commit 3 — the herdsman** (cut and carry hay in the growing seasons, feed it out in winter, the cull as work;
+> the quota asks from the hay the herd will need; *a herdsman never freezes*, posed at the 30-tile margin; the barn's room
+> derived from the hay a herdsman cuts).
+>
+> **(the banner below is the state at D590–D591)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-17 (D590: COMMIT 1 — THE ROWS AND THE STATE FOR TRADE AND THE HERD, NOTHING BEHAVES; SAVE FORMAT 8) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D590**, local. Hay (good 13, barn-only), the barn (23) and the trading post (24), the herdsman
+> (13) and the trader (14), one animal (*cattle*) and three neighbours are rows (`World/Region.cs`, `SimConfig`); the
+> post's orders (two `StockLimits`), the boat (three ticks), the boats that came, the neighbours' stocks and a barn's
+> herd are saved (**format 8 — every save Joe has is refused**) and hashed sparsely (tags 0x70–0x76). Both buildings wait
+> for the town hall in the sim (`WhyNotYet`) and the view (`EarnedYet` → `_hallTradeKnown`); hay is unknown until the
+> barn is. Nobody is asked to herd or trade. ⚠️ **Prices and neighbour sizes are provisional and labelled so.**
+>
+> **Verified:** suite **1700 / 0 / 5 of 1705 (7m48)**; view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, **no ⛔ or ❌**, `spoilers:` (hay, herdsman, trader hidden at the founding) / `filters:` / `new game:` / `tile
+> centres` ✅, bar height 151, `done.`; **goldens 362 → 362, none in the diff.** 11 mutants, 16 reds, no mutant uncaught
+> (one probe zero written down in D590).
+>
+> **▶️ NEXT: commit 2 — the herd lives** (growth, grazing, hay eaten in winter, starvation, the cull into meat and leather),
+> measured first by its own arms; the barn's room derived from the herd, not typed. ✅ **D591: the new job is the
+> merchant** (`JobKind.Merchant` 14); the marketer keeps *traders* (Joe).
+>
+> **(the banner below is the state at D589)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D589: COMMIT 0 — THE HERD MEASURED) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D589**, local. `livestock.md §10.1` holds the numbers (`tools/harness/ZzHerd.cs`, `ZzClothing`
+> re-run, copies of Joe's saves): winter **75 % at a fire, 2 % outdoor work**; ⚠️ **summer is idle too (55–63 % at
+> home)**, so the herd's summer cost is smaller than `livestock.md §3` claimed — hay will find hands; the **cold margin is
+> 30 tiles** from the work to a lit hearth; free pasture ground lies within 10 tiles of every hall-era village; the hay
+> field is `FieldTilesOneFarmerKeeps`' question asked of the barn. Measurement only; no code.
+>
+> **▶️ NEXT: commit 1** — rows and state, nothing behaves: `Goods.Hay` 13, `BuildingKind.Barn` 23 / `TradingPost` 24,
+> `JobKind.Herdsman` 13 / `Trader` 14, the animal and neighbour rows, the herd on the barn, standing orders, the boat's
+> ticks; save format 8; sparse hashing; both buildings gated on the hall. **All 362 goldens must not move.**
+>
+> **(the banner below is the state at D588)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D588: THE TRADE-AND-HERD BUILD PLANNED; `livestock.md` RE-READ) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D588**, local. `livestock.md §0` is the re-read (what it said in August, what is true now,
+> what the build does); `trade.md §11` is the build: **eight commits** — 0 measure (`ZzHerd`), 1 rows and state (save
+> format 8), 2 the herd lives, 3 the herdsman, 4 the post and the region, 5 the boat, 6–7 the view. Joe's calls (D588):
+> **one kind of animal**, **meat and leather from the cull**, **one barn** (workplace, hay store, its painted ground the
+> pasture). ⭐ **All 362 goldens must hold until a test raises a barn or a post** — sparse hashing, no starting limit for
+> hay, the region asleep until a post stands. Docs only.
+>
+> **▶️ NEXT: ⏸️ Joe's go-ahead, then commit 0** — measure before typing: D533's winter baseline re-taken, the freeze risk
+> for outdoor winter work, hay a tile against a walk. ⚠️ Format 8 refuses every save Joe has; playing it means reaching the
+> hall (*Skip 10y*). `slice/pause-probe` still waits on his word to merge.
+>
+> **(the banner below is the state at D587)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D587: JOE ANSWERED TRADE'S NINE CALLS — TRADE AND THE HERD ARE ONE BUILD) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** = D585, **`slice/trade`** = D585 + D586 + **D587**. Both local, not
+> pushed, not merged. `specs/trade.md §3.2` now holds his answers: a post learned once the hall stands; three neighbours
+> with reasons; **a boat every 2–3 years from either river edge, seen sailing, docked long enough to notice
+> (`trade_boat_dock_days`, his to tune in play), sent on from the post's window**; a seeded assortment of every good the
+> game has (never one with no system yet); a trader job; **trade and `livestock.md`'s first slice built together**; a
+> cart's pass makes a path (drawn at once, faster next spring). Docs only; no code changed.
+>
+> **▶️ NEXT: plan the first build** (`trade.md §9` slices 1–4). ⚠️ **Re-read `livestock.md` against today's code first**:
+> it was written 2026-08-01, before gridless, plots, building condition and the armful, and the herd is half of this
+> build. Tests first; the boat is sim state with three ticks and a derived place on the water — never stepped per tick.
+> `slice/pause-probe` still waits on Joe's word to merge.
+>
+> **(the banner below is the state at D586)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D586: TRADE — THE LIVING REGION, SPECCED AND MEASURED, NOT BUILT; ⏸️ NINE CALLS ARE JOE'S) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** = D585 (below), **`slice/trade`** = D585 + **D586**, cut from it so the
+> two do not collide in `DESIGN.md`. Both local, not pushed, not merged.
+>
+> **D586:** `specs/trade.md` and `tools/harness/ZzTrade.cs`. Joe's calls (asked in plan mode): the **full living
+> region**; **barter, no coin**; **standing orders** on the post's card; the **town hall gift** is the permission, then
+> a **trading post on the river bank**, a boat along the river; once carts exist (the unbuilt workshop slice) a
+> **caravan and a built cart road** from the map's edge to the hall. Measured: every valley's river reaches two edges
+> with 30+ bank tiles on the village's side; the last founder dies in **Year 51** at the median; ⭐ copies of his saves
+> show a played village at the hall's era holding **nearly every good at its limit** — plenty to sell, little worth
+> buying on today's goods — which is why call 5 (animals with trade, or after) is open.
+>
+> **Verified:** a spec — nothing under `src/`, `tests/` or `data/` changed; the suite and the game build were run on
+> the D585 tree (below), and the harness copy was deleted from `tests/` before the commit.
+>
+> **▶️ NEXT: ⏸️ Joe answers `trade.md §3.2`** (nine calls, each with a recommendation). Then slice 1 (§9): the post,
+> standing orders, the trader, one river neighbour, the boat's clock — tests first. And `slice/pause-probe` waits on his
+> word to merge.
+>
+> **(the banner below is the state at D585)**
+
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D585: THE PROBE'S `pause:` ❌ WAS THE PROBE'S OWN MOMENT; FIXED IN THE POSE) — ON WINDOWS.**
+>
+> **`main` = D584, pushed. `slice/pause-probe`** (off `main`, local, **not pushed, not merged**) = **D585.** Joe: *"fix the
+> probe's pause: line first, then i want to start on trading."* The fault was made to name what was open and said *a
+> moment was up: "Four nomads have found the empty valley"* — the probe's own valley empties and is re-founded in its
+> twelve-year run (D567), the late `Refresh` shows that moment (two were queued), and Esc dismissed it, which is the
+> game's rule. `ThePauseOpensAndCloses` now lets the run's moments go by, poses its own, and guards that a moment takes
+> Esc before the pause does. 3 mutants, 3 reds, no zeros. **View only (`Main.Pause.cs`); no sim change, no golden.**
+>
+> **Verified:** suite 1688 / 0 / 5 of 1693 (8m11); view 0 warnings on `--no-incremental`; probe after a fresh build 89
+> lines, `pause:` ✅, no ⛔ or ❌ anywhere, `title:` / `new game:` / `tile centres` / `trails:` / `paths:` ✅, bar height 151,
+> `done.` (the posed bar's ⚠️ wrap was there before the change); goldens 362 → 362, nothing under `src/Bclone.Sim`,
+> `tests/` or `data/` moved.
+>
+> **▶️ NEXT: the trade spec**, on `slice/trade` cut from this branch so D585 and D586 do not collide in `DESIGN.md`.
+> Joe's calls (2026-10-16): **the full living region; barter, no coin; standing orders on the post's card; the town
+> hall gift is the permission, then a trading post on the river bank; a cart caravan and a cart road from the map's edge
+> to the town hall once carts exist (the workshop slice).** Spec and measurement first; no sim code until he answers
+> its calls. `slice/pause-probe` merges at his word only.
+>
+> **(the banner below is the state at D584)**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-16 (D584: THE NOMADS SLICE AND JOE'S SIX NOTES — MERGED AND PUSHED) — ON WINDOWS.**
 >
@@ -6986,6 +7386,277 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D607 PAID FOR — A CARD READ AS THE WINDOW, AND AN ESCAPE THAT BECAME A NEWLINE
+
+- ⭐ **When Joe says a window lacks something, check which panel his screenshot is.** It was the post's card; the window
+  had it all a button away — and his save showed no order ever set, which is what the missing information cost him.
+- ⛔ **`\\n` inside a Python edit script written through a quoted heredoc still became a real newline in the C#** — the
+  memory's rule again: write edit scripts with the Write tool, and for a newline in C# prefer `'\\n'` as a char or
+  `string.Join` over a string escape.
+
+## ⛔ THE TRAPS D606 PAID FOR — A GODOT THAT WAS JOE'S
+
+- ⛔ **A Godot still running after the probe's `done.` may be Joe's own game** — he plays while sessions run. Read its
+  command line before `taskkill`: the probe's has `--headless`; `run.bat`'s does not (D606: PID 9796, his, left alone).
+- **The view cannot raise a post**, so *found once per post* is held by one cache key and said unprobed — if a future
+  probe can pose a post, add it.
+
+## ⛔ THE TRAPS D605 PAID FOR — THE CAP THAT DREW WHAT IT HID, AND A SQUARE DRAWN BY HAND
+
+- ⭐ **Measure the drawing on Joe's own ground.** The trail network runs only in the game (Godot types), so the
+  instrument was: dump a save's worn grade, footprints and walls from a sim test into a grid file, and have the game,
+  headless, build the real network on it and count faults (fence crossings, lanes at a junction, span ratio,
+  buildings reached). Both throwaways are gone; rebuild them from D605's description if the paths come back.
+- ⛔ **The obvious cure for the star — cap the junction clump at 3 × 3 — drew the mesh the giant hub was hiding**
+  (90-odd lanes, 40 junctions). Measure each piece alone before believing the bundle.
+- **A hand-drawn shape can miss the case** — the 5 × 5 packed square thinned to a small cross and its mutant scored
+  zero; the guard holds now because it carries Joe's own square with its fences.
+- **"Reached" must be judged where the lane is drawn, not where its pixel is** — a lane's points sit on the middle
+  of the worn ground, a tile off a building's wall in a packed patch.
+
+## ⛔ THE TRAPS D604 PAID FOR — WHAT JOE CALLED A HOUSE WAS A YARD
+
+- ⭐ **"A home on a well" was a yard round one.** Footprints said nothing overlapped; zooming into his screenshot
+  and printing the plot owners tile by tile round each well showed the U of fence. When the footprints say "clean",
+  map the plots and the walls before telling Joe it can't happen.
+- **A house's own tiles are always inside its fence**, so a clip on the yard alone cannot keep anything clear of a
+  house — the house check has to refuse it too, and a guard on the chooser's outcome may never exercise that check
+  (W2 scored zero until it was asked of the plot directly).
+
+## ⛔ THE TRAPS D603 PAID FOR — TWELVE SEEDS THAT LIED, A KEY NOBODY READ, AND A CLOCK THAT WAS THE MACHINE
+
+- ⭐ **Twelve seeds cannot carry a market-vs-none survival claim** — the per-seed spread is ~14 deaths, and four
+  failed valleys made a 27 % "gap" that thirty-six seeds erased. Before telling Joe a change costs lives, run 36
+  and give the per-seed spread; and ask first whether the dead died beside food (distribution) or with the granary
+  empty (production) — the answer changes what the change could possibly have done.
+- **A config key with a confident doc can be dead.** `forester_hut_capacity` claimed to size the hut; the row stated
+  nothing and `SeatsIn` derived 3. When Joe names a number, find where the game reads it, not where it is written.
+- **Read the suite clock on a quiet machine before believing it** — 18m15 with the machine busy, 12m52 quiet. Time
+  both builds with `--logger "console;verbosity=normal"` and diff per test (`scratchpad/suite_diff.py`); its minute
+  regex once missed `[2 m]`, which made one test look new.
+
+## ⛔ THE TRAPS D602 PAID FOR — A RULE THAT UNDID THE NEW ONE, AND A SURVIVAL BAR ON ONE SEED
+
+- ⭐ **An older rule can silently cancel a new one.** The spread worked in the planner and did nothing in the valley:
+  D453's *finish what's begun first* sent every empty-handed builder back to the paid-for head. Trace the villager,
+  not the planner — `ServingSiteId` per tick showed it in one screen.
+- **`TheVillageSurvivesWithTheMarketSwitchedOff` is one valley over 150 years, and its ratio is a knife edge** — the
+  quarter bar failed 3 of 12 seeds on D601. When it goes red, measure the twelve seeds on both builds before
+  touching the code or the bar (worktrees: `git worktree add --detach <scratch>/wt HEAD`, apply the diff to a second).
+- **Never build in the main tree while the harness runs** — it builds once and runs `--no-build`; measure in a
+  worktree instead. And `python -` in a command waits on stdin until the timeout.
+- **A race guard posed with materials to spare stops meaning "the queue decides"** once builders spread: pose the
+  race for hands (one seat) or for scarce materials, not for both sites at once.
+
+## ⛔ THE TRAPS D601 PAID FOR — A HARNESS THAT COULD NOT SEE, AND THREE GUARDS THAT LOOKED A TICK LATE
+
+- ⭐ **The 200-valley harness never places a market** — every unattended founding runs without one, so a market rule
+  came out byte-identical across all 200 runs. *Byte-identical is not "neutral", it is "not measured".* Before
+  trusting the harness on a change, ask whether its villages ever reach the code; for the market, measure on
+  `ShippedConfig.Established()` and `VillageFixtures.Village` (both start with one).
+- **A guard that reads a villager's note must read it on the tick the decision was taken** — the note is written at
+  the start of the step, and that same step's fetches can change the very condition the guard filters on.
+- **"A site on this tile" is not "never built"** — a standing building ages into a repair site on the same tile.
+  Watch the raise site (`Repairing: false`), and when a guard fails late in a long run, trace whether the village is
+  even alive (the seam fixture's eight starved; the failing line said only *"wants 10 logs"*).
+- **A pinned worker's household errands are part of his day** — a herdsman whose larder sits under half goes shopping
+  in the herd's prep window. If a guard is about the trade, pose the household's larder; don't loosen the claim.
+- **A stepped pose cannot say where a villager will stand when they decide** (they rest or eat first and choose from
+  home) — K1 scored zero twice that way. Ask the planner directly from a posed spot.
+
+## ⛔ THE TRAPS D600 PAID FOR — A LIMIT SET WHEN SMALL, AND A SENTENCE THAT BLAMED THE WINTER
+
+- ⭐ **A limit set when the village was small outlives it.** Joe's firewood limit (600) was fine at 10 households and
+  starved 37: the woodcutters stopped, the shortfall never closed, the forge waited on it all year and the people froze —
+  while every sentence on screen told the truth about its own corner (*"the woodcutters have stopped"*, *"the village
+  needs its firewood for the winter"*) and none said **the limit is the cause**. When a gate waits on a shortfall, ask
+  whether the player's own limit is what keeps it open, and say so where they look.
+- **A demolition site is told apart by `Demolishing`, not by kind** — a fence's raising and its take-down both carry
+  `FencesBarnId`; `FenceSiteOf` / `FenceDemolitionOf` ask the flag, and cancelling a take-down must not unlock the pasture.
+- **Copy Joe's `godot.log` first** (D597's trap) — this time it was there: `logs/godot.log`, 460 KB, his whole session.
+
+## ⛔ THE TRAPS D599 PAID FOR — A MUTANT'S ANCHOR THAT MATCHED THE YARD'S COPY
+
+- **`VillageMap.PastureFenceSegments` and the yard's `AddFenceSide` carry the same edge-to-segment switch** — a mutant
+  anchored on one line matched both. The pasture's copy is pure (the probe asks it); the yard's draws straight into the
+  outline list. ⏸️ One switch would be better; not merged here, because the yard's path is D404's and probed already.
+- **The outlines' cache now keys on the walls and the standing too** — a fence goes up at its finishing and comes down
+  at a take-down, and neither moves `ZoneMap.Edits` at that moment.
+
+## ⛔ THE TRAPS D598 PAID FOR — A RULE MEASURED ON JOE'S PASTURE, A ROW THAT LOCKED HIS SAVES OUT
+
+- ⭐ **Measure a refusal against Joe's own data before shipping it.** *"A pasture in pieces is refused"* read well in the
+  spec; Joe's real pasture was 100 tiles and 2 strays, and it would have refused his barn. Now the main piece is fenced
+  and the strays given back. *Load his newest autosave (a copy) and ask the rule what it would say.*
+- ⛔ **Appending a building row refused every save Joe had** — `buildings_named` is one counter per kind and the load
+  demanded the lengths match. Kinds are appended, never renumbered, so a shorter counter is a save from before the row:
+  padded now (`ASaveFromBeforeAnAppendedKindOpensAndOneFromLostDataDoesNot`). **Any new per-kind array in a save needs
+  the same tolerance** — check the load, not just the save, when a row is added.
+- **A store's demolition retired only a workplace of kind Marketer** — the barn's herdsmen and the post's merchant
+  outlived their buildings from D590 to D598. Found because the fence's guard demolished a barn and its fence stayed up.
+- **The herd's ring painting (`HerdTests.GivePasture`) runs among the houses** — fine for a herd, wrong for a fence: the
+  wall-off refusal rightly refused to fence a family in. Fence guards pose a compact block on open ground
+  (`PastureFenceTests.GiveACompactPasture`), and the ring pose is kept as the wall-off refusal's own guard.
+- **The fence's site stands on the gate's lane tile until it is finished**, so *"is the gate's lane refused?"* reads
+  *"Something already stands there"* while it is a site — ask it after finishing.
+
+## ⛔ THE TRAPS D597 PAID FOR — A PROBE THAT MEASURED WIDTHS PASSED A WINDOW WITH NO NAMES
+
+- ⛔ **A clipped label's minimum width is zero, so a width check passes a row whose words have vanished.** D596's
+  `post:` line asserted the window *fit*; every good's name had clipped to nothing and it passed — Joe saw only colour
+  chips. **Assert that the words show**: the label is visible, its text is the good's name, and it keeps the width a
+  name needs (`PostNameWidth`). Red-checked: P1 (names clip) and P3 (names empty) both turn the line ❌.
+- **An autowrapping label measures its height at its own width** — with no width yet, a word a line. The post's window
+  stood 641 tall until each sentence got a `CustomMinimumSize.X` to wrap at (165 → 39). When a panel is mysteriously
+  tall, have the probe list each child's minimum height (`post:` does, on failure).
+- **The game's `godot.log` keeps only a few files, and every headless probe run rotates one out.** Joe's session log
+  (for the 4.26 s frame) was gone after a morning of probes. **Copy his newest log before running the probe.**
+- **A one-line `python -c` inside bash breaks on any `"` in the text** — the shell ends the string. Write the script to a
+  file (the memory rule already says so for heredocs; it holds for `-c` too).
+
+## ⛔ THE TRAPS D596 PAID FOR — THE VIEW CANNOT RAISE A BUILDING, AND A CARD IS 268 WIDE
+
+- **The view cannot raise a barn or a post** — `SimWorld.Complete` and the hall are internal, and a probe hook with a side
+  effect is what D160 deleted. A view feature over a building the probe's valley does not have is probed through
+  **writers of facts** (`WriteBarnCard`, `WriteThePostsWindow`, the pure `VillageMap.HerdSpots`) — the library's and the
+  hall's shape — plus the real controls driven against the real world where the sim can answer without the building
+  (the order setters, *Send the boat on* refusing). ⚠️ What that cannot reach is written down as unprobed, not implied.
+- **By the end of the probe the valley may have no standing workplace** — the save/load and pause lines leave a different
+  village. A card posed at the end opens on *any* workplace, a site included (its Settings fold is the same).
+- **A card is 268 wide, and a row of five controls is near it** — the first post's window wanted 295 (a checkbox's long
+  caption) and 278 (the goods rows). The probe line now names each child's minimum width when it fails: *read the
+  widest, do not guess.* A long caption goes on its own label that clips; a dropdown takes a fixed minimum and clips.
+- **A Python script written through a bash heredoc loses its `\n` escapes** — twice this session the mutant script came
+  out with real newlines inside string literals. The memory note says so; it was not obeyed. Write scripts with the editor.
+
+## ⛔ THE TRAPS D595 PAID FOR — A ROUND RATE HIDES ROUNDING, AND THE POST'S ROOM IS A LIMIT TOO
+
+- **A rate of 1:1 hides a payment rounded the wrong way and a wrong "wanted"** — the first settle guard traded firewood
+  at 200 for stone at 200 with no stone held, so taking `floor` or `ceil` units, and forgetting what the village already
+  held, all gave the same answer. It now holds ten stone and the hills a quarter stocked with firewood (offered at 175),
+  and **asserts its own premise** — that the payment does not come out even.
+- **A trade has four limits — the hold each way, the post's free room, the credit, the order — and a guard for one must
+  make the others slack.** The first hold guard was bound by the post's room (780 of 800 full), then by a 1:1 rate;
+  it now buys leather at half its worth, and asserts that all the firewood would buy more than the room holds and the
+  hold's worth buys less. Write the premise down as an `Assert` and the next session cannot pose it away.
+- **The post's free room is shared by every good the boat leaves** — `RoomFor` answers for one good at a time, so the
+  first draft could have promised two goods the same free space. One running count (`free`) now.
+- **`Boat` is never null once the region wakes** — the next boat is scheduled the tick the last has gone. A view that
+  draws *"a boat"* must ask `BoatIsDocked` / the three ticks, not `Boat != null` (commit 6–7).
+- **A guard that a do-nothing passes is not a guard** — `TheBoatNeverLeavesAGoodTheVillageSells` passed on the stubs (a
+  boat that does nothing leaves nothing). It now also orders leather and asserts it came. Run the guards against stubs
+  before the real code: the one that stays green is the one to fix.
+- **The boat pays good by good in id order, so a wrong good posed after the right one is never reached** — B7 (a good
+  with no keep order sold) scored zero while the posed no-keep fish (6) sat behind the firewood (2) that paid. The pose
+  now puts the good that must stay *first* in id order and asserts it. Any guard over an id-order loop: pose the trap
+  where the loop reaches it first.
+- **An equivalent mutant is a zero to write down, not to chase** — B14 let the payment loop run on past the debt, but
+  its rounding then gives 0 units, so nothing changes. Recorded as equivalent; B14b (the boat takes all it may) is the
+  real mutant, and red.
+
+## ⛔ THE TRAPS D594 PAID FOR — A DAY IS STILL FOUR TICKS, THE ESTABLISHED VILLAGE HAS NO STONE, AND TWO SIDES FILLED AS ONE
+
+- **A day is four ticks** — D427's trap, paid again. `TicksPerDay * 4` is sixteen ticks, not four days of work: three
+  merchant guards read *"nobody carried anything"* because the merchant had not finished walking home from his rest.
+  Give an errand **a season** (`TicksPerSeason`), and when a guard says *nobody did it*, trace before believing it.
+- **`ShippedConfig.Established()` holds no stone, iron, fish, meat, leather, wheat or bread at tick 0** — only forage,
+  stone tools, and logs and firewood once the first days run. A guard about a good must **give** it (into the warehouse,
+  `StoreBuilding.Put`), not assume the village has some.
+- **A good at the post with a keep order stays there; one without goes home.** That is how the merchant tells what is for
+  sale from what a boat left. Commit 5 must never leave a good the village also sells — or forbid both orders on one good.
+- ⭐ **Fill the two sides of a ratio apart.** The band guard filled a neighbour's wants and makes to the same level, so the
+  offer and the ask always moved together and a band widened to 20–500 % passed (T7 scored zero). Wants and makes now go
+  through every pair of fills. D423's lesson in a new shape: *pose the shape that makes the claim bite.*
+- ⛔ **A mutant's filter must be green before the mutant, or its reds are not its own.** Posing the region awake in the
+  save pose made `ThePosesCatchTheMomentsTheyAreNamedFor` fail on its own (3 posed animals had stepped to 6) — and the
+  mutant pass counted that failure as a red for T15 and T16. T16 really scored zero. **Run each mutant's filter on the
+  clean tree first**, or read every red's name, not just its count.
+- **A sparse hash's tag byte hides its value**: zeroing `RegionAwakeSince` inside the mix still moved the hash, because
+  `0x78` was mixed whenever the region was awake. Its guard now also asks that *two different wake ticks* hash apart,
+  and a second mutant (T16b) drops the whole block.
+- **An edit script's "already applied" check misfires on a deletion** — when the new text is a substring of the old, the
+  new text is always "present". Check that the old text is gone, not that the new text is there.
+- **The quota and the merchant read one copy of the reasons** (`SimWorld.GoodToSell` / `GoodToBringHome` /
+  `AboveTheKeep`). The first draft had the quota restate them, and a quota that disagrees with its worker asks for a hand
+  who then finds nothing to do (D52's lesson). Keep it one copy.
+
+## ⛔ THE TRAPS D593 PAID FOR — A TRADE THE ALLOCATOR NEVER WALKS, A YEAR STEPPED BY ACCIDENT, AND A HERDSMAN WHO RESTED ALL AUTUMN
+
+- **A new trade must be in `LabourAllocator.KindsInOrder`** as well as the quota — *"two halves of one fact and neither
+  compiles against the other"*. The herdsman was asked for, pinned, and never seated; every herdsman test read *"nobody
+  cut the pasture"* until the list had him. **The merchant joined it in commit 4 (D594); T13 is its red check.**
+- **`SkillSystem`'s state table throws on a state it does not know** — loud by design. Every new `VillagerState` needs its
+  row there, and `ErrandKind` / `IsOnAWorkErrand` in `BehaviorSystem` (D281: or the worker is recalled home every tick).
+- **`StepToTheStartOf(Season.Spring)` from tick 0 steps a whole year** — tick 0 *is* the first day of spring. Three herdsman
+  poses ran a year they did not mean to and measured a herd that had already starved.
+- **On tick 0 nobody is seated** — the herd system runs before the labour system, so a pose that puts a cull owed at
+  tick 0 meets the *nobody keeps the herd* rule first. Let a day pass.
+- **A herdsman rested a whole autumn with pasture still to cut**: the next tile in the pasture's order had become
+  unworkable, the walk to it failed every time, and he went home. Found by tracing the villager's state each tick, not
+  by reading — a throwaway `Zz…Trace` test, deleted before the commit, is the fastest instrument this project has.
+- **The household emergency restock interrupts any action** (`TryEmergencyRestock`), so long work (a cull's 8 ticks) is
+  sometimes abandoned and redone. Not a bug; a test window must allow for it.
+
+## ⛔ THE TRAPS D592 PAID FOR — A FULL HERD HIDES ITS GROWTH, AND A MUTANT THIS BUILD WILL NOT COMPILE
+
+- **A herd at its pasture's limit looks the same whether it grows or not** — every calf is culled, the head count never
+  moves. The guard *"fed through winter, no beast lost"* passed with growth running all winter (H1 scored zero); it now
+  also holds the growth accumulator still across winter. When a rule's effect is capped, assert the hidden counter, not
+  the capped total.
+- **This repo's build refuses the classic mutants**: `if (false)` / `if (true)` is CS0162 (unreachable) and emptying a
+  method leaves IDE0060 (unused parameter) — all errors here, so three of eleven herd mutants never built and scored
+  zero silently (D420's trap, again). Mutate with arithmetic that compiles: `pasture + 1000`, an argument to 0.
+- **A `\\n` inside an inline `python -c` through bash became a real newline** in the mutant file — the backslash trap,
+  the fourth time. Edit scripts go through the Write tool, always.
+
+## ⛔ THE TRAPS D590 PAID FOR — A MODDED ROW IN A BUILT-IN'S SEAT, A FILTER BY ID, A DEFAULT THAT SAYS "KNOWN", AND A PROBE THAT HANGS
+
+- **A modded test row sitting at the next free id silently becomes the next built-in.** `ModdedGoodTests`' *pitch* was
+  id 13; the day hay took 13, the modded catalogue had no hay row and *pitch* answered for hay — the herdsman's
+  `limited_by: Hay` read pitch, and **nothing failed**. Only the jobs and buildings validators refuse a missing
+  built-in id; goods do not. When a built-in is appended, move every modded row above it in the same commit and grep
+  each modded file for the new id.
+- **A test that filters JSON lines by `"id": 14,` drops whatever else is 14.** The retired-longhouse test removed the
+  new *trader* job row along with the longhouse and failed on "missing id 14". Filter by name.
+- **The view's `_ => true` in `EarnedYet` makes every new building known.** A gated row with no button yet lit the
+  *Other* tab at the founding; the probe's `filters:` line saw it and no unit test could. Every new building row needs
+  its arm in `EarnedYet` the day the row lands, button or not.
+- **A failed game build hangs the headless probe instead of failing it** — Godot cannot find `Main`, prints one error
+  and waits forever. A name clash (`_tradeKnown` already existed as an array) did exactly that for ten minutes. Read the
+  game build's `Error(s)` before starting the probe; kill only *your* `--headless` Godot (check its command line).
+- **A probe check can carry a premise no good had broken yet.** `spoilers:` expected every newly learned good to appear on
+  the cart's card — true until hay, which only a barn holds. The check now asks only of goods the cart can hold; the
+  line above it already holds every row to `CanEverHold`, so nothing it guarded is lost.
+
+## ⛔ THE TRAP D588 FOUND — A BLOCKED SPEC KEEPS ITS OLD PROMISES
+
+- **`livestock.md` sat blocked for eleven weeks and its safety claims aged in place.** *"Nobody can freeze doing it at the
+  7-tile bound"* was true on 2026-08-01; the bound went in D120 and D533 measured outdoor winter freezes. A spec that was
+  never built is never re-checked by a red test, so **re-read a blocked spec against the code before building it** —
+  claim by claim, as `livestock.md §0` does — and turn each safety claim into a guard rather than carrying it as prose.
+
+## ⛔ THE TRAP D586 NEARLY PAID FOR — A HARNESS'S SURPLUS IS NOT A PLAYER'S
+
+- **"What does a village have spare when trade opens?" has two answers, and the harness gives the wrong one.** The
+  unattended `Village` arm never paints a seam or marks a farm, fishery or lodge, so at the hall's era it held no stone,
+  iron, fish, wheat or bread at all, and logs at their limit in only half. Copies of Joe's saves said the opposite:
+  nearly every good at its limit. The spec's recommendation for what trade should buy flipped on that. **Ask the
+  harness *when*; ask Joe's saves *what*** (D447, again).
+- **A save is gzipped JSON** (`saves/<village>/autosave-N.save`, format 1–7 all readable as JSON); goods are arrays in
+  `Goods` order. Copy the folder to the scratchpad and read the copy — never open his files in place (D580's trap).
+
+## ⛔ THE TRAPS D585 PAID FOR — A PROBE LINE THAT INHERITS THE RUN, AND A ❌ NOBODY GREPS FOR
+
+- **A late probe line inherits everything the run before it raised.** `pause:` pressed Esc *"with nothing open"* —
+  but the twelve-year log probe had emptied and re-founded the probe's own valley (D567), and the `Refresh` just before
+  it put the re-founders' moment up. Esc dismissed it, correctly, and the line read ❌ for seventeen commits. **A line
+  that says "with nothing open" must make it so**, and a fault must name what *was* open (`WhatIsOpen`) — the
+  one-sentence diagnosis came from that, not from reading.
+- **Queued moments come one at a time.** Dismissing the visible moment and asking `ShowAnyMoment` again showed a
+  second of the same title. Clearing "the moment" once is not clearing them; let them go by in a loop, as a player would.
+- **"No ⛔" is not "green".** Summaries grepped for ⛔ while this line printed ❌; D569 found it only by reading every
+  line. Read every probe line, as CLAUDE.md says — the symbol a line uses for failure is the line's choice.
+
 ## ⛔ THE TRAPS D583 PAID FOR — THE WRONG INVARIANT, AND A SAMPLED LINE
 
 - **"Never crosses a building" was an invariant Joe never asked for; "goes round it" was.** D582 satisfied the first by
@@ -7116,6 +7787,36 @@ Read `git status` after staging, every time.
   nudged a tenth of a tile).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
+  `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
+  builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
+  the well's ring), the paths (D605, played and approved) and D607. His word only.
+
+- ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
+  building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
+  session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
+
+- ⏸️ **THE MARKET'S VOLUME IS ITS MARKETERS' (D601).** The emptiest-shelf rule spreads two marketers' loads across the
+  goods; it cannot make the shelf fuller. More market seats is Joe's lever — said to him, not yet tried in play.
+
+- ⏸️ **A RING THAT THINS INTO A PLAZA IS NOT OPENED (D607).** Round a 2 × 2 building the worn ring becomes one junction
+  clump wider than 3 × 3 — a plaza — drawn as its tree plus a lane round the building. `KeepTheBusierSides` sees only
+  lanes; the three rings opened on Joe's villages were all lane rings. Raise only if he sees one.
+
+- ✅ **ANSWERED (D596) — Joe: *"keep it as built: a keep order alone sells nothing, and the post's window says to set what to buy."* Built** (`SimWorld.SayWhatThePostWillDo`). ~~A KEEP ORDER ALONE SELLS NOTHING (D595, `trade.md §4.5`).~~ Barter with no coin: the boat takes from the post only
+  as much as pays for what the *buy* orders ask, so *"sell firewood above 400"* with no buy order sends nothing. Built
+  that way because the alternative gives the village nothing back for what leaves. Options: (a) **as built** — the post's
+  window says *"set what to buy, and the boat takes enough to pay"*; (b) the boat takes the surplus anyway and leaves a
+  share of its cargo for it, picked by hash (the village receives an assortment it did not order — stores may fill);
+  (c) unspent credit is kept at the post as *goodwill* toward the next boat (a new number to hash and save). Needed
+  before Joe plays commit 6; nothing in the view shows orders yet.
+
+- ✅ **ANSWERED (D591) — Joe: *"keep the marketer's plural as traders and call the new job merchant / merchants."* Built.** ~~TWO TRADES WOULD BOTH BE "TRADERS" (D590).~~ The marketer's plural has been *traders* since D188 (a tail the doc
+  left as Joe's), and trade's new job is *trader* / *traders* (his D587 call 4). The Professions panel would list
+  "traders" twice once the view shows the trader (commit 6 of `trade.md §11`). Options: the marketer becomes
+  *marketers* (D188's own ruling was "marketer wins"), or the new job takes another name (*merchant*). Needed before
+  commit 6; nothing shows either word for the new job today.
 
 - ⏸️ **PATHS, OPTION C — STAGGERED HOUSE SITING, PARKED (D581, `path-shapes.md §4`).** Homes the sim sites set at varied
   offsets and small angles on their plots, so the gaps between them do not line up. Not built: Joe's grid was the per-tile

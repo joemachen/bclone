@@ -65,6 +65,20 @@ public sealed class SaveLoadTests : IDisposable
         // D565/D572: the day after the first band settled — roofless arrivals with their arrival tick, the one state
         // the nomads add that is not a count.
         new object[] { "fixture village, the day after the first band settled", ((FixtureKnockYear - 1) * 480) + 5 },
+
+        // D590: trade orders, a boat, the neighbours' stocks and a herd, posed — nothing reads them yet (commit 1 of
+        // `trade.md §11`), so a year later they are still what was posed and the save must keep every one.
+        new object[] { "established, trade and a herd posed (year 2)", 500 },
+
+        // D592: a real barn, its pasture and a herd eating its hay in winter — the herd system across a load and a year.
+        new object[] { "established, a barn's herd in winter (year 1)", (120 * 3) + 21 },
+
+        // D595: a post, a barn and a boat tied up mid-visit with orders for goods and beasts — settled before the save,
+        // leaving after it, and the next boat scheduled within the loaded year.
+        new object[] { "established, a boat in dock (year 1)", 60 },
+
+        // D598: a barn's fenced pasture standing, a herd on it — the walls rebuilt from the barn's facts on load.
+        new object[] { "established, a fenced pasture (year 1)", 200 },
     };
 
     /// <summary>The fixture's first knock, by the same hash the sim uses (`nomads.md §4.1`).</summary>
@@ -79,6 +93,37 @@ public sealed class SaveLoadTests : IDisposable
         if (pose.StartsWith("fixture", StringComparison.Ordinal))
         {
             loop = SimFactory.CreatePhase0(VillageFixtures.Village, log);
+        }
+        else if (pose.StartsWith("established, a barn's herd", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            Workplace barn = HerdTests.RaiseABarn(loop.World);
+            HerdTests.GivePasture(loop.World, barn, 40);
+            barn.HerdHead = 6;
+            loop.World.BarnStoreOf(barn)!.Store.Receive(Goods.Hay, 300);
+
+            // Hay already out on the pasture (D593): a pose holding none would let `hay_put_out` drop from the save
+            // unseen (its red check scored zero until this line).
+            barn.HayPutOut = 200;
+        }
+        else if (pose.StartsWith("established, a fenced pasture", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            Workplace barn = PastureFenceTests.ABarnWithPastureIn(loop.World);
+            Assert.True(loop.World.FenceThePasture(barn).Allowed);
+            PastureFenceTests.FinishTheFence(loop.World, barn);
+            barn.HerdHead = 4;
+            loop.World.BarnStoreOf(barn)!.Store.Receive(Goods.Hay, 300);
+        }
+        else if (pose.StartsWith("established, a boat in dock", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            TradeBoatTests.PoseABoatInDock(loop);
+        }
+        else if (pose.StartsWith("established, trade and a herd posed", StringComparison.Ordinal))
+        {
+            loop = SimFactory.CreatePhase0(ShippedConfig.Established(), log);
+            TradeRowsTests.PoseTradeAndAHerd(loop.World);
         }
         else if (pose.StartsWith("established, every store closed", StringComparison.Ordinal))
         {
@@ -203,6 +248,31 @@ public sealed class SaveLoadTests : IDisposable
         var arrived = knocked.World.Villagers.Where(v => v.ArrivedAtTick != 0UL).ToList();
         Assert.True(arrived.Count >= 2, "nobody arrived — the pose is not the day after a band settled");
         Assert.All(arrived, v => Assert.False(knocked.World.HouseholdOf(v).HasHome));
+
+        (SimLoop traded, _) = Played("established, trade and a herd posed (year 2)", 500);
+        Assert.NotNull(traded.World.Boat);
+        Assert.Equal(300, traded.World.TradeKeep.For(Goods.Firewood));
+        Assert.Equal(5, traded.World.Workplaces[0].HerdHead);
+        // The region posed awake (D594): its three posed animals step back toward the neighbour's six at each season turn.
+        Assert.Equal(1UL, traded.World.RegionAwakeSince);
+        Assert.InRange(traded.World.NeighbourStocks[0].Animals, 4, traded.World.Config.Neighbours[0].MakesAnimals);
+
+        (SimLoop herded, _) = Played("established, a barn's herd in winter (year 1)", (120 * 3) + 21);
+        Assert.Equal(Season.Winter, herded.World.Clock.Season);
+        Workplace herd = Assert.Single(herded.World.Workplaces, w => w.Kind == JobKind.Herdsman && !w.IsSite);
+        Assert.True(herd.HerdHead > 0, "the herd is gone — the pose saves no herd");
+        Assert.True(herded.World.BarnStoreOf(herd)!.Store[Goods.Hay] > 0, "the barn is empty — the pose saves no hay");
+        Assert.True(herd.HayPutOut > 0, "no hay out on the pasture — the pose saves none of it");
+
+        (SimLoop docked, _) = Played("established, a boat in dock (year 1)", 60);
+        Assert.True(docked.World.BoatIsDocked, "the boat is not tied up — the pose saves no visit");
+        Assert.Equal(1, docked.World.BoatsEverCame);
+        Assert.NotNull(docked.World.TradeBuyHead);
+
+        (SimLoop fencedIn, _) = Played("established, a fenced pasture (year 1)", 200);
+        Workplace fencedBarn = Assert.Single(fencedIn.World.Workplaces, w => w.Kind == JobKind.Herdsman && !w.IsSite);
+        Assert.True(fencedBarn.FenceStands, "the pose saves no standing fence");
+        Assert.NotEmpty(fencedIn.World.Zones.PastureFenceOf(fencedBarn.Id));
     }
 
     // ---------------------------------------------------------------
@@ -257,6 +327,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
+            "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
         (typeof(SimWorld), Kept.Data, new[]
@@ -273,6 +344,8 @@ public sealed class SaveLoadTests : IDisposable
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
             // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
             "ConditionWalks",
+            // Which barn's fence holds a tile (D598): rebuilt on load from the barns' fenced tiles and gates.
+            "_pastureLocks",
             // Whether the walk under way may raise repairs (D567): set by the caller on every walk, never read between them.
             "_raiseRepairs",
         }),
@@ -284,7 +357,7 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
-            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick",
+            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
@@ -299,6 +372,7 @@ public sealed class SaveLoadTests : IDisposable
             "GatheringRadius", "Mode", "ForgeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
+            "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]
@@ -310,7 +384,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",
-            "BridgeTo", "RebuildsBridge", "Repairing",
+            "BridgeTo", "RebuildsBridge", "Repairing", "FencesBarnId",
         }),
         (typeof(BuildingRecipe), Kept.Saved, new[] { "_materials", "WorkTicks" }),
         (typeof(GeneratedMap), Kept.Saved, new[]
@@ -329,6 +403,9 @@ public sealed class SaveLoadTests : IDisposable
             "_harvestCount", "_destroy", "_destroyCount", "_width", "_height", "_minX", "_minY", "_subWidth",
             "_subHeight", "ResidentialTiles", "_wholeResidential", "_groundByOwner", "HarvestTiles", "_paintedHarvest",
             "DestroyTiles", "_markedToDestroy",
+
+            // A standing pasture fence's edges (D598): rebuilt on load from its barn's facts, never saved itself.
+            "_pastureFenceByBarn",
         }),
         (typeof(ZoneMap), Kept.Cache, new[] { "WallGeneration", "Edits" }),
         (typeof(PathWear), Kept.Saved, new[]
@@ -361,6 +438,8 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
         (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
+        (typeof(TradeBoat), Kept.Saved, new[] { "NeighbourId", "AppearsAtTick", "DocksAtTick", "LeavesAtTick" }),
+        (typeof(NeighbourStock), Kept.Saved, new[] { "Held", "Animals" }),
         (typeof(JobLimits), Kept.Saved, new[] { "_targets" }));
 
     /// <summary>
@@ -524,6 +603,26 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Null(opened.Loop);
         Assert.Equal("This save holds “Smokehouse”, which this game no longer has, so it can't be opened.", opened.Refusal);
         Assert.False(File.Exists(path + SaveFile.BrokenSuffix), "a sound save over changed data is not damage");
+    }
+
+    /// <summary>
+    /// ⭐ A save from before a building kind was appended still opens (D598: the pasture fence arrived inside format 8) —
+    /// and one that knows a kind this data has lost is still refused.
+    /// </summary>
+    [Fact]
+    public void ASaveFromBeforeAnAppendedKindOpensAndOneFromLostDataDoesNot()
+    {
+        string older = Saved(doc =>
+        {
+            var named = doc["world"]!["buildings_named"]!.AsArray();
+            named.RemoveAt(named.Count - 1);
+        });
+        Assert.NotNull(SaveFile.Open(older, VillageFixtures.Village).Loop);
+
+        string newer = Saved(doc => doc["world"]!["buildings_named"]!.AsArray().Add(0));
+        SaveOpened refused = SaveFile.Open(newer, VillageFixtures.Village);
+        Assert.Null(refused.Loop);
+        Assert.Contains("different list of buildings", refused.Refusal, StringComparison.Ordinal);
     }
 
     [Fact]

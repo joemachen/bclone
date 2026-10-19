@@ -1143,6 +1143,9 @@ internal static class LabourAllocator
     {
         JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
         JobKind.Woodcutter, JobKind.Smith, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
+
+        // The herdsman after the baker, then the merchant, as the quota takes hands (D593, D594).
+        JobKind.Herdsman, JobKind.Merchant,
         JobKind.Marketer, JobKind.Builder,
     };
 

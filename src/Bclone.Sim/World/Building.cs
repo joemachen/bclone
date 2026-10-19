@@ -340,6 +340,14 @@ public sealed record BuildingRow
     public bool SpansWater { get; init; }
 
     /// <summary>
+    /// A fence round a barn's pasture (D598, `livestock.md §0.2`): put up from the barn's card round the ground it was
+    /// given, never placed by hand, and <b>priced per length of fence</b> — <see cref="Materials"/> and
+    /// <see cref="WorkTicks"/> are for one edge, as a bridge's are for one tile.
+    /// </summary>
+    [JsonPropertyName("encloses_pasture")]
+    public bool EnclosesPasture { get; init; }
+
+    /// <summary>
     /// For a bridge, what a step onto its deck costs in the shared cost field — grass is 10, a packed
     /// path 8 (`desire-paths.md §3`). Between 1 and 10, or Dial's bucket queue refuses it.
     /// </summary>
