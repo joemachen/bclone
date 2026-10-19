@@ -135,6 +135,11 @@ public partial class Main
 
             WriteThePostsWindow(w, new PostFacts(
                 new string('P', SimWorld.NameLengthLimit),
+                string.Join(
+                    '\n',
+                    "Ashbourne, up the river — plenty of logs, stone, iron, stone tools, iron tools, leather and cattle; short of wheat, flour, bread, fish and firewood.",
+                    "Millbrook, down the river — plenty of forage, fish, wheat, flour, bread and firewood; short of logs, stone, iron, leather and meat.",
+                    "Thornfield, overland, no road yet — plenty of meat, leather, hay, iron tools and cattle; short of firewood, bread, wheat and stone."),
                 "The merchant carries what is above each keep down to the post; the next boat takes enough of it to pay for what you asked.",
                 "The boat from Ashford is tied up at the post for 10 more days. It carries 1,234 stone, 56 leather, 7 iron tools and 3 cattle.",
                 true,
@@ -154,6 +159,7 @@ public partial class Main
                 : w.Orders.Count(o => o.Row.Visible) != orders.Length ? "not every good's row shows"
                 : fire.Selected != SellAbove || (int)fireAmount.Value != 400 ? $"firewood reads {fire.Selected} at {fireAmount.Value}"
                 : stone.Selected != BuyUpTo ? $"stone reads {stone.Selected}"
+                : !w.Region.Visible || w.Region.Text.Split('\n').Length != 3 ? "the region's three lines do not show at the top (D607)"
                 : w.SendOn.Disabled ? "Send the boat on is disabled with a boat docked"
                 : !w.HeadOn.ButtonPressed ? "the order for beasts is not shown"
                 : wants.X > Size.X - (2f * Edge) ? $"the window wants {wants.X:F0} of a {Size.X:F0} game"

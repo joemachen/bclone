@@ -5301,9 +5301,11 @@ public partial class VillageMap : Control
             "wBBw",
             "wwww");
         int onTheHut = OnTheBuildings(ring, "wwww", "wBBw", "wBBw", "wwww");
-        if (ring.Lanes.Count != 1 || !ring.Lanes[0].Closed || onTheHut > 0)
+        // ⚠️ One closed loop, and since D607 a spur from it to the hut's wall besides — the loop is drawn on its own
+        // tiles' middles, a tile off the wall, so it goes round the hut without touching it.
+        if (ring.Lanes.Count(lane => lane.Closed) != 1 || ring.Lanes.Count > 2 || onTheHut > 0)
         {
-            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes (closed: {ring.Lanes.Count == 1 && ring.Lanes[0].Closed}), {onTheHut} samples on the hut");
+            faults.Add($"a ring round a hut is {ring.Lanes.Count} lanes ({ring.Lanes.Count(lane => lane.Closed)} closed), {onTheHut} samples on the hut");
         }
 
         // ⛔ AND ROUND A ONE-TILE BUILDING (D582, Joe's screenshot: a lane drawn straight across a small store). A ring
@@ -5409,7 +5411,8 @@ public partial class VillageMap : Control
             faults.Add($"two lanes two tiles apart drew as {apart.Lanes.Count} ({apart.BridgedTiles} gap tiles bridged)");
         }
 
-        if (walled.Lanes.Count != 2 || walled.BridgedTiles != 0)
+        // ⚠️ Two lanes and, since D607, one spur to the building's wall — never a lane across it or a bridge over it.
+        if (walled.Lanes.Count < 2 || walled.Lanes.Count > 3 || walled.BridgedTiles != 0 || OnTheBuildings(walled, "wwwwwwww", "BBBBBBBB", "wwwwwwww") > 0)
         {
             faults.Add($"two lanes with a building between drew as {walled.Lanes.Count} ({walled.BridgedTiles} bridged across it)");
         }
@@ -5504,6 +5507,41 @@ public partial class VillageMap : Control
             faults.Add($"a lane a tile off a building comes no nearer its wall than {nearestToTheDoor:F2} of its centre");
         }
 
+        // ⭐ A SPUR TO A WALL THE LANE ONLY PASSES (D607, Joe: "paths not connecting to building entrances"): a lane down
+        // the next row, its own tile's middle a tile from the building — it goes by, so a spur is drawn up to the wall.
+        string[] byTheWall = { "....B....", "wwwwwwwww" };
+        TrailNetwork passingBy = Shape(byTheWall);
+        float spurReaches = passingBy.Lanes.SelectMany(lane => lane.Points).Select(point => point.DistanceTo(new Vector2(4f, 0f))).DefaultIfEmpty(9f).Min();
+        if (spurReaches > 0.6f || OnTheBuildings(passingBy, byTheWall) > 0)
+        {
+            faults.Add($"a lane passing a building comes no nearer its wall than {spurReaches:F2} of its centre, or is drawn on it");
+        }
+
+        // ⭐ A RING ROUND ONE BUILDING KEEPS ITS BUSIER SIDE (D607, Joe's call). JOE'S OWN RING (`oakhaven-ash-otter-53`, Y60:
+        // worn ground, footprints and fences round the smithy's corner as the game read them), its left side posed only
+        // worn so the busier side is the right: the right is drawn beside the building, the left is not. ⚠️ A ring drawn
+        // by hand thinned to one arc and never formed (D607's first two red checks scored zero) — this one is his.
+        string[] hisRing =
+        {
+            "pppppBBp..",
+            "pppppppppp",
+            "pppppppppp",
+            "BB.w.BpBB.",
+            "...w.BpBBp",
+            "...w..p...",
+            "ppppppp...",
+            "Bp.BBBpp..",
+            "B.BBBBBpBB",
+        };
+        (int, int, int, int)[] hisRingFences = { (0, 5, 0, 1), (1, 5, 0, 1), (2, 2, 0, 1), (2, 3, 1, 0), (2, 4, 1, 0), (2, 5, 0, 1), (2, 5, 1, 0) };
+        TrailNetwork aroundIt = ShapeWith(false, hisRing, hisRingFences);
+        bool quieterDrawn = aroundIt.Lanes.SelectMany(lane => lane.Points).Any(point => Mathf.Abs(point.X - 3f) < 0.35f && point.Y > 3.2f && point.Y < 4.8f);
+        bool busierDrawn = aroundIt.Lanes.SelectMany(lane => lane.Points).Any(point => Mathf.Abs(point.X - 6f) < 0.35f && point.Y > 3.2f && point.Y < 4.8f);
+        if (quieterDrawn || !busierDrawn || aroundIt.RingsOpened == 0)
+        {
+            faults.Add($"Joe's ring round the smithy's corner draws its quieter side ({quieterDrawn}), loses its busier one ({!busierDrawn}), or opened none ({aroundIt.RingsOpened})");
+        }
+
         // The same shape twice, with the valley's wander, draws the same.
         TrailNetwork once = Wandering("wwwwwwwwwwww", "w.........w.", "wwwwwwwwwwww");
         TrailNetwork twice = Wandering("wwwwwwwwwwww", "w.........w.", "wwwwwwwwwwww");
@@ -5524,7 +5562,8 @@ public partial class VillageMap : Control
                 + "stay two; a short lane up to a door stays; a lane past a one-tile store, and Joe's own village, go round it uncut; "
                 + $"lanes either side of a fence stay {fenced.Lanes.Count} and cross it only at its gate; a packed square with six lanes in "
                 + $"meets at most {mostMeeting} at a junction, in one piece, and Joe's own square (seventeen once) at most {mostOnHisSquare}; "
-                + $"a doorstep is drawn to {nearestToTheDoor:F2} of the wall's tile; "
+                + $"a doorstep is drawn to {nearestToTheDoor:F2} of the wall's tile, and a spur from a lane only passing to {spurReaches:F2}; "
+                + "a ring round one store keeps its busier side; "
                 + "a lone 2×2 draws; the same shape draws the same"
             : $"[widths] trails: ⛔ {string.Join("; ", faults)}";
 

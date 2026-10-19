@@ -50,21 +50,28 @@ internal sealed class TrailNetwork
     /// <summary>How far a doorstep lane may run along the worn ground to meet the nearest lane, in tiles (D605).</summary>
     private const int DoorstepReach = 6;
 
-    /// <summary>How near a building's tile a lane must be drawn to have reached it, in tiles — a doorstep's centre is 1 (D605).</summary>
-    private const float DoorstepReachedWithin = 1.2f;
+    /// <summary>
+    /// How near a building's tile a lane must be drawn to touch its wall, in tiles (D607): the wall is half a tile out and
+    /// a lane's ribbon a little more — a lane down the next tile's middle, at 1, passes by and gets its spur.
+    /// </summary>
+    private const float DoorstepTouches = 0.75f;
 
-    /// <summary>How far past the doorstep's centre toward the wall a doorstep lane ends — short of the wall (D605).</summary>
-    private const float DoorstepToTheWall = 0.4f;
+    /// <summary>The longest ring round one building that keeps only its busier side, in pixels round (D607).</summary>
+    private const int RingAtMost = 20;
+
+    /// <summary>How far past the doorstep's centre toward the wall a spur runs — to the wall, a hair short of its tile (D607).</summary>
+    private const float DoorstepToTheWall = 0.45f;
 
     /// <summary>The detour's four ways, in a fixed order.</summary>
     private static readonly (int, int)[] FourWays = { (1, 0), (-1, 0), (0, 1), (0, -1) };
 
-    private TrailNetwork(List<Lane> lanes, List<(Vector2 At, byte Grade)> junctions, int bridged, int cuts)
+    private TrailNetwork(List<Lane> lanes, List<(Vector2 At, byte Grade)> junctions, int bridged, int cuts, int ringsOpened)
     {
         Lanes = lanes;
         Junctions = junctions;
         BridgedTiles = bridged;
         CutSteps = cuts;
+        RingsOpened = ringsOpened;
     }
 
     /// <summary>The lanes, in the order traced.</summary>
@@ -79,8 +86,11 @@ internal sealed class TrailNetwork
     /// <summary>How many steps had no way round a building and were cut at its walls (D583: the last resort) — for the probe.</summary>
     public int CutSteps { get; }
 
+    /// <summary>How many rings round one building were opened to their busier side (D607) — for the probe.</summary>
+    public int RingsOpened { get; }
+
     /// <summary>A network with nothing in it.</summary>
-    public static TrailNetwork Empty { get; } = new(new List<Lane>(), new List<(Vector2, byte)>(), 0, 0);
+    public static TrailNetwork Empty { get; } = new(new List<Lane>(), new List<(Vector2, byte)>(), 0, 0, 0);
 
     /// <summary>
     /// The network of the worn ground in a window of the valley.
@@ -433,6 +443,11 @@ internal sealed class TrailNetwork
         // on Joe's own village it cut the three-tile lane up to a store's door — a lane, not a stub — while changing nothing
         // in any shape the probe draws. The clumps above are what keep a hub tidy.
         Walk();
+        int ringsOpened = 0;
+        if (buildingOf is not null)
+        {
+            KeepTheBusierSides(buildingOf);
+        }
 
         // ⭐⭐ BUT A CLUMP WIDER THAN 3 × 3 IS A PLAZA, NOT A CROSSING (D605, Joe's star: "doesn't look organic - how would
         // real humans behave on those paths?"). A packed square thins to a mesh whose junction pixels all touch, so it was one
@@ -524,7 +539,146 @@ internal sealed class TrailNetwork
             lanes.AddRange(Doorsteps(buildingOf));
         }
 
-        return new TrailNetwork(lanes, junctions, bridged, cuts);
+        return new TrailNetwork(lanes, junctions, bridged, cuts, ringsOpened);
+
+        // ⭐ A RING ROUND ONE SMALL BUILDING KEEPS ITS BUSIER SIDE (Joe, D607: "weird looking paths" — rings and hooks round
+        // single stores; his call, "Busier side only"). People do wear both sides of a store they pass from both ways, but a
+        // lane circling it reads as nobody going in. Two lanes between the same two junctions that together ring exactly one
+        // building — at most `RingAtMost` pixels round — lose the less worn (by mean grade; then the longer; then the later);
+        // a lane that leaves a junction, rings one building and comes back is cut at its far point, and its busier half kept
+        // as a dead end. The ground stays worn; the drawing says which way it is walked.
+        void KeepTheBusierSides(int[] buildings)
+        {
+            var dropped = new HashSet<int>();
+            for (int p = 0; p < paths.Count; p++)
+            {
+                List<int> path = paths[p];
+                if (closed[p] || path.Count < 2 || dropped.Contains(p))
+                {
+                    continue;
+                }
+
+                int a = Key(path[0]), b = Key(path[^1]);
+                if (SamePlace(path[0], path[^1]))
+                {
+                    if (path.Count <= RingAtMost && RingsOneBuilding(path, buildings))
+                    {
+                        int middle = path.Count / 2;
+                        List<int> first = path.GetRange(0, middle + 1);
+                        List<int> second = path.GetRange(middle, path.Count - middle);
+                        second.Reverse();
+                        List<int> kept = MeanGrade(second) > MeanGrade(first) ? second : first;
+                        ends[ReferenceEquals(kept, first) ? b : a]--;
+                        ends[Key(kept[^1])]++;
+                        paths[p] = kept;
+                        ringsOpened++;
+                    }
+
+                    continue;
+                }
+
+                for (int q = p + 1; q < paths.Count; q++)
+                {
+                    List<int> other = paths[q];
+                    if (closed[q] || other.Count < 2 || dropped.Contains(q)
+                        || !((SamePlace(other[0], path[0]) && SamePlace(other[^1], path[^1])) || (SamePlace(other[0], path[^1]) && SamePlace(other[^1], path[0])))
+                        || path.Count + other.Count > RingAtMost)
+                    {
+                        continue;
+                    }
+
+                    var ring = new List<int>(path);
+                    var back = new List<int>(other);
+                    if (SamePlace(back[0], path[0]))
+                    {
+                        back.Reverse();
+                    }
+
+                    ring.AddRange(back.Skip(1).Take(back.Count - 2));
+                    if (!RingsOneBuilding(ring, buildings))
+                    {
+                        continue;
+                    }
+
+                    float mp = MeanGrade(path), mq = MeanGrade(other);
+                    int loser = mp < mq ? p : mq < mp ? q : other.Count > path.Count ? q : path.Count > other.Count ? p : q;
+                    dropped.Add(loser);
+                    ringsOpened++;
+                    ends[Key(paths[loser][0])]--;
+                    ends[Key(paths[loser][^1])]--;
+                    break;
+                }
+            }
+
+            foreach (int p in dropped.OrderDescending())
+            {
+                paths.RemoveAt(p);
+                closed.RemoveAt(p);
+            }
+        }
+
+        float MeanGrade(List<int> path) => (float)path.Average(i => shape[i]);
+
+        // Two lane ends are one place when they share a junction or lie within two pixels — a junction the thinning split in
+        // two, joined by a one-pixel stub, is still one crossing (D607: the ring in the probe's shape ended at two such).
+        bool SamePlace(int i, int j) =>
+            Key(i) == Key(j) || (Math.Abs((i % width) - (j % width)) <= 2 && Math.Abs((i / width) - (j / width)) <= 2);
+
+        // Whether a ring of pixels encloses tiles of exactly one building and nothing worn of its own inside.
+        bool RingsOneBuilding(List<int> ring, int[] buildings)
+        {
+            int x0 = ring.Min(i => i % width), x1 = ring.Max(i => i % width);
+            int y0 = ring.Min(i => i / width), y1 = ring.Max(i => i / width);
+            var onRing = new HashSet<int>(ring);
+            int building = 0;
+            for (int y = y0; y <= y1; y++)
+            {
+                for (int x = x0; x <= x1; x++)
+                {
+                    int i = (y * width) + x;
+                    if (onRing.Contains(i) || !Inside(x, y))
+                    {
+                        continue;
+                    }
+
+                    if (buildings[i] == 0)
+                    {
+                        if (line[i])
+                        {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
+                    if (building != 0 && buildings[i] != building)
+                    {
+                        return false;
+                    }
+
+                    building = buildings[i];
+                }
+            }
+
+            return building != 0;
+
+            // Ray to the east, crossing the ring's edges between pixel centres.
+            bool Inside(int x, int y)
+            {
+                bool inside = false;
+                for (int k = 0; k < ring.Count; k++)
+                {
+                    int p = ring[k], q = ring[(k + 1) % ring.Count];
+                    float px = p % width, py = p / width, qx = q % width, qy = q / width;
+                    if ((py > y) != (qy > y) && x < px + ((y - py) * (qx - px) / (qy - py)))
+                    {
+                        inside = !inside;
+                    }
+                }
+
+                return inside;
+            }
+        }
 
         // The tree joining a plaza's arrivals along its own pixels (D605): from the first arrival, the nearest one not yet
         // joined is reached from the whole tree at once, lowest pixel first, and its path becomes part of the tree; then the
@@ -666,8 +820,9 @@ internal sealed class TrailNetwork
             {
                 bool reached = false;
                 var steps = new SortedDictionary<int, int>();
-                // Reached when a lane runs against one of its faces AND is drawn there — past a corner is passing, not
-                // arriving; and a lane through a packed patch is placed on the patch's middle, a tile off the wall.
+                // ⭐ REACHED ONLY WHEN A LANE IS DRAWN TOUCHING ITS WALL (Joe, D607: "paths not connecting to building
+                // entrances" — his red marks in D600's screenshot are spurs from the passing lane to each wall). A lane
+                // passing a tile off, drawn on its own tile's middle, goes BY the building; it gets its spur.
                 foreach (int t in tiles)
                 {
                     int tx = t % width, ty = t / width;
@@ -677,7 +832,7 @@ internal sealed class TrailNetwork
                         int nx = tx + dx, ny = ty + dy;
                         int step = (ny * width) + nx;
                         reached |= nx >= 0 && ny >= 0 && nx < width && ny < height && line[step] && linked.Step(t, dx, dy)
-                            && PointOf(step).DistanceTo(wallTile) <= DoorstepReachedWithin;
+                            && PointOf(step).DistanceTo(wallTile) <= DoorstepTouches;
                         if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[step] > 0 && !blocked[step]
                             && linked.Step(t, dx, dy) && !steps.ContainsKey(step))
                         {
@@ -770,7 +925,8 @@ internal sealed class TrailNetwork
                     (drawn, graded) = Chaikin(drawn, graded, false, Crosses);
                 }
 
-                added.Add(new Lane(drawn, graded, false, false, true));
+                // ⚠️ No taper at the wall (D607): a spur meets the building at full width, or it reads as stopping short.
+                added.Add(new Lane(drawn, graded, false, false, false));
             }
 
             return added;

@@ -201,6 +201,7 @@ public sealed class TradeWordsTests
         SimLoop loop = AVillage();
         SimWorld world = loop.World;
         Assert.Empty(world.SayTheRegion());
+        Assert.StartsWith("The region wakes", Assert.Single(world.SayTheRegionInBrief()), StringComparison.Ordinal);
 
         TradeTests.RaiseAPost(world);
         for (int t = 0; t <= world.Config.TicksPerSeason && world.RegionAwakeSince == 0UL; t++)
@@ -220,6 +221,12 @@ public sealed class TradeWordsTests
         Assert.Contains($"Has plenty of {world.GoodsCatalog.NameOf(row.Makes[0].Goods)}", words, StringComparison.Ordinal);
         Assert.Contains("Short of", words, StringComparison.Ordinal);
         Assert.EndsWith("its rates are said here.", words, StringComparison.Ordinal);
+
+        // And in brief, a line a neighbour, for the top of the post's window (D607).
+        IReadOnlyList<string> brief = world.SayTheRegionInBrief();
+        Assert.Equal(world.Config.Neighbours.Count, brief.Count);
+        Assert.StartsWith($"{name}, up the river — plenty of {world.GoodsCatalog.NameOf(row.Makes[0].Goods)}", brief[up], StringComparison.Ordinal);
+        Assert.Contains("short of", brief[up], StringComparison.Ordinal);
 
         Goods sell = row.Wants[0].Goods, buy = row.Makes[0].Goods;
         Assert.True(world.SetTradeKeep(sell, 0).Allowed);

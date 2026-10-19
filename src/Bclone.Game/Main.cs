@@ -3435,7 +3435,14 @@ public partial class Main : Control
 
         // ⭐ The barn and the post are workplaces whose store is their own building (D596): their card is the
         // workplace's — the herd, the post's window — and it reads the store from there.
-        if (world.StoreAt(tile) is { Kind: StoreKind.Barn or StoreKind.TradingPost }
+        // ⭐ AND THE POST OPENS ITS WINDOW (Joe, D607: "the trading post's window is missing a lot of important information
+        // … no region, no items to sell" — he was reading the card; the window was a button away, and no order was ever
+        // set). The card is a button on the window.
+        if (world.StoreAt(tile) is { Kind: StoreKind.TradingPost } && world.WorkplaceCovering(tile) is { Kind: JobKind.Merchant } post)
+        {
+            OpenThePostsWindow(post.Id);
+        }
+        else if (world.StoreAt(tile) is { Kind: StoreKind.Barn or StoreKind.TradingPost }
             && world.WorkplaceCovering(tile) is { Kind: JobKind.Herdsman or JobKind.Merchant } trade)
         {
             OpenCard(new CardSubject(CardKind.Workplace, trade.Id));

@@ -28,6 +28,7 @@ public partial class Main
     {
         public required PanelContainer Panel { get; init; }
         public required Label Title { get; init; }
+        public required Label Region { get; init; }
         public required Label Note { get; init; }
         public required Label BoatLine { get; init; }
         public required Button SendOn { get; init; }
@@ -97,9 +98,19 @@ public partial class Main
         var region = new Button { Text = "The region", TooltipText = "The neighbours: what they have plenty of, what they are short of, and their rates for these orders." };
         region.Pressed += OpenTheRegionWindow;
         head.AddChild(region);
+
+        // The post's card — its merchant's seat and its settings — since a click on the post opens this window (D607).
+        var card = new Button { Text = "Card", TooltipText = "The post's card: its merchant and its settings." };
+        head.AddChild(card);
         var close = new Button { Text = "✕", Flat = true, TooltipText = "Close" };
         head.AddChild(close);
         column.AddChild(head);
+
+        // ⭐ The region first, a line a neighbour (Joe, D607: the window had "no region") — what each has plenty of and is
+        // short of; *The region* above has the rates.
+        Label regionLines = Wrapped(Muted(string.Empty));
+        regionLines.CustomMinimumSize = new Vector2(PostWindowWidth - 40f, 0);
+        column.AddChild(regionLines);
 
         // ⚠️ Each sentence gets the width it wraps at: an autowrapping label measures its height at its own width, and
         // with none it stood a word a line — 165 and 137 tall (D597's probe, part by part).
@@ -132,6 +143,7 @@ public partial class Main
         {
             Panel = panel,
             Title = title,
+            Region = regionLines,
             Note = note,
             BoatLine = boatLine,
             SendOn = sendOn,
@@ -183,6 +195,13 @@ public partial class Main
         MakeDraggable(grip, panel);
         MakeDraggable(title, panel);
         close.Pressed += () => panel.Visible = false;
+        card.Pressed += () =>
+        {
+            if (_postWindow is PostWindow open)
+            {
+                OpenCard(new CardSubject(CardKind.Workplace, open.PostId));
+            }
+        };
         sendOn.Pressed += () => ActInThePostsWindow(() => SayTheVerdict(_loop.World.SendTheBoatOn()));
         w.HeadOn.Toggled += on => ActInThePostsWindow(() => SayTheVerdict(_loop.World.SetTradeBuyHead(on ? (int)w.HeadAmount.Value : null)));
         w.HeadAmount.ValueChanged += value => ActInThePostsWindow(() =>
@@ -201,8 +220,11 @@ public partial class Main
     /// <summary>Two columns of rows and the gap between them — the rows' own widths, measured by the probe (716).</summary>
     private const float PostWindowWidth = 720f;
 
-    /// <summary>The tallest the window may stand — the probe holds it to this (Joe, D597: <i>"way too long"</i>).</summary>
-    private const float PostWindowTallest = 480f;
+    /// <summary>
+    /// The tallest the window may stand — the probe holds it to this (Joe, D597: <i>"way too long"</i> at 641, its names
+    /// clipped to nothing). 480 until D607 put the region's three lines at the top; 560 with them.
+    /// </summary>
+    private const float PostWindowTallest = 560f;
 
     private const float PostNameWidth = 84f;
     private const float PostHeldWidth = 52f;
@@ -250,7 +272,7 @@ public partial class Main
     private readonly record struct OrderFacts(bool Shown, int Held, int? Keep, int? Buy, string Waits);
 
     /// <summary>What the post's window says — read from the sim once, written by <see cref="WriteThePostsWindow"/>.</summary>
-    private readonly record struct PostFacts(string Title, string Note, string BoatLine, bool Docked, OrderFacts[] Orders, int? Head);
+    private readonly record struct PostFacts(string Title, string Region, string Note, string BoatLine, bool Docked, OrderFacts[] Orders, int? Head);
 
     /// <summary>Write the window as the village stands, if it is open; close it if its post is gone.</summary>
     private void RefreshThePostsWindow(SimWorld world)
@@ -283,12 +305,13 @@ public partial class Main
         string boatLine = world.Boat is TradeBoat boat && world.Tick >= boat.AppearsAtTick && world.Tick <= boat.LeavesAtTick
             ? $"{due} It carries {WhatTheBoatCarries(world, boat)}."
             : due;
-        WriteThePostsWindow(w, new PostFacts(post.Name, world.SayWhatThePostWillDo(), boatLine, world.BoatIsDocked, orders, world.TradeBuyHead));
+        WriteThePostsWindow(w, new PostFacts(post.Name, string.Join('\n', world.SayTheRegionInBrief()), world.SayWhatThePostWillDo(), boatLine, world.BoatIsDocked, orders, world.TradeBuyHead));
     }
 
     private static void WriteThePostsWindow(PostWindow w, PostFacts f)
     {
         w.Title.Text = $"{f.Title} — what the village sells and buys";
+        w.Region.Text = f.Region;
         w.Note.Text = f.Note;
         w.SendOn.Disabled = !f.Docked;
         w.SendOn.TooltipText = f.Docked ? "The boat leaves on the next tick." : "No boat is tied up at the post.";

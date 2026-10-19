@@ -219,6 +219,56 @@ public sealed partial class SimWorld
     }
 
     /// <summary>
+    /// The region in a line a neighbour, for the top of the post's window (Joe, D607: the window had <i>"no region"</i>):
+    /// <i>"Ashbourne, up the river — plenty of logs, stone and iron; short of wheat and bread."</i> The full words, with
+    /// the rates, are <see cref="SayTheRegion"/>'s. One line saying when it wakes while the region sleeps.
+    /// </summary>
+    public IReadOnlyList<string> SayTheRegionInBrief()
+    {
+        if (RegionAwakeSince == 0UL)
+        {
+            return new[] { "The region wakes the season after a trading post stands." };
+        }
+
+        var lines = new List<string>();
+        for (int n = 0; n < Config.Neighbours.Count; n++)
+        {
+            NeighbourRow row = Config.Neighbours[n];
+            NeighbourStock stock = NeighbourStocks[n];
+            var plenty = row.Makes.Where(m => stock.Held[(int)m.Goods] >= m.Amount).Select(m => GoodsCatalog.NameOf(m.Goods)).ToList();
+            if (row.MakesAnimals > 0 && Config.Animals.Count > 0 && stock.Animals >= row.MakesAnimals)
+            {
+                plenty.Add(Config.Animals[0].Plural);
+            }
+
+            var shortOf = row.Wants.Where(w => stock.Held[(int)w.Goods] < w.Amount).Select(w => GoodsCatalog.NameOf(w.Goods)).ToList();
+            string where = row.Direction switch
+            {
+                NeighbourDirection.Upriver => "up the river",
+                NeighbourDirection.Downriver => "down the river",
+                _ => "overland, no road yet",
+            };
+            var parts = new List<string>();
+            if (plenty.Count > 0)
+            {
+                parts.Add($"plenty of {Together(plenty)}");
+            }
+
+            if (shortOf.Count > 0)
+            {
+                parts.Add($"short of {Together(shortOf)}");
+            }
+
+            lines.Add($"{NeighbourName(n)}, {where} — {(parts.Count == 0 ? "nothing to spare and nothing wanted" : string.Join("; ", parts))}.");
+        }
+
+        return lines;
+
+        static string Together(List<string> goods) =>
+            goods.Count == 1 ? goods[0] : string.Join(", ", goods.Take(goods.Count - 1)) + " and " + goods[^1];
+    }
+
+    /// <summary>
     /// What the post's orders will do, in one sentence — the post's window (Joe, D596: <i>"a keep order alone sells
     /// nothing, and the post's window says to set what to buy"</i>).
     /// </summary>

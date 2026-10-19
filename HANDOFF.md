@@ -1,6 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D606 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS, COMMIT 7) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS TRADE END TO END, THEN HIS CALL ON MERGING. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D584, PUSHED. `slice/pause-probe` = D585 (THE PROBE'S `pause:` GREEN), `slice/trade` = D586–D607 (THE TRADE SPEC, COMMITS 0–6, VIEW I PLAYED AND FIXED, THE FENCED PASTURE, JOE'S PLAY NOTES: THE FENCE, THE FORGE, THE MARKET, THE BUILDERS, THE SEATS, THE WELL'S RING, THE PATHS, COMMIT 7, TRADE PLAYED) ON TOP OF IT — BOTH LOCAL, UNMERGED. NEXT: JOE PLAYS D607; DOORS SPEC'D; MERGING HIS CALL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D606: COMMIT 7 — THE BOAT SAILS, THE REGION IS SAID) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D607: JOE PLAYED TRADE — THE POST'S WINDOW, SPURS, RINGS) — ON WINDOWS.**
+>
+> **`slice/trade`** = D585–**D607**, local. Joe played trade: his village never set an order (the window was behind the
+> card). **Built (D607):** a click on the post opens its window, the region in brief at its top; a spur from a passing
+> lane to every building's wall; a ring round one building opened to its busier side. Walls touched by a lane on his
+> villages: 23 → 46 of 48, 23 → 30 of 31, 17 → 42 of 42, 17 → 31 of 31. **Unplayed.**
+>
+> **▶️ NEXT:** Joe plays D607; **doors** get a spec of their own (his call: spurs now, doors later — every building a
+> door on its front, walkers in and out through it, paths wearing to doors; goldens move, survival measured).
+> Merging `slice/pause-probe` and `slice/trade` stays his word.
+>
+> **(the banner below is the state at D606)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D606: COMMIT 7 — THE BOAT SAILS, THE REGION IS SAID) — ON WINDOWS.**
 >
 > **`slice/trade`** = D585–**D606**, local. Joe played the paths (D605): *"everything looks good. proceed."* **Built
 > (D606, `trade.md §11` commit 7 — the first trade build is complete):** the boat sails the river from its edge past the
@@ -7347,6 +7360,14 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D607 PAID FOR — A CARD READ AS THE WINDOW, AND AN ESCAPE THAT BECAME A NEWLINE
+
+- ⭐ **When Joe says a window lacks something, check which panel his screenshot is.** It was the post's card; the window
+  had it all a button away — and his save showed no order ever set, which is what the missing information cost him.
+- ⛔ **`\\n` inside a Python edit script written through a quoted heredoc still became a real newline in the C#** — the
+  memory's rule again: write edit scripts with the Write tool, and for a newline in C# prefer `'\\n'` as a char or
+  `string.Join` over a string escape.
 
 ## ⛔ THE TRAPS D606 PAID FOR — A GODOT THAT WAS JOE'S
 

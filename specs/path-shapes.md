@@ -8,7 +8,7 @@ field), D122 (the last time the route chain moved by a tile it froze nineteen pe
 NOT BUILT — his newest save showed it would not reach what he saw (§4.E); his call: E. ✅ OPTION E BUILT (D581) — view
 only, `TrailNetwork` (`desire-paths.md` slice 2 says how). ✅ Played: *"what do you think?"* — the ladders, rings and
 blob gone; one lane drawn across a one-tile store — D582 cut it at the walls, and Joe: *"the path should go around the
-building"* — D583 routes it round on the worn ground. ✅ Joe looked and approved (*"merge and push"*, D584). C stays here for villages of many homes.** · ✅ **§4.F — fences, the plaza, doorsteps (D605), built; PLAYED AND APPROVED (Joe, D606: *"everything looks good. proceed."*).** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
+building"* — D583 routes it round on the worn ground. ✅ Joe looked and approved (*"merge and push"*, D584). C stays here for villages of many homes.** · ✅ **§4.F — fences, the plaza, doorsteps (D605), built; PLAYED AND APPROVED (Joe, D606: *"everything looks good. proceed."*).** · ✅ **§4.G — spurs to the walls, rings opened (D607), built, NOT YET PLAYED.** `tools/harness/ZzPathShape.cs` + `pathshape.py`. The two sim prototypes in §3 lived
 in a throwaway worktree and are gone.
 Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 
@@ -184,3 +184,31 @@ the shape you imagined.*
 **Unchanged:** the sim, its walks and its wear; one cost field; no golden. View only, rebuilt on the paths' generation and
 now the walls' (`ZoneMap.WallGeneration`), never per frame. Probe `trails:` gains a fence (and a gate), a plaza and a
 doorstep, each red-checked (D605).
+
+## 4.G Spurs to the walls, and rings opened to their busier side (D607) — Joe's notes playing trade
+
+Joe, playing D606: *"weird looking paths and paths not connecting to building entrances"* — screenshots of lanes hooking
+round single stores, rings round them, and lanes ending beside a building, not at it. Read on his newest village
+(oakhaven Y60, and Y23) before building: the lanes DO run against the buildings — between the stockpiles, along the
+granary — but drawn on their own tiles' middles, a tile off the wall, they go *by*; and **no building but a house has a
+door** (walkers enter by the cheapest side, D383), so nothing says where a spur should land. His red marks in D600's
+screenshot were exactly this: short spurs from the passing lane to each wall. **His calls (2026-10-19):** spurs now,
+real doors later (a spec of their own); a ring round a single building keeps its busier side.
+
+1. **A spur to every wall a lane only passes.** A building is reached only when a lane is drawn within 0.75 of one of its
+   tiles (`DoorstepTouches`) — touching its wall; anything further gets the doorstep lane of §4.F, now drawn at full width
+   to within 0.05 of the wall's tile (no taper — a taper read as stopping short). On the side the worn ground reaches,
+   until doors say which side is the door.
+2. **A ring round one small building keeps its busier side** (`KeepTheBusierSides`): two lanes between the same two
+   junctions (or two a thinning split, within two pixels) that together ring exactly one building — at most 20 pixels
+   round, nothing worn inside — lose the less
+   worn (mean grade; then the longer; then the later); a lane that leaves a junction, rings one building and comes back
+   is cut at its far point and its busier half kept. The ground stays worn; the drawing says which way it is walked.
+
+**Measured (the real network on his villages, D606 → D607):** walls a lane touches — dove Y58 23 → 46 of 48, willow Y71
+23 → 30 of 31, ash Y62 17 → 42 of 42, oakhaven Y60 17 → 31 of 31, oakhaven Y23 12 → 21 of 21 (the rest are worn patches
+no worn ground joins to a lane); rings opened: ash 3, oakhaven Y60 1 (round the smithy's corner — the probe's case, its left
+side posed only worn), Y23 0. ⚠️ The rings in his screenshots were at a year between his saves — not measured directly.
+⚠️ A ring drawn by hand thinned to one arc, and one round a 2 × 2 thinned into a plaza: both red checks scored zero
+until the probe carried his own ring. A ring that thins into a plaza is drawn as the plaza's tree and a lane round it —
+not handled here. Probe `trails:` gains a spur and his ring.
