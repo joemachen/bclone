@@ -338,7 +338,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "_terrainGeneration", "BuildingGeneration", "StandingGeneration", "_standing", "_standingOwner",
             "_standingFootprints", "_standingBuiltAt", "_freeGroundToday", "_freeGroundTodayGeneration",
-            "_freeGroundTodayWalls", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
+            "_freeGroundTodayWalls", "_freeGroundTodayPieces", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_seamTiles", "_mostEverAliveFor", "_mostEverAlive",

@@ -141,6 +141,55 @@ public sealed class StalledSiteTests
         Assert.Null(world.SiteWaitingNote(site));
     }
 
+    /// <summary>⛔ A site nobody can reach says it is walled in (D614) — the builders never serve it.</summary>
+    /// <remarks>
+    /// Established seed 18's repair of woodcutter's hut 1 stood twelve years shut in by a house on the founding site,
+    /// with 401 logs in the warehouse, while its builders rested saying nothing was marked out. <c>NextToBuild</c> skips a
+    /// site it cannot reach, by the question this note asks. Every edge of the site walled here by hand.
+    /// </remarks>
+    [Fact]
+    public void ASiteNobodyCanReachSaysItIsWalledIn()
+    {
+        SimConfig config = VillageFixtures.Village;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos at = ClearGroundNear(world, BuildingKind.Granary);
+        Assert.True(world.Mark(BuildingKind.Granary, at).Allowed);
+        Workplace site = SiteFor(world, BuildingKind.Granary);
+        Assert.DoesNotContain("walled in", world.SiteWaitingNote(site) ?? string.Empty);
+
+        List<GridPos> covered = site.Footprint.CoveredTiles();
+        foreach (GridPos tile in covered)
+        {
+            foreach (var beyond in new[]
+            {
+                new GridPos(tile.X, tile.Y - 1), new GridPos(tile.X + 1, tile.Y),
+                new GridPos(tile.X, tile.Y + 1), new GridPos(tile.X - 1, tile.Y),
+            })
+            {
+                if (!covered.Contains(beyond) && world.Map.Contains(beyond))
+                {
+                    world.Zones.Wall(tile, beyond, up: true);
+                }
+            }
+        }
+
+        Assert.False(world.TravelCost.CanReach(world.FirstHomeOrFoundingSite(), site.Tile), "The site is still reached, so nothing is walled in.");
+        Assert.Null(world.NextToBuild());
+
+        string? note = world.SiteWaitingNote(site);
+        _output.WriteLine($"the site says: {note ?? "(nothing)"}");
+        Assert.NotNull(note);
+        Assert.Contains("walled in", note);
+
+        // ⚠️ And a builder asking for work says the same, not "Nothing is marked out to build" — which is what seed 18's
+        // three said for twelve years beside it.
+        Villager builder = world.Villagers[0];
+        Assert.False(Bclone.Sim.Systems.BehaviorSystem.WorkTheSiteForTest(world, builder));
+        _output.WriteLine($"the builder says: {builder.WorkNote}");
+        Assert.Contains("walled in", builder.WorkNote);
+    }
+
     /// <summary>⭐⭐ The village log carries it too, once, and not every season after.</summary>
     /// <remarks>
     /// <b>Both halves from one method</b>, which is D195's rule for the at-risk line and the

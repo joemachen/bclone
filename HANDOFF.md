@@ -20,6 +20,13 @@
 > what is left); place a quarry by rock and watch the ghost, then the palisade. Merging `slice/d607-notes` is his word.
 > **Waiting on him too:** the walled-in-hut fix (a session card, `task_bb33ea9f`); the doors spec card (`task_a4066d55`).
 >
+> ⛔ **The walled-in hut is fixed on `slice/fence-edge` (D614), one commit on top of `slice/d607-notes` (21e0a17), local,
+> unmerged.** Not a fence and not the map's edge: a house sited ON the free founding site filled the only gap into twelve
+> tiles of ground, and the wall-off sweep — which starts beside the founding site — had seeds inside the pocket and called
+> it the village. Now ground that is one piece today stays one piece (`SimWorld.TheVillagesPiece`), and a site nobody can
+> reach says *"… is walled in"* (and so do its builders). No golden moved. Merging it (after or with `slice/d607-notes`)
+> is Joe's word. Suite at D614: **1802 / 0 / 5 of 1807** (11m25 / 12m53); goldens grep 383 lines, unchanged; probe 97 lines.
+>
 > **The numbers a session checks against (as of D613):** suite **1798 / 0 / 5 of 1803**, its clock **≈ 11–12 min**;
 > probe **97 `[widths]` lines**, bar 151; the goldens grep **383 lines**.
 >
@@ -7412,6 +7419,25 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D614 PAID FOR — A BRIEF'S CAUSE IS A HYPOTHESIS, A PICTURE MISREAD BY ONE COLUMN, AND A GUARD THAT ASSERTED THE HOLE AWAY
+
+- ⭐ **The cause that came with the bug was wrong twice** — *"a yard's fence against the map's edge"*. The map runs x −60..59,
+  so (0, 2) is its middle, and no fence went up that day: a house filled a gap on the founding site. Trace the day the
+  reach flips and print the ground round it (walkable, standing *and what*, plot owner, walls, **reached or not per tile**)
+  before writing a sentence about why. *D611's trap said the same of a death count; it holds for a filed cause too.*
+- ⛔ **A picture without column labels was misread by one column** and produced a plausible three-tile pocket that did not
+  exist (one of its "walls" was open ground). The fix was right and its story was wrong; the second trace, with `x=`
+  headers and an `R` for reached per tile, showed twelve tiles and the one gap. **Label the axes of a trace you will
+  reason from, and print the answer per tile rather than inferring it from the walls.**
+- ⚠️ **A guard's precondition can be the bug, stated.** `AHouseThatWouldFenceSomebodyInIsRefusedByName` asserts *"The
+  founding site is inside the ring, so the sweep starts inside it and nothing is shut in"* — exactly the hole, written
+  down in 2026-09 as a reason to pose elsewhere. When a guard needs a precondition to dodge a case, ask whether the case
+  is a bug.
+- **`SaveLoadTests.EveryFieldIsSavedOrNamed` fails on any new field of `SimWorld`**, a derived cache included: name it in
+  its list (this one: `_freeGroundTodayPieces`). Run that class with `--filter` after adding a field, not 11 minutes later.
+- **Two zeros kept:** the proposal itself not scored (only tie-breaks no pose reaches), and a bridge's pull-down off the
+  rule (no guard pulls a deck down beside the founding site). If either ever matters, that is where its guard goes.
+
 ## ⛔ THE TRAPS D613 PAID FOR — A GUARD WHOSE NEAR SEAM WAS ALSO FIRST, AND A CORNER THAT WAS THE CHECK'S OWN
 
 - ⚠️ **A "nearest" guard must pose the far one first in the other order.** The first pose put the near seam north — first
@@ -7445,7 +7471,8 @@ Read `git status` after staging, every time.
   trace off the old code. Every harness build now greps for `0 Error(s)` and stops if it is missing.
 - ⭐ **A death count that jumps is a valley to trace, not a number to report.** Established froze 2 → 42 was ONE valley,
   and its cause was a woodcutter's hut walled in against the map's edge (`NextToBuild` skips what it cannot reach) — a
-  bug older than the change, which the change only reached sooner. `scratchpad/ZzFuel.cs`'s shape (where each good is,
+  bug older than the change, which the change only reached sooner. *(⚠️ D614: not the map's edge — a house on the
+  founding site closed a pocket the wall-off sweep had seeds inside. See D614's traps.)* `scratchpad/ZzFuel.cs`'s shape (where each good is,
   each worker's note, each site's materials and reach) found it in three runs.
 
 ## ⛔ THE TRAPS D610 PAID FOR — A MUTANT RED FOR THE WRONG REASON, AND A POINT-BASED CUT ON A CURVE WITH NO POINTS

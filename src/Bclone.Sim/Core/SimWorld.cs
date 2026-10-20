@@ -5023,6 +5023,15 @@ public sealed partial class SimWorld : IObstacles
             return null;
         }
 
+        // ⛔ A SITE NOBODY CAN REACH IS NEVER SERVED (D614) — `NextToBuild` skips it, by the same question asked here, so
+        // the player hears it rather than watching a ruin wait for ever. Established seed 18's woodcutter's hut was walled
+        // in for twelve years in silence and the village froze for it.
+        if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), workplace.Tile))
+        {
+            return $"{plan.Name} is walled in — nobody can reach it, so the builders cannot raise it. Clear a way to it, "
+                + "or it will stand as it is.";
+        }
+
         for (int m = 0; m < plan.Recipe.Materials.Count; m++)
         {
             Goods wants = plan.Recipe.Materials[m].Goods;
@@ -12635,6 +12644,9 @@ public sealed partial class SimWorld : IObstacles
     private int _freeGroundTodayGeneration = -1;
     private int _freeGroundTodayWalls = -1;
 
+    /// <summary>Today's free ground in pieces, for <see cref="TheVillagesPiece"/> — derived from the sweep above, never hashed.</summary>
+    private int[]? _freeGroundTodayPieces;
+
     /// <summary>
     /// What a building here would cut off from the village — a name, or null if nothing (D383).
     /// </summary>
@@ -12687,6 +12699,7 @@ public sealed partial class SimWorld : IObstacles
             || _freeGroundTodayWalls != Zones.WallGeneration)
         {
             _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
+            _freeGroundTodayPieces = null;
             _freeGroundTodayGeneration = StandingGeneration;
             _freeGroundTodayWalls = Zones.WallGeneration;
         }
@@ -12756,7 +12769,7 @@ public sealed partial class SimWorld : IObstacles
     {
         if (AlwaysSweepTheWholeValley)
         {
-            return SweepTheFreeGround(proposedTiles, fence);
+            return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
         }
 
         var closed = new HashSet<int>();
@@ -12799,7 +12812,7 @@ public sealed partial class SimWorld : IObstacles
         GridPos site = Map.FoundingSite;
         if (site.X >= minX - 1 && site.X <= maxX + 1 && site.Y >= minY - 1 && site.Y <= maxY + 1)
         {
-            return SweepTheFreeGround(proposedTiles, fence);
+            return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
         }
 
         // The boundary: reached today, not closed, and beside a closed tile or on a new wall.
@@ -12850,7 +12863,7 @@ public sealed partial class SimWorld : IObstacles
             {
                 if (!seen.Contains(boundary[i]))
                 {
-                    return SweepTheFreeGround(proposedTiles, fence);
+                    return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
                 }
             }
 
@@ -13069,6 +13082,159 @@ public sealed partial class SimWorld : IObstacles
             reached[index] = true;
             queue[tail++] = index;
         }
+    }
+
+    /// <summary>
+    /// ⛔⛔ The free ground after a proposal, kept to the village's piece of it (D614) — where the proposal splits one piece of
+    /// today's ground in two, the piece most of what stands touches is the village, and the rest is walled off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Established seed 18 froze for this.</b> <see cref="SweepTheFreeGround"/> starts beside the founding site — the
+    /// site's own neighbours even when the site is free, and the tiles beside whatever stands on it. So a proposal ON the site,
+    /// or beside what stands there, can close the only way into a pocket one of those seeds sits in, and the sweep starts
+    /// inside the pocket: everything in it is "reached". In Spring, Year 29 a house went up on the free founding site and
+    /// filled the two-tile gap that was the only way into twelve tiles of ground walled by the warehouse, the granary, two
+    /// houses, the market, the builder's hut and three yards' fences — woodcutter's hut 1 touching nothing else. The sweep
+    /// seeded beside the site on both sides of the new house and called the hut fine. Nobody reached it again: it fell in, its repair site was never served
+    /// (<see cref="NextToBuild"/> skips what it cannot reach), and all 41 villagers froze in Year 43.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The rule is the invariant, not a better seed:</b> ground that is one piece today must not become two that both hold
+    /// something. Each piece of the after-ground lies inside one piece of today's (a proposal only closes ground), so per piece
+    /// of today's the after-piece touched by the most shapes — what stands, the proposal itself and the founding site — is
+    /// kept, ties to the first found, and the rest dropped. A shape left touching only a dropped piece is then walled off by
+    /// the ordinary test, and named. Ground already in pieces today (a hut the generator put across the water) stays in them:
+    /// <i>against today, not against perfection</i>.
+    /// </para>
+    /// <para>
+    /// Only the full sweeps come through here: the quick local answer has already shown the proposal cuts nothing.
+    /// </para>
+    /// </remarks>
+    private bool[] TheVillagesPiece(bool[] before, bool[] after, IReadOnlyList<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence)
+    {
+        int[] afterPieces = PiecesOf(after, fence, out int count);
+        if (count <= 1)
+        {
+            return after;
+        }
+
+        int[] beforePieces;
+        if (ReferenceEquals(before, _freeGroundToday))
+        {
+            _freeGroundTodayPieces ??= PiecesOf(before, null, out _);
+            beforePieces = _freeGroundTodayPieces;
+        }
+        else
+        {
+            beforePieces = PiecesOf(before, null, out _);
+        }
+
+        // How many shapes touch each after-piece, across an edge with no wall on it.
+        var touching = new int[count + 1];
+        var counted = new HashSet<int>();
+        for (int i = 0; i < _standingFootprints.Count; i++)
+        {
+            Score(_standingFootprints[i]);
+        }
+
+        if (proposedTiles.Count > 0)
+        {
+            Score(proposedTiles);
+        }
+
+        Score(new[] { Map.FoundingSite });
+
+        // Per piece of today's ground, the after-piece most shapes touch; ties to the lowest, which was found first.
+        var kept = new Dictionary<int, int>();
+        for (int i = 0; i < afterPieces.Length; i++)
+        {
+            int piece = afterPieces[i];
+            if (piece != 0 && (!kept.TryGetValue(beforePieces[i], out int best) || touching[piece] > touching[best]))
+            {
+                kept[beforePieces[i]] = piece;
+            }
+        }
+
+        var village = new bool[after.Length];
+        for (int i = 0; i < afterPieces.Length; i++)
+        {
+            village[i] = afterPieces[i] != 0 && kept[beforePieces[i]] == afterPieces[i];
+        }
+
+        return village;
+
+        void Score(IReadOnlyList<GridPos> shape)
+        {
+            counted.Clear();
+            for (int i = 0; i < shape.Count; i++)
+            {
+                GridPos t = shape[i];
+                byte walls = WallsForTheSweep(t, fence);
+                if ((walls & 1) == 0) { Touch(new GridPos(t.X, t.Y - 1)); }
+                if ((walls & 2) == 0) { Touch(new GridPos(t.X + 1, t.Y)); }
+                if ((walls & 4) == 0) { Touch(new GridPos(t.X, t.Y + 1)); }
+                if ((walls & 8) == 0) { Touch(new GridPos(t.X - 1, t.Y)); }
+            }
+        }
+
+        void Touch(GridPos tile)
+        {
+            int index = IndexOfTile(tile);
+            if (index >= 0 && afterPieces[index] != 0 && counted.Add(afterPieces[index]))
+            {
+                touching[afterPieces[index]]++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The reached tiles of a sweep in pieces — 1, 2, … in tile order, 0 off the reached ground — joined only across an edge
+    /// with no wall on it (D614).
+    /// </summary>
+    private int[] PiecesOf(bool[] reached, IReadOnlyDictionary<GridPos, byte>? fence, out int count)
+    {
+        int width = Map.Width;
+        int height = Map.Height;
+        var pieces = new int[reached.Length];
+        var queue = new int[reached.Length];
+        int found = 0;
+        for (int start = 0; start < reached.Length; start++)
+        {
+            if (!reached[start] || pieces[start] != 0)
+            {
+                continue;
+            }
+
+            found++;
+            int head = 0;
+            int tail = 0;
+            pieces[start] = found;
+            queue[tail++] = start;
+            while (head < tail)
+            {
+                int at = queue[head++];
+                int x = at % width;
+                int y = at / width;
+                byte walls = WallsForTheSweep(new GridPos(x + Map.MinX, y + Map.MinY), fence);
+                if (x + 1 < width && (walls & 2) == 0) { Join(at + 1); }
+                if (x > 0 && (walls & 8) == 0) { Join(at - 1); }
+                if (y + 1 < height && (walls & 4) == 0) { Join(at + width); }
+                if (y > 0 && (walls & 1) == 0) { Join(at - width); }
+            }
+
+            void Join(int index)
+            {
+                if (reached[index] && pieces[index] == 0)
+                {
+                    pieces[index] = found;
+                    queue[tail++] = index;
+                }
+            }
+        }
+
+        count = found;
+        return pieces;
     }
 
     /// <summary>Whether a shape has a reached tile beside it, across an edge with no wall on it (D383; walls D404).</summary>
