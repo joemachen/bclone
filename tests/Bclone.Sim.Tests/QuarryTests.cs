@@ -321,6 +321,11 @@ public sealed class QuarryTests
         SimWorld world = AVillage();
         Workplace quarry = RaiseAQuarry(world, TheNearestReachableRock(world));
 
+        // ⭐ Raised, it holds the seam it stands by (D613), so it is wanted at once — and with its ground taken away (an
+        // older save's quarry that was never painted) it is not, which is the rule this guard was written for.
+        Assert.True(world.Zones.WorkGroundTiles(quarry.Id) > 0, "the premise: a raised quarry claims its seam");
+        Assert.Equal(quarry.Capacity, LabourQuota.QuarriersWanted(world));
+        world.Zones.ReleaseWorkGround(quarry.Id);
         Assert.Equal(0, LabourQuota.QuarriersWanted(world));
 
         GiveItRock(world, quarry, 6);

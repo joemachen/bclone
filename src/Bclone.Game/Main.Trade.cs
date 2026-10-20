@@ -498,6 +498,98 @@ public partial class Main
             : $"[widths] market limits: ❌ {string.Join("; ", faults)}";
     }
 
+    /// <summary>
+    /// <c>quarry claim:</c> (D613) — a posed claimed seam drawn as its palisade: one closed line round it, no corner sharper
+    /// than 45°, every point within half a tile of the seam's edge, a post about every tile of it; and the brush offered to
+    /// no trade whose ground is claimed (the quarrier and the miner) while every painted trade keeps it. The view cannot raise
+    /// a quarry (D596), so the seam is posed.
+    /// </summary>
+    private string TheClaimedSeamIsStakedRound()
+    {
+        var faults = new List<string>();
+        var seam = new List<GridPos>
+        {
+            new(30, 30), new(31, 30), new(32, 30), new(30, 31), new(31, 31), new(30, 32), new(29, 33),
+        };
+        var set = seam.ToHashSet();
+        var sides = new List<(Vector2 A, Vector2 B)>();
+        foreach (GridPos t in seam)
+        {
+            foreach ((int dx, int dy) in new[] { (0, -1), (1, 0), (0, 1), (-1, 0) })
+            {
+                if (!set.Contains(new GridPos(t.X + dx, t.Y + dy)))
+                {
+                    var mid = new Vector2(t.X + (dx / 2f), t.Y + (dy / 2f));
+                    var along = dx == 0 ? new Vector2(0.5f, 0f) : new Vector2(0f, 0.5f);
+                    sides.Add((mid - along, mid + along));
+                }
+            }
+        }
+
+        // ⚠️ (29, 33) touches the rest only at a corner — one seam (D561: eight neighbours), two pieces on the ground — so it
+        // is staked as two rings: the palisade goes round what is drawn, and a ring across a corner would stake grass.
+        List<Vector2[]> lines = VillageMap.PastureFenceLines(seam, null);
+        if (lines.Count != 2 || lines.Any(l => l.Length < 4 || l[0].DistanceTo(l[^1]) > 0.001f))
+        {
+            faults.Add($"the seam drew {lines.Count} line(s), not a closed ring round each of its two pieces");
+        }
+        else
+        {
+            Vector2[] drawn = lines.SelectMany(l => l).Select(v => VillageMap.InTileSpace(v, SubTile.PerTile)).ToArray();
+            float furthest = drawn.Max(v => sides.Min(e => v.DistanceTo(Geometry2D.GetClosestPointToSegment(v, e.A, e.B))));
+            if (furthest > 0.5f)
+            {
+                faults.Add($"a stake stands {furthest:F2} tiles from the seam's edge");
+            }
+
+            // Each ring on its own — the jump from one ring's end to the next one's start is not a corner.
+            float sharpest = 0f;
+            foreach (Vector2[] ring in lines)
+            {
+                for (int k = 1; k < ring.Length - 1; k++)
+                {
+                    Vector2 into = ring[k] - ring[k - 1];
+                    Vector2 outOf = ring[k + 1] - ring[k];
+                    if (into.LengthSquared() > 1e-8f && outOf.LengthSquared() > 1e-8f)
+                    {
+                        sharpest = Mathf.Max(sharpest, Mathf.RadToDeg(Mathf.Abs(into.AngleTo(outOf))));
+                    }
+                }
+            }
+
+            if (sharpest >= 45f)
+            {
+                faults.Add($"a corner turns {sharpest:F0}°");
+            }
+
+            int posts = lines.Sum(l => VillageMap.PalisadePosts(l).Count);
+            if (posts < sides.Count * 6 / 10 || posts > sides.Count * 12 / 10)
+            {
+                faults.Add($"{posts} posts round a seam {sides.Count} tile-sides long — not one a tile");
+            }
+        }
+
+        foreach (JobKind claims in new[] { JobKind.Quarrier, JobKind.Miner })
+        {
+            if (GroundIsPaintedFor(claims, _loop.World))
+            {
+                faults.Add($"the {claims}'s card still offers the brush");
+            }
+        }
+
+        foreach (JobKind painted in new[] { JobKind.Farmer, JobKind.Forester, JobKind.Herdsman })
+        {
+            if (!GroundIsPaintedFor(painted, _loop.World))
+            {
+                faults.Add($"the {painted}'s card lost the brush");
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] quarry claim: ✅ a posed seam of {seam.Count} tiles staked round, a closed ring round each of its two pieces, within half a tile of its edge, no corner past 45°, a post a tile; the quarrier's and the miner's cards offer no brush, the farmer's, forester's and herdsman's keep it"
+            : $"[widths] quarry claim: ❌ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Open a card on the first workplace, hand it to <paramref name="pose"/>, and close it again.</summary>
     private string? WithAPosedCard(System.Func<Card, string?> pose)
     {

@@ -259,6 +259,10 @@ public sealed class MineTests
         SimWorld world = AVillage();
         Workplace mine = RaiseAMine(world, TheNearestReachable(world, Terrain.IronDeposit));
 
+        // ⭐ Raised, it holds the seam it stands by (D613): wanted at once; with its ground taken away, not.
+        Assert.True(world.Zones.WorkGroundTiles(mine.Id) > 0, "the premise: a raised mine claims its seam");
+        Assert.Equal(mine.Capacity, LabourQuota.MinersWanted(world));
+        world.Zones.ReleaseWorkGround(mine.Id);
         Assert.Equal(0, LabourQuota.MinersWanted(world));
 
         GiveItIron(world, mine, world.Config.MineTilesPerWorker);

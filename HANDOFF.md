@@ -1,6 +1,31 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED (TRADE AND THE HERD MERGED: D585–D607, PLAYED). NEXT: JOE'S D607 NOTES ON `slice/d607-notes`, ONE COMMIT EACH — THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED. `slice/d607-notes` = D609–D613 (JOE'S D607 NOTES: THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM) — LOCAL, UNMERGED, UNPLAYED. NEXT: JOE PLAYS IT; MERGING IS HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D613: JOE'S D607 NOTES, ALL FIVE BUILT) — ON WINDOWS.**
+>
+> **`slice/d607-notes`** = D609–D613 on top of `main` (D608), local, **unplayed**. One commit each:
+> - **D609** *The village* panel sorts — *Sort: Name · Age · Trade* above the list, remembered; the list no longer rebuilt
+>   every frame.
+> - **D610** a round pasture's fence is drawn round (the gate cut out at its posts) — and every fence moved an eighth of a
+>   tile onto its real edge.
+> - **D611** Joe's starting stock limits (forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600; stone tools
+>   30), measured first (`tools/harness/ZzLimits.cs`).
+> - **D612** a market of 8,000 whose limits start at 1,000 a good and may not add up past its room — enforced, not warned;
+>   the limits are its split (the half-for-food rule gone at a market). Measured: marketers' hauling +12 %, survival level.
+>   ⚠️ A market raised before D612 keeps its 4,000; Joe's own (forage 10,000 in 4,000) can only be lowered.
+> - **D613** quarries and mines claim the whole seam they stand by on completion, staked round with a palisade; the ghost
+>   shows the seam before the click; a seam is never shared; the brush buttons are gone from their cards.
+>
+> **▶️ NEXT:** Joe plays it (`.\run.bat`): sort the village panel; fence a round pasture and look at the gate; check a new
+> game's Stock limits panel; a new market's card (*Keeps up to — 5,000 of its 8,000 kept*, a box that will not go past
+> what is left); place a quarry by rock and watch the ghost, then the palisade. Merging `slice/d607-notes` is his word.
+> **Waiting on him too:** the walled-in-hut fix (a session card, `task_bb33ea9f`); the doors spec card (`task_a4066d55`).
+>
+> **The numbers a session checks against (as of D613):** suite **1798 / 0 / 5 of 1803**, its clock **≈ 11–12 min**;
+> probe **97 `[widths]` lines**, bar 151; the goldens grep **383 lines**.
+>
+> **(the banner below is the state at D608)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
 >
 > **`main`** = D608, pushed: trade and the herd (D585–D607) merged at Joe's word after he played D607 (*"the
 > trading post window opens, i set an order. i sent the boat on. the region button works … Paths seem to do a
@@ -13,7 +38,7 @@
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
 > 8,000, limits start at 1,000 a good and may not add up past the room — ✅ **built (D612), measured, unplayed** (one rule wherever per-good limits exist;
 > at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
-> by, spec first. His tools question was answered from the code (D608). Then **doors**, spec first.
+> by — ✅ **specced and built (D613), unplayed**. His tools question was answered from the code (D608). Then **doors**, spec first.
 >
 > **(the banner below is the state at D607)**
 >
@@ -7387,6 +7412,16 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D613 PAID FOR — A GUARD WHOSE NEAR SEAM WAS ALSO FIRST, AND A CORNER THAT WAS THE CHECK'S OWN
+
+- ⚠️ **A "nearest" guard must pose the far one first in the other order.** The first pose put the near seam north — first
+  in map order too — so a claim that walked the diamond in map order would have passed it. Re-posed with the far seam
+  north, before the mutant was run; the mutant then went red.
+- **A probe check that concatenates two rings invents a corner where one ends and the next begins** (158°). Measure each
+  ring on its own. And a seam is joined through eight neighbours while the outline tracer joins through four: one seam can
+  draw as two rings, which is the honest drawing.
+- **`JobKind.Laborer` does not exist** — a laborer is a villager with no job. Ask `EmployedBy(kind) is JobKind t`.
+
 ## ⛔ THE TRAPS D612 PAID FOR — A CLAMP THAT FIRES A SIGNAL, A SIX-VALLEY COIN, AND AN `rm` ON A BARE VARIABLE
 
 - ⛔ **Godot's `SpinBox` fires `ValueChanged` when its `MaxValue` drops under the value it shows** — six changes on the
@@ -7855,6 +7890,16 @@ Read `git status` after staging, every time.
 - ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
+
+- ⏸️ **MERGE `slice/d607-notes` (D609–D613) TO `main`** — local, unmerged, unplayed. His word only, after he plays it.
+
+- ⏸️ **D613'S CALLS, SETTLED WITHOUT ASKING — HIS TO OVERRULE (`seam-reach.md §8.7`):** a seam is claimed when the quarry
+  is finished (shown from placing); a seam is never shared (a second quarry by it is refused); the palisade is drawn, not
+  walls; the brush buttons go for both trades; existing quarries keep their painted ground.
+
+- ⏸️ **TOOLS — HIS QUESTION ANSWERED (D608), CHANGES HIS CALL:** builders carry no tools (on purpose, `tools-and-the-smith.md
+  §3.2`); a worker holding stone never trades it in for iron (D446); D391's ~3 years a hand and D430's ~5× slower never
+  reconciled. Say if any of the three should change.
 
 - ⏸️ **THE MARKET'S VOLUME IS ITS MARKETERS' (D601).** The emptiest-shelf rule spreads two marketers' loads across the
   goods; it cannot make the shelf fuller. More market seats is Joe's lever — said to him, not yet tried in play.

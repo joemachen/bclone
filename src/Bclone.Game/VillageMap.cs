@@ -91,6 +91,9 @@ public partial class VillageMap : Control
     /// <summary>A household's fence — the outline of its plot's painted ground (D386).</summary>
     private static readonly Color FenceEdge = new("#7a5a3a", 0.85f);
 
+    /// <summary>The stakes round a claimed seam (D613) — darker than a fence, so a seam being worked reads as its own thing.</summary>
+    private static readonly Color PalisadeEdge = new("#5e4a36", 0.9f);
+
     /// <summary>The door: a darker notch on the house's front edge, the lane side (D386).</summary>
     private static readonly Color DoorColour = new("#4a3421");
     private static readonly Color GranaryColour = new("#d8c56a");
@@ -841,6 +844,7 @@ public partial class VillageMap : Control
         // value — it was a field somebody forgot to clear in one of seven near-identical
         // blocks, three times over.
         _building = building;
+        _ghostClaim = new List<Vector2[]>();
         _harvestMode = harvest;
         _groundFor = groundFor;
         _brush = brush;
@@ -1318,6 +1322,12 @@ public partial class VillageMap : Control
                     // `_ghostFacing` since D320 and the verdict was computed without it, so a
                     // turned longhouse could be shown green over ground the sim had never checked.
                     _verdict = _world.CanBuildAt(_building.Value, _hoveredPoint, facing: _ghostFacing);
+
+                    // ⭐ AND THE SEAM IT WOULD CLAIM, BEFORE THE CLICK (D613) — the sim's own preview, asked here as the ghost
+                    // moves, so the drawing is what completion will take.
+                    _ghostClaim = _verdict.Allowed
+                        ? PastureFenceLines(new List<GridPos>(_world.SeamToClaim(_building.Value, _hoveredPoint.ToTile())), null)
+                        : new List<Vector2[]>();
                 }
 
                 // Drag to paint. A neighbourhood is a shape you draw, not a sequence of
@@ -3005,6 +3015,18 @@ public partial class VillageMap : Control
             return;
         }
 
+        // The seam this one would claim, faint under it (D613).
+        foreach (Vector2[] line in _ghostClaim)
+        {
+            var onScreen = new Vector2[line.Length];
+            for (int p = 0; p < line.Length; p++)
+            {
+                onScreen[p] = ToScreen(InTileSpace(line[p], SubTile.PerTile));
+            }
+
+            DrawPolyline(onScreen, PalisadeEdge with { A = 0.45f }, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
+        }
+
         Footprint shape = world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing);
         float wide = shape.Width * 0.9f;
         float deep = shape.Height * 0.9f;
@@ -3944,6 +3966,7 @@ public partial class VillageMap : Control
         _zoneOutlines.Clear();
         _zoneFills.Clear();
         _fieldFills.Clear();
+        _palisadePosts.Clear();
 
         var residential = new HashSet<Vector2I>();
         var harvest = new HashSet<Vector2I>();
@@ -4110,6 +4133,47 @@ public partial class VillageMap : Control
             foreach (Vector2[] line in PastureFenceLines(tiles, opening))
             {
                 _zoneOutlines.Add((Layer.WorkGround, colour, line));
+            }
+        }
+
+        // ⭐ THE PALISADE ROUND A CLAIMED SEAM (D613, Joe: "the building 'smart draws' a type of mining/fence structure
+        // around the nearest node … marking it visually as 'this node is being mined/quarried'"). A finished quarry's or
+        // mine's claimed tiles, traced and rounded as a pasture's fence is, with a post at each tile's length; faint for a site,
+        // from the sim's own preview of what it will claim. ⚠️ A drawing, not walls: the face is worked from anywhere.
+        for (int i = 0; i < _world.Workplaces.Count; i++)
+        {
+            Workplace w = _world.Workplaces[i];
+            List<GridPos> claimed;
+            Color stakes;
+            if (!w.IsSite && _world.FaceOf(w) is not null)
+            {
+                IReadOnlyList<int> held = zones.WorkGroundOf(w.Id);
+                claimed = new List<GridPos>(held.Count);
+                for (int t = 0; t < held.Count; t++)
+                {
+                    claimed.Add(zones.PositionOf(held[t]));
+                }
+
+                stakes = PalisadeEdge;
+            }
+            else if (w.Construction is { Demolishing: false, Repairing: false, Kind: BuildingKind kind }
+                && _world.BuildingsCatalog.EmployedBy(kind) is JobKind trade && _world.JobsCatalog.FaceOf(trade) is not null)
+            {
+                claimed = new List<GridPos>(_world.SeamToClaim(kind, w.Position.ToTile()));
+                stakes = PalisadeEdge with { A = 0.35f };
+            }
+            else
+            {
+                continue;
+            }
+
+            foreach (Vector2[] line in PastureFenceLines(claimed, null))
+            {
+                _zoneOutlines.Add((Layer.WorkGround, stakes, line));
+                foreach (Vector2 post in PalisadePosts(line))
+                {
+                    _palisadePosts.Add((Layer.WorkGround, stakes, post));
+                }
             }
         }
 
@@ -4463,6 +4527,51 @@ public partial class VillageMap : Control
 
             DrawPolyline(onScreen, edge, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
         }
+
+        for (int i = 0; i < _palisadePosts.Count; i++)
+        {
+            (Layer layer, Color edge, Vector2 at) = _palisadePosts[i];
+            if (Showing(layer))
+            {
+                DrawCircle(ToScreen(InTileSpace(at, SubTile.PerTile)), Mathf.Max(1.5f, _pixelsPerTile * 0.09f), edge);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A palisade's posts along a traced line (D613), a tile apart and one at its start — in the line's own sub-tile space.
+    /// Pure, so the probe counts them.
+    /// </summary>
+    internal static List<Vector2> PalisadePosts(Vector2[] line)
+    {
+        var posts = new List<Vector2>();
+        if (line.Length == 0)
+        {
+            return posts;
+        }
+
+        posts.Add(line[0]);
+        float since = 0f;
+        for (int k = 1; k < line.Length; k++)
+        {
+            Vector2 a = line[k - 1];
+            Vector2 b = line[k];
+            float length = a.DistanceTo(b);
+            float along = 0f;
+            while (since + (length - along) >= SubTile.PerTile)
+            {
+                along += SubTile.PerTile - since;
+                since = 0f;
+                if (along < length - 0.01f || k < line.Length - 1)
+                {
+                    posts.Add(a.Lerp(b, along / length));
+                }
+            }
+
+            since += length - along;
+        }
+
+        return posts;
     }
 
     /// <summary>
@@ -6660,6 +6769,12 @@ public partial class VillageMap : Control
     /// </para>
     /// </remarks>
     private readonly List<(Layer Layer, Color Edge, Vector2[] Loop)> _zoneOutlines = new();
+
+    /// <summary>The palisades' posts (D613), in sub-tile space beside the outlines they stand on; traced with them, never per frame.</summary>
+    private readonly List<(Layer Layer, Color Edge, Vector2 At)> _palisadePosts = new();
+
+    /// <summary>The ghost's preview of the seam it would claim (D613), asked when the ghost moves, never per frame.</summary>
+    private List<Vector2[]> _ghostClaim = new();
 
     private int _outlinesTracedAt = -1;
 

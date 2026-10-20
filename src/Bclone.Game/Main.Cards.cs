@@ -117,6 +117,11 @@ public partial class Main
         public Button? IdleMarker { get; set; }
         public VBoxContainer? GroundRow { get; set; }
         public Label? GroundLabel { get; set; }
+
+        /// <summary><i>Give ground</i> and <i>Take back</i> — hidden for a quarry or a mine, which claims its seam (D613).</summary>
+        public Button? GiveGround { get; set; }
+
+        public Button? TakeBack { get; set; }
         public Label? GroundNote { get; set; }
         public Button? Mode { get; set; }
         public VBoxContainer? ForgeRow { get; set; }
@@ -666,6 +671,10 @@ public partial class Main
         }
     }
 
+    /// <summary>Whether a trade's ground is given with the brush — every one that keeps ground but a face's (D613).</summary>
+    private static bool GroundIsPaintedFor(JobKind kind, SimWorld world) =>
+        SimWorld.KeepsWorkGround(kind) && world.JobsCatalog.FaceOf(kind) is null;
+
     private StoreBuilding? StoreOf(Card card) =>
         _loop.World.StoreBuildings.Find(s => s.Id == card.Subject.Id);
 
@@ -879,12 +888,12 @@ public partial class Main
                 // The ground brush (D86) and the forester's mode.
                 c.GroundLabel = Muted(string.Empty);
                 (c.GroundRow, HFlowContainer groundControls) = InspectorRow(body, c.GroundLabel);
-                var give = new Button { Text = "Give ground" };
-                give.Pressed += () => Act(card, () => PaintGroundForSelection(1));
-                groundControls.AddChild(give);
-                var takeBack = new Button { Text = "Take back" };
-                takeBack.Pressed += () => Act(card, () => PaintGroundForSelection(-1));
-                groundControls.AddChild(takeBack);
+                c.GiveGround = new Button { Text = "Give ground" };
+                c.GiveGround.Pressed += () => Act(card, () => PaintGroundForSelection(1));
+                groundControls.AddChild(c.GiveGround);
+                c.TakeBack = new Button { Text = "Take back" };
+                c.TakeBack.Pressed += () => Act(card, () => PaintGroundForSelection(-1));
+                groundControls.AddChild(c.TakeBack);
                 c.Mode = new Button { Text = "Planting: off" };
                 c.Mode.Pressed += () => Act(card, ToggleSelectedMode);
                 groundControls.AddChild(c.Mode);
@@ -1016,9 +1025,14 @@ public partial class Main
                 {
                     int tiles = world.Zones.WorkGroundTiles(place.Id);
                     int allowance = world.WorkGroundAllowanceFor(place);
-                    c.GroundLabel!.Text = place.WorkerIds.Count == 0
-                        ? $"Ground — {tiles} tiles, nobody working it:"
-                        : $"Ground — {tiles} tiles, enough hands for {allowance}:";
+
+                    // ⭐ A QUARRY OR A MINE CLAIMS ITS SEAM (D613): nothing to paint, so no brush — the card says what it works.
+                    string? claim = world.SayTheClaim(place);
+                    c.GiveGround!.Visible = c.TakeBack!.Visible = GroundIsPaintedFor(place.Kind, world);
+                    c.GroundLabel!.Text = claim
+                        ?? (place.WorkerIds.Count == 0
+                            ? $"Ground — {tiles} tiles, nobody working it:"
+                            : $"Ground — {tiles} tiles, enough hands for {allowance}:");
                     if (world.OverstretchedNote(place) is string stretched)
                     {
                         c.GroundNote.Text = stretched;

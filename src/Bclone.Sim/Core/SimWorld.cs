@@ -3967,9 +3967,10 @@ public sealed partial class SimWorld : IObstacles
     /// Why this building may not stand here for want of its ground nearby — or null when a tile of it the village can
     /// walk to lies within the rule's reach (D540).
     /// </summary>
-    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village)
+    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village, bool alreadyStanding = false)
     {
         bool cutOff = false;
+        Workplace? heldBy = null;
         for (int dy = -near.Tiles; dy <= near.Tiles; dy++)
         {
             int span = near.Tiles - Math.Abs(dy);
@@ -3983,6 +3984,15 @@ public sealed partial class SimWorld : IObstacles
 
                 if (TravelCost.CanReach(village, at))
                 {
+                    // ⭐ A SEAM OF ITS OWN (D613): a quarry or a mine claims the seam it stands by, so one another building
+                    // holds is no ground for a new one. ⚠️ Not asked of a move — the building's own seam is its own.
+                    if (!alreadyStanding && BuildingsCatalog.EmployedBy(kind) is JobKind faceTrade && JobsCatalog.FaceOf(faceTrade) is not null
+                        && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder)
+                    {
+                        heldBy ??= holder;
+                        continue;
+                    }
+
                     return null;
                 }
 
@@ -3991,6 +4001,13 @@ public sealed partial class SimWorld : IObstacles
         }
 
         string ground = Describe(near.Terrain);
+        string named = BuildingsCatalog[kind]!.Name;
+        if (heldBy is not null)
+        {
+            string an = "aeiou".Contains(named[0], StringComparison.Ordinal) ? "an" : "a";
+            return $"The {WithoutArticle(ground)} there is {heldBy.Name}'s — {an} {named} needs a seam of its own.";
+        }
+
         if (cutOff && BuildingsCatalog.EmployedBy(kind) is JobKind trade)
         {
             return CutOff(WithoutArticle(ground), JobsCatalog.PluralOf(trade));
@@ -5520,16 +5537,12 @@ public sealed partial class SimWorld : IObstacles
                   + "or paint less.";
         }
 
-        if (FaceOf(workplace) is Terrain face)
+        // ⛔ NEVER FOR A FACE SINCE D613 (Joe's call): a quarry or a mine claims the whole seam it stands by, nobody paints
+        // it, and a face never runs out — the tiles past the hands are where a worker stands, not work undone. Staffing is
+        // the idle note's to say (`WhyTheFaceIsIdle`).
+        if (FaceOf(workplace) is not null)
         {
-            string seam = FaceWord(face);
-            string trade = JobsCatalog.NameOf(workplace.Kind);
-            return hands == 0
-                ? $"{name} has {tiles} tiles of {seam} and nobody working it. Put a {trade} on — "
-                  + $"one pair of hands keeps {TilesOneWorkerKeeps(workplace.Kind)} faces."
-                : $"{name} has {tiles} tiles of {seam} and {Hands(hands)} to work them — enough for "
-                  + $"{allowance}. The other {tiles - allowance} will stand idle — put another "
-                  + $"{trade} on, or paint less.";
+            return null;
         }
 
         return hands == 0
@@ -7536,6 +7549,27 @@ public sealed partial class SimWorld : IObstacles
             workplace.MoveTo(to);
             StandingChanged();
             TravelCost.Forget();
+
+            // ⭐ A QUARRY OR A MINE MOVED LETS ITS OLD SEAM GO AND CLAIMS THE ONE WHERE IT LANDS (D613) — painted ground
+            // travels with a farm, but a claim is the seam the building stands by, and it no longer stands by that one.
+            if (JobsCatalog.FaceOf(workplace.Kind) is not null)
+            {
+                IReadOnlyList<int> held = Zones.WorkGroundOf(workplace.Id);
+                var was = new List<GridPos>(held.Count);
+                for (int i = 0; i < held.Count; i++)
+                {
+                    was.Add(Zones.PositionOf(held[i]));
+                }
+
+                Zones.ReleaseWorkGround(workplace.Id);
+                for (int i = 0; i < was.Count; i++)
+                {
+                    AfterTakingGround(workplace, was[i]);
+                }
+
+                ClaimTheSeam(workplace);
+            }
+
             return true;
         }
 
@@ -8792,7 +8826,7 @@ public sealed partial class SimWorld : IObstacles
         // asked of a reach like the lodge's. ⚠️ Counted only where the village can walk (D110/D111): rock across
         // the river is not near, it is cut off, and the sentence says which mistake it is.
         if (BuildingsCatalog[kind]?.MustBeNear is NearRule near
-            && WhyNotNearItsGround(kind, position, near, village) is string notNear)
+            && WhyNotNearItsGround(kind, position, near, village, alreadyStanding) is string notNear)
         {
             return PlacementVerdict.No(notNear);
         }
@@ -10391,6 +10425,10 @@ public sealed partial class SimWorld : IObstacles
             ExtentWidth = row.ExtentWidth,
             ExtentHeight = row.ExtentHeight,
         });
+
+        // ⭐ A QUARRY OR A MINE TAKES THE SEAM IT STANDS BY (D613, Joe: "when the player places a mine or quarry near its ore
+        // node, the building 'smart draws' ... around the nearest node") — claimed, not painted.
+        ClaimTheSeam(Workplaces[^1]);
     }
 
     /// <summary>

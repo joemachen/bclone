@@ -553,6 +553,7 @@ public partial class Main : Control
         ProbeASelfScroller("roster", _roster, _roster.ItemCount, "items");
         GD.Print(TheRosterSortsAsAsked());
         GD.Print(TheMarketCardStopsAtTheRoom());
+        GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
 
         ProbeFolding();

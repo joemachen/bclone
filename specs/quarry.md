@@ -160,6 +160,10 @@ does not — so moving a quarry, and fixtures that raise one, are not gated.
 
 ### 3.4 A quarry's ground is rock
 
+> ⭐ **Since D613 the ground is claimed, not painted** (`seam-reach.md §8`): a finished quarry takes the whole seam it
+> stands by, drawn round with a palisade, and its card loses *Give ground* / *Take back*. Every rule below about what its
+> ground is and does stands; only how it is given changed.
+
 - `BuildingKind.Quarry` and `JobKind.Quarrier` (Joe's word), appended, never
   renumbered. `KeepsWorkGround` includes it.
 - **`CanPaintWorkGround` refuses a tile that is not `Rock` for a quarry**, in words: *"A quarry
