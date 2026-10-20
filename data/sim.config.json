@@ -1753,17 +1753,22 @@
   // few years to have more than 25 people who need tools at once."
   // FLOUR 200 (Joe's "200 for everything else") and BREAD 1000 (wheat's own),
   // D522 -- the mill stops at its flour, the oven at its bread.
+  // ⭐ D611 -- JOE'S PANEL, AS HE PLAYS IT (D608: "for global stock limits, set the
+  // starting defaults to what you see in the screenshot"): forage, fish and meat
+  // 2500, wheat 2000, logs and stone 400, firewood 600, stone tools 30. Iron and
+  // leather were already his; bread, flour and iron tools were not in the
+  // screenshot and stay. Measured before it shipped (tools/harness/ZzLimits.cs).
   "starting_stock_limits": {
-    "forage": 2000,
-    "wheat": 1000,
+    "forage": 2500,
+    "wheat": 2000,
     "bread": 1000,
     "flour": 200,
-    "fish": 250,
-    "meat": 250,
-    "logs": 200,
-    "firewood": 400,
-    "stone": 200,
-    "stone tools": 25,
+    "fish": 2500,
+    "meat": 2500,
+    "logs": 400,
+    "firewood": 600,
+    "stone": 400,
+    "stone tools": 30,
     "iron tools": 25,
     "iron": 200,
     "leather": 200,

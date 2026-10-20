@@ -181,9 +181,13 @@ public sealed class HerdsmanTests
         Assert.True(head < world.PastureFor(barn), "the pose is at its pasture — a cull could hide a starved beast");
         Assert.True(barn.HayPutOut > 0, "winter came with nothing out — the herdsman did not prepare");
 
+        // ⚠️ And through the winter (D611): with Joe's starting limits the household fell under its fetch line on the 23rd and
+        // he went five days across the valley for food, the hay out ran dry behind him and four head starved. The same
+        // household errand D601 met in the autumn, a season later — still not what this guard asks.
         int outdoorsFeeding = 0;
         do
         {
+            KeepHisLarderFull();
             loop.StepOnce();
             if (herdsman.State == VillagerState.FeedingTheHerd && world.ShelterAt(herdsman.Tile) == Shelter.Outdoors)
             {

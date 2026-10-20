@@ -8,7 +8,8 @@
 >
 > **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
 > panel sorts by first name, age and trade — ✅ **built (D609), unplayed**; (2) a round pasture's fence drawn round — ✅ **built
-> (D610), unplayed** (and every fence moved an eighth of a tile onto its real edge); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
+> (D610), unplayed** (and every fence moved an eighth of a tile onto its real edge); (3) his stock-limit defaults — ✅ **built
+> (D611), measured** (forage, fish, meat 2,500; wheat 2,000; logs, stone
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
 > 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
 > at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
@@ -7386,6 +7387,18 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D611 PAID FOR — AN OPENING THAT NEVER MAKES THE GOOD, A HARNESS THAT RAN THE OLD DLL, AND A HUT NOBODY COULD REACH
+
+- ⭐ **Ask which openings make the good before measuring a limit on it.** ZzLimits' played and established openings made
+  **0 fish and 0 meat** in every run — no lodge, no fishery — so half of Joe's change was invisible to them. The `every`
+  opening (lodge, fishery and farm raised) is the only one that reaches it, and it carries D515's first-winter race.
+- ⛔ **D522's trap again: a harness that did not compile ran the previous DLL under `--no-build`** and printed a whole
+  trace off the old code. Every harness build now greps for `0 Error(s)` and stops if it is missing.
+- ⭐ **A death count that jumps is a valley to trace, not a number to report.** Established froze 2 → 42 was ONE valley,
+  and its cause was a woodcutter's hut walled in against the map's edge (`NextToBuild` skips what it cannot reach) — a
+  bug older than the change, which the change only reached sooner. `scratchpad/ZzFuel.cs`'s shape (where each good is,
+  each worker's note, each site's materials and reach) found it in three runs.
+
 ## ⛔ THE TRAPS D610 PAID FOR — A MUTANT RED FOR THE WRONG REASON, AND A POINT-BASED CUT ON A CURVE WITH NO POINTS
 
 - ⭐ **Read WHY a mutant went red, not only that it did.** The stair mutant (corners kept sharp) was meant to trip the
@@ -7818,6 +7831,12 @@ Read `git status` after staging, every time.
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
   builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
   the well's ring), the paths (D605, played and approved) and D607. His word only.
+
+- ⏸️ **A YARD CAN WALL A BUILDING IN AGAINST THE MAP'S EDGE (found D611).** Established seed 18 (`ShippedConfig.Established()`,
+  Joe's D611 limits): woodcutter's hut 1 at (0, 2), a yard wall on its south side, `TravelCost.CanReach(village, hut)` false;
+  unworked, fallen in at Year 41, its repair never served (`NextToBuild` skips the unreachable), the village frozen at Year
+  43. Under the old limits the same hut falls in at Year 48. D404's `WhatThisWouldWallOff` should have refused the yard.
+  Proposed as its own session; not fixed on `slice/d607-notes`.
 
 - ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own

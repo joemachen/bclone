@@ -175,8 +175,9 @@ always had limits and **no test or measurement ever did**. The firewood branch t
 headless left nobody alive in his game.
 
 - **Starting limits are data:** `starting_stock_limits` in `data/sim.config.json`, keyed by the
-  goods' names — forage 2000, wheat 1000, fish 250, meat 250, logs 200, firewood 400, 200 for the
-  rest (Joe's numbers). Empty by default, so a config that says nothing has no limits. An unknown
+  goods' names — ~~forage 2000, wheat 1000, fish 250, meat 250, logs 200, firewood 400, 200 for the
+  rest~~ **since D611, Joe's panel as he plays it: forage, fish and meat 2,500; wheat 2,000; logs and stone 400;
+  firewood 600; stone tools 30;** iron and leather 200, flour 200, bread 1,000, iron tools 25, hay none. Empty by default, so a config that says nothing has no limits. An unknown
   key fails at load. The panel seeds its rows from `StockLimits` and pushes nothing.
 - **One number per good — `SimWorld.HeldAgainstItsLimit`:** stores + heaps + (edible goods) the
   huts' buffers. *(Since D420, §4.5: every good's buffers, and the loads on their way to storage.)* `MayTake` / `LimitIsMet` read it, and so every stop does: the forester (D146), the

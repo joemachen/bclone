@@ -38,14 +38,16 @@ public sealed class StartingStockLimitsTests
 
         var expected = new Dictionary<Goods, int?>
         {
-            [Goods.Produce] = 2000,
-            [Goods.Wheat] = 1000,
-            [Goods.Fish] = 250,
-            [Goods.Meat] = 250,
-            [Goods.Logs] = 200,
-            [Goods.Firewood] = 400,
-            [Goods.Stone] = 200,
-            [Goods.Tools] = 25,
+            // Joe's panel as he plays it (D611): forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600;
+            // stone tools 30.
+            [Goods.Produce] = 2500,
+            [Goods.Wheat] = 2000,
+            [Goods.Fish] = 2500,
+            [Goods.Meat] = 2500,
+            [Goods.Logs] = 400,
+            [Goods.Firewood] = 600,
+            [Goods.Stone] = 400,
+            [Goods.Tools] = 30,
             [Goods.IronTools] = 25,
             [Goods.Iron] = 200,
             [Goods.Leather] = 200,

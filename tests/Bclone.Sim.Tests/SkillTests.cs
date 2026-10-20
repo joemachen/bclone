@@ -350,7 +350,8 @@ public sealed class SkillTests
     // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 8694415183060773569.
     // RE-TAKEN (D498), BOTH — every tile a building covers is cleared and waited on, not the one it is filed under, and a house is never sited on a stone or iron seam (`footprints.md §7`, `organic-housing.md §3.3`, Joe: "yes" / "houses go round seams the way farms now do"): the far half of every house fells its tree before work goes in. Was 13678622736665324494.
     // RE-TAKEN (D522), THE SHIPPED ONE ONLY — the shipped game starts with limits on the new flour (200, Joe's "200 for everything else") and bread (1,000, wheat's own), and a set limit is hashed. This village builds no mill. ⭐ PROVEN TO BE THE ONLY REASON: with those two lines taken out of the data the old value passes. The fixture sets no limits and did not move. Was 527323685715353248.
-    [InlineData(true, 1854911485487116989UL)]
+    // RE-TAKEN (D611), THE SHIPPED ONE ONLY — the starting stock limits are Joe's panel (D608: forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600; stone tools 30); a set limit is hashed, and the village works to them. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9949612, D610) holds the old value with the suite green, and this commit's only sim change is those eight numbers in `starting_stock_limits`. The fixture sets no limits and did not move. Was 1854911485487116989.
+    [InlineData(true, 15642955732307660429UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed
