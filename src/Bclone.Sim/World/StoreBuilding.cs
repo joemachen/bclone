@@ -368,6 +368,17 @@ public sealed class StoreBuilding
     public int RoomFor(Goods goods)
     {
         int free = Store.FreeSpace;
+
+        // ⭐⭐ A MARKET'S ROOM FOR A GOOD IS ITS LIMIT'S (D612, Joe's call: the per-good limits replace the half-for-food
+        // rule at a market). They cannot add up past the building (`MostItMayKeep`), so they ARE its split — and asked here,
+        // the one door, every load anybody brings is held to them: a forager overflowing a full granary cannot fill the
+        // whole 8,000 with forage, which is the D361 failure the half rule stood in for.
+        if (Kind == StoreKind.Market)
+        {
+            int under = KeepsUpTo(goods) - Store[goods];
+            return under <= 0 ? 0 : (under < free ? under : free);
+        }
+
         if (!SharesItsRoofWithFood)
         {
             return free;
@@ -526,6 +537,122 @@ public sealed class StoreBuilding
     /// </para>
     /// </remarks>
     public StockLimits Limits => _limits ??= new StockLimits(Catalog.Count);
+
+    /// <summary>
+    /// What a market's good keeps before the player says otherwise (D612, <c>market_starting_limit</c>) — handed over by
+    /// the sim when it raises or loads a market. Config, so never hashed or saved.
+    /// </summary>
+    internal int StartingLimit { get; set; }
+
+    /// <summary>
+    /// Whether the village knows of a good (<c>SimWorld.KnowsOf</c>), handed over by the sim with
+    /// <see cref="StartingLimit"/>. A good it does not know yet keeps nothing and takes none of the room: bread waits for
+    /// the oven, as its row on the card does. Derived, so never hashed or saved.
+    /// </summary>
+    internal Func<Goods, bool>? Knows { get; set; }
+
+    /// <summary>
+    /// ⭐ How much of a good this market keeps (D612): the player's limit, or the starting one — and the starting one only
+    /// out of what the set limits and the goods before it in the catalogue's order have left of the room, so the limits
+    /// <b>never add up past the building</b>. Untouched, six goods at 1,000 keep 6,000 of 8,000 and none is cut; a good
+    /// learned late (bread, when the oven comes) into a nearly full market keeps what is left, and its row says so.
+    /// </summary>
+    /// <remarks>
+    /// Asked of a store that is not a market, or of a good it does not count, it is 0. Walked in the catalogue's order, so
+    /// the answer is the same every run. ⚠️ A save from before D612 may hold limits that already pass the room; they are
+    /// kept as they are (a load changes nothing) and only a lowering is accepted until they fit.
+    /// </remarks>
+    public int KeepsUpTo(Goods goods) => Keeps(goods, absent: null);
+
+    /// <summary>
+    /// The most a market may be told to keep of a good (D612, Joe: <i>"limit the user from setting a total limit for all
+    /// items beyond the building's max capacity"</i>) — the room less what every other good it counts keeps.
+    /// </summary>
+    public int MostItMayKeep(Goods goods)
+    {
+        int others = 0;
+        for (int id = 0; id < Catalog.Count; id++)
+        {
+            if ((Goods)id != goods)
+            {
+                others += Keeps((Goods)id, absent: goods);
+            }
+        }
+
+        int most = Store.Capacity - others;
+        return most < 0 ? 0 : most;
+    }
+
+    /// <summary>What every good this market counts keeps, together — never more than its room for a market raised since D612.</summary>
+    public int KeptInAll
+    {
+        get
+        {
+            int all = 0;
+            for (int id = 0; id < Catalog.Count; id++)
+            {
+                all += KeepsUpTo((Goods)id);
+            }
+
+            return all;
+        }
+    }
+
+    /// <summary>A market counts a good it can hold and the village knows; nothing else counts anything.</summary>
+    private bool Counts(Goods goods) => Kind == StoreKind.Market && KindAccepts(goods) && (Knows?.Invoke(goods) ?? true);
+
+    /// <summary>The player's set limits on the goods this market counts, but one.</summary>
+    private int SetLimitsBut(Goods? but)
+    {
+        int all = 0;
+        for (int id = 0; id < Catalog.Count; id++)
+        {
+            var goods = (Goods)id;
+            if (goods != but && Counts(goods) && _limits?.For(goods) is int set)
+            {
+                all += set;
+            }
+        }
+
+        return all;
+    }
+
+    /// <summary>
+    /// <see cref="KeepsUpTo"/>, as it reads with <paramref name="absent"/> taking none of the room — what the others keep
+    /// beside it. The starting limit is shared out in the catalogue's order over what the set limits leave.
+    /// </summary>
+    private int Keeps(Goods goods, Goods? absent)
+    {
+        if (goods == absent || !Counts(goods))
+        {
+            return 0;
+        }
+
+        if (_limits?.For(goods) is int set)
+        {
+            return set;
+        }
+
+        int left = Store.Capacity - SetLimitsBut(absent);
+        for (int id = 0; id < Catalog.Count; id++)
+        {
+            var other = (Goods)id;
+            if (other == absent || !Counts(other) || _limits?.For(other) is int)
+            {
+                continue;
+            }
+
+            int keeps = left <= 0 ? 0 : (StartingLimit < left ? StartingLimit : left);
+            if (other == goods)
+            {
+                return keeps;
+            }
+
+            left -= keeps;
+        }
+
+        return 0;
+    }
 
     /// <summary>
     /// What this kind of building holds — <b>read off the good's row, not a switch</b>.

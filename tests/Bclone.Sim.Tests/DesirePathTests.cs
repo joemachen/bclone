@@ -588,12 +588,17 @@ public sealed class DesirePathTests
     /// in a scratch arm read 0.66 before and 0.60 after — the rule working as well as it did. D470's lesson
     /// again: a one-valley guard is a coin.
     /// </para>
+    /// <para>
+    /// ⚠️ TWELVE, NOT SIX (D612). The market's thousand a good read 0.72 on six — over the bar — with the fixture's own
+    /// valley alone going 16 → 24 block tiles; on twelve it read <b>0.688 before the market and 0.682 after</b>, so the
+    /// market did not thicken the hub and six valleys were the coin, one size up. Stronger, not looser: the bar stays 0.7.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheFoundingHubWearsLanesNotABlock()
     {
         int kept = 0, keptPaths = 0, cut = 0, cutPaths = 0;
-        foreach (ulong? seed in new ulong?[] { null, 1, 2, 3, 4, 5 })
+        foreach (ulong? seed in new ulong?[] { null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 })
         {
             SimConfig config = seed is ulong s ? Config with { Seed = s } : Config;
             (int k, int kp) = BlockTilesAfter(config, 15);
@@ -604,8 +609,8 @@ public sealed class DesirePathTests
             cutPaths += cp;
         }
 
-        _output.WriteLine($"fifteen years in six valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
-        Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in six valleys — the villages wore no paths (§2.6)");
+        _output.WriteLine($"fifteen years in twelve valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
+        Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in twelve valleys — the villages wore no paths (§2.6)");
         Assert.True(kept * 10 <= cut * BlockBarTenths,
             $"keeping to the lanes left {kept} block tiles against {cut} — not a thinner network");
     }

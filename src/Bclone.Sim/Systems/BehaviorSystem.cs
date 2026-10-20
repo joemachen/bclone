@@ -2057,10 +2057,10 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             Goods goods = carried[g];
 
-            // Room under THIS counter's limit (D372) — the player's, or the derived default.
-            int room = world.MarketStockLimit(market, goods) - HeldOf(market.Store, goods);
+            // Room under THIS counter's limit (D372), by the one door (D612): the limit less what it holds, within the room.
+            int room = market.RoomFor(goods);
 
-            if (!market.Accepts(goods) || room < load || market.Store.FreeSpace < load)
+            if (!market.Accepts(goods) || room < load)
             {
                 continue;
             }

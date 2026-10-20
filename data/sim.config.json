@@ -1452,22 +1452,19 @@
   // has become the cliff fetching was designed to avoid.
   "market_capacity": 2,
 
-  // What the market keeps on hand, per household the village is
-  // budgeted for. A market is a short trip, not a second granary -
-  // sized flat it would become the real store as the village grew,
-  // re-centralising everything storage just spread out.
-  // 100 since D417 (was 40; Joe: "markets that visibly carry more stock") -
-  // measured level on survival and marketer seats; still per household, so
-  // still not the building-sized target D197 found doubling the hauling.
-  "market_stock_per_household": 100,
+  // What a market keeps of each good before the player says otherwise
+  // (D612, Joe: "set the market's starting limits to 1000 for each item").
+  // It replaced market_stock_per_household (100 a household since D417),
+  // which D197 sized to the homes a market served because a target sized to
+  // the building doubled the hauling; flat at Joe's word, measured first.
+  // Shared out of the room, so the limits never add up past the building.
+  "market_starting_limit": 1000,
 
   // What the market HOLDS, food and firewood together (D416, Joe: "increase
-  // market capacity to 4000"). Stated, like the granary (D219); it was
-  // market_stock_per_household x economy_horizon_households = 800. The size of
-  // the building, not what it is stocked to: the marketer still restocks to 100
-  // per occupied household above (D197 measured a target sized to the building
-  // doubling the hauling).
-  "market_store_capacity": 4000,
+  // market capacity to 4000"; D612: "from 4000 to 8000"). Stated, like the
+  // granary (D219). Its goods' limits are its split: they may not add up past
+  // it, and at a market they replace the half-for-food rule (D361, Joe's call).
+  "market_store_capacity": 8000,
 
   // ---- What buildings cost to raise (D43) --------------------
   // Two numbers each, on purpose. Logs are what the village must

@@ -24,7 +24,8 @@ for (arm, opening), runs in sorted(rows.items(), key=lambda kv: (kv[0][1], kv[0]
     total = lambda k: sum(r[k] for r in v)
     print(f"{opening:12} {arm:4} runs {len(v):3}  alive {total('alive'):5}  dead valleys {sum(1 for r in v if r['alive'] == 0):3}  "
           f"peak {total('peak'):5}  starved {total('starved'):5}  froze {total('cold'):4}  born {total('born'):5}  "
-          f"fish {total('fish'):8}  meat {total('meat'):8}  forage {total('forage'):8}  fish+meat held/yr {total('fishmeatheld'):7}")
+          f"fish {total('fish'):8}  meat {total('meat'):8}  forage {total('forage'):8}  fish+meat held/yr {total('fishmeatheld'):7}"
+          + (f"  marketer-ticks stocking {total('stocking'):7}  market held/yr {total('counter'):7}" if all('stocking' in r for r in v) else ""))
 
 for opening in sorted({o for _, o in rows}):
     old, new = rows.get(("old", opening), {}), rows.get(("new", opening), {})

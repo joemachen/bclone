@@ -7018,29 +7018,58 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No($"A market never holds {GoodsCatalog.NameOf(goods)}.");
         }
 
-        if (!market.Limits.Set(goods, limit) || limit is null || limit.Value <= market.Store.Capacity)
+        // ⭐ THE LIMITS MAY NOT ADD UP PAST THE ROOM (D612, Joe: "limit the user from setting a total limit for all items
+        // beyond the building's max capacity … add a limit enforcement"). D372 accepted any number and warned past the whole
+        // room; now the number is refused, in words, past what the other goods leave. ⚠️ A lowering is always accepted,
+        // so a save from before the rule, whose limits already pass the room, can be brought back under it.
+        if (limit is int wanted && wanted > market.MostItMayKeep(goods) && wanted > market.KeepsUpTo(goods))
         {
-            return PlacementVerdict.Fine;
+            int most = market.MostItMayKeep(goods);
+            string good = GoodsCatalog.NameOf(goods);
+            return PlacementVerdict.No(
+                $"{market.Name} holds {market.Store.Capacity:N0} in all and its other goods keep {market.Store.Capacity - most:N0} "
+                + $"of it, so it can keep {most:N0} {good} at most. Lower another good to make room.");
         }
 
-        return PlacementVerdict.Yes(
-            $"{market.Name} can hold {market.Store.Capacity} in all, so it will never reach {limit.Value} "
-            + $"{GoodsCatalog.NameOf(goods)}. The marketer will keep it as full as it goes.");
+        market.Limits.Set(goods, limit);
+        return PlacementVerdict.Fine;
     }
 
     /// <summary>
-    /// How much of a good the marketer keeps at this counter — the player's limit for this
-    /// market, or the derived <see cref="VillageEconomy.MarketStockWanted"/> when they have not said (D372).
+    /// How much of a good the marketer keeps at this counter — the player's limit for this market, or the starting
+    /// <c>market_starting_limit</c> out of what is left of the room (D612; <see cref="StoreBuilding.KeepsUpTo"/>).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// ⭐ THE ONE ANSWER for the restock offer, the load, the counter's room and the labour
     /// quota — four readers of *"is the counter short?"* that D148 and D370 both say must never
     /// carry their own copy of the sum.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>D612 reverses D197's sizing at Joe's word:</b> the derived target was <c>market_stock_per_household</c> × the
+    /// occupied households, because a target sized to the building doubled the hauling. Joe: <i>"set the market's starting
+    /// limits to 1000 for each item"</i> — flat, and measured before it shipped (`storage-and-distribution.md §14.9.3`).
+    /// </para>
     /// </remarks>
     public int MarketStockLimit(StoreBuilding market, Goods goods)
     {
         ArgumentNullException.ThrowIfNull(market);
-        return market.Limits.For(goods) ?? VillageEconomy.MarketStockWanted(Config, OccupiedHouseholds());
+        return market.KeepsUpTo(goods);
+    }
+
+    /// <summary>
+    /// A market is told the starting limit and what the village knows of (D612) — on every road a store enters the world
+    /// by: raised, founded, loaded. Derived, so a load sets it as the raise did and the hash never sees it.
+    /// </summary>
+    private StoreBuilding KnowItsGoods(StoreBuilding store)
+    {
+        if (store.Kind == StoreKind.Market)
+        {
+            store.StartingLimit = Config.MarketStartingLimit;
+            store.Knows = KnowsOf;
+        }
+
+        return store;
     }
 
     /// <summary>Households with somebody living in them — what the derived market stock is sized to.</summary>
@@ -7099,8 +7128,9 @@ public sealed partial class SimWorld : IObstacles
             return false;
         }
 
+        // The counter's room for this good, by the one door (D612): its limit less what it holds, within the building.
         int armful = Config.CarryCapacity;
-        if (market.Store[goods] + armful > MarketStockLimit(market, goods) || market.Store.FreeSpace < armful)
+        if (market.RoomFor(goods) < armful)
         {
             return false;
         }
@@ -10202,6 +10232,7 @@ public sealed partial class SimWorld : IObstacles
             RaisedAtTick = Tick,
         };
 
+        KnowItsGoods(building);
         StandingChanged();
         StoreBuildings.Add(building);
 
@@ -11645,7 +11676,7 @@ public sealed partial class SimWorld : IObstacles
         string marketName = NameFor(BuildingKind.Market);
 
         StandingChanged();
-        StoreBuildings.Add(new StoreBuilding
+        StoreBuildings.Add(KnowItsGoods(new StoreBuilding
         {
             Catalog = GoodsCatalog,
             Id = 3,
@@ -11655,7 +11686,7 @@ public sealed partial class SimWorld : IObstacles
             ExtentWidth = ExtentOf(BuildingKind.Market).Width,
             ExtentHeight = ExtentOf(BuildingKind.Market).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
-        });
+        }));
 
         // Capacity zero means no market at all rather than a market nobody can work
         // at, so that "switch the market off" is a state the village genuinely runs in
@@ -14136,7 +14167,7 @@ public sealed partial class SimWorld : IObstacles
 
         foreach (SaveReader store in save.Objects("stores"))
         {
-            StoreBuildings.Add(StoreBuilding.FromSave(store, GoodsCatalog));
+            StoreBuildings.Add(KnowItsGoods(StoreBuilding.FromSave(store, GoodsCatalog)));
         }
 
         foreach (SaveReader library in save.Objects("libraries"))

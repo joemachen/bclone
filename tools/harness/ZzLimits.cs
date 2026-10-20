@@ -16,7 +16,9 @@ namespace Bclone.Sim.Tests;
 // cannot carry a survival claim); "every" — the played opening on the shipped file with a hunter's lodge, a fishery
 // and a farm raised at once, seeds 1–36 (the only opening of the three that ever makes fish or meat). ZZ_YEARS (50).
 // ZZ_ONLY=<good name> applies Joe's number for that good alone, the rest as before — which of them did it. ZZ_SEEDS=a,b
-// narrows the seeds; ZZ_TRACE=1 prints a ZZY line a year (people, held goods, trades, deaths by cause). One ZZL a run.
+// narrows the seeds; ZZ_TRACE=1 prints a ZZY line a year (people, held goods, trades, deaths by cause); ZZ_LABEL renames
+// the arm (D612 measured two builds of the market on the same limits: label each "old" / "new"). One ZZL a run, with
+// the marketers' ticks carrying stock to a counter and what the counters held a year.
 //
 // Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLimits --logger "console;verbosity=detailed"`
 // with each ZZ_LIMITS × ZZ_OPEN; delete; then `python tools/harness/limits.py <outputs>`.
@@ -52,6 +54,8 @@ public sealed class ZzLimits
             arm = "only-" + only.Replace(' ', '_');
         }
 
+        // ZZ_LABEL names the arm in the output — two builds of the code measured on the same limits (D612's market).
+        arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? arm;
         bool trace = Environment.GetEnvironmentVariable("ZZ_TRACE") == "1";
         int years = int.Parse(Environment.GetEnvironmentVariable("ZZ_YEARS") ?? "50");
 
@@ -78,6 +82,8 @@ public sealed class ZzLimits
 
         int peak = 0;
         long held = 0;
+        long stocking = 0;
+        long counter = 0;
         for (int t = 0; t < config.TicksPerYear * years; t++)
         {
             if (open is "played" or "every" && t == config.TicksPerYear * 3)
@@ -88,6 +94,13 @@ public sealed class ZzLimits
 
             loop.StepOnce();
             peak = Math.Max(peak, world.Population);
+
+            // D612: the marketers' hauling (D197 measured a building-sized target doubling it) and what the counters hold.
+            stocking += world.Villagers.Count(v => v.Alive && v.State == VillagerState.StockingTheMarket);
+            if (t % config.TicksPerYear == 0)
+            {
+                counter += world.StoreBuildings.Where(s => s.Kind == StoreKind.Market).Sum(s => s.Store.Held);
+            }
             if (t % config.TicksPerYear == 0)
             {
                 held += world.StoreBuildings.Where(s => s.IsStorage).Sum(s => s.Store[Goods.Fish] + s.Store[Goods.Meat]);
@@ -115,7 +128,7 @@ public sealed class ZzLimits
             $"ZZL {arm} {open} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} born {born} "
             + $"fish {world.FoodEverProducedOf(Goods.Fish)} meat {world.FoodEverProducedOf(Goods.Meat)} "
             + $"forage {world.FoodEverProducedOf(Goods.Produce)} fishmeatheld {held / Math.Max(1, years)} "
-            + $"firewood {world.StoreBuildings.Sum(s => s.Store[Goods.Firewood])}");
+            + $"firewood {world.StoreBuildings.Sum(s => s.Store[Goods.Firewood])} stocking {stocking} counter {counter / Math.Max(1, years)}");
     }
 
     public static IEnumerable<object[]> Runs()

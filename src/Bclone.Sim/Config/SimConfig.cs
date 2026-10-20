@@ -2067,36 +2067,28 @@ public sealed record SimConfig
     [JsonPropertyName("market_capacity")]
     public int MarketCapacity { get; init; } = 2;
 
-    /// <summary>Goods the market keeps on hand, per household it serves.</summary>
+    /// <summary>What a market keeps of each good before the player says otherwise (D612, Joe: <i>"set the market's starting limits to 1000 for each item"</i>).</summary>
     /// <remarks>
-    /// A market is a short trip, not a second granary — it holds enough that a
-    /// household's errand is usually satisfied there, and no more. Sized per household
-    /// rather than flat so it does not become the village's real store as the
-    /// settlement grows, which would quietly re-centralise everything storage just
-    /// spread out.
-    /// ⭐ <b>100 since D417</b> (was 40; Joe: *"I want markets that visibly carry more stock"*). Measured
-    /// over 48 fifty-year runs: survival level within the seed noise and the marketer seats flat, the
-    /// counter holding ~2.2× — D197's doubled hauling came from a target sized to the BUILDING (800 for
-    /// five homes), which this still is not.
+    /// ⛔ <b>It replaced <c>market_stock_per_household</c></b> (40, then 100 since D417), which sized the stock to the
+    /// households a market served because D197 measured a target sized to the building doubling the village's hauling.
+    /// Flat at Joe's word, and measured before it shipped. Shared out of the room in the catalogue's order, so the
+    /// starting limits never add up past <see cref="MarketStoreCapacity"/> (<c>StoreBuilding.KeepsUpTo</c>).
     /// </remarks>
-    [JsonPropertyName("market_stock_per_household")]
-    public int MarketStockPerHousehold { get; init; } = 100;
+    [JsonPropertyName("market_starting_limit")]
+    public int MarketStartingLimit { get; init; } = 1000;
 
     /// <summary>
     /// How much a market HOLDS, food and firewood together — a stated number (D416, Joe:
-    /// *"increase market capacity to 4000"*).
+    /// *"increase market capacity to 4000"*; D612: *"increase the capacity of the market from 4000 to 8000"*).
     /// </summary>
     /// <remarks>
     /// Was derived — <c>market_stock_per_household × economy_horizon_households</c>, 800 shipped —
     /// the shape D219 took away from the granary because a size that derives itself can hide a
-    /// divergence. ⛔ <b>The building's size, not what it is stocked to:</b> the marketer still
-    /// restocks to <c>market_stock_per_household</c> per occupied household
-    /// (<c>VillageEconomy.MarketStockWanted</c>), because D197 measured a restock target sized to
-    /// the building doubling the village's hauling. The capacity caps one good's target only past
-    /// 40 households, but it is shared: five goods at 100 each (D417) fill it at eight.
+    /// divergence. ⭐ <b>Since D612 its goods' limits are its split</b> — they may not add up past it, and
+    /// at a market they replace D361's half-for-food rule (Joe's call).
     /// </remarks>
     [JsonPropertyName("market_store_capacity")]
-    public int MarketStoreCapacity { get; init; } = 4000;
+    public int MarketStoreCapacity { get; init; } = 8000;
 
     // ---------------------------------------------------------------
     //  What buildings cost to raise (D43)
@@ -5255,6 +5247,12 @@ public sealed record SimConfig
         // its village is now a legitimate configuration with a visible consequence** — the village
         // stops growing sooner and the player builds another — which is the whole of Joe's ruling:
         // *"it's fine if the granary feeds a different number of people."*
+        if (MarketStartingLimit < 0)
+        {
+            throw new SimConfigException(
+                $"market_starting_limit must be 0 or more (got {MarketStartingLimit}) — it is how much of a good a market keeps.");
+        }
+
         if (MarketStoreCapacity < 1)
         {
             throw new SimConfigException(

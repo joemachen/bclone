@@ -380,7 +380,9 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
             "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick", "Closed",
         }),
-        (typeof(StoreBuilding), Kept.Data, new[] { "Catalog" }),
+        // D612: the market's starting limit (config) and the village's knowledge (a hook to SimWorld.KnowsOf), handed to a
+        // market on every road it enters the world by — raised, founded, loaded. ALoadedMarketKeepsWhatTheSavedOneKept.
+        (typeof(StoreBuilding), Kept.Data, new[] { "Catalog", "StartingLimit", "Knows" }),
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",

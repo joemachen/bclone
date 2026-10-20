@@ -419,6 +419,85 @@ public partial class Main
         }
     }
 
+    /// <summary>
+    /// <c>market limits:</c> (D612) — a market's <i>Keeps up to</i> rows posed through the game's own writer: the caption says
+    /// how much of the room is kept, each box stops at what the others leave and shows what the counter keeps, <i>clear</i>
+    /// only on a set limit — and a ceiling dropped under the shown value fires no <c>ValueChanged</c>, which would set a
+    /// limit nobody typed. On a real store's card (the view cannot raise a market, D596).
+    /// </summary>
+    private string TheMarketCardStopsAtTheRoom()
+    {
+        StoreBuilding? any = _loop.World.StoreBuildings.FirstOrDefault();
+        if (any is null)
+        {
+            return "[widths] market limits: ❌ no store to open a card on";
+        }
+
+        OpenCard(new CardSubject(CardKind.Store, any.Id));
+        Card? card = _cards.Find(c => c.Subject.Kind == CardKind.Store && c.Subject.Id == any.Id);
+        if (card is null)
+        {
+            return "[widths] market limits: ❌ the store's card did not open";
+        }
+
+        var faults = new List<string>();
+        try
+        {
+            CardControls c = card.Controls;
+            if (c.Limits.Count == 0 || c.LimitCaption is null)
+            {
+                return "[widths] market limits: ❌ a store card has no limit rows";
+            }
+
+            WriteTheMarketLimits(c, 5000, 8000, 1000, _ => new MarketLimitFacts(true, 1000, 3000, false));
+            if (!c.LimitCaption.Text.Contains("5,000 of its 8,000", System.StringComparison.Ordinal))
+            {
+                faults.Add($"the caption reads \"{c.LimitCaption.Text}\"");
+            }
+
+            foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in c.Limits)
+            {
+                if (!cell.Visible || (int)amount.MaxValue != 3000 || (int)amount.Value != 1000 || !clear.Disabled)
+                {
+                    faults.Add($"{goods}: max {amount.MaxValue}, shows {amount.Value}, clear {(clear.Disabled ? "off" : "on")}");
+                }
+            }
+
+            // The trap: a box showing 2,500 whose ceiling drops to 1,000 must not fire a change on the way down.
+            WriteTheMarketLimits(c, 8000, 8000, 1000, _ => new MarketLimitFacts(true, 2500, 2500, true));
+            int fired = 0;
+            void Count(double _) => fired++;
+            foreach ((Goods _, Control _, SpinBox amount, Button _) in c.Limits)
+            {
+                amount.ValueChanged += Count;
+            }
+
+            WriteTheMarketLimits(c, 8000, 8000, 1000, _ => new MarketLimitFacts(true, 1000, 1000, false));
+            foreach ((Goods _, Control _, SpinBox amount, Button _) in c.Limits)
+            {
+                amount.ValueChanged -= Count;
+            }
+
+            if (fired > 0)
+            {
+                faults.Add($"a ceiling dropped under the shown value fired {fired} change(s) — a limit nobody typed");
+            }
+
+            if (c.Limits.Any(l => (int)l.Amount.Value != 1000 || (int)l.Amount.MaxValue != 1000))
+            {
+                faults.Add("after the ceiling dropped, a box does not show 1,000 of at most 1,000");
+            }
+        }
+        finally
+        {
+            CloseCard(card);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] market limits: ✅ the caption says 5,000 of its 8,000 kept; each box stops at what the others leave and shows what the counter keeps; clear only on a set limit; a ceiling dropped under the shown value fired no change"
+            : $"[widths] market limits: ❌ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Open a card on the first workplace, hand it to <paramref name="pose"/>, and close it again.</summary>
     private string? WithAPosedCard(System.Func<Card, string?> pose)
     {

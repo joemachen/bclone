@@ -351,7 +351,11 @@ public sealed class VillagerPointTests
         // forester stated at two) put more hands at the gathering, so trips begin sooner and more often — 55 trips, the
         // 1st/10th/20th at 7 / 119 / 313; the first untouched. Proven the only reason: the parent commit (9aea43a, D602)
         // holds 52 at 7 / 192 / 493 with the suite green, and this is its only sim change. Were 52 at 7 / 192 / 493.
-        Assert.Equal(55, entries);
+        // ⚠️ RE-PINNED (D612), not for the clock: the market keeps 1,000 of each good it knows, not 100 a household, so the
+        // marketer's loads and the households' fetches land differently — 53 trips, the 1st/10th/20th at 7 / 119 / 313; the
+        // milestones untouched. Proven the only reason: the parent commit (de2b491, D611) holds 55 with the suite green, and
+        // this commit's only sim change is the market's. Were 55 at 7 / 119 / 313.
+        Assert.Equal(53, entries);
         Assert.Equal(new ulong[] { 7, 119, 313 }, at);
     }
 

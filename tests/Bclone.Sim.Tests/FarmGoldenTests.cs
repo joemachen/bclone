@@ -300,7 +300,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 3047690971634059098.
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 6173447274466564153.
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 15516440239506033514.
-    private const ulong SeamGoldenHash = 17250329924685123549UL;
+    // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 17250329924685123549.
+    private const ulong SeamGoldenHash = 335095228686958537UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -383,7 +384,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D601) with it, for the same reason: the market stocks its emptiest shelf first. ⭐ PROVEN: with that one comparison put back to cost-first, the old value passes (the 73-of-73 run, which asserts it after `SeamGoldenHash`'s old value). Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's and D543's did. Was 7686462258561762435.
     // RE-TAKEN (D602) with it, for the same reason: builders spread across the queue. ⭐ PROVEN: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 16045020298154782036.
     // RE-TAKEN (D603) with it, for the same reason: Joe's seat defaults. PROVEN: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 10584260321345854200.
-    private const ulong SeamBeforeAnybodyGotBetter = 7581925007179817567UL;
+    // RE-TAKEN (D612) with it, for the same reason: the market holds 8,000 and keeps 1,000 of each good it knows. Proven by the parent commit (de2b491), which holds the old value with the suite green. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 7581925007179817567.
+    private const ulong SeamBeforeAnybodyGotBetter = 7837485714083851781UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

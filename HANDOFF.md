@@ -11,7 +11,7 @@
 > (D610), unplayed** (and every fence moved an eighth of a tile onto its real edge); (3) his stock-limit defaults — ✅ **built
 > (D611), measured** (forage, fish, meat 2,500; wheat 2,000; logs, stone
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
-> 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
+> 8,000, limits start at 1,000 a good and may not add up past the room — ✅ **built (D612), measured, unplayed** (one rule wherever per-good limits exist;
 > at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
 > by, spec first. His tools question was answered from the code (D608). Then **doors**, spec first.
 >
@@ -7386,6 +7386,20 @@ Read `git status` after staging, every time.
   When the natural path scores zero, the next question is *why* — here, the probe's valley never meets a band — and
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
+
+## ⛔ THE TRAPS D612 PAID FOR — A CLAMP THAT FIRES A SIGNAL, A SIX-VALLEY COIN, AND AN `rm` ON A BARE VARIABLE
+
+- ⛔ **Godot's `SpinBox` fires `ValueChanged` when its `MaxValue` drops under the value it shows** — six changes on the
+  probe's pose. A card refresh that sets the ceiling first writes a limit the player never typed. Lower the value with
+  `SetValueNoSignal` first, then the ceiling, then the value; probe `market limits:` counts any signal.
+- ⭐ **A ratio guard over six valleys is still a coin.** `TheFoundingHubWearsLanesNotABlock` read 0.72 against its 0.7 bar
+  with ONE valley flipping 16 → 24; twelve valleys read 0.688 / 0.682 before and after. Measure more valleys on both
+  builds before touching a bar — then make the guard stronger (more valleys), never looser.
+- ⛔ **`rm -f "$S/$wt/…"` is refused by a safety check** (a bare variable could expand to `/`). Write
+  `"${S:?}/${wt:?}/…"` — the shell stops instead of removing anything when one is empty.
+- **A guard posed on seven years of a fixture's history moves with any change to the village's rhythm** —
+  `FoodLimitTests` drained its posed stock in ten ticks under the new market. Pose the stock the claim needs, and say
+  in the comment what it was before and why.
 
 ## ⛔ THE TRAPS D611 PAID FOR — AN OPENING THAT NEVER MAKES THE GOOD, A HARNESS THAT RAN THE OLD DLL, AND A HUT NOBODY COULD REACH
 

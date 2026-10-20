@@ -333,7 +333,10 @@ public sealed class FoodLimitTests
         // in its granary at year seven is seven years of history: it held 263 on `main` at D496 and 0
         // once every house cleared both its tiles — two trees a house, out of the foragers' rings for
         // good. The claim is the limit's, so a working stock is put in when the history left none.
-        const int working = 200;
+        // ⚠️ 600, NOT 200, SINCE D612: with the market keeping 1,000 a good the village's history to year seven differs, and
+        // a posed 200 drained through the limit in ten ticks of two years — no forager decided under it while it stood (the
+        // claim's premise, not its failure). At 600 it stands for 144 ticks, as 200 did for 112 before.
+        const int working = 600;
         if (world.HeldAgainstItsLimit(Goods.Produce) < working)
         {
             StoreBuilding granary = world.StoreBuildings.First(s => s.Accepts(Goods.Produce));
