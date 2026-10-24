@@ -1,11 +1,38 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D618, PUSHED (D609–D617 MERGED, PLAYED). NOTHING IS UNMERGED. NEXT: JOE'S CALL — DOORS (SPEC FIRST) WAITS AS A CARD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D618, PUSHED, CLEAN: NOTHING UNMERGED, NOTHING UNPLAYED. NEXT IS JOE'S CALL (THE QUEUED THREAD IS DOORS, SPEC FIRST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D618: D616–D617 MERGED) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D618) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **`main`** = D618, pushed: Joe played the village panel in columns (D616) and tools for every hands-on adult once a
-> smithy stands (D617), and said merge and push. **Nothing is unmerged.** ▶️ **Next is Joe's call** — the doors spec
-> (`task_a4066d55`) is the queued design thread. **Numbers:** suite 1811 / 0 / 5 of 1816 (13m17); probe 97 lines;
-> goldens 383.
+> **The state.** `main` = D618 plus this handoff, pushed to GitHub. **Every branch is merged; nothing waits on Joe's play.**
+> Phase 5 (production chains, professions' buildings, the living region). The last stretch, all played by Joe and merged:
+> - **Trade and the herd** (D585–D607, merged D608): the trading post, the merchant, the region's three neighbours, the boat,
+>   the barn, the fenced pasture, the paths drawn as walked.
+> - **His D607 notes** (D609–D613, merged D615): the village panel sorts; a round pasture's fence drawn round; his starting
+>   stock limits; a market of 8,000 whose limits start at 1,000 and add up to its room; quarries and mines claim the seam
+>   they stand by. **D614**: one piece of ground stays one piece (a house on the founding site had walled a hut in).
+> - **His D615 notes** (D616–D617, merged D618): *The village* panel in three aligned columns, the column names the sort;
+>   every hands-on adult carries a tool **once a smithy stands** — builders a third faster, herdsmen, laborers from what the
+>   trades can spare; never the carriers (marketer, merchant), nor the teacher and preacher when they come.
+>
+> **▶️ NEXT — Joe's call; nothing is half-built.** The queued thread is **doors** (`⏸️ OPEN` below): every building a door on
+> its front and walkers in and out through it. **Spec first** (`specs/doors.md`), because it moves every golden, the Phase 0
+> pins and catchment — measure survival before typing. A session card was proposed for it (`task_a4066d55`, **expires
+> 2026-10-26**). Ask Joe what he wants before starting anything; the ⏸️ OPEN list holds his other open calls.
+>
+> **The numbers a session checks against (D618):** suite **1811 / 0 / 5 of 1816**, clock **≈ 11–13 min** (13m17 last;
+> read it on a quiet machine); probe **97 `[widths]` lines**, bar height 151, `done.` printed (the `ERROR … posed by the
+> probe` line is the fault drill, and `fault: ✅` after it); the goldens grep **383 lines**.
+>
+> **How this project is worked (the habits that paid for themselves this stretch — the traps below have the why):**
+> - **Joe's named fix is a hypothesis:** read his newest autosave first (`%APPDATA%\Godot\app_userdata\bclone\saves\`, a
+>   *copy* in the scratchpad; `SaveFile.Open` it in a scratch test and step it).
+> - **Measure before typing** with `tools/harness/ZzLimits.cs` (+ `limits.py`): `ZZ_LABEL` arms in **two worktrees** (parent
+>   vs change), 36+ seeds a cell, and ask whether the openings ever reach the code (no harness village raises a market or a
+>   smithy — D601, D617). A harness loss is paired with Joe's own save run on before it becomes a design question.
+> - **Every guard red-checked and counted**, mutants applied and reverted by exact text (never `git checkout`, never an
+>   empty mutant); a zero is written down or closed. A guard through a test seam can miss the path the seam bypasses.
+> - **Edit scripts from a file** (Write the `.py`, run `python -X utf8 -I`), commit messages from a file (`git merge -F -`
+>   reads no stdin), `rm` only on `${VAR:?}` paths. Never build in a tree whose suite is running.
+> - Docs move in the same commit as the code: the spec's status line, a §7 entry, §6, and this banner.
 >
 > **(the banner below is the state at D617)**
 >
@@ -17,8 +44,7 @@
 > (2) tools for every hands-on adult — builders (a third faster), herdsmen, laborers from what the trades can spare;
 > not the carriers — ✅ **built (D617), measured, unplayed: once a smithy stands (his call); no golden moved.** ▶️ **Joe
 > plays it** (`.\run.bat`): the list's columns and sorting; a village with a smithy — builders with tools, laborers taking
-> spares. Merging is his word. **Numbers:** suite 1811 / 0 / 5 of 1816 (13m17); probe 97 lines; goldens 383. **Numbers:** suite 1802 / 0 / 5 of 1807 (13m26);
-> probe 97 lines; goldens 383.
+> spares. Merging is his word. **Numbers:** suite 1811 / 0 / 5 of 1816 (13m17); probe 97 lines; goldens 383.
 >
 > **(the banner below is the state at D613)**
 >
@@ -7948,7 +7974,9 @@ Read `git status` after staging, every time.
   builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
   the well's ring), the paths (D605, played and approved) and D607. His word only.
 
-- ⏸️ **A YARD CAN WALL A BUILDING IN AGAINST THE MAP'S EDGE (found D611).** Established seed 18 (`ShippedConfig.Established()`,
+- ✅ **FIXED (D614), MERGED (D615) — the cause was not the map's edge:** a house sited on the free founding site sealed a
+  pocket the wall-off sweep could not see from inside; one piece of ground now stays one piece (`SimWorld.TheVillagesPiece`),
+  and a builder who cannot reach a site says it is walled in. ~~A YARD CAN WALL A BUILDING IN AGAINST THE MAP'S EDGE (found D611).~~ Established seed 18 (`ShippedConfig.Established()`,
   Joe's D611 limits): woodcutter's hut 1 at (0, 2), a yard wall on its south side, `TravelCost.CanReach(village, hut)` false;
   unworked, fallen in at Year 41, its repair never served (`NextToBuild` skips the unreachable), the village frozen at Year
   43. Under the old limits the same hut falls in at Year 48. D404's `WhatThisWouldWallOff` should have refused the yard.
@@ -7957,14 +7985,22 @@ Read `git status` after staging, every time.
 - ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
+  ▶️ **The queued thread after D618** — the card `task_a4066d55` expires 2026-10-26; Joe says when.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
+
+- ⏸️ **D617'S CALLS, SETTLED WITHOUT ASKING — HIS TO OVERRULE (`tools-and-the-smith.md §10`):** a builder's tool wears a
+  use each time they set off to build (a stint), not once a building day as first specced; and before a smithy stands a
+  tool a builder or herdsman kept from another trade is neither used nor worn at that work (it keeps for the trades) —
+  measured: with that, a village without a smithy plays byte for byte as before.
 
 - ⏸️ **D613'S CALLS, SETTLED WITHOUT ASKING — HIS TO OVERRULE (`seam-reach.md §8.7`):** a seam is claimed when the quarry
   is finished (shown from placing); a seam is never shared (a second quarry by it is refused); the palisade is drawn, not
   walls; the brush buttons go for both trades; existing quarries keep their painted ground.
 
-- ✅ **ANSWERED (D615): builders, herdsmen and laborers (trades first) carry tools; carriers do not — building as D617.**
+- ✅ **ANSWERED (D615), BUILT (D617), PLAYED AND MERGED (D618): builders, herdsmen and laborers (trades first) carry tools
+  once a smithy stands; carriers do not.** ⏸️ Still his if he wants them: a worker holding stone trading it in for iron
+  (D446 says no); D391's and D430's wear measurements never reconciled.
   ~~TOOLS — HIS QUESTION ANSWERED (D608), CHANGES HIS CALL:~~ builders carry no tools (on purpose, `tools-and-the-smith.md
   §3.2`); a worker holding stone never trades it in for iron (D446); D391's ~3 years a hand and D430's ~5× slower never
   reconciled. Say if any of the three should change.
