@@ -1,6 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D618, PUSHED, CLEAN: NOTHING UNMERGED, NOTHING UNPLAYED. NEXT IS JOE'S CALL (THE QUEUED THREAD IS DOORS, SPEC FIRST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D619: DOORS ARE SPECCED (`specs/doors.md`), NOTHING BUILT. NEXT: JOE'S FIVE CALLS (THE SPEC'S §6), THEN `slice/doors`, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D618) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D619) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **The state.** `main` = D618 + D619. D619 is the doors spec, written at Joe's pick (*"Doors, spec only"*).
+> **Nothing in `src/` changed and no golden moved.** It is `specs/doors.md`, its premise measurement
+> `tools/harness/ZzDoors.cs`, and the docs (§6, §4's next line, §7 D619).
+>
+> **What the spec says, in one breath:** every roofed building is entered through a door on its front. The sim quantises
+> the door to the four tile directions, derives it and never saves it. A walk's goal becomes the doorstep, with every
+> footprint closed in every field. The one cost field is unchanged and no wall bits are written round buildings.
+> Catchment is priced door to door, nothing may stand on a doorstep, and wall-off asks the door. Wells, piles and bridges
+> keep D383's any-side rule. A front that cannot open moves the door to the first side that can (front → back → right →
+> left), and the card says so.
+>
+> **Measured first, on copies of Joe's five newest saves:** 177 of 196 fronts open. The 19 blocked ones are 9 onto water
+> (4 fishing huts and both trading posts face their water, as a dock does), 7 with something built in front, 2 wells against a fence and
+> 1 barn unreached, and **all 19 have another side open**. **46 % were never turned.** The walk to a front is about the
+> walk to the building (−1.8 %): a premise, not a survival claim.
+>
+> **▶️ NEXT — Joe's five calls** (`doors.md §6`): which buildings have a door; a blocked front; founding buildings'
+> facing; the ghost's starting facing; water buildings. Each has a recommendation. **Then the build, on `slice/doors`, five
+> commits** (`doors.md §9`). The goldens and the Phase 0 pins move **once, in commit 3**, and only after §5's measurement:
+> ZzLimits played 100 / established 36 / every 36, plus his five saves for 20 years, parent against change in two
+> worktrees, survival within noise, every added death traced.
+>
+> **The numbers a session checks against are D618's, unchanged** (no code moved): suite 1811 / 0 / 5 of 1816, probe 97
+> `[widths]` lines, bar 151, goldens grep 383 lines. ⚠️ The four checks were **not** re-run for D619: docs and a harness
+> file only, and the harness file lives outside `tests/` (copied in to run, deleted after, and `git status` showed it gone).
+>
+> **(the banner below is the state at D618)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-24 (D618) — ON WINDOWS.**
 >
 > **The state.** `main` = D618 plus this handoff, pushed to GitHub. **Every branch is merged; nothing waits on Joe's play.**
 > Phase 5 (production chains, professions' buildings, the living region). The last stretch, all played by Joe and merged:
@@ -7967,6 +7997,15 @@ Read `git status` after staging, every time.
   a hang is reported as HUNG, never counted as a red.** The mutant was re-posed as one that builds and runs (the ends
   nudged a tenth of a tile).
 
+## ⛔ THE TRAP THE DOORS SPEC (D619) NEARLY PAID FOR — ONE BUILDING, TWO LISTS
+
+- **The market, the trading post and the barn are each both a `Workplace` and a `StoreBuilding`, at the same footprint.**
+  A measurement that walks `Workplaces` and then `StoreBuildings` counts each of them twice (the first pass of
+  `ZzDoors` read *Marketer* and *Market* as two blocked fronts). `StandingShapes()` lists them twice as well, which the
+  occupancy index tolerates and a count does not. **Dedupe by footprint (origin, width, height) before counting buildings.**
+- **A facing is a default far more often than a choice:** 91 of Joe's 196 buildings were never turned. Before a rule
+  keys on the facing, ask what the unturned pose does. Here every door would face north.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
@@ -7985,7 +8024,8 @@ Read `git status` after staging, every time.
 - ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
-  ▶️ **The queued thread after D618** — the card `task_a4066d55` expires 2026-10-26; Joe says when.
+  ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
+  used). ⏸️ **His five calls are its §6**; nothing is built until he answers them.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 

@@ -37,6 +37,10 @@ against a number from an older commit.
   worktrees (D612's market, D617's tools); the ZZL line carries the marketers' carrying ticks, the counters' stock, tools
   forged and taken, the tool-trade hands' share of ticks without a tool, and site-ticks. ⚠️ No harness village raises a
   smithy: a tools rule measured here is measured on the founders' twenty (D617).
+- `ZzDoors.cs` — D619's premise for `specs/doors.md §3`: on a folder of saves (`ZZ_SAVES`, a *copy* of Joe's), for
+  every standing building, whether the tile in front of its facing is walkable, empty, unwalled and reached, whether
+  another side is open if not, and the walk to it against the walk to the building. Reads, never steps. Copy in,
+  `--filter ZzDoors`, delete.
 - `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
   fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
   one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its
