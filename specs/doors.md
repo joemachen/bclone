@@ -3,9 +3,9 @@
 **Decision:** D619 (this document; Joe's D607 call *"spurs now, real doors later (a spec of their own)"*, and his
 2026-09-19 note, D395). Neighbours: D383 (buildings are obstacles — entered from the cheapest side), D388 (the lane
 picks a house's door), D404–D406 (fences as walls, one gate), D605/D607 (doorsteps and spurs, drawn), D614 (one piece
-of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620): all five as recommended. NOT STARTED —
-next is commit 1 on `slice/doors` (§9).** The premise
-is measured (§3, `tools/harness/ZzDoors.cs`); nothing in `src/` has changed. Owner: Joe + Claude Code.
+of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620): all five as recommended. 🔨 COMMIT 1 OF 5
+BUILT (D621) on `slice/doors`, unplayed: the door derived and said (`SimWorld.Doors.cs`, `DoorTests`); nobody walks
+through it yet, no golden moved. Next: commit 2 (§9).** The premise is measured (§3, `tools/harness/ZzDoors.cs`). Owner: Joe + Claude Code.
 
 ---
 
@@ -99,23 +99,38 @@ rule, unchanged.
 On the building's **front**: the edge its facing points away from, in the footprint's own frame the −y edge
 (`PlotShape.cs:124`'s *"the door on the −y edge"*, which the house already uses).
 
-- **The door tile** is the footprint tile under centre + (0, −(H/2 − ½)) turned by the facing; **the doorstep** is
-  its four-neighbour across the front. For a 1-deep building turned a quarter (a house, a 2×1 hut) that is exactly
-  `PlotShape.Door`, so such a house's door does not move. For a house turned off the quarter, `PlotShape.Door` can be
-  the diagonal tile; the siting check (`TilesClippedOff`) is moved onto this rule's doorstep in commit 1, so the two
-  never disagree.
-- **The front's direction is quantised to the nearest of the four tile directions** for the sim (ties to the
-  earlier of N, E, S, W). The view draws the door on the turned wall where it really is. §3's 16 diagonal cases are why.
+- **The door tile** is, of the building's tiles whose next tile frontward is not its own, the one nearest the middle
+  of the turned front edge (centre + (0, −H/2) turned); a tie goes to the tile that middle point falls in (the later in
+  `CoveredTiles`' order). **The doorstep** is its four-neighbour across the front. *(Built, D621 — the first draft said
+  "the tile under centre + (0, −(H/2 − ½))", which need not be a front tile once a building is turned off the quarter.)*
+  For a building turned a quarter that is the tile half a tile past the front's middle; for a house it is exactly
+  `PlotShape.Door` (guarded, `AHousesDoorstepIsItsPlotsDoor`), so a house's door does not move. For a house turned
+  off the quarter, `PlotShape.Door` can be the diagonal tile; the siting check (`TilesClippedOff`) moves onto this
+  rule's doorstep **in commit 2** (it changes which plots are refused, so it is not commit 1's), and then the two never
+  disagree.
+- **The front's direction is quantised to the nearest of the four tile directions** for the sim (a facing exactly
+  between two turns back — anticlockwise, to the lower angle; `SimWorld.FrontOf`). The view draws the door on the turned wall where it really is. §3's 16 diagonal cases are why.
 - **Derived, never stored, never hashed** (D335): it restates the footprint, the facing and what stands round it.
-  Kept as an index on `StandingGeneration` and `WallGeneration` (`SimWorld.DoorOf`), never rebuilt per tick (Joe's rule).
+  Remembered per footprint until `StandingGeneration`, the walls' or the terrain's generation moves (`SimWorld.DoorAt`),
+  never rebuilt per ask (Joe's rule; `ADoorIsWorkedOutOncePerChangeNotPerAsk`).
   **No save format change.**
 
 ### 4.3 A front that cannot open ⭐ (call 2)
 
-If the front's doorstep is not walkable, has something standing on it, is walled from the door tile, or is not part of
-the village's ground (`TheVillagesPiece`), **the door is on the first side that can open, in the order front → back →
-right → left.** It is still derived. The card says so in words: *"Its door is at the back — the river is in front of
-it."* Back before the sides because a dock faces its water and its door is landward (§3.1).
+If the front's doorstep is off the map, not walkable, has something standing on it, is walled from the door tile, or
+is not ground the village reaches today (the wall-off sweep's own free ground), **the door slides along the front to
+the nearest edge tile that can open, and failing that turns to the first side that can, in the order back → right →
+left**, each side again from its middle outward. It is still derived. Back before the sides because a dock faces its
+water and its door is landward (§3.1). ⭐ *Built (D621):* because a door slides before it turns, **a building is shut
+exactly when no free tile the village reaches touches it across an unwalled edge** — D383's own test — so a building
+the village reaches always has a door it can use (`ABuildingIsShutExactlyWhenNothingReachesIt`). A shut door stands on
+the front's middle.
+
+**The card's sentence** (`SimWorld.SayWhereTheDoorIs`) names the side by the compass, because the player reads a map,
+not a building's left and right: *"Its door is on its north side — water lies in front of it."* The reasons: *the
+valley ends* / *water lies* / *{the name} stands* in front of it, *a fence runs across its front*, *nobody can reach
+the ground in front of it*; shut, *"No side of it opens onto ground the village can reach."* Nothing is said for a
+door on its front, slid or not.
 
 Once §4.5 holds, a new building's door only moves when the ground under its doorstep changes. Old saves, the river and
 the founding site are the cases left.
@@ -269,14 +284,17 @@ through doors; the gate stays theirs).
 
 ## 9. Build order — one commit each, measured where it moves behaviour
 
-1. **The door, derived** — `DoorOf`, the index, the card's sentence for a moved door. No behaviour change, no golden.
+1. **The door, derived** — `DoorOf`, the index, the sentence for a moved door as a sim answer. No behaviour change, no
+   golden. ✅ **Built (D621).** *The sentence reaches the cards in commit 5:* every card kind writes its own rows, so
+   putting it on them is view work with probe checks of its own, and it would be the only view change in this commit.
 2. **Doorsteps kept clear** — `CanBuildAt`'s refusal and wall-off asking the door. New refusals only. Measure whether
    any golden village is refused a placement it used to get.
 3. **Walking and catchment through the door** — **the goldens move here, once.** §5's measurement is taken on this commit
    against its parent before it is kept.
 4. **Founding facing and the ghost's starting facing** (calls 3 and 4). Measured on its own: it moves the established
    arm again.
-5. **The view** — the door drawn on every building, the ghost's door, spurs to doors, `KeepTheBusierSides` re-measured.
+5. **The view** — the door drawn on every building, the ghost's door, the moved-door sentence on the cards, spurs to
+   doors, `KeepTheBusierSides` re-measured.
    View only.
 
 Each on `slice/doors`, unplayed until Joe plays it; merging is his word.

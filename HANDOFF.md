@@ -1,6 +1,19 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620: DOORS ARE SPECCED (`specs/doors.md`) AND JOE'S FIVE CALLS ARE ANSWERED, NOTHING BUILT. NEXT: `slice/doors`, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620 (DOORS SPECCED, JOE'S CALLS ANSWERED). `slice/doors` = D621, COMMIT 1 OF 5 (THE DOOR, DERIVED; NO BEHAVIOUR CHANGE), LOCAL. NEXT: COMMIT 2, THEN THE WALKING COMMIT, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D620) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D621) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`slice/doors`** = `main` (D620) + **D621, commit 1 of `doors.md §9`**, local, unpushed, unplayed (nothing to see yet).
+> Every roofed building's door is worked out and said (`SimWorld.Doors.cs`, `World/Door.cs`), and **nobody walks through
+> it yet**. No golden moved. `DoorTests`: 26 cases; 11 mutants, 21 reds, no zero. ⚠️ Two spec corrections (in the spec):
+> the door tile is the front tile nearest the edge's middle; the siting check (`TilesClippedOff`) moves in commit 2. The
+> sentence reaches the cards in commit 5.
+> **▶️ NEXT: commit 2** — `CanBuildAt` refuses a footprint on any standing building's doorstep, wall-off asks the door,
+> `TilesClippedOff` moves onto the doorstep; measure whether a golden village is refused a placement it used to get.
+> **Numbers (D621):** suite 1837 / 0 / 5 of 1842 (12m51); probe 97 lines, bar 151; goldens grep 383.
+>
+> **(the banner below is the state at D620)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-24 (D620) — ON WINDOWS.**
 >
 > **The state.** `main` = D618 + D619 + D620. D619 is the doors spec, written at Joe's pick (*"Doors, spec only"*).
 > **Nothing in `src/` changed and no golden moved.** It is `specs/doors.md`, its premise measurement
@@ -8007,6 +8020,19 @@ Read `git status` after staging, every time.
 - **A facing is a default far more often than a choice:** 91 of Joe's 196 buildings were never turned. Before a rule
   keys on the facing, ask what the unturned pose does. Here every door would face north.
 
+## ⛔ THE TRAP DOORS COMMIT 1 (D621) PAID FOR — A MUTANT THE ANALYSERS REFUSE SCORES ZERO, AND A PILE THAT WAITS
+
+- **Three of the first run's four zeros were mutants that never built.** `.editorconfig` makes an unused parameter
+  (IDE0060) or a field nobody reads (IDE0052) a build error, so a mutant that stops reading something ("reach not
+  read", "blind to the walls' counter") fails to build. The red-check script looked for `error CS` only, and dotnet
+  printed no test lines, which counted as **0 red**. **A run without `Total tests:` in its output is NO RUN, never a
+  zero**; pose the mutant so it still reads the thing (`reached[index] || true`, `&& false`).
+- **A pile on uncleared ground does not stand when it is marked:** it waits for the ground to clear, so a pose that walls
+  a pocket with piles leaks. Walls (`Zones.Wall`) seal a pose exactly and stand at once.
+- `_freeGroundToday` (the wall-off sweep the doors now share) is keyed on the standing and wall generations, not the
+  terrain's. The doors' own index keys on all three, but a terrain change alone does not refresh the sweep under it.
+  Older than this, and left as it was; commit 3 is where it could start to matter.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
@@ -8026,7 +8052,7 @@ Read `git status` after staging, every time.
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
   ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
-  used). ✅ **His five calls answered as recommended (D620).** ▶️ The build on `slice/doors` is next.
+  used). ✅ **His five calls answered as recommended (D620).** 🔨 Commit 1 of 5 built on `slice/doors` (D621). ▶️ Commit 2.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 

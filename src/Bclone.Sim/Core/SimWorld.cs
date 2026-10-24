@@ -12712,6 +12712,26 @@ public sealed partial class SimWorld : IObstacles
     private int[]? _freeGroundTodayPieces;
 
     /// <summary>
+    /// The free ground the village reaches today, by map-order index — swept once per standing and wall generation and
+    /// shared by the wall-off check and the doors (D621).
+    /// </summary>
+    private bool[] FreeGroundToday()
+    {
+        RebuildTheStandingIndexIfStale();
+        if (_freeGroundToday is null
+            || _freeGroundTodayGeneration != StandingGeneration
+            || _freeGroundTodayWalls != Zones.WallGeneration)
+        {
+            _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
+            _freeGroundTodayPieces = null;
+            _freeGroundTodayGeneration = StandingGeneration;
+            _freeGroundTodayWalls = Zones.WallGeneration;
+        }
+
+        return _freeGroundToday;
+    }
+
+    /// <summary>
     /// What a building here would cut off from the village — a name, or null if nothing (D383).
     /// </summary>
     /// <remarks>
@@ -12752,23 +12772,11 @@ public sealed partial class SimWorld : IObstacles
 
     private string? WhatWouldBeWalledOff(List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, List<GridPos> mustStayReached)
     {
-        RebuildTheStandingIndexIfStale();
-
         // ⚠️ AGAINST TODAY, NOT AGAINST PERFECTION. A shape nothing reaches today — a hut the
         // generator put across the water (seed 42's forager's hut) — is not something this
         // proposal walls off, and refusing every building in the valley on its account is how
         // the founding stopped founding. Two sweeps: the free ground as it is, and as it would be.
-        if (_freeGroundToday is null
-            || _freeGroundTodayGeneration != StandingGeneration
-            || _freeGroundTodayWalls != Zones.WallGeneration)
-        {
-            _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
-            _freeGroundTodayPieces = null;
-            _freeGroundTodayGeneration = StandingGeneration;
-            _freeGroundTodayWalls = Zones.WallGeneration;
-        }
-
-        bool[] before = _freeGroundToday;
+        bool[] before = FreeGroundToday();
         bool[] after = TheFreeGroundAfter(before, proposedTiles, fence);
 
         // First, the village can still leave where it landed: the founding site keeps a reached

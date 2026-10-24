@@ -338,7 +338,9 @@ public sealed class SaveLoadTests : IDisposable
         {
             "_terrainGeneration", "BuildingGeneration", "StandingGeneration", "_standing", "_standingOwner",
             "_standingFootprints", "_standingBuiltAt", "_freeGroundToday", "_freeGroundTodayGeneration",
-            "_freeGroundTodayWalls", "_freeGroundTodayPieces", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
+            "_freeGroundTodayWalls", "_freeGroundTodayPieces",
+            // Every building's door (D621): worked out from the footprint and what stands round it, a loaded village works them out again.
+            "_doors", "_doorsStanding", "_doorsWalls", "_doorsTerrain", "DoorsWorkedOut", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_seamTiles", "_smithyCheckedAt", "_aSmithyStands", "_mostEverAliveFor", "_mostEverAlive",
