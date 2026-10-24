@@ -1,6 +1,15 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D615, PUSHED (D609–D614 MERGED, PLAYED). NEXT, ON `slice/d615-notes`: THE VILLAGE PANEL IN ALIGNED COLUMNS (D616), THEN TOOLS FOR EVERY HANDS-ON ADULT (D617, `tools-and-the-smith.md §10`). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D618, PUSHED (D609–D617 MERGED, PLAYED). NOTHING IS UNMERGED. NEXT: JOE'S CALL — DOORS (SPEC FIRST) WAITS AS A CARD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-23 (D615: D609–D614 MERGED) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D618: D616–D617 MERGED) — ON WINDOWS.**
+>
+> **`main`** = D618, pushed: Joe played the village panel in columns (D616) and tools for every hands-on adult once a
+> smithy stands (D617), and said merge and push. **Nothing is unmerged.** ▶️ **Next is Joe's call** — the doors spec
+> (`task_a4066d55`) is the queued design thread. **Numbers:** suite 1811 / 0 / 5 of 1816 (13m17); probe 97 lines;
+> goldens 383.
+>
+> **(the banner below is the state at D617)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-23 (D615: D609–D614 MERGED) — ON WINDOWS.**
 >
 > **`main`** = D615, pushed: Joe played D609–D613 and merged them with D614 (the walled-in hut) on top. **▶️ NEXT** on
 > `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort — ✅ **built (D616),
