@@ -3,9 +3,12 @@
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-23 (D615: D609–D614 MERGED) — ON WINDOWS.**
 >
 > **`main`** = D615, pushed: Joe played D609–D613 and merged them with D614 (the walled-in hut) on top. **▶️ NEXT** on
-> `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort (D616, view);
+> `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort — ✅ **built (D616),
+> unplayed**;
 > (2) tools for every hands-on adult — builders (a third faster), herdsmen, laborers from what the trades can spare;
-> not the carriers (D617, spec §10 first, measured, goldens move). **Numbers:** suite 1802 / 0 / 5 of 1807 (13m26);
+> not the carriers — ✅ **built (D617), measured, unplayed: once a smithy stands (his call); no golden moved.** ▶️ **Joe
+> plays it** (`.\run.bat`): the list's columns and sorting; a village with a smithy — builders with tools, laborers taking
+> spares. Merging is his word. **Numbers:** suite 1811 / 0 / 5 of 1816 (13m17); probe 97 lines; goldens 383. **Numbers:** suite 1802 / 0 / 5 of 1807 (13m26);
 > probe 97 lines; goldens 383.
 >
 > **(the banner below is the state at D613)**
@@ -7447,6 +7450,24 @@ Read `git status` after staging, every time.
   its list (this one: `_freeGroundTodayPieces`). Run that class with `--filter` after adding a field, not 11 minutes later.
 - **Two zeros kept:** the proposal itself not scored (only tie-breaks no pose reaches), and a bridge's pull-down off the
   rule (no guard pulls a deck down beside the founding site). If either ever matters, that is where its guard goes.
+
+## ⛔ THE TRAPS D617 PAID FOR — A HARNESS THAT NEVER BUILDS THE THING THE RULE NEEDS, AND A GUARD THAT POSED AROUND DECIDE
+
+- ⭐ **No harness village ever raises a smithy, so its tools are the founders' twenty for ever.** A rule about who carries
+  a tool measured there is a rule about a fixed stock; in Joe's villages, with smithies, the same rule was a gain. Run his
+  saves on (scratchpad `ZzSave.cs` — `SaveFile.Open` a copy, step twenty years) before calling a harness loss a design
+  problem (the memory's rule), and say both to him.
+- ⭐ **When a rule waits on something, the thing already in hand waits too.** Gating only the *taking* of a tool left a
+  builder wearing out the one he kept from a trade — 0.6 lives a valley. One helper (`ToolWorksFor`) for ticks, yield, wear
+  and extra work made the no-smithy village byte-identical, which is the strongest check there is.
+- ⛔ **A guard through a test seam passes a mutant that cuts the path the seam bypasses.** Every laborer guard called
+  `TryFetchAToolForTest`; cutting laborers out of `Decide` scored zero until a village ran with its trades closed and a
+  laborer had to fetch of their own accord. And in a working fixture laborers are seated within a tick — pose standing
+  laborers (job limits 0), or the observation is of nobody.
+- **An errand state can last less than a tick** (a store a step away): check the outcome (a tool in hand), and check it
+  for the same villager before and after one step, or a hand that took a trade and fetched through it confounds it.
+- ⚠️ **`dotnet build` while a suite runs in the same tree fights its DLLs** — measure in worktrees, and build in the main
+  tree only between runs. Two scratch worktrees (`wt-tools`, `wt-new`, `wt-nolab`) are removed at the end.
 
 ## ⛔ THE TRAPS D613 PAID FOR — A GUARD WHOSE NEAR SEAM WAS ALSO FIRST, AND A CORNER THAT WAS THE CHECK'S OWN
 

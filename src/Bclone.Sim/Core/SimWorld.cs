@@ -3050,7 +3050,7 @@ public sealed partial class SimWorld : IObstacles
         // Each bonus as a percentage off; zero where it does not apply. Mastery is scaled by the
         // share of the way there (hundredths of a percent, out of 10,000); the tool is whole.
         long masteryOff = MasteryOffFor(villager, trade);
-        int toolOff = villager.ToolUses > 0 && JobsCatalog.UsesTool(trade)
+        int toolOff = ToolWorksFor(villager, trade)
             ? GoodsCatalog[villager.ToolGood].ToolSpeedBonusPercent
             : 0;
 
@@ -3124,6 +3124,70 @@ public sealed partial class SimWorld : IObstacles
     /// tool that quickens it, so the last use speeds its own action and the next one is bare.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐ The extra units of a site's work a builder's tool does this tick (D617, `tools-and-the-smith.md §10.2`) — so the
+    /// site takes about <c>1 − bonus</c> of the time, as a tool takes its bonus off any action's ticks: stone's 34 % one
+    /// extra unit about every other tick, iron's 50 % one every tick.
+    /// </summary>
+    /// <remarks>
+    /// Derived from the world's tick — <c>⌊(t+1)·b ÷ (100−b)⌋ − ⌊t·b ÷ (100−b)⌋</c> — so nothing new is stored or hashed.
+    /// Nothing for a builder with empty hands, or when the builder's row says no tool. The tool wears through
+    /// <see cref="BeginWork"/> when the builder sets to work, not here.
+    /// </remarks>
+    /// <summary>
+    /// ⭐ Whether the tool in these hands works for this trade (D617) — the one answer for the ticks, the yield, the wear and
+    /// a builder's extra work: a tool in hand, a trade whose row carries one, and, for a trade whose tool waits for the
+    /// smithy (the builder, the herdsman), a smithy standing. Before it, a tool kept from another trade is neither worn nor
+    /// used at that work — the founders' few stay whole for the trades that feed and warm the village.
+    /// </summary>
+    public bool ToolWorksFor(Villager villager, JobKind trade)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        return villager.ToolUses > 0 && JobsCatalog.UsesTool(trade)
+            && (!JobsCatalog.ToolWaitsForTheSmithy(trade) || ASmithyStands());
+    }
+
+    private int _smithyCheckedAt = -1;
+    private bool _aSmithyStands;
+
+    /// <summary>
+    /// Whether a finished smithy stands — tools can be made (D617). Kept on <see cref="StandingGeneration"/>, which moves
+    /// whenever a building appears, finishes or goes: asked on every building tick, so never a walk of the workplaces per
+    /// ask (Joe's 2026-09-10 rule). Derived, never hashed.
+    /// </summary>
+    public bool ASmithyStands()
+    {
+        if (_smithyCheckedAt != StandingGeneration)
+        {
+            _smithyCheckedAt = StandingGeneration;
+            _aSmithyStands = false;
+            for (int i = 0; i < Workplaces.Count && !_aSmithyStands; i++)
+            {
+                _aSmithyStands = Workplaces[i].Kind == JobKind.Smith && !Workplaces[i].IsSite;
+            }
+        }
+
+        return _aSmithyStands;
+    }
+
+    public int ToolWorkThisTick(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        if (!ToolWorksFor(villager, JobKind.Builder))
+        {
+            return 0;
+        }
+
+        long bonus = GoodsCatalog[villager.ToolGood].ToolSpeedBonusPercent;
+        if (bonus <= 0 || bonus >= 100)
+        {
+            return 0;
+        }
+
+        long t = (long)Tick;
+        return (int)((((t + 1) * bonus) / (100 - bonus)) - ((t * bonus) / (100 - bonus)));
+    }
+
     public int BeginWork(Villager villager, JobKind trade, int baseTicks)
     {
         ArgumentNullException.ThrowIfNull(villager);
@@ -3137,7 +3201,7 @@ public sealed partial class SimWorld : IObstacles
 
         int ticks = WorkTicksFor(villager, trade, baseTicks);
 
-        if (villager.ToolUses > 0 && JobsCatalog.UsesTool(trade))
+        if (ToolWorksFor(villager, trade))
         {
             villager.ToolUses--;
             if (villager.ToolUses == 0 && Logs(LogLevel.Debug))
@@ -3186,7 +3250,7 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public int WithTool(Villager? villager, JobKind trade, int amount)
     {
-        if (amount <= 0 || villager is null || villager.ToolUses <= 0 || !JobsCatalog.UsesTool(trade))
+        if (amount <= 0 || villager is null || !ToolWorksFor(villager, trade))
         {
             return amount;
         }

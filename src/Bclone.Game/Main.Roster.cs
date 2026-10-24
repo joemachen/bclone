@@ -23,8 +23,8 @@ internal enum RosterOrder
 /// <param name="Name">The first name, which <see cref="RosterOrder.Name"/> sorts by.</param>
 /// <param name="Surname">The family name, the first tiebreak after it.</param>
 /// <param name="BirthTick">When they were born — the earliest is the oldest.</param>
-/// <param name="Work">The trade word the row shows — <c>laborer</c>, a trade's name, or <c>not working yet</c>.</param>
-/// <param name="Child">Not working yet: sorted after every trade, not among them under <i>n</i>.</param>
+/// <param name="Work">The trade word the row shows — <c>laborer</c>, a trade's name, or <c>child</c>.</param>
+/// <param name="Child">A child: sorted after every trade, not among them under <i>c</i>.</param>
 internal readonly record struct RosterRow(int Id, string Name, string Surname, long BirthTick, string Work, bool Child)
 {
     /// <summary>The order, total: every tie ends on the id, so the same people always come out the same way round.</summary>
@@ -53,10 +53,17 @@ public partial class Main
 {
     private RosterOrder _rosterOrder = RosterOrder.Name;
 
-    private readonly List<(RosterOrder Order, Button Button)> _rosterSortButtons = new();
+    /// <summary>The column titles, in <see cref="RosterOrder"/>'s order — the sort is the column you click (D616).</summary>
+    private static readonly string[] RosterTitles = { "Name", "Age", "Trade" };
 
-    /// <summary>The ids in the order the rows were added — what a selection made on the map is found by.</summary>
-    private readonly List<int> _rosterIds = new();
+    /// <summary>The age column's width: three digits and the sort mark, right-aligned so the years line up.</summary>
+    private const int RosterAgeWidth = 44;
+
+    /// <summary>The trade column's width: <i>woodcutter</i> whole at the panel's own size; anything longer trims.</summary>
+    private const int RosterTradeWidth = 96;
+
+    /// <summary>The rows in the order they were added, each with its villager — what a selection made on the map is found by.</summary>
+    private readonly List<(int Id, TreeItem Item)> _rosterItems = new();
 
     /// <summary>What the rows were last built from; equal, and nothing a row says can have changed.</summary>
     private (SimWorld? World, ulong Tick, RosterOrder Order, int People, long Jobs) _rosterBuiltFrom;
@@ -64,31 +71,57 @@ public partial class Main
     /// <summary>The villager the list last showed selected — so a click on the map moves the highlight without a rebuild.</summary>
     private int _rosterShowsSelected;
 
-    /// <summary><i>Sort:</i> and one toggle per order, above the list.</summary>
-    private void AddTheRosterSorts(VBoxContainer body)
-    {
-        var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 6);
-        row.AddChild(Muted("Sort:"));
-        foreach ((RosterOrder order, string label) in new[]
-        {
-            (RosterOrder.Name, "Name"),
-            (RosterOrder.Age, "Age"),
-            (RosterOrder.Trade, "Trade"),
-        })
-        {
-            var button = new Button { Text = label, ToggleMode = true, Flat = true };
-            button.AddThemeFontSizeOverride("font_size", RowSize);
-            button.Pressed += () => SortTheRoster(order);
-            _rosterSortButtons.Add((order, button));
-            row.AddChild(button);
-        }
+    /// <summary>True while the code selects a row, so its own <c>ItemSelected</c> is not taken for a click.</summary>
+    private bool _rosterSelecting;
 
-        body.AddChild(row);
-        ShowTheRosterOrder();
+    /// <summary>
+    /// ⭐ <i>The village</i> as three columns that line up, with no lines drawn (D616, Joe: <i>"i dont want an actual grid …
+    /// but its hard to scan because of the varied position of the information"</i>) — and the column titles are the sort:
+    /// click <i>Age</i> and it sorts by age, the column it sorts by marked ▾.
+    /// </summary>
+    private Tree MakeTheRoster()
+    {
+        var tree = new Tree
+        {
+            Columns = RosterTitles.Length,
+            HideRoot = true,
+            ColumnTitlesVisible = true,
+            SelectMode = Tree.SelectModeEnum.Row,
+            ScrollHorizontalEnabled = false,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, ListHeight),
+        };
+        tree.AddThemeFontSizeOverride("font_size", RowSize);
+        tree.AddThemeFontSizeOverride("title_button_font_size", RowSize);
+
+        // ⭐ NO GRID: no relationship lines, no guides — the columns line up and nothing is drawn between them.
+        tree.AddThemeConstantOverride("draw_relationship_lines", 0);
+        tree.AddThemeConstantOverride("draw_guides", 0);
+
+        tree.SetColumnExpand(0, true);
+        tree.SetColumnClipContent(0, true);
+        tree.SetColumnExpand(1, false);
+        tree.SetColumnCustomMinimumWidth(1, RosterAgeWidth);
+        tree.SetColumnTitleAlignment(1, HorizontalAlignment.Right);
+        tree.SetColumnExpand(2, false);
+        tree.SetColumnCustomMinimumWidth(2, RosterTradeWidth);
+        tree.SetColumnClipContent(2, true);
+        tree.SetColumnTitleAlignment(0, HorizontalAlignment.Left);
+        tree.SetColumnTitleAlignment(2, HorizontalAlignment.Left);
+        tree.CreateItem();
+
+        tree.ColumnTitleClicked += (column, button) =>
+        {
+            if (button == (long)MouseButton.Left && column >= 0 && column < RosterTitles.Length)
+            {
+                SortTheRoster((RosterOrder)column);
+            }
+        };
+        tree.ItemSelected += OnVillagerSelected;
+        return tree;
     }
 
-    /// <summary>A sort button, or a remembered setting: the order, the buttons, and the file.</summary>
+    /// <summary>A column title clicked, or a remembered setting: the order, the titles, and the file.</summary>
     private void SortTheRoster(RosterOrder order)
     {
         _rosterOrder = order;
@@ -97,12 +130,21 @@ public partial class Main
         SettingsChanged();
     }
 
-    /// <summary>One button down — the order's — whichever was pressed, so a press on the down button cannot raise it.</summary>
+    /// <summary>The ▾ on the column the list is sorted by, and on no other.</summary>
     private void ShowTheRosterOrder()
     {
-        foreach ((RosterOrder order, Button button) in _rosterSortButtons)
+        for (int c = 0; c < RosterTitles.Length; c++)
         {
-            button.SetPressedNoSignal(order == _rosterOrder);
+            _roster.SetColumnTitle(c, c == (int)_rosterOrder ? $"{RosterTitles[c]} ▾" : RosterTitles[c]);
+        }
+    }
+
+    /// <summary>A row clicked: that villager is selected, as a click on them on the map would.</summary>
+    private void OnVillagerSelected()
+    {
+        if (!_rosterSelecting && _roster.GetSelected() is TreeItem item)
+        {
+            SelectVillager(item.GetMetadata(0).AsInt32());
         }
     }
 
@@ -144,38 +186,53 @@ public partial class Main
         if (_rosterShowsSelected != _selectedVillagerId)
         {
             _rosterShowsSelected = _selectedVillagerId;
-            int index = _rosterIds.IndexOf(_selectedVillagerId);
-            if (index >= 0)
+            int index = _rosterItems.FindIndex(r => r.Id == _selectedVillagerId);
+            _rosterSelecting = true;
+            try
             {
-                _roster.Select(index);
+                if (index >= 0)
+                {
+                    _rosterItems[index].Item.Select(0);
+                }
+                else
+                {
+                    _roster.DeselectAll();
+                }
             }
-            else
+            finally
             {
-                _roster.DeselectAll();
+                _rosterSelecting = false;
             }
         }
     }
 
     private void RebuildTheRoster(SimWorld world)
     {
-        List<(RosterRow Row, string Text)> rows = RosterRowsOf(world);
+        List<(RosterRow Row, string Age)> rows = RosterRowsOf(world);
         RosterOrder order = _rosterOrder;
         rows.Sort((a, b) => RosterRow.Compare(a.Row, b.Row, order));
 
         _roster.Clear();
-        _rosterIds.Clear();
-        foreach ((RosterRow row, string text) in rows)
+        _rosterItems.Clear();
+        TreeItem top = _roster.CreateItem();
+        foreach ((RosterRow row, string age) in rows)
         {
-            int index = _roster.AddItem(text);
-            _roster.SetItemMetadata(index, row.Id);
-            _rosterIds.Add(row.Id);
+            TreeItem item = _roster.CreateItem(top);
+            item.SetText(0, row.Surname.Length == 0 ? row.Name : $"{row.Name} {row.Surname}");
+            item.SetTextOverrunBehavior(0, TextServer.OverrunBehavior.TrimEllipsis);
+            item.SetText(1, age);
+            item.SetTextAlignment(1, HorizontalAlignment.Right);
+            item.SetText(2, row.Work);
+            item.SetTextOverrunBehavior(2, TextServer.OverrunBehavior.TrimEllipsis);
+            item.SetMetadata(0, row.Id);
+            _rosterItems.Add((row.Id, item));
         }
     }
 
-    /// <summary>Everyone alive, as a row and its text, in the order they joined the village.</summary>
-    private List<(RosterRow Row, string Text)> RosterRowsOf(SimWorld world)
+    /// <summary>Everyone alive, as a row and their age in years, in the order they joined the village.</summary>
+    private List<(RosterRow Row, string Age)> RosterRowsOf(SimWorld world)
     {
-        var rows = new List<(RosterRow Row, string Text)>();
+        var rows = new List<(RosterRow Row, string Age)>();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -183,13 +240,6 @@ public partial class Main
             {
                 continue;
             }
-
-            string stage = villager.LifeStage switch
-            {
-                LifeStage.Child => "child",
-                LifeStage.Elder => "elder",
-                _ => "adult",
-            };
 
             // WHAT THEY ARE, NOT WHAT THEY ARE DOING RIGHT NOW (D80).
             //
@@ -201,13 +251,14 @@ public partial class Main
             // The roster answers "who is this?" — their trade — and the panel answers "what
             // are they doing?". Exactly the distinction the vacancy alert settled: holding a
             // job and being at it this instant are different facts.
+            // ⭐ The stage words went with the columns (D616): the age says it, and a child's trade is "child".
             bool child = !villager.IsLaborer && !villager.HasJob;
             string work = villager.IsLaborer ? "laborer"
                 : villager.HasJob ? TradeOf(villager)
-                : "not working yet";
+                : "child";
             rows.Add((
                 new RosterRow(villager.Id, villager.Name, villager.Surname, villager.BirthTick, work, child),
-                $"{villager.FullName}, {villager.AgeYears} ({stage}) — {work}"));
+                villager.AgeYears.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         return rows;
@@ -215,7 +266,8 @@ public partial class Main
 
     /// <summary>
     /// <c>roster sort:</c> (D609) — posed rows, each order against a list typed by hand, every tie posed so its tiebreak
-    /// bites; then the real panel: each button pressed, every living villager listed once, and the capture says the order.
+    /// bites; then the real panel (D616): each column title clicked, every living villager listed once in its columns, the ▾
+    /// on the clicked one, and the capture says the order.
     /// </summary>
     /// <remarks>
     /// ⛔ The expected orders are written out, never computed by the comparer they check (D419's trap: a check that
@@ -227,12 +279,12 @@ public partial class Main
 
         // Aldmoor and aldo share a birth tick (Age falls to the name) and their first letters (case is ignored, so the
         // fourth letter decides); bram is the oldest, so Age and Name disagree; Cara is the child, after every trade
-        // though "not working yet" sorts under n.
+        // though "child" sorts under c, ahead of "fisher" — only the child rule puts her last.
         RosterRow[] posed =
         {
             new(3, "bram", "Frost", 40, "woodcutter", false),
             new(1, "Aldmoor", "Atwood", 50, "laborer", false),
-            new(2, "Cara", "Frost", 300, "not working yet", true),
+            new(2, "Cara", "Frost", 300, "child", true),
             new(4, "aldo", "Frost", 50, "fisher", false),
         };
 
@@ -265,31 +317,52 @@ public partial class Main
             faults.Add($"twins came out {string.Join(",", twins.Select(r => r.Id))}, not 9,7,8");
         }
 
-        // The real panel, through its own buttons.
+        // The real panel, through its own column titles (D616).
         SimWorld world = _loop.World;
         RosterOrder was = _rosterOrder;
         var orders = new List<string>();
         var living = world.Villagers.Where(v => v.Alive).Select(v => v.Id).OrderBy(id => id).ToList();
-        foreach ((RosterOrder order, Button button) in _rosterSortButtons)
+        foreach (RosterOrder order in new[] { RosterOrder.Name, RosterOrder.Age, RosterOrder.Trade })
         {
-            button.EmitSignal(BaseButton.SignalName.Pressed);
-            if (_rosterOrder != order || !button.ButtonPressed || _rosterSortButtons.Count(b => b.Button.ButtonPressed) != 1)
+            _roster.EmitSignal(Tree.SignalName.ColumnTitleClicked, (long)order, (long)MouseButton.Left);
+            if (_rosterOrder != order)
             {
-                faults.Add($"pressing {button.Text} left the order at {_rosterOrder}");
+                faults.Add($"clicking {RosterTitles[(int)order]} left the order at {_rosterOrder}");
             }
 
-            var listed = Enumerable.Range(0, _roster.ItemCount).Select(i => _roster.GetItemMetadata(i).AsInt32()).ToList();
+            for (int c = 0; c < RosterTitles.Length; c++)
+            {
+                if (_roster.GetColumnTitle(c).EndsWith('▾') != (c == (int)order))
+                {
+                    faults.Add($"sorted by {order}, the {RosterTitles[c]} title reads \"{_roster.GetColumnTitle(c)}\"");
+                }
+            }
+
+            var items = _roster.GetRoot().GetChildren();
+            var listed = items.Select(i => i.GetMetadata(0).AsInt32()).ToList();
             if (!listed.OrderBy(id => id).SequenceEqual(living))
             {
                 faults.Add($"{order} listed {listed.Count} people, not the {living.Count} alive, each once");
             }
 
-            // The wiring, not the comparer (the posed rows check that): the panel is in the pressed order NOW.
-            List<(RosterRow Row, string Text)> rows = RosterRowsOf(world);
+            // ⭐ The columns hold what they say: a name, the years as digits, a trade word — on every row.
+            foreach (TreeItem item in items)
+            {
+                Villager v = world.Villagers.First(x => x.Id == item.GetMetadata(0).AsInt32());
+                if (item.GetText(0) != v.FullName || item.GetText(1) != v.AgeYears.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    || item.GetText(2).Length == 0 || item.GetText(2).Any(char.IsDigit))
+                {
+                    faults.Add($"a row reads \"{item.GetText(0)}\" | \"{item.GetText(1)}\" | \"{item.GetText(2)}\"");
+                    break;
+                }
+            }
+
+            // The wiring, not the comparer (the posed rows check that): the panel is in the clicked order NOW.
+            List<(RosterRow Row, string Age)> rows = RosterRowsOf(world);
             rows.Sort((a, b) => RosterRow.Compare(a.Row, b.Row, order));
             if (!listed.SequenceEqual(rows.Select(r => r.Row.Id)))
             {
-                faults.Add($"pressing {button.Text} did not re-sort the panel");
+                faults.Add($"clicking {RosterTitles[(int)order]} did not re-sort the panel");
             }
 
             orders.Add(string.Join(",", listed));
@@ -301,10 +374,17 @@ public partial class Main
             }
         }
 
+        // ⭐ AND THEY FIT: the age and trade columns at their widths, the name taking the rest, inside the panel.
+        if (_roster.GetColumnWidth(1) < RosterAgeWidth || _roster.GetColumnWidth(2) < RosterTradeWidth
+            || _roster.GetColumnWidth(0) < 100)
+        {
+            faults.Add($"the columns are {_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide");
+        }
+
         SortTheRoster(was);
 
         return faults.Count == 0
-            ? $"[widths] roster sort: ✅ name, age and trade against posed rows typed by hand, every tiebreak posed; {_rosterSortButtons.Count} buttons each set the order, list the {living.Count} alive once in it and are captured ({orders.Distinct().Count()} distinct orders here)"
+            ? $"[widths] roster sort: ✅ name, age and trade against posed rows typed by hand, every tiebreak posed; the three column titles each set the order and wear the ▾, list the {living.Count} alive once in it, a name, the years and a trade in their columns ({_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide), and are captured ({orders.Distinct().Count()} distinct orders here)"
             : $"[widths] roster sort: ⛔ {string.Join("; ", faults)}";
     }
 }

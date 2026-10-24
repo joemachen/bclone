@@ -33,7 +33,10 @@ against a number from an older commit.
   a farm raised free — ever makes fish or meat; it carries D515's first-winter race), `ZZ_ONLY=<good>` (one good's new number
   alone), `ZZ_SEEDS`, `ZZ_TRACE=1` (a ZZY line each spring and winter: people, held goods, trades, deaths). Copy into a
   **worktree**, build **with a check for `0 Error(s)`**, `-c Release --filter ZzLimits`, delete; `limits.py` prints each arm and the
-  per-seed spread (D603).
+  per-seed spread (D603). ⭐ `ZZ_LABEL=old|new` names the arm, so two builds of the code are measured on the same limits in two
+  worktrees (D612's market, D617's tools); the ZZL line carries the marketers' carrying ticks, the counters' stock, tools
+  forged and taken, the tool-trade hands' share of ticks without a tool, and site-ticks. ⚠️ No harness village raises a
+  smithy: a tools rule measured here is measured on the founders' twenty (D617).
 - `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
   fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
   one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its

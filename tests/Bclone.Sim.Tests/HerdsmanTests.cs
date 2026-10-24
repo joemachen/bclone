@@ -110,10 +110,22 @@ public sealed class HerdsmanTests
     {
         (SimLoop loop, Workplace barn) = AHerd();
         SimWorld world = loop.World;
-        PinAHerdsman(world);
+        Villager herdsman = PinAHerdsman(world);
         Assert.Equal(Season.Spring, world.Clock.Season); // tick 0 is the year's first day: the whole growing year ahead
 
-        StepToTheStartOf(loop, Season.Winter);
+        // ⚠️ HIS LARDER KEPT FULL THROUGH THE GROWING YEAR (D617) — the household's errand is not what this asks, as D601
+        // and D611 found for the winter's feeding. With a tool he cuts quicker and his day reshuffles: on the bare pose he
+        // spent half again as long shopping and reached winter at 833 of 864 (it held by 7 before: 871); posed, a tool
+        // brings 913 in 76 ticks of cutting against 871 in 107 without.
+        Household home = world.HouseholdOf(herdsman);
+        do
+        {
+            home.Stockpile.Receive(Goods.Produce, Math.Max(0, world.TargetFoodFor(home) - world.FoodIn(home.Stockpile)));
+            home.ToppingUpFood = false;
+            loop.StepOnce();
+        }
+        while (!(world.Clock.Season == Season.Winter && world.Clock.DayOfSeason == 1
+            && world.Tick % (ulong)world.Config.TicksPerDay == 0UL));
         int held = world.HayHeldFor(barn);
         _output.WriteLine($"by winter: {held} hay held of {world.WinterHayWanted(barn)} wanted; {barn.HayCutThisYear} tiles cut of 40");
         Assert.True(barn.HayCutThisYear > 0, "nobody cut the pasture");

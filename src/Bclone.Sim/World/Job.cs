@@ -106,14 +106,24 @@ public sealed record JobRow
     /// brings in (D391, `specs/tools-and-the-smith.md §3.2`).
     /// </summary>
     /// <remarks>
-    /// <b>A column, not a switch on the kind</b> — the rule this record is pinned by. Built in: the
-    /// forester, woodcutter, farmer, fisher, hunter, forager and smith; not the marketer, who makes
-    /// nothing; and <b>not the builder in this slice</b> — a builder's bonus would fall on a
-    /// site's work ticks, a second seam, and waits for the workshop. Written down rather than
-    /// omitted.
+    /// <b>A column, not a switch on the kind</b> — the rule this record is pinned by. Built in: every hands-on trade
+    /// (D617, Joe: <i>"all adults should except maybe the teacher and the preacher"</i>) — the builder and the herdsman with
+    /// them since D617; not the carriers, the marketer and the merchant, whose work no tool quickens.
     /// </remarks>
     [JsonPropertyName("uses_tool")]
     public bool UsesTool { get; init; }
+
+    /// <summary>
+    /// Whether a hand in this trade takes a tool only once a smithy stands (D617, Joe's call) — until tools can be made,
+    /// the founders' few are the trades' that feed and warm the village. The builder and the herdsman say so; a laborer,
+    /// who has no row, waits too.
+    /// </summary>
+    /// <remarks>
+    /// Measured (D617): a builder's and a laborer's tool from the founding cost about a tenth of the people in 100 played
+    /// valleys with no smithy, and nothing in Joe's own villages, which have one — where they were a gain.
+    /// </remarks>
+    [JsonPropertyName("tool_waits_for_the_smithy")]
+    public bool ToolWaitsForTheSmithy { get; init; }
 
     /// <summary>
     /// The seam this trade works as a face that never runs out — <c>Rock</c> for the quarrier,
@@ -196,6 +206,9 @@ public sealed class JobsCatalog
 
     /// <summary>Whether a hand in this trade carries a tool (D391).</summary>
     public bool UsesTool(JobKind kind) => _rows[(int)kind].UsesTool;
+
+    /// <summary>Whether a hand in this trade takes a tool only once a smithy stands (D617).</summary>
+    public bool ToolWaitsForTheSmithy(JobKind kind) => _rows[(int)kind].ToolWaitsForTheSmithy;
 
     /// <summary>The seam this trade works as a face, or null (D449).</summary>
     public Terrain? FaceOf(JobKind kind) =>

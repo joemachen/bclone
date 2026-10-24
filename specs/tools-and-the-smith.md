@@ -13,7 +13,8 @@ specced before the code as ticks-instead-of-yield, measured, and changed to both
 the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D433).** ✅ **§9 — the
 smithy as a gift after 50 iron (D444) and stone tools and iron tools (D446, 2026-10-01) — BUILT,
 played by Joe (*"the smithy works great. both tool types were created and used"*) and merged
-(D447).** Owner: Joe + Claude Code.
+(D447).** ✅ **§10 — every hands-on adult carries a tool (D617, Joe 2026-10-23): builders, herdsmen and laborers, once a
+smithy stands — SPECCED, BUILT AND MEASURED on `slice/d615-notes`, unplayed.** Owner: Joe + Claude Code.
 
 ---
 
@@ -76,6 +77,9 @@ fisher, hunter, forager — true; marketer — false; builder — false, in this
 bonus would be on a site's work ticks, which is a second seam (§3.4); the builder takes a hammer
 when Phase 5's maintenance item grows the builder's hut into a workshop. Written down here so it
 is a decision and not an omission.
+
+> ⭐ **SUPERSEDED BY §10 (D617):** builders and herdsmen carry a tool, and laborers take one the trades can spare. The
+> column keeps saying which trades — the marketer and the merchant say no, because their work is carrying.
 
 ### 3.3 Wear is one use per work action begun
 
@@ -566,3 +570,89 @@ item too long for the card 1.
 - Determinism green. **One golden moved, for one stated reason:** the shipped fifty-year village in
   `SkillTests` mixes the new `"iron tools": 200` starting limit — proven the only reason by running
   it with that line out of the data, when the old value passes.
+
+---
+
+## 10. Every hands-on adult carries a tool (D617, Joe 2026-10-23)
+
+**Status:** ✅ **BUILT (D617) on `slice/d615-notes`, measured (§10.4), unplayed.** `ToolsForEveryHandTests` (9): 11
+mutants, 20 reds, no zeros left (one closed: a laborer's fetch cut out of `Decide` passed every posed guard).
+
+Joe: *"builders should carry tools. all adults should except maybe the teacher and the preacher. know what i mean?"* —
+asked the same day: **trades first** for laborers, **no tool** for the carriers, a builder **a third faster** — and, once
+the first build was measured (§10.4), **the builders', herdsmen's and laborers' tools wait for a smithy**.
+
+### 10.1 The rule
+
+**A tool goes to everyone whose work is hands-on.** Not to those whose work is carrying — the marketer and the merchant,
+whose errands have no work action for a tool to quicken — and, when they come, not to those whose work is words: the
+teacher and the preacher. `JobRow.UsesTool` stays the column that says which; a new trade states it.
+
+| Who | Today | Since D617 |
+|---|---|---|
+| forester, woodcutter, farmer, fisher, hunter, forager, smith, quarrier, miner, miller, baker | tool | tool (unchanged) |
+| **herdsman** | none | **tool once a smithy stands** — its cutting, feeding out and culling already begin through `BeginWork` |
+| **builder** | none | **tool once a smithy stands** — §10.2 |
+| **laborer** (no job) | none (a tool in hand already quickened their clearing) | **takes a spare once a smithy stands** — §10.3 |
+| marketer, merchant | none | none — carrying |
+| teacher, preacher (not built) | — | none — words |
+
+### 10.1a ⭐ Once a smithy stands (Joe's call, after the measurement)
+
+Until a smithy stands, tools cannot be made: the village has the founders' cart and nothing more. Spread over the builders
+and laborers too, those few ran out under the trades that feed the village — **played valleys with no smithy lost about a
+tenth of their people** (§10.4). So a trade whose row says `tool_waits_for_the_smithy` (the builder, the herdsman) and every
+laborer take a tool only once a finished smithy stands (`SimWorld.ASmithyStands`); before then the note says *"No tool yet —
+the founders' tools are the trades' until a smithy stands."* A tool already in such a hand is kept and used, as any is.
+
+### 10.2 The builder's tool
+
+A builder raises a site one unit of work a tick (`ConstructionSite.Work()`), not by work actions, so §3.3's wear and
+§3.4's ticks do not reach it. The builder's rule, in the same terms:
+
+- **A third faster.** A builder holding a tool adds extra units on the ticks the tool's speed bonus gives:
+  `extra(t) = ((t + 1) · b ÷ (100 − b)) − (t · b ÷ (100 − b))` in whole numbers, with `t` the world's tick and `b` the
+  tool's `ToolSpeedBonusPercent` — 34 (stone) is about one extra unit every other tick, so the site takes about 66 % of
+  the time, as a tool takes 34 % off any action; 50 (iron) doubles the work. Derived from the tick, so **no new state**
+  and nothing hashed that was not. `Work()` still does nothing while the materials are short and never passes the
+  recipe.
+- **Worn one use each time the builder sets off to build** (`SetOffToBuild`, through `BeginWork` — a work action begun, as
+  any trade's tool wears). ⚠️ *Specced as "a use a building day"; built per stint, because the walk to a site already wears
+  the `Building` state, so a day's first tick may find the builder walking — and a per-day rule would need state.*
+- A builder with no tool works at today's number, and the card says *"No tool — works slower"* as it does for any trade.
+
+### 10.3 Laborers take what the trades can spare — trades first
+
+A laborer with empty hands takes a tool only when **the stores hold more tools than the trades' year of cover** — one on
+the shelf for every working pair of hands in a tool trade (§3.8's spare a hand, the number `ToolShortfall` keeps). So a
+village of thirty laborers cannot strip the shelves before its woodcutters' tools wear out; the smiths' quota still
+forges for the trades, and what is past their cover is the laborers'. The errand is §3.5's; asked when the laborer
+decides, never per tick. With none to spare the note says *"No tool to spare — the trades come first."* A laborer who
+takes a trade keeps the tool, as anybody does (§3.1).
+
+### 10.4 What it moves, and how it is measured
+
+- **Demand:** builders and herdsmen are hands in `ToolShortfall` (and so in `SmithsWanted`); laborers are not — they take
+  only the surplus. The stone tools limit (30, D611) still caps the forge.
+- **Goldens:** every village with a builder moves (the founders' builder takes a cart tool). Re-taken once, each proven by
+  its parent.
+- **Measured before it ships** (`tools/harness/ZzLimits.cs`, `ZZ_LABEL` arms in two worktrees; Joe's own saves run on
+  twenty years): survival; tools forged and taken; the share of tradespeople working without a tool; how long sites wait.
+  - **The first build (tools from the founding):** played valleys — no harness village ever raises a smithy, so its tools
+    are the cart's twenty — alive **1,308 → 1,161** (t −3.98), tradespeople bare 2.4 % → 14.3 %; builders and herdsmen alone
+    1,197. Joe's two villages, which have a smithy: **Elderwood 52 → 60, Oakhaven 82 → 84 alive**, sites waiting 20–30 % less,
+    smiths forging more (13 → 21, 27 → 47), nobody bare. ⭐ **Joe's call: wait for a smithy** (§10.1a).
+  - **A builder's kept tool:** with only the *taking* waiting, played valleys still lost 0.6 a valley (t −2.05) — a
+    builder holding a tool kept from a trade wore it a stint at a time. So the *use* waits too (`ToolWorksFor`: ticks, yield,
+    wear and the builder's extra work, one answer).
+  - **As shipped:** every valley with no smithy plays **byte for byte as before** (172 runs, per-seed difference 0.00 —
+    no golden moved for the same reason); Joe's villages keep the gains above.
+
+### 10.5 Guards
+
+1. A builder with a stone tool raises a site in about two thirds of the ticks a bare builder takes; iron in about half;
+   one use worn per building day.
+2. A herdsman takes, carries and wears a tool.
+3. A laborer takes a tool only above the trades' cover, and says why when there is none to spare; a marketer and a
+   merchant never take one.
+4. The column as shipped: which trades use a tool.
