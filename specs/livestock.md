@@ -107,7 +107,9 @@ fence's site, its walls, cancel and take-down, the barn taking its fence with it
 `ZoneMap.RaiseAPastureFence`, `PastureFenceTests`); the barn card's fence row (its one button follows the state), the
 fence drawn from its walls (faint while a site, the gate a gap), the brush's rubber refusing a fenced pasture, the probe's
 `fence:` (`Main.Trade.cs`). ⚠️ Not probed: the button's press against a real barn, the fence's draw call, the rubber's
-colour — Joe's eyes.
+colour — Joe's eyes. ✅ **Played (D600); drawn round since D610** (Joe: *"barns that have round fences should be round,
+not stairstep"*): the fenced tiles traced and rounded as a yard's outline is, the gate's span cut out at its posts —
+the walls, the tiles and the gate unchanged, the line within half a tile of every wall (probed). Unplayed.
 
 ### 0.2.1 Joe's calls (2026-10-17)
 
@@ -202,7 +204,8 @@ only through the gate (a walk from outside to an inside tile crosses the gate); 
 refunds; take-down unlocks, unpaints, refunds half and **leaves a neighbouring yard's wall standing on a shared edge**;
 the barn pulled down takes its fence; save → load → hash equal with a site and with a standing fence; a village with no
 fence hashes as before (all 362 goldens).
-View (probe `fence:`): the fence drawn on its edges with the gate open; faint while a site; the barn card's button
+View (probe `fence:`): the fence drawn ~~on its edges~~ **as one rounded line within half a tile of its walls (D610)**, with
+the gate open at its posts — on a disc and on a block gated mid-side; faint while a site; the barn card's button
 reads the state (*Fence the pasture* / *Cancel the fence* / *Take the fence down*).
 
 ## 1. Goal

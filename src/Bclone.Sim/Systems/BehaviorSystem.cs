@@ -1498,7 +1498,11 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             // A builder with nothing marked out. Not idle — they fall through to the spare
             // errands at the bottom of Decide, like the woodcutter with an empty yard.
-            villager.WorkNote = "Nothing is marked out to build.";
+            // ⚠️ Or with a site nobody can reach (D614): seed 18's three builders rested beside a
+            // walled-in repair saying nothing was marked out, which was false.
+            villager.WorkNote = world.Workplaces.Find(w => w.Construction is { IsFinished: false })?.Construction is ConstructionSite walledIn
+                ? $"Nothing they can reach is marked out — {walledIn.Name} is walled in."
+                : "Nothing is marked out to build.";
             villager.ServingSiteId = 0;
             return false;
         }
@@ -2057,10 +2061,10 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             Goods goods = carried[g];
 
-            // Room under THIS counter's limit (D372) — the player's, or the derived default.
-            int room = world.MarketStockLimit(market, goods) - HeldOf(market.Store, goods);
+            // Room under THIS counter's limit (D372), by the one door (D612): the limit less what it holds, within the room.
+            int room = market.RoomFor(goods);
 
-            if (!market.Accepts(goods) || room < load || market.Store.FreeSpace < load)
+            if (!market.Accepts(goods) || room < load)
             {
                 continue;
             }
@@ -4300,6 +4304,9 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     internal static void RaiseForTest(SimWorld world, Villager villager) =>
         ArriveAt(world, villager, VillagerState.Building);
+
+    /// <summary>A builder asking the queue for a site, posed directly (D614) — what their note says when none can be reached.</summary>
+    internal static bool WorkTheSiteForTest(SimWorld world, Villager villager) => WorkTheSite(world, villager);
 
     /// <summary>A villager reaching a hearth to thaw, posed directly.</summary>
     /// <remarks>

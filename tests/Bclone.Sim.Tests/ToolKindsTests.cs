@@ -80,8 +80,8 @@ public sealed class ToolKindsTests
         }
 
         // Each kind has its own starting limit, under its own name — 25 each (Joe, D447: "its going
-        // to take a few years to have more than 25 people who need tools at once").
-        Assert.Equal(25, shipped.StartingStockLimits["stone tools"]);
+        // to take a few years to have more than 25 people who need tools at once"); stone 30 since D611, his panel.
+        Assert.Equal(30, shipped.StartingStockLimits["stone tools"]);
         Assert.Equal(25, shipped.StartingStockLimits["iron tools"]);
     }
 

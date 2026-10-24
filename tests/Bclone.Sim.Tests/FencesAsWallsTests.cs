@@ -761,4 +761,148 @@ public sealed class FencesAsWallsTests
             Assert.True(quick == swept, $"At {proposed.Origin}: the quick answer said \"{quick}\", the sweep said \"{swept}\".");
         }
     }
+
+    /// <summary>
+    /// ⛔⛔ A proposal beside what stands on the founding site may not seal a pocket against it (D614): the sweep that asks
+    /// <i>"what would this wall off?"</i> starts beside the founding site, and a seed that lands inside the pocket the
+    /// proposal closes is not the village.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Found on established seed 18 (D611's measurement): a house sited ON the free founding site in Spring, Year 29 filled
+    /// the two-tile gap that was the only way into twelve tiles walled by the warehouse, the granary, two houses, the market,
+    /// the builder's hut and three yards' fences, with woodcutter's hut 1 inside. The sweep seeded beside the site on both
+    /// sides of the house — inside the pocket too — called the hut reached, and the house went up. The hut was never
+    /// reached again; it fell in, its repair site was never served, and all 41 villagers froze in Year 43.
+    /// </para>
+    /// <para>
+    /// Built here by hand, the shape of it: a tile <c>P</c> beside the founding shape, a pile <c>R</c> beside <c>P</c>,
+    /// every other edge of the two walled, and one way out at <c>G</c>. A pile on <c>G</c> shuts <c>R</c> in — nobody walks
+    /// through a building, so the founding shape's side of <c>P</c> is no way in.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NothingBesideTheFoundingSiteSealsAPocketAgainstIt(bool somethingStandsOnTheSite)
+    {
+        SimWorld world = Founded();
+        GridPos site = world.Map.FoundingSite;
+        if (somethingStandsOnTheSite && world.FootprintCovering(site).Count == 0)
+        {
+            Assert.True(world.Mark(BuildingKind.Pile, site).Allowed, "A pile could not be marked on the founding site.");
+        }
+
+        IReadOnlyList<GridPos> under = world.FootprintCovering(site);
+        IReadOnlyList<GridPos> shape = under.Count > 0 ? under : new[] { site };
+        _output.WriteLine($"founding site {site}; standing on it: {(under.Count > 0 ? string.Join(" ", under) : "nothing")}");
+
+        bool Free(GridPos t) => world.Map.Contains(t) && world.IsWalkable(t) && !world.SomethingStandsAt(t)
+            && world.Zones.PlotOwner(t) == 0 && world.Zones.WallsOn(t) == 0 && !shape.Contains(t);
+
+        // A tile P beside the shape, going out along (dx, dy); G beyond it; the pile R to one side, and the other side walled.
+        foreach (GridPos s in shape)
+        {
+            foreach ((int dx, int dy) in Steps)
+            {
+                var p = new GridPos(s.X + dx, s.Y + dy);
+                var g = new GridPos(p.X + dx, p.Y + dy);
+                var r = new GridPos(p.X - dy, p.Y + dx);
+                var other = new GridPos(p.X + dy, p.Y - dx);
+                if (!Free(p) || !Free(g) || !Free(r) || !world.Map.Contains(other) || !world.CanBuildAt(BuildingKind.Pile, r).Allowed)
+                {
+                    continue;
+                }
+
+                // With nothing on the founding site, the way in is the site itself and the proposal is ON it — seed 18's case,
+                // where the site's own neighbours seed the sweep. With something on it, the way in is G.
+                bool onTheSite = under.Count == 0;
+                Footprint proposed = world.FootprintOf(BuildingKind.Pile, onTheSite ? site : g);
+                Assert.True(world.Mark(BuildingKind.Pile, r).Allowed, "The pile could not be marked.");
+                world.Zones.Wall(p, other, up: true);
+                if (onTheSite)
+                {
+                    world.Zones.Wall(p, g, up: true);
+                }
+
+                foreach ((int sx, int sy) in Steps)
+                {
+                    var beyond = new GridPos(r.X + sx, r.Y + sy);
+                    if (beyond != p && world.Map.Contains(beyond))
+                    {
+                        world.Zones.Wall(r, beyond, up: true);
+                    }
+                }
+
+                // The control: today the pile is reached, through G.
+                Assert.True(world.TravelCost.CanReach(world.FirstHomeOrFoundingSite(), r), "The pile is not reached today, so there is nothing to wall off.");
+
+                string? refused = world.WhatThisWouldWallOff(proposed);
+                _output.WriteLine($"P {p}, {(onTheSite ? $"on the site {site}" : $"G {g}")}, R {r}: {refused ?? "(allowed)"}");
+                Assert.NotNull(refused);
+                Assert.Contains("wall off", refused);
+                return;
+            }
+        }
+
+        Assert.Fail("No ground beside the founding site to build the pocket on, so the guard proved nothing.");
+    }
+
+    /// <summary>
+    /// ⛔⛔ And the bug as found (D614): on established seed 18, nothing the village could reach stops being reachable —
+    /// every building, every year, through Year 44.
+    /// </summary>
+    /// <remarks>
+    /// Red before D614 in Spring, Year 29: woodcutter's hut 1 at (0, 2), shut in by the Ponds' house on the founding site.
+    /// </remarks>
+    [Fact]
+    public void NoBuildingTheVillageReachesIsEverWalledOffOnEstablishedSeed18()
+    {
+        SimConfig config = ShippedConfig.Established() with { Seed = 18 };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        var reached = new HashSet<string>();
+        int asked = 0;
+        for (int year = 0; year < 44; year++)
+        {
+            for (int season = 0; season < 4; season++)
+            {
+                loop.Step(config.TicksPerSeason);
+                GridPos village = world.FirstHomeOrFoundingSite();
+                foreach (Workplace w in world.Workplaces)
+                {
+                    Ask($"workplace {w.Id}", w.Name, w.Tile);
+                }
+
+                foreach (StoreBuilding store in world.StoreBuildings)
+                {
+                    Ask($"store {store.Id}", store.Name, store.Tile);
+                }
+
+                foreach (Household family in world.Households)
+                {
+                    if (family.HomeTile is GridPos home)
+                    {
+                        Ask($"home {family.Id}", $"the {family.Name}s' house", home);
+                    }
+                }
+
+                void Ask(string key, string name, GridPos tile)
+                {
+                    bool now = world.TravelCost.CanReach(village, tile);
+                    asked++;
+                    Assert.False(
+                        reached.Contains(key) && !now,
+                        $"{world.Clock.SeasonAndYear()}: {name} at {tile} was reached and is walled off now.");
+                    if (now)
+                    {
+                        reached.Add(key);
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"{asked} questions over 44 years; {reached.Count} buildings reached, none ever walled off. Alive {world.Population}.");
+        Assert.True(reached.Count > 10, "The village built almost nothing, so the guard proved nothing.");
+    }
 }

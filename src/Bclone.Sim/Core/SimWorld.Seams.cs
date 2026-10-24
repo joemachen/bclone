@@ -19,6 +19,11 @@ public sealed partial class SimWorld
 
     private int _seamPatchBuiltAt = -1;
 
+    /// <summary>Each seam's tiles by map-order index, in map order — <c>[patch]</c>; index 0 unused. Derived with
+    /// <see cref="_seamPatch"/>, never hashed (D613: the claim and the ghost read a whole seam, and a scan of the map per
+    /// ask would be the D179 shape).</summary>
+    private List<int>[] _seamTiles = System.Array.Empty<List<int>>();
+
     /// <summary>The seam this tile belongs to, or 0 — the same number for every tile of one seam, rock and iron never shared.</summary>
     internal int SeamPatchOf(GridPos tile)
     {
@@ -78,6 +83,151 @@ public sealed partial class SimWorld
                 }
             }
         }
+
+        // Each seam's tiles, listed once while the index is fresh — walked in map order, so each list is in map order.
+        _seamTiles = new List<int>[next + 1];
+        for (int patch = 1; patch <= next; patch++)
+        {
+            _seamTiles[patch] = new List<int>();
+        }
+
+        for (int i = 0; i < tiles; i++)
+        {
+            if (_seamPatch[i] != 0)
+            {
+                _seamTiles[_seamPatch[i]].Add(i);
+            }
+        }
+    }
+
+    /// <summary>The tiles of one seam, by map-order index, in map order (D613). Empty for 0 or a patch that is not one.</summary>
+    internal IReadOnlyList<int> SeamTilesOf(int patch)
+    {
+        RebuildTheSeamIndexIfStale();
+        return patch > 0 && patch < _seamTiles.Length ? _seamTiles[patch] : System.Array.Empty<int>();
+    }
+
+    /// <summary>
+    /// ⭐ THE SEAM A QUARRY OR A MINE WOULD CLAIM STANDING HERE (D613, `seam-reach.md §8`) — pure, so the ghost asks it as it
+    /// moves and completion claims exactly what the ghost showed.
+    /// </summary>
+    /// <remarks>
+    /// Of the face tiles in the building's placement diamond, the nearest to its tile by that same distance — ties to map
+    /// order, never a draw — that the village can walk to and whose seam no other building holds; then every tile of that
+    /// seam it may take (<see cref="MayClaim"/>). Empty for a building with no face, or none to claim.
+    /// </remarks>
+    /// <param name="kind">The building.</param>
+    /// <param name="position">Its tile.</param>
+    /// <param name="claimant">The workplace that would hold it, or 0 for a building not yet raised: its own ground is no obstacle.</param>
+    public IReadOnlyList<GridPos> SeamToClaim(BuildingKind kind, GridPos position, int claimant = 0)
+    {
+        if (BuildingsCatalog[kind]?.MustBeNear is not NearRule near
+            || BuildingsCatalog.EmployedBy(kind) is not JobKind trade
+            || JobsCatalog.FaceOf(trade) is not Terrain face
+            || face != near.Terrain)
+        {
+            return System.Array.Empty<GridPos>();
+        }
+
+        GridPos village = FirstHomeOrFoundingSite();
+        for (int distance = 0; distance <= near.Tiles; distance++)
+        {
+            for (int dy = -distance; dy <= distance; dy++)
+            {
+                int span = distance - Math.Abs(dy);
+                foreach (int dx in span == 0 ? new[] { 0 } : new[] { -span, span })
+                {
+                    var at = new GridPos(position.X + dx, position.Y + dy);
+                    if (!Map.Contains(at) || Map.TerrainAt(at) != face || !TravelCost.CanReach(village, at)
+                        || HolderOfTheSeam(SeamPatchOf(at), claimant) is not null)
+                    {
+                        continue;
+                    }
+
+                    var claim = new List<GridPos>();
+                    IReadOnlyList<int> seam = SeamTilesOf(SeamPatchOf(at));
+                    for (int i = 0; i < seam.Count; i++)
+                    {
+                        GridPos tile = Zones.PositionOf(seam[i]);
+                        if (MayClaim(face, tile, claimant, village))
+                        {
+                            claim.Add(tile);
+                        }
+                    }
+
+                    return claim;
+                }
+            }
+        }
+
+        return System.Array.Empty<GridPos>();
+    }
+
+    /// <summary>
+    /// A tile a quarry or a mine may take as its claim (D613) — the rules painted ground already keeps
+    /// (`CanPaintWorkGround`): its face, walkable to from the village, nobody else's ground, nobody's yard.
+    /// </summary>
+    private bool MayClaim(Terrain face, GridPos tile, int claimant, GridPos village) =>
+        Map.TerrainAt(tile) == face
+        && TravelCost.CanReach(village, tile)
+        && Zones.WorkGroundOwner(tile) is var owner && (owner == 0 || owner == claimant)
+        && WhoseYard(tile) is null;
+
+    /// <summary>
+    /// The card's line for a quarry or a mine (D613): <i>"Works the seam beside it — 23 tiles of rock."</i> — or, with none to
+    /// work, why. Null for a building with no face.
+    /// </summary>
+    public string? SayTheClaim(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        if (FaceOf(workplace) is not Terrain face)
+        {
+            return null;
+        }
+
+        int tiles = Zones.WorkGroundTiles(workplace.Id);
+        return tiles > 0
+            ? $"Works the seam beside it — {tiles} {(tiles == 1 ? "tile" : "tiles")} of {FaceWord(face)}."
+            : $"Works no seam — none of the {FaceWord(face)} it stands by is its own to work.";
+    }
+
+    /// <summary>The building other than <paramref name="claimant"/> that holds any tile of this seam, or null — a seam is never shared (D613).</summary>
+    internal Workplace? HolderOfTheSeam(int patch, int claimant = 0)
+    {
+        IReadOnlyList<int> seam = SeamTilesOf(patch);
+        for (int i = 0; i < seam.Count; i++)
+        {
+            int owner = Zones.WorkGroundOwner(Zones.PositionOf(seam[i]));
+            if (owner != 0 && owner != claimant && FindWorkplace(owner) is Workplace holder)
+            {
+                return holder;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ⭐ A finished quarry or mine takes the seam it stands by (D613) — whole tiles, through the brush's own door
+    /// (<see cref="PaintWorkGround(Workplace, GridPos)"/>), so everything that reads painted ground reads this. Called when
+    /// one is raised and when one finishes moving; a building with no face claims nothing.
+    /// </summary>
+    /// <returns>How many tiles were claimed.</returns>
+    private int ClaimTheSeam(Workplace workplace)
+    {
+        if (JobsCatalog.FaceOf(workplace.Kind) is null || JobsCatalog.WorksAt(workplace.Kind) is not BuildingKind kind)
+        {
+            return 0;
+        }
+
+        int claimed = 0;
+        IReadOnlyList<GridPos> seam = SeamToClaim(kind, workplace.Position.ToTile(), workplace.Id);
+        for (int i = 0; i < seam.Count; i++)
+        {
+            claimed += PaintWorkGround(workplace, seam[i]).Allowed ? 1 : 0;
+        }
+
+        return claimed;
     }
 
     /// <summary>

@@ -128,6 +128,9 @@ reach check, keyed on the tile's terrain; never per tick.
 
 ### 3.6 The worked face (the view — quarry and mine)
 
+> ⭐ **Since D613 a mine's ground is claimed, not painted** (`seam-reach.md §8`): the whole iron seam it stands by,
+> drawn round with a palisade; the worked face below draws on it as it did on paint.
+
 - **A face** — a seam tile held by its face trade — draws **worked**: the seam's lumps cut down
   (fewer and lower, from the same stateless hash, so nothing flickers) on a **pale floor**
   (spoil-coloured: stone faces paler grey, iron faces rust-pale). The rest of the seam is unchanged.

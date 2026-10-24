@@ -280,23 +280,40 @@ public sealed class MarketShopTests
         }
     }
 
-    /// <summary>A limit past the counter's capacity is allowed with a warning; a good the market never holds is refused.</summary>
+    /// <summary>
+    /// ⭐ The limits may not add up past the room (D612, Joe: <i>"the market panel should limit the user from setting a total
+    /// limit for all items beyond the building's max capacity … add a limit enforcement"</i>): up to what the other goods
+    /// leave is accepted, a unit past it is refused in words and changes nothing; clearing goes back to the starting limit.
+    /// A good the market never holds, and a store that is not a market, are refused as before.
+    /// </summary>
     [Fact]
-    public void ALimitIsBoundedByWhatTheCounterCanHold()
+    public void ALimitIsBoundedByWhatTheOtherGoodsLeave()
     {
         SimWorld world = Build(Config).World;
         StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
 
-        PlacementVerdict past = world.SetMarketLimit(market, Goods.Firewood, market.Store.Capacity + 1);
-        Assert.True(past.Allowed);
-        Assert.True(past.HasWarning, "a limit past the counter's capacity should warn");
-        _output.WriteLine(past.Warning);
+        int most = market.MostItMayKeep(Goods.Firewood);
+        Assert.Equal(market.Store.Capacity - (market.KeptInAll - market.KeepsUpTo(Goods.Firewood)), most);
+        Assert.True(world.SetMarketLimit(market, Goods.Firewood, most).Allowed);
+        Assert.Equal(most, world.MarketStockLimit(market, Goods.Firewood));
+        Assert.Equal(market.Store.Capacity, market.KeptInAll);
+
+        PlacementVerdict past = world.SetMarketLimit(market, Goods.Firewood, most + 1);
+        _output.WriteLine(past.Reason);
+        Assert.False(past.Allowed);
+        Assert.Contains("at most", past.Reason, StringComparison.Ordinal);
+        Assert.Equal(most, world.MarketStockLimit(market, Goods.Firewood));
+
+        // Every other good is full up now: not one more unit of forage.
+        Assert.False(world.SetMarketLimit(market, Goods.Produce, world.MarketStockLimit(market, Goods.Produce) + 1).Allowed);
+        Assert.True(world.SetMarketLimit(market, Goods.Produce, 10).Allowed);
 
         Assert.False(world.SetMarketLimit(market, Goods.Logs, 10).Allowed);
         Assert.False(world.SetMarketLimit(granary, Goods.Produce, 10).Allowed);
         Assert.True(world.SetMarketLimit(market, Goods.Firewood, null).Allowed);
         Assert.Null(market.Limits.For(Goods.Firewood));
+        Assert.Equal(Config.MarketStartingLimit, world.MarketStockLimit(market, Goods.Firewood));
     }
 
     /// <summary>A market's limits and a household's topping-up are state, so the hash reads them (D7's anti-vacuity).</summary>

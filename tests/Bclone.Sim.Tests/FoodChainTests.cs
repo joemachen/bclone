@@ -285,7 +285,7 @@ public sealed class FoodChainTests
         ColdStartTests.PlayTheOpening(world);
         Workplace farm = FarmFixtures.RaiseAFarm(world);
         FarmFixtures.GiveItGround(world, farm, 3);
-        Assert.Equal(1000, world.StockLimits.For(Goods.Wheat));
+        Assert.Equal(2000, world.StockLimits.For(Goods.Wheat)); // 1,000 until Joe's panel (D611)
 
         loop.Step(config.TicksPerYear * 3);
         int byYearThree = world.WheatEverReaped;

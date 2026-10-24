@@ -490,7 +490,7 @@ public sealed partial class SimWorld
     {
         RebuildTheStandingIndexIfStale();
         bool[] before = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
-        bool[] after = SweepTheFreeGround(deck, null);
+        bool[] after = TheVillagesPiece(before, SweepTheFreeGround(deck, null), System.Array.Empty<GridPos>(), null);
         for (int i = 0; i < _standingFootprints.Count; i++)
         {
             if (HasAReachedNeighbour(before, _standingFootprints[i], null)

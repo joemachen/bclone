@@ -2,7 +2,8 @@
 
 **Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles), D561 (painting: the whole seam it
 stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); ✅ D561 — a quarry or a
-mine paints the whole seam it stands by — built, played and merged (D562).** `SeamReachTests` (8)
+mine paints the whole seam it stands by) — built, played and merged (D562).** ✅ **§8 (D613): claimed, not painted — a quarry or a mine takes the
+whole seam it stands by when it is finished, drawn round with a palisade; the brush goes. SPECCED AND BUILT (D613), unplayed.** `SeamReachTests` (8)
 green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved.
 
 ---
@@ -147,3 +148,93 @@ not `if`-guarded. Same 7 mutants, same 12 reds.
       moved.
 - [ ] Played by Joe: placing a quarry and a mine near and far from their seams, reading the ghost's sentence.
 - [ ] `quarry.md`, `iron-mine.md`, `DESIGN.md` §6/§7 and `HANDOFF.md` in the same commit; this status line made true.
+
+---
+
+## 8. ⭐ CLAIMED, NOT PAINTED — a quarry or a mine takes the seam it stands by (D613, Joe 2026-10-19)
+
+**Status:** ✅ **SPECCED AND BUILT (D613) on `slice/d607-notes` — unplayed.** `SeamClaimTests` (6) and the re-posed demand
+guards: 7 mutants, 11 reds; probe `quarry claim:` 2 mutants, 2 reds. ⚠️ *As built:* a seam joined only at a corner (one
+seam, D561's eight neighbours) is staked as one ring round each edge-joined piece — the palisade goes round what is drawn.
+
+Joe, playing D607: *"for mines and quarries im not sure if i like having to paint the nodes. can we change it so when the
+player places a mine or quarry near its ore node, the building 'smart draws' a type of mining/fence structure around the
+nearest node? kind of marking it visually as 'this node is being mined/quarried'"*. Asked how much it claims (D608): **the
+whole seam it stands by** — his own D561 reach, where today the brush may paint any of it.
+
+### 8.1 The rule
+
+- **Which seam.** Of the face tiles inside the building's placement diamond (`|dx| + |dy| ≤ face_reach_tiles`, the
+  diamond `CanBuildAt` already asks — §3), the one **nearest the building's tile by that same distance**, ties broken by
+  map order, that the village can walk to (`TravelCost.CanReach`) and that **no other building holds**. Its seam is the
+  one claimed: every tile joined to it through its eight neighbours, of the same face (`SimWorld.SeamPatchOf`, D561 — rock
+  and iron never one seam). Never an `Rng` draw, so the same quarry on the same ground claims the same seam every run.
+- **What is claimed.** Every tile of that seam that `CanPaintWorkGround` would accept for this building today — so the
+  rules that already hold for paint hold for the claim: not another building's ground, not a yard, not cut off. The
+  ground is written through `Zones.SetWorkGround` as whole tiles (all four quarters), exactly as a painted tile is held,
+  so `NextFace`, `IsFace`, the worked floor, the cut-down lumps, the harvest brush's refusal (*"That rock is the
+  quarry's."*) and the labour quota all read it unchanged. **Hashed as painted ground always was** (`WorkGroundSub`).
+- **When.** **On completion** (`SimWorld.Complete` → `RaiseFinished`), because the work ground belongs to the finished
+  workplace's id and a site has another. ⭐ But it is **shown from the moment of placing**: the ghost draws the seam it
+  would claim, and a standing site draws it faint (§8.3), from the same pure query (`SimWorld.SeamToClaim(kind, tile)`),
+  so the player sees *"this node will be quarried"* before the first log is carried.
+- **A seam a building already holds is not shared.** `CanBuildAt` refuses a quarry or a mine where every seam within
+  reach is held: *"The rock there is quarry 1's — a quarry needs a seam of its own."* (the mine's names iron).
+  *Settled without asking — Joe's to overrule.*
+- **Moved** (`relocate`): the old claim is released and the seam at the new place claimed when the move finishes.
+  **Pulled down:** released, as painted ground always was (`ReleaseWorkGround`).
+- **A face never runs out** (`quarry.md §3.4`), so the claim is for the building's life.
+
+### 8.2 What goes
+
+- **The brush for a quarry or a mine.** *Give ground* and *Take back* leave their cards (`KeepsWorkGround` stays true —
+  they keep work ground; nobody paints it). The card says what it works instead: *"Works the seam beside it — 23 tiles
+  of rock."*
+- **The overstretched note for a claimed seam** (Joe's call: *"…enough for 6. The rest will stand idle."* would fire on
+  every seam over six tiles, and a face never runs out — the extra tiles are where a quarrier stands, not work undone).
+  `WhyTheFaceIsIdle` keeps its other sentences.
+- ⚠️ **What stays:** the placement rule (§3, within 2 tiles of a reachable face), the face allowances as numbers in the
+  config (`quarry_tiles_per_worker`, `mine_tiles_per_worker` — read by nothing for a claimed seam; kept for a modder's
+  face trade that paints), and every rule of §6 about which seam is *the seam it stands by*.
+
+### 8.3 The look
+
+- **A palisade round the claimed seam**: the seam's tiles traced and rounded the way a yard's outline is
+  (`ZoneOutline.Trace(tiles, 1, ∞)`), drawn in a stake colour with a post at each tile's length along it, over the work
+  ground's wash. **View only — no walls**: quarriers and miners walk in and out anywhere, so the line never blocks the
+  face it marks. Faint while the building is a site and on the ghost; full once it stands.
+- Cached in `TraceTheZonesIfTheyMoved` on the counters it already keys on (`Zones.Edits`, `TerrainGeneration`,
+  `BuildingGeneration`); the ghost's preview is asked once per tile the ghost moves to, never per frame.
+
+### 8.4 The index (Joe's rule: nothing derivable rebuilt per ask)
+
+- **Each seam's tiles, listed** beside `_seamPatch` and rebuilt with it — only when `TerrainGeneration` has moved and
+  somebody asks. Never hashed, never saved (D335). `SeamTilesOf(patch)` returns the list; the claim and the ghost read it.
+
+### 8.5 Saves and the village that already exists
+
+- A quarry or a mine standing in a save keeps the ground it was painted — a load changes nothing, and nothing claims for
+  it. Its card loses the brush buttons with every other; its ground goes when it is pulled down, as before.
+- No golden village raises a quarry or a mine (D541), so no golden should move; the harness never marks one either, so
+  survival is not what to measure — **the seam sizes are** (D561's: rock median 8 / p90 18 / max 66 tiles; iron median 8
+  / p90 17 / max 38), and they are the claim's sizes now.
+
+### 8.6 Guards (red first, red-checked and counted)
+
+1. A finished quarry beside a seam holds every tile of that seam it may hold, and nothing of another seam in reach.
+2. The nearest seam is the one claimed when two are in reach; a tie goes to map order.
+3. Tiles another building holds, and tiles cut off, are left out of the claim.
+4. A quarry by a seam another quarry holds is refused, in words; a mine and a quarry by one rock-and-iron outcrop each
+   claim their own face.
+5. A quarry pulled down releases its seam; a quarry moved claims the seam where it lands and lets the old one go.
+6. `SeamToClaim` for the ghost is what completion claims, tile for tile.
+7. The card has no *Give ground* / *Take back* for a quarry or a mine, and its sentence counts the claimed tiles.
+8. The overstretched note never speaks for a claimed seam.
+9. Save → load → hash with a claimed seam; a year after loading matches a village that never stopped.
+10. Probe `quarry claim:` — the palisade drawn round a posed claimed seam, closed, within half a tile of its tiles,
+    faint for a site.
+
+### 8.7 Joe's to overrule, settled without asking
+
+(a) claimed on completion, shown from placement; (b) a seam is never shared — the second building is refused; (c) the
+palisade is a drawing, not walls; (d) the brush buttons go for both trades; (e) existing quarries keep their paint.

@@ -3,7 +3,8 @@
 **Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400). ⭐ **§10's player-built
 fence arrived as a barn's pasture fence (D598, `livestock.md §0.2`)** — through `ZoneMap.Wall`, its own index keyed by
 the barn, its source hashed and the layer not, exactly as §10 asked; and a pull-down of either kind now puts back the
-other's wall on a shared edge.
+other's wall on a shared edge. ⛔ **D614 (2026-10-20, on `slice/fence-edge`, unmerged): the wall-off sweep could be fooled
+from inside a pocket by the founding site's own seeds** — §3.3a's fifth rule; established seed 18 froze for it.
 Sixteen guards green and red-checked; §6 filled in from the run; six goldens moved once; the
 fixture premises re-posed with Joe's words — *"let longer walks be the price of fences."*
 Joe's yes, 2026-09-18, ordered
@@ -111,6 +112,20 @@ Four holes the guards found on their first runs, each closed by a rule rather th
 > no-room sentence. ⚠️ Houses are never placed by hand (the strip has no house button), so this
 > is where §3.3's words reach the player.
 
+> ⛔ **What is one piece of ground today stays one piece (D614).** The sweep starts beside the founding site — the
+> site's own neighbours even when the site is free, and beside whatever stands on it — so a proposal ON the site, or
+> beside what stands there, could close the only way into a pocket a seed sat in: the sweep started inside the pocket and
+> counted it as the village. Established seed 18, Spring, Year 29: a house on the free founding site filled the two-tile
+> gap that was the only way into twelve tiles walled by the warehouse, the granary, two houses, the market, the builder's
+> hut and three yards' fences, woodcutter's hut 1 inside; the sweep seeded beside the site on both sides of the house.
+> Nobody reached the hut again, its repair was never served, and all 41 froze in Year 43. **No fence raised it** — the
+> yards' fences were three of the pocket's many sides, the house the last. Now the after-ground is cut into pieces, and of each piece of today's ground only the after-piece most
+> shapes touch (what stands, the proposal, the founding site) counts as reached (`SimWorld.TheVillagesPiece`); a shape
+> left touching only another piece is walled off and named. Full sweeps only — the quick local answer already proves
+> nothing was cut. The same rule guards a bridge's pull-down. And a site nobody can reach now says so: *"… is walled in —
+> nobody can reach it, so the builders cannot raise it."* (`SiteWaitingNote`, said in the log once), and its builders say
+> *"Nothing they can reach is marked out — … is walled in."* instead of *"Nothing is marked out to build."*
+
 > **A walk obeys the walls at every step, not only in the fill.** The descent down a field
 > (`TerrainCostField.StepFrom`), the step off a building (`TravelCostField.StepOff`), a leg's
 > straight line through a grid corner (all four edges, not two), and the first leg out of a
@@ -156,6 +171,7 @@ The fence is drawn (D386/D388). Two things follow from it becoming a wall:
 |---|---|
 | A household's own yard | Walled like anybody else's, gate open. Nothing in the sim needs to enter a yard today; the kitchen garden (D357) is the first thing that will, and it arrives with a worker who comes through the gate. |
 | A plot on the valley's edge | Fine: a wall refuses a step, it does not create ground. |
+| ⛔ A house or a hut on the founding site, or beside what stands on it | The sweep's own seeds may sit in the pocket it would close. **Refused if it splits today's ground** and leaves something on the far side (D614, §3.3a). |
 | Two plots back to back | Two walls on one edge; the mask is per tile per side, so both are set and neither can be crossed. |
 | A plot whose lane is itself fenced by a neighbour | The refusal in §3.3 is what prevents it being built. ⚠️ **The measurement in §6 must count how often the site-chooser is refused for this reason** — a chooser that cannot place a house is a village that stops growing. |
 | A fence built round a standing building | Cannot happen: `FencedTilesFor` already clips what a building covers. |
@@ -212,7 +228,7 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
    against 56) because a plot is nine tiles and a lane.
 5. **The suite's clock:** 2m48 for the full run including the build, against D403's ~3m30.
 
-## 7. How it is tested (`FencesAsWallsTests`, fifteen guards; the reds and the two zeros are in the D404 entry)
+## 7. How it is tested (`FencesAsWallsTests`, fifteen guards and D614's two; the reds and the two zeros are in the D404 entry)
 
 - `AFenceIsAWall` — every yard tile with walkable ground behind a fence: the route in goes round.
 - `AGateIsTheOneWayIn` — exactly one open edge, onto the lane, and the walk in comes through it.
@@ -227,6 +243,10 @@ shipped steps, 81,116 in somebody else's yard, 16.2 %** — so every column belo
 - `NothingIsBuiltOrPaintedInSomebodysYard`, `AnInheritedFenceComesDownWithTheHeirsRelease`,
   `BackToBackFencesKeepTheirSharedWall` — the three rules building the slice added.
 - `TheQuickWallOffAnswerIsTheSweepsAnswer` (D405) — the local wall-off check is the sweep's answer.
+- ⛔ `NothingBesideTheFoundingSiteSealsAPocketAgainstIt` (D614, two poses: a pile ON the free site, and beside one standing
+  on it) and `NoBuildingTheVillageReachesIsEverWalledOffOnEstablishedSeed18` (the bug as found: every workplace, store and
+  home, every season, 44 years); `StalledSiteTests.ASiteNobodyCanReachSaysItIsWalledIn` (the site's note and its
+  builder's). 7 mutants, 5 red, 7 reds; two zeros written down in D614.
 - ✅ **Goldens moved once and the fixture premises re-posed** (D406), each with its reason.
 
 ## 8. Definition of Done

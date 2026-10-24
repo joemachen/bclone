@@ -1,18 +1,51 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED (TRADE AND THE HERD MERGED: D585–D607, PLAYED). NEXT: JOE'S D607 NOTES ON `slice/d607-notes`, ONE COMMIT EACH — THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED. `slice/d607-notes` = D609–D613 (JOE'S D607 NOTES: THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM) — LOCAL, UNMERGED, UNPLAYED. NEXT: JOE PLAYS IT; MERGING IS HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D613: JOE'S D607 NOTES, ALL FIVE BUILT) — ON WINDOWS.**
+>
+> **`slice/d607-notes`** = D609–D613 on top of `main` (D608), local, **unplayed**. One commit each:
+> - **D609** *The village* panel sorts — *Sort: Name · Age · Trade* above the list, remembered; the list no longer rebuilt
+>   every frame.
+> - **D610** a round pasture's fence is drawn round (the gate cut out at its posts) — and every fence moved an eighth of a
+>   tile onto its real edge.
+> - **D611** Joe's starting stock limits (forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600; stone tools
+>   30), measured first (`tools/harness/ZzLimits.cs`).
+> - **D612** a market of 8,000 whose limits start at 1,000 a good and may not add up past its room — enforced, not warned;
+>   the limits are its split (the half-for-food rule gone at a market). Measured: marketers' hauling +12 %, survival level.
+>   ⚠️ A market raised before D612 keeps its 4,000; Joe's own (forage 10,000 in 4,000) can only be lowered.
+> - **D613** quarries and mines claim the whole seam they stand by on completion, staked round with a palisade; the ghost
+>   shows the seam before the click; a seam is never shared; the brush buttons are gone from their cards.
+>
+> **▶️ NEXT:** Joe plays it (`.\run.bat`): sort the village panel; fence a round pasture and look at the gate; check a new
+> game's Stock limits panel; a new market's card (*Keeps up to — 5,000 of its 8,000 kept*, a box that will not go past
+> what is left); place a quarry by rock and watch the ghost, then the palisade. Merging `slice/d607-notes` is his word.
+> **Waiting on him too:** the walled-in-hut fix (a session card, `task_bb33ea9f`); the doors spec card (`task_a4066d55`).
+>
+> ⛔ **The walled-in hut is fixed on `slice/fence-edge` (D614), one commit on top of `slice/d607-notes` (21e0a17), local,
+> unmerged.** Not a fence and not the map's edge: a house sited ON the free founding site filled the only gap into twelve
+> tiles of ground, and the wall-off sweep — which starts beside the founding site — had seeds inside the pocket and called
+> it the village. Now ground that is one piece today stays one piece (`SimWorld.TheVillagesPiece`), and a site nobody can
+> reach says *"… is walled in"* (and so do its builders). No golden moved. Merging it (after or with `slice/d607-notes`)
+> is Joe's word. Suite at D614: **1802 / 0 / 5 of 1807** (11m25 / 12m53); goldens grep 383 lines, unchanged; probe 97 lines.
+>
+> **The numbers a session checks against (as of D613):** suite **1798 / 0 / 5 of 1803**, its clock **≈ 11–12 min**;
+> probe **97 `[widths]` lines**, bar 151; the goldens grep **383 lines**.
+>
+> **(the banner below is the state at D608)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D608: TRADE MERGED; JOE'S D607 NOTES) — ON WINDOWS.**
 >
 > **`main`** = D608, pushed: trade and the herd (D585–D607) merged at Joe's word after he played D607 (*"the
 > trading post window opens, i set an order. i sent the boat on. the region button works … Paths seem to do a
 > better job of reaching buildings."*).
 >
 > **▶️ NEXT — his six notes (D608), on `slice/d607-notes`, each its own commit, views first:** (1) the village
-> panel sorts by first name, age and trade; (2) a round pasture's fence drawn round (traced from the fenced tiles,
-> the gate cut out — view only); (3) his stock-limit defaults (forage, fish, meat 2,500; wheat 2,000; logs, stone
+> panel sorts by first name, age and trade — ✅ **built (D609), unplayed**; (2) a round pasture's fence drawn round — ✅ **built
+> (D610), unplayed** (and every fence moved an eighth of a tile onto its real edge); (3) his stock-limit defaults — ✅ **built
+> (D611), measured** (forage, fish, meat 2,500; wheat 2,000; logs, stone
 > 400; firewood 600; stone tools 30) — **measured on the harness AND established valleys**; (4) the market holds
-> 8,000, limits start at 1,000 a good and may not add up past the room (one rule wherever per-good limits exist;
+> 8,000, limits start at 1,000 a good and may not add up past the room — ✅ **built (D612), measured, unplayed** (one rule wherever per-good limits exist;
 > at a market the limits replace the half-for-food rule); (5) quarries and mines claim the whole seam they stand
-> by, spec first. His tools question was answered from the code (D608). Then **doors**, spec first.
+> by — ✅ **specced and built (D613), unplayed**. His tools question was answered from the code (D608). Then **doors**, spec first.
 >
 > **(the banner below is the state at D607)**
 >
@@ -7386,6 +7419,88 @@ Read `git status` after staging, every time.
   the answer is to make the natural path reachable (step to the knock turn), not only to pose around it. A pose
   closes the mutant; the natural path closes the premise.
 
+## ⛔ THE TRAPS D614 PAID FOR — A BRIEF'S CAUSE IS A HYPOTHESIS, A PICTURE MISREAD BY ONE COLUMN, AND A GUARD THAT ASSERTED THE HOLE AWAY
+
+- ⭐ **The cause that came with the bug was wrong twice** — *"a yard's fence against the map's edge"*. The map runs x −60..59,
+  so (0, 2) is its middle, and no fence went up that day: a house filled a gap on the founding site. Trace the day the
+  reach flips and print the ground round it (walkable, standing *and what*, plot owner, walls, **reached or not per tile**)
+  before writing a sentence about why. *D611's trap said the same of a death count; it holds for a filed cause too.*
+- ⛔ **A picture without column labels was misread by one column** and produced a plausible three-tile pocket that did not
+  exist (one of its "walls" was open ground). The fix was right and its story was wrong; the second trace, with `x=`
+  headers and an `R` for reached per tile, showed twelve tiles and the one gap. **Label the axes of a trace you will
+  reason from, and print the answer per tile rather than inferring it from the walls.**
+- ⚠️ **A guard's precondition can be the bug, stated.** `AHouseThatWouldFenceSomebodyInIsRefusedByName` asserts *"The
+  founding site is inside the ring, so the sweep starts inside it and nothing is shut in"* — exactly the hole, written
+  down in 2026-09 as a reason to pose elsewhere. When a guard needs a precondition to dodge a case, ask whether the case
+  is a bug.
+- **`SaveLoadTests.EveryFieldIsSavedOrNamed` fails on any new field of `SimWorld`**, a derived cache included: name it in
+  its list (this one: `_freeGroundTodayPieces`). Run that class with `--filter` after adding a field, not 11 minutes later.
+- **Two zeros kept:** the proposal itself not scored (only tie-breaks no pose reaches), and a bridge's pull-down off the
+  rule (no guard pulls a deck down beside the founding site). If either ever matters, that is where its guard goes.
+
+## ⛔ THE TRAPS D613 PAID FOR — A GUARD WHOSE NEAR SEAM WAS ALSO FIRST, AND A CORNER THAT WAS THE CHECK'S OWN
+
+- ⚠️ **A "nearest" guard must pose the far one first in the other order.** The first pose put the near seam north — first
+  in map order too — so a claim that walked the diamond in map order would have passed it. Re-posed with the far seam
+  north, before the mutant was run; the mutant then went red.
+- **A probe check that concatenates two rings invents a corner where one ends and the next begins** (158°). Measure each
+  ring on its own. And a seam is joined through eight neighbours while the outline tracer joins through four: one seam can
+  draw as two rings, which is the honest drawing.
+- **`JobKind.Laborer` does not exist** — a laborer is a villager with no job. Ask `EmployedBy(kind) is JobKind t`.
+
+## ⛔ THE TRAPS D612 PAID FOR — A CLAMP THAT FIRES A SIGNAL, A SIX-VALLEY COIN, AND AN `rm` ON A BARE VARIABLE
+
+- ⛔ **Godot's `SpinBox` fires `ValueChanged` when its `MaxValue` drops under the value it shows** — six changes on the
+  probe's pose. A card refresh that sets the ceiling first writes a limit the player never typed. Lower the value with
+  `SetValueNoSignal` first, then the ceiling, then the value; probe `market limits:` counts any signal.
+- ⭐ **A ratio guard over six valleys is still a coin.** `TheFoundingHubWearsLanesNotABlock` read 0.72 against its 0.7 bar
+  with ONE valley flipping 16 → 24; twelve valleys read 0.688 / 0.682 before and after. Measure more valleys on both
+  builds before touching a bar — then make the guard stronger (more valleys), never looser.
+- ⛔ **`rm -f "$S/$wt/…"` is refused by a safety check** (a bare variable could expand to `/`). Write
+  `"${S:?}/${wt:?}/…"` — the shell stops instead of removing anything when one is empty.
+- **A guard posed on seven years of a fixture's history moves with any change to the village's rhythm** —
+  `FoodLimitTests` drained its posed stock in ten ticks under the new market. Pose the stock the claim needs, and say
+  in the comment what it was before and why.
+
+## ⛔ THE TRAPS D611 PAID FOR — AN OPENING THAT NEVER MAKES THE GOOD, A HARNESS THAT RAN THE OLD DLL, AND A HUT NOBODY COULD REACH
+
+- ⭐ **Ask which openings make the good before measuring a limit on it.** ZzLimits' played and established openings made
+  **0 fish and 0 meat** in every run — no lodge, no fishery — so half of Joe's change was invisible to them. The `every`
+  opening (lodge, fishery and farm raised) is the only one that reaches it, and it carries D515's first-winter race.
+- ⛔ **D522's trap again: a harness that did not compile ran the previous DLL under `--no-build`** and printed a whole
+  trace off the old code. Every harness build now greps for `0 Error(s)` and stops if it is missing.
+- ⭐ **A death count that jumps is a valley to trace, not a number to report.** Established froze 2 → 42 was ONE valley,
+  and its cause was a woodcutter's hut walled in against the map's edge (`NextToBuild` skips what it cannot reach) — a
+  bug older than the change, which the change only reached sooner. *(⚠️ D614: not the map's edge — a house on the
+  founding site closed a pocket the wall-off sweep had seeds inside. See D614's traps.)* `scratchpad/ZzFuel.cs`'s shape (where each good is,
+  each worker's note, each site's materials and reach) found it in three runs.
+
+## ⛔ THE TRAPS D610 PAID FOR — A MUTANT RED FOR THE WRONG REASON, AND A POINT-BASED CUT ON A CURVE WITH NO POINTS
+
+- ⭐ **Read WHY a mutant went red, not only that it did.** The stair mutant (corners kept sharp) was meant to trip the
+  45° check and tripped *"not one open line"* instead — because a straightened loop has no point near the gate, so the
+  gate was never cut. That was a real bug in the shipped code (a block's mid-side gate drawn shut), not a quirk of the
+  mutant, and the disc pose could not see it. Re-posed with a block, fixed, and the stair mutant re-run to see the
+  corner check bite on its own.
+- ⛔ **A rounded loop's points sit at its corners** (`ZoneOutline.Straighten` merges every straight run). Anything that
+  asks *"which points are near X?"* of a traced outline must densify near X first, or a long side is invisible to it.
+- ⛔ **D338's eighth of a tile, a third time**: a hand-written segment in sub-tile space starts a tile at `x·4 − ½`, not
+  `x·4`. Read any hand-made outline back through `InTileSpace` onto the tile's corners before trusting it.
+
+## ⛔ THE TRAPS D608–D609 PAID FOR — A MERGE THAT READ NO MESSAGE, AN EMPTY MUTANT, AND A POSE WHOSE IDS AGREED
+
+- ⛔ **`git commit -F -` reads its message from stdin; `git merge -F -` does not** (*"could not read file '-'"*). The
+  merge never ran, and the `git push` chained after it said *"Everything up-to-date"* — a merge that had not happened
+  read like one that had. Write the message to a file in the scratchpad, and read `git log` before pushing.
+- ⛔ **A mutant whose text is empty cannot be reverted by text.** V3 deleted a line (`""`); the reverse replacement
+  found the empty string 13,377 times and refused, so the mutant stayed in for the next three runs — each of which
+  then showed its own fault *plus* the stale one, which is the only reason it was noticed. The scratchpad's
+  `mutate.py` now refuses an empty side: replace the line with a comment instead. **After any mutant batch, grep each
+  mutated line back to its original before believing the next green.**
+- ⚠️ **A tiebreak guard must pose the next tiebreak against it.** The twins (same name, same birth) had their ids in
+  surname order, so dropping the surname tiebreak fell through to the id and came out right: a zero by construction.
+  Re-posed with the highest id on the earliest surname before the run.
+
 ## ⛔ THE TRAPS D607 PAID FOR — A CARD READ AS THE WINDOW, AND AN ESCAPE THAT BECAME A NEWLINE
 
 - ⭐ **When Joe says a window lacks something, check which panel his screenshot is.** It was the post's card; the window
@@ -7793,9 +7908,25 @@ Read `git status` after staging, every time.
   builders, the cold forge named, the market's emptiest shelf first, builders spread across the queue, the seat defaults,
   the well's ring), the paths (D605, played and approved) and D607. His word only.
 
+- ⏸️ **A YARD CAN WALL A BUILDING IN AGAINST THE MAP'S EDGE (found D611).** Established seed 18 (`ShippedConfig.Established()`,
+  Joe's D611 limits): woodcutter's hut 1 at (0, 2), a yard wall on its south side, `TravelCost.CanReach(village, hut)` false;
+  unworked, fallen in at Year 41, its repair never served (`NextToBuild` skips the unreachable), the village frozen at Year
+  43. Under the old limits the same hut falls in at Year 48. D404's `WhatThisWouldWallOff` should have refused the yard.
+  Proposed as its own session; not fixed on `slice/d607-notes`.
+
 - ⏸️ **DOORS — HIS CALL WAS "SPURS NOW, DOORS LATER" (D607).** The spurs are built (view only). Doors in the sim — every
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
+
+- ⏸️ **MERGE `slice/d607-notes` (D609–D613) TO `main`** — local, unmerged, unplayed. His word only, after he plays it.
+
+- ⏸️ **D613'S CALLS, SETTLED WITHOUT ASKING — HIS TO OVERRULE (`seam-reach.md §8.7`):** a seam is claimed when the quarry
+  is finished (shown from placing); a seam is never shared (a second quarry by it is refused); the palisade is drawn, not
+  walls; the brush buttons go for both trades; existing quarries keep their painted ground.
+
+- ⏸️ **TOOLS — HIS QUESTION ANSWERED (D608), CHANGES HIS CALL:** builders carry no tools (on purpose, `tools-and-the-smith.md
+  §3.2`); a worker holding stone never trades it in for iron (D446); D391's ~3 years a hand and D430's ~5× slower never
+  reconciled. Say if any of the three should change.
 
 - ⏸️ **THE MARKET'S VOLUME IS ITS MARKETERS' (D601).** The emptiest-shelf rule spreads two marketers' loads across the
   goods; it cannot make the shelf fuller. More market seats is Joe's lever — said to him, not yet tried in play.

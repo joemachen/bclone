@@ -3967,9 +3967,10 @@ public sealed partial class SimWorld : IObstacles
     /// Why this building may not stand here for want of its ground nearby — or null when a tile of it the village can
     /// walk to lies within the rule's reach (D540).
     /// </summary>
-    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village)
+    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village, bool alreadyStanding = false)
     {
         bool cutOff = false;
+        Workplace? heldBy = null;
         for (int dy = -near.Tiles; dy <= near.Tiles; dy++)
         {
             int span = near.Tiles - Math.Abs(dy);
@@ -3983,6 +3984,15 @@ public sealed partial class SimWorld : IObstacles
 
                 if (TravelCost.CanReach(village, at))
                 {
+                    // ⭐ A SEAM OF ITS OWN (D613): a quarry or a mine claims the seam it stands by, so one another building
+                    // holds is no ground for a new one. ⚠️ Not asked of a move — the building's own seam is its own.
+                    if (!alreadyStanding && BuildingsCatalog.EmployedBy(kind) is JobKind faceTrade && JobsCatalog.FaceOf(faceTrade) is not null
+                        && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder)
+                    {
+                        heldBy ??= holder;
+                        continue;
+                    }
+
                     return null;
                 }
 
@@ -3991,6 +4001,13 @@ public sealed partial class SimWorld : IObstacles
         }
 
         string ground = Describe(near.Terrain);
+        string named = BuildingsCatalog[kind]!.Name;
+        if (heldBy is not null)
+        {
+            string an = "aeiou".Contains(named[0], StringComparison.Ordinal) ? "an" : "a";
+            return $"The {WithoutArticle(ground)} there is {heldBy.Name}'s — {an} {named} needs a seam of its own.";
+        }
+
         if (cutOff && BuildingsCatalog.EmployedBy(kind) is JobKind trade)
         {
             return CutOff(WithoutArticle(ground), JobsCatalog.PluralOf(trade));
@@ -5006,6 +5023,15 @@ public sealed partial class SimWorld : IObstacles
             return null;
         }
 
+        // ⛔ A SITE NOBODY CAN REACH IS NEVER SERVED (D614) — `NextToBuild` skips it, by the same question asked here, so
+        // the player hears it rather than watching a ruin wait for ever. Established seed 18's woodcutter's hut was walled
+        // in for twelve years in silence and the village froze for it.
+        if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), workplace.Tile))
+        {
+            return $"{plan.Name} is walled in — nobody can reach it, so the builders cannot raise it. Clear a way to it, "
+                + "or it will stand as it is.";
+        }
+
         for (int m = 0; m < plan.Recipe.Materials.Count; m++)
         {
             Goods wants = plan.Recipe.Materials[m].Goods;
@@ -5520,16 +5546,12 @@ public sealed partial class SimWorld : IObstacles
                   + "or paint less.";
         }
 
-        if (FaceOf(workplace) is Terrain face)
+        // ⛔ NEVER FOR A FACE SINCE D613 (Joe's call): a quarry or a mine claims the whole seam it stands by, nobody paints
+        // it, and a face never runs out — the tiles past the hands are where a worker stands, not work undone. Staffing is
+        // the idle note's to say (`WhyTheFaceIsIdle`).
+        if (FaceOf(workplace) is not null)
         {
-            string seam = FaceWord(face);
-            string trade = JobsCatalog.NameOf(workplace.Kind);
-            return hands == 0
-                ? $"{name} has {tiles} tiles of {seam} and nobody working it. Put a {trade} on — "
-                  + $"one pair of hands keeps {TilesOneWorkerKeeps(workplace.Kind)} faces."
-                : $"{name} has {tiles} tiles of {seam} and {Hands(hands)} to work them — enough for "
-                  + $"{allowance}. The other {tiles - allowance} will stand idle — put another "
-                  + $"{trade} on, or paint less.";
+            return null;
         }
 
         return hands == 0
@@ -7018,29 +7040,58 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No($"A market never holds {GoodsCatalog.NameOf(goods)}.");
         }
 
-        if (!market.Limits.Set(goods, limit) || limit is null || limit.Value <= market.Store.Capacity)
+        // ⭐ THE LIMITS MAY NOT ADD UP PAST THE ROOM (D612, Joe: "limit the user from setting a total limit for all items
+        // beyond the building's max capacity … add a limit enforcement"). D372 accepted any number and warned past the whole
+        // room; now the number is refused, in words, past what the other goods leave. ⚠️ A lowering is always accepted,
+        // so a save from before the rule, whose limits already pass the room, can be brought back under it.
+        if (limit is int wanted && wanted > market.MostItMayKeep(goods) && wanted > market.KeepsUpTo(goods))
         {
-            return PlacementVerdict.Fine;
+            int most = market.MostItMayKeep(goods);
+            string good = GoodsCatalog.NameOf(goods);
+            return PlacementVerdict.No(
+                $"{market.Name} holds {market.Store.Capacity:N0} in all and its other goods keep {market.Store.Capacity - most:N0} "
+                + $"of it, so it can keep {most:N0} {good} at most. Lower another good to make room.");
         }
 
-        return PlacementVerdict.Yes(
-            $"{market.Name} can hold {market.Store.Capacity} in all, so it will never reach {limit.Value} "
-            + $"{GoodsCatalog.NameOf(goods)}. The marketer will keep it as full as it goes.");
+        market.Limits.Set(goods, limit);
+        return PlacementVerdict.Fine;
     }
 
     /// <summary>
-    /// How much of a good the marketer keeps at this counter — the player's limit for this
-    /// market, or the derived <see cref="VillageEconomy.MarketStockWanted"/> when they have not said (D372).
+    /// How much of a good the marketer keeps at this counter — the player's limit for this market, or the starting
+    /// <c>market_starting_limit</c> out of what is left of the room (D612; <see cref="StoreBuilding.KeepsUpTo"/>).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// ⭐ THE ONE ANSWER for the restock offer, the load, the counter's room and the labour
     /// quota — four readers of *"is the counter short?"* that D148 and D370 both say must never
     /// carry their own copy of the sum.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>D612 reverses D197's sizing at Joe's word:</b> the derived target was <c>market_stock_per_household</c> × the
+    /// occupied households, because a target sized to the building doubled the hauling. Joe: <i>"set the market's starting
+    /// limits to 1000 for each item"</i> — flat, and measured before it shipped (`storage-and-distribution.md §14.9.3`).
+    /// </para>
     /// </remarks>
     public int MarketStockLimit(StoreBuilding market, Goods goods)
     {
         ArgumentNullException.ThrowIfNull(market);
-        return market.Limits.For(goods) ?? VillageEconomy.MarketStockWanted(Config, OccupiedHouseholds());
+        return market.KeepsUpTo(goods);
+    }
+
+    /// <summary>
+    /// A market is told the starting limit and what the village knows of (D612) — on every road a store enters the world
+    /// by: raised, founded, loaded. Derived, so a load sets it as the raise did and the hash never sees it.
+    /// </summary>
+    private StoreBuilding KnowItsGoods(StoreBuilding store)
+    {
+        if (store.Kind == StoreKind.Market)
+        {
+            store.StartingLimit = Config.MarketStartingLimit;
+            store.Knows = KnowsOf;
+        }
+
+        return store;
     }
 
     /// <summary>Households with somebody living in them — what the derived market stock is sized to.</summary>
@@ -7099,8 +7150,9 @@ public sealed partial class SimWorld : IObstacles
             return false;
         }
 
+        // The counter's room for this good, by the one door (D612): its limit less what it holds, within the building.
         int armful = Config.CarryCapacity;
-        if (market.Store[goods] + armful > MarketStockLimit(market, goods) || market.Store.FreeSpace < armful)
+        if (market.RoomFor(goods) < armful)
         {
             return false;
         }
@@ -7506,6 +7558,27 @@ public sealed partial class SimWorld : IObstacles
             workplace.MoveTo(to);
             StandingChanged();
             TravelCost.Forget();
+
+            // ⭐ A QUARRY OR A MINE MOVED LETS ITS OLD SEAM GO AND CLAIMS THE ONE WHERE IT LANDS (D613) — painted ground
+            // travels with a farm, but a claim is the seam the building stands by, and it no longer stands by that one.
+            if (JobsCatalog.FaceOf(workplace.Kind) is not null)
+            {
+                IReadOnlyList<int> held = Zones.WorkGroundOf(workplace.Id);
+                var was = new List<GridPos>(held.Count);
+                for (int i = 0; i < held.Count; i++)
+                {
+                    was.Add(Zones.PositionOf(held[i]));
+                }
+
+                Zones.ReleaseWorkGround(workplace.Id);
+                for (int i = 0; i < was.Count; i++)
+                {
+                    AfterTakingGround(workplace, was[i]);
+                }
+
+                ClaimTheSeam(workplace);
+            }
+
             return true;
         }
 
@@ -8762,7 +8835,7 @@ public sealed partial class SimWorld : IObstacles
         // asked of a reach like the lodge's. ⚠️ Counted only where the village can walk (D110/D111): rock across
         // the river is not near, it is cut off, and the sentence says which mistake it is.
         if (BuildingsCatalog[kind]?.MustBeNear is NearRule near
-            && WhyNotNearItsGround(kind, position, near, village) is string notNear)
+            && WhyNotNearItsGround(kind, position, near, village, alreadyStanding) is string notNear)
         {
             return PlacementVerdict.No(notNear);
         }
@@ -10202,6 +10275,7 @@ public sealed partial class SimWorld : IObstacles
             RaisedAtTick = Tick,
         };
 
+        KnowItsGoods(building);
         StandingChanged();
         StoreBuildings.Add(building);
 
@@ -10360,6 +10434,10 @@ public sealed partial class SimWorld : IObstacles
             ExtentWidth = row.ExtentWidth,
             ExtentHeight = row.ExtentHeight,
         });
+
+        // ⭐ A QUARRY OR A MINE TAKES THE SEAM IT STANDS BY (D613, Joe: "when the player places a mine or quarry near its ore
+        // node, the building 'smart draws' ... around the nearest node") — claimed, not painted.
+        ClaimTheSeam(Workplaces[^1]);
     }
 
     /// <summary>
@@ -11645,7 +11723,7 @@ public sealed partial class SimWorld : IObstacles
         string marketName = NameFor(BuildingKind.Market);
 
         StandingChanged();
-        StoreBuildings.Add(new StoreBuilding
+        StoreBuildings.Add(KnowItsGoods(new StoreBuilding
         {
             Catalog = GoodsCatalog,
             Id = 3,
@@ -11655,7 +11733,7 @@ public sealed partial class SimWorld : IObstacles
             ExtentWidth = ExtentOf(BuildingKind.Market).Width,
             ExtentHeight = ExtentOf(BuildingKind.Market).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
-        });
+        }));
 
         // Capacity zero means no market at all rather than a market nobody can work
         // at, so that "switch the market off" is a state the village genuinely runs in
@@ -12566,6 +12644,9 @@ public sealed partial class SimWorld : IObstacles
     private int _freeGroundTodayGeneration = -1;
     private int _freeGroundTodayWalls = -1;
 
+    /// <summary>Today's free ground in pieces, for <see cref="TheVillagesPiece"/> — derived from the sweep above, never hashed.</summary>
+    private int[]? _freeGroundTodayPieces;
+
     /// <summary>
     /// What a building here would cut off from the village — a name, or null if nothing (D383).
     /// </summary>
@@ -12618,6 +12699,7 @@ public sealed partial class SimWorld : IObstacles
             || _freeGroundTodayWalls != Zones.WallGeneration)
         {
             _freeGroundToday = SweepTheFreeGround(System.Array.Empty<GridPos>(), null);
+            _freeGroundTodayPieces = null;
             _freeGroundTodayGeneration = StandingGeneration;
             _freeGroundTodayWalls = Zones.WallGeneration;
         }
@@ -12687,7 +12769,7 @@ public sealed partial class SimWorld : IObstacles
     {
         if (AlwaysSweepTheWholeValley)
         {
-            return SweepTheFreeGround(proposedTiles, fence);
+            return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
         }
 
         var closed = new HashSet<int>();
@@ -12730,7 +12812,7 @@ public sealed partial class SimWorld : IObstacles
         GridPos site = Map.FoundingSite;
         if (site.X >= minX - 1 && site.X <= maxX + 1 && site.Y >= minY - 1 && site.Y <= maxY + 1)
         {
-            return SweepTheFreeGround(proposedTiles, fence);
+            return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
         }
 
         // The boundary: reached today, not closed, and beside a closed tile or on a new wall.
@@ -12781,7 +12863,7 @@ public sealed partial class SimWorld : IObstacles
             {
                 if (!seen.Contains(boundary[i]))
                 {
-                    return SweepTheFreeGround(proposedTiles, fence);
+                    return TheVillagesPiece(before, SweepTheFreeGround(proposedTiles, fence), proposedTiles, fence);
                 }
             }
 
@@ -13000,6 +13082,159 @@ public sealed partial class SimWorld : IObstacles
             reached[index] = true;
             queue[tail++] = index;
         }
+    }
+
+    /// <summary>
+    /// ⛔⛔ The free ground after a proposal, kept to the village's piece of it (D614) — where the proposal splits one piece of
+    /// today's ground in two, the piece most of what stands touches is the village, and the rest is walled off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Established seed 18 froze for this.</b> <see cref="SweepTheFreeGround"/> starts beside the founding site — the
+    /// site's own neighbours even when the site is free, and the tiles beside whatever stands on it. So a proposal ON the site,
+    /// or beside what stands there, can close the only way into a pocket one of those seeds sits in, and the sweep starts
+    /// inside the pocket: everything in it is "reached". In Spring, Year 29 a house went up on the free founding site and
+    /// filled the two-tile gap that was the only way into twelve tiles of ground walled by the warehouse, the granary, two
+    /// houses, the market, the builder's hut and three yards' fences — woodcutter's hut 1 touching nothing else. The sweep
+    /// seeded beside the site on both sides of the new house and called the hut fine. Nobody reached it again: it fell in, its repair site was never served
+    /// (<see cref="NextToBuild"/> skips what it cannot reach), and all 41 villagers froze in Year 43.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The rule is the invariant, not a better seed:</b> ground that is one piece today must not become two that both hold
+    /// something. Each piece of the after-ground lies inside one piece of today's (a proposal only closes ground), so per piece
+    /// of today's the after-piece touched by the most shapes — what stands, the proposal itself and the founding site — is
+    /// kept, ties to the first found, and the rest dropped. A shape left touching only a dropped piece is then walled off by
+    /// the ordinary test, and named. Ground already in pieces today (a hut the generator put across the water) stays in them:
+    /// <i>against today, not against perfection</i>.
+    /// </para>
+    /// <para>
+    /// Only the full sweeps come through here: the quick local answer has already shown the proposal cuts nothing.
+    /// </para>
+    /// </remarks>
+    private bool[] TheVillagesPiece(bool[] before, bool[] after, IReadOnlyList<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence)
+    {
+        int[] afterPieces = PiecesOf(after, fence, out int count);
+        if (count <= 1)
+        {
+            return after;
+        }
+
+        int[] beforePieces;
+        if (ReferenceEquals(before, _freeGroundToday))
+        {
+            _freeGroundTodayPieces ??= PiecesOf(before, null, out _);
+            beforePieces = _freeGroundTodayPieces;
+        }
+        else
+        {
+            beforePieces = PiecesOf(before, null, out _);
+        }
+
+        // How many shapes touch each after-piece, across an edge with no wall on it.
+        var touching = new int[count + 1];
+        var counted = new HashSet<int>();
+        for (int i = 0; i < _standingFootprints.Count; i++)
+        {
+            Score(_standingFootprints[i]);
+        }
+
+        if (proposedTiles.Count > 0)
+        {
+            Score(proposedTiles);
+        }
+
+        Score(new[] { Map.FoundingSite });
+
+        // Per piece of today's ground, the after-piece most shapes touch; ties to the lowest, which was found first.
+        var kept = new Dictionary<int, int>();
+        for (int i = 0; i < afterPieces.Length; i++)
+        {
+            int piece = afterPieces[i];
+            if (piece != 0 && (!kept.TryGetValue(beforePieces[i], out int best) || touching[piece] > touching[best]))
+            {
+                kept[beforePieces[i]] = piece;
+            }
+        }
+
+        var village = new bool[after.Length];
+        for (int i = 0; i < afterPieces.Length; i++)
+        {
+            village[i] = afterPieces[i] != 0 && kept[beforePieces[i]] == afterPieces[i];
+        }
+
+        return village;
+
+        void Score(IReadOnlyList<GridPos> shape)
+        {
+            counted.Clear();
+            for (int i = 0; i < shape.Count; i++)
+            {
+                GridPos t = shape[i];
+                byte walls = WallsForTheSweep(t, fence);
+                if ((walls & 1) == 0) { Touch(new GridPos(t.X, t.Y - 1)); }
+                if ((walls & 2) == 0) { Touch(new GridPos(t.X + 1, t.Y)); }
+                if ((walls & 4) == 0) { Touch(new GridPos(t.X, t.Y + 1)); }
+                if ((walls & 8) == 0) { Touch(new GridPos(t.X - 1, t.Y)); }
+            }
+        }
+
+        void Touch(GridPos tile)
+        {
+            int index = IndexOfTile(tile);
+            if (index >= 0 && afterPieces[index] != 0 && counted.Add(afterPieces[index]))
+            {
+                touching[afterPieces[index]]++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The reached tiles of a sweep in pieces — 1, 2, … in tile order, 0 off the reached ground — joined only across an edge
+    /// with no wall on it (D614).
+    /// </summary>
+    private int[] PiecesOf(bool[] reached, IReadOnlyDictionary<GridPos, byte>? fence, out int count)
+    {
+        int width = Map.Width;
+        int height = Map.Height;
+        var pieces = new int[reached.Length];
+        var queue = new int[reached.Length];
+        int found = 0;
+        for (int start = 0; start < reached.Length; start++)
+        {
+            if (!reached[start] || pieces[start] != 0)
+            {
+                continue;
+            }
+
+            found++;
+            int head = 0;
+            int tail = 0;
+            pieces[start] = found;
+            queue[tail++] = start;
+            while (head < tail)
+            {
+                int at = queue[head++];
+                int x = at % width;
+                int y = at / width;
+                byte walls = WallsForTheSweep(new GridPos(x + Map.MinX, y + Map.MinY), fence);
+                if (x + 1 < width && (walls & 2) == 0) { Join(at + 1); }
+                if (x > 0 && (walls & 8) == 0) { Join(at - 1); }
+                if (y + 1 < height && (walls & 4) == 0) { Join(at + width); }
+                if (y > 0 && (walls & 1) == 0) { Join(at - width); }
+            }
+
+            void Join(int index)
+            {
+                if (reached[index] && pieces[index] == 0)
+                {
+                    pieces[index] = found;
+                    queue[tail++] = index;
+                }
+            }
+        }
+
+        count = found;
+        return pieces;
     }
 
     /// <summary>Whether a shape has a reached tile beside it, across an edge with no wall on it (D383; walls D404).</summary>
@@ -14136,7 +14371,7 @@ public sealed partial class SimWorld : IObstacles
 
         foreach (SaveReader store in save.Objects("stores"))
         {
-            StoreBuildings.Add(StoreBuilding.FromSave(store, GoodsCatalog));
+            StoreBuildings.Add(KnowItsGoods(StoreBuilding.FromSave(store, GoodsCatalog)));
         }
 
         foreach (SaveReader library in save.Objects("libraries"))

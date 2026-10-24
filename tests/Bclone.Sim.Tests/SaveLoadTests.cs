@@ -338,10 +338,10 @@ public sealed class SaveLoadTests : IDisposable
         {
             "_terrainGeneration", "BuildingGeneration", "StandingGeneration", "_standing", "_standingOwner",
             "_standingFootprints", "_standingBuiltAt", "_freeGroundToday", "_freeGroundTodayGeneration",
-            "_freeGroundTodayWalls", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
+            "_freeGroundTodayWalls", "_freeGroundTodayPieces", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
-            "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_mostEverAliveFor", "_mostEverAlive",
+            "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_seamTiles", "_mostEverAliveFor", "_mostEverAlive",
             // How many times the season's condition walk has run (D555): a count the probe reads, nothing in the sim does.
             "ConditionWalks",
             // Which barn's fence holds a tile (D598): rebuilt on load from the barns' fenced tiles and gates.
@@ -380,7 +380,9 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
             "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick", "Closed",
         }),
-        (typeof(StoreBuilding), Kept.Data, new[] { "Catalog" }),
+        // D612: the market's starting limit (config) and the village's knowledge (a hook to SimWorld.KnowsOf), handed to a
+        // market on every road it enters the world by — raised, founded, loaded. ALoadedMarketKeepsWhatTheSavedOneKept.
+        (typeof(StoreBuilding), Kept.Data, new[] { "Catalog", "StartingLimit", "Knows" }),
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",

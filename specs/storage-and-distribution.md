@@ -1,6 +1,6 @@
 # Spec: Storage and Distribution — goods live in buildings
 
-> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.16, the emptiest shelf first (Joe, 2026-10-17), BUILT (D601)** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT (D422), all three rules on Joe's call — PLAYED AND MERGED (D425)** · Owner: Joe + Claude Code
+> Status: **✅ complete — all five slices built, D30 closed** · ✅ **§14.9, the market as a shop (Joe, 2026-09-13), BUILT (D372) and played since** · ✅ **§14.9.3 amended (D612, Joe 2026-10-19): a market of 8,000 whose limits start at 1,000 a good and may not add up past its room — BUILT, unplayed** · ✅ **§14.16, the emptiest shelf first (Joe, 2026-10-17), BUILT (D601)** · ✅ **§14.14, a market that visibly carries more stock (Joe, 2026-09-26), BUILT (D417), PLAYED and MERGED (D418: *"markets look good!"*)** · ✅ **every storage building shows its stock the same way (D419), played and merged (D421)** · ✅ **§14.15, a top-up that ends (Joe's larder loop, D421 note 1), BUILT (D422), all three rules on Joe's call — PLAYED AND MERGED (D425)** · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements decisions **D30** and **D32**; delivers the building half of **D14**.
 
 **Settled by Joe:** refilling a larder is a **fetch** (§3), and food gets its own building — a **granary** — separate from the warehouse that holds manufacturing materials (§4).
@@ -523,6 +523,38 @@ player sets on THAT market, per good** — the same shape as the village stock l
   `SimWorld.SetMarketLimit(market, goods, int?)` (the `SetStockLimit` shape: a `PlacementVerdict`
   with a warning when the limit exceeds the market's capacity). ⚠️ Goods a market does not
   `Accept` cannot be limited; the row does not appear.
+
+> ⭐ **AMENDED (D612, Joe's D607 notes, 2026-10-19) — the limits are the market's split, and they add up to its room.**
+> Joe: *"increase the capacity of the market from 4000 to 8000. set the market's starting limits to 1000 for each item.
+> also the market panel should limit the user from setting a total limit for all items beyond the building's max
+> capacity. the log message is good, but add a limit enforcement."* His calls (asked the same day): the rule applies
+> **wherever per-good limits exist** (the market now; any store given them later inherits it — no new rows elsewhere),
+> and **at a market the limits replace D361's half-for-food rule**.
+>
+> - **The room:** `market_store_capacity` **8,000** (was 4,000, D416).
+> - **The default is no longer derived.** `null` now means **`market_starting_limit` (1,000)**, flat — not
+>   `MarketStockWanted`'s 100 per occupied household (D417), which is deleted with `market_stock_per_household`.
+>   ⛔ This reverses D197's sizing at Joe's word; it was measured before it shipped (D612).
+> - **They never add up past the room.** `StoreBuilding.KeepsUpTo(good)`: a set limit as set; an unset one the
+>   starting limit **out of what is left** — the room less every set limit, shared out in the catalogue's order. A good
+>   the village does not know (`SimWorld.KnowsOf` — bread before the oven) keeps nothing and takes no room; learned into
+>   a nearly full market it keeps what is left. `KeptInAll` is the sum; untouched, five known goods keep 5,000 of 8,000.
+> - **Enforced, not warned.** `SetMarketLimit` refuses a limit past `MostItMayKeep(good)` (the room less what the other
+>   goods keep), in words: *"market 1 holds 8,000 in all and its other goods keep 7,000 of it, so it can keep 1,000
+>   firewood at most. Lower another good to make room."* ⚠️ **A lowering is always accepted**, so a save from before
+>   the rule whose limits already pass the room (Joe's own: forage 10,000 in a market of 4,000) can be brought back
+>   under it; a load changes nothing. The card's box for each good stops at what the others leave, and its caption says
+>   *"Keeps up to — 5,000 of its 8,000 kept:"*; *clear* goes back to the starting 1,000.
+> - **The limits are the split — one door.** `StoreBuilding.RoomFor(good)` at a market is `min(free room, limit −
+>   held)`, so every load anybody brings stops at its good's limit (the marketer's armful, a dead family's larder, a
+>   producer's overflow) — which is what the half rule stood in for (D361: a cart full of firewood starved thirteen).
+>   `CounterShortOf` and `LoadForTheMarket` ask the same door rather than `FreeSpace` (they had disagreed with `Put`
+>   about the half rule).
+> - ⚠️ **A market raised before D612 keeps its 4,000** — a store's room is saved with it and nothing migrates (save/load
+>   §10: no migrations before v1). A new market is 8,000.
+> - Guards: `MarketLimitsTests` (the starting limits and the unknown good; the room is the limit's, not half the building;
+>   any load held to its limit; a good learned late; an older save's limits only lowered; a raised and a loaded market
+>   wired like the founded one), `MarketShopTests.ALimitIsBoundedByWhatTheOtherGoodsLeave`.
 
 #### 14.9.4 What it must not become
 

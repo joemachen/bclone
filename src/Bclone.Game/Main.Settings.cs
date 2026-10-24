@@ -144,6 +144,11 @@ public partial class Main
             _detail = (MapDetail)routes;
             ShowTheDetail();
 
+            _rosterOrder = (RosterOrder)(settings.RosterSort is string sort
+                ? Math.Max(0, IndexOf(PlayerSettings.RosterSorts, sort))
+                : 0);
+            ShowTheRosterOrder();
+
             _map.ShowWear(settings.Toggles.TryGetValue(PathsToggle, out bool paths) && paths);
             RefreshWearButton();
 
@@ -312,6 +317,7 @@ public partial class Main
         {
             UiScalePercent = _uiScalePercent,
             Routes = PlayerSettings.RoutesLevels[(int)_detail],
+            RosterSort = PlayerSettings.RosterSorts[(int)_rosterOrder],
             Toggles = toggles,
             Windows = windows,
         };
@@ -441,6 +447,7 @@ public partial class Main
         {
             UiScalePercent = 100,
             Routes = PlayerSettings.RoutesLevels[^1],
+            RosterSort = PlayerSettings.RosterSorts[^1],
             Toggles = toggles,
             Windows = windows,
         };
@@ -499,7 +506,7 @@ public partial class Main
 
         return faults.Count == 0
             ? $"[widths] settings: ✅ the player's file not read; {toggles.Count} toggles, {windows.Count} windows, the dial and "
-                + $"Routes through a file and back; {onScreen.Count} windows placed on both sides and drawn where they were put"
+                + $"Routes and the roster's order through a file and back; {onScreen.Count} windows placed on both sides and drawn where they were put"
             : $"[widths] settings: ⛔ {string.Join("; ", faults)}";
 
         static void Compare(string where, PlayerSettings wanted, PlayerSettings got, List<string> faults)

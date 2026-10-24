@@ -28,6 +28,12 @@ How a number in `data/sim.config.json` or a new-game row's end gets **measured b
 ⚠️ **A harness is not a player (D447):** it measures that a setting can be lived in, not how it plays.
 ⚠️ Baselines move whenever the sim does: run `base` in the same sitting as the arm, never compare
 against a number from an older commit.
+- `ZzLimits.cs` + `limits.py` — D611's measurement of the starting stock limits: `ZZ_LIMITS=old|new` (both typed in the file,
+  so an arm cannot move with `sim.config.json`), `ZZ_OPEN=played|established|every` (⚠️ only `every` — a lodge, a fishery and
+  a farm raised free — ever makes fish or meat; it carries D515's first-winter race), `ZZ_ONLY=<good>` (one good's new number
+  alone), `ZZ_SEEDS`, `ZZ_TRACE=1` (a ZZY line each spring and winter: people, held goods, trades, deaths). Copy into a
+  **worktree**, build **with a check for `0 Error(s)`**, `-c Release --filter ZzLimits`, delete; `limits.py` prints each arm and the
+  per-seed spread (D603).
 - `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
   fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
   one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its

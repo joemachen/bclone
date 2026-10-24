@@ -108,12 +108,20 @@ public partial class Main
 
         public List<(Stocking State, Button Button)> StockingButtons { get; } = new();
         public VBoxContainer? LimitRow { get; set; }
+
+        /// <summary>The market's limits caption — how much of the room its goods keep (D612).</summary>
+        public Label? LimitCaption { get; set; }
         public List<(Goods Goods, Control Cell, SpinBox Amount, Button Clear)> Limits { get; } = new();
         public VBoxContainer? IdleRow { get; set; }
         public Label? IdleLabel { get; set; }
         public Button? IdleMarker { get; set; }
         public VBoxContainer? GroundRow { get; set; }
         public Label? GroundLabel { get; set; }
+
+        /// <summary><i>Give ground</i> and <i>Take back</i> — hidden for a quarry or a mine, which claims its seam (D613).</summary>
+        public Button? GiveGround { get; set; }
+
+        public Button? TakeBack { get; set; }
         public Label? GroundNote { get; set; }
         public Button? Mode { get; set; }
         public VBoxContainer? ForgeRow { get; set; }
@@ -632,6 +640,41 @@ public partial class Main
         RefreshInspector(_loop.World);
     }
 
+    /// <summary>One good's row on a market's card, as the sim says it (D612).</summary>
+    /// <param name="Shown">The market holds it and the village knows it.</param>
+    /// <param name="Keeps">What the counter keeps of it — set, or the starting limit out of what is left.</param>
+    /// <param name="Most">The most it may be told to keep: the room less what the other goods keep.</param>
+    /// <param name="Set">The player has set it; <i>clear</i> goes back to the starting limit.</param>
+    private readonly record struct MarketLimitFacts(bool Shown, int Keeps, int Most, bool Set);
+
+    /// <summary>
+    /// ⭐ A market's <i>Keeps up to</i> rows from the sim's facts (D612) — the caption says how much of the room the goods keep,
+    /// and each box stops at what the others leave, so the player sees why a number will not go higher. Pure on the facts,
+    /// so the probe poses a market the view cannot raise (D596's shape).
+    /// </summary>
+    private static void WriteTheMarketLimits(
+        CardControls c, int kept, int capacity, int starting, System.Func<Goods, MarketLimitFacts> fact)
+    {
+        c.LimitCaption!.Text = $"Keeps up to — {kept:N0} of its {capacity:N0} kept:";
+        foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in c.Limits)
+        {
+            MarketLimitFacts f = fact(goods);
+            cell.Visible = f.Shown;
+
+            // ⚠️ Value down first, then the ceiling, then the value: a ceiling set under the shown value clamps it, and a
+            // clamp can fire `ValueChanged` — which would set a limit the player never typed. The probe counts it.
+            amount.SetValueNoSignal(Math.Min(f.Keeps, amount.Value));
+            amount.MaxValue = Math.Max(f.Most, f.Keeps);
+            amount.SetValueNoSignal(f.Keeps);
+            clear.Disabled = !f.Set;
+            clear.TooltipText = $"back to the starting {starting:N0}";
+        }
+    }
+
+    /// <summary>Whether a trade's ground is given with the brush — every one that keeps ground but a face's (D613).</summary>
+    private static bool GroundIsPaintedFor(JobKind kind, SimWorld world) =>
+        SimWorld.KeepsWorkGround(kind) && world.JobsCatalog.FaceOf(kind) is null;
+
     private StoreBuilding? StoreOf(Card card) =>
         _loop.World.StoreBuildings.Find(s => s.Id == card.Subject.Id);
 
@@ -801,7 +844,8 @@ public partial class Main
                 }
 
                 // How much this counter keeps, per good (Joe, D372) — markets only.
-                (c.LimitRow, HFlowContainer limitControls) = InspectorRow(body, Muted("Keeps up to:"));
+                c.LimitCaption = Muted("Keeps up to:");
+                (c.LimitRow, HFlowContainer limitControls) = InspectorRow(body, c.LimitCaption);
                 for (int g = 0; g < world.GoodsCatalog.Count; g++)
                 {
                     var goods = (Goods)g;
@@ -844,12 +888,12 @@ public partial class Main
                 // The ground brush (D86) and the forester's mode.
                 c.GroundLabel = Muted(string.Empty);
                 (c.GroundRow, HFlowContainer groundControls) = InspectorRow(body, c.GroundLabel);
-                var give = new Button { Text = "Give ground" };
-                give.Pressed += () => Act(card, () => PaintGroundForSelection(1));
-                groundControls.AddChild(give);
-                var takeBack = new Button { Text = "Take back" };
-                takeBack.Pressed += () => Act(card, () => PaintGroundForSelection(-1));
-                groundControls.AddChild(takeBack);
+                c.GiveGround = new Button { Text = "Give ground" };
+                c.GiveGround.Pressed += () => Act(card, () => PaintGroundForSelection(1));
+                groundControls.AddChild(c.GiveGround);
+                c.TakeBack = new Button { Text = "Take back" };
+                c.TakeBack.Pressed += () => Act(card, () => PaintGroundForSelection(-1));
+                groundControls.AddChild(c.TakeBack);
                 c.Mode = new Button { Text = "Planting: off" };
                 c.Mode.Pressed += () => Act(card, ToggleSelectedMode);
                 groundControls.AddChild(c.Mode);
@@ -950,12 +994,16 @@ public partial class Main
                 c.LimitRow!.Visible = store.Kind == StoreKind.Market;
                 if (store.Kind == StoreKind.Market)
                 {
-                    foreach ((Goods goods, Control cell, SpinBox amount, Button clear) in c.Limits)
-                    {
-                        cell.Visible = store.CanEverHold(goods) && GoodKnown(goods);
-                        amount.SetValueNoSignal(world.MarketStockLimit(store, goods));
-                        clear.Disabled = store.Limits.For(goods) is null;
-                    }
+                    WriteTheMarketLimits(
+                        c,
+                        store.KeptInAll,
+                        store.Store.Capacity,
+                        world.Config.MarketStartingLimit,
+                        goods => new MarketLimitFacts(
+                            store.CanEverHold(goods) && GoodKnown(goods),
+                            world.MarketStockLimit(store, goods),
+                            store.MostItMayKeep(goods),
+                            store.Limits.For(goods) is not null));
                 }
 
                 break;
@@ -977,9 +1025,14 @@ public partial class Main
                 {
                     int tiles = world.Zones.WorkGroundTiles(place.Id);
                     int allowance = world.WorkGroundAllowanceFor(place);
-                    c.GroundLabel!.Text = place.WorkerIds.Count == 0
-                        ? $"Ground — {tiles} tiles, nobody working it:"
-                        : $"Ground — {tiles} tiles, enough hands for {allowance}:";
+
+                    // ⭐ A QUARRY OR A MINE CLAIMS ITS SEAM (D613): nothing to paint, so no brush — the card says what it works.
+                    string? claim = world.SayTheClaim(place);
+                    c.GiveGround!.Visible = c.TakeBack!.Visible = GroundIsPaintedFor(place.Kind, world);
+                    c.GroundLabel!.Text = claim
+                        ?? (place.WorkerIds.Count == 0
+                            ? $"Ground — {tiles} tiles, nobody working it:"
+                            : $"Ground — {tiles} tiles, enough hands for {allowance}:");
                     if (world.OverstretchedNote(place) is string stretched)
                     {
                         c.GroundNote.Text = stretched;

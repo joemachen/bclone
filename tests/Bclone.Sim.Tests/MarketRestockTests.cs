@@ -218,11 +218,14 @@ public sealed class MarketRestockTests
             loop.StepOnce();
         }
 
+        // ⭐ What the counter is kept to is each good's limit since D612 (1,000 to start, flat at Joe's word) — not
+        // D197's hundred a household. The rule under test is unchanged: stocked to it, the marketer fetches no more.
         int homes = world.Households.Count(h => world.LivingMembersOf(h) > 0);
-        int wanted = VillageEconomy.MarketStockWanted(config, homes);
-        Assert.True(wanted > 0, "No occupied homes, so the market wants nothing and this proves nothing.");
-
         StoreBuilding market = TheMarket(world);
+        int wanted = world.MarketStockLimit(market, Goods.Produce);
+        Assert.Equal(wanted, world.MarketStockLimit(market, Goods.Firewood));
+        Assert.True(wanted > 0, "The market keeps nothing, so this proves nothing.");
+
         // ⚠️ TOP UP ONLY IF SHORT — this was a bare `wanted - held` and went NEGATIVE when D250's
         // rest spell shifted the timing enough that the market was already over-stocked by year
         // eight. **The pose quietly assumed an under-stocked market**, which was true of every
@@ -360,11 +363,11 @@ public sealed class MarketRestockTests
             loop.StepOnce();
 
             int homes = world.Households.Count(h => world.LivingMembersOf(h) > 0);
-            int wanted = VillageEconomy.MarketStockWanted(config, homes);
 
             foreach (Goods goods in new[] { Goods.Produce, Goods.Firewood })
             {
-                int over = TheMarket(world).Store[goods] - wanted;
+                // Against each good's own limit since D612 — what the counter is kept to, and its room by the one door.
+                int over = TheMarket(world).Store[goods] - world.MarketStockLimit(TheMarket(world), goods);
                 if (over > worstOverfill)
                 {
                     worstOverfill = over;
@@ -378,10 +381,10 @@ public sealed class MarketRestockTests
             + $"{worstOverfill} (at {atHomes} homes; the building could hold "
             + $"{TheMarket(world).Store.Capacity})");
 
-        // ⚠️ SLACK OF ONE ARMFUL PLUS ONE HOUSEHOLD'S SHARE. The restock leg tops up in whole
-        // loads (D165), and a trader emptying a dead family's larder into the market is
-        // deliberate and correct (§14.3) — so the bar is "not a dumping ground", not "exact".
-        int slack = config.CarryCapacity + config.MarketStockPerHousehold;
+        // ⭐ NO SLACK SINCE D612: a market's room for a good is its limit's (`StoreBuilding.RoomFor`), so a trader's
+        // load and a dead family's larder both stop at it. Until then the bar was one armful and one household's share,
+        // because the restock leg and the larder could each pass the derived target by a load.
+        const int slack = 0;
         Assert.True(
             worstOverfill <= slack,
             $"The market held {worstOverfill} above what {atHomes} homes need, which is more than "

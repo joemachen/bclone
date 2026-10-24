@@ -386,7 +386,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 18077535368486915593.
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 15494584510038838764.
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 11303534331429093217.
-    private const ulong FixtureFiftyYearHash = 13986730816975584371UL;
+    // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 13986730816975584371.
+    private const ulong FixtureFiftyYearHash = 10707258848844381306UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -504,7 +505,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D601) — the market stocks its emptiest shelf first (Joe, D601: the good furthest below its counter limit as a share, ties to the nearest store — cost-first let the nearest good win every trip). ⭐ PROVEN TO BE THE ONLY REASON: with that one comparison put back to cost-first, the old value passes (73 of 73 golden and determinism guards green). Was 10848813117593108683.
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 17115696696510155642.
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 1409568693810175691.
-    private const ulong ShippedFiftyYearHash = 6485759654357553653UL;
+    // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 6485759654357553653.
+    private const ulong ShippedFiftyYearHash = 17458720737706957369UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

@@ -908,17 +908,14 @@ public sealed class MarketTests
     }
 
     /// <summary>
-    /// ⭐ The market HOLDS what the config states and is STOCKED for the households it has (D416,
-    /// Joe: *"increase market capacity to 4000"*) — the building grew, the marketer's work did not.
+    /// ⭐ The market HOLDS what the config states (D416; 8,000 since D612, Joe: *"increase the capacity of the market from
+    /// 4000 to 8000"*) and keeps its starting limit of each good it knows — together under its room.
     /// </summary>
-    /// <remarks>
-    /// ⛔ The restock half is D197's lesson: a target sized to the building doubled the hauling.
-    /// </remarks>
     [Fact]
-    public void TheMarketHoldsItsStatedSizeAndIsStockedForItsHouseholds()
+    public void TheMarketHoldsItsStatedSizeAndKeepsItsStartingLimits()
     {
         SimConfig config = Config;
-        Assert.Equal(4000, ShippedConfig.Load().MarketStoreCapacity);
+        Assert.Equal(8000, ShippedConfig.Load().MarketStoreCapacity);
 
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
@@ -926,23 +923,28 @@ public sealed class MarketTests
         Assert.NotNull(market);
         Assert.Equal(config.MarketStoreCapacity, market!.Store.Capacity);
 
-        Assert.Equal(config.MarketStockPerHousehold * 5, VillageEconomy.MarketStockWanted(config, 5));
+        Assert.Equal(config.MarketStartingLimit, world.MarketStockLimit(market, Goods.Firewood));
+        Assert.Equal(config.MarketStartingLimit, world.MarketStockLimit(market, Goods.Produce));
+        Assert.True(market.KeptInAll <= market.Store.Capacity, $"the starting limits keep {market.KeptInAll} of {market.Store.Capacity}");
         Assert.Throws<SimConfigException>(() => (config with { MarketStoreCapacity = 0 }).Validate());
+        Assert.Throws<SimConfigException>(() => (config with { MarketStartingLimit = -1 }).Validate());
     }
 
     /// <summary>
-    /// ⭐ The counter is kept to a hundred per household (D417, Joe: *"I want markets that visibly
-    /// carry more stock"*) — in the shipped file AND the C# default the fixtures are built from.
+    /// ⭐ A market starts at a thousand of each good and holds eight thousand (D612, Joe: <i>"set the market's starting
+    /// limits to 1000 for each item"</i>) — in the shipped file AND the C# default the fixtures are built from. Until D612
+    /// it was a hundred per household (D417).
     /// </summary>
     /// <remarks>
     /// ⚠️ Both halves, because the village fixture reads the C# default, not the JSON: a number
     /// changed in one place alone is a game and a suite that disagree about the market.
     /// </remarks>
     [Fact]
-    public void TheMarketIsStockedToAHundredPerHousehold()
+    public void TheMarketStartsAtAThousandAGoodAndHoldsEightThousand()
     {
-        Assert.Equal(100, ShippedConfig.Load().MarketStockPerHousehold);
-        Assert.Equal(100, new SimConfig().MarketStockPerHousehold);
-        Assert.Equal(500, VillageEconomy.MarketStockWanted(new SimConfig(), 5));
+        Assert.Equal(1000, ShippedConfig.Load().MarketStartingLimit);
+        Assert.Equal(1000, new SimConfig().MarketStartingLimit);
+        Assert.Equal(8000, ShippedConfig.Load().MarketStoreCapacity);
+        Assert.Equal(8000, new SimConfig().MarketStoreCapacity);
     }
 }

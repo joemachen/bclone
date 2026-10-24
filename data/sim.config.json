@@ -1452,22 +1452,19 @@
   // has become the cliff fetching was designed to avoid.
   "market_capacity": 2,
 
-  // What the market keeps on hand, per household the village is
-  // budgeted for. A market is a short trip, not a second granary -
-  // sized flat it would become the real store as the village grew,
-  // re-centralising everything storage just spread out.
-  // 100 since D417 (was 40; Joe: "markets that visibly carry more stock") -
-  // measured level on survival and marketer seats; still per household, so
-  // still not the building-sized target D197 found doubling the hauling.
-  "market_stock_per_household": 100,
+  // What a market keeps of each good before the player says otherwise
+  // (D612, Joe: "set the market's starting limits to 1000 for each item").
+  // It replaced market_stock_per_household (100 a household since D417),
+  // which D197 sized to the homes a market served because a target sized to
+  // the building doubled the hauling; flat at Joe's word, measured first.
+  // Shared out of the room, so the limits never add up past the building.
+  "market_starting_limit": 1000,
 
   // What the market HOLDS, food and firewood together (D416, Joe: "increase
-  // market capacity to 4000"). Stated, like the granary (D219); it was
-  // market_stock_per_household x economy_horizon_households = 800. The size of
-  // the building, not what it is stocked to: the marketer still restocks to 100
-  // per occupied household above (D197 measured a target sized to the building
-  // doubling the hauling).
-  "market_store_capacity": 4000,
+  // market capacity to 4000"; D612: "from 4000 to 8000"). Stated, like the
+  // granary (D219). Its goods' limits are its split: they may not add up past
+  // it, and at a market they replace the half-for-food rule (D361, Joe's call).
+  "market_store_capacity": 8000,
 
   // ---- What buildings cost to raise (D43) --------------------
   // Two numbers each, on purpose. Logs are what the village must
@@ -1753,17 +1750,22 @@
   // few years to have more than 25 people who need tools at once."
   // FLOUR 200 (Joe's "200 for everything else") and BREAD 1000 (wheat's own),
   // D522 -- the mill stops at its flour, the oven at its bread.
+  // ⭐ D611 -- JOE'S PANEL, AS HE PLAYS IT (D608: "for global stock limits, set the
+  // starting defaults to what you see in the screenshot"): forage, fish and meat
+  // 2500, wheat 2000, logs and stone 400, firewood 600, stone tools 30. Iron and
+  // leather were already his; bread, flour and iron tools were not in the
+  // screenshot and stay. Measured before it shipped (tools/harness/ZzLimits.cs).
   "starting_stock_limits": {
-    "forage": 2000,
-    "wheat": 1000,
+    "forage": 2500,
+    "wheat": 2000,
     "bread": 1000,
     "flour": 200,
-    "fish": 250,
-    "meat": 250,
-    "logs": 200,
-    "firewood": 400,
-    "stone": 200,
-    "stone tools": 25,
+    "fish": 2500,
+    "meat": 2500,
+    "logs": 400,
+    "firewood": 600,
+    "stone": 400,
+    "stone tools": 30,
     "iron tools": 25,
     "iron": 200,
     "leather": 200,
