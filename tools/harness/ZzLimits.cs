@@ -84,6 +84,11 @@ public sealed class ZzLimits
         long held = 0;
         long stocking = 0;
         long counter = 0;
+
+        // D617: a tool-trade hand's ticks with and without a tool (the "trades first" claim), and sites standing unfinished.
+        long tradeTicks = 0;
+        long bareTradeTicks = 0;
+        long siteTicks = 0;
         for (int t = 0; t < config.TicksPerYear * years; t++)
         {
             if (open is "played" or "every" && t == config.TicksPerYear * 3)
@@ -97,6 +102,16 @@ public sealed class ZzLimits
 
             // D612: the marketers' hauling (D197 measured a building-sized target doubling it) and what the counters hold.
             stocking += world.Villagers.Count(v => v.Alive && v.State == VillagerState.StockingTheMarket);
+            foreach (Villager v in world.Villagers)
+            {
+                if (v.Alive && v.CanWork && world.FindWorkplace(v.WorkplaceId) is Workplace job && world.JobsCatalog.UsesTool(job.Kind))
+                {
+                    tradeTicks++;
+                    bareTradeTicks += v.ToolUses == 0 ? 1 : 0;
+                }
+            }
+
+            siteTicks += world.Workplaces.Count(w => w.Construction is { IsFinished: false, Repairing: false });
             if (t % config.TicksPerYear == 0)
             {
                 counter += world.StoreBuildings.Where(s => s.Kind == StoreKind.Market).Sum(s => s.Store.Held);
@@ -128,7 +143,8 @@ public sealed class ZzLimits
             $"ZZL {arm} {open} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} born {born} "
             + $"fish {world.FoodEverProducedOf(Goods.Fish)} meat {world.FoodEverProducedOf(Goods.Meat)} "
             + $"forage {world.FoodEverProducedOf(Goods.Produce)} fishmeatheld {held / Math.Max(1, years)} "
-            + $"firewood {world.StoreBuildings.Sum(s => s.Store[Goods.Firewood])} stocking {stocking} counter {counter / Math.Max(1, years)}");
+            + $"firewood {world.StoreBuildings.Sum(s => s.Store[Goods.Firewood])} stocking {stocking} counter {counter / Math.Max(1, years)} "
+            + $"forged {world.ToolsEverForged} taken {world.ToolsEverTaken} bare {(tradeTicks == 0 ? 0 : bareTradeTicks * 1000 / tradeTicks)} sites {siteTicks}");
     }
 
     public static IEnumerable<object[]> Runs()

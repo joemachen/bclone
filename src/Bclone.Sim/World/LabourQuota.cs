@@ -1327,10 +1327,10 @@ public readonly record struct LabourQuota
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>One on the shelf per hand is the year's wear stated in the tool's own unit</b>:
-    /// <c>tool_uses</c> is sized to about a year of one pair of hands (§6's run), so a spare a
-    /// hand is a year's cover — the woodpile's *winter and a bit ahead* (`WinterBufferPercent`),
-    /// one good over, without a second percentage to tune.
+    /// <b>One on the shelf per hand is the year's cover</b> — the woodpile's *winter and a bit ahead*
+    /// (`WinterBufferPercent`), one good over, without a second percentage to tune. ⚠️ Not "a year of one pair of hands"
+    /// as this said: §6 measured a stone tool at about three years a hand (D391) and a later count about five times slower
+    /// (D430), never reconciled — so a spare a hand is at least a year's cover, which is what the rule needs (D617).
     /// </para>
     /// <para>
     /// <b>The hands count, not the seats</b>: a seat nobody sits in wears nothing. And a tool in
@@ -1371,6 +1371,48 @@ public readonly record struct LabourQuota
 
         int shortfall = (hands * 2) - onShelves - inHands;
         return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>Every tool in every store, all kinds.</summary>
+    public static int ToolsOnTheShelves(SimWorld world)
+    {
+        int onShelves = 0;
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; i < tools.Count; i++)
+        {
+            onShelves += world.InStores(tools[i]);
+        }
+
+        return onShelves;
+    }
+
+    /// <summary>
+    /// ⭐ The tools a laborer may take — what the stores hold past the trades' year of cover, one for every working pair
+    /// of hands in a tool trade (D617, Joe: trades first; `tools-and-the-smith.md §10.3`). The cover is the spare a hand
+    /// <see cref="ToolShortfall"/> keeps, so the smiths go on forging for the trades and the laborers have what is over.
+    /// </summary>
+    /// <remarks>Asked when a laborer with empty hands decides — a walk of the living, never kept per tick.</remarks>
+    public static int ToolsTheTradesCanSpare(SimWorld world)
+    {
+        int onShelves = ToolsOnTheShelves(world);
+        if (onShelves == 0)
+        {
+            return 0;
+        }
+
+        int hands = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.CanWork && world.FindWorkplace(villager.WorkplaceId) is Workplace job
+                && world.JobsCatalog.UsesTool(job.Kind))
+            {
+                hands++;
+            }
+        }
+
+        int spare = onShelves - hands;
+        return spare <= 0 ? 0 : spare;
     }
 
     /// <summary>

@@ -1609,7 +1609,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             villager.WorkNote = string.Empty;
             villager.ServingSiteId = standing.Id;
-            HeadFor(world, villager, standing.Tile, VillagerState.Building);
+            SetOffToBuild(world, villager, standing.Tile);
             return true;
         }
 
@@ -1650,7 +1650,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                     $"{site.Name} is waiting on {site.DescribeWhatIsMissing(world.GoodsCatalog)} "
                     + $"nobody has, so {ready.Construction!.Name} is getting the day instead.";
                 villager.ServingSiteId = ready.Id;
-                HeadFor(world, villager, ready.Tile, VillagerState.Building);
+                SetOffToBuild(world, villager, ready.Tile);
                 return true;
             }
 
@@ -1865,7 +1865,15 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         villager.WorkNote = string.Empty;
+
+        // ⭐ A BUILDER'S TOOL (D617, `tools-and-the-smith.md §10.2`): a third faster on every tick of the work. It wears
+        // where the builder sets off to build (`SetOffToBuild`), not here — the walk already wears the state.
         site.Work();
+        for (int extra = world.ToolWorkThisTick(villager); extra > 0; extra--)
+        {
+            site.Work();
+        }
+
         villager.State = VillagerState.Building;
 
         if (site.IsFinished)
@@ -2782,7 +2790,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         // one, whether or not the trade has work today. A tool is fetched once in `tool_uses`
         // actions, not once a half-larder, which is why it is not the household's errand and the
         // market does not stock it.
-        if (job is not null && TryFetchATool(world, villager, job))
+        // ⭐ AND A LABORER TAKES ONE THE TRADES CAN SPARE (D617, Joe: "all adults should"; his call: trades first) —
+        // their clearing begins through `BeginWork` as a forester's does, so a tool in their hands already quickens it.
+        if (job is not null ? TryFetchATool(world, villager, job) : villager.IsLaborer && TryFetchATool(world, villager, null))
         {
             return;
         }
@@ -5302,11 +5312,36 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// hands are empty (D391, `tools-and-the-smith.md §3.5`). False when there is nothing to fetch
     /// or nowhere to fetch it from — and then the note says so.
     /// </summary>
-    private static bool TryFetchATool(SimWorld world, Villager villager, Workplace job)
+    private static bool TryFetchATool(SimWorld world, Villager villager, Workplace? job)
     {
         if (!villager.CanWork || villager.ToolUses > 0 || villager.IsCarrying
-            || !world.JobsCatalog.UsesTool(job.Kind))
+            || (job is not null && !world.JobsCatalog.UsesTool(job.Kind)))
         {
+            return false;
+        }
+
+        // ⭐ ONCE A SMITHY STANDS (D617, Joe's call): until tools can be made, the founders' few are the trades' that feed and
+        // warm the village — a laborer, and a trade whose row says it waits (the builder, the herdsman), take none.
+        if ((job is null || world.JobsCatalog.ToolWaitsForTheSmithy(job.Kind)) && !world.ASmithyStands())
+        {
+            if (LabourQuota.ToolsOnTheShelves(world) > 0)
+            {
+                villager.WorkNote = "No tool yet — the founders' tools are the trades' until a smithy stands.";
+            }
+
+            return false;
+        }
+
+        // ⭐ TRADES FIRST (D617): a laborer takes a tool only past the trades' year of cover — one on the shelf for every
+        // working pair of hands in a tool trade (`LabourQuota.ToolsTheTradesCanSpare`). Said only when there are tools to
+        // say it about.
+        if (job is null && LabourQuota.ToolsTheTradesCanSpare(world) <= 0)
+        {
+            if (LabourQuota.ToolsOnTheShelves(world) > 0)
+            {
+                villager.WorkNote = "No tool to spare — the trades come first.";
+            }
+
             return false;
         }
 
@@ -5331,6 +5366,20 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.State = VillagerState.FetchingATool;
         Travel(world, villager, source.Position, VillagerState.FetchingATool);
         return true;
+    }
+
+    /// <summary>A villager asks for a tool as <c>Decide</c> would, posed directly (D617) — their job, or none for a laborer.</summary>
+    internal static bool TryFetchAToolForTest(SimWorld world, Villager villager) =>
+        TryFetchATool(world, villager, world.FindWorkplace(villager.WorkplaceId));
+
+    /// <summary>
+    /// A builder sets off to raise a site — and a tool in their hands is worn a use, as any trade's is by a work action
+    /// begun (D617, `tools-and-the-smith.md §10.2`): once a stint, through <see cref="SimWorld.BeginWork"/>.
+    /// </summary>
+    private static void SetOffToBuild(SimWorld world, Villager villager, GridPos site)
+    {
+        world.BeginWork(villager, JobKind.Builder, 1);
+        HeadFor(world, villager, site, VillagerState.Building);
     }
 
     /// <summary>

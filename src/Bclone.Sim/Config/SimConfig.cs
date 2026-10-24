@@ -3280,6 +3280,9 @@ public sealed record SimConfig
             Doing = "the market",
             WorksAt = BuildingKind.Market,
             LimitedBy = null,
+
+            // ⛔ NO TOOL (D617, Joe's call): a marketer's work is carrying, and there is no work action for a tool to quicken.
+            UsesTool = false,
         },
         new JobRow
         {
@@ -3289,6 +3292,12 @@ public sealed record SimConfig
             Doing = "building",
             WorksAt = BuildingKind.BuilderHut,
             LimitedBy = null,
+
+            // ⭐ A TOOL SINCE D617 (Joe: "builders should carry tools"): a builder holding one raises a site a third faster
+            // and wears it a use each time they set to work (`tools-and-the-smith.md §10.2`, `SimWorld.ToolWorkThisTick`).
+            // Once a smithy stands (Joe's call): until tools can be made, the founders' few are the feeding trades'.
+            UsesTool = true,
+            ToolWaitsForTheSmithy = true,
         },
         new JobRow
         {
@@ -3412,6 +3421,11 @@ public sealed record SimConfig
 
             // A met hay limit stops the cutting, as a met limit stops every trade (D139).
             LimitedBy = World.Goods.Hay,
+
+            // ⭐ A TOOL SINCE D617: the cutting, the feeding out and the cull already begin through `BeginWork` — once a smithy
+            // stands, as the builder's.
+            UsesTool = true,
+            ToolWaitsForTheSmithy = true,
         },
         new JobRow
         {
@@ -3425,6 +3439,9 @@ public sealed record SimConfig
 
             // Makes no good of its own, so nothing limits it — the marketer's shape.
             LimitedBy = null,
+
+            // ⛔ NO TOOL (D617, Joe's call): a merchant carries to and from the post — no work action for a tool to quicken.
+            UsesTool = false,
         },
     };
 

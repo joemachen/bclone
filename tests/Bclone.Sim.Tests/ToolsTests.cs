@@ -518,7 +518,11 @@ public sealed class ToolsTests
         Assert.True(catalog.UsesTool(JobKind.Hunter));
         Assert.True(catalog.UsesTool(JobKind.Smith));
         Assert.False(catalog.UsesTool(JobKind.Marketer));
-        Assert.False(catalog.UsesTool(JobKind.Builder));
+
+        // D617 (Joe: every hands-on adult): the builder and the herdsman carry one now; the carriers still do not.
+        Assert.True(catalog.UsesTool(JobKind.Builder));
+        Assert.True(catalog.UsesTool(JobKind.Herdsman));
+        Assert.False(catalog.UsesTool(JobKind.Merchant));
     }
 
     // ---------------------------------------------------------------
