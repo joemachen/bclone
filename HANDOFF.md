@@ -1,6 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D608, PUSHED. `slice/d607-notes` = D609–D613 (JOE'S D607 NOTES: THE VILLAGE PANEL SORTS, THE ROUND PASTURE FENCE, HIS STOCK-LIMIT DEFAULTS, THE MARKET'S LIMITS THAT ADD UP, QUARRIES AND MINES THAT CLAIM THEIR SEAM) — LOCAL, UNMERGED, UNPLAYED. NEXT: JOE PLAYS IT; MERGING IS HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D615, PUSHED (D609–D614 MERGED, PLAYED). NEXT, ON `slice/d615-notes`: THE VILLAGE PANEL IN ALIGNED COLUMNS (D616), THEN TOOLS FOR EVERY HANDS-ON ADULT (D617, `tools-and-the-smith.md §10`). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-19 (D613: JOE'S D607 NOTES, ALL FIVE BUILT) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-23 (D615: D609–D614 MERGED) — ON WINDOWS.**
+>
+> **`main`** = D615, pushed: Joe played D609–D613 and merged them with D614 (the walled-in hut) on top. **▶️ NEXT** on
+> `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort (D616, view);
+> (2) tools for every hands-on adult — builders (a third faster), herdsmen, laborers from what the trades can spare;
+> not the carriers (D617, spec §10 first, measured, goldens move). **Numbers:** suite 1802 / 0 / 5 of 1807 (13m26);
+> probe 97 lines; goldens 383.
+>
+> **(the banner below is the state at D613)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-19 (D613: JOE'S D607 NOTES, ALL FIVE BUILT) — ON WINDOWS.**
 >
 > **`slice/d607-notes`** = D609–D613 on top of `main` (D608), local, **unplayed**. One commit each:
 > - **D609** *The village* panel sorts — *Sort: Name · Age · Trade* above the list, remembered; the list no longer rebuilt
@@ -7918,13 +7928,14 @@ Read `git status` after staging, every time.
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
 
-- ⏸️ **MERGE `slice/d607-notes` (D609–D613) TO `main`** — local, unmerged, unplayed. His word only, after he plays it.
+- ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 
 - ⏸️ **D613'S CALLS, SETTLED WITHOUT ASKING — HIS TO OVERRULE (`seam-reach.md §8.7`):** a seam is claimed when the quarry
   is finished (shown from placing); a seam is never shared (a second quarry by it is refused); the palisade is drawn, not
   walls; the brush buttons go for both trades; existing quarries keep their painted ground.
 
-- ⏸️ **TOOLS — HIS QUESTION ANSWERED (D608), CHANGES HIS CALL:** builders carry no tools (on purpose, `tools-and-the-smith.md
+- ✅ **ANSWERED (D615): builders, herdsmen and laborers (trades first) carry tools; carriers do not — building as D617.**
+  ~~TOOLS — HIS QUESTION ANSWERED (D608), CHANGES HIS CALL:~~ builders carry no tools (on purpose, `tools-and-the-smith.md
   §3.2`); a worker holding stone never trades it in for iron (D446); D391's ~3 years a hand and D430's ~5× slower never
   reconciled. Say if any of the three should change.
 
