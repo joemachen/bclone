@@ -3,7 +3,8 @@
 **Decision:** D619 (this document; Joe's D607 call *"spurs now, real doors later (a spec of their own)"*, and his
 2026-09-19 note, D395). Neighbours: D383 (buildings are obstacles — entered from the cheapest side), D388 (the lane
 picks a house's door), D404–D406 (fences as walls, one gate), D605/D607 (doorsteps and spurs, drawn), D614 (one piece
-of ground stays one piece). **Status:** 📝 **SPECCED (D619), NOT STARTED — waiting on Joe's calls in §6.** The premise
+of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620): all five as recommended. NOT STARTED —
+next is commit 1 on `slice/doors` (§9).** The premise
 is measured (§3, `tools/harness/ZzDoors.cs`); nothing in `src/` has changed. Owner: Joe + Claude Code.
 
 ---
@@ -83,7 +84,7 @@ What it says:
 
 ---
 
-## 4. The rule (proposed; §6's calls decide the starred lines)
+## 4. The rule (the starred lines are Joe's calls, answered in D620 — §6)
 
 ### 4.1 Which buildings have a door ⭐ (call 1)
 
@@ -163,7 +164,8 @@ move with it.
   where §4.2 and §4.3 put it.
 - **The ghost shows the door and its doorstep** before the click. R turns it, as today. If the front is blocked, the
   ghost shows the door where §4.3 will put it, with the sentence.
-- **The ghost's starting facing** ⭐ (call 4).
+- **The ghost's starting facing** ⭐ (call 4, D620): the ghost starts with its door toward the village's nearest
+  store, derived from where the ghost is; R still turns it, and a turned ghost keeps its turn for the next one.
 - **Spurs land on the door.** `TrailNetwork.Doorsteps` aims at the door's doorstep instead of the worn side.
   `KeepTheBusierSides` is measured again before it is touched: rings round single buildings should mostly stop being
   worn, because walks now converge on one face. Nothing is removed until the probe's villages say it is dead.
@@ -202,7 +204,12 @@ distance budgets (§4.4), not to soften the rule.
 
 ---
 
-## 6. Joe's calls (asked 2026-10-24)
+## 6. Joe's calls — answered (D620, 2026-10-24): *"agree with your recommendations for the five calls"*
+
+**All five as recommended:** (1) roofed buildings and their sites, not wells, piles or bridges; (2) a blocked front
+moves the door to the first side that can open, said on the card; (3) founding buildings face the founding site, to a
+quarter turn; (4) the ghost starts with its door toward the nearest store; (5) water buildings get no rule of their
+own — their door is landward by (2)'s order. The options below are kept as they were asked.
 
 1. **Which buildings have a door?** *Recommended:* every roofed building and its site. Wells, stockpiles and bridges
    have none and keep today's any-side entry. *Or:* literally every building, wells and piles included (2 of §3's 19
@@ -278,7 +285,7 @@ Each on `slice/doors`, unplayed until Joe plays it; merging is his word.
 
 ## 10. Definition of Done
 
-- §6 answered and written in here. §4's starred lines rewritten to the answers.
+- ✅ §6 answered and written in here, §4's starred lines rewritten to the answers (D620).
 - §5's four arms measured on commit 3 against its parent and written in §5 with the numbers. Every added death traced.
 - §7's guards red first, then green, each red-checked with the count written down (zeros kept and named).
 - The four checks (CLAUDE.md): suite with determinism, the view build read, the probe (bar height 151, `done.`), the

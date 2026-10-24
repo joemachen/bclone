@@ -1,8 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D619: DOORS ARE SPECCED (`specs/doors.md`), NOTHING BUILT. NEXT: JOE'S FIVE CALLS (THE SPEC'S §6), THEN `slice/doors`, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620: DOORS ARE SPECCED (`specs/doors.md`) AND JOE'S FIVE CALLS ARE ANSWERED, NOTHING BUILT. NEXT: `slice/doors`, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D619) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D620) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **The state.** `main` = D618 + D619. D619 is the doors spec, written at Joe's pick (*"Doors, spec only"*).
+> **The state.** `main` = D618 + D619 + D620. D619 is the doors spec, written at Joe's pick (*"Doors, spec only"*).
 > **Nothing in `src/` changed and no golden moved.** It is `specs/doors.md`, its premise measurement
 > `tools/harness/ZzDoors.cs`, and the docs (§6, §4's next line, §7 D619).
 >
@@ -18,9 +18,10 @@
 > 1 barn unreached, and **all 19 have another side open**. **46 % were never turned.** The walk to a front is about the
 > walk to the building (−1.8 %): a premise, not a survival claim.
 >
-> **▶️ NEXT — Joe's five calls** (`doors.md §6`): which buildings have a door; a blocked front; founding buildings'
-> facing; the ghost's starting facing; water buildings. Each has a recommendation. **Then the build, on `slice/doors`, five
-> commits** (`doors.md §9`). The goldens and the Phase 0 pins move **once, in commit 3**, and only after §5's measurement:
+> **✅ Joe's five calls answered (D620): *"agree with your recommendations for the five calls"*** — roofed buildings only;
+> a blocked front moves the door; founding buildings and the ghost face the village; water buildings' doors landward.
+> **▶️ NEXT — the build, on a new branch `slice/doors`, five commits** (`doors.md §9`), starting with commit 1 (the door,
+> derived; no behaviour change). The goldens and the Phase 0 pins move **once, in commit 3**, and only after §5's measurement:
 > ZzLimits played 100 / established 36 / every 36, plus his five saves for 20 years, parent against change in two
 > worktrees, survival within noise, every added death traced.
 >
@@ -8025,7 +8026,7 @@ Read `git status` after staging, every time.
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
   ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
-  used). ⏸️ **His five calls are its §6**; nothing is built until he answers them.
+  used). ✅ **His five calls answered as recommended (D620).** ▶️ The build on `slice/doors` is next.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 
