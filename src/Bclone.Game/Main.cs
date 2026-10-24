@@ -65,7 +65,7 @@ public partial class Main : Control
     private Label _clockLabel = null!;
     private Label _seedLabel = null!;
     private Label _speedLabel = null!;
-    private ItemList _roster = null!;
+    private Tree _roster = null!;
     private RichTextLabel _inspector = null!;
     private PanelContainer _whatsHerePanel = null!;
     private RichTextLabel _villageLog = null!;
@@ -550,7 +550,7 @@ public partial class Main : Control
         // height of zero, so a `ScrollContainer` around either lays it out at nothing. **Joe saw
         // a blank roster beside "6 villagers in 2 households".** *A count beside a drawn height
         // is the only pair that can say this; neither number alone can.*
-        ProbeASelfScroller("roster", _roster, _roster.ItemCount, "items");
+        ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
@@ -3176,12 +3176,6 @@ public partial class Main : Control
         _inspector.Text = string.Empty;
     }
 
-    private void OnVillagerSelected(long index)
-    {
-        Variant metadata = _roster.GetItemMetadata((int)index);
-        SelectVillager(metadata.AsInt32());
-    }
-
     /// <summary>
     /// The player clicked a person on the map — <b>which has never worked until now</b>.
     /// </summary>
@@ -4722,14 +4716,8 @@ public partial class Main : Control
         // scrolled are the two it broke. *A self-scrolling control needs a HEIGHT, not a scroll.*
         VBoxContainer body = InColumn(right: false, 0, "The village");
 
-        _roster = new ItemList
-        {
-            SizeFlagsVertical = SizeFlags.ExpandFill,
-            CustomMinimumSize = new Vector2(0, ListHeight),
-        };
-        _roster.AddThemeFontSizeOverride("font_size", RowSize);
-        _roster.ItemSelected += OnVillagerSelected;
-        AddTheRosterSorts(body);
+        _roster = MakeTheRoster();
+        ShowTheRosterOrder();
         body.AddChild(_roster);
     }
 

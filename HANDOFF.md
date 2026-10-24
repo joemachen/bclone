@@ -3,7 +3,8 @@
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-23 (D615: D609–D614 MERGED) — ON WINDOWS.**
 >
 > **`main`** = D615, pushed: Joe played D609–D613 and merged them with D614 (the walled-in hut) on top. **▶️ NEXT** on
-> `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort (D616, view);
+> `slice/d615-notes`: (1) *The village* panel as three aligned columns, the column names the sort — ✅ **built (D616),
+> unplayed**;
 > (2) tools for every hands-on adult — builders (a third faster), herdsmen, laborers from what the trades can spare;
 > not the carriers (D617, spec §10 first, measured, goldens move). **Numbers:** suite 1802 / 0 / 5 of 1807 (13m26);
 > probe 97 lines; goldens 383.

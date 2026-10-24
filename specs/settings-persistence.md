@@ -57,7 +57,7 @@ by an exception to this line.
 |---|---|---|
 | View | UI size (55–115 %, steps of 5; default 75) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
-| View | *The village* panel's order (D609): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
+| View | *The village* panel's order (D609; its column titles since D616): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
 | View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
 | Windows | each window's Settings tick (*shown*) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
