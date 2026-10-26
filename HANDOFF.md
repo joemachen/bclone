@@ -1,10 +1,13 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621 + D622–D625: WALKERS GO IN AND OUT THROUGH THE DOOR, GOLDENS RE-TAKEN ONCE, LOCAL, UNPUSHED, UNPLAYED. NEXT: JOE PLAYS IT, OR COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621 + D622–D625: WALKERS GO IN AND OUT THROUGH THE DOOR, GOLDENS RE-TAKEN ONCE, LOCAL, UNPUSHED, PLAYED BY JOE ("IT LOOKS GOOD"). NEXT: JOE'S CALL — MERGE, OR COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-25 (D625) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`slice/doors`** = `main` (D620) + D621 (commit 1, the door derived and said) + **one behaviour commit, D622–D625**
 > (Joe: *"fold commits 2, 3 and 4's sim changes into one behaviour commit, measured once against main, goldens re-taken
-> once"*). Local, unpushed, **unplayed**. `specs/doors.md §11` is the as-built account; read it before touching doors.
+> once"*) — commit **6c5eaff**. Local, unpushed, unmerged. **Played by Joe, 2026-10-25: *"it looks good."*** Not yet
+> recorded in `DESIGN.md` (§6 still says *unplayed*, no §7 entry): Joe ended the session there, so the next session
+> records the play as **D626** when it next touches the docs. `specs/doors.md §11` is the as-built account; read it
+> before touching doors.
 > - **What changed:** nothing is built on a door in use's doorstep, and nothing may shut one (cover, fence across, pocket);
 >   every walk to or from a doored building goes through its door's edge, in the one cost field, the catchment with it;
 >   founding buildings face the founding site, an unmarked building the nearest store; the door is priced into the
@@ -23,10 +26,11 @@
 > - **Red-check:** 20 mutants, 16 caught (23 test reds), 4 zeros kept and written down — the way off by any side, the way out by any side, the re-founders' food uncounted, the siting on the plot's door tile rather than its doorstep (trap below).
 > - **Numbers (D625):** suite 1850 / 0 / 5 of 1855 (17m08); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 388 (383 + the five `RE-TAKEN` lines), `git diff` six hashes and nothing else.
 >
-> **▶️ NEXT — Joe's call.** Either he plays it (`.\run.bat`, a new village and his newest save: walkers should leave by the
-> doorstep; the view still draws the spur on the side the old walks wore until commit 5), or commit 5 is built first (the
-> door drawn, the card's sentence, the ghost asking the facing rule, the spur aimed at the doorstep — `doors.md §9`). His
-> new open items are at the top of ⏸️ OPEN. **Do not merge or push without his word.**
+> **▶️ NEXT — Joe's call; ask him before starting anything.** He has played it and it looks good. The choices: merge
+> `slice/doors` to `main` (`git merge --no-ff slice/doors`; push only at his word — `main` was last pushed at D618), or
+> build commit 5 first, on the branch (the door drawn, the card's sentence, the ghost asking the facing rule, the spur
+> aimed at the doorstep — `doors.md §9`, §11.7; until then the view draws the spur on the side the old walks wore). His
+> open doors items are at the top of ⏸️ OPEN. **Do not merge or push without his word.**
 >
 > **(the banner below is the state at D621)**
 >
@@ -8092,7 +8096,8 @@ Read `git status` after staging, every time.
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
-  - **Play it, or commit 5 first.** Built, unplayed. The view still guesses the spur's side (`path-shapes.md`).
+  - **Merge, or commit 5 first.** Built and played (*"it looks good"*, 2026-10-25). The view still guesses the spur's
+    side (`path-shapes.md`).
   - **The farm warning now fires on every farm** (D624): the nearest a farm can stand to a fresh granary is 6 ticks, so
     every farm is warned and capped at 8 tiles of 13. D42's nag; his call whether it says less, or less often.
   - **D388 kept, and it is the cost's main road:** a house faces its lane with its back to its work (a herdsman five tiles
@@ -8120,7 +8125,8 @@ Read `git status` after staging, every time.
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
   ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
   used). ✅ **His five calls answered as recommended (D620).** 🔨 Commit 1 of 5 built on `slice/doors` (D621); 🔨 commits 2–4 folded into one behaviour commit (D622–D625), goldens
-  re-taken once, unplayed. ▶️ His play, or commit 5 (the view). His new items: the top of this list.
+  re-taken once (6c5eaff), played: *"it looks good"*. ▶️ His call: merge, or commit 5 (the view). His new items: the top
+  of this list.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 
