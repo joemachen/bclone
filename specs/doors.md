@@ -3,7 +3,7 @@
 **Decision:** D619 (this document; Joe's D607 call *"spurs now, real doors later (a spec of their own)"*, and his
 2026-09-19 note, D395). Neighbours: D383 (buildings are obstacles — entered from the cheapest side), D388 (the lane
 picks a house's door), D404–D406 (fences as walls, one gate), D605/D607 (doorsteps and spurs, drawn), D614 (one piece
-of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620); 🔨 BUILT on `slice/doors`, unplayed:** commit 1 the
+of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620); 🔨 BUILT, ✅ PLAYED BY JOE (*"it looks good"*) AND MERGED TO `main` (D626, not pushed):** commit 1 the
 door derived and said (D621), then **one behaviour commit (D622–D625, §11)** — doorsteps kept clear, walks and catchment
 through the door, the facings nobody chose, the door priced into the economy; a farmhouse, a barn and the cart open on
 every side (Joe, D624–D625). Goldens re-taken once. ⏸️ **The view (§9 commit 5) is not built:** the cards' sentence,
