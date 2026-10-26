@@ -1,5 +1,28 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D626: DOORS (D621–D625) PLAYED ("IT LOOKS GOOD"), MERGED AND PUSHED. `slice/grass-seasons` = D627 OFF D620, THE GRASS ASSETS IMPORTED, NOTHING DRAWN. NEXT: JOE'S CALL — COMMIT 5 (THE VIEW), OR THE GRASS QUESTIONS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D634) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = D634: doors and the seasonal grass, both merged.** Joe: *"Push and let CI run the full suite, then
+> merge."* `slice/grass-seasons` was pushed and CI passed it (1811 of 1816, 5 skipped) at 0d4018b; then merged
+> `--no-ff` here. Doors (D621–D626) were already on `main` and pushed. The grass touches only the view, the tools and
+> the docs — `Bclone.Sim`, `tests/` and `data/` are doors' exactly.
+>
+> **The grass, in one paragraph:** Joe's pack (masks v02–v06, the season atlas, his snippet) is imported lossless and
+> proved byte-identical; the lab (`.\run.bat grass`) draws it over parchment with the game's own glyphs; the look he
+> approved (D632) is one file, `src/Bclone.Game/looks/grass_approved.tres` (`GrassLook.cs`, no defaults), and its
+> open items 1–3 were checked in the lab and kept (D633). **The game's valley does not draw grass yet.**
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything.** (1) **The parchment ground** (`seasonal-grass.md §6.0`):
+> the pack is Multiply over parchment and the game's ground is slate, so drawing the grass in the valley first needs
+> the ground to move — which re-picks every colour chosen against slate (villager dots and the granary already
+> vanish on parchment, D630). (2) Doors commit 5, the view.
+>
+> **Numbers (D634, the merged tree):** suite 1850 / 0 / 5 of 1855 (13m56); view 0 warnings; probe 98 `[widths]` lines,
+> bar 151, tile centres / new game / grass lab ✅, `done.`; goldens grep 388 before and after.
+>
+> **(the two banners below are each branch's own, at the moment they met)**
+>
+> **— `main`'s banner at D626 (doors) —**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D626) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = D626, PUSHED** (Joe: *"Push main to GitHub."*). Joe played doors (*"it looks good"*) and said *"Merge
@@ -60,6 +83,65 @@
 > **▶️ NEXT: commit 2** — `CanBuildAt` refuses a footprint on any standing building's doorstep, wall-off asks the door,
 > `TilesClippedOff` moves onto the doorstep; measure whether a golden village is refused a placement it used to get.
 > **Numbers (D621):** suite 1837 / 0 / 5 of 1842 (12m51); probe 97 lines, bar 151; goldens grep 383.
+>
+> **— `slice/grass-seasons`' banner at D633 —**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Two branches, both local, both unpushed:**
+> - **`slice/doors`** = `main` + D621–D625 + a handoff commit (e7d59f8) recording Joe's play: *"it looks good."* His call
+>   is merge, or commit 5 (the view) first. **D626 is reserved there** for recording the play in `DESIGN.md`. That
+>   branch's `HANDOFF.md` carries the doors banner; read it with `git show slice/doors:HANDOFF.md`.
+> - **`slice/grass-seasons`** (this branch, off `main` at D620) = **D627: Joe's seasonal grass pack imported, nothing
+>   drawn.** Masks v02–v06, the season atlas and `grass_seasons.gdshaderinc` (unchanged) are in
+>   `src/Bclone.Game/textures/grass/` and `src/Bclone.Game/shaders/`, with committed `.png.import` files: lossless,
+>   mipmaps on the masks and off the atlas, Fix Alpha Border and Premult Alpha off. Proved byte-identical to the pack after
+>   import (trap below). `specs/seasonal-grass.md` holds the open questions and THE SCENE's debug UI. Nothing in `src/*.cs`
+>   changed.
+>
+> **D628 (docs only):** Joe settled `seasonal-grass.md §6`, all as recommended — **parchment under the grass in THE
+> SCENE** (the pack is Multiply over parchment; the game's slate ground would turn it near black, and moving the game
+> to parchment is its own decision after the scene); `canvas_item` with no linear step; a tiles-per-repeat slider from
+> 32; each season held 20 days and turned over its last 10; only the shown version loaded; a grass-coverage image from
+> `ValleyTexture`'s loop, multiplied in by one shader on the valley draw.
+>
+> **D629 — THE SCENE BUILT, UNPLAYED.** `.\run.bat grass` opens `GrassLab.tscn`: the pack over parchment, sliders for
+> version / season / jitter / tiles a repeat / pixels a tile, H hides the panel. Matches `grass_ref.py` to ≤ 1/255 on
+> every pixel at one texel a pixel (a throwaway windowed render, not in the tree). Probe line `grass lab:` guards the
+> lab's defaults, its wiring and the textures' import — 7 mutants, 7 reds. ⚠️ At the far zoom a 32-tile repeat shows.
+>
+> **D630 — after Joe's first look:** a strength slider (0 bare … 1 as painted), a paper-grain multiply over everything
+> (0–0.4 at 0.15, screen-anchored, not drawn at 0), and placeholders drawn with the game's own shapes and colours
+> (`GrassLabVillage.cs`; five `VillageMap` members made `internal` for it). Grass and village zoom from the window's
+> centre. Still ≤ 1/255 against `grass_ref.py`. ⚠️ The placeholders show an adult's dot nearly vanishing on bare
+> parchment and the granary lost against ochre grass — slate colours, for §6.0.
+>
+> **D631 — anti-tiling, lab only, each behind a switch (all off):** macro variation, version mixing (v02–v06 by
+> region), hex tiling, a Linear / Height blend, *mark transitions*, a GPU readout. The maths is
+> `shaders/grass_antitile.gdshaderinc`, mirrored by `tools/grass/grass_antitile_ref.py` (parity ≤ 1/255, hex ≤ 5/255
+> on 187 px). **Linear blending ghosts** (~70 % of a mixing band's stamps at part strength; a third of all ground for
+> linear hex); **height** cuts it to 0.6 % / 6 % of the ground. Cost over plain at 1280 × 800: +0.03 to +0.25 ms.
+>
+> **D632 — the look approved and recorded.** `src/Bclone.Game/looks/grass_approved.tres` (`GrassLook.cs`, no defaults:
+> the file is the only copy of a number) — v06, strength 0.80, jitter 0.15, grain 0.15 (placeholder), 63 tiles a repeat
+> (provisional), macro 85/0.37/0.10, hex 8.5 Height; mixing and Linear rejected, kept off. The lab opens at it, with
+> *Reset to approved* and *Copy current values* (Joe's list format). Parity at the look ≤ 2/255. Cost +0.12 ms over the
+> pack at 1280 × 800. Tools to redo every number: `tools/grass/` (README). Reference images: `art/grass/`.
+>
+> **D633 — Joe checked `grass-look.md §7`'s items 1–3 in the lab: *"no changes"*.** 63 tiles a repeat (no longer
+> provisional), macro strength 0.37, and the clipped stamps at hex borders all stay. ⛔ Do not re-open them unasked.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
+> his to start. Grass: §6.0 of `seasonal-grass.md` — does the game's ground move to parchment; then the terrain
+> shader that draws the look in the valley (re-measure its cost with `tools/grass/lab_cost.gd`).
+> `slice/grass-seasons` is off D620 and unmerged: merging it to `main` conflicts in this banner and DESIGN §6/§7.
+>
+> **Numbers (D632):** suite 1811 / 0 / 5 of 1816 (13m39); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; parity at the look ≤ 2/255.
+> **Numbers (D631):** suite 1811 / 0 / 5 of 1816 (13m08); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; `grass_antitile_ref.py --selfcheck` OK.
+> **Numbers (D630):** suite 1811 / 0 / 5 of 1816 (12m56); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after.
+> **Numbers (D629):** suite 1811 / 0 / 5 of 1816 (13m38); view 0 warnings; probe **98** `[widths]` lines (+ `grass lab:`), bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after. ⚠️ **Merging both into
+> `main` conflicts in this file's banner.** Keep both banners.
+>
+> **Numbers (D627):** suite 1811 / 0 / 5 of 1816 (12m47); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after, `git diff` no golden.
 >
 > **(the banner below is the state at D620)**
 >
@@ -8109,6 +8191,84 @@ Read `git status` after staging, every time.
   the granary door's cap meets the distance's cap. **Re-run every guard you re-posed on the code you commit, and
   pose a comparison where its margin is wide** (12 ticks: 53 against 76).
 
+## ⛔ THE TRAPS THE GRASS IMPORT (D627) PAID FOR — GODOT'S DEFAULT IMPORT WIPES A DATA MASK, AND A SPOT-CHECK CANNOT SEE IT
+
+- **Godot's default texture import writes `process/fix_alpha_border=true`** (and `detect_3d/compress_to=1`). On a data
+  texture whose alpha is a mask of its own, that rewrites RGB wherever A is low: 30,868–45,251 pixels per grass mask.
+  Premult Alpha zeroes RGB wherever A = 0, 3,248,610 of v06's 4,194,304 pixels. **Any new data texture: let Godot write
+  its `.import`, then set the params by exact key, re-import, and compare.** The editor's Import dock can flip them back
+  silently.
+- **Five sampled A = 0 pixels per mask survived Fix Alpha Border every time.** A spot-check scored zero against the very
+  setting it was written for. The check that bites converts the imported level 0 to RGBA8 and compares it to the source
+  PNG **byte for byte** (`Image.get_data()` equality, in a `--headless --script` GDScript, seconds per mask).
+- **Repeat and sRGB are not import settings in Godot 4.** They are the shader's sampler hints (`repeat_enable`, no
+  `source_color`). Looking for them in the `.import` file finds nothing.
+- **`--headless --import` writes a `.cs.uid` beside every C# script that lacks one** (27 here). Not ours to commit:
+  remove exactly the untracked ones (`git ls-files --others --exclude-standard -- 'src/Bclone.Game/*.cs.uid'`).
+
+## ⛔ THE TRAPS THE GRASS LAB (D629) PAID FOR — A RE-IMPORT THAT LOOKS LIKE AN EDIT, AND A NAME THAT HIDES
+
+- **After a re-import, `git status` showed all six `.import` files modified — and every one was byte-identical to
+  HEAD.** Godot rewrites them, the timestamps move, and with `core.autocrlf` git reports `M` with an empty diff. Compare
+  bytes (`git show HEAD:f | sha256sum` against the file) before believing a red-check left something behind.
+- **A view check of a picture is a render and a reference, not a look.** The lab was proved by rendering at one mask
+  texel a pixel (32 px a tile × 64 tiles = 2048) into a fixed `SubViewport` — so the window's DPI cannot rescale it —
+  and comparing to Joe's `grass_ref.py`. The pack's own `godot_test/test.gd` is the shape; the script stays out of
+  the tree (D160).
+- **A property called `Material` on a `Control` hides `CanvasItem.Material`** (CS0108) — the view does not fail on a
+  warning, so read the build's output.
+
+## ⛔ THE TRAPS D630 PAID FOR — A `grep -c` THAT READ `*` AS A REGEX, AND A MUTANT THAT DELETES
+
+- **`grep -c "$NEW"` on a shader line with `*` in it counted 0** (`*` is a quantifier), the `&&` chain stopped
+  after the mutant was applied, and only the revert at the end of the line saved the file. Count source text with
+  **`grep -cF`**, and put the revert where a failed count still reaches it.
+- **A mutant that deletes a line cannot be reverted by its own text** (there is no text left to find). Save the
+  file aside before applying it and restore from that, then check the file's hash against the one taken before the
+  run — `sha256sum -c` printed `OK` for `GrassLab.cs` after six mutants.
+- **The placeholders were the cheapest legibility test this project has run on a parchment map.** Within one render
+  they showed two colours chosen against slate failing on paper. When the ground question (§6.0) comes up, draw the
+  real things on it before arguing about it.
+
+## ⛔ THE TRAPS D631 PAID FOR — A GHOST MEASURE THAT COUNTED CUTS, A GPU TIMER AT IDLE, AND THE HEREDOC AGAIN
+
+- **"Drawn under 70 % of the strongest source" is not a ghost measure.** It counted every stamp a height blend
+  *cut* (the other layout won outright, drawn whole) as a ghost, and said height blending barely helped (42 → 23 %).
+  Changing the depth and the height measure moved nothing — **when no knob moves a number, suspect the number.** A
+  ghost is a stamp drawn at a *partial final weight*; measured that way height cuts it 70 → 12.5 %.
+- **A GPU timer on a light load is noise.** At 1280 × 800 the 3070 idled at 1335 MHz and *"all three"* came out
+  cheaper than mixing alone. Measure where the shader dominates (4K), interleave the cases over rounds so clock
+  drift lands on each alike, take the median of round medians, and scale by pixels.
+- **The heredoc ate `\n` again** (traps 54, D577): a Python mutant table written through `<<'EOF'` came out with
+  real newlines inside its strings. Nothing was mutated because the count step ran first and failed. **Write any
+  Python holding `\n` with the Write tool**, and count anchors before applying.
+- **GDScript `_set` is an `Object` virtual** — a helper named `_set(node, name, value)` fails to parse (*"signature
+  doesn't match the parent"*). Name helpers so they cannot collide.
+- **Joe's lab was running** (`run.bat grass`, PID read from its command line) through the build and every render; the
+  build did not lock. Check a Godot's command line before treating it as yours (D606).
+
+## ⛔ THE TRAPS D632 PAID FOR — A RELATIVE `-s` IS `res://`, `sed` EATS BACKSLASHES, AND A MUTANT NEEDS A WAY BACK
+
+- **`godot --path src/Bclone.Game -s tools/grass/x.gd` says *File not found*:** a relative script path is read as
+  `res://tools/...`. Pass it absolute — `"$(pwd -W)/tools/grass/x.gd"` in Git Bash, `"$PWD\tools\grass\x.gd"` in
+  PowerShell.
+- **`sed` turned `\tools` into a tab and ate the other backslashes** in a PowerShell path written into a comment.
+  Any text with a backslash: build it in Python from `chr(92)`, or write the file with the Write tool.
+- **Count the mutant's text too, not only the anchor.** `reset_skips` deleted a line whose remainder already occurred
+  twice — applied, it could never have been reverted by its own text. Count both (`mutate.py count`) and make a
+  mutant leave a unique marker.
+- **A resource class with no defaults is a single source only if something checks the file sets every field.** The
+  probe reads `GrassLook`'s `[Export]` properties by reflection and asks `grass_approved.tres` for each.
+
+## ⛔ THE TRAP D633–D634 PAID FOR — `$GODOT` IS EMPTY IN A FRESH BASH, AND THE PATH IS ONE FOLDER SHALLOWER THAN IT LOOKS
+
+- **`$GODOT` is not set in the Bash tool's shell**; `run.bat` falls back to its own default. The executable sits directly
+  in `D:/Projects/Godot/Godot_v4.7.1-stable_mono_win64/` — not one folder deeper, as the folder's name tempts you to
+  type — and the probe wants **`Godot_v4.7.1-stable_mono_win64_console.exe`**, whose output reaches a redirect. A wrong
+  path is `exit 127` with an empty probe file, which a grep for `✅` reads as silence, not failure: **check the exit code.**
+- **"Let CI run the full suite" is a branch push**: `.github/workflows/ci.yml` runs on every push to any branch, no PR
+  needed. `gh run watch <id> --exit-status` in the background, then read `Total tests` / `Passed` from `gh run view --log`.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
@@ -8122,6 +8282,12 @@ Read `git status` after staging, every time.
     founder starves before the first gather (pace 1: 39 → 65); his saves 330 → 280, millbrook 48 → 25.
   - **Settled without asking:** a building that is not square turns only a half (every founding and marked building
     covers the tiles it always did); an unmarked building faces the nearest store, in the sim, for the ghost to ask.
+
+- ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
+  **the look approved (D632) and its open items kept (D633); merged (D634).** ⏸️ **Now his: does the game's ground
+  move from slate to parchment (`seasonal-grass.md §6.0`)?** The pack only reads over parchment, so the valley cannot
+  draw it until he answers. Still open in `grass-look.md §7`: re-measure the cost once the terrain shader exists;
+  later, macro variation from sim data.
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by

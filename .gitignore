@@ -9,6 +9,9 @@
 logs/
 *.log
 
+# ---- Python (tools/grass) ----
+__pycache__/
+
 # ---- OS cruft ----
 .DS_Store
 Thumbs.db
