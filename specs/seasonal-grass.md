@@ -2,9 +2,9 @@
 
 **Decision:** D627 (this document; Joe's grass pack, `D:\Projects\brushes\seasons`). Neighbours: D342 (`ValleyTexture`,
 the valley baked once on the CPU), D338/D366 (nothing per frame that a counter can answer), `environment-and-seasons.md`
-(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627), NOTHING DRAWN.** The masks, the atlas and the recolour snippet
-are in the project with the import settings below, proved lossless (§3). No shader uses them, no scene exists, and
-nothing in `src/*.cs` or `Bclone.Sim` changed. Owner: Joe + Claude Code.
+(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627), NOTHING DRAWN; ✅ §6'S QUESTIONS SETTLED BY JOE (D628).** The masks, the
+atlas and the recolour snippet are in the project with the import settings below, proved lossless (§3). No shader
+uses them, no scene exists, and nothing in `src/*.cs` or `Bclone.Sim` changed. Next: THE SCENE (§5). Owner: Joe + Claude Code.
 
 ---
 
@@ -68,23 +68,42 @@ sRGB.**
 
 The first use is a scene to look at the grass in, before it goes anywhere near the valley.
 
+**Ground:** parchment `#e6d6b0` under the grass (D628, §6.0) — the pack is judged as it was painted.
+
 **Debug UI:**
 - `grass_jitter` slider, 0–0.25, defaulting to 0.15
 - default version: v06, with v04 as the first alternative
+- tiles per mask repeat: a slider, starting at 32 (D628, §6.3); the number found by eye goes into data
+- season: a slider, 0–4, to judge the blends directly (D628, §6.4)
 
 ⚠️ The snippet's uniform is `hint_range(0.0, 0.3) = 0.0`; the slider sets the value from code, and the snippet is not
 edited. The pack disagrees with itself on the value: the snippet's comment says *~0.08–0.12*, `README.md` and
 `REPORT.md` say 0.15. The slider follows the README.
 
-## 6. Open — to settle before anything is drawn
+## 6. Settled — Joe's calls (D628, 2026-10-26, all as recommended)
 
-1. **`canvas_item`, not spatial.** The snippet's usage comment writes `ALBEDO`; ours would write `COLOR`. It compiles in a
-   `canvas_item` shader unchanged (the pack's own `godot_test` does exactly that).
-2. **No linear conversion.** With `hdr_2d` off, `COLOR` is sRGB, and Multiply in sRGB *is* Photoshop's Multiply — so the
-   shader would not call `grass_srgb_to_linear`. A call-site choice, not a snippet edit.
-3. **How many tiles one mask repeat covers.** At `ValleyTexture`'s 16 px a tile, one 2048² repeat at 1:1 is 128 tiles —
-   more than the valley is wide.
-4. **Where the season comes from.** `world.Clock.Season` is whole seasons; the blend wants a fraction.
-5. **Load only the version shown.** A lossless 2048² mask with mipmaps is ~21 MB of VRAM; five is ~105 MB.
-6. **The bake and the shader.** `ValleyTexture` decides where grass is; how a shader layer meets it is the design question,
-   and changing the bake is out of scope until it is answered.
+0. **The ground under the grass.** ⛔ The pack's colours are Multiply over parchment `#e6d6b0`; the game's grass ground
+   is slate `#2b3332` (`VillageMap.Ground`), and Multiply only darkens — summer olive's pooled `#7a9254` over slate is
+   `#151d10`, near black. **THE SCENE puts parchment under the grass.** Moving the game's ground to parchment (the
+   hand-drawn direction in `art/`) is **its own decision, after the scene**, and touches every colour the view picked
+   against slate. Nothing in the game's view changes until then.
+1. **`canvas_item`, not spatial.** The game is all 2D, so the shader writes `COLOR`. The snippet compiles there unchanged
+   (the pack's own `godot_test` does exactly that).
+2. **No linear conversion.** With `hdr_2d` off, Godot blends 2D in sRGB, and Multiply on sRGB values *is* Photoshop's
+   Multiply, so the shader does not call `grass_srgb_to_linear`. A call-site choice, not a snippet edit. ⚠️ If `hdr_2d`
+   is ever turned on, this flips.
+3. **Tiles per mask repeat: a slider in THE SCENE, starting at 32.** 32 tiles is 64 mask px a tile — sharp at
+   `MaxPixelsPerTile = 48` — and ~3.75 repeats across the 120-tile valley (`REPORT.md`: v06 tiles 3×3 with no stand-out
+   shape). 1:1 with the bake (128) was soft up close; 20 risks a visible repeat. The number found by eye goes into data.
+4. **The year: hold, then turn.** A season is 30 days × 4 ticks = 120 ticks. Each season holds its own palette for its
+   first **20 days** and blends into the next over its last **10**, winter into spring included. The fraction is
+   worked out in the view from the tick within the season; the sim is not touched. Rejected: continuous drift (mid-summer
+   is half spring, half fall — never legibly one season) and a snap at the boundary.
+5. **Load only the version shown.** A lossless 2048² mask with mipmaps is ~21 MB of VRAM; switching loads the new one and
+   drops the old. (THE SCENE may hold v06 and v04 both, 42 MB, for an instant flip.)
+6. **The bake meets the shader through a coverage map (option A).** `ValleyTexture` already finds, per pixel, which
+   ground wins and how decisively; the same loop bakes a one-channel **grass coverage** image. One `canvas_item` shader on
+   the existing valley `DrawTextureRect` multiplies the grass in by that coverage, so grass fades at banks and woods on the
+   valley's own smooth edge. Season and jitter are uniforms set per frame — a uniform, never a rebuild (the D338 rule).
+   Rejected: re-baking the CPU texture with grass in it (hundreds of ms a bake, and a blend would want one every frame);
+   a separate overlay (the same coverage map plus a full-screen pass and a rect to keep aligned).

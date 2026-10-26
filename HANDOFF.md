@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627: THE SEASONAL GRASS ASSETS IMPORTED, NOTHING DRAWN. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D628: THE SEASONAL GRASS ASSETS IMPORTED, NOTHING DRAWN; JOE'S §6 CALLS SETTLED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -13,8 +13,14 @@
 >   import (trap below). `specs/seasonal-grass.md` holds the open questions and THE SCENE's debug UI. Nothing in `src/*.cs`
 >   changed.
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merge, or commit 5. Grass: the spec's §6 questions
-> (`canvas_item`, the tile scale of a repeat, the season fraction, the bake), then THE SCENE. ⚠️ **Merging both into
+> **D628 (docs only):** Joe settled `seasonal-grass.md §6`, all as recommended — **parchment under the grass in THE
+> SCENE** (the pack is Multiply over parchment; the game's slate ground would turn it near black, and moving the game
+> to parchment is its own decision after the scene); `canvas_item` with no linear step; a tiles-per-repeat slider from
+> 32; each season held 20 days and turned over its last 10; only the shown version loaded; a grass-coverage image from
+> `ValleyTexture`'s loop, multiplied in by one shader on the valley draw.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
+> his to start. Grass: **THE SCENE** (`seasonal-grass.md §5`). ⚠️ **Merging both into
 > `main` conflicts in this file's banner.** Keep both banners.
 >
 > **Numbers (D627):** suite 1811 / 0 / 5 of 1816 (12m47); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after, `git diff` no golden.
@@ -8045,9 +8051,8 @@ Read `git status` after staging, every time.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SEASONAL GRASS (D627), HIS TO CALL — assets in, nothing drawn** (`specs/seasonal-grass.md §6`): a `canvas_item`
-  shader with no linear conversion; how many tiles one mask repeat covers (1:1 at 16 px a tile is 128); where the
-  season's fraction comes from; how a shader layer meets `ValleyTexture`'s bake. Then THE SCENE (§5).
+- ⏸️ **SEASONAL GRASS (D627–D628), HIS TO CALL — assets in, nothing drawn; §6 settled (D628).** Next: THE SCENE (§5).
+  ⏸️ **Then his: does the game's ground move from slate to parchment?** The pack only reads over parchment.
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
