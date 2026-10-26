@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `slice/parchment-legibility` = D635–D636: PARCHMENT DECIDED; THE WORLD'S COLOURS MEASURED AGAINST IT, 57 OF 60 FAIL, NOTHING CHANGED; THE RULE IS JOE'S CALL. `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D634) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D636) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`slice/parchment-legibility`** (off `main` at D634, local): **D635** — Joe: *"Yes, move the game's ground to
+> parchment"*; world colours move, the UI stays slate. **D636** — every world colour checked against the parchment
+> ground in every season (`specs/world-legibility.md`, `tools/legibility/`): 57 of 60 that must read fail 3:1; 2 of 7
+> washes too faint; 13 of 17 ground kinds below the band. **Nothing in the game changed.** `specs/terrain-shader.md`
+> (new, not started) holds the snow note.
+>
+> **▶️ NEXT — Joe's calls (`world-legibility.md §7`), then build:** the rule (recommended: three bands — ground
+> L\* ≥ 50, ink outlines on things with an area, lines / marks / dots dark at L\* ≤ 29); the bar (3:1, ΔE 5); what UI
+> pictures of world things sit on (recommended: a parchment chip); trees; D68. Then re-pick the world palette in one
+> place, re-run `check.py` to zero failures, and only then the terrain shader.
+>
+> **Numbers (D636):** analysis and docs only — no `.cs` changed; `check.py` reports 0 unclassified colours.
+>
+> **— `main` at D634 —**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D634) — ON WINDOWS.**
 >
 > **`main` = D634: doors and the seasonal grass, both merged.** Joe: *"Push and let CI run the full suite, then
 > merge."* `slice/grass-seasons` was pushed and CI passed it (1811 of 1816, 5 skipped) at 0d4018b; then merged
@@ -8269,6 +8285,16 @@ Read `git status` after staging, every time.
 - **"Let CI run the full suite" is a branch push**: `.github/workflows/ci.yml` runs on every push to any branch, no PR
   needed. `gh run watch <id> --exit-status` in the background, then read `Total tests` / `Passed` from `gh run view --log`.
 
+## ⛔ THE TRAPS D636 PAID FOR — A LUMINANCE IS NOT A COLOUR, AND A TEXTURED GROUND HAS NO SINGLE CONTRAST
+
+- **`lstar((y, y, y))` treated a linear luminance as an sRGB triple** and put the 3:1 target at L\* 4 instead of 29;
+  it read as plausible ("nearly black") for one run. Convert Y to L\* directly (`check.y_to_lstar`), and sanity-check
+  a derived threshold against one hand-computed value before reading a table built on it.
+- **A colour inside the ground's own lightness band always finds a patch it matches** — contrast ~1:1, whatever its
+  hue. A single "ground colour" would have hidden that; test against the percentiles of the rendered ground.
+- **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
+  (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
@@ -8283,7 +8309,9 @@ Read `git status` after staging, every time.
   - **Settled without asking:** a building that is not square turns only a half (every founding and marked building
     covers the tiles it always did); an unmarked building faces the nearest store, in the sim, for the ghost to ask.
 
-- ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
+- ⏸️ **WORLD LEGIBILITY ON PARCHMENT (D636), HIS TO CALL — `world-legibility.md §7`:** the rule (three bands
+  recommended), the bar, the parchment chip for UI pictures of world things, the trees, and D68's destination.
+- ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ **Parchment: yes (D635).** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
   **the look approved (D632) and its open items kept (D633); merged (D634).** ⏸️ **Now his: does the game's ground
   move from slate to parchment (`seasonal-grass.md §6.0`)?** The pack only reads over parchment, so the valley cannot
   draw it until he answers. Still open in `grass-look.md §7`: re-measure the cost once the terrain shader exists;

@@ -222,6 +222,8 @@ miswired, the layouts out of order.
    `#151d10`, near black. **THE SCENE puts parchment under the grass.** Moving the game's ground to parchment (the
    hand-drawn direction in `art/`) is **its own decision, after the scene**, and touches every colour the view picked
    against slate. Nothing in the game's view changes until then.
+   ✅ **Decided (D635, 2026-10-26) — Joe: *"Yes, move the game's ground to parchment."*** The world's colours move with
+   it (`world-legibility.md`, measured first); the UI stays slate; the terrain shader comes after (`terrain-shader.md`).
 1. **`canvas_item`, not spatial.** The game is all 2D, so the shader writes `COLOR`. The snippet compiles there unchanged
    (the pack's own `godot_test` does exactly that).
 2. **No linear conversion.** With `hdr_2d` off, Godot blends 2D in sRGB, and Multiply on sRGB values *is* Photoshop's
