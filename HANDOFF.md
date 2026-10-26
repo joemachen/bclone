@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620: DOORS ARE SPECCED (`specs/doors.md`) AND JOE'S FIVE CALLS ARE ANSWERED, NOTHING BUILT. NEXT: `slice/doors`, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627: THE SEASONAL GRASS ASSETS IMPORTED, NOTHING DRAWN. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D620) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Two branches, both local, both unpushed:**
+> - **`slice/doors`** = `main` + D621–D625 + a handoff commit (e7d59f8) recording Joe's play: *"it looks good."* His call
+>   is merge, or commit 5 (the view) first. **D626 is reserved there** for recording the play in `DESIGN.md`. That
+>   branch's `HANDOFF.md` carries the doors banner; read it with `git show slice/doors:HANDOFF.md`.
+> - **`slice/grass-seasons`** (this branch, off `main` at D620) = **D627: Joe's seasonal grass pack imported, nothing
+>   drawn.** Masks v02–v06, the season atlas and `grass_seasons.gdshaderinc` (unchanged) are in
+>   `src/Bclone.Game/textures/grass/` and `src/Bclone.Game/shaders/`, with committed `.png.import` files: lossless,
+>   mipmaps on the masks and off the atlas, Fix Alpha Border and Premult Alpha off. Proved byte-identical to the pack after
+>   import (trap below). `specs/seasonal-grass.md` holds the open questions and THE SCENE's debug UI. Nothing in `src/*.cs`
+>   changed.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merge, or commit 5. Grass: the spec's §6 questions
+> (`canvas_item`, the tile scale of a repeat, the season fraction, the bake), then THE SCENE. ⚠️ **Merging both into
+> `main` conflicts in this file's banner.** Keep both banners.
+>
+> **Numbers (D627):** suite 1811 / 0 / 5 of 1816 (12m47); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after, `git diff` no golden.
+>
+> **(the banner below is the state at D620)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-24 (D620) — ON WINDOWS.**
 >
 > **The state.** `main` = D618 + D619 + D620. D619 is the doors spec, written at Joe's pick (*"Doors, spec only"*).
 > **Nothing in `src/` changed and no golden moved.** It is `specs/doors.md`, its premise measurement
@@ -8007,7 +8028,26 @@ Read `git status` after staging, every time.
 - **A facing is a default far more often than a choice:** 91 of Joe's 196 buildings were never turned. Before a rule
   keys on the facing, ask what the unturned pose does. Here every door would face north.
 
+## ⛔ THE TRAPS THE GRASS IMPORT (D627) PAID FOR — GODOT'S DEFAULT IMPORT WIPES A DATA MASK, AND A SPOT-CHECK CANNOT SEE IT
+
+- **Godot's default texture import writes `process/fix_alpha_border=true`** (and `detect_3d/compress_to=1`). On a data
+  texture whose alpha is a mask of its own, that rewrites RGB wherever A is low: 30,868–45,251 pixels per grass mask.
+  Premult Alpha zeroes RGB wherever A = 0, 3,248,610 of v06's 4,194,304 pixels. **Any new data texture: let Godot write
+  its `.import`, then set the params by exact key, re-import, and compare.** The editor's Import dock can flip them back
+  silently.
+- **Five sampled A = 0 pixels per mask survived Fix Alpha Border every time.** A spot-check scored zero against the very
+  setting it was written for. The check that bites converts the imported level 0 to RGBA8 and compares it to the source
+  PNG **byte for byte** (`Image.get_data()` equality, in a `--headless --script` GDScript, seconds per mask).
+- **Repeat and sRGB are not import settings in Godot 4.** They are the shader's sampler hints (`repeat_enable`, no
+  `source_color`). Looking for them in the `.import` file finds nothing.
+- **`--headless --import` writes a `.cs.uid` beside every C# script that lacks one** (27 here). Not ours to commit:
+  remove exactly the untracked ones (`git ls-files --others --exclude-standard -- 'src/Bclone.Game/*.cs.uid'`).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **SEASONAL GRASS (D627), HIS TO CALL — assets in, nothing drawn** (`specs/seasonal-grass.md §6`): a `canvas_item`
+  shader with no linear conversion; how many tiles one mask repeat covers (1:1 at 16 px a tile is 128); where the
+  season's fraction comes from; how a shader layer meets `ValleyTexture`'s bake. Then THE SCENE (§5).
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
