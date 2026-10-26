@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D630: THE SEASONAL GRASS LAB BUILT (`.\run.bat grass`) WITH STRENGTH, PAPER GRAIN AND PLACEHOLDERS, UNPLAYED; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D631: THE SEASONAL GRASS LAB BUILT (`.\run.bat grass`) WITH STRENGTH, PAPER GRAIN, PLACEHOLDERS AND THREE ANTI-TILING OPTIONS, UNPLAYED; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -30,10 +30,17 @@
 > centre. Still ≤ 1/255 against `grass_ref.py`. ⚠️ The placeholders show an adult's dot nearly vanishing on bare
 > parchment and the granary lost against ochre grass — slate colours, for §6.0.
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
-> his to start. Grass: **Joe looks at the lab** (`.\run.bat grass`) and picks the repeat, the zoom, the strength and
-> the grain; then §6.0 — does the game's ground move to parchment.
+> **D631 — anti-tiling, lab only, each behind a switch (all off):** macro variation, version mixing (v02–v06 by
+> region), hex tiling, a Linear / Height blend, *mark transitions*, a GPU readout. The maths is
+> `shaders/grass_antitile.gdshaderinc`, mirrored by `tools/grass/grass_antitile_ref.py` (parity ≤ 1/255, hex ≤ 5/255
+> on 187 px). **Linear blending ghosts** (~70 % of a mixing band's stamps at part strength; a third of all ground for
+> linear hex); **height** cuts it to 0.6 % / 6 % of the ground. Cost over plain at 1280 × 800: +0.03 to +0.25 ms.
 >
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
+> his to start. Grass: **Joe compares the anti-tiling options in the lab** and picks; then the repeat, the zoom, the
+> strength and the grain; then §6.0 — does the game's ground move to parchment.
+>
+> **Numbers (D631):** suite 1811 / 0 / 5 of 1816 (13m08); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; `grass_antitile_ref.py --selfcheck` OK.
 > **Numbers (D630):** suite 1811 / 0 / 5 of 1816 (12m56); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after.
 > **Numbers (D629):** suite 1811 / 0 / 5 of 1816 (13m38); view 0 warnings; probe **98** `[widths]` lines (+ `grass lab:`), bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after. ⚠️ **Merging both into
 > `main` conflicts in this file's banner.** Keep both banners.
@@ -8087,6 +8094,23 @@ Read `git status` after staging, every time.
 - **The placeholders were the cheapest legibility test this project has run on a parchment map.** Within one render
   they showed two colours chosen against slate failing on paper. When the ground question (§6.0) comes up, draw the
   real things on it before arguing about it.
+
+## ⛔ THE TRAPS D631 PAID FOR — A GHOST MEASURE THAT COUNTED CUTS, A GPU TIMER AT IDLE, AND THE HEREDOC AGAIN
+
+- **"Drawn under 70 % of the strongest source" is not a ghost measure.** It counted every stamp a height blend
+  *cut* (the other layout won outright, drawn whole) as a ghost, and said height blending barely helped (42 → 23 %).
+  Changing the depth and the height measure moved nothing — **when no knob moves a number, suspect the number.** A
+  ghost is a stamp drawn at a *partial final weight*; measured that way height cuts it 70 → 12.5 %.
+- **A GPU timer on a light load is noise.** At 1280 × 800 the 3070 idled at 1335 MHz and *"all three"* came out
+  cheaper than mixing alone. Measure where the shader dominates (4K), interleave the cases over rounds so clock
+  drift lands on each alike, take the median of round medians, and scale by pixels.
+- **The heredoc ate `\n` again** (traps 54, D577): a Python mutant table written through `<<'EOF'` came out with
+  real newlines inside its strings. Nothing was mutated because the count step ran first and failed. **Write any
+  Python holding `\n` with the Write tool**, and count anchors before applying.
+- **GDScript `_set` is an `Object` virtual** — a helper named `_set(node, name, value)` fails to parse (*"signature
+  doesn't match the parent"*). Name helpers so they cannot collide.
+- **Joe's lab was running** (`run.bat grass`, PID read from its command line) through the build and every render; the
+  build did not lock. Check a Godot's command line before treating it as yours (D606).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

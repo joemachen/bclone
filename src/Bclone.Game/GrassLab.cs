@@ -51,6 +51,17 @@ public sealed partial class GrassLab : Control
     /// <summary>A light grain — about 7 % darker on average, which is what takes the edge off the contrast.</summary>
     internal const double DefaultGrain = 0.15;
 
+    // The anti-tiling options' starting points when switched on (D631, §5.3). Every switch starts off.
+    internal const double DefaultMacroCycle = 100.0;
+    internal const double DefaultMacroStrength = 0.3;
+    internal const double DefaultMacroSeason = 0.1;
+    internal const double DefaultRegion = 48.0;
+    internal const double DefaultWidth = 1.5;
+    internal const double DefaultSharpness = 4.0;
+
+    /// <summary>The five layouts version mixing draws on, in the shader's order <c>grass_v0</c> … <c>grass_v4</c>.</summary>
+    internal static readonly string[] Mixed = { "v02", "v03", "v04", "v05", "v06" };
+
     internal static readonly Color Parchment = new("#e6d6b0");
 
     private static readonly string[] SeasonNames = { "spring", "summer", "fall", "winter" };
@@ -61,6 +72,10 @@ public sealed partial class GrassLab : Control
     private ColorRect _grain = null!;
     private PanelContainer _panel = null!;
     private Texture2D? _masks;
+    private PanelContainer _tiling = null!;
+    private Label _gpu = null!;
+    private double _gpuMs;
+    private double _gpuSaidAt;
 
     internal string ShownVersion { get; private set; } = Versions[0];
 
@@ -81,6 +96,31 @@ public sealed partial class GrassLab : Control
     internal CheckBox Placeholders { get; private set; } = null!;
 
     internal GrassLabVillage Village { get; private set; } = null!;
+
+    internal CheckBox Macro { get; private set; } = null!;
+
+    internal HSlider MacroCycle { get; private set; } = null!;
+
+    internal HSlider MacroStrength { get; private set; } = null!;
+
+    internal HSlider MacroSeason { get; private set; } = null!;
+
+    internal CheckBox Mixing { get; private set; } = null!;
+
+    internal HSlider Region { get; private set; } = null!;
+
+    internal HSlider Width { get; private set; } = null!;
+
+    internal CheckBox Hex { get; private set; } = null!;
+
+    internal HSlider Sharpness { get; private set; } = null!;
+
+    internal OptionButton Blend { get; private set; } = null!;
+
+    internal CheckBox MarkTransitions { get; private set; } = null!;
+
+    /// <summary>True once version mixing has loaded all five layouts — only when it is first switched on.</summary>
+    internal bool MixedLoaded { get; private set; }
 
     public override void _Ready()
     {
@@ -103,19 +143,8 @@ public sealed partial class GrassLab : Control
         _grain.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(_grain);
 
-        _panel = new PanelContainer { Name = "Panel", Position = new Vector2(16, 16), CustomMinimumSize = new Vector2(340, 0) };
-        _panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(0.09f, 0.10f, 0.10f, 0.9f),
-            ContentMarginLeft = 16,
-            ContentMarginRight = 16,
-            ContentMarginTop = 12,
-            ContentMarginBottom = 12,
-            CornerRadiusTopLeft = 6,
-            CornerRadiusTopRight = 6,
-            CornerRadiusBottomLeft = 6,
-            CornerRadiusBottomRight = 6,
-        });
+        _panel = Panel("Panel");
+        _panel.Position = new Vector2(16, 16);
         AddChild(_panel);
 
         var body = new VBoxContainer();
@@ -158,11 +187,128 @@ public sealed partial class GrassLab : Control
         Placeholders.Toggled += on => Village.Visible = on;
         body.AddChild(Placeholders);
 
-        var hint = new Label { Text = "h hides this panel", Modulate = new Color(1, 1, 1, 0.6f) };
+        var hint = new Label { Text = "h hides the panels", Modulate = new Color(1, 1, 1, 0.6f) };
         hint.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(hint);
 
         ShowVersion(Versions[0]);
+        BuildTheTilingPanel();
+        RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
+    }
+
+    /// <summary>
+    /// The anti-tiling options (D631, `seasonal-grass.md §5.3`), top right — each behind its own switch, all off, so the
+    /// lab opens as it always did; and the GPU's time for the whole window, so each option's cost can be read off.
+    /// </summary>
+    private void BuildTheTilingPanel()
+    {
+        _tiling = Panel("Tiling");
+        _tiling.AnchorLeft = 1f;
+        _tiling.AnchorRight = 1f;
+        _tiling.GrowHorizontal = GrowDirection.Begin;
+        _tiling.OffsetLeft = -16f;
+        _tiling.OffsetRight = -16f;
+        _tiling.OffsetTop = 16f;
+        AddChild(_tiling);
+
+        var body = new VBoxContainer();
+        body.AddThemeConstantOverride("separation", 4);
+        _tiling.AddChild(body);
+
+        var heading = new Label { Text = "Anti-tiling" };
+        heading.AddThemeFontSizeOverride("font_size", 20);
+        body.AddChild(heading);
+
+        Macro = AddSwitch(body, "Macro variation", "macro_on");
+        MacroCycle = AddSlider(body, "Tiles a cycle", 50.0, 200.0, 1.0, DefaultMacroCycle, Sets("macro_cycle_tiles"), Plain("0"));
+        MacroStrength = AddSlider(body, "Strength amount", 0.0, 1.0, 0.01, DefaultMacroStrength, Sets("macro_strength_amount"), Plain("0.00"));
+        MacroSeason = AddSlider(body, "Season amount", 0.0, 0.5, 0.01, DefaultMacroSeason, Sets("macro_season_amount"), Plain("0.00"));
+
+        Mixing = AddSwitch(body, "Version mixing (v02–v06)", "mix_on");
+        Mixing.Toggled += on =>
+        {
+            if (on)
+            {
+                LoadTheMixedVersions();
+            }
+        };
+        Region = AddSlider(body, "Region, tiles", 16.0, 128.0, 1.0, DefaultRegion, Sets("mix_region_tiles"), Plain("0"));
+        Width = AddSlider(body, "Transition, tiles", 0.0, 8.0, 0.1, DefaultWidth, Sets("mix_width_tiles"), Plain("0.0"));
+
+        Hex = AddSwitch(body, "Hex tiling", "hex_on");
+        Sharpness = AddSlider(body, "Blend sharpness", 1.0, 16.0, 0.5, DefaultSharpness, Sets("hex_sharpness"), Plain("0.0"));
+
+        Blend = new OptionButton { Name = "Blend" };
+        Blend.AddItem("Linear");
+        Blend.AddItem("Height — each stamp whole");
+        Blend.ItemSelected += index => _material.SetShaderParameter("height_blend", index == 1);
+        _material.SetShaderParameter("height_blend", false);
+        body.AddChild(Row("Blend (mixing and hex)", Blend, null));
+
+        MarkTransitions = AddSwitch(body, "Mark transitions", "mark_transitions");
+
+        _gpu = new Label { Name = "Gpu", Modulate = new Color(1, 1, 1, 0.75f) };
+        _gpu.AddThemeFontSizeOverride("font_size", 13);
+        body.AddChild(_gpu);
+    }
+
+    /// <summary>A switch for one boolean uniform, off.</summary>
+    private CheckBox AddSwitch(VBoxContainer body, string name, string uniform)
+    {
+        var box = new CheckBox { Name = name, Text = name };
+        box.Toggled += on => _material.SetShaderParameter(uniform, on);
+        _material.SetShaderParameter(uniform, false);
+        body.AddChild(box);
+        return box;
+    }
+
+    /// <summary>
+    /// All five layouts, once (§6.5's one-version rule does not hold here: ~105 MB of VRAM while mixing is on).
+    /// </summary>
+    private void LoadTheMixedVersions()
+    {
+        if (MixedLoaded)
+        {
+            return;
+        }
+
+        for (int i = 0; i < Mixed.Length; i++)
+        {
+            _material.SetShaderParameter($"grass_v{i}", GD.Load<Texture2D>($"res://textures/grass/grass_{Mixed[i]}_masks.png"));
+        }
+
+        MixedLoaded = true;
+    }
+
+    /// <summary>The GPU's time for the window, smoothed and said four times a second.</summary>
+    public override void _Process(double delta)
+    {
+        double ms = RenderingServer.ViewportGetMeasuredRenderTimeGpu(GetViewport().GetViewportRid());
+        _gpuMs = _gpuMs <= 0.0 ? ms : (0.95 * _gpuMs) + (0.05 * ms);
+        _gpuSaidAt += delta;
+        if (_gpuSaidAt >= 0.25)
+        {
+            _gpuSaidAt = 0.0;
+            _gpu.Text = $"GPU {_gpuMs.ToString("0.00", CultureInfo.InvariantCulture)} ms a frame, the whole window";
+        }
+    }
+
+    private static PanelContainer Panel(string name)
+    {
+        var panel = new PanelContainer { Name = name, CustomMinimumSize = new Vector2(340, 0) };
+        panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.09f, 0.10f, 0.10f, 0.9f),
+            ContentMarginLeft = 16,
+            ContentMarginRight = 16,
+            ContentMarginTop = 12,
+            ContentMarginBottom = 12,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+        });
+        return panel;
     }
 
     public override void _UnhandledKeyInput(InputEvent key)
@@ -170,6 +316,7 @@ public sealed partial class GrassLab : Control
         if (key is InputEventKey { Pressed: true, Echo: false, Keycode: Key.H })
         {
             _panel.Visible = !_panel.Visible;
+            _tiling.Visible = _panel.Visible;
         }
     }
 
@@ -285,6 +432,16 @@ public sealed partial class GrassLab : Control
                     + $"(drawn {lab._grain.Visible}), placeholders {lab.Placeholders.ButtonPressed} (drawn {lab.Village.Visible}) (want 1, 0.15 drawn, on drawn)");
             }
 
+            // D631: every anti-tiling switch opens off, Linear blending, no five-layout load until mixing is asked for.
+            bool Flag(string name) => lab._material.GetShaderParameter(name).AsBool();
+            if (lab.Macro.ButtonPressed || lab.Mixing.ButtonPressed || lab.Hex.ButtonPressed || lab.MarkTransitions.ButtonPressed
+                || lab.Blend.Selected != 0 || Flag("macro_on") || Flag("mix_on") || Flag("hex_on") || Flag("height_blend")
+                || Flag("mark_transitions") || lab.MixedLoaded)
+            {
+                faults.Add($"an anti-tiling option opens on (macro {Flag("macro_on")}, mixing {Flag("mix_on")}, hex {Flag("hex_on")}, "
+                    + $"height {Flag("height_blend")}, marks {Flag("mark_transitions")}, five layouts loaded {lab.MixedLoaded})");
+            }
+
             if (lab.Jitter.MinValue != 0.0 || lab.Jitter.MaxValue != 0.25)
             {
                 faults.Add($"the jitter slider runs {lab.Jitter.MinValue}–{lab.Jitter.MaxValue} (want 0–0.25)");
@@ -318,6 +475,26 @@ public sealed partial class GrassLab : Control
                 faults.Add($"moving the rest reached strength {Uniform("grass_strength")}, grain drawn {lab._grain.Visible} at 0, "
                     + $"placeholders drawn {lab.Village.Visible} when off, the grass at {Uniform("px_per_tile")} px a tile and the village at {lab.Village.PixelsPerTile}");
             }
+
+            lab.Macro.ButtonPressed = true;
+            lab.Mixing.ButtonPressed = true;
+            lab.Hex.ButtonPressed = true;
+            lab.MarkTransitions.ButtonPressed = true;
+            lab.Blend.Select(1);
+            lab.Blend.EmitSignal(OptionButton.SignalName.ItemSelected, 1L);
+            lab.MacroCycle.Value = 150.0;
+            lab.Width.Value = 3.0;
+            lab.Sharpness.Value = 8.0;
+            var last = lab._material.GetShaderParameter("grass_v4").As<Texture2D>();
+            if (!Flag("macro_on") || !Flag("mix_on") || !Flag("hex_on") || !Flag("height_blend") || !Flag("mark_transitions")
+                || !lab.MixedLoaded || last?.ResourcePath.EndsWith("grass_v06_masks.png", StringComparison.Ordinal) != true
+                || Math.Abs(Uniform("macro_cycle_tiles") - 150f) > 1e-6f || Math.Abs(Uniform("mix_width_tiles") - 3f) > 1e-6f
+                || Math.Abs(Uniform("hex_sharpness") - 8f) > 1e-6f)
+            {
+                faults.Add($"switching anti-tiling on reached macro {Flag("macro_on")}, mixing {Flag("mix_on")} (layouts {lab.MixedLoaded}, "
+                    + $"the fifth {last?.ResourcePath ?? "none"}), hex {Flag("hex_on")}, height {Flag("height_blend")}, marks {Flag("mark_transitions")}, "
+                    + $"cycle {Uniform("macro_cycle_tiles")}, width {Uniform("mix_width_tiles")}, sharpness {Uniform("hex_sharpness")}");
+            }
         }
         finally
         {
@@ -333,7 +510,7 @@ public sealed partial class GrassLab : Control
         ImportHolds("res://textures/grass/grass_seasons.png", mipmapped: false, Image.Format.Rgb8, faults);
 
         return faults.Count == 0
-            ? "[widths] grass lab: ✅ opens on v06 (v04 next) at strength 1, jitter 0.15, grain 0.15, season 1, 32 tiles a repeat, over parchment with the placeholders standing, and every control reaches what it moves (grain 0 is not drawn; the village zooms with the grass); the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
+            ? "[widths] grass lab: ✅ opens on v06 (v04 next) at strength 1, jitter 0.15, grain 0.15, season 1, 32 tiles a repeat, over parchment with the placeholders standing, and every control reaches what it moves (grain 0 is not drawn; the village zooms with the grass); the anti-tiling switches open off and reach the shader, mixing loading v02–v06 only when asked; the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
             : $"[widths] grass lab: ❌ {string.Join("; ", faults)}";
     }
 

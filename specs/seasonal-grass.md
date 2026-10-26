@@ -2,7 +2,7 @@
 
 **Decision:** D627 (this document; Joe's grass pack, `D:\Projects\brushes\seasons`). Neighbours: D342 (`ValleyTexture`,
 the valley baked once on the CPU), D338/D366 (nothing per frame that a counter can answer), `environment-and-seasons.md`
-(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D630), UNPLAYED** —
+(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D631), UNPLAYED** —
 `.\run.bat grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
 lossless (§3); THE SCENE draws them over parchment (§5). **The game's valley does not use them yet**, and
 `Bclone.Sim` is untouched. Next: Joe looks at the scene; then §6.0's ground question. Owner: Joe + Claude Code.
@@ -135,6 +135,85 @@ edited. The pack disagrees with itself on the value: the snippet's comment says 
 - ⚠️ **What the placeholders showed at once — for §6.0, not for the lab:** an adult villager's dot (`#e8e2d4`) almost
   vanishes on bare parchment, and the granary's yellow barely separates from ochre grass. Both were chosen against
   slate. Moving the game to parchment re-picks them.
+
+### 5.3 Anti-tiling — three options, each behind its own switch (D631, LAB ONLY)
+
+Joe: *"The repeat is clearly visible at wide zoom. Lab only; keep each option behind a toggle so I can compare."* All
+three open **off**, so the lab opens as before. The maths is `shaders/grass_antitile.gdshaderinc` (pure functions of
+world position — no uniforms, no `TIME`), used by `grass_lab.gdshader`, and mirrored step for step by
+**`tools/grass/grass_antitile_ref.py`**. ⭐ **The pack's recolour is unchanged:** these options decide how the masks are
+*sampled* and what season and strength each place gets, never how a density becomes a colour — so Joe's
+`grass_seasons.gdshaderinc` and `grass_ref.py` stay as he made them, and the mirror calls `grass_ref` for jitter and
+holds its own per-pixel-season recolour to `grass_ref.recolor` (`--selfcheck`: 0/255; with the season blend broken,
+44/255 — it can fail).
+
+| option | what it does | controls (start) |
+|---|---|---|
+| **1. Macro variation** | two octaves of value noise at one cycle per *N* tiles: strength × (1 − amount·n₁), season + amount·(2n₂ − 1) | tiles a cycle 50–200 (100), strength amount 0–1 (0.3), season amount 0–0.5 (0.1) |
+| **2. Version mixing** | v02–v06 by region: the cells of a jittered grid one region across, the position warped first at two scales so a border wiggles; within *width* tiles of a border the two layouts blend | region 16–128 tiles (48), transition 0–8 tiles (1.5; 0 = a hard cut) |
+| **3. Hex tiling** | the triangle grid of Heitz & Neyret / Mikkelsen: each hexagon (about half a repeat across) turned by any angle and shifted; weights raised to *sharpness* | blend sharpness 1–16 (4) |
+| **Blend** (2 and 3) | **Linear** keeps the weights; **Height** lifts each by its sample's densest group and keeps only those within 0.15 of the tallest — a stamp whole or not at all | Linear |
+| **Mark transitions** | tints every pixel where samples are being blended | off |
+
+A **GPU readout** under the panel gives the window's GPU time a frame, smoothed. Hashing is integer (PCG2D), so the
+GPU and numpy pick the same regions and turns bit for bit. ⚠️ **Mixing loads all five layouts** (~105 MB of VRAM) the
+first time it is switched on — §6.5's one-version rule does not hold while it is.
+
+**Parity** — the lab rendered at one mask texel a pixel against the mirror, 1280 × 800:
+
+| case | max | pixels off by > 1 |
+|---|---|---|
+| macro (cycle 50, strength 0.5, season 0.3) | 1/255 | 0 |
+| mixing, linear / height / hard (region 16, band 2; 17 % of the window in the band) | 1/255 | 0 |
+| hex, linear, sharpness 4 | 2/255 | 13 |
+| hex, height, sharpness 4 | 5/255 | 187 (2 over 4) |
+| all three, height | 4/255 | 136 |
+
+The hex residue is the GPU's 8-bit filtering weights at turned sample positions, sharpened where the height blend's
+cutoff falls between them. Red-checked: the region cells' salt moved puts every mixing case **117–151/255** off; the
+height depth 0.15 → 0.30 puts the height cases **52–80/255** off; macro and linear hex stay green (untouched).
+
+**Ghosting** — Joe: *"I want to know whether blending mask densities creates ghost shapes."* **It does.** Measured on
+the mirror over 80 × 80 tiles: a pixel is a ghost when a source's stamp (its densest group > 0.2) is drawn at a
+*partial* final weight (0.15–0.85). A stamp the blend cut whole is an edge, not a ghost.
+
+| option | band, share of ground | ghosted, share of the band's stamps | ghosted, share of all ground |
+|---|---|---|---|
+| mixing, linear, 0.5 / 1.5 / 4-tile band | 1.8 / 5.4 / 13.0 % | 70 / 70 / 74 % | 1.2 / 3.5 / 9.0 % |
+| mixing, height, 1.5 / 4-tile band | 5.4 / 13.0 % | 12.5 / 13.4 % | 0.6 / 1.6 % |
+| hex, linear, sharpness 1 / 4 / 16 | 100 / 67 / 20 % | 90 / 52 / 43 % | 89 / 34 / 9 % |
+| hex, height, sharpness 4 | 67 % | 9 % | 6 % |
+
+**What it looks like** (the sheets in the D631 report): linear mixing fades both layouts' stamps through each other
+across the band — the ghost, plainly; height keeps stamps whole but leaves the odd thin sliver where one stamp's edge
+cuts another; a hard cut slices stamps along the border. Linear hex turns most of the ground to mush (two thirds of it
+is in a band at sharpness 4); height hex is crisper with some torn edges; sharpness 16 is crisp with straight seams.
+⚠️ A first ghost measure ("drawn under 70 % of the strongest source") counted cut stamps as ghosts and said height
+blending barely helped; it was the measure, not the blend.
+
+**At the widest zoom** (13 px a tile, 32 tiles a repeat): macro alone does not break the repeat on one screen — at one
+cycle per 100 tiles it is valley-scale variation; mixing breaks it between regions, but a 48-tile region still repeats
+inside itself; hex removes it, at the price of the character (washes look smaller and turned, less bare paper). ⚠️ The
+snippet's jitter field is still periodic at the repeat (its `uv` is the world's), so it repeats under every option.
+
+**GPU cost** (RTX 3070; the window at 3840 × 2160 so the shader's work dwarfs the noise, six interleaved rounds, the
+median of the round medians — a first pass at 1280 × 800 was all noise, *"all three"* cheaper than mixing alone; a
+full-screen fragment shader's cost scales with pixels, so 1280 × 800 is 0.12 of it):
+
+| option | 4K, measured | over plain at 1280 × 800 | over plain at 2560 × 1440 |
+|---|---|---|---|
+| plain | 0.57 ms | (0.07 ms) | (0.25 ms) |
+| macro | 0.79 ms | +0.03 ms | +0.10 ms |
+| mixing, linear / height | 1.50 / 1.98 ms | +0.12 / +0.17 ms | +0.41 / +0.63 ms |
+| hex, linear / height | 1.22 / 1.34 ms | +0.08 / +0.10 ms | +0.29 / +0.34 ms |
+| all three, height | 2.57 ms | +0.25 ms | +0.89 ms |
+
+Mixing, height, was bimodal across rounds (1.5 or 2.0 ms at 4K).
+
+**Probe:** `grass lab:` asks that every switch opens off with Linear blending and nothing extra loaded, and that each
+reaches the shader, mixing loading v02–v06 in order. Red-checked: **5 mutants, 5 reds, no zeros** — a switch whose
+uniform name misses, switches that open on, the five layouts loaded before mixing is asked for, the Height option
+miswired, the layouts out of order.
 
 ## 6. Settled — Joe's calls (D628, 2026-10-26, all as recommended)
 
