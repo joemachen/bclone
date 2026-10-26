@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D632: THE GRASS LOOK APPROVED BY JOE AND RECORDED (`looks/grass_approved.tres`, `specs/grass-look.md`); THE LAB OPENS AT IT; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D633: THE GRASS LOOK APPROVED BY JOE AND RECORDED, ITS OPEN ITEMS CHECKED AND KEPT (`looks/grass_approved.tres`, `specs/grass-look.md`); THE LAB OPENS AT IT; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -42,9 +42,12 @@
 > *Reset to approved* and *Copy current values* (Joe's list format). Parity at the look ≤ 2/255. Cost +0.12 ms over the
 > pack at 1280 × 800. Tools to redo every number: `tools/grass/` (README). Reference images: `art/grass/`.
 >
+> **D633 — Joe checked `grass-look.md §7`'s items 1–3 in the lab: *"no changes"*.** 63 tiles a repeat (no longer
+> provisional), macro strength 0.37, and the clipped stamps at hex borders all stay. ⛔ Do not re-open them unasked.
+>
 > **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
-> his to start. Grass: `grass-look.md §7`'s open items (63 vs ~48; macro strength 0.37 vs ~0.25; clipped stamps at hex
-> borders, seen in the summer reference); then §6.0 of `seasonal-grass.md` — does the game's ground move to parchment.
+> his to start. Grass: §6.0 of `seasonal-grass.md` — does the game's ground move to parchment; then the terrain
+> shader that draws the look in the valley (re-measure its cost with `tools/grass/lab_cost.gd`).
 > `slice/grass-seasons` is off D620 and unmerged: merging it to `main` conflicts in this banner and DESIGN §6/§7.
 >
 > **Numbers (D632):** suite 1811 / 0 / 5 of 1816 (13m39); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; parity at the look ≤ 2/255.

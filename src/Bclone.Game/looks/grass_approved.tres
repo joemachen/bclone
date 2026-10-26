@@ -2,8 +2,8 @@
 
 ; The approved grass look (Joe, 2026-10-26; `specs/grass-look.md`, D632). The one place these numbers live:
 ; the lab opens at them, "Reset to approved" returns to them, and the terrain shader will read them.
-; PaperGrain is the lab's placeholder, a starting point only. TilesPerRepeat 63 is provisional (~48 after a
-; closer-zoom check). MixingOn and a false HeightBlend (Linear) are rejected — kept switchable, off.
+; PaperGrain is the lab's placeholder, a starting point only. TilesPerRepeat 63 was kept after a closer-zoom
+; check (D633). MixingOn and a false HeightBlend (Linear) are rejected — kept switchable, off.
 
 [ext_resource type="Script" path="res://GrassLook.cs" id="1_look"]
 

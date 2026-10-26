@@ -2,7 +2,8 @@
 
 **Decision:** D632 (Joe, 2026-10-26: *"Lock in the grass look from the lab. The current settings are approved."*).
 Built on `seasonal-grass.md` (the pack, its import, THE SCENE, the anti-tiling options of §5.3). **Status:** ✅ **APPROVED
-AND RECORDED (D632) — the lab opens at it; the game's valley does not draw it yet.** One file holds every value
+AND RECORDED (D632); ITS OPEN ITEMS 1–3 CHECKED IN THE LAB AND KEPT AS THEY ARE (D633) — the lab opens at it; the
+game's valley does not draw it yet.** One file holds every value
 (`src/Bclone.Game/looks/grass_approved.tres`); nothing in `Bclone.Sim` changed. Owner: Joe + Claude Code.
 
 ---
@@ -46,7 +47,7 @@ APPROVED SETTINGS
 | **Strength 0.80** | the grass multiply blended 80 % of the way from bare parchment to the pack as painted |
 | **Jitter 0.15** | the snippet's stand-in for the per-stamp colour jitter a density mask cannot hold (README's value) |
 | **Paper grain 0.15** | ⚠️ **a starting point only.** The lab's grain is a placeholder (screen-anchored noise, `paper_grain.gdshader`); the real grain belongs to the full terrain shader |
-| **Tiles per repeat 63** | one 2048² mask covers 63 × 63 tiles — 32.5 mask texels a tile. ⚠️ **Provisional** (§6) |
+| **Tiles per repeat 63** | one 2048² mask covers 63 × 63 tiles — 32.5 mask texels a tile. ✅ **Kept after the closer-zoom check** (D633; §7) |
 | **Macro variation 85 / 0.37 / 0.10** | two octaves of value noise, one cycle per 85 tiles: a region's strength × (1 − 0.37·n₁) — down to 63 % of 0.80 — and its season ± 0.10 (a tenth of a season early or late) |
 | **Hex tiling 8.5, Height** | each half-repeat hexagon of the mask turned and shifted by a hash of its lattice cell; weights raised to 8.5 (a narrow blend); Height keeps each stamp whole or drops it |
 
@@ -131,12 +132,19 @@ machine, and compare a new run with this table rather than with a single number.
 
 ## 7. Open
 
-1. **Tiles per repeat: 63, or ~48?** Pending a closer-zoom check (at 48 px a tile 63 magnifies the mask 1.5×).
-2. **Does macro strength make summer read too dry?** 0.37 takes a region down to 63 % of the look's strength; consider
-   ~0.25.
-3. **Clipped stamps at hex borders.** ⚠️ **Seen in the reference images:** the summer view at the widest zoom has a few
-   straight cut edges where a hexagon's border clips a stamp. Verify with *Mark transitions*; sharpness 8.5 is narrow
+⭐ **Items 1–3 closed by Joe (D633, 2026-10-26), after checking each in the lab: *"no changes"*.** The values of §2
+stand. The items stay here so the reasoning is not lost:
+
+1. ✅ **Tiles per repeat: 63, or ~48? — 63 kept.** Checked at the closer zoom (at 48 px a tile 63 magnifies the mask
+   1.5×; 48 would be about 1.1× and repeat about 2.5 times across the valley's width instead of 1.9).
+2. ✅ **Does macro strength make summer read too dry? — 0.37 kept.** It takes a region down to 63 % of the look's
+   strength; ~0.25 was the alternative.
+3. ✅ **Clipped stamps at hex borders — seen, no change.** ⚠️ **Seen in the reference images:** the summer view at
+   the widest zoom has a few straight cut edges where a hexagon's border clips a stamp. Verify with *Mark transitions*; sharpness 8.5 is narrow
    enough that a stamp can end on the border rather than fade.
+
+Still open:
+
 4. **Re-measure the cost once the full terrain shader exists** (§5's tool, the same table).
 5. **Later: drive macro variation from sim data** — soil fertility or moisture — instead of noise. It would read sim
    state, never write it (DESIGN §3), and it would have to stay a pure function of a place, as the noise is.
