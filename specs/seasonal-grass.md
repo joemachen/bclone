@@ -2,9 +2,10 @@
 
 **Decision:** D627 (this document; Joe's grass pack, `D:\Projects\brushes\seasons`). Neighbours: D342 (`ValleyTexture`,
 the valley baked once on the CPU), D338/D366 (nothing per frame that a counter can answer), `environment-and-seasons.md`
-(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627), NOTHING DRAWN; ✅ §6'S QUESTIONS SETTLED BY JOE (D628).** The masks, the
-atlas and the recolour snippet are in the project with the import settings below, proved lossless (§3). No shader
-uses them, no scene exists, and nothing in `src/*.cs` or `Bclone.Sim` changed. Next: THE SCENE (§5). Owner: Joe + Claude Code.
+(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629), UNPLAYED** — `.\run.bat
+grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
+lossless (§3); THE SCENE draws them over parchment (§5). **The game's valley does not use them yet**, and
+`Bclone.Sim` is untouched. Next: Joe looks at the scene; then §6.0's ground question. Owner: Joe + Claude Code.
 
 ---
 
@@ -75,10 +76,34 @@ The first use is a scene to look at the grass in, before it goes anywhere near t
 - default version: v06, with v04 as the first alternative
 - tiles per mask repeat: a slider, starting at 32 (D628, §6.3); the number found by eye goes into data
 - season: a slider, 0–4, to judge the blends directly (D628, §6.4)
+- pixels per tile: a slider, 13–48 (the game's zoom range at 1280 wide), starting at 24 — added in the build (D629),
+  because *tiles per repeat* means nothing on screen without a zoom to say how big a tile is
+- **H** hides the panel
 
 ⚠️ The snippet's uniform is `hint_range(0.0, 0.3) = 0.0`; the slider sets the value from code, and the snippet is not
 edited. The pack disagrees with itself on the value: the snippet's comment says *~0.08–0.12*, `README.md` and
 `REPORT.md` say 0.15. The slider follows the README.
+
+### 5.1 As built (D629)
+
+- **`GrassLab.tscn` / `GrassLab.cs`**: one full-window `ColorRect` with one `ShaderMaterial`, and a panel whose
+  sliders only set uniforms. **`shaders/grass_lab.gdshader`** includes the snippet unchanged, turns the rect's UV back
+  into tiles (`UV × size_px / px_per_tile / tiles_per_repeat`), and writes `parchment × grass` — no linear step
+  (§6.2). Only the version on show is loaded. Launched by `.\run.bat grass` (Godot's scene argument,
+  `res://GrassLab.tscn`); the game itself is untouched.
+- **Verified against Joe's reference, not by eye alone.** Rendered windowed (a throwaway script, not in the tree —
+  D160) at 32 px a tile and 64 tiles a repeat, so one mask texel lands on one pixel, and compared with
+  `grass_ref.over_ground(grass_ref.recolor(…))`: **≤ 1/255 on every pixel** of 1280 × 800 for v06 summer, v06 2.6
+  with jitter 0.15, v04 3.5, and v06 spring with jitter 0.15. Red-checked: with the linear step put back, up to
+  **67/255** off on 78 % of the pixels, all four cases red.
+- **Probe line `grass lab:`** — the lab opens as this section says (v06 then v04 of five; jitter 0.15 on a 0–0.25
+  slider; season 1; 32 tiles; the pack's parchment `#e6d6b0`), its sliders and version list reach the shader, and
+  every grass texture's import still holds (§3: masks mipmapped, atlas not, each level 0 byte for byte its PNG).
+  Red-checked: **7 mutants, 7 reds, no zeros** — the jitter default, the version order, a slider that no longer
+  reaches its uniform, the parchment hex, the masks never handed to the shader, Fix Alpha Border on v03, mipmaps on
+  the atlas.
+- ⚠️ **Seen in the first renders:** at the game's far zoom (13 px a tile) a 32-tile repeat reads plainly as a
+  pattern, about 3 × 2 across the window. That is the question the repeat slider is for (§6.3).
 
 ## 6. Settled — Joe's calls (D628, 2026-10-26, all as recommended)
 

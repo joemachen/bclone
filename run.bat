@@ -39,6 +39,10 @@ if not "!ERRORLEVEL!"=="0" (
 )
 
 set CMD=^& '!GODOT!' --path src/Bclone.Game
+
+REM `.\run.bat grass` opens the seasonal grass lab instead of the game
+REM (specs\seasonal-grass.md section 5).
+if /i "%~1"=="grass" set CMD=!CMD! res://GrassLab.tscn
 REM --------------------------------------------------------------
 
 echo ================================================================

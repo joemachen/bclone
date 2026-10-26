@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D628: THE SEASONAL GRASS ASSETS IMPORTED, NOTHING DRAWN; JOE'S §6 CALLS SETTLED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D629: THE SEASONAL GRASS LAB BUILT (`.\run.bat grass`), UNPLAYED; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -19,8 +19,16 @@
 > 32; each season held 20 days and turned over its last 10; only the shown version loaded; a grass-coverage image from
 > `ValleyTexture`'s loop, multiplied in by one shader on the valley draw.
 >
+> **D629 — THE SCENE BUILT, UNPLAYED.** `.\run.bat grass` opens `GrassLab.tscn`: the pack over parchment, sliders for
+> version / season / jitter / tiles a repeat / pixels a tile, H hides the panel. Matches `grass_ref.py` to ≤ 1/255 on
+> every pixel at one texel a pixel (a throwaway windowed render, not in the tree). Probe line `grass lab:` guards the
+> lab's defaults, its wiring and the textures' import — 7 mutants, 7 reds. ⚠️ At the far zoom a 32-tile repeat shows.
+>
 > **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
-> his to start. Grass: **THE SCENE** (`seasonal-grass.md §5`). ⚠️ **Merging both into
+> his to start. Grass: **Joe looks at the lab** (`.\run.bat grass`) and picks the repeat and the zoom; then §6.0 —
+> does the game's ground move to parchment.
+>
+> **Numbers (D629):** suite 1811 / 0 / 5 of 1816 (13m38); view 0 warnings; probe **98** `[widths]` lines (+ `grass lab:`), bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after. ⚠️ **Merging both into
 > `main` conflicts in this file's banner.** Keep both banners.
 >
 > **Numbers (D627):** suite 1811 / 0 / 5 of 1816 (12m47); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after, `git diff` no golden.
@@ -8049,9 +8057,22 @@ Read `git status` after staging, every time.
 - **`--headless --import` writes a `.cs.uid` beside every C# script that lacks one** (27 here). Not ours to commit:
   remove exactly the untracked ones (`git ls-files --others --exclude-standard -- 'src/Bclone.Game/*.cs.uid'`).
 
+## ⛔ THE TRAPS THE GRASS LAB (D629) PAID FOR — A RE-IMPORT THAT LOOKS LIKE AN EDIT, AND A NAME THAT HIDES
+
+- **After a re-import, `git status` showed all six `.import` files modified — and every one was byte-identical to
+  HEAD.** Godot rewrites them, the timestamps move, and with `core.autocrlf` git reports `M` with an empty diff. Compare
+  bytes (`git show HEAD:f | sha256sum` against the file) before believing a red-check left something behind.
+- **A view check of a picture is a render and a reference, not a look.** The lab was proved by rendering at one mask
+  texel a pixel (32 px a tile × 64 tiles = 2048) into a fixed `SubViewport` — so the window's DPI cannot rescale it —
+  and comparing to Joe's `grass_ref.py`. The pack's own `godot_test/test.gd` is the shape; the script stays out of
+  the tree (D160).
+- **A property called `Material` on a `Control` hides `CanvasItem.Material`** (CS0108) — the view does not fail on a
+  warning, so read the build's output.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SEASONAL GRASS (D627–D628), HIS TO CALL — assets in, nothing drawn; §6 settled (D628).** Next: THE SCENE (§5).
+- ⏸️ **SEASONAL GRASS (D627–D629), HIS TO CALL — the lab is built, unplayed (`.\run.bat grass`).** His eyes on it: the
+  version, the jitter, **the tiles a repeat** (32 shows its repeat at the far zoom), the season blends.
   ⏸️ **Then his: does the game's ground move from slate to parchment?** The pack only reads over parchment.
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~

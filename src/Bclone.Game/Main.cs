@@ -625,6 +625,9 @@ public partial class Main : Control
         GD.Print(TheRegionIsSaid());
         GD.Print(_map.TheBoatSailsTheRiver());
         GD.Print(TheFenceIsDrawnAndItsButtonFollowsIt());
+
+        // The grass lab (D629) is its own scene; posed here, freed at once, and the grass textures' import read back.
+        GD.Print(GrassLab.SelfCheck(this));
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
