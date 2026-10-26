@@ -1133,6 +1133,18 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
+        // ⛔ NOR ONE WITH ANYTHING IN THEIR ARMS (D623) — D372's bug, the rest of it. D372 stopped the emergency sending
+        // back a villager carrying the very thing home; carrying anything else, it still sent them. A marketer at the
+        // stall, the household out of firewood, was sent to the nearest store holding firewood — the stall they stood on —
+        // and collected forage there, which is what the larder took first: arrived at once, still no firewood, sent again
+        // next tick. 274 forage in their arms by the fifth tick, and no step home (`NobodyEverCarriesMoreThanAnArmful`;
+        // doors moved who stood where when, and a marketer came to stand on the stall in a firewood emergency). Whatever
+        // is in the arms is delivered first — a few ticks — and the emergency is asked again with them empty.
+        if (!alreadyGoing && villager.IsCarrying)
+        {
+            return false;
+        }
+
         // ⛔ A VILLAGER CARRYING THE VERY THING HOME IS NOT AN EMERGENCY (D372). This fired again
         // every tick at a villager one tile from the door with the firewood in her arms: Dorcas
         // loaded forty at the warehouse eight ticks running — 320 firewood carried, 630 in a
@@ -4216,6 +4228,12 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </summary>
     private static GridPos? ExitToward(SimWorld world, IReadOnlyList<GridPos> leaving, GridPos firstStep)
     {
+        // ⭐ Out of a doored building by its door (D623): the door tile, and only toward the doorstep.
+        if (leaving.Count > 0 && world.DoorCovering(leaving[0]) is Door door)
+        {
+            return firstStep == door.Doorstep ? door.Tile : null;
+        }
+
         for (int i = 0; i < leaving.Count; i++)
         {
             GridPos tile = leaving[i];
@@ -5036,7 +5054,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (onArrival == VillagerState.Tending)
         {
             var field = new GridPos(villager.ErrandX, villager.ErrandY);
+
+            // ⛔ AND NOT A TEND THAT WOULD OUTLAST SUMMER (D625): one begun in its last ticks ran on into autumn —
+            // `TendingIsSummerOnlyOnTheFarmsOwnSownTiles`, met once doors moved when a hand reached the field. Tending is
+            // summer's work; too late to finish, they turn round as for any other reason they cannot tend.
+            int leftOfTheSeason = world.Config.TicksPerSeason - (int)(world.Tick % (ulong)world.Config.TicksPerSeason);
             if (world.Clock.Season != Season.Summer
+                || leftOfTheSeason <= world.Config.TendTicks
                 || world.Map.TerrainAt(field) != Terrain.Sown
                 || !world.RestsAtTheSteading(villager))
             {

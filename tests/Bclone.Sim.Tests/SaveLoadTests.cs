@@ -340,7 +340,11 @@ public sealed class SaveLoadTests : IDisposable
             "_standingFootprints", "_standingBuiltAt", "_freeGroundToday", "_freeGroundTodayGeneration",
             "_freeGroundTodayWalls", "_freeGroundTodayPieces",
             // Every building's door (D621): worked out from the footprint and what stands round it, a loaded village works them out again.
-            "_doors", "_doorsStanding", "_doorsWalls", "_doorsTerrain", "DoorsWorkedOut", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley",
+            "_doors", "_doorsStanding", "_doorsWalls", "DoorsWorkedOut",
+            // The doors in use and their doorsteps (D622), and the trial houses' share of the standing counter it keys on.
+            "_doorsInUse", "_doorsInUseStanding", "_doorsInUseWalls", "_trialBumps",
+            // The village's piece of today's free ground (D623), cut from the sweep above and rebuilt with it.
+            "_villageGround", "_villageGroundFrom", "_plotsAsked", "_trialWalls", "_trialHome", "AlwaysSweepTheWholeValley", "DoorsOnEverySide",
             // The deck index and the bridge ends are derived from the bridges and the sites (D546); the
             // most ever alive is derived from the villagers' arrivals and deaths.
             "_deckCost", "_bridgeLands", "_deckSlow", "_bridgeIndexBuiltAt", "_seamPatch", "_seamPatchBuiltAt", "_seamTiles", "_smithyCheckedAt", "_aSmithyStands", "_mostEverAliveFor", "_mostEverAlive",

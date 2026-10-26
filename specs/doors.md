@@ -3,9 +3,11 @@
 **Decision:** D619 (this document; Joe's D607 call *"spurs now, real doors later (a spec of their own)"*, and his
 2026-09-19 note, D395). Neighbours: D383 (buildings are obstacles — entered from the cheapest side), D388 (the lane
 picks a house's door), D404–D406 (fences as walls, one gate), D605/D607 (doorsteps and spurs, drawn), D614 (one piece
-of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620): all five as recommended. 🔨 COMMIT 1 OF 5
-BUILT (D621) on `slice/doors`, unplayed: the door derived and said (`SimWorld.Doors.cs`, `DoorTests`); nobody walks
-through it yet, no golden moved. Next: commit 2 (§9).** The premise is measured (§3, `tools/harness/ZzDoors.cs`). Owner: Joe + Claude Code.
+of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620); 🔨 BUILT on `slice/doors`, unplayed:** commit 1 the
+door derived and said (D621), then **one behaviour commit (D622–D625, §11)** — doorsteps kept clear, walks and catchment
+through the door, the facings nobody chose, the door priced into the economy; a farmhouse, a barn and the cart open on
+every side (Joe, D624–D625). Goldens re-taken once. ⏸️ **The view (§9 commit 5) is not built:** the cards' sentence,
+the ghost's door and the spurs to doors. Owner: Joe + Claude Code.
 
 ---
 
@@ -93,6 +95,11 @@ hall, and every construction and demolition site (it takes the door of the build
 clear from the marking). **No door:** a **well** (drawn from all round; D604 already keeps a ring of public ground
 round it), a **stockpile** (a heap, not a building), a **bridge** (walked across, not into). They keep D383's any-side
 rule, unchanged.
+
+⭐ **Built (D624–D625): a farmhouse and a barn have no door either** (Joe: *"they open onto their fields on every side,
+like a well or a pile"*) — priced through one door a farmer kept one ring of field, five tiles not thirteen (§11.3);
+**and nor has the cart** — a wagon, not a roofed building; with a door it closed the best ground beside the founding
+site and a played opening froze (§11.4).
 
 ### 4.2 Where the door is
 
@@ -284,6 +291,10 @@ through doors; the gate stays theirs).
 
 ## 9. Build order — one commit each, measured where it moves behaviour
 
+⭐ **As built (Joe, D623): commits 2, 3 and 4's sim changes folded into one behaviour commit**, measured once against
+`main`, goldens re-taken once — commit 2 alone moved 19 of 30 foundings, because the founding buildings faced north
+until commit 4 turned them (§11.1). Commit 5, the view, is still its own and still to come.
+
 1. **The door, derived** — `DoorOf`, the index, the sentence for a moved door as a sim answer. No behaviour change, no
    golden. ✅ **Built (D621).** *The sentence reaches the cards in commit 5:* every card kind writes its own rows, so
    putting it on them is view work with probe checks of its own, and it would be the only view change in this commit.
@@ -311,3 +322,98 @@ Each on `slice/doors`, unplayed until Joe plays it; merging is his word.
 - `DESIGN.md §7` entries for each commit, §6 and §4 current; `path-shapes.md §4.G` told that doors now say which side;
   `buildings-as-obstacles.md §2` amended (*through the door, not any side*); this status line true.
 - Joe plays it.
+
+---
+
+## 11. ✅ BUILT — the behaviour commit (D622–D625, 2026-10-25), unplayed
+
+### 11.1 What it does
+
+- **Doorsteps kept clear (§4.5).** `CanBuildAt` refuses a footprint on a door in use's doorstep, by name (*"That is in front of
+  granary 2's door."*); the wall-off check refuses a proposal that covers, fences across or pockets a door in use, though
+  another side of the building stays open (`WhatDoorThisWouldShut`); the site chooser keeps a house's own doorstep clear
+  (`PlotShape.Doorstep`, shaped with the plot and remembered with it).
+- **Walks and catchment through the door (§4.4).** The field to a doored building walls every edge of its footprint but the
+  door's, for that field only (put up on the shared scratch for the fill, kept on the field for its descent,
+  `TerrainCostField.DoorWalls`); leaving is by the doorstep (`StepOff`); the leg and the way out read the same rule
+  (`LineOfSight.ADoorBars`, `ExitToward`); a step off a doorless building (a pile, a well) is not let into a doored one across
+  its wall. One cost field; no wall written into the village. The catchment asks the same field, so it is door to door.
+- **The facings nobody chose (§4.6–§4.7).** Founding buildings face the founding site; a building marked without a facing
+  faces the nearest store (the ghost's starting facing, asked of the sim). ⚠️ *Settled without asking:* a building that is
+  not square turns only a half, north or south, so every founding and marked building covers the tiles it always did.
+- **The door in the economy (`VillageEconomy.DoorTiles` = 2).** On every leg the economy prices to or from a building;
+  `gather_yield` 123 → 135 (the floor 120 → 132, the margin kept). Measured (`tools/harness/ZzDoorWalk.cs`, twenty villages):
+  one way in 1.41–1.75 tiles, a leg between buildings 1.26–2.38, never shorter.
+
+### 11.2 Joe's calls along the way (D622–D625)
+
+- **Fold** commits 2–4 (D623): commit 2 alone changed 19 of 30 foundings, because the founding buildings faced north until
+  commit 4 — measured with commit 2 on its own.
+- **Accept the cost** as the price of doors, like fences (D406), then **price the door into the derivations** so they stay
+  honest (D623).
+- **A farmhouse and a barn have no door** (D624); **the farm derivation exactly as it was** (D624): a farm's armfuls go into
+  the granary by its door, so a farm beside a granary is warned and capped — the nearest one can stand is 6 ticks, against a
+  haul budget of 4, and the warning's cap reads 8 tiles of 13. *The warning now fires on every farm (D42's nag), recorded.*
+- **D388 kept** (D625): houses face their lane whatever the walk; the house-siting and herd guards recorded at their measured
+  price.
+- **Accept the cost on his saves** (D625), §11.5.
+
+### 11.3 The farm, measured before it was decided
+
+Priced through one farmhouse door, a reaped tile's haul cost 4.63 tiles each way with the field painted round the farmhouse,
+2.79 with 25 tiles in front of the door, 2.73 with the derivation's own 13 in front — and at three, rounded up, the ring
+derivation kept a farmer one ring, five tiles, worth a gatherer's year only at more than an armful a tile (95 against the
+armful's 80 and the buffer's 100). Hence D624. Counted tile by tile, with one store visit a haul, a farmer would keep 11
+(crop 67 unchanged) — offered, declined.
+
+### 11.4 Bugs the change surfaced, fixed in it
+
+- **A door opened into a pocket beside the founding site.** The free-ground sweep is seeded beside the founding site (D383),
+  so a sealed pocket there read as reached; a town hall stood on the site faced its door into one, and 1 tile of 493 was
+  reached from the site. Doors read the village's own piece of the ground (D614's rule, `VillageGroundToday`).
+- **An emergency sent a villager whose arms were full** — D372's bug, the rest of it: a marketer on the stall, the household
+  out of firewood, sent to the stall they stood on, collecting forage there every tick — 274 in their arms. Whatever is carried
+  is delivered first.
+- **The re-founders' cart food was never counted in** (`FoodEverBroughtIn`), seen once doors cost a fixture its founders.
+- **Hay was put out at the pasture's top row**, wherever that lay; now the tile nearest the barn.
+- **A tend begun in summer's last ticks ran into autumn**; one that cannot finish is not begun.
+- **The cart had a door** (D625): every placement in front of it refused, the played opening's woodcutter's hut never raised,
+  four founders frozen.
+- **Two cache keys** cost the suite minutes: the doors were keyed on the terrain's counter (a crop turning moved it; only
+  water stops a walker), and on the standing counter a site-chooser trial house moves twice a candidate
+  (`SettledStandingGeneration`).
+
+### 11.5 Measured against `main` (four arms, two worktrees, `ZzLimits` + `ZzDoorSaves`)
+
+| arm | `main` → doors | per seed |
+|---|---|---|
+| played, 100 valleys, 50 years | alive 1,308 → 1,334, starved 652 → 579 | t +0.57 |
+| established, 36 | alive 543 → 568 | t +0.73 |
+| every, 36 | alive 1,077 → 1,149 | t +1.60 |
+| Joe's five saves, 20 years | 330 → 280 | — |
+
+His villages, by name: ashbourne 87 → 74, elderwood 60 → 54, millbrook 48 → 25 (21 starved), oakhaven-ash-otter 51 → 51,
+oakhaven-hazel 84 → 76. Traced on millbrook: 16 % less food over the twenty years — fish −26 %, wheat −27 %, forage +16 % —
+the fishers walking 16 % more; no bug found (a fisher fishes at the hut). They were built before doors: houses facing their
+lanes, half their buildings never turned. **Accepted by Joe as measured.**
+
+### 11.6 Guards recorded at their measured price (Joe: "record … as measured costs")
+
+| guard | before doors | with doors |
+|---|---|---|
+| a farm beside a granary is not warned → renamed `AFarmBesideAGranaryIsWarnedOfTheDoorItHaulsThrough` | not warned | warned at 6 ticks, cap 8 |
+| houses along a bend turn with it | ≥ 6 facings of 12 | 5 |
+| houses face the path in front of them | half off the quarters | 1 of 6 |
+| houses gather round a well | 2 tiles nearer, 2 more within eight | 1.4 nearer, 1 more |
+| a path wears to the well | a worn tile | wear 20 against 0, no worn tile |
+| a herdsman feeds the herd through winter | 6 of 6 | 2 of 6 |
+| the founding distance budget | every seed ≤ 2 × budget | seed 11 named, at 23 |
+| the shipped village asked to build | marked ≥ unmarked | 105 against 106 |
+| the fuel chain, deaths of old age | over half | 88 of 204 (43 %) |
+| Phase 0, first gather at pace 3 | tick 95 | the founder starves at 139 (−1) |
+| a farm's harvest falls off with distance (D58) | far arm 10 ticks: fewer tiles | 10 ticks meets the door's cap (76 = 76); re-posed at 12 (53 against 76) |
+
+### 11.7 Not built
+
+Commit 5, the view: the door drawn on every building and the ghost, the moved-door sentence on the cards
+(`SayWhereTheDoorIs`), spurs landing on doors (`path-shapes.md §4.G`), `KeepTheBusierSides` re-measured.

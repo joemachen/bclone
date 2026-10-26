@@ -8496,14 +8496,16 @@ public sealed partial class SimWorld : IObstacles
     private PlotShape ShapeThePlot(GridPos front, Angle facing, int householdId)
     {
         Point centre = HomeAnchorOn(front, facing);
-        List<GridPos> house = FootprintOf(BuildingKind.Home, centre, facing).CoveredTiles();
+        Footprint footprint = FootprintOf(BuildingKind.Home, centre, facing);
+        List<GridPos> house = footprint.CoveredTiles();
         Fixed gateEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.SideSalt, Config.HomeYardSideQuarters), 4);
         Fixed otherEnd = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.OtherSideSalt, Config.HomeYardOtherSideQuarters), 4);
         Fixed back = Fixed.FromRatio(PlotShape.ByHash(householdId, PlotShape.BackSalt, Config.HomeYardBackQuarters), 4);
         bool gateOnTheLeft = PlotShape.ByHash(householdId, PlotShape.WhichSideSalt, TheTwoEnds) == 0;
-        return gateOnTheLeft
+        PlotShape plot = gateOnTheLeft
             ? PlotShape.Of(front, facing, centre, house, gateEnd, otherEnd, back)
             : PlotShape.Of(front, facing, centre, house, otherEnd, gateEnd, back);
+        return plot with { Doorstep = FrontDoorstepOf(footprint) };
     }
 
     /// <summary>
@@ -8732,6 +8734,14 @@ public sealed partial class SimWorld : IObstacles
             {
                 string whose = FindHousehold(gated) is Household family ? $"the {family.Name}s'" : "a family's";
                 return PlacementVerdict.No($"That is the lane in front of {whose} gate — it would shut their yard.");
+            }
+
+            // ⛔ NOR IN FRONT OF A DOOR (D622, `doors.md §4.5`): the tile a building's door opens onto is kept clear, said
+            // by name before the sweep has to find it. Not asked of a move, which keeps its own old doorstep in the index
+            // and skips the sweep for the same reason.
+            if (!alreadyStanding && WhoseDoorstep(onTheGround[i]) is string doorOf)
+            {
+                return PlacementVerdict.No($"That is in front of {doorOf}'s door.");
             }
 
             // ⛔ NOR INSIDE A FENCED PASTURE, NOR ON THE LANE AT ITS GATE (D598, `livestock.md §0.2.3` rule 3).
@@ -9091,11 +9101,18 @@ public sealed partial class SimWorld : IObstacles
     /// ⭐ <b>Building over a standing crop is allowed and said out loud</b> — see
     /// <see cref="WarningForBuildingOverACrop"/>.
     /// </remarks>
+    /// <summary>Mark a building out on a tile, its door toward the nearest store (D623, `doors.md §4.7`, Joe's call 4).</summary>
+    /// <remarks>
+    /// ⭐ <b>The facing nobody chose is the ghost's starting facing</b>, so a building marked without one — by a test, a
+    /// harness, a player who never presses R — opens toward the village instead of north (46 % of Joe's buildings were
+    /// never turned, `doors.md §3`). It turns only as <see cref="FacingTheFoundingSite"/> does, so its tiles are the
+    /// ones it always covered: ⛔ until D623 this said <i>"every existing caller means facing north"</i>.
+    /// </remarks>
     public PlacementVerdict Mark(BuildingKind kind, GridPos position) =>
-        Mark(kind, AnchorOn(kind, position), Angle.Zero);
+        Mark(kind, AnchorOn(kind, position), FacingTheNearestStore(kind, AnchorOn(kind, position)));
 
     public PlacementVerdict Mark(BuildingKind kind, Point position) =>
-        Mark(kind, position, Angle.Zero);
+        Mark(kind, position, FacingTheNearestStore(kind, position));
 
     /// <summary>Mark a building out, turned the way the player is holding it (D320).</summary>
     /// <remarks>
@@ -11631,6 +11648,7 @@ public sealed partial class SimWorld : IObstacles
             Kind = JobKind.Builder,
             Name = NameFor(BuildingKind.BuilderHut),
             Position = AnchorOn(BuildingKind.BuilderHut, FoundingSpotFor(BuildingKind.BuilderHut, Offset(origin, config.BuilderHutX, config.BuilderHutY))),
+            Facing = FacingTheFoundingSite(BuildingKind.BuilderHut, AnchorOn(BuildingKind.BuilderHut, FoundingSpotFor(BuildingKind.BuilderHut, Offset(origin, config.BuilderHutX, config.BuilderHutY)))),
             ExtentWidth = ExtentOf(BuildingKind.BuilderHut).Width,
             ExtentHeight = ExtentOf(BuildingKind.BuilderHut).Height,
             Capacity = SeatsIn(BuildingKind.BuilderHut),
@@ -11684,6 +11702,7 @@ public sealed partial class SimWorld : IObstacles
                 Kind = JobKind.Forager,
                 Name = NameFor(BuildingKind.GathererHut),
                 Position = Point.CentreOf(spot.Value),
+                Facing = FacingTheFoundingSite(BuildingKind.GathererHut, Point.CentreOf(spot.Value)),
                 Capacity = config.GathererHutCapacity,
                 GatheringRadius = config.GathererHutRingTiles,
             });
@@ -11700,6 +11719,7 @@ public sealed partial class SimWorld : IObstacles
         // with no ground it is a building nobody can work. So the warm start gives it some,
         // exactly as a player would — which is what makes this a village that already works
         // rather than one holding a building it does not understand.
+        Point foresterAt = Point.CentreOf(WhereTheTreesAre(BuildingKind.ForesterHut, origin, config)!.Value);
         var forester = new Workplace
         {
             Store = NewStockpile(),
@@ -11709,7 +11729,8 @@ public sealed partial class SimWorld : IObstacles
 
             // ⚠️ Never null: only the clear-of-other-rings form can fail to find a spot, and a
             // forester does not compete for gathered food.
-            Position = Point.CentreOf(WhereTheTreesAre(BuildingKind.ForesterHut, origin, config)!.Value),
+            Position = foresterAt,
+            Facing = FacingTheFoundingSite(BuildingKind.ForesterHut, foresterAt),
             Capacity = config.ForesterHutCapacity,
         };
 
@@ -11728,6 +11749,7 @@ public sealed partial class SimWorld : IObstacles
             Kind = JobKind.Woodcutter,
             Name = NameFor(BuildingKind.WoodcutterHut),
             Position = AnchorOn(BuildingKind.WoodcutterHut, FoundingSpotFor(BuildingKind.WoodcutterHut, Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY))),
+            Facing = FacingTheFoundingSite(BuildingKind.WoodcutterHut, AnchorOn(BuildingKind.WoodcutterHut, FoundingSpotFor(BuildingKind.WoodcutterHut, Offset(origin, config.WoodcutterHutX, config.WoodcutterHutY)))),
             ExtentWidth = ExtentOf(BuildingKind.WoodcutterHut).Width,
             ExtentHeight = ExtentOf(BuildingKind.WoodcutterHut).Height,
             Capacity = config.WoodcutterHutCapacity,
@@ -11753,6 +11775,7 @@ public sealed partial class SimWorld : IObstacles
             Kind = StoreKind.Granary,
             Name = NameFor(BuildingKind.Granary),
             Position = AnchorOn(BuildingKind.Granary, FoundingSpotFor(BuildingKind.Granary, Offset(origin, config.GranaryX, config.GranaryY))),
+            Facing = FacingTheFoundingSite(BuildingKind.Granary, AnchorOn(BuildingKind.Granary, FoundingSpotFor(BuildingKind.Granary, Offset(origin, config.GranaryX, config.GranaryY)))),
             ExtentWidth = ExtentOf(BuildingKind.Granary).Width,
             ExtentHeight = ExtentOf(BuildingKind.Granary).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.GranaryCapacity(config) },
@@ -11766,6 +11789,7 @@ public sealed partial class SimWorld : IObstacles
             Kind = StoreKind.Warehouse,
             Name = NameFor(BuildingKind.Warehouse),
             Position = AnchorOn(BuildingKind.Warehouse, FoundingSpotFor(BuildingKind.Warehouse, Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY))),
+            Facing = FacingTheFoundingSite(BuildingKind.Warehouse, AnchorOn(BuildingKind.Warehouse, FoundingSpotFor(BuildingKind.Warehouse, Offset(origin, config.StorageWarehouseX, config.StorageWarehouseY)))),
             ExtentWidth = ExtentOf(BuildingKind.Warehouse).Width,
             ExtentHeight = ExtentOf(BuildingKind.Warehouse).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.WarehouseCapacity(config) },
@@ -11794,6 +11818,7 @@ public sealed partial class SimWorld : IObstacles
             Kind = StoreKind.Market,
             Name = marketName,
             Position = AnchorOn(BuildingKind.Market, market),
+            Facing = FacingTheFoundingSite(BuildingKind.Market, AnchorOn(BuildingKind.Market, market)),
             ExtentWidth = ExtentOf(BuildingKind.Market).Width,
             ExtentHeight = ExtentOf(BuildingKind.Market).Height,
             Store = new Stockpile(GoodsCatalog.Count) { Capacity = VillageEconomy.MarketCapacity(config) },
@@ -11813,6 +11838,7 @@ public sealed partial class SimWorld : IObstacles
                 Kind = JobKind.Marketer,
                 Name = marketName,
                 Position = AnchorOn(BuildingKind.Market, market),
+            Facing = FacingTheFoundingSite(BuildingKind.Market, AnchorOn(BuildingKind.Market, market)),
                 ExtentWidth = ExtentOf(BuildingKind.Market).Width,
                 ExtentHeight = ExtentOf(BuildingKind.Market).Height,
                 Capacity = config.MarketCapacity,
@@ -11846,6 +11872,76 @@ public sealed partial class SimWorld : IObstacles
         }
 
         FoundVillage(config, origin);
+    }
+
+    /// <summary>
+    /// ⭐ Which way a founding building faces (D623, `doors.md §4.6`, Joe's call 3): its door toward the founding site.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The quarter turn whose front points most nearly at the site — the larger of the two distances decides; a tie
+    /// takes the earlier of north, east, south, west, and a building on the site itself faces north.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A building that is not square turns only a half</b> (settled without asking, Joe's to overrule): the
+    /// founding's layout is laid by hand for each building's tiles, and a 2×1 turned a quarter is a 1×2 that overlaps
+    /// its neighbour and, anchored on a tile, covers a third row (D382's even extent). So it faces north or south,
+    /// whichever is nearer the site — every founding building covers the tiles it always did, and only its door turns.
+    /// </para>
+    /// </remarks>
+    private Angle FacingTheFoundingSite(BuildingKind kind, Point centre) =>
+        FacingToward(kind, centre, Point.CentreOf(Map.FoundingSite));
+
+    /// <summary>
+    /// ⭐ Which way a building marked without a facing faces (D623, `doors.md §4.7`, Joe's call 4): its door toward the
+    /// nearest store standing — by the straight line, as the player sees it — or toward the founding site while none
+    /// does. The ghost's starting facing, asked by the view (commit 5) as well as by every caller that gives none.
+    /// </summary>
+    public Angle FacingTheNearestStore(BuildingKind kind, Point centre)
+    {
+        Point target = Point.CentreOf(Map.FoundingSite);
+        Fixed nearest = Fixed.Zero;
+        bool any = false;
+        for (int i = 0; i < StoreBuildings.Count; i++)
+        {
+            Point at = StoreBuildings[i].Footprint.Origin;
+            Fixed distance = centre.DistanceTo(at);
+            if (!any || distance < nearest)
+            {
+                any = true;
+                nearest = distance;
+                target = at;
+            }
+        }
+
+        return FacingToward(kind, centre, target);
+    }
+
+    /// <summary>The quarter turn whose front points most nearly from <paramref name="centre"/> at <paramref name="target"/> — a half only, for a building that is not square.</summary>
+    private Angle FacingToward(BuildingKind kind, Point centre, Point target)
+    {
+        Fixed dx = target.X - centre.X;
+        Fixed dy = target.Y - centre.Y;
+        Fixed across = dx < Fixed.Zero ? -dx : dx;
+        Fixed down = dy < Fixed.Zero ? -dy : dy;
+        (int width, int height) = ExtentOf(kind);
+
+        Compass way;
+        if (width != height || down > across)
+        {
+            way = dy > Fixed.Zero ? Compass.South : Compass.North;
+        }
+        else if (across > down)
+        {
+            way = dx > Fixed.Zero ? Compass.East : Compass.West;
+        }
+        else
+        {
+            // A tie: north before east before south before west.
+            way = dy < Fixed.Zero || dx == Fixed.Zero ? Compass.North : dx > Fixed.Zero ? Compass.East : Compass.South;
+        }
+
+        return Angle.FromTurnFraction((int)way, 4);
     }
 
     /// <summary>
@@ -12553,6 +12649,22 @@ public sealed partial class SimWorld : IObstacles
 
     internal void StandingChanged() => StandingGeneration++;
 
+    /// <summary>How many of <see cref="StandingGeneration"/>'s bumps were a trial house going up or coming down.</summary>
+    private int _trialBumps;
+
+    /// <summary>
+    /// ⭐ <see cref="StandingGeneration"/> less the site chooser's trial houses (D622) — moves only when something really
+    /// stands, moves or goes.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DetourOfAHouseAt"/> stands a trial house and takes it down again for every plot it prices, and both
+    /// bump the standing counter, as they must: the cost field has to forget flow fields priced round the trial. The
+    /// world after a trial is the world before it, so an index that is only asked between trials keys on this instead
+    /// and is not thrown away twice a candidate — the doors were, and a subset of the suite went from minutes to twenty
+    /// (D622, Joe's rule). Not hashed: bookkeeping about a cache.
+    /// </remarks>
+    internal int SettledStandingGeneration => StandingGeneration - _trialBumps;
+
     private bool[]? _standing;
     private int[]? _standingOwner;
     private readonly List<GridPos[]> _standingFootprints = new();
@@ -12804,6 +12916,14 @@ public sealed partial class SimWorld : IObstacles
 
                 return $"That would wall off {NameOfWhatStandsAt(_standingFootprints[i][0])} — nobody could reach it.";
             }
+        }
+
+        // ⭐ AND NO DOOR IN USE IS SHUT (D622, `doors.md §4.5`): not covered, not fenced across, not left in a pocket —
+        // though another side of the building would still be open. After the walled-off check, whose sentence is the
+        // stronger truth when both hold.
+        if (WhatDoorThisWouldShut(after, proposedTiles, fence) is string shutsADoor)
+        {
+            return shutsADoor;
         }
 
         if (!HasAReachedNeighbour(after, mustStayReached, fence))
@@ -13431,6 +13551,7 @@ public sealed partial class SimWorld : IObstacles
         // years against 33 before fences, and the villages stopped growing at two homes.
         _trialWalls = TrialFence(front, facing, householdId);
         StandingChanged();
+        _trialBumps++;
         int detour = 0;
         try
         {
@@ -13450,6 +13571,7 @@ public sealed partial class SimWorld : IObstacles
             _trialHome = null;
             _trialWalls = null;
             StandingChanged();
+            _trialBumps++;
         }
 
         return (detour + (TravelCostField.BaseTileCost / 2)) / TravelCostField.BaseTileCost;

@@ -142,8 +142,15 @@ public sealed class VillagerPointTests
     // falls on a different tick and the first gather at pace 1 comes one tick sooner — 39 / 95. Pace 3,
     // whose walks are three times as long, did not move, which is a meal and not a walk. Proven the only
     // reason: the parent commit (3b675ec) holds 40 / 95 and this is its only sim change. Were 40 / 95.
-    private const int FirstGatherAtPace1 = 39;
-    private const int FirstGatherAtPace3 = 95;
+    // ⚠️ RE-PINNED (D625), not for the clock: doors (`doors.md §11`). The founder's house faces west onto its lane (D388,
+    // kept) with the granary and the hut to the east, so every errand goes out of a west door and round the yard: the first
+    // gather at pace 1 comes at 65. ⛔ AT PACE 3 THE FOUNDER NOW STARVES BEFORE THE FIRST GATHER — tick 139, Day 5 of Fall,
+    // on the way to fetch a tool, the walk home from the granary 64 ticks round the house — so the pace-3 pin is the −1 of
+    // "no gather in 600 ticks", recorded at Joe's word (D625: accept the cost as measured) and on his open list. Pace 3 is a
+    // test pace only (the game ships 1), but the clock it guarded at three times the walk is no longer seen here.
+    // Proven: the parent commit (b10667c, D621) holds 39 / 95 with the suite green. Were 39 / 95.
+    private const int FirstGatherAtPace1 = 65;
+    private const int FirstGatherAtPace3 = -1;
 
     /// <summary>
     /// ⛔⛔ The VALLEY walks on its PINNED clock — <b>the pin that can actually see the clock</b>
@@ -355,8 +362,12 @@ public sealed class VillagerPointTests
         // marketer's loads and the households' fetches land differently — 53 trips, the 1st/10th/20th at 7 / 119 / 313; the
         // milestones untouched. Proven the only reason: the parent commit (de2b491, D611) holds 55 with the suite green, and
         // this commit's only sim change is the market's. Were 55 at 7 / 119 / 313.
-        Assert.Equal(53, entries);
-        Assert.Equal(new ulong[] { 7, 119, 313 }, at);
+        // ⚠️ RE-PINNED (D625), not for the clock: doors (`doors.md §11`) — every walk goes in and out by a door, the founders'
+        // houses face their lanes (D388, kept) and the economy is priced with the door — 48 trips, the 1st/10th/20th at
+        // 20 / 141 / 492. Proven: the parent commit (b10667c, D621) holds 53 at 7 / 119 / 313 with the suite green, and the
+        // new numbers read twice, identical. Were 53 at 7 / 119 / 313.
+        Assert.Equal(48, entries);
+        Assert.Equal(new ulong[] { 20, 141, 492 }, at);
     }
 
     /// <summary>

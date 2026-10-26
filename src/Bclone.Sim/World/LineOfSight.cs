@@ -67,12 +67,20 @@ public static class LineOfSight
                 return false;
             }
 
+            // ⭐⭐ AND INTO OR OUT OF A DOORED BUILDING ONLY THROUGH ITS DOOR (D623, `doors.md §4.4`) — the field's own
+            // rule, read by the leg, so a pulled string cannot cut a corner through a wall the route went round.
+            if (ADoorBars(obstacles, was, tile))
+            {
+                clear = false;
+                return false;
+            }
+
             return true;
         },
         (above, diagonal) =>
         {
             // ⭐ The fourth edge at a corner (D404) — see Walk.
-            if (AWallBetween(obstacles, above, diagonal))
+            if (AWallBetween(obstacles, above, diagonal) || ADoorBars(obstacles, above, diagonal))
             {
                 clear = false;
                 return false;
@@ -141,6 +149,27 @@ public static class LineOfSight
     {
         byte crossing = ZoneMap.EdgeBit(to.X - from.X, to.Y - from.Y);
         return crossing != 0 && (obstacles.WallsOn(from) & crossing) != 0;
+    }
+
+    /// <summary>
+    /// Whether a step between two touching tiles crosses a doored building's edge somewhere other than its door —
+    /// into it or out of it (D623). A step within one building, or between tiles no door covers, is never barred.
+    /// </summary>
+    internal static bool ADoorBars(IObstacles obstacles, GridPos from, GridPos to)
+    {
+        Door? outOf = obstacles.DoorCovering(from);
+        Door? into = obstacles.DoorCovering(to);
+        if (outOf == into)
+        {
+            return false;
+        }
+
+        if (into is Door entered && !(from == entered.Doorstep && to == entered.Tile))
+        {
+            return true;
+        }
+
+        return outOf is Door left && !(from == left.Tile && to == left.Doorstep);
     }
 
     private static bool Among(IReadOnlyList<GridPos> tiles, GridPos tile)

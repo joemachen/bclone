@@ -1,6 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620 (DOORS SPECCED, JOE'S CALLS ANSWERED). `slice/doors` = D621, COMMIT 1 OF 5 (THE DOOR, DERIVED; NO BEHAVIOUR CHANGE), LOCAL. NEXT: COMMIT 2, THEN THE WALKING COMMIT, MEASURED BEFORE THE GOLDENS MOVE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621 + D622–D625: WALKERS GO IN AND OUT THROUGH THE DOOR, GOLDENS RE-TAKEN ONCE, LOCAL, UNPUSHED, UNPLAYED. NEXT: JOE PLAYS IT, OR COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-24 (D621) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-25 (D625) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`slice/doors`** = `main` (D620) + D621 (commit 1, the door derived and said) + **one behaviour commit, D622–D625**
+> (Joe: *"fold commits 2, 3 and 4's sim changes into one behaviour commit, measured once against main, goldens re-taken
+> once"*). Local, unpushed, **unplayed**. `specs/doors.md §11` is the as-built account; read it before touching doors.
+> - **What changed:** nothing is built on a door in use's doorstep, and nothing may shut one (cover, fence across, pocket);
+>   every walk to or from a doored building goes through its door's edge, in the one cost field, the catchment with it;
+>   founding buildings face the founding site, an unmarked building the nearest store; the door is priced into the
+>   economy (`VillageEconomy.DoorTiles` 2, `gather_yield` 123 → 135). **A farmhouse, a barn and the cart have no door**
+>   (D624–D625) and the farm and herd derivations are `main`'s byte for byte. **D388 kept:** houses face their lane.
+> - **Six bugs it surfaced, fixed in it** (`doors.md §11.4`): a pocket read as reached from the seeded sweep; an emergency
+>   sent a villager with full arms; the re-founders' cart food never counted; hay out at the pasture's top row; a tend
+>   running into autumn; a step off a pile into the warehouse beside it.
+> - **Measured against `main` (two worktrees):** the harness's three arms level or better (t +0.57 / +0.73 / +1.60);
+>   **Joe's five saves 330 → 280 alive over twenty years — accepted as measured** (*"accept the cost on my saves as
+>   measured"*); millbrook 48 → 25 traced (fishers walking 16 % more, no bug). Ten guards recorded at their measured
+>   price, each switched rule by rule (`doors.md §11.6`).
+> - **Goldens re-taken once, with proof:** six hashes, the valley pin, the Phase 0 pins; each read twice identical, the
+>   parent (b10667c) holding the old ones green. ⚠️ The five `RE-TAKEN` comment lines carry the old values, so the goldens
+>   grep is **388**, not 383.
+> - **Red-check:** 20 mutants, 16 caught (23 test reds), 4 zeros kept and written down — the way off by any side, the way out by any side, the re-founders' food uncounted, the siting on the plot's door tile rather than its doorstep (trap below).
+> - **Numbers (D625):** suite 1850 / 0 / 5 of 1855 (17m08); view 0 warnings; probe 97 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 388 (383 + the five `RE-TAKEN` lines), `git diff` six hashes and nothing else.
+>
+> **▶️ NEXT — Joe's call.** Either he plays it (`.\run.bat`, a new village and his newest save: walkers should leave by the
+> doorstep; the view still draws the spur on the side the old walks wore until commit 5), or commit 5 is built first (the
+> door drawn, the card's sentence, the ghost asking the facing rule, the spur aimed at the doorstep — `doors.md §9`). His
+> new open items are at the top of ⏸️ OPEN. **Do not merge or push without his word.**
+>
+> **(the banner below is the state at D621)**
+>
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-24 (D621) — ON WINDOWS.**
 >
 > **`slice/doors`** = `main` (D620) + **D621, commit 1 of `doors.md §9`**, local, unpushed, unplayed (nothing to see yet).
 > Every roofed building's door is worked out and said (`SimWorld.Doors.cs`, `World/Door.cs`), and **nobody walks through
@@ -8033,7 +8063,44 @@ Read `git status` after staging, every time.
   terrain's. The doors' own index keys on all three, but a terrain change alone does not refresh the sweep under it.
   Older than this, and left as it was; commit 3 is where it could start to matter.
 
+## ⛔ THE TRAPS THE DOORS BEHAVIOUR COMMIT (D622–D625) PAID FOR — A SHARED SCRATCH, A SEEDED SWEEP, AND A STALE DLL
+
+- **A field's walls put up on the shared scratch are gone by the time anybody descends it.** The first door walls were
+  written to the cost field's scratch for the fill only, and every descent read the scratch as the next fill left it:
+  walkers stepped through a back wall into the cheaper tile behind. **Whatever a field was filled with, the field keeps**
+  (`TerrainCostField.DoorWalls`).
+- **The free-ground sweep is seeded beside the founding site (D383), so a pocket sealed there reads as reached.** A door
+  opening into it was "reached" and the building unwalkable; 25 guards went red at once. Ask the village's own piece
+  (`VillageGroundToday`, D614's rule), not the sweep.
+- **A counter that a trial bumps is not a settled counter.** Keying the doors on `StandingGeneration` re-worked every door
+  twice per candidate the site chooser tried; keying them on the terrain's counter re-worked them every felled tree.
+  Together they took one test 6m04 → 10m03. Key on what can actually change the answer (`SettledStandingGeneration`).
+- **After an isolation run that edits source and restores it, rebuild before you trust a green.** Twice a stale
+  `Bclone.Sim.dll` from the mutant answered the next run. The red-check now ends with *"rebuilt from the restored source"*.
+- **A splice by offsets after a replace is off by the replace.** A fix script that replaced text and then spliced at the
+  offsets it had measured before cut `DoorWalkTests` in half; measure after each edit, or splice first.
+- **A cost that reads like a regression can be a door you did not mean to give something.** The cart had one; its doorstep
+  closed the best ground by the founding site and froze the played opening. Before re-posing a red guard, ask whether
+  the thing it watches *should* be under the new rule at all.
+- **Four mutants scored zero and are kept as zeros:** *(1)* `StepOff` by any side while the door is open, and *(2)* the way out by any side (`ExitToward`) — `DoorWalkTests` reads the same with either; nothing in it asserts the side a walker leaves by, and why the wrong first step never shows was not traced; *(3)* the re-founders' cart food uncounted — `FoodConservationTests` caught it while seed 2 re-founded in the first arm and reads the same on the final code (whether any fixture still re-founds was not checked); *(4)* the site chooser keeping the door tile clear instead of the doorstep — `EveryHouseTheChooserSitesOpensOnItsFront` reads the same. **A guard for (3) is the cheapest to add**: a re-founding with the cart restocked, asserting `FoodEverBroughtIn` rises by `CartFood`.
+- **A pose measured mid-commit goes stale when a later change in the same commit moves the ground.**
+  `AFarmsHarvestFallsOffWithDistanceFromItsStore` was posed at 80 tiles against 78, before the cart lost its door;
+  on the final code it read 76 against 76 and the only failure of the final suite. The far arm sat exactly where
+  the granary door's cap meets the distance's cap. **Re-run every guard you re-posed on the code you commit, and
+  pose a comparison where its margin is wide** (12 ticks: 53 against 76).
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
+  - **Play it, or commit 5 first.** Built, unplayed. The view still guesses the spur's side (`path-shapes.md`).
+  - **The farm warning now fires on every farm** (D624): the nearest a farm can stand to a fresh granary is 6 ticks, so
+    every farm is warned and capped at 8 tiles of 13. D42's nag; his call whether it says less, or less often.
+  - **D388 kept, and it is the cost's main road:** a house faces its lane with its back to its work (a herdsman five tiles
+    from his barn walks seventeen). A house facing its work instead is a different trade, measured nowhere yet.
+  - **Recorded costs (`doors.md §11.6`):** the herd 2 of 6; the fuel chain's old-age share 43 %; Phase 0 at pace 3, the
+    founder starves before the first gather (pace 1: 39 → 65); his saves 330 → 280, millbrook 48 → 25.
+  - **Settled without asking:** a building that is not square turns only a half (every founding and marked building
+    covers the tiles it always did); an unmarked building faces the nearest store, in the sim, for the ghost to ask.
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~
   `slice/trade` holds the whole first trade build (commits 0–7), the fenced pasture, Joe's D599 notes (the fence by
@@ -8052,7 +8119,8 @@ Read `git status` after staging, every time.
   building a door on its front, walkers in and out through it — need a spec first (`specs/doors.md`, proposed as its own
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
   ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
-  used). ✅ **His five calls answered as recommended (D620).** 🔨 Commit 1 of 5 built on `slice/doors` (D621). ▶️ Commit 2.
+  used). ✅ **His five calls answered as recommended (D620).** 🔨 Commit 1 of 5 built on `slice/doors` (D621); 🔨 commits 2–4 folded into one behaviour commit (D622–D625), goldens
+  re-taken once, unplayed. ▶️ His play, or commit 5 (the view). His new items: the top of this list.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
 

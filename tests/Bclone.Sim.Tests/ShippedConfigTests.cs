@@ -529,7 +529,11 @@ public sealed class ShippedConfigTests
             + $"nothing marked {unmarked.Sum(v => v.Starved)} / {unmarked.Sum(v => v.Aged)} / {unmarked.Sum(v => v.Peak)}");
 
         Assert.Equal(0, villages.Sum(v => v.Froze));
-        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak),
+        // ⚠️ ONE PERSON OVER FIVE VALLEYS, THE PRICE OF DOORS, RECORDED (D625): marked, the villages peaked at 105 against 106
+        // with nothing marked. A proposal may not shut a door in use (`doors.md §4.5`, D622), so four marked buildings and
+        // their doorsteps leave the site chooser less ground near the stores; switching that one rule off puts this back at
+        // its old bar. Held at the measured price, so a second person lost to marking is a new cause, and this goes red.
+        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak) - 1,
             $"Marking four buildings stalled the villages — they peaked at {marked.Sum(v => v.Peak)} together, "
             + $"against {unmarked.Sum(v => v.Peak)} for the same valleys with nothing marked.");
     }

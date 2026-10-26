@@ -614,23 +614,39 @@ public sealed class FarmMemoryTests
     }
 
     /// <summary>
-    /// The anti-vacuity companion (D7): a farm beside the granary is not nagged.
+    /// ⛔ <b>The granary's door, recorded as its measured cost (D624, Joe):</b> a farm as near a granary as one can stand is a
+    /// door's walk from it — past the haul budget — and is warned, and the warning says the true cap.
     /// </summary>
     /// <remarks>
-    /// Without this, a warning that fired on every farmhouse in the valley would pass the guard
-    /// above and teach the player to click past it — D42's rule about one considered sentence
-    /// rather than a nag.
+    /// <para>
+    /// This was the anti-vacuity companion (D7): <i>"a farm beside the granary is not nagged"</i>, so a warning that fired on
+    /// every farmhouse would not pass the guard above. ⚠️ <b>It now does fire on every farm, by Joe's call.</b> A farm's
+    /// armfuls go into the granary by its door (`doors.md §4.4`); a farmhouse has no door but cannot stand on the granary's
+    /// doorstep, so the nearest farm ground to a granary raised on open ground was 6 ticks — against a haul budget of 4
+    /// (`VillageEconomy.FieldHaulTicksBudgeted`, kept exactly as it was, D624). The warning reads <i>"brings in about 8 tiles
+    /// of crop against 13 beside a store"</i> — and 13 can no longer be had. Joe chose this over re-deriving the farm
+    /// (tile by tile, 11 tiles, crop unchanged); it is on his open list as a D42 question.
+    /// </para>
+    /// <para>
+    /// The guard holds the measured price: as near as a farm can stand, at most 6 ticks, warned, the cap at least 8 tiles.
+    /// A door that costs a farm more than this goes red.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void ButAFarmBesideTheStoresIsNotWarnedAboutAnything()
+    public void AFarmBesideAGranaryIsWarnedOfTheDoorItHaulsThrough()
     {
         SimWorld world = Loop(Config).World;
 
-        GridPos near = FarmTestGround.GroundAtAboutThisWalk(world, walkAway: 1, out int walk);
+        GridPos near = FarmTestGround.GroundBesideAFreshGranary(world, out int walk);
         PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Farmhouse, near);
 
         _output.WriteLine($"{walk} ticks from the nearest granary: \"{verdict.Warning}\"");
-        Assert.DoesNotContain("store", verdict.Warning, System.StringComparison.OrdinalIgnoreCase);
+        Assert.True(walk <= 6, $"the nearest farm ground to a granary is {walk} ticks — measured at 6 (D624)");
+        Assert.Contains("store", verdict.Warning, System.StringComparison.OrdinalIgnoreCase);
+        System.Text.RegularExpressions.Match cap = System.Text.RegularExpressions.Regex.Match(verdict.Warning, @"about (\d+) tiles");
+        Assert.True(cap.Success, "the warning no longer says the cap");
+        Assert.True(int.Parse(cap.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) >= 8,
+            $"the cap beside a granary is {cap.Groups[1].Value} tiles — measured at 8 (D624)");
     }
 
     // ---------------------------------------------------------------

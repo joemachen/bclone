@@ -640,7 +640,12 @@ public sealed class OrganicHousingTests
         }
 
         _output.WriteLine($"{offTheQuarters} of {sites.Count} turned off the four quarters.");
-        Assert.True(offTheQuarters * 2 >= sites.Count, $"Only {offTheQuarters} of {sites.Count} houses are turned off a compass point.");
+        // ⚠️ ONE OFF THE QUARTERS, NOT HALF — the price of doors, measured and accepted (D625, Joe: "keep D388
+        // as it is ... record the house-siting and herd guards as measured costs"). Walks go through doors now
+        // (`doors.md §4.4`) and the site chooser prices every plot by them; switching that one rule off
+        // (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of D622 moves it.
+        // Measured: 1 of 6 (half or more before doors). Every house still looks at a path, asserted above.
+        Assert.True(offTheQuarters >= 1, $"Only {offTheQuarters} of {sites.Count} houses are turned off a compass point.");
     }
 
     /// <summary>
@@ -681,7 +686,12 @@ public sealed class OrganicHousingTests
         var faced = sites.GroupBy(s => s.Facing.Raw).Select(g => g.Count()).ToList();
         _output.WriteLine($"{faced.Count} facings among {sites.Count}; the most common holds {faced.Max()}");
 
-        Assert.True(faced.Count >= 6, $"A dozen houses on a bend face only {faced.Count} ways.");
+        // ⚠️ FIVE WAYS, NOT SIX — the price of doors, measured and accepted (D625, Joe: "keep D388 as it is
+        // ... record the house-siting and herd guards as measured costs"). Walks go through doors now
+        // (`doors.md §4.4`) and the site chooser prices every plot by them; switching that one rule off
+        // (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of D622 moves it.
+        // Measured: 5 facings among 12 (6 or more before doors).
+        Assert.True(faced.Count >= 5, $"A dozen houses on a bend face only {faced.Count} ways.");
         Assert.True(faced.Max() * 2 <= sites.Count, $"{faced.Max()} of {sites.Count} face one way — a street.");
     }
 
@@ -924,8 +934,14 @@ public sealed class OrganicHousingTests
         // 23, 18, 17, 1, 5, 6, 12, 18 (mean 12.5) → 23, 18, 17, 8, 2, 18, 10, 13 (mean 13.6), against 15.9 with the well
         // ignored. The pull holds; the count is taken within eight tiles, a ring's slack (it was six: 3 against 0, now 1).
         // ⚠️ The mean bar now clears by 0.3 of a tile (13.6 + 2 against 15.9) — a knife edge, written down, not tuned.
-        Assert.True(near + 2 <= far, $"the well drew the houses in by less than two tiles ({near:0.0} against {far:0.0})");
-        Assert.True(weighed.Count(w => w <= 8) >= ignored.Count(w => w <= 8) + 2,
+        // ⚠️ A TILE AND A HALF, NOT TWO — the price of doors, measured and accepted (D625, Joe: "keep D388 as
+        // it is ... record the house-siting and herd guards as measured costs"). Walks go through doors now
+        // (`doors.md §4.4`) and the site chooser prices every plot by them; switching that one rule off
+        // (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of D622 moves it.
+        // Measured: doors to the well 14.9 against 16.3 with it ignored; the pull holds, smaller.
+        Assert.True(near + 1 <= far, $"the well drew the houses in by less than a tile ({near:0.0} against {far:0.0})");
+        // ⚠️ AND ONE MORE WITHIN EIGHT, NOT TWO — the same measured price (D625): 1 against 0 (2 or more before doors).
+        Assert.True(weighed.Count(w => w <= 8) >= ignored.Count(w => w <= 8) + 1,
             "no more houses within eight tiles of the well than with it ignored");
     }
 

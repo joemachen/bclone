@@ -393,7 +393,14 @@ public sealed class TradeTests
         RaiseAPost(world);
         GiveStone(world, 50);
         world.TradeKeep.Set(Goods.Stone, 0);
-        loop.Step(world.Config.TicksPerSeason);
+
+        // ⚠️ ON THE ALLOCATOR'S PASS, NOT A SEASON'S TICKS (D623). The four founders are all seated at the trades that keep
+        // them, so the merchant is taken from a trade on the season turn's pass — seen seated at tick 128 in a trace (four-day
+        // samples), just past the 120 this guard used to wait. Since doors (the walks, `doors.md §5`) nobody is idle before it, as
+        // somebody was. The claim is that the allocator walks the trade, so the guard waits for the pass that walks it.
+        Assert.Equal(1, LabourQuota.MerchantsWanted(world));
+        StepPastTheNextSeasonTurn(loop);
+        loop.Step(world.Config.TicksPerDay * 2);
 
         Assert.Contains(world.Villagers, v => v.Alive && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Merchant);
     }

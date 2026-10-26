@@ -413,7 +413,12 @@ public sealed class FirewoodTests
         // Most people should die of old age. A village where the usual way to go is
         // freezing or starving has stopped being a settlement under pressure and
         // become a disaster, and the generational arc D12 exists for flattens out.
-        Assert.True(aged > froze + starved,
+        // ⚠️ RECORDED AS THE MEASURED PRICE OF DOORS (D625, Joe: accept the cost as measured), AND ON HIS OPEN LIST: in this
+        // unattended village, three centuries on, the walks through doors (`doors.md §4.4`) — houses facing their lanes
+        // whatever the walk (D388, kept) — made hunger the usual way to die: 88 of 204 deaths old age, 116 starved, none froze
+        // (more than half old age before doors). Switching walking through doors off (`DoorsOnEverySide`) puts it back above
+        // half. Held at the measured share, 43 %, so a further slide goes red; the claim this guarded is now Joe's to call.
+        Assert.True(aged * 100 >= (froze + starved + aged) * 43,
             $"Only {aged} of {froze + starved + aged} deaths were old age; the pressure systems " +
             "have stopped being pressure and become the normal way to die.");
     }

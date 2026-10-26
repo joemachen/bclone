@@ -74,6 +74,14 @@ public sealed class WorkplaceStoreTests
         loop.Step(Config.TicksPerYear * 3);
 
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        // ⚠️ UNTIL THE GRANARY HOLDS THE HUNDRED THIS MOVES, SAID (D625): since doors the fixture's yield is derived a
+        // walk longer (`VillageEconomy.DoorTiles`) and its bigger village emptied the granary at the end of year three.
+        // The claim is the accounting, so the pose waits for the food it moves — a year at most.
+        for (int t = 0; t < Config.TicksPerYear && granary.Store[Goods.Produce] < 100; t++)
+        {
+            loop.StepOnce();
+        }
+
         Workplace workplace = world.Workplaces[0];
 
         int before = world.FoodTheVillageHolds();
@@ -184,6 +192,12 @@ public sealed class WorkplaceStoreTests
         // A workplace has to be holding something, or the middle tier is zero and this
         // equation balances for the wrong reason.
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        // ⚠️ Until the granary holds the hundred (D625), as the guard above says.
+        for (int t = 0; t < Config.TicksPerYear && granary.Store[Goods.Produce] < 100; t++)
+        {
+            loop.StepOnce();
+        }
+
         Workplace workplace = world.Workplaces[0];
         Assert.True(granary.Store.TryTake(Goods.Produce, 100));
         workplace.Store.Add(Goods.Produce, 100);

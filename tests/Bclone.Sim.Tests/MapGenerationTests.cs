@@ -619,7 +619,9 @@ public sealed class MapGenerationTests
         // more than +2 — and the economy carries that tile on every home leg
         // (`VillageEconomy.PlotLaneTiles`). The budget the generator is held to is the same walk
         // the yield is derived against.
-        int budget = VillageEconomy.MaxHomeToWorkTiles(config) + VillageEconomy.PlotLaneTiles;
+        // ⭐ AND THE DOOR (D623): the walk the yield is derived against goes out of the house's door and in at the hut's
+        // (`VillageEconomy.DoorTiles`), so the walk the generator is held to does too.
+        int budget = VillageEconomy.MaxHomeToWorkTiles(config) + VillageEconomy.PlotLaneTiles + VillageEconomy.DoorTiles;
 
         int seedsBeyond = 0;
         int seedsWithin = 0;
@@ -699,7 +701,11 @@ public sealed class MapGenerationTests
             // **Measured before choosing the bar:** across 30 seeds the typical walk runs 2 to
             // 9 tiles and only three seeds are over 8 — so what wants catching is a valley that
             // put the village *miles* from its food, not one that cost it a tile.
-            Assert.True(typical <= budget * 2,
+            // ⚠️ SEED 11 BY NAME, AT ITS MEASURED 23 — the price of doors on one hand-laid founding (D625, Joe: record the
+            // house-siting costs as measured). Its forager's hut faces the founding site, north, and the founding's own
+            // builder's hut stands on that tile, so the hut's door is at its back and every walk to it goes round: 23 against a
+            // bar of 22. The other 29 sit at 6–16. Named, not a looser bar, so any other valley that drifts goes red.
+            Assert.True(typical <= budget * 2 || (seed == 11 && typical <= 23),
                 $"Seed {seed}: the typical family walks {typical} tiles to work against a "
                 + $"budget of {budget}. That is not a long walk, it is a village the generator "
                 + "sited away from its own food.");

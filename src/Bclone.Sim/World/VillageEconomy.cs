@@ -195,9 +195,35 @@ public static class VillageEconomy
     /// </remarks>
     public const int PlotLaneTiles = 1;
 
-    /// <summary>The walk to work the trip derivations price: the ring, a tile round what stands in the way, and the lane a house fronts.</summary>
+    /// <summary>
+    /// The tiles a walk carries for going in or out of a building by its door (D623, `specs/doors.md §5`) — on every leg
+    /// the economy prices that starts or ends at a building.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A building is entered and left across its door's edge alone (`doors.md §4.4`), where before it was the cheapest side
+    /// (D383). <b>Measured, not guessed</b> (`tools/harness/ZzDoorWalk.cs`, twenty fixture villages ten years on, every walk
+    /// priced through the doors and again with every building open on every side): one way in from a free tile 1.75 tiles
+    /// longer on the village fixture and 1.41 on the established warm start; a leg from one building to another 2.38 and
+    /// 1.26; never shorter, anywhere. <b>Two tiles, stated</b> — rounded up, as the detour above is (D363: an economy that
+    /// prices a walk shorter than it is makes fewer trips than it budgeted, and starves at the margin).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>One term for a passage and for a leg:</b> measured, a leg between two buildings cost about one passage's worth,
+    /// not two (the doors of a village face its middle, so the way out of one is often the way to the next).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Not on a farm's haul — a farmhouse and a barn have no door</b> (Joe, D624). Measured on ten farms, a reaped
+    /// tile's haul through a farmhouse door cost 4.63 tiles each way with the field round the farmhouse, 2.79 with 25 tiles
+    /// in front of the door, 2.73 with the derivation's own 13 in front: priced at three, a farmer kept one ring of field,
+    /// five tiles not thirteen, and was worth a gatherer only if a tile gave more than an armful.
+    /// </para>
+    /// </remarks>
+    public const int DoorTiles = 2;
+
+    /// <summary>The walk to work the trip derivations price: the ring, a tile round what stands in the way, the lane a house fronts, and the door (D623).</summary>
     public static int WalkBudgetTiles(SimConfig config) =>
-        MaxHomeToWorkTiles(config) + ObstacleDetourTiles + PlotLaneTiles;
+        MaxHomeToWorkTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
 
     /// <summary>How far a home may sit from the middle of the village.</summary>
     /// <remarks>
@@ -266,9 +292,10 @@ public static class VillageEconomy
         // The stand IS the worst home's budget point, so the first leg is nothing; the two
         // real legs each go round what stands in the way (D383), and the leg home crosses the
         // lane (D386).
+        // ⭐ And each leg that ends at a building goes in and out by its door (D623): into the warehouse, into the home.
         int worst = worstHome.ManhattanDistanceTo(stand)
-            + stand.ManhattanDistanceTo(warehouse) + ObstacleDetourTiles
-            + warehouse.ManhattanDistanceTo(worstHome) + ObstacleDetourTiles + PlotLaneTiles;
+            + stand.ManhattanDistanceTo(warehouse) + ObstacleDetourTiles + DoorTiles
+            + warehouse.ManhattanDistanceTo(worstHome) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
 
         return (worst * config.TravelTicksPerUnit) + config.CutTicks;
     }
@@ -370,7 +397,7 @@ public static class VillageEconomy
 
         var hut = new GridPos(config.WoodcutterHutX, config.WoodcutterHutY);
         var worstHome = new GridPos(MaxHomeToVillageTiles(config), 0);
-        int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles + PlotLaneTiles;
+        int worst = worstHome.ManhattanDistanceTo(hut) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
         int splits = config.SplitsPerStint < 1 ? 1 : config.SplitsPerStint;
 
         return (worst * config.TravelTicksPerUnit * 2) + (splits * config.SplitTicks);
@@ -388,7 +415,7 @@ public static class VillageEconomy
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles;
+        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
         int forges = config.ForgesPerStint < 1 ? 1 : config.ForgesPerStint;
 
         return (worst * config.TravelTicksPerUnit * 2) + (forges * config.ForgeTicks);

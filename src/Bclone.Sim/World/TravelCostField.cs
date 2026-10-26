@@ -236,22 +236,38 @@ public sealed class TravelCostField
         IReadOnlyList<GridPos> footprint = _obstacles.FootprintCovering(from);
         GridPos? best = null;
         int cheapest = Unreachable;
+
+        // ⭐ OUT OF A DOORED BUILDING BY ITS DOORSTEP ALONE (D623, `doors.md §4.4`).
+        if (_obstacles.DoorCovering(from) is Door door)
+        {
+            Consider(door.Tile, door.Doorstep);
+            cost = cheapest;
+            return best;
+        }
         for (int i = 0; i < footprint.Count; i++)
         {
             // ⛔ Not out through a fence (D404): a building beside a yard carries the yard's wall
             // on its own side of the edge, and stepping off it into the yard is crossing that wall.
             byte walls = _obstacles.WallsOn(footprint[i]);
-            if ((walls & 2) == 0) { Consider(new GridPos(footprint[i].X + 1, footprint[i].Y)); }
-            if ((walls & 8) == 0) { Consider(new GridPos(footprint[i].X - 1, footprint[i].Y)); }
-            if ((walls & 4) == 0) { Consider(new GridPos(footprint[i].X, footprint[i].Y + 1)); }
-            if ((walls & 1) == 0) { Consider(new GridPos(footprint[i].X, footprint[i].Y - 1)); }
+            if ((walls & 2) == 0) { Consider(footprint[i], new GridPos(footprint[i].X + 1, footprint[i].Y)); }
+            if ((walls & 8) == 0) { Consider(footprint[i], new GridPos(footprint[i].X - 1, footprint[i].Y)); }
+            if ((walls & 4) == 0) { Consider(footprint[i], new GridPos(footprint[i].X, footprint[i].Y + 1)); }
+            if ((walls & 1) == 0) { Consider(footprint[i], new GridPos(footprint[i].X, footprint[i].Y - 1)); }
         }
 
         cost = cheapest;
         return best;
 
-        void Consider(GridPos beside)
+        void Consider(GridPos off, GridPos beside)
         {
+            // ⛔ NOR INTO A NEIGHBOUR ACROSS ITS WALL (D625): off a pile or a well, any side, the next tile can be a doored
+            // building's own — open in its own field — and the step went straight in across a wall that is not its door
+            // (`NoStepEverCrossesABuildingsEdgeButAtItsDoor`: a hauler on the pile beside the warehouse, sent to the warehouse).
+            if (LineOfSight.ADoorBars(_obstacles!, off, beside))
+            {
+                return;
+            }
+
             int there = field.CostFrom(beside);
             if (there == Unreachable)
             {
@@ -431,7 +447,27 @@ public sealed class TravelCostField
                 }
             }
 
+            // ⭐⭐ AND A DOORED BUILDING IS ENTERED THROUGH ITS DOOR ALONE (D623, `doors.md §4.4`): every other edge of
+            // its footprint is a wall for this field only — put up on the shared scratch for the fill, taken down after,
+            // and kept on the field for its descent. No second cost field, and no wall written into the village.
+            (int Index, byte Bits)[] doorWalls = DoorWallsFor(own, destination);
+            byte[] walls = _scratch.Walls;
+            var kept = new byte[doorWalls.Length];
+            for (int i = 0; i < doorWalls.Length && walls.Length > 0; i++)
+            {
+                kept[i] = walls[doorWalls[i].Index];
+                walls[doorWalls[i].Index] |= doorWalls[i].Bits;
+            }
+
             field.Refill(BaseTileCost, _routeCost, _scratch);
+
+            // Taken down in the reverse order, so a tile walled on two edges gets its own byte back.
+            for (int i = doorWalls.Length - 1; i >= 0 && walls.Length > 0; i--)
+            {
+                walls[doorWalls[i].Index] = kept[i];
+            }
+
+            field.DoorWalls = doorWalls;
 
             for (int i = 0; i < own.Count; i++)
             {
@@ -446,6 +482,50 @@ public sealed class TravelCostField
         }
 
         return field;
+    }
+
+    /// <summary>
+    /// Every edge of the destination's footprint but its door's, as walls on both sides — empty for a building with no
+    /// door in use (a well, a pile, a shut door: D383's any side).
+    /// </summary>
+    private (int Index, byte Bits)[] DoorWallsFor(IReadOnlyList<GridPos> own, GridPos destination)
+    {
+        if (own.Count == 0 || _obstacles?.DoorCovering(destination) is not Door door)
+        {
+            return System.Array.Empty<(int, byte)>();
+        }
+
+        var inside = new HashSet<GridPos>(own);
+        var walls = new List<(int Index, byte Bits)>();
+        for (int i = 0; i < own.Count; i++)
+        {
+            GridPos tile = own[i];
+            foreach (GridPos next in new[]
+            {
+                new GridPos(tile.X, tile.Y - 1), new GridPos(tile.X + 1, tile.Y),
+                new GridPos(tile.X, tile.Y + 1), new GridPos(tile.X - 1, tile.Y),
+            })
+            {
+                if (inside.Contains(next) || (tile == door.Tile && next == door.Doorstep))
+                {
+                    continue;
+                }
+
+                int here = _scratch!.IndexOf(_map!, tile);
+                int there = _scratch.IndexOf(_map!, next);
+                if (here >= 0)
+                {
+                    walls.Add((here, ZoneMap.EdgeBit(next.X - tile.X, next.Y - tile.Y)));
+                }
+
+                if (there >= 0)
+                {
+                    walls.Add((there, ZoneMap.EdgeBit(tile.X - next.X, tile.Y - next.Y)));
+                }
+            }
+        }
+
+        return walls.ToArray();
     }
 
     /// <summary>The wear table with every deck priced in — or null when every tile costs grass (D179's sweep is exact).</summary>

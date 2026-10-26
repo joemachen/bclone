@@ -15,6 +15,10 @@ rule."* Now that a granary is 2×2 (D382) a walk through one is a walk through a
 
 ## 2. The rule
 
+> ⭐ **Since doors (D623, `specs/doors.md §4.4`): a doored building is walked to and from through its door's edge, and no other.**
+> Everything below still holds for a building with no door — a well, a pile, the cart, a farmhouse, a barn, a bridge — and for a
+> building whose door is shut: D383's cheapest side.
+
 **A tile a building stands on cannot be walked through — only to.** Through the ONE shared cost
 field (§2.6, CLAUDE.md), exactly as water: a standing tile is impassable to every flow field
 except the field whose destination that building is, where its whole footprint is open. Homes,

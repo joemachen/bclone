@@ -52,4 +52,15 @@ public interface IObstacles
     /// so no sixth counter.
     /// </remarks>
     byte DeckOn(GridPos tile);
+
+    /// <summary>
+    /// ⭐ The door in use of the building standing on this tile (D623, `specs/doors.md §4.4`) — null for a tile nothing
+    /// stands on, a building with no door (a well, a pile) and a building whose door is shut, all of which keep D383's
+    /// any-side rule. <b>A doored building is entered and left across its door's edge and no other.</b>
+    /// </summary>
+    /// <remarks>
+    /// A sixth question on the same seam. A door changes only when what stands or the walls change, and both already move
+    /// a counter the field rebuilds on — so no seventh counter. Defaulted, so a field built without a world has no doors.
+    /// </remarks>
+    Door? DoorCovering(GridPos tile) => null;
 }

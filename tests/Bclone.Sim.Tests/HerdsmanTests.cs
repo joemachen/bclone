@@ -126,7 +126,10 @@ public sealed class HerdsmanTests
         }
         while (!(world.Clock.Season == Season.Winter && world.Clock.DayOfSeason == 1
             && world.Tick % (ulong)world.Config.TicksPerDay == 0UL));
-        int held = world.HayHeldFor(barn);
+        // ⚠️ AND THE ARMFUL IN HIS ARMS (D623): winter's first tick can catch him carrying hay out to the herd — later than
+        // before doors, his walk out of his own house's door — and the snapshot met him on it: 871 cut, 80 in his arms, 791
+        // "held". The hay in his arms is still the herd's winter.
+        int held = world.HayHeldFor(barn) + herdsman.Carried[Goods.Hay];
         _output.WriteLine($"by winter: {held} hay held of {world.WinterHayWanted(barn)} wanted; {barn.HayCutThisYear} tiles cut of 40");
         Assert.True(barn.HayCutThisYear > 0, "nobody cut the pasture");
         Assert.True(held >= world.WinterHayWanted(barn) || barn.HayCutThisYear == 40,
@@ -191,7 +194,10 @@ public sealed class HerdsmanTests
         StepToTheStartOf(loop, Season.Winter);
         int head = barn.HerdHead;
         Assert.True(head < world.PastureFor(barn), "the pose is at its pasture — a cull could hide a starved beast");
-        Assert.True(barn.HayPutOut > 0, "winter came with nothing out — the herdsman did not prepare");
+        // ⚠️ OUT, OR ON ITS WAY OUT (D623): five days ahead is 20 ticks, and his walk to the barn now starts at his own
+        // house's door — he set out on time and was carrying the first armful to the herd on winter's first tick.
+        // Preparing is setting out with the hay.
+        Assert.True(barn.HayPutOut > 0 || herdsman.Carried[Goods.Hay] > 0, "winter came with nothing out — the herdsman did not prepare");
 
         // ⚠️ And through the winter (D611): with Joe's starting limits the household fell under its fetch line on the 23rd and
         // he went five days across the valley for food, the hay out ran dry behind him and four head starved. The same
@@ -210,7 +216,15 @@ public sealed class HerdsmanTests
 
         _output.WriteLine($"{head} head into winter, {barn.HerdHead} out; {outdoorsFeeding} ticks feeding outdoors");
         Assert.True(outdoorsFeeding > 0, "nobody carried hay out to the herd");
-        Assert.True(barn.HerdHead == head, $"{head} went into winter and {barn.HerdHead} came out");
+        // ⚠️ TWO OF SIX, NOT ALL SIX — the price of doors, measured and accepted (D625, Joe: "keep D388 as it
+        // is ... record the house-siting and herd guards as measured costs"). Walks go through doors now
+        // (`doors.md §4.4`) and the site chooser prices every plot by them; switching that one rule off
+        // (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of D622 moves it.
+        // The barn has no door (D624); the herdsman's house's door faces west onto its lane and his barn is
+        // five tiles east — home to the barn is a 17-tile walk round his yard each way, and between his laps
+        // the hay out ran dry. Measured: 6 in, 2 out (6 before doors; 0 with the hay put out at the pasture's
+        // top row, which D623 changed to the tile nearest the barn).
+        Assert.True(barn.HerdHead >= 2, $"{head} went into winter and {barn.HerdHead} came out");
     }
 
     /// <summary>The cull, as work (Joe, D588): a beast beyond the pasture, culled at the barn into meat and leather.</summary>

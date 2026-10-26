@@ -53,6 +53,13 @@ public readonly record struct PlotShape
     public required GridPos Door { get; init; }
 
     /// <summary>
+    /// The tile the house's door opens onto by the door rule (D622, `doors.md §4.2`) — <see cref="Door"/> at a quarter
+    /// turn, the tile straight in front of the front tile at any other. Shaped with the plot and remembered with it, so the
+    /// site chooser asks it of a candidate for nothing (Joe's rule).
+    /// </summary>
+    public GridPos Doorstep { get; init; }
+
+    /// <summary>
     /// Yard tiles the rectangle covered that no gate could reach (<see cref="OneWayIn"/>) — ground
     /// the family does not get, priced as a clipped tile is (D411).
     /// </summary>

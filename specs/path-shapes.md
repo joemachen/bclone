@@ -198,7 +198,8 @@ real doors later (a spec of their own); a ring round a single building keeps its
 1. **A spur to every wall a lane only passes.** A building is reached only when a lane is drawn within 0.75 of one of its
    tiles (`DoorstepTouches`) — touching its wall; anything further gets the doorstep lane of §4.F, now drawn at full width
    to within 0.05 of the wall's tile (no taper — a taper read as stopping short). On the side the worn ground reaches,
-   until doors say which side is the door.
+   until doors say which side is the door. *(D623: walkers now go in and out by the door, so the worn ground reaches the
+   door; the drawing itself still guesses until `doors.md` commit 5 aims the spur at the doorstep.)*
 2. **A ring round one small building keeps its busier side** (`KeepTheBusierSides`): two lanes between the same two
    junctions (or two a thinning split, within two pixels) that together ring exactly one building — at most 20 pixels
    round, nothing worn inside — lose the less
