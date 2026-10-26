@@ -4,8 +4,11 @@
 // Multiply — so the snippet's grass_srgb_to_linear is deliberately not called (D628, §6.2). The snippet is
 // included unchanged; it declares grass_masks, grass_season_atlas, grass_season and grass_jitter.
 //
-// The anti-tiling options (D631, §5.3) are off by default and each behind its own switch; they change how the masks
-// are sampled and the season and strength each place is given — the recolour itself stays the snippet's.
+// The anti-tiling options (D631, §5.3) are each behind their own switch; they change how the masks are sampled and the
+// season and strength each place is given — the recolour itself stays the snippet's.
+//
+// ⭐ THE LOOK IS NOT HERE (D632): every value the lab uses comes from res://looks/grass_approved.tres (GrassLook.cs,
+// specs/grass-look.md). The uniform defaults below are the pack as painted with every option off, nothing more.
 shader_type canvas_item;
 
 #include "res://shaders/grass_seasons.gdshaderinc"
@@ -29,6 +32,8 @@ uniform float macro_strength_amount = 0.3;
 uniform float macro_season_amount = 0.1;
 
 // 2. Version mixing: v02..v06 by region, a narrow band between them.
+// ⛔ REJECTED (D632), kept switchable and off: blending one layout into another drew stamps of both at part strength
+// (the ghosts §5.3 measured), and the mixed layouts read as camouflage.
 uniform bool mix_on = false;
 uniform float mix_region_tiles = 48.0;
 uniform float mix_width_tiles = 1.5;
@@ -43,6 +48,7 @@ uniform bool hex_on = false;
 uniform float hex_sharpness = 4.0;
 
 // How samples are blended, for 2 and 3 both: linear weights, or height (each stamp whole or not at all).
+// ⛔ Linear (false) is REJECTED (D632) for the same ghosting; Height is the approved blend.
 uniform bool height_blend = false;
 
 // Tints where samples are being blended, so the seams can be found and looked at.

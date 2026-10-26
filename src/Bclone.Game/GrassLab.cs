@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using Godot;
 
 namespace Bclone.Game;
@@ -16,11 +17,13 @@ namespace Bclone.Game;
 /// <para>
 /// One full-window rect with one material (<c>shaders/grass_lab.gdshader</c>, which includes the pack's snippet
 /// unchanged), and a panel of sliders that only set uniforms — nothing is rebuilt when a slider moves. Only the
-/// version on show is loaded (§6.5). Launched with <c>.\run.bat grass</c>; <b>H</b> hides the panel.
+/// version on show is loaded (§6.5). Launched with <c>.\run.bat grass</c>; <b>H</b> hides the panels.
 /// </para>
 /// <para>
-/// The numbers here are the lab's starting points, not the game's: the repeat and the zoom found by eye go into data
-/// when the grass goes into the valley (§6.3).
+/// ⭐⭐ <b>It opens at the approved look</b> (D632, `specs/grass-look.md`): every look value comes from
+/// <see cref="GrassLook.Approved"/> — none is written here. <i>Reset to approved</i> goes back to it, and <i>Copy current
+/// values</i> puts the panel's settings on the clipboard in the list Joe approved, so a new set can be pasted back.
+/// Only the view's own controls — the season, the zoom, the placeholders, the marks — are the lab's.
 /// </para>
 /// <para>
 /// ⭐ <b>Joe's three after the first look (D630):</b> a <i>strength</i> that fades the grass to bare parchment; a
@@ -35,29 +38,14 @@ public sealed partial class GrassLab : Control
     /// <summary>v06 first, v04 the first alternative (Joe, §5); v01 is retired and not in the project.</summary>
     internal static readonly string[] Versions = { "v06", "v04", "v02", "v03", "v05" };
 
+    /// <summary>Summer: the season the lab opens on. A view control, not part of the look.</summary>
     internal const double DefaultSeason = 1.0;
-    internal const double DefaultJitter = 0.15;
-    internal const double DefaultTilesPerRepeat = 32.0;
 
     /// <summary>
     /// The zoom the lab opens at, in screen pixels a tile — between the game's fit-to-width (~13 at 1280 wide) and
-    /// <c>MaxPixelsPerTile = 48</c>, so a repeat and a half is on screen and the detail still reads.
+    /// <c>MaxPixelsPerTile = 48</c>, so a repeat and a half is on screen and the detail still reads. A view control.
     /// </summary>
     internal const double DefaultPixelsPerTile = 24.0;
-
-    /// <summary>The pack as painted.</summary>
-    internal const double DefaultStrength = 1.0;
-
-    /// <summary>A light grain — about 7 % darker on average, which is what takes the edge off the contrast.</summary>
-    internal const double DefaultGrain = 0.15;
-
-    // The anti-tiling options' starting points when switched on (D631, §5.3). Every switch starts off.
-    internal const double DefaultMacroCycle = 100.0;
-    internal const double DefaultMacroStrength = 0.3;
-    internal const double DefaultMacroSeason = 0.1;
-    internal const double DefaultRegion = 48.0;
-    internal const double DefaultWidth = 1.5;
-    internal const double DefaultSharpness = 4.0;
 
     /// <summary>The five layouts version mixing draws on, in the shader's order <c>grass_v0</c> … <c>grass_v4</c>.</summary>
     internal static readonly string[] Mixed = { "v02", "v03", "v04", "v05", "v06" };
@@ -74,10 +62,11 @@ public sealed partial class GrassLab : Control
     private Texture2D? _masks;
     private PanelContainer _tiling = null!;
     private Label _gpu = null!;
+    private Label _copied = null!;
     private double _gpuMs;
     private double _gpuSaidAt;
 
-    internal string ShownVersion { get; private set; } = Versions[0];
+    internal string ShownVersion { get; private set; } = string.Empty;
 
     internal OptionButton Version { get; private set; } = null!;
 
@@ -125,6 +114,7 @@ public sealed partial class GrassLab : Control
     public override void _Ready()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        GrassLook look = GrassLook.Approved;
 
         _material.SetShaderParameter("grass_season_atlas", GD.Load<Texture2D>("res://textures/grass/grass_seasons.png"));
         _material.SetShaderParameter("ground_srgb", new Vector3(Parchment.R, Parchment.G, Parchment.B));
@@ -165,10 +155,10 @@ public sealed partial class GrassLab : Control
         body.AddChild(Row("Version", Version, null));
 
         Season = AddSlider(body, "Season", 0.0, 4.0, 0.01, DefaultSeason, Sets("grass_season"), SeasonSays);
-        Strength = AddSlider(body, "Strength", 0.0, 1.0, 0.01, DefaultStrength, Sets("grass_strength"), Plain("0.00"));
-        Jitter = AddSlider(body, "Jitter", 0.0, 0.25, 0.005, DefaultJitter, Sets("grass_jitter"), Plain("0.000"));
-        Grain = AddSlider(body, "Paper grain", 0.0, 0.4, 0.01, DefaultGrain, SetTheGrain, Plain("0.00"));
-        TilesPerRepeat = AddSlider(body, "Tiles per repeat", 8.0, 128.0, 1.0, DefaultTilesPerRepeat, Sets("tiles_per_repeat"), Plain("0"));
+        Strength = AddSlider(body, "Strength", 0.0, 1.0, 0.01, look.Strength, Sets("grass_strength"), Plain("0.00"));
+        Jitter = AddSlider(body, "Jitter", 0.0, 0.25, 0.005, look.Jitter, Sets("grass_jitter"), Plain("0.000"));
+        Grain = AddSlider(body, "Paper grain", 0.0, 0.4, 0.01, look.PaperGrain, SetTheGrain, Plain("0.00"));
+        TilesPerRepeat = AddSlider(body, "Tiles per repeat", 8.0, 128.0, 1.0, look.TilesPerRepeat, Sets("tiles_per_repeat"), Plain("0"));
         PixelsPerTile = AddSlider(
             body,
             "Pixels per tile",
@@ -187,20 +177,35 @@ public sealed partial class GrassLab : Control
         Placeholders.Toggled += on => Village.Visible = on;
         body.AddChild(Placeholders);
 
+        var buttons = new HBoxContainer();
+        buttons.AddThemeConstantOverride("separation", 8);
+        var reset = new Button { Name = "Reset", Text = "Reset to approved", TooltipText = GrassLook.ApprovedPath };
+        reset.Pressed += ResetToApproved;
+        var copy = new Button { Name = "Copy", Text = "Copy current values" };
+        copy.Pressed += CopyCurrentValues;
+        buttons.AddChild(reset);
+        buttons.AddChild(copy);
+        body.AddChild(buttons);
+
+        _copied = new Label { Modulate = new Color(1, 1, 1, 0.6f) };
+        _copied.AddThemeFontSizeOverride("font_size", 12);
+        body.AddChild(_copied);
+
         var hint = new Label { Text = "h hides the panels", Modulate = new Color(1, 1, 1, 0.6f) };
         hint.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(hint);
 
-        ShowVersion(Versions[0]);
-        BuildTheTilingPanel();
+        Version.Select(Array.IndexOf(Versions, look.Masks));
+        ShowVersion(look.Masks);
+        BuildTheTilingPanel(look);
         RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
     }
 
     /// <summary>
-    /// The anti-tiling options (D631, `seasonal-grass.md §5.3`), top right — each behind its own switch, all off, so the
-    /// lab opens as it always did; and the GPU's time for the whole window, so each option's cost can be read off.
+    /// The anti-tiling options (D631, `seasonal-grass.md §5.3`), top right, each behind its own switch and opened at the
+    /// approved look (D632); and the GPU's time for the whole window, so each option's cost can be read off.
     /// </summary>
-    private void BuildTheTilingPanel()
+    private void BuildTheTilingPanel(GrassLook look)
     {
         _tiling = Panel("Tiling");
         _tiling.AnchorLeft = 1f;
@@ -219,12 +224,14 @@ public sealed partial class GrassLab : Control
         heading.AddThemeFontSizeOverride("font_size", 20);
         body.AddChild(heading);
 
-        Macro = AddSwitch(body, "Macro variation", "macro_on");
-        MacroCycle = AddSlider(body, "Tiles a cycle", 50.0, 200.0, 1.0, DefaultMacroCycle, Sets("macro_cycle_tiles"), Plain("0"));
-        MacroStrength = AddSlider(body, "Strength amount", 0.0, 1.0, 0.01, DefaultMacroStrength, Sets("macro_strength_amount"), Plain("0.00"));
-        MacroSeason = AddSlider(body, "Season amount", 0.0, 0.5, 0.01, DefaultMacroSeason, Sets("macro_season_amount"), Plain("0.00"));
+        Macro = AddSwitch(body, "Macro variation", "macro_on", look.MacroOn);
+        MacroCycle = AddSlider(body, "Tiles a cycle", 50.0, 200.0, 1.0, look.MacroCycleTiles, Sets("macro_cycle_tiles"), Plain("0"));
+        MacroStrength = AddSlider(body, "Strength amount", 0.0, 1.0, 0.01, look.MacroStrengthAmount, Sets("macro_strength_amount"), Plain("0.00"));
+        MacroSeason = AddSlider(body, "Season amount", 0.0, 0.5, 0.01, look.MacroSeasonAmount, Sets("macro_season_amount"), Plain("0.00"));
 
-        Mixing = AddSwitch(body, "Version mixing (v02–v06)", "mix_on");
+        // ⛔ REJECTED (D632), kept switchable and off: blending one layout into another drew stamps of both at part
+        // strength — the ghosts §5.3 measured — and at any region size the mixed layouts read as camouflage.
+        Mixing = AddSwitch(body, "Version mixing (rejected)", "mix_on", false);
         Mixing.Toggled += on =>
         {
             if (on)
@@ -232,34 +239,98 @@ public sealed partial class GrassLab : Control
                 LoadTheMixedVersions();
             }
         };
-        Region = AddSlider(body, "Region, tiles", 16.0, 128.0, 1.0, DefaultRegion, Sets("mix_region_tiles"), Plain("0"));
-        Width = AddSlider(body, "Transition, tiles", 0.0, 8.0, 0.1, DefaultWidth, Sets("mix_width_tiles"), Plain("0.0"));
+        Mixing.ButtonPressed = look.MixingOn;
+        Region = AddSlider(body, "Region, tiles", 16.0, 128.0, 1.0, look.MixRegionTiles, Sets("mix_region_tiles"), Plain("0"));
+        Width = AddSlider(body, "Transition, tiles", 0.0, 8.0, 0.1, look.MixWidthTiles, Sets("mix_width_tiles"), Plain("0.0"));
 
-        Hex = AddSwitch(body, "Hex tiling", "hex_on");
-        Sharpness = AddSlider(body, "Blend sharpness", 1.0, 16.0, 0.5, DefaultSharpness, Sets("hex_sharpness"), Plain("0.0"));
+        Hex = AddSwitch(body, "Hex tiling", "hex_on", look.HexOn);
+        Sharpness = AddSlider(body, "Blend sharpness", 1.0, 16.0, 0.5, look.HexSharpness, Sets("hex_sharpness"), Plain("0.0"));
 
+        // ⛔ Linear is REJECTED (D632) for the same reason as mixing — it draws stamps at part strength — and kept for
+        // comparison. Height, "each stamp whole", is the approved blend.
         Blend = new OptionButton { Name = "Blend" };
-        Blend.AddItem("Linear");
+        Blend.AddItem("Linear (rejected)");
         Blend.AddItem("Height — each stamp whole");
         Blend.ItemSelected += index => _material.SetShaderParameter("height_blend", index == 1);
-        _material.SetShaderParameter("height_blend", false);
+        SelectBlend(look.HeightBlend);
         body.AddChild(Row("Blend (mixing and hex)", Blend, null));
 
-        MarkTransitions = AddSwitch(body, "Mark transitions", "mark_transitions");
+        MarkTransitions = AddSwitch(body, "Mark transitions", "mark_transitions", false);
 
         _gpu = new Label { Name = "Gpu", Modulate = new Color(1, 1, 1, 0.75f) };
         _gpu.AddThemeFontSizeOverride("font_size", 13);
         body.AddChild(_gpu);
     }
 
-    /// <summary>A switch for one boolean uniform, off.</summary>
-    private CheckBox AddSwitch(VBoxContainer body, string name, string uniform)
+    /// <summary>A switch for one boolean uniform.</summary>
+    private CheckBox AddSwitch(VBoxContainer body, string name, string uniform, bool on)
     {
-        var box = new CheckBox { Name = name, Text = name };
-        box.Toggled += on => _material.SetShaderParameter(uniform, on);
-        _material.SetShaderParameter(uniform, false);
+        var box = new CheckBox { Name = name, Text = name, ButtonPressed = on };
+        box.Toggled += pressed => _material.SetShaderParameter(uniform, pressed);
+        _material.SetShaderParameter(uniform, on);
         body.AddChild(box);
         return box;
+    }
+
+    private void SelectBlend(bool height)
+    {
+        Blend.Select(height ? 1 : 0);
+        _material.SetShaderParameter("height_blend", height);
+    }
+
+    /// <summary>
+    /// <i>Reset to approved</i>: every look control back to <see cref="GrassLook.Approved"/>, read from its file again
+    /// so an edit to the file shows without a restart. The season, the zoom, the placeholders and the marks stay.
+    /// </summary>
+    internal void ResetToApproved()
+    {
+        GrassLook look = (GrassLook)ResourceLoader.Load(GrassLook.ApprovedPath, null, ResourceLoader.CacheMode.Replace);
+        Version.Select(Array.IndexOf(Versions, look.Masks));
+        ShowVersion(look.Masks);
+        Strength.Value = look.Strength;
+        Jitter.Value = look.Jitter;
+        Grain.Value = look.PaperGrain;
+        TilesPerRepeat.Value = look.TilesPerRepeat;
+        Macro.ButtonPressed = look.MacroOn;
+        MacroCycle.Value = look.MacroCycleTiles;
+        MacroStrength.Value = look.MacroStrengthAmount;
+        MacroSeason.Value = look.MacroSeasonAmount;
+        Mixing.ButtonPressed = look.MixingOn;
+        Region.Value = look.MixRegionTiles;
+        Width.Value = look.MixWidthTiles;
+        Hex.ButtonPressed = look.HexOn;
+        Sharpness.Value = look.HexSharpness;
+        SelectBlend(look.HeightBlend);
+        _copied.Text = "reset to the approved look";
+    }
+
+    /// <summary>The panel's look, as a <see cref="GrassLook"/> — what <i>Copy current values</i> says.</summary>
+    internal GrassLook CurrentLook() => new()
+    {
+        Masks = ShownVersion,
+        Strength = (float)Strength.Value,
+        Jitter = (float)Jitter.Value,
+        PaperGrain = (float)Grain.Value,
+        TilesPerRepeat = (float)TilesPerRepeat.Value,
+        MacroOn = Macro.ButtonPressed,
+        MacroCycleTiles = (float)MacroCycle.Value,
+        MacroStrengthAmount = (float)MacroStrength.Value,
+        MacroSeasonAmount = (float)MacroSeason.Value,
+        HexOn = Hex.ButtonPressed,
+        HexSharpness = (float)Sharpness.Value,
+        HeightBlend = Blend.Selected == 1,
+        MixingOn = Mixing.ButtonPressed,
+        MixRegionTiles = (float)Region.Value,
+        MixWidthTiles = (float)Width.Value,
+    };
+
+    /// <summary><i>Copy current values</i>: the list on the clipboard and in the log, ready to paste back.</summary>
+    private void CopyCurrentValues()
+    {
+        string said = CurrentLook().Say();
+        DisplayServer.ClipboardSet(said);
+        GD.Print(said);
+        _copied.Text = "copied — paste it back to change the approved look";
     }
 
     /// <summary>
@@ -401,45 +472,99 @@ public sealed partial class GrassLab : Control
     }
 
     /// <summary>
-    /// The probe's line (D629, D630): the lab opens as §5 says and its controls reach what they move; and the grass textures are
-    /// still imported as §3 says — <b>because Godot's own defaults wipe the masks, and its Import dock can put them
-    /// back</b> (D627). Each imported level 0 is compared with its PNG byte for byte: a sampled spot-check scored
-    /// zero against Fix Alpha Border.
+    /// Where the material differs from <paramref name="look"/>, said — or <c>null</c> when it holds the look exactly.
+    /// </summary>
+    private string? DiffersFrom(GrassLook look)
+    {
+        var off = new List<string>();
+        float Uniform(string name) => _material.GetShaderParameter(name).AsSingle();
+        bool Flag(string name) => _material.GetShaderParameter(name).AsBool();
+        void Near(string what, float got, float want)
+        {
+            if (Math.Abs(got - want) > 1e-5f)
+            {
+                off.Add($"{what} {got} (want {want})");
+            }
+        }
+
+        void Same(string what, bool got, bool want)
+        {
+            if (got != want)
+            {
+                off.Add($"{what} {got} (want {want})");
+            }
+        }
+
+        var masks = _material.GetShaderParameter("grass_masks").As<Texture2D>();
+        if (ShownVersion != look.Masks || masks?.ResourcePath.EndsWith($"grass_{look.Masks}_masks.png", StringComparison.Ordinal) != true)
+        {
+            off.Add($"masks {ShownVersion} / {masks?.ResourcePath ?? "none"} (want {look.Masks})");
+        }
+
+        Near("strength", Uniform("grass_strength"), look.Strength);
+        Near("jitter", Uniform("grass_jitter"), look.Jitter);
+        Near("grain", _grainMaterial.GetShaderParameter("amount").AsSingle(), look.PaperGrain);
+        Same("grain drawn", _grain.Visible, look.PaperGrain > 0f);
+        Near("tiles a repeat", Uniform("tiles_per_repeat"), look.TilesPerRepeat);
+        Same("macro", Flag("macro_on"), look.MacroOn);
+        Near("macro cycle", Uniform("macro_cycle_tiles"), look.MacroCycleTiles);
+        Near("macro strength", Uniform("macro_strength_amount"), look.MacroStrengthAmount);
+        Near("macro season", Uniform("macro_season_amount"), look.MacroSeasonAmount);
+        Same("hex", Flag("hex_on"), look.HexOn);
+        Near("hex sharpness", Uniform("hex_sharpness"), look.HexSharpness);
+        Same("height blend", Flag("height_blend"), look.HeightBlend);
+        Same("mixing", Flag("mix_on"), look.MixingOn);
+        Near("mix region", Uniform("mix_region_tiles"), look.MixRegionTiles);
+        Near("mix width", Uniform("mix_width_tiles"), look.MixWidthTiles);
+        return off.Count == 0 ? null : string.Join(", ", off);
+    }
+
+    /// <summary>
+    /// The probe's line (D629–D632): the approved look's file sets every value and keeps the rejected options off; the
+    /// lab opens at it, its controls reach what they move, <i>Reset to approved</i> brings it back and <i>Copy</i> says
+    /// it in Joe's list; and the grass textures are still imported as §3 says — <b>because Godot's own defaults wipe
+    /// the masks, and its Import dock can put them back</b> (D627). Each imported level 0 is compared with its PNG byte
+    /// for byte: a sampled spot-check scored zero against Fix Alpha Border.
     /// </summary>
     internal static string SelfCheck(Node host)
     {
         var faults = new List<string>();
+
+        // ⭐ The file is the only place the numbers live (the class gives none), so every property must be set in it.
+        string file = Godot.FileAccess.GetFileAsString(GrassLook.ApprovedPath);
+        foreach (PropertyInfo property in typeof(GrassLook).GetProperties())
+        {
+            if (property.GetCustomAttribute<ExportAttribute>() is not null && !file.Contains($"\n{property.Name} = ", StringComparison.Ordinal))
+            {
+                faults.Add($"{GrassLook.ApprovedPath} does not set {property.Name}");
+            }
+        }
+
+        GrassLook approved = GrassLook.Approved;
+        if (approved.MixingOn || !approved.HeightBlend || Array.IndexOf(Versions, approved.Masks) < 0)
+        {
+            faults.Add($"the approved look has mixing {approved.MixingOn} and height blending {approved.HeightBlend} on {approved.Masks} "
+                + "(the rejected options must stay off, and the masks one of the five)");
+        }
+
         var lab = new GrassLab();
         host.AddChild(lab);
         try
         {
-            if (lab.ShownVersion != "v06" || lab.Version.ItemCount != 5 || lab.Version.GetItemText(1) != "v04")
+            if (lab.DiffersFrom(approved) is string opened)
             {
-                faults.Add($"opens on {lab.ShownVersion} of {lab.Version.ItemCount}, the second {lab.Version.GetItemText(1)} (want v06 of 5, then v04)");
+                faults.Add($"opens off the approved look: {opened}");
             }
 
             float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();
-            if (Math.Abs(Uniform("grass_jitter") - 0.15f) > 1e-6f || Math.Abs(Uniform("grass_season") - 1f) > 1e-6f
-                || Math.Abs(Uniform("tiles_per_repeat") - 32f) > 1e-6f || Math.Abs(Uniform("px_per_tile") - 24f) > 1e-6f)
-            {
-                faults.Add($"opens at jitter {Uniform("grass_jitter")}, season {Uniform("grass_season")}, {Uniform("tiles_per_repeat")} tiles a repeat, {Uniform("px_per_tile")} px a tile (want 0.15, 1, 32, 24)");
-            }
-
-            if (Math.Abs(Uniform("grass_strength") - 1f) > 1e-6f || Math.Abs(lab._grainMaterial.GetShaderParameter("amount").AsSingle() - 0.15f) > 1e-6f
-                || !lab._grain.Visible || !lab.Placeholders.ButtonPressed || !lab.Village.Visible)
-            {
-                faults.Add($"opens at strength {Uniform("grass_strength")}, grain {lab._grainMaterial.GetShaderParameter("amount").AsSingle()} "
-                    + $"(drawn {lab._grain.Visible}), placeholders {lab.Placeholders.ButtonPressed} (drawn {lab.Village.Visible}) (want 1, 0.15 drawn, on drawn)");
-            }
-
-            // D631: every anti-tiling switch opens off, Linear blending, no five-layout load until mixing is asked for.
             bool Flag(string name) => lab._material.GetShaderParameter(name).AsBool();
-            if (lab.Macro.ButtonPressed || lab.Mixing.ButtonPressed || lab.Hex.ButtonPressed || lab.MarkTransitions.ButtonPressed
-                || lab.Blend.Selected != 0 || Flag("macro_on") || Flag("mix_on") || Flag("hex_on") || Flag("height_blend")
-                || Flag("mark_transitions") || lab.MixedLoaded)
+            if (lab.Version.ItemCount != 5 || lab.Version.GetItemText(0) != "v06" || lab.Version.GetItemText(1) != "v04"
+                || Math.Abs(Uniform("grass_season") - 1f) > 1e-6f || Math.Abs(Uniform("px_per_tile") - 24f) > 1e-6f
+                || !lab.Placeholders.ButtonPressed || !lab.Village.Visible || Flag("mark_transitions") || lab.MixedLoaded)
             {
-                faults.Add($"an anti-tiling option opens on (macro {Flag("macro_on")}, mixing {Flag("mix_on")}, hex {Flag("hex_on")}, "
-                    + $"height {Flag("height_blend")}, marks {Flag("mark_transitions")}, five layouts loaded {lab.MixedLoaded})");
+                faults.Add($"opens on {lab.Version.ItemCount} versions ({lab.Version.GetItemText(0)}, {lab.Version.GetItemText(1)} …), "
+                    + $"season {Uniform("grass_season")}, {Uniform("px_per_tile")} px a tile, placeholders {lab.Village.Visible}, "
+                    + $"marks {Flag("mark_transitions")}, five layouts loaded {lab.MixedLoaded} (want v06, v04 of 5; 1; 24; on; off; not loaded)");
             }
 
             if (lab.Jitter.MinValue != 0.0 || lab.Jitter.MaxValue != 0.25)
@@ -454,46 +579,63 @@ public sealed partial class GrassLab : Control
                 faults.Add($"the ground is not the pack's parchment #e6d6b0 (#{Parchment.ToHtml(false)})");
             }
 
+            // ⭐ Copy says the approved look in Joe's own list, line for line.
+            string[] said = lab.CurrentLook().Say().Split('\n');
+            string[] heads = { "APPROVED SETTINGS", "- Masks: ", "- Strength: ", "- Jitter: ", "- Paper grain: ", "- Tiles per repeat: ",
+                "- Macro variation: ", "- Hex tiling: ", "- Version mixing: ", "- Linear blend: " };
+            if (said.Length != heads.Length || heads.Where((head, i) => !said[i].StartsWith(head, StringComparison.Ordinal)).Any()
+                || lab.CurrentLook().Say() != approved.Say())
+            {
+                faults.Add($"Copy says \"{string.Join(" | ", said)}\" (want Joe's ten lines, the approved look's)");
+            }
+
             lab.Jitter.Value = 0.2;
             lab.Season.Value = 2.6;
             lab.Version.Select(1);
             lab.Version.EmitSignal(OptionButton.SignalName.ItemSelected, 1L);
-            var masks = lab._material.GetShaderParameter("grass_masks").As<Texture2D>();
-            if (Math.Abs(Uniform("grass_jitter") - 0.2f) > 1e-6f || Math.Abs(Uniform("grass_season") - 2.6f) > 1e-6f
-                || lab.ShownVersion != "v04" || masks?.ResourcePath.EndsWith("grass_v04_masks.png", StringComparison.Ordinal) != true)
-            {
-                faults.Add($"moving the sliders reached jitter {Uniform("grass_jitter")}, season {Uniform("grass_season")}, {masks?.ResourcePath ?? "no masks"}");
-            }
-
             lab.Strength.Value = 0.5;
             lab.Grain.Value = 0.0;
             lab.PixelsPerTile.Value = 40.0;
             lab.Placeholders.ButtonPressed = false;
-            if (Math.Abs(Uniform("grass_strength") - 0.5f) > 1e-6f || lab._grain.Visible || lab.Village.Visible
-                || Math.Abs(Uniform("px_per_tile") - 40f) > 1e-6f || Math.Abs(lab.Village.PixelsPerTile - 40f) > 1e-6f)
-            {
-                faults.Add($"moving the rest reached strength {Uniform("grass_strength")}, grain drawn {lab._grain.Visible} at 0, "
-                    + $"placeholders drawn {lab.Village.Visible} when off, the grass at {Uniform("px_per_tile")} px a tile and the village at {lab.Village.PixelsPerTile}");
-            }
-
-            lab.Macro.ButtonPressed = true;
+            lab.Macro.ButtonPressed = false;
+            lab.Hex.ButtonPressed = false;
             lab.Mixing.ButtonPressed = true;
-            lab.Hex.ButtonPressed = true;
             lab.MarkTransitions.ButtonPressed = true;
-            lab.Blend.Select(1);
-            lab.Blend.EmitSignal(OptionButton.SignalName.ItemSelected, 1L);
+            lab.Blend.Select(0);
+            lab.Blend.EmitSignal(OptionButton.SignalName.ItemSelected, 0L);
             lab.MacroCycle.Value = 150.0;
             lab.Width.Value = 3.0;
-            lab.Sharpness.Value = 8.0;
+            lab.Sharpness.Value = 2.0;
+            var masks = lab._material.GetShaderParameter("grass_masks").As<Texture2D>();
             var last = lab._material.GetShaderParameter("grass_v4").As<Texture2D>();
-            if (!Flag("macro_on") || !Flag("mix_on") || !Flag("hex_on") || !Flag("height_blend") || !Flag("mark_transitions")
+            if (Math.Abs(Uniform("grass_jitter") - 0.2f) > 1e-6f || Math.Abs(Uniform("grass_season") - 2.6f) > 1e-6f
+                || lab.ShownVersion != "v04" || masks?.ResourcePath.EndsWith("grass_v04_masks.png", StringComparison.Ordinal) != true
+                || Math.Abs(Uniform("grass_strength") - 0.5f) > 1e-6f || lab._grain.Visible || lab.Village.Visible
+                || Math.Abs(Uniform("px_per_tile") - 40f) > 1e-6f || Math.Abs(lab.Village.PixelsPerTile - 40f) > 1e-6f
+                || Flag("macro_on") || Flag("hex_on") || !Flag("mix_on") || !Flag("mark_transitions") || Flag("height_blend")
                 || !lab.MixedLoaded || last?.ResourcePath.EndsWith("grass_v06_masks.png", StringComparison.Ordinal) != true
                 || Math.Abs(Uniform("macro_cycle_tiles") - 150f) > 1e-6f || Math.Abs(Uniform("mix_width_tiles") - 3f) > 1e-6f
-                || Math.Abs(Uniform("hex_sharpness") - 8f) > 1e-6f)
+                || Math.Abs(Uniform("hex_sharpness") - 2f) > 1e-6f)
             {
-                faults.Add($"switching anti-tiling on reached macro {Flag("macro_on")}, mixing {Flag("mix_on")} (layouts {lab.MixedLoaded}, "
-                    + $"the fifth {last?.ResourcePath ?? "none"}), hex {Flag("hex_on")}, height {Flag("height_blend")}, marks {Flag("mark_transitions")}, "
-                    + $"cycle {Uniform("macro_cycle_tiles")}, width {Uniform("mix_width_tiles")}, sharpness {Uniform("hex_sharpness")}");
+                faults.Add($"moving every control reached jitter {Uniform("grass_jitter")}, season {Uniform("grass_season")}, "
+                    + $"{masks?.ResourcePath ?? "no masks"}, strength {Uniform("grass_strength")}, grain drawn {lab._grain.Visible} at 0, "
+                    + $"placeholders drawn {lab.Village.Visible} when off, the grass at {Uniform("px_per_tile")} px and the village at "
+                    + $"{lab.Village.PixelsPerTile}, macro {Flag("macro_on")}, hex {Flag("hex_on")}, mixing {Flag("mix_on")} (layouts "
+                    + $"{lab.MixedLoaded}, the fifth {last?.ResourcePath ?? "none"}), marks {Flag("mark_transitions")}, height "
+                    + $"{Flag("height_blend")}, cycle {Uniform("macro_cycle_tiles")}, width {Uniform("mix_width_tiles")}, "
+                    + $"sharpness {Uniform("hex_sharpness")}");
+            }
+
+            // ⭐ Reset brings back every look value, and leaves the view's own controls where they were.
+            lab.ResetToApproved();
+            if (lab.DiffersFrom(approved) is string reset)
+            {
+                faults.Add($"Reset to approved left {reset}");
+            }
+
+            if (Math.Abs(Uniform("grass_season") - 2.6f) > 1e-6f || Math.Abs(Uniform("px_per_tile") - 40f) > 1e-6f || lab.Village.Visible)
+            {
+                faults.Add("Reset to approved moved the season, the zoom or the placeholders");
             }
         }
         finally
@@ -510,7 +652,9 @@ public sealed partial class GrassLab : Control
         ImportHolds("res://textures/grass/grass_seasons.png", mipmapped: false, Image.Format.Rgb8, faults);
 
         return faults.Count == 0
-            ? "[widths] grass lab: ✅ opens on v06 (v04 next) at strength 1, jitter 0.15, grain 0.15, season 1, 32 tiles a repeat, over parchment with the placeholders standing, and every control reaches what it moves (grain 0 is not drawn; the village zooms with the grass); the anti-tiling switches open off and reach the shader, mixing loading v02–v06 only when asked; the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
+            ? $"[widths] grass lab: ✅ {GrassLook.ApprovedPath} sets every value, rejected options off; the lab opens at it "
+                + "over parchment with the placeholders standing, every control reaches what it moves, Reset brings the look back "
+                + "and Copy says it in Joe's list; the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
             : $"[widths] grass lab: ❌ {string.Join("; ", faults)}";
     }
 

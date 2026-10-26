@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="GrassLook" load_steps=2 format=3]
+
+; The approved grass look (Joe, 2026-10-26; `specs/grass-look.md`, D632). The one place these numbers live:
+; the lab opens at them, "Reset to approved" returns to them, and the terrain shader will read them.
+; PaperGrain is the lab's placeholder, a starting point only. TilesPerRepeat 63 is provisional (~48 after a
+; closer-zoom check). MixingOn and a false HeightBlend (Linear) are rejected — kept switchable, off.
+
+[ext_resource type="Script" path="res://GrassLook.cs" id="1_look"]
+
+[resource]
+script = ExtResource("1_look")
+Masks = "v06"
+Strength = 0.8
+Jitter = 0.15
+PaperGrain = 0.15
+TilesPerRepeat = 63.0
+MacroOn = true
+MacroCycleTiles = 85.0
+MacroStrengthAmount = 0.37
+MacroSeasonAmount = 0.1
+HexOn = true
+HexSharpness = 8.5
+HeightBlend = true
+MixingOn = false
+MixRegionTiles = 48.0
+MixWidthTiles = 1.5

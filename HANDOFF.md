@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D631: THE SEASONAL GRASS LAB BUILT (`.\run.bat grass`) WITH STRENGTH, PAPER GRAIN, PLACEHOLDERS AND THREE ANTI-TILING OPTIONS, UNPLAYED; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D620. `slice/doors` = D621–D625 + the handoff recording Joe's play ("IT LOOKS GOOD"), WAITING ON HIS MERGE CALL. `slice/grass-seasons` (THIS BRANCH, off `main`) = D627–D632: THE GRASS LOOK APPROVED BY JOE AND RECORDED (`looks/grass_approved.tres`, `specs/grass-look.md`); THE LAB OPENS AT IT; THE GAME'S VALLEY UNTOUCHED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D627) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -36,10 +36,18 @@
 > on 187 px). **Linear blending ghosts** (~70 % of a mixing band's stamps at part strength; a third of all ground for
 > linear hex); **height** cuts it to 0.6 % / 6 % of the ground. Cost over plain at 1280 × 800: +0.03 to +0.25 ms.
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
-> his to start. Grass: **Joe compares the anti-tiling options in the lab** and picks; then the repeat, the zoom, the
-> strength and the grain; then §6.0 — does the game's ground move to parchment.
+> **D632 — the look approved and recorded.** `src/Bclone.Game/looks/grass_approved.tres` (`GrassLook.cs`, no defaults:
+> the file is the only copy of a number) — v06, strength 0.80, jitter 0.15, grain 0.15 (placeholder), 63 tiles a repeat
+> (provisional), macro 85/0.37/0.10, hex 8.5 Height; mixing and Linear rejected, kept off. The lab opens at it, with
+> *Reset to approved* and *Copy current values* (Joe's list format). Parity at the look ≤ 2/255. Cost +0.12 ms over the
+> pack at 1280 × 800. Tools to redo every number: `tools/grass/` (README). Reference images: `art/grass/`.
 >
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Doors: merged and pushed on `main` (D626); commit 5 is
+> his to start. Grass: `grass-look.md §7`'s open items (63 vs ~48; macro strength 0.37 vs ~0.25; clipped stamps at hex
+> borders, seen in the summer reference); then §6.0 of `seasonal-grass.md` — does the game's ground move to parchment.
+> `slice/grass-seasons` is off D620 and unmerged: merging it to `main` conflicts in this banner and DESIGN §6/§7.
+>
+> **Numbers (D632):** suite 1811 / 0 / 5 of 1816 (13m39); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; parity at the look ≤ 2/255.
 > **Numbers (D631):** suite 1811 / 0 / 5 of 1816 (13m08); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after; `grass_antitile_ref.py --selfcheck` OK.
 > **Numbers (D630):** suite 1811 / 0 / 5 of 1816 (12m56); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after.
 > **Numbers (D629):** suite 1811 / 0 / 5 of 1816 (13m38); view 0 warnings; probe **98** `[widths]` lines (+ `grass lab:`), bar 151, tile centres / new game / fault ✅, `done.`; goldens grep 383 before and after. ⚠️ **Merging both into
@@ -8111,6 +8119,19 @@ Read `git status` after staging, every time.
   doesn't match the parent"*). Name helpers so they cannot collide.
 - **Joe's lab was running** (`run.bat grass`, PID read from its command line) through the build and every render; the
   build did not lock. Check a Godot's command line before treating it as yours (D606).
+
+## ⛔ THE TRAPS D632 PAID FOR — A RELATIVE `-s` IS `res://`, `sed` EATS BACKSLASHES, AND A MUTANT NEEDS A WAY BACK
+
+- **`godot --path src/Bclone.Game -s tools/grass/x.gd` says *File not found*:** a relative script path is read as
+  `res://tools/...`. Pass it absolute — `"$(pwd -W)/tools/grass/x.gd"` in Git Bash, `"$PWD\tools\grass\x.gd"` in
+  PowerShell.
+- **`sed` turned `\tools` into a tab and ate the other backslashes** in a PowerShell path written into a comment.
+  Any text with a backslash: build it in Python from `chr(92)`, or write the file with the Write tool.
+- **Count the mutant's text too, not only the anchor.** `reset_skips` deleted a line whose remainder already occurred
+  twice — applied, it could never have been reverted by its own text. Count both (`mutate.py count`) and make a
+  mutant leave a unique marker.
+- **A resource class with no defaults is a single source only if something checks the file sets every field.** The
+  probe reads `GrassLook`'s `[Export]` properties by reflection and asks `grass_approved.tres` for each.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

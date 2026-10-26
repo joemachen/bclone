@@ -2,8 +2,8 @@
 
 **Decision:** D627 (this document; Joe's grass pack, `D:\Projects\brushes\seasons`). Neighbours: D342 (`ValleyTexture`,
 the valley baked once on the CPU), D338/D366 (nothing per frame that a counter can answer), `environment-and-seasons.md`
-(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D631), UNPLAYED** —
-`.\run.bat grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
+(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D631); ✅ THE LOOK APPROVED (D632) — its values and
+reasons are in `specs/grass-look.md`.** `.\run.bat grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
 lossless (§3); THE SCENE draws them over parchment (§5). **The game's valley does not use them yet**, and
 `Bclone.Sim` is untouched. Next: Joe looks at the scene; then §6.0's ground question. Owner: Joe + Claude Code.
 
