@@ -80,6 +80,10 @@ public sealed partial class SimWorld
         int foodInStores = FoodTheVillageHolds();
 
         // The cart they arrived in: restocked where it stands, raised again where it was pulled down.
+        // ⛔ AND ITS FOOD COMES IN BY ITS OWN DOOR (D623), as a nomad band's does (D572): neither produced nor eaten here,
+        // so the ledger is told. Unseen until doors cost a fixture village its founders — seed 2 re-founded in Year 7 and
+        // the conservation guard read 200 food appearing in the cart.
+        int heldBefore = FoodHeldAnywhere();
         if (TheCart is StoreBuilding cart)
         {
             cart.Store.Receive(Goods.Produce, Config.CartFood);
@@ -89,6 +93,8 @@ public sealed partial class SimWorld
         {
             RaiseTheCart(Config, Map.FoundingSite);
         }
+
+        FoodEverBroughtIn += FoodHeldAnywhere() - heldBefore;
 
         // The founding's shape: two households of two adults, paired, a master and a journeyman among them — all by
         // hash (`NameHash`), keyed two million past any villager id so no first founding's name is repeated by chance.

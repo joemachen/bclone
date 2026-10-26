@@ -20,6 +20,54 @@ namespace Bclone.Sim.Tests;
 /// </remarks>
 internal static class FarmTestGround
 {
+    /// <summary>
+    /// ⭐ A granary raised on open ground, and the farmhouse ground nearest its door — a farm that really is beside a store
+    /// (D623). Returns the ground and its walk to the granary.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Not beside the founding granary any more:</b> since doors the founding buildings face the founding site and
+    /// their doorsteps are kept clear (`doors.md §4.5–§4.6`), and the nearest farm-sized ground to the founding granary was a
+    /// 6-tick walk through its door — past the haul budget, so "near" farms were warned and penalised, and one reaped fewer
+    /// tiles than a farm ten ticks out, on cramped ground. A farmhouse has no door (D624), so it can stand right beside a
+    /// granary's doorstep on open ground.
+    /// </remarks>
+    internal static GridPos GroundBesideAFreshGranary(SimWorld world, out int walk)
+    {
+        GridPos open = FarmFixtures.ClearGroundNear(world);
+        Assert.True(world.Mark(BuildingKind.Granary, open).Allowed);
+        Workplace site = Assert.Single(world.Workplaces, place => place.Construction?.Kind == BuildingKind.Granary);
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+        StoreBuilding granary = Assert.Single(world.StoreBuildings, store => store.Tile == open);
+        GridPos best = default;
+        walk = int.MaxValue;
+        for (int dy = -8; dy <= 8; dy++)
+        {
+            for (int dx = -8; dx <= 8; dx++)
+            {
+                var at = new GridPos(granary.Tile.X + dx, granary.Tile.Y + dy);
+                if (world.HasSomethingToHarvest(at) || !world.CanBuildAt(BuildingKind.Farmhouse, at).Allowed)
+                {
+                    continue;
+                }
+
+                int cost = world.TravelCost.TicksBetween(at, granary.Tile);
+                if (cost != TravelCostField.Unreachable && cost < walk)
+                {
+                    walk = cost;
+                    best = at;
+                }
+            }
+        }
+
+        return best;
+    }
+
     /// <summary>Buildable ground as close as possible to a given walk from the nearest granary.</summary>
     internal static GridPos GroundAtAboutThisWalk(SimWorld world, int walkAway, out int walk)
     {

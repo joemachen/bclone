@@ -198,7 +198,14 @@ public sealed class FootprintClaimsGroundTests
         GridPos tile = SomewhereClear(world);
         var beside = new GridPos(tile.X + dx, tile.Y + dy);
 
-        Assert.True(world.Mark(BuildingKind.ForesterHut, tile).Allowed);
+        // ⚠️ The first hut's door does not open onto the second's tile (D623): a doorstep is kept clear (`doors.md §4.5`),
+        // and marked with no facing the hut's door turned toward the nearest store — onto `beside` for (0, 1). This guard is
+        // about two footprints touching, not about doors, so the first is turned until its door — as the door rule finds
+        // it, a blocked front and all — opens somewhere else.
+        Angle away = new[] { 0, 1, 2, 3 }
+            .Select(q => Angle.FromTurnFraction(q, 4))
+            .First(facing => world.DoorAt(world.FootprintOf(BuildingKind.ForesterHut, tile, facing)).Doorstep != beside);
+        Assert.True(world.Mark(BuildingKind.ForesterHut, tile, away).Allowed);
 
         PlacementVerdict second = world.Mark(BuildingKind.ForesterHut, beside);
         _output.WriteLine($"{tile} then {beside}: {second.Allowed} {second.Reason}");

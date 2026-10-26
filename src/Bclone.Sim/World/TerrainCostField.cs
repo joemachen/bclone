@@ -47,6 +47,13 @@ public sealed class TerrainCostField
     /// descent in <see cref="StepFrom"/> refuses the same edges the fill refused.
     /// </summary>
     private byte[] _walls = System.Array.Empty<byte>();
+
+    /// <summary>
+    /// ⭐ The destination's own walls, for this field alone (D623, `doors.md §4.4`): every edge of a doored building but
+    /// its door's, as (map-order index, wall bits), both sides of each edge. The fill reads them through the scratch;
+    /// the descent reads them here, because the scratch is shared and has them taken down again by then.
+    /// </summary>
+    internal (int Index, byte Bits)[] DoorWalls { get; set; } = System.Array.Empty<(int, byte)>();
     private readonly int _width;
     private readonly int _height;
     private readonly int _minX;
@@ -554,7 +561,16 @@ public sealed class TerrainCostField
         // reached through the gate, can still be cheaper, and a descent that only compares costs
         // stepped straight over the fence to it. Measured on the first run of the guard: a founder
         // across the Fletchers' fence at tick 17.
-        byte walls = _walls.Length == 0 ? (byte)0 : _walls[IndexOf(from)];
+        int at = IndexOf(from);
+        byte walls = _walls.Length == 0 ? (byte)0 : _walls[at];
+        for (int i = 0; i < DoorWalls.Length; i++)
+        {
+            if (DoorWalls[i].Index == at)
+            {
+                walls |= DoorWalls[i].Bits;
+            }
+        }
+
         if ((walls & 2) == 0) { Consider(new GridPos(from.X + 1, from.Y)); }
         if ((walls & 8) == 0) { Consider(new GridPos(from.X - 1, from.Y)); }
         if ((walls & 4) == 0) { Consider(new GridPos(from.X, from.Y + 1)); }

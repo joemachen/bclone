@@ -301,7 +301,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D602) — builders spread across the queue (Joe, D602: each takes the first site nobody else serves, surplus only behind the head; `Villager.ServingSiteId` hashed sparsely). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Was 6173447274466564153.
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 15516440239506033514.
     // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 17250329924685123549.
-    private const ulong SeamGoldenHash = 335095228686958537UL;
+    // RE-TAKEN (D625) — doors, the behaviour commit (D622–D625, `doors.md §11`), folded at Joe's word (D623: *"fold commits 2, 3 and 4's sim changes into one behaviour commit … goldens re-taken once"*): doorsteps kept clear, walks and catchment through the door, the founding's and an unmarked building's facings, a farmhouse, a barn and the cart with no door, the door priced into the economy (`DoorTiles`, `gather_yield` 123 → 135), the hay put out nearest the barn, a tend that would outlast summer not begun, and the three bugs the change surfaced (an emergency sent a villager whose arms were full, the re-founders' cart food was never counted in, a door opened into a pocket beside the founding site). ⭐ PROVEN: the parent commit (b10667c, D621) holds the old value with the suite green (1837 / 0 / 5), and every value here was read twice, identical. Was 335095228686958537.
+    private const ulong SeamGoldenHash = 12490923102850685382UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -385,7 +386,10 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D602) with it, for the same reason: builders spread across the queue. ⭐ PROVEN: the parent commit (0b91211, D601) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 16045020298154782036.
     // RE-TAKEN (D603) with it, for the same reason: Joe's seat defaults. PROVEN: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Asserted after `SeamGoldenHash`, so it surfaced on the second run. Was 10584260321345854200.
     // RE-TAKEN (D612) with it, for the same reason: the market holds 8,000 and keeps 1,000 of each good it knows. Proven by the parent commit (de2b491), which holds the old value with the suite green. Asserted after `SeamGoldenHash`, so it surfaced on the second run, as D537's did. Was 7581925007179817567.
-    private const ulong SeamBeforeAnybodyGotBetter = 7837485714083851781UL;
+    // RE-TAKEN (D625) — doors, the same folded behaviour commit as `SeamGoldenHash` above, with mastery off: it sat behind
+    // that golden in the one test and surfaced only once it passed (D537's trap). Proven: the parent commit (b10667c, D621)
+    // holds the old value with the suite green; read three times, identical. Was 7837485714083851781.
+    private const ulong SeamBeforeAnybodyGotBetter = 10861144845569800999UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

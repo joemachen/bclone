@@ -627,9 +627,12 @@ public sealed class Household
             }
         }
 
-        if (!world.Map.Contains(plot.Door)
-            || world.Map.TerrainAt(plot.Door) == Terrain.Water
-            || world.SomethingStandsAt(plot.Door))
+        // ⭐ The doorstep the house's door will open onto (D622, `doors.md §4.2`) — the door rule's own, which is
+        // `plot.Door` at a quarter turn and the tile straight in front of the front tile at any other.
+        GridPos doorstep = plot.Doorstep;
+        if (!world.Map.Contains(doorstep)
+            || world.Map.TerrainAt(doorstep) == Terrain.Water
+            || world.SomethingStandsAt(doorstep))
         {
             return -1;
         }

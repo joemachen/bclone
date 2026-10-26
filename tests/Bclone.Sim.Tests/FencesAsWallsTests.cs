@@ -786,12 +786,18 @@ public sealed class FencesAsWallsTests
     [InlineData(true)]
     public void NothingBesideTheFoundingSiteSealsAPocketAgainstIt(bool somethingStandsOnTheSite)
     {
+        // ⚠️ SOMETHING STOOD ON THE SITE, NOT MARKED THERE (D623). This marked a pile on the free founding site; since doors
+        // the founding buildings face the site (`doors.md §4.6`) and one opens onto it, so nothing may be marked there —
+        // rightly. It is stood there instead, as the trade and barn guards stand the hall: one tile, and the standing set told.
         SimWorld world = Founded();
         GridPos site = world.Map.FoundingSite;
         if (somethingStandsOnTheSite && world.FootprintCovering(site).Count == 0)
         {
-            Assert.True(world.Mark(BuildingKind.Pile, site).Allowed, "A pile could not be marked on the founding site.");
+            world.TownHall = new TownHall { Position = Point.CentreOf(site), Name = "the hall", RaisedAtTick = 1 };
+            world.StandingChanged();
         }
+
+        Assert.Equal(somethingStandsOnTheSite, world.FootprintCovering(site).Count > 0);
 
         IReadOnlyList<GridPos> under = world.FootprintCovering(site);
         IReadOnlyList<GridPos> shape = under.Count > 0 ? under : new[] { site };

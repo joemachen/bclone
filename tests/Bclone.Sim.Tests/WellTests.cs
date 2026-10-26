@@ -354,7 +354,12 @@ public sealed class WellTests
         _output.WriteLine($"{trips.Count} trips against {once.Count}; worn tiles beside the well {worn} against {wornWithout}; "
             + $"wear beside it {wear} against {wearWithout}");
 
-        Assert.True(worn >= 1, "no worn tile beside the well");
+        // ⚠️ WEAR, NOT YET A WORN TILE, IN TWO YEARS — the price of doors, measured and accepted (D625, Joe:
+        // "keep D388 as it is ... record the house-siting and herd guards as measured costs"). Walks go
+        // through doors now (`doors.md §4.4`) and the site chooser prices every plot by them; switching that
+        // one rule off (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of
+        // D622 moves it. Measured: 11 trips, wear beside the well 20 against 0, no tile there worn to the path
+        // grade (one or more before doors). The doubling below still holds.
         Assert.True(wear >= wearWithout * 2, $"the trips did not double the wear beside the well ({wear} against {wearWithout})");
     }
 

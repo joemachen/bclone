@@ -111,14 +111,31 @@ public sealed partial class SimWorld
     private bool MayNotStore(Workplace barn) =>
         BarnStoreOf(barn) is not StoreBuilding store || store.Store.Held + Config.CarryCapacity > store.Store.Capacity;
 
-    /// <summary>Where a herdsman puts the hay out: the pasture's first workable tile, in its own order.</summary>
+    /// <summary>
+    /// Where a herdsman puts the hay out: the workable pasture tile nearest the barn (D623), a tie to the pasture's own order.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ It was the pasture's FIRST workable tile, in map order — its top row, wherever that lay. Since doors the
+    /// herdsman's winter round starts and ends at his own house's door (`doors.md §4.4`), and the lap out to the top row and
+    /// home to warm was long enough that the hay out ran dry behind him: six head into winter, none out
+    /// (`AHerdsmanFeedsTheHerdThroughWinter`; six before doors). The barn has no door (D624), so the nearest is by the walk's
+    /// ruler from its middle; sorted once and asked in that order, so the cost field is asked of the first few tiles, not of
+    /// the whole pasture.
+    /// </remarks>
     public GridPos? WhereTheHayGoesOut(Workplace barn)
     {
         ArgumentNullException.ThrowIfNull(barn);
         IReadOnlyList<int> owned = Zones.WorkGroundOf(barn.Id);
+        var nearest = new List<(int Distance, int Order)>(owned.Count);
         for (int i = 0; i < owned.Count; i++)
         {
-            GridPos tile = Zones.PositionOf(owned[i]);
+            nearest.Add((barn.Tile.ManhattanDistanceTo(Zones.PositionOf(owned[i])), i));
+        }
+
+        nearest.Sort();
+        for (int i = 0; i < nearest.Count; i++)
+        {
+            GridPos tile = Zones.PositionOf(owned[nearest[i].Order]);
             if (IsWorkablePasture(tile))
             {
                 return tile;
@@ -126,6 +143,21 @@ public sealed partial class SimWorld
         }
 
         return null;
+    }
+
+    /// <summary>Whether any pasture tile is workable — <see cref="WhereTheHayGoesOut"/>'s question without its sort, for the per-tick ask.</summary>
+    private bool AnyPastureToFeedOn(Workplace barn)
+    {
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(barn.Id);
+        for (int i = 0; i < owned.Count; i++)
+        {
+            if (IsWorkablePasture(Zones.PositionOf(owned[i])))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -138,7 +170,7 @@ public sealed partial class SimWorld
         ArgumentNullException.ThrowIfNull(barn);
         bool feedingTime = Clock.IsWinter
             || (Clock.Season == Season.Fall && Clock.DayOfSeason > Config.DaysPerSeason - Config.HayFeedAheadDays);
-        if (!feedingTime || barn.HerdHead <= 0 || Config.Animals.Count == 0 || WhereTheHayGoesOut(barn) is null)
+        if (!feedingTime || barn.HerdHead <= 0 || Config.Animals.Count == 0 || !AnyPastureToFeedOn(barn))
         {
             return false;
         }

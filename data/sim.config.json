@@ -234,7 +234,11 @@
   // a year holds 11 trips, not 12 (and the floor is asked of the year's own
   // sum now, which truncates twice: 122 fed 257 against a need of 258).
   // Same target, same scarcity.
-  "gather_yield": 123,
+  // 123 -> 135 (D623): every building is entered and left by its door, so
+  // every leg to or from one is two tiles longer (VillageEconomy.DoorTiles,
+  // measured on twenty villages: 1.4-2.4). The floor went 120 -> 132; 135
+  // keeps the 2.5 % over it that 123 kept over 120. Same target, same scarcity.
+  "gather_yield": 135,
   // THE COPSE THINS UNDER USE (D257, Joe: "the copse of wood isnt infinite").
   // Every N completed gathers sets the nearest mature tree in the hut's ring
   // back to a sapling; regrowth grows it up again on its own sweep. So a hut

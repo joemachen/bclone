@@ -41,6 +41,11 @@ against a number from an older commit.
   every standing building, whether the tile in front of its facing is walkable, empty, unwalled and reached, whether
   another side is open if not, and the walk to it against the walk to the building. Reads, never steps. Copy in,
   `--filter ZzDoors`, delete.
+- `ZzDoorWalk.cs` — D623's measurement of what a door costs a walk: on twenty fixture villages ten years on, every walk
+  (a passage in from a free tile, a leg between buildings, a farm's haul) priced through the doors and again with
+  `SimWorld.DoorsOnEverySide`; one ZZW line a village and walk kind. Copy in, `-c Release --filter ZzDoorWalk`, delete.
+- `ZzDoorSaves.cs` — D623's fourth arm: Joe's own saves (`ZZ_SAVES`, a *copy*), stepped `ZZ_YEARS` (20) on, one ZZS line
+  a save — alive at load and after, deaths by cause, births. Run in two worktrees with `ZZ_LABEL`, as `ZzLimits`.
 - `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
   fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
   one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its

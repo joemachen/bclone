@@ -138,8 +138,11 @@ public sealed class BuilderSpreadTests
             {
                 for (int dx = -radius; dx <= radius; dx++)
                 {
+                    // ⚠️ THE WHOLE FOOTPRINT CLEAR, NOT ITS ANCHOR (D623): a 2×2 with a tree under one corner waits for the
+                    // clearing (B5), and `NextSiteToServe` rightly skips a site still waiting. The anchor alone held while the
+                    // first clear anchor happened to have clear neighbours; doors refuse a doorstep, and the search moved.
                     var at = new GridPos(site.X + dx, site.Y + dy);
-                    if (!world.HasSomethingToHarvest(at) && world.CanBuildAt(kind, at).Allowed)
+                    if (!world.FootprintOf(kind, at).CoveredTiles().Any(world.HasSomethingToHarvest) && world.CanBuildAt(kind, at).Allowed)
                     {
                         return at;
                     }
