@@ -2,8 +2,8 @@
 
 **Decision:** D627 (this document; Joe's grass pack, `D:\Projects\brushes\seasons`). Neighbours: D342 (`ValleyTexture`,
 the valley baked once on the CPU), D338/D366 (nothing per frame that a counter can answer), `environment-and-seasons.md`
-(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629), UNPLAYED** — `.\run.bat
-grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
+(the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D630), UNPLAYED** —
+`.\run.bat grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
 lossless (§3); THE SCENE draws them over parchment (§5). **The game's valley does not use them yet**, and
 `Bclone.Sim` is untouched. Next: Joe looks at the scene; then §6.0's ground question. Owner: Joe + Claude Code.
 
@@ -78,6 +78,12 @@ The first use is a scene to look at the grass in, before it goes anywhere near t
 - season: a slider, 0–4, to judge the blends directly (D628, §6.4)
 - pixels per tile: a slider, 13–48 (the game's zoom range at 1280 wide), starting at 24 — added in the build (D629),
   because *tiles per repeat* means nothing on screen without a zoom to say how big a tile is
+- **strength**: a slider, 0–1, starting at 1 — 0 is bare parchment, 1 the pack as painted; the grass multiply blended
+  toward white (Joe, after the first look; D630)
+- **paper grain**: a slider, 0–0.4, starting at 0.15 — a rough multiply over everything, grass and placeholders alike,
+  because grain knocks the contrast down and changes how loud the grass reads (Joe; D630). At 0 it is not drawn.
+- **placeholders**: on by default — six homes, a granary, a wood and eight villagers, drawn as the game draws them
+  (Joe: *"the game's own glyphs"*; D630)
 - **H** hides the panel
 
 ⚠️ The snippet's uniform is `hint_range(0.0, 0.3) = 0.0`; the slider sets the value from code, and the snippet is not
@@ -88,7 +94,7 @@ edited. The pack disagrees with itself on the value: the snippet's comment says 
 
 - **`GrassLab.tscn` / `GrassLab.cs`**: one full-window `ColorRect` with one `ShaderMaterial`, and a panel whose
   sliders only set uniforms. **`shaders/grass_lab.gdshader`** includes the snippet unchanged, turns the rect's UV back
-  into tiles (`UV × size_px / px_per_tile / tiles_per_repeat`), and writes `parchment × grass` — no linear step
+  into tiles (`(UV − 0.5) × size_px / px_per_tile / tiles_per_repeat` — from the centre since D630), and writes `parchment × grass` — no linear step
   (§6.2). Only the version on show is loaded. Launched by `.\run.bat grass` (Godot's scene argument,
   `res://GrassLab.tscn`); the game itself is untouched.
 - **Verified against Joe's reference, not by eye alone.** Rendered windowed (a throwaway script, not in the tree —
@@ -104,6 +110,31 @@ edited. The pack disagrees with itself on the value: the snippet's comment says 
   the atlas.
 - ⚠️ **Seen in the first renders:** at the game's far zoom (13 px a tile) a 32-tile repeat reads plainly as a
   pattern, about 3 × 2 across the window. That is the question the repeat slider is for (§6.3).
+
+### 5.2 Strength, paper grain and the placeholders (D630)
+
+- **Strength** is `mix(1, grass, strength)` before the multiply over parchment, in `grass_lab.gdshader` — the snippet
+  is still untouched.
+- **Paper grain** is its own overlay (`shaders/paper_grain.gdshader`, `render_mode blend_mul`) on top of the grass
+  and the placeholders: three octaves of value noise in **screen pixels** (fibres at ~1 px, tooth at ~5, a faint
+  cloud at ~37), `1 − amount × n`, so 0.15 is about 7 % darker on average. No image asset. ⚠️ **Screen-anchored
+  is a lab choice, not a game one:** the lab never pans, so it cannot show whether grain belongs to the window or
+  to the land. That is the game's question, when it pans.
+- **The placeholders** (`GrassLabVillage.cs`) borrow everything but the layout: `VillageMap.FootprintQuadAt`, the
+  home, door, granary, canopy and villager colours, the canopy scatter (`VillageMap.TreesOn` / `CanopyOn`, made
+  `internal` for this, with `DoorColour`, `TreeCanopy` and `CanopyRadius`), the villager's radius, and the home and
+  granary footprints from the loaded config's rows. ⚠️ The game draws canopies only above 24 px a tile and a baked
+  wood below; the lab, with no bake, draws canopies at every zoom.
+- **Grass and village now count tiles from the window's centre** (`(UV − 0.5) × size_px / px_per_tile`), so they zoom
+  together. Re-verified against `grass_ref.py` with the shifted origin: **≤ 1/255 on every pixel** in the four D629
+  cases and a fifth at strength 0.5; with the strength blend removed, that case is up to **76/255** off.
+- **Probe:** `grass lab:` now also asks that the lab opens at strength 1, grain 0.15 drawn, placeholders on and
+  drawn, and that strength, grain (0 = not drawn), the placeholders' box and the zoom (the village with the grass)
+  reach what they move. Red-checked: **6 mutants, 6 reds, no zeros** — the strength and grain defaults, grain drawn
+  at 0, a box that no longer hides the village, a village that does not zoom, strength never reaching its uniform.
+- ⚠️ **What the placeholders showed at once — for §6.0, not for the lab:** an adult villager's dot (`#e8e2d4`) almost
+  vanishes on bare parchment, and the granary's yellow barely separates from ochre grass. Both were chosen against
+  slate. Moving the game to parchment re-picks them.
 
 ## 6. Settled — Joe's calls (D628, 2026-10-26, all as recommended)
 

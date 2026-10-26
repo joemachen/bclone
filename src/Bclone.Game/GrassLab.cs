@@ -22,6 +22,13 @@ namespace Bclone.Game;
 /// The numbers here are the lab's starting points, not the game's: the repeat and the zoom found by eye go into data
 /// when the grass goes into the valley (§6.3).
 /// </para>
+/// <para>
+/// ⭐ <b>Joe's three after the first look (D630):</b> a <i>strength</i> that fades the grass to bare parchment; a
+/// <i>paper grain</i> multiplied over everything, because grain knocks the contrast down and changes how loud the
+/// grass reads; and <i>placeholders</i> — the game's own buildings, trees and villagers (<see cref="GrassLabVillage"/>)
+/// — so the grass is judged under what will stand on it. Grass and village count tiles from the window's centre, so
+/// they zoom together.
+/// </para>
 /// </remarks>
 public sealed partial class GrassLab : Control
 {
@@ -38,12 +45,20 @@ public sealed partial class GrassLab : Control
     /// </summary>
     internal const double DefaultPixelsPerTile = 24.0;
 
+    /// <summary>The pack as painted.</summary>
+    internal const double DefaultStrength = 1.0;
+
+    /// <summary>A light grain — about 7 % darker on average, which is what takes the edge off the contrast.</summary>
+    internal const double DefaultGrain = 0.15;
+
     internal static readonly Color Parchment = new("#e6d6b0");
 
     private static readonly string[] SeasonNames = { "spring", "summer", "fall", "winter" };
 
     private readonly ShaderMaterial _material = new() { Shader = GD.Load<Shader>("res://shaders/grass_lab.gdshader") };
+    private readonly ShaderMaterial _grainMaterial = new() { Shader = GD.Load<Shader>("res://shaders/paper_grain.gdshader") };
     private ColorRect _ground = null!;
+    private ColorRect _grain = null!;
     private PanelContainer _panel = null!;
     private Texture2D? _masks;
 
@@ -53,11 +68,19 @@ public sealed partial class GrassLab : Control
 
     internal HSlider Season { get; private set; } = null!;
 
+    internal HSlider Strength { get; private set; } = null!;
+
     internal HSlider Jitter { get; private set; } = null!;
+
+    internal HSlider Grain { get; private set; } = null!;
 
     internal HSlider TilesPerRepeat { get; private set; } = null!;
 
     internal HSlider PixelsPerTile { get; private set; } = null!;
+
+    internal CheckBox Placeholders { get; private set; } = null!;
+
+    internal GrassLabVillage Village { get; private set; } = null!;
 
     public override void _Ready()
     {
@@ -70,6 +93,15 @@ public sealed partial class GrassLab : Control
         _ground.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(_ground);
         _ground.Resized += () => _material.SetShaderParameter("size_px", _ground.Size);
+
+        // The placeholder village stands on the grass, and the paper's grain lies over both.
+        Village = new GrassLabVillage { Name = "Village" };
+        Village.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(Village);
+
+        _grain = new ColorRect { Name = "Grain", Material = _grainMaterial, MouseFilter = MouseFilterEnum.Ignore };
+        _grain.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_grain);
 
         _panel = new PanelContainer { Name = "Panel", Position = new Vector2(16, 16), CustomMinimumSize = new Vector2(340, 0) };
         _panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
@@ -103,10 +135,28 @@ public sealed partial class GrassLab : Control
         Version.ItemSelected += index => ShowVersion(Versions[index]);
         body.AddChild(Row("Version", Version, null));
 
-        Season = AddSlider(body, "Season", 0.0, 4.0, 0.01, DefaultSeason, "grass_season", SeasonSays);
-        Jitter = AddSlider(body, "Jitter", 0.0, 0.25, 0.005, DefaultJitter, "grass_jitter", v => v.ToString("0.000", CultureInfo.InvariantCulture));
-        TilesPerRepeat = AddSlider(body, "Tiles per repeat", 8.0, 128.0, 1.0, DefaultTilesPerRepeat, "tiles_per_repeat", v => v.ToString("0", CultureInfo.InvariantCulture));
-        PixelsPerTile = AddSlider(body, "Pixels per tile", 13.0, 48.0, 1.0, DefaultPixelsPerTile, "px_per_tile", v => v.ToString("0", CultureInfo.InvariantCulture));
+        Season = AddSlider(body, "Season", 0.0, 4.0, 0.01, DefaultSeason, Sets("grass_season"), SeasonSays);
+        Strength = AddSlider(body, "Strength", 0.0, 1.0, 0.01, DefaultStrength, Sets("grass_strength"), Plain("0.00"));
+        Jitter = AddSlider(body, "Jitter", 0.0, 0.25, 0.005, DefaultJitter, Sets("grass_jitter"), Plain("0.000"));
+        Grain = AddSlider(body, "Paper grain", 0.0, 0.4, 0.01, DefaultGrain, SetTheGrain, Plain("0.00"));
+        TilesPerRepeat = AddSlider(body, "Tiles per repeat", 8.0, 128.0, 1.0, DefaultTilesPerRepeat, Sets("tiles_per_repeat"), Plain("0"));
+        PixelsPerTile = AddSlider(
+            body,
+            "Pixels per tile",
+            13.0,
+            48.0,
+            1.0,
+            DefaultPixelsPerTile,
+            v =>
+            {
+                _material.SetShaderParameter("px_per_tile", (float)v);
+                Village.PixelsPerTile = (float)v;
+            },
+            Plain("0"));
+
+        Placeholders = new CheckBox { Name = "Placeholders", Text = "Placeholders", ButtonPressed = true };
+        Placeholders.Toggled += on => Village.Visible = on;
+        body.AddChild(Placeholders);
 
         var hint = new Label { Text = "h hides this panel", Modulate = new Color(1, 1, 1, 0.6f) };
         hint.AddThemeFontSizeOverride("font_size", 12);
@@ -133,8 +183,20 @@ public sealed partial class GrassLab : Control
         ShownVersion = version;
     }
 
-    /// <summary>A labelled slider that sets one uniform, with its value said beside it.</summary>
-    private HSlider AddSlider(VBoxContainer body, string name, double min, double max, double step, double start, string uniform, Func<double, string> says)
+    /// <summary>A uniform of the grass material, set from a slider.</summary>
+    private Action<double> Sets(string uniform) => v => _material.SetShaderParameter(uniform, (float)v);
+
+    /// <summary>The grain's amount — and at 0 the overlay is not drawn at all, so the lab is the pack exactly.</summary>
+    private void SetTheGrain(double amount)
+    {
+        _grainMaterial.SetShaderParameter("amount", (float)amount);
+        _grain.Visible = amount > 0.0;
+    }
+
+    private static Func<double, string> Plain(string format) => v => v.ToString(format, CultureInfo.InvariantCulture);
+
+    /// <summary>A labelled slider that applies its value, with the value said beside it.</summary>
+    private static HSlider AddSlider(VBoxContainer body, string name, double min, double max, double step, double start, Action<double> apply, Func<double, string> says)
     {
         var value = new Label { CustomMinimumSize = new Vector2(150, 0) };
         var slider = new HSlider
@@ -149,13 +211,13 @@ public sealed partial class GrassLab : Control
         };
         slider.ValueChanged += v =>
         {
-            _material.SetShaderParameter(uniform, (float)v);
+            apply(v);
             value.Text = says(v);
         };
         slider.Value = start;
 
-        // `Value = start` raises nothing when start is the slider's own default, so the uniform is set here too.
-        _material.SetShaderParameter(uniform, (float)start);
+        // `Value = start` raises nothing when start is the slider's own default, so it is applied here too.
+        apply(start);
         value.Text = says(start);
 
         body.AddChild(Row(name, slider, value));
@@ -192,7 +254,7 @@ public sealed partial class GrassLab : Control
     }
 
     /// <summary>
-    /// The probe's line (D629): the lab opens as §5 says and its sliders reach the shader; and the grass textures are
+    /// The probe's line (D629, D630): the lab opens as §5 says and its controls reach what they move; and the grass textures are
     /// still imported as §3 says — <b>because Godot's own defaults wipe the masks, and its Import dock can put them
     /// back</b> (D627). Each imported level 0 is compared with its PNG byte for byte: a sampled spot-check scored
     /// zero against Fix Alpha Border.
@@ -214,6 +276,13 @@ public sealed partial class GrassLab : Control
                 || Math.Abs(Uniform("tiles_per_repeat") - 32f) > 1e-6f || Math.Abs(Uniform("px_per_tile") - 24f) > 1e-6f)
             {
                 faults.Add($"opens at jitter {Uniform("grass_jitter")}, season {Uniform("grass_season")}, {Uniform("tiles_per_repeat")} tiles a repeat, {Uniform("px_per_tile")} px a tile (want 0.15, 1, 32, 24)");
+            }
+
+            if (Math.Abs(Uniform("grass_strength") - 1f) > 1e-6f || Math.Abs(lab._grainMaterial.GetShaderParameter("amount").AsSingle() - 0.15f) > 1e-6f
+                || !lab._grain.Visible || !lab.Placeholders.ButtonPressed || !lab.Village.Visible)
+            {
+                faults.Add($"opens at strength {Uniform("grass_strength")}, grain {lab._grainMaterial.GetShaderParameter("amount").AsSingle()} "
+                    + $"(drawn {lab._grain.Visible}), placeholders {lab.Placeholders.ButtonPressed} (drawn {lab.Village.Visible}) (want 1, 0.15 drawn, on drawn)");
             }
 
             if (lab.Jitter.MinValue != 0.0 || lab.Jitter.MaxValue != 0.25)
@@ -238,6 +307,17 @@ public sealed partial class GrassLab : Control
             {
                 faults.Add($"moving the sliders reached jitter {Uniform("grass_jitter")}, season {Uniform("grass_season")}, {masks?.ResourcePath ?? "no masks"}");
             }
+
+            lab.Strength.Value = 0.5;
+            lab.Grain.Value = 0.0;
+            lab.PixelsPerTile.Value = 40.0;
+            lab.Placeholders.ButtonPressed = false;
+            if (Math.Abs(Uniform("grass_strength") - 0.5f) > 1e-6f || lab._grain.Visible || lab.Village.Visible
+                || Math.Abs(Uniform("px_per_tile") - 40f) > 1e-6f || Math.Abs(lab.Village.PixelsPerTile - 40f) > 1e-6f)
+            {
+                faults.Add($"moving the rest reached strength {Uniform("grass_strength")}, grain drawn {lab._grain.Visible} at 0, "
+                    + $"placeholders drawn {lab.Village.Visible} when off, the grass at {Uniform("px_per_tile")} px a tile and the village at {lab.Village.PixelsPerTile}");
+            }
         }
         finally
         {
@@ -253,7 +333,7 @@ public sealed partial class GrassLab : Control
         ImportHolds("res://textures/grass/grass_seasons.png", mipmapped: false, Image.Format.Rgb8, faults);
 
         return faults.Count == 0
-            ? "[widths] grass lab: ✅ opens on v06 (v04 next) at jitter 0.15, season 1, 32 tiles a repeat, over parchment, and its sliders reach the shader; the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
+            ? "[widths] grass lab: ✅ opens on v06 (v04 next) at strength 1, jitter 0.15, grain 0.15, season 1, 32 tiles a repeat, over parchment with the placeholders standing, and every control reaches what it moves (grain 0 is not drawn; the village zooms with the grass); the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
             : $"[widths] grass lab: ❌ {string.Join("; ", faults)}";
     }
 

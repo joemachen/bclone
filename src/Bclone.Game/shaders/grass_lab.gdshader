@@ -15,9 +15,13 @@ uniform vec2 size_px = vec2(1280.0, 800.0);
 uniform float px_per_tile = 24.0;
 uniform float tiles_per_repeat = 32.0;
 
+// 0 = bare parchment, 1 = the pack as painted: the grass multiply blended toward white (D630).
+uniform float grass_strength = 1.0;
+
 void fragment() {
-    vec2 tile_uv = UV * size_px / px_per_tile / tiles_per_repeat;
+    // Tiles from the rect's centre, as the placeholder village counts them, so the two zoom together.
+    vec2 tile_uv = (UV - 0.5) * size_px / px_per_tile / tiles_per_repeat;
     vec4 m = texture(grass_masks, tile_uv);
     vec3 grass = grass_recolor_srgb(m, tile_uv, grass_season, grass_jitter);
-    COLOR = vec4(ground_srgb * grass, 1.0);
+    COLOR = vec4(ground_srgb * mix(vec3(1.0), grass, grass_strength), 1.0);
 }

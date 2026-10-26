@@ -95,7 +95,7 @@ public partial class VillageMap : Control
     private static readonly Color PalisadeEdge = new("#5e4a36", 0.9f);
 
     /// <summary>The door: a darker notch on the house's front edge, the lane side (D386).</summary>
-    private static readonly Color DoorColour = new("#4a3421");
+    internal static readonly Color DoorColour = new("#4a3421");
     private static readonly Color GranaryColour = new("#d8c56a");
     private static readonly Color WarehouseColour = new("#8a7a63");
     private static readonly Color BerryColour = new("#5aa04a");
@@ -145,7 +145,7 @@ public partial class VillageMap : Control
     private static readonly Color SaplingColour = new("#3d5433");
 
     /// <summary>A canopy, a shade above the ground it stands on so the wood has texture (D337).</summary>
-    private static readonly Color TreeCanopy = new("#3c5a3e");
+    internal static readonly Color TreeCanopy = new("#3c5a3e");
 
     /// <summary>A young tree — smaller, lighter, and obviously not yet timber.</summary>
     private static readonly Color SaplingCanopy = new("#4f6b41");
@@ -4831,7 +4831,7 @@ public partial class VillageMap : Control
     /// was in fact spilling over. *A tree overhangs by its branches, not by its trunk* — so the
     /// reach that matters is the centre plus this.
     /// </remarks>
-    private const float CanopyRadius = 0.20f;
+    internal const float CanopyRadius = 0.20f;
 
     /// <summary>
     /// ⭐⭐ The trees — <b>and until D337 there were none at all</b>.
@@ -4975,7 +4975,7 @@ public partial class VillageMap : Control
     }
 
     /// <summary>How many trees stand on one tile.</summary>
-    private static int TreesOn(GridPos tile, bool grown) =>
+    internal static int TreesOn(GridPos tile, bool grown) =>
         grown ? 3 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
 
     /// <summary>
@@ -4997,7 +4997,7 @@ public partial class VillageMap : Control
     /// probe's job is now the half it can actually check: that the canopies reach past their tile.
     /// </para>
     /// </remarks>
-    private static (Vector2 Where, float Shade) CanopyOn(GridPos tile, int which)
+    internal static (Vector2 Where, float Shade) CanopyOn(GridPos tile, int which)
     {
         uint spin = Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) >> (which * 7);
 
