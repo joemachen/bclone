@@ -1,8 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 5 — `main` = D626: DOORS (D621–D625) PLAYED ("IT LOOKS GOOD") AND MERGED, NOT PUSHED. `slice/grass-seasons` = D627 OFF D620, THE GRASS ASSETS IMPORTED, NOTHING DRAWN. NEXT: JOE'S CALL — PUSH, COMMIT 5 (THE VIEW), OR THE GRASS QUESTIONS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `main` = D626: DOORS (D621–D625) PLAYED ("IT LOOKS GOOD"), MERGED AND PUSHED. `slice/grass-seasons` = D627 OFF D620, THE GRASS ASSETS IMPORTED, NOTHING DRAWN. NEXT: JOE'S CALL — COMMIT 5 (THE VIEW), OR THE GRASS QUESTIONS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D626) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **`main` = D626, local, NOT PUSHED** (last pushed at D618). Joe played doors (*"it looks good"*) and said *"Merge
+> **`main` = D626, PUSHED** (Joe: *"Push main to GitHub."*). Joe played doors (*"it looks good"*) and said *"Merge
 > slice/doors into main (don't push yet)"*: merged `--no-ff` (c4a8235), the tree the doors tip's byte for byte, then
 > this D626 docs commit. The four checks are D625's (below): docs only since.
 >
@@ -11,8 +11,8 @@
 > drawn. Its banner and trap live in that branch's `HANDOFF.md`. ⚠️ **Merging it conflicts here, in this banner, and in
 > §6/§7 of `DESIGN.md`** (both sides appended): keep both. Its D627 line says D621–D626 are unmerged; fix that line then.
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything:** push `main`; commit 5 of doors (the view, `doors.md §9`,
-> §11.7); or the grass questions (`specs/seasonal-grass.md §6`, on its branch). **Do not push without his word.**
+> **▶️ NEXT — Joe's call; ask him before starting anything:** commit 5 of doors (the view, `doors.md §9`,
+> §11.7); or the grass questions (`specs/seasonal-grass.md §6`, on its branch). **Do not push a branch without his word.**
 >
 > **(the banner below is the state at D625)**
 >
@@ -8112,7 +8112,7 @@ Read `git status` after staging, every time.
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
-  - ✅ ~~Merge, or commit 5 first~~ — **merged (D626), not pushed.** ▶️ **Commit 5 (the view) is his to start.** The
+  - ✅ ~~Merge, or commit 5 first~~ — **merged and pushed (D626).** ▶️ **Commit 5 (the view) is his to start.** The
     view still guesses the spur's side (`path-shapes.md`).
   - **The farm warning now fires on every farm** (D624): the nearest a farm can stand to a fresh granary is 6 ticks, so
     every farm is warned and capped at 8 tiles of 13. D42's nag; his call whether it says less, or less often.
@@ -8141,7 +8141,7 @@ Read `git status` after staging, every time.
   session): they move every golden, the Phase 0 pins and catchment, so survival is measured before anything is typed.
   ✅ **SPECCED (D619), `specs/doors.md`** — written at Joe's pick in the session after D618 (the card `task_a4066d55` was not
   used). ✅ **His five calls answered as recommended (D620).** 🔨 Commit 1 of 5 built on `slice/doors` (D621); 🔨 commits 2–4 folded into one behaviour commit (D622–D625), goldens
-  re-taken once (6c5eaff), played: *"it looks good"*. ✅ Merged to `main` (D626), not pushed. ▶️ His call: push, or commit 5 (the view). His new items: the top
+  re-taken once (6c5eaff), played: *"it looks good"*. ✅ Merged to `main` and pushed (D626). ▶️ His call: commit 5 (the view). His new items: the top
   of this list.
 
 - ✅ **MERGED AND PUSHED (D615) with D614 on top — Joe: *"merge it, with slice/fence-edge on top"*.** ~~MERGE `slice/d607-notes` (D609–D613) TO `main`.~~
