@@ -1,8 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = THE MERGE OF `slice/doc-truth` (D640–D641: THE DOC TRUTH PASS; THE PHASE 5 GATE ACCEPTED AS WRITTEN), NOT PUSHED; `origin/main` = 9bdd358. NEXT: JOE'S CALL — PUSH; DOORS COMMIT 5 (THE VIEW); A VERDICT ON AN OPEN PHASE 5 ITEM; OR GATE ITEMS 2–3 (THE GOLDEN AUDIT, THE QA CHECKLIST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = 23825d7 (D640–D641), PUSHED. `slice/golden-audit` = D642: GATE ITEM 2 AUDITED — NO GOLDEN REACHES ANY PHASE 5 CHAIN; A POSED-VILLAGE GOLDEN PROPOSED (`specs/phase-5-golden.md §5`), NOT BUILT; UNMERGED. NEXT: JOE'S CALL — BUILD THE POSED GOLDEN; DOORS COMMIT 5; A VERDICT ON AN OPEN PHASE 5 ITEM; OR THE QA CHECKLIST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D641) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D642) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **Local `main` = 9bdd358 + the merge of `slice/doc-truth` (D640–D641), NOT PUSHED** (Joe: *"don't push yet"*).
+> **`main` = 23825d7, pushed** (D640–D641; Joe's word came after the merge commit, so its own lines said *not pushed*
+> — fixed by D642, as he asked).
+>
+> **`slice/golden-audit`** (off `main` at 23825d7, local, unpushed) = **D642: the Phase 5 gate's item 2, audited.**
+> `tools/harness/ZzGoldens.cs` replays the five years-long goldens (fixture and shipped, 50 years, with and without
+> skills; the 20-year posed farm) — every final hash matches its constant — and samples them daily. **No golden
+> reaches any Phase 5 production chain:** no smithy, quarry, mine, mill, bakery, well, bridge, trading post, boat,
+> barn or herd ever stands; the 50-year goldens never even farm; tools are the founders' twenty. Reached: housing
+> (6 homes), doors (6 of 6), maintenance (4 repaired), nomads (5 bands), the market. `specs/phase-5-golden.md` holds
+> the audit and **§5, a posed-village golden — PROPOSED, NOT BUILT**: every ❌ posed at tick 0 by fixtures that
+> already exist, both hashes pinned, a coverage test that each chain turned over, red-checked.
+>
+> **⏸️ Found, Joe's:** CLAUDE.md's goldens grep misses two digit-separated goldens (`AngleTests.cs:336`,
+> `FixedTests.cs:440`, the math tables); `grep -rnE "[0-9](_?[0-9]){14,}"` sees both, and its count is a new baseline.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** build §5's posed golden (Claude's under the gate, his to
+> see the shape first); merge `slice/golden-audit`; doors commit 5; a verdict on an open Phase 5 item; or the QA
+> checklist (gate item 3).
+>
+> **Numbers (D642; no `src/`, `tests/` or `data/` file changed):** suite 1850 / 0 / 5 of 1855 (12m54); view 0 warnings; probe 99
+> `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388 before and after (the
+> separator-aware grep: 390). ZzGoldens: all five replays matched their constants, 18 s in Release. No red-check: no guard
+> was added — the harness is a measurement, not a guard.
+>
+> **— D641, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D641) — ON WINDOWS.**
+>
+> **`main` = 9bdd358 + the merge of `slice/doc-truth` (D640–D641) = 23825d7, pushed at Joe's word after the merge
+> commit** (*this line said "NOT PUSHED" until D642*).
 > **`origin/main` = 9bdd358** — D635–D639 merged (the world on parchment, D638's hang fixed, Joe re-played painting
 > homes: *"painting homes works now"*; the art parked, D639). CI ran the full suite on 5d0c221: 1850 / 0 / 5 of 1855.
 > *This file's title still said "unplayed; Joe plays it; `main` = D634" after that merge — the merge commit carried no
@@ -24,7 +52,7 @@
 > **⚠️ Flagged for Joe, not changed:** `DESIGN.md §3` says *ECS, data-oriented … not negotiable*; the sim is a `sealed
 > class Villager` in lists and `SimWorld` partials, and no §7 entry records leaving ECS.
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything:** push `main` (his word — he said *"don't push yet"*);
+> **▶️ NEXT (as it was, D641) — Joe's call:** push `main` (✅ done, at his word);
 > then doors commit 5, a verdict on an open Phase 5 item, or gate items 2–3 — the golden audit and the QA checklist,
 > Claude's to write now that the gate is taken.
 >
@@ -8356,6 +8384,19 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D642 FOUND — A GOLDEN THAT PASSES SAYS NOTHING ABOUT WHAT ITS RUN NEVER BUILT
+
+- **Every 50-year golden stands the same five workplaces and never farms.** Phase 5 commits re-took or held these
+  goldens (*"All 362 goldens held"*, D592) while no smithy, mill, bridge, boat or herd ever stood in them — the hash held
+  because the code it guards never ran. **Before a golden is cited as guarding a system, measure that its run reaches
+  the system** (`tools/harness/ZzGoldens.cs`), and pin a coverage test beside any new golden (`FarmGoldenTests`' shape).
+- **A unit test that a fact reaches the hash is not a run that reaches the fact.** `…IsInTheFingerprint` tests prove
+  the fingerprint has the field; only a run over years proves the chain behind it is pinned.
+- **A harness replay must assert the golden's own constant**, or it measures a village near the pinned one. All five
+  matched here; a mismatch means the replay is wrong, not the golden.
+- **The goldens grep is a regex, and a regex has a spelling.** `[0-9]\{15,\}` misses `14_897_684_…UL`; two goldens
+  have never been in *"388 before and after"*. When you count something, check what the counter cannot see.
+
 ## ⛔ THE TRAPS D640 FOUND — THE MERGE IS WHERE A STATUS LINE ROTS, AND A HANDOFF'S TITLE IS A STATUS LINE
 
 - **27 false status claims in 24 specs, and almost every one was the branch's own words at the moment it was built**
@@ -8427,6 +8468,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE GOLDENS GREP MISSES DIGIT-SEPARATED GOLDENS (found D642).** CLAUDE.md's fourth verification line,
+  `grep -rn "[0-9]\{15,\}"`, cannot see `AngleTests.cs:336` or `FixedTests.cs:440` (`14_897_…UL`, the math tables).
+  `grep -rnE "[0-9](_?[0-9]){14,}" tests/Bclone.Sim.Tests/*.cs` sees both; its count is a new baseline. His file, his call.
+- ⏸️ **THE POSED PHASE 5 GOLDEN (`specs/phase-5-golden.md §5`, D642) — PROPOSED, NOT BUILT.** Claude's to build under
+  the accepted gate; his to see the shape first.
 - ✅ ~~**PHASE 5'S EXIT GATE — PROPOSED (D640), HIS TO ACCEPT, TRIM OR REPLACE**~~ — **accepted as written (D641).**
   (`DESIGN.md §4`, the end of Phase 5.)
   Five items: every Phase 5 item has a verdict (built-played-merged, or moved out in his words — open: doors commit 5,

@@ -154,3 +154,8 @@ against a number from an older commit.
   grass or forest within 10 / 20 / 30 tiles' walk of the founding site and the nearest from a home (`ZZP`). Copy in,
   `-c Release --filter ZzHerd`, delete. ⚠️ Its "walking" bucket is any `Travel*` or `-ing` state not resting — hauling
   counts as walking, so read work + walking as *busy*.
+- `ZzGoldens.cs` — D642's audit for Phase 5's gate item 2 (`specs/phase-5-golden.md`): replays the five years-long goldens
+  (`fixture50`, `shipped50`, both again without skills, `farm20`) exactly as their tests build them, **asserts each final hash
+  against the golden's own constant**, and samples once a game day: workplaces standing by job and days worked, stores by
+  kind, every good held, bridges, herd head, boat, bands, repairs, wells, homes and their doors (`ZZG` lines). 18 s in Release
+  for all five. Copy in, `-c Release --filter ZzGoldens`, delete. ⚠️ When a golden is re-taken, its constant here moves too.
