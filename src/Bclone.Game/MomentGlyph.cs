@@ -40,6 +40,10 @@ public sealed partial class MomentGlyph : Control
     {
         float s = Side;
 
+        // A picture of a world thing sits on the world's own ground (D637), so the dark villager and chevron read as they do
+        // in the valley.
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(s, s)), VillageMap.Parchment);
+
         switch (_mark)
         {
             // A villager's dot, and the chevron over their head on the road in.

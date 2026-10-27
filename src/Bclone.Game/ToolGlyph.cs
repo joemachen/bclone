@@ -80,13 +80,51 @@ public sealed partial class ToolGlyph : Control
 
     public override void _Draw()
     {
+        if (_mark is ToolMark.PaintLand or ToolMark.HarvestTrees or ToolMark.HarvestStone or ToolMark.HarvestIron
+            or ToolMark.HarvestAll or ToolMark.Destroy)
+        {
+            DrawOnAChip(Side);
+        }
+        else
+        {
+            DrawShapes();
+        }
+    }
+
+    // ⭐ A picture of a world thing sits on the world's own ground, inked round as the map inks it (D637): a parchment
+    // chip, the glyph's silhouette in ink a pixel out each way, then the glyph — so a pale fill (stone, iron)
+    // reads on the paper as it does in the valley, and the bar's own chrome stays slate.
+    private static readonly Vector2[] Nudges = { new(-1f, 0f), new(1f, 0f), new(0f, -1f), new(0f, 1f) };
+
+    /// <summary>Ink while the silhouette is drawn, nothing otherwise — every colour a world glyph uses goes through <see cref="Paint"/>.</summary>
+    private Color? _stroke;
+
+    private Color Paint(Color colour) => _stroke ?? colour;
+
+    private void DrawOnAChip(float s)
+    {
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(s, s)), VillageMap.Parchment);
+        _stroke = VillageMap.Ink;
+        foreach (Vector2 nudge in Nudges)
+        {
+            DrawSetTransform(nudge);
+            DrawShapes();
+        }
+
+        DrawSetTransform(Vector2.Zero);
+        _stroke = null;
+        DrawShapes();
+    }
+
+    private void DrawShapes()
+    {
         float s = Side;
 
         switch (_mark)
         {
             // A patch of painted ground: filled, in the colour the map washes it.
             case ToolMark.PaintLand:
-                DrawRect(new Rect2(s * 0.12f, s * 0.22f, s * 0.76f, s * 0.56f), VillageMap.DwellingColour);
+                DrawRect(new Rect2(s * 0.12f, s * 0.22f, s * 0.76f, s * 0.56f), Paint(VillageMap.DwellingColour));
                 break;
 
             // The same patch, emptied. ⭐ AN OUTLINE IS THE ONLY HONEST OPPOSITE OF A FILL —
@@ -131,32 +169,32 @@ public sealed partial class ToolGlyph : Control
 
             // The three things the ground gives up, each in the colour the valley paints it.
             case ToolMark.HarvestTrees:
-                Tree(new Vector2(s * 0.34f, s * 0.82f), s * 0.44f, VillageMap.TimberTone);
-                Tree(new Vector2(s * 0.70f, s * 0.88f), s * 0.36f, VillageMap.TimberTone);
+                Tree(new Vector2(s * 0.34f, s * 0.82f), s * 0.44f, Paint(VillageMap.TimberTone));
+                Tree(new Vector2(s * 0.70f, s * 0.88f), s * 0.36f, Paint(VillageMap.TimberTone));
                 break;
 
             case ToolMark.HarvestStone:
-                Lump(VillageMap.StoneTone);
+                Lump(Paint(VillageMap.StoneTone));
                 break;
 
             case ToolMark.HarvestIron:
-                Lump(VillageMap.IronTone);
+                Lump(Paint(VillageMap.IronTone));
                 break;
 
             // Everything: one of each, small, side by side.
             case ToolMark.HarvestAll:
-                DrawRect(new Rect2(s * 0.08f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.TimberTone);
-                DrawRect(new Rect2(s * 0.38f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.StoneTone);
-                DrawRect(new Rect2(s * 0.68f, s * 0.40f, s * 0.24f, s * 0.34f), VillageMap.IronTone);
+                DrawRect(new Rect2(s * 0.08f, s * 0.40f, s * 0.24f, s * 0.34f), Paint(VillageMap.TimberTone));
+                DrawRect(new Rect2(s * 0.38f, s * 0.40f, s * 0.24f, s * 0.34f), Paint(VillageMap.StoneTone));
+                DrawRect(new Rect2(s * 0.68f, s * 0.40f, s * 0.24f, s * 0.34f), Paint(VillageMap.IronTone));
                 break;
 
             // ⭐ What the ground gives up, struck through in red (D494): a tree and a rock, and a cross
             // over both — taken, and not kept.
             case ToolMark.Destroy:
-                Tree(new Vector2(s * 0.30f, s * 0.80f), s * 0.40f, VillageMap.TimberTone);
-                DrawRect(new Rect2(s * 0.56f, s * 0.52f, s * 0.32f, s * 0.28f), VillageMap.StoneTone);
-                DrawLine(new Vector2(s * 0.12f, s * 0.18f), new Vector2(s * 0.88f, s * 0.86f), VillageMap.DestroyTone, 1.8f);
-                DrawLine(new Vector2(s * 0.88f, s * 0.18f), new Vector2(s * 0.12f, s * 0.86f), VillageMap.DestroyTone, 1.8f);
+                Tree(new Vector2(s * 0.30f, s * 0.80f), s * 0.40f, Paint(VillageMap.TimberTone));
+                DrawRect(new Rect2(s * 0.56f, s * 0.52f, s * 0.32f, s * 0.28f), Paint(VillageMap.StoneTone));
+                DrawLine(new Vector2(s * 0.12f, s * 0.18f), new Vector2(s * 0.88f, s * 0.86f), Paint(VillageMap.DestroyTone), 1.8f);
+                DrawLine(new Vector2(s * 0.88f, s * 0.18f), new Vector2(s * 0.12f, s * 0.86f), Paint(VillageMap.DestroyTone), 1.8f);
                 break;
 
             // A marking, struck through.

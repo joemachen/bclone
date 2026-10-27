@@ -35,6 +35,9 @@ public sealed partial class BuildingGlyph : Control
     /// <summary>Nobody's colour, for a building nobody has drawn.</summary>
     private static readonly Color Unchosen = new(0.70f, 0.70f, 0.70f);
 
+    /// <summary>A forge's or an oven's glow.</summary>
+    private static readonly Color Fire = new(0.95f, 0.55f, 0.20f);
+
     private readonly BuildingKind _kind;
     private readonly bool _known;
 
@@ -97,7 +100,38 @@ public sealed partial class BuildingGlyph : Control
             return;
         }
 
-        Color ink = ColourOf(_kind);
+        DrawOnAChip(s);
+    }
+
+    // ⭐ A picture of a world thing sits on the world's own ground, inked round as the map inks it (D637): a parchment
+    // chip, the glyph's silhouette in ink a pixel out each way, then the glyph — so a pale fill (the granary, the mill)
+    // reads on the paper as it does in the valley, and the bar's own chrome stays slate.
+    private static readonly Vector2[] Nudges = { new(-1f, 0f), new(1f, 0f), new(0f, -1f), new(0f, 1f) };
+
+    /// <summary>Ink while the silhouette is drawn, nothing otherwise — every colour a world glyph uses goes through <see cref="Paint"/>.</summary>
+    private Color? _stroke;
+
+    private Color Paint(Color colour) => _stroke ?? colour;
+
+    private void DrawOnAChip(float s)
+    {
+        DrawRect(new Rect2(Vector2.Zero, new Vector2(s, s)), VillageMap.Parchment);
+        _stroke = VillageMap.Ink;
+        foreach (Vector2 nudge in Nudges)
+        {
+            DrawSetTransform(nudge);
+            DrawShapes();
+        }
+
+        DrawSetTransform(Vector2.Zero);
+        _stroke = null;
+        DrawShapes();
+    }
+
+    private void DrawShapes()
+    {
+        float s = Side;
+        Color ink = Paint(ColourOf(_kind));
 
         switch (_kind)
         {
@@ -135,25 +169,25 @@ public sealed partial class BuildingGlyph : Control
             case BuildingKind.Home:
                 Roof(new Rect2(s * 0.14f, s * 0.14f, s * 0.72f, s * 0.28f), ink);
                 DrawRect(new Rect2(s * 0.22f, s * 0.42f, s * 0.56f, s * 0.44f), ink);
-                DrawRect(new Rect2(s * 0.44f, s * 0.60f, s * 0.14f, s * 0.26f), VillageMap.BeyondColour);
+                DrawRect(new Rect2(s * 0.44f, s * 0.60f, s * 0.14f, s * 0.26f), Paint(VillageMap.Ink));
                 break;
 
             // A hut with a hammer laid across it.
             case BuildingKind.BuilderHut:
                 Hut(ink);
-                DrawRect(new Rect2(s * 0.16f, s * 0.52f, s * 0.68f, s * 0.12f), VillageMap.BeyondColour);
+                DrawRect(new Rect2(s * 0.16f, s * 0.52f, s * 0.68f, s * 0.12f), Paint(VillageMap.Ink));
                 break;
 
             // A hut with a basket at the door.
             case BuildingKind.GathererHut:
                 Hut(ink);
-                DrawArc(new Vector2(s * 0.72f, s * 0.66f), s * 0.18f, 0f, Mathf.Pi, 10, VillageMap.BeyondColour, 1.8f);
+                DrawArc(new Vector2(s * 0.72f, s * 0.66f), s * 0.18f, 0f, Mathf.Pi, 10, Paint(VillageMap.Ink), 1.8f);
                 break;
 
             // A hut with a conifer standing beside it.
             case BuildingKind.ForesterHut:
                 Hut(ink);
-                Tree(new Vector2(s * 0.80f, s * 0.86f), s * 0.34f, VillageMap.TimberTone);
+                Tree(new Vector2(s * 0.80f, s * 0.86f), s * 0.34f, Paint(VillageMap.TimberTone));
                 break;
 
             // A hut over a split log.
@@ -162,7 +196,7 @@ public sealed partial class BuildingGlyph : Control
                 DrawLine(
                     new Vector2(s * 0.26f, s * 0.86f),
                     new Vector2(s * 0.74f, s * 0.56f),
-                    VillageMap.BeyondColour,
+                    Paint(VillageMap.Ink),
                     1.6f);
                 break;
 
@@ -183,14 +217,14 @@ public sealed partial class BuildingGlyph : Control
                 DrawRect(new Rect2(s * 0.24f, s * 0.34f, s * 0.52f, s * 0.26f), ink);
                 DrawRect(new Rect2(s * 0.28f, s * 0.60f, s * 0.08f, s * 0.18f), ink);
                 DrawRect(new Rect2(s * 0.64f, s * 0.60f, s * 0.08f, s * 0.18f), ink);
-                DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), VillageMap.WaterTone);
+                DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), Paint(VillageMap.WaterTone));
                 break;
 
             // A hut with a chimney and the glow of a forge at its door (D391).
             case BuildingKind.Smithy:
                 Hut(ink);
                 DrawRect(new Rect2(s * 0.64f, s * 0.12f, s * 0.12f, s * 0.26f), ink);
-                DrawRect(new Rect2(s * 0.40f, s * 0.66f, s * 0.20f, s * 0.20f), new Color(0.95f, 0.55f, 0.20f));
+                DrawRect(new Rect2(s * 0.40f, s * 0.66f, s * 0.20f, s * 0.20f), Paint(Fire));
                 break;
 
             // A crane over a cut block of stone (D434): the jib, its rope, and the dressed face.
@@ -224,7 +258,7 @@ public sealed partial class BuildingGlyph : Control
             case BuildingKind.Bakery:
                 Hut(ink);
                 DrawCircle(new Vector2(s * 0.70f, s * 0.70f), s * 0.16f, ink);
-                DrawRect(new Rect2(s * 0.64f, s * 0.70f, s * 0.12f, s * 0.08f), new Color(0.95f, 0.55f, 0.20f));
+                DrawRect(new Rect2(s * 0.64f, s * 0.70f, s * 0.12f, s * 0.08f), Paint(Fire));
                 break;
 
             // A low lodge under a drawn bow.
@@ -264,14 +298,14 @@ public sealed partial class BuildingGlyph : Control
                 DrawRect(new Rect2(s * 0.24f, s * 0.28f, s * 0.07f, s * 0.34f), ink);
                 DrawRect(new Rect2(s * 0.69f, s * 0.28f, s * 0.07f, s * 0.34f), ink);
                 DrawRect(new Rect2(s * 0.14f, s * 0.60f, s * 0.72f, s * 0.28f), ink);
-                DrawRect(new Rect2(s * 0.26f, s * 0.64f, s * 0.48f, s * 0.10f), VillageMap.WaterTone);
+                DrawRect(new Rect2(s * 0.26f, s * 0.64f, s * 0.48f, s * 0.10f), Paint(VillageMap.WaterTone));
                 break;
 
             // A barn (D596): the long roof, the wide doors, and a bale of hay at its side.
             case BuildingKind.Barn:
                 Roof(new Rect2(s * 0.10f, s * 0.20f, s * 0.80f, s * 0.24f), ink);
                 DrawRect(new Rect2(s * 0.16f, s * 0.44f, s * 0.68f, s * 0.40f), ink);
-                DrawRect(new Rect2(s * 0.38f, s * 0.56f, s * 0.24f, s * 0.28f), VillageMap.BeyondColour);
+                DrawRect(new Rect2(s * 0.38f, s * 0.56f, s * 0.24f, s * 0.28f), Paint(VillageMap.Ink));
                 break;
 
             // A trading post (D596): a hut on the bank, a jetty into the water, and a sail tied up at it.
@@ -279,7 +313,7 @@ public sealed partial class BuildingGlyph : Control
                 Roof(new Rect2(s * 0.08f, s * 0.24f, s * 0.46f, s * 0.20f), ink);
                 DrawRect(new Rect2(s * 0.14f, s * 0.44f, s * 0.34f, s * 0.30f), ink);
                 DrawRect(new Rect2(s * 0.48f, s * 0.66f, s * 0.42f, s * 0.08f), ink);
-                DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), VillageMap.WaterTone);
+                DrawRect(new Rect2(s * 0.06f, s * 0.80f, s * 0.88f, s * 0.10f), Paint(VillageMap.WaterTone));
                 DrawColoredPolygon(
                     new[]
                     {

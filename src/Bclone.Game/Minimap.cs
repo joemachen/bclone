@@ -133,11 +133,13 @@ public partial class Minimap : Control
         // The camera box last, over everything, because it is the one thing here that
         // answers "where am I?" — and an outline rather than a wash, so it never hides the
         // ground it is telling you about.
-        DrawRect(TilesToPixels(_view), new Color(1f, 0.76f, 0.31f, 0.85f), filled: false, width: 1.5f);
+        // In ink: the minimap is a picture of the world, so it is drawn on the world's parchment and marked as the map
+        // marks (D637) — the old amber box vanished into it.
+        DrawRect(TilesToPixels(_view), VillageMap.Ink, filled: false, width: 1.5f);
 
         // A hairline round the valley, so the minimap reads as a map of it rather than as
         // a texture that happens to be there.
-        DrawRect(Valley(), new Color(1, 1, 1, 0.18f), filled: false);
+        DrawRect(Valley(), VillageMap.Ink with { A = 0.35f }, filled: false);
     }
 
     /// <summary>
@@ -209,6 +211,10 @@ public partial class Minimap : Control
     private void Mark(GridPos tile, Color colour, float size)
     {
         Vector2 centre = TileToPixel(new Vector2(tile.X, tile.Y));
+
+        // Inked round, as the map inks a thing with an area (D637): a pale granary's dot is otherwise lost on the parchment.
+        float inked = size + 2f;
+        DrawRect(new Rect2(centre - (Vector2.One * inked / 2f), Vector2.One * inked), VillageMap.Ink with { A = colour.A });
         DrawRect(new Rect2(centre - (Vector2.One * size / 2f), Vector2.One * size), colour);
     }
 

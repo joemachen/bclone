@@ -362,7 +362,7 @@ public partial class VillageMap
         if (berries)
         {
             _berries.Clear();
-            Color colour = GoodsPalette.ColourOf(Goods.Produce);
+            Color colour = BerryMark;
             for (int y = fromY; y < toY; y++)
             {
                 for (int x = fromX; x < toX; x++)
@@ -485,8 +485,14 @@ public partial class VillageMap
     /// <summary>A quarry face's floor — pale stone spoil, lighter than the boulders (drawn as a traced fill, D461).</summary>
     private static readonly Color QuarryFloor = new("#a39b8e");
 
+    /// <summary>
+    /// The berries on a forage bush — produce's red, dark (D639): a dot, so L* 29 or below with its hue kept
+    /// (`world-legibility.md`). Produce's own colour stays the heap's and the bar's; here it was nearly lost on parchment.
+    /// </summary>
+    private static readonly Color BerryMark = new("#840c26");
+
     /// <summary>A mine face's floor — rust-pale spoil, lighter and warmer than the ore.</summary>
-    private static readonly Color MineFloor = new("#9a6a52");
+    private static readonly Color MineFloor = new("#bf957c");
 
     /// <summary>The lumps on one seam tile, and the ones spilling off it — into the mesh.</summary>
     private static void Lumps(MeshBuilder into, GridPos tile, bool stone)

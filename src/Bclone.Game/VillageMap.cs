@@ -60,10 +60,23 @@ public enum MapDetail
 /// </remarks>
 public partial class VillageMap : Control
 {
-    private static readonly Color Ground = new("#2b3332");
-    private static readonly Color Beyond = new("#202625");
-    private static readonly Color ValleyEdge = new("#485453");
-    private static readonly Color GridLine = new("#343d3d");
+    // ⭐⭐ THE WORLD IS DRAWN ON PARCHMENT, IN THREE BANDS (D635, D637; `specs/world-legibility.md`). The ground and every
+    // kind of ground sit at L* 50 and up; a thing with an area (a building, a heap, a beast, a boat) wears an ink outline
+    // and keeps its fill's hue; a line, a mark or a villager's dot is dark, L* 29 or below, hue kept. Measured, not
+    // guessed: the grass over parchment spans L* ~55–84 in every season, nothing lighter than it reaches 3:1, and 3:1
+    // below its darkest common patch needs L* 29. `tools/legibility/check.py` holds every colour here to its band.
+    // ⚠️ The UI stays slate: a UI picture of a world thing sits on a parchment chip (`Parchment`), never on slate.
+
+    /// <summary>The paper the world is drawn on — Joe's pack's own ground (`seasonal-grass.md §6.0`).</summary>
+    internal static readonly Color Parchment = new("#e6d6b0");
+
+    /// <summary>The line every thing with an area is drawn round: dark sepia, 5:1 on the darkest common ground (D637).</summary>
+    internal static readonly Color Ink = new("#2a2018");
+
+    private static readonly Color Ground = Parchment;
+    private static readonly Color Beyond = new("#c4b48f");
+    private static readonly Color ValleyEdge = new("#8c7a5c");
+    private static readonly Color GridLine = new("#d2c29c");
     internal static readonly Color HomeColour = new("#b98a52");
 
     /// <summary>
@@ -89,10 +102,10 @@ public partial class VillageMap : Control
     }
 
     /// <summary>A household's fence — the outline of its plot's painted ground (D386).</summary>
-    private static readonly Color FenceEdge = new("#7a5a3a", 0.85f);
+    private static readonly Color FenceEdge = new("#583b1d");
 
     /// <summary>The stakes round a claimed seam (D613) — darker than a fence, so a seam being worked reads as its own thing.</summary>
-    private static readonly Color PalisadeEdge = new("#5e4a36", 0.9f);
+    private static readonly Color PalisadeEdge = new("#3f2d1a");
 
     /// <summary>The door: a darker notch on the house's front edge, the lane side (D386).</summary>
     internal static readonly Color DoorColour = new("#4a3421");
@@ -107,7 +120,7 @@ public partial class VillageMap : Control
     /// one thing a villager cannot walk over (D40), so it needs to read as an obstacle
     /// at a glance and long before a bridge exists to argue with it.
     /// </remarks>
-    private static readonly Color WaterColour = new("#2f5f7a");
+    private static readonly Color WaterColour = new("#6f97ad");
 
     /// <summary>
     /// ⭐ The water where it meets the land — <b>this is the shoreline now</b> (D342).
@@ -119,13 +132,13 @@ public partial class VillageMap : Control
     /// field won at each pixel, which is the same contour as the fill **by construction**. *There
     /// is no second shape to get wrong any more.*
     /// </remarks>
-    internal static readonly Color ShallowsColour = new("#4c86a0");
+    internal static readonly Color ShallowsColour = new("#9cbccb");
 
     /// <summary>A fishing hut — the river's colour, lifted so the hut reads against it.</summary>
     private static readonly Color FisheryColour = new(0.42f, 0.68f, 0.78f);
 
     /// <summary>Generated woodland. Quieter than the tree stand that stands in it.</summary>
-    private static readonly Color ForestColour = new("#2a3d2c");
+    private static readonly Color ForestColour = new("#9aa47a");
 
     /// <summary>Young trees — <b>between bare ground and woodland, and visibly so</b>.</summary>
     /// <remarks>
@@ -142,19 +155,21 @@ public partial class VillageMap : Control
     /// than old wood at a glance, and clearly not <see cref="Ground"/>.
     /// </para>
     /// </remarks>
-    private static readonly Color SaplingColour = new("#3d5433");
+    private static readonly Color SaplingColour = new("#b3b98d");
 
-    /// <summary>A canopy, a shade above the ground it stands on so the wood has texture (D337).</summary>
-    internal static readonly Color TreeCanopy = new("#3c5a3e");
+    /// <summary>A canopy, a shade below the ground it stands on so the wood has texture (D337) — and still in the ground's
+    /// band (D637): trees are scenery, and a dark wood would be the loudest thing on the map. How trees finally look is Joe's
+    /// (`world-legibility.md §7`, call 4).</summary>
+    internal static readonly Color TreeCanopy = new("#7d8c5c");
 
     /// <summary>A young tree — smaller, lighter, and obviously not yet timber.</summary>
-    private static readonly Color SaplingCanopy = new("#4f6b41");
+    private static readonly Color SaplingCanopy = new("#98a56f");
 
     /// <summary>Keeps the trees' scatter out of step with the animals' (D337).</summary>
     private const int TreeSalt = 5701;
 
     /// <summary>A boulder on a stone seam — paler than the seam it sits on, so it reads as a lump.</summary>
-    private static readonly Color Boulder = new("#8d857a");
+    private static readonly Color Boulder = new("#cdc6b8");
 
     /// <summary>A lump of ore on an iron seam — darker and redder than the ground round it.</summary>
     private static readonly Color OreLump = new("#5c3424");
@@ -163,7 +178,7 @@ public partial class VillageMap : Control
     private const int DepositSalt = 8329;
 
     /// <summary>A stone seam — pale and dry against the grass, so it reads as bare ground.</summary>
-    private static readonly Color RockColour = new("#6b6459");
+    private static readonly Color RockColour = new("#b4ab99");
 
     /// <summary>An iron seam. Rusted, and warmer than the stone so the two never blur.</summary>
     /// <remarks>
@@ -171,7 +186,7 @@ public partial class VillageMap : Control
     /// because you can see it), so they differ in hue rather than only in lightness —
     /// which is also the one difference that survives being colour-blind.
     /// </remarks>
-    private static readonly Color IronColour = new("#7a4a33");
+    private static readonly Color IronColour = new("#b9906f");
 
     // ---------------------------------------------------------------
     //  The field, in its three states (`specs/crops-and-orchards.md`)
@@ -190,10 +205,10 @@ public partial class VillageMap : Control
     // in every season, which is D108's silent-default finding arriving in the view.
 
     /// <summary>Ploughed and bare. Winter and early spring — turned earth, warm and dark.</summary>
-    private static readonly Color FieldColour = new("#4a3a2b");
+    private static readonly Color FieldColour = new("#b39874");
 
     /// <summary>Sown. Young growth: green, but paler and yellower than the woods.</summary>
-    private static readonly Color SownColour = new("#4a5c33");
+    private static readonly Color SownColour = new("#a8b07a");
 
     /// <summary>Standing ripe. The one colour on the map that says "come and take this".</summary>
     /// <remarks>
@@ -201,7 +216,7 @@ public partial class VillageMap : Control
     /// D67 set for the two seams: the difference a player has to read at a glance is the one
     /// that must survive being colour-blind.
     /// </remarks>
-    private static readonly Color RipeColour = new("#b8933f");
+    private static readonly Color RipeColour = new("#d6b55c");
 
     /// <summary>The woodcutter's hut — a workplace, not a stand of trees.</summary>
     private static readonly Color HutColour = new("#9a6b3f");
@@ -235,7 +250,7 @@ public partial class VillageMap : Control
     /// Warm amber rather than red. A full store is not a disaster — it is usually a village
     /// doing well at something — and §1.1 wants the player to look, not to panic.
     /// </remarks>
-    private static readonly Color FullStoreColour = new("#e8a13c");
+    private static readonly Color FullStoreColour = new("#5c3a01");
 
     /// <summary>The ring a full store wears, for a card's picture (D376).</summary>
     internal static Color FullStoreRing => FullStoreColour;
@@ -262,7 +277,7 @@ public partial class VillageMap : Control
     /// usually a village doing well at something; an idle hut never is. Still not red — the fix
     /// is always a decision rather than an emergency (§0.1).
     /// </remarks>
-    private static readonly Color IdleWorkplaceColour = new("#7fb2d9");
+    private static readonly Color IdleWorkplaceColour = new("#024665");
 
     /// <summary>A building marked out but not yet raised (D43).</summary>
     private static readonly Color SiteColour = new("#8f9aa8");
@@ -271,8 +286,13 @@ public partial class VillageMap : Control
     // same shape doing opposite things, so colour is what tells them apart at a glance.
     private static readonly Color DemolishColour = new("#b5714a");
 
-    /// <summary>Land the player has painted for housing (D42). Faint on purpose.</summary>
-    private static readonly Color ResidentialColour = new("#b98a52", 0.14f);
+    // A site's line is its fill's hue, dark (D637): the fill says which kind of work, the line is what reads on parchment.
+    private static readonly Color SiteEdge = new("#38424e");
+
+    private static readonly Color DemolishEdge = new("#6a310d");
+
+    /// <summary>Land the player has painted for housing (D42). Faint on purpose — but seen on parchment (ΔE 5, D637).</summary>
+    private static readonly Color ResidentialColour = new("#b98a52", 0.28f);
 
     /// <summary>Ground the village has been told to clear (D87).</summary>
     /// <remarks>
@@ -334,34 +354,39 @@ public partial class VillageMap : Control
     // spoken for*; the line says *this far and no further*, and it is the line that has to survive
     // being read at a glance over terrain. **Same colour, so it is obviously the same zone** —
     // a border in a new hue would be a fourth thing to learn.
-    private static readonly Color ResidentialEdge = new("#b98a52", 0.55f);
+    //
+    // ⚠️ On parchment they are the same hues DARK (D637), and the housing and clearing edges, which darken to nearly one
+    // brown, are told apart by the housing edge being DASHED (`DrawTheZoneOutlines`) — a second difference, not a hue.
+    private static readonly Color ResidentialEdge = new("#5d3902");
 
-    private static readonly Color HarvestEdge = new("#d8892f", 0.70f);
+    private static readonly Color HarvestEdge = new("#613700");
 
-    private static readonly Color DestroyEdge = DestroyTone with { A = 0.85f };
+    private static readonly Color DestroyEdge = new("#880019");
 
-    private static readonly Color WorkGroundEdge = new("#4a9ba8", 0.65f);
+    private static readonly Color WorkGroundEdge = new("#024851");
 
     /// <summary>The selected building's own ground, brighter than everybody else's.</summary>
     private static readonly Color WorkGroundMine = new("#5fc8d8", 0.30f);
 
     /// <summary>Grass worn through to earth where people walk — a footpath (D358).</summary>
-    private static readonly Color WornPath = new("#5b4b38", 0.60f);
+    private static readonly Color WornPath = new("#8c7457", 0.60f);
 
-    /// <summary>A packed trail: the earth trodden hard and dark (D358).</summary>
-    private static readonly Color PackedPath = new("#6e5843", 0.90f);
+    /// <summary>A packed trail: the earth trodden hard and darker (D358) — still ground, so still in its band (D637).</summary>
+    private static readonly Color PackedPath = new("#8a7056", 0.75f);
 
     /// <summary>The wear overlay's wash — how trodden a tile is, whether or not it reads as a path yet (D358).</summary>
     private static readonly Color WearWash = new("#e0a868", 0.70f);
 
-    private static readonly Color GhostFine = new("#7fd48a");
-    private static readonly Color GhostWarned = new("#e0b755");
-    private static readonly Color GhostRefused = new("#d4685f");
-    internal static readonly Color AdultColour = new("#e8e2d4");
+    // Lines, marks and the villagers' dots: dark, hue kept (D637). The selection is violet, a hue nothing else on the map
+    // uses — gold went the full-store ring's brown when darkened (ΔE 8).
+    private static readonly Color GhostFine = new("#004c1b");
+    private static readonly Color GhostWarned = new("#523e01");
+    private static readonly Color GhostRefused = new("#7e1b1d");
+    internal static readonly Color AdultColour = new("#454135");
 
-    internal static readonly Color ChildColour = new("#8fc7e8");
-    internal static readonly Color ElderColour = new("#d9a05b");
-    private static readonly Color SelectedRing = new("#f2c14e");
+    internal static readonly Color ChildColour = new("#02465f");
+    internal static readonly Color ElderColour = new("#5d3900");
+    private static readonly Color SelectedRing = new("#59238e");
 
     /// <summary>Closest the camera will get, in pixels per tile.</summary>
     private const float MaxPixelsPerTile = 48f;
@@ -2217,6 +2242,112 @@ public partial class VillageMap : Control
         }
     }
 
+    /// <summary>A polyline drawn in dashes of <paramref name="dash"/> pixels, the pattern running on across its corners.</summary>
+    private void DrawDashedPolyline(Vector2[] points, Color colour, float width, float dash)
+    {
+        foreach ((Vector2 from, Vector2 to) in DashesAlong(points, dash))
+        {
+            DrawLine(from, to, colour, width, antialiased: true);
+        }
+    }
+
+    /// <summary>The dashes along a polyline: on for <paramref name="dash"/> pixels, off for as many, across its corners.</summary>
+    /// <remarks>
+    /// ⛔⛔ <b>D637's first version locked Joe's PC, twice, the moment he painted homes</b> (D638). It stepped by
+    /// <c>dash - (along % dash)</c> — the distance to the next turn — and in floats that can come out smaller than
+    /// <c>along</c> can add, so <c>along</c> never moved, the loop never ended, and every pass queued another line until
+    /// the machine ran out of memory. In a float32 replay at the game's zooms (×1.12 steps) 241 of 300 zone outlines never
+    /// finished. ⭐ <b>So every pass here moves forward by at least a hundredth of a dash, and a segment's last step ends
+    /// the segment rather than adding up to it.</b> The probe's <c>dashes:</c> line replays the inputs that hung.
+    /// </remarks>
+    internal static List<(Vector2 From, Vector2 To)> DashesAlong(Vector2[] points, float dash)
+    {
+        var dashes = new List<(Vector2 From, Vector2 To)>();
+        if (!(dash > 0f))
+        {
+            return dashes;
+        }
+
+        float phase = 0f; // how far into the current dash-and-gap, [0, 2 × dash)
+        for (int i = 1; i < points.Length; i++)
+        {
+            Vector2 from = points[i - 1];
+            Vector2 to = points[i];
+            float length = from.DistanceTo(to);
+            float at = 0f;
+            while (at < length)
+            {
+                bool on = phase < dash;
+                float want = Mathf.Max((on ? dash : 2f * dash) - phase, dash * 0.01f);
+                bool last = want >= length - at;
+                float step = last ? length - at : want;
+                if (on)
+                {
+                    dashes.Add((from.Lerp(to, at / length), last ? to : from.Lerp(to, (at + step) / length)));
+                }
+
+                phase += step;
+                if (phase >= 2f * dash)
+                {
+                    phase = 0f;
+                }
+
+                if (last)
+                {
+                    break;
+                }
+
+                at += step;
+            }
+        }
+
+        return dashes;
+    }
+
+    /// <summary>
+    /// The probe's <c>dashes:</c> line — <see cref="DashesAlong"/> fed the zone outlines that hung D637's version: traced
+    /// loops of quarter-tile steps at every zoom the game steps through, where the dash is never a whole number of pixels.
+    /// </summary>
+    internal static string DashesEnd()
+    {
+        var faults = new List<string>();
+        var random = new System.Random(637);
+        int loops = 0;
+        long worst = 0;
+        for (int zoom = 0; zoom < 14 && faults.Count == 0; zoom++)
+        {
+            float pixelsPerTile = 13f * Mathf.Pow(1.12f, zoom);
+            float dash = Mathf.Max(4f, pixelsPerTile * 0.25f);
+            for (int trial = 0; trial < 25; trial++)
+            {
+                var points = new Vector2[601];
+                points[0] = new Vector2((float)(random.NextDouble() * 1280.0), (float)(random.NextDouble() * 800.0));
+                float total = 0f;
+                for (int k = 1; k < points.Length; k++)
+                {
+                    Vector2 way = (random.Next(4)) switch { 0 => Vector2.Right, 1 => Vector2.Down, 2 => Vector2.Left, _ => Vector2.Up };
+                    points[k] = points[k - 1] + (way * pixelsPerTile / 4f);
+                    total += pixelsPerTile / 4f;
+                }
+
+                List<(Vector2 From, Vector2 To)> dashes = DashesAlong(points, dash);
+                float drawn = dashes.Sum(d => d.From.DistanceTo(d.To));
+                long bound = points.Length + (long)(total / dash) + 1;
+                worst = System.Math.Max(worst, dashes.Count * 100 / System.Math.Max(1, bound));
+                loops++;
+                if (dashes.Count > bound || drawn < total * 0.4f || drawn > total * 0.6f)
+                {
+                    faults.Add($"at {pixelsPerTile:F1} px a tile a loop of {total:F0} px drew {dashes.Count} dashes ({drawn:F0} px), bound {bound}");
+                    break;
+                }
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] dashes: ✅ {loops} traced outlines at 14 zooms end, each in at most its segments plus its dashes ({worst} % of that at worst), half drawn"
+            : $"[widths] dashes: ⛔ {string.Join("; ", faults)}";
+    }
+
     /// <summary>
     /// The four turned corners of a building — or of a BAND across it (D324).
     /// </summary>
@@ -2869,7 +3000,7 @@ public partial class VillageMap : Control
     /// says *"this takes back"* while the tiles still say which of them have anything to take.
     /// </remarks>
     private Color BrushEdgeFor(int direction) =>
-        direction < 0 ? GhostWarned with { A = 0.85f } : GhostFine with { A = 0.85f };
+        direction < 0 ? GhostWarned : GhostFine;
 
     /// <summary>Which way the stroke under the cursor would go, right now (D327).</summary>
     /// <remarks>
@@ -3111,7 +3242,7 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            DrawArc(ToScreen(home), radius, 0f, Mathf.Tau, 24, GhostFine with { A = 0.9f }, 2f);
+            DrawArc(ToScreen(home), radius, 0f, Mathf.Tau, 24, GhostFine, 2f);
         }
     }
 
@@ -3239,7 +3370,7 @@ public partial class VillageMap : Control
                 library.ExtentHeight * 0.8f,
                 library.Facing.Raw,
                 paint with { A = 0.85f },
-                paint,
+                Ink,
                 worn == Condition.Ruin);
 
             // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
@@ -3279,7 +3410,7 @@ public partial class VillageMap : Control
             hall.ExtentHeight * 0.95f,
             hall.Facing.Raw,
             TownHallColour with { A = 0.9f },
-            TownHallColour);
+            Ink);
     }
 
     /// <summary>The wells (D427): a ring of stone with water at its heart.</summary>
@@ -3303,7 +3434,7 @@ public partial class VillageMap : Control
                 well.ExtentHeight * 0.7f,
                 well.Facing.Raw,
                 paint with { A = 0.9f },
-                paint,
+                Ink,
                 worn == Condition.Ruin);
             DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
         }
@@ -3351,7 +3482,7 @@ public partial class VillageMap : Control
             bool stone = bridge.Kind == BuildingKind.StoneBridge;
             Condition worn = world.ConditionOf(bridge);
             Color deck = Weathered(stone ? StoneBridgeColour : BridgeColour, worn);
-            DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, deck.Darkened(0.35f), bridge.Closed);
+            DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, Ink, bridge.Closed);
 
             // Planks across the deck, three a tile; a stone deck shows its joints a tile apart.
             // ⭐ A failing or fallen-in deck has lost planks (`building-condition.md §6`, D556): every other one is gone,
@@ -3402,7 +3533,7 @@ public partial class VillageMap : Control
                 building.ExtentHeight * 0.8f,
                 building.Facing.Raw,
                 colour with { A = 0.85f },
-                colour,
+                Ink,
                 worn == Condition.Ruin);
 
             if (ShowsItsStock(building))
@@ -4525,7 +4656,16 @@ public partial class VillageMap : Control
                 onScreen[p] = ToScreen(InTileSpace(loop[p], SubTile.PerTile));
             }
 
-            DrawPolyline(onScreen, edge, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
+            float width = Mathf.Max(1.5f, _pixelsPerTile * 0.07f);
+            if (edge == ResidentialEdge)
+            {
+                // Dashed: on parchment the housing and clearing edges darken to nearly one brown (D637).
+                DrawDashedPolyline(onScreen, edge, width, Mathf.Max(4f, _pixelsPerTile * 0.25f));
+            }
+            else
+            {
+                DrawPolyline(onScreen, edge, width, antialiased: true);
+            }
         }
 
         for (int i = 0; i < _palisadePosts.Count; i++)
@@ -6641,7 +6781,8 @@ public partial class VillageMap : Control
                 bool groundIsBusy = !pullingDown && !world.FootprintIsClear(workplace);
                 Color colourOfWork = pullingDown
                     ? DemolishColour
-                    : groundIsBusy ? HarvestEdge with { A = 1f } : SiteColour;
+                    : groundIsBusy ? HarvestColour with { A = 1f } : SiteColour;
+                Color edgeOfWork = pullingDown ? DemolishEdge : groundIsBusy ? HarvestEdge : SiteEdge;
                 float shown = pullingDown ? 1f - done : done;
 
                 DrawColoredPolygon(
@@ -6660,7 +6801,7 @@ public partial class VillageMap : Control
                 Vector2[] outline = FootprintQuad(centre, wide, deep, facing);
                 for (int edge = 0; edge < 4; edge++)
                 {
-                    DrawLine(outline[edge], outline[(edge + 1) % 4], colourOfWork, 2f);
+                    DrawLine(outline[edge], outline[(edge + 1) % 4], edgeOfWork, 2f);
                 }
 
                 continue;
@@ -6680,7 +6821,7 @@ public partial class VillageMap : Control
                 workplace.ExtentHeight * 0.8f,
                 workplace.Facing.Raw,
                 paint,
-                paint with { A = 0.85f },
+                Ink,
                 worn == Condition.Ruin);
 
             // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
@@ -7002,10 +7143,7 @@ public partial class VillageMap : Control
             // edge, as every building does (D556).
             Vector2[] house = FootprintQuad(centre, wide * 0.8f, deep * 0.8f, facing);
             DrawColoredPolygon(house, paint);
-            if (worn == Condition.Ruin)
-            {
-                DrawEdges(house, weathered.Darkened(0.35f), fallenIn: true);
-            }
+            DrawEdges(house, occupied ? Ink : Ink with { A = 0.35f }, fallenIn: worn == Condition.Ruin);
 
             DrawColoredPolygon(
                 FootprintQuad(centre, 0.28f, deep * 0.8f, facing, from: 0f, to: 0.22f),
@@ -7159,7 +7297,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private const float RoamTiles = 1.4f;
 
-    private static readonly Color GameColour = new("#8a6a3f");
+    private static readonly Color GameColour = new("#573c13");
 
     /// <summary>What the map believes, so the probe can check the ticks against it (D345).</summary>
     public bool GameShown => _showGame;
@@ -7679,7 +7817,7 @@ public partial class VillageMap : Control
         return faults.Count == 0 ? string.Empty : string.Join("; ", faults);
     }
 
-    private static readonly Color HeapEdge = new(0f, 0f, 0f, 0.45f);
+    private static readonly Color HeapEdge = Ink;
 
     private void DrawVillagers()
     {
@@ -7759,7 +7897,7 @@ public partial class VillageMap : Control
     }
 
     /// <summary>The meal mark's colour: a warm bread-crust, apart from the life-stage colours of the dots.</summary>
-    private static readonly Color MealMark = new(0.96f, 0.78f, 0.42f, 0.95f);
+    private static readonly Color MealMark = new("#543d01");
 
     /// <summary>
     /// Roll each villager's glide forward when — and only when — the sim has actually

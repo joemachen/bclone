@@ -3233,6 +3233,10 @@ public sealed partial class BuildingPortrait : Control
         float longest = Mathf.Max(_wide, _tall) + 0.6f;
         float pixelsPerTile = Mathf.Min(Size.X, Size.Y) / longest;
 
+        // A picture of a world thing sits on the world's own ground (D637): a parchment chip, the building inked on it as
+        // the map draws it — so the card and the map stay one palette while the card's chrome stays slate.
+        DrawRect(new Rect2(Vector2.Zero, Size), VillageMap.Parchment);
+
         Vector2[] quad = VillageMap.FootprintQuadAt(centre, _wide, _tall, _facing, pixelsPerTile);
         Color fill = VillageMap.Weathered(_fill, _wear);
         DrawColoredPolygon(quad, fill with { A = 0.85f });
@@ -3240,11 +3244,11 @@ public sealed partial class BuildingPortrait : Control
         {
             if (_wear == Condition.Ruin)
             {
-                DrawDashedLine(quad[i], quad[(i + 1) % 4], fill, 2f, 4f);
+                DrawDashedLine(quad[i], quad[(i + 1) % 4], VillageMap.Ink, 2f, 4f);
             }
             else
             {
-                DrawLine(quad[i], quad[(i + 1) % 4], fill, 2f);
+                DrawLine(quad[i], quad[(i + 1) % 4], VillageMap.Ink, 2f);
             }
         }
 

@@ -43,7 +43,7 @@ public partial class VillageMap
     internal const float WalkInBlendShare = 0.15f;
 
     /// <summary>The arrival mark — the dun the huddle used (D565), between the ground and a villager's chalk.</summary>
-    internal static readonly Color ArrivalMark = new("#c9b48a");
+    internal static readonly Color ArrivalMark = new("#4e3f1b");
 
     /// <summary>One band's walk from the edge to the camp, worked out at the arrival and read by every frame until the last is in.</summary>
     private sealed class WalkIn
