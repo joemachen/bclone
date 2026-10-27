@@ -6,7 +6,8 @@ founder's death), `buildings-plan.md §6` (gold cut: *"no combat, no score, no w
 a deck over the river), D553 call 6 (the workshop, carpenter and hammer: the follow-on carts wait for), D563–D584
 (nomads — the clock-by-hash and the walk-in from the valley's edge this copies), **D586 (Joe's calls for this spec,
 2026-10-16 — §3.1)**, **D587 (his answers to the nine calls, the same day — §3.2)**.
-**Status:** 🔨 **COMMITS 1–6 OF §11 BUILT, VIEW I PLAYED AND FIXED (D597) (D590 the rows and the state; D592 the herd lives; D593 the herdsman; D594 the post and the region; D595 the boat; D596 View I — the barn and the post can be placed, painted, read and ordered); COMMIT 7 (the boat sailing, the region panel) NOT STARTED; EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
+**Status:** ✅ **ALL SEVEN COMMITS OF §11 BUILT — commit 7, the boat sailing and the region said, is D606; PLAYED
+BY JOE (D607) AND MERGED AND PUSHED (D608).** *The rest of this line is the state at D597, kept:* 🔨 **COMMITS 1–6 OF §11 BUILT, VIEW I PLAYED AND FIXED (D597) (D590 the rows and the state; D592 the herd lives; D593 the herdsman; D594 the post and the region; D595 the boat; D596 View I — the barn and the post can be placed, painted, read and ordered); COMMIT 7 (the boat sailing, the region panel) NOT STARTED; EVERY CALL ANSWERED (D586–D587); on `slice/trade`.** Measured first (§8,
 `tools/harness/ZzTrade.cs`). ⭐ **Trade and the herd are built together (call 5)**; the build is planned commit by
 commit in **§11 (D588)**, with `livestock.md` re-read against today's code (its §0). Owner: Joe + Claude Code.
 

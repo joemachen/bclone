@@ -1,9 +1,9 @@
 # Spec: The build bar — one strip, three tabs, and a menu that reads the catalogue
 
-> Status: **✅ BUILT AND COMPILING; ⚠️ NOT YET MEASURED OR LOOKED AT (D308, 2026-09-06).**
-> **CI is green on `d660e2b`: the sim reads 927 / 0 / 2 of 929 and `Build the Godot view` reports
-> 0 warnings, 0 errors.** ⛔ **What is still owed is what CI cannot do**: it installs no Godot, so
-> **the width probe has never run and nobody has looked at the bar.** · Owner: Joe + Claude Code
+> Status: **✅ BUILT (D308, 2026-09-06), PLAYED BY JOE (D310, D312) AND GUARDED BY THE PROBE** — the
+> width probe runs on every verification and its `bar height` line is the bar (151 since D475).
+> *Corrected 2026-10-27 (D640): this said "not yet measured or looked at" for seven weeks after Joe
+> played the bar and asked for its UI size (D310) and one height on every tab (D312).* · Owner: Joe + Claude Code
 > Format per `METHODOLOGY.md §2`. Implements Joe's UI mockup, second half. Resolves
 > `buildings-catalog.md §8.2` (D223's deferral) and closes `content-inventory.md` finding 5's
 > reachability hole.

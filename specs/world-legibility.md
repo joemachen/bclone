@@ -3,7 +3,9 @@
 **Decision:** D635 (Joe, 2026-10-26: *"§6.0: Yes, move the game's ground to parchment."*); measured D636; built D637
 (Joe: *"Take the three-band rule as recommended, with a parchment chip under UI pictures of world things. Go ahead and
 re-pick the world palette."*).
-**Status:** ✅ **THE RULE ADOPTED AND THE WORLD PALETTE RE-PICKED (D637), UNPLAYED — `check.py` reports 0 failures.** The
+**Status:** ✅ **THE RULE ADOPTED AND THE WORLD PALETTE RE-PICKED (D637); D637's hang fixed (D638); PLAYED BY JOE
+(*"painting homes works now"*, D639); MERGED TO `main` AND PUSHED (9bdd358, CI 1850 / 0 / 5 of 1855) — `check.py`
+reports 0 failures. 🅿️ What is left (trees, D68, the eye-check of outlines) is PARKED with the art (D639).** The
 game's ground is flat parchment until the terrain shader lays the grass on it. §1–§6 are the measurement as it was before
 D637 changed anything (kept as the record of why); §9 is what D637 built. The tools are `tools/legibility/` (§8); the
 table they print now is `tools/legibility/report.md`. Owner: Joe + Claude Code.

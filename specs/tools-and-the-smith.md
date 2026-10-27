@@ -14,7 +14,7 @@ the numbers (§6.1). `ToolsTests` fifteen guards; **played by Joe and merged (D4
 smithy as a gift after 50 iron (D444) and stone tools and iron tools (D446, 2026-10-01) — BUILT,
 played by Joe (*"the smithy works great. both tool types were created and used"*) and merged
 (D447).** ✅ **§10 — every hands-on adult carries a tool (D617, Joe 2026-10-23): builders, herdsmen and laborers, once a
-smithy stands — SPECCED, BUILT AND MEASURED on `slice/d615-notes`, unplayed.** Owner: Joe + Claude Code.
+smithy stands — SPECCED, BUILT AND MEASURED on `slice/d615-notes`; PLAYED AND MERGED (D618).** Owner: Joe + Claude Code.
 
 ---
 
@@ -575,7 +575,7 @@ item too long for the card 1.
 
 ## 10. Every hands-on adult carries a tool (D617, Joe 2026-10-23)
 
-**Status:** ✅ **BUILT (D617) on `slice/d615-notes`, measured (§10.4), unplayed.** `ToolsForEveryHandTests` (9): 11
+**Status:** ✅ **BUILT (D617) on `slice/d615-notes`, measured (§10.4); PLAYED AND MERGED (D618).** `ToolsForEveryHandTests` (9): 11
 mutants, 20 reds, no zeros left (one closed: a laborer's fetch cut out of `Decide` passed every posed guard).
 
 Joe: *"builders should carry tools. all adults should except maybe the teacher and the preacher. know what i mean?"* —

@@ -3,7 +3,7 @@
 **Decisions:** D395 (Joe's call), D474 (confirmed), D534 (taken next), D535 (this spec), D536 (Joe's three
 calls), D537 (the quarter day, and built).
 **Status:** ✅ **built 2026-10-09 on `slice/armful` (D537, D538), sim only, merged to `main` at Joe's word
-(*"merge"*) unplayed.** The guards in §6 and §7a are green and red-checked; six goldens moved with D537 (§6b),
+(*"merge"*) unplayed (D538); sim only, so in every build he has played since (D545 on).** The guards in §6 and §7a are green and red-checked; six goldens moved with D537 (§6b),
 none with D538. **The founding race is fixed (§7a): lost foundings 22 → 13 of 100, under the 15 before.**
 
 ---

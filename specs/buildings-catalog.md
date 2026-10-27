@@ -1,7 +1,8 @@
 # Spec: The buildings catalogue — a building becomes a row
 
-> Status: **BUILT — slices 1 and 2 landed, proven and red-checked. Slice 3 (the view) is NOT
-> started.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven, first-class modding) ·
+> Status: **BUILT — slices 1 and 2 landed, proven and red-checked; slice 3 (the view) DONE as the
+> build bar (D308, `build-bar.md`) — this line said "NOT started" while §Slice 3 below said done
+> (corrected D640).** Owner: Joe + Claude Code · Pillar: `DESIGN.md §3` (data-driven, first-class modding) ·
 > Format per `METHODOLOGY.md §2`.
 >
 > **804 passed, 0 failed, 2 skipped of 806** (was 786/788) — **and every golden byte-identical**,

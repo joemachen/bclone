@@ -5,7 +5,9 @@ the valley baked once on the CPU), D338/D366 (nothing per frame that a counter c
 (the calendar). **Status:** 📦 **ASSETS IMPORTED (D627); ✅ §6 SETTLED (D628); 🔨 THE SCENE BUILT (D629–D631); ✅ THE LOOK APPROVED (D632) — its values and
 reasons are in `specs/grass-look.md`.** `.\run.bat grass`. The masks, the atlas and the recolour snippet are in the project with the import settings below, proved
 lossless (§3); THE SCENE draws them over parchment (§5). **The game's valley does not use them yet**, and
-`Bclone.Sim` is untouched. Next: Joe looks at the scene; then §6.0's ground question. Owner: Joe + Claude Code.
+`Bclone.Sim` is untouched. ✅ Joe looked and approved the look (D632–D633); merged to `main` (D634); §6.0's ground
+question answered — parchment (D635, built D637). Drawing the grass in the valley is the terrain shader, 🅿️ parked
+with the art (D639). *This said "Next: Joe looks at the scene; then §6.0" until D640.* Owner: Joe + Claude Code.
 
 ---
 

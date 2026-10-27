@@ -2,7 +2,8 @@
 
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
-**Status:** 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — ✅ **And it is kept (D593)**: the herdsman cuts and carries hay, feeds it out in winter, culls what the pasture cannot hold; the barn's room is derived (§0.1).** Animals come
+**Status:** ✅ **BUILT WITH TRADE, PLAYED AND MERGED (D608) — the herd, the herdsman, the barn and the fenced
+pasture (§0.2).** *The rest of this line is the build's history, kept:* 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — ✅ **And it is kept (D593)**: the herdsman cuts and carries hay, feeds it out in winter, culls what the pasture cannot hold; the barn's room is derived (§0.1).** Animals come
 only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
 **§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
 later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.
@@ -102,7 +103,7 @@ the barn's room derived."*
 
 ## 0.2 The fenced pasture (D597 calls; D598 spec) — a barn's pasture locked in, fenced, gated
 
-**Status:** ✅ **BUILT (D598 the sim, D599 the view) — waiting for Joe to play it.** *Fence the pasture*, the lock, the
+**Status:** ✅ **BUILT (D598 the sim, D599 the view), PLAYED (D600: *"the process goes pretty well"*) AND MERGED (D608).** *Fence the pasture*, the lock, the
 fence's site, its walls, cancel and take-down, the barn taking its fence with it, saved and hashed (`SimWorld.Pasture.cs`,
 `ZoneMap.RaiseAPastureFence`, `PastureFenceTests`); the barn card's fence row (its one button follows the state), the
 fence drawn from its walls (faint while a site, the gate a gap), the brush's rubber refusing a fenced pasture, the probe's

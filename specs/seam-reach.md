@@ -3,7 +3,7 @@
 **Decision:** D539 (Joe, 2026-10-09), D540 (his calls; built), D541 (4 → 2 tiles), D561 (painting: the whole seam it
 stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); ✅ D561 — a quarry or a
 mine paints the whole seam it stands by) — built, played and merged (D562).** ✅ **§8 (D613): claimed, not painted — a quarry or a mine takes the
-whole seam it stands by when it is finished, drawn round with a palisade; the brush goes. SPECCED AND BUILT (D613), unplayed.** `SeamReachTests` (8)
+whole seam it stands by when it is finished, drawn round with a palisade; the brush goes. SPECCED AND BUILT (D613), PLAYED AND MERGED (D615).** `SeamReachTests` (8)
 green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved.
 
 ---
@@ -153,7 +153,7 @@ not `if`-guarded. Same 7 mutants, same 12 reds.
 
 ## 8. ⭐ CLAIMED, NOT PAINTED — a quarry or a mine takes the seam it stands by (D613, Joe 2026-10-19)
 
-**Status:** ✅ **SPECCED AND BUILT (D613) on `slice/d607-notes` — unplayed.** `SeamClaimTests` (6) and the re-posed demand
+**Status:** ✅ **SPECCED AND BUILT (D613) on `slice/d607-notes`; PLAYED AND MERGED (D615).** `SeamClaimTests` (6) and the re-posed demand
 guards: 7 mutants, 11 reds; probe `quarry claim:` 2 mutants, 2 reds. ⚠️ *As built:* a seam joined only at a corner (one
 seam, D561's eight neighbours) is staked as one ring round each edge-joined piece — the palisade goes round what is drawn.
 

@@ -5,7 +5,8 @@ D313 (2026-09-06, the empty-village banner does not stop the game *because nomad
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
 **Status:** ✅ **built — all three commits on `slice/nomads` (D565 the band, D566 the longhouse, D567 re-founding),
-sim and view, local, not pushed. ▶️ Played by Joe (D568, §3a): six notes are the next work — ⛔ the longhouse comes out,
+sim and view. ✅ **All six of Joe's notes built and played; MERGED AND PUSHED (D584, 2026-10-16).** *(The
+history below kept as it happened; "unmerged" in it was true until D584.)* ▶️ Played by Joe (D568, §3a): six notes are the next work — ⛔ the longhouse comes out,
 nomads not travellers, a Nomads switch, a walk-in with a marker, "the pile" in the village's words, the paths' gridding
 reviewed. The branch stays unmerged until they are built and played. ✅ Note 2 built (D569): every string says
 *nomads*, and the knock, the card and the bar button name the camp in the village's words — `SimWorld.WhereTheBandCamps`,

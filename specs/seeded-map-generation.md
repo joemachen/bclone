@@ -1,7 +1,7 @@
 # Spec: Seeded map generation — the valley is generated, not typed in
 
-> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES — 🔨 built on `slice/bridges` (D546–D548,
-> `specs/bridges.md`), unplayed, unmerged.
+> Status: **✅ built — slices 1 and 2 of 3 (see §11); slice 3 is BRIDGES — ✅ built (D546–D548,
+> `specs/bridges.md`), played, merged and pushed (D551).
 > §13, per-stage seeds (the shell's first step, D473), is ✅ BUILT, PLAYED AND MERGED (D476) —
 > with Joe's one note, the seams, answered in §13.6 (D475).** · Owner: Joe + Claude Code
 >
