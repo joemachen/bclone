@@ -4151,7 +4151,7 @@ public partial class Main : Control
         cell.AddThemeConstantOverride("separation", 5);
         if (chip is Color colour)
         {
-            cell.AddChild(Chip(colour));
+            cell.AddChild(WorldChip(colour));
         }
 
         // ⚠️ `Fill`, not the `ExpandFill` the Overview's cells had: in a row of cells an
@@ -4520,6 +4520,27 @@ public partial class Main : Control
         CustomMinimumSize = new Vector2(10, 10),
         SizeFlagsVertical = SizeFlags.ShrinkCenter,
     };
+
+    /// <summary>
+    /// A world thing's colour in the bar — a villager, a good — inked on a square of the world's parchment (D637), so a
+    /// dark villager or a pale flour reads on the slate bar as it does in the valley. Same 10 px as <see cref="Chip"/>.
+    /// </summary>
+    private static ColorRect WorldChip(Color colour)
+    {
+        ColorRect chip = Chip(VillageMap.Parchment);
+        var swatch = new Panel { Position = new Vector2(2, 2), Size = new Vector2(6, 6), MouseFilter = MouseFilterEnum.Ignore };
+        swatch.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = colour,
+            BorderColor = VillageMap.Ink,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+        });
+        chip.AddChild(swatch);
+        return chip;
+    }
 
     /// <summary>What colour a good reads as — <b>one answer, shared with the map</b>.</summary>
     /// <remarks>

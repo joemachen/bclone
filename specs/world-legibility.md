@@ -1,9 +1,12 @@
 # Spec: World colours on parchment — what fails, and the rule that fixes it
 
-**Decision:** D635 (Joe, 2026-10-26: *"§6.0: Yes, move the game's ground to parchment."*); this slice D636.
-**Status:** 📏 **MEASURED, NOTHING CHANGED — the failure list and a recommendation; the rule is Joe's call (§7).** No colour
-in the game moved. The tools are `tools/legibility/` (§8); the full table they print is `tools/legibility/report.md`.
-Owner: Joe + Claude Code.
+**Decision:** D635 (Joe, 2026-10-26: *"§6.0: Yes, move the game's ground to parchment."*); measured D636; built D637
+(Joe: *"Take the three-band rule as recommended, with a parchment chip under UI pictures of world things. Go ahead and
+re-pick the world palette."*).
+**Status:** ✅ **THE RULE ADOPTED AND THE WORLD PALETTE RE-PICKED (D637), UNPLAYED — `check.py` reports 0 failures.** The
+game's ground is flat parchment until the terrain shader lays the grass on it. §1–§6 are the measurement as it was before
+D637 changed anything (kept as the record of why); §9 is what D637 built. The tools are `tools/legibility/` (§8); the
+table they print now is `tools/legibility/report.md`. Owner: Joe + Claude Code.
 
 Built on `grass-look.md` (the approved ground) and `seasonal-grass.md §6.0` (why the ground has to move).
 
@@ -137,19 +140,21 @@ Snow is lighter than parchment (L\* ~95 against 86), so the ground's band rises 
 light ones lose it: a reason more for the dark and outlined bands. How the terrain shader draws snow is
 `terrain-shader.md §2`.
 
-## 7. Open — Joe's calls
+## 7. Joe's calls
 
-1. **The rule:** as recommended in §5 (three bands), as you stated it, or something else?
-2. **The bar:** 3:1 (WCAG non-text) for the read tier, and the washes' ΔE 5. The waiting clear zone was *faint on
-   purpose* (D343; its edge stays at full strength), so it may stay faint. The housing zone's 2.7 probably should not.
-3. **What a UI picture of a world thing sits on.** My recommendation: a **parchment chip**. The bar's glyphs, the cards'
+1. ✅ **The rule: the three bands of §5** (D637).
+2. ✅ **The bar, as recommended** (D637): 3:1 (WCAG non-text) for the read tier, ΔE 5 for washes. The waiting clear zone
+   stays *faint on purpose* (D343; its edge stays at full strength) — the one ❌ `check.py` still prints, accepted. The
+   housing zone was raised to be seen.
+3. ✅ **What a UI picture of a world thing sits on: a parchment chip** (D637). As recommended: The bar's glyphs, the cards'
    portraits and the minimap draw world things on a small parchment ground, so the world palette stays one palette
    (D376, the minimap's "one palette and not two"). The alternative is a second, slate-tuned copy of ~30 colours, which
    drifts. *Either way the UI's own chrome stays slate.*
-4. **Trees.** Canopies are scenery, reported and not failed, but on parchment they decide how the woods look. One
+4. ⏸️ **Trees — still open.** D637 placed the woods' ground and the canopies in the ground's band (canopy L\* 56) as an
+   interim, so the wood is quiet rather than the darkest mass on the map. Canopies are scenery, reported and not failed, but on parchment they decide how the woods look. One
    option is ink-outlined canopies over an in-band green ground (the hand-drawn references in `art/`); another is
    canopies as mid-tone washes without lines. Your eye, before the terrain shader.
-5. **D68 still names *Foundation*** (a painted 3D look) as the art direction's destination. Parchment and `art/`'s
+5. ⏸️ **D68 still names *Foundation*** (a painted 3D look) as the art direction's destination. Parchment and `art/`'s
    hand-drawn references point at a 2D drawn map. D68's two observations still hold (intent drawn as painted regions;
    a thin HUD). Whether its destination is retired is yours to say; I have not changed it.
 
@@ -164,3 +169,43 @@ python -X utf8 -I -B tools/legibility/check.py > tools/legibility/report.md
 `BuildingGlyph.cs`, `ToolGlyph.cs`). A colour it has not been told about prints as **unclassified**, so a new one cannot
 slip past unchecked. That was red-checked: a colour planted in a copy of `VillageMap.cs` was reported as unclassified
 (1 of 1), and the real source reports none. Re-run `ground.py` whenever `grass_approved.tres` changes.
+
+## 9. What D637 built
+
+**The bands, in `VillageMap.cs`'s palette block** (with the rule written over it), all checked by `check.py`:
+
+| band | what | values (was → now) |
+|---|---|---|
+| **ground, L\* ≥ 50** | the valley's ground is **flat `Parchment` `#e6d6b0`** until the terrain shader lays the grass on it | outside the valley `#202625` → `#c4b48f`; valley edge `#485453` → `#8c7a5c`; grid `#343d3d` → `#d2c29c` |
+| | water and its shallows | `#2f5f7a` → `#6f97ad`, `#4c86a0` → `#9cbccb` |
+| | woods, young wood | `#2a3d2c` → `#9aa47a`, `#3d5433` → `#b3b98d` |
+| | stone and iron seams (still apart in hue, D67) | `#6b6459` → `#b4ab99`, `#7a4a33` → `#b9906f` |
+| | field: ploughed, sown, ripe | `#4a3a2b` → `#b39874`, `#4a5c33` → `#a8b07a`, `#b8933f` → `#d6b55c` |
+| | mine floor; footpath, packed trail | `#9a6a52` → `#bf957c`; `#5b4b38`@0.6 → `#8c7457`@0.6, `#6e5843`@0.9 → `#8a7056`@0.75 |
+| | scenery (not failed): canopies, boulder | `#3c5a3e` → `#7d8c5c`, `#4f6b41` → `#98a56f`, `#8d857a` → `#cdc6b8` |
+| **things with an area: ink outline, fill kept** | every building (homes now always outlined; ruins dashed in ink), bridges, heaps and crates (`HeapEdge` = `Ink`) | **`Ink` `#2a2018`**; fills unchanged |
+| | building sites: the fill keeps the kind of work, the line is its hue dark | `SiteEdge` `#38424e`, `DemolishEdge` `#6a310d`, waiting-for-clearing `HarvestEdge`; the waiting site's fill is now the clear zone's orange, not its edge |
+| **lines, marks, dots: L\* ≤ 29, hue kept** | adult, child, elder | `#e8e2d4` → `#454135`, `#8fc7e8` → `#02465f`, `#d9a05b` → `#5d3900` |
+| | wild game; meal mark; arrival chevron | `#8a6a3f` → `#573c13`; `#f5c76b` → `#543d01`; `#c9b48a` → `#4e3f1b` |
+| | full-store ring, idle ring, **selection (now violet)** | `#e8a13c` → `#5c3a01`, `#7fb2d9` → `#024665`, `#f2c14e` → `#59238e` |
+| | zone edges — **housing dashed**, so it parts from clearing's near-identical brown | housing `#5d3902`, clear `#613700`, destroy `#880019`, work ground `#024851` (all opaque now) |
+| | placement ghosts and the brush's edge (opaque now) | fine `#004c1b`, warned `#523e01`, refused `#7e1b1d` |
+| | fences, palisade | `#583b1d`, `#3f2d1a` |
+| **washes** | the housing zone, raised to be seen | `#b98a52`@0.14 → @0.28 |
+
+**The parchment chip** (§7 call 3): the cards' portraits draw on parchment with an ink edge; the bar's building glyphs
+and its world tool glyphs (paint land, the harvest brushes, destroy) sit on a parchment chip with their silhouette inked a
+pixel out each way (`DrawOnAChip`; their dark details are `Ink`, not `BeyondColour`, which is light now); the moments'
+glyphs on parchment; the bar's headcount and goods chips are a parchment square with the colour inked inside
+(`WorldChip`, same 10 px); the minimap's camera box and hairline are ink and its building dots are inked round. The UI's
+own chrome is untouched slate, and the UI-only icons (move, empty, take back, unmark, cancel) stay on it.
+
+**Verified:** `check.py` — things 0 of 37 fail (by their outline), read 0 of 25, washes 1 (the waiting clear zone,
+accepted), ground kinds 0 of 17 below the band. **Red-checked: 3 mutants, 3 caught** — the adult back to its old light
+(1), the woods back to their old dark (1), the ink lightened to a mid brown (66). ⚠️ A first count scored the adult
+zero; the read tier's failure rows carry no ❌, so counting ❌ missed them — counted from the tool's own failure totals,
+it is 1. Reference images: `art/legibility/` — the game at its founding (flat parchment), and the lab's placeholders over
+the grass in fall at 24 px, summer at 48 and winter at 13.
+
+⚠️ **What the check cannot see:** it reads colours, and its table *says* which fills are outlined. A draw site that
+dropped its ink edge would still pass. The probe has no line for it either; Joe's eyes in play are the check on that.

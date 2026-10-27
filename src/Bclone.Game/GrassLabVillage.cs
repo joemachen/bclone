@@ -83,19 +83,18 @@ internal sealed partial class GrassLabVillage : Control
             }
         }
 
-        // As `DrawStores` draws a granary: its footprint at 80 %, the fill a little clear, a 2px edge.
+        // As `DrawStores` draws a granary: its footprint at 80 %, the fill a little clear, a 2px ink edge (D637).
         Color store = VillageMap.ColourOf(StoreKind.Granary);
         Vector2[] granary = VillageMap.FootprintQuadAt(ToScreen(Granary), _granary.X * 0.8f, _granary.Y * 0.8f, 0, ppt);
         DrawColoredPolygon(granary, store with { A = 0.85f });
-        for (int i = 0; i < 4; i++)
-        {
-            DrawLine(granary[i], granary[(i + 1) % 4], store, 2f);
-        }
+        Outline(granary);
 
-        // As `DrawHomes` draws an occupied house: its footprint at 80 %, and the door's notch on its front.
+        // As `DrawHomes` draws an occupied house: its footprint at 80 %, inked round, and the door's notch on its front.
         foreach ((Vector2 at, ushort facing) in Homes)
         {
-            DrawColoredPolygon(VillageMap.FootprintQuadAt(ToScreen(at), _home.X * 0.8f, _home.Y * 0.8f, facing, ppt), VillageMap.HomeColour);
+            Vector2[] house = VillageMap.FootprintQuadAt(ToScreen(at), _home.X * 0.8f, _home.Y * 0.8f, facing, ppt);
+            DrawColoredPolygon(house, VillageMap.HomeColour);
+            Outline(house);
             DrawColoredPolygon(VillageMap.FootprintQuadAt(ToScreen(at), 0.28f, _home.Y * 0.8f, facing, ppt, from: 0f, to: 0.22f), VillageMap.DoorColour);
         }
 
@@ -104,6 +103,14 @@ internal sealed partial class GrassLabVillage : Control
         foreach ((Vector2 at, Color colour) in Villagers)
         {
             DrawCircle(ToScreen(at), radius, colour);
+        }
+    }
+
+    private void Outline(Vector2[] quad)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            DrawLine(quad[i], quad[(i + 1) % 4], VillageMap.Ink, 2f);
         }
     }
 

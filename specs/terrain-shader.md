@@ -14,8 +14,10 @@ Code.
 - **No linear conversion:** with `hdr_2d` off, Godot blends 2D in sRGB, so Multiply on sRGB values is Photoshop's
   Multiply (`seasonal-grass.md §6.2`).
 - **The year:** each season holds its palette for 20 days, then blends into the next over 10 (`seasonal-grass.md §6.4`).
-- **The value band:** the ground and every ground kind at L\* ≥ 50 (`world-legibility.md §5`, pending Joe's call on the
-  rule). Today's ground kinds, picked against slate, are mostly below it and get re-picked here.
+- **The value band:** the ground and every ground kind at L\* ≥ 50 (`world-legibility.md §5`, adopted D637). Since D637
+  the valley's ground is **flat parchment** and the ground kinds sit in the band (`VillageMap.cs`'s palette;
+  `world-legibility.md §9`) — this shader lays the grass over that, and may refine the ground kinds; `check.py` holds
+  whatever it picks to the band.
 
 ## 2. ⚠️ Snow cannot be Multiply — it needs its own blend
 
@@ -45,5 +47,5 @@ Things to settle when the spec is written:
   item 4).
 - **Paper grain:** world-anchored or screen-anchored. The lab's grain is screen-anchored, a placeholder (`grass-look.md
   §2`).
-- **Re-pick the ground kinds into the band** (`world-legibility.md §4`, 13 of 17 below it): woods, seams, fields, the
-  river and its shallows, paths, the quarry and mine floors, the valley's edge and outside it.
+- **The ground kinds are in the band already (D637)**; whether the shader draws them as flat fills, washes or textures
+  is its own question, and the trees with them (`world-legibility.md §7`, call 4).

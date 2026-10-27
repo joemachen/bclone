@@ -486,7 +486,7 @@ public partial class VillageMap
     private static readonly Color QuarryFloor = new("#a39b8e");
 
     /// <summary>A mine face's floor — rust-pale spoil, lighter and warmer than the ore.</summary>
-    private static readonly Color MineFloor = new("#9a6a52");
+    private static readonly Color MineFloor = new("#bf957c");
 
     /// <summary>The lumps on one seam tile, and the ones spilling off it — into the mesh.</summary>
     private static void Lumps(MeshBuilder into, GridPos tile, bool stone)

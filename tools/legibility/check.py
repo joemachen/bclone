@@ -36,19 +36,22 @@ WORLD = {
     "SaplingColour": "ground", "RockColour": "ground", "IronColour": "ground", "FieldColour": "ground",
     "SownColour": "ground", "RipeColour": "ground", "QuarryFloor": "ground", "MineFloor": "ground",
     "WornPath": "ground", "PackedPath": "ground", "Beyond": "ground", "ValleyEdge": "ground", "GridLine": "ground",
-    # things: buildings by what they are, the people, the beasts, the boats
-    "HomeColour": "read", "GranaryColour": "read", "WarehouseColour": "read", "MarketColour": "read",
-    "HutColour": "read", "LibraryColour": "read", "TownHallColour": "read", "WellColour": "read",
-    "BridgeColour": "read", "StoneBridgeColour": "read", "FisheryColour": "read", "BerryColour": "read",
-    "TreeColour": "read", "SiteColour": "read", "DemolishColour": "read",
-    "AdultColour": "read", "ChildColour": "read", "ElderColour": "read",
-    "CattleColour": "read", "GameColour": "read", "HullColour": "read", "SailColour": "read",
+    "Parchment": "ground",
+    # things with an area — the fill carries identity and is judged by the outline drawn round it (D637): "fill:<edge>"
+    "HomeColour": "fill:Ink", "GranaryColour": "fill:Ink", "WarehouseColour": "fill:Ink", "MarketColour": "fill:Ink",
+    "HutColour": "fill:Ink", "LibraryColour": "fill:Ink", "TownHallColour": "fill:Ink", "WellColour": "fill:Ink",
+    "BridgeColour": "fill:Ink", "StoneBridgeColour": "fill:Ink", "FisheryColour": "fill:Ink", "BerryColour": "fill:Ink",
+    "TreeColour": "fill:Ink", "SiteColour": "fill:SiteEdge", "DemolishColour": "fill:DemolishEdge",
+    "CattleColour": "fill:CattleEdge", "HullColour": "fill:HullEdge", "SailColour": "fill:HullEdge",
+    # the people and the wild game: dots, dark
+    "AdultColour": "read", "ChildColour": "read", "ElderColour": "read", "GameColour": "read",
     # lines and marks
+    "Ink": "read", "SiteEdge": "read", "DemolishEdge": "read",
     "FenceEdge": "read", "PalisadeEdge": "read", "CattleEdge": "read", "HullEdge": "read", "HeapEdge": "read",
     "DoorColour": "read", "FullStoreColour": "read", "IdleWorkplaceColour": "read", "SelectedRing": "read",
     "MealMark": "read", "ArrivalMark": "read",
     "ResidentialEdge": "read", "HarvestEdge": "read", "DestroyEdge": "read", "WorkGroundEdge": "read",
-    "GhostFine": "read", "GhostWarned": "read", "GhostRefused": "read", "DestroyTone": "read",
+    "GhostFine": "read", "GhostWarned": "read", "GhostRefused": "read",
     # washes
     "ResidentialColour": "wash", "HarvestColour": "wash", "HarvestWaitingColour": "wash", "DestroyColour": "wash",
     "WorkGroundColour": "wash", "WorkGroundMine": "wash", "WearWash": "wash",
@@ -59,7 +62,9 @@ WORLD = {
 # Trades and goods drawn ON the map (`VillageMap.ColourOf(JobKind)` hands these to TradeGlyph; heaps and crates use
 # GoodsPalette). The same colours are the bar's and the cards' icons — shared, which is a finding of its own.
 WORLD_TRADES = {"Smith", "Quarrier", "Miner", "Miller", "Baker", "Herdsman", "Merchant"}
-UI = {"Unchosen", "Hand", "Undo"}  # BuildingGlyph / ToolGlyph — the bar's icons only
+# BuildingGlyph / ToolGlyph — the bar's icons only; DestroyTone is the red brush's glyph and the base the destroy wash is
+# made from, never drawn on the valley by itself (its edge is DestroyEdge).
+UI = {"Unchosen", "Hand", "Undo", "Fire", "DestroyTone"}
 
 WHAT = {
     "Ground": "grass ground (now parchment × the grass)", "WaterColour": "river", "ShallowsColour": "river's edge",
@@ -109,6 +114,8 @@ def read_colours():
         for m in re.finditer(r'Color (\w+) = (\w+) with \{ A = ([0-9.]+)f \};', text):
             base = named[m.group(2)]
             named[m.group(1)] = (base[0], float(m.group(3)), path.name)
+        for m in re.finditer(r'Color (\w+) = ([A-Z]\w+);', text):  # an alias: `Ground = Parchment`, `HeapEdge = Ink`
+            named[m.group(1)] = named[m.group(2)][:2] + (path.name,)
         for m in re.finditer(r'(JobKind|Goods)\.(\w+) => new Color\((?:"#([0-9a-fA-F]{6})"|([0-9.]+)f, ([0-9.]+)f, ([0-9.]+)f)\)', text):
             rgb = hexrgb(m.group(3)) if m.group(3) else (float(m.group(4)), float(m.group(5)), float(m.group(6)))
             key = f"{m.group(1)}.{m.group(2)}"
@@ -233,16 +240,31 @@ def main() -> int:
     p(f"**3:1 below the darkest common ground needs L\\* ≤ {target:.1f}; nothing can reach 3:1 above the lightest** "
       f"(white is {contrast((1, 1, 1), light_end[2]):.2f}:1).\n")
 
-    rows = {"read": [], "wash": [], "ground": [], "quiet": []}
+    rows = {"read": [], "fill": [], "wash": [], "ground": [], "quiet": []}
     for key, (rgb, alpha, src) in sorted(named.items()):
-        tier = "read" if key.startswith(("Goods.", "JobKind.")) else WORLD.get(key)
+        # Heaps and crates are inked round with HeapEdge; a trade's workplace is a building, inked round like any.
+        tier = ("fill:HeapEdge" if key.startswith("Goods.") else "fill:Ink" if key.startswith("JobKind.")
+                else WORLD.get(key))
         if tier is None:
             continue
         what = WHAT.get(key, key.split(".")[-1].lower() + (" heap / crate" if key.startswith("Goods.") else " workplace"))
-        w = worst_against_ground(rgb, alpha)
         g_mid = [g for g in grounds if g[1] == "50"]
         d = min(de(over(rgb, alpha, g[2]), g[2]) for g in g_mid)
+        if tier.startswith("fill:"):
+            edge = tier.split(":")[1]
+            # The thing reads by its outline: the outline's contrast against the ground, whatever the fill.
+            w = worst_against_ground(*named[edge][:2])
+            rows["fill"].append((key, what, rgb, alpha, src, w, d, edge))
+            continue
+        w = worst_against_ground(rgb, alpha)
         rows[tier].append((key, what, rgb, alpha, src, w, d))
+
+    fill_fails = [r for r in rows["fill"] if r[5][0] < 3.0]
+    p(f"## Things with an area — judged by their outline, {len(fill_fails)} of {len(rows['fill'])} fail\n")
+    p("| colour | drawn as | fill | outline | outline's worst |\n|---|---|---|---|---|")
+    for key, what, rgb, alpha, src, w, _, edge in sorted(rows["fill"], key=lambda r: r[5][0]):
+        p(f"| `{key}` | {what} | `{hexs(rgb, alpha)}` | `{edge}` | {w[0]:.2f}:1{'' if w[0] >= 3 else ' ❌'} |")
+    p("")
 
     fails = [r for r in rows["read"] if r[5][0] < 3.0]
     p(f"## Failures — must read at 3:1, {len(fails)} of {len(rows['read'])}\n")
@@ -261,7 +283,7 @@ def main() -> int:
 
     p(f"\n## Ground kinds — the rule gives the ground L\\* {GROUND_FLOOR:.0f} and up (the grass spans "
       f"{dark_end[3]:.0f}–{light_end[3]:.0f})\n")
-    p("Today's values, picked against slate: `Ground` itself is replaced by parchment × the grass, and the rest are what "
+    p("`Ground` is drawn as flat parchment until the terrain shader lays the grass over it; the rest are what "
       "the terrain shader re-picks.\n")
     p("| colour | drawn as | value | L\\* | contrast with the grass (mid) | in the band? |\n|---|---|---|---|---|---|")
     for key, what, rgb, alpha, src, w, d in rows["ground"]:
@@ -277,7 +299,7 @@ def main() -> int:
 
     # ---- the rule ----
     p("\n## The value-band rule, tested\n")
-    fills = [r for r in rows["read"] if r[0] in ("HomeColour", "GranaryColour", "WarehouseColour", "MarketColour",
+    fills = [r for r in rows["fill"] if r[0] in ("HomeColour", "GranaryColour", "WarehouseColour", "MarketColour",
              "HutColour", "LibraryColour", "TownHallColour", "WellColour", "FisheryColour", "BerryColour", "TreeColour",
              "SiteColour", "DemolishColour", "BridgeColour", "StoneBridgeColour") or r[0].startswith("JobKind.")]
     pairs_now = pairs_dark = 0
@@ -298,8 +320,8 @@ def main() -> int:
     ink_extreme = contrast(INK, extreme_dark[1]["rgb"])
     p(f"\n**Ink outline:** `{hexs(INK)}` (L\\* {lstar(INK):.0f}) is {ink_worst:.2f}:1 against the darkest common ground "
       f"and {ink_extreme:.2f}:1 against the rarest dark (p0.1) — every outlined thing passes whatever its fill.")
-    fill_ok = sum(1 for r in fills if r[5][0] >= 3.0)
-    p(f"Fills that pass on their own today: {fill_ok} of {len(fills)}.")
+    fill_ok = sum(1 for r in fills if worst_against_ground(r[2], r[3])[0] >= 3.0)
+    p(f"Fills that would pass without their outline: {fill_ok} of {len(fills)} — the outline is what carries them.")
 
     p(f"\n## Out of scope — UI ({len(ui)})\n")
     p(", ".join(f"`{k}`" for k in sorted(ui)))

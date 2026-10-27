@@ -1,6 +1,21 @@
-# Handoff — bclone: **▶️ PHASE 5 — `slice/parchment-legibility` = D635–D636: PARCHMENT DECIDED; THE WORLD'S COLOURS MEASURED AGAINST IT, 57 OF 60 FAIL, NOTHING CHANGED; THE RULE IS JOE'S CALL. `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5 — `slice/parchment-legibility` = D635–D637: THE WORLD ON PARCHMENT — THE THREE-BAND RULE ADOPTED, THE WORLD PALETTE RE-PICKED, 0 FAILURES, UNPLAYED; JOE PLAYS IT. `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D636) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D637) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **D637 — the world re-picked for parchment, on `slice/parchment-legibility`, local, unpushed, UNPLAYED.** Joe took
+> the three-band rule and the parchment chip. The valley's ground is flat parchment (the grass waits for the terrain
+> shader); ground kinds at L\* ≥ 50; buildings, heaps and boats outlined in `Ink`; villagers, rings, edges, ghosts dark
+> (selection violet, housing edge dashed); UI pictures of world things on parchment. `check.py`: 0 failures.
+> `specs/world-legibility.md §9` has every value, was → now. Pictures: `art/legibility/`.
+>
+> **▶️ NEXT — Joe plays it (`.\run.bat`, and `.\run.bat grass` for the things over the real grass).** Then his: the
+> trees (`world-legibility.md §7` call 4, canopies are an interim in the band), D68's destination, and merging. Then the
+> terrain shader (`specs/terrain-shader.md`).
+>
+> **Numbers (D637):** suite 1850 / 0 / 5 of 1855 (14m04); view 0 warnings; probe 98 `[widths]` lines, bar 151, tile centres / new game / grass lab / fault ✅, `done.` — the same 98 lines and 62 ✅ as D634; goldens grep 388 before and after; `check.py` 0 failures, red-check 3 / 3.
+>
+> **— D636, as it was —**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D636) — ON WINDOWS.**
 >
 > **`slice/parchment-legibility`** (off `main` at D634, local): **D635** — Joe: *"Yes, move the game's ground to
 > parchment"*; world colours move, the UI stays slate. **D636** — every world colour checked against the parchment
@@ -8295,6 +8310,21 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D637 PAID FOR — A COLOUR NAMED FOR A PLACE IS USED FOR ITS VALUE, AND A RED COUNTED BY ITS GLYPH
+
+- **`BeyondColour` was the bar glyphs' dark detail colour** (a house's door, a well's shaft) because it happened to be
+  the darkest colour on the map. Re-picked light for parchment, every door would have vanished. Before changing a
+  colour's value, grep every reader of it, including the ones that borrowed it for its lightness, not its meaning.
+- **A mutant counted by `❌` scored zero** because `check.py`'s read-tier failure rows carry no `❌` — the total is in
+  the header. Count a tool's own verdict, never a glyph it prints on some rows.
+- **An alpha on a dark line undoes the darkness:** the brush's edge at 0.85 over parchment composites to L\* ~45 and
+  fails 3:1. Lines in the dark band are opaque; translucency is for washes.
+- **Re-picking things for a ground the game does not draw yet breaks the game** — dark things on the slate ground. The
+  ground moved to flat parchment in the same slice.
+- **The game can be looked at without Joe's hands and without touching his saves:** `BCLONE_FRAME_SAMPLE=90` founds the
+  config's valley in a real window and writes nothing; a scratch `-s` SceneTree script that adds `Main.tscn` to its
+  root can save the viewport at chosen seconds.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
@@ -8309,8 +8339,8 @@ Read `git status` after staging, every time.
   - **Settled without asking:** a building that is not square turns only a half (every founding and marked building
     covers the tiles it always did); an unmarked building faces the nearest store, in the sim, for the ghost to ask.
 
-- ⏸️ **WORLD LEGIBILITY ON PARCHMENT (D636), HIS TO CALL — `world-legibility.md §7`:** the rule (three bands
-  recommended), the bar, the parchment chip for UI pictures of world things, the trees, and D68's destination.
+- ⏸️ **WORLD LEGIBILITY ON PARCHMENT (D636–D637), HIS TO CALL — `world-legibility.md §7`:** ✅ the rule, the bar and
+  the chip (D637, built, unplayed). Still his: **play it**; the trees (call 4); D68's destination (call 5).
 - ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ **Parchment: yes (D635).** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
   **the look approved (D632) and its open items kept (D633); merged (D634).** ⏸️ **Now his: does the game's ground
   move from slate to parchment (`seasonal-grass.md §6.0`)?** The pack only reads over parchment, so the valley cannot
