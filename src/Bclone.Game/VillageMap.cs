@@ -2245,25 +2245,107 @@ public partial class VillageMap : Control
     /// <summary>A polyline drawn in dashes of <paramref name="dash"/> pixels, the pattern running on across its corners.</summary>
     private void DrawDashedPolyline(Vector2[] points, Color colour, float width, float dash)
     {
-        float along = 0f;
+        foreach ((Vector2 from, Vector2 to) in DashesAlong(points, dash))
+        {
+            DrawLine(from, to, colour, width, antialiased: true);
+        }
+    }
+
+    /// <summary>The dashes along a polyline: on for <paramref name="dash"/> pixels, off for as many, across its corners.</summary>
+    /// <remarks>
+    /// ⛔⛔ <b>D637's first version locked Joe's PC, twice, the moment he painted homes</b> (D638). It stepped by
+    /// <c>dash - (along % dash)</c> — the distance to the next turn — and in floats that can come out smaller than
+    /// <c>along</c> can add, so <c>along</c> never moved, the loop never ended, and every pass queued another line until
+    /// the machine ran out of memory. In a float32 replay at the game's zooms (×1.12 steps) 241 of 300 zone outlines never
+    /// finished. ⭐ <b>So every pass here moves forward by at least a hundredth of a dash, and a segment's last step ends
+    /// the segment rather than adding up to it.</b> The probe's <c>dashes:</c> line replays the inputs that hung.
+    /// </remarks>
+    internal static List<(Vector2 From, Vector2 To)> DashesAlong(Vector2[] points, float dash)
+    {
+        var dashes = new List<(Vector2 From, Vector2 To)>();
+        if (!(dash > 0f))
+        {
+            return dashes;
+        }
+
+        float phase = 0f; // how far into the current dash-and-gap, [0, 2 × dash)
         for (int i = 1; i < points.Length; i++)
         {
             Vector2 from = points[i - 1];
-            float length = from.DistanceTo(points[i]);
-            float done = 0f;
-            while (done < length)
+            Vector2 to = points[i];
+            float length = from.DistanceTo(to);
+            float at = 0f;
+            while (at < length)
             {
-                bool on = (int)(along / dash) % 2 == 0;
-                float step = Mathf.Min(dash - (along % dash), length - done);
+                bool on = phase < dash;
+                float want = Mathf.Max((on ? dash : 2f * dash) - phase, dash * 0.01f);
+                bool last = want >= length - at;
+                float step = last ? length - at : want;
                 if (on)
                 {
-                    DrawLine(from.Lerp(points[i], done / length), from.Lerp(points[i], (done + step) / length), colour, width, antialiased: true);
+                    dashes.Add((from.Lerp(to, at / length), last ? to : from.Lerp(to, (at + step) / length)));
                 }
 
-                done += step;
-                along += step;
+                phase += step;
+                if (phase >= 2f * dash)
+                {
+                    phase = 0f;
+                }
+
+                if (last)
+                {
+                    break;
+                }
+
+                at += step;
             }
         }
+
+        return dashes;
+    }
+
+    /// <summary>
+    /// The probe's <c>dashes:</c> line — <see cref="DashesAlong"/> fed the zone outlines that hung D637's version: traced
+    /// loops of quarter-tile steps at every zoom the game steps through, where the dash is never a whole number of pixels.
+    /// </summary>
+    internal static string DashesEnd()
+    {
+        var faults = new List<string>();
+        var random = new System.Random(637);
+        int loops = 0;
+        long worst = 0;
+        for (int zoom = 0; zoom < 14 && faults.Count == 0; zoom++)
+        {
+            float pixelsPerTile = 13f * Mathf.Pow(1.12f, zoom);
+            float dash = Mathf.Max(4f, pixelsPerTile * 0.25f);
+            for (int trial = 0; trial < 25; trial++)
+            {
+                var points = new Vector2[601];
+                points[0] = new Vector2((float)(random.NextDouble() * 1280.0), (float)(random.NextDouble() * 800.0));
+                float total = 0f;
+                for (int k = 1; k < points.Length; k++)
+                {
+                    Vector2 way = (random.Next(4)) switch { 0 => Vector2.Right, 1 => Vector2.Down, 2 => Vector2.Left, _ => Vector2.Up };
+                    points[k] = points[k - 1] + (way * pixelsPerTile / 4f);
+                    total += pixelsPerTile / 4f;
+                }
+
+                List<(Vector2 From, Vector2 To)> dashes = DashesAlong(points, dash);
+                float drawn = dashes.Sum(d => d.From.DistanceTo(d.To));
+                long bound = points.Length + (long)(total / dash) + 1;
+                worst = System.Math.Max(worst, dashes.Count * 100 / System.Math.Max(1, bound));
+                loops++;
+                if (dashes.Count > bound || drawn < total * 0.4f || drawn > total * 0.6f)
+                {
+                    faults.Add($"at {pixelsPerTile:F1} px a tile a loop of {total:F0} px drew {dashes.Count} dashes ({drawn:F0} px), bound {bound}");
+                    break;
+                }
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] dashes: ✅ {loops} traced outlines at 14 zooms end, each in at most its segments plus its dashes ({worst} % of that at worst), half drawn"
+            : $"[widths] dashes: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>

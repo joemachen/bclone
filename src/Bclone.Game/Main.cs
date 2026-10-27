@@ -566,6 +566,7 @@ public partial class Main : Control
         GD.Print(_map.AVillagerDrawsWhereTheyStand());
         GD.Print(VillageMap.TheCrowdDoesNotSkip());
         GD.Print(VillageMap.AMealIsSeen());
+        GD.Print(VillageMap.DashesEnd());
         GD.Print(_map.TheNomadsWalkInFromTheEdge());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());

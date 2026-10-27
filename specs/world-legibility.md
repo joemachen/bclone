@@ -207,5 +207,9 @@ zero; the read tier's failure rows carry no ❌, so counting ❌ missed them —
 it is 1. Reference images: `art/legibility/` — the game at its founding (flat parchment), and the lab's placeholders over
 the grass in fall at 24 px, summer at 48 and winter at 13.
 
+⛔ **D638 — the dashed housing edge hung the game.** D637's dash loop could stop advancing in float32; painting homes
+locked Joe's PC twice. Rewritten as `VillageMap.DashesAlong` (every pass moves forward; a segment's last step ends it),
+guarded by the probe's `dashes:` line, and replayed with the real brush in a window.
+
 ⚠️ **What the check cannot see:** it reads colours, and its table *says* which fills are outlined. A draw site that
 dropped its ink edge would still pass. The probe has no line for it either; Joe's eyes in play are the check on that.

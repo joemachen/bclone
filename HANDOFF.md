@@ -2,6 +2,11 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D637) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
+> **⛔ D638 — D637 HUNG THE GAME AND LOCKED JOE'S PC WHEN HE PAINTED HOMES; FIXED.** The dashed housing edge's loop
+> could stop advancing in float32 and queue lines until memory ran out. Now `VillageMap.DashesAlong`, guarded by the
+> probe's new `dashes:` line; painting homes replayed in a real window. **Joe re-plays it before anything else.**
+> **Numbers (D638):** suite 1850 / 0 / 5 of 1855 (13m54); view 0 warnings; probe **99** `[widths]` lines (+ `dashes:`), 63 ✅, bar 151, `done.`; goldens grep 388 before and after; `dashes:` red-check 2 of 3, the zero written down.
+>
 > **D637 — the world re-picked for parchment, on `slice/parchment-legibility`, local, unpushed, UNPLAYED.** Joe took
 > the three-band rule and the parchment chip. The valley's ground is flat parchment (the grass waits for the terrain
 > shader); ground kinds at L\* ≥ 50; buildings, heaps and boats outlined in `Ink`; villagers, rings, edges, ghosts dark
@@ -8309,6 +8314,19 @@ Read `git status` after staging, every time.
   hue. A single "ground colour" would have hidden that; test against the percentiles of the rendered ground.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
+
+## ⛔⛔ THE TRAP D638 PAID FOR — A FLOAT LOOP THAT STEPS BY "WHAT IS LEFT" CAN STOP STEPPING, AND IN `_Draw` THAT TAKES THE MACHINE
+
+- **`step = dash - (along % dash)` in float32 can be smaller than `along` can add**, so `along + step == along` and
+  the loop spins for ever. Inside `_Draw` each pass queued a line: memory ran out and **Joe had to hard-reboot, twice.**
+  Any loop that walks a distance in floats must move forward by a floor every pass and end a segment by `break`, not
+  by summing up to it (`DashesAlong`).
+- **A replay at whole-number values hid it** (0 of 300); the game's zoom is ×1.12 steps, never whole (241 of 300).
+  Replay with the values the game really uses.
+- **A new draw path the probe's world never exercises is unverified, however green the probe.** D637 added one loop
+  and only a housing zone ran it; the probe has none. Pull the logic into a pure function and give it a probe line.
+- **Do not red-check a runaway by reinstating it.** It eats this machine too. Cap the mutant (`d638_mutants.py`'s
+  `d637_capped`) so it stalls and stops.
 
 ## ⛔ THE TRAPS D637 PAID FOR — A COLOUR NAMED FOR A PLACE IS USED FOR ITS VALUE, AND A RED COUNTED BY ITS GLYPH
 
