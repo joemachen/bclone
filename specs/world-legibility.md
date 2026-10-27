@@ -211,5 +211,8 @@ the grass in fall at 24 px, summer at 48 and winter at 13.
 locked Joe's PC twice. Rewritten as `VillageMap.DashesAlong` (every pass moves forward; a segment's last step ends it),
 guarded by the probe's `dashes:` line, and replayed with the real brush in a window.
 
+**D639:** the forage bushes' berries were produce's light red on parchment; now `BerryMark` `#840c26` (dark, hue kept),
+in the table. Then the art was parked (`HANDOFF.md`, 🅿️ ART: PARKED).
+
 ⚠️ **What the check cannot see:** it reads colours, and its table *says* which fills are outlined. A draw site that
 dropped its ink edge would still pass. The probe has no line for it either; Joe's eyes in play are the check on that.

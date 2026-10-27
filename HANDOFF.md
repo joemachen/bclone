@@ -2,6 +2,10 @@
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D637) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
+> **🅿️ D639 — ART PARKED; BACK TO THE GAME SYSTEMS.** Joe re-played painting homes: *"painting homes works now."* The
+> forage bushes' berries were the last light mark on parchment — now dark produce red (`BerryMark`), in `check.py`'s
+> table, 0 failures. Every open art item is in **🅿️ ART: PARKED** below, and is not worked on until he reopens it.
+>
 > **⛔ D638 — D637 HUNG THE GAME AND LOCKED JOE'S PC WHEN HE PAINTED HOMES; FIXED.** The dashed housing edge's loop
 > could stop advancing in float32 and queue lines until memory ran out. Now `VillageMap.DashesAlong`, guarded by the
 > probe's new `dashes:` line; painting homes replayed in a real window. **Joe re-plays it before anything else.**
@@ -8343,6 +8347,25 @@ Read `git status` after staging, every time.
   config's valley in a real window and writes nothing; a scratch `-s` SceneTree script that adds `Main.tscn` to its
   root can save the viewport at chosen seconds.
 
+## 🅿️ ART: PARKED (D639, 2026-10-26) — NOTHING HERE IS WORKED ON UNTIL JOE REOPENS IT
+
+Joe: *"I'm parking the art work and going back to finishing the game systems … Nothing in this list gets worked on
+until I reopen it."* ⛔ **Not a to-do list for a session to pick up.** Where it stands: the grass look is approved and
+recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchment and the world palette passes
+`tools/legibility/check.py` (`specs/world-legibility.md`, D635–D639); the grass is in the lab only, never in the valley.
+
+- **Terrain shader** — the grass integrated into the valley (D628's coverage map, option A), splat blending between
+  ground kinds, edge bleed, and real paper grain (world-anchored; the lab's is a screen-anchored placeholder).
+  `specs/terrain-shader.md` (not started) holds what is settled.
+- **Snow needs a non-Multiply blend** — it is lighter than parchment, which Multiply cannot reach
+  (`terrain-shader.md §2`).
+- **The tree look — undecided** (`world-legibility.md §7`, call 4). Canopies sit in the ground's band as an interim.
+- **D68's *Foundation* look — retire or keep, undecided** (`world-legibility.md §7`, call 5).
+- **The debug readout text is illegible on parchment** — the frame/draw readout lines over the map need a dark backing.
+- **Eye-check every building, heap and fence for a missing ink edge.** `check.py` reads colours and its table *says*
+  which fills are outlined; a draw site that drops its outline still passes, and no probe line looks.
+- **Watercolour textures for stone, clay, dirt and the other terrains** — today they are flat fills in the band.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
@@ -8357,8 +8380,8 @@ Read `git status` after staging, every time.
   - **Settled without asking:** a building that is not square turns only a half (every founding and marked building
     covers the tiles it always did); an unmarked building faces the nearest store, in the sim, for the ghost to ask.
 
-- ⏸️ **WORLD LEGIBILITY ON PARCHMENT (D636–D637), HIS TO CALL — `world-legibility.md §7`:** ✅ the rule, the bar and
-  the chip (D637, built, unplayed). Still his: **play it**; the trees (call 4); D68's destination (call 5).
+- 🅿️ **WORLD LEGIBILITY ON PARCHMENT (D636–D639) — PARKED** with the rest of the art (see 🅿️ ART: PARKED). Played: painting
+  homes works (D638's fix). The trees and D68 wait there.
 - ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ **Parchment: yes (D635).** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
   **the look approved (D632) and its open items kept (D633); merged (D634).** ⏸️ **Now his: does the game's ground
   move from slate to parchment (`seasonal-grass.md §6.0`)?** The pack only reads over parchment, so the valley cannot

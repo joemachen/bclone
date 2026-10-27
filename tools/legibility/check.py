@@ -45,6 +45,7 @@ WORLD = {
     "CattleColour": "fill:CattleEdge", "HullColour": "fill:HullEdge", "SailColour": "fill:HullEdge",
     # the people and the wild game: dots, dark
     "AdultColour": "read", "ChildColour": "read", "ElderColour": "read", "GameColour": "read",
+    "BerryMark": "read",
     # lines and marks
     "Ink": "read", "SiteEdge": "read", "DemolishEdge": "read",
     "FenceEdge": "read", "PalisadeEdge": "read", "CattleEdge": "read", "HullEdge": "read", "HeapEdge": "read",
@@ -88,7 +89,7 @@ WHAT = {
     "ResidentialColour": "housing zone", "HarvestColour": "clear zone", "HarvestWaitingColour": "clear zone, waiting",
     "DestroyColour": "destroy zone", "WorkGroundColour": "work ground", "WorkGroundMine": "selected work ground",
     "WearWash": "wear overlay", "TreeCanopy": "tree canopy", "SaplingCanopy": "sapling canopy", "Boulder": "boulder",
-    "OreLump": "ore lump",
+    "OreLump": "ore lump", "BerryMark": "berries on a forage bush",
 }
 
 INK = (0x2A / 255, 0x20 / 255, 0x18 / 255)  # a candidate ink: dark sepia, the art direction's line colour
@@ -114,7 +115,8 @@ def read_colours():
         for m in re.finditer(r'Color (\w+) = (\w+) with \{ A = ([0-9.]+)f \};', text):
             base = named[m.group(2)]
             named[m.group(1)] = (base[0], float(m.group(3)), path.name)
-        for m in re.finditer(r'Color (\w+) = ([A-Z]\w+);', text):  # an alias: `Ground = Parchment`, `HeapEdge = Ink`
+        # An alias: `Ground = Parchment`, `HeapEdge = Ink` — a field, never a local (`Color colour = BerryMark;`).
+        for m in re.finditer(r'static readonly Color (\w+) = ([A-Z]\w+);', text):
             named[m.group(1)] = named[m.group(2)][:2] + (path.name,)
         for m in re.finditer(r'(JobKind|Goods)\.(\w+) => new Color\((?:"#([0-9a-fA-F]{6})"|([0-9.]+)f, ([0-9.]+)f, ([0-9.]+)f)\)', text):
             rgb = hexrgb(m.group(3)) if m.group(3) else (float(m.group(4)), float(m.group(5)), float(m.group(6)))

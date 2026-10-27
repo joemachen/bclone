@@ -56,14 +56,14 @@ Darkest common ground: fall p1, L\* 59.7. Lightest: spring p99, L\* 82.6. Rarest
 | `WarehouseColour` | warehouse | `#8a7a63` | `Ink` | 4.98:1 |
 | `WellColour` | well | `#8d8577` | `Ink` | 4.98:1 |
 
-## Failures — must read at 3:1, 0 of 25
+## Failures — must read at 3:1, 0 of 26
 
 Each needs its fill at L\* ≤ 29 or an ink outline. L\* is the colour as drawn (over the darkest ground, when it is translucent); *worst* is its lowest contrast against any season's p1, p50 or p99 ground.
 
 | colour | drawn as | value | L\* | worst | against |
 |---|---|---|---|---|---|
 
-Passing at 3:1 (25): `IdleWorkplaceColour` 3.2:1, `GhostRefused` 3.2:1, `GameColour` 3.2:1, `DestroyEdge` 3.2:1, `FullStoreColour` 3.2:1, `AdultColour` 3.2:1, `FenceEdge` 3.2:1, `DemolishEdge` 3.2:1, `SiteEdge` 3.2:1, `SelectedRing` 3.2:1, `HarvestEdge` 3.2:1, `ResidentialEdge` 3.2:1, `ArrivalMark` 3.2:1, `ElderColour` 3.2:1, `GhostFine` 3.2:1, `WorkGroundEdge` 3.2:1, `GhostWarned` 3.2:1, `MealMark` 3.2:1, `ChildColour` 3.2:1, `CattleEdge` 3.4:1, `DoorColour` 3.6:1, `HullEdge` 3.7:1, `PalisadeEdge` 4.1:1, `HeapEdge` 5.0:1, `Ink` 5.0:1
+Passing at 3:1 (26): `IdleWorkplaceColour` 3.2:1, `BerryMark` 3.2:1, `GhostRefused` 3.2:1, `GameColour` 3.2:1, `DestroyEdge` 3.2:1, `FullStoreColour` 3.2:1, `AdultColour` 3.2:1, `FenceEdge` 3.2:1, `DemolishEdge` 3.2:1, `SiteEdge` 3.2:1, `SelectedRing` 3.2:1, `HarvestEdge` 3.2:1, `ResidentialEdge` 3.2:1, `ArrivalMark` 3.2:1, `ElderColour` 3.2:1, `GhostFine` 3.2:1, `WorkGroundEdge` 3.2:1, `GhostWarned` 3.2:1, `MealMark` 3.2:1, `ChildColour` 3.2:1, `CattleEdge` 3.4:1, `DoorColour` 3.6:1, `HullEdge` 3.7:1, `PalisadeEdge` 4.1:1, `HeapEdge` 5.0:1, `Ink` 5.0:1
 
 ## Washes — must be seen (CIE76 ΔE ≥ 5 against the middle ground, every season)
 
