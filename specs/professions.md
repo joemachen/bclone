@@ -2,7 +2,9 @@
 
 **Decisions:** **D107** (this document), and the ones it settles. Neighbours: D14, D29, D30,
 D43, D51, D62, D63, D64, D66, D84, D86, D87, D102–D106.
-**Status:** ⚠️ **Alignment document; the table in §4 is current as of 2026-09-18 (D391).** It had
+**Status:** ⚠️ **Alignment document; the table in §4 is current as of 2026-10-27 (D640)** — the doc truth pass
+added five trades that had shipped without a row (farmer, quarrier, miner, herdsman, merchant) and corrected the
+forester, the smith's tools, the tailor and the market worker. Before that it was current as of D391. It had
 called the fisher and the hunter *"new"* for a fortnight after both shipped (D288, D291) — the
 D159 lie, caught while the smith's row was added. §6.1's *"blocked"* was corrected 2026-08-28.
 Nothing else here is built except where the table says so.
@@ -185,20 +187,25 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 |---|---|---|---|---|---|
 | **Laborer** | none, by design | — | clears & hauls | — | ✅ clearing, tidying. ⛔ carry-to-site (D93) |
 | **Builder** | builder's hut | — | raises buildings; later roads, bridges, fences | — | ✅ **hut built (D110)**. Free and instant; seats derived; a site is an errand, not a seat |
-| **Forester** | forester's hut | owned ground | logs → warehouse | 50 logs | ⚠️ job exists (D96 rename); hut, ground and worker-pricing built and waiting (D86, C3c) |
+| **Forester** | forester's hut | owned ground | logs → warehouse | 50 logs | ✅ **BUILT** (D86, D96); tends its marked ground (D384) |
+| **Farmer** | farmhouse | painted fields | wheat → farm store → granary | 100 (`farm_store_cap`) | ✅ **BUILT** (D162, `crops-and-orchards.md`); rests at the steading (D513) |
+| **Quarrier** | quarry | **by a stone seam** (claims it, D613) | stone → warehouse | — | ✅ **BUILT** (D438, `quarry.md`) — learned from 200 stone dug by hand (D500) |
+| **Miner** | iron mine | **by an iron seam** (claims it, D613) | iron → warehouse | — | ✅ **BUILT** (D450, `iron-mine.md`) — learned from the smith's first iron tool |
+| **Herdsman** | barn | a pasture (fenced, §0.2) | cattle → meat, leather; cuts and carries hay | — | ✅ **BUILT** (D593, `livestock.md`) — animals come only by trade |
+| **Merchant** | trading post | **on the river bank** | carries goods to and from the boat | 800 | ✅ **BUILT** (D594, `trade.md`; named D591) |
 | **Woodcutter** | woodcutter's hut | — | firewood → warehouse | 50 firewood | ✅ built. Local store new. |
 | **Forager** | forager's hut | forest nearby | food → granary | 100 food | ✅ **BUILT** (D112–D130). Forage sites retired; named "forager" since D188/D240. §6.1 below is spent |
 | **Fisher** | fishing hut | **beside water** | fish → granary | 840 (three casts) | ✅ **BUILT** (D282–D288, `fishing.md`) |
 | **Hunter** | hunter's lodge | **woods within reach** | meat → granary; leather → warehouse | 2,700 | ✅ **BUILT** (D291–D293, `hunting.md`; in the woods since D384) |
-| **Smith** | smithy | — | iron + firewood → tools → warehouse | — | ✅ **BUILT** (D391, `tools-and-the-smith.md`) — and every trade above but the marketer and the builder wears the tools |
+| **Smith** | smithy | — | iron + firewood → tools → warehouse | — | ✅ **BUILT** (D391, `tools-and-the-smith.md`) — every hands-on trade wears the tools; builders, herdsmen and laborers too once a smithy stands (D617); never the carriers (marketer, merchant) |
 | **Miller** | mill | — | wheat → flour → warehouse | 200 flour (a limit) | ✅ **BUILT** (D522, `food-chain.md`) — learned by reaping wheat; never grinds while the village is hungry |
 | **Baker** | bakery | — | flour + a firing of firewood → bread → granary | 1,000 bread (a limit) | ✅ **BUILT** (D522) — learned with the mill (D523); the oven lit once a stint, never with the winter's firewood |
-| **Tailor** | tailor's | — | clothing → warehouse | 50 clothing | ❌ new; `clothing.md` blocked on its input |
-| **Market worker** | market | — | moves goods to homes | large | ✅ built (D14, D36) |
+| **Tailor** | tailor's | — | clothing → warehouse | 50 clothing | ❌ not built; `clothing.md` — its input is not blocked, ⏸️ parked by Joe (D534) |
+| **Market worker** | market | — | stocks the market; households shop there (no home deliveries since D372) | 8,000 (D612) | ✅ built (D14, D36, D372) — named *marketer*, plural *traders* (D188, D591) |
 
-**Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — herdsman,
-miner, brewer, teacher, physician, cleric (the blacksmith is the smith above, D391; the quarry
-worker shipped as the **quarrier**, D438) — and each lands on §3's
+**Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — brewer, teacher,
+physician, cleric (the blacksmith is the smith above, D391; the quarry worker shipped as the
+**quarrier**, D438; the herdsman and the miner are rows above) — and each lands on §3's
 shape or argues why not.
 
 ### 4.1 New goods

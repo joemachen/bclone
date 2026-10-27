@@ -1,6 +1,7 @@
 # Spec: Phase 4 — the tech tree
 
-> Status: **SLICES 1 AND 2 ARE IN, both red-checked. Slice 3 (the knowledge screen) is open.**
+> Status: **SLICES 1 AND 2 ARE IN, both red-checked. Slice 3 (the knowledge screen) is not built — it moved to
+> Phase 6 as a tab of the town hall (`DESIGN.md §4`, D353).**
 > Pillar: `DESIGN.md §2.7` · Format per `METHODOLOGY.md §2`.
 >
 > **⭐ This is the phase plan and the QA checklist in one document, and the checklist exists from

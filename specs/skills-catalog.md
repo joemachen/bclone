@@ -8,7 +8,8 @@ Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `profess
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
 **Status:** ✅ **COMPLETE — all three landings, the at-risk line and apprenticeship are built**
-(D181, D187, D190, D195, D202), on `phase/3-skill-and-apprenticeship`, **unmerged**.
+(D181, D187, D190, D195, D202), on `phase/3-skill-and-apprenticeship`, **merged to `main` 2026-08-23** (§4's
+Phase 3 line; this said *unmerged* until D640).
 **⭐⭐ §2.1's claim is finally true: skill TRANSFERS.** A learner beside a master of the same trade
 at the same workplace learns twice as fast, nobody is assigned to anybody, and the master pays
 nothing. **§10's anti-vacuity guard is written and green** — masters alive after a century go

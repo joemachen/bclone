@@ -3,7 +3,7 @@
 **Status:** ✅ **BUILT AND MERGED** (2026-09-26, D406; built D404–D405; specced 2026-09-20, D400). ⭐ **§10's player-built
 fence arrived as a barn's pasture fence (D598, `livestock.md §0.2`)** — through `ZoneMap.Wall`, its own index keyed by
 the barn, its source hashed and the layer not, exactly as §10 asked; and a pull-down of either kind now puts back the
-other's wall on a shared edge. ⛔ **D614 (2026-10-20, on `slice/fence-edge`, unmerged): the wall-off sweep could be fooled
+other's wall on a shared edge. ⛔ **D614 (2026-10-20, on `slice/fence-edge`; merged D615): the wall-off sweep could be fooled
 from inside a pocket by the founding site's own seeds** — §3.3a's fifth rule; established seed 18 froze for it.
 Sixteen guards green and red-checked; §6 filled in from the run; six goldens moved once; the
 fixture premises re-posed with Joe's words — *"let longer walks be the price of fences."*

@@ -1,6 +1,43 @@
-# Handoff — bclone: **▶️ PHASE 5 — `slice/parchment-legibility` = D635–D637: THE WORLD ON PARCHMENT — THE THREE-BAND RULE ADOPTED, THE WORLD PALETTE RE-PICKED, 0 FAILURES, UNPLAYED; JOE PLAYS IT. `main` = D634: DOORS (D621–D626) AND SEASONAL GRASS (D627–D633) BOTH MERGED. THE GRASS LOOK IS APPROVED AND LIVES IN `looks/grass_approved.tres`; THE GAME'S VALLEY DOES NOT DRAW IT YET. NEXT: JOE'S CALL — THE PARCHMENT GROUND (`seasonal-grass.md §6.0`), OR DOORS COMMIT 5 (THE VIEW). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = THE MERGE OF `slice/doc-truth` (D640–D641: THE DOC TRUTH PASS; THE PHASE 5 GATE ACCEPTED AS WRITTEN), NOT PUSHED; `origin/main` = 9bdd358. NEXT: JOE'S CALL — PUSH; DOORS COMMIT 5 (THE VIEW); A VERDICT ON AN OPEN PHASE 5 ITEM; OR GATE ITEMS 2–3 (THE GOLDEN AUDIT, THE QA CHECKLIST). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-26 (D637) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D641) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Local `main` = 9bdd358 + the merge of `slice/doc-truth` (D640–D641), NOT PUSHED** (Joe: *"don't push yet"*).
+> **`origin/main` = 9bdd358** — D635–D639 merged (the world on parchment, D638's hang fixed, Joe re-played painting
+> homes: *"painting homes works now"*; the art parked, D639). CI ran the full suite on 5d0c221: 1850 / 0 / 5 of 1855.
+> *This file's title still said "unplayed; Joe plays it; `main` = D634" after that merge — the merge commit carried no
+> doc edit (trap below).*
+>
+> **`slice/doc-truth`** (off `main` at 9bdd358; merged into local `main`, D641; unpushed) = **D640, docs only**: every spec's status line checked
+> against §7 and the code, not against itself. **27 false claims in 24 specs** made true (*on `slice/x`, unplayed /
+> unmerged / not started* for work played and merged weeks ago); `professions.md`'s table gains the five trades that
+> shipped without a row; `content-inventory.md` marked dated (`main` at D526); **§4 brought level with §6** (trade, the
+> food chain, the new-game screen, nomads; Phase 5's list gains doors, the armful, the seams, the paths and the art);
+> §5's stale boxes; four milestone-map rows; §6's Current phase line rewritten whole.
+>
+> **⛳ ACCEPTED AS WRITTEN BY JOE (D641): PHASE 5'S EXIT GATE** (`DESIGN.md §4`, the end of Phase 5) — every Phase 5 item built, played
+> and merged or moved out by him in words (open: doors commit 5, clothing, soil depletion, house tiers, drought, fire
+> and blight, logistics, beer); a golden that reaches the Phase 5 chains; a QA checklist he walks; the docs true; the
+> four checks and a clean played log. The art and Phase 4.5's leftovers deliberately not on it. **In force since D641:
+> Phase 5 ends when all five hold.** Accepting it decided none of the open items; each still needs his verdict.
+>
+> **⚠️ Flagged for Joe, not changed:** `DESIGN.md §3` says *ECS, data-oriented … not negotiable*; the sim is a `sealed
+> class Villager` in lists and `SimWorld` partials, and no §7 entry records leaving ECS.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** push `main` (his word — he said *"don't push yet"*);
+> then doors commit 5, a verdict on an open Phase 5 item, or gate items 2–3 — the golden audit and the QA checklist,
+> Claude's to write now that the gate is taken.
+>
+> **Numbers (D640, docs only, all four run anyway):** suite 1850 / 0 / 5 of 1855 (13m51); view 0 warnings; probe 99
+> `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.` — D638's exactly; goldens grep 388 before and after, and `git diff`
+> touches only `specs/`, `DESIGN.md` and `HANDOFF.md`. No red-check: no guard was added.
+>
+> **Numbers (D641, on the merged tree before its commit):** suite 1850 / 0 / 5 of 1855 (14m22); view 0 warnings; probe 99
+> `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388. The merge touches only
+> `specs/`, `DESIGN.md` and `HANDOFF.md` (28 files).
+>
+> **— D639, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-26 (D637) — ON WINDOWS.**
 >
 > **🅿️ D639 — ART PARKED; BACK TO THE GAME SYSTEMS.** Joe re-played painting homes: *"painting homes works now."* The
 > forage bushes' berries were the last light mark on parchment — now dark produce red (`BerryMark`), in `check.py`'s
@@ -8319,6 +8356,28 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D640 FOUND — THE MERGE IS WHERE A STATUS LINE ROTS, AND A HANDOFF'S TITLE IS A STATUS LINE
+
+- **27 false status claims in 24 specs, and almost every one was the branch's own words at the moment it was built**
+  — *on `slice/x`, unplayed*, *not started*, *waiting for Joe to play it*. The play and the merge were then recorded in
+  `DESIGN.md §6/§7` and never travelled back to the spec. **When you merge or record a play, grep the specs the slice
+  touched for `unplayed`, `unmerged`, `on \`slice/`, `not started` and fix them in the same commit.** The grep this
+  pass used: the first 40 lines of every spec for those words, then each hit checked against §7's entry for the merge.
+- **A merge commit with no doc edit leaves every "where things are" line one step behind.** 9bdd358 merged and pushed
+  D635–D639 and this file's title still said *"unplayed; Joe plays it; `main` = D634"*. The title, the banner and §6's
+  Current phase line are status lines too.
+- **(D641) The fix for the trap above is mechanical: `git merge --no-ff --no-commit slice/x`, then edit the title, the
+  banner, §6, §7 and any spec the slice touched, then commit** — the merge commit carries its own status. It cannot
+  name its own hash, so write *"the merge of `slice/x`"*, and say *pushed* or *not pushed* in words: `origin/main`
+  is the other half of "where things are", and a local merge Joe has not pushed is not on `main` for anyone else.
+- **A status line can contradict its own spec two screens down** — `buildings-catalog.md` said slice 3 *"NOT started"*
+  above its own *"Slice 3 ✅ DONE (D308)"*. Read the section the status line summarises, not only the line.
+- **"Unplayed as of this line" rots by design.** It is true the day it is written and silently false the day Joe plays
+  it. Prefer a decision number (*"played, D600"*) over a disclaimer, and when you see the disclaimer, look for the play.
+- **A list of what a phase holds is not the phase.** §4's Phase 5 list never gained doors, the armful, the seams or the
+  art, though all were built in it — so a phase-end gate written against that list would have missed them. A gate
+  reads §6 and §7, not only §4.
+
 ## ⛔⛔ THE TRAP D638 PAID FOR — A FLOAT LOOP THAT STEPS BY "WHAT IS LEFT" CAN STOP STEPPING, AND IN `_Draw` THAT TAKES THE MACHINE
 
 - **`step = dash - (along % dash)` in float32 can be smaller than `along` can add**, so `along + step == along` and
@@ -8368,6 +8427,17 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ✅ ~~**PHASE 5'S EXIT GATE — PROPOSED (D640), HIS TO ACCEPT, TRIM OR REPLACE**~~ — **accepted as written (D641).**
+  (`DESIGN.md §4`, the end of Phase 5.)
+  Five items: every Phase 5 item has a verdict (built-played-merged, or moved out in his words — open: doors commit 5,
+  clothing, soil depletion, house tiers, drought, fire and blight, logistics, beer); a golden that reaches the Phase 5
+  chains; a QA checklist he walks; the docs true; the four checks and a clean played log. Not on it: the art (parked),
+  full settings and ironman (unscheduled). Should either of those gate, he says so.
+- ⏸️ **`DESIGN.md §3` SAYS ECS; THE SIM IS NOT (found D640).** *"ECS, data-oriented … This is not negotiable given the
+  agent counts."* The sim is `sealed class Villager` objects in lists with `SimWorld` partials, and no §7 entry records
+  the choice. Either §3 is rewritten to what is built (and why it is enough at the agent counts the game reaches), or it
+  is a debt with a phase. His call; nothing changed.
+
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
   - ✅ ~~Merge, or commit 5 first~~ — **merged and pushed (D626).** ▶️ **Commit 5 (the view) is his to start.** The
     view still guesses the spur's side (`path-shapes.md`).
@@ -8383,9 +8453,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - 🅿️ **WORLD LEGIBILITY ON PARCHMENT (D636–D639) — PARKED** with the rest of the art (see 🅿️ ART: PARKED). Played: painting
   homes works (D638's fix). The trees and D68 wait there.
 - ⏸️ **SEASONAL GRASS (D627–D634), HIS TO CALL.** ✅ **Parchment: yes (D635).** ✅ ~~The lab's version, jitter, tiles a repeat, season blends~~ —
-  **the look approved (D632) and its open items kept (D633); merged (D634).** ⏸️ **Now his: does the game's ground
-  move from slate to parchment (`seasonal-grass.md §6.0`)?** The pack only reads over parchment, so the valley cannot
-  draw it until he answers. Still open in `grass-look.md §7`: re-measure the cost once the terrain shader exists;
+  **the look approved (D632) and its open items kept (D633); merged (D634).** ✅ **Answered (D635): the ground
+  moved to parchment (built D637, merged 9bdd358).** Drawing the grass in the valley is the terrain shader, 🅿️ parked
+  with the art (D639). ~~Now his: does the game's ground move from slate to parchment (`seasonal-grass.md §6.0`)?~~ Still open in `grass-look.md §7`: re-measure the cost once the terrain shader exists;
   later, macro variation from sim data.
 
 - ✅ **MERGED AND PUSHED (D608) — Joe: *"merge now, then notes"*.** ~~MERGE `slice/pause-probe` (D585) AND `slice/trade` (D586–D607) TO `main` — both local, unmerged, unpushed.~~

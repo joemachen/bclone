@@ -9,7 +9,7 @@ never hashed).
 **Status:** ✍️ **SPECCED (D504). ✅ BUILT (D505) on `slice/settings-persistence` — the sim half and the
 view, guards §8 red-checked; no golden moved. ✅ PLAYED by Joe (*"it holds up"*) and merged (D506, 2026-10-05)** —
 his play is what saw a real launch write the file and a drag remembered; the probe is hermetic by design (§7) and cannot drag.
-✅ **`roster_sort` added (D609, unplayed):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
+✅ **`roster_sort` added (D609; played and merged, D615):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
 Owner: Joe + Claude Code.
 
 ---

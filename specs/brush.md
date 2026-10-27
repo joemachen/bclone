@@ -6,9 +6,9 @@ shape function, and the harvest brush's missing sentence. **B2** (2026-09-08, D3
 painted outline, one outline round the brushful, and a switch for the grid lines. **§4.3** (2026-09-11, D350→D351) — a whole-tile farm stroke was tried and Joe rejected it in play; one stroke for every layer.
 **1047 passing, 0 failing, 2 skipped of 1049; no golden moved** by either. Bar height still 161 on
 every tab × filter, and `zone outlines: ✅` in the probe. ⭐ **Joe confirmed the sizing gesture in
-play — *"alt +scroll is perfect"*** — and approved the rest of B1's walk as described. ⚠️ **B2 is
-unplayed by him as of this line**: the view has no automated verification of any kind and his eyes
-are the only test there is (D11, D160).
+play — *"alt +scroll is perfect"*** — and approved the rest of B1's walk as described. ✅ **B2 was
+played by him from D333 on** (his notes on its grid switch and corners are D333–D334); the view has no
+automated verification of any kind and his eyes are the only test there is (D11, D160).
 
 ⚠️ **This line contradicted itself for one commit** — it claimed both slices built and then said B2
 was not started, because the update edited the head and left the tail. **That is D159's exact

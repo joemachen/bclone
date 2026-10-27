@@ -5,7 +5,7 @@ already say), D353 (2026-09-11, Phase 5 names *decay and maintenance*, condition
 last-repaired ticks*), D546 (2026-10-10, calls 5 and 6: *bridges first, wear later*; an unrepaired wooden deck *slows,
 then closes*), D552 (2026-10-10, this spec and its measurement).
 **Status:** ✅ **built — all three commits on `slice/maintenance` (D554 the stamps, D555 the season's walk / repairs /
-*closed* / the bridge, D556 the view), local, not pushed. Not yet played by Joe** (§10). Joe's seven calls answered as
+*closed* / the bridge, D556 the view); played by Joe and merged and pushed (D560: *"everything else looks good! approved"*)** (§10). Joe's seven calls answered as
 recommended (D553: *"yes to all"*), and one more from his first look at a Year-88 village (D556: the card says the state
 **and a percentage toward fallen in**). Guards: commit 1's 11 mutants / 13 reds / no zeros; commit 2's 22 / 31 / one
 equivalent zero written down; commit 3's 6 sim mutants / 7 reds and 3 probe mutants / 3 reds, no zeros (§9). The goldens

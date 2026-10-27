@@ -1,7 +1,7 @@
 # Spec: Stone and iron seams, revisited — volume, positioning, frequency, size, shape
 
-**Decisions:** D542 (the census and the questions), D543 (Joe's answers; built). **Status:** 🔨 **built 2026-10-10 on
-`slice/seams-revisited` (D543), sim only; NOT played, NOT merged.** §4 is the design as built, §5 the measurement, §6
+**Decisions:** D542 (the census and the questions), D543 (Joe's answers; built). **Status:** ✅ **built 2026-10-10 on
+`slice/seams-revisited` (D543), sim only; played, approved and merged (D545).** §4 is the design as built, §5 the measurement, §6
 the guards and their red-checks.
 
 ---
