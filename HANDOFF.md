@@ -1,6 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643: THE POSED PHASE 5 VILLAGE MEASURED — EVERY CHAIN TURNS OVER BUT THE HERD, WHOSE CATTLE STARVE WITH HAY IN THE BARN; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — TRACE THE HERD, OR PIN THE GOLDEN WITHOUT ITS CULL. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643–D644: THE POSED VILLAGE MEASURED; THE HERD TRACED — THE HERDSMAN ANSWERS LATER THAN THE FEED-AHEAD LEAD, AND NO LEAD FIXES IT; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — THE HERD'S FIX (A HUNGRY HERD CALLS ITS HERDSMAN, RECOMMENDED), THEN THE GOLDEN. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D643) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D644) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D644: the posed village measured, and the herd traced; the golden NOT BUILT.**
+>
+> **🔍 The herd (D644, `specs/phase-5-golden.md §7`):** the posed cattle starve *"with hay still in the barn — nobody
+> carried it out"* because the herdsman fetches hay only when less than `hay_feed_ahead_days` (5 days, 20 ticks) is out,
+> and he answers only when his rest or his shelter ends, in spells of 3–4 days (D593's own finding at 3). Ruled out:
+> distance, the store, the pasture, the pin. **A bigger lead is not a fix:** 10 days starves 0 on seed 12345 but 16 on seed
+> 2 and 4 on seed 42. **Never played:** Joe's 1,286 logs never land a beast.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** the herd's fix — ① a hungry herd calls its herdsman out of rest
+> (recommended: the carry stays on screen); ② the herd eats from the barn's hay; ③ he puts out enough to last until he next
+> decides. Then the posed golden. Push only at his word.
+>
+> **Numbers (D644; no `src/`, `tests/` or `data/` file changed):** suite 1850 / 0 / 5 of 1855 (13m37); view 0 warnings;
+> probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388. No red-check: no guard added.
+>
+> **— D643, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D643) — ON WINDOWS.**
 >
 > **Local `main` = 008f9b6** (the merge of `slice/golden-audit`, D642), **NOT PUSHED**; `origin/main` = 23825d7.
 >
@@ -8409,6 +8428,17 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D644 FOUND — A TUNED NUMBER THAT HELD ON ONE VALLEY IS A MARGIN, NOT A FIX
+
+- **D593 raised `hay_feed_ahead_days` from 3 to 5 on one posed village, and it held there.** On another posed village 5
+  starves, and 10 fixes seed 12345 but makes seed 2 worse (16 against 4). When a number is raised to cover a response time,
+  measure the response time's tail on several seeds. One valley's pass is not evidence the tail is covered.
+- **"Played" has to be checked in the logs.** D600 is recorded as playing the herd's fences; Joe's 1,286 logs never land
+  a beast. `grep` the sim logs in `src/Bclone.Game/logs/` for the narration before citing a play as evidence for a
+  behaviour.
+- **A wait clock needs a reset for every way the wait can end.** `ZZW`'s 8,908-tick "wait" was a herd dying out with the
+  clock still running. Before reading a tail, find which of its values are the measurement.
+
 ## ⛔ THE TRAPS D643 FOUND — A POSE IS A PLAYER, AND IT HAS TO PLAY LIKE ONE
 
 - **A counter's name is not what it counts.** `StoneEverDug` is hand-digging only (the quarry's unlock); the quarry's
@@ -8504,9 +8534,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE POSED VILLAGE'S CATTLE STARVE WITH HAY IN THE BARN (D643, `specs/phase-5-golden.md §6`).** 10 of 11 head, with a
-  living herdsman pinned and 500 hay cut. A possible bug or a harness artefact; his played herd (D600) is the other half.
-  His call: trace it, or pin the posed golden without the herd's cull.
+- ⏸️ **THE WINTER HERD STARVES WITH HAY IN THE BARN — TRACED (D643–D644, `specs/phase-5-golden.md §6–§7`).** The herdsman
+  answers later than `hay_feed_ahead_days` because rest and shelter hold him; leads of 5, 10 and 15 all starve on some seed.
+  Never played (no beast in 1,286 logs). His pick: ① a hungry herd calls its herdsman out of rest (recommended); ② the herd
+  eats from the barn's hay; ③ he puts out enough to last until he next decides. The posed golden waits on it.
 - ⏸️ **THE GOLDENS GREP MISSES DIGIT-SEPARATED GOLDENS (found D642).** CLAUDE.md's fourth verification line,
   `grep -rn "[0-9]\{15,\}"`, cannot see `AngleTests.cs:336` or `FixedTests.cs:440` (`14_897_…UL`, the math tables).
   `grep -rnE "[0-9](_?[0-9]){14,}" tests/Bclone.Sim.Tests/*.cs` sees both; its count is a new baseline. His file, his call.

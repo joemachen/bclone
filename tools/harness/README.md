@@ -165,3 +165,7 @@ against a number from an older commit.
   year: what each chain made, and the villager-ticks in each chain's working state. `ZZL` lines group the herd and boat
   narrations. `ZZ_YEARS` (default 50); 45 s in Release. Copy in, `-c Release --filter ZzPose`, delete. Needs the `internal`
   helpers in `MineTests` and `QuarryTests`.
+  D644's arms: `ZZ_TRACE=1` (a `ZZH` line every feeding day while beasts stand: head, hay out and in store, `HerdWantsFeeding`,
+  where it goes out, and the pinned herdsman's state and tile; and a `ZZW` line of refill response times), `ZZ_AHEAD=n`
+  (`hay_feed_ahead_days`), `ZZ_SEED=n`, and `ZZ_HERD=1` (4 head at the 10th villager, whatever the boats bring). ⚠️ `ZZW`'s
+  clock does not reset when a herd dies out, so its largest values can be the gap until the next beasts.

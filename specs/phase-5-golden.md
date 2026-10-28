@@ -7,7 +7,9 @@ that reached `NearestHarvest`), D601 and D617 (no harness village raises a marke
 and nomads are reached. The smithy, the quarry, the mine, the mill, the bakery, the well, bridges, the trading post and
 its boat, and the barn and its herd are not. 📝 **§5's posed-village golden: Joe's go-ahead (D642, *"Merge the audit
 first"*), 📏 MEASURED (D643, §6), NOT BUILT:** every chain turns over in a posed 50-year run except the herd, whose
-cattle starve with hay in the barn even with a pinned herdsman. That is Joe's to call before a golden is pinned over it. Owner: Joe + Claude Code.
+cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D644, §7):** the herdsman answers later than
+`hay_feed_ahead_days` allows, because rest and shelter hold him; a bigger lead does not fix it. ⏸️ The fix is Joe's to pick; the
+golden waits on it. Owner: Joe + Claude Code.
 
 ---
 
@@ -149,3 +151,51 @@ not traced further. **Unattended-village losses are the harness playing badly un
 this is put to Joe with that caveat, not as a bug. A golden pinned over it would hold one cull in fifty years, and its
 coverage test would flip whenever that cull crossed the cutoff. **So the golden is NOT BUILT** until the herd is
 understood: traced as a bug, accepted, or taken out of the golden's coverage.
+
+## 7. Traced: why the cattle starve with hay in the barn (D644)
+
+*Joe, D644: "Trace the herd". `ZzPose.cs` with `ZZ_TRACE=1` prints a `ZZH` line every feeding day while beasts stand:
+head, hay out, hay in the barn's store, `HerdWantsFeeding`, where the hay goes, and the pinned herdsman's state and tile.
+A `ZZW` line gives each refill's response time: the ticks from the herd first wanting hay to hay going out.*
+
+**What it is not.**
+- Not distance: the herdsman's home is about 8 tiles from the barn, and the pasture is beside it.
+- Not the store: hay is in the barn's own store (`BarnStoreOf` is the barn).
+- Not the pasture: `WhereTheHayGoesOut` always has a tile, and `AnyPastureToFeedOn` holds.
+- Not the pin: he is alive, seated at the barn, and an adult.
+
+**What it is: the herdsman answers later than the lead allows.** He fetches hay when less than `hay_feed_ahead_days`
+of the herd's hay is out, which is 5 days, or 20 ticks at 4 ticks a day. The trace shows him `Resting` or
+`SeekingShelter` through spells of 3 to 4 days while the herd wants feeding. He re-decides only when that spell ends,
+which is D593's own finding at 3 days (*"a herdsman finishes his rest before he re-decides and spends winter going in
+to get warm"*). On seed 12345 his response is a median of 12 ticks and up to 22. The tail runs past the lead, and a
+beast starves each time it does.
+
+**A bigger number is not a fix.** Measured with 4 head posed at the village's 10th villager, independent of what the
+boats bring:
+
+| Seed | Lead 5 days (shipped): starved | Lead 10 days: starved |
+|---|---|---|
+| 12345 | 11 | **0** (45 culls) |
+| 2 | 4 | **16** |
+| 42 | 4 | 4 |
+
+At 15 days on seed 12345, 4 starve again. Every death on every seed and lead is the same sentence: *"starved with hay
+still in the barn — nobody carried it out"*. ⚠️ `ZZW`'s largest waits (2,600 and 8,908 ticks) are a measurement
+artefact: a herd that dies out leaves the clock running until the next beasts come. They are not a herdsman gone for
+years.
+
+**Never played.** Joe's 1,286 logs in `src/Bclone.Game/logs/` show barns marked and finished (3) and boats docking.
+None has a beast landing, a herdsman, or any herd line. D600 played the fences, not a winter herd. **The winter herd
+has never been played**, so this harness result has nothing played to check it against.
+
+⏸️ **Joe's call: the feeding rule assumes a herdsman who answers within the lead, and nothing makes him answer.**
+Three shapes, none built:
+1. **A hungry herd calls its herdsman out of rest and shelter**, as an empty larder calls a household
+   (`TryEmergencyRestock`'s shape). The carry stays visible.
+2. **The herd eats from the barn's own hay when none is out.** This is cheap, but it deletes the carry, the legible
+   act, in exactly the case where the player would see it.
+3. **The herdsman puts out enough to last until he next decides**, sized from his own day and not from a lead.
+
+*Recommended: 1*, because it keeps the work on screen (§1.1) and copies a shape that already exists. The golden waits on
+this, since its herd would pin the bug.

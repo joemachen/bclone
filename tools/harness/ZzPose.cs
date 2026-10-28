@@ -24,6 +24,18 @@ public sealed class ZzPose
     {
         int years = int.TryParse(Environment.GetEnvironmentVariable("ZZ_YEARS"), out int y) ? y : 50;
         SimConfig config = ShippedConfig.Established();
+        // ZZ_SEED=n: another valley.
+        if (ulong.TryParse(Environment.GetEnvironmentVariable("ZZ_SEED"), out ulong seed))
+        {
+            config = config with { Seed = seed };
+        }
+
+        // ZZ_AHEAD=n: the D643 arm — hay_feed_ahead_days at n instead of the shipped 5.
+        if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_AHEAD"), out int ahead))
+        {
+            config = config with { HayFeedAheadDays = ahead };
+        }
+
         var sink = new InMemoryLogSink();
         SimLoop loop = SimFactory.CreatePhase0(config, sink);
         SimWorld world = loop.World;
@@ -54,6 +66,8 @@ public sealed class ZzPose
         int herdUps = 0, herdDowns = 0, docked = 0, lastHerd = 0, stone = 0, iron = 0, sold = 0, leather = 0;
         int lastStone = 0, lastIron = 0, lastPost = 0, lastLeather = 0, hayMax = 0;
         Bridge? bridge = null;
+        int traceLines = 0;
+        long wantedSince = -1; int lastOut = 0; var waits = new List<long>();
         VillagerState[] watched =
         {
             VillagerState.Quarrying, VillagerState.Mining, VillagerState.Forging, VillagerState.Grinding,
@@ -75,6 +89,10 @@ public sealed class ZzPose
                     bridge = BridgeTests.RaiseABridge(world, BridgeTests.ACrossing(world));
                     bool marked = world.Mark(BuildingKind.Well, BridgeTests.AcrossTheRiver(world, before, bridge)).Allowed;
                     _output.WriteLine($"ZZP bridge raised y{year} tick {world.Tick}; well across marked {marked}");
+                    if (Environment.GetEnvironmentVariable("ZZ_HERD") == "1" && barn.HerdHead == 0)
+                    {
+                        barn.HerdHead = 4; // ZZ_HERD=1: four head at the 10th villager, whatever the boats bring
+                    }
                 }
 
                 if (barn.HerdHead > 0 && !world.Villagers.Any(v => v.Alive && v.CanWork && v.PinnedTrade == JobKind.Herdsman))
@@ -82,6 +100,38 @@ public sealed class ZzPose
                     Villager hand = world.Villagers.Where(v => v.Alive && v.CanWork).OrderByDescending(v => v.Id).First();
                     world.SetPinnedTrade(hand, JobKind.Herdsman);
                     _output.WriteLine($"ZZP herdsman pinned y{year} tick {world.Tick}: {hand.Name}");
+                }
+
+                // ZZ_TRACE=1: every winter (and late-fall feeding) day with beasts in the barn, one ZZH line —
+                // the barn's side and the pinned herdsman's side of D643's starving.
+                if (traceLines < 400 && Environment.GetEnvironmentVariable("ZZ_TRACE") == "1" && barn.HerdHead > 0
+                    && world.Tick % (ulong)config.TicksPerDay == 1)
+                {
+                    Villager? keeper = world.Villagers.FirstOrDefault(v => v.Alive && v.PinnedTrade == JobKind.Herdsman);
+                    StoreBuilding? barnStore = world.BarnStoreOf(barn);
+                    bool feedingTime = world.Clock.IsWinter || (world.Clock.Season == Season.Fall && world.Clock.DayOfSeason > config.DaysPerSeason - config.HayFeedAheadDays);
+                    if (feedingTime)
+                    {
+                        traceLines++;
+                        string held = barnStore is null ? "none" : barnStore.Store[Goods.Hay].ToString();
+                        string goesOut = world.WhereTheHayGoesOut(barn) is GridPos g ? g.ToString() : "null";
+                        string who = keeper is null ? "none" : keeper.Id.ToString();
+                        string workers = string.Join(",", barn.WorkerIds);
+                        _output.WriteLine(
+                            $"ZZH y{year} {world.Clock.Season} d{world.Clock.DayOfSeason} head={barn.HerdHead} out={barn.HayPutOut} "
+                            + $"store={held} wants={world.HerdWantsFeeding(barn)} goesOut={goesOut} "
+                            + $"pasture={world.Zones.WorkGroundTiles(barn.Id)} workers=[{workers}] keeper={who} "
+                            + $"kWp={keeper?.WorkplaceId} kState={keeper?.State} kStage={keeper?.LifeStage} kNote='{keeper?.WorkNote}' barnAt={barn.Tile} storeAt={barnStore?.Tile} kAt={keeper?.Position.ToTile()}");
+                    }
+                }
+
+                if (barn.HerdHead > 0)
+                {
+                    bool wantsNow = world.HerdWantsFeeding(barn);
+                    if (wantsNow && wantedSince < 0) wantedSince = (long)world.Tick;
+                    if (barn.HayPutOut > lastOut && wantedSince >= 0) { waits.Add((long)world.Tick - wantedSince); wantedSince = -1; }
+                    if (!wantsNow && barn.HayPutOut <= lastOut) wantedSince = wantsNow ? wantedSince : -1;
+                    lastOut = barn.HayPutOut;
                 }
 
                 if (barn.HerdHead > lastHerd) herdUps += barn.HerdHead - lastHerd;
@@ -128,6 +178,13 @@ public sealed class ZzPose
             .GroupBy(e => System.Text.RegularExpressions.Regex.Replace(e.Message, "[0-9]+", "#")).OrderByDescending(g => g.Count()).Take(12))
         {
             _output.WriteLine($"ZZL {g.Count()}x {g.Key}");
+        }
+
+        waits.Sort();
+        if (waits.Count > 0)
+        {
+            _output.WriteLine($"ZZW refills {waits.Count}: ticks from wanting to hay out — min {waits[0]} p50 {waits[waits.Count / 2]} "
+                + $"p90 {waits[waits.Count * 9 / 10]} max {waits[^1]}; lead is {config.HayFeedAheadDays * config.TicksPerDay}");
         }
 
         _output.WriteLine($"ZZP end hash {StateHash.Compute(world)} noskill {StateHash.ComputeIgnoringSkills(world)}");
