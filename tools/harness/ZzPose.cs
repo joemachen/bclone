@@ -67,6 +67,8 @@ public sealed class ZzPose
         int lastStone = 0, lastIron = 0, lastPost = 0, lastLeather = 0, hayMax = 0;
         Bridge? bridge = null;
         int traceLines = 0;
+        int tickLines = 0;
+        var cut = new SortedDictionary<string, int>(); VillagerState lastKState = VillagerState.Idle; int lastKId = -1;
         long wantedSince = -1; int lastOut = 0; var waits = new List<long>();
         VillagerState[] watched =
         {
@@ -97,7 +99,12 @@ public sealed class ZzPose
 
                 if (barn.HerdHead > 0 && !world.Villagers.Any(v => v.Alive && v.CanWork && v.PinnedTrade == JobKind.Herdsman))
                 {
-                    Villager hand = world.Villagers.Where(v => v.Alive && v.CanWork).OrderByDescending(v => v.Id).First();
+                    // ZZ_PIN=housed: the newest adult whose household has a home (D644's correction — the newest adult
+                    // is often a new household still waiting for its house, and a homeless herdsman rests in the open).
+                    bool housed = Environment.GetEnvironmentVariable("ZZ_PIN") == "housed";
+                    Villager hand = world.Villagers
+                        .Where(v => v.Alive && v.CanWork && (!housed || world.HouseholdOf(v).HasHome))
+                        .OrderByDescending(v => v.Id).First();
                     world.SetPinnedTrade(hand, JobKind.Herdsman);
                     _output.WriteLine($"ZZP herdsman pinned y{year} tick {world.Tick}: {hand.Name}");
                 }
@@ -132,6 +139,33 @@ public sealed class ZzPose
                     if (barn.HayPutOut > lastOut && wantedSince >= 0) { waits.Add((long)world.Tick - wantedSince); wantedSince = -1; }
                     if (!wantsNow && barn.HayPutOut <= lastOut) wantedSince = wantsNow ? wantedSince : -1;
                     lastOut = barn.HayPutOut;
+                }
+
+                // ZZ_TICK=1: every tick the herd wants hay, the keeper's state, cold, tile and what he carries (D644's
+                // second look: which of his own needs breaks the round trip).
+                if (tickLines < 1500 && Environment.GetEnvironmentVariable("ZZ_TICK") == "1" && barn.HerdHead > 0
+                    && world.Clock.IsWinter && (world.HerdWantsFeeding(barn) || barn.HayPutOut < barn.HerdHead * 2 * 2))
+                {
+                    Villager? k = world.Villagers.FirstOrDefault(v => v.Alive && v.PinnedTrade == JobKind.Herdsman);
+                    if (k is not null)
+                    {
+                        tickLines++;
+                        _output.WriteLine($"ZZT y{year} {world.Clock.Season} d{world.Clock.DayOfSeason} t{world.Tick} head={barn.HerdHead} "
+                            + $"out={barn.HayPutOut} st={k.State} left={k.ActionTicksRemaining} cold={k.Cold} hunger={k.Hunger} "
+                            + $"at={k.Position.ToTile()} hay={k.Carried[Goods.Hay]} homeWood={world.HouseholdOf(k).Stockpile.Firewood} "
+                            + $"homeAt={world.HouseholdOf(k).HomeTile} villageWood={world.InStores(Goods.Firewood)} "
+                            + $"founding={world.Map.FoundingSite} hall={world.TownHall?.Position.ToTile()} hh={k.HouseholdId}");
+                    }
+                }
+
+                if (world.Villagers.FirstOrDefault(v => v.Alive && v.PinnedTrade == JobKind.Herdsman) is Villager kk && world.Clock.IsWinter)
+                {
+                    if (kk.Id == lastKId && kk.State == VillagerState.SeekingShelter && lastKState != VillagerState.SeekingShelter)
+                    {
+                        string key = $"{lastKState}{(kk.Carried[Goods.Hay] > 0 ? "+hay" : "")}";
+                        cut[key] = cut.GetValueOrDefault(key) + 1;
+                    }
+                    lastKState = kk.State; lastKId = kk.Id;
                 }
 
                 if (barn.HerdHead > lastHerd) herdUps += barn.HerdHead - lastHerd;
@@ -187,6 +221,7 @@ public sealed class ZzPose
                 + $"p90 {waits[waits.Count * 9 / 10]} max {waits[^1]}; lead is {config.HayFeedAheadDays * config.TicksPerDay}");
         }
 
+        _output.WriteLine($"ZZC sheltering began from: {string.Join(" ", cut.Select(kv => $"{kv.Key}={kv.Value}"))}");
         _output.WriteLine($"ZZP end hash {StateHash.Compute(world)} noskill {StateHash.ComputeIgnoringSkills(world)}");
     }
 }

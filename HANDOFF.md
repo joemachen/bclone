@@ -1,6 +1,24 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643–D644: THE POSED VILLAGE MEASURED; THE HERD TRACED — THE HERDSMAN ANSWERS LATER THAN THE FEED-AHEAD LEAD, AND NO LEAD FIXES IT; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — THE HERD'S FIX (A HUNGRY HERD CALLS ITS HERDSMAN, RECOMMENDED), THEN THE GOLDEN. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643–D645: THE POSED VILLAGE MEASURED; THE HERD TRACED, AND D644'S DIAGNOSIS WITHDRAWN (SEEDS 2 AND 42 OPEN WINTER WITH NO HAY OUT; THE TRACED HERDSMAN WAS HOMELESS; A HOUSED ONE STILL LOSES 13, UNTRACED); FIX 1 NOT BUILT; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — TRACE THE DEATHS, OR PIN THE GOLDEN WITH THE HERD CHECKED ONLY FOR LANDING. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D644) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D645) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D645: the posed village measured; the herd traced; D644's diagnosis WITHDRAWN; the golden NOT BUILT.**
+>
+> **⚠️ The herd (D645, `specs/phase-5-golden.md §8`):** Joe picked D644's fix 1 (*"Herd calls him (1)"*); a tick trace run
+> before speccing it does not support D644. On seeds 2 and 42 each first winter opens with no hay put out (the late-fall
+> feed-ahead put nothing out, untraced); on seed 12345 the pinned herdsman is **homeless** and gets cold resting in the open
+> (51 of 59 shelter spells begin from rest); a **housed** herdsman still loses 13 head, untraced. **Fix 1 is not built.**
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** trace the deaths one at a time before choosing a fix; or pin the
+> posed golden with the herd checked only for cattle landing. Push only at his word.
+>
+> **Numbers (D645; no `src/`, `tests/` or `data/` file changed):** suite 1850 / 0 / 5 of 1855 (16m24 — up from 13m37 with
+> no code change since, so the machine, not the code); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`,
+> no Godot left running; goldens grep 388. No red-check: no guard added.
+>
+> **— D644, as it was (its diagnosis withdrawn by D645) —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D644) — ON WINDOWS.**
 >
 > **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
 > unpushed) = **D643–D644: the posed village measured, and the herd traced; the golden NOT BUILT.**
@@ -8428,6 +8446,17 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D645 FOUND — D644 DIAGNOSED A SEED TABLE WITHOUT READING ONE DEATH IN IT
+
+- **One cause read off one valley is not the cause on the next.** D644 read seeds 2 and 42's deaths as seed 12345's
+  lateness. Traced, they open winter with no hay out, a different failure. Even D645's first draft (*"the eve of
+  winter"*) was wrong until a tick number was checked against the year. **Read one death per seed, tick by tick, before a
+  table generalises.**
+- **A choice made on a diagnosis waits for the diagnosis to be checked.** Joe picked fix 1 on D644's word. The tick trace,
+  run before the spec, withdrew it. Put the correction to him before building, never a fix for a cause that is gone.
+- **A pose's own pick can be the bug.** "The newest adult" is often a new household with no house yet, so the pinned
+  herdsman slept in the open. When a pose chooses a villager, print their home, their cold and their household.
+
 ## ⛔ THE TRAPS D644 FOUND — A TUNED NUMBER THAT HELD ON ONE VALLEY IS A MARGIN, NOT A FIX
 
 - **D593 raised `hay_feed_ahead_days` from 3 to 5 on one posed village, and it held there.** On another posed village 5
@@ -8534,10 +8563,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE WINTER HERD STARVES WITH HAY IN THE BARN — TRACED (D643–D644, `specs/phase-5-golden.md §6–§7`).** The herdsman
-  answers later than `hay_feed_ahead_days` because rest and shelter hold him; leads of 5, 10 and 15 all starve on some seed.
-  Never played (no beast in 1,286 logs). His pick: ① a hungry herd calls its herdsman out of rest (recommended); ② the herd
-  eats from the barn's hay; ③ he puts out enough to last until he next decides. The posed golden waits on it.
+- ⏸️ **THE WINTER HERD STARVES WITH HAY IN THE BARN — CAUSE NOT YET KNOWN (D643–D645, `specs/phase-5-golden.md §6–§8`).**
+  D644's diagnosis was withdrawn by D645: seeds 2 and 42 open winter with no hay out, the traced herdsman on 12345 was
+  homeless, and a housed herdsman still loses 13 head there, untraced. Never played (no beast in 1,286 logs). He picked fix
+  1 on D644's word; it is not built. His call: trace the deaths first, or pin the posed golden with the herd checked only for landing.
 - ⏸️ **THE GOLDENS GREP MISSES DIGIT-SEPARATED GOLDENS (found D642).** CLAUDE.md's fourth verification line,
   `grep -rn "[0-9]\{15,\}"`, cannot see `AngleTests.cs:336` or `FixedTests.cs:440` (`14_897_…UL`, the math tables).
   `grep -rnE "[0-9](_?[0-9]){14,}" tests/Bclone.Sim.Tests/*.cs` sees both; its count is a new baseline. His file, his call.

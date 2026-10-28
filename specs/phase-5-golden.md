@@ -7,9 +7,9 @@ that reached `NearestHarvest`), D601 and D617 (no harness village raises a marke
 and nomads are reached. The smithy, the quarry, the mine, the mill, the bakery, the well, bridges, the trading post and
 its boat, and the barn and its herd are not. 📝 **§5's posed-village golden: Joe's go-ahead (D642, *"Merge the audit
 first"*), 📏 MEASURED (D643, §6), NOT BUILT:** every chain turns over in a posed 50-year run except the herd, whose
-cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D644, §7):** the herdsman answers later than
-`hay_feed_ahead_days` allows, because rest and shelter hold him; a bigger lead does not fix it. ⏸️ The fix is Joe's to pick; the
-golden waits on it. Owner: Joe + Claude Code.
+cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D644, §7) — ⚠️ AND §7's DIAGNOSIS
+WITHDRAWN (D645, §8):** seeds 2 and 42 open winter with no hay out, the traced herdsman on 12345 was homeless, and a
+housed one still loses 13 head, untraced. Fix 1 is not built. ⏸️ Joe's call: trace the deaths, or pin the golden without the herd. Owner: Joe + Claude Code.
 
 ---
 
@@ -152,7 +152,7 @@ this is put to Joe with that caveat, not as a bug. A golden pinned over it would
 coverage test would flip whenever that cull crossed the cutoff. **So the golden is NOT BUILT** until the herd is
 understood: traced as a bug, accepted, or taken out of the golden's coverage.
 
-## 7. Traced: why the cattle starve with hay in the barn (D644)
+## 7. Traced: why the cattle starve with hay in the barn (D644) — ⚠️ withdrawn by §8 (D645)
 
 *Joe, D644: "Trace the herd". `ZzPose.cs` with `ZZ_TRACE=1` prints a `ZZH` line every feeding day while beasts stand:
 head, hay out, hay in the barn's store, `HerdWantsFeeding`, where the hay goes, and the pinned herdsman's state and tile.
@@ -199,3 +199,32 @@ Three shapes, none built:
 
 *Recommended: 1*, because it keeps the work on screen (§1.1) and copies a shape that already exists. The golden waits on
 this, since its herd would pin the bug.
+
+## 8. ⚠️ §7's diagnosis does not hold, and fix 1 is not built (D645)
+
+*Joe picked §7's fix 1 (D645: "Herd calls him (1)"). Before speccing it, a tick-by-tick trace of the herdsman (`ZzPose.cs`,
+`ZZ_TICK=1`: state, ticks left, cold, tile, arms and home every winter tick the herd wants hay) and a count of where each of
+his winter shelter spells begins (`ZZC`) were run. They do not support §7.*
+
+1. **On seeds 2 and 42 the failure is a different one.** `ZZ_HERD=1` put 4 head in the barn on spring's first day: ticks
+   4321 and 7681, each the first tick of a 480-tick year. Each first winter then opens with **nothing put out**. A beast
+   starves on winter's first day while the herdsman is still bringing the first armful in, so the late-fall feed-ahead
+   window put no hay out. Why it didn't is **not traced**. It is not a late answer from rest, so §7's seed table, read as
+   one cause, is withdrawn.
+2. **On seed 12345, where the cattle came by trade, the pinned herdsman is homeless.** His household has no house:
+   `HomeTile` is empty. The pose pinned the newest adult, and a new household waits for its house. So he rests in the open
+   at the founding site, his cold climbs at rest, and **51 of his 59 winter shelter spells begin from resting**. Only 3
+   begin on a hay errand: 2 walking to the barn, and 1 with 80 hay in his arms one tick from putting it out.
+3. **A housed herdsman does not cure it.** With the newest adult *whose household has a home* pinned (`ZZ_PIN=housed`),
+   13 still starve on seed 12345. Those 13 are **not traced**.
+4. **So fix 1 is not shown to help.** It cuts a rest short, but rest is where the homeless herdsman gets cold, not where a
+   herdsman idles while the herd waits. The housed run's deaths and seeds 2 and 42's empty first day are unexplained.
+   Building it now would be building on a guess.
+
+**What stands:** every death is narrated *"starved with hay still in the barn — nobody carried it out"*; the winter herd
+has never been played; and the posed golden still waits on the herd. **What does not:** §7's single cause, its seed
+table read as one cause, and its ranking of the three shapes.
+
+⏸️ **Joe's call:** trace the deaths first, one at a time: the housed run on seed 12345, and the empty first day on seeds 2
+and 42. Or take the herd out of the posed golden's coverage for now, so it checks that cattle land by trade, not that
+they live, and pin the rest.

@@ -169,3 +169,7 @@ against a number from an older commit.
   where it goes out, and the pinned herdsman's state and tile; and a `ZZW` line of refill response times), `ZZ_AHEAD=n`
   (`hay_feed_ahead_days`), `ZZ_SEED=n`, and `ZZ_HERD=1` (4 head at the 10th villager, whatever the boats bring). ⚠️ `ZZW`'s
   clock does not reset when a herd dies out, so its largest values can be the gap until the next beasts.
+  D645's arms: `ZZ_TICK=1` (a `ZZT` line every winter tick the herd wants hay: the herdsman's state, ticks left, cold, tile,
+  arms, home and household), `ZZ_PIN=housed` (pin the newest adult *with a house*, not just the newest), and a `ZZC` line
+  counting where each of his winter shelter spells began. ⚠️ `ZZ_HERD=1` poses on the tick the village has held 10, whatever
+  the season; read one death per seed before trusting a seed's count.
