@@ -173,3 +173,8 @@ against a number from an older commit.
   arms, home and household), `ZZ_PIN=housed` (pin the newest adult *with a house*, not just the newest), and a `ZZC` line
   counting where each of his winter shelter spells began. ⚠️ `ZZ_HERD=1` poses on the tick the village has held 10, whatever
   the season; read one death per seed before trusting a seed's count.
+  D646's arms: `ZZ_DEATHS=1` (a ring of the last 48 ticks of the barn and the man seated at it, his household's food and
+  firewood against their targets, printed whole as `ZZD` lines at every head lost) and `ZZ_CALL=1` (a harness-only prototype:
+  the seated herdsman set idle off rest, chores and the walk home while the herd wants feeding). `zzdeaths.py` turns a run's
+  `ZZD` lines into one line a loss — a cull, or a starving with the run of his states while the herd wanted hay:
+  `grep -o "ZZD .*" out.txt | awk '!seen[$0]++' > out.d; python -X utf8 -I zzdeaths.py out.d`.

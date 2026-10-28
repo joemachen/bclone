@@ -68,6 +68,9 @@ public sealed class ZzPose
         Bridge? bridge = null;
         int traceLines = 0;
         int tickLines = 0;
+        var ring = new Queue<string>();
+        int deaths = 0;
+        int calls = 0;
         var cut = new SortedDictionary<string, int>(); VillagerState lastKState = VillagerState.Idle; int lastKId = -1;
         long wantedSince = -1; int lastOut = 0; var waits = new List<long>();
         VillagerState[] watched =
@@ -168,6 +171,50 @@ public sealed class ZzPose
                     lastKState = kk.State; lastKId = kk.Id;
                 }
 
+                // ZZ_CALL=1 (D646's prototype of the fix, harness only): while the herd wants feeding, the man seated at the
+                // barn, empty-handed on an errand that is not eating, warmth or the herd itself, is set idle so he decides
+                // again next tick — what "a hungry herd calls its herdsman" would do, measured before it is specced.
+                if (Environment.GetEnvironmentVariable("ZZ_CALL") == "1" && barn.HerdHead > 0 && barn.WorkerIds.Count > 0
+                    && world.HerdWantsFeeding(barn)
+                    && world.Villagers.FirstOrDefault(v => v.Id == barn.WorkerIds[0]) is Villager called
+                    && !called.IsCarrying
+                    && called.State is VillagerState.TidyingGround or VillagerState.TravelingHome or VillagerState.Resting
+                        or VillagerState.CuttingHay)
+                {
+                    called.State = VillagerState.Idle;
+                    called.ActionTicksRemaining = 0;
+                    calls++;
+                }
+
+                // ZZ_DEATHS=1 (D646): the last 48 ticks of the barn and its herdsman, kept while a herd stands, printed whole
+                // at every head lost — one death, one story. The keeper is whoever is seated at the barn, pinned or not.
+                if (Environment.GetEnvironmentVariable("ZZ_DEATHS") == "1" && (barn.HerdHead > 0 || lastHerd > 0))
+                {
+                    Villager? seated = barn.WorkerIds.Count > 0 ? world.Villagers.FirstOrDefault(v => v.Id == barn.WorkerIds[0]) : null;
+                    string home = seated is null ? "-" : world.HouseholdOf(seated).HomeTile?.ToString() ?? "homeless";
+                    ring.Enqueue(
+                        $"{world.Clock.Season} d{world.Clock.DayOfSeason} t{world.Tick} head={barn.HerdHead} out={barn.HayPutOut} "
+                        + $"barnHay={world.BarnStoreOf(barn)?.Store[Goods.Hay]} wants={world.HerdWantsFeeding(barn)} "
+                        + $"seats=[{string.Join(",", barn.WorkerIds)}] k={seated?.Id} st={seated?.State} left={seated?.ActionTicksRemaining} "
+                        + $"cold={seated?.Cold} at={seated?.Position.ToTile()} hay={seated?.Carried[Goods.Hay]} home={home} "
+                        + $"note='{seated?.WorkNote}' "
+                        + (seated is null ? "" : HouseholdLine(world, world.HouseholdOf(seated))));
+                    while (ring.Count > 48)
+                    {
+                        ring.Dequeue();
+                    }
+
+                    if (barn.HerdHead < lastHerd && deaths < 20)
+                    {
+                        deaths++;
+                        _output.WriteLine($"ZZD ===== head lost #{deaths}, y{year} =====");
+                        foreach (string line in ring)
+                        {
+                            _output.WriteLine($"ZZD {line}");
+                        }
+                    }
+                }
+
                 if (barn.HerdHead > lastHerd) herdUps += barn.HerdHead - lastHerd;
                 if (barn.HerdHead < lastHerd) herdDowns += lastHerd - barn.HerdHead;
                 lastHerd = barn.HerdHead;
@@ -221,7 +268,20 @@ public sealed class ZzPose
                 + $"p90 {waits[waits.Count * 9 / 10]} max {waits[^1]}; lead is {config.HayFeedAheadDays * config.TicksPerDay}");
         }
 
+        _output.WriteLine($"ZZK calls {calls}");
         _output.WriteLine($"ZZC sheltering began from: {string.Join(" ", cut.Select(kv => $"{kv.Key}={kv.Value}"))}");
         _output.WriteLine($"ZZP end hash {StateHash.Compute(world)} noskill {StateHash.ComputeIgnoringSkills(world)}");
+    }
+
+    // D646: the seated herdsman's household — food and firewood against the targets the emergency restock
+    // reads (restock_emergency_percent of each), and its living members — so a report says why he was fetching.
+    private static string HouseholdLine(SimWorld world, Household h)
+    {
+        int food = world.FoodIn(h.Stockpile);
+        int foodTarget = world.TargetFoodFor(h);
+        int wood = h.Stockpile.Firewood;
+        int woodTarget = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
+        int able = world.Villagers.Count(v => v.Alive && v.CanWork && v.HouseholdId == h.Id);
+        return $"hh food={food}/{foodTarget} wood={wood}/{woodTarget} living={world.LivingMembersOf(h)} able={able}";
     }
 }

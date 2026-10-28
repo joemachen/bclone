@@ -9,7 +9,10 @@ its boat, and the barn and its herd are not. 📝 **§5's posed-village golden: 
 first"*), 📏 MEASURED (D643, §6), NOT BUILT:** every chain turns over in a posed 50-year run except the herd, whose
 cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D644, §7) — ⚠️ AND §7's DIAGNOSIS
 WITHDRAWN (D645, §8):** seeds 2 and 42 open winter with no hay out, the traced herdsman on 12345 was homeless, and a
-housed one still loses 13 head, untraced. Fix 1 is not built. ⏸️ Joe's call: trace the deaths, or pin the golden without the herd. Owner: Joe + Claude Code.
+housed one still loses 13 head. 🔍 **Every death read (D646, §9):** errands that outlast the 20-tick feed window (the
+household's ordinary shopping ranks above all work), long walks, the cold they bring, and no slack at the herd's end. Four
+fixes were tried and none saves seeds 2 and 42. ⏸️ Joe's call: the herd eats from the barn's hay (recommended), or rebuild
+the herdsman's winter. Owner: Joe + Claude Code.
 
 ---
 
@@ -228,3 +231,69 @@ table read as one cause, and its ranking of the three shapes.
 ⏸️ **Joe's call:** trace the deaths first, one at a time: the housed run on seed 12345, and the empty first day on seeds 2
 and 42. Or take the herd out of the posed golden's coverage for now, so it checks that cattle land by trade, not that
 they live, and pin the rest.
+
+## 9. Every death read (D646)
+
+*Joe, D646: "Trace the deaths", then "Keep tracing", and asked whether this is about hay not being a real item. It is
+not: hay is a good (`Goods.Hay`), cut off the pasture, 67 a tile, carried to the barn, and shown on the barn's card. Every
+death here had about 400–500 hay in the barn.*
+
+**Method.** `ZzPose.cs` with `ZZ_DEATHS=1` keeps the last 48 ticks of the barn and the man seated at it, and prints the
+whole ring at every head lost. Each line has his state, ticks left, cold, tile, arms, home, and his household's food and
+firewood against their targets. `tools/harness/zzdeaths.py` turns each loss into one line: a cull, or a starving with the
+run of his states over the ticks the herd wanted hay. It was run on seeds 12345, 2 and 42, with the newest and the
+newest-housed herdsman pinned, and the prototype call off and on.
+
+**Where he was while the herd wanted hay**, over every window that ended in a starving (209 ticks):
+
+| State | Ticks | Share |
+|---|---|---|
+| `TravelingHome` | 92 | 44% |
+| `FetchingFromStore` | 48 | 23% |
+| `HaulingToStore` | 20 | 10% |
+| `FetchingHay` + `FeedingTheHerd` (the herd's own work) | 29 | 14% |
+| `Resting`, `Idle`, `TidyingGround`, `SeekingShelter` | 20 | 10% |
+
+**What the reports show**, every death explained by one or more of these:
+
+1. **An errand that outlasts the window.** The feed-ahead window is 20 ticks (`hay_feed_ahead_days` 5 × 4). A shopping
+   trip and its walk home run 16–20 ticks, and a chore plus the walk home runs 22. Whatever he was doing when the window
+   opened, he was still doing when winter began. **The household's ordinary shopping is not an emergency:** his larder
+   stood at 47–86% of target and his firewood at 44–100%. It is the top-up errand (D372: it fires at half a larder and
+   fetches back to target, trip after trip). It ranks above every job in `Decide` (`PlanFetch` comes first), and late
+   autumn is firewood season, exactly when the window opens.
+2. **Short walks take long.** On seed 2 a shop about 5 tiles from home is a 20-tick round trip, because the path loops
+   round the building, probably to its door (D619–D625).
+3. **The cold from those walks cuts the hay trip.** He sets out with cold already at 1,500–2,600, and the shelter line
+   (3,000) takes him off the errand.
+4. **The first day without hay kills, then one beast a day.** Twice the armful landed on the very tick a beast died
+   (`out=80` at the loss), because the day's feeding is checked before he puts the hay down.
+
+Two more were seen and are **not explained**: on seed 42 in year 18 nobody was seated at the barn for a whole window
+although a herdsman was pinned; and §8's homeless herdsman, who came from the pose's own pick.
+
+**Every fix tested, each a scratch change reverted at once** (no `src/` file differs from the commit):
+
+| Change | Seed 12345 (housed) | Seed 12345 (newest) | Seed 2 | Seed 42 |
+|---|---|---|---|---|
+| None (today) | 13 | 11 | 4 of 4 | 4 of 4 |
+| The herd calls him off rest, chores and the walk home (harness) | 8 | not run | 4 | 4 |
+| He skips the ordinary shopping while the herd wants feeding | 13 | 6 | 4 | 4 |
+| Both | 8 | 9 | 4 | 4–5 |
+| A beast survives 2 hayless days and starves on the 3rd | 10 | 6 | 4 | 4–5 |
+
+**None of them saves seeds 2 and 42**, where the first winter's herd is lost every time. Each closes one door and the next
+cause walks through it: freed from a chore he goes shopping; kept from shopping he is still mid-walk; given a grace, he is
+still not back by the third day.
+
+⏸️ **Joe's call, from what was measured:**
+- **Recommended: the herd eats from the barn's own hay when none is put out.** Every death above had hay in the barn,
+  and this is the one change that needs nothing from the herdsman's day. The cost is legibility: the carry is the visible
+  act. It can be kept honest by narration (*"The cattle at barn 1 ate from the barn — nobody carried hay out"*), and the
+  herdsman still carries hay out whenever he can, as today. Cattle fed in their barn through winter is also the ordinary
+  shape of the thing.
+- **Or keep the carry and rebuild the herdsman's winter:** the herd outranks the household's ordinary shopping, a hungry
+  herd calls him off any errand, and the day's feeding waits for the tick's hay. That is three changes, each measured
+  here to be not enough alone.
+
+The posed golden still waits on this.
