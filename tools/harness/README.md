@@ -159,3 +159,9 @@ against a number from an older commit.
   against the golden's own constant**, and samples once a game day: workplaces standing by job and days worked, stores by
   kind, every good held, bridges, herd head, boat, bands, repairs, wells, homes and their doors (`ZZG` lines). 18 s in Release
   for all five. Copy in, `-c Release --filter ZzGoldens`, delete. ⚠️ When a golden is re-taken, its constant here moves too.
+- `ZzPose.cs` — D643's measurement of `specs/phase-5-golden.md §5`: the posed Phase 5 village on the shipped data. It poses
+  the farm, mill, bakery, quarry, mine, smithy, well, post and barn at tick 0, plus a pasture and trade orders; the bridge and a
+  well across the river at the tick the village has held 10; and a herdsman pinned when cattle first stand. One `ZZP` line a
+  year: what each chain made, and the villager-ticks in each chain's working state. `ZZL` lines group the herd and boat
+  narrations. `ZZ_YEARS` (default 50); 45 s in Release. Copy in, `-c Release --filter ZzPose`, delete. Needs the `internal`
+  helpers in `MineTests` and `QuarryTests`.

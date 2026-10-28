@@ -325,7 +325,7 @@ public sealed class MineTests
         throw new Xunit.Sdk.XunitException($"No {terrain} in this valley.");
     }
 
-    private static GridPos TheNearestReachable(SimWorld world, Terrain terrain)
+    internal static GridPos TheNearestReachable(SimWorld world, Terrain terrain)
     {
         GridPos from = world.Map.FoundingSite;
         GridPos? best = null;
@@ -371,7 +371,7 @@ public sealed class MineTests
     }
 
     /// <summary>A finished mine beside this iron — the village is lent the iron tool it takes to learn.</summary>
-    private static Workplace RaiseAMine(SimWorld world, GridPos iron)
+    internal static Workplace RaiseAMine(SimWorld world, GridPos iron)
     {
         world.IronToolsEverForged = Math.Max(world.IronToolsEverForged, world.Config.MineUnlockIronTools);
         Assert.True(world.Mark(BuildingKind.Mine, SomewhereItFits(world, BuildingKind.Mine, iron)).Allowed);
@@ -388,7 +388,7 @@ public sealed class MineTests
     }
 
     /// <summary>Paint the mine the iron tiles nearest it that the village can reach.</summary>
-    private static List<GridPos> GiveItIron(SimWorld world, Workplace mine, int howMany)
+    internal static List<GridPos> GiveItIron(SimWorld world, Workplace mine, int howMany)
     {
         var iron = new List<(int Cost, GridPos At)>();
         for (int i = 0; i < world.Map.Tiles.Count; i++)

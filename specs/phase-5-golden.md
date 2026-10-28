@@ -5,8 +5,9 @@
 that reached `NearestHarvest`), D601 and D617 (no harness village raises a market's worth of trade or a smithy).
 **Status:** 🔍 **AUDIT DONE (D642): no pinned golden reaches any Phase 5 production chain.** Housing, doors, maintenance
 and nomads are reached. The smithy, the quarry, the mine, the mill, the bakery, the well, bridges, the trading post and
-its boat, and the barn and its herd are not. 📝 **§5's posed-village golden is PROPOSED, NOT BUILT:** Claude's to build
-under the accepted gate, and Joe's to see first. Owner: Joe + Claude Code.
+its boat, and the barn and its herd are not. 📝 **§5's posed-village golden: Joe's go-ahead (D642, *"Merge the audit
+first"*), 📏 MEASURED (D643, §6), NOT BUILT:** every chain turns over in a posed 50-year run except the herd, whose
+cattle starve with hay in the barn even with a pinned herdsman. That is Joe's to call before a golden is pinned over it. Owner: Joe + Claude Code.
 
 ---
 
@@ -112,3 +113,39 @@ CLAUDE.md is his working agreement.
    coverage test must both go red.
 6. ⚠️ **Re-takes:** every later change to a Phase 5 chain will move this golden. That is the point of it, and it costs
    a §7 line each time, as the 50-year goldens already do.
+
+## 6. Measured: the posed village, 50 years on the shipped data (D643)
+
+`tools/harness/ZzPose.cs` builds §5's pose, steps it 50 years and prints one `ZZP` line a year: what each chain made,
+the villager-ticks spent in each chain's working state, and the log's herd and boat lines. One run takes 45 s in
+Release, with the probe sampling every tick. Three things §5 did not foresee had to change before the chains turned:
+
+- **The bridge cannot be posed at tick 0.** It unlocks once the village has held 10 people (`MostEverAlive`), and that
+  count is derived from the villagers' own history, so it cannot be set. The pose raises the bridge the first tick the
+  village has held 10 (year 20 on this seed), and marks a well across the river, as `BridgeTests` does, so someone has
+  a reason to cross.
+- **A herd posed at tick 0 dies in year 1.** Herdsmen give way whenever food comes first, and four founders' food
+  always comes first. The herd arrives by trade instead: a pasture is painted round the barn and an animal order is set
+  (`SetTradeBuyHead(4)`; refused without a pasture). Trade orders are posed too, keep 300 firewood and buy up to 50
+  stone, because a merchant is only wanted once the player has asked for something (`LabourQuota.MerchantsWanted`).
+- **`StoneEverDug` counts digging by hand only**, as the quarry's unlock. The quarry's own output never passes through
+  it, so the coverage reads stone held in stores and villager-ticks spent `Quarrying`.
+
+| Chain | Turns over? | When, and how much (50 years) |
+|---|---|---|
+| Farm → mill → bakery | ✅ | flour from year 9; 7,040 ground and 6,840 baked |
+| Quarry | ✅ | from year 1; 550 stone held at most, and quarrying stops when the stock limit is met |
+| Mine | ✅ | from year 6; 222 iron held at most |
+| Smithy | ✅ | from year 20; 46 tools forged |
+| Well | ✅ | water drawn from year 1 |
+| Bridge | ✅ | raised in year 20; 139 crossings |
+| Trade | ✅ | 19 boats; *"The boat from Larkspur took # firewood and left # cattle"*, 4 times |
+| **The herd** | ⚠️ **barely** | 11 head landed or born and 11 lost; **10 of them starved "with hay still in the barn — nobody carried it out"**; the one cull came in year 42 |
+
+⚠️ **The herd is not a pose problem that the pose can fix.** A living herdsman was pinned the first tick cattle stood in
+the barn (`SetPinnedTrade`, the player's own control), hay was cut (500 at most), and the cattle still starved every
+winter with hay in the barn. `HerdWantsFeeding` also asks `AnyPastureToFeedOn(barn)`, which is one candidate; this was
+not traced further. **Unattended-village losses are the harness playing badly until a played run says otherwise**, so
+this is put to Joe with that caveat, not as a bug. A golden pinned over it would hold one cull in fifty years, and its
+coverage test would flip whenever that cull crossed the cutoff. **So the golden is NOT BUILT** until the herd is
+understood: traced as a bug, accepted, or taken out of the golden's coverage.
