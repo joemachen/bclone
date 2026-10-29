@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643–D646: THE POSED VILLAGE MEASURED; EVERY HERD DEATH READ — ERRANDS OUTLAST THE 20-TICK FEED WINDOW, AND FOUR HERDSMAN-SIDE FIXES (TRIED, REVERTED) DON'T SAVE THE FIRST WINTER; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — THE HERD EATS FROM THE BARN'S HAY (RECOMMENDED), OR REBUILD THE HERDSMAN'S WINTER. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = 008f9b6 (D642, THE GOLDEN AUDIT), NOT PUSHED; `origin/main` = 23825d7. `slice/phase5-golden` = D643–D647: THE POSED VILLAGE MEASURED; EVERY HERD DEATH READ; A KEPT HERD NOW EATS FROM THE BARN WHEN NOTHING IS OUT (D647, JOE'S PICK) AND NO POSED HERD STARVES WHILE A HERDSMAN LIVES; BUT THE POSE KILLS ITS VILLAGES ON SEEDS 2 AND 42; THE GOLDEN NOT BUILT. NEXT: JOE'S CALL — PIN THE GOLDEN ON SEED 12345 AS IT IS, OR FIX THE POSE FIRST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D646) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-28 (D647) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D647: the posed village measured; every herd death read; the barn feeds a kept herd; the golden NOT BUILT.**
+>
+> **✅ The herd (D647, `specs/livestock.md §0.3`):** Joe picked *"Barn feeds them"*. On a winter day the herd eats what is out
+> first, and with a herdsman **seated** at the barn makes up the rest from the barn's own hay, narrated. With nobody seated
+> D593 stands. Posed herd starvations 11/13 → 0/0 on seed 12345, 4 → 0 on seed 2.
+>
+> **⚠️ Found (`specs/phase-5-golden.md §10`): the pose kills villages.** Seed 42's is dead by its 18th winter (founders of cold
+> in year 1, each nomad party after), so its herd losses had no herdsman alive; seed 2 loses 56 to cold and hunger; seed
+> 12345 loses 13 but lives, and reaches every Phase 5 chain. `people=` in `ZzPose` counts the dead; read `ZZX`.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** pin the posed golden on seed 12345 as it is, or make the pose
+> play like a player first. Also his: whether the barn's narration (261 lines in 50 years on seed 2) is too chatty. Push and
+> merge only at his word.
+>
+> **Numbers (D647):** suite 1853 / 0 / 5 of 1858 in 13m31 (back down from D646's 18m on the machine); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388, none in the diff. Red-check: **5 reds of 5**
+> (three guards before the fix, the seat mutated away, the narration's words changed).
+>
+> **— D646, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D646) — ON WINDOWS.**
 >
 > **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
 > unpushed) = **D643–D646: the posed village measured; every herd death read; the golden NOT BUILT.**
@@ -8465,6 +8486,17 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D647 FOUND — A RUN THAT ENDS IN 5 SECONDS WHEN ITS NEIGHBOURS TAKE 41 IS NOT A FAST VALLEY
+
+- **Seed 42's posed run took 4–5 s in every run from D643 on, against 41 for seed 12345, and nobody asked why.** The
+  village was dead from its 18th winter, and four sessions read its herd as if a herdsman had failed it. A harness's
+  wall-clock is an instrument, as the suite's is (CLAUDE.md): a run far faster than its neighbours is a village with
+  nothing left to simulate.
+- **`people=` was `Villagers.Count`: the dead included.** A count that only grows reads as a living village. Print the
+  living (`ZZX` now does) before reading anything a village does.
+- **Before diagnosing who failed the herd, check somebody was alive to fail it.** D646's ring showed `seats=[]` and `k=`
+  empty and called it *an empty barn seat, unexplained*. Nobody alive is the first explanation to rule out, not the last.
+
 ## ⛔ THE TRAPS D646 FOUND — WHEN EVERY DOOR YOU CLOSE HAS ANOTHER BEHIND IT, THE FAULT IS THE ROOM
 
 - **Four herdsman-side fixes each cut one cause and the next walked through.** Freed from a chore he shopped; kept from
@@ -8594,11 +8626,13 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE WINTER HERD STARVES WITH HAY IN THE BARN — EVERY DEATH READ (D643–D646, `specs/phase-5-golden.md §6–§9`).** Errands
-  outlast the 20-tick feed window (the household's ordinary shopping ranks above all work), walks are long, the cold cuts the
-  hay trip, and the first hayless day kills. Four herdsman-side fixes tried and reverted; none saves seeds 2 and 42. Never
-  played. His pick: ① the herd eats from the barn's hay when none is out, narrated (recommended); ② rebuild the herdsman's
-  winter (three changes). The posed golden waits on it.
+- ⏸️ **THE WINTER HERD — HE PICKED "BARN FEEDS THEM", BUILT (D647, `specs/livestock.md §0.3`).** A kept herd eats from the
+  barn's own hay when nothing is out; with nobody seated it still starves (tying it to the seat is Claude's, his to
+  overrule). Never played. Still his: whether the narration is too chatty (261 lines in 50 years on posed seed 2; fallback
+  once a winter).
+- ⏸️ **THE POSE KILLS ITS VILLAGES (found D647, `specs/phase-5-golden.md §10`).** Seed 42's posed village is dead by year 18,
+  seed 2's loses 56 to cold and hunger, seed 12345's 13. His pick: pin the golden on 12345 as it is, or make the pose play
+  like a player first (cause untraced: likely nine posed workplaces taking four founders off firewood).
 - ⏸️ **THE GOLDENS GREP MISSES DIGIT-SEPARATED GOLDENS (found D642).** CLAUDE.md's fourth verification line,
   `grep -rn "[0-9]\{15,\}"`, cannot see `AngleTests.cs:336` or `FixedTests.cs:440` (`14_897_…UL`, the math tables).
   `grep -rnE "[0-9](_?[0-9]){14,}" tests/Bclone.Sim.Tests/*.cs` sees both; its count is a new baseline. His file, his call.

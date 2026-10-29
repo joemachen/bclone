@@ -28,9 +28,9 @@ public sealed class HerdTests
     /// An established village where <b>nobody keeps the herd</b> (the herdsman's target at nought, D106): these guards
     /// are the herd's own rules (D592); the herdsman's are <c>HerdsmanTests</c> (D593).
     /// </summary>
-    private static SimLoop AVillage()
+    private static SimLoop AVillage(InMemoryLogSink? sink = null)
     {
-        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), sink ?? new InMemoryLogSink());
         Assert.True(loop.World.SetJobLimit(JobKind.Herdsman, 0).Allowed);
         return loop;
     }
@@ -239,6 +239,97 @@ public sealed class HerdTests
 
         StepToTheStartOf(loop, Season.Spring);
         Assert.Equal(0, barn.HerdHead);
+    }
+
+    // ---------------------------------------------------------------
+    //  A kept herd and the barn's own hay (D647, `livestock.md §0.3`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Winter's first tick, six head, <paramref name="inTheBarn"/> hay in the barn and <paramref name="out"/> on the
+    /// pasture. The day's feeding is then called by hand (<see cref="SimWorld.TendTheHerds"/>), so no allocation runs to
+    /// change who is seated.
+    /// </summary>
+    private static (SimWorld World, Workplace Barn, StoreBuilding Store) AWinterMorning(
+        InMemoryLogSink sink, int inTheBarn, int @out, bool kept)
+    {
+        SimLoop loop = AVillage(sink);
+        SimWorld world = loop.World;
+        Workplace barn = RaiseABarn(world);
+        GivePasture(world, barn, 40);
+        StepToTheStartOf(loop, Season.Winter);
+        barn.HerdHead = 6;
+        StoreBuilding store = BarnOf(world, barn);
+        store.Store.TakeAll(Goods.Hay);
+        store.Store.Receive(Goods.Hay, inTheBarn);
+        barn.HayPutOut = @out;
+        Assert.Empty(barn.WorkerIds); // the herdsman's target is nought (AVillage): the seat is the pose's alone
+        if (kept)
+        {
+            barn.WorkerIds.Add(world.Villagers.First(v => v.CanWork).Id);
+        }
+
+        return (world, barn, store);
+    }
+
+    private static bool Narrated(InMemoryLogSink sink, string words) =>
+        sink.Entries.Any(e => e.Message.Contains(words, StringComparison.Ordinal));
+
+    /// <summary>
+    /// ⭐ A kept herd with nothing out eats from the barn (D647, Joe: <i>"Barn feeds them"</i>). D646 read every death in a
+    /// posed village: each had hay in the barn and a herdsman seated, out on some other errand. What is out goes first,
+    /// the barn gives the rest, nobody is lost, and the log says nobody carried it out.
+    /// </summary>
+    [Fact]
+    public void AKeptHerdWithNothingOutEatsFromTheBarn()
+    {
+        var sink = new InMemoryLogSink();
+        (SimWorld world, Workplace barn, StoreBuilding store) = AWinterMorning(sink, inTheBarn: 100, @out: 0, kept: true);
+        int day = 6 * Cattle(world).HayPerHeadPerWinterDay;
+
+        world.TendTheHerds();
+        Assert.Equal(6, barn.HerdHead);
+        Assert.Equal(100 - day, store.Store[Goods.Hay]);
+        Assert.True(Narrated(sink, "ate from the barn — nobody had carried hay out"), "the barn fed them unsaid");
+        Assert.False(Narrated(sink, "starved"), "a beast starved with a keeper and hay in the barn");
+
+        // Some out: that is eaten first, and the barn gives only the rest.
+        barn.HayPutOut = 5;
+        world.TendTheHerds();
+        Assert.Equal(6, barn.HerdHead);
+        Assert.Equal(0, barn.HayPutOut);
+        Assert.Equal(100 - day - (day - 5), store.Store[Goods.Hay]);
+    }
+
+    /// <summary>A kept herd whose barn cannot make up the day eats every straw there is, and a beast starves.</summary>
+    [Fact]
+    public void AKeptHerdStarvesWhenTheBarnRunsDry()
+    {
+        var sink = new InMemoryLogSink();
+        (SimWorld world, Workplace barn, StoreBuilding store) = AWinterMorning(sink, inTheBarn: 3, @out: 2, kept: true);
+
+        world.TendTheHerds();
+        Assert.Equal(5, barn.HerdHead);
+        Assert.Equal(0, barn.HayPutOut);
+        Assert.Equal(0, store.Store[Goods.Hay]);
+        Assert.True(Narrated(sink, "the barn ran out of hay"), "the loss went unsaid, or was blamed on the herdsman");
+        Assert.False(Narrated(sink, "ate from the barn"), "a starving day was told as a fed one");
+    }
+
+    /// <summary>
+    /// ⛔ The barn's hay is the herdsman's slack, not a replacement for him (`livestock.md §0.3`): with nobody seated, D593
+    /// stands — the herd eats only what was carried out, and a beast starves with hay still in the barn.
+    /// </summary>
+    [Fact]
+    public void AHerdNobodyKeepsStillStarvesWithHayInTheBarn()
+    {
+        var sink = new InMemoryLogSink();
+        (SimWorld world, Workplace barn, StoreBuilding store) = AWinterMorning(sink, inTheBarn: 100, @out: 0, kept: false);
+
+        world.TendTheHerds();
+        Assert.Equal(5, barn.HerdHead);
+        Assert.Equal(100, store.Store[Goods.Hay]);
+        Assert.True(Narrated(sink, "starved with hay still in the barn — nobody carried it out"), "the loss went unsaid");
     }
 
     // ---------------------------------------------------------------

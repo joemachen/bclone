@@ -255,11 +255,20 @@ public sealed class ZzPose
                 + string.Join(" ", watched.Select((w, i) => $"{w}={inState[i]}")));
         }
 
-        foreach (var g in sink.Entries.Where(e => e.Message.Contains("starved") || e.Message.Contains("boat") || e.Message.Contains("cull"))
+        foreach (var g in sink.Entries.Where(e => e.Message.Contains("starved") || e.Message.Contains("boat") || e.Message.Contains("cull") || e.Message.Contains("ate from the barn"))
             .GroupBy(e => System.Text.RegularExpressions.Regex.Replace(e.Message, "[0-9]+", "#")).OrderByDescending(g => g.Count()).Take(12))
         {
             _output.WriteLine($"ZZL {g.Count()}x {g.Key}");
         }
+
+        // D647: every death by cause and year, and who is left — a herd lost with its whole village is not a herd finding.
+        foreach (var g in world.Villagers.Where(v => !v.Alive && v.DiedAtTick is not null)
+            .GroupBy(v => (Year: 1 + (int)(v.DiedAtTick!.Value / (ulong)world.Config.TicksPerYear), v.CauseOfDeath)).OrderBy(g => g.Key))
+        {
+            _output.WriteLine($"ZZX y{g.Key.Year} {g.Key.CauseOfDeath} x{g.Count()}");
+        }
+
+        _output.WriteLine($"ZZX alive at the end: {world.Villagers.Count(v => v.Alive)} of {world.Villagers.Count}");
 
         waits.Sort();
         if (waits.Count > 0)

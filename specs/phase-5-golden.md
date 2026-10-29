@@ -11,8 +11,11 @@ cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D
 WITHDRAWN (D645, §8):** seeds 2 and 42 open winter with no hay out, the traced herdsman on 12345 was homeless, and a
 housed one still loses 13 head. 🔍 **Every death read (D646, §9):** errands that outlast the 20-tick feed window (the
 household's ordinary shopping ranks above all work), long walks, the cold they bring, and no slack at the herd's end. Four
-fixes were tried and none saves seeds 2 and 42. ⏸️ Joe's call: the herd eats from the barn's hay (recommended), or rebuild
-the herdsman's winter. Owner: Joe + Claude Code.
+fixes were tried and none saves seeds 2 and 42. ✅ **Joe picked the barn (D647, §10):** a kept herd eats from the barn's
+own hay when nothing is out, built and guarded (`livestock.md §0.3`); no posed herd starves while a herdsman lives. ⚠️ **And
+§10 found the pose kills villages:** seed 42's is dead by year 18, seed 2's loses 56 to cold and hunger, seed 12345's 13.
+§9's seed-42 reading was taken on a dying village. ⏸️ **Joe's call:** pin the golden on seed 12345 as it is, or make the
+pose play like a player first. Owner: Joe + Claude Code.
 
 ---
 
@@ -297,3 +300,44 @@ still not back by the third day.
   here to be not enough alone.
 
 The posed golden still waits on this.
+
+## 10. The barn feeds a kept herd, and the pose is killing its villages (D647)
+
+Joe, 2026-10-28: *"Barn feeds them"*. Built as `livestock.md §0.3`: on a winter day the herd eats what is put out first,
+and with a herdsman seated at the barn it makes up the rest from the barn's own hay, narrated. With nobody seated, D593
+stands. Measured with `ZzPose`, `ZZ_HERD=1 ZZ_DEATHS=1`, 50 years:
+
+| Arm | Starved, D646 | Starved, D647 | Days the barn fed them |
+|---|---|---|---|
+| 12345, newest pinned | 11 | **0** | 13 |
+| 12345, housed pinned | 13 | **0** | 24 |
+| 2, newest pinned | 4 | **0** | 261 |
+| 42, newest pinned | 4 | 5, every one with nobody seated | 9 |
+
+**Seed 42's five are not the herd's.** A new `ZZX` line prints every death by year and cause and who is alive at the end,
+and `people=` turns out to be `Villagers.Count`, **the dead included**:
+
+| Seed | Deaths over 50 years | Alive at year 50 |
+|---|---|---|
+| 12345 | 2 founders of cold in year 1; 11 starved in years 40–41; 5 of old age | 24 of 42 |
+| 2 | 10 of cold in years 1–4; 45 starved in years 21–43; 1 cold in year 37; 5 of old age | 9 of 70 |
+| 42 | 4 founders of cold and 1 starved in year 1; then each nomad party frozen within a few years (5, 8, 6, 6, 6, 6, 6, 6, 6) | 0 of 60 |
+
+**So, corrections to §9:**
+- On seed 42 the herd's first winter, year 18, is the village's last: 8 of its people froze that year. No herdsman fix
+  could have saved a herd with no herdsman alive. *The empty barn seat §9 left unexplained* is that: `seats=[]`, and `k=`
+  empty because nobody living was left to pin. The run's 4–5 seconds, against 41 for seed 12345, said so in every run
+  from D643 on, and nobody asked.
+- On seed 2 the village was alive through the herd's winters, and the fix saves its herd. Its many barn narrations are
+  the starving years, when its herdsman has other work.
+
+**The chains on seed 12345 still all turn over** at year 50: 38,651 wheat, 3,780 flour, 3,580 bread, 38 tools forged, 142
+crossings, 19 boats, the herd at 4 head with 51 born and 47 culled into 470 leather, and the quarry, mine and smithy
+worked (`quarry:160 mine:135 smithy:75`).
+
+⏸️ **Joe's call, from what was measured:**
+- **Pin the golden on seed 12345 as it is.** A determinism golden pins *what the code does*, and this run reaches every
+  Phase 5 chain. The cost: it pins a village that loses two founders to cold in year one, which a later fix to the
+  village's first winter will move, as any golden moves with the code.
+- **Or make the pose play like a player first.** Nine buildings at tick 0 on four founders is not how anyone plays
+  (D643's trap). The likely cause, untraced: the posed workplaces take the founders off firewood before the first winter.

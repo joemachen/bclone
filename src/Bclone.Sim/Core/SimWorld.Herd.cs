@@ -228,8 +228,15 @@ public sealed partial class SimWorld
     }
 
     /// <summary>
-    /// A winter day: the herd eats the hay put out on its pasture, and if there is too little a beast is lost.
+    /// A winter day: the herd eats the hay put out on its pasture — a kept herd the rest from the barn (D647) — and if
+    /// there is too little a beast is lost.
     /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The barn's hay is the herdsman's slack, not a replacement for him</b> (`livestock.md §0.3`, Joe: <i>"Barn
+    /// feeds them"</i>). D646 read every death in a posed village: each had hay in the barn and a herdsman seated, out on
+    /// some other errand longer than the feed window. With somebody seated the herd makes up the day from the barn, and
+    /// the log says nobody carried it out. With nobody seated D593 stands, the same seat as <see cref="GrazeAndGrow"/>'s.
+    /// </remarks>
     private void FeedTheHerd(Workplace barn, AnimalRow animal)
     {
         int wanted = barn.HerdHead * animal.HayPerHeadPerWinterDay;
@@ -239,7 +246,23 @@ public sealed partial class SimWorld
             return;
         }
 
-        bool inTheBarn = (BarnStoreOf(barn)?.Store[Goods.Hay] ?? 0) > 0;
+        StoreBuilding? store = BarnStoreOf(barn);
+        if (barn.WorkerIds.Count > 0 && store is not null)
+        {
+            int owed = wanted - barn.HayPutOut;
+            barn.HayPutOut = 0;
+            if (store.Store.TryTake(Goods.Hay, owed))
+            {
+                Narrate(
+                    $"The {animal.Plural} at {barn.Name} ate from the barn — nobody had carried hay out. {Clock.SeasonAndYear()}.");
+                return;
+            }
+
+            // Not enough to make up the day: they eat every straw there is, and a beast starves all the same.
+            store.Store.TakeAll(Goods.Hay);
+        }
+
+        bool inTheBarn = (store?.Store[Goods.Hay] ?? 0) > 0;
         barn.HayPutOut = 0;
         barn.HerdHead--;
         Narrate(

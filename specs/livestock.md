@@ -3,7 +3,7 @@
 **Decisions:** D19, D39, D44, D52, **D59**, **D60**, **D61**. **Phase:** 2, after the
 shelter-and-exposure slice.
 **Status:** ✅ **BUILT WITH TRADE, PLAYED AND MERGED (D608) — the herd, the herdsman, the barn and the fenced
-pasture (§0.2).** *The rest of this line is the build's history, kept:* 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — ✅ **And it is kept (D593)**: the herdsman cuts and carries hay, feeds it out in winter, culls what the pasture cannot hold; the barn's room is derived (§0.1).** Animals come
+pasture (§0.2).** ✅ **§0.3, a kept herd eating from the barn when nothing is out (D647): built and guarded, on `slice/phase5-golden`, not merged.** *The rest of this line is the build's history, kept:* 🔨 **UNBLOCKED BY TRADE AND RE-READ AGAINST TODAY'S CODE (D588); MEASURED (D589); THE ROWS AND THE STATE BUILT, NOTHING BEHAVES (D590: hay, the barn, the herdsman, `cattle`, a barn's herd — saved, hashed sparsely). ✅ **The herd lives (D592)**: grazing, winter hay, starvation a beast a short day, growth to the pasture, the cull into meat and leather — ✅ **And it is kept (D593)**: the herdsman cuts and carries hay, feeds it out in winter, culls what the pasture cannot hold; the barn's room is derived (§0.1).** Animals come
 only by trade (D61), and trade is specced (D586–D587, `trade.md`); **Joe: trade and the herd are one build** (D587).
 **§0 below is the re-read** — what this spec said in August, what is true now, and what the build does; where §0 and a
 later section disagree, §0 wins. The build, commit by commit, is `trade.md §11`.
@@ -208,6 +208,62 @@ fence hashes as before (all 362 goldens).
 View (probe `fence:`): the fence drawn ~~on its edges~~ **as one rounded line within half a tile of its walls (D610)**, with
 the gate open at its posts — on a disc and on a block gated mid-side; faint while a site; the barn card's button
 reads the state (*Fence the pasture* / *Cancel the fence* / *Take the fence down*).
+
+
+## 0.3 A kept herd eats from the barn when nothing is out (D647)
+
+Joe, 2026-10-28: *"Barn feeds them"* — the first of D646's two options (`phase-5-golden.md §9`).
+
+**Why.** D643–D646 read every herd death in a posed Phase 5 village. Every one had 400–500 hay in the barn and a
+herdsman seated. He was walking home, shopping for his household's ordinary top-up, or hauling, and those errands outlast
+the 20-tick window `hay_feed_ahead_days` gives. Four fixes on the herdsman's side (a call off rest and chores, skipping
+the shopping, both, a three-day grace) each closed one gap; none saved the first winter on seeds 2 and 42. §8 says *a herd
+sized to its pasture, with a barn built and hands available, must survive an ordinary winter* — it did not, and the
+player had nothing to answer it with but babysitting.
+
+**The rule.** On a winter day (`SimWorld.FeedTheHerd`, the day's first tick, as before):
+
+| Hay put out | A herdsman seated at the barn | The barn's own store | What happens |
+|---|---|---|---|
+| ≥ the day's (head × `hay_per_head_per_winter_day`) | — | — | the herd eats it — **unchanged** |
+| short | **yes** | covers the rest | the herd eats what is out, **then the rest from the barn**; narrated, nobody lost |
+| short | yes | short too | the herd eats everything there is, out and in the barn, and **one beast starves** — *"the barn ran out of hay"* |
+| short | **no** | any | **unchanged** (D593): what is out is eaten, one beast starves — *"with hay still in the barn — nobody carried it out"* if the barn holds any, *"the barn ran out of hay"* if not |
+
+- ⭐ **Seated, not "a herdsman exists".** The barn's hay is the herdsman's slack, not a replacement for him. With nobody
+  keeping the herd, D593's sentence — *nobody fed it out* — stays true and stays fatal, the same shape as
+  `GrazeAndGrow`'s overgrazing (`WorkerIds.Count == 0`). So the quota's one winter herdsman still matters, and so does
+  a player's pin. ⚠️ *Decided for Joe, to overrule:* his call was the barn feeding the herd; tying it to a seat is mine.
+- **The narration** (`Ordinary`, nothing was lost): *"The cattle at barn 1 ate from the barn — nobody had carried hay out.
+  Winter, Year 3."* It names what the player would otherwise not see: the herdsman was somewhere else.
+- **What does not change:** `HerdWantsFeeding`, the feeding work and its exposure, the quota, the cutting, the cull, the
+  barn's derived room, `HayHeldFor`. The herdsman still carries hay out whenever the herd wants it; `HayPutOut` is still
+  saved and hashed as before. No new state, nothing in the save.
+- ⚠️ **The cost, recorded:** while a herdsman is seated, carrying hay out no longer decides whether a beast lives. It is
+  still real work, outdoors in winter (§7's exposure, §9.6's guard), and it is what the player sees of the herd being
+  kept. *Legibility over fidelity*: the narration says when the barn did his job for him.
+- **No golden moves**: none reaches the herd (D642, `phase-5-golden.md §3`).
+
+**Guards** (red first, counted, D326):
+1. `HerdTests.AKeptHerdWithNothingOutEatsFromTheBarn` — seated, nothing out, hay in the barn: no beast lost, the barn
+   down by exactly the day's hay, the narration logged. And with some out: what is out goes first, the barn gives the rest.
+2. `HerdTests.AKeptHerdStarvesWhenTheBarnRunsDry` — seated, out and barn together short: a beast lost, both emptied,
+   *"the barn ran out of hay"*.
+3. `HerdTests.AHerdNobodyKeepsStillStarvesWithHayInTheBarn` — nobody seated: unchanged, a beast lost, the barn untouched,
+   *"nobody carried it out"*. The guard on the seat.
+4. `HerdsmanTests.AHerdsmanFeedsTheHerdThroughWinter` — its D625 floor (*two of six*) raised to **all six**: the price of
+   doors D625 accepted is the very failure this rule ends.
+
+**Built (D647), red-checked and measured:**
+- **5 reds of 5.** Before the fix, guards 1, 2 and 4 failed for their own reasons (5 head not 6; the barn's 3 hay
+  untouched; *6 went into winter and 2 came out*), and guard 3 passed, as it must on D593's rule. With the fix, the seat
+  test mutated away (`WorkerIds.Count >= 0`) failed guard 3 alone, and the narration's words changed failed guard 1 alone.
+  Both mutants were reversed by the same `sed`, counted back.
+- **The posed village** (`phase-5-golden.md §10`, `ZzPose` 50 years): herd starvations 11 and 13 → **0 and 0** on seed
+  12345 (newest and housed pin), 4 → **0** on seed 2. Seed 42's 5 are all with nobody seated, because nobody is alive
+  there: the pose's whole village is dead by its 18th winter. The barn fed the herd on 13, 24, 261 and 9 days over the
+  fifty years. ⚠️ **261 on seed 2 is a line in the log on about nine winter days a year**, in a village starving in its
+  20s and 40s. Whether that is too chatty is Joe's to say in play; once a winter is the obvious fallback.
 
 ## 1. Goal
 

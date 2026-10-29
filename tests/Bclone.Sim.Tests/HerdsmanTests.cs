@@ -216,15 +216,11 @@ public sealed class HerdsmanTests
 
         _output.WriteLine($"{head} head into winter, {barn.HerdHead} out; {outdoorsFeeding} ticks feeding outdoors");
         Assert.True(outdoorsFeeding > 0, "nobody carried hay out to the herd");
-        // ⚠️ TWO OF SIX, NOT ALL SIX — the price of doors, measured and accepted (D625, Joe: "keep D388 as it
-        // is ... record the house-siting and herd guards as measured costs"). Walks go through doors now
-        // (`doors.md §4.4`) and the site chooser prices every plot by them; switching that one rule off
-        // (`DoorsOnEverySide`) puts this guard back at its old bar, and neither siting rule of D622 moves it.
-        // The barn has no door (D624); the herdsman's house's door faces west onto its lane and his barn is
-        // five tiles east — home to the barn is a 17-tile walk round his yard each way, and between his laps
-        // the hay out ran dry. Measured: 6 in, 2 out (6 before doors; 0 with the hay put out at the pasture's
-        // top row, which D623 changed to the tile nearest the barn).
-        Assert.True(barn.HerdHead >= 2, $"{head} went into winter and {barn.HerdHead} came out");
+        // ⭐ ALL SIX AGAIN (D647). D625 accepted two of six as the price of doors: the herdsman's house door faces west
+        // and his barn is five tiles east, a 17-tile walk round his yard each way, and between his laps the hay out ran
+        // dry. That gap is exactly what a kept herd now fills from the barn's own hay (`livestock.md §0.3`), so the
+        // floor goes back to the whole herd. The barn holds its winter here, so nothing may starve.
+        Assert.True(barn.HerdHead == head, $"{head} went into winter and {barn.HerdHead} came out");
     }
 
     /// <summary>The cull, as work (Joe, D588): a beast beyond the pasture, culled at the barn into meat and leather.</summary>

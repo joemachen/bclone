@@ -178,3 +178,6 @@ against a number from an older commit.
   the seated herdsman set idle off rest, chores and the walk home while the herd wants feeding). `zzdeaths.py` turns a run's
   `ZZD` lines into one line a loss — a cull, or a starving with the run of his states while the herd wanted hay:
   `grep -o "ZZD .*" out.txt | awk '!seen[$0]++' > out.d; python -X utf8 -I zzdeaths.py out.d`.
+  D647: `ZZX` lines, every death by year and cause and the living at the end; `ZZL` also groups the barn's *"ate from the
+  barn"* line. ⚠️ **`people=` is `Villagers.Count`, the dead included**: read `ZZX` before reading a village as alive.
+  Seed 42's posed village is dead by year 18, which is why its run takes 5 s.
