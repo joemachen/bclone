@@ -40,8 +40,39 @@ public sealed class ZzPose
         SimLoop loop = SimFactory.CreatePhase0(config, sink);
         SimWorld world = loop.World;
 
-        Workplace farm = FarmFixtures.RaiseAFarm(world);
-        FarmFixtures.GiveItGround(world, farm, reach: 2);
+        bool bare = Environment.GetEnvironmentVariable("ZZ_BARE") == "1"; // ZZ_BARE=1: no pose at all, the control
+        if (bare)
+        {
+            for (int t = 0; t < years * config.TicksPerYear; t++)
+            {
+                loop.StepOnce();
+                int yr = 1 + t / config.TicksPerYear;
+                if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_DAY"), out int dy) && yr <= dy
+                    && world.Tick % (ulong)config.TicksPerDay == (ulong)config.TicksPerDay / 2)
+                {
+                    _output.WriteLine(DayLine(world, yr));
+                }
+            }
+
+            Deaths(world);
+            return;
+        }
+
+        // D648: the farm is MARKED, as a player marks one, and its ground painted the day it stands — a farm handed over
+        // finished at tick 0 takes two of four founders off the wood all year (the quota ranks farming above firewood,
+        // D161), and seed 2's founders froze in year 1 of it. ZZ_FARM=posed: D643's finished farm, for comparison.
+        bool farmPosed = Environment.GetEnvironmentVariable("ZZ_FARM") == "posed";
+        Workplace? farm = null;
+        if (farmPosed)
+        {
+            farm = FarmFixtures.RaiseAFarm(world);
+            FarmFixtures.GiveItGround(world, farm, reach: 2);
+        }
+        else
+        {
+            Assert.True(world.Mark(BuildingKind.Farmhouse, FarmFixtures.ClearGroundNear(world)).Allowed);
+        }
+
         Workplace mill = FoodChainTests.RaiseA(world, BuildingKind.Mill);
         Workplace bakery = FoodChainTests.RaiseA(world, BuildingKind.Bakery);
         Workplace quarry = QuarryTests.RaiseAQuarry(world, QuarryTests.TheNearestReachableRock(world));
@@ -57,7 +88,7 @@ public sealed class ZzPose
         world.TradeBuy.Set(Goods.Stone, 50);
         Assert.True(world.SetTradeBuyHead(4).Allowed);
 
-        var posed = new (string Name, Workplace W)[]
+        var posed = new (string Name, Workplace? W)[]
         {
             ("farm", farm), ("mill", mill), ("bakery", bakery), ("quarry", quarry), ("mine", mine),
             ("smithy", smithy), ("post", post), ("barn", barn),
@@ -88,6 +119,21 @@ public sealed class ZzPose
             for (int t = 0; t < config.TicksPerYear; t++)
             {
                 loop.StepOnce();
+                if (farm is null && world.Workplaces.FirstOrDefault(w => w.Kind == JobKind.Farmer && !w.IsSite) is Workplace stood)
+                {
+                    farm = stood;
+                    posed[0] = ("farm", farm);
+                    _output.WriteLine($"ZZP farm stood y{year} {world.Clock.Season} d{world.Clock.DayOfSeason}; ground painted {FarmFixtures.GiveItGround(world, farm, reach: 2)}");
+                }
+
+                // ZZ_DAY=n (D648): the first n years, one ZZY line a day at noon — every living villager's state,
+                // seat, cold and hunger, and his household's firewood — to see what the founders do before they freeze.
+                if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_DAY"), out int dayYears) && year <= dayYears
+                    && world.Tick % (ulong)config.TicksPerDay == (ulong)config.TicksPerDay / 2)
+                {
+                    _output.WriteLine(DayLine(world, year));
+                }
+
                 if (bridge is null && world.MostEverAlive >= config.BridgeUnlockPopulation)
                 {
                     HashSet<GridPos> before = BridgeTests.Reached(world);
@@ -239,7 +285,7 @@ public sealed class ZzPose
                     if (world.BoatIsDocked) docked++;
                     for (int i = 0; i < posed.Length; i++)
                     {
-                        if (posed[i].W.WorkerIds.Count > 0) worked[i]++;
+                        if (posed[i].W?.WorkerIds.Count > 0) worked[i]++;
                     }
                 }
             }
@@ -261,14 +307,7 @@ public sealed class ZzPose
             _output.WriteLine($"ZZL {g.Count()}x {g.Key}");
         }
 
-        // D647: every death by cause and year, and who is left — a herd lost with its whole village is not a herd finding.
-        foreach (var g in world.Villagers.Where(v => !v.Alive && v.DiedAtTick is not null)
-            .GroupBy(v => (Year: 1 + (int)(v.DiedAtTick!.Value / (ulong)world.Config.TicksPerYear), v.CauseOfDeath)).OrderBy(g => g.Key))
-        {
-            _output.WriteLine($"ZZX y{g.Key.Year} {g.Key.CauseOfDeath} x{g.Count()}");
-        }
-
-        _output.WriteLine($"ZZX alive at the end: {world.Villagers.Count(v => v.Alive)} of {world.Villagers.Count}");
+        Deaths(world);
 
         waits.Sort();
         if (waits.Count > 0)
@@ -281,6 +320,29 @@ public sealed class ZzPose
         _output.WriteLine($"ZZC sheltering began from: {string.Join(" ", cut.Select(kv => $"{kv.Key}={kv.Value}"))}");
         _output.WriteLine($"ZZP end hash {StateHash.Compute(world)} noskill {StateHash.ComputeIgnoringSkills(world)}");
     }
+
+    // D647: every death by cause and year, and who is left — a herd lost with its whole village is not a herd finding.
+    private void Deaths(SimWorld world)
+    {
+        foreach (var g in world.Villagers.Where(v => !v.Alive && v.DiedAtTick is not null)
+            .GroupBy(v => (Year: 1 + (int)(v.DiedAtTick!.Value / (ulong)world.Config.TicksPerYear), v.CauseOfDeath)).OrderBy(g => g.Key))
+        {
+            _output.WriteLine($"ZZX y{g.Key.Year} {g.Key.CauseOfDeath} x{g.Count()}");
+        }
+
+        _output.WriteLine($"ZZX alive at the end: {world.Villagers.Count(v => v.Alive)} of {world.Villagers.Count}");
+    }
+
+    // D648: one ZZY line — every living villager's state, seat, cold and hunger, and his household's firewood.
+    private static string DayLine(SimWorld world, int year) =>
+        $"ZZY y{year} {world.Clock.Season} d{world.Clock.DayOfSeason} villageWood={world.InStores(Goods.Firewood)} logs={world.InStores(Goods.Logs)} "
+        + string.Join(" ", world.Villagers.Where(v => v.Alive).Select(v =>
+            $"[{v.Id}{(v.CanWork ? "" : "c")} {v.State} wp={WorkplaceName(world, v.WorkplaceId)} c={v.Cold} h={v.Hunger} at={v.Tile} to=({v.ErrandX}, {v.ErrandY}) "
+            + $"hw={world.HouseholdOf(v).Stockpile.Firewood} home={(world.HouseholdOf(v).HasHome ? "y" : "n")}]"));
+
+    // D648: a seat's kind, for the ZZY line.
+    private static string WorkplaceName(SimWorld world, int id) =>
+        id == 0 ? "-" : world.Workplaces.FirstOrDefault(w => w.Id == id) is Workplace w ? w.Kind.ToString() : $"#{id}";
 
     // D646: the seated herdsman's household — food and firewood against the targets the emergency restock
     // reads (restock_emergency_percent of each), and its living members — so a report says why he was fetching.

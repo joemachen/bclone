@@ -14,8 +14,11 @@ household's ordinary shopping ranks above all work), long walks, the cold they b
 fixes were tried and none saves seeds 2 and 42. ✅ **Joe picked the barn (D647, §10):** a kept herd eats from the barn's
 own hay when nothing is out, built and guarded (`livestock.md §0.3`); no posed herd starves while a herdsman lives. ⚠️ **And
 §10 found the pose kills villages:** seed 42's is dead by year 18, seed 2's loses 56 to cold and hunger, seed 12345's 13.
-§9's seed-42 reading was taken on a dying village. ⏸️ **Joe's call:** pin the golden on seed 12345 as it is, or make the
-pose play like a player first. Owner: Joe + Claude Code.
+§9's seed-42 reading was taken on a dying village. ✅ **Joe: *"Fix the pose first"* (D648, §11): the pose plays like a
+player and the golden is BUILT and pinned** on `slice/phase5-golden`, not merged. The year-1 freezes were the farm handed
+over finished at tick 0 (the quota ranks farming above firewood); the pose marks it now. `PhaseFiveGoldenTests`: 20 years
+on seed 12345, both hashes pinned, a coverage test over every chain in the same run, red-checked. ⏸️ **Joe's:** a farm
+can take a small village's wood (§11, found, not changed). Owner: Joe + Claude Code.
 
 ---
 
@@ -93,7 +96,7 @@ Both pin the math tables, not a village. Still, *"388 before and after"* has nev
 spellings is `grep -rnE "[0-9](_?[0-9]){14,}"`, but its count is a new baseline. ⏸️ Changing that line is Joe's call:
 CLAUDE.md is his working agreement.
 
-## 5. Proposed: a posed Phase 5 village, pinned (NOT BUILT)
+## 5. Proposed: a posed Phase 5 village, pinned (✅ BUILT D648 — §11.1 is what was built)
 
 *Gate item 2 says: "audit which of those any golden reaches; pose a village for the rest". This is the pose.*
 
@@ -341,3 +344,76 @@ worked (`quarry:160 mine:135 smithy:75`).
   village's first winter will move, as any golden moves with the code.
 - **Or make the pose play like a player first.** Nine buildings at tick 0 on four founders is not how anyone plays
   (D643's trap). The likely cause, untraced: the posed workplaces take the founders off firewood before the first winter.
+
+## 11. The pose plays like a player, and the golden is pinned (D648)
+
+Joe, 2026-10-28: *"Fix the pose first"*. Traced with `ZzPose`'s new arms, `ZZ_DAY=n` (one `ZZY` line a day: every living
+villager's state, seat, cold, hunger, tile and errand, and the household's firewood) and `ZZ_BARE=1` (no pose at all, the
+control), and a scratch probe that posed one piece at a time.
+
+**What froze the founders: the farm, handed over finished at tick 0.** The quota asks for the farm right after the food
+floor and *ahead of firewood* (`LabourQuota`, D161: *"a standing crop is on a clock"*). Four founders with a sown farm
+are two foragers and two farmers from the first day, so nobody cuts wood until winter has begun. On seed 42 the bare
+founders are a forester, a woodcutter and two foragers, and hold 330 firewood by summer. The posed four held none all
+year. A finished farm alone killed seed 2's founders in year 1. A farm **marked** at tick 0, as a player marks one,
+killed nobody on any of the three seeds: the founders cut wood while it waits for its logs, and it stands in year 2–5.
+
+| Seed, 3 years | Nothing posed | The farm posed | Everything but the farm | The farm marked |
+|---|---|---|---|---|
+| 42 | 6 of 6 | 6 of 6 | 6 of 6 | 6 of 6 |
+| 2 | 6 of 6 | **0 of 5, cold in year 1** | 6 of 6 | 6 of 6 |
+| 12345 | 6 of 6 | 6 of 6 | 6 of 6 | 6 of 6 |
+
+The full pose with the finished farm killed seed 42's founders too; the farm and the rest together were enough.
+
+**So the pose now marks the farm** at `FarmFixtures.ClearGroundNear`, and paints its ground (`GiveItGround`, reach 2) the
+tick it stands. `ZZ_FARM=posed` keeps D643's finished farm for comparison. Measured, 50 years, the herd by trade
+(no `ZZ_HERD`):
+
+| Seed | Farm stood | Year-1 deaths | Deaths over 50 years | Alive at year 50 |
+|---|---|---|---|---|
+| 12345 | year 3 | **none** (2 of cold before) | 24 starved, years 29–40; 4 of old age | 24 of 52 |
+| 2 | year 4 | **none** (10 of cold in years 1–4 before) | 35 starved, years 14–43; 1 cold; 1 old age | 15 of 52 |
+| 42 | year 5 | 1 starved | 25 starved, years 19–38; 4 of old age | 11 of 41 |
+
+⚠️ **The mid-game starving is the unattended village, not the pose.** The bare control, nothing posed, starves too: 11
+on seed 12345 (years 32–33), 22 on seed 2 (years 19–46), 18 on seed 42 (years 19–42). D143 says an unattended founding
+is supposed to die out, and "harness losses are not design problems". The pose's larger villages starve more of a larger
+number; that is not chased here.
+
+⚠️ **Seed 42's one year-1 death is the layout.** The founder's first errands are a tool fetch and a meal; the bare
+founder walks east round the founding and is home eating on day 6, the posed one is sent west round the nine buildings
+and dies on the errand at hunger 100. Posing everything near the founding costs that, on that seed. Not chased.
+
+⏸️ **Found, for Joe, not changed: a farm can take a small village's wood.** D161 puts the farm ahead of firewood with
+no floor for wood beneath it. No played village has met it, because a played farm costs 25 logs and stands after the
+first wood is cut, as the marked farm does here. A player who builds a farm with very few hands could meet it.
+
+### 11.1 The golden
+
+`PhaseFiveGoldenTests`, on `ShippedConfig.Established()` at its own seed (12345), stepped **20 years**: every chain has
+turned over by year 18 (the herd lands in year 11, the first cull in year 16, tools in years 15 and 18) and nobody dies
+before year 29, so the pinned village is one that lives. §5's pose with D643's and this section's changes:
+
+- at tick 0: the farm **marked**, and its ground painted when it stands; a mill, a bakery, a quarry on 6 tiles of rock, a
+  mine on 6 of iron, a smithy, a well near the founding, a trading post, a barn with 20 tiles of pasture; orders to keep
+  300 firewood, buy up to 50 stone and buy up to 4 head;
+- the first tick the village has held 10 (`MostEverAlive`): a bridge at the first crossing, and a well marked across it;
+- whenever a herd stands and no living adult is pinned to it: the newest living adult pinned herdsman (the player's own
+  control, `SetPinnedTrade`).
+
+**Both hashes are pinned**, `Compute` and `ComputeIgnoringSkills`. **The coverage test asserts each chain turned over** in
+the same run: wheat reaped, flour ground, bread baked, stone quarried at the quarry, iron mined at the mine, a tool forged,
+water drawn, the bridge crossed, a boat docked, cattle landed by it, a calf born, and a beast culled into leather.
+**Red-check:** the smithy's forging broken must turn the golden and the coverage test red.
+
+**Built (D648).** `tests/Bclone.Sim.Tests/PhaseFiveGoldenTests.cs`: `ThePosedPhaseFiveVillageRunsTheSameWayEveryTime` pins
+`9279994292569338767` (`Compute`) and `6069163189267979265` (`ComputeIgnoringSkills`); `EveryPhaseFiveChainTurnsOver` reads
+the same run (one shared run, 5 s in Release, 11 s in Debug). Over the 20 years: 17,008 wheat, 3,460 flour, 3,260 bread,
+477 stone quarried, 204 iron mined, 18 tools, 324 villager-ticks drawing water, 84 crossings, 70 days a boat was docked,
+1 head landed, 10 calves born, 70 leather; 23 of 23 alive. ⚠️ **The quarry's and the mine's output never reaches their own
+stores** — a dig goes into the digger's arms and is hauled to the nearest store (D385) — so it is counted as it arrives in
+the arms of whoever is seated there. `ZzPose`'s `stone=` and `iron=` columns read the face stores and have read 0 since
+D643. **Red-check (D326):** the forge mutated to make nothing (`tools = 0` before the tools are racked,
+`BehaviorSystem.cs`): **2 reds of 2** — the hash moved, and the coverage test failed on *"tools forged 0"*. Restored by
+deleting the line; `git diff --stat src/` empty.

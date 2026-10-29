@@ -181,3 +181,8 @@ against a number from an older commit.
   D647: `ZZX` lines, every death by year and cause and the living at the end; `ZZL` also groups the barn's *"ate from the
   barn"* line. ⚠️ **`people=` is `Villagers.Count`, the dead included**: read `ZZX` before reading a village as alive.
   Seed 42's posed village is dead by year 18, which is why its run takes 5 s.
+  D648: the farm is **marked** at tick 0 and its ground painted when it stands (`ZZ_FARM=posed` for D643's finished farm);
+  `ZZ_DAY=n` (a `ZZY` line a day for the first n years: each living villager's state, seat, cold, hunger, tile, errand and
+  household firewood) and `ZZ_BARE=1` (nothing posed, the control; `ZZY` and `ZZX` only). ⚠️ `stone=` and `iron=` read the
+  face stores, which a dig never reaches (it is carried to the nearest store): read `stoneHeld` / `ironHeld` and the
+  `Quarrying` / `Mining` ticks, or count at the digger's arms as `PhaseFiveGoldenTests` does.
