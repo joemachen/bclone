@@ -114,6 +114,45 @@ public readonly record struct Footprint
             }
         }
 
+        // ⭐ AND ONE PIECE (D650): where two of those tiles touch only at a corner, the tile between them nearer the
+        // centre. Found from the pairs, not by asking `Joins` of every tile in the box — the box is ~49 tiles and the pairs
+        // a handful. `Covers(GridPos)` asks the same question one tile at a time; `FootprintTests` holds them equal.
+        List<GridPos>? joins = null;
+        for (int i = 0; i < covered.Count; i++)
+        {
+            for (int j = i + 1; j < covered.Count; j++)
+            {
+                GridPos a = covered[i];
+                GridPos b = covered[j];
+                if (Math.Abs(a.X - b.X) != 1 || Math.Abs(a.Y - b.Y) != 1)
+                {
+                    continue;
+                }
+
+                var one = new GridPos(a.X, b.Y);
+                var other = new GridPos(b.X, a.Y);
+                if (covered.Contains(one) || covered.Contains(other))
+                {
+                    continue;
+                }
+
+                GridPos between = IsNearer(one, other) ? one : other;
+                joins ??= new List<GridPos>();
+                if (!joins.Contains(between))
+                {
+                    joins.Add(between);
+                }
+            }
+        }
+
+        if (joins is null)
+        {
+            return covered;
+        }
+
+        // Row-major, lowest tile first, as the scan above — the order is the contract.
+        covered.AddRange(joins);
+        covered.Sort((left, right) => left.Y != right.Y ? left.Y.CompareTo(right.Y) : left.X.CompareTo(right.X));
         return covered;
     }
 
@@ -165,7 +204,73 @@ public readonly record struct Footprint
     /// guard would object to. <c>FootprintTests</c> compares the two answers directly.
     /// </para>
     /// </remarks>
-    public bool Covers(GridPos tile) => tile == Origin.ToTile() || StandsOn(tile);
+    public bool Covers(GridPos tile) => OnTheCentres(tile) || Joins(tile);
+
+    /// <summary>D319's centres and D331's anchor — the coverage before D650 made it one piece.</summary>
+    private bool OnTheCentres(GridPos tile) => tile == Origin.ToTile() || StandsOn(tile);
+
+    /// <summary>
+    /// ⭐⭐ Is this the tile that joins two of the building's tiles touching only at a corner? (D650, `footprints.md §8`)
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ JOE'S IRON MINE STOOD UNBUILT FOR EIGHTEEN YEARS.</b> A 2×1 turned near an eighth covered two tiles that touched only
+    /// at a corner. Its door went on one; doors wall every other edge (D623), and the cost field steps north, south, east
+    /// and west only, so the other — its anchor — could not be reached, and <c>NextToBuild</c> skips what it cannot reach
+    /// (D614). One placement in ten of every 2×1 split so.
+    /// </para>
+    /// <para>
+    /// <b>The rule a player could be told: where two of its tiles touch only at a corner, a building also stands on the tile
+    /// between them nearer its centre.</b> A turned rectangle is convex, so this only fires on a real split: two covered
+    /// centres joined some other way round would put one of the tiles between them inside the rectangle too.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Cheap where it is not near</b> — the hottest call in the sim (D329) — so a tile beyond the building's reach is
+    /// refused on two integer comparisons before any rotation.
+    /// </para>
+    /// </remarks>
+    private bool Joins(GridPos tile)
+    {
+        GridPos anchor = Origin.ToTile();
+        int reach = ((Width + Height + 1) / 2) + 2;
+        if (Math.Abs(tile.X - anchor.X) > reach || Math.Abs(tile.Y - anchor.Y) > reach)
+        {
+            return false;
+        }
+
+        for (int sx = -1; sx <= 1; sx += 2)
+        {
+            for (int sy = -1; sy <= 1; sy += 2)
+            {
+                // `tile` and `other` are the two tiles both corner-touching ones share a side with.
+                var other = new GridPos(tile.X + sx, tile.Y + sy);
+                if (OnTheCentres(new GridPos(tile.X + sx, tile.Y))
+                    && OnTheCentres(new GridPos(tile.X, tile.Y + sy))
+                    && !OnTheCentres(other)
+                    && IsNearer(tile, other))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>The nearer of two tiles to the building's centre — and a tie to the earlier in row order, a total order.</summary>
+    private bool IsNearer(GridPos tile, GridPos other)
+    {
+        Point toTile = Point.CentreOf(tile) - Origin;
+        Point toOther = Point.CentreOf(other) - Origin;
+        Fixed here = (toTile.X * toTile.X) + (toTile.Y * toTile.Y);
+        Fixed there = (toOther.X * toOther.X) + (toOther.Y * toOther.Y);
+        if (here != there)
+        {
+            return here < there;
+        }
+
+        return tile.Y != other.Y ? tile.Y < other.Y : tile.X < other.X;
+    }
 
     /// <summary>
     /// ⭐⭐ Is this exact point inside the building's rectangle? — <b>what the player

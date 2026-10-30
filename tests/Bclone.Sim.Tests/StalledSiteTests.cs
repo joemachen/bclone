@@ -182,6 +182,9 @@ public sealed class StalledSiteTests
         Assert.NotNull(note);
         Assert.Contains("walled in", note);
 
+        // ⭐ And a remedy that always works (D650): Joe's mine was walled in by its own footprint, with nothing to clear.
+        Assert.Contains("mark it somewhere else", note);
+
         // ⚠️ And a builder asking for work says the same, not "Nothing is marked out to build" — which is what seed 18's
         // three said for twelve years beside it.
         Villager builder = world.Villagers[0];

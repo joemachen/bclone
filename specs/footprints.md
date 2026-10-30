@@ -1,7 +1,7 @@
 # Spec: Footprints per building — a granary is bigger than a hut
 
 **Decisions:** D382 (this document). Neighbours: D319 (the centre rule), D322 (the longhouse), D329–D331 (free placement, SAT), D344 (a re-take with one reason), D353 (item 4 of Joe's 2026-09-12 list).
-**Status:** ✅ **BUILT (2026-09-16, D382)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-16, D382)**; §8 (a footprint is one piece) ✅ **BUILT (D650) on `slice/whole-footprints`, not merged**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
 
 ---
 
@@ -194,3 +194,78 @@ red each:**
   before and after (one each way; `wood 13` traced: both sites clear by tick 80, the houses 30 tiles
   out never got their logs, everybody froze in the first winter — it scraped through on `main` with
   one house at t497).
+
+## 8. A footprint is one piece (D650)
+
+**Status:** ✅ **BUILT (D650)** on `slice/whole-footprints`, not merged. Joe, 2026-10-29: *"Make footprints whole"*.
+
+### 8.1 What was wrong, found on Joe's save
+
+Joe's iron mine 1 (Ravenscar) was warned walled in in Summer, Year 11, and still stood unbuilt in Year 29 with 713 logs and 439 stone in store;
+he demolished it and marked another. Read on his `year-19.save`: the mine is a 2×1 turned close to an eighth, and **the
+centre rule covered two tiles that touch only at a corner**, (−20,−4) and (−21,−3). The door went on (−20,−4), whose
+doorstep is reachable. Since doors (D623) every other edge of a building is a wall to the field that walks to it, and the
+field steps north, south, east and west only, so **the anchor (−21,−3) was walled on all four sides**. `NextToBuild` skips
+a site whose anchor nobody can reach (D614), so no builder ever went; the warning said *"walled in … Clear a way to it"*,
+and there was nothing to clear.
+
+**How often:** every 2×1 building — the woodcutter's hut, the builder's hut, homes, the hunter's lodge, the smithy, the
+quarry, the mine, the bakery and the trading post — splits in **600 of 5,760 placements (10.4%)** over every whole-degree
+facing and sixteen positions within a tile. No 1×1, 2×2 or 3×2 ever splits. Joe's saves (years 7, 11, 19, 64) hold this
+one split building and no other; none of his homes split.
+
+### 8.2 The rule
+
+**⭐ A building stands on the tiles whose centres it covers, on the tile its centre is in (D331), and — where two of
+those tiles touch only at a corner — on the tile between them nearer its centre.**
+
+- *Between* means one of the two tiles both corner-touching tiles share a side with. *Nearer* is the squared distance
+  from that tile's centre to the building's centre; a tie goes to the tile earlier in row order (lower `Y`, then lower
+  `X`), so the choice is a total order and the same every time.
+- **It only fires on a real split.** A turned rectangle is convex: if two covered centres touched only at a corner but
+  were joined some other way round, the region holding that other way would contain one of the two tiles between them,
+  which would then be covered. So a footprint that was already one piece gains nothing, and 1×1, 2×2 and 3×2 footprints
+  are unchanged at every placement.
+- **Coverage and collision stay two questions (D331).** `Overlaps` is the rectangles and does not change. The new tile is
+  coverage: it is claimed, so `CanBuildAt` refuses a placement whose new tile is water, rock or another building, as it
+  refuses any covered tile, and a later building may not stand on it.
+- **`Covers(GridPos)` and `CoveredTiles()` say the same thing**, as they must (D329). `Covers` asks it of one tile, with a
+  distance check first so a far tile costs no more than it did. The list keeps row order (D331's contract).
+
+### 8.3 What it changes, stated
+
+- **A split building is reached through its door, all of it.** The walk to any of its tiles goes door → in.
+- **Its door may move.** The door is chosen from the covered tiles (`doors.md §4`); a split building has one more to choose
+  from.
+- **Old saves:** footprints are derived, never saved, so a split building in an old save gains its tile on load. If that
+  tile is water or another building's, the two claim it together until one is pulled down. Joe's saves have none.
+- **The warning** says *"…so the builders cannot raise it. Clear a way to it, or mark it somewhere else"*. With the split
+  gone the remaining cause is a real obstruction, but moving the site is always a remedy and was the one Joe found.
+- **Goldens:** a golden moves only if a building in it is split. Each that moves re-takes once, with this as its reason.
+
+### 8.4 Guards (`FootprintTests`, `StalledSiteTests`), red-checked
+
+- `EveryFootprintIsOnePiece` — every catalogue building at every whole-degree facing and sixteen positions: the covered
+  tiles are one orthogonal piece.
+- `AWholeFootprintAddsOnlyTheTileBetween` — over the same placements: a footprint already in one piece is exactly the centre
+  rule plus the anchor; a split one gains only tiles each sharing a side with two corner-touching tiles.
+- `CoversAgreesWithCoveredTilesWhereAFootprintWasSplit` — tile by tile around every split placement.
+- `ASplitSiteIsReachedAndBuilt` — a woodcutter's hut marked where the centre rule splits it: **every** tile of it reachable
+  (the door goes on one; under the centre rule alone the other is sealed, the anchor when the door is off it, as Joe's
+  was), no *"walled in"* warning, and a standing hut on its tile within two years (20 stone put in a store: a founding
+  holds none). `Complete` stands a new workplace where the site was, so the old site object is never asked.
+- `ASiteNobodyCanReachSaysItIsWalledIn` (`StalledSiteTests`, D614's) also asserts *"mark it somewhere else"*.
+- `ThePointTestAgreesWithTheTileTestAtEveryTileCentre` (D338's) forgave the anchor alone; it now also forgives a tile
+  between two corner-touching tiles — its 3×1 at an eighth is a staircase of them — through the same predicate
+  `AWholeFootprintAddsOnlyTheTileBetween` uses, so the two cannot drift.
+
+**Built (D650).** `Footprint.CoveredTiles()` finds the joining tiles from the corner-touching pairs (a handful) and sorts
+the list back into row order; `Covers(GridPos)` asks `Joins`, which refuses a tile beyond the building's reach on two
+integer comparisons. **Red-check (D326): 10 reds over 4 mutants** — no joins in the list (4: one piece, adds-only,
+agreement, D329's fast-cover theory at 3×1 an eighth); no joins in `Covers` (2: both agreement guards); the old coverage,
+both at once (3: one piece, adds-only, the split site — *"(9, 6) of the split site cannot be reached"*); the warning's
+old words (1). ⚠️ **One zero, written down:** the agreement guard is green under the old coverage, by design — it guards
+the fast path, and the old code had two equal wrong answers. ⚠️ **The split-site guard's first red was the guard's own
+bug** (it asked the stale site object), and under the old coverage that hut's door sat on its anchor, so the anchor was
+reached and the hut built; it asks every tile now and is red for the reason. **No golden moved** — no golden village holds
+a split building. **Cost:** the three golden classes 5–6 s with the fix and with the old coverage alike.
