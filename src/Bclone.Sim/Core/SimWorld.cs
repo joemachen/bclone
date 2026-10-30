@@ -5092,8 +5092,10 @@ public sealed partial class SimWorld : IObstacles
         // in for twelve years in silence and the village froze for it.
         if (!TravelCost.CanReach(FirstHomeOrFoundingSite(), workplace.Tile))
         {
+            // ⭐ "OR MARK IT SOMEWHERE ELSE" (D650): Joe's iron mine was walled in by its own split footprint, with nothing
+            // to clear, and moving it was the remedy he found. Moving a site is always one.
             return $"{plan.Name} is walled in — nobody can reach it, so the builders cannot raise it. Clear a way to it, "
-                + "or it will stand as it is.";
+                + "or mark it somewhere else.";
         }
 
         for (int m = 0; m < plan.Recipe.Materials.Count; m++)

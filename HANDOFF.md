@@ -1,6 +1,22 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/phase5-golden` (D649), PUSHED: THE GOLDEN AUDIT (D642), THE POSED VILLAGE AND ITS HERD (D643–D647), AND THE PHASE 5 GOLDEN PINNED (D648) — GATE ITEM 2 CLOSED. NEXT: JOE'S CALL — GATE ITEM 3 (THE QA CHECKLIST) OR AN ITEM-1 VERDICT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/whole-footprints` (D651), PUSHED: D650, A FOOTPRINT IS ONE PIECE — JOE'S IRON MINE, UNBUILT FROM YEAR 11, WAS A TURNED 2×1 SEALED BY ITS OWN DOOR. NEXT: JOE'S CALL — GATE ITEM 3 (THE QA CHECKLIST) OR AN ITEM-1 VERDICT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-29 (D649) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-30 (D651) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = the merge of `slice/whole-footprints` (D651), pushed at Joe's word** (*"Merge and push."*) = **D650: a
+> footprint is one piece.** The four checks were run on D650's tree; the merge adds doc lines only.
+>
+> **✅ Joe's iron mine (D650, `specs/footprints.md §8`):** a 2×1 turned near an eighth covered two tiles touching only at a
+> corner; the door went on one and sealed the other (the anchor), so the builders never came from Year 11. One placement
+> in ten of every 2×1 split so. Now a building also stands on the tile between two corner-touching tiles, the one nearer
+> its centre; nothing else's coverage changes, no golden moved. The walled-in warning adds *"or mark it somewhere else"*.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist) or an item-1 verdict. He merged
+> D650 before playing it: a 2×1 turned near an eighth now claims a third tile, and its door may sit on it — his eye on it.
+>
+> **Numbers (D650):** suite 1859 / 0 / 5 of 1864 in 16m23 (15m09 on the same `src/` an hour before — the machine; the golden classes 5–6 s with and without the fix); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 390, none in the diff. Red-check: **10 reds over 4 mutants**, one zero by design (`footprints.md §8.4`).
+>
+> **— D649, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-29 (D649) — ON WINDOWS.**
 >
 > **`main` = the merge of `slice/phase5-golden` (D649), pushed at Joe's word** (*"merge and push."*): D642–D648 — the
 > golden audit, the posed village measured, every herd death read, the barn feeds a kept herd, the pose plays like a player
@@ -8505,6 +8521,18 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D650 FOUND — A GUARD'S FIRST RED IS A CLAIM ABOUT THE GUARD UNTIL ITS MESSAGE IS READ
+
+- **`ASplitSiteIsReachedAndBuilt` went red before the fix and the red was its own bug.** `Complete` stands a *new*
+  workplace where a site was, so the old site object is a finished site for ever; the guard asked it. Under the old
+  coverage that hut was reached and built all along — its door sat on its anchor. Run the fix's mutant (the old code)
+  against the finished guard and read the failure message, not just the word *Failed*.
+- **A split building is sealed on whichever tile lacks the door.** Joe's mine had its door off the anchor, so the anchor
+  was the sealed one and `NextToBuild` skipped it; a split hut with its door on the anchor is built and its other tile is
+  merely unwalkable. Ask every tile of a footprint, not the anchor.
+- **The game log in `src/Bclone.Game/logs/` dates a warning to the season.** The save said *Year 19*; the log said the
+  mine was walled in from *Summer, Year 11* — eight more years than the saves showed.
+
 ## ⛔ THE TRAPS D648 FOUND — A POSED BUILDING THE PLAYER COULD NOT HAVE IS NOT A PLAYER'S VILLAGE
 
 - **The pose handed the founders a finished farm, which no player has at tick 0.** A player's farm costs 25 logs the
@@ -8663,6 +8691,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   once a winter).
 - ✅ ~~**THE POSE KILLS ITS VILLAGES (found D647, `specs/phase-5-golden.md §10`).**~~ He picked *"Fix the pose first"*: the
   finished farm at tick 0 was the year-1 killer; the pose marks it now and the golden is pinned (D648, §11).
+- ⏸️ **PLAY D650 — A TURNED 2×1 NOW CLAIMS THE TILE BETWEEN ITS CORNER-TOUCHING HALVES** (`specs/footprints.md §8`). Turn a
+  hut or a mine near an eighth: it covers three tiles where it covered two, and its door may sit on the third. His eye on
+  whether that reads right. Merged and pushed at his word before he played it (D651).
 - ⏸️ **A FARM CAN TAKE A SMALL VILLAGE'S WOOD (found D648, `specs/phase-5-golden.md §11`).** `LabourQuota` asks for the farm
   ahead of firewood with no floor for wood beneath it (D161); four founders with a sown farm cut none and froze. No played
   village has met it — a played farm costs 25 logs and stands after the first wood. His call whether that is enough.

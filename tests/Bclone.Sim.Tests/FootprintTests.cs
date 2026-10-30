@@ -673,9 +673,10 @@ public sealed class FootprintTests
     /// <para>
     /// ⚠️ <b>Asked at tile CENTRES, where the two are defined to agree</b> — and
     /// away from centres they are supposed to differ, which is the whole reason the point test
-    /// exists. The one exception is the anchor tile, which
+    /// exists. The exceptions are the anchor tile, which
     /// <see cref="Footprint.Covers(GridPos)"/> forgives unconditionally (D331) and the rectangle
-    /// does not.
+    /// does not, and a tile that joins two corner-touching tiles (D650, `footprints.md §8`) — the 3×1
+    /// at an eighth is a staircase of them.
     /// </para>
     /// </remarks>
     [Theory]
@@ -697,13 +698,14 @@ public sealed class FootprintTests
             Facing = Angle.FromRaw((ushort)rawFacing),
         };
 
+        List<GridPos> centres = CentreRule(shape);
         int reach = width + height + 2;
         for (int dy = -reach; dy <= reach; dy++)
         {
             for (int dx = -reach; dx <= reach; dx++)
             {
                 var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
-                if (tile == anchor)
+                if (tile == anchor || LiesBetweenTwoCornerTouching(centres, tile))
                 {
                     continue;
                 }
@@ -976,5 +978,245 @@ public sealed class FootprintTests
 
         _output.WriteLine($"{seen.Count} tiles under {world.Workplaces.Count + world.StoreBuildings.Count} buildings and the homes");
         Assert.True(twice.Count == 0, "Two founding buildings on one tile: " + string.Join("; ", twice));
+    }
+
+    // ---------------------------------------------------------------
+    //  A footprint is one piece (D650, `footprints.md §8`)
+    // ---------------------------------------------------------------
+
+    /// <summary>⛔⛔ Every building, at every facing and position, stands on one orthogonal piece of ground.</summary>
+    /// <remarks>
+    /// <b>Joe's iron mine stood unbuilt for eighteen years</b> (Ravenscar, Year 11 to 29): a 2×1 turned near an eighth covered
+    /// two tiles touching only at a corner, its door went on one, and the other — its anchor — was walled on all four
+    /// sides to a field that steps only north, south, east and west. One in ten placements of every 2×1 did that.
+    /// </remarks>
+    [Fact]
+    public void EveryFootprintIsOnePiece()
+    {
+        var split = new List<string>();
+        foreach (Footprint shape in EveryPlacement())
+        {
+            if (PiecesOf(shape.CoveredTiles()) != 1)
+            {
+                split.Add($"{shape.Width}x{shape.Height} facing {shape.Facing} from {shape.Origin}");
+            }
+        }
+
+        _output.WriteLine($"{split.Count} placements in more than one piece; first: {split.FirstOrDefault() ?? "none"}");
+        Assert.Empty(split);
+    }
+
+    /// <summary>⭐ And nothing else changed: a footprint gains only the tile between two corner-touching tiles.</summary>
+    /// <remarks>
+    /// A footprint the centre rule already made one piece is the centre rule and the anchor exactly — which is why no 1×1,
+    /// 2×2 or 3×2 building moves — and every tile a split one gains shares a side with two of its tiles that touch only
+    /// at a corner.
+    /// </remarks>
+    [Fact]
+    public void AWholeFootprintAddsOnlyTheTileBetween()
+    {
+        int whole = 0, mended = 0;
+        foreach (Footprint shape in EveryPlacement())
+        {
+            List<GridPos> centres = CentreRule(shape);
+            List<GridPos> covered = shape.CoveredTiles();
+            Assert.Empty(centres.Except(covered));
+            List<GridPos> added = covered.Except(centres).ToList();
+            if (PiecesOf(centres) == 1)
+            {
+                Assert.Empty(added);
+                whole++;
+                continue;
+            }
+
+            Assert.NotEmpty(added);
+            foreach (GridPos tile in added)
+            {
+                Assert.True(
+                    LiesBetweenTwoCornerTouching(centres, tile),
+                    $"{tile} was added to a {shape.Width}x{shape.Height} without lying between two corner-touching tiles.");
+            }
+
+            mended++;
+        }
+
+        _output.WriteLine($"{whole} placements unchanged, {mended} mended");
+        Assert.True(mended > 0, "No placement was split, so this guard watched nothing.");
+    }
+
+    /// <summary>⛔ The one-tile question and the list agree tile by tile around every split placement (D329).</summary>
+    [Fact]
+    public void CoversAgreesWithCoveredTilesWhereAFootprintWasSplit()
+    {
+        int asked = 0;
+        foreach (Footprint shape in EveryPlacement().Where(f => PiecesOf(CentreRule(f)) > 1))
+        {
+            List<GridPos> covered = shape.CoveredTiles();
+            GridPos anchor = shape.Origin.ToTile();
+            for (int dy = -5; dy <= 5; dy++)
+            {
+                for (int dx = -5; dx <= 5; dx++)
+                {
+                    var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                    Assert.True(covered.Contains(tile) == shape.Covers(tile), $"{tile} of a {shape.Width}x{shape.Height} facing {shape.Facing}");
+                    asked++;
+                }
+            }
+        }
+
+        Assert.True(asked > 0, "No placement was split, so nothing was compared.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ The case Joe met: a 2×1 marked where the centre rule splits it is reached, says nothing about walls, and is built.
+    /// </summary>
+    [Fact]
+    public void ASplitSiteIsReachedAndBuilt()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        const BuildingKind kind = BuildingKind.WoodcutterHut;
+        Footprint? chosen = null;
+        GridPos founding = world.Map.FoundingSite;
+        for (int radius = 3; radius < 12 && chosen is null; radius++)
+        {
+            for (int deg = 30; deg < 60 && chosen is null; deg++)
+            {
+                for (int s = 0; s < 16 && chosen is null; s++)
+                {
+                    var shape = new Footprint
+                    {
+                        Origin = new Point(
+                            Fixed.FromInt(founding.X + radius) + Fixed.FromRatio((2 * (s % 4)) + 1, 8),
+                            Fixed.FromInt(founding.Y) + Fixed.FromRatio((2 * (s / 4)) + 1, 8)),
+                        Width = world.BuildingsCatalog[kind]!.ExtentWidth,
+                        Height = world.BuildingsCatalog[kind]!.ExtentHeight,
+                        Facing = Angle.FromDegrees(deg),
+                    };
+                    if (PiecesOf(CentreRule(shape)) > 1 && world.CanBuildAt(kind, shape.Origin, facing: shape.Facing).Allowed)
+                    {
+                        chosen = shape;
+                    }
+                }
+            }
+        }
+
+        Assert.NotNull(chosen);
+        Assert.True(world.Mark(kind, chosen.Value.Origin, chosen.Value.Facing).Allowed);
+        Workplace site = Assert.Single(world.Workplaces, w => w.Construction?.Kind == kind && w.IsSite);
+        Assert.Equal(chosen.Value, site.Footprint);
+        _output.WriteLine($"marked at {site.Tile} facing {site.Footprint.Facing}, on {string.Join(" ", site.Footprint.CoveredTiles())}");
+
+        // Every tile of it, not only the anchor: the door goes on one tile, and under the centre rule alone the other is
+        // walled on four sides. Joe's mine had its door off the anchor, so the anchor was the sealed one and nobody came.
+        foreach (GridPos tile in site.Footprint.CoveredTiles())
+        {
+            Assert.True(world.TravelCost.CanReach(world.FirstHomeOrFoundingSite(), tile), $"{tile} of the split site cannot be reached.");
+        }
+
+        Assert.DoesNotContain("walled in", world.SiteWaitingNote(site) ?? string.Empty);
+
+        // A founding holds no stone, and the hut wants 9: put some in a store, so this watches the walk and not the quarry.
+        StoreBuilding shed = world.StoreBuildings.First(store => store.Accepts(Goods.Stone));
+        Assert.Equal(20, shed.Put(Goods.Stone, 20));
+
+        // `Complete` stands a new workplace where the site was, so the hut is looked for on the site's own tile.
+        GridPos stood = site.Tile;
+        bool built = false;
+        for (int t = 0; t < 2 * config.TicksPerYear && !built; t++)
+        {
+            loop.StepOnce();
+            built = world.Workplaces.Any(w => w.Kind == JobKind.Woodcutter && !w.IsSite && w.Tile == stood);
+        }
+
+        Assert.True(built, "Two years on, the split site is not built.");
+    }
+
+    /// <summary>Every catalogue size at every whole degree and sixteen positions within a tile.</summary>
+    private static IEnumerable<Footprint> EveryPlacement()
+    {
+        SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink()).World;
+        var sizes = new HashSet<(int, int)>();
+        foreach (BuildingKind kind in Enum.GetValues<BuildingKind>())
+        {
+            if (world.BuildingsCatalog[kind] is { } row)
+            {
+                sizes.Add((row.ExtentWidth, row.ExtentHeight));
+            }
+        }
+
+        foreach ((int width, int height) in sizes.OrderBy(z => z))
+        {
+            for (int deg = 0; deg < 360; deg++)
+            {
+                for (int s = 0; s < 16; s++)
+                {
+                    yield return new Footprint
+                    {
+                        Origin = new Point(Fixed.FromRatio((2 * (s % 4)) + 1, 8), Fixed.FromRatio((2 * (s / 4)) + 1, 8)),
+                        Width = width,
+                        Height = height,
+                        Facing = Angle.FromDegrees(deg),
+                    };
+                }
+            }
+        }
+    }
+
+    /// <summary>D319 and D331 alone: the tiles whose centres it covers, and its anchor.</summary>
+    private static List<GridPos> CentreRule(Footprint shape)
+    {
+        GridPos anchor = shape.Origin.ToTile();
+        var tiles = new List<GridPos>();
+        for (int dy = -5; dy <= 5; dy++)
+        {
+            for (int dx = -5; dx <= 5; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                if (tile == anchor || shape.Covers(Point.CentreOf(tile)))
+                {
+                    tiles.Add(tile);
+                }
+            }
+        }
+
+        return tiles;
+    }
+
+    /// <summary>Does this tile share a side with two of these that touch only at a corner? (D650's tile between.)</summary>
+    private static bool LiesBetweenTwoCornerTouching(List<GridPos> centres, GridPos tile) =>
+        !centres.Contains(tile)
+        && new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) }.Any(d =>
+            centres.Contains(new GridPos(tile.X + d.Item1, tile.Y))
+            && centres.Contains(new GridPos(tile.X, tile.Y + d.Item2))
+            && !centres.Contains(new GridPos(tile.X + d.Item1, tile.Y + d.Item2)));
+
+    /// <summary>How many orthogonal pieces a set of tiles falls into.</summary>
+    private static int PiecesOf(List<GridPos> tiles)
+    {
+        var left = new HashSet<GridPos>(tiles);
+        int pieces = 0;
+        while (left.Count > 0)
+        {
+            pieces++;
+            var stack = new Stack<GridPos>();
+            GridPos first = left.First();
+            left.Remove(first);
+            stack.Push(first);
+            while (stack.Count > 0)
+            {
+                GridPos at = stack.Pop();
+                foreach (GridPos next in new[] { new GridPos(at.X + 1, at.Y), new GridPos(at.X - 1, at.Y), new GridPos(at.X, at.Y + 1), new GridPos(at.X, at.Y - 1) })
+                {
+                    if (left.Remove(next))
+                    {
+                        stack.Push(next);
+                    }
+                }
+            }
+        }
+
+        return pieces;
     }
 }
