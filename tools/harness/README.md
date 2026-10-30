@@ -159,3 +159,30 @@ against a number from an older commit.
   against the golden's own constant**, and samples once a game day: workplaces standing by job and days worked, stores by
   kind, every good held, bridges, herd head, boat, bands, repairs, wells, homes and their doors (`ZZG` lines). 18 s in Release
   for all five. Copy in, `-c Release --filter ZzGoldens`, delete. ⚠️ When a golden is re-taken, its constant here moves too.
+- `ZzPose.cs` — D643's measurement of `specs/phase-5-golden.md §5`: the posed Phase 5 village on the shipped data. It poses
+  the farm, mill, bakery, quarry, mine, smithy, well, post and barn at tick 0, plus a pasture and trade orders; the bridge and a
+  well across the river at the tick the village has held 10; and a herdsman pinned when cattle first stand. One `ZZP` line a
+  year: what each chain made, and the villager-ticks in each chain's working state. `ZZL` lines group the herd and boat
+  narrations. `ZZ_YEARS` (default 50); 45 s in Release. Copy in, `-c Release --filter ZzPose`, delete. Needs the `internal`
+  helpers in `MineTests` and `QuarryTests`.
+  D644's arms: `ZZ_TRACE=1` (a `ZZH` line every feeding day while beasts stand: head, hay out and in store, `HerdWantsFeeding`,
+  where it goes out, and the pinned herdsman's state and tile; and a `ZZW` line of refill response times), `ZZ_AHEAD=n`
+  (`hay_feed_ahead_days`), `ZZ_SEED=n`, and `ZZ_HERD=1` (4 head at the 10th villager, whatever the boats bring). ⚠️ `ZZW`'s
+  clock does not reset when a herd dies out, so its largest values can be the gap until the next beasts.
+  D645's arms: `ZZ_TICK=1` (a `ZZT` line every winter tick the herd wants hay: the herdsman's state, ticks left, cold, tile,
+  arms, home and household), `ZZ_PIN=housed` (pin the newest adult *with a house*, not just the newest), and a `ZZC` line
+  counting where each of his winter shelter spells began. ⚠️ `ZZ_HERD=1` poses on the tick the village has held 10, whatever
+  the season; read one death per seed before trusting a seed's count.
+  D646's arms: `ZZ_DEATHS=1` (a ring of the last 48 ticks of the barn and the man seated at it, his household's food and
+  firewood against their targets, printed whole as `ZZD` lines at every head lost) and `ZZ_CALL=1` (a harness-only prototype:
+  the seated herdsman set idle off rest, chores and the walk home while the herd wants feeding). `zzdeaths.py` turns a run's
+  `ZZD` lines into one line a loss — a cull, or a starving with the run of his states while the herd wanted hay:
+  `grep -o "ZZD .*" out.txt | awk '!seen[$0]++' > out.d; python -X utf8 -I zzdeaths.py out.d`.
+  D647: `ZZX` lines, every death by year and cause and the living at the end; `ZZL` also groups the barn's *"ate from the
+  barn"* line. ⚠️ **`people=` is `Villagers.Count`, the dead included**: read `ZZX` before reading a village as alive.
+  Seed 42's posed village is dead by year 18, which is why its run takes 5 s.
+  D648: the farm is **marked** at tick 0 and its ground painted when it stands (`ZZ_FARM=posed` for D643's finished farm);
+  `ZZ_DAY=n` (a `ZZY` line a day for the first n years: each living villager's state, seat, cold, hunger, tile, errand and
+  household firewood) and `ZZ_BARE=1` (nothing posed, the control; `ZZY` and `ZZX` only). ⚠️ `stone=` and `iron=` read the
+  face stores, which a dig never reaches (it is carried to the nearest store): read `stoneHeld` / `ironHeld` and the
+  `Quarrying` / `Mining` ticks, or count at the digger's arms as `PhaseFiveGoldenTests` does.

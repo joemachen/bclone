@@ -5,8 +5,20 @@
 that reached `NearestHarvest`), D601 and D617 (no harness village raises a market's worth of trade or a smithy).
 **Status:** 🔍 **AUDIT DONE (D642): no pinned golden reaches any Phase 5 production chain.** Housing, doors, maintenance
 and nomads are reached. The smithy, the quarry, the mine, the mill, the bakery, the well, bridges, the trading post and
-its boat, and the barn and its herd are not. 📝 **§5's posed-village golden is PROPOSED, NOT BUILT:** Claude's to build
-under the accepted gate, and Joe's to see first. Owner: Joe + Claude Code.
+its boat, and the barn and its herd are not. 📝 **§5's posed-village golden: Joe's go-ahead (D642, *"Merge the audit
+first"*), 📏 MEASURED (D643, §6), NOT BUILT:** every chain turns over in a posed 50-year run except the herd, whose
+cattle starve with hay in the barn even with a pinned herdsman. 🔍 **Traced (D644, §7) — ⚠️ AND §7's DIAGNOSIS
+WITHDRAWN (D645, §8):** seeds 2 and 42 open winter with no hay out, the traced herdsman on 12345 was homeless, and a
+housed one still loses 13 head. 🔍 **Every death read (D646, §9):** errands that outlast the 20-tick feed window (the
+household's ordinary shopping ranks above all work), long walks, the cold they bring, and no slack at the herd's end. Four
+fixes were tried and none saves seeds 2 and 42. ✅ **Joe picked the barn (D647, §10):** a kept herd eats from the barn's
+own hay when nothing is out, built and guarded (`livestock.md §0.3`); no posed herd starves while a herdsman lives. ⚠️ **And
+§10 found the pose kills villages:** seed 42's is dead by year 18, seed 2's loses 56 to cold and hunger, seed 12345's 13.
+§9's seed-42 reading was taken on a dying village. ✅ **Joe: *"Fix the pose first"* (D648, §11): the pose plays like a
+player and the golden is BUILT and pinned**, merged into `main` and pushed (D649). The year-1 freezes were the farm handed
+over finished at tick 0 (the quota ranks farming above firewood); the pose marks it now. `PhaseFiveGoldenTests`: 20 years
+on seed 12345, both hashes pinned, a coverage test over every chain in the same run, red-checked. ⏸️ **Joe's:** a farm
+can take a small village's wood (§11, found, not changed). Owner: Joe + Claude Code.
 
 ---
 
@@ -84,7 +96,7 @@ Both pin the math tables, not a village. Still, *"388 before and after"* has nev
 spellings is `grep -rnE "[0-9](_?[0-9]){14,}"`, but its count is a new baseline. ⏸️ Changing that line is Joe's call:
 CLAUDE.md is his working agreement.
 
-## 5. Proposed: a posed Phase 5 village, pinned (NOT BUILT)
+## 5. Proposed: a posed Phase 5 village, pinned (✅ BUILT D648 — §11.1 is what was built)
 
 *Gate item 2 says: "audit which of those any golden reaches; pose a village for the rest". This is the pose.*
 
@@ -112,3 +124,296 @@ CLAUDE.md is his working agreement.
    coverage test must both go red.
 6. ⚠️ **Re-takes:** every later change to a Phase 5 chain will move this golden. That is the point of it, and it costs
    a §7 line each time, as the 50-year goldens already do.
+
+## 6. Measured: the posed village, 50 years on the shipped data (D643)
+
+`tools/harness/ZzPose.cs` builds §5's pose, steps it 50 years and prints one `ZZP` line a year: what each chain made,
+the villager-ticks spent in each chain's working state, and the log's herd and boat lines. One run takes 45 s in
+Release, with the probe sampling every tick. Three things §5 did not foresee had to change before the chains turned:
+
+- **The bridge cannot be posed at tick 0.** It unlocks once the village has held 10 people (`MostEverAlive`), and that
+  count is derived from the villagers' own history, so it cannot be set. The pose raises the bridge the first tick the
+  village has held 10 (year 20 on this seed), and marks a well across the river, as `BridgeTests` does, so someone has
+  a reason to cross.
+- **A herd posed at tick 0 dies in year 1.** Herdsmen give way whenever food comes first, and four founders' food
+  always comes first. The herd arrives by trade instead: a pasture is painted round the barn and an animal order is set
+  (`SetTradeBuyHead(4)`; refused without a pasture). Trade orders are posed too, keep 300 firewood and buy up to 50
+  stone, because a merchant is only wanted once the player has asked for something (`LabourQuota.MerchantsWanted`).
+- **`StoneEverDug` counts digging by hand only**, as the quarry's unlock. The quarry's own output never passes through
+  it, so the coverage reads stone held in stores and villager-ticks spent `Quarrying`.
+
+| Chain | Turns over? | When, and how much (50 years) |
+|---|---|---|
+| Farm → mill → bakery | ✅ | flour from year 9; 7,040 ground and 6,840 baked |
+| Quarry | ✅ | from year 1; 550 stone held at most, and quarrying stops when the stock limit is met |
+| Mine | ✅ | from year 6; 222 iron held at most |
+| Smithy | ✅ | from year 20; 46 tools forged |
+| Well | ✅ | water drawn from year 1 |
+| Bridge | ✅ | raised in year 20; 139 crossings |
+| Trade | ✅ | 19 boats; *"The boat from Larkspur took # firewood and left # cattle"*, 4 times |
+| **The herd** | ⚠️ **barely** | 11 head landed or born and 11 lost; **10 of them starved "with hay still in the barn — nobody carried it out"**; the one cull came in year 42 |
+
+⚠️ **The herd is not a pose problem that the pose can fix.** A living herdsman was pinned the first tick cattle stood in
+the barn (`SetPinnedTrade`, the player's own control), hay was cut (500 at most), and the cattle still starved every
+winter with hay in the barn. `HerdWantsFeeding` also asks `AnyPastureToFeedOn(barn)`, which is one candidate; this was
+not traced further. **Unattended-village losses are the harness playing badly until a played run says otherwise**, so
+this is put to Joe with that caveat, not as a bug. A golden pinned over it would hold one cull in fifty years, and its
+coverage test would flip whenever that cull crossed the cutoff. **So the golden is NOT BUILT** until the herd is
+understood: traced as a bug, accepted, or taken out of the golden's coverage.
+
+## 7. Traced: why the cattle starve with hay in the barn (D644) — ⚠️ withdrawn by §8 (D645)
+
+*Joe, D644: "Trace the herd". `ZzPose.cs` with `ZZ_TRACE=1` prints a `ZZH` line every feeding day while beasts stand:
+head, hay out, hay in the barn's store, `HerdWantsFeeding`, where the hay goes, and the pinned herdsman's state and tile.
+A `ZZW` line gives each refill's response time: the ticks from the herd first wanting hay to hay going out.*
+
+**What it is not.**
+- Not distance: the herdsman's home is about 8 tiles from the barn, and the pasture is beside it.
+- Not the store: hay is in the barn's own store (`BarnStoreOf` is the barn).
+- Not the pasture: `WhereTheHayGoesOut` always has a tile, and `AnyPastureToFeedOn` holds.
+- Not the pin: he is alive, seated at the barn, and an adult.
+
+**What it is: the herdsman answers later than the lead allows.** He fetches hay when less than `hay_feed_ahead_days`
+of the herd's hay is out, which is 5 days, or 20 ticks at 4 ticks a day. The trace shows him `Resting` or
+`SeekingShelter` through spells of 3 to 4 days while the herd wants feeding. He re-decides only when that spell ends,
+which is D593's own finding at 3 days (*"a herdsman finishes his rest before he re-decides and spends winter going in
+to get warm"*). On seed 12345 his response is a median of 12 ticks and up to 22. The tail runs past the lead, and a
+beast starves each time it does.
+
+**A bigger number is not a fix.** Measured with 4 head posed at the village's 10th villager, independent of what the
+boats bring:
+
+| Seed | Lead 5 days (shipped): starved | Lead 10 days: starved |
+|---|---|---|
+| 12345 | 11 | **0** (45 culls) |
+| 2 | 4 | **16** |
+| 42 | 4 | 4 |
+
+At 15 days on seed 12345, 4 starve again. Every death on every seed and lead is the same sentence: *"starved with hay
+still in the barn — nobody carried it out"*. ⚠️ `ZZW`'s largest waits (2,600 and 8,908 ticks) are a measurement
+artefact: a herd that dies out leaves the clock running until the next beasts come. They are not a herdsman gone for
+years.
+
+**Never played.** Joe's 1,286 logs in `src/Bclone.Game/logs/` show barns marked and finished (3) and boats docking.
+None has a beast landing, a herdsman, or any herd line. D600 played the fences, not a winter herd. **The winter herd
+has never been played**, so this harness result has nothing played to check it against.
+
+⏸️ **Joe's call: the feeding rule assumes a herdsman who answers within the lead, and nothing makes him answer.**
+Three shapes, none built:
+1. **A hungry herd calls its herdsman out of rest and shelter**, as an empty larder calls a household
+   (`TryEmergencyRestock`'s shape). The carry stays visible.
+2. **The herd eats from the barn's own hay when none is out.** This is cheap, but it deletes the carry, the legible
+   act, in exactly the case where the player would see it.
+3. **The herdsman puts out enough to last until he next decides**, sized from his own day and not from a lead.
+
+*Recommended: 1*, because it keeps the work on screen (§1.1) and copies a shape that already exists. The golden waits on
+this, since its herd would pin the bug.
+
+## 8. ⚠️ §7's diagnosis does not hold, and fix 1 is not built (D645)
+
+*Joe picked §7's fix 1 (D645: "Herd calls him (1)"). Before speccing it, a tick-by-tick trace of the herdsman (`ZzPose.cs`,
+`ZZ_TICK=1`: state, ticks left, cold, tile, arms and home every winter tick the herd wants hay) and a count of where each of
+his winter shelter spells begins (`ZZC`) were run. They do not support §7.*
+
+1. **On seeds 2 and 42 the failure is a different one.** `ZZ_HERD=1` put 4 head in the barn on spring's first day: ticks
+   4321 and 7681, each the first tick of a 480-tick year. Each first winter then opens with **nothing put out**. A beast
+   starves on winter's first day while the herdsman is still bringing the first armful in, so the late-fall feed-ahead
+   window put no hay out. Why it didn't is **not traced**. It is not a late answer from rest, so §7's seed table, read as
+   one cause, is withdrawn.
+2. **On seed 12345, where the cattle came by trade, the pinned herdsman is homeless.** His household has no house:
+   `HomeTile` is empty. The pose pinned the newest adult, and a new household waits for its house. So he rests in the open
+   at the founding site, his cold climbs at rest, and **51 of his 59 winter shelter spells begin from resting**. Only 3
+   begin on a hay errand: 2 walking to the barn, and 1 with 80 hay in his arms one tick from putting it out.
+3. **A housed herdsman does not cure it.** With the newest adult *whose household has a home* pinned (`ZZ_PIN=housed`),
+   13 still starve on seed 12345. Those 13 are **not traced**.
+4. **So fix 1 is not shown to help.** It cuts a rest short, but rest is where the homeless herdsman gets cold, not where a
+   herdsman idles while the herd waits. The housed run's deaths and seeds 2 and 42's empty first day are unexplained.
+   Building it now would be building on a guess.
+
+**What stands:** every death is narrated *"starved with hay still in the barn — nobody carried it out"*; the winter herd
+has never been played; and the posed golden still waits on the herd. **What does not:** §7's single cause, its seed
+table read as one cause, and its ranking of the three shapes.
+
+⏸️ **Joe's call:** trace the deaths first, one at a time: the housed run on seed 12345, and the empty first day on seeds 2
+and 42. Or take the herd out of the posed golden's coverage for now, so it checks that cattle land by trade, not that
+they live, and pin the rest.
+
+## 9. Every death read (D646)
+
+*Joe, D646: "Trace the deaths", then "Keep tracing", and asked whether this is about hay not being a real item. It is
+not: hay is a good (`Goods.Hay`), cut off the pasture, 67 a tile, carried to the barn, and shown on the barn's card. Every
+death here had about 400–500 hay in the barn.*
+
+**Method.** `ZzPose.cs` with `ZZ_DEATHS=1` keeps the last 48 ticks of the barn and the man seated at it, and prints the
+whole ring at every head lost. Each line has his state, ticks left, cold, tile, arms, home, and his household's food and
+firewood against their targets. `tools/harness/zzdeaths.py` turns each loss into one line: a cull, or a starving with the
+run of his states over the ticks the herd wanted hay. It was run on seeds 12345, 2 and 42, with the newest and the
+newest-housed herdsman pinned, and the prototype call off and on.
+
+**Where he was while the herd wanted hay**, over every window that ended in a starving (209 ticks):
+
+| State | Ticks | Share |
+|---|---|---|
+| `TravelingHome` | 92 | 44% |
+| `FetchingFromStore` | 48 | 23% |
+| `HaulingToStore` | 20 | 10% |
+| `FetchingHay` + `FeedingTheHerd` (the herd's own work) | 29 | 14% |
+| `Resting`, `Idle`, `TidyingGround`, `SeekingShelter` | 20 | 10% |
+
+**What the reports show**, every death explained by one or more of these:
+
+1. **An errand that outlasts the window.** The feed-ahead window is 20 ticks (`hay_feed_ahead_days` 5 × 4). A shopping
+   trip and its walk home run 16–20 ticks, and a chore plus the walk home runs 22. Whatever he was doing when the window
+   opened, he was still doing when winter began. **The household's ordinary shopping is not an emergency:** his larder
+   stood at 47–86% of target and his firewood at 44–100%. It is the top-up errand (D372: it fires at half a larder and
+   fetches back to target, trip after trip). It ranks above every job in `Decide` (`PlanFetch` comes first), and late
+   autumn is firewood season, exactly when the window opens.
+2. **Short walks take long.** On seed 2 a shop about 5 tiles from home is a 20-tick round trip, because the path loops
+   round the building, probably to its door (D619–D625).
+3. **The cold from those walks cuts the hay trip.** He sets out with cold already at 1,500–2,600, and the shelter line
+   (3,000) takes him off the errand.
+4. **The first day without hay kills, then one beast a day.** Twice the armful landed on the very tick a beast died
+   (`out=80` at the loss), because the day's feeding is checked before he puts the hay down.
+
+Two more were seen and are **not explained**: on seed 42 in year 18 nobody was seated at the barn for a whole window
+although a herdsman was pinned; and §8's homeless herdsman, who came from the pose's own pick.
+
+**Every fix tested, each a scratch change reverted at once** (no `src/` file differs from the commit):
+
+| Change | Seed 12345 (housed) | Seed 12345 (newest) | Seed 2 | Seed 42 |
+|---|---|---|---|---|
+| None (today) | 13 | 11 | 4 of 4 | 4 of 4 |
+| The herd calls him off rest, chores and the walk home (harness) | 8 | not run | 4 | 4 |
+| He skips the ordinary shopping while the herd wants feeding | 13 | 6 | 4 | 4 |
+| Both | 8 | 9 | 4 | 4–5 |
+| A beast survives 2 hayless days and starves on the 3rd | 10 | 6 | 4 | 4–5 |
+
+**None of them saves seeds 2 and 42**, where the first winter's herd is lost every time. Each closes one door and the next
+cause walks through it: freed from a chore he goes shopping; kept from shopping he is still mid-walk; given a grace, he is
+still not back by the third day.
+
+⏸️ **Joe's call, from what was measured:**
+- **Recommended: the herd eats from the barn's own hay when none is put out.** Every death above had hay in the barn,
+  and this is the one change that needs nothing from the herdsman's day. The cost is legibility: the carry is the visible
+  act. It can be kept honest by narration (*"The cattle at barn 1 ate from the barn — nobody carried hay out"*), and the
+  herdsman still carries hay out whenever he can, as today. Cattle fed in their barn through winter is also the ordinary
+  shape of the thing.
+- **Or keep the carry and rebuild the herdsman's winter:** the herd outranks the household's ordinary shopping, a hungry
+  herd calls him off any errand, and the day's feeding waits for the tick's hay. That is three changes, each measured
+  here to be not enough alone.
+
+The posed golden still waits on this.
+
+## 10. The barn feeds a kept herd, and the pose is killing its villages (D647)
+
+Joe, 2026-10-28: *"Barn feeds them"*. Built as `livestock.md §0.3`: on a winter day the herd eats what is put out first,
+and with a herdsman seated at the barn it makes up the rest from the barn's own hay, narrated. With nobody seated, D593
+stands. Measured with `ZzPose`, `ZZ_HERD=1 ZZ_DEATHS=1`, 50 years:
+
+| Arm | Starved, D646 | Starved, D647 | Days the barn fed them |
+|---|---|---|---|
+| 12345, newest pinned | 11 | **0** | 13 |
+| 12345, housed pinned | 13 | **0** | 24 |
+| 2, newest pinned | 4 | **0** | 261 |
+| 42, newest pinned | 4 | 5, every one with nobody seated | 9 |
+
+**Seed 42's five are not the herd's.** A new `ZZX` line prints every death by year and cause and who is alive at the end,
+and `people=` turns out to be `Villagers.Count`, **the dead included**:
+
+| Seed | Deaths over 50 years | Alive at year 50 |
+|---|---|---|
+| 12345 | 2 founders of cold in year 1; 11 starved in years 40–41; 5 of old age | 24 of 42 |
+| 2 | 10 of cold in years 1–4; 45 starved in years 21–43; 1 cold in year 37; 5 of old age | 9 of 70 |
+| 42 | 4 founders of cold and 1 starved in year 1; then each nomad party frozen within a few years (5, 8, 6, 6, 6, 6, 6, 6, 6) | 0 of 60 |
+
+**So, corrections to §9:**
+- On seed 42 the herd's first winter, year 18, is the village's last: 8 of its people froze that year. No herdsman fix
+  could have saved a herd with no herdsman alive. *The empty barn seat §9 left unexplained* is that: `seats=[]`, and `k=`
+  empty because nobody living was left to pin. The run's 4–5 seconds, against 41 for seed 12345, said so in every run
+  from D643 on, and nobody asked.
+- On seed 2 the village was alive through the herd's winters, and the fix saves its herd. Its many barn narrations are
+  the starving years, when its herdsman has other work.
+
+**The chains on seed 12345 still all turn over** at year 50: 38,651 wheat, 3,780 flour, 3,580 bread, 38 tools forged, 142
+crossings, 19 boats, the herd at 4 head with 51 born and 47 culled into 470 leather, and the quarry, mine and smithy
+worked (`quarry:160 mine:135 smithy:75`).
+
+⏸️ **Joe's call, from what was measured:**
+- **Pin the golden on seed 12345 as it is.** A determinism golden pins *what the code does*, and this run reaches every
+  Phase 5 chain. The cost: it pins a village that loses two founders to cold in year one, which a later fix to the
+  village's first winter will move, as any golden moves with the code.
+- **Or make the pose play like a player first.** Nine buildings at tick 0 on four founders is not how anyone plays
+  (D643's trap). The likely cause, untraced: the posed workplaces take the founders off firewood before the first winter.
+
+## 11. The pose plays like a player, and the golden is pinned (D648)
+
+Joe, 2026-10-28: *"Fix the pose first"*. Traced with `ZzPose`'s new arms, `ZZ_DAY=n` (one `ZZY` line a day: every living
+villager's state, seat, cold, hunger, tile and errand, and the household's firewood) and `ZZ_BARE=1` (no pose at all, the
+control), and a scratch probe that posed one piece at a time.
+
+**What froze the founders: the farm, handed over finished at tick 0.** The quota asks for the farm right after the food
+floor and *ahead of firewood* (`LabourQuota`, D161: *"a standing crop is on a clock"*). Four founders with a sown farm
+are two foragers and two farmers from the first day, so nobody cuts wood until winter has begun. On seed 42 the bare
+founders are a forester, a woodcutter and two foragers, and hold 330 firewood by summer. The posed four held none all
+year. A finished farm alone killed seed 2's founders in year 1. A farm **marked** at tick 0, as a player marks one,
+killed nobody on any of the three seeds: the founders cut wood while it waits for its logs, and it stands in year 2–5.
+
+| Seed, 3 years | Nothing posed | The farm posed | Everything but the farm | The farm marked |
+|---|---|---|---|---|
+| 42 | 6 of 6 | 6 of 6 | 6 of 6 | 6 of 6 |
+| 2 | 6 of 6 | **0 of 5, cold in year 1** | 6 of 6 | 6 of 6 |
+| 12345 | 6 of 6 | 6 of 6 | 6 of 6 | 6 of 6 |
+
+The full pose with the finished farm killed seed 42's founders too; the farm and the rest together were enough.
+
+**So the pose now marks the farm** at `FarmFixtures.ClearGroundNear`, and paints its ground (`GiveItGround`, reach 2) the
+tick it stands. `ZZ_FARM=posed` keeps D643's finished farm for comparison. Measured, 50 years, the herd by trade
+(no `ZZ_HERD`):
+
+| Seed | Farm stood | Year-1 deaths | Deaths over 50 years | Alive at year 50 |
+|---|---|---|---|---|
+| 12345 | year 3 | **none** (2 of cold before) | 24 starved, years 29–40; 4 of old age | 24 of 52 |
+| 2 | year 4 | **none** (10 of cold in years 1–4 before) | 35 starved, years 14–43; 1 cold; 1 old age | 15 of 52 |
+| 42 | year 5 | 1 starved | 25 starved, years 19–38; 4 of old age | 11 of 41 |
+
+⚠️ **The mid-game starving is the unattended village, not the pose.** The bare control, nothing posed, starves too: 11
+on seed 12345 (years 32–33), 22 on seed 2 (years 19–46), 18 on seed 42 (years 19–42). D143 says an unattended founding
+is supposed to die out, and "harness losses are not design problems". The pose's larger villages starve more of a larger
+number; that is not chased here.
+
+⚠️ **Seed 42's one year-1 death is the layout.** The founder's first errands are a tool fetch and a meal; the bare
+founder walks east round the founding and is home eating on day 6, the posed one is sent west round the nine buildings
+and dies on the errand at hunger 100. Posing everything near the founding costs that, on that seed. Not chased.
+
+⏸️ **Found, for Joe, not changed: a farm can take a small village's wood.** D161 puts the farm ahead of firewood with
+no floor for wood beneath it. No played village has met it, because a played farm costs 25 logs and stands after the
+first wood is cut, as the marked farm does here. A player who builds a farm with very few hands could meet it.
+
+### 11.1 The golden
+
+`PhaseFiveGoldenTests`, on `ShippedConfig.Established()` at its own seed (12345), stepped **20 years**: every chain has
+turned over by year 18 (the herd lands in year 11, the first cull in year 16, tools in years 15 and 18) and nobody dies
+before year 29, so the pinned village is one that lives. §5's pose with D643's and this section's changes:
+
+- at tick 0: the farm **marked**, and its ground painted when it stands; a mill, a bakery, a quarry on 6 tiles of rock, a
+  mine on 6 of iron, a smithy, a well near the founding, a trading post, a barn with 20 tiles of pasture; orders to keep
+  300 firewood, buy up to 50 stone and buy up to 4 head;
+- the first tick the village has held 10 (`MostEverAlive`): a bridge at the first crossing, and a well marked across it;
+- whenever a herd stands and no living adult is pinned to it: the newest living adult pinned herdsman (the player's own
+  control, `SetPinnedTrade`).
+
+**Both hashes are pinned**, `Compute` and `ComputeIgnoringSkills`. **The coverage test asserts each chain turned over** in
+the same run: wheat reaped, flour ground, bread baked, stone quarried at the quarry, iron mined at the mine, a tool forged,
+water drawn, the bridge crossed, a boat docked, cattle landed by it, a calf born, and a beast culled into leather.
+**Red-check:** the smithy's forging broken must turn the golden and the coverage test red.
+
+**Built (D648).** `tests/Bclone.Sim.Tests/PhaseFiveGoldenTests.cs`: `ThePosedPhaseFiveVillageRunsTheSameWayEveryTime` pins
+`9279994292569338767` (`Compute`) and `6069163189267979265` (`ComputeIgnoringSkills`); `EveryPhaseFiveChainTurnsOver` reads
+the same run (one shared run, 5 s in Release, 11 s in Debug). Over the 20 years: 17,008 wheat, 3,460 flour, 3,260 bread,
+477 stone quarried, 204 iron mined, 18 tools, 324 villager-ticks drawing water, 84 crossings, 70 days a boat was docked,
+1 head landed, 10 calves born, 70 leather; 23 of 23 alive. ⚠️ **The quarry's and the mine's output never reaches their own
+stores** — a dig goes into the digger's arms and is hauled to the nearest store (D385) — so it is counted as it arrives in
+the arms of whoever is seated there. `ZzPose`'s `stone=` and `iron=` columns read the face stores and have read 0 since
+D643. **Red-check (D326):** the forge mutated to make nothing (`tools = 0` before the tools are racked,
+`BehaviorSystem.cs`): **2 reds of 2** — the hash moved, and the coverage test failed on *"tools forged 0"*. Restored by
+deleting the line; `git diff --stat src/` empty.

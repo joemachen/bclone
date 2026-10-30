@@ -336,7 +336,7 @@ public sealed class QuarryTests
         Assert.Equal(0, LabourQuota.QuarriersWanted(world));
     }
 
-    private static GridPos TheNearestReachableRock(SimWorld world)
+    internal static GridPos TheNearestReachableRock(SimWorld world)
     {
         GridPos from = world.Map.FoundingSite;
         GridPos? best = null;
@@ -382,7 +382,7 @@ public sealed class QuarryTests
     }
 
     /// <summary>A finished quarry beside this rock — the village is lent the stone it takes to learn.</summary>
-    private static Workplace RaiseAQuarry(SimWorld world, GridPos rock)
+    internal static Workplace RaiseAQuarry(SimWorld world, GridPos rock)
     {
         world.StoneEverDug = Math.Max(world.StoneEverDug, world.Config.QuarryUnlockStone);
         Assert.True(world.Mark(BuildingKind.Quarry, SomewhereAQuarryFits(world, rock)).Allowed);
@@ -399,7 +399,7 @@ public sealed class QuarryTests
     }
 
     /// <summary>Paint the quarry the rock tiles nearest it that the village can reach.</summary>
-    private static List<GridPos> GiveItRock(SimWorld world, Workplace quarry, int howMany)
+    internal static List<GridPos> GiveItRock(SimWorld world, Workplace quarry, int howMany)
     {
         var rock = new List<(int Cost, GridPos At)>();
         for (int i = 0; i < world.Map.Tiles.Count; i++)

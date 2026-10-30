@@ -1,6 +1,122 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — LOCAL `main` = THE MERGE OF `slice/golden-audit` (D642: GATE ITEM 2 AUDITED — NO GOLDEN REACHES ANY PHASE 5 CHAIN), NOT PUSHED; `origin/main` = 23825d7 (D640–D641). NEXT: THE POSED PHASE 5 GOLDEN (`specs/phase-5-golden.md §5`), JOE'S GO-AHEAD GIVEN; THEN DOORS COMMIT 5, A VERDICT ON AN OPEN PHASE 5 ITEM, OR THE QA CHECKLIST. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/phase5-golden` (D649), PUSHED: THE GOLDEN AUDIT (D642), THE POSED VILLAGE AND ITS HERD (D643–D647), AND THE PHASE 5 GOLDEN PINNED (D648) — GATE ITEM 2 CLOSED. NEXT: JOE'S CALL — GATE ITEM 3 (THE QA CHECKLIST) OR AN ITEM-1 VERDICT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-27 (D642) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-29 (D649) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = the merge of `slice/phase5-golden` (D649), pushed at Joe's word** (*"merge and push."*): D642–D648 — the
+> golden audit, the posed village measured, every herd death read, the barn feeds a kept herd, the pose plays like a player
+> and the Phase 5 golden is pinned. The four checks were run on D648's tree; the merge adds doc lines only.
+>
+> **✅ Gate item 2 built (D648, `specs/phase-5-golden.md §11`):** Joe picked *"Fix the pose first"*. The year-1 freezes were
+> a farm handed over finished at tick 0 (the quota ranks farming above firewood, so four founders cut no wood all year);
+> the pose **marks** the farm now. `PhaseFiveGoldenTests`: 20 years on seed 12345, both hashes pinned, and
+> `EveryPhaseFiveChainTurnsOver` over the same run (wheat, flour, bread, stone, iron, tools, water, crossings, a boat, cattle
+> landed, a calf, leather). Nobody dies in it.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist he walks) or a verdict on an
+> item-1 entry. Still his: the barn narration's chattiness, the
+> barn's seat condition, and a farm taking a small village's wood (found D648, not changed). Push and merge only at his word.
+>
+> **Numbers (D648):** suite 1855 / 0 / 5 of 1860 in 13m57; view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388 → 390 (the new golden's two; none of the 388 in the diff). Red-check: **2 reds of 2** (the forge made to make nothing).
+>
+> **— D647, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-28 (D647) — ON WINDOWS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D647: the posed village measured; every herd death read; the barn feeds a kept herd; the golden NOT BUILT.**
+>
+> **✅ The herd (D647, `specs/livestock.md §0.3`):** Joe picked *"Barn feeds them"*. On a winter day the herd eats what is out
+> first, and with a herdsman **seated** at the barn makes up the rest from the barn's own hay, narrated. With nobody seated
+> D593 stands. Posed herd starvations 11/13 → 0/0 on seed 12345, 4 → 0 on seed 2.
+>
+> **⚠️ Found (`specs/phase-5-golden.md §10`): the pose kills villages.** Seed 42's is dead by its 18th winter (founders of cold
+> in year 1, each nomad party after), so its herd losses had no herdsman alive; seed 2 loses 56 to cold and hunger; seed
+> 12345 loses 13 but lives, and reaches every Phase 5 chain. `people=` in `ZzPose` counts the dead; read `ZZX`.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** pin the posed golden on seed 12345 as it is, or make the pose
+> play like a player first. Also his: whether the barn's narration (261 lines in 50 years on seed 2) is too chatty. Push and
+> merge only at his word.
+>
+> **Numbers (D647):** suite 1853 / 0 / 5 of 1858 in 13m31 (back down from D646's 18m on the machine); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388, none in the diff. Red-check: **5 reds of 5**
+> (three guards before the fix, the seat mutated away, the narration's words changed).
+>
+> **— D646, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D646) — ON WINDOWS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D646: the posed village measured; every herd death read; the golden NOT BUILT.**
+>
+> **🔍 The herd (D646, `specs/phase-5-golden.md §9`):** hay is a real good and every death had 400–500 in the barn. While the
+> herd wanted hay the herdsman was walking home (44%), at the household's *ordinary* shopping (23%; `PlanFetch` ranks above
+> every job), hauling (10%), and on the herd (14%). Causes: errands that outlast the 20-tick window, long walks, the cold they
+> bring, and no slack at the herd's end. **Four fixes tried as scratch changes and reverted** (a call, skipping the shopping,
+> both, a 3-day grace): none saves seeds 2 and 42.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** the herd eats from the barn's own hay when none is put out,
+> narrated (recommended); or rebuild the herdsman's winter in three changes. Then the posed golden. Push only at his word.
+>
+> **Numbers (D646; no `src/`, `tests/` or `data/` file differs from the commit):** suite 1850 / 0 / 5 of 1855 in **18m** —
+> 13m37 → 16m24 → 18m over three runs of byte-identical code, so the machine, unexplained; view 0 warnings; probe 99
+> `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388. No red-check: no guard added.
+>
+> **— D645, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D645) — ON WINDOWS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D645: the posed village measured; the herd traced; D644's diagnosis WITHDRAWN; the golden NOT BUILT.**
+>
+> **⚠️ The herd (D645, `specs/phase-5-golden.md §8`):** Joe picked D644's fix 1 (*"Herd calls him (1)"*); a tick trace run
+> before speccing it does not support D644. On seeds 2 and 42 each first winter opens with no hay put out (the late-fall
+> feed-ahead put nothing out, untraced); on seed 12345 the pinned herdsman is **homeless** and gets cold resting in the open
+> (51 of 59 shelter spells begin from rest); a **housed** herdsman still loses 13 head, untraced. **Fix 1 is not built.**
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** trace the deaths one at a time before choosing a fix; or pin the
+> posed golden with the herd checked only for cattle landing. Push only at his word.
+>
+> **Numbers (D645; no `src/`, `tests/` or `data/` file changed):** suite 1850 / 0 / 5 of 1855 (16m24 — up from 13m37 with
+> no code change since, so the machine, not the code); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`,
+> no Godot left running; goldens grep 388. No red-check: no guard added.
+>
+> **— D644, as it was (its diagnosis withdrawn by D645) —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D644) — ON WINDOWS.**
+>
+> **Local `main` = 008f9b6** (D642), **NOT PUSHED**; `origin/main` = 23825d7. **`slice/phase5-golden`** (off 008f9b6, local,
+> unpushed) = **D643–D644: the posed village measured, and the herd traced; the golden NOT BUILT.**
+>
+> **🔍 The herd (D644, `specs/phase-5-golden.md §7`):** the posed cattle starve *"with hay still in the barn — nobody
+> carried it out"* because the herdsman fetches hay only when less than `hay_feed_ahead_days` (5 days, 20 ticks) is out,
+> and he answers only when his rest or his shelter ends, in spells of 3–4 days (D593's own finding at 3). Ruled out:
+> distance, the store, the pasture, the pin. **A bigger lead is not a fix:** 10 days starves 0 on seed 12345 but 16 on seed
+> 2 and 4 on seed 42. **Never played:** Joe's 1,286 logs never land a beast.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** the herd's fix — ① a hungry herd calls its herdsman out of rest
+> (recommended: the carry stays on screen); ② the herd eats from the barn's hay; ③ he puts out enough to last until he next
+> decides. Then the posed golden. Push only at his word.
+>
+> **Numbers (D644; no `src/`, `tests/` or `data/` file changed):** suite 1850 / 0 / 5 of 1855 (13m37); view 0 warnings;
+> probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 388. No red-check: no guard added.
+>
+> **— D643, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D643) — ON WINDOWS.**
+>
+> **Local `main` = 008f9b6** (the merge of `slice/golden-audit`, D642), **NOT PUSHED**; `origin/main` = 23825d7.
+>
+> **`slice/phase5-golden`** (off `main` at 008f9b6, local, unpushed) = **D643: the posed Phase 5 village, MEASURED; the
+> golden NOT BUILT.** `tools/harness/ZzPose.cs` poses `specs/phase-5-golden.md §5` on the shipped data for 50 years.
+> ✅ The food chain, the quarry, the mine, the smithy, the well, the bridge and trade all turn over. ⚠️ **The herd does not
+> turn over reliably:** 10 of 11 cattle starve *"with hay still in the barn — nobody carried it out"*, even with a living
+> herdsman pinned; one cull in fifty years. The pose had to change three ways (`§6`): the bridge waits for 10 people, the
+> herd comes by trade, and the quarry is read at the stores. Six `MineTests`/`QuarryTests` helpers are now `internal`.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything:** trace the herd's starving (a possible bug: an unattended
+> run, so his played herd, D600, is the other half of the evidence), or pin the golden without the herd's cull. Push only at
+> his word.
+>
+> **Numbers (D643):** suite 1850 / 0 / 5 of 1855 (13m44); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar
+> 151, `done.`, no Godot left running; goldens grep 388 before and after. The `tests/` diff is six `private` → `internal`
+> and nothing else. No red-check: no guard was added; the golden is not built.
+>
+> **— D642, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-27 (D642) — ON WINDOWS.**
 >
 > **Local `main` = 23825d7 + the merge of `slice/golden-audit` (D642), NOT PUSHED** (Joe: *"Merge the audit first"*;
 > push only at his word). **`origin/main` = 23825d7** (D640–D641; Joe's word to push came after that merge commit, so
@@ -8389,6 +8505,74 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D648 FOUND — A POSED BUILDING THE PLAYER COULD NOT HAVE IS NOT A PLAYER'S VILLAGE
+
+- **The pose handed the founders a finished farm, which no player has at tick 0.** A player's farm costs 25 logs the
+  founders have not cut, so it stands after the first wood; the posed one outranked the wood from day one and froze them.
+  Before posing a building finished, ask whether a player could have it at that moment. If not, mark it and let the village
+  build it.
+- **Run the unposed control on the same seeds before blaming the pose for a death.** `ZZ_BARE=1`. The mid-game starving
+  D647 laid at the pose's door was there without it (11 / 22 / 18 over 50 years).
+- **A quarry's and a mine's output never reaches their own store.** The dig goes into the digger's arms and is carried to
+  the nearest store, so `ZzPose`'s `stone=` and `iron=` columns read 0 from D643 to D648 while both faces worked. A column
+  that reads 0 for a chain the spec says turns over is the column's fault until shown otherwise.
+
+## ⛔ THE TRAPS D647 FOUND — A RUN THAT ENDS IN 5 SECONDS WHEN ITS NEIGHBOURS TAKE 41 IS NOT A FAST VALLEY
+
+- **Seed 42's posed run took 4–5 s in every run from D643 on, against 41 for seed 12345, and nobody asked why.** The
+  village was dead from its 18th winter, and four sessions read its herd as if a herdsman had failed it. A harness's
+  wall-clock is an instrument, as the suite's is (CLAUDE.md): a run far faster than its neighbours is a village with
+  nothing left to simulate.
+- **`people=` was `Villagers.Count`: the dead included.** A count that only grows reads as a living village. Print the
+  living (`ZZX` now does) before reading anything a village does.
+- **Before diagnosing who failed the herd, check somebody was alive to fail it.** D646's ring showed `seats=[]` and `k=`
+  empty and called it *an empty barn seat, unexplained*. Nobody alive is the first explanation to rule out, not the last.
+
+## ⛔ THE TRAPS D646 FOUND — WHEN EVERY DOOR YOU CLOSE HAS ANOTHER BEHIND IT, THE FAULT IS THE ROOM
+
+- **Four herdsman-side fixes each cut one cause and the next walked through.** Freed from a chore he shopped; kept from
+  shopping he was mid-walk; given a grace he was not back by the third day. When a 20-tick margin competes with a whole
+  villager's day, patching the competitors one at a time does not converge. Measure the combination before proposing a part.
+- **A scratch change to the sim is reverted with an Edit, and the revert is checked with `git diff --stat src/`.** Four
+  were made and reverted here. The diff was empty each time, and the grace's no-op setting (1) reproduced today's numbers
+  exactly, which is the check that the scratch touched nothing else.
+- **"Not an emergency" is a number, not an impression.** `FetchingFromStore` read as the D77 emergency until the
+  household's stock was printed: 47–86% of target, so it was the ordinary top-up. Print the threshold's inputs before
+  naming the rule that fired.
+
+## ⛔ THE TRAPS D645 FOUND — D644 DIAGNOSED A SEED TABLE WITHOUT READING ONE DEATH IN IT
+
+- **One cause read off one valley is not the cause on the next.** D644 read seeds 2 and 42's deaths as seed 12345's
+  lateness. Traced, they open winter with no hay out, a different failure. Even D645's first draft (*"the eve of
+  winter"*) was wrong until a tick number was checked against the year. **Read one death per seed, tick by tick, before a
+  table generalises.**
+- **A choice made on a diagnosis waits for the diagnosis to be checked.** Joe picked fix 1 on D644's word. The tick trace,
+  run before the spec, withdrew it. Put the correction to him before building, never a fix for a cause that is gone.
+- **A pose's own pick can be the bug.** "The newest adult" is often a new household with no house yet, so the pinned
+  herdsman slept in the open. When a pose chooses a villager, print their home, their cold and their household.
+
+## ⛔ THE TRAPS D644 FOUND — A TUNED NUMBER THAT HELD ON ONE VALLEY IS A MARGIN, NOT A FIX
+
+- **D593 raised `hay_feed_ahead_days` from 3 to 5 on one posed village, and it held there.** On another posed village 5
+  starves, and 10 fixes seed 12345 but makes seed 2 worse (16 against 4). When a number is raised to cover a response time,
+  measure the response time's tail on several seeds. One valley's pass is not evidence the tail is covered.
+- **"Played" has to be checked in the logs.** D600 is recorded as playing the herd's fences; Joe's 1,286 logs never land
+  a beast. `grep` the sim logs in `src/Bclone.Game/logs/` for the narration before citing a play as evidence for a
+  behaviour.
+- **A wait clock needs a reset for every way the wait can end.** `ZZW`'s 8,908-tick "wait" was a herd dying out with the
+  clock still running. Before reading a tail, find which of its values are the measurement.
+
+## ⛔ THE TRAPS D643 FOUND — A POSE IS A PLAYER, AND IT HAS TO PLAY LIKE ONE
+
+- **A counter's name is not what it counts.** `StoneEverDug` is hand-digging only (the quarry's unlock); the quarry's
+  output never touches it. Read a counter's increment site before a coverage test leans on it.
+- **Not every unlock can be posed.** `MostEverAlive` is derived from the villagers' history: the bridge waits for the
+  village to hold 10, so a posed bridge goes up mid-run. Check each unlock is state before writing "at tick 0".
+- **A building with no orders has no workers.** A trading post gets no merchant until the player asks for a trade, and a
+  barn gets no herdsman while food comes first. Pose the player's orders too, or the building stands idle and the run
+  looks covered.
+- **A pin on a dead villager is no pin.** `Villagers` keeps the dead; a check for *"anyone pinned"* must ask `Alive`.
+
 ## ⛔ THE TRAPS D642 FOUND — A GOLDEN THAT PASSES SAYS NOTHING ABOUT WHAT ITS RUN NEVER BUILT
 
 - **Every 50-year golden stands the same five workplaces and never farms.** Phase 5 commits re-took or held these
@@ -8473,11 +8657,20 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE WINTER HERD — HE PICKED "BARN FEEDS THEM", BUILT (D647, `specs/livestock.md §0.3`).** A kept herd eats from the
+  barn's own hay when nothing is out; with nobody seated it still starves (tying it to the seat is Claude's, his to
+  overrule). Never played. Still his: whether the narration is too chatty (261 lines in 50 years on posed seed 2; fallback
+  once a winter).
+- ✅ ~~**THE POSE KILLS ITS VILLAGES (found D647, `specs/phase-5-golden.md §10`).**~~ He picked *"Fix the pose first"*: the
+  finished farm at tick 0 was the year-1 killer; the pose marks it now and the golden is pinned (D648, §11).
+- ⏸️ **A FARM CAN TAKE A SMALL VILLAGE'S WOOD (found D648, `specs/phase-5-golden.md §11`).** `LabourQuota` asks for the farm
+  ahead of firewood with no floor for wood beneath it (D161); four founders with a sown farm cut none and froze. No played
+  village has met it — a played farm costs 25 logs and stands after the first wood. His call whether that is enough.
 - ⏸️ **THE GOLDENS GREP MISSES DIGIT-SEPARATED GOLDENS (found D642).** CLAUDE.md's fourth verification line,
   `grep -rn "[0-9]\{15,\}"`, cannot see `AngleTests.cs:336` or `FixedTests.cs:440` (`14_897_…UL`, the math tables).
   `grep -rnE "[0-9](_?[0-9]){14,}" tests/Bclone.Sim.Tests/*.cs` sees both; its count is a new baseline. His file, his call.
-- ⏸️ **THE POSED PHASE 5 GOLDEN (`specs/phase-5-golden.md §5`, D642) — PROPOSED, NOT BUILT.** Claude's to build under
-  the accepted gate; his to see the shape first.
+- ✅ ~~**THE POSED PHASE 5 GOLDEN (`specs/phase-5-golden.md §5`, D642) — PROPOSED, NOT BUILT.**~~ Built and pinned (D648,
+  §11.1), merged and pushed (D649).
 - ✅ ~~**PHASE 5'S EXIT GATE — PROPOSED (D640), HIS TO ACCEPT, TRIM OR REPLACE**~~ — **accepted as written (D641).**
   (`DESIGN.md §4`, the end of Phase 5.)
   Five items: every Phase 5 item has a verdict (built-played-merged, or moved out in his words — open: doors commit 5,
