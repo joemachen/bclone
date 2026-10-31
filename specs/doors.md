@@ -6,8 +6,9 @@ picks a house's door), D404–D406 (fences as walls, one gate), D605/D607 (doors
 of ground stays one piece). **Status:** 📝 **SPECCED (D619); ✅ Joe's five calls answered (D620); 🔨 BUILT, ✅ PLAYED BY JOE (*"it looks good"*) AND MERGED TO `main` (D626), pushed:** commit 1 the
 door derived and said (D621), then **one behaviour commit (D622–D625, §11)** — doorsteps kept clear, walks and catchment
 through the door, the facings nobody chose, the door priced into the economy; a farmhouse, a barn and the cart open on
-every side (Joe, D624–D625). Goldens re-taken once. ⏸️ **The view (§9 commit 5) is not built:** the cards' sentence,
-the ghost's door and the spurs to doors. Owner: Joe + Claude Code.
+every side (Joe, D624–D625). Goldens re-taken once. **✅ The view (§9 commit 5, §12) BUILT (D657), PLAYED BY JOE
+(*"looks good. merge and push"*) AND MERGED TO `main` (D658), pushed:** the door drawn on every doored building and the ghost, the ghost starting toward the nearest store,
+the moved-door sentence on the cards and on marking, spurs landing on doors. Owner: Joe + Claude Code.
 
 ---
 
@@ -416,4 +417,95 @@ lanes, half their buildings never turned. **Accepted by Joe as measured.**
 ### 11.7 Not built
 
 Commit 5, the view: the door drawn on every building and the ghost, the moved-door sentence on the cards
-(`SayWhereTheDoorIs`), spurs landing on doors (`path-shapes.md §4.G`), `KeepTheBusierSides` re-measured.
+(`SayWhereTheDoorIs`), spurs landing on doors (`path-shapes.md §4.G`), `KeepTheBusierSides` re-measured. *(Built in §12,
+D657 — all but the re-measurement, which §12.5 leaves for a played village.)*
+
+---
+
+## 12. Commit 5 — the view, as it will be built (D657, 2026-10-30, Joe: *"Push, start doors"*)
+
+📝 **Specced here before any code; ✅ BUILT (D657), played by Joe and merged (D658).** §4.7 is the rule and Joe's calls (§6) are answered; this is
+how each part lands, what it settles without asking, and the guards. **View only, plus one public sim question** — the
+ghost has to ask the door of a building that does not stand yet.
+
+### 12.1 The sim's one addition
+
+`SimWorld.DoorOfAProposal(BuildingKind, Footprint)` — the door a building of this kind would have on this footprint,
+standing here today; null for a kind with no door (§4.1). It is `DoorAt` behind the kind's rule, so it is remembered per
+footprint like every door (§4.2) — a ghost that sits still asks a dictionary, not the walls. No behaviour changes, no
+golden moves.
+
+### 12.2 The door, drawn on every building that has one
+
+- **Where:** a notch on the middle of the wall the door opens through — the front, or the side §4.3 moved it to. The sim
+  quantises the door to a compass way; the view finds the wall by turning the building's own frame a quarter for each
+  step the door is round from the front (`Faces − Front`), so the notch sits on **the turned wall where it really is**.
+  ⭐ *Found while building:* a wide front **slides** its door along before it turns (§4.3), so the notch follows the door
+  tile along the wall — but only when that tile is more than half a tile off the middle. Half a tile is an even wall's
+  ordinary door (a house's, which has always drawn centred), so a house still draws exactly as it did.
+- **What:** `DoorColour`, 0.28 of a tile across and 0.18 deep, the size the house's notch has always been — so a house
+  draws exactly as it did when its door is on its front, and moves when the front is blocked. **No new colour**
+  (`tools/legibility/check.py` stays at its count).
+- **On:** homes, every doored workplace, store, library and the town hall — finished or still a site (a site takes the
+  door of what it raises, §4.1), in the site's own edge colour so it reads as part of the drawing still being made.
+- ⚠️ *Settled without asking:* a **shut** door (§4.3: nothing reaches any side) draws on the front at a quarter strength —
+  a door nobody can use, said in words on the card.
+
+### 12.3 The ghost
+
+- **Its door and doorstep** (§4.7): the notch in the ghost's own fine / warned / refused colour, and a dot on the
+  doorstep — a dot and not a square, because Joe never wants to see a tile drawn (D345).
+- **Its starting facing** (Joe's call 4): until R or a middle-drag turns it, the ghost faces the nearest store
+  (`FacingTheNearestStore`, the sim's own answer, asked as the cursor moves). Once turned, the turn is kept for every
+  placement until a different building is taken from the bar. ⚠️ *Settled without asking:* a building that is not
+  square starts north or south only — the sim's rule (§11.1), so the ghost covers the tiles it always did.
+- **The sentence:** a click that marks a building whose door moved says so — *"Marked out. Its door is on its north
+  side — water lies in front of it."* — in place of *"The village will raise it when it can spare the hands."* ⚠️ A
+  placement that also carries a warning keeps the warning; the door is on the ghost and the card.
+
+### 12.4 The card
+
+A line under the condition (`Card.Door`), muted like it, written by every doored building's card from
+`SayWhereTheDoorIs(DoorOf(…))` — homes, workplaces and their sites, stores, the library, the town hall. Hidden when the
+door is on its front, which is nearly always.
+
+### 12.5 Spurs to doors
+
+`TrailNetwork.Build` learns each building's door (its tile and doorstep, by the building's number). For a doored
+building, `Doorsteps` looks only at the doorstep: it is **reached** when a lane touches the door's wall there, and a spur
+is drawn to the doorstep, along worn ground only, as before (§1.1, D581). A building with no door — a well, a pile, a farm,
+the barn, the cart — keeps today's any-side rule. **`KeepTheBusierSides` is not touched**: §4.7 asks that it be
+re-measured *before it is removed*, and nothing is removed here; whether its rings round single buildings have gone quiet
+since walks began converging on doors (D622) is a played village's question, and is left for one.
+
+### 12.6 Guards — the probe is the view's only instrument (D11, D160)
+
+| Line | Asks | Red-check |
+|---|---|---|
+| `[widths] doors:` | Twelve years in, every doored building's notch has its centre within 0.8 of a tile of the sim's door tile and opens within 46° of the door's way; a posed hut against water draws its door landward. | The notch drawn always on the front |
+| `[widths] ghost door:` | An unturned ghost faces the nearest store, and still does after the cursor moves; a turned one keeps its turn across a move; its drawn door is the door the sim gives the building once marked there. | The starting facing never applied; the turn not kept |
+| `[widths] card door:` | A building whose front is blocked says so on its card, in the sim's sentence; one on its front says nothing. | The line never shown |
+| `[widths] trails:` (one more case) | A building with its door on one side and a lane passing the other gets its spur to the door, not to the lane's side. | The door ignored by `Doorsteps` |
+| `DoorTests` (suite) | `DoorOfAProposal` is the door the building has once marked there, and null for a well and a farmhouse. | Always null |
+
+⚠️ **Known zero, written down now:** a draw site that forgets to call the door draw is invisible to `doors:` — the line
+checks the notch each building *would* draw, from the same footprint the draw uses, not the frame's pixels.
+
+**✅ Built (D657) — 6 reds over 6 mutants, every one read:** `DoorTests` 1 (the proposal always null — *"Value of type
+'Nullable<Door>' does not have a value"*); `doors:` 1 (the notch always on the front — the posed hut's door *"opening
+(0, -1) where the sim's opens South"*); `ghost door:` 2 (the starting facing never applied — *"faces 0, where the
+nearest store is at 16384"*; the turn not kept — *"faces 16384, not the 50176 it was turned to"*); `card door:` 1 (the
+line never shown — *"says 'nothing' where the sim says 'Its door is on its south side — water lies in front of it.'"*);
+`trails:` 1 (the door ignored — *"spurred 0 times at its door"*). The four view mutants ran together, one per line, and
+each line went red alone. ⚠️ **One mutant was thrown away:** the first `trails:` break threw a null reference inside
+the trace instead of ignoring the door, and the probe stopped with Godot still running — a crash is not a red. Rewritten
+to ignore the door quietly, it scored its red.
+⚠️ **Thin coverage, said plainly:** twelve years into the probe's unattended valley only one standing building has a
+door (no houses — nobody paints ground); the posed hut against the water is what carries `doors:`'s moved door, and the
+card's line was read on a posed site, marked and taken back. Joe's own villages are the real test (§12.7).
+
+### 12.7 Definition of Done
+
+The guards red first and counted; the four checks; `path-shapes.md §4.G` and `buildings-as-obstacles.md §2` told; this
+status line true; Joe plays it — a hut turned to face water, a building against a fence, a ghost picked up beside a
+granary.

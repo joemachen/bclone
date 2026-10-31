@@ -187,6 +187,10 @@ doorstep, each red-checked (D605).
 
 ## 4.G Spurs to the walls, and rings opened to their busier side (D607) — Joe's notes playing trade
 
+> ⭐ **Since doors (D657, `doors.md §12.5`): a doored building is reached, and spurred, through its door.** `Doorsteps`
+> looks only at its doorstep; a building with no door — a well, a pile, a farm, the barn, the cart — keeps the any-wall
+> rule below. `KeepTheBusierSides` is untouched until a played village says its rings have gone quiet.
+
 Joe, playing D606: *"weird looking paths and paths not connecting to building entrances"* — screenshots of lanes hooking
 round single stores, rings round them, and lanes ending beside a building, not at it. Read on his newest village
 (oakhaven Y60, and Y23) before building: the lanes DO run against the buildings — between the stockpiles, along the

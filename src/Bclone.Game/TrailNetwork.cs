@@ -111,9 +111,14 @@ internal sealed class TrailNetwork
     /// Which building stands on each tile (0 for none), or null to draw no doorsteps (D605): a building with worn ground
     /// beside it that no lane comes within a tile of gets a short lane to its doorstep along the worn ground.
     /// </param>
+    /// <param name="doors">
+    /// ⭐ Each doored building's door, by its number in <paramref name="buildingOf"/>: the index of its door tile and of its
+    /// doorstep (`doors.md §12.5`). A building listed is reached, and spurred, only through its door; one not listed — a
+    /// well, a pile, a farm — by any side, as before.
+    /// </param>
     public static TrailNetwork Build(
         int originX, int originY, int width, int height, byte[] grade, bool[] blocked, Func<Vector2, Vector2>? wander,
-        byte[]? walls = null, int[]? buildingOf = null)
+        byte[]? walls = null, int[]? buildingOf = null, IReadOnlyDictionary<int, (int Door, int Step)>? doors = null)
     {
         int n = width * height;
         if (grade.Length != n || blocked.Length != n || (walls is not null && walls.Length != n) || (buildingOf is not null && buildingOf.Length != n))
@@ -158,7 +163,7 @@ internal sealed class TrailNetwork
         Dictionary<(int, int), int> wraps = DropCornerPixels(line, blocked, width, height, linked);
 
         // 4. Trace, place and smooth; then the doorsteps.
-        return Trace(line, shape, blocked, wraps, originX, originY, width, height, wander, bridged, linked, buildingOf);
+        return Trace(line, shape, blocked, wraps, originX, originY, width, height, wander, bridged, linked, buildingOf, doors);
 
         byte Facing(int x, int y, int dx, int dy)
         {
@@ -426,7 +431,7 @@ internal sealed class TrailNetwork
     /// <summary>The line traced into lanes between its ends and junctions, every point placed and smoothed.</summary>
     private static TrailNetwork Trace(
         bool[] line, byte[] shape, bool[] blocked, Dictionary<(int, int), int> wraps, int originX, int originY, int width, int height,
-        Func<Vector2, Vector2>? wander, int bridged, Linkage linked, int[]? buildingOf)
+        Func<Vector2, Vector2>? wander, int bridged, Linkage linked, int[]? buildingOf, IReadOnlyDictionary<int, (int Door, int Step)>? doors)
     {
         int n = line.Length;
         var paths = new List<List<int>>();
@@ -816,10 +821,16 @@ internal sealed class TrailNetwork
             }
 
             var added = new List<Lane>();
-            foreach (List<int> tiles in tilesOf.Values)
+            foreach ((int id, List<int> all) in tilesOf)
             {
                 bool reached = false;
                 var steps = new SortedDictionary<int, int>();
+
+                // ⭐ A DOORED BUILDING IS REACHED THROUGH ITS DOOR (`doors.md §12.5`): only its door's wall is asked, and only
+                // its doorstep is spurred to — the walks have converged there since D622, so that is where the ground wears.
+                (int Door, int Step)? door = doors is not null && doors.TryGetValue(id, out (int Door, int Step) d) ? d : null;
+                IReadOnlyList<int> tiles = door is { } at ? new[] { at.Door } : all;
+
                 // ⭐ REACHED ONLY WHEN A LANE IS DRAWN TOUCHING ITS WALL (Joe, D607: "paths not connecting to building
                 // entrances" — his red marks in D600's screenshot are spurs from the passing lane to each wall). A lane
                 // passing a tile off, drawn on its own tile's middle, goes BY the building; it gets its spur.
@@ -831,6 +842,11 @@ internal sealed class TrailNetwork
                     {
                         int nx = tx + dx, ny = ty + dy;
                         int step = (ny * width) + nx;
+                        if (door is { } through && step != through.Step)
+                        {
+                            continue;
+                        }
+
                         reached |= nx >= 0 && ny >= 0 && nx < width && ny < height && line[step] && linked.Step(t, dx, dy)
                             && PointOf(step).DistanceTo(wallTile) <= DoorstepTouches;
                         if (nx >= 0 && ny >= 0 && nx < width && ny < height && shape[step] > 0 && !blocked[step]

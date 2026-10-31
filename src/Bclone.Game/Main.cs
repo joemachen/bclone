@@ -616,6 +616,11 @@ public partial class Main : Control
         // Asked again here (D419): the founding has only the cart, twelve years in the granaries and
         // warehouses stand — so the rule the draw obeys is read on every kind that exists.
         GD.Print(_map.EveryStoreShowsItsStock());
+
+        // ⭐ The doors (`doors.md §12.6`), twelve years in, when every kind that has one stands.
+        GD.Print(_map.EveryDoorIsDrawnOnItsWall());
+        GD.Print(_map.TheGhostStartsTowardTheStore());
+        GD.Print(TheCardSaysWhereItsDoorIs());
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());

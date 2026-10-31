@@ -71,6 +71,9 @@ public partial class Main
 
         /// <summary>The building's condition, under its status (D556, Joe: <i>"described state + % wear"</i>). Hidden on a person.</summary>
         public required Label Wear { get; init; }
+
+        /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
+        public required Label Door { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
@@ -417,6 +420,11 @@ public partial class Main
         wear.Visible = false;
         column.AddChild(wear);
 
+        // ---- where its door is, when not on its front (`doors.md §12.4`) ----
+        Label door = Wrapped(Muted(string.Empty));
+        door.Visible = false;
+        column.AddChild(door);
+
         // ---- a person's sections (D431) ----
         VillagerParts person = BuildPersonParts();
         column.AddChild(person.Box);
@@ -522,6 +530,7 @@ public partial class Main
             Light = light,
             Status = status,
             Wear = wear,
+            Door = door,
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
@@ -733,6 +742,7 @@ public partial class Main
 
         // Each building's writer says its condition; a person, a site and anything without a row says none.
         card.Wear.Visible = false;
+        card.Door.Visible = false;
         card.Portrait.Wear = Condition.Sound;
 
         bool shown = card.Subject.Kind switch
@@ -1256,6 +1266,7 @@ public partial class Main
     {
         Title(card, store.Name, renamable: true);
         Wear(card, world.WearOf(store), world.Config);
+        DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(store)));
 
         int used = store.Store.Capacity - store.Store.FreeSpace;
         if (store.Emptying)
@@ -1297,6 +1308,9 @@ public partial class Main
         Title(card, place.Name, renamable: true);
         card.Numbers.Visible = true;
         card.Storage.Visible = false;
+
+        // A site takes the door of what it raises (`doors.md §4.1`), so it says where that door will be.
+        DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(place)));
 
         if (place.Construction is { IsFinished: false } site)
         {
@@ -1511,6 +1525,7 @@ public partial class Main
         card.Storage.Visible = false;
         Title(card, $"The {home.Name} household", renamable: true);
         Wear(card, world.WearOf(home), world.Config);
+        DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(home)));
 
         int living = world.LivingMembersOf(home);
         int food = world.FoodIn(home.Stockpile);
@@ -2010,6 +2025,7 @@ public partial class Main
 
         WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
         Wear(card, world.WearOf(library), world.Config);
+        DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(library)));
         return true;
     }
 
@@ -2109,6 +2125,7 @@ public partial class Main
         int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
         WriteTownHallCard(card, hall.Name, founders, raised, hall.ExtentWidth, hall.ExtentHeight, hall.Facing.Raw);
         Wear(card, world.WearOf(hall), world.Config);
+        DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(hall)));
         return true;
     }
 
@@ -2284,6 +2301,13 @@ public partial class Main
     {
         card.Values[slot].Text = value;
         card.Keys[slot].Text = key;
+    }
+
+    /// <summary>Write where the door is when it is not on the front — or hide the line (`doors.md §12.4`).</summary>
+    private static void DoorLine(Card card, string? said)
+    {
+        card.Door.Visible = said is not null;
+        card.Door.Text = said ?? string.Empty;
     }
 
     /// <summary>Write the condition line and weather the portrait — or hide the line, for a thing with no row.</summary>
@@ -2687,6 +2711,83 @@ public partial class Main
                 + $"{string.Join(", ", unknownTrades.Select(world.JobsCatalog.NameOf))}) in the cart, the stock limits, the bar's more or the dropdown; "
                 + "all appear when learned, and go again when put back"
             : $"[widths] spoilers: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ A building whose door is not on its front says where it is, in the sim's sentence; one on its front says nothing —
+    /// <b>a probe line</b> (`doors.md §12.6`). A building in the village where one has a moved door; otherwise a hut is marked
+    /// facing the water for the asking and taken back.
+    /// </summary>
+    private string TheCardSaysWhereItsDoorIs()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Workplace? posed = null;
+
+        Workplace? moved = world.Workplaces.Find(w => world.SayWhereTheDoorIs(world.DoorOf(w)) is not null);
+        if (moved is null)
+        {
+            GridPos site = world.Map.FoundingSite;
+            for (int r = 1; r < 40 && posed is null; r++)
+            {
+                for (int dy = -r; dy <= r && posed is null; dy++)
+                {
+                    for (int dx = -r; dx <= r && posed is null; dx++)
+                    {
+                        var tile = new GridPos(site.X + dx, site.Y + dy);
+                        var north = new GridPos(tile.X, tile.Y - 1);
+                        if (Math.Max(Math.Abs(dx), Math.Abs(dy)) == r && world.Map.Contains(north) && !world.IsWalkable(north)
+                            && world.IsWalkable(tile) && !world.StandsOn(tile)
+                            && world.Mark(BuildingKind.GathererHut, Point.CentreOf(tile), Angle.Zero).Allowed)
+                        {
+                            posed = world.Workplaces.Find(w => w.IsSite && w.Tile == tile);
+                        }
+                    }
+                }
+            }
+
+            moved = posed;
+        }
+
+        Workplace? front = world.Workplaces.Find(w => world.DoorOf(w) is Door d && d.Faces == d.Front && !d.Shut);
+        string said = "nothing to read";
+        if (moved is null || world.SayWhereTheDoorIs(world.DoorOf(moved)) is not string expected)
+        {
+            faults.Add("no building with a moved door, and none could be posed");
+        }
+        else
+        {
+            OpenCard(new CardSubject(CardKind.Workplace, moved.Id));
+            Card card = _selectedCard!;
+            said = card.Door.Text;
+            if (!card.Door.Visible || said != expected)
+            {
+                faults.Add($"{moved.Name}'s card says \"{(card.Door.Visible ? said : "nothing")}\" where the sim says \"{expected}\"");
+            }
+
+            CloseCard(card);
+        }
+
+        if (front is not null)
+        {
+            OpenCard(new CardSubject(CardKind.Workplace, front.Id));
+            Card card = _selectedCard!;
+            if (card.Door.Visible)
+            {
+                faults.Add($"{front.Name}, its door on its front, says \"{card.Door.Text}\"");
+            }
+
+            CloseCard(card);
+        }
+
+        if (posed is not null)
+        {
+            world.CancelConstruction(posed);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] card door: ✅ a moved door is said on its card (\"{said}\"), and a door on its front says nothing"
+            : $"[widths] card door: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()
