@@ -657,11 +657,28 @@ public partial class VillageMap : Control
     /// </remarks>
     private Angle _ghostFacing;
 
-    /// <summary>Which way the ghost in hand is turned — <b>for the probe</b> (D401).</summary>
+    /// <summary>
+    /// ⭐ Whether the player has turned the ghost since taking this building from the bar (`doors.md §12.3`, Joe's call 4).
+    /// Until they have, it faces the nearest store as the cursor moves; once they have, the turn is kept.
+    /// </summary>
+    private bool _ghostTurned;
+
+    /// <summary>Which way the ghost in hand is turned — <b>for the probe</b> (D401). Setting it counts as a turn.</summary>
     internal Angle GhostFacing
     {
         get => _ghostFacing;
-        set => _ghostFacing = value;
+        set
+        {
+            _ghostFacing = value;
+            _ghostTurned = true;
+        }
+    }
+
+    /// <summary>Whether the ghost has been turned by hand — <b>for the probe</b> (`doors.md §12.6`).</summary>
+    internal bool GhostTurned
+    {
+        get => _ghostTurned;
+        set => _ghostTurned = value;
     }
 
     /// <summary>True when the next click pulls a building down instead of raising one.</summary>
@@ -868,6 +885,12 @@ public partial class VillageMap : Control
         // ⛔ EVERY FIELD, EVERY TIME, IN ONE PLACE. The bug this replaces was never a wrong
         // value — it was a field somebody forgot to clear in one of seven near-identical
         // blocks, three times over.
+        // ⭐ A different building starts unturned again, facing the nearest store (`doors.md §12.3`).
+        if (_building != building)
+        {
+            _ghostTurned = false;
+        }
+
         _building = building;
         _ghostClaim = new List<Vector2[]>();
         _harvestMode = harvest;
@@ -1098,6 +1121,7 @@ public partial class VillageMap : Control
         }
 
         _ghostFacing += Angle.FromRaw(unchecked((ushort)steps));
+        _ghostTurned = true;
         QueueRedraw();
     }
 
@@ -1143,6 +1167,7 @@ public partial class VillageMap : Control
             _ghostFacing += Angle.FromTurnFraction(1, 64);
         }
 
+        _ghostTurned = true;
         QueueRedraw();
     }
 
@@ -1343,6 +1368,13 @@ public partial class VillageMap : Control
                 }
                 else if (_building is not null)
                 {
+                    // ⭐ UNTURNED, IT FACES THE NEAREST STORE (`doors.md §12.3`, Joe's call 4) — the sim's own answer, asked as
+                    // the cursor moves, so the door starts toward where its goods will go.
+                    if (!_ghostTurned)
+                    {
+                        _ghostFacing = _world.FacingTheNearestStore(_building.Value, _hoveredPoint);
+                    }
+
                     // ⭐ AT THE ANGLE IN YOUR HAND (D328). The ghost has been drawn with
                     // `_ghostFacing` since D320 and the verdict was computed without it, so a
                     // turned longhouse could be shown green over ground the sim had never checked.
@@ -1881,7 +1913,9 @@ public partial class VillageMap : Control
         // ⭐⭐ WHERE THE PLAYER PUT IT (gridless 2c, D330). `WhereItWouldStand` has already applied
         // the snap setting, so the sim is told a position it could have written itself and believes
         // exactly what is drawn. **The ghost and the building are the same geometry.**
-        PlacementVerdict verdict = _world!.Mark(_building!.Value, WhereItWouldStand(at), _ghostFacing);
+        // ⭐ Its door, asked before the mark changes what stands round it (`doors.md §12.3`).
+        Door? door = _world!.DoorOfAProposal(_building!.Value, _world.FootprintOf(_building.Value, WhereItWouldStand(at), _ghostFacing));
+        PlacementVerdict verdict = _world.Mark(_building.Value, WhereItWouldStand(at), _ghostFacing);
         if (!verdict.Allowed)
         {
             // Stay in build mode: a refusal is information, not a dismissal, and
@@ -1891,9 +1925,12 @@ public partial class VillageMap : Control
             return;
         }
 
+        // A warning outranks the door: the door is on the ghost and the card, the warning is only said here.
         PlacementMessageChanged?.Invoke(verdict.HasWarning
             ? $"Marked out. {verdict.Warning}"
-            : "Marked out. The village will raise it when it can spare the hands.");
+            : _world.SayWhereTheDoorIs(door) is string doorMoved
+                ? $"Marked out. {doorMoved}"
+                : "Marked out. The village will raise it when it can spare the hands.");
 
         QueueRedraw();
     }
@@ -2223,6 +2260,57 @@ public partial class VillageMap : Control
         DrawEdges(quad, edge, fallenIn);
     }
 
+    /// <summary>How deep a door's notch is, in tiles — the house's notch since D386 (0.22 of its 0.8-tile depth).</summary>
+    private const float DoorDeep = 0.176f;
+
+    /// <summary>How wide a door's notch is, in tiles.</summary>
+    private const float DoorWide = 0.28f;
+
+    /// <summary>
+    /// ⭐ A building's door, drawn on the wall it opens through (`doors.md §12.2`) — the front, or the side a blocked front
+    /// moved it to; a shut door on the front, faint. Nothing for a building with no door.
+    /// </summary>
+    private void DrawDoor(Vector2 centre, float widthTiles, float heightTiles, ushort facing, Door? door, Color colour)
+    {
+        if (door is not Door d)
+        {
+            return;
+        }
+
+        DrawColoredPolygon(
+            DoorQuadAt(centre, widthTiles, heightTiles, facing, d, ToScreen(d.Tile), _pixelsPerTile),
+            d.Shut ? colour with { A = colour.A * 0.25f } : colour);
+    }
+
+    /// <summary>
+    /// The notch of a door — <b>the building's own frame turned a quarter for each step the door is round from its front</b>
+    /// (`Faces − Front`, clockwise as the compass runs), so the notch sits on the turned wall the sim's door opens through.
+    /// The sizes are the drawn building's (already scaled), in tiles; <paramref name="doorTileAt"/> is the door tile's centre
+    /// on screen.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>On the wall's middle, unless the door slid along it</b> (`doors.md §4.3`: a wide front slides before it turns).
+    /// A door tile half a tile off the middle is an even wall's ordinary door — a house's, which has always drawn centred —
+    /// so the notch moves along the wall only when its tile is further off than that, and then to the tile.
+    /// </remarks>
+    internal static Vector2[] DoorQuadAt(
+        Vector2 centre, float widthTiles, float heightTiles, ushort facing, Door door, Vector2 doorTileAt, float pixelsPerTile)
+    {
+        int round = ((int)door.Faces - (int)door.Front) & 3;
+        ushort turned = unchecked((ushort)(facing + (round * 16384)));
+        float depth = (round & 1) == 0 ? heightTiles : widthTiles;
+        float along = (round & 1) == 0 ? widthTiles : heightTiles;
+
+        float radians = turned * Mathf.Tau / 65536f;
+        var tangent = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        float off = (doorTileAt - centre).Dot(tangent) / pixelsPerTile;
+        float room = Mathf.Max(0f, (along - DoorWide) / 2f);
+        float slide = Mathf.Abs(off) <= 0.51f ? 0f : Mathf.Clamp(off, -room, room);
+
+        return FootprintQuadAt(
+            centre + (tangent * slide * pixelsPerTile), DoorWide, depth, turned, pixelsPerTile, 0f, Mathf.Min(1f, DoorDeep / Mathf.Max(0.01f, depth)));
+    }
+
     /// <summary>
     /// A building's four edges — broken, if it has fallen in (`building-condition.md §6`, D556): the one shape on the map
     /// that says <i>closed</i> without a ring or a word.
@@ -2346,6 +2434,203 @@ public partial class VillageMap : Control
         return faults.Count == 0
             ? $"[widths] dashes: ✅ {loops} traced outlines at 14 zooms end, each in at most its segments plus its dashes ({worst} % of that at worst), half drawn"
             : $"[widths] dashes: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ Every doored building draws its door on the wall the sim's door opens through — <b>a probe line</b>
+    /// (`doors.md §12.6`). Asked twelve years in, of every kind, and of a hut posed facing the water, whose door is moved.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ It reads the notch each building <i>would</i> draw from the footprint the draw uses — a draw site that forgets to
+    /// call the door is invisible to it (the zero §12.6 writes down).
+    /// </remarks>
+    public string EveryDoorIsDrawnOnItsWall()
+    {
+        SimWorld world = _world!;
+        var faults = new List<string>();
+        int drawn = 0, moved = 0;
+        float worst = 0f;
+
+        void Check(string name, Point at, float wide, float deep, ushort facing, Door? door)
+        {
+            if (door is not Door d)
+            {
+                return;
+            }
+
+            drawn++;
+            moved += d.Faces != d.Front ? 1 : 0;
+            Vector2 centre = ToScreen(at);
+            Vector2[] q = DoorQuadAt(centre, wide, deep, facing, d, ToScreen(d.Tile), _pixelsPerTile);
+            Vector2 middle = (q[0] + q[1] + q[2] + q[3]) / 4f;
+            float off = middle.DistanceTo(ToScreen(d.Tile)) / _pixelsPerTile;
+            worst = Mathf.Max(worst, off);
+            Vector2 outward = (((q[0] + q[1]) / 2f) - ((q[2] + q[3]) / 2f)).Normalized();
+            Vector2 way = d.Faces switch
+            {
+                Compass.North => new Vector2(0f, -1f),
+                Compass.East => new Vector2(1f, 0f),
+                Compass.South => new Vector2(0f, 1f),
+                _ => new Vector2(-1f, 0f),
+            };
+            if (off > 0.8f || outward.Dot(way) < 0.69f)
+            {
+                faults.Add($"{name}'s door is drawn {off:F2} of a tile from its door tile {d.Tile}, opening {outward} where the sim's opens {d.Faces}");
+            }
+        }
+
+        foreach (Workplace w in world.Workplaces)
+        {
+            Check(w.Name, w.Position, w.ExtentWidth * 0.8f, w.ExtentHeight * 0.8f, w.Facing.Raw, world.DoorOf(w));
+        }
+
+        foreach (StoreBuilding s in world.StoreBuildings)
+        {
+            Check(s.Name, s.Position, s.ExtentWidth * 0.8f, s.ExtentHeight * 0.8f, s.Facing.Raw, world.DoorOf(s));
+        }
+
+        float homeWide = (world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1) * 0.8f;
+        float homeDeep = (world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1) * 0.8f;
+        foreach (Household h in world.Households)
+        {
+            if (h.HomePosition is Point home)
+            {
+                Check($"the {h.Name} house", home, homeWide, homeDeep, h.HomeFacing.Raw, world.DoorOf(h));
+            }
+        }
+
+        foreach (Library l in world.Libraries)
+        {
+            Check("the library", l.Position, l.ExtentWidth * 0.8f, l.ExtentHeight * 0.8f, l.Facing.Raw, world.DoorOf(l));
+        }
+
+        if (world.TownHall is { } hall)
+        {
+            Check("the town hall", hall.Position, hall.ExtentWidth * 0.95f, hall.ExtentHeight * 0.95f, hall.Facing.Raw, world.DoorOf(hall));
+        }
+
+        // A hut posed facing the water: its front cannot open, so its door is drawn on the side the sim moved it to.
+        string posed = "no shore found to pose a hut on";
+        GridPos site = world.Map.FoundingSite;
+        for (int r = 1; r < 40 && posed.StartsWith("no", StringComparison.Ordinal); r++)
+        {
+            for (int dy = -r; dy <= r && posed.StartsWith("no", StringComparison.Ordinal); dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    var tile = new GridPos(site.X + dx, site.Y + dy);
+                    var north = new GridPos(tile.X, tile.Y - 1);
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r || !world.Map.Contains(north) || world.IsWalkable(north)
+                        || !world.IsWalkable(tile) || world.StandsOn(tile))
+                    {
+                        continue;
+                    }
+
+                    Footprint hut = world.FootprintOf(BuildingKind.GathererHut, Point.CentreOf(tile), Angle.Zero);
+                    if (world.DoorOfAProposal(BuildingKind.GathererHut, hut) is Door door && door.Faces != door.Front && !door.Shut)
+                    {
+                        int before = faults.Count;
+                        Check($"a hut posed at {tile} facing the water", hut.Origin, 0.8f, 0.8f, 0, door);
+                        posed = faults.Count == before
+                            ? $"a hut posed facing the water at {tile} draws its door {door.Faces.ToString().ToLowerInvariant()}"
+                            : "a hut posed facing the water draws its door on the wrong wall";
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (posed.StartsWith("no", StringComparison.Ordinal))
+        {
+            faults.Add(posed);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] doors: ✅ {drawn} doors drawn on their walls ({moved} moved off a blocked front), the farthest "
+                + $"{worst:F2} of a tile from the sim's door tile; {posed}"
+            : $"[widths] doors: ⛔ {string.Join("; ", faults.Take(4))}";
+    }
+
+    /// <summary>
+    /// ⭐ An unturned ghost faces the nearest store, and a turned one keeps its turn — <b>a probe line</b> (`doors.md §12.6`,
+    /// Joe's call 4). Posed through the map's own cursor and put back; nothing is marked.
+    /// </summary>
+    public string TheGhostStartsTowardTheStore()
+    {
+        SimWorld world = _world!;
+        if (world.StoreBuildings.Count == 0)
+        {
+            return "[widths] ghost door: ⛔ no store to face";
+        }
+
+        BuildingKind? was = _building;
+        Angle facingWas = _ghostFacing;
+        bool turnedWas = _ghostTurned;
+        var faults = new List<string>();
+        const BuildingKind Kind = BuildingKind.GathererHut;
+
+        // Two tiles round the first store where the sim's answer is not north, so a facing never set cannot pass.
+        GridPos store = world.StoreBuildings[0].Tile;
+        var tiles = new List<GridPos>();
+        foreach ((int dx, int dy) in new[] { (-5, 0), (5, 0), (0, 5), (0, -5), (-5, 5), (5, -5) })
+        {
+            var tile = new GridPos(store.X + dx, store.Y + dy);
+            if (world.Map.Contains(tile) && world.FacingTheNearestStore(Kind, Point.CentreOf(tile)) != Angle.Zero)
+            {
+                tiles.Add(tile);
+            }
+        }
+
+        if (tiles.Count < 2)
+        {
+            return "[widths] ghost door: ⛔ no two tiles round the first store that face anything but north";
+        }
+
+        PutTheToolDown();
+        BeginBuilding(Kind);
+        void HoverOver(GridPos tile) => _GuiInput(new InputEventMouseMotion { Position = ToScreen(Point.CentreOf(tile)) });
+
+        HoverOver(tiles[0]);
+        Angle first = world.FacingTheNearestStore(Kind, _hoveredPoint);
+        if (_ghostTurned || _ghostFacing != first)
+        {
+            faults.Add($"an unturned ghost at {tiles[0]} faces {_ghostFacing.Raw}, where the nearest store is at {first.Raw}");
+        }
+
+        HoverOver(tiles[1]);
+        Angle second = world.FacingTheNearestStore(Kind, _hoveredPoint);
+        if (_ghostFacing != second)
+        {
+            faults.Add($"moved to {tiles[1]}, it faces {_ghostFacing.Raw}, where the nearest store is at {second.Raw}");
+        }
+
+        bool doorShown = world.DoorOfAProposal(Kind, world.FootprintOf(Kind, _hoveredPoint, _ghostFacing)) is not null;
+        if (!doorShown)
+        {
+            faults.Add("the ghost of a hut has no door to draw");
+        }
+
+        TurnTheGhost();
+        Angle turned = _ghostFacing;
+        HoverOver(tiles[0]);
+        if (_ghostFacing != turned)
+        {
+            faults.Add($"a turned ghost moved back to {tiles[0]} faces {_ghostFacing.Raw}, not the {turned.Raw} it was turned to");
+        }
+
+        PutTheToolDown();
+        if (was is BuildingKind holding)
+        {
+            BeginBuilding(holding);
+        }
+
+        _ghostFacing = facingWas;
+        _ghostTurned = turnedWas;
+
+        return faults.Count == 0
+            ? $"[widths] ghost door: ✅ an unturned ghost faces the nearest store ({first.Raw}, then {second.Raw} as it moves) and "
+                + $"draws its door; turned, it keeps its turn ({turned.Raw}) as it moves"
+            : $"[widths] ghost door: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -3199,6 +3484,14 @@ public partial class VillageMap : Control
 
         DrawFootprint(centre, wide, deep, shape.Facing.Raw, colour with { A = 0.35f }, colour);
 
+        // ⭐ AND ITS DOOR, AND THE DOORSTEP IT WILL KEEP CLEAR (`doors.md §12.3`) — where the sim will put it, moved if the
+        // front cannot open. A dot on the doorstep, never a square: no tile is drawn (D345).
+        if (world.DoorOfAProposal(_building.Value, shape) is Door door)
+        {
+            DrawDoor(centre, wide, deep, shape.Facing.Raw, door, colour);
+            DrawCircle(ToScreen(door.Doorstep), Mathf.Max(2f, _pixelsPerTile * 0.12f), colour);
+        }
+
         DrawTheHomesThisMarketWouldServe();
     }
 
@@ -3372,6 +3665,7 @@ public partial class VillageMap : Control
                 paint with { A = 0.85f },
                 Ink,
                 worn == Condition.Ruin);
+            DrawDoor(centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, world.DoorOf(library), DoorColour);
 
             // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
             // the consequence of a full shelf is a technique dying with somebody years from now,
@@ -3411,6 +3705,7 @@ public partial class VillageMap : Control
             hall.Facing.Raw,
             TownHallColour with { A = 0.9f },
             Ink);
+        DrawDoor(centre, hall.ExtentWidth * 0.95f, hall.ExtentHeight * 0.95f, hall.Facing.Raw, _world.DoorOf(hall), DoorColour);
     }
 
     /// <summary>The wells (D427): a ring of stone with water at its heart.</summary>
@@ -3535,6 +3830,7 @@ public partial class VillageMap : Control
                 colour with { A = 0.85f },
                 Ink,
                 worn == Condition.Ruin);
+            DrawDoor(centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, world.DoorOf(building), DoorColour);
 
             if (ShowsItsStock(building))
             {
@@ -5443,6 +5739,7 @@ public partial class VillageMap : Control
         var walls = new byte[width * height];
         var buildingOf = new int[width * height];
         var numbered = new Dictionary<GridPos, int>();
+        var doors = new Dictionary<int, (int Door, int Step)>();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -5458,6 +5755,14 @@ public partial class VillageMap : Control
                     if (!numbered.TryGetValue(standing[0], out int id))
                     {
                         numbered[standing[0]] = id = numbered.Count + 1;
+
+                        // ⭐ And its door, if it has one in use and both its tiles are in the window (`doors.md §12.5`).
+                        if (world.DoorCovering(tile) is Door door
+                            && door.Tile.X >= minX && door.Tile.Y >= minY && door.Tile.X < minX + width && door.Tile.Y < minY + height
+                            && door.Doorstep.X >= minX && door.Doorstep.Y >= minY && door.Doorstep.X < minX + width && door.Doorstep.Y < minY + height)
+                        {
+                            doors[id] = (((door.Tile.Y - minY) * width) + door.Tile.X - minX, ((door.Doorstep.Y - minY) * width) + door.Doorstep.X - minX);
+                        }
                     }
 
                     buildingOf[i] = id;
@@ -5465,7 +5770,7 @@ public partial class VillageMap : Control
             }
         }
 
-        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble, walls, buildingOf);
+        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble, walls, buildingOf, doors);
         _networkWindow = (minX, minY, width, height, grade, blocked);
         LastNetworkBuildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
     }
@@ -5882,6 +6187,18 @@ public partial class VillageMap : Control
             faults.Add($"a lane passing a building comes no nearer its wall than {spurReaches:F2} of its centre, or is drawn on it");
         }
 
+        // ⭐ THE SPUR LANDS ON THE DOOR (`doors.md §12.5`): lanes passing a tile off on both sides of a building a row long
+        // (a whole row, so the ground either side is not bridged into one), its door opening south from its middle. With no
+        // door the spur goes to the first wall found, at its north-west end; with one it goes to the doorstep.
+        string[] eitherSide = { "wwwwwwwww", "BBBBBBBBB", "wwwwwwwww" };
+        TrailNetwork throughTheDoor = ShapeWith(false, eitherSide, null, (4, 1, 0, 1));
+        int atTheDoor = throughTheDoor.Lanes.SelectMany(lane => lane.Points).Count(point => point.DistanceTo(new Vector2(4f, 1.55f)) <= 0.3f);
+        int atTheBack = throughTheDoor.Lanes.SelectMany(lane => lane.Points).Count(point => point.DistanceTo(new Vector2(4f, 0.45f)) <= 0.3f);
+        if (atTheDoor == 0 || atTheBack > 0 || OnTheBuildings(throughTheDoor, eitherSide) > 0)
+        {
+            faults.Add($"a building whose door opens south is spurred {atTheDoor} times at its door and {atTheBack} at its back");
+        }
+
         // ⭐ A RING ROUND ONE BUILDING KEEPS ITS BUSIER SIDE (D607, Joe's call). JOE'S OWN RING (`oakhaven-ash-otter-53`, Y60:
         // worn ground, footprints and fences round the smithy's corner as the game read them), its left side posed only
         // worn so the busier side is the right: the right is drawn beside the building, the left is not. ⚠️ A ring drawn
@@ -5928,7 +6245,7 @@ public partial class VillageMap : Control
                 + $"lanes either side of a fence stay {fenced.Lanes.Count} and cross it only at its gate; a packed square with six lanes in "
                 + $"meets at most {mostMeeting} at a junction, in one piece, and Joe's own square (seventeen once) at most {mostOnHisSquare}; "
                 + $"a doorstep is drawn to {nearestToTheDoor:F2} of the wall's tile, and a spur from a lane only passing to {spurReaches:F2}; "
-                + "a ring round one store keeps its busier side; "
+                + "a ring round one store keeps its busier side; a spur lands on the door, not the first wall found; "
                 + "a lone 2×2 draws; the same shape draws the same"
             : $"[widths] trails: ⛔ {string.Join("; ", faults)}";
 
@@ -5938,7 +6255,7 @@ public partial class VillageMap : Control
 
         // ⭐ Every shape is built as the game builds it (D605): its buildings told apart (each block of B one building, for
         // the doorsteps), and — where a case gives them — walls between tiles, as (x, y) and the step across the wall.
-        TrailNetwork ShapeWith(bool wander, string[] rows, (int X, int Y, int DX, int DY)[]? fences)
+        TrailNetwork ShapeWith(bool wander, string[] rows, (int X, int Y, int DX, int DY)[]? fences, (int X, int Y, int DX, int DY)? door = null)
         {
             int width = rows[0].Length + 2;
             int height = rows.Length + 2;
@@ -5992,7 +6309,15 @@ public partial class VillageMap : Control
                 }
             }
 
-            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null, walls, buildingOf);
+            // ⭐ A door, where a case gives one (`doors.md §12.5`): the building on (x, y), opening one step (dx, dy).
+            Dictionary<int, (int Door, int Step)>? doors = null;
+            if (door is { } d)
+            {
+                int on = ((d.Y + 1) * width) + d.X + 1, step = ((d.Y + d.DY + 1) * width) + d.X + d.DX + 1;
+                doors = new Dictionary<int, (int Door, int Step)> { [buildingOf[on]] = (on, step) };
+            }
+
+            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null, walls, buildingOf, doors);
 
             static byte WallBit(int dx, int dy) => (dx, dy) switch { (0, -1) => 1, (1, 0) => 2, (0, 1) => 4, (-1, 0) => 8, _ => 0 };
         }
@@ -6804,6 +7129,8 @@ public partial class VillageMap : Control
                     DrawLine(outline[edge], outline[(edge + 1) % 4], edgeOfWork, 2f);
                 }
 
+                // ⭐ A site takes the door of what it raises (`doors.md §4.1`), drawn in the site's own edge (§12.2).
+                DrawDoor(centre, wide, deep, facing, world.DoorOf(workplace), edgeOfWork);
                 continue;
             }
 
@@ -6823,6 +7150,7 @@ public partial class VillageMap : Control
                 paint,
                 Ink,
                 worn == Condition.Ruin);
+            DrawDoor(centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, world.DoorOf(workplace), DoorColour);
 
             // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
             // D140's full-store ring, for the same reason and with the same switches — and it
@@ -7145,9 +7473,9 @@ public partial class VillageMap : Control
             DrawColoredPolygon(house, paint);
             DrawEdges(house, occupied ? Ink : Ink with { A = 0.35f }, fallenIn: worn == Condition.Ruin);
 
-            DrawColoredPolygon(
-                FootprintQuad(centre, 0.28f, deep * 0.8f, facing, from: 0f, to: 0.22f),
-                occupied ? DoorColour : DoorColour with { A = 0.25f });
+            // ⭐ ON THE WALL THE SIM'S DOOR OPENS THROUGH (`doors.md §12.2`): the front, as it always drew, unless the front
+            // is blocked.
+            DrawDoor(centre, wide * 0.8f, deep * 0.8f, facing, world.DoorOf(household), occupied ? DoorColour : DoorColour with { A = 0.25f });
         }
     }
 

@@ -21,7 +21,13 @@
 > **⚖️ D656 — Joe's gate item 1 verdicts:** soil depletion **dropped from the game**; drought, fire and blight, and beer
 > **moved to Phase 6**; four stay, built in his order — **doors commit 5 (the view) → clothing → logistics → house tiers.**
 >
-> **▶️ NEXT:** doors commit 5, the view (`specs/doors.md §9`, §11.7), spec-first — then clothing, logistics, house tiers. He merged
+> **🔨 D657, on `slice/doors-view`, unplayed, not merged: doors commit 5, the view (`specs/doors.md §12`).** Every doored
+> building draws its door where the sim's opens; the ghost draws its door and starts facing the nearest store; the card and
+> the mark say a moved door; spurs land on doors. 6 reds over 6 mutants; no golden moved.
+> **Numbers (D657):** suite 1860 / 0 / 5 of 1865 in 14m49; view 0 warnings; probe 102 `[widths]` lines, 66 ✅, 0 ⛔, bar 151,
+> `done.`, no Godot left running; goldens grep 390, none in the diff; `check.py` report unchanged (no new colour).
+>
+> **▶️ NEXT:** Joe plays D657 (`.\run.bat`), then the merge; then clothing, logistics, house tiers. He merged
 > D650 before playing it, then played it: *"Looked right"* (D652).
 >
 > **Numbers (D650):** suite 1859 / 0 / 5 of 1864 in 16m23 (15m09 on the same `src/` an hour before — the machine; the golden classes 5–6 s with and without the fix); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 390, none in the diff. Red-check: **10 reds over 4 mutants**, one zero by design (`footprints.md §8.4`).
@@ -8532,6 +8538,14 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAP D657 FOUND — A MUTANT THAT CRASHES IS NOT A RED, AND IT HANGS THE PROBE
+
+The first `trails:` mutant was `doors is null && doors!.TryGetValue(…)` — meant to ignore the doors, it threw a null
+reference inside the trace. The probe stopped mid-run, `done.` never printed, and headless Godot sat there until the
+600-second tool timeout. **A crash scores nothing about the guard**: rewritten to `… && d.Door < 0 ? d : null` (always
+no door, no throw) it went red for the right reason. ⭐ **Run a mutant probe under `timeout 540 env BCLONE_PROBE_WIDTHS=1
+"$GODOT" …`**, grep it for `NullReference`/`Exception` as well as `⛔`, and `tasklist | grep -i godot` after.
+
 ## ⛔ THE TRAP D653 FOUND — A DECISION NUMBER IN A COMMENT IS A CLAIM ABOUT THE LOG
 
 Five view files and `build-bar.md` say *"the project ships no image assets (D26)"*. **D26 in `DESIGN.md §7` is the
@@ -8711,6 +8725,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   once a winter).
 - ✅ ~~**THE POSE KILLS ITS VILLAGES (found D647, `specs/phase-5-golden.md §10`).**~~ He picked *"Fix the pose first"*: the
   finished farm at tick 0 was the year-1 killer; the pose marks it now and the golden is pinned (D648, §11).
+- ⏸️ **PLAY D657 — DOORS DRAWN** (`specs/doors.md §12.7`). A hut turned to face the water (its door should draw landward,
+  and the mark and the card say so); a building against a fence; a ghost picked up beside a granary (it should start facing
+  it, and keep a turn once R is pressed); the path spurs should end at doors. His eye on the notch size, then the merge.
 - ✅ ~~**PLAY D650 — A TURNED 2×1 NOW CLAIMS THE TILE BETWEEN ITS CORNER-TOUCHING HALVES**~~ — played, *"Looked right"* (D652). (`specs/footprints.md §8`) Turn a
   hut or a mine near an eighth: it covers three tiles where it covered two, and its door may sit on the third. His eye on
   whether that reads right. Merged and pushed at his word before he played it (D651).

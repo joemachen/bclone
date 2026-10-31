@@ -399,6 +399,38 @@ public sealed class DoorTests
     };
 
     /// <summary>A shape of this kind centred on a tile, its even extents shifted half a tile as turned — so it covers its own count of tiles.</summary>
+    /// <summary>
+    /// ⭐ The ghost's door (commit 5, `doors.md §12.1`): a proposal's door is the door the building has once it is marked
+    /// there — on open ground and against water — and a kind with no door has none.
+    /// </summary>
+    [Fact]
+    public void AProposalsDoorIsTheDoorItHasOnceMarked()
+    {
+        SimWorld world = World();
+        (GridPos water, Compass toward) = AShore(world);
+        GridPos shore = Step(water, (Compass)(((int)toward + 2) & 3));
+        var cases = new List<(GridPos At, Angle Facing)>
+        {
+            (OpenGround(world), Angle.Zero),
+            (shore, Angle.FromTurnFraction((int)toward, 4)),
+        };
+
+        foreach ((GridPos at, Angle facing) in cases)
+        {
+            Footprint shape = Pose(world, BuildingKind.GathererHut, at, facing);
+            Door? asked = world.DoorOfAProposal(BuildingKind.GathererHut, shape);
+            Assert.True(world.Mark(BuildingKind.GathererHut, shape.Origin, shape.Facing).Allowed);
+            Workplace site = world.Workplaces.Single(w => w.IsSite && w.Footprint == shape);
+            _output.WriteLine($"a hut at {at} facing {facing.Raw}: asked {asked}, marked {world.DoorOf(site)}");
+            Assert.NotNull(asked);
+            Assert.Equal(world.DoorOf(site), asked);
+        }
+
+        Footprint open = Pose(world, BuildingKind.Well, OpenGround(world), Angle.Zero);
+        Assert.Null(world.DoorOfAProposal(BuildingKind.Well, open));
+        Assert.Null(world.DoorOfAProposal(BuildingKind.Farmhouse, Pose(world, BuildingKind.Farmhouse, OpenGround(world), Angle.Zero)));
+    }
+
     private static Footprint Pose(SimWorld world, BuildingKind kind, GridPos at, Angle facing)
     {
         (int width, int height) = world.ExtentOf(kind);

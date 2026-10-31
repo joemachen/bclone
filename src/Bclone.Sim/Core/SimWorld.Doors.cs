@@ -71,6 +71,12 @@ public sealed partial class SimWorld
         return store.Kind is StoreKind.Pile or StoreKind.Barn or StoreKind.Cart ? null : DoorAt(store.Footprint);
     }
 
+    /// <summary>
+    /// ⭐ The door a building of this kind would have on this footprint, standing here today (`doors.md §12.1`) — what the
+    /// ghost draws before the click. Null for a kind with no door (§4.1). Remembered per footprint like every door.
+    /// </summary>
+    public Door? DoorOfAProposal(BuildingKind kind, Footprint shape) => HasADoor(kind) ? DoorAt(shape) : null;
+
     /// <summary>A household's front door. Null while it has no house.</summary>
     public Door? DoorOf(Household household) =>
         HomeFootprintOf(household) is Footprint home ? DoorAt(home) : null;
