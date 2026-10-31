@@ -1,6 +1,51 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/whole-footprints` (D651), PUSHED: D650, A FOOTPRINT IS ONE PIECE — JOE'S IRON MINE, UNBUILT FROM YEAR 11, WAS A TURNED 2×1 SEALED BY ITS OWN DOOR. NEXT: JOE'S CALL — GATE ITEM 3 (THE QA CHECKLIST) OR AN ITEM-1 VERDICT. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde, THE MERGE OF `slice/doors-view` (D658), PUSHED: DOORS ARE DONE. GATE ITEM 1 DECIDED BY JOE (D656) — FOUR LEFT IN HIS ORDER, DOORS ✅, THEN CLOTHING, LOGISTICS, HOUSE TIERS. NEXT: CLOTHING, WHEN JOE SAYS SO — HE SAID *"NOT YET"*. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-30 (D651) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-30 (D658) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = a9c6fde, pushed; origin agrees. No branch is open; the tree is clean but for `bclone-tracker.xlsx`** (never
+> staged, committed or ignored). Every slice of this session is merged: `slice/whole-footprints` (D651),
+> `slice/image-assets` (D655), `slice/doors-view` (D658).
+>
+> **⛳ Where Phase 5 stands (the gate, `DESIGN.md §4`):**
+> - **Item 1 — every Phase 5 item has a verdict.** Joe decided them all (D656): **soil depletion dropped from the game**;
+>   **drought, fire and blight, and beer moved to Phase 6**; **four stay, in his order: ✅ doors commit 5 (D657–D658) →
+>   clothing → logistics → house tiers.** Item 1 closes when the last three are built, played and merged.
+> - **Item 2 — the Phase 5 golden:** ✅ pinned (D648, merged D649).
+> - **Item 3 — the QA checklist Joe walks:** not written; it waits for item 1, since what it walks depends on what stays.
+> - **Item 4 — the docs true at the gate:** not started (`content-inventory.md` still reads `main` at D526).
+> - **Item 5 — the four checks on the merged tree and a played run with no `ERROR`:** last.
+>
+> **▶️ NEXT — Joe's call; ask him before starting anything.** Clothing is next in his order, and he said *"not yet"*
+> (2026-10-30). When he says go: re-read `specs/clothing.md` first — its measurement is D533's (a coat removed about
+> two-thirds of the cold break-offs and did not raise winter work), and the village has changed since. Bring him what the
+> re-read changes before building. **Logistics**, when it comes, is a measurement, not a feature: are villagers losing real
+> time on long fetch walks? Measured and fixed, or measured and dropped in his words.
+>
+> **What this session did (2026-10-29/30), newest first — the detail is in `DESIGN.md §7`:**
+> - **✅ D657–D658 — doors drawn** (`specs/doors.md §12`): every doored building draws its door on the wall the sim's
+>   door opens through (moved off a blocked front, slid along a wide one); the ghost draws its door and a doorstep dot and
+>   **starts facing the nearest store** until turned; a moved door is said on marking and on the card; path spurs land on
+>   doors. One sim addition, `DoorOfAProposal`. 6 reds over 6 mutants. Joe: *"looks good. merge and push."*
+> - **⚖️ D656 — Joe's gate item 1 verdicts** (above). Soil depletion is struck through, not erased, wherever it was planned.
+> - **✅ D654–D655 — the game ships image assets.** The view's *"no image assets (D26)"* rule cited a decision that never
+>   said it; void now, every citation points at D654. `.gitattributes` marks png/jpg/jpeg/webp/psd/exr binary. ⭐ **Joe's
+>   rule (D655): a wrong §7 entry is annotated where it stands — *(void — …, Dnnn)* — and corrected by a new entry; never
+>   reworded.**
+> - **📋 D653 — `specs/art-inventory.md`**, every piece of art the game still needs, with what stands in and the call that
+>   blocks its style. An audit; **the art stays parked (D639)**.
+> - **✅ D650–D652 — a footprint is one piece** (`specs/footprints.md §8`): Joe's iron mine sat unbuilt from Year 11
+>   because a turned 2×1 split into corner-touching tiles and its door sealed the other. Played: *"Looked right."*
+> - **✅ D648–D649 — the Phase 5 golden pinned** (gate item 2).
+>
+> **Numbers, last full run (D657, on the tree merged as D658):** suite 1860 / 0 / 5 of 1865 in 14m49; view 0 warnings;
+> probe 102 `[widths]` lines, 66 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 390, none moved this
+> session; `tools/legibility/check.py` report unchanged. D658's merge added doc lines only.
+>
+> **Joe's other open calls** are in **⏸️ OPEN, AND JOE'S TO CALL** below — the barn narration, the barn's seat condition,
+> a farm taking a small village's wood, the goldens grep, the §3 ECS flag. The art is **🅿️ PARKED** until he reopens it.
+>
+> **— D651–D657, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-30, D651–D657 — ON WINDOWS.**
 >
 > **`main` = the merge of `slice/whole-footprints` (D651), pushed at Joe's word** (*"Merge and push."*) = **D650: a
 > footprint is one piece.** The four checks were run on D650's tree; the merge adds doc lines only.
@@ -8742,7 +8787,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ✅ ~~**PHASE 5'S EXIT GATE — PROPOSED (D640), HIS TO ACCEPT, TRIM OR REPLACE**~~ — **accepted as written (D641).**
   (`DESIGN.md §4`, the end of Phase 5.)
   Five items: every Phase 5 item has a verdict (built-played-merged, or moved out in his words — open: doors commit 5,
-  clothing, soil depletion, house tiers, drought, fire and blight, logistics, beer); a golden that reaches the Phase 5
+  clothing, soil depletion, house tiers, drought, fire and blight, logistics, beer — ⚖️ **all decided, D656**: soil
+  depletion dropped, drought / fire and blight / beer to Phase 6, four kept in his order, doors ✅ D658); a golden that reaches the Phase 5
   chains; a QA checklist he walks; the docs true; the four checks and a clean played log. Not on it: the art (parked),
   full settings and ironman (unscheduled). Should either of those gate, he says so.
 - ⏸️ **`DESIGN.md §3` SAYS ECS; THE SIM IS NOT (found D640).** *"ECS, data-oriented … This is not negotiable given the
@@ -8751,8 +8797,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   is a debt with a phase. His call; nothing changed.
 
 - ⏸️ **DOORS (D622–D625), HIS TO CALL — each settled or measured, none blocking:**
-  - ✅ ~~Merge, or commit 5 first~~ — **merged and pushed (D626).** ▶️ **Commit 5 (the view) is his to start.** The
-    view still guesses the spur's side (`path-shapes.md`).
+  - ✅ ~~Merge, or commit 5 first~~ — **merged and pushed (D626).** ✅ ~~Commit 5 (the view) is his to start. The view
+    still guesses the spur's side~~ — **built, played and merged (D657–D658)**: doors drawn, spurs land on doors.
   - **The farm warning now fires on every farm** (D624): the nearest a farm can stand to a fresh granary is 6 ticks, so
     every farm is warned and capped at 8 tiles of 13. D42's nag; his call whether it says less, or less often.
   - **D388 kept, and it is the cost's main road:** a house faces its lane with its back to its work (a herdsman five tiles
