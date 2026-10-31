@@ -9,9 +9,10 @@ namespace Bclone.Game;
 /// <remarks>
 /// <para>
 /// ⭐ <b><see cref="TradeGlyph"/>'s rules, applied to the build bar</b> (`specs/build-bar.md §4`).
-/// The project ships <b>no image assets</b> (D26) and the goods table rejects emoji because a
-/// glyph <em>"is at the mercy of whatever the default font happens to cover"</em>. Two to four
-/// shapes each, read at a centimetre across, so these are silhouettes and not drawings.
+/// Drawn in code as a <b>placeholder, not a rule</b>: the game ships image assets (D654), and real
+/// icons wait on the art, which is parked (D639). Emoji stay rejected because a glyph <em>"is at
+/// the mercy of whatever the default font happens to cover"</em>. Two to four shapes each, read at
+/// a centimetre across, so these are silhouettes and not drawings.
 /// </para>
 /// <para>
 /// ⭐⭐ <b>A workplace reads as the colour of the trade that works it</b>, and the stores read as

@@ -13,6 +13,10 @@
 > **📋 D653: `specs/art-inventory.md`** — Joe asked for an art asset inventory; it is an audit, docs only, and the art stays
 > parked. Its B1: the view's *"no image assets (D26)"* rule cites a decision that does not say it.
 >
+> **✅ D654, on `slice/image-assets`, not merged: B1 resolved — the game ships image assets.** Joe voided the phantom rule;
+> the five view comments and `build-bar.md` now cite D654 and call the drawn icons placeholders. Docs and comments only;
+> no art added, the art stays parked. Merging it is his.
+>
 > **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist) or an item-1 verdict. He merged
 > D650 before playing it, then played it: *"Looked right"* (D652).
 >

@@ -8,8 +8,9 @@ namespace Bclone.Game;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <see cref="BuildingGlyph"/>'s rules: a few shapes, colours borrowed from <see cref="VillageMap"/>, no image assets
-/// and no emoji (D26). Larger than the bar's marks, because it sits beside body text rather than in a button.
+/// <see cref="BuildingGlyph"/>'s rules: a few shapes, colours borrowed from <see cref="VillageMap"/>, and no emoji —
+/// drawn in code as a placeholder, not a rule (images are allowed, D654). Larger than the bar's marks, because it sits
+/// beside body text rather than in a button.
 /// </para>
 /// <para>
 /// ⭐ <b>The nomads' mark is the one that rides over their heads as they walk in</b> — a villager's dot under the dun
