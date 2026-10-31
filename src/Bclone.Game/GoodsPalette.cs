@@ -19,8 +19,9 @@ namespace Bclone.Game;
 /// same thing. That is the only reason to colour them at all.
 /// </para>
 /// <para>
-/// ⚠️ <b>Coloured shapes rather than icons</b>: the project ships no image assets (D26), and an
-/// emoji glyph is at the mercy of whatever the default font happens to cover. A
+/// ⚠️ <b>Coloured shapes rather than icons — a placeholder, not a rule</b>: the game ships image
+/// assets (D654) and a good may have a real icon when the parked art is reopened (D639). An emoji
+/// glyph stays rejected, being at the mercy of whatever the default font happens to cover; a
 /// <c>ColorRect</c> draws the same on every machine.
 /// </para>
 /// </remarks>

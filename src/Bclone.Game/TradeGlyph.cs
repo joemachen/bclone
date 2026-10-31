@@ -8,12 +8,12 @@ namespace Bclone.Game;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⭐ <b>Joe asked for icons on the professions table and this is what an icon is here.</b> The
-/// project ships <b>no image assets</b> (D26), and the goods table's own note explains why emoji
-/// were rejected in its place: a glyph *"is at the mercy of whatever the default font happens to
-/// cover"*. A shape painted from polygons and rects renders identically on every machine, needs no
-/// file, and is the same visual language as the valley itself — <b>the real thing rather than a
-/// placeholder for one</b>.
+/// ⭐ <b>Joe asked for icons on the professions table and this is what an icon is here — for now.</b>
+/// Drawn in code as a <b>placeholder, not a rule</b>: the game ships image assets (D654), and real
+/// icons wait on the art, which is parked (D639). The goods table's own note explains why emoji
+/// stay rejected: a glyph *"is at the mercy of whatever the default font happens to cover"*. A
+/// shape painted from polygons and rects renders identically on every machine and is the same
+/// visual language as the valley's placeholders.
 /// </para>
 /// <para>
 /// ⚠️ <b>These are read at a centimetre across, so they are silhouettes and not drawings.</b> Two

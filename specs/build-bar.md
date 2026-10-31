@@ -34,9 +34,11 @@ buildings catalogue** instead of being ten hand-written buttons.
 - **§1.6 Traceable over clever.** Seven `Begin*` methods each hand-clearing eight fields is the
   clever-by-accident shape: it works until the eighth brush forgets one. **It already has** —
   see §5.
-- **⛔ D26 — no image assets.** Icons are drawn from polygons and rects, as `TradeGlyph` draws
-  a trade. Emoji are rejected for the same reason the goods table rejects them: a glyph *"is at
-  the mercy of whatever the default font happens to cover"*.
+- **D654 — the game ships image assets; the drawn icons are placeholders.** Icons are drawn from
+  polygons and rects, as `TradeGlyph` draws a trade, until the parked art (D639) gives them real
+  ones. *(This line used to read "⛔ D26 — no image assets"; D26 is the valley's bounds and camera
+  and never said it — the rule is void, D654.)* Emoji stay rejected for the same reason the goods
+  table rejects them: a glyph *"is at the mercy of whatever the default font happens to cover"*.
 - **D103 — a feature the player cannot reach does not exist.** That is the rule this spec is
   mostly about honouring at scale.
 

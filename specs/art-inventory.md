@@ -1,6 +1,6 @@
 # Inventory: every piece of art the game still needs
 
-> **Status: an audit, read off `main` at 880db1e (2026-10-30, D653).** Joe: *"Build an art asset inventory for bclone so I
+> **Status: an audit, read off `main` at 880db1e (2026-10-30, D653); B1 resolved (D654).** Joe: *"Build an art asset inventory for bclone so I
 > know everything that still needs real art."* Not a spec and not a plan — it invents nothing and decides nothing, and
 > **it does not reopen the art.** Everything here stays under HANDOFF's **🅿️ ART: PARKED** (D639) until Joe reopens it.
 > Companion to `content-inventory.md` (what the village *has*); this is what the village *looks like* and what stands in.
@@ -25,7 +25,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 | # | The call | Where it stands | What it blocks |
 |---|---|---|---|
-| **B1** | **Is the game allowed image assets at all?** The view cites *"the project ships no image assets (D26)"* in five places (`GoodsPalette.cs:22`, `TradeGlyph.cs:10`, `BuildingGlyph.cs:11`, `ToolGlyph.cs:56`, `MomentGlyph.cs:10`) and `build-bar.md:37` calls it *"⛔ D26 — no image assets"*. ⚠️ **But D26 in `DESIGN.md §7` is "the world has bounds and the map has a camera"** — it says nothing about images. The rule is real in the code and has no decision behind it in the log. | ⚠️ Unrecorded | **Every** sprite, texture, icon, portrait and logo below. Answering it is the first art decision. |
+| **B1** | ✅ **RESOLVED (D654): the game ships image assets** — textures, sprites, icons, backdrops. B1 no longer blocks any row below. *As found:* **Is the game allowed image assets at all?** The view cited *"the project ships no image assets (D26)"* in five places (`GoodsPalette.cs:22`, `TradeGlyph.cs:10`, `BuildingGlyph.cs:11`, `ToolGlyph.cs:56`, `MomentGlyph.cs:10`) and `build-bar.md:37` calls it *"⛔ D26 — no image assets"*. ⚠️ **But D26 in `DESIGN.md §7` is "the world has bounds and the map has a camera"** — it says nothing about images. The rule was real in the code and had no decision behind it in the log; D654 voids it and every citation now points there. | ✅ Joe, D654 | Nothing now. It blocked every sprite, texture, icon, portrait and logo below. |
 | **B2** | **D68's destination — *Foundation* (painted 3D) or a 2D drawn map** (`world-legibility.md §7` call 5; D68 at `DESIGN.md` §7). Parchment and the `art/` references point at 2D drawn. | ⏸️ Joe's | Everything in the world: projection, buildings, villagers, animals. |
 | **B3** | **Phases 7–8: a 3D front end (`src/Bclone.Game3D`) on top of the same sim**, the 2D view kept as the debug/probe view (`DESIGN.md §4`, "Phases 7 and 8"). If it stands, finished 2D world art is the debug view's. | Roadmap | Whether 2D world art is the shipped look or a stopgap. Tied to B2. |
 | **B4** | **Projection and turning.** The view is flat top-down (D27) and footprints turn freely — homes to any 1/64 turn (D411), any building since gridless, one piece at any angle (D650). The `art/` references are **fixed-orientation ¾ sprites** (origin 0.5, 1.0; `art/art-direction-hand-drawn-orthographic-asset-pipeline.jpg`). Nothing reconciles the two. Store crates already snap to a quarter turn (D423), which is a precedent. | Undecided | Every building, villager, animal and object sprite. A ¾ sprite cannot turn to 1/64. |
@@ -258,4 +258,4 @@ gathering-radius ring; home-to-work route lines. All 🟨, all functional. Wheth
 4. **The minimap marks only three things**, and a site looks finished.
 5. **The tech tree view is not to its own spec** (known colour, fogged silhouette).
 6. **Unicode symbols as icons** throughout the cards and windows — the font dependence the code rejects for goods.
-7. **"No image assets" is cited to a decision that does not say it** (B1).
+7. **"No image assets" is cited to a decision that does not say it** (B1) — ✅ **resolved, D654**: images are allowed and the citations are corrected.

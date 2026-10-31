@@ -54,8 +54,9 @@ public enum ToolMark
 /// </summary>
 /// <remarks>
 /// <see cref="BuildingGlyph"/>'s rules exactly — two to four shapes, colours borrowed from
-/// <see cref="VillageMap"/>, no image assets and no emoji (D26). These are the buttons that act
-/// on ground the village already has rather than putting something new on it.
+/// <see cref="VillageMap"/>, and no emoji; drawn in code as a placeholder, not a rule (D654).
+/// These are the buttons that act on ground the village already has rather than putting
+/// something new on it.
 /// </remarks>
 public sealed partial class ToolGlyph : Control
 {
