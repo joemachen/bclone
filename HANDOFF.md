@@ -10,6 +10,9 @@
 > in ten of every 2×1 split so. Now a building also stands on the tile between two corner-touching tiles, the one nearer
 > its centre; nothing else's coverage changes, no golden moved. The walled-in warning adds *"or mark it somewhere else"*.
 >
+> **📋 D653: `specs/art-inventory.md`** — Joe asked for an art asset inventory; it is an audit, docs only, and the art stays
+> parked. Its B1: the view's *"no image assets (D26)"* rule cites a decision that does not say it.
+>
 > **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist) or an item-1 verdict. He merged
 > D650 before playing it, then played it: *"Looked right"* (D652).
 >
@@ -8521,6 +8524,13 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAP D653 FOUND — A DECISION NUMBER IN A COMMENT IS A CLAIM ABOUT THE LOG
+
+Five view files and `build-bar.md` say *"the project ships no image assets (D26)"*. **D26 in `DESIGN.md §7` is the
+valley's bounds and the camera** — it never mentions images. The rule is real in the code and has no decision behind it,
+so it looked settled for three months while nobody had settled it. ⭐ **Before leaning on a `(Dnnn)` in a comment, grep
+`- **Dnnn ·` in §7 and read it.** The number may be a neighbour, a typo, or the decision the author *meant* to log.
+
 ## ⛔ THE TRAPS D650 FOUND — A GUARD'S FIRST RED IS A CLAIM ABOUT THE GUARD UNTIL ITS MESSAGE IS READ
 
 - **`ASplitSiteIsReachedAndBuilt` went red before the fix and the red was its own bug.** `Complete` stands a *new*
@@ -8670,6 +8680,8 @@ Joe: *"I'm parking the art work and going back to finishing the game systems …
 until I reopen it."* ⛔ **Not a to-do list for a session to pick up.** Where it stands: the grass look is approved and
 recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchment and the world palette passes
 `tools/legibility/check.py` (`specs/world-legibility.md`, D635–D639); the grass is in the lab only, never in the valley.
+📋 **The full inventory — every item that needs real art, what stands in, its variants and the call blocking its style — is
+`specs/art-inventory.md` (D653).** The list below is what Joe *parked*; the inventory is everything. Neither is a to-do list.
 
 - **Terrain shader** — the grass integrated into the valley (D628's coverage map, option A), splat blending between
   ground kinds, edge bleed, and real paper grain (world-anchored; the lab's is a screen-anchored placeholder).
