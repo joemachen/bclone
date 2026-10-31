@@ -53,6 +53,7 @@ public sealed class ZzClothing
         config = cold switch
         {
             "bare" => config with { TailorUnlockLeather = int.MaxValue },
+            "coatforever" => config with { CoatWinters = 1000 },
             "posed" => config with { ExposureDaysOutdoors = config.ExposureDaysSheltered },
             "off" => config with { ExposureDaysOutdoors = 0 },
             _ => config,
@@ -120,7 +121,10 @@ public sealed class ZzClothing
             }
 
             // C4 (D663): the player's part — a tailor's shop marked near the founding site the tick the village learns to sew.
-            if (!shopMarked && world.IsUnlocked(BuildingKind.TailorShop))
+            // ZZ_SHOPYEAR=n holds the marking until year n (D663: a stone-costing site marked in Year 1 of a four-founder
+            // village is the harness playing badly, D447/D515 — the player marks it when the village can afford it).
+            int shopYear = int.Parse(Environment.GetEnvironmentVariable("ZZ_SHOPYEAR") ?? "1", System.Globalization.CultureInfo.InvariantCulture);
+            if (!shopMarked && world.IsUnlocked(BuildingKind.TailorShop) && t >= config.TicksPerYear * (shopYear - 1))
             {
                 shopLearnedYear = t / config.TicksPerYear + 1;
                 ColdStartTests.MarkSomewhereNear(world, BuildingKind.TailorShop, world.Map.FoundingSite, 8);

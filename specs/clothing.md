@@ -2,10 +2,10 @@
 
 **Decision:** D45's third clause, as Joe re-decided it in D659. **Slice:** `specs/environment-and-seasons.md §11`, slice 4;
 Phase 5 gate item 1, second of Joe's four (D656: doors → **clothing** → logistics → house tiers).
-**Status:** 🔨 **specced (D659, 2026-10-31) and IN BUILD on `slice/clothing`.** ✅ C0 (this spec, the baseline §5.3, the stale
-lines; D659), ✅ **C1 (the good and the coat on the villager, §3.1–3.5; D660)** and ✅ **C2 (the tailor's shop, the batch, the
-quota and the unlock, §3.5–3.6; D661)** and ✅ **C3 (the view: the shop's button and glyphs, the card's COAT line, the post
-window's scroll; D662)** are built; C4 the measurement and Joe's play follow. Nothing of it is on `main`. *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
+**Status:** ✅ **BUILT AND MEASURED on `slice/clothing` (D659–D663, 2026-10-31), UNPLAYED, NOT MERGED.** C0 (this spec, the
+baseline §5.3, the stale lines; D659), C1 (the good and the coat on the villager, §3.1–3.5; D660), C2 (the tailor's shop, the
+batch, the quota and the unlock, §3.5–3.6; D661), C3 (the view; D662) and C4 (the real build measured against §7, §5.4; D663).
+**Next: Joe plays it** (`.\run.bat`), then the merge at his word. Nothing of it is on `main`. *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
 nobody writing it down (found D533); re-measured D533; parked D534; unparked D656.*
 
 ---
@@ -202,6 +202,37 @@ hired, the meat held against its limit and whether the village is short of food.
   exactly when meat is wanted. No code changed; raising the meat limit is the player's lever, and whether the
   quota should keep one hunter at the lodge for leather's sake is **Joe's call** (§6).
 
+### 5.4 2026-10-31 — the real build, held against §7 (D663)
+
+`ZzClothing` on the C0–C3 tree, the 13 every-source valleys (the only opening the unattended harness builds a lodge in — the
+played one never does, §5.3, so it cannot differ), fifty years, limits ×10 at Year 5. **Bare** is the shipped game with the
+shop never learned (`tailor_unlock_leather` out of reach); **coat** is the shipped game, the harness marking a tailor's shop
+near the founding site — once the tick it is learned (Year 1, five hunts in), once held to Year 5; and a diagnostic arm,
+**coats that never wear**, with the shop marked in Year 1.
+
+| | alive at 50 | frozen | break-offs | freezes Y3+, outdoors / roof | froze *seeking shelter* | coats sewn | adults coated | tailor seat-years |
+|---|---|---|---|---|---|---|---|---|
+| bare (no shop ever) | 30.8 | 16.0 | 473 | 86 / 70 | 0 | — | — | — |
+| coat, shop marked in Year 1 | **26.2** | **20.1** | 330 (−30 %) | **122 / 87** | **34** | 121 | 55 % | 3.4 |
+| coat, shop held to Year 5 | **30.8** | **15.0** | 391 (−17 %) | **76 / 67** | 1 | 113 | 48 % | 2.8 |
+| coats never wear, shop Year 1 | 26.6 | 20.3 | 299 (−37 %) | 106 / 106 | — | 29 | 74 % | 0.6 |
+
+- **The bare arm is the C0 baseline to the number** (30.8 / 16.0 / 473 / 86 / 70): a village that never learns the shop plays
+  as the shipped game did — §7 item 3, and the goldens say the same.
+- **Marked in Year 1 the coat world ends smaller and colder, and that is the harness, not the coat.** A stone-costing site
+  marked by four founders before any rock is painted (Year 3) is D515's free farm and D648's finished farm again (D447: *a
+  harness is not a player*); with coats that never wear and the same Year-1 site the deaths are the same (26.6 / 20.3), and
+  with the shop held to Year 5 they are gone. How a Year-1 site costs lives in years 21–50 is **not traced**; the shape is.
+- **Held to Year 5 — the player's timing — the coat is what D659 asked for:** 17 % fewer cold break-offs (the posed coat's
+  third needed every adult coated; here half are), outdoor freezes 86 → 76, roof deaths 70 → 67 (fuel, as expected), one
+  fewer frozen a valley, no fewer alive. The 34 *froze seeking shelter* of the Year-1 arm are 1.
+- **Leather:** the coat arms spent ≈ 590 leather a valley — 118 coats at 5 each, to the recipe; one lodge's 50 a year covers
+  it, so `leather_per_coat` 5 stands (§3.7).
+- ⚠️ **The tailor is hired about 7 % of the time** (2.8 seat-years in ~40 shop-years), sews about 3 coats a year against a
+  want of ~8, and half the adults wear one at any moment; the shelves stay near empty (1.3). The demand is continuous — not
+  D22's errand — but at ×10 limits every trade wants hands and tailors are taken after smiths. ⏸️ Whether coats outrank
+  stone and iron in the quota is **Joe's call** (§7 item 4).
+
 ---
 
 ## 6. What makes clothing matter — unchanged, and no longer a reason to wait
@@ -220,12 +251,17 @@ and is **his call, not this slice's**.
 
 **The bar (Joe, D659: *"fewer break-offs"*)**, measured in C4 on `ZzClothing` with the real build —
 *bare* = the tailor never unlocked, *coat* = the shipped game — with limits ×10 at Year 5, 43 valleys:
-1. **Fewer cold break-offs** in the coat world than the bare one (§5.2's pose: about two-thirds fewer);
-2. **Fewer outdoor freezes** after the founding, and **no fewer alive at fifty**;
+1. **Fewer cold break-offs** in the coat world than the bare one (§5.2's pose: about two-thirds fewer) — ✅ **D663:
+   473 → 391 a valley (−17 %) with the shop at Year 5; −30 % marked at once (§5.4).**
+2. **Fewer outdoor freezes** after the founding, and **no fewer alive at fifty** — ✅ **D663: 86 → 76 and 30.8 → 30.8 with
+   the shop at Year 5.** ⚠️ Marked in Year 1 by four founders it is 122 and 26.2 — the harness's play (§5.4), not the coat.
 3. **A village that never unlocks the tailor plays byte for byte as today** — every golden but the Phase
-   5 golden holds, and that one moves for `LeatherEverHeld` alone (proved, §3.6);
+   5 golden holds, and that one moves for `LeatherEverHeld` alone (proved, §3.6) — ✅ **D661, D663: the bare arm is the
+   baseline to the number**; the Phase 5 golden moved for three named causes (the counter, the unlock's moment, a neighbour's
+   stock slot), proved.
 4. **The tailor is a livelihood, not an errand**: seat-years per valley and coats sewn a year reported,
-   against a demand of adults ÷ `coat_winters`.
+   against a demand of adults ÷ `coat_winters` — ⚠️ **D663: continuous demand (~8 a year), ~3 sewn, 2.8 seat-years in ~40
+   shop-years.** Hired too little rather than wanted in bursts; the quota's rank is Joe's (§5.4).
 
 ⛔ ~~*A clothed village must do measurably more winter work than an unclothed one.*~~ The 2026-08-01 bar
 is struck, not met: D533 showed the work is bounded by the limits, so it cannot be met by construction.

@@ -1,19 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS OPEN: C0 THE SPEC AND BASELINE (D659), C1 THE COAT (D660), C2 THE TAILOR (D661) AND C3 THE VIEW (D662) ARE BUILT, UNPLAYED, UNMERGED; NEXT: C4 THE MEASUREMENT, THEN JOE PLAYS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT AND MEASURED (D659–D663: THE SPEC, THE COAT, THE TAILOR, THE VIEW, THE REAL BUILD AGAINST THE BAR), UNPLAYED, UNMERGED. NEXT: JOE PLAYS IT, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D662) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D663) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = a9c6fde (D658), pushed; origin agrees. `slice/clothing` is open off it, local, unpushed**, holding C0 (D659: `specs/clothing.md`
 > rewritten with a DoD, the baseline re-taken, the winter lodge traced, six stale doc lines made true), C1 (D660: `Goods.Clothing`,
 > `Villager.CoatDays`, the hearth's coat arm, wear by the winter day, the fetch, `ClothingShortfall`; save format 9) and C2 (D661: the
 > tailor's shop and trade, the batch, `TailorsWanted`, the unlock at 50 leather handled, clothing in the region's rows; the Phase 5 golden
 > re-pinned and proved) and C3 (D662: the view — the shop's learned button, glyphs and colour, the card's COAT line, the post window's
-> goods grid scrolling past seven rows, probe `coat:`). The tree is clean but for `bclone-tracker.xlsx` (never staged, committed or ignored).
+> goods grid scrolling past seven rows, probe `coat:`) and C4 (D663: the real build measured, `clothing.md §5.4`). **One commit holds C0–C3
+> (22a8b88, the four checks on that tree) and a second C4 (docs and the harness).** The tree is clean but for `bclone-tracker.xlsx`
+> (never staged, committed or ignored).
 >
 > **⚖️ Joe's four clothing calls (D659), settled — do not re-ask:** a coat is **a roof you wear** (outdoors at the sheltered rate; no third
 > "tattered furs" rate — today's 15 days is the furs); **every adult** wears one, children not; the tailor's shop is **learned at 50 leather
 > ever held**; the bar is **fewer break-offs**, not more winter work. `clothing.md §3` and §7 hold them.
 >
-> **▶️ NEXT — C4, the measurement (`clothing.md §7`):** copy `tools/harness/ZzClothing.cs` into `tests/`, run `ZZ_COLDS=bare,coat
+> **▶️ NEXT — JOE PLAYS `slice/clothing`** (`.\run.bat`): the tailor's shop appearing under *Works* after about his fifth hide (the moment
+> *The village learned to sew*), somebody walking to a store for a coat, a villager's card's COAT line (*Coat — 3 winters left*), the shop's
+> card saying why it waits, the post window scrolling its goods once fifteen are known. **Merge at his word only.** ⚠️ What the measurement
+> says about play: a shop marked by four founders before the village has stone drags the founding (`clothing.md §5.4`, D515's shape);
+> the game's *nobody can raise it* line is what tells him so. **His calls after the play:** the tailor's rank in the quota (hired ~7 % of
+> the time at ×10 limits — tailors come after smiths), `coat_winters` 3 and `leather_per_coat` 5, the post window's columns.
+>
+> **— C4's brief, as it stood (done D663) —**
+> **▶️ (done) C4, the measurement (`clothing.md §7`):** copy `tools/harness/ZzClothing.cs` into `tests/`, run `ZZ_COLDS=bare,coat
 > ZZ_LIMITX=10 ZZ_HUNT=1 ZZ_ARMS=every` — *bare* is the shop never learned (`TailorUnlockLeather` out of reach), *coat* the shipped game
 > with the harness marking a shop near the founding site the tick it is learned; read `ZZC` (break-offs, outdoor freezes, alive), `ZZL`
 > (leather) and the new `ZZT` (coats sewn, coated adults, tailor seat-years); write the four DoD items into `clothing.md §5.3` and §7; delete
@@ -35,6 +45,8 @@
 > **Clothing ships with no starting limit** (D660): a set limit is hashed and would move every shipped golden; hay's reasoning. With none set
 > the tailor sews toward `LabourQuota.ClothingWanted`. Joe's *"50 clothes"* is his to set on the panel.
 >
+> **Numbers (D663, the four checks on the C4 tree — the same build as D662's):** suite 1878 / 0 / 5 of 1883 in 16m48 (D662's 19m16 on the same
+> build: the machine); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392, none moved.
 > **Numbers (D662, the four checks on the C0–C3 tree, one commit):** suite 1878 / 0 / 5 of 1883 in **19m16** (13m42 on the C1 tree, 15m15 on C2's, with under a minute of new tests between — the machine, unexplained, as D646's 13 → 18 was); view 0 warnings; probe 103 `[widths]` lines (+ `coat:`), 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 390 → 392, the two being the *Was …* comments on the re-pinned Phase 5 golden; `check.py` 0 of 39 things and 0 of 26 marks fail.
 >
 > **— D658, as it was —**
@@ -8621,6 +8633,15 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAP D663 PAID FOR — A HARNESS THAT MARKS A BUILDING THE TICK IT IS LEARNED IS D515 AGAIN
+
+- **The first real-build arm said coats kill** (alive 30.8 → 26.2, 34 frozen *seeking shelter*), and the obvious cause — a coat wearing
+  through on a far errand — was wrong: coats that never wear died the same. The harness had marked a stone-costing shop the tick four
+  founders learned it, two years before any rock is painted. Held to Year 5 the coat world is as big as bare and less cold. **Before
+  blaming a mechanic for a harness village's deaths, move the harness's own placements to when a player could make them** (D447, D515,
+  D648 — the fourth time). The state histogram (`ZZD` by state and year band) is what pointed away from the wear: the deaths were
+  decades after the site, and spread across every job.
+
 ## ⛔ THE TRAPS D661–D662 PAID FOR — A MUTANT'S REVERSE ANCHOR, THE THIRD CAUSE OF A MOVED GOLDEN, AND THE MODDED FIXTURES
 
 - **A mutant script must be able to put the file back, and an empty or common string cannot anchor the way back.** Twice a reversal
@@ -8833,6 +8854,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.
+- ⏸️ **THE TAILOR IS HIRED ABOUT 7 % OF THE TIME (D663, `clothing.md §5.4`).** Demand is continuous (~8 coats a year) but at ×10
+  limits every trade wants hands and tailors are taken after smiths, before quarriers; ~3 coats a year get sewn and half the adults
+  are coated. Whether coats outrank stone and iron is his call; and `coat_winters` 3 / `leather_per_coat` 5 after he plays.
 - ⏸️ **THE POST'S WINDOW SCROLLS ITS GOODS PAST SEVEN ROWS (D662).** Fifteen goods known would stand it 573 tall against his 560 (D597);
   the grid scrolls instead. Three columns in a wider window (~980 of 1280) would show every good at once. His call.
 - ⏸️ **CLOTHING'S TYPED NUMBERS (D659, `clothing.md §3.7`):** `coat_winters` 3, `leather_per_coat` 5, `sew_ticks` 10, `sews_per_stint` 2.
