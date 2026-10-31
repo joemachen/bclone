@@ -672,6 +672,14 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.WheatEverReaped);
         }
 
+        // The tailor's shop's unlock reads this (D659, `clothing.md §3.6`), so it is state — sparse, under a tag. Coats
+        // sewn is a statistic and is not mixed.
+        if (world.LeatherEverHeld != 0)
+        {
+            hash = MixByte(hash, 0x3B);
+            hash = MixUInt32(hash, (uint)world.LeatherEverHeld);
+        }
+
         // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
         // learned by doing mixes nothing.
         if (world.ShownTheTechTree)
@@ -1222,6 +1230,14 @@ public static class StateHash
         {
             hash = MixUInt32(hash, 7u);
             hash = MixUInt32(hash, (uint)villager.ServingSiteId);
+        }
+
+        // The coat on their back (D659, `clothing.md §3.3`) — it decides how fast open ground chills them. Sparse and
+        // tagged like the tool, so a village with no coat hashes as it did before coats existed.
+        if (villager.CoatDays != 0)
+        {
+            hash = MixUInt32(hash, 8u);
+            hash = MixUInt32(hash, (uint)villager.CoatDays);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

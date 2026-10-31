@@ -1180,6 +1180,41 @@ public sealed record SimConfig
     [JsonPropertyName("tool_uses")]
     public int ToolUses { get; init; } = 150;
 
+    /// <summary>
+    /// Winters a coat lasts on a back (`clothing.md §3.3`, D659) — the clothing row's <c>coat_winters</c>, priced from
+    /// here so the built-in row and a modder's read one key.
+    /// </summary>
+    /// <remarks>
+    /// <b>Three, Joe's *"a few winters"* (D69) as a lifetime</b>: a coat wears a day every winter day it is worn,
+    /// whatever the day held, so the tailor's demand is a third of the adults a year — a livelihood rather than an
+    /// errand (D22). ⏳ Typed so the suite can run; `clothing.md §3.7` says C4 measures it against the leather flow.
+    /// </remarks>
+    [JsonPropertyName("coat_winters")]
+    public int CoatWinters { get; init; } = 3;
+
+    /// <summary>Leather one coat takes at the tailor's shop (`clothing.md §3.5`, D659) — half a hunt's hide. ⏳ C4 measures it.</summary>
+    [JsonPropertyName("leather_per_coat")]
+    public int LeatherPerCoat { get; init; } = 5;
+
+    /// <summary>Ticks one coat takes to sew (D659) — between a bake's 4 and a hunt's 15. ⏳ C4.</summary>
+    [JsonPropertyName("sew_ticks")]
+    public int SewTicks { get; init; } = 10;
+
+    /// <summary>Coats a tailor sews in one stint at the shop before walking home (D659). ⏳ C4.</summary>
+    [JsonPropertyName("sews_per_stint")]
+    public int SewsPerStint { get; init; } = 2;
+
+    /// <summary>Seats at a tailor's shop (D659).</summary>
+    [JsonPropertyName("tailor_shop_capacity")]
+    public int TailorShopCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Leather the village must have handled before the tailor's shop reaches the menu (`clothing.md §3.6`, D659) — the
+    /// smithy's shape (D395), about five hunts. Joe: *"50 leather held"*.
+    /// </summary>
+    [JsonPropertyName("tailor_unlock_leather")]
+    public int TailorUnlockLeather { get; init; } = 50;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -1605,7 +1640,7 @@ public sealed record SimConfig
             {
                 new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
                 new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Leather, 100),
-                new MaterialCost(World.Goods.Meat, 125),
+                new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Clothing, 25),
             },
         },
 
@@ -1618,6 +1653,10 @@ public sealed record SimConfig
             {
                 new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Leather, 100),
                 new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 12),
+
+                // The coats sewn from its hides (D660, `clothing.md §3.4`): half of Joe's "50 clothes" (D62), the
+                // size rule for a good that ships with no limit. By cart only (tier 2), so no boat brings one yet.
+                new MaterialCost(World.Goods.Clothing, 25),
             },
             MakesAnimals = 6,
             Wants = new[]
@@ -3183,6 +3222,21 @@ public sealed record SimConfig
             // shortage nobody can read. Nobody eats it but the herd.
             StoredBy = new[] { StoreKind.Barn },
         },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Clothing,
+            Category = World.GoodCategory.Materials,
+            Name = "clothing",
+
+            // Five leather's worth and a tailor's day (`clothing.md §3.4`): leather is 3.
+            TradeWorth = 15,
+            SourceName = "the tailor's shop",
+
+            // ⚠️ THE WAREHOUSE, LIKE LEATHER — a material, not a meal; and never the market, whose counter is the
+            // household's shop (D372): a coat is fetched by the one who wears it, as a tool is.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            CoatWinters = CoatWinters,
+        },
     };
 
     /// <summary>
@@ -3406,6 +3460,19 @@ public sealed record SimConfig
 
             // A met bread limit lets the oven go cold (D139).
             LimitedBy = World.Goods.Bread,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Tailor,
+            Name = "tailor",
+            Plural = "tailors",
+            Doing = "sewing coats",
+            WorksAt = BuildingKind.TailorShop,
+
+            // A met clothing limit stills the needle (D139); with none set, the shop sews toward
+            // `LabourQuota.ClothingWanted` (`clothing.md §3.5`).
+            LimitedBy = World.Goods.Clothing,
             UsesTool = true,
         },
 
@@ -3921,6 +3988,23 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
+        // ⭐ THE TAILOR'S SHOP (D659, `specs/clothing.md §3.5`) — leather to coats. A hut's price and footprint: the
+        // work is a bench and a needle, not an oven. Learned at fifty leather handled (§3.6).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TailorShop,
+            Name = "tailor's shop",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HutLogs),
+                new MaterialCost(World.Goods.Stone, HutStone),
+            },
+            WorkTicks = HutWorkTicks,
+            Seats = TailorShopCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
         // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
         new BuildingRow
@@ -4082,6 +4166,15 @@ public sealed record SimConfig
             YearsPhrase = "as a baker",
             MasteryLine = "{0} has baked the village's bread for {1} years. "
                 + "The oven is read by the hand on its door.",
+        },
+        new SkillRow
+        {
+            Id = 9,
+            Name = "tailoring",
+            GrownBy = JobKind.Tailor,
+            YearsPhrase = "as a tailor",
+            MasteryLine = "{0} has sewn the village's coats for {1} years. "
+                + "A hide is cut once and nothing is wasted.",
         },
 
         // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
@@ -5574,6 +5667,11 @@ public sealed record SimConfig
             throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
         }
 
+        if (TailorUnlockLeather < 0)
+        {
+            throw new SimConfigException($"tailor_unlock_leather cannot be negative (got {TailorUnlockLeather}).");
+        }
+
         // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,
         // and the unlocks may be nought (a modder's village that knows both from the start) but not less.
         foreach ((string key, int value) in new[]
@@ -5582,6 +5680,8 @@ public sealed record SimConfig
             ("grind_ticks", GrindTicks), ("grinds_per_stint", GrindsPerStint), ("flour_per_bake", FlourPerBake),
             ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
+            ("leather_per_coat", LeatherPerCoat), ("sew_ticks", SewTicks), ("sews_per_stint", SewsPerStint),
+            ("tailor_shop_capacity", TailorShopCapacity),
             ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
             ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
             ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
@@ -5911,6 +6011,13 @@ public sealed record SimConfig
                     $"goods[{i}] ('{good.Name}') has tool_uses {good.ToolUses}, "
                     + $"tool_speed_bonus_percent {good.ToolSpeedBonusPercent} and tool_yield_bonus_percent "
                     + $"{good.ToolYieldBonusPercent}; uses are zero or more and each bonus is 0 to 100.");
+            }
+
+            // A coat's winters are its row's (`clothing.md §3.3`): none, or some.
+            if (good.CoatWinters < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has coat_winters {good.CoatWinters}; a coat lasts zero or more winters.");
             }
 
             if (good.ForgedFrom.Count > 0 && !good.IsTool)

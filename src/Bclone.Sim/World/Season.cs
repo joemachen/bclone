@@ -314,6 +314,18 @@ public enum VillagerState
 
     /// <summary>To the trading post for what a boat left, to carry it home (D594).</summary>
     FetchingFromThePost,
+
+    /// <summary>
+    /// To the store that holds a coat, for one of their own (D659, `clothing.md §3.3`) — the tool's errand one good
+    /// over, and every adult's rather than a trade's.
+    /// </summary>
+    FetchingACoat,
+
+    /// <summary>To the tailor's shop they hold a seat at (D659) — the miller's walk.</summary>
+    TravelingToTailor,
+
+    /// <summary>At the shop, sewing leather into a coat — a batch (D659, `clothing.md §3.5`).</summary>
+    Sewing,
 }
 
 /// <summary>

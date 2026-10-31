@@ -3,7 +3,7 @@
 > Status: **✅ four of five slices built, and the fifth left this spec.** The building
 > selection panel, the calendar (D49), the buildings the economy had outgrown (D50), the
 > idle winter (D44/D52) and shelter-and-exposure (D45/D53) have all shipped; **clothing is
-> blocked** (see `specs/clothing.md`); and the fifth slice — the **seasonal yield curve** —
+> 🔨 in build on `slice/clothing` (D659)** (see `specs/clothing.md`; this said *blocked* until then); and the fifth slice — the **seasonal yield curve** —
 > **is superseded by `crops-and-orchards.md` (D161)**, which is where the last of Phase 2
 > now lives. §5.1 keeps the argument and the derived target; the mechanic moved.
 >
@@ -331,7 +331,8 @@ Joe's model: **cold is about shelter and exposure, not household accounting.**
 
 Villagers break off and seek shelter at a stated threshold, but still have to go out
 for food and work. **Clothing** (leather, wool or cotton) removes the outdoor danger
-entirely — and is therefore what unlocks winter as a working season, which is
+entirely (⚖️ *as built, D659: a coat is a roof you wear — outdoors chills a clothed villager at the
+sheltered rate, not at none; `clothing.md §3`*) — and is therefore what unlocks winter as a working season, which is
 §2.7's *unlock by doing* arriving out of a survival mechanic. Clothing waits on
 D19/D39's production tier, so **every slice before it must be survivable without it.**
 
@@ -391,7 +392,8 @@ project learning twice.
    **Survivable with no clothing**, and cold now fires when the fuel chain fails rather
    than on a per-household timer (§9.4 (c) and (d)).
 4. **Clothing**, once D19/D39's production tier exists. The slice that turns winter
-   from survivable into workable.
+   from survivable into workable. 🔨 **In build (D659, `slice/clothing`)** — its input is hunting's leather
+   (D291), and D533 measured what it buys: fewer cold break-offs, not more winter work.
 5. **The seasonal yield curve** (§5.1), on its own terms — economy to an annual basis
    as a byte-identical no-op first, then the curve turned on.
 

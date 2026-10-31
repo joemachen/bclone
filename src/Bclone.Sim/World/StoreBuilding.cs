@@ -910,4 +910,12 @@ public enum Goods
     /// Ships with no starting limit, so no golden moves for it existing (`trade.md §11.1`). <b>Appended at 13.</b>
     /// </remarks>
     Hay = 13,
+
+    /// <summary>
+    /// ⭐ A coat — leather sewn at the tailor's shop, worn by an adult: <b>a roof you wear</b> (Joe, D659;
+    /// `clothing.md`). Open ground chills whoever wears one at the roof's rate.
+    /// </summary>
+    /// <remarks>Appended, never renumbered. A material (D107): the warehouse's, never a granary's or the market's.
+    /// How many winters it lasts is its row's (<c>GoodRow.CoatWinters</c>). The good D62's list called *"50 clothes"*.</remarks>
+    Clothing = 14,
 }

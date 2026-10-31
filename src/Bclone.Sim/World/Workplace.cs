@@ -191,6 +191,13 @@ public enum JobKind
     /// the trader (Joe, D591): the marketer's plural is <i>traders</i> (D188), and so is half this codebase's prose.
     /// </remarks>
     Merchant = 14,
+
+    /// <summary>
+    /// Sew leather into coats at the tailor's shop (D659, `clothing.md §3.5`) — the miller's stint, one recipe over.
+    /// Wanted against <c>LabourQuota.ClothingShortfall</c>, the smith's shape.
+    /// </summary>
+    /// <remarks>⛔ Appended at 15.</remarks>
+    Tailor = 15,
 }
 
 /// <summary>

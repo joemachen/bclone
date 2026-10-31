@@ -569,6 +569,22 @@ public sealed class Villager
     /// </remarks>
     public Goods ToolGood { get; set; } = Goods.Tools;
 
+    /// <summary>
+    /// The winter days left in the coat on their back — <b>0 for no coat</b> (`clothing.md §3.3`, D659).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="ToolUses"/>' shape one good over: taken from a store's count, never conjured; worn a day every
+    /// winter day whatever the day held; hashed sparsely, so a village with no coat hashes as it did before coats
+    /// existed. While it is above zero, open ground chills them at the roof's rate (<c>HearthSystem</c>).
+    /// </para>
+    /// <para>
+    /// <b>Zero is the founders' furs.</b> D69's third rate was never built and is not wanted (Joe, D659): today's 15
+    /// days outdoors is what they arrived in, and the coat is the upgrade.
+    /// </para>
+    /// </remarks>
+    public int CoatDays { get; set; }
+
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
 
@@ -801,6 +817,7 @@ public sealed class Villager
                 : "carrying the harvest to the farm",
             VillagerState.StockingTheMarket => "carrying goods to the market",
             VillagerState.FetchingATool => "fetching a tool from a store",
+            VillagerState.FetchingACoat => "fetching a coat from a store",
             VillagerState.TravelingToSmithy => $"walking to {where}",
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
@@ -810,6 +827,10 @@ public sealed class Villager
                 ? $"grinding wheat, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} grind of the day"
                 : "grinding wheat at the stones",
             VillagerState.TravelingToBakery => $"walking to {where}",
+            VillagerState.TravelingToTailor => $"walking to {where}",
+            VillagerState.Sewing => BatchesThisStint > 0
+                ? $"sewing coats, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
+                : "cutting a hide for a coat",
             VillagerState.Baking => BatchesThisStint > 0
                 ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
                 : "lighting the oven",
@@ -899,6 +920,7 @@ public sealed class Villager
             ["splits_this_stint"] = SplitsThisStint,
             ["tool_uses"] = ToolUses,
             ["tool_good"] = SaveWriter.Good(ToolGood),
+            ["coat_days"] = CoatDays,
             ["forges_this_stint"] = ForgesThisStint,
             ["digs_this_stint"] = DigsThisStint,
             ["batches_this_stint"] = BatchesThisStint,
@@ -956,6 +978,7 @@ public sealed class Villager
             SplitsThisStint = save.Int("splits_this_stint"),
             ToolUses = save.Int("tool_uses"),
             ToolGood = save.Good("tool_good"),
+            CoatDays = save.Int("coat_days"),
             ForgesThisStint = save.Int("forges_this_stint"),
             DigsThisStint = save.Int("digs_this_stint"),
             BatchesThisStint = save.Int("batches_this_stint"),

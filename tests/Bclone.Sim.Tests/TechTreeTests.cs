@@ -120,8 +120,11 @@ public sealed class TechTreeTests
 
             // ⭐ And hay waits on the barn, which waits on the town hall (D590).
             bool barned = goods == Goods.Hay;
+
+            // ⭐ And clothing waits on the tailor's shop, learned at fifty leather handled (D661).
+            bool sewn = goods == Goods.Clothing;
             _output.WriteLine($"day one: {world.GoodsCatalog.NameOf(goods)} {(world.KnowsOf(goods) ? "known" : "unknown")}");
-            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned, world.KnowsOf(goods));
+            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned && !sewn, world.KnowsOf(goods));
         }
 
         world.IronEverDug = world.Config.SmithyUnlockIron;
@@ -134,6 +137,9 @@ public sealed class TechTreeTests
         // The mill and the bakery are learned together (Joe, D523), so flour and bread are known together.
         world.WheatEverReaped = world.Config.MillUnlockWheat;
         Assert.False(world.KnowsOf(Goods.Hay), "Hay was known before the barn.");
+        Assert.False(world.KnowsOf(Goods.Clothing), "Clothing was known before the tailor's shop.");
+        world.LeatherEverHeld = world.Config.TailorUnlockLeather;
+        Assert.True(world.KnowsOf(Goods.Clothing));
         world.TownHall = new TownHall { Position = Point.CentreOf(world.Map.FoundingSite), Name = "the hall", RaisedAtTick = 1 };
         Assert.All(Enumerable.Range(0, world.GoodsCatalog.Count), g => Assert.True(world.KnowsOf((Goods)g)));
     }

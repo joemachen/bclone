@@ -322,6 +322,7 @@ public sealed partial class SimWorld
         barn.HerdHead--;
         barn.Store.Add(Goods.Meat, animal.MeatPerHead);
         barn.Store.Add(Goods.Leather, animal.LeatherPerHead);
+        HeldLeather(animal.LeatherPerHead);
         RecordFoodProduced(Goods.Meat, animal.MeatPerHead);
         return true;
     }

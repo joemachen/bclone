@@ -2442,7 +2442,7 @@ public sealed partial class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
-            JobKind.Miller or JobKind.Baker =>
+            JobKind.Miller or JobKind.Baker or JobKind.Tailor =>
                 WhyTheBatchWaits(workplace) is string waits ? $"{workplace.Name}: {waits}" : null,
             JobKind.Quarrier or JobKind.Miner =>
                 WhyTheFaceIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
@@ -3869,6 +3869,11 @@ public sealed partial class SimWorld : IObstacles
             $"Nobody here mills or bakes yet — the village has reaped {WheatEverReaped} of the "
             + $"{Config.MillUnlockWheat} wheat it takes to learn.",
 
+        // ⭐ THE TAILOR'S SHOP IS LEARNED AT FIFTY LEATHER HANDLED (Joe, D659; `clothing.md §3.6`), the smithy's shape.
+        BuildingKind.TailorShop when LeatherEverHeld < Config.TailorUnlockLeather =>
+            $"Nobody here sews yet — the village has handled {LeatherEverHeld} of the "
+            + $"{Config.TailorUnlockLeather} leather it takes to learn.",
+
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
@@ -3938,8 +3943,8 @@ public sealed partial class SimWorld : IObstacles
             return known(BuildingKind.Smithy) || (goods == Goods.Tools && Config.CartTools > 0);
         }
 
-        // The mill's and the oven's goods wait on the building that makes them.
-        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker })
+        // The mill's, the oven's and the tailor's goods wait on the building that makes them.
+        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker, JobKind.Tailor })
         {
             if (BatchFor(trade) is Batch batch && batch.Output == goods
                 && JobsCatalog.WorksAt(trade) is BuildingKind maker)
@@ -4124,6 +4129,9 @@ public sealed partial class SimWorld : IObstacles
         JobKind.Baker => new Batch(
             JobKind.Baker, Goods.Flour, Config.FlourPerBake, Goods.Bread, Config.BreadPerBake,
             Config.FirewoodPerFiring, Config.BakeTicks, Config.BakesPerStint, "bake", "a bake"),
+        JobKind.Tailor => new Batch(
+            JobKind.Tailor, Goods.Leather, Config.LeatherPerCoat, Goods.Clothing, 1,
+            Firing: 0, Config.SewTicks, Config.SewsPerStint, "sew", "a coat"),
         _ => null,
     };
 
@@ -4173,6 +4181,16 @@ public sealed partial class SimWorld : IObstacles
             {
                 return $"{nothing} — the ovens have flour enough ({HeldAgainstItsLimit(Goods.Flour)} stored).";
             }
+        }
+
+        // ⭐ THE TAILOR, WITH NO LIMIT OF THE PLAYER'S, SEWS TOWARD WHAT THE SHELVES SHOULD HOLD (`clothing.md §3.5`, D659):
+        // a coat for every adult without one and a year's wear beside them — the derived default under the ceiling
+        // (D62), the mill's rule for flour one good over. A set limit is the ceiling, read above.
+        if (batch.Trade == JobKind.Tailor && StockLimits.For(batch.Output) is null
+            && HeldAgainstItsLimit(batch.Output) >= LabourQuota.ClothingWanted(this))
+        {
+            return $"{nothing} — every adult has a coat, and the shelves hold a year's wear "
+                + $"({HeldAgainstItsLimit(batch.Output)} stored).";
         }
 
         // ⛔ The oven never takes firewood the homes still want (§5 rule 2, the forge's rule).
@@ -4241,6 +4259,10 @@ public sealed partial class SimWorld : IObstacles
         {
             BreadEverBaked += amount;
             RecordFoodProduced(Goods.Bread, amount);
+        }
+        else if (made == Goods.Clothing)
+        {
+            CoatsEverSewn += amount;
         }
     }
 
@@ -11287,6 +11309,40 @@ public sealed partial class SimWorld : IObstacles
     public int WheatEverReaped { get; internal set; }
 
     /// <summary>
+    /// Leather the village has ever taken in — the hunt's hide and the cull's (`clothing.md §3.6`, D659). The
+    /// tailor's shop is learned when it crosses <c>tailor_unlock_leather</c>.
+    /// </summary>
+    /// <remarks>⛔ <b>State, and hashed sparsely</b>: it decides what the player may build. ⚠️ It moves the Phase 5
+    /// golden, whose posed lodge and herd make leather (`phase-5-golden.md §11`) — proved to move for this alone.</remarks>
+    public int LeatherEverHeld { get; internal set; }
+
+    /// <summary>Coats ever sewn at a tailor's shop — a statistic, not hashed, as <see cref="FlourEverGround"/>.</summary>
+    public int CoatsEverSewn { get; internal set; }
+
+    /// <summary>
+    /// A hide has come in — <paramref name="amount"/> leather off a hunt or a cull — and the tailor's shop is learned
+    /// when the count crosses <c>tailor_unlock_leather</c> (D659): a stop like the mill's, paid for, no gift.
+    /// </summary>
+    internal void HeldLeather(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        bool knewHow = IsUnlocked(BuildingKind.TailorShop);
+        LeatherEverHeld += amount;
+        if (!knewHow && IsUnlocked(BuildingKind.TailorShop))
+        {
+            LearnedByDoing(
+                "The village learned to sew",
+                $"The village has handled {LeatherEverHeld} leather, and somebody has worked out how to cut and sew it "
+                + "into a coat — a roof you wear, that keeps the open ground in winter as kind as a roof. Build a "
+                + $"tailor's shop. {Clock.SeasonAndYear()}.");
+        }
+    }
+
+    /// <summary>
     /// Flour ever ground at a mill — counted at the stones (D522). A statistic, not hashed, as
     /// <see cref="BreadEverBaked"/>: since D523 the bakery is learned with the mill, so nothing reads it.
     /// </summary>
@@ -14490,6 +14546,8 @@ public sealed partial class SimWorld : IObstacles
             ["tools_ever_forged"] = ToolsEverForged,
             ["iron_tools_ever_forged"] = IronToolsEverForged,
             ["wheat_ever_reaped"] = WheatEverReaped,
+            ["leather_ever_held"] = LeatherEverHeld,
+            ["coats_ever_sewn"] = CoatsEverSewn,
             ["bridge_crossings"] = BridgeCrossings,
             ["flour_ever_ground"] = FlourEverGround,
             ["bread_ever_baked"] = BreadEverBaked,
@@ -14680,6 +14738,8 @@ public sealed partial class SimWorld : IObstacles
         ToolsEverForged = save.Int("tools_ever_forged");
         IronToolsEverForged = save.Int("iron_tools_ever_forged");
         WheatEverReaped = save.Int("wheat_ever_reaped");
+        LeatherEverHeld = save.Int("leather_ever_held");
+        CoatsEverSewn = save.Int("coats_ever_sewn");
         BridgeCrossings = save.Int("bridge_crossings");
         FlourEverGround = save.Int("flour_ever_ground");
         BreadEverBaked = save.Int("bread_ever_baked");

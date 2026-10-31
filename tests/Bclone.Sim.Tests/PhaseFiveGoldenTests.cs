@@ -44,9 +44,15 @@ public sealed class PhaseFiveGoldenTests
 
     // ⭐ FIRST TAKEN with the pose (D648). ⚠️ WHEN THIS MOVES, SAY WHY IN ONE SENTENCE AND WRITE IT HERE (D152): any change
     // to a Phase 5 chain will move it, which is the point of it (§5.6).
-    private const ulong PhaseFiveGoldenHash = 9279994292569338767UL;
+    // RE-TAKEN (D661) — the tailor: the posed lodge's and herd's leather is counted (`LeatherEverHeld`, hashed), crosses
+    // fifty and learns the tailor's shop, which is this village's first learned-by-doing moment (`ShownTheTechTree`,
+    // hashed); and the overland neighbour makes clothing (a stock slot, hashed). Proved to move for those three alone:
+    // with the counter unmixed, the neighbour rows gone and the unlock out of reach, both old constants pass.
+    // Was 9279994292569338767.
+    private const ulong PhaseFiveGoldenHash = 2244450603637359139UL;
 
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 6069163189267979265UL;
+    // Was 6069163189267979265 before D661.
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 9357705984530611765UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

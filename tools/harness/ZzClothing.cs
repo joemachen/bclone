@@ -24,7 +24,7 @@ public sealed class ZzClothing
         VillagerState.Gathering, VillagerState.Cutting, VillagerState.MakingFirewood, VillagerState.Building,
         VillagerState.Clearing, VillagerState.TidyingGround, VillagerState.Sowing, VillagerState.Reaping,
         VillagerState.Fishing, VillagerState.Hunting, VillagerState.Forging, VillagerState.Quarrying,
-        VillagerState.Mining,
+        VillagerState.Mining, VillagerState.Sewing,
     };
 
     private static readonly HashSet<VillagerState> Walk = new()
@@ -34,8 +34,8 @@ public sealed class ZzClothing
         VillagerState.CollectingForMarket, VillagerState.StockingTheMarket, VillagerState.FetchingMaterials,
         VillagerState.TravelingToField, VillagerState.TravelingToWater, VillagerState.HaulingToFarm,
         VillagerState.TravelingToGame, VillagerState.ClearingAStore, VillagerState.ClearingABuffer,
-        VillagerState.FetchingATool, VillagerState.TravelingToSmithy, VillagerState.WalkingToTheWell,
-        VillagerState.TravelingToQuarry, VillagerState.TravelingToMine,
+        VillagerState.FetchingATool, VillagerState.FetchingACoat, VillagerState.TravelingToSmithy, VillagerState.WalkingToTheWell,
+        VillagerState.TravelingToQuarry, VillagerState.TravelingToMine, VillagerState.TravelingToTailor,
     };
 
     private readonly ITestOutputHelper _o;
@@ -47,9 +47,13 @@ public sealed class ZzClothing
     public void Measure(string arm, string cold, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
+        // D663 (C4): `bare` is the shipped game with the tailor's shop never learned; `coat` is the shipped game, the harness
+        // marking a shop near the founding site the tick it is learned; `posed` is D533's coat (outdoors as a roof, everyone);
+        // `off` is cold off entirely (an upper bound; it switches roof cold off too — HANDOFF, D533).
         config = cold switch
         {
-            "coat" => config with { ExposureDaysOutdoors = config.ExposureDaysSheltered },
+            "bare" => config with { TailorUnlockLeather = int.MaxValue },
+            "posed" => config with { ExposureDaysOutdoors = config.ExposureDaysSheltered },
             "off" => config with { ExposureDaysOutdoors = 0 },
             _ => config,
         };
@@ -87,6 +91,13 @@ public sealed class ZzClothing
         var hunterStates = new SortedDictionary<string, long>();
         long hunterColdSum = 0, hunterTicks = 0;
         int peak = 0;
+        // D659: leather produced (every rise in the valley's total leather — stores, buffers, arms; nothing
+        // spends it, so a fall is a boat) and a per-winter lodge trace, both for `clothing.md §5.3`.
+        long leatherProduced = 0, leatherLast = 0, meatMetWinters = 0;
+        bool wasWinter = false;
+        bool shopMarked = false;
+        int shopLearnedYear = 0, shopStoodYear = 0;
+        long tailorTicks = 0, coatedAdultTicks = 0, adultTicks = 0;
 
         for (int t = 0; t < config.TicksPerYear * 50; t++)
         {
@@ -108,6 +119,27 @@ public sealed class ZzClothing
                 }
             }
 
+            // C4 (D663): the player's part — a tailor's shop marked near the founding site the tick the village learns to sew.
+            if (!shopMarked && world.IsUnlocked(BuildingKind.TailorShop))
+            {
+                shopLearnedYear = t / config.TicksPerYear + 1;
+                ColdStartTests.MarkSomewhereNear(world, BuildingKind.TailorShop, world.Map.FoundingSite, 8);
+                shopMarked = true;
+            }
+
+            if (shopStoodYear == 0 && world.Workplaces.Any(w => w.Kind == JobKind.Tailor && !w.IsSite))
+            {
+                shopStoodYear = t / config.TicksPerYear + 1;
+            }
+
+            foreach (Villager v in world.Villagers)
+            {
+                if (!v.Alive || !v.CanWork) { continue; }
+                adultTicks++;
+                if (v.CoatDays > 0) { coatedAdultTicks++; }
+                if (v.State is VillagerState.Sewing or VillagerState.TravelingToTailor) { tailorTicks++; }
+            }
+
             var aliveBefore = world.Villagers.Where(v => v.Alive).Select(v => (v, world.ShelterAt(v.Tile), v.State)).ToList();
             loop.StepOnce();
             foreach (var (v, sh, st) in aliveBefore)
@@ -120,6 +152,20 @@ public sealed class ZzClothing
             }
 
             peak = Math.Max(peak, world.Population);
+            long leatherNow = world.InStores(Goods.Leather);
+            foreach (Workplace wp in world.Workplaces) { leatherNow += wp.Store[Goods.Leather]; }
+            foreach (Villager v in world.Villagers) { if (v.Alive) { leatherNow += v.Carried[Goods.Leather]; } }
+            if (leatherNow > leatherLast) { leatherProduced += leatherNow - leatherLast; }
+            leatherLast = leatherNow;
+            if (world.Clock.IsWinter && !wasWinter && Environment.GetEnvironmentVariable("ZZ_HUNT") == "1")
+            {
+                int lodges = world.Workplaces.Count(w => w.Kind == JobKind.Hunter && !w.IsSite);
+                int hunting = world.Villagers.Count(v => v.Alive && v.HasJob && world.FindWorkplace(v.WorkplaceId) is { Kind: JobKind.Hunter });
+                bool meatMet = world.LimitIsMet(Goods.Meat);
+                if (meatMet) { meatMetWinters++; }
+                _o.WriteLine($"ZZW {arm} {cold} {seed} year {t / config.TicksPerYear + 1} lodges {lodges} hunters {hunting} meat {world.HeldAgainstItsLimit(Goods.Meat)} meatMet {meatMet} shortOfFood {LabourQuota.VillageIsShortOfFood(world)} pop {world.Population} leather {leatherNow}");
+            }
+            wasWinter = world.Clock.IsWinter;
             if (!world.Clock.IsWinter)
             {
                 wasSeeking.Clear();
@@ -193,6 +239,11 @@ public sealed class ZzClothing
         _o.WriteLine($"ZZC {arm} {cold} {seed} alive {world.Population} peak {peak} starved {starved} cold {frozen} " +
             $"winter {winter} workOut {workOut} workRoof {workRoof} walking {walking} walkingOut {walkingOut} " +
             $"seeking {seeking} atFire {atFire} other {other} breakOffs {breakOffs} | {trades}");
+        _o.WriteLine($"ZZL {arm} {cold} {seed} leatherProduced {leatherProduced} leatherEnd {leatherLast} meatMetWinters {meatMetWinters} " +
+            $"lodges {world.Workplaces.Count(w => w.Kind == JobKind.Hunter && !w.IsSite)} adults {world.Villagers.Count(v => v.Alive && v.CanWork)}");
+        _o.WriteLine($"ZZT {arm} {cold} {seed} shopLearnedYear {shopLearnedYear} shopStoodYear {shopStoodYear} coatsSewn {world.CoatsEverSewn} " +
+            $"coatedAdultShare {(adultTicks == 0 ? 0 : 100 * coatedAdultTicks / adultTicks)} tailorSeatYears {tailorTicks / config.TicksPerYear} " +
+            $"clothingStored {world.InStores(Goods.Clothing)} leatherHeld {world.LeatherEverHeld}");
         if (Environment.GetEnvironmentVariable("ZZ_HUNT") == "1")
         {
             _o.WriteLine($"ZZH {arm} {cold} {seed} ticks {hunterTicks} meanCold {(hunterTicks == 0 ? 0 : hunterColdSum / hunterTicks)} threshold {config.ExposureThreshold} | " +
@@ -202,7 +253,7 @@ public sealed class ZzClothing
 
     public static IEnumerable<object[]> Runs()
     {
-        string[] colds = (Environment.GetEnvironmentVariable("ZZ_COLDS") ?? "bare,coat,off").Split(',');
+        string[] colds = (Environment.GetEnvironmentVariable("ZZ_COLDS") ?? "bare,coat").Split(',');
         string[] arms = (Environment.GetEnvironmentVariable("ZZ_ARMS") ?? "played,every").Split(',');
         ulong[] played = new ulong[] { 12345, 1, 2, 3, 7, 11 }
             .Concat(Enumerable.Range(100, 24).Select(x => (ulong)x)).ToArray();

@@ -381,6 +381,12 @@ public enum BuildingKind
     /// placed by hand; its row prices one length of fence. <b>Appended at 25.</b>
     /// </summary>
     PastureFence = 25,
+
+    /// <summary>
+    /// The tailor's shop (D659, `clothing.md §3.5`) — leather sewn into clothing, the mill's and the oven's `Batch`
+    /// shape. Learned at fifty leather ever held (§3.6). <b>Appended at 26.</b>
+    /// </summary>
+    TailorShop = 26,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

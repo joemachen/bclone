@@ -101,7 +101,9 @@ asked the same day; those answers are in the last column.
   and **what it wants** (goods it lacks), each with a size.
 - ⭐ **Between them the three make every good the game has** (call 5: *"everything that is or will be in the game"*),
   and animals. A good added later is given to a neighbour's row the day its system is built, so the region grows with
-  the game. ⛔ A good with no system yet is never offered (asked, D587).
+  the game. ⛔ A good with no system yet is never offered (asked, D587). ✅ **Clothing joined with its system (D660):**
+  the overland neighbour makes it (25, half of D62's *"50 clothes"*) and the lowlands want it (25) — by cart only, so
+  no boat carries a coat until carts exist.
 - **Each neighbour keeps a stock per good**, in integers, **stepped once at each season turn** — its makes add, its wants
   take away, held between nothing and **double** its size. ⛔ Never per tick (CLAUDE.md: nothing derivable is rebuilt per
   tick, and nothing in the region changes between season turns).

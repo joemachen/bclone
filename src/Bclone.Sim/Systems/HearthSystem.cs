@@ -77,7 +77,37 @@ public sealed class HearthSystem : ISimSystem
             BurnADaysFirewood(world, config);
         }
 
+        // The coats wear on the day's first tick, before the chill — so the day a coat runs out is a bare day.
+        if (world.Tick % (ulong)config.TicksPerDay == 0UL)
+        {
+            WearTheCoats(world);
+        }
+
         ChillTheUnsheltered(world, config);
+    }
+
+    /// <summary>
+    /// ⭐ A coat wears a day every winter day it is worn, whatever the day held (D659, `clothing.md §3.3`) — by the
+    /// day and not by the tick outdoors, so the tailor's demand is a steady share of the adults and a coat in a
+    /// drawer wears no faster than one on a back. At zero the DEBUG log says so; the villager goes on at the bare
+    /// rate and fetches another when a store has one.
+    /// </summary>
+    private static void WearTheCoats(SimWorld world)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive || villager.CoatDays <= 0)
+            {
+                continue;
+            }
+
+            villager.CoatDays--;
+            if (villager.CoatDays == 0 && world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "hearth", $"{villager.Name}'s coat is worn through — {world.Clock}.");
+            }
+        }
     }
 
     /// <summary>Winter only, for now. Shoulder seasons are a config change away.</summary>
@@ -158,11 +188,14 @@ public sealed class HearthSystem : ISimSystem
 
             int before = villager.Cold;
 
+            // ⭐ A COAT IS A ROOF YOU WEAR (Joe, D659; `clothing.md §3.1`): open ground chills a clothed villager at
+            // the roof's rate and no faster. The roof's and the fire's arms do not read the coat — a household out of
+            // firewood still freezes, so fuel stays the winter's axis (D45, D53, D69).
             villager.Cold += world.ShelterAt(villager.Tile) switch
             {
                 Shelter.Fire => -config.ThawPerTickAtAFire,
                 Shelter.Roof => config.ExposurePerTickSheltered,
-                _ => config.ExposurePerTickOutdoors,
+                _ => villager.CoatDays > 0 ? config.ExposurePerTickSheltered : config.ExposurePerTickOutdoors,
             };
 
             // Clamped both ends. Below zero would bank warmth against next winter, which

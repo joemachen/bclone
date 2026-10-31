@@ -438,6 +438,29 @@ public static class VillageEconomy
         return tools < 1 ? 1 : tools;
     }
 
+    /// <summary>A tailor's stint: the worst walk there and back, and the sews (D659) — the forge's shape.</summary>
+    public static int SewStintTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
+        int sews = config.SewsPerStint < 1 ? 1 : config.SewsPerStint;
+
+        return (worst * config.TravelTicksPerUnit * 2) + (sews * config.SewTicks);
+    }
+
+    /// <summary>Coats one tailor sews in a year, working every stint the year allows (D659) — <see cref="ToolsForgedPerYearAtWorst"/>'s shape.</summary>
+    public static int CoatsSewnPerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int available = config.TicksPerYear - MealsPerYear(config);
+        int stint = SewStintTicks(config);
+        int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
+        int coats = stints * (config.SewsPerStint < 1 ? 1 : config.SewsPerStint);
+        return coats < 1 ? 1 : coats;
+    }
+
     /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>
     /// <remarks>Year-round work, like felling — a hut does not care what season it is.</remarks>
     public static int FirewoodMadePerYearAtWorst(SimConfig config)

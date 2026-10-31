@@ -44,7 +44,7 @@ public sealed class ModdedBuildingTests
     // ⚠️ 8, not 7 — `JobKind.Hunter` took 7 when hunting shipped.
     // ⚠️ 11 since the miner took 10 (D449); 13 since the miller and the baker took 11 and 12 (D522); 15 since the
     // herdsman and the merchant took 13 and 14 (D590, D591).
-    private static JobKind Boatman => (JobKind)15;
+    private static JobKind Boatman => (JobKind)16; // 15 until the tailor took it (D661).
 
     /// <summary>
     /// A catalogue with an eleventh building and a seventh trade that staffs it.
@@ -94,10 +94,11 @@ public sealed class ModdedBuildingTests
         { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",       "works_at": "Bakery",        "limited_by": "Bread" },
         { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
         { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
+        { "id": 15, "name": "tailor",    "plural": "tailors",     "doing": "sewing coats",       "works_at": "TailorShop",    "limited_by": "Clothing" },
 
         // ⚠️ 9 → 10 WHEN THE QUARRIER SHIPPED (D434) — this row's job is to be an id the enum
-        // cannot name, and 9 stopped being one. The fisherman's move, again.
-        { "id": 15, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
+        // cannot name, and 9 stopped being one. The fisherman's move, again; 15 → 16 when the tailor shipped (D661).
+        { "id": 16, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "works_at": 10,              "limited_by": "Produce" }
       ],
 
       "buildings": [
@@ -145,7 +146,8 @@ public sealed class ModdedBuildingTests
         { "id": 22, "name": "stone bridge", "spans_water": true, "deck_tile_cost": 8, "rebuilds": "Bridge", "work_ticks": 15, "materials": [ { "goods": "Stone", "amount": 12 } ] },
         { "id": 23, "name": "barn", "stores": "Barn", "store_capacity": 1200, "seats": 2, "extent_width": 3, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
         { "id": 24, "name": "trading post", "stores": "TradingPost", "store_capacity": 800, "seats": 1, "must_touch": "Water", "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
-        { "id": 25, "name": "pasture fence", "encloses_pasture": true, "work_ticks": 2, "materials": [ { "goods": "Logs", "amount": 1 } ] }
+        { "id": 25, "name": "pasture fence", "encloses_pasture": true, "work_ticks": 2, "materials": [ { "goods": "Logs", "amount": 1 } ] },
+        { "id": 26, "name": "tailor's shop", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 9 } ] }
       ]
     }
     """;
@@ -203,9 +205,9 @@ public sealed class ModdedBuildingTests
         // (2026-09-03); → 15 with the longhouse, the first building that is not one tile
         // (2026-09-06, D320); → 16 with the smithy (2026-09-18, D391); → 17 with the well (D427);
         // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522); → 23 with the two
-        // bridges (D546); → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598). The modder's
-        // boathouse sits inside the range, at the library's id, on purpose.
-        Assert.Equal(26, catalog.Count);
+        // bridges (D546); → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598); → 27 with the
+        // tailor's shop (D661). The modder's boathouse sits inside the range, at the library's id, on purpose.
+        Assert.Equal(27, catalog.Count);
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -352,6 +354,7 @@ public sealed class ModdedBuildingTests
             { "id": 23, "name": "barn", "stores": "Barn", "store_capacity": 1200, "seats": 2, "extent_width": 3, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 40 } ] },
             { "id": 24, "name": "trading post", "stores": "TradingPost", "store_capacity": 800, "seats": 1, "must_touch": "Water", "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 } ] },
             { "id": 25, "name": "pasture fence", "encloses_pasture": true, "work_ticks": 2, "materials": [ { "goods": "Logs", "amount": 1 } ] },
+            { "id": 26, "name": "tailor's shop", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 9 } ] },
             { "id": 21, "name": "wooden bridge",  "spans_water": true, "deck_tile_cost": 10,       "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
             { "id": 3,  "name": "woodcutter's hut", "seats": 3,                                "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 } ] },
@@ -434,7 +437,7 @@ public sealed class ModdedBuildingTests
 
         SimConfig config = SimConfigLoader.Parse(without, "<retired>");
         var catalog = new BuildingsCatalog(config.BuildingRows, new JobsCatalog(config.JobsCatalog));
-        Assert.Equal(26, catalog.Count); // 23 → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598)
+        Assert.Equal(27, catalog.Count); // 23 → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598); → 27 with the tailor's shop (D661)
         Assert.False(catalog.Has((int)BuildingKind.Longhouse));
         Assert.True(catalog.Has((int)BuildingKind.Smithy));
 
