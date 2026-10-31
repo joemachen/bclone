@@ -7,7 +7,7 @@ the gatherer, already shipped), D120 (the fence came down), D171 (the farm's mea
 bug), D152 (goldens last).
 Neighbours: `crops-and-orchards.md` (the farm this changes), `seeded-map-generation.md` (the draw
 order, which is the seed contract), `forests-and-gathering.md §3.2` (where the bound became a
-budget), `environment-and-seasons.md` (soil depletion's eventual home).
+budget), `environment-and-seasons.md` (soil depletion's eventual home — ⛔ dropped from the game, D656).
 **Status:** ⛔ **THE SOIL HALF IS REMOVED (D395, Joe: *"remove the 'ground' quality functionality
 from the game entirely"*; built as D470).** A tile of crop reaps `crop_yield_per_tile` everywhere;
 the soil overlay, the `G` key, the inspector's ground sentence and `PerSiteYieldTests` are gone
@@ -452,7 +452,7 @@ merely awkward. D180 adds it, plus the same sentence on any tile the player clic
 - **⛔ Gathering is untouched.** It already has per-site yield (D112) and is not broken. Re-opening
   `gather_yield` reopens `MaxHomeToWorkTiles` and the fuel budget together, **and D122 froze
   nineteen people the last time that chain moved — by one tile.**
-- **⛔ Soil depletion** (§2.3, `crops-and-orchards.md §7`) stays deferred. **This slice makes soil
+- **⛔ Soil depletion** (§2.3, `crops-and-orchards.md §7`) stays deferred *(⛔ and is dropped from the game, D656; soil itself went in D470)*. **This slice makes soil
   *matter*; depletion makes it *change*.** Two systems, and the second is uninteresting until the
   first exists.
 - **⛔ No new refusal.** Poor ground is warned about and never forbidden (D43, D86). Farming bad

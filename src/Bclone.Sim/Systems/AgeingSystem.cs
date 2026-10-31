@@ -18,7 +18,7 @@ namespace Bclone.Sim.Systems;
 /// </para>
 /// <para>
 /// It was the only source of year-to-year variation in Phase 0, and the systemic
-/// pressures that will eventually supply more — climate drift, soil depletion, disease
+/// pressures that will eventually supply more — climate drift, disease (soil depletion was dropped, D656)
 /// (DESIGN.md §2.3) — still belong to later phases.
 /// </para>
 /// <para>

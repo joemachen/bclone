@@ -355,7 +355,7 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Sowing | DOING + PEOPLE | |
 | Crop rotation | PEOPLE | The `DESIGN.md §2.7` worked example |
 | Manuring | ADJ (herder + farmer) | |
-| Fallowing | CRISIS or PEOPLE | Typically taught by soil depletion biting |
+| Fallowing | CRISIS or PEOPLE | ~~Typically taught by soil depletion biting~~ *(soil depletion dropped, D656 — no trigger now)* |
 | Drainage | TERRAIN (wet ground) + SCALE | |
 | ★ **Basic Sanitation** | DOING | *Compost Pit.* Manure and spoiled food → fertiliser. **The herd branch feeding the ground branch**, which is the same web-not-columns argument §7a makes for the granary |
 | ★ **Crop Milling** | PEOPLE | *Gristmill & Bakery.* Grain → flour → bread. §2.7's own unlock-by-doing example finally has its building |

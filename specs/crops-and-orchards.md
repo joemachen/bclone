@@ -427,7 +427,8 @@ spring opens on a village full of idle hands and the scarce kinds are matched fi
   groundwork below no longer exists; the soil draw itself goes with per-stage seeds (D473). If
   fertility ever returns it is a new generator **stage**, which under D473 moves no other stage's
   valley. *(Kept for the history:)*
-- **Soil fertility, rotation and fallow.** `buildings-plan.md` lists rotation as a *knowledge
+- **Soil fertility, rotation and fallow.** ⛔ **Dropped from the game (Joe, D656):** *"remove soil depletion from the game completely. too complex and not useful enough for what i want the game to be."* *(The bullet below is history; `GeneratedMap.Soil` itself is gone, D470.)*
+  `buildings-plan.md` lists rotation as a *knowledge
   node*, and §2.3 wants exhaustion as a pressure axis. **It needs the tech tree (Phase 4)** and
   it would double this slice.
   - **⭐ AND THE GROUNDWORK IS ALREADY LAID, WHICH A FUTURE SESSION SHOULD NOT RE-DERIVE.**

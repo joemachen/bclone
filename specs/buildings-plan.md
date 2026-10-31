@@ -29,7 +29,7 @@ These are prior to the catalogue, because they decide what half the buildings ar
 Trees, soil, game, fish. **Spatial, exhaustible, recoverable.** They have a location, a quantity, and a regrowth rate. Over-use them and you can see where you did it. This is already the harvest brush's model (`building-placement.md §12`), and it should extend unchanged to soil, game and fish.
 
 - Forest → recedes where felled, regrows on a generational clock, plantable once managed forestry is earned.
-- Soil → fields lose fertility with continuous cropping; fallow and rotation restore it. Rotation is a knowledge node.
+- ~~Soil → fields lose fertility with continuous cropping; fallow and rotation restore it. Rotation is a knowledge node.~~ ⛔ **Dropped from the game (Joe, D656):** *"remove soil depletion from the game completely. too complex and not useful enough for what i want the game to be."* Rotation stays, as a plain yield technique.
 - Game and fish → local populations thin under sustained pressure and recover when left alone. **No new mechanic** — it is the same curve as forest, applied to a different terrain layer.
 
 ### 2.2 Subsurface resources are finite in effort
@@ -180,7 +180,7 @@ Mutually exclusive-ish, per §2.7's *broad not tall*. Nobody gets all of these i
 | Node | Answers |
 |---|---|
 | ~~**Managed forestry** (planting brush)~~ ✅ **BUILT AND UNGATED** — see the note above | A cleared valley |
-| **Crop rotation / fallow** | Soil exhaustion |
+| **Crop rotation / fallow** | ~~Soil exhaustion~~ *(dropped, D656 — rotation is a yield technique)* |
 | **Deep shaft, drainage, pit props** | The mine's declining yield curve |
 | **Coal mine** | Charcoal competing with fuel and timber |
 | **Stone bridge, stone road, stone granary** | Impermanence; the civic tier generally |
@@ -351,7 +351,7 @@ The brush pattern in `building-placement.md §12` is better than a farm building
 
 A crop zone painted over land the village then ploughs, sows and reaps has three advantages over a farm building:
 
-- **Soil depletion becomes spatial.** Fertility is a property of tiles, so an exhausted field is a place you can see, exactly as a cleared forest is. That is the surface rule (§2.1) applied consistently rather than twice in two different ways.
+- ~~**Soil depletion becomes spatial.**~~ *(Dropped, D656.)* Fertility is a property of tiles, so an exhausted field is a place you can see, exactly as a cleared forest is. That is the surface rule (§2.1) applied consistently rather than twice in two different ways.
 - **Fallow becomes a player verb.** Un-painting land is resting it. No new UI, no policy slider — the same brush, used differently.
 - **It costs no new mechanic.** Residential, harvest, plant, crop and pasture are five uses of one system.
 

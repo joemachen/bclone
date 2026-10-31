@@ -18,7 +18,10 @@
 > no art added, the art stays parked. `.gitattributes` marks the image types binary (D655). ⭐ Joe, D655: **a wrong §7 entry
 > is annotated where it stands — *(void — …, Dnnn)* — and corrected by a new entry; never reworded.**
 >
-> **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist) or an item-1 verdict. He merged
+> **⚖️ D656 — Joe's gate item 1 verdicts:** soil depletion **dropped from the game**; drought, fire and blight, and beer
+> **moved to Phase 6**; four stay, built in his order — **doors commit 5 (the view) → clothing → logistics → house tiers.**
+>
+> **▶️ NEXT:** doors commit 5, the view (`specs/doors.md §9`, §11.7), spec-first — then clothing, logistics, house tiers. He merged
 > D650 before playing it, then played it: *"Looked right"* (D652).
 >
 > **Numbers (D650):** suite 1859 / 0 / 5 of 1864 in 16m23 (15m09 on the same `src/` an hour before — the machine; the golden classes 5–6 s with and without the fix); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 390, none in the diff. Red-check: **10 reds over 4 mutants**, one zero by design (`footprints.md §8.4`).

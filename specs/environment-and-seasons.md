@@ -209,7 +209,7 @@ are worse than one properly habitable valley."* Nothing since has changed that, 
 valley we have is not yet interesting enough to be worth having two of.
 
 Soil quality is generated and hashed but unread. It stays unread here: it is reserved
-for §2.3's soil depletion, which is Phase 6. **Do not spend it on seasons** — a
+for §2.3's soil depletion, which is Phase 6 *(⛔ both gone since: soil in D470, its depletion dropped from the game, D656)*. **Do not spend it on seasons** — a
 system reaching for the nearest unused field is how pillars get built in parallel.
 
 ---
