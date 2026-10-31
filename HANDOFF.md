@@ -11,7 +11,7 @@
 > its centre; nothing else's coverage changes, no golden moved. The walled-in warning adds *"or mark it somewhere else"*.
 >
 > **▶️ NEXT — Joe's call; ask him before starting anything:** gate item 3 (the QA checklist) or an item-1 verdict. He merged
-> D650 before playing it: a 2×1 turned near an eighth now claims a third tile, and its door may sit on it — his eye on it.
+> D650 before playing it, then played it: *"Looked right"* (D652).
 >
 > **Numbers (D650):** suite 1859 / 0 / 5 of 1864 in 16m23 (15m09 on the same `src/` an hour before — the machine; the golden classes 5–6 s with and without the fix); view 0 warnings; probe 99 `[widths]` lines, 63 ✅, 0 ❌, bar 151, `done.`, no Godot left running; goldens grep 390, none in the diff. Red-check: **10 reds over 4 mutants**, one zero by design (`footprints.md §8.4`).
 >
@@ -8691,7 +8691,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   once a winter).
 - ✅ ~~**THE POSE KILLS ITS VILLAGES (found D647, `specs/phase-5-golden.md §10`).**~~ He picked *"Fix the pose first"*: the
   finished farm at tick 0 was the year-1 killer; the pose marks it now and the golden is pinned (D648, §11).
-- ⏸️ **PLAY D650 — A TURNED 2×1 NOW CLAIMS THE TILE BETWEEN ITS CORNER-TOUCHING HALVES** (`specs/footprints.md §8`). Turn a
+- ✅ ~~**PLAY D650 — A TURNED 2×1 NOW CLAIMS THE TILE BETWEEN ITS CORNER-TOUCHING HALVES**~~ — played, *"Looked right"* (D652). (`specs/footprints.md §8`) Turn a
   hut or a mine near an eighth: it covers three tiles where it covered two, and its door may sit on the third. His eye on
   whether that reads right. Merged and pushed at his word before he played it (D651).
 - ⏸️ **A FARM CAN TAKE A SMALL VILLAGE'S WOOD (found D648, `specs/phase-5-golden.md §11`).** `LabourQuota` asks for the farm

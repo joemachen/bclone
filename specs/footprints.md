@@ -1,7 +1,7 @@
 # Spec: Footprints per building — a granary is bigger than a hut
 
 **Decisions:** D382 (this document). Neighbours: D319 (the centre rule), D322 (the longhouse), D329–D331 (free placement, SAT), D344 (a re-take with one reason), D353 (item 4 of Joe's 2026-09-12 list).
-**Status:** ✅ **BUILT (2026-09-16, D382)**; §8 (a footprint is one piece) ✅ **BUILT (D650), MERGED AND PUSHED (D651), not yet played**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-16, D382)**; §8 (a footprint is one piece) ✅ **BUILT (D650), MERGED AND PUSHED (D651), PLAYED (D652)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
 
 ---
 
@@ -197,7 +197,7 @@ red each:**
 
 ## 8. A footprint is one piece (D650)
 
-**Status:** ✅ **BUILT (D650)**, merged into `main` and pushed (D651); not yet played. Joe, 2026-10-29: *"Make footprints whole"*.
+**Status:** ✅ **BUILT (D650)**, merged into `main` and pushed (D651); played by Joe, *"Looked right"* (D652). Joe, 2026-10-29: *"Make footprints whole"*.
 
 ### 8.1 What was wrong, found on Joe's save
 
