@@ -3,9 +3,10 @@
 **Decision:** `DESIGN.md §5`, *LOGISTICS — THE MECHANIC* (D669), candidate **(a)**: Joe, 2026-11-01 — *"hardcart (workshop
 and carpenter) — where are unused handcarts stored at — at the warehouse? what do they look like on the map? lets just
 think through what this means across all aspects first."* This is that thinking, written down so it outlives the chat.
-**Status:** 💭 **DESIGN SKETCH — NOTHING BUILT (D670, 2026-11-01).** ⛔ Blocked on the workshop + carpenter slice (D553
-call 6, owed by `building-condition.md §4.6`, no spec yet — §5 here redefines it). **Six calls are Joe's (▶️, §10), and
-every number below is a proposal to be measured on `ZzLogistics` before it is typed.** Candidate (d), *nearby* given a
+**Status:** 💭 **DESIGN SKETCH — NOTHING BUILT (D670; ALL SIX CALLS MADE AS PROPOSED, D672, 2026-11-01).** ⛔ Blocked on the workshop + carpenter slice (D553
+call 6, owed by `building-condition.md §4.6`, no spec yet — §5 here redefines it). **✅ Joe made all six calls as proposed (D672: *"Yes, all
+six"*; §10), so the design is settled; every number below is still a proposal to be measured on `ZzLogistics` before it
+is typed.** Candidate (d), *nearby* given a
 meaning, is the near-term rule and is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`).
 
 ---
@@ -50,7 +51,7 @@ in `TECH-EXAMPLE.md:206`); not roads as a build (paving, `DESIGN.md §2.6`, open
 
 ---
 
-## 3. What a cart is in the model — ▶️ Joe (call 1)
+## 3. What a cart is in the model — ✅ Joe (call 1, D672)
 
 **Proposed: a good, `Goods.Handcart`, owned by a household and parked at its home.**
 
@@ -78,7 +79,7 @@ The measured share is the **household's** shop walk, so the household's cart is 
   two to five. By arithmetic the trips fall ~2.5–3×, and the Fetch share from ~20 % toward ~7–8 %; the unattended
   control, whose homes stand 4–6 ticks from their store, spends 3–13 %.
 - **The marketer's cart is not in the first slice.** The Market bucket was small in every village measured; a marketer
-  with a cart stocks faster, but nobody's shopping walk shortens. ▶️ Joe may want it anyway (call 6) — it is one more
+  with a cart stocks faster, but nobody's shopping walk shortens. ✅ Joe (call 6, D672): *later*, not in slice H — when it comes it is one more
   owner of the same good, and the marketer is a carrying trade that takes no tool (`tools-and-the-smith.md §10.1`).
 - Builders' and producers' hauls (the *Deliver* bucket) are out of scope; they were not the number.
 - **Honest costs:** one walk to the warehouse per cart's life; the slower walk off-path if §6 is taken; and the cart's
@@ -86,7 +87,7 @@ The measured share is the **household's** shop walk, so the household's cart is 
 
 ---
 
-## 5. Making it — the workshop slice, redefined — ▶️ Joe (calls 2 and 3)
+## 5. Making it — the workshop slice, redefined — ✅ Joe (calls 2 and 3, D672)
 
 **Proposed:**
 
@@ -107,19 +108,20 @@ The measured share is the **household's** shop walk, so the household's cart is 
 
 ---
 
-## 6. Capacity, speed and wear — ▶️ Joe (call 5)
+## 6. Capacity, speed and wear — ✅ Joe (call 5, D672)
 
 - **`cart_armfuls`: 3** (§5 of DESIGN said *three or four*; the sweep with 2 / 3 / 4 on `ZzLogistics` picks it).
 - **Speed:** *"a cart slower off-road is what to measure."* Proposed `cart_off_path_slow_percent` 150 on grass, 100 on
   worn and packed tiles, applied to the leg's ticks as the failing deck is — **the route unchanged**, so the cart takes
   the walker's path and the cost field stays one. Legible in a sentence: *the cart is slow on grass and quick on the
-  path.* ▶️ Measure with and without; the flat cart may be the right first version.
+  path.* ✅ Joe (call 5, D672): the slower cart on grass, as proposed — still measured with and without before the
+  number is typed.
 - **Wear:** like a tool — a good with uses, **one use a round trip** (say 150: a few years of shopping), then the
   household fetches another. No repair: the condition system (D552) mends buildings, and a cart is a good.
 
 ---
 
-## 7. Paths — ▶️ Joe (call 4)
+## 7. Paths — ✅ Joe (call 4, D672)
 
 D587 call 8 already rules it: a cart's first trip to the market wears its line to a path, drawn at once, priced in
 spring. With a cart at every doorstep, **within a season every home is joined to the market by a track.** That is §2.6's
@@ -166,11 +168,14 @@ lines, and if every line is a path, the desire-path signal the player paves by f
    D587's cart path (`Tread` exists, so it rides along). Measured on `ZzLogistics` before and after.
 3. Then `trade.md §4.7`'s caravan unblocks, and *Heavy Haulage* proper (oxen, wagons) is the knowledge node after.
 
-**▶️ Joe's calls, each open until he says:**
+**✅ Joe's calls — all six made as proposed, 2026-11-01 (D672): *"Yes, all six"*.** Calls 5 and 6 were put as
+either/or; *as proposed* reads (5) as the spec's own proposal in §6, the slower cart on grass, and (6) as §4's, the
+marketer's cart later — written here so a wrong reading is one line to correct.
 
-1. A cart is a household's good, parked at home, spares in the warehouse (§3) — yes?
-2. The workshop a new building and the hut left alone; the hammer dropped as an item (§5) — yes?
-3. The handcart gated on the building alone, no knowledge node (§5) — yes?
-4. Every cart line becomes a path on its first pass, D587's sentence (§7) — the look he wants?
-5. A cart slower on grass than on the path (§6) — yes, or measure the flat cart first?
-6. The marketer's cart in slice H, or later (§4)?
+1. A cart is a household's good, parked at home, spares in the warehouse (§3) — ✅ yes.
+2. The workshop a new building and the hut left alone; the hammer dropped as an item (§5) — ✅ yes.
+3. The handcart gated on the building alone, no knowledge node (§5) — ✅ yes.
+4. Every cart line becomes a path on its first pass, D587's sentence (§7) — ✅ yes, as written; the trodden share
+   with carts against without is measured in slice H before anything softens it.
+5. A cart slower on grass than on the path (§6) — ✅ slower on grass, measured with and without.
+6. The marketer's cart in slice H, or later (§4)? — ✅ later.

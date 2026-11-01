@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D671) IS OPEN, LOCAL, UNMERGED: LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, SIX CALLS HIS). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: HIS SIX CART CALLS; MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D672) IS OPEN, LOCAL, UNMERGED: LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: MERGE AT HIS WORD, THEN SLICE W (WORKSHOP + CARPENTER, ITS OWN SPEC), THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D671) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D672) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, four commits** — f98de0b
 > (D668: the measurement), 458ba7f (D669: Joe's verdict, the candidates to §5), then D670 (his two picks: the sweep for X and
@@ -17,7 +17,7 @@
 > the home, spares in the warehouse where tools live (his guess was right), made by a carpenter at a new workshop building
 > with the hammer dropped (D617 gave the builder a tool), gated on the building not a node, three armfuls a trip, worn by
 > trips, slower on grass than on a path, its first pass wearing the line to a path (D587 call 8), a chip beside the home and
-> a rectangle behind the dot. **Six calls are his (`handcart.md §10`)**; nothing of it built; blocked on the workshop slice.
+> a rectangle behind the dot. **All six calls made as proposed (D672, `handcart.md §10`)**; nothing of it built; Slice W next.
 >
 > **⚠️ Two things D671 found on the way (`logistics.md §5.7`):** the margin's first draft carried **D372's scrap hole to the
 > granary** (a storehouse "holding any at all" would have taken every trip from a full market with three fish — fixed to *stocked
@@ -29,8 +29,11 @@
 > 15m17; D668's: 15m16); view **0 warnings**; probe **67 ✅ 0 ⛔, bar 151, `done.`**; goldens **392, none moved**. Red checks: the
 > clause 2 of 2, the sweep 2 of 2, the scrap case pinned.
 >
-> **▶️ NEXT — JOE'S SIX CART CALLS, then the workshop + carpenter slice (its own spec), then the handcart slice, each measured
-> on `ZzLogistics`.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap). Then **house tiers**.
+> **✅ D672 — JOE: *"Yes, all six"* — every handcart call stands as proposed (`handcart.md §10`; calls 5 and 6 were either/or
+> and were read as the spec's own proposal: slower on grass, the marketer's cart later). Docs only, no code touched.**
+>
+> **▶️ NEXT — merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap), then the workshop + carpenter
+> slice (Slice W, its own spec), then the handcart slice (Slice H), each measured on `ZzLogistics`.** Then **house tiers**.
 >
 > **— D669, as it was —**
 > **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D669) — ON WINDOWS.**
@@ -9087,12 +9090,13 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE HANDCART — SIX CALLS, HIS (D670, `specs/handcart.md §10`).** ✅ ~~His pick~~ — (d) built (D671) and (a) sketched.
-  Now his, each open until he says: (1) a cart is a household's good, parked at home, spares in the warehouse; (2) the
-  workshop a new building, the hut left alone, the hammer dropped as an item; (3) gated on the building, no knowledge node;
-  (4) every cart line becomes a path on its first pass (D587's sentence) — the look he wants?; (5) slower on grass than on
-  the path, or measure the flat cart first; (6) the marketer's cart in the handcart slice or later. Then the workshop +
-  carpenter slice gets its spec. Candidates (b) the marketer's bounded round and (c) a neighbourhood store stay in
+- ✅ ~~⏸️ **THE HANDCART — SIX CALLS, HIS (D670, `specs/handcart.md §10`).**~~ **MADE, ALL SIX AS PROPOSED (D672, 2026-11-01:
+  *"Yes, all six"*).** (d) built (D671), (a) sketched (D670), the calls closed: (1) a cart is a household's good, parked at
+  home, spares in the warehouse ✅; (2) the workshop a new building, the hut left alone, the hammer dropped as an item ✅;
+  (3) gated on the building, no knowledge node ✅; (4) every cart line becomes a path on its first pass (D587's sentence) ✅;
+  (5) slower on grass than on the path ✅ (an either/or, read as the spec's proposal; measured with and without);
+  (6) the marketer's cart later ✅ (the same reading). Next the workshop + carpenter slice (Slice W) gets its spec, then
+  Slice H. Candidates (b) the marketer's bounded round and (c) a neighbourhood store stay in
   `DESIGN.md §5`, unpicked.
 - ⏸️ **`market_detour_ticks` 4 (D670–D671) IS A MEASURED DEFAULT, NOT A PLAYED ONE.** The sweep says 4 keeps a market beside
   the granary winning and sends 18 of 148 homes to a nearer granary; 2 would be nearest-first for that layout (and costs the
