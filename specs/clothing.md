@@ -122,9 +122,9 @@ so this counter **moves that golden** (`phase-5-golden.md §11`); C2 proves it m
 ### 3.7 Numbers, and where they come from
 | Key | Value | Why |
 |---|---|---|
-| `coat_winters` | **3** | Joe's *"a few winters"* (D69) as a lifetime; demand of a third of the adults a year. ⏳ **C4 measures** the tailor's seat-years and the leather flow against it. |
-| `leather_per_coat` | **5** | Half a hunt's hide (`leather_yield` 10). §5.3's leather flow is the bound it must sit under. ⏳ C4. |
-| `sew_ticks` / `sews_per_stint` | **10 / 2** | A day's stint for two coats, between the oven (15 a bake) and the grind. ⏳ C4. |
+| `coat_winters` | **3** | Joe's *"a few winters"* (D69) as a lifetime; demand of a third of the adults a year. ✅ **Measured (D663–D664):** half to 96 % of adults coated where a shop stands and hides reach it; the bound is the lodge's five hunts a year, not the coat's life. Joe's to move after play. |
+| `leather_per_coat` | **5** | Half a hunt's hide (`leather_yield` 10). §5.3's leather flow is the bound it must sit under. ✅ **Stands (D663):** 118 coats from ≈ 590 leather, under one lodge's 50 a year. |
+| `sew_ticks` / `sews_per_stint` | **10 / 2** | A day's stint for two coats, between the oven (15 a bake) and the grind. ✅ **Not the bottleneck (D663–D664):** the tailor is hired ~7 % of the time and sews what reaches the shelf; the rank in the quota is Joe's (§5.4). |
 | `tailor_unlock_leather` | **50** | Joe, D659. |
 | limit `clothing` | **50** | Joe, D62. |
 
