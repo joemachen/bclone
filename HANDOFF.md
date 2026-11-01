@@ -1,6 +1,37 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D672) IS OPEN, LOCAL, UNMERGED: LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: MERGE AT HIS WORD, THEN SLICE W (WORKSHOP + CARPENTER, ITS OWN SPEC), THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D672) IS OPEN, LOCAL, UNMERGED: LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D673, `specs/workshop-and-the-carpenter.md`) ON A SIDE-SESSION BRANCH OFF `slice/logistics`'s TIP — NOTHING BUILT, FIVE CALLS HIS. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: MERGE AT HIS WORD, HIS CALLS ON W, THEN BUILD W, THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D672) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D673) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, five commits (D668–D672).
+> This commit (D673) sits on a side session's branch (`claude/musing-rhodes-b6ffea`) fast-forwarded onto `slice/logistics`'s tip
+> c1a4f90** — the session opened at `main`, where `specs/handcart.md` does not exist, and moved onto the branch that has it rather
+> than re-derive the cart (the branch had no commits of its own, so nothing was lost). **Merge it into `slice/logistics` (a
+> fast-forward, one commit, docs only) before or with the slice's merge to `main`.** The tree is clean but for `bclone-tracker.xlsx`.
+>
+> **📝 Slice W is specced — `specs/workshop-and-the-carpenter.md`, in `tools-and-the-smith.md`'s shape (D673). Nothing built; no
+> code, data or test touched.** In one breath: the **Workshop** is a new 2×1 building under *Works* beside the smithy (proposed 25
+> logs, 12 stone, 40 ticks, two seats), **on the bar from the founding** — the gate is the building alone (Joe's D672 call 3), so no
+> node, no gift, no counter; the **Carpenter** is a new trade with a tool that wears a use a make, ranked after the tailor; the
+> **make** is a `Batch` — `logs_per_handcart` (10) → one `Goods.Handcart`, no firing — with the recipe a `made_from` column on the
+> good's row so the card's ***Makes:*** dropdown lists every row that has one (**one item today**; planks later are a row and nothing
+> else); the cart is **stored where tools are** (warehouse, cart, pile — never the market) and the carpenter **stops** at a set
+> `handcarts` limit or, with none set, at **one a household and a spare**. ⭐ **No new field** (with one product `MakeGood` is
+> derived), so **save format stays 9**, nothing new is hashed, **no starting limit is shipped** (D660's reason) and **every golden is
+> expected to hold**. §8 says what the builder's hut does *not* do (no growing, no carpenter there, no hammer). §10 is one cheap
+> harness table — the workshop's own cost in logs and roofs — before any number is typed. ⚠️ Found while tracing:
+> `tools-and-the-smith.md` prices `smithy_stone` at 12; the config says 36. Not changed; a follow-up.
+>
+> **▶️ NEXT — Joe's five calls on W (`workshop-and-the-carpenter.md §11`, each with a recommendation; also under ⏸️ OPEN below):**
+> on the bar from the founding, or a civic stop at N households? · no shipped `handcarts` starting limit, or a typed one and every
+> golden re-pinned? · no `MakeGood` field until planks (format 9), or the field now (format 10)? · the carpenter after Tailor? ·
+> the numbers. **Then build W, TDD per §9, §10's table before the json is typed; then Slice H (`handcart.md`), measured on
+> `ZzLogistics`.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap), this commit with it.
+>
+> **The four checks were not run for D673** — a spec and four doc files changed, nothing else, so they stand on D671's tree (suite
+> 1886 / 0 / 5 of 1891 in 15m06; view 0 warnings; probe 67 ✅ 0 ⛔, bar 151, `done.`; goldens 392, none moved), as D672's did.
+>
+> **— D670–D672, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-11-01 (D670–D672) — ON WINDOWS.**
 >
 > **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, four commits** — f98de0b
 > (D668: the measurement), 458ba7f (D669: Joe's verdict, the candidates to §5), then D670 (his two picks: the sweep for X and
@@ -8881,6 +8912,22 @@ Read `git status` after staging, every time.
   D648 — the fourth time). The state histogram (`ZZD` by state and year band) is what pointed away from the wear: the deaths were
   decades after the site, and spread across every job.
 
+## ⛔ THE TRAPS D673 FOUND — A SIDE SESSION OPENS AT `main`, AND THE SPEC YOU COPY MAY LIE ABOUT ITS OWN NUMBERS
+
+- **A side session's worktree branch opens at `main`, not at the branch the brief is about.** D673's brief said *"if
+  `specs/handcart.md` is missing on your branch, stop"* — and it was missing, because the five logistics commits sat on
+  `slice/logistics`, unmerged, and the new branch had been cut from `main`. **Before concluding a file does not exist, `git log`
+  the branch the brief names and `git show <branch>:<path>`.** The fix was a fast-forward (`git merge --ff-only slice/logistics`),
+  safe only because the new branch had no commits of its own; with commits of its own it would have been a rebase and a question
+  back to the starting session. Writing D673 on `main`'s tip would have produced a §7 that skipped D668–D672 and a merge conflict in
+  `DESIGN.md` for whoever merged next.
+- **A shipped spec's numbers table can be stale against the config it describes.** `tools-and-the-smith.md §3.6` and its §4 table
+  say `smithy_stone` 12 and have since D391; `data/sim.config.json` says 36 (*"a forge's worth of stone"*), and `bridges.md` already
+  prices the smithy at 36. **When a new spec copies a building's cost "in the range of" an older one, price from the config, not from
+  the older spec's table** — and say which you read. The 12 is not corrected here (a docs-only side session on a spec task; a
+  follow-up for whoever next touches `tools-and-the-smith.md`), which is itself the trap's second half: a stale number seen and
+  left is a stale number the next reader copies.
+
 ## ⛔ THE TRAPS D661–D662 PAID FOR — A MUTANT'S REVERSE ANCHOR, THE THIRD CAUSE OF A MOVED GOLDEN, AND THE MODDED FIXTURES
 
 - **A mutant script must be able to put the file back, and an empty or common string cannot anchor the way back.** Twice a reversal
@@ -9090,6 +9137,15 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **SLICE W — THE WORKSHOP AND THE CARPENTER: FIVE CALLS, HIS (D673, `specs/workshop-and-the-carpenter.md §11`), EACH WITH A
+  RECOMMENDATION; NOTHING BUILT UNTIL HE ANSWERS.** (1) The workshop **on the bar from the founding** (recommended: the gate is the
+  building alone, Joe's D672 call 3, and the measured problem is in every established village), or a civic stop at N households?
+  (2) **No shipped `handcarts` starting limit** (recommended: clothing's precedent, D660 — a typed one is hashed and moves every
+  golden), or a number typed and every golden re-pinned once? (3) **No `Workplace.MakeGood` field until a second product**
+  (recommended: with one product the setting is derived; save format stays 9 and his saves load), or the field now and format 10?
+  (4) **The carpenter ranked after Tailor, before Quarrier** (a convenience of the coat's kind, wanted in a burst), or lower?
+  (5) **The numbers, every one a proposal until §10's harness table is filled:** `workshop_logs` 25, `workshop_stone` 12,
+  `workshop_capacity` 2, `logs_per_handcart` 10, `make_ticks` 20, `makes_per_stint` 1, the spare 1, `trade_worth` 20.
 - ✅ ~~⏸️ **THE HANDCART — SIX CALLS, HIS (D670, `specs/handcart.md §10`).**~~ **MADE, ALL SIX AS PROPOSED (D672, 2026-11-01:
   *"Yes, all six"*).** (d) built (D671), (a) sketched (D670), the calls closed: (1) a cart is a household's good, parked at
   home, spares in the warehouse ✅; (2) the workshop a new building, the hut left alone, the hammer dropped as an item ✅;
