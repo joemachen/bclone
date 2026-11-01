@@ -5,7 +5,8 @@
 > chain merged to `main` at D527 (2026-10-07) and is ✅ below.** Part C (the disagreements) is the August audit, kept as history through D223.
 > ⚠️ **DATED, NOT STALE-BY-ACCIDENT (D640): Parts A and B are `main` at D526.** Built and merged since, and NOT in
 > these tables: bridges (D551), building condition (D560), nomads (D584), trade and the herd — hay, cattle, the barn,
-> the trading post, the merchant (D608), doors (D626). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
+> the trading post, the merchant (D608), doors (D626), clothing — the good (14), the tailor's shop (building 26) and the tailor
+> (trade 15) (D659–D667). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
 > Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
 >
 > **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in

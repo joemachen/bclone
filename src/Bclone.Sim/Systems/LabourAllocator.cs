@@ -1142,7 +1142,7 @@ internal static class LabourAllocator
     private static readonly JobKind[] KindsInOrder =
     {
         JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
-        JobKind.Woodcutter, JobKind.Smith, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
+        JobKind.Woodcutter, JobKind.Smith, JobKind.Tailor, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
 
         // The herdsman after the baker, then the merchant, as the quota takes hands (D593, D594).
         JobKind.Herdsman, JobKind.Merchant,

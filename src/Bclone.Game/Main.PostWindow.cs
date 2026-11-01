@@ -36,6 +36,10 @@ public partial class Main
         public required CheckBox HeadOn { get; init; }
         public required SpinBox HeadAmount { get; init; }
 
+        /// <summary>The goods' grid and the scroll it sits in (D662): seven rows, then a scrollbar.</summary>
+        public required GridContainer Grid { get; init; }
+        public required ScrollContainer GridScroll { get; init; }
+
         /// <summary>One row a good: its name in words, what the village holds, the order's kind and its number.</summary>
         public List<(Goods Goods, HBoxContainer Row, Label Name, Label Held, OptionButton Order, SpinBox Amount)> Orders { get; } = new();
 
@@ -134,10 +138,20 @@ public partial class Main
         column.AddChild(verdict);
 
         // ⭐ Two columns, every good named (Joe, D597).
-        var grid = new GridContainer { Columns = 2 };
+        // ⭐ THREE COLUMNS (Joe, D664), AND THE GOODS SCROLL PAST SEVEN ROWS (D662): every known good is a row, and the
+        // fifteenth good (clothing) made two columns 573 tall against the 560 Joe accepted (D597, D607). Three a row shows
+        // every good the game has at once (15 goods, five rows, ~470 tall); the scroll stays for a twenty-second.
+        var grid = new GridContainer { Columns = 3, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         grid.AddThemeConstantOverride("h_separation", 18);
         grid.AddThemeConstantOverride("v_separation", 4);
-        column.AddChild(grid);
+        var gridScroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        };
+        gridScroll.AddChild(grid);
+        column.AddChild(gridScroll);
 
         var w = new PostWindow
         {
@@ -150,6 +164,8 @@ public partial class Main
             Verdict = verdict,
             HeadOn = new CheckBox { Text = "buy up to", TooltipText = "head the village's herds should hold" },
             HeadAmount = new SpinBox { MinValue = 0, MaxValue = 1_000, Step = 1, CustomMinimumSize = new Vector2(PostAmountWidth, 0) },
+            Grid = grid,
+            GridScroll = gridScroll,
         };
 
         for (int g = 0; g < world.GoodsCatalog.Count; g++)
@@ -217,14 +233,17 @@ public partial class Main
         return w;
     }
 
-    /// <summary>Two columns of rows and the gap between them — the rows' own widths, measured by the probe (716).</summary>
-    private const float PostWindowWidth = 720f;
+    /// <summary>Three columns of rows and the gaps between them (Joe, D664: *"do 3 columns"*) — the rows' own widths, measured by the probe; 720 with two until D664.</summary>
+    private const float PostWindowWidth = 1070f;
 
     /// <summary>
     /// The tallest the window may stand — the probe holds it to this (Joe, D597: <i>"way too long"</i> at 641, its names
     /// clipped to nothing). 480 until D607 put the region's three lines at the top; 560 with them.
     /// </summary>
     private const float PostWindowTallest = 560f;
+
+    /// <summary>Seven rows of goods before the grid scrolls (D662) — three a row since D664, so the scroll waits for a twenty-second good.</summary>
+    private const float PostGridTallest = 242f;
 
     private const float PostNameWidth = 84f;
     private const float PostHeldWidth = 52f;
@@ -350,6 +369,10 @@ public partial class Main
         }
 
         w.HeadAmount.Editable = f.Head is not null;
+
+        // The scroll takes the grid's own height up to seven rows (D662): no blank band while few goods are known, and no
+        // growth past the window's limit once every good is.
+        w.GridScroll.CustomMinimumSize = new Vector2(0, Mathf.Min(w.Grid.GetCombinedMinimumSize().Y, PostGridTallest));
     }
 
     /// <summary>What a boat on the river carries, in words — its cargo, derived (`SimWorld.CargoOf`).</summary>

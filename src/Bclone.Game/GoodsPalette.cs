@@ -55,6 +55,10 @@ internal static class GoodsPalette
         Goods.Flour => new Color(0.92f, 0.88f, 0.78f),
         Goods.Bread => new Color(0.72f, 0.48f, 0.24f),
 
+        // A coat (D662): moss green, dyed cloth — apart from leather's tan it is sewn from, bread's brown and the
+        // fish's blue. Judged by its heap's ink edge under the three-band rule, like every good (`check.py`).
+        Goods.Clothing => new Color(0.40f, 0.52f, 0.34f),
+
         // ⚠️ A MOD-ADDED GOOD GETS A COLOUR RATHER THAN A CRASH, and it is deliberately drab.
         // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls
         // it *"the first thing a modder will ask for"*. Until that is answered, a neutral grey is

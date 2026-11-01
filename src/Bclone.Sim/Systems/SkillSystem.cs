@@ -262,6 +262,7 @@ public sealed class SkillSystem : ISimSystem
         // Fetching a tool is the household fetch's cousin (D391): a walk for something to work
         // with, not the work — it grows no trade, like `FetchingFromStore`.
         VillagerState.FetchingATool => false,
+        VillagerState.FetchingACoat => false,
 
         // The forge, and the walk to it, is a smith out on their trade (D391).
         VillagerState.TravelingToSmithy => true,
@@ -272,6 +273,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.Grinding => true,
         VillagerState.TravelingToBakery => true,
         VillagerState.Baking => true,
+
+        // The tailor's shop, and the walk to it (D659).
+        VillagerState.TravelingToTailor => true,
+        VillagerState.Sewing => true,
 
         // The walk to the face and the stint at it are a quarrier out on their trade (D434).
         VillagerState.TravelingToQuarry => true,

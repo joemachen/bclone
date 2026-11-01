@@ -121,12 +121,15 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.TidyingGround => "fetching a load off the ground",
         VillagerState.ClearingABuffer => "carrying food out of a hut",
         VillagerState.FetchingATool => "fetching a tool from a store",
+        VillagerState.FetchingACoat => "fetching a coat from a store",
         VillagerState.TravelingToSmithy => "walking to the smithy",
         VillagerState.Forging => "forging tools",
         VillagerState.TravelingToMill => "walking to the mill",
         VillagerState.Grinding => "grinding wheat",
         VillagerState.TravelingToBakery => "walking to the bakery",
         VillagerState.Baking => "baking bread",
+        VillagerState.TravelingToTailor => "walking to the tailor's shop",
+        VillagerState.Sewing => "sewing coats",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
         VillagerState.Quarrying => "cutting stone",
         VillagerState.TravelingToMine => "walking to the mine face",
@@ -415,6 +418,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                     VillagerState.FetchingATool);
                 return;
 
+            case VillagerState.FetchingACoat:
+                // The coat's errand (D659), the tool's rule.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.FetchingACoat);
+                return;
+
             case VillagerState.WalkingToTheWell:
                 // To the well they set off for (D427), fixed at departure. Pulled down or moved
                 // on the way, and they turn for home — the claim is spent, which costs nothing
@@ -459,7 +468,8 @@ public sealed partial class BehaviorSystem : ISimSystem
 
             case VillagerState.TravelingToMill:
             case VillagerState.TravelingToBakery:
-                // To the mill or the oven they hold a seat at (D522), the smith's walk.
+            case VillagerState.TravelingToTailor:
+                // To the mill, the oven or the tailor's shop they hold a seat at (D522, D659), the smith's walk.
                 if (WorkplaceOf(world, villager) is not Workplace hut)
                 {
                     GoHome(world, villager);
@@ -613,9 +623,24 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static bool IsBaking(VillagerState state) =>
         state is VillagerState.TravelingToBakery or VillagerState.Baking;
 
+    private static bool IsSewing(VillagerState state) =>
+        state is VillagerState.TravelingToTailor or VillagerState.Sewing;
+
     /// <summary>The work a walk to the mill or the oven arrives as (D522).</summary>
-    private static VillagerState BatchState(VillagerState travelling) =>
-        travelling == VillagerState.TravelingToMill ? VillagerState.Grinding : VillagerState.Baking;
+    private static VillagerState BatchState(VillagerState travelling) => travelling switch
+    {
+        VillagerState.TravelingToMill => VillagerState.Grinding,
+        VillagerState.TravelingToTailor => VillagerState.Sewing,
+        _ => VillagerState.Baking,
+    };
+
+    /// <summary>The work a batch trade does at its hut, and the walk there (D522, D659).</summary>
+    private static (VillagerState Walk, VillagerState Work) BatchStatesOf(JobKind trade) => trade switch
+    {
+        JobKind.Miller => (VillagerState.TravelingToMill, VillagerState.Grinding),
+        JobKind.Tailor => (VillagerState.TravelingToTailor, VillagerState.Sewing),
+        _ => (VillagerState.TravelingToBakery, VillagerState.Baking),
+    };
 
     private static bool IsQuarrying(VillagerState state) =>
         state is VillagerState.TravelingToQuarry or VillagerState.Quarrying;
@@ -637,7 +662,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state)
+        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state) || IsSewing(state)
         || IsHerding(state) || IsTradingAtThePost(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
@@ -705,6 +730,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (IsBaking(state))
         {
             return JobKind.Baker;
+        }
+
+        // And the tailor (D659), the same lesson an eighth time.
+        if (IsSewing(state))
+        {
+            return JobKind.Tailor;
         }
 
         // ⛔ D281's lesson, the fifth time: without this arm a herdsman is recalled home every tick.
@@ -2809,6 +2840,14 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ A COAT FOR EVERY ADULT (Joe, D659; `clothing.md §3.3`): the tool's errand one good over, for anyone past
+        // childhood with none on their back — the carriers too, because walking is outdoors (D53). After the tool,
+        // because a tool is the trade's and a coat is the person's; before the work, like the tool.
+        if (TryFetchACoat(world, villager))
+        {
+            return;
+        }
+
         // ⭐ THE SMITH (D391) — the woodcutter's shape, one good over: a stint at the forge while
         // a store within reach holds a forge's iron and firewood, the tools limit is not met, and
         // ⛔ the sheds hold what the homes want, because a forge that burns the winter's firewood
@@ -2857,16 +2896,14 @@ public sealed partial class BehaviorSystem : ISimSystem
             }
 
             villager.WorkNote = string.Empty;
-            VillagerState working = job.Kind == JobKind.Miller ? VillagerState.Grinding : VillagerState.Baking;
+            (VillagerState walk, VillagerState working) = BatchStatesOf(job.Kind);
             if (villager.Tile == job.Tile)
             {
                 BeginBatches(world, villager, working);
             }
             else
             {
-                villager.State = job.Kind == JobKind.Miller
-                    ? VillagerState.TravelingToMill
-                    : VillagerState.TravelingToBakery;
+                villager.State = walk;
                 Travel(world, villager, job.Position, working);
             }
 
@@ -3623,28 +3660,48 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// ⭐ A buffer's non-food good — a hide in the lodge — <b>into an empty armful only</b> (D420).
+    /// ⭐⭐ THE ARMFUL IS THE GOOD THAT SENT THE CARRIER (D664, rule A): the one <see cref="SimWorld.GoodWorthClearing"/>
+    /// names. A food fills the armful from every food held, as it always did (D362); a hide fills it with hides, and
+    /// the meat scraps below an armful stay — a hide goes to a warehouse where meat goes to a granary, one kind of
+    /// store per armful (D420).
     /// </summary>
     /// <remarks>
-    /// Food goes to a granary and a hide to a warehouse, so an armful of both is two walks with a
-    /// set-down at the first door. The good is the one <see cref="SimWorld.GoodWorthClearing"/>
-    /// names, which is the question that sent the carrier here.
+    /// ⛔ Until D664 the pickup took <i>any</i> food first, whatever the amount, and a hide only into an empty armful — so a
+    /// carrier the test had sent for 50 hides took 29 meat scraps and left the hides, every time, until the lodge held
+    /// exactly no meat (Joe's Year-54 village, two years). D371's lesson, found again: <i>approve the load you will
+    /// actually pick up.</i>
     /// </remarks>
-    private static void TakeTheOtherGoods(SimWorld world, Villager villager, Workplace workplace, int room)
+    private static void TakeTheArmfulThatSentThem(SimWorld world, Villager villager, Workplace workplace, int room)
     {
-        if (villager.IsCarrying || world.GoodWorthClearing(workplace) is not Goods goods || world.GoodsCatalog.Edible(goods))
+        // ⭐ The hides (or any non-food good) the test named: a whole armful of them, and nothing else (D664).
+        if (world.GoodWorthClearing(workplace) is Goods named && !world.GoodsCatalog.Edible(named))
         {
+            int hides = Smallest(room, room, workplace.Store[named]);
+            if (hides > 0 && workplace.Store.TryTake(named, hides))
+            {
+                villager.Carried.Receive(named, hides);
+            }
+
             return;
         }
 
-        int take = Smallest(room, room, workplace.Store[goods]);
-        if (take > 0 && workplace.Store.TryTake(goods, take))
+        // Otherwise the food, exactly as it always was (D362): every food held, up to the armful — whatever the test
+        // says on arrival, as before, so a carrier who set off for food and finds the granary filled meanwhile still
+        // carries what they came for (the first draft of D664 sent them home empty, and three harness valleys froze).
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+        for (int g = 0; g < edible.Count && room > 0; g++)
         {
-            villager.Carried.Receive(goods, take);
+            int held = workplace.Store[edible[g]];
+            int take = held < room ? held : room;
+            if (take > 0 && workplace.Store.TryTake(edible[g], take))
+            {
+                villager.Carried.Receive(edible[g], take);
+                room -= take;
+            }
         }
     }
 
-    /// <summary>An armful out of the buffer — food first, then a hide (D420) — and to a store by the ordinary path.</summary>
+    /// <summary>An armful out of the buffer — the good that sent the carrier (D664) — and to a store by the ordinary path.</summary>
     private static void TakeFromTheBuffer(SimWorld world, Villager villager)
     {
         var at = new GridPos(villager.ErrandX, villager.ErrandY);
@@ -3662,20 +3719,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         if (workplace is not null)
         {
-            int room = world.Config.CarryCapacity;
-            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-            for (int g = 0; g < edible.Count && room > 0; g++)
-            {
-                int held = workplace.Store[edible[g]];
-                int take = held < room ? held : room;
-                if (take > 0 && workplace.Store.TryTake(edible[g], take))
-                {
-                    villager.Carried.Receive(edible[g], take);
-                    room -= take;
-                }
-            }
-
-            TakeTheOtherGoods(world, villager, workplace, room);
+            TakeTheArmfulThatSentThem(world, villager, workplace, world.Config.CarryCapacity);
         }
 
         if (!villager.IsCarrying)
@@ -4791,19 +4835,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-            for (int g = 0; g < edible.Count; g++)
-            {
-                int clearing = Smallest(load, load, workplace.Store[edible[g]]);
-                if (clearing > 0 && workplace.Store.TryTake(edible[g], clearing))
-                {
-                    villager.Carried.Receive(edible[g], clearing);
-                    break;
-                }
-            }
-
-            // ⭐ AND A HIDE, INTO AN EMPTY ARMFUL ONLY (D420) — one kind of store per armful.
-            TakeTheOtherGoods(world, villager, workplace, load);
+            // ⭐ The good that sent the marketer (D664): a food, or the hides — one kind of store per armful (D420).
+            TakeTheArmfulThatSentThem(world, villager, workplace, load);
             break;
         }
 
@@ -5049,6 +5082,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.FetchingACoat)
+        {
+            TakeACoat(world, villager);
+            return;
+        }
+
         // On the field (D511): tend a while, then back to the steading. A tile reaped, a season
         // turned or a job lost on the way, and they turn round instead.
         if (onArrival == VillagerState.Tending)
@@ -5095,7 +5134,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (onArrival is VillagerState.Grinding or VillagerState.Baking)
+        if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing)
         {
             BeginBatches(world, villager, onArrival);
             return;
@@ -5318,7 +5357,12 @@ public sealed partial class BehaviorSystem : ISimSystem
     {
         villager.BatchesThisStint = 0;
         villager.State = working;
-        JobKind trade = working == VillagerState.Grinding ? JobKind.Miller : JobKind.Baker;
+        JobKind trade = working switch
+        {
+            VillagerState.Grinding => JobKind.Miller,
+            VillagerState.Sewing => JobKind.Tailor,
+            _ => JobKind.Baker,
+        };
         villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
     }
 
@@ -5329,6 +5373,71 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.State = VillagerState.Forging;
         villager.ActionTicksRemaining =
             world.BeginWork(villager, JobKind.Smith, world.Config.ForgeTicks);
+    }
+
+    /// <summary>
+    /// Walk to the nearest store holding a coat, when this adult has none and their hands are empty (D659,
+    /// `clothing.md §3.3`) — <see cref="TryFetchATool"/>'s errand one good over, for every adult rather than a
+    /// trade's hands. False when they wear one, or there is none to be had. No note: until a tailor stands that is
+    /// every adult in the valley, and the card's coat line already says *no coat*.
+    /// </summary>
+    private static bool TryFetchACoat(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.CoatDays > 0 || villager.IsCarrying)
+        {
+            return false;
+        }
+
+        // The longest-lasting kind in reach, then the nearest store holding it — by the rows, never by name.
+        StoreBuilding? source = null;
+        IReadOnlyList<Goods> coats = world.GoodsCatalog.CoatsBestFirst;
+        for (int i = 0; i < coats.Count && source is null; i++)
+        {
+            source = NearestStoreHolding(world, villager.Tile, coats[i]);
+        }
+
+        if (source is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = source.Tile.X;
+        villager.ErrandY = source.Tile.Y;
+        villager.State = VillagerState.FetchingACoat;
+        Travel(world, villager, source.Position, VillagerState.FetchingACoat);
+        return true;
+    }
+
+    /// <summary>
+    /// At the store: put on the longest-lasting coat it still holds (D659). Its winters are the row's, in days of the
+    /// season. Gone on the way, and they decide again bare — nothing is conjured.
+    /// </summary>
+    private static void TakeACoat(SimWorld world, Villager villager)
+    {
+        StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+        IReadOnlyList<Goods> coats = world.GoodsCatalog.CoatsBestFirst;
+        for (int i = 0; store is not null && i < coats.Count; i++)
+        {
+            Goods kind = coats[i];
+            if (!store.Store.TryTake(kind, 1))
+            {
+                continue;
+            }
+
+            villager.CoatDays = world.GoodsCatalog[kind].CoatWinters * world.Config.DaysPerSeason;
+            if (world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "behavior",
+                    $"{villager.Name} took {world.GoodsCatalog.NameOf(kind)} from {store.Name} — {world.Clock}.");
+            }
+
+            break;
+        }
+
+        villager.State = VillagerState.Idle;
+        Decide(world, villager);
     }
 
     /// <summary>
@@ -5966,6 +6075,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // hunt, or home when the lodge is full. The hide stays in their arms until they
                 // pass a store, as it always did.
                 villager.Carried.Receive(Goods.Leather, hide);
+                world.HeldLeather(hide);
                 villager.Carried.Receive(Goods.Meat, meat);
                 world.RecordFoodProduced(Goods.Meat, meat);
 
@@ -6537,6 +6647,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
             case VillagerState.Grinding:
             case VillagerState.Baking:
+            case VillagerState.Sewing:
                 FinishABatch(world, villager);
                 return;
 

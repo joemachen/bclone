@@ -889,6 +889,11 @@
   "tool_speed_bonus_percent": 34,
   "tool_yield_bonus_percent": 25,
 
+  // THE COAT (clothing.md 3.3, Joe D659: "a roof you wear"): lasts this many
+  // winters on a back, wearing a day every winter day it is worn. The clothing
+  // row reads it. Typed, not yet measured -- C4 holds it against the leather flow.
+  "coat_winters": 3,
+
   // THE IRON TOOL (tools-and-the-smith.md 9.2, Joe's order of magnitude, D434):
   // lasts 250 uses, takes half off an action's ticks (a gather still 3 -> 2, a
   // split 4 -> 2, a cast 10 -> 5, a hunt 15 -> 8) and brings in 35% more.
@@ -967,6 +972,21 @@
   "bakery_stone": 24,
   "bakery_work_ticks": 40,
   "bakery_capacity": 2,
+
+  // THE TAILOR'S SHOP (clothing.md 3.5-3.6, D659): leather to coats, the mill's
+  // batch shape. Half a hunt's hide a coat; a sew between a bake (4) and a hunt
+  // (15); two a stint. Learned at fifty leather handled -- about five hunts, the
+  // smithy's shape (Joe: "50 leather held"). The shop is a hut's price (hut_logs,
+  // hut_stone). TYPED, not yet measured -- C4 holds them against the leather flow.
+  // 2 since D666 (Joe: a lodge and a tailor should clothe ten adults, and 5 a
+  // coat did not): one hunt is five coats, two hunts a year clothe ten adults
+  // three times over. Hides stay scarce; coats are cheap, and the better cloth
+  // to come (wool, cotton) gets its own recipe.
+  "leather_per_coat": 2,
+  "sew_ticks": 10,
+  "sews_per_stint": 2,
+  "tailor_shop_capacity": 2,
+  "tailor_unlock_leather": 50,
 
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the

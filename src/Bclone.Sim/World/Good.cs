@@ -220,6 +220,14 @@ public sealed record GoodRow
     public int ToolYieldBonusPercent { get; init; }
 
     /// <summary>
+    /// Winters a coat of this good lasts on a back — <b>0 for anything that is not a coat</b> (`clothing.md §3.3`,
+    /// D659). A coat's numbers are columns on its row, as a tool's are: the leather coat is one row and a wool coat is
+    /// another, with nothing in the sim naming either.
+    /// </summary>
+    [JsonPropertyName("coat_winters")]
+    public int CoatWinters { get; init; }
+
+    /// <summary>
     /// What one forge of it takes from a store — <b>empty for anything no smith makes</b> (§9.3).
     /// </summary>
     /// <remarks>
@@ -255,6 +263,10 @@ public sealed record GoodRow
     /// <summary>Whether this is a tool a hand can hold. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool IsTool => ToolUses > 0;
+
+    /// <summary>Whether this is a coat a back can wear (D659). Derived, like <see cref="IsTool"/>.</summary>
+    [JsonIgnore]
+    public bool IsCoat => CoatWinters > 0;
 }
 
 /// <summary>The stock-limit headings, in the order the panel shows them (D409).</summary>
@@ -370,6 +382,19 @@ public sealed class GoodsCatalog
             return c != 0 ? c : ((int)a).CompareTo((int)b);
         });
         ToolsBestFirst = tools;
+
+        // ⭐ The coats, the longest-lasting first (D659) — one row today; a wool coat would be a second.
+        var coats = new List<Goods>();
+        for (int id = 0; id < _rows.Length; id++)
+        {
+            if (_rows[id] is { IsCoat: true })
+            {
+                coats.Add((Goods)id);
+            }
+        }
+
+        coats.Sort((a, b) => _rows[(int)b].CoatWinters.CompareTo(_rows[(int)a].CoatWinters));
+        CoatsBestFirst = coats;
     }
 
     /// <summary>How many goods exist.</summary>
@@ -463,4 +488,7 @@ public sealed class GoodsCatalog
     /// </para>
     /// </remarks>
     public IReadOnlyList<Goods> ToolsBestFirst { get; }
+
+    /// <summary>Every coat in the catalogue, the longest-lasting first (D659, `clothing.md §3.3`). Built once, in a fixed order, like <see cref="ToolsBestFirst"/>.</summary>
+    public IReadOnlyList<Goods> CoatsBestFirst { get; }
 }

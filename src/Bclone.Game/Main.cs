@@ -540,6 +540,7 @@ public partial class Main : Control
         GD.Print(TheAlertLeavesTheVillageAt1x());
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
+        GD.Print(TheCardSaysTheCoat());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
         GD.Print(AMetLimitIsMarkedOnTheBar());
@@ -2076,6 +2077,7 @@ public partial class Main : Control
     private Button? _smithyButton;
     private Button? _millButton;
     private Button? _bakeryButton;
+    private Button? _tailorButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2226,6 +2228,9 @@ public partial class Main : Control
         RefreshALearnedButton(world, BuildingKind.Mill, JobKind.Miller, _millButton, ref _millKnown, ref _millTried);
         RefreshALearnedButton(world, BuildingKind.Bakery, JobKind.Baker, _bakeryButton, ref _bakeryKnown, ref _bakeryTried);
 
+        // The tailor's shop, learned at fifty leather handled (D661, `clothing.md §3.6`) — paid for, lit until the first is marked.
+        RefreshALearnedButton(world, BuildingKind.TailorShop, JobKind.Tailor, _tailorButton, ref _tailorKnown, ref _tailorTried);
+
         // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
@@ -2263,6 +2268,8 @@ public partial class Main : Control
     private bool _millTried;
     private bool _bakeryKnown;
     private bool _bakeryTried;
+    private bool _tailorKnown;
+    private bool _tailorTried;
     private bool _bridgeKnown;
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
@@ -3759,6 +3766,7 @@ public partial class Main : Control
         JobKind.Miner => "iron is dug from its seam here",
         JobKind.Miller => "wheat is ground into flour here",
         JobKind.Baker => "flour is baked into bread here",
+        JobKind.Tailor => "leather is sewn into coats here",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -7534,6 +7542,10 @@ public partial class Main : Control
             {
                 _bakeryButton = button;
             }
+            else if (kind == BuildingKind.TailorShop)
+            {
+                _tailorButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -7645,6 +7657,10 @@ public partial class Main : Control
 
             // The smithy beside it (D391): the second building whose product is for every trade.
             BuildingKind.Smithy => BuildCategory.Works,
+
+            // The tailor's shop under Resources (Joe, D665: *"move the tailor from the works menu into the resources"*),
+            // beside the quarry and the mine it was first filed with the smithy against (D662).
+            BuildingKind.TailorShop => BuildCategory.Resources,
 
             // ⭐ And the bridges, which this group was named for (D546) — the builder's work on the land.
             BuildingKind.Bridge or BuildingKind.StoneBridge => BuildCategory.Works,
@@ -7785,6 +7801,7 @@ public partial class Main : Control
         BuildingKind.Smithy => _smithyKnown,
         BuildingKind.Mill => _millKnown,
         BuildingKind.Bakery => _bakeryKnown,
+        BuildingKind.TailorShop => _tailorKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

@@ -39,6 +39,9 @@ public sealed partial class BuildingGlyph : Control
     /// <summary>A forge's or an oven's glow.</summary>
     private static readonly Color Fire = new(0.95f, 0.55f, 0.20f);
 
+    /// <summary>The tailor's thread (D662) — pale, like the oven's glow is warm: a detail on the hut's ink.</summary>
+    private static readonly Color Thread = new(0.93f, 0.90f, 0.80f);
+
     private readonly BuildingKind _kind;
     private readonly bool _known;
 
@@ -86,6 +89,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Bakery => TradeGlyph.ColourOf(JobKind.Baker),
         BuildingKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
         BuildingKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
+        BuildingKind.TailorShop => TradeGlyph.ColourOf(JobKind.Tailor),
 
         _ => Unchosen,
     };
@@ -260,6 +264,13 @@ public sealed partial class BuildingGlyph : Control
                 Hut(ink);
                 DrawCircle(new Vector2(s * 0.70f, s * 0.70f), s * 0.16f, ink);
                 DrawRect(new Rect2(s * 0.64f, s * 0.70f, s * 0.12f, s * 0.08f), Paint(Fire));
+                break;
+
+            // A tailor's shop (D662): a hut, and a needle slanted across its wall with the thread's eye.
+            case BuildingKind.TailorShop:
+                Hut(ink);
+                DrawLine(new Vector2(s * 0.26f, s * 0.82f), new Vector2(s * 0.56f, s * 0.50f), Paint(Thread), 2.0f);
+                DrawCircle(new Vector2(s * 0.56f, s * 0.50f), s * 0.05f, Paint(Thread));
                 break;
 
             // A low lodge under a drawn bow.

@@ -35,6 +35,8 @@ public enum TechCondition
     /// <summary>Crossings walked over bridges — <see cref="SimWorld.BridgeCrossings"/> against <c>stone_bridge_unlock_crossings</c> (D546).</summary>
     CrossingsWalked,
 
+    /// <summary>Leather ever held — <see cref="SimWorld.LeatherEverHeld"/> against <c>tailor_unlock_leather</c> (D659).</summary>
+    LeatherHeld,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -149,6 +151,12 @@ public static class TechTree
         },
         new TechNodeRow
         {
+            Id = "tailor", Name = "The tailor's shop", Unlocks = BuildingKind.TailorShop, Condition = TechCondition.LeatherHeld,
+            // One sentence: the tree's card is 160 tall and the probe holds it there (`tech tree:`).
+            Says = "Handle enough hides, and somebody works out how to cut and sew them into a coat — a roof you wear.",
+        },
+        new TechNodeRow
+        {
             Id = "bridging", Name = "The wooden bridge", Unlocks = BuildingKind.Bridge, Condition = TechCondition.VillageSize,
             Says = "Grow the village, and somebody works out how to put a span of timber across the water.",
         },
@@ -220,6 +228,8 @@ public static class TechTree
                 return (world.IronToolsEverForged, world.Config.MineUnlockIronTools);
             case TechCondition.WheatReaped:
                 return (world.WheatEverReaped, world.Config.MillUnlockWheat);
+            case TechCondition.LeatherHeld:
+                return (world.LeatherEverHeld, world.Config.TailorUnlockLeather);
             case TechCondition.VillageSize:
                 return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
             case TechCondition.CrossingsWalked:
@@ -253,7 +263,7 @@ public static class TechTree
     /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
     public static bool IntroducesTheMap(TechCondition condition) =>
         condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
-            or TechCondition.WheatReaped;
+            or TechCondition.WheatReaped or TechCondition.LeatherHeld;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

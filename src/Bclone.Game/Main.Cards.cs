@@ -163,6 +163,9 @@ public partial class Main
         public required VBoxContainer ToolSection { get; init; }
         public required ProgressBar ToolBar { get; init; }
         public required Label ToolUses { get; init; }
+        public required VBoxContainer CoatSection { get; init; }
+        public required ProgressBar CoatBar { get; init; }
+        public required Label CoatText { get; init; }
         public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
         public required VBoxContainer SkillsSection { get; init; }
         public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
@@ -1681,6 +1684,23 @@ public partial class Main
                 : $"No tool in hand or on a shelf they can reach. {WhatEachToolIsWorth(world)}";
         }
 
+        // ---- COAT (D659, `clothing.md §3.3`): a roof you wear, and the winters left in it — every adult's, a child's never ----
+        bool wearsOne = villager.CanWork;
+        p.CoatSection.Visible = wearsOne;
+        if (wearsOne)
+        {
+            int days = villager.CoatDays;
+            int aNewCoat = CoatDaysOfANewCoat(world);
+            p.CoatBar.MaxValue = Mathf.Max(1, Mathf.Max(aNewCoat, days));
+            p.CoatBar.Value = days;
+            p.CoatBar.Visible = days > 0;
+            p.CoatText.Text = CoatLine(days, world.Config.DaysPerSeason);
+            p.CoatText.Modulate = days > 0 ? new Color(1, 1, 1, 0.7f) : LightStopped;
+            p.CoatSection.TooltipText = days > 0
+                ? $"A roof you wear: open ground chills {villager.Name} only as a roof does. {days} winter days left — it wears a day every winter day."
+                : $"No coat: open ground chills {villager.Name} at the open's rate, a roof at the roof's. A tailor's shop sews coats from leather; any adult fetches one from a store.";
+        }
+
         // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
         // ⭐ FULL, AND JOE'S SENTENCE IS ITS TOOLTIP (D522, `food-chain.md §9` call 5): a meal of bread holds
         // hunger off, and the card says what filled them and for how long — one hover away, as the work
@@ -1850,6 +1870,30 @@ public partial class Main
         return skin;
     }
 
+    /// <summary>The card's coat line (`clothing.md §3.3`): the winters left, rounded up — a day left is still its last winter.</summary>
+    internal static string CoatLine(int coatDays, int daysPerSeason)
+    {
+        if (coatDays <= 0)
+        {
+            return "No coat — the cold bites outdoors";
+        }
+
+        int winters = daysPerSeason <= 0 ? 1 : (coatDays + daysPerSeason - 1) / daysPerSeason;
+        return winters <= 1 ? "Coat — its last winter" : $"Coat — {winters} winters left";
+    }
+
+    /// <summary>The winter days a coat fresh off the shelf holds — the longest-lasting row's, for the bar's full mark.</summary>
+    private static int CoatDaysOfANewCoat(SimWorld world)
+    {
+        int most = 0;
+        foreach (Goods coat in world.GoodsCatalog.CoatsBestFirst)
+        {
+            most = Math.Max(most, world.GoodsCatalog[coat].CoatWinters * world.Config.DaysPerSeason);
+        }
+
+        return most;
+    }
+
     private static void SetNeed((PanelContainer Pill, Label Text) need, bool fine, string text, string why)
     {
         need.Text.Text = text;
@@ -1956,6 +2000,17 @@ public partial class Main
         toolSection.AddChild(toolRow);
         box.AddChild(toolSection);
 
+        VBoxContainer coatSection = Section("COAT");
+        coatSection.MouseFilter = MouseFilterEnum.Stop;
+        var coatRow = new HBoxContainer();
+        coatRow.AddThemeConstantOverride("separation", 8);
+        ProgressBar coatBar = Bar();
+        coatRow.AddChild(coatBar);
+        Label coatText = Body(string.Empty);
+        coatRow.AddChild(coatText);
+        coatSection.AddChild(coatRow);
+        box.AddChild(coatSection);
+
         VBoxContainer needsSection = Section("NEEDS");
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
@@ -1995,6 +2050,9 @@ public partial class Main
             ToolSection = toolSection,
             ToolBar = toolBar,
             ToolUses = toolUses,
+            CoatSection = coatSection,
+            CoatBar = coatBar,
+            CoatText = coatText,
             Needs = needs,
             SkillsSection = skillsSection,
             Skills = new(),
@@ -2628,13 +2686,14 @@ public partial class Main
         var faults = new List<string>();
         var unknownGoods = Enumerable.Range(0, world.GoodsCatalog.Count).Select(g => (Goods)g).Where(g => !GoodKnown(g)).ToList();
         var unknownTrades = System.Enum.GetValues<JobKind>().Where(t => !TradeKnown(t)).ToList();
-        if (!unknownGoods.Contains(Goods.IronTools) || !unknownGoods.Contains(Goods.Flour) || !unknownGoods.Contains(Goods.Bread))
+        if (!unknownGoods.Contains(Goods.IronTools) || !unknownGoods.Contains(Goods.Flour) || !unknownGoods.Contains(Goods.Bread)
+            || !unknownGoods.Contains(Goods.Clothing))
         {
             faults.Add($"the founding knows goods it should not: unknown are only {string.Join(", ", unknownGoods)}");
         }
 
         if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner)
-            || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker))
+            || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker) || !unknownTrades.Contains(JobKind.Tailor))
         {
             faults.Add($"the founding knows trades it should not: unknown are only {string.Join(", ", unknownTrades)}");
         }
@@ -2688,11 +2747,11 @@ public partial class Main
 
         Ask("at the founding", learned: false);
 
-        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (true, true, true, true, true, true);
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown) = (true, true, true, true, true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown) = (quarry, mine, smithy, mill, bakery, trade);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);
@@ -2788,6 +2847,51 @@ public partial class Main
         return faults.Count == 0
             ? $"[widths] card door: ✅ a moved door is said on its card (\"{said}\"), and a door on its front says nothing"
             : $"[widths] card door: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// Probe `coat:` (D662, `clothing.md §8` item 4): the card's COAT line reads the coat — the winters left, its last winter,
+    /// none — posed on a living adult's `CoatDays` and put back, so the village is as it was.
+    /// </summary>
+    private string TheCardSaysTheCoat()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Villager? adult = world.Villagers.FirstOrDefault(v => v.Alive && v.CanWork);
+        if (adult is null)
+        {
+            return "[widths] coat: ⛔ nobody alive to wear one";
+        }
+
+        int before = adult.CoatDays;
+        int days = world.Config.DaysPerSeason;
+        try
+        {
+            foreach ((int pose, string expected) in new[]
+            {
+                (0, "No coat — the cold bites outdoors"), (1, "Coat — its last winter"), ((2 * days) + 1, "Coat — 3 winters left"),
+            })
+            {
+                adult.CoatDays = pose;
+                OpenCard(new CardSubject(CardKind.Villager, adult.Id));
+                Card card = _selectedCard!;
+                string said = card.Person.CoatText.Text;
+                if (!card.Person.CoatSection.Visible || said != expected)
+                {
+                    faults.Add($"with {pose} days the card says \"{said}\" where it should say \"{expected}\"");
+                }
+
+                CloseCard(card);
+            }
+        }
+        finally
+        {
+            adult.CoatDays = before;
+        }
+
+        return faults.Count == 0
+            ? "[widths] coat: ✅ the card says the winters left in a coat, its last winter, and no coat"
+            : $"[widths] coat: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()

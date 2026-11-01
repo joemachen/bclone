@@ -59,6 +59,11 @@ public sealed class StartingStockLimitsTests
             // ⛔ Hay ships with NO limit (D590, `trade.md §11.1`): D522 moved the shipped golden by adding two starting
             // limits, and a village with no barn must hash as it did.
             [Goods.Hay] = null,
+
+            // ⛔ Clothing ships with NO limit too (D659, `clothing.md §3.4`): a set limit is hashed and would move every
+            // shipped golden for a good no village holds before a tailor stands. With none set, the tailor sews toward
+            // `LabourQuota.ClothingWanted`; Joe's *"50 clothes"* (D62) is his to set on the panel.
+            [Goods.Clothing] = null,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

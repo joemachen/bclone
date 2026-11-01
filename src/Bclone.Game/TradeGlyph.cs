@@ -85,6 +85,9 @@ public sealed partial class TradeGlyph : Control
         JobKind.Miller => new Color(0.86f, 0.82f, 0.70f),
         JobKind.Baker => new Color(0.72f, 0.48f, 0.24f),
 
+        // The tailor takes the coat's moss green (D662) — `GoodsPalette`'s clothing, the good they make.
+        JobKind.Tailor => new Color(0.40f, 0.52f, 0.34f),
+
         // The herdsman takes the barn's red-brown, the merchant the slate of a river boat (D596).
         JobKind.Herdsman => new Color("#8a4b32"),
         JobKind.Merchant => new Color("#5f6f8c"),
@@ -204,6 +207,13 @@ public sealed partial class TradeGlyph : Control
             case JobKind.Miller:
                 DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.34f, ink);
                 DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.08f, new Color(0.10f, 0.10f, 0.12f));
+                break;
+
+            // A needle and its thread (D662): the shaft, the eye, and the loop the thread makes below it.
+            case JobKind.Tailor:
+                DrawLine(new Vector2(s * 0.22f, s * 0.80f), new Vector2(s * 0.74f, s * 0.24f), ink, 2.2f);
+                DrawCircle(new Vector2(s * 0.74f, s * 0.24f), s * 0.07f, new Color(0.10f, 0.10f, 0.12f));
+                DrawArc(new Vector2(s * 0.40f, s * 0.70f), s * 0.18f, 0f, Mathf.Pi * 1.6f, 10, ink, 1.4f);
                 break;
 
             // A loaf (D522): the rounded crust and two scores across it.

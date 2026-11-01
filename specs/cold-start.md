@@ -283,6 +283,10 @@ needs a **third exposure rate** between bare and dressed. **It is not in this sl
 a clothing change and belongs with `specs/clothing.md`'s rewrite — but it is recorded here
 because winter 1's difficulty is tuned against whichever rate the founders actually have.
 
+⚖️ **Resolved with the clothing build (Joe, D659): no third rate.** Today's 15 days outdoors *is* the
+furs the founders arrived in, and a coat is the upgrade (outdoors at the roof's 25 days). The rate
+winter 1 is tuned against (D122) does not move.
+
 ---
 
 ## 8. Failure modes to design against
