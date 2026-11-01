@@ -6,7 +6,8 @@ Phase 5 gate item 1, second of Joe's four (D656: doors → **clothing** → logi
 baseline §5.3, the stale lines; D659), C1 (the good and the coat on the villager, §3.1–3.5; D660), C2 (the tailor's shop, the
 batch, the quota and the unlock, §3.5–3.6; D661), C3 (the view; D662), C4 (the real build measured against §7, §5.4; D663) and
 **C5 (D664): Joe played it — *"everything else for clothes works as expected. approved once we figure out the leather thing"*** —
-and the leather thing is §3.5a: hides sat in his lodge for two years. Fixed; **his re-play of the fix, then the merge at his word.** *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
+and the leather thing is §3.5a: hides sat in his lodge for two years. Fixed. His re-play found the meat kept in by a scrap of
+forage (§3.5a C, D665) — fixed; the shop is under *Resources* (his call). **His re-play, then the merge at his word.** *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
 nobody writing it down (found D533); re-measured D533; parked D534; unparked D656.*
 
 ---
@@ -109,6 +110,15 @@ will actually pick up*). Two rules now:
   a standing batch workplace takes the good as its input, the buffer holds at least one batch's worth (`leather_per_coat`,
   5) and the stores hold less than one — and storage has room, as ever. Then one hunt's hide (10) sends the marketer. The
   one named case D370's *below an armful is nobody's walk* gives way; never for a food (a hungry village is the floor's).
+
+- **C. Every food is asked** (D665). The test used to ask only the first food held and stop: 11 forage a hunter had put
+  down with his catch kept 2,622 meat in Joe's Greyford lodge beside an empty granary set to meat — *nobody is collecting
+  anything from the hunter's lodge*. A food short of an armful keeps nothing in: not the meat, not the hides.
+- **D. A shop starving for its input outranks a routine food armful** (D665): with 1,800 meat in the lodge all year and the
+  hunters at work, *food first* named the meat on every trip and 16 hides waited as they had before. Now B's case is asked
+  before the foods — one armful of hides for the tailor, then the meat again. One armful between meat armfuls locks no
+  food in (D362's fear); a coat's worth is 5. On his Greyford two years on: 44 hides handled, 44 reached the stores,
+  8 coats sewn, 0 → 7 of 16 adults coated, the meat flowing (2,622 → 1,908 with four hunts coming in).
 
 Measured on his save three years on (§5.5) and on the harness. The barn's cull leather takes the same road.
 

@@ -162,6 +162,28 @@ public sealed class LeatherOutOfTheLodgeTests
         Assert.Equal(Goods.Leather, world.GoodWorthClearing(lodge));
     }
 
+    /// <summary>
+    /// Joe's Greyford, Year 26: 1,800 meat in the lodge all year with the hunters at work, so "food first" named the meat on
+    /// every trip and 16 hides waited. A shop starving for its input gets one armful of hides, then the meat again (D665).
+    /// </summary>
+    [Fact]
+    public void AStarvingShopOutranksARoutineFoodArmfulOnce()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Workplace lodge = HuntingTests.RaiseALodgeFor(world);
+        TailorTests.RaiseAShop(world);
+        NoLeatherOnAnyShelf(world);
+        lodge.Store.Add(Goods.Meat, Config.CarryCapacity * 4);
+        lodge.Store.Add(Goods.Leather, 10);
+        Assert.True(world.SomewhereToPut(Goods.Meat) && world.SomewhereToPut(Goods.Leather), "the premise: room for both");
+
+        Assert.Equal(Goods.Leather, world.GoodWorthClearing(lodge));
+
+        // A coat's worth on the shelf, and the meat is the walk again.
+        TheWarehouse(world).Store.Add(Goods.Leather, world.Config.LeatherPerCoat);
+        Assert.Equal(Goods.Meat, world.GoodWorthClearing(lodge));
+    }
+
     /// <summary>The marketer's errands count the lodge once the shop stands (D370's leg, `LabourQuota.MarketersWanted`).</summary>
     [Fact]
     public void MarketersAreWantedForTheHidesOnceAShopStands()
@@ -192,5 +214,35 @@ public sealed class LeatherOutOfTheLodgeTests
 
         Assert.False(world.AStandingShopIsShortOf(Goods.Meat, 10));
         Assert.Null(world.GoodWorthClearing(lodge));
+    }
+
+    // ---------------------------------------------------------------
+    //  D665 — a scrap of another food does not keep the meat in
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Joe's Greyford lodge, Year 25: 11 forage and 5 fish a hunter had put down with his catch, 2,622 meat, an empty
+    /// granary set to meat — and nobody came, because the test asked only the first food it found. Every food is asked.
+    /// </summary>
+    [Fact]
+    public void AScrapOfAnotherFoodDoesNotKeepTheMeatIn()
+    {
+        int meat = Config.CarryCapacity * 3;
+        (SimLoop loop, Workplace lodge) = JoesLodge(meat: meat, leather: 0);
+        SimWorld world = loop.World;
+        lodge.Store.Add(Goods.Produce, 11);
+        lodge.Store.Add(Goods.Fish, 5);
+        int meatBefore = world.InStores(Goods.Meat);
+
+        Assert.Equal(Goods.Meat, world.GoodWorthClearing(lodge));
+
+        int tick = 0;
+        for (; tick < world.Config.TicksPerSeason * 2 && world.InStores(Goods.Meat) <= meatBefore; tick++)
+        {
+            loop.StepOnce();
+        }
+
+        _output.WriteLine($"tick {tick}: stores gained {world.InStores(Goods.Meat) - meatBefore} meat; the lodge holds {lodge.Store[Goods.Meat]} meat, {lodge.Store[Goods.Produce]} forage, {lodge.Store[Goods.Fish]} fish.");
+        Assert.True(world.InStores(Goods.Meat) > meatBefore, "Eleven forage in the lodge kept the meat in for two seasons.");
     }
 }

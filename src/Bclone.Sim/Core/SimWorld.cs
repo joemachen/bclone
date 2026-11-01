@@ -3537,19 +3537,30 @@ public sealed partial class SimWorld : IObstacles
             return null;
         }
 
+        // ⭐ A SHOP STARVING FOR ITS INPUT OUTRANKS A ROUTINE FOOD ARMFUL (D665): one armful of hides for the tailor, then
+        // the meat again. Joe's Greyford lodge held 1,800 meat the whole year with the hunters at work, so "food first"
+        // named the meat on every trip and 16 hides waited as they had before D664. One armful of hides between meat
+        // armfuls locks no food in (D362's fear); a coat's worth is 5.
+        for (int g = 0; g < workplace.Store.Slots; g++)
+        {
+            var goods = (Goods)g;
+            if (AStandingShopIsShortOf(goods, workplace.Store[goods]) && SomewhereToPut(goods))
+            {
+                return goods;
+            }
+        }
+
+        // ⭐ EVERY FOOD IS ASKED (D665). Until then the first food held decided for all of them and a `break` followed —
+        // so 11 forage a hunter had put down with his catch (he puts down everything he carries, D420) kept 2,622 meat in
+        // Joe's lodge for a season with an empty granary set to meat beside it: nobody came, because the first food was
+        // short of an armful and the meat was never asked. A food short of an armful keeps nothing in — not the meat,
+        // not the hides.
         IReadOnlyList<Goods> edible = GoodsCatalog.EdibleGoods;
         for (int i = 0; i < edible.Count; i++)
         {
-            if (workplace.Store[edible[i]] > 0)
+            if (WorthTheWalk(edible[i]))
             {
-                // The first food held decides for the food, as it always did — and a food short of
-                // an armful does not keep the hides in.
-                if (WorthTheWalk(edible[i]))
-                {
-                    return edible[i];
-                }
-
-                break;
+                return edible[i];
             }
         }
 

@@ -7658,8 +7658,9 @@ public partial class Main : Control
             // The smithy beside it (D391): the second building whose product is for every trade.
             BuildingKind.Smithy => BuildCategory.Works,
 
-            // The tailor's shop beside the smithy (D662): a workshop that turns one good into another.
-            BuildingKind.TailorShop => BuildCategory.Works,
+            // The tailor's shop under Resources (Joe, D665: *"move the tailor from the works menu into the resources"*),
+            // beside the quarry and the mine it was first filed with the smithy against (D662).
+            BuildingKind.TailorShop => BuildCategory.Resources,
 
             // ⭐ And the bridges, which this group was named for (D546) — the builder's work on the land.
             BuildingKind.Bridge or BuildingKind.StoneBridge => BuildCategory.Works,

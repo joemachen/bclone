@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT, MEASURED AND PLAYED (D659–D664): JOE APPROVED THE CLOTHES; THE HIDES-STUCK-IN-THE-LODGE FIX (D664) AND THREE POST COLUMNS WAIT ON HIS RE-PLAY, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT, MEASURED AND PLAYED (D659–D665): JOE APPROVED THE CLOTHES; THE LODGE'S TWO CARRY BUGS (D664 THE HIDES, D665 THE MEAT) ARE FIXED; THREE POST COLUMNS; THE SHOP UNDER RESOURCES. HIS RE-PLAY, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D664) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D665) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = a9c6fde (D658), pushed; origin agrees. `slice/clothing` is open off it, local, unpushed**, holding C0 (D659: `specs/clothing.md`
 > rewritten with a DoD, the baseline re-taken, the winter lodge traced, six stale doc lines made true), C1 (D660: `Goods.Clothing`,
@@ -20,7 +20,19 @@
 > only into an empty armful, so the carrier sent for hides took the meat scraps (`clothing.md §3.5a`). **Fixed (rules A and B), guarded,
 > red-checked, re-measured on his save.** The post's window is **three columns** (his call). Both in the third commit on the branch.
 >
-> **▶️ NEXT — JOE RE-PLAYS** (`.\run.bat`, continue his Ashbourne or a new valley): hides leaving the lodge within a season of the shop
+> **✅ His re-play (D665):** the tailor's shop moved to *Resources* (his call), and his Greyford lodge held 2,622 meat nobody collected —
+> 11 forage a hunter put down with his catch, and `GoodWorthClearing` asked only the first food held (since D420). Every food is asked now;
+> guarded and red-checked. The met meat limit (the lodge's meat counts) had also stood his hunters down, so no hides came. And with the
+> meat flowing the hides still waited behind it (*food first*, every trip, while the hunters kept the lodge above an armful), so a shop
+> starving for its input is asked before the foods now — one armful of hides, then the meat (`clothing.md §3.5a` D). Two years on from
+> his save: every hide reaches the stores, 8 coats, 0 → 7 of 16 coated.
+>
+> **▶️ NEXT — JOE RE-PLAYS AGAIN** (`.\run.bat`, his Greyford): the meat leaving the lodge for granary 3 within a season, the hunters
+> back at work once the granary meat is eaten, hides following to the warehouse, the shop sewing. **Then merge and push at his word
+> only.** Still his after that: the tailor's rank in the quota, `coat_winters` 3 and `leather_per_coat` 5.
+>
+> **— as it stood before his re-play (D664) —**
+> **▶️ (done) JOE RE-PLAYS** (`.\run.bat`, continue his Ashbourne or a new valley): hides leaving the lodge within a season of the shop
 > standing, the shop sewing, coats on most adults within a few winters, the post window in three columns. **Then merge and push at his
 > word only.** Still his after that: the tailor's rank in the quota, `coat_winters` 3 and `leather_per_coat` 5.
 >
@@ -55,6 +67,7 @@
 > **Clothing ships with no starting limit** (D660): a set limit is hashed and would move every shipped golden; hay's reasoning. With none set
 > the tailor sews toward `LabourQuota.ClothingWanted`. Joe's *"50 clothes"* is his to set on the panel.
 >
+> **Numbers (D665, the four checks on the final tree):** suite 1885 / 0 / 5 of 1890 in 24m32 (15m22 at D664 with two tests fewer — the machine, as D646's and D662's were); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D664, the four checks on the final tree):** suite 1883 / 0 / 5 of 1888 in 15m22; view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D663, the four checks on the C4 tree — the same build as D662's):** suite 1878 / 0 / 5 of 1883 in 16m48 (D662's 19m16 on the same
 > build: the machine); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392, none moved.
@@ -8643,6 +8656,13 @@ Read `git status` after staging, every time.
   hue. A single "ground colour" would have hidden that; test against the percentiles of the rendered ground.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
+
+## ⛔ THE TRAP D665 FOUND — THE FIRST FOOD HELD DECIDED FOR ALL OF THEM
+
+- **A `break` after the first food held meant a scrap of forage in a lodge kept 2,622 meat from an empty granary** — for a season in
+  Joe's Greyford, found by his eye (*nobody is collecting anything*) and read off the save in one line (`forage 11 fish 5 meat 2622`).
+  Since D420 nothing posed a lodge holding two foods. **When a rule walks a list and stops early, pose the list with the thing it
+  stops on in front.** The save said it; the suite could not.
 
 ## ⛔ THE TRAPS D664 PAID FOR — THE PICKUP MUST TAKE THE LOAD THE TEST APPROVED, AND A FIXTURE'S ARMFUL IS NOT THE GAME'S
 

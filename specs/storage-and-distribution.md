@@ -125,7 +125,9 @@ Four workarounds, all of which exist because there was nowhere to put things. **
   first, whatever the amount, so a carrier sent for 50 hides took 29 meat scraps and left the hides for two years in Joe's
   village; now it takes what `GoodWorthClearing` named. *(e)* **A standing shop short of a non-food good makes a batch's
   worth of it worth the walk** (`AStandingShopIsShortOf`) — the one named case *(a)*'s armful gives way; never a food.
-  Guards: `LeatherOutOfTheLodgeTests`.
+  *(f)* **Every food is asked, not the first one held** (D665): the first-food `break` let 11 forage in a lodge keep 2,622
+  meat from an empty granary. *(g)* **A shop starving for its input is asked before the foods** (D665): one armful of hides
+  between meat armfuls, so a busy lodge does not keep the tailor idle. Guards: `LeatherOutOfTheLodgeTests`.
 
 ---
 
