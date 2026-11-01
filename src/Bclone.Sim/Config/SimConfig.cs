@@ -1194,7 +1194,7 @@ public sealed record SimConfig
 
     /// <summary>Leather one coat takes at the tailor's shop (`clothing.md §3.5`, D659) — half a hunt's hide. ⏳ C4 measures it.</summary>
     [JsonPropertyName("leather_per_coat")]
-    public int LeatherPerCoat { get; init; } = 5;
+    public int LeatherPerCoat { get; init; } = 2; // 5 until D666: too weak for ten adults on one lodge (Joe).
 
     /// <summary>Ticks one coat takes to sew (D659) — between a bake's 4 and a hunt's 15. ⏳ C4.</summary>
     [JsonPropertyName("sew_ticks")]
@@ -3228,8 +3228,8 @@ public sealed record SimConfig
             Category = World.GoodCategory.Materials,
             Name = "clothing",
 
-            // Five leather's worth and a tailor's day (`clothing.md §3.4`): leather is 3.
-            TradeWorth = 15,
+            // Two leather's worth and a tailor's day (`clothing.md §3.4`, D666): leather is 3.
+            TradeWorth = 8,
             SourceName = "the tailor's shop",
 
             // ⚠️ THE WAREHOUSE, LIKE LEATHER — a material, not a meal; and never the market, whose counter is the

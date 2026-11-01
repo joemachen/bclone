@@ -978,7 +978,11 @@
   // (15); two a stint. Learned at fifty leather handled -- about five hunts, the
   // smithy's shape (Joe: "50 leather held"). The shop is a hut's price (hut_logs,
   // hut_stone). TYPED, not yet measured -- C4 holds them against the leather flow.
-  "leather_per_coat": 5,
+  // 2 since D666 (Joe: a lodge and a tailor should clothe ten adults, and 5 a
+  // coat did not): one hunt is five coats, two hunts a year clothe ten adults
+  // three times over. Hides stay scarce; coats are cheap, and the better cloth
+  // to come (wool, cotton) gets its own recipe.
+  "leather_per_coat": 2,
   "sew_ticks": 10,
   "sews_per_stint": 2,
   "tailor_shop_capacity": 2,

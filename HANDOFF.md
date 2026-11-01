@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT, MEASURED AND PLAYED (D659–D665): JOE APPROVED THE CLOTHES; THE LODGE'S TWO CARRY BUGS (D664 THE HIDES, D665 THE MEAT) ARE FIXED; THREE POST COLUMNS; THE SHOP UNDER RESOURCES. HIS RE-PLAY, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT, MEASURED, PLAYED AND TUNED (D659–D666): JOE: *"SEEMS TO WORK"*; A COAT TAKES TWO LEATHER (HIS CALL). NEXT: MERGE AND PUSH AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D665) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D666) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = a9c6fde (D658), pushed; origin agrees. `slice/clothing` is open off it, local, unpushed**, holding C0 (D659: `specs/clothing.md`
 > rewritten with a DoD, the baseline re-taken, the winter lodge traced, six stale doc lines made true), C1 (D660: `Goods.Clothing`,
@@ -27,7 +27,15 @@
 > starving for its input is asked before the foods now — one armful of hides, then the meat (`clothing.md §3.5a` D). Two years on from
 > his save: every hide reaches the stores, 8 coats, 0 → 7 of 16 coated.
 >
-> **▶️ NEXT — JOE RE-PLAYS AGAIN** (`.\run.bat`, his Greyford): the meat leaving the lodge for granary 3 within a season, the hunters
+> **✅ He re-played (D666): *"seems to work"*** — and asked for more coats per lodge: `leather_per_coat` 5 → 2 (his Greyford: 16 of 16 adults
+> coated by the second winter). Clothing's trade worth 15 → 8 with it.
+>
+> **▶️ NEXT — MERGE AND PUSH AT HIS WORD** (`--no-ff --no-commit`, the *unmerged* lines corrected inside the merge commit — D640's trap; the
+> slice is five commits). Still his after that: the tailor's rank in the quota (hired ~7 % of the time at ×10 limits), `coat_winters` 3, the
+> lodge's winter seat for hides, 5 leather the shop never reached on a far shelf (Ashbourne).
+>
+> **— as it stood before his second re-play (D665) —**
+> **▶️ (done) JOE RE-PLAYS AGAIN** (`.\run.bat`, his Greyford): the meat leaving the lodge for granary 3 within a season, the hunters
 > back at work once the granary meat is eaten, hides following to the warehouse, the shop sewing. **Then merge and push at his word
 > only.** Still his after that: the tailor's rank in the quota, `coat_winters` 3 and `leather_per_coat` 5.
 >
@@ -67,6 +75,7 @@
 > **Clothing ships with no starting limit** (D660): a set limit is hashed and would move every shipped golden; hay's reasoning. With none set
 > the tailor sews toward `LabourQuota.ClothingWanted`. Joe's *"50 clothes"* is his to set on the panel.
 >
+> **Numbers (D666, the four checks on the final tree):** suite 1885 / 0 / 5 of 1890 in 16m54; view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D665, the four checks on the final tree):** suite 1885 / 0 / 5 of 1890 in 24m32 (15m22 at D664 with two tests fewer — the machine, as D646's and D662's were); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D664, the four checks on the final tree):** suite 1883 / 0 / 5 of 1888 in 15m22; view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D663, the four checks on the C4 tree — the same build as D662's):** suite 1878 / 0 / 5 of 1883 in 16m48 (D662's 19m16 on the same
@@ -8912,8 +8921,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   are coated. Whether coats outrank stone and iron is his call; and `coat_winters` 3 / `leather_per_coat` 5 after he plays.
 - ✅ ~~**THE POST'S WINDOW SCROLLS ITS GOODS PAST SEVEN ROWS (D662).**~~ Joe: *"do 3 columns"* — three columns, 1,070 wide (D664); the
   scroll stays for a twenty-second good.
-- ⏸️ **CLOTHING'S TYPED NUMBERS (D659, `clothing.md §3.7`):** `coat_winters` 3, `leather_per_coat` 5, `sew_ticks` 10, `sews_per_stint` 2.
-  Typed so the suite runs; C4 measures them (one lodge dresses about thirty adults at these). His to move after he plays it.
+- ⏸️ **CLOTHING'S TYPED NUMBERS (D659, `clothing.md §3.7`):** `coat_winters` 3, ~~`leather_per_coat` 5~~ **2 (Joe, D666)**, `sew_ticks` 10,
+  `sews_per_stint` 2. The rest stay his to move.
 - ⏸️ **THE WINTER HERD — HE PICKED "BARN FEEDS THEM", BUILT (D647, `specs/livestock.md §0.3`).** A kept herd eats from the
   barn's own hay when nothing is out; with nobody seated it still starves (tying it to the seat is Claude's, his to
   overrule). Never played. Still his: whether the narration is too chatty (261 lines in 50 years on posed seed 2; fallback

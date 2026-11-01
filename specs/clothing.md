@@ -80,7 +80,7 @@ is the household shop (D372). In any season: a coat taken in spring wears nothin
 ### 3.4 The good: `Goods.Clothing`
 A material (D107), warehouse-, cart- and pile-stored, never a granary. Stock limit **50** — Joe's own
 number in D62 (*"… 50 tools, 50 clothes"*). `trade_worth` sized from leather's 3 and the leather a coat
-takes. A new good gets its stock-limits row for free (`StockLimits.Kinds`); its colour is picked under
+takes (8 at 2 a coat, D666). A new good gets its stock-limits row for free (`StockLimits.Kinds`); its colour is picked under
 the three-band rule (D637) and checked by `tools/legibility/check.py`.
 
 ### 3.5 The tailor's shop and the tailor
@@ -118,7 +118,8 @@ will actually pick up*). Two rules now:
   hunters at work, *food first* named the meat on every trip and 16 hides waited as they had before. Now B's case is asked
   before the foods — one armful of hides for the tailor, then the meat again. One armful between meat armfuls locks no
   food in (D362's fear); a coat's worth is 5. On his Greyford two years on: 44 hides handled, 44 reached the stores,
-  8 coats sewn, 0 → 7 of 16 adults coated, the meat flowing (2,622 → 1,908 with four hunts coming in).
+  8 coats sewn, 0 → 7 of 16 adults coated, the meat flowing (2,622 → 1,908 with four hunts coming in). **At 2 leather a coat
+  (D666): 22 coats in three years, 0 → 16 of 16 coated by Winter Y27 and held, six spare on the shelf by Y28.**
 
 Measured on his save three years on (§5.5) and on the harness. The barn's cull leather takes the same road.
 
@@ -133,7 +134,7 @@ so this counter **moves that golden** (`phase-5-golden.md §11`); C2 proves it m
 | Key | Value | Why |
 |---|---|---|
 | `coat_winters` | **3** | Joe's *"a few winters"* (D69) as a lifetime; demand of a third of the adults a year. ✅ **Measured (D663–D664):** half to 96 % of adults coated where a shop stands and hides reach it; the bound is the lodge's five hunts a year, not the coat's life. Joe's to move after play. |
-| `leather_per_coat` | **5** | Half a hunt's hide (`leather_yield` 10). §5.3's leather flow is the bound it must sit under. ✅ **Stands (D663):** 118 coats from ≈ 590 leather, under one lodge's 50 a year. |
+| `leather_per_coat` | **2** | ⚖️ **Joe, D666:** *"it feels too weak"* at 5 — a lodge in a fed village hunts about twice a year (the quota hires hunters only while meat is wanted), 20 hides, four coats against the ~3.3 ten adults wear through. At 2 a hunt is five coats and two hunts clothe ten adults three times over; hides stay scarce and coats cheap, and the better cloth to come (wool, cotton) gets its own recipe. His Greyford three years on: 0 → **16 of 16 adults coated** by the second winter, six spare on the shelf after (§5.5). *(5 until D666; `trade_worth` of clothing 15 → 8 with it.)* |
 | `sew_ticks` / `sews_per_stint` | **10 / 2** | A day's stint for two coats, between the oven (15 a bake) and the grind. ✅ **Not the bottleneck (D663–D664):** the tailor is hired ~7 % of the time and sews what reaches the shelf; the rank in the quota is Joe's (§5.4). |
 | `tailor_unlock_leather` | **50** | Joe, D659. |
 | limit `clothing` | **50** | Joe, D62. |

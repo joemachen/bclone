@@ -239,7 +239,7 @@ public sealed class TailorTests
         Assert.Equal(1, batch.OutputPerBatch);
         Assert.Equal(0, batch.Firing);
         Assert.Equal(shipped.LeatherPerCoat, batch.InputPerBatch);
-        Assert.Equal(5, shipped.LeatherPerCoat);
+        Assert.Equal(2, shipped.LeatherPerCoat); // 5 until D666.
 
         Assert.Contains(shipped.Skills, s => s.GrownBy == JobKind.Tailor && s.Name == "tailoring");
         Assert.Contains(shipped.TechNodeRows, n => n.Unlocks == BuildingKind.TailorShop && n.Condition == TechCondition.LeatherHeld);
