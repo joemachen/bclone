@@ -1,6 +1,32 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) ON A SIDE-SESSION BRANCH WITH `main` MERGED IN — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` — ⏸️ THE NUMBER STILL HIS, PROPOSAL 2,500), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NEXT: HIS NUMBER, THEN BUILD W, THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) ON A SIDE-SESSION BRANCH WITH `main` MERGED IN — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9), THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D675) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D676) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = 421a372 (the `slice/logistics` merge, D673, plus one docs commit), pushed; origin agrees. This branch
+> (`claude/musing-rhodes-b6ffea`) is four docs-only commits past it** — the Slice W spec (c5677cd), `main` merged in with the
+> entry renumbered D674 (d5f60ab), Joe's five calls answered (055938c, D675), and this commit: **his number for the unlock and
+> the hash decided (D676)**. Nothing in `src/`, `data/` or `tests/`. **Merge the branch into `main` at Joe's word (`--no-ff`).**
+> The tree is clean but for `bclone-tracker.xlsx`.
+>
+> **✅ `specs/workshop-and-the-carpenter.md` has nothing open — status: *every call answered, ready to build, nothing built.***
+> Joe: *"2500 logs"* → `workshop_unlock_logs` 2,500 (his villages fell 70–100 a year, so Year 25–35; above the mill's 5,000 would be
+> after Year 50 in nearly every village he has played). **The hash is a learned flag, `SimWorld.WorkshopLearned`**, set in the fell
+> path when the counter crosses, hashed as a tag byte when true, saved — the gate reads the flag, so what the sim reads is what is
+> hashed, and **no golden moves**; `LogsEverFelled` stays an unhashed statistic; the gap (two villages below the gate with
+> different counts hash alike) is written in §4.1a and asserted by a guard. The fifty-year unattended goldens read 1,602–1,770
+> felled at year 50 and are not expected to cross. The knob's config comment is drafted in the spec. Format 10 for `make_good`
+> and `workshop_learned`; his format-9 saves refused, accepted.
+>
+> **▶️ NEXT — build Slice W:** TDD per the spec's §9 (sixteen-odd guards, each red-checked and counted), §10's harness table
+> filled before a number is typed into `data/sim.config.json`, the four checks, Joe plays it (`.\run.bat`: a workshop lighting
+> under *Works* after 2,500 logs, a carpenter making carts, the warehouse row, the card's *Makes:*), merge at his word. **Then
+> Slice H (`handcart.md`)**, measured on `ZzLogistics`. This branch merges to `main` at his word first or with it.
+>
+> **The four checks were not run for D676** — docs only; they stand on D671's tree (suite 1886 / 0 / 5 of 1891 in 15m06; view 0
+> warnings; probe 67 ✅ 0 ⛔, bar 151, `done.`; goldens 392, none moved), as D672–D675's did.
+>
+> **— D675, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-11-01 (D675) — ON WINDOWS.**
 >
 > **`main` = 421a372 (the `slice/logistics` merge, D673, plus one docs commit), pushed; origin agrees. This branch
 > (`claude/musing-rhodes-b6ffea`) is three docs-only commits past it:** the Slice W spec (c5677cd), `main` merged in with the
@@ -9173,15 +9199,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
-  §4.1a`).** Joe made the workshop *learned by felling wood* and wants the number *"larger than anything else we currently have
-  in-game"*; his villages fell 70–100 logs a year and stand at 2,600–4,500 after 25–50 years (one at 6,618); the largest unlock
-  today is `mill_unlock_wheat` 5,000. **Proposal 2,500** until he says. **The counter must then be hashed:** densely (every golden
-  moves once, proven by its parent — recommended) or as a learned flag (goldens hold; two villages at 100 and 2,400 logs hash alike
-  and diverge later). No golden run crosses 2,500 or 5,000 (§4.1b), so the number does not change any golden's behaviour.
+- ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
+  §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
+  and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he
+  has played). **The hash: the learned flag, sparse** — the gate reads `WorkshopLearned`, no golden moves, the gap written in §4.1a and
+  guarded. The fifty-year unattended goldens (1,602–1,770 felled at year 50) are not expected to cross. Nothing open on the spec.
 - ✅ ~~⏸️ **SLICE W — THE WORKSHOP AND THE CARPENTER: FIVE CALLS, HIS (D674, `specs/workshop-and-the-carpenter.md §11`), EACH WITH A
   RECOMMENDATION; NOTHING BUILT UNTIL HE ANSWERS.**~~ **ANSWERED (D675, 2026-11-01), relayed by the session that asked him:** (1)
-  **learned by felling wood** — neither of the two offered (the number above is still his); (2) **no shipped limit** ✅ as recommended;
+  **learned by felling wood** — neither of the two offered (the number: 2,500, his, D676, closed above); (2) **no shipped limit** ✅ as recommended;
   (3) **the `MakeGood` field now, save format 10** — *not* as recommended; his format-9 saves refused: *"I don't mind starting a new
   game — that's actually my favourite part"*; (4) **after Tailor** ✅; (5) **every number a proposal until §10's table** ✅. The
   questions as they were put: (1) The workshop **on the bar from the founding** (recommended: the gate is the
