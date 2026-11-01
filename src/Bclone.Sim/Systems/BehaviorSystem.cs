@@ -3660,28 +3660,48 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// ⭐ A buffer's non-food good — a hide in the lodge — <b>into an empty armful only</b> (D420).
+    /// ⭐⭐ THE ARMFUL IS THE GOOD THAT SENT THE CARRIER (D664, rule A): the one <see cref="SimWorld.GoodWorthClearing"/>
+    /// names. A food fills the armful from every food held, as it always did (D362); a hide fills it with hides, and
+    /// the meat scraps below an armful stay — a hide goes to a warehouse where meat goes to a granary, one kind of
+    /// store per armful (D420).
     /// </summary>
     /// <remarks>
-    /// Food goes to a granary and a hide to a warehouse, so an armful of both is two walks with a
-    /// set-down at the first door. The good is the one <see cref="SimWorld.GoodWorthClearing"/>
-    /// names, which is the question that sent the carrier here.
+    /// ⛔ Until D664 the pickup took <i>any</i> food first, whatever the amount, and a hide only into an empty armful — so a
+    /// carrier the test had sent for 50 hides took 29 meat scraps and left the hides, every time, until the lodge held
+    /// exactly no meat (Joe's Year-54 village, two years). D371's lesson, found again: <i>approve the load you will
+    /// actually pick up.</i>
     /// </remarks>
-    private static void TakeTheOtherGoods(SimWorld world, Villager villager, Workplace workplace, int room)
+    private static void TakeTheArmfulThatSentThem(SimWorld world, Villager villager, Workplace workplace, int room)
     {
-        if (villager.IsCarrying || world.GoodWorthClearing(workplace) is not Goods goods || world.GoodsCatalog.Edible(goods))
+        // ⭐ The hides (or any non-food good) the test named: a whole armful of them, and nothing else (D664).
+        if (world.GoodWorthClearing(workplace) is Goods named && !world.GoodsCatalog.Edible(named))
         {
+            int hides = Smallest(room, room, workplace.Store[named]);
+            if (hides > 0 && workplace.Store.TryTake(named, hides))
+            {
+                villager.Carried.Receive(named, hides);
+            }
+
             return;
         }
 
-        int take = Smallest(room, room, workplace.Store[goods]);
-        if (take > 0 && workplace.Store.TryTake(goods, take))
+        // Otherwise the food, exactly as it always was (D362): every food held, up to the armful — whatever the test
+        // says on arrival, as before, so a carrier who set off for food and finds the granary filled meanwhile still
+        // carries what they came for (the first draft of D664 sent them home empty, and three harness valleys froze).
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+        for (int g = 0; g < edible.Count && room > 0; g++)
         {
-            villager.Carried.Receive(goods, take);
+            int held = workplace.Store[edible[g]];
+            int take = held < room ? held : room;
+            if (take > 0 && workplace.Store.TryTake(edible[g], take))
+            {
+                villager.Carried.Receive(edible[g], take);
+                room -= take;
+            }
         }
     }
 
-    /// <summary>An armful out of the buffer — food first, then a hide (D420) — and to a store by the ordinary path.</summary>
+    /// <summary>An armful out of the buffer — the good that sent the carrier (D664) — and to a store by the ordinary path.</summary>
     private static void TakeFromTheBuffer(SimWorld world, Villager villager)
     {
         var at = new GridPos(villager.ErrandX, villager.ErrandY);
@@ -3699,20 +3719,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         if (workplace is not null)
         {
-            int room = world.Config.CarryCapacity;
-            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-            for (int g = 0; g < edible.Count && room > 0; g++)
-            {
-                int held = workplace.Store[edible[g]];
-                int take = held < room ? held : room;
-                if (take > 0 && workplace.Store.TryTake(edible[g], take))
-                {
-                    villager.Carried.Receive(edible[g], take);
-                    room -= take;
-                }
-            }
-
-            TakeTheOtherGoods(world, villager, workplace, room);
+            TakeTheArmfulThatSentThem(world, villager, workplace, world.Config.CarryCapacity);
         }
 
         if (!villager.IsCarrying)
@@ -4828,19 +4835,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 continue;
             }
 
-            IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
-            for (int g = 0; g < edible.Count; g++)
-            {
-                int clearing = Smallest(load, load, workplace.Store[edible[g]]);
-                if (clearing > 0 && workplace.Store.TryTake(edible[g], clearing))
-                {
-                    villager.Carried.Receive(edible[g], clearing);
-                    break;
-                }
-            }
-
-            // ⭐ AND A HIDE, INTO AN EMPTY ARMFUL ONLY (D420) — one kind of store per armful.
-            TakeTheOtherGoods(world, villager, workplace, load);
+            // ⭐ The good that sent the marketer (D664): a food, or the hides — one kind of store per armful (D420).
+            TakeTheArmfulThatSentThem(world, villager, workplace, load);
             break;
         }
 

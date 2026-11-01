@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT AND MEASURED (D659–D663: THE SPEC, THE COAT, THE TAILOR, THE VIEW, THE REAL BUILD AGAINST THE BAR), UNPLAYED, UNMERGED. NEXT: JOE PLAYS IT, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = a9c6fde (D658), PUSHED. `slice/clothing` IS BUILT, MEASURED AND PLAYED (D659–D664): JOE APPROVED THE CLOTHES; THE HIDES-STUCK-IN-THE-LODGE FIX (D664) AND THREE POST COLUMNS WAIT ON HIS RE-PLAY, THEN THE MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D663) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D664) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = a9c6fde (D658), pushed; origin agrees. `slice/clothing` is open off it, local, unpushed**, holding C0 (D659: `specs/clothing.md`
 > rewritten with a DoD, the baseline re-taken, the winter lodge traced, six stale doc lines made true), C1 (D660: `Goods.Clothing`,
@@ -15,7 +15,17 @@
 > "tattered furs" rate — today's 15 days is the furs); **every adult** wears one, children not; the tailor's shop is **learned at 50 leather
 > ever held**; the bar is **fewer break-offs**, not more winter work. `clothing.md §3` and §7 hold them.
 >
-> **▶️ NEXT — JOE PLAYS `slice/clothing`** (`.\run.bat`): the tailor's shop appearing under *Works* after about his fifth hide (the moment
+> **✅ Joe played it (D664): *"everything else for clothes works as expected. approved once we figure out the leather thing."*** The leather
+> thing, read off his Year-54 save: 50 hides in the lodge and none in any store for two years — the pickup took any food first and a hide
+> only into an empty armful, so the carrier sent for hides took the meat scraps (`clothing.md §3.5a`). **Fixed (rules A and B), guarded,
+> red-checked, re-measured on his save.** The post's window is **three columns** (his call). Both in the third commit on the branch.
+>
+> **▶️ NEXT — JOE RE-PLAYS** (`.\run.bat`, continue his Ashbourne or a new valley): hides leaving the lodge within a season of the shop
+> standing, the shop sewing, coats on most adults within a few winters, the post window in three columns. **Then merge and push at his
+> word only.** Still his after that: the tailor's rank in the quota, `coat_winters` 3 and `leather_per_coat` 5.
+>
+> **— as it stood before his play (D663) —**
+> **▶️ (done) JOE PLAYS `slice/clothing`** (`.\run.bat`): the tailor's shop appearing under *Works* after about his fifth hide (the moment
 > *The village learned to sew*), somebody walking to a store for a coat, a villager's card's COAT line (*Coat — 3 winters left*), the shop's
 > card saying why it waits, the post window scrolling its goods once fifteen are known. **Merge at his word only.** ⚠️ What the measurement
 > says about play: a shop marked by four founders before the village has stone drags the founding (`clothing.md §5.4`, D515's shape);
@@ -45,6 +55,7 @@
 > **Clothing ships with no starting limit** (D660): a set limit is hashed and would move every shipped golden; hay's reasoning. With none set
 > the tailor sews toward `LabourQuota.ClothingWanted`. Joe's *"50 clothes"* is his to set on the panel.
 >
+> **Numbers (D664, the four checks on the final tree):** suite 1883 / 0 / 5 of 1888 in 15m22; view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
 > **Numbers (D663, the four checks on the C4 tree — the same build as D662's):** suite 1878 / 0 / 5 of 1883 in 16m48 (D662's 19m16 on the same
 > build: the machine); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 392, none moved.
 > **Numbers (D662, the four checks on the C0–C3 tree, one commit):** suite 1878 / 0 / 5 of 1883 in **19m16** (13m42 on the C1 tree, 15m15 on C2's, with under a minute of new tests between — the machine, unexplained, as D646's 13 → 18 was); view 0 warnings; probe 103 `[widths]` lines (+ `coat:`), 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running; goldens grep 390 → 392, the two being the *Was …* comments on the re-pinned Phase 5 golden; `check.py` 0 of 39 things and 0 of 26 marks fail.
@@ -8633,6 +8644,28 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D664 PAID FOR — THE PICKUP MUST TAKE THE LOAD THE TEST APPROVED, AND A FIXTURE'S ARMFUL IS NOT THE GAME'S
+
+- **Two predicates about one errand must agree, or the errand loops for ever.** `GoodWorthClearing` approved the hides; the pickup
+  took the meat. Joe's lodge kept 50 hides for two years while a tailor sat idle, and nothing in the suite saw it: every buffer guard
+  poses one good. D371 wrote the rule for heaps (*approve the load you will actually pick up*); the buffer had the same two halves
+  and nobody checked them against each other. **Read the player's save before the code** — the save said *50 leather, 29 meat,
+  0 in stores* in one line, and that was the whole diagnosis.
+- **The fixture's armful is 80; the shipped game's is 40.** A pose of *50 hides, above an armful* passes `GoodWorthClearing` in the
+  game and fails in the fixture. Pose against `config.CarryCapacity`, never a number.
+- **`OnlyOneTradeWorks(Marketer)` leaves nobody to carry when the fixture has no spare hand for the seat**, and `KeepTheVillageWarmAndFed`
+  fills the fixture's warehouse so `SomewhereToPut` says no. The fisher's clearing guards have the working pose (settle a year, limits,
+  larders, half the shelves) — copy it rather than inventing one.
+- **A harness arm's mean hides which valleys are corpses.** The every arm's 13 valleys fell 30.8 → 24.4 alive after the fix and six
+  arms chased a mechanism (leather in the warehouse, fuel, stone, a one-hunt lodge, two perturbations) before a season trace of one seed
+  showed its four founders frozen in Winter 1 **in both worlds** — seven of the thirteen are nomad re-foundings of dead valleys, whose
+  fate is a coin flip any change re-rolls. **Read the Year-1 deaths per seed before reading a mean**, and judge a rule on the valleys
+  whose founding lives (all six gained) and on the player's save.
+- **A "neutral" perturbation must move a decision.** One more hide a hunt changed nothing under the old pickup because hides never
+  left the lodge — it perturbed a number nobody read. Ten more meat a hunt moved decisions, and the old world still held: that is the
+  control. `ZZ_TRACE=1 ZZ_SEEDS=8` prints a `ZZS` season line (seats, lodge, granaries, fuel, homes, deaths) — diff two runs and the
+  first season that differs names the mechanism in minutes; six arms of means did not.
+
 ## ⛔ THE TRAP D663 PAID FOR — A HARNESS THAT MARKS A BUILDING THE TICK IT IS LEARNED IS D515 AGAIN
 
 - **The first real-build arm said coats kill** (alive 30.8 → 26.2, 34 frozen *seeking shelter*), and the obvious cause — a coat wearing
@@ -8857,8 +8890,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **THE TAILOR IS HIRED ABOUT 7 % OF THE TIME (D663, `clothing.md §5.4`).** Demand is continuous (~8 coats a year) but at ×10
   limits every trade wants hands and tailors are taken after smiths, before quarriers; ~3 coats a year get sewn and half the adults
   are coated. Whether coats outrank stone and iron is his call; and `coat_winters` 3 / `leather_per_coat` 5 after he plays.
-- ⏸️ **THE POST'S WINDOW SCROLLS ITS GOODS PAST SEVEN ROWS (D662).** Fifteen goods known would stand it 573 tall against his 560 (D597);
-  the grid scrolls instead. Three columns in a wider window (~980 of 1280) would show every good at once. His call.
+- ✅ ~~**THE POST'S WINDOW SCROLLS ITS GOODS PAST SEVEN ROWS (D662).**~~ Joe: *"do 3 columns"* — three columns, 1,070 wide (D664); the
+  scroll stays for a twenty-second good.
 - ⏸️ **CLOTHING'S TYPED NUMBERS (D659, `clothing.md §3.7`):** `coat_winters` 3, `leather_per_coat` 5, `sew_ticks` 10, `sews_per_stint` 2.
   Typed so the suite runs; C4 measures them (one lodge dresses about thirty adults at these). His to move after he plays it.
 - ⏸️ **THE WINTER HERD — HE PICKED "BARN FEEDS THEM", BUILT (D647, `specs/livestock.md §0.3`).** A kept herd eats from the

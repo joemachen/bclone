@@ -3564,8 +3564,39 @@ public sealed partial class SimWorld : IObstacles
 
         return null;
 
+        // ⭐ An armful — or, for a hide, a coat's worth when the tailor has nothing to sew (D664, rule B).
         bool WorthTheWalk(Goods goods) =>
-            workplace.Store[goods] >= Config.CarryCapacity && SomewhereToPut(goods);
+            (workplace.Store[goods] >= Config.CarryCapacity || AStandingShopIsShortOf(goods, workplace.Store[goods]))
+            && SomewhereToPut(goods);
+    }
+
+    /// <summary>
+    /// ⭐ Whether a standing batch workplace takes this good as its input and the stores hold less than one batch of it
+    /// (D664, `clothing.md §3.5`) — then a buffer holding a batch's worth is worth the walk short of an armful. Joe's
+    /// Year-54 village: 50 hides in the lodge, none in any store, a tailor with nothing to sew, for two years. This is
+    /// the one case D370's <i>below an armful is nobody's walk</i> gives way, and it is named: a good a standing shop
+    /// is starving for. Never a food — a hungry village is the food floor's business (D362), not a shop's.
+    /// </summary>
+    /// <remarks>Asked when a carrier decides and when the quota counts the marketer's errands — never per tick.</remarks>
+    public bool AStandingShopIsShortOf(Goods goods, int held)
+    {
+        if (GoodsCatalog.Edible(goods))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace shop = Workplaces[i];
+            if (shop.IsSite || BatchFor(shop.Kind) is not Batch batch || batch.Input != goods)
+            {
+                continue;
+            }
+
+            return held >= batch.InputPerBatch && InStores(goods) < batch.InputPerBatch;
+        }
+
+        return false;
     }
 
     /// <summary>

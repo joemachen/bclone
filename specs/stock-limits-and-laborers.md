@@ -223,7 +223,9 @@ should count and the market's shelf should count toward the limit too."**
   what does not fit goes on to a store as before (D385). **So a buffer holds a non-food good for the
   first time, and every reader of a buffer reads every good:** `BufferWorthClearing` (an armful of
   any one good, with storage room for it — food asked first), the producer's own clearing and the
-  marketer's round (food first, as before; a non-food good only into an empty armful, so an armful
+  marketer's round (~~food first, as before; a non-food good only into an empty armful~~ — ⚖️ *void since D664: the
+  armful is the good `GoodWorthClearing` named, `clothing.md §3.5a`; the first form left Joe's hides in the lodge for
+  two years* — so an armful
   never needs two kinds of store).
 - **Known gap, kept:** a producer interrupted mid-haul (`TrySeekWarmth`, `TryEmergencyRestock`)
   keeps the load under another state and is not counted until it is put down.

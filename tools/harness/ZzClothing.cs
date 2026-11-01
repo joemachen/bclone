@@ -53,6 +53,9 @@ public sealed class ZzClothing
         config = cold switch
         {
             "bare" => config with { TailorUnlockLeather = int.MaxValue },
+            "pbare" => config with { TailorUnlockLeather = int.MaxValue, LeatherYield = config.LeatherYield + 1 }, // a neutral perturbation (D664)
+            "bare1000" => config with { TailorUnlockLeather = int.MaxValue, HunterLodgeStoreCap = 1000 }, // a one-hunt lodge: the hunter clears after every catch (D664)
+            "pbare2" => config with { TailorUnlockLeather = int.MaxValue, MeatYield = config.MeatYield + 10 }, // a perturbation that moves decisions (D664: +1 hide moved none while hides never left)
             "coatforever" => config with { CoatWinters = 1000 },
             "posed" => config with { ExposureDaysOutdoors = config.ExposureDaysSheltered },
             "off" => config with { ExposureDaysOutdoors = 0 },
@@ -113,7 +116,12 @@ public sealed class ZzClothing
             {
                 for (int id = 0; id < world.GoodsCatalog.Count; id++)
                 {
-                    if (limits.TryGetValue(world.GoodsCatalog[id].Name, out int limit) && !world.GoodsCatalog[id].Name.Contains("tools"))
+                    // Tools stay at their limit (D533) — and leather since D664: ×10 is 2,000 hides, which the lodge's own
+                    // room once held and the warehouse now takes, crowding out the fuel; four knife-edge valleys froze for it.
+                    // ZZ_LIMITX_EXEMPT=firewood,logs keeps named goods at their shipped limits too (D664: at x10 the warehouse
+                    // is full of fuel, and every hide that enters it displaces firewood).
+                    string[] exempt = (Environment.GetEnvironmentVariable("ZZ_LIMITX_EXEMPT") ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    if (limits.TryGetValue(world.GoodsCatalog[id].Name, out int limit) && !world.GoodsCatalog[id].Name.Contains("tools") && world.GoodsCatalog[id].Name != "leather" && !exempt.Contains(world.GoodsCatalog[id].Name))
                     {
                         world.SetStockLimit((Goods)id, limit * int.Parse(lx));
                     }
@@ -170,6 +178,16 @@ public sealed class ZzClothing
                 _o.WriteLine($"ZZW {arm} {cold} {seed} year {t / config.TicksPerYear + 1} lodges {lodges} hunters {hunting} meat {world.HeldAgainstItsLimit(Goods.Meat)} meatMet {meatMet} shortOfFood {LabourQuota.VillageIsShortOfFood(world)} pop {world.Population} leather {leatherNow}");
             }
             wasWinter = world.Clock.IsWinter;
+            if (Environment.GetEnvironmentVariable("ZZ_TRACE") == "1" && t % config.TicksPerSeason == 0)
+            {
+                var seats = new SortedDictionary<string, int>();
+                foreach (Villager v in world.Villagers) { if (v.Alive && v.CanWork) { string k = v.HasJob && world.FindWorkplace(v.WorkplaceId) is Workplace w ? w.Kind.ToString() : "Laborer"; seats[k] = seats.GetValueOrDefault(k) + 1; } }
+                int lodgeMeat = world.Workplaces.Where(w => w.Kind == JobKind.Hunter && !w.IsSite).Sum(w => w.Store[Goods.Meat]);
+                int lodgeLeather = world.Workplaces.Where(w => w.Kind == JobKind.Hunter && !w.IsSite).Sum(w => w.Store[Goods.Leather]);
+                _o.WriteLine($"ZZS {seed} Y{world.Clock.Year} {world.Clock.Season} pop {world.Population} homes {world.Households.Count(h => h.HomePosition is not null)}/{world.Households.Count} sites {world.Workplaces.Count(w => w.IsSite)} " +
+                    $"lodge meat {lodgeMeat} leather {lodgeLeather} granaries {world.FoodInGranaries()} storeLeather {world.InStores(Goods.Leather)} storeFirewood {world.InStores(Goods.Firewood)} storeLogs {world.InStores(Goods.Logs)} " +
+                    $"fuelShort {LabourQuota.FirewoodShortfall(world)} frozen {world.Villagers.Count(v => !v.Alive && v.CauseOfDeath == CauseOfDeath.Cold)} | {string.Join(" ", seats.Select(kv => kv.Key + "=" + kv.Value))}");
+            }
             if (!world.Clock.IsWinter)
             {
                 wasSeeking.Clear();
@@ -262,6 +280,7 @@ public sealed class ZzClothing
         ulong[] played = new ulong[] { 12345, 1, 2, 3, 7, 11 }
             .Concat(Enumerable.Range(100, 24).Select(x => (ulong)x)).ToArray();
         ulong[] every = Enumerable.Range(1, 12).Select(x => (ulong)x).Append(12345UL).ToArray();
+        if (Environment.GetEnvironmentVariable("ZZ_SEEDS") is string only) { every = played = only.Split(',').Select(ulong.Parse).ToArray(); }
         foreach (string arm in arms)
         {
             foreach (string cold in colds)

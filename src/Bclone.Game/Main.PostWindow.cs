@@ -138,10 +138,10 @@ public partial class Main
         column.AddChild(verdict);
 
         // ⭐ Two columns, every good named (Joe, D597).
-        // ⭐ THE GOODS SCROLL PAST SEVEN ROWS (D662): every known good is a row, and the fifteenth good (clothing) made the
-        // window 573 tall against the 560 Joe accepted (D597, D607). The window keeps its height: a village that knows every
-        // good scrolls the last row rather than growing the window. Three columns would need a wider window — Joe's call.
-        var grid = new GridContainer { Columns = 2, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        // ⭐ THREE COLUMNS (Joe, D664), AND THE GOODS SCROLL PAST SEVEN ROWS (D662): every known good is a row, and the
+        // fifteenth good (clothing) made two columns 573 tall against the 560 Joe accepted (D597, D607). Three a row shows
+        // every good the game has at once (15 goods, five rows, ~470 tall); the scroll stays for a twenty-second.
+        var grid = new GridContainer { Columns = 3, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         grid.AddThemeConstantOverride("h_separation", 18);
         grid.AddThemeConstantOverride("v_separation", 4);
         var gridScroll = new ScrollContainer
@@ -233,8 +233,8 @@ public partial class Main
         return w;
     }
 
-    /// <summary>Two columns of rows and the gap between them — the rows' own widths, measured by the probe (716).</summary>
-    private const float PostWindowWidth = 720f;
+    /// <summary>Three columns of rows and the gaps between them (Joe, D664: *"do 3 columns"*) — the rows' own widths, measured by the probe; 720 with two until D664.</summary>
+    private const float PostWindowWidth = 1070f;
 
     /// <summary>
     /// The tallest the window may stand — the probe holds it to this (Joe, D597: <i>"way too long"</i> at 641, its names
@@ -242,7 +242,7 @@ public partial class Main
     /// </summary>
     private const float PostWindowTallest = 560f;
 
-    /// <summary>Seven rows of goods, two a row, before the grid scrolls (D662) — the window's height with fourteen goods known.</summary>
+    /// <summary>Seven rows of goods before the grid scrolls (D662) — three a row since D664, so the scroll waits for a twenty-second good.</summary>
     private const float PostGridTallest = 242f;
 
     private const float PostNameWidth = 84f;

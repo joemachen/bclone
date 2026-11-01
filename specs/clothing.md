@@ -2,10 +2,11 @@
 
 **Decision:** D45's third clause, as Joe re-decided it in D659. **Slice:** `specs/environment-and-seasons.md §11`, slice 4;
 Phase 5 gate item 1, second of Joe's four (D656: doors → **clothing** → logistics → house tiers).
-**Status:** ✅ **BUILT AND MEASURED on `slice/clothing` (D659–D663, 2026-10-31), UNPLAYED, NOT MERGED.** C0 (this spec, the
+**Status:** ✅ **BUILT, MEASURED AND PLAYED on `slice/clothing` (D659–D664, 2026-10-31), NOT MERGED.** C0 (this spec, the
 baseline §5.3, the stale lines; D659), C1 (the good and the coat on the villager, §3.1–3.5; D660), C2 (the tailor's shop, the
-batch, the quota and the unlock, §3.5–3.6; D661), C3 (the view; D662) and C4 (the real build measured against §7, §5.4; D663).
-**Next: Joe plays it** (`.\run.bat`), then the merge at his word. Nothing of it is on `main`. *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
+batch, the quota and the unlock, §3.5–3.6; D661), C3 (the view; D662), C4 (the real build measured against §7, §5.4; D663) and
+**C5 (D664): Joe played it — *"everything else for clothes works as expected. approved once we figure out the leather thing"*** —
+and the leather thing is §3.5a: hides sat in his lodge for two years. Fixed; **his re-play of the fix, then the merge at his word.** *History: specced 2026-08-01 as "why clothing is not next"; its blocker fell at D291 with
 nobody writing it down (found D533); re-measured D533; parked D534; unparked D656.*
 
 ---
@@ -91,6 +92,25 @@ limit met, or no store in reach with the leather — and the card reads it.
 wear (adults ÷ `coat_winters`) − clothing on the shelves; `TailorsWanted` = that ÷ the coats one tailor
 sews a year at the worst walk, rounded up. Taken after smiths in the quota's order. The shortfall is
 the panel's sentence (*"the village wants a tailor"*) and the chip's amber.
+
+### 3.5a How the hides leave the lodge (D664)
+The hunt's hide goes into the lodge with the meat (D420), and a buffer leaves on a carrier's errand — the hunter's own
+when the lodge cannot take another hunt (while the village wants meat), else the marketer's, last in his round (D370).
+**Joe's Year-54 village held 50 hides in the lodge and none in any store for two years**, with a tailor who had nothing
+to sew: the *worth a walk* test named the hides (an armful, 40, and a warehouse with room), but the pickup filled the
+armful with **any food first, whatever the amount** and took a hide only into an empty armful — so the carrier took the
+29 meat scraps and left the hides, every time, until the lodge held exactly no meat (D371's lesson: *approve the load you
+will actually pick up*). Two rules now:
+
+- **A. The armful is the good that sent the carrier** (`SimWorld.GoodWorthClearing` names it; `TakeTheArmfulThatSentThem`
+  takes it). A food fills the armful from every food held, as it always did (D362); a hide fills it with hides, and the
+  meat scraps below an armful stay. One kind of store per armful, as D420 said.
+- **B. A coat's worth of hides is worth the walk when a standing shop is short of them** (`SimWorld.AStandingShopIsShortOf`):
+  a standing batch workplace takes the good as its input, the buffer holds at least one batch's worth (`leather_per_coat`,
+  5) and the stores hold less than one — and storage has room, as ever. Then one hunt's hide (10) sends the marketer. The
+  one named case D370's *below an armful is nobody's walk* gives way; never for a food (a hungry village is the floor's).
+
+Measured on his save three years on (§5.5) and on the harness. The barn's cull leather takes the same road.
 
 ### 3.6 The unlock: fifty leather held
 The smithy's shape (D395: *"a gift after 50 iron dug"*): `SimWorld.LeatherEverHeld` counts every hide
@@ -233,6 +253,57 @@ near the founding site — once the tick it is learned (Year 1, five hunts in), 
   D22's errand — but at ×10 limits every trade wants hands and tailors are taken after smiths. ⏸️ Whether coats outrank
   stone and iron in the quota is **Joe's call** (§7 item 4).
 
+### 5.5 2026-10-31 — Joe's village, three years on from his Year-54 save (D664)
+
+`tools/harness/ZzJoesSave.cs` runs a save on and prints where the leather is each season (`ZZJ`). His Ashbourne, Year
+54: 39 alive, 27 adults, 3 hunters, 2 marketers, a tailor seated, 112 coats sewn over the game, **1 adult coated**.
+
+| | lodge leather | stores' leather | coats sewn in 3 years | adults coated |
+|---|---|---|---|---|
+| before, Summer Y54 | 50 (29 meat) | 0 | — | 1 / 27 |
+| before, Fall Y55 → Summer Y56 | **70 → 90** | 0 | 0 | 0 / 28 |
+| before, Fall Y56 (the lodge's meat hit 0) | 10 | 50 → 25 | 16 by Summer Y57 | 6 → 16 / 28 |
+| **after**, Fall Y54 (the first season) | **0** | **70** | — | 1 / 26 |
+| after, Winter Y54 → Spring Y55 | 0 | 30 → 5 | **13** | **7 → 13 / 27** |
+| after, Y55–Y57 | 0 → 30 | 5 | 0 | 13 → 7 / 28 |
+
+- **Before:** the hides sat two years and left only in the one season the lodge held exactly no meat.
+- **After:** the hides left in the first season, the shop sewed 13 coats in two seasons, and half the adults were coated
+  by spring. Nobody died of it (27 → 28 adults).
+- **Then the supply runs dry, and that is the lodge, not the carrier:** 50 hides in three years — five hunts — because
+  the meat limit (2,500) is met most of the time and the quota hires no hunter (§5.3's finding). A village of 28 adults
+  wears through ~9 coats a year; five hunts make two. ⏸️ **Joe's levers:** a higher meat limit or a second lodge (more
+  hunts), or a rule that a hunter hunts for hides while the shop is short — the lodge working for the tailor as it works
+  for the granary. Not built; his call.
+- ⚠️ Seen, not chased: 5 leather sat on a shelf for two years unsewn — one coat's worth the shop did not reach, probably a
+  pile out of its reach (`StoreForTheBatch` wants a store *within reach*). Worth a look if he sees it.
+### 5.6 2026-10-31 — the harness after the fix, and what it can and cannot say (D664)
+
+`ZzClothing`, the 13 every-source valleys, limits ×10 at Year 5, the shop held to Year 5, old pickup against new:
+
+| seed | founders live Y1? | bare, old pickup: alive | bare, new: alive | coat, new: alive / coats sewn / adults coated |
+|---|---|---|---|---|
+| 1, 2, 6, 9, 11, 12345 (the founding lives) | yes | 42–51 | 42–50 | **equal or better: 43–51 / 129–340 / 48–96 %** |
+| 3, 7, 10 (dead in both, every run) | no | 0 | 0 | 0 |
+| 4, 5, 8, 12 (the founders freeze in Winter 1 in both worlds) | no | 25–41 | 0–30 | 0–34 |
+
+- **Where the founding lives, the fix is a plain gain:** coats on 93–96 % of adults where the posed harness managed
+  30–76 %, break-offs a third lower again (e.g. 803 → 487, 739 → 442), nobody dead for it. Rule B never fired here —
+  with hides leaving in armfuls the shelves hold a coat's worth — so A and A+B read identically.
+- **The other seven valleys are corpses re-founded by nomads.** Their founders freeze in Winter 1 with no firewood in
+  *both* worlds (the free lodge and farm at t0: D515's race, D447's harness) and the valley is lived in afterwards only
+  by bands that knock. Their later fate swung against the new pickup in this sample (means 30.2 → 24.3 alive) and I
+  spent six arms on it: not the ×10 leather in the warehouse (held at 200: the same), not the fuel or the stone (held
+  at their limits: the same), not a one-hunt lodge, not a decision-moving perturbation under the old pickup (stable
+  to four a seed — the old world is robust and the new one is not, in these corpses). **The one mechanical difference
+  the trace found is in Fall of Year 1:** the granary is full, so *worth a walk* names the hides (meat has nowhere to
+  go, D370) and the two hunters haul four armfuls of leather to the warehouse where they used to haul meat to a full
+  granary's door — both wasted, in a founding already lost. After that the re-founded valleys diverge chaotically.
+- **So the measurement that bears on the design is the six living valleys and Joe's own village (§5.5), and both say
+  the same thing.** The corpses are the harness's; a refounded nomad band on a frozen valley is not a player's game.
+  ⚠️ The arm's *mean* hid this — read the Year-1 deaths per seed before reading a mean (HANDOFF, D664).
+
+
 ---
 
 ## 6. What makes clothing matter — unchanged, and no longer a reason to wait
@@ -292,4 +363,6 @@ is struck, not met: D533 showed the work is bounded by the limits, so it cannot 
 6. The four checks green on every commit; every new guard red-checked by mutant with the reds counted and
    any zero written down; the suite's clock noted.
 7. Joe plays it: the shop appearing after his fifth hide, somebody fetching a coat, the card, a quieter
-   winter log. Merged at his word.
+   winter log. ✅ *"everything else for clothes works as expected"* (D664). Merged at his word.
+8. **The hides leave the lodge** (§3.5a, D664): guards in `LeatherOutOfTheLodgeTests`, red-checked; Joe's save re-run; his
+   re-play, then the merge.

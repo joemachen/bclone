@@ -105,7 +105,7 @@ this section.
 | Good | Nutrition | Notes |
 |---|---|---|
 | `Meat` | **1** | ⛔ **Must equal every other edible.** D277's validator refuses a config whose edible goods disagree, because the survival floor is derived from a single figure. |
-| `Leather` | 0 | Inedible. Its only consumer is the tailor (🔨 in build, `clothing.md`, D659; until then it accumulated, and that was correct and visible). **Since D420 it goes into the lodge with the meat** (meat first) and leaves with whoever clears the buffer; until then it rode in the hunter's arms from hunt to hunt, where no stock limit could see it (`stock-limits-and-laborers.md §4.5`). |
+| `Leather` | 0 | Inedible. Its only consumer is the tailor (`clothing.md`, D659–D664). **It leaves the lodge on the carrier the *worth a walk* test named** (D664, `clothing.md §3.5a`): an armful, or a coat's worth when a standing shop is short of it. **Since D420 it goes into the lodge with the meat** (meat first) and leaves with whoever clears the buffer; until then it rode in the hunter's arms from hunt to hunt, where no stock limit could see it (`stock-limits-and-laborers.md §4.5`). |
 
 ⚠️ **"Different types of game meat" is deferred to a data-only follow-up, deliberately.** Every
 meat would be a `GoodRow` with nutrition 1, which is cheap — but each is also a column in every
