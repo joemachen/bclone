@@ -19,6 +19,16 @@
 > trips, slower on grass than on a path, its first pass wearing the line to a path (D587 call 8), a chip beside the home and
 > a rectangle behind the dot. **Six calls are his (`handcart.md §10`)**; nothing of it built; blocked on the workshop slice.
 >
+> **⚠️ Two things D671 found on the way (`logistics.md §5.7`):** the margin's first draft carried **D372's scrap hole to the
+> granary** (a storehouse "holding any at all" would have taken every trip from a full market with three fish — fixed to *stocked
+> for the trip*, pinned); and **the five-valley ledger fired** (103 marked against 106, bar within one) — swept over X and widened
+> to ten valleys it reads as reshuffling (marked 222 → 219 with seven unchanged, unmarked 222 → 222), so **its bar is re-pinned at
+> three with D671 named, and that reading is his to overturn** (⏸️ below).
+>
+> **The four checks on D671's tree:** suite **1886 / 0 / 5 of 1891 in 15m06** (the run before the ledger's re-pin: 1885 / 1 / 5 in
+> 15m17; D668's: 15m16); view **0 warnings**; probe **67 ✅ 0 ⛔, bar 151, `done.`**; goldens **392, none moved**. Red checks: the
+> clause 2 of 2, the sweep 2 of 2, the scrap case pinned.
+>
 > **▶️ NEXT — JOE'S SIX CART CALLS, then the workshop + carpenter slice (its own spec), then the handcart slice, each measured
 > on `ZzLogistics`.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap). Then **house tiers**.
 >
@@ -8780,6 +8790,32 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D670–D671 PAID FOR — A STASH IN A BACKGROUND JOB, A SPEC'S POSE THAT ROTTED, AND THE SCRAP MOVED TO THE GRANARY
+
+- **⛔ A background job that `git stash`es holds every tracked file hostage until it pops.** The sweep's red check stashed the
+  working tree to build the committed instrument against a mutant, and ran two minutes; one Edit to any tracked file in that window
+  would have made the pop a conflict. Nothing was lost — by luck of ordering, not design. *Never stash in a background command.
+  Build the mutant in a worktree, or run the red check in the foreground and wait.*
+- **⚠️ A spec that quotes a test's numbers rots when the engine moves under it.** `storage-and-distribution.md §14.9.7` said the
+  market-first guard poses *a granary 2 ticks away, a stocked market 11*; the pose has been **11 and 19** since the gridless engine,
+  and the eight-tick gap was the thing D671's margin test needed to know. *Quote the pose's shape, not its ticks; or make the test
+  print them and copy the print.*
+- **⛔ THE MARGIN'S FIRST DRAFT MOVED D372'S SCRAP FROM THE COUNTER TO THE GRANARY.** Written against *a storehouse holding any at
+  all* — the tier's own predicate — a granary out among the homes holding **three fish** would take every trip from a full market
+  four ticks further. Found while reading the five-valley ledger's red (which it turned out not to explain — see the next trap);
+  real on its own. The margin applies to a storehouse **stocked for the trip** (`holding(store, aTripsWorth)`), the same bar D372
+  set the market. Pinned by the scrap case in `AHouseholdWalksPastAFarMarketToTheGranary`. *Every rule that picks a store must
+  say which of the two predicates it means.*
+- **⛔ D669's stale-DLL trap, paid again from the other side:** a measurement mutant that stubbed the asserts with a two-parameter
+  no-op tripped `IDE0060` (unused parameter) — an *error* in the test project — the build failed, `--no-build` ran the old DLL, and
+  "ten valleys" printed the old five. The only tell was the seed list. *A mutant must `grep -c` its own new output (a seed, a tag)
+  before its numbers are read; and open a private helper with `internal` for a scratch test rather than stubbing asserts.*
+- **⚠️ THE FIVE-VALLEY LEDGER IS A TRIPWIRE FOR ANY RULE THAT MOVES WHERE AN UNATTENDED VILLAGE SHOPS.** Its bar is *marked
+  within one person of unmarked* over five small valleys, pinned to one trajectory (D625). Two granaries marked out among the
+  homes are the detour margin's own case, so D671 moved two of its five valleys by ±4 and it went red at 103 / 106. Before
+  reading a red there as a price, sweep the knob (the bar's own value must reproduce — 105 did) and widen the seeds (ten:
+  222 → 219, seven unchanged). *A sum of five chaotic peaks is a coin; it says "look", never "how much".*
+
 ## ⛔ THE TRAPS D668 PAID FOR — AN IN-PLACE REPLACE THAT PRINTS NOTHING IS A DELETE, AND A SAVE FOLDER IS EIGHT BUILDS DEEP
 
 - **⛔ `perl -i` with an unexported shell variable deleted `DESIGN.md`'s Current-phase line instead of replacing it.** `NEW=path
@@ -9059,8 +9095,15 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   carpenter slice gets its spec. Candidates (b) the marketer's bounded round and (c) a neighbourhood store stay in
   `DESIGN.md §5`, unpicked.
 - ⏸️ **`market_detour_ticks` 4 (D670–D671) IS A MEASURED DEFAULT, NOT A PLAYED ONE.** The sweep says 4 keeps a market beside
-  the granary winning and sends 18 of 148 homes to a nearer granary; 2 would be nearest-first for that layout. His to move
-  after play (`data/sim.config.json`); 0 is nearest-first, a large number is D372 as built.
+  the granary winning and sends 18 of 148 homes to a nearer granary; 2 would be nearest-first for that layout (and costs the
+  unattended unmarked valleys eight people over ten). His to move after play (`data/sim.config.json`); 0 is nearest-first, a
+  large number is D372 as built.
+- ⏸️ **THE FIVE-VALLEY LEDGER'S BAR MOVED FROM ONE PERSON TO THREE FOR D671 — ON MY READING OF NOISE, HIS TO DISAGREE.**
+  `TheShippedVillageSurvivesBeingAskedToBuild` read 103 marked against 106 unmarked with the margin (bar: within one, D625).
+  Swept over X: 105 / 105 / 100 / 103 / 102 at 1000 / 0 / 2 / 4 / 8; ten valleys at 4: marked 222 → 219 (one −4, one +2, one −1,
+  seven unchanged), unmarked 222 → 222. Two valleys moving opposite ways with eight still is reshuffling, so the bar is held at
+  the measured price with D671 named (`logistics.md §5.7`). If he reads it as a real cost of the margin, the knob is the lever
+  and the bar goes back to one.
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.

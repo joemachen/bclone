@@ -224,6 +224,33 @@ live re-run with the rule is §5.7. ⚠️ What this does not touch: the househo
 (D537), and this moves only *where* some of them turn round — the handcart (`handcart.md`) is the candidate that moves
 *how many*.
 
+### 5.7 The rule, live (D671)
+
+`market_detour_ticks` 4 is built: one clause in `BehaviorSystem.NearestShopHolding`, the knob validated, two guards
+(`storage-and-distribution.md §14.9.7`), red-checked — the sweep's `detour` line 2 of 2 (a mutant that forgets the storehouse
+walk moves both villages' X = 4 count from 0 to 10 and 7), the clause 2 of 2 (deleted, and `>` for `>=` at the edge; one
+red each, the new guard both times).
+
+- **⛔ The first draft had D372's scrap hole on the other shop.** The storehouse tier counts a store holding *any at all*, and
+  the margin was written against it — so a granary out among the homes holding three fish would have taken every trip from a
+  full market four ticks further, the exact failure D372 fixed at the counter. The margin applies to a storehouse **stocked for
+  the trip**; the scrap case is in the guard.
+- **Live on the saves this build can open** (format 9: Ashbourne-fallow-finch-66, Greyford-brook-lark-24): Fetch 20.2 → 19.7 %
+  and 15.9 → 15.9 %, trips to the market 219 → 236 and 13 → 13 — noise, as §5.6 said: both switch zero homes at 4. The two
+  villages that would show it (Willowdale-flint-thrush-27, Oakhaven-hazel-pebble-34) are format 8 and the sweep's estimate
+  stands for them (6 and 10 homes, 10–11 one-way ticks each). **The unattended control is untouched**: its markets hold no
+  food (no marketer is ever hired there), so the rule never fires; seeds 1 and 2 read 6.9 % and 8.0 %, as D668.
+- **⚠️ The five-valley ledger went red** (`ShippedConfigTests.TheShippedVillageSurvivesBeingAskedToBuild`: two granaries and two
+  warehouses marked at Year 15 must not cost the village more than D625's one person against nothing marked): **103 against
+  106.** Two marked granaries out among the homes are the rule's own case. Swept over the margin: marked peaks **105** at
+  1000 (the bar's own trajectory), **105** at 0, **100** at 2, **103** at 4, **102** at 8 — no order in it. Ten valleys at 4
+  against 1000: **marked 222 → 219** (seed 1 −4, seed 12345 +2, seed 5 −1, seven unchanged), **nothing marked 222 → 222**;
+  **at 2 the unmarked valleys lose eight** (222 → 214), the pair layout turning nearest-first, which is the second reason 4
+  is the number. Read as reshuffling, not a price: two valleys move in opposite directions and eight hold. **The bar is
+  re-pinned at the measured price, three, with D671 named** — D625's own shape — and flagged for Joe (HANDOFF ⏸️): the
+  ledger is a tripwire for any rule that moves where an unattended village shops, and it fired as designed.
+- Goldens: 392, none moved — the shipped seeds' homes stand 4–6 ticks from a market beside its granary.
+
 ---
 
 ## 6. What the numbers can mean — Joe's call

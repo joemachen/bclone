@@ -1000,6 +1000,31 @@ public sealed record SimConfig
     [JsonPropertyName("fetch_below_share_percent")]
     public int FetchBelowSharePercent { get; init; } = 50;
 
+    /// <summary>
+    /// What <i>nearby</i> means when a household picks its shop: the nearest market holding the
+    /// good wins unless a storehouse holding it is nearer by <b>more than this many one-way
+    /// ticks</b> — then the storehouse does (D670–D671). Default <b>4</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's D372 sentence was *"only go to the granary if there is no market nearby"*, built with
+    /// <i>nearby</i> meaning <i>reachable</i>. D668 then measured a fifth of every adult's ticks as
+    /// the household's shopping, and D670's sweep found the market–storehouse gaps come in two
+    /// kinds: 3–4 ticks (a market standing beside the granary, the pair's footprints apart — the
+    /// layout D372 was written for, and that market must keep winning) and 5–17 ticks (a second
+    /// granary built out among the homes). At 4, eighteen of 148 homes in his ten villages walk to
+    /// the nearer granary and save 10–30 ticks on a 29–31-tick round trip; at 2 the rule is
+    /// nearest-first again for the pair layout (`specs/logistics.md §5.6`).
+    /// </para>
+    /// <para>
+    /// ⚠️ Not a fence (D201): nobody is refused a walk; the margin only decides between two shops
+    /// that both hold the good. 0 is nearest-first; a very large number is D372 as first built.
+    /// The scrap tier (<c>BehaviorSystem.NearestShopHolding</c>) is untouched by it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("market_detour_ticks")]
+    public int MarketDetourTicks { get; init; } = 4;
+
     /// <summary>How many people work one farmhouse — <b>three</b> (Joe, D603; two before).</summary>
     /// <remarks><i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>.</remarks>
     [JsonPropertyName("farmhouse_seats")]
@@ -5532,6 +5557,11 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"fetch_below_share_percent must be between restock_emergency_percent ({RestockEmergencyPercent}) and 100 " +
                 $"(got {FetchBelowSharePercent}) - the ordinary fetch has to fire before the emergency one.");
+        }
+
+        if (MarketDetourTicks < 0)
+        {
+            throw new SimConfigException($"market_detour_ticks cannot be negative (got {MarketDetourTicks}); 0 is nearest-first.");
         }
 
         if (LeaveHomeAge < 0)

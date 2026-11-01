@@ -4530,8 +4530,10 @@ public sealed partial class BehaviorSystem : ISimSystem
 
 
     /// <summary>
-    /// Where a household shops: <b>the nearest market holding what they want; a storehouse only
-    /// if no market is reachable or none holds it</b> (D372, Joe).
+    /// Where a household shops: <b>the nearest market holding what they want, unless a storehouse
+    /// holding it is nearer by more than <see cref="SimConfig.MarketDetourTicks"/>; a storehouse
+    /// also when no market is reachable or none holds it</b> (D372, Joe; <i>nearby</i> given its
+    /// number D670–D671).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -4541,6 +4543,17 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// with the granary beside the homes the market never won a trip — his *"bum rushing the
     /// granary"*. Two passes in one loop: a market beats any storehouse; among markets, or among
     /// storehouses, the nearest wins; unreachable never.
+    /// </para>
+    /// <para>
+    /// ⭐ <b><i>Nearby</i> was built as <i>reachable</i>, and D668 measured a fifth of every adult's
+    /// ticks as the shopping.</b> D670's sweep of ten of Joe's villages found two kinds of gap: a
+    /// market standing beside the granary, 3–4 ticks further for most homes (D372's own layout —
+    /// that market must keep winning), and a second granary built out among the homes, 5–17 ticks
+    /// nearer for a few. So the margin: a stocked market still beats a storehouse up to
+    /// <see cref="SimConfig.MarketDetourTicks"/> one-way ticks further (4), and beyond that the
+    /// nearer storehouse wins. ⚠️ Not a fence (D201) — nobody is refused a walk; the margin only
+    /// picks between two shops that both hold the good. 0 is nearest-first; a very large number
+    /// is D372 as first built. The scrap tier below is untouched by it.
     /// </para>
     /// <para>
     /// ⛔⛔ <b>A SCRAP AT THE COUNTER IS NOT A STOCKED COUNTER.</b> A market "holding the good" is
@@ -4563,8 +4576,14 @@ public sealed partial class BehaviorSystem : ISimSystem
         // Three answers, in order: a market stocked for the trip; a storehouse with any at all; a
         // market with a scrap — the last so that a village whose only food is thirty fish at the
         // counter still eats them (the scrap rule alone read eight guards red for exactly that).
-        StoreBuilding? stockedMarket = null, storehouse = null, scrapMarket = null;
-        int stockedMarketCost = int.MaxValue, storehouseCost = int.MaxValue, scrapMarketCost = int.MaxValue;
+        // Between the first two, the margin (D671): a storehouse STOCKED FOR THE TRIP and nearer by
+        // more than market_detour_ticks takes the trip from a stocked market. ⛔ Stocked, not "any at
+        // all": written against `storehouse` the first time, a granary out among the homes holding
+        // three fish took every trip from a full market four ticks further, and the five-valley
+        // ledger lost two people to it — D372's scrap at the counter, moved to the granary.
+        StoreBuilding? stockedMarket = null, storehouse = null, stockedStorehouse = null, scrapMarket = null;
+        int stockedMarketCost = int.MaxValue, storehouseCost = int.MaxValue, stockedStorehouseCost = int.MaxValue,
+            scrapMarketCost = int.MaxValue;
 
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
@@ -4583,6 +4602,10 @@ public sealed partial class BehaviorSystem : ISimSystem
             if (store.Kind != StoreKind.Market)
             {
                 Take(ref storehouse, ref storehouseCost);
+                if (holding(store, aTripsWorth))
+                {
+                    Take(ref stockedStorehouse, ref stockedStorehouseCost);
+                }
             }
             else if (holding(store, aTripsWorth))
             {
@@ -4601,6 +4624,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                     best = store;
                 }
             }
+        }
+
+        if (stockedMarket != null && stockedStorehouse != null
+            && stockedMarketCost > stockedStorehouseCost + world.Config.MarketDetourTicks)
+        {
+            return stockedStorehouse;
         }
 
         return stockedMarket ?? storehouse ?? scrapMarket;

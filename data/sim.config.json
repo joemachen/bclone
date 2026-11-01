@@ -1420,6 +1420,20 @@
   // The emergency restock (restock_emergency_percent, 20) is the floor beneath.
   "fetch_below_share_percent": 50,
 
+  // WHERE A HOUSEHOLD GOES SHOPPING (D372, Joe: "only go to the granary if
+  // there is no market nearby") - and what "nearby" means (D670-D671). The
+  // nearest market holding the good wins unless a storehouse holding it is
+  // nearer by MORE than this many one-way ticks (a plain tile is a tick);
+  // then the storehouse does. Not a fence: nobody is refused a walk, the
+  // margin only picks between two stocked shops. Swept on ten of Joe's
+  // villages before it was typed (specs/logistics.md 5.6): the gaps come as
+  // 3-4 ticks (a market standing beside the granary - that market must keep
+  // winning) and 5-17 (a second granary built out among the homes). 4 sends
+  // 18 of 148 homes to the nearer granary and saves them 10-30 ticks on a
+  // 29-31-tick round trip; 2 would be nearest-first for the pair layout.
+  // 0 is nearest-first; a very large number is D372 as first built.
+  "market_detour_ticks": 4,
+
   // HOW BIG THE VILLAGE CAN GET, stated as a fact about a building (D33).
   //
   // A granary holds a winter's store for this many people; VillageEconomy

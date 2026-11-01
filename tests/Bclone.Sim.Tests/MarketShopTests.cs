@@ -50,13 +50,16 @@ public sealed class MarketShopTests
     /// Nearest-of-any-store was §14.5's rule since D14 and it is exactly what Joe saw as
     /// *"bum rushing the granary"*: the granary stands beside the homes, so the market — a few
     /// tiles further — never won a single trip. The rule now is a market that holds the good,
-    /// then storage only if no market is reachable or none holds it.
+    /// then storage only if no market is reachable or none holds it. Since D671 the market wins
+    /// only within <c>market_detour_ticks</c> of the storehouse's walk; this pose is nine ticks
+    /// apart, so the margin is held wide here and <see cref="AHouseholdWalksPastAFarMarketToTheGranary"/>
+    /// guards the margin itself.
     /// </remarks>
     [Fact]
     public void AHouseholdFetchesFromTheMarketBeforeTheGranary()
     {
         // The market moved a few tiles out, so that "nearest" and "market" disagree.
-        SimConfig config = Config with { MarketX = 6, MarketY = 5 };
+        SimConfig config = Config with { MarketX = 6, MarketY = 5, MarketDetourTicks = 20 };
         SimWorld world = Build(config).World;
 
         Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
@@ -99,6 +102,74 @@ public sealed class MarketShopTests
         StoreBuilding? last = BehaviorSystem.PlanFetchForTest(world, villager);
         _output.WriteLine($"with five at the market and nothing in the granary they go to {last?.Name ?? "nowhere"}");
         Assert.Same(market, last);
+    }
+
+    /// <summary>
+    /// ⭐ <i>Nearby</i> has a number (D670–D671): a stocked granary <b>more than
+    /// <c>market_detour_ticks</c> nearer</b> than the stocked market takes the trip; one exactly at
+    /// the margin does not; an empty granary never does.
+    /// </summary>
+    /// <remarks>
+    /// Joe's D372 sentence was *"only go to the granary if there is no market nearby"*, and
+    /// *nearby* was built as *reachable*. D668 measured a fifth of every adult's ticks as the
+    /// shopping; D670's sweep of his villages found a market beside the granary 3–4 ticks further
+    /// for most homes (that market must keep winning) and a second granary out among the homes
+    /// 5–17 ticks nearer for a few (`specs/logistics.md §5.6`). The shipped margin is 4; this pose
+    /// is nine apart, so at the shipped margin the granary wins, at a margin of nine the market
+    /// does, and at eight the granary again — the edge pinned from both sides.
+    /// </remarks>
+    [Fact]
+    public void AHouseholdWalksPastAFarMarketToTheGranary()
+    {
+        SimConfig posed = Config with { MarketX = 6, MarketY = 5 };
+        (SimWorld world, Villager villager, StoreBuilding granary, StoreBuilding market) = Pose(posed);
+        int toGranary = world.TravelCost.TicksBetween(villager.Tile, granary.Tile);
+        int toMarket = world.TravelCost.TicksBetween(villager.Tile, market.Tile);
+        int gap = toMarket - toGranary;
+        Assert.True(gap > posed.MarketDetourTicks,
+            $"the pose must put the market more than the shipped margin ({posed.MarketDetourTicks}) beyond the granary; it is {gap} ticks further");
+
+        StoreBuilding? shipped = BehaviorSystem.PlanFetchForTest(world, villager);
+        _output.WriteLine($"granary {toGranary} ticks, market {toMarket}, margin {posed.MarketDetourTicks}: they go to {shipped?.Name ?? "nowhere"}");
+        Assert.Same(granary, shipped);
+
+        granary.Store.TryTake(Goods.Produce, granary.Store[Goods.Produce]);
+        StoreBuilding? granaryEmpty = BehaviorSystem.PlanFetchForTest(world, villager);
+        _output.WriteLine($"with the granary empty they go to {granaryEmpty?.Name ?? "nowhere"}");
+        Assert.Same(market, granaryEmpty);
+
+        // ⛔ A SCRAP IN THE NEARER GRANARY IS NOT A STOCKED GRANARY: the margin applies only to a storehouse
+        // holding the trip's worth. Written as "any at all" it sent every trip to a granary holding three fish
+        // past a full market, and the five-valley ledger lost two people to it.
+        granary.Store.Receive(Goods.Produce, 5);
+        StoreBuilding? scrap = BehaviorSystem.PlanFetchForTest(world, villager);
+        _output.WriteLine($"with five in the near granary and 120 at the market they go to {scrap?.Name ?? "nowhere"}");
+        Assert.Same(market, scrap);
+        granary.Store.Receive(Goods.Produce, 395);
+
+        // The edge, from both sides: a margin equal to the gap keeps the market ("more than"), one less loses it.
+        (SimWorld atTheEdge, Villager v1, _, StoreBuilding m1) = Pose(posed with { MarketDetourTicks = gap });
+        StoreBuilding? edge = BehaviorSystem.PlanFetchForTest(atTheEdge, v1);
+        _output.WriteLine($"margin {gap}: they go to {edge?.Name ?? "nowhere"}");
+        Assert.Same(m1, edge);
+
+        (SimWorld justInside, Villager v2, StoreBuilding g2, _) = Pose(posed with { MarketDetourTicks = gap - 1 });
+        StoreBuilding? inside = BehaviorSystem.PlanFetchForTest(justInside, v2);
+        _output.WriteLine($"margin {gap - 1}: they go to {inside?.Name ?? "nowhere"}");
+        Assert.Same(g2, inside);
+
+        static (SimWorld, Villager, StoreBuilding, StoreBuilding) Pose(SimConfig config)
+        {
+            SimWorld world = Build(config).World;
+            Villager villager = world.Villagers.First(v => v.Alive && v.CanWork);
+            Household home = world.HouseholdOf(villager);
+            StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+            StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+            granary.Store.Receive(Goods.Produce, 400);
+            market.Store.Receive(Goods.Produce, 120);
+            home.Stockpile.TryTake(Goods.Produce, home.Stockpile[Goods.Produce]);
+            return (world, villager, granary, market);
+        }
     }
 
     // ---------------------------------------------------------------
