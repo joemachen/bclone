@@ -186,3 +186,13 @@ against a number from an older commit.
   household firewood) and `ZZ_BARE=1` (nothing posed, the control; `ZZY` and `ZZX` only). ⚠️ `stone=` and `iron=` read the
   face stores, which a dig never reaches (it is carried to the nearest store): read `stoneHeld` / `ironHeld` and the
   `Quarrying` / `Mining` ticks, or count at the digger's arms as `PhaseFiveGoldenTests` does.
+- `ZzLogistics.cs` — D668's measurement for `specs/logistics.md §4`: is real time lost on fetch walks? Two arms: `ZZ_SAVES=<a
+  COPY of Joe's saves folder>` (`ZZ_PICK` defaults to `autosave-1.save`, one a village; `ZZ_YEARS` 5), and `ZZ_SEEDS=1,2,3`
+  (the shipped config, the played opening, a granary and a warehouse at year 3; `ZZ_YEARS` 50) as the unattended control.
+  One `ZZG` line a year per village: every living adult's ticks in nine buckets — work / commute / deliver (the producer's own
+  load to a store) / fetch (the household's shopping, a coat, a tool, the well, and the walk home carrying) / market / haul
+  (buffers, heaps, materials, hay, the post) / shelter / home / other. `ZZG … end` sums the run; `ZZG … spells <bucket>` gives
+  spells, spells an adult-year, median / p90 / max ticks and the share over one, two and four days (a day is 4 ticks);
+  `ZZG … long` the five longest fetch-or-haul spells (who, from home, how far out); `ZZG … shops` every lived-in home's walk
+  to the nearest store holding food. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
+  while nothing else (a meal does not change state; shelter does) interrupts it. Copy in, `-c Release --filter ZzLogistics`, delete.

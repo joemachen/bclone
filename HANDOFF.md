@@ -1,6 +1,43 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED: CLOTHING IS DONE. GATE ITEM 1: DOORS ✅, CLOTHING ✅, THEN LOGISTICS (A MEASUREMENT) AND HOUSE TIERS, IN JOE'S ORDER. NEXT: LOGISTICS, WHEN JOE SAYS SO. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668) IS OPEN, LOCAL, ONE COMMIT: LOGISTICS MEASURED, NOTHING BUILT — A FIFTH OF A PLAYED VILLAGE'S ADULT TICKS IS SHOPPING. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS 📏 (JOE'S CALL), THEN HOUSE TIERS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D667) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D668) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = a82c072, the merge of `slice/clothing` (D667), pushed; origin agrees. `slice/logistics` is open off it, local,
+> unpushed, one commit (D668): `specs/logistics.md`, `tools/harness/ZzLogistics.cs`, a README bullet, two stale `DESIGN.md`
+> lines made true, §6 and §7.** Nothing in `src/`, `tests/` or `data/` changed. The tree is clean but for `bclone-tracker.xlsx`
+> (never staged, committed or ignored).
+>
+> **⛳ Where Phase 5 stands (the gate, `DESIGN.md §4`):**
+> - **Item 1 — every Phase 5 item has a verdict.** Joe's four, in his order: ✅ doors (D658) → ✅ clothing (D667) → 📏 **logistics
+>   measured (D668), ⏸️ his call** → **house tiers**. Soil depletion dropped; drought, fire and blight, beer moved to Phase 6 (D656).
+> - **Item 2 — the Phase 5 golden:** ✅ pinned (D648), re-pinned for the tailor (D661).
+> - **Item 3 — the QA checklist Joe walks:** not written; waits for item 1.
+> - **Item 4 — the docs true at the gate:** not started (`content-inventory.md` is `main` at D526).
+> - **Item 5 — the four checks on the merged tree and a played run with no `ERROR`:** last.
+>
+> **📏 Logistics, in one breath (`specs/logistics.md §5`):** §4 said *"only if measured … welcome if play shows them"*. **Play shows
+> them.** In ten of Joe's established villages (17–70 adults, five years run on from his saves) **a fifth of every adult's ticks
+> (12–22 %, median 19.8 %) is the household's shopping** — more than work, delivery and hauling together; a shopping round trip is
+> 12–18 ticks at the median (a day is four), 27–54 % of trips run over four days; the marketer's own trips are 16–29 ticks. The
+> unattended control: 3–13 %, trips 5–9 ticks. **The cause:** 2–5 shops for 7–36 homes, every lived-in home a median 8–18 ticks from
+> the nearest shop (control 4–6) — a home is sited wherever the player painted (D381), and the housing brush's one warning reads the
+> walk to the nearest *forage* (`CanPaintResidential`), not the nearest *shop*, though every household has eaten from a shop since
+> D385. Instrument red-checked 2 of 2. ⚠️ 53 of his 56 saves are older save formats this build refuses; the thirteen at format 8
+> were run in a worktree at a9c6fde (D658) with the same file less the clothing states; forty older ones were not run.
+>
+> **▶️ NEXT — JOE'S CALL, ONE OF THREE (`logistics.md §6`); ask, do not build:** (1) **dropped** — *a fifth of the day shopping is the
+> village I want to watch* (a cozy call, §0.1); (2) **one legibility rule** — the housing brush's warning, the villager's card and the
+> log name the walk to the nearest *shop* (D112's shape: a fence you can see; the market, D372, is the answer the game already has);
+> (3) **a mechanic** as a design thread in `DESIGN.md §5` (the marketer delivering to far homes, a bigger armful for a longer walk, a
+> second store tier). Then merge `slice/logistics` at his word (`--no-ff --no-commit`, D640's trap) and **house tiers** (`DESIGN.md §5`,
+> D206: the 60–80 firewood target is a 6–8× change and must be measured, not typed — `ZzLogistics`'s shape).
+>
+> **Numbers (D668, the four checks on the slice's tree — no code changed):** suite 1885 / 0 / 5 of 1890 in 15m16 (D667's 16m54 on
+> the same code — the machine); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running;
+> goldens grep 392 → 392, none moved.
+>
+> **— D667, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D667) — ON WINDOWS.**
 >
 > **`main` = the merge of `slice/clothing` (D667), pushed; origin agrees. No branch is open** (`slice/clothing` stays local, merged). The tree
 > is clean but for `bclone-tracker.xlsx` (never staged, committed or ignored).
@@ -8699,6 +8736,26 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D668 PAID FOR — AN IN-PLACE REPLACE THAT PRINTS NOTHING IS A DELETE, AND A SAVE FOLDER IS EIGHT BUILDS DEEP
+
+- **⛔ `perl -i` with an unexported shell variable deleted `DESIGN.md`'s Current-phase line instead of replacing it.** `NEW=path
+  perl -i -ne '... open(F, "<:raw", $ENV{NEW}) ...'` — `NEW` was set, not `export`ed, so `$ENV{NEW}` was undef, the open did not
+  die, `$new` was empty, and the branch that should have printed the new line printed nothing. **The line count went 4740 → 4739
+  and that is the only thing that caught it.** *Rule: after every in-place edit, `wc -l` before and after and `sed -n Np` the
+  line you aimed at; a replace that could print an empty string is a delete with a better name. Export what perl must read, and
+  `die` on an empty payload.*
+- **⚠️ Joe's saves are eight formats deep, and a build reads exactly one.** 53 of his 56 `autosave-1.save`s refused with *"format
+  N, where this build reads 9"*; the first run quietly measured three villages and printed 54 happy lines. **A harness over a saves
+  folder must count the refusals, not the lines.** The format-8 thirteen were read by building the same harness in a worktree at
+  the last commit of that format (a9c6fde, D658) — D664's worktree shape — with the states that did not exist then stripped
+  (`Sewing`, `FetchingACoat`, `TravelingToTailor`); the forty older ones were left, and the spec says so. ⭐ *Read the format of
+  his newest save before promising a number on "his saves".*
+- **⚠️ One compile error on a `.Where(...)` cascades into two nonsense ones on the next lines** (*"cannot convert from method
+  group to object?"* on `shops.Count` — because `shops` had no type). Fix the first error only, rebuild, then read again.
+- **⭐ The buckets had to split before the number meant anything:** the first cut put the producer's own load to the store
+  (`HaulingToStore`) under *haul*, which made "logistics" 12 % when 4 % of it was production (D385's every-load-to-a-store).
+  *A bucket named for a question must hold only what the question asks; measure, read the long lines, re-cut, then run.*
+
 ## ⛔ THE TRAP D665 FOUND — THE FIRST FOOD HELD DECIDED FOR ALL OF THEM
 
 - **A `break` after the first food held meant a scrap of forage in a lodge kept 2,622 meat from an empty granary** — for a season in
@@ -8946,6 +9003,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **LOGISTICS — MEASURED, HIS VERDICT OWED (D668, `specs/logistics.md §5–§6`).** A fifth of every adult's ticks in his played
+  villages is the household's shopping, because homes stand a median 8–18 ticks from the nearest shop and the housing brush
+  warns about the forage walk, not the shop walk. One of three closes gate item 1's third entry: dropped in his words; one
+  legibility rule (the brush, the card and the log name the shop walk); or a mechanic as a §5 design thread. Nothing built.
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.
