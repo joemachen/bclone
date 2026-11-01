@@ -1,8 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673), LOCAL, NOT PUSHED; `origin/main` = a82c072 (D667). LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE W (WORKSHOP + CARPENTER SPEC) IS RUNNING IN ITS OWN SESSION; THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: SLICE W (WORKSHOP + CARPENTER SPEC) IS RUNNING IN ITS OWN SESSION; THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D673) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **`main` = the merge of `slice/logistics` (D673), local, NOT pushed; `origin/main` = a82c072 (D667).** The slice was five commits —
+> **`main` = the merge of `slice/logistics` (D673, 4ee678e) plus one docs commit making these lines true, pushed; origin agrees.** The slice was five commits —
 > f98de0b (D668: the measurement), 458ba7f (D669: Joe's verdict, the candidates to §5), 1c6c86f (D670: his two picks, the sweep for X
 > and the handcart sketch — docs and harness only), dcb6aa0 (D671: the rule, `market_detour_ticks`, one clause in
 > `BehaviorSystem.NearestShopHolding`, its test, the spec) and c1a4f90 (D672: his six cart calls, docs only) — merged `--no-ff` at
@@ -34,7 +34,7 @@
 > **✅ D672 — JOE: *"Yes, all six"* — every handcart call stands as proposed (`handcart.md §10`; calls 5 and 6 were either/or
 > and were read as the spec's own proposal: slower on grass, the marketer's cart later). Docs only, no code touched.**
 >
-> **▶️ NEXT — push `main` at his word.** Slice W (the workshop + carpenter spec, `specs/workshop-and-the-carpenter.md`) was started
+> **▶️ NEXT — Slice W.** It (the workshop + carpenter spec, `specs/workshop-and-the-carpenter.md`) was started
 > in its own session on 2026-11-01 from a worktree cut at a82c072, *before* this merge — it was told `main` moved and to merge it in;
 > if its branch lacks `specs/handcart.md`, that is why. Then the handcart slice (Slice H), each measured on `ZzLogistics`. Then **house tiers**.
 >
