@@ -324,7 +324,7 @@ This is the acceptance test for the slice, and it is a stronger claim than "the 
 
 - `JobKind.Marketer`, `market_capacity` in config — more than one seat, per Joe.
 - The market is **both** a `StoreBuilding` (a third `StoreKind`, accepting food and firewood, near the homes) **and** a `Workplace` at the same position. Those are separate types today; merging them into the spec's §4 single `Building` is the right end state but not this slice's job. Recorded as a known seam.
-- Households fetch from the market as well as the granary and warehouse, ~~nearest-first~~ **market-first since D372 (§14.9)**: the nearest market holding the good, and a storehouse only if no market is reachable or none holds it.
+- Households fetch from the market as well as the granary and warehouse, ~~nearest-first~~ **market-first since D372 (§14.9)**: the nearest market holding the good, and a storehouse only if no market is reachable or none holds it — **or, since D671, if a storehouse holding it is nearer by more than `market_detour_ticks` (4; §14.9.7, `logistics.md §5.6`).**
 
 ### 14.7 What it measured (built 2026-07-27)
 
@@ -615,12 +615,23 @@ player sets on THAT market, per good** — the same shape as the village stock l
 - **The market comes first (Joe, 2026-09-15, after the spec):** *"villagers should be going to the
   market and the marketer replenishes their market from the granary. the villagers should only go
   to the granary if there is no market nearby or the market doesnt have any food."*
-  `BehaviorSystem.NearestShopHolding`: the nearest **market** holding the good; a storehouse only
-  if no market is reachable or none holds it. *"Nearby"* is *reachable* — there is no radius to
-  tune (D201's reasoning). The emergency restock at 20 % (`TryEmergencyRestock`) still goes to the
-  nearest store of any kind — an emergency is the walk that matters most. Guard:
-  `AHouseholdFetchesFromTheMarketBeforeTheGranary` (a granary 2 ticks away, a stocked market 11:
-  the market; emptied: the granary). Red-checked.
+  `BehaviorSystem.NearestShopHolding`: the nearest **market** holding the good, **unless a storehouse
+  holding it is nearer by more than `market_detour_ticks` (4, D670–D671) — then the storehouse**; a
+  storehouse also if no market is reachable or none holds it. *"Nearby"* was built as *reachable* —
+  no radius to tune (D201's reasoning) — until D668 measured a fifth of every adult's ticks as the
+  shopping and D670's sweep gave it a number (`logistics.md §5.6`: a market beside the granary is 3–4
+  ticks further for most homes and must keep winning; a second granary out among the homes is 5–17
+  nearer for a few). ⚠️ **A margin, not a fence** — D201's objection stands: nobody is refused a
+  walk, the margin only picks between two stocked shops; 0 is nearest-first, a very large number is
+  D372 as first built. The emergency restock at 20 % (`TryEmergencyRestock`) still goes to the
+  nearest store of any kind — an emergency is the walk that matters most. Guards:
+  `AHouseholdFetchesFromTheMarketBeforeTheGranary` (a granary 11 ticks away, a stocked market 19 —
+  the pose has read 2 and 11 here since D372; it has been 11 and 19 since the gridless engine — the
+  margin held at 20: the market; emptied: the granary) and `AHouseholdWalksPastAFarMarketToTheGranary`
+  (the same pose at the shipped margin of 4: the granary; the granary empty: the market; a margin of
+  8, the gap itself: the market; 7: the granary). Red-checked. D201's service-area count (*homes this
+  would be the nearest food store for*) is unchanged — it answers whose walk a market shortens,
+  which is still the question.
 - **Half a larder, then back to target:** `fetch_below_share_percent` (50) in `SimConfig`, validated
   between `restock_emergency_percent` and 100. **One bit of state per good per household —
   `Household.ToppingUpFood` / `ToppingUpFirewood`, hashed** — set when the trigger fires, cleared

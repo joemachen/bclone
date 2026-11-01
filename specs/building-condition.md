@@ -93,7 +93,10 @@ Every recommendation below is the decision. Kept in the asked form so the altern
    village that mends before it grows).
 6. **Who repairs.** **Recommended: the builders, from the hut, in this slice**; the builder's hut growing into a
    *workshop* with a carpenter trade and the builder's hammer (D391 deferred the tool because its bonus would fall on a
-   site's ticks) is **a follow-on slice** with its own spec. Alternative: all of it at once.
+   site's ticks) is **a follow-on slice** with its own spec. Alternative: all of it at once. ⚠️ **Redefinition proposed
+   (D670, `handcart.md §5`):** a new workshop building in the smithy's shape with the hut left alone, the carpenter making
+   handcarts first, and **the hammer dropped** — D617 gave every hands-on adult, builders included, a tool once a smithy
+   stands. Joe's call 2 there.
 7. **A ruin's demolition.** **Recommended: pulling down a ruin returns nothing** (`demolition_returns_percent` applies to
    what still stands, and a ruin's timber is gone). Alternative: the normal 50 %.
 
@@ -233,7 +236,8 @@ repair is served. That is the nomads' inheritance.
 
 ### 4.6 Not in this slice, said so
 
-- The **workshop, the carpenter and the builder's hammer** — follow-on (call 6).
+- The **workshop, the carpenter and the builder's hammer** — follow-on (call 6); its shape, redefined, is sketched in
+  `handcart.md §5` (D670), the handcart being what the carpenter is for.
 - **Fire, storm, blight** — §4's own sentence (*telegraphed, legible, answerable*) before any of it.
 - **The library's record decay and keeper** — `tech-tree.md §7c`, lands with its own spec.
 - **House tiers** — read `wears_in_years` per row when they come (a stone cottage wears slower); their own spec.

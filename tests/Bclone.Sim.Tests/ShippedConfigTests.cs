@@ -533,7 +533,15 @@ public sealed class ShippedConfigTests
         // with nothing marked. A proposal may not shut a door in use (`doors.md §4.5`, D622), so four marked buildings and
         // their doorsteps leave the site chooser less ground near the stores; switching that one rule off puts this back at
         // its old bar. Held at the measured price, so a second person lost to marking is a new cause, and this goes red.
-        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak) - 1,
+        //
+        // ⚠️ AND IT WENT RED FOR D671 — THREE PEOPLE, READ AS RESHUFFLING, RECORDED (`logistics.md §5.7`): with `market_detour_ticks`
+        // 4 a household shops at a granary more than four ticks nearer than the stocked market, which is exactly what two marked
+        // granaries out among the homes are. Five valleys read 103 against 106. Swept over the margin: 105 at 1000 (this bar's
+        // own trajectory), 105 at 0, 100 at 2, 103 at 4, 102 at 8 — no order in it. Ten valleys at 4 against 1000: marked 222 → 219
+        // (seed 1 −4, seed 12345 +2, seed 5 −1, seven unchanged), nothing marked 222 → 222; at 2 the unmarked valleys lose eight,
+        // which is the pair layout turning nearest-first and why 4 is the number. Held at THIS measured price now, so a fourth
+        // person lost to marking is a new cause, and this goes red. Joe's to disagree (HANDOFF ⏸️).
+        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak) - 3,
             $"Marking four buildings stalled the villages — they peaked at {marked.Sum(v => v.Peak)} together, "
             + $"against {unmarked.Sum(v => v.Peak)} for the same valleys with nothing marked.");
     }

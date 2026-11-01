@@ -201,7 +201,8 @@ asked the same day; those answers are in the last column.
 
 ### 4.7 Tier 2 — carts, the caravan and the cart path
 
-- ⛔ **Blocked on carts**, which need the workshop + carpenter + hammer slice (D553 call 6), unbuilt.
+- ⛔ **Blocked on carts**, which need the workshop + carpenter + hammer slice (D553 call 6), unbuilt. The handcart and the
+  workshop are sketched in `handcart.md` (D670): the cart a household's good, the workshop a new building; nothing built.
 - ⭐ **A cart makes its path as it drives** (call 8: *"one pass in a direction by a cart makes a path"*). A cart's step
   treads its tile **all the way to a path at once** — the wear a villager's thousand steps would give. No road sites.
 - ⚠️ **Drawn at once, faster next spring** (asked, D587): the path shows the moment the cart passes; its cost enters the

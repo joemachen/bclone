@@ -1,6 +1,103 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED: CLOTHING IS DONE. GATE ITEM 1: DOORS ✅, CLOTHING ✅, THEN LOGISTICS (A MEASUREMENT) AND HOUSE TIERS, IN JOE'S ORDER. NEXT: LOGISTICS, WHEN JOE SAYS SO. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673), LOCAL, NOT PUSHED; `origin/main` = a82c072 (D667). LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE W (WORKSHOP + CARPENTER SPEC) IS RUNNING IN ITS OWN SESSION; THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D667) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D673) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = the merge of `slice/logistics` (D673), local, NOT pushed; `origin/main` = a82c072 (D667).** The slice was five commits —
+> f98de0b (D668: the measurement), 458ba7f (D669: Joe's verdict, the candidates to §5), 1c6c86f (D670: his two picks, the sweep for X
+> and the handcart sketch — docs and harness only), dcb6aa0 (D671: the rule, `market_detour_ticks`, one clause in
+> `BehaviorSystem.NearestShopHolding`, its test, the spec) and c1a4f90 (D672: his six cart calls, docs only) — merged `--no-ff` at
+> his *"Yes, merge"*, the *unmerged* lines corrected inside the merge commit (D640's trap). The merge added doc lines only; the
+> tip's code is dcb6aa0's, which passed the four checks. The tree is clean but for `bclone-tracker.xlsx` (never staged).
+>
+> **▶️ Joe's picks (D670): *"1. Shop at the granary when the market is more than X ticks further … 2. hardcart (workshop and
+> carpenter) … lets just think through what this means across all aspects first."*** The sweep (`logistics.md §5.6`, the
+> instrument's `detour` line on ten villages across two save formats) found the market–storehouse gaps come in two kinds —
+> **3–4 ticks, a market beside the granary** (D372's own layout; the rule must keep sending those to the market), and
+> **5–17 ticks, a second granary out among the homes** in two villages — so **X = 4**: 18 of 148 homes switch and save 10–30
+> ticks on a 29–31-tick round trip; 2 would switch 54, most past a market in sight of the granary. Not a fence (D201): the
+> margin only picks between two stocked shops. **The handcart is `specs/handcart.md`**, a sketch: a household's good parked at
+> the home, spares in the warehouse where tools live (his guess was right), made by a carpenter at a new workshop building
+> with the hammer dropped (D617 gave the builder a tool), gated on the building not a node, three armfuls a trip, worn by
+> trips, slower on grass than on a path, its first pass wearing the line to a path (D587 call 8), a chip beside the home and
+> a rectangle behind the dot. **All six calls made as proposed (D672, `handcart.md §10`)**; nothing of it built; Slice W next.
+>
+> **⚠️ Two things D671 found on the way (`logistics.md §5.7`):** the margin's first draft carried **D372's scrap hole to the
+> granary** (a storehouse "holding any at all" would have taken every trip from a full market with three fish — fixed to *stocked
+> for the trip*, pinned); and **the five-valley ledger fired** (103 marked against 106, bar within one) — swept over X and widened
+> to ten valleys it reads as reshuffling (marked 222 → 219 with seven unchanged, unmarked 222 → 222), so **its bar is re-pinned at
+> three with D671 named, and that reading is his to overturn** (⏸️ below).
+>
+> **The four checks on D671's tree:** suite **1886 / 0 / 5 of 1891 in 15m06** (the run before the ledger's re-pin: 1885 / 1 / 5 in
+> 15m17; D668's: 15m16); view **0 warnings**; probe **67 ✅ 0 ⛔, bar 151, `done.`**; goldens **392, none moved**. Red checks: the
+> clause 2 of 2, the sweep 2 of 2, the scrap case pinned.
+>
+> **✅ D672 — JOE: *"Yes, all six"* — every handcart call stands as proposed (`handcart.md §10`; calls 5 and 6 were either/or
+> and were read as the spec's own proposal: slower on grass, the marketer's cart later). Docs only, no code touched.**
+>
+> **▶️ NEXT — push `main` at his word.** Slice W (the workshop + carpenter spec, `specs/workshop-and-the-carpenter.md`) was started
+> in its own session on 2026-11-01 from a worktree cut at a82c072, *before* this merge — it was told `main` moved and to merge it in;
+> if its branch lacks `specs/handcart.md`, that is why. Then the handcart slice (Slice H), each measured on `ZzLogistics`. Then **house tiers**.
+>
+> **— D669, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D669) — ON WINDOWS.**
+>
+> **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, two commits** — f98de0b
+> (D668: the measurement) and this one (D669: Joe's verdict, the trips split by where they end, §5's open decision). Nothing in
+> `src/`, `tests/` or `data/` changed on the branch; the four checks were run on D668's tree and D669 adds docs and harness
+> lines only (the harness is not compiled by the solution). The tree is clean but for `bclone-tracker.xlsx` (never staged).
+>
+> **⚖️ Joe's verdict on logistics (D669): *"i say look at changing the game"*** — outcome 3 of `logistics.md §6`, a mechanic.
+> Measured before writing it up (§5.5): **every established village of his has exactly one market, for 7–36 homes, no nearer
+> the homes than the granaries** (home → market 8–19 ticks, home → storehouse 9–21, the gap 0–7 either way), so **D372's
+> market-first rule is not the cause** — one market placed once while the housing paint spreads is. A real shopping trip to
+> either store is 17–32 ticks round at the median; the short fetch spells are the well. **The candidates are `DESIGN.md §5`,
+> LOGISTICS — THE MECHANIC, none chosen:** (a) a handcart off the owed workshop slice (recommended, structural), (b) the
+> marketer's round bounded to far homes (half of D372 back), (c) a neighbourhood store (a small market; recommended beside
+> (a)), (d) *nearby* given a meaning (worth 0–7 ticks a trip). Refused on the record: a bigger larder, a bigger armful alone,
+> a porter trade. The legibility sentence (brush and card name the shop walk) rides with whichever lands.
+>
+> **▶️ NEXT — JOE PICKS A CANDIDATE (or orders them); the pick gets its own spec, measured against `logistics.md §5` before a
+> number is typed.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap). Then **house tiers**.
+>
+> **— D668, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D668) — ON WINDOWS.**
+>
+> **`main` = a82c072, the merge of `slice/clothing` (D667), pushed; origin agrees. `slice/logistics` is open off it, local,
+> unpushed, one commit (D668): `specs/logistics.md`, `tools/harness/ZzLogistics.cs`, a README bullet, two stale `DESIGN.md`
+> lines made true, §6 and §7.** Nothing in `src/`, `tests/` or `data/` changed. The tree is clean but for `bclone-tracker.xlsx`
+> (never staged, committed or ignored).
+>
+> **⛳ Where Phase 5 stands (the gate, `DESIGN.md §4`):**
+> - **Item 1 — every Phase 5 item has a verdict.** Joe's four, in his order: ✅ doors (D658) → ✅ clothing (D667) → 📏 **logistics
+>   measured (D668), ⏸️ his call** → **house tiers**. Soil depletion dropped; drought, fire and blight, beer moved to Phase 6 (D656).
+> - **Item 2 — the Phase 5 golden:** ✅ pinned (D648), re-pinned for the tailor (D661).
+> - **Item 3 — the QA checklist Joe walks:** not written; waits for item 1.
+> - **Item 4 — the docs true at the gate:** not started (`content-inventory.md` is `main` at D526).
+> - **Item 5 — the four checks on the merged tree and a played run with no `ERROR`:** last.
+>
+> **📏 Logistics, in one breath (`specs/logistics.md §5`):** §4 said *"only if measured … welcome if play shows them"*. **Play shows
+> them.** In ten of Joe's established villages (17–70 adults, five years run on from his saves) **a fifth of every adult's ticks
+> (12–22 %, median 19.8 %) is the household's shopping** — more than work, delivery and hauling together; a shopping round trip is
+> 12–18 ticks at the median (a day is four), 27–54 % of trips run over four days; the marketer's own trips are 16–29 ticks. The
+> unattended control: 3–13 %, trips 5–9 ticks. **The cause:** 2–5 shops for 7–36 homes, every lived-in home a median 8–18 ticks from
+> the nearest shop (control 4–6) — a home is sited wherever the player painted (D381), and the housing brush's one warning reads the
+> walk to the nearest *forage* (`CanPaintResidential`), not the nearest *shop*, though every household has eaten from a shop since
+> D385. Instrument red-checked 2 of 2. ⚠️ 53 of his 56 saves are older save formats this build refuses; the thirteen at format 8
+> were run in a worktree at a9c6fde (D658) with the same file less the clothing states; forty older ones were not run.
+>
+> **▶️ NEXT — JOE'S CALL, ONE OF THREE (`logistics.md §6`); ask, do not build:** (1) **dropped** — *a fifth of the day shopping is the
+> village I want to watch* (a cozy call, §0.1); (2) **one legibility rule** — the housing brush's warning, the villager's card and the
+> log name the walk to the nearest *shop* (D112's shape: a fence you can see; the market, D372, is the answer the game already has);
+> (3) **a mechanic** as a design thread in `DESIGN.md §5` (the marketer delivering to far homes, a bigger armful for a longer walk, a
+> second store tier). Then merge `slice/logistics` at his word (`--no-ff --no-commit`, D640's trap) and **house tiers** (`DESIGN.md §5`,
+> D206: the 60–80 firewood target is a 6–8× change and must be measured, not typed — `ZzLogistics`'s shape).
+>
+> **Numbers (D668, the four checks on the slice's tree — no code changed):** suite 1885 / 0 / 5 of 1890 in 15m16 (D667's 16m54 on
+> the same code — the machine); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151, `done.`, no Godot left running;
+> goldens grep 392 → 392, none moved.
+>
+> **— D667, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D667) — ON WINDOWS.**
 >
 > **`main` = the merge of `slice/clothing` (D667), pushed; origin agrees. No branch is open** (`slice/clothing` stays local, merged). The tree
 > is clean but for `bclone-tracker.xlsx` (never staged, committed or ignored).
@@ -8699,6 +8796,56 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D670–D671 PAID FOR — A STASH IN A BACKGROUND JOB, A SPEC'S POSE THAT ROTTED, AND THE SCRAP MOVED TO THE GRANARY
+
+- **⛔ A background job that `git stash`es holds every tracked file hostage until it pops.** The sweep's red check stashed the
+  working tree to build the committed instrument against a mutant, and ran two minutes; one Edit to any tracked file in that window
+  would have made the pop a conflict. Nothing was lost — by luck of ordering, not design. *Never stash in a background command.
+  Build the mutant in a worktree, or run the red check in the foreground and wait.*
+- **⚠️ A spec that quotes a test's numbers rots when the engine moves under it.** `storage-and-distribution.md §14.9.7` said the
+  market-first guard poses *a granary 2 ticks away, a stocked market 11*; the pose has been **11 and 19** since the gridless engine,
+  and the eight-tick gap was the thing D671's margin test needed to know. *Quote the pose's shape, not its ticks; or make the test
+  print them and copy the print.*
+- **⛔ THE MARGIN'S FIRST DRAFT MOVED D372'S SCRAP FROM THE COUNTER TO THE GRANARY.** Written against *a storehouse holding any at
+  all* — the tier's own predicate — a granary out among the homes holding **three fish** would take every trip from a full market
+  four ticks further. Found while reading the five-valley ledger's red (which it turned out not to explain — see the next trap);
+  real on its own. The margin applies to a storehouse **stocked for the trip** (`holding(store, aTripsWorth)`), the same bar D372
+  set the market. Pinned by the scrap case in `AHouseholdWalksPastAFarMarketToTheGranary`. *Every rule that picks a store must
+  say which of the two predicates it means.*
+- **⛔ D669's stale-DLL trap, paid again from the other side:** a measurement mutant that stubbed the asserts with a two-parameter
+  no-op tripped `IDE0060` (unused parameter) — an *error* in the test project — the build failed, `--no-build` ran the old DLL, and
+  "ten valleys" printed the old five. The only tell was the seed list. *A mutant must `grep -c` its own new output (a seed, a tag)
+  before its numbers are read; and open a private helper with `internal` for a scratch test rather than stubbing asserts.*
+- **⚠️ THE FIVE-VALLEY LEDGER IS A TRIPWIRE FOR ANY RULE THAT MOVES WHERE AN UNATTENDED VILLAGE SHOPS.** Its bar is *marked
+  within one person of unmarked* over five small valleys, pinned to one trajectory (D625). Two granaries marked out among the
+  homes are the detour margin's own case, so D671 moved two of its five valleys by ±4 and it went red at 103 / 106. Before
+  reading a red there as a price, sweep the knob (the bar's own value must reproduce — 105 did) and widen the seeds (ten:
+  222 → 219, seven unchanged). *A sum of five chaotic peaks is a coin; it says "look", never "how much".*
+
+## ⛔ THE TRAPS D668 PAID FOR — AN IN-PLACE REPLACE THAT PRINTS NOTHING IS A DELETE, AND A SAVE FOLDER IS EIGHT BUILDS DEEP
+
+- **⛔ `perl -i` with an unexported shell variable deleted `DESIGN.md`'s Current-phase line instead of replacing it.** `NEW=path
+  perl -i -ne '... open(F, "<:raw", $ENV{NEW}) ...'` — `NEW` was set, not `export`ed, so `$ENV{NEW}` was undef, the open did not
+  die, `$new` was empty, and the branch that should have printed the new line printed nothing. **The line count went 4740 → 4739
+  and that is the only thing that caught it.** *Rule: after every in-place edit, `wc -l` before and after and `sed -n Np` the
+  line you aimed at; a replace that could print an empty string is a delete with a better name. Export what perl must read, and
+  `die` on an empty payload.*
+- **⚠️ Joe's saves are eight formats deep, and a build reads exactly one.** 53 of his 56 `autosave-1.save`s refused with *"format
+  N, where this build reads 9"*; the first run quietly measured three villages and printed 54 happy lines. **A harness over a saves
+  folder must count the refusals, not the lines.** The format-8 thirteen were read by building the same harness in a worktree at
+  the last commit of that format (a9c6fde, D658) — D664's worktree shape — with the states that did not exist then stripped
+  (`Sewing`, `FetchingACoat`, `TravelingToTailor`); the forty older ones were left, and the spec says so. ⭐ *Read the format of
+  his newest save before promising a number on "his saves".*
+- **⚠️ One compile error on a `.Where(...)` cascades into two nonsense ones on the next lines** (*"cannot convert from method
+  group to object?"* on `shops.Count` — because `shops` had no type). Fix the first error only, rebuild, then read again.
+- **⚠️ A local named `t` inside a loop whose counter is `t` fails the build — and a build that fails leaves the OLD DLL,
+  which `--no-build` then runs** (D669): the format-9 arm printed the previous run's lines and looked finished; only the
+  missing `fetchTo` lines said otherwise. *Grep the build for `Error(s)` AND grep the output for the line the change was
+  supposed to add.*
+- **⭐ The buckets had to split before the number meant anything:** the first cut put the producer's own load to the store
+  (`HaulingToStore`) under *haul*, which made "logistics" 12 % when 4 % of it was production (D385's every-load-to-a-store).
+  *A bucket named for a question must hold only what the question asks; measure, read the long lines, re-cut, then run.*
+
 ## ⛔ THE TRAP D665 FOUND — THE FIRST FOOD HELD DECIDED FOR ALL OF THEM
 
 - **A `break` after the first food held meant a scrap of forage in a lodge kept 2,622 meat from an empty granary** — for a season in
@@ -8946,6 +9093,24 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ✅ ~~⏸️ **THE HANDCART — SIX CALLS, HIS (D670, `specs/handcart.md §10`).**~~ **MADE, ALL SIX AS PROPOSED (D672, 2026-11-01:
+  *"Yes, all six"*).** (d) built (D671), (a) sketched (D670), the calls closed: (1) a cart is a household's good, parked at
+  home, spares in the warehouse ✅; (2) the workshop a new building, the hut left alone, the hammer dropped as an item ✅;
+  (3) gated on the building, no knowledge node ✅; (4) every cart line becomes a path on its first pass (D587's sentence) ✅;
+  (5) slower on grass than on the path ✅ (an either/or, read as the spec's proposal; measured with and without);
+  (6) the marketer's cart later ✅ (the same reading). Next the workshop + carpenter slice (Slice W) gets its spec, then
+  Slice H. Candidates (b) the marketer's bounded round and (c) a neighbourhood store stay in
+  `DESIGN.md §5`, unpicked.
+- ⏸️ **`market_detour_ticks` 4 (D670–D671) IS A MEASURED DEFAULT, NOT A PLAYED ONE.** The sweep says 4 keeps a market beside
+  the granary winning and sends 18 of 148 homes to a nearer granary; 2 would be nearest-first for that layout (and costs the
+  unattended unmarked valleys eight people over ten). His to move after play (`data/sim.config.json`); 0 is nearest-first, a
+  large number is D372 as built.
+- ⏸️ **THE FIVE-VALLEY LEDGER'S BAR MOVED FROM ONE PERSON TO THREE FOR D671 — ON MY READING OF NOISE, HIS TO DISAGREE.**
+  `TheShippedVillageSurvivesBeingAskedToBuild` read 103 marked against 106 unmarked with the margin (bar: within one, D625).
+  Swept over X: 105 / 105 / 100 / 103 / 102 at 1000 / 0 / 2 / 4 / 8; ten valleys at 4: marked 222 → 219 (one −4, one +2, one −1,
+  seven unchanged), unmarked 222 → 222. Two valleys moving opposite ways with eight still is reshuffling, so the bar is held at
+  the measured price with D671 named (`logistics.md §5.7`). If he reads it as a real cost of the margin, the knob is the lever
+  and the bar goes back to one.
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.
