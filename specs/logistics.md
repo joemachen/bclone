@@ -2,9 +2,11 @@
 
 **Decision:** `DESIGN.md §4`, Phase 5: *"Logistics only if measured … a measured pass on long fetch walks is welcome
 if play shows them."* Phase 5 gate item 1, third of Joe's four (D656: doors → clothing → **logistics** → house tiers).
-**Status:** 📏 **MEASURED — NOTHING BUILT (D668, 2026-10-31), ON `slice/logistics`; ⏸️ JOE'S CALL (§6).** This spec is
-the premise and the instrument; §5 holds the numbers (ten of Joe's played villages against five unattended ones, the
-instrument red-checked 2 of 2); §6 is what they can mean and is Joe's to call. **No line of `src/` changed.** *History: the Marketer (D14, D36, D171) and the laborer's hauling (D63, D96)
+**Status:** 📏 **MEASURED — NOTHING BUILT (D668, 2026-10-31), ON `slice/logistics`. ⚖️ JOE'S VERDICT (D669): *"i say look
+at changing the game"* — outcome 3, a mechanic; the candidates are a design thread in `DESIGN.md §5`, none chosen, each to
+be measured here before it is typed.** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
+played villages against five unattended ones, the instrument red-checked 2 of 2; §5.5 says where the trips go). **No
+line of `src/` changed.** Gate item 1's logistics entry is decided; what it becomes is the §5 decision. *History: the Marketer (D14, D36, D171) and the laborer's hauling (D63, D96)
 were built before this question existed; a "porter" trade was refused as already built (D357); §4 has carried this entry
 as "only if measured" since D353.*
 
@@ -147,6 +149,35 @@ grows while the shops stay where they were raised. **And the one warning the bru
 the nearest **forage** — but since D385 (every load to a store, never home) a household eats from the nearest **shop**,
 and nothing on the brush, the card or the log says how far that is.
 
+### 5.5 Where the trips go — one market a village (D669)
+
+Since D372 a household shops at **the nearest market holding the good, anywhere reachable**, and at a storehouse only
+when no market holds it (Joe: *"only go to the granary if there is no market nearby"* — built with *nearby* meaning
+*reachable*, no radius, D201's reasoning). So the instrument was taught where each shopping spell turned round (the
+nearest store within two tiles of its far point):
+
+| village | markets | homes | home → market, median | home → storehouse, median | market trips, median | storehouse trips, median | short spells (the well) |
+|---|---|---|---|---|---|---|---|
+| Ashbourne-fallow-finch-66 | 1 | 11 | 13 | 11 | 219 × **31** | 256 × 17 | 328 × 7 |
+| Ashbourne-rye-rush-18 | 1 | 18 | 18 | 19 | 165 × 32 | 381 × 31 | 510 × 9 |
+| Elderwood-sparrow-brook-12 | 1 | 12 | 8 | 15 | 134 × 17 | 169 × 29 | 259 × 5 |
+| Greyford-brook-lark-24 | 1 | 7 | 12 | 9 | 13 × 18 | 214 × 22 | 226 × 6 |
+| Millbrook-ash-willow-36 | 1 | 13 | 12 | 21 | 110 × 27 | 268 × 31 | 334 × 7 |
+| Oakhaven-ash-otter-53 | 1 | 11 | 14 | 13 | 149 × 24 | 176 × 28 | 323 × 7 |
+| Oakhaven-hazel-pebble-34 | 1 | 17 | 19 | 12 | 3 × 5 | 473 × 29 | 512 × 8 |
+| Ravenscar-sloe-oat-43 | 1 | 8 | 10 | 13 | 133 × 13 | 49 × 23 | 162 × 11 |
+| Willowdale-dove-flint-67 | 1 | 36 | 18 | 16 | 198 × 32 | 489 × 29 | 1,097 × 8 |
+| Willowdale-flint-thrush-27 | 1 | 15 | 13 | 11 | 159 × 31 | 205 × 27 | 262 × 10 |
+
+**Every established village has exactly one market**, for 7 to 36 homes, and it stands no nearer the homes than the
+granaries do: the median gap between the walk to the market and the walk to the nearest storehouse is 0–7 ticks either
+way. **So D372's market-first rule is not the cause** — it costs a tick or two in four villages and saves as many in
+four others. The cause is the one before it: one market, placed once, while the housing paint spreads. A real shopping
+trip to either kind of store is a **17–32-tick round trip at the median, four to eight days**; the short spells (a
+median 5–11 ticks, roughly thirty a home over the five years) are the well trips, every twenty days a household (D427),
+and are not the problem. The five longest trips in the sample are 82–108 ticks (21–27 days), all from the far ends of
+Willowdale-dove-flint-67 and Oakhaven-hazel-pebble-34, 16–29 tiles out.
+
 ### 5.4 What the number is not
 
 - Not the armful (D537 measured `carry_capacity`; the trips an adult-year, 3.9–5.8, are the armful doing its job).
@@ -177,6 +208,12 @@ the second asks for; which of the three it is remains his.**
    does not do, a bigger armful for a longer walk), not a slice, and it goes to §5 of `DESIGN.md` as an open decision
    with the numbers attached. §5 argues it is large and **not** diffuse — one cause, the shop walk — but a mechanic
    (say the marketer delivering to far homes, D171's old shape) is a design call, not a rule, and it is his.
+
+**⚖️ Joe's verdict (D669, 2026-10-31): *"i say look at changing the game"* — outcome 3.** The candidates, with what each
+would cost the pillars and what `ZzLogistics` would have to show before any is typed, are the open decision
+**LOGISTICS — THE MECHANIC** in `DESIGN.md §5`. The legibility rule of outcome 2 is not an alternative to it: whatever
+mechanic lands, the brush and the card still owe the player the sentence (D112), and it is listed there as the
+companion. §7's Definition of Done closes at item 3 with this verdict; the mechanic gets its own spec when he picks one.
 
 ⛔ **Whatever the outcome, the rule stays:** no fence the player cannot see (D112). A fetch that is too long is said on
 the card and in the log before it is forbidden anywhere.

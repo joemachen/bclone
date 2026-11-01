@@ -1,6 +1,27 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668) IS OPEN, LOCAL, ONE COMMIT: LOGISTICS MEASURED, NOTHING BUILT — A FIFTH OF A PLAYED VILLAGE'S ADULT TICKS IS SHOPPING. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS 📏 (JOE'S CALL), THEN HOUSE TIERS. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D669) IS OPEN, LOCAL, TWO COMMITS, UNMERGED: LOGISTICS MEASURED, JOE PICKED "A MECHANIC", THE CANDIDATES ARE `DESIGN.md §5`'S OPEN DECISION. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ⚖️ DECIDED, THEN HOUSE TIERS. NEXT: JOE PICKS A CANDIDATE; MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D668) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D669) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, two commits** — f98de0b
+> (D668: the measurement) and this one (D669: Joe's verdict, the trips split by where they end, §5's open decision). Nothing in
+> `src/`, `tests/` or `data/` changed on the branch; the four checks were run on D668's tree and D669 adds docs and harness
+> lines only (the harness is not compiled by the solution). The tree is clean but for `bclone-tracker.xlsx` (never staged).
+>
+> **⚖️ Joe's verdict on logistics (D669): *"i say look at changing the game"*** — outcome 3 of `logistics.md §6`, a mechanic.
+> Measured before writing it up (§5.5): **every established village of his has exactly one market, for 7–36 homes, no nearer
+> the homes than the granaries** (home → market 8–19 ticks, home → storehouse 9–21, the gap 0–7 either way), so **D372's
+> market-first rule is not the cause** — one market placed once while the housing paint spreads is. A real shopping trip to
+> either store is 17–32 ticks round at the median; the short fetch spells are the well. **The candidates are `DESIGN.md §5`,
+> LOGISTICS — THE MECHANIC, none chosen:** (a) a handcart off the owed workshop slice (recommended, structural), (b) the
+> marketer's round bounded to far homes (half of D372 back), (c) a neighbourhood store (a small market; recommended beside
+> (a)), (d) *nearby* given a meaning (worth 0–7 ticks a trip). Refused on the record: a bigger larder, a bigger armful alone,
+> a porter trade. The legibility sentence (brush and card name the shop walk) rides with whichever lands.
+>
+> **▶️ NEXT — JOE PICKS A CANDIDATE (or orders them); the pick gets its own spec, measured against `logistics.md §5` before a
+> number is typed.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap). Then **house tiers**.
+>
+> **— D668, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D668) — ON WINDOWS.**
 >
 > **`main` = a82c072, the merge of `slice/clothing` (D667), pushed; origin agrees. `slice/logistics` is open off it, local,
 > unpushed, one commit (D668): `specs/logistics.md`, `tools/harness/ZzLogistics.cs`, a README bullet, two stale `DESIGN.md`
@@ -8752,6 +8773,10 @@ Read `git status` after staging, every time.
   his newest save before promising a number on "his saves".*
 - **⚠️ One compile error on a `.Where(...)` cascades into two nonsense ones on the next lines** (*"cannot convert from method
   group to object?"* on `shops.Count` — because `shops` had no type). Fix the first error only, rebuild, then read again.
+- **⚠️ A local named `t` inside a loop whose counter is `t` fails the build — and a build that fails leaves the OLD DLL,
+  which `--no-build` then runs** (D669): the format-9 arm printed the previous run's lines and looked finished; only the
+  missing `fetchTo` lines said otherwise. *Grep the build for `Error(s)` AND grep the output for the line the change was
+  supposed to add.*
 - **⭐ The buckets had to split before the number meant anything:** the first cut put the producer's own load to the store
   (`HaulingToStore`) under *haul*, which made "logistics" 12 % when 4 % of it was production (D385's every-load-to-a-store).
   *A bucket named for a question must hold only what the question asks; measure, read the long lines, re-cut, then run.*
@@ -9003,10 +9028,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **LOGISTICS — MEASURED, HIS VERDICT OWED (D668, `specs/logistics.md §5–§6`).** A fifth of every adult's ticks in his played
-  villages is the household's shopping, because homes stand a median 8–18 ticks from the nearest shop and the housing brush
-  warns about the forage walk, not the shop walk. One of three closes gate item 1's third entry: dropped in his words; one
-  legibility rule (the brush, the card and the log name the shop walk); or a mechanic as a §5 design thread. Nothing built.
+- ⏸️ **LOGISTICS — THE MECHANIC, HIS PICK OWED (D669, `DESIGN.md §5`).** ✅ ~~His verdict~~ — *"i say look at changing the
+  game"* (D669). Now his: which candidate — (a) the handcart off the workshop slice, (b) the marketer's bounded round, (c) a
+  neighbourhood store, (d) *nearby* given a meaning — or an order of them. Each gets a spec and is measured on `ZzLogistics`
+  against `logistics.md §5` before a number is typed. Nothing built.
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.

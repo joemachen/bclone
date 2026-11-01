@@ -156,6 +156,24 @@ public sealed class ZzLogistics
 
     private sealed record Spell(Bucket Bucket, int Ticks, string Who, GridPos From, GridPos Far, int FarDist, int Year);
 
+    /// <summary>Which kind of store a walk turned round at: the nearest store within two tiles of its far point (D669).</summary>
+    private static string TurnedAt(SimWorld world, GridPos far)
+    {
+        StoreBuilding? best = null;
+        int bestD = int.MaxValue;
+        foreach (StoreBuilding s in world.StoreBuildings)
+        {
+            int d = Cheb(far, s.Tile);
+            if (d < bestD)
+            {
+                bestD = d;
+                best = s;
+            }
+        }
+
+        return best is null || bestD > 2 ? "elsewhere" : best.Kind == StoreKind.Market ? "market" : "storehouse";
+    }
+
     private static int Cheb(GridPos a, GridPos b) => Math.Max(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
 
     private void Run(SimLoop loop, string label, int years, Action? atYearThree)
@@ -175,6 +193,7 @@ public sealed class ZzLogistics
         }
 
         var longest = new List<Spell>();
+        var fetchBy = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
         var open = new Dictionary<Villager, Open>(ReferenceEqualityComparer.Instance);
         int yearShown = world.Clock.Year;
         long t = 0;
@@ -188,6 +207,17 @@ public sealed class ZzLogistics
 
             int ticks = (int)(now - o.Start);
             spells[o.Bucket].Add(ticks);
+            if (o.Bucket == Bucket.Fetch && ticks > 1)
+            {
+                string at = TurnedAt(world, o.Far);
+                if (!fetchBy.TryGetValue(at, out List<int>? list))
+                {
+                    fetchBy[at] = list = new List<int>();
+                }
+
+                list.Add(ticks);
+            }
+
             if (o.Bucket is Bucket.Fetch or Bucket.Haul)
             {
                 longest.Add(new Spell(o.Bucket, ticks, v.FullName, o.From, o.Far, o.FarDist, o.Year));
@@ -294,9 +324,20 @@ public sealed class ZzLogistics
             _o.WriteLine($"ZZG {label} long {s.Bucket} {s.Ticks} ticks {s.Who} Y{s.Year} from ({s.From.X},{s.From.Y}) out to ({s.Far.X},{s.Far.Y}) {s.FarDist} tiles");
         }
 
-        // Why a fetch is as long as it is: every lived-in home's walk to the nearest store holding any food, at the end.
+        // D669: where the shopping trips turned round — a market or a storehouse — since D372 sends a household to the
+        // nearest MARKET holding the good anywhere reachable, and to a storehouse only when no market holds it.
+        foreach ((string at, List<int> s) in fetchBy)
+        {
+            s.Sort();
+            _o.WriteLine($"ZZG {label} fetchTo {at} n {s.Count} median {s[s.Count / 2]} p90 {s[Math.Min(s.Count - 1, (int)(s.Count * 0.9))]} max {s[^1]}");
+        }
+
+        // Why a fetch is as long as it is: every lived-in home's walk to the nearest store holding any food, at the end —
+        // and separately to the nearest market and the nearest storehouse holding food, the two D372 chooses between.
         var shops = world.StoreBuildings.Where(s => world.FoodIn(s.Store) > 0).ToList();
         var walks = new List<int>();
+        var toMarket = new List<int>();
+        var toStorehouse = new List<int>();
         foreach (Household h in world.Households)
         {
             if (h.HomeTile is not GridPos home || !world.Villagers.Any(v => v.Alive && v.HouseholdId == h.Id))
@@ -304,23 +345,48 @@ public sealed class ZzLogistics
                 continue;
             }
 
-            int best = int.MaxValue;
+            int best = int.MaxValue, market = int.MaxValue, storehouse = int.MaxValue;
             foreach (StoreBuilding s in shops)
             {
-                best = Math.Min(best, world.TravelCost.TicksBetween(home, s.Tile));
+                int walk = world.TravelCost.TicksBetween(home, s.Tile);
+                best = Math.Min(best, walk);
+                if (s.Kind == StoreKind.Market)
+                {
+                    market = Math.Min(market, walk);
+                }
+                else
+                {
+                    storehouse = Math.Min(storehouse, walk);
+                }
             }
 
             if (best != int.MaxValue)
             {
                 walks.Add(best);
             }
+
+            if (market != int.MaxValue)
+            {
+                toMarket.Add(market);
+            }
+
+            if (storehouse != int.MaxValue)
+            {
+                toStorehouse.Add(storehouse);
+            }
         }
 
         walks.Sort();
+        toMarket.Sort();
+        toStorehouse.Sort();
+        int markets = shops.Count(s => s.Kind == StoreKind.Market);
         _o.WriteLine(walks.Count == 0
-            ? $"ZZG {label} shops {shops.Count} homes 0"
-            : $"ZZG {label} shops {shops.Count} homes {walks.Count} homeToNearestShopTicks median {walks[walks.Count / 2]} "
-              + $"p90 {walks[Math.Min(walks.Count - 1, (int)(walks.Count * 0.9))]} max {walks[^1]}");
+            ? $"ZZG {label} shops {shops.Count} markets {markets} homes 0"
+            : $"ZZG {label} shops {shops.Count} markets {markets} homes {walks.Count} homeToNearestShopTicks median {walks[walks.Count / 2]} "
+              + $"p90 {walks[Math.Min(walks.Count - 1, (int)(walks.Count * 0.9))]} max {walks[^1]}"
+              + $" toMarket {Med(toMarket)} toStorehouse {Med(toStorehouse)}");
+
+        static string Med(List<int> s) => s.Count == 0 ? "none" : $"median {s[s.Count / 2]} p90 {s[Math.Min(s.Count - 1, (int)(s.Count * 0.9))]} max {s[^1]}";
     }
 
     private static string Columns(long[] ticks, long total)
