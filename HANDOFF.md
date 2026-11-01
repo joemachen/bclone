@@ -1,6 +1,36 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) ON A SIDE-SESSION BRANCH WITH `main` MERGED IN — NOTHING BUILT, FIVE CALLS HIS. NEXT: HIS CALLS ON W, THEN BUILD W, THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/logistics` (D673) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) ON A SIDE-SESSION BRANCH WITH `main` MERGED IN — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` — ⏸️ THE NUMBER STILL HIS, PROPOSAL 2,500), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NEXT: HIS NUMBER, THEN BUILD W, THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D674) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D675) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = 421a372 (the `slice/logistics` merge, D673, plus one docs commit), pushed; origin agrees. This branch
+> (`claude/musing-rhodes-b6ffea`) is three docs-only commits past it:** the Slice W spec (c5677cd), `main` merged in with the
+> entry renumbered D674 (d5f60ab), and this commit — **Joe's five calls on the spec answered (D675)**, relayed by the session that
+> asked him. Nothing in `src/`, `data/` or `tests/`; a throwaway probe was written, run under `--filter` and deleted. **Merge the
+> branch into `main` at Joe's word (`--no-ff`).** The tree is clean but for `bclone-tracker.xlsx`.
+>
+> **✅ Joe's answers (`workshop-and-the-carpenter.md §11`):** **(1) the Workshop is learned by felling wood** — *"does anything
+> currently trigger on a certain amount of trees/wood/lumber harvested? If not, perhaps the workshop can appear on that — but I'd
+> want it to be a larger number than anything else we currently have in-game."* Nothing did; `SimWorld.LogsEverFelled` exists,
+> saved and **unhashed because nothing read it**. Specced as `workshop_unlock_logs` in the quarry's shape (a `WhyNotYet` arm, a
+> `TechCondition`, a node, `HowFar`, `LearnedByDoing`, a learned button with its `IsKnown` arm — `filters:` catches a missing
+> one). ⏸️ **THE NUMBER IS HIS AND OPEN — proposal 2,500** (his villages fell 70–100 logs a year, 2,600–4,500 after 25–50 years;
+> the largest unlock today is `mill_unlock_wheat` 5,000, a generation away for him). ⛔ The counter becomes state and must be
+> hashed; the spec recommends **hashing it densely — every golden moves once, proven by switching its lines off** — over a
+> learned flag (goldens hold, the hash has a gap); **his to pick with the number.** Measured (§4.1b): the fifty-year goldens read
+> 1,602–1,770 logs felled at year 50, the Phase 5 pose 1,050 at 20 — **no golden run crosses 2,500**, so none changes behaviour.
+> **(2)** no shipped `handcarts` limit. **(3) `Workplace.MakeGood` now, save format 9 → 10** — his format-9 saves refused, and
+> he said *"I don't mind starting a new game — that's actually my favourite part."* `save-load.md §4` records it. **(4)** the
+> carpenter after Tailor, before Quarrier. **(5)** every number a proposal until §10's harness table is filled.
+>
+> **▶️ NEXT — Joe's number for `workshop_unlock_logs` and his word on the hash choice (⏸️ OPEN below); then build W, TDD per
+> §9, §10's table before the json is typed; then Slice H (`handcart.md`), measured on `ZzLogistics`.** This branch merges to
+> `main` at his word.
+>
+> **The four checks were not run for D675** — docs only; they stand on D671's tree (suite 1886 / 0 / 5 of 1891 in 15m06; view 0
+> warnings; probe 67 ✅ 0 ⛔, bar 151, `done.`; goldens 392, none moved), as D672's, D673's and D674's did.
+>
+> **— D674, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-11-01 (D674) — ON WINDOWS.**
 >
 > **`main` = the merge of `slice/logistics` (D673, 4ee678e) plus one docs commit (421a372), pushed; origin agrees. This work sits on a
 > side session's branch (`claude/musing-rhodes-b6ffea`), two commits past `main`:** the spec commit (c5677cd, written on
@@ -9143,8 +9173,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SLICE W — THE WORKSHOP AND THE CARPENTER: FIVE CALLS, HIS (D674, `specs/workshop-and-the-carpenter.md §11`), EACH WITH A
-  RECOMMENDATION; NOTHING BUILT UNTIL HE ANSWERS.** (1) The workshop **on the bar from the founding** (recommended: the gate is the
+- ⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
+  §4.1a`).** Joe made the workshop *learned by felling wood* and wants the number *"larger than anything else we currently have
+  in-game"*; his villages fell 70–100 logs a year and stand at 2,600–4,500 after 25–50 years (one at 6,618); the largest unlock
+  today is `mill_unlock_wheat` 5,000. **Proposal 2,500** until he says. **The counter must then be hashed:** densely (every golden
+  moves once, proven by its parent — recommended) or as a learned flag (goldens hold; two villages at 100 and 2,400 logs hash alike
+  and diverge later). No golden run crosses 2,500 or 5,000 (§4.1b), so the number does not change any golden's behaviour.
+- ✅ ~~⏸️ **SLICE W — THE WORKSHOP AND THE CARPENTER: FIVE CALLS, HIS (D674, `specs/workshop-and-the-carpenter.md §11`), EACH WITH A
+  RECOMMENDATION; NOTHING BUILT UNTIL HE ANSWERS.**~~ **ANSWERED (D675, 2026-11-01), relayed by the session that asked him:** (1)
+  **learned by felling wood** — neither of the two offered (the number above is still his); (2) **no shipped limit** ✅ as recommended;
+  (3) **the `MakeGood` field now, save format 10** — *not* as recommended; his format-9 saves refused: *"I don't mind starting a new
+  game — that's actually my favourite part"*; (4) **after Tailor** ✅; (5) **every number a proposal until §10's table** ✅. The
+  questions as they were put: (1) The workshop **on the bar from the founding** (recommended: the gate is the
   building alone, Joe's D672 call 3, and the measured problem is in every established village), or a civic stop at N households?
   (2) **No shipped `handcarts` starting limit** (recommended: clothing's precedent, D660 — a typed one is hashed and moves every
   golden), or a number typed and every golden re-pinned once? (3) **No `Workplace.MakeGood` field until a second product**

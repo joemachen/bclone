@@ -65,7 +65,7 @@ One file, holding:
 
 | Part | What | Why |
 |---|---|---|
-| `format` | an integer, starting at 1 | §7: a different number is refused |
+| `format` | an integer, starting at 1 — **9 today (D660, the coat); 10 is the next, planned by Slice W (D675): `make_good` on every workplace, the carpenter's *Makes:* setting (`workshop-and-the-carpenter.md §4.3`) — every format-9 save, Joe's own included, is then refused, and he has accepted that (*"I don't mind starting a new game — that's actually my favourite part"*)** | §7: a different number is refused |
 | `build` | the `VERSION` that wrote it (`0.0.1` today) | said on the load list and in a refusal |
 | `share_code` | `NewGame.ShareCode` — the seed and every new-game row | the config is rebuilt from it (below) |
 | `village_name` | the name the player gave | never hashed, never in the share code |
