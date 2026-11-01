@@ -194,5 +194,7 @@ against a number from an older commit.
   (buffers, heaps, materials, hay, the post) / shelter / home / other. `ZZG … end` sums the run; `ZZG … spells <bucket>` gives
   spells, spells an adult-year, median / p90 / max ticks and the share over one, two and four days (a day is 4 ticks);
   `ZZG … long` the five longest fetch-or-haul spells (who, from home, how far out); `ZZG … shops` every lived-in home's walk
-  to the nearest store holding food. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
+  to the nearest store holding food; `ZZG … detour` (D670) the sweep for `market_detour_ticks` — for X in 0, 2, 4, 6, 8,
+  12, how many homes would walk to a storehouse because the market is more than X one-way ticks further, and the median /
+  p90 / max ticks each would save, read off the end state with no sim change. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
   while nothing else (a meal does not change state; shelter does) interrupts it. Copy in, `-c Release --filter ZzLogistics`, delete.

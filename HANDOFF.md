@@ -1,6 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D669) IS OPEN, LOCAL, TWO COMMITS, UNMERGED: LOGISTICS MEASURED, JOE PICKED "A MECHANIC", THE CANDIDATES ARE `DESIGN.md §5`'S OPEN DECISION. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ⚖️ DECIDED, THEN HOUSE TIERS. NEXT: JOE PICKS A CANDIDATE; MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/clothing` (D667), PUSHED. `slice/logistics` (D668–D671) IS OPEN, LOCAL, UNMERGED: LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, SIX CALLS HIS). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. NEXT: HIS SIX CART CALLS; MERGE AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-10-31 (D669) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D670–D671) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, four commits** — f98de0b
+> (D668: the measurement), 458ba7f (D669: Joe's verdict, the candidates to §5), then D670 (his two picks: the sweep for X and
+> the handcart sketch — docs and harness only) and D671 (the rule: `market_detour_ticks`, one clause in
+> `BehaviorSystem.NearestShopHolding`, its test, the spec). The tree is clean but for `bclone-tracker.xlsx` (never staged).
+>
+> **▶️ Joe's picks (D670): *"1. Shop at the granary when the market is more than X ticks further … 2. hardcart (workshop and
+> carpenter) … lets just think through what this means across all aspects first."*** The sweep (`logistics.md §5.6`, the
+> instrument's `detour` line on ten villages across two save formats) found the market–storehouse gaps come in two kinds —
+> **3–4 ticks, a market beside the granary** (D372's own layout; the rule must keep sending those to the market), and
+> **5–17 ticks, a second granary out among the homes** in two villages — so **X = 4**: 18 of 148 homes switch and save 10–30
+> ticks on a 29–31-tick round trip; 2 would switch 54, most past a market in sight of the granary. Not a fence (D201): the
+> margin only picks between two stocked shops. **The handcart is `specs/handcart.md`**, a sketch: a household's good parked at
+> the home, spares in the warehouse where tools live (his guess was right), made by a carpenter at a new workshop building
+> with the hammer dropped (D617 gave the builder a tool), gated on the building not a node, three armfuls a trip, worn by
+> trips, slower on grass than on a path, its first pass wearing the line to a path (D587 call 8), a chip beside the home and
+> a rectangle behind the dot. **Six calls are his (`handcart.md §10`)**; nothing of it built; blocked on the workshop slice.
+>
+> **▶️ NEXT — JOE'S SIX CART CALLS, then the workshop + carpenter slice (its own spec), then the handcart slice, each measured
+> on `ZzLogistics`.** Merge `slice/logistics` to `main` at his word (`--no-ff --no-commit`, D640's trap). Then **house tiers**.
+>
+> **— D669, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-10-31 (D669) — ON WINDOWS.**
 >
 > **`main` = a82c072 (D667), pushed; origin agrees. `slice/logistics` is open off it, local, unpushed, two commits** — f98de0b
 > (D668: the measurement) and this one (D669: Joe's verdict, the trips split by where they end, §5's open decision). Nothing in
@@ -9028,10 +9051,16 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **LOGISTICS — THE MECHANIC, HIS PICK OWED (D669, `DESIGN.md §5`).** ✅ ~~His verdict~~ — *"i say look at changing the
-  game"* (D669). Now his: which candidate — (a) the handcart off the workshop slice, (b) the marketer's bounded round, (c) a
-  neighbourhood store, (d) *nearby* given a meaning — or an order of them. Each gets a spec and is measured on `ZzLogistics`
-  against `logistics.md §5` before a number is typed. Nothing built.
+- ⏸️ **THE HANDCART — SIX CALLS, HIS (D670, `specs/handcart.md §10`).** ✅ ~~His pick~~ — (d) built (D671) and (a) sketched.
+  Now his, each open until he says: (1) a cart is a household's good, parked at home, spares in the warehouse; (2) the
+  workshop a new building, the hut left alone, the hammer dropped as an item; (3) gated on the building, no knowledge node;
+  (4) every cart line becomes a path on its first pass (D587's sentence) — the look he wants?; (5) slower on grass than on
+  the path, or measure the flat cart first; (6) the marketer's cart in the handcart slice or later. Then the workshop +
+  carpenter slice gets its spec. Candidates (b) the marketer's bounded round and (c) a neighbourhood store stay in
+  `DESIGN.md §5`, unpicked.
+- ⏸️ **`market_detour_ticks` 4 (D670–D671) IS A MEASURED DEFAULT, NOT A PLAYED ONE.** The sweep says 4 keeps a market beside
+  the granary winning and sends 18 of 148 homes to a nearer granary; 2 would be nearest-first for that layout. His to move
+  after play (`data/sim.config.json`); 0 is nearest-first, a large number is D372 as built.
 - ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.

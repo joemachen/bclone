@@ -76,7 +76,9 @@ silently true. (A tool left on the ground where somebody fell is a later kindnes
 fisher, hunter, forager — true; marketer — false; builder — false, in this slice.** A builder's
 bonus would be on a site's work ticks, which is a second seam (§3.4); the builder takes a hammer
 when Phase 5's maintenance item grows the builder's hut into a workshop. Written down here so it
-is a decision and not an omission.
+is a decision and not an omission. *(D617 since gave the builder a tool like every hands-on adult
+once a smithy stands; `handcart.md §5` proposes dropping the hammer as a separate item for that
+reason, D670 — Joe's call.)*
 
 > ⭐ **SUPERSEDED BY §10 (D617):** builders and herdsmen carry a tool, and laborers take one the trades can spare. The
 > column keeps saying which trades — the marketer and the merchant say no, because their work is carrying.

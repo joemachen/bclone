@@ -2,9 +2,11 @@
 
 **Decision:** `DESIGN.md §4`, Phase 5: *"Logistics only if measured … a measured pass on long fetch walks is welcome
 if play shows them."* Phase 5 gate item 1, third of Joe's four (D656: doors → clothing → **logistics** → house tiers).
-**Status:** 📏 **MEASURED — NOTHING BUILT (D668, 2026-10-31), ON `slice/logistics`. ⚖️ JOE'S VERDICT (D669): *"i say look
-at changing the game"* — outcome 3, a mechanic; the candidates are a design thread in `DESIGN.md §5`, none chosen, each to
-be measured here before it is typed.** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
+**Status:** 📏 **MEASURED (D668, 2026-10-31), ON `slice/logistics`. ⚖️ JOE'S VERDICT (D669): *"i say look
+at changing the game"* — outcome 3, a mechanic; the candidates are a design thread in `DESIGN.md §5`, each to
+be measured here before it is typed. ▶️ HIS PICKS (D670, 2026-11-01): (d) *nearby* given a meaning — swept in §5.6,
+`market_detour_ticks` 4, built as D671; and (a) the handcart, thought through across every aspect in `specs/handcart.md`
+(a sketch, six calls his, blocked on the workshop slice).** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
 played villages against five unattended ones, the instrument red-checked 2 of 2; §5.5 says where the trips go). **No
 line of `src/` changed.** Gate item 1's logistics entry is decided; what it becomes is the §5 decision. *History: the Marketer (D14, D36, D171) and the laborer's hauling (D63, D96)
 were built before this question existed; a "porter" trade was refused as already built (D357); §4 has carried this entry
@@ -185,6 +187,43 @@ Willowdale-dove-flint-67 and Oakhaven-hazel-pebble-34, 16–29 tiles out.
   its shoppers walked to shops with nothing — the far end of the same mechanism, not a different one.
 - Not winter alone: the shares are year-round; D589's winter is 75 % at a fire, and shelter is 1.4–3.6 % here.
 
+### 5.6 The sweep for *nearby* — `market_detour_ticks` (D670)
+
+Joe picked candidate (d) — *"Shop at the granary when the market is more than X ticks further"* — and (a) to think
+through (`handcart.md`). Before X was typed the instrument was taught to answer, from each village's end state and
+without a sim change, **how many lived-in homes would switch to the storehouse at each X, and how many one-way ticks each
+would save** (`ZZG … detour`; a home counts only when it can reach both a market and a storehouse holding food):
+
+| village | homes | market nearer | X = 0 | X = 2 | X = 4 | X = 6 | X = 8 | X = 12 |
+|---|---|---|---|---|---|---|---|---|
+| Ashbourne-fallow-finch-66 | 11 | 2 | 8 × 4 | 6 × 4 | — | — | — | — |
+| Ashbourne-rye-rush-18 | 18 | 12 | — | — | — | — | — | — |
+| Elderwood-sparrow-brook-12 | 12 | 9 | 2 × 5 | 1 × 5 | 1 × 5 | — | — | — |
+| Greyford-brook-lark-24 | 7 | 0 | 7 × 3 | 5 × 4 | — | — | — | — |
+| Millbrook-ash-willow-36 | 13 | 13 | — | — | — | — | — | — |
+| Oakhaven-ash-otter-53 | 11 | 3 | 8 × 3 | 4 × 4 | 1 × 6 | — | — | — |
+| Oakhaven-hazel-pebble-34 | 17 | 4 | 13 × 7 | 10 × 10 | 10 × 10 | 7 × 10 | 6 × 11 | 1 × 15 |
+| Ravenscar-sloe-oat-43 | 8 | 7 | 1 × 1 | — | — | — | — | — |
+| Willowdale-dove-flint-67 | 36 | 5 | 29 × 3 | 22 × 3 | — | — | — | — |
+| Willowdale-flint-thrush-27 | 15 | 6 | 8 × 11 | 6 × 11 | 6 × 11 | 5 × 11 | 5 × 11 | 2 × 17 |
+| **all ten** | **148** | **61** | **76** | **54** | **18** | **12** | **11** | **3** |
+
+*homes that switch × median one-way ticks saved; a day is 4 ticks.*
+
+**The gaps come in two kinds.** In six villages most homes have the market **3–4 ticks further** than a storehouse — a
+market standing beside the granary, the pair's footprints apart, which is the layout D372 was written for and meant the
+market to win (*"bum rushing the granary"*). In two villages (Willowdale-flint-thrush-27, Oakhaven-hazel-pebble-34) and a
+home or two elsewhere, a storehouse is **5–17 ticks nearer** — a second granary built out among the homes while the one
+market stayed where it was placed. **X = 4 is the knee:** below it the rule is nearest-first again for the pair layout
+(54 homes switch, 36 of them to save 3–4 ticks past a market they can see from the granary's door); at 4, **18 homes in
+four villages switch and save 5–15 one-way ticks, 10–30 on a 29–31-tick round trip**, and the market beside the granary
+still takes every trip. At 6 and beyond the saving thins (12, 11, 3 homes) without a reason to prefer it. **So
+`market_detour_ticks` 4**: a round-trip detour of a full two days is where a market stops being *nearby*. By the table's
+arithmetic it takes ~8 % off the shopping ticks of the ten villages (X = 2 would take ~17 %, at the price above); the
+live re-run with the rule is §5.7. ⚠️ What this does not touch: the household's trips are still consumption ÷ armful
+(D537), and this moves only *where* some of them turn round — the handcart (`handcart.md`) is the candidate that moves
+*how many*.
+
 ---
 
 ## 6. What the numbers can mean — Joe's call
@@ -214,6 +253,8 @@ would cost the pillars and what `ZzLogistics` would have to show before any is t
 **LOGISTICS — THE MECHANIC** in `DESIGN.md §5`. The legibility rule of outcome 2 is not an alternative to it: whatever
 mechanic lands, the brush and the card still owe the player the sentence (D112), and it is listed there as the
 companion. §7's Definition of Done closes at item 3 with this verdict; the mechanic gets its own spec when he picks one.
+**He picked two (D670): (d) now — the sweep is §5.6, the rule `storage-and-distribution.md §14.9.7` — and (a) to think
+through first, which is `handcart.md`.**
 
 ⛔ **Whatever the outcome, the rule stays:** no fence the player cannot see (D112). A fetch that is too long is said on
 the card and in the log before it is forbidden anywhere.

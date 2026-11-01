@@ -115,7 +115,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 | Warehouse | `#8a7a63` + crates | ✅ | Stock seen (B14) | 🟨 |
 | Market | `MarketColour` `#c98f4a` + crates | ✅ | Stalls, stock (B14) | 🟨 |
 | Stockpile | ⚠️ draws in **MarketColour** — no colour of its own (`VillageMap.cs:262`) | ✅ | Stock heaps | 🟨 |
-| Founders' cart | ⚠️ draws in **MarketColour** — a store quad, no cart | — | A cart | 🟨 |
+| Founders' cart | ⚠️ draws in **MarketColour** — a store quad, no cart | — | A cart; a colour of its own, shared with the handcart (`handcart.md §8`, D670) | 🟨 |
 | Builder's hut | ⚠️ **falls through to MarketColour** (`VillageMap.cs:8203`, `_ => MarketColour`) | ✅ | — | 🟨 |
 | Woodcutter's hut | `#9a6b3f` | ✅ | Log pile? | 🟨 |
 | Forager's hut | `#5aa04a` (the berry colour) | ✅ | — | 🟨 |
@@ -182,7 +182,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 | Fishing boats | ⬜ | — | — | ⬜ |
 | Overland caravan, cart road | ⬜ | — | blocked on carts (`trade.md §4.7`) | 💭 |
 | Smoke, fire, chimney | ⬜ — none anywhere | Per working building, winter hearths | B11 | ⬜ |
-| Tools on the ground, carts | ⬜ | — | — | ⬜ |
+| Tools on the ground, carts | ⬜ | — | The handcart is sketched (`handcart.md §8`, D670): a rectangle trailing the pushing villager's dot, a chip beside the home when parked, a crate in the warehouse | 💭 |
 | Doorsteps and the plaza | Drawn by the trail network (D605) | — | B6 | 🟨 |
 | Graves | ⬜ | Growing cemetery (D35) | — | 💭 |
 

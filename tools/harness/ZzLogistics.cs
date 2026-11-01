@@ -338,6 +338,7 @@ public sealed class ZzLogistics
         var walks = new List<int>();
         var toMarket = new List<int>();
         var toStorehouse = new List<int>();
+        var pairs = new List<(int market, int storehouse)>();
         foreach (Household h in world.Households)
         {
             if (h.HomeTile is not GridPos home || !world.Villagers.Any(v => v.Alive && v.HouseholdId == h.Id))
@@ -374,6 +375,11 @@ public sealed class ZzLogistics
             {
                 toStorehouse.Add(storehouse);
             }
+
+            if (market != int.MaxValue && storehouse != int.MaxValue)
+            {
+                pairs.Add((market, storehouse));
+            }
         }
 
         walks.Sort();
@@ -385,6 +391,23 @@ public sealed class ZzLogistics
             : $"ZZG {label} shops {shops.Count} markets {markets} homes {walks.Count} homeToNearestShopTicks median {walks[walks.Count / 2]} "
               + $"p90 {walks[Math.Min(walks.Count - 1, (int)(walks.Count * 0.9))]} max {walks[^1]}"
               + $" toMarket {Med(toMarket)} toStorehouse {Med(toStorehouse)}");
+
+        // D670's SWEEP for `market_detour_ticks` (candidate (d), DESIGN §5): for each X, the homes that would walk to
+        // the storehouse because the market is more than X one-way ticks further, and the one-way ticks each saves —
+        // a static estimate from the end state, no sim change, so it runs on every format the harness can open.
+        if (pairs.Count > 0)
+        {
+            int marketNearer = pairs.Count(p => p.market < p.storehouse);
+            var line = new System.Text.StringBuilder($"ZZG {label} detour homesWithBoth {pairs.Count} marketNearer {marketNearer}");
+            foreach (int x in new[] { 0, 2, 4, 6, 8, 12 })
+            {
+                var saved = pairs.Where(p => p.market > p.storehouse + x).Select(p => p.market - p.storehouse).ToList();
+                saved.Sort();
+                line.Append($" X{x} switch {saved.Count} saved {Med(saved)}");
+            }
+
+            _o.WriteLine(line.ToString());
+        }
 
         static string Med(List<int> s) => s.Count == 0 ? "none" : $"median {s[s.Count / 2]} p90 {s[Math.Min(s.Count - 1, (int)(s.Count * 0.9))]} max {s[^1]}";
     }
