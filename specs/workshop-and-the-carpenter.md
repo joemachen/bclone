@@ -1,6 +1,6 @@
 # Spec: The Workshop, and the Carpenter who makes the handcart — Slice W
 
-**Decisions:** D673 (this document). It builds on D672 (Joe: *"Yes, all six"* — every call in `handcart.md §10`),
+**Decisions:** D674 (this document). It builds on D672 (Joe: *"Yes, all six"* — every call in `handcart.md §10`),
 D670 (the handcart thought through; `handcart.md §5` redefines this slice), D553 call 6 (the slice as first owed:
 *the builder's hut growing into a workshop with a carpenter trade and the builder's hammer* — redefined here, see §8),
 D617 (every hands-on adult takes a tool once a smithy stands — why there is no hammer), D391 / D446 (the smithy and the
@@ -9,7 +9,7 @@ D522 / D659 (the `Batch` shape: mill, oven, tailor's shop — the third of its k
 limit stops the work), D109 (the player staffs), D62 (the player's ceiling over a derived floor), D382 (footprints
 per building type), D392 (a skill row is safe to add), D291 (the hash is sparse over goods), D510 (an older save is
 refused, never half-loaded), D660 (a typed starting limit is hashed and moves every golden).
-**Status:** 📝 **SPEC WRITTEN, NOTHING BUILT (D673, 2026-11-01).** No code, no data, no tests. **Every number in
+**Status:** 📝 **SPEC WRITTEN, NOTHING BUILT (D674, 2026-11-01).** No code, no data, no tests. **Every number in
 this document is a proposal until it is measured** — on the harness in §10 before it is typed into
 `data/sim.config.json`, and on `ZzLogistics` when Slice H gives the cart something to do. Owner: Joe + Claude Code.
 
@@ -184,7 +184,7 @@ batch trade's is.
   re-pinned once with this line as the cause. The config comment, in its own voice, proposed:
 
   ```jsonc
-  // HANDCARTS (workshop-and-the-carpenter.md 4.4, D673): no starting limit, as
+  // HANDCARTS (workshop-and-the-carpenter.md 4.4, D674): no starting limit, as
   // clothing (D660) -- a set limit is hashed and moves every golden. With none
   // set the carpenter makes one a household and one spare, and stops. The
   // panel's row is the ceiling if Joe wants one; the demand is one a household.

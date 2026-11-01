@@ -2,11 +2,11 @@
 
 **Decision:** `DESIGN.md §4`, Phase 5: *"Logistics only if measured … a measured pass on long fetch walks is welcome
 if play shows them."* Phase 5 gate item 1, third of Joe's four (D656: doors → clothing → **logistics** → house tiers).
-**Status:** 📏 **MEASURED (D668, 2026-10-31), ON `slice/logistics`. ⚖️ JOE'S VERDICT (D669): *"i say look
+**Status:** 📏 **MEASURED (D668, 2026-10-31); THE SLICE MERGED INTO `main` (D673, 2026-11-01). ⚖️ JOE'S VERDICT (D669): *"i say look
 at changing the game"* — outcome 3, a mechanic; the candidates are a design thread in `DESIGN.md §5`, each to
 be measured here before it is typed. ▶️ HIS PICKS (D670, 2026-11-01): (d) *nearby* given a meaning — swept in §5.6,
 `market_detour_ticks` 4, built as D671; and (a) the handcart, thought through across every aspect in `specs/handcart.md`
-(a sketch, six calls his, blocked on the workshop slice).** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
+(a sketch, all six calls made as proposed — D672 — blocked on the workshop slice).** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
 played villages against five unattended ones, the instrument red-checked 2 of 2; §5.5 says where the trips go). **No
 line of `src/` changed.** Gate item 1's logistics entry is decided; what it becomes is the §5 decision. *History: the Marketer (D14, D36, D171) and the laborer's hauling (D63, D96)
 were built before this question existed; a "porter" trade was refused as already built (D357); §4 has carried this entry

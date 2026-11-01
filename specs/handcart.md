@@ -4,7 +4,7 @@
 and carpenter) — where are unused handcarts stored at — at the warehouse? what do they look like on the map? lets just
 think through what this means across all aspects first."* This is that thinking, written down so it outlives the chat.
 **Status:** 💭 **DESIGN SKETCH — NOTHING BUILT (D670; ALL SIX CALLS MADE AS PROPOSED, D672, 2026-11-01).** ⛔ Blocked on the workshop + carpenter slice (D553
-call 6, owed by `building-condition.md §4.6` — §5 here redefines it; **specced as `specs/workshop-and-the-carpenter.md`, D673, nothing built**). **✅ Joe made all six calls as proposed (D672: *"Yes, all
+call 6, owed by `building-condition.md §4.6` — §5 here redefines it; **specced as `specs/workshop-and-the-carpenter.md`, D674, nothing built**). **✅ Joe made all six calls as proposed (D672: *"Yes, all
 six"*; §10), so the design is settled; every number below is still a proposal to be measured on `ZzLogistics` before it
 is typed.** Candidate (d), *nearby* given a
 meaning, is the near-term rule and is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`).
