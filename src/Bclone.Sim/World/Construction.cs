@@ -387,6 +387,13 @@ public enum BuildingKind
     /// shape. Learned at fifty leather ever held (§3.6). <b>Appended at 26.</b>
     /// </summary>
     TailorShop = 26,
+
+    /// <summary>
+    /// The workshop (D678, `workshop-and-the-carpenter.md §4.1`) — logs made into handcarts by the carpenter, in the
+    /// smithy's shape: two seats, a hut's footprint, no forge. Learned by felling wood: <c>workshop_unlock_logs</c>
+    /// against <c>SimWorld.LogsEverFelled</c> (§4.1a; Joe, D675–D676). <b>Appended at 27.</b>
+    /// </summary>
+    Workshop = 27,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

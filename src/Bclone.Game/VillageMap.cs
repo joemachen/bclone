@@ -8541,7 +8541,7 @@ public partial class VillageMap : Control
         // ⭐ The smith, the quarrier and the miner take their trade's own colour (D449) — they fell
         // to the market's until the mine, so a quarry drew as a stall.
         JobKind.Smith or JobKind.Quarrier or JobKind.Miner
-            or JobKind.Miller or JobKind.Baker or JobKind.Herdsman or JobKind.Merchant or JobKind.Tailor => TradeGlyph.ColourOf(kind),
+            or JobKind.Miller or JobKind.Baker or JobKind.Herdsman or JobKind.Merchant or JobKind.Tailor or JobKind.Carpenter => TradeGlyph.ColourOf(kind),
         _ => MarketColour,
     };
 

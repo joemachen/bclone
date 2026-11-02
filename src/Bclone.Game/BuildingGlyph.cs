@@ -90,6 +90,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
         BuildingKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
         BuildingKind.TailorShop => TradeGlyph.ColourOf(JobKind.Tailor),
+        BuildingKind.Workshop => TradeGlyph.ColourOf(JobKind.Carpenter),
 
         _ => Unchosen,
     };
@@ -271,6 +272,13 @@ public sealed partial class BuildingGlyph : Control
                 Hut(ink);
                 DrawLine(new Vector2(s * 0.26f, s * 0.82f), new Vector2(s * 0.56f, s * 0.50f), Paint(Thread), 2.0f);
                 DrawCircle(new Vector2(s * 0.56f, s * 0.50f), s * 0.05f, Paint(Thread));
+                break;
+
+            // A workshop (D678): a hut, and a wheel leaning on its wall — the rim and the hub it is trued on.
+            case BuildingKind.Workshop:
+                Hut(ink);
+                DrawArc(new Vector2(s * 0.70f, s * 0.70f), s * 0.15f, 0f, Mathf.Tau, 12, Paint(Thread), 1.6f);
+                DrawCircle(new Vector2(s * 0.70f, s * 0.70f), s * 0.04f, Paint(Thread));
                 break;
 
             // A low lodge under a drawn bow.

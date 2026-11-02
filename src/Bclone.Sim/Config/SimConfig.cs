@@ -1240,6 +1240,53 @@ public sealed record SimConfig
     [JsonPropertyName("tailor_unlock_leather")]
     public int TailorUnlockLeather { get; init; } = 50;
 
+    // ---------------------------------------------------------------
+    //  The workshop and the carpenter (D678, `specs/workshop-and-the-carpenter.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a workshop costs (§4.1) — a hut's timber, as the smithy's: a bench and a saw-pit, not a forge. ⏳ A proposal until §10's table.</summary>
+    [JsonPropertyName("workshop_logs")]
+    public int WorkshopLogs { get; init; } = 25;
+
+    /// <summary>Stone a workshop costs (§4.1) — the floor and the hearth-stone of a hut, less than the smithy's 36: there is no forge. ⏳ §10.</summary>
+    [JsonPropertyName("workshop_stone")]
+    public int WorkshopStone { get; init; } = 12;
+
+    /// <summary>Work ticks to raise a workshop (§4.1) — as every hut.</summary>
+    [JsonPropertyName("workshop_work_ticks")]
+    public int WorkshopWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats at a workshop (§4.1) — two, as the smithy's and the tailor's shop's.</summary>
+    [JsonPropertyName("workshop_capacity")]
+    public int WorkshopCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Logs the village must have felled before the workshop reaches the menu (§4.1a) — read against
+    /// <c>SimWorld.LogsEverFelled</c> where it moves; the crossing sets <c>SimWorld.WorkshopLearned</c>, which is the gate.
+    /// </summary>
+    /// <remarks>
+    /// <b>2,500 — Joe's number (D676: *"2500 logs"*)</b>, larger than every unlock in the game but the mill's, and his
+    /// own ask (D675: *"a larger number than anything else we currently have in-game"*). His played villages fell
+    /// 70–100 logs a year, so it lands around Year 25–35; the unattended valley fells 30–45 and reaches it at Year 55–80,
+    /// never inside a fifty-year golden (§4.1b). Validated at load like <see cref="QuarryUnlockStone"/>: at least nought.
+    /// ⚠️ At nought the workshop is learned at the first log felled, not at the founding — the flag is set in the fell
+    /// path, never per tick.
+    /// </remarks>
+    [JsonPropertyName("workshop_unlock_logs")]
+    public int WorkshopUnlockLogs { get; init; } = 2500;
+
+    /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
+    [JsonPropertyName("logs_per_handcart")]
+    public int LogsPerHandcart { get; init; } = 10;
+
+    /// <summary>Ticks one handcart takes to make (§4.3) — a wheel trued and a bed hung on it; longer than a hunt's 15. ⏳ §10.</summary>
+    [JsonPropertyName("make_ticks")]
+    public int MakeTicks { get; init; } = 20;
+
+    /// <summary>Handcarts a carpenter makes in one stint before walking home (§4.3). ⏳ §10; Joe's balance bar (D666) may move it to 2.</summary>
+    [JsonPropertyName("makes_per_stint")]
+    public int MakesPerStint { get; init; } = 1;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -1682,6 +1729,11 @@ public sealed record SimConfig
                 // The coats sewn from its hides (D660, `clothing.md §3.4`): half of Joe's "50 clothes" (D62), the
                 // size rule for a good that ships with no limit. By cart only (tier 2), so no boat brings one yet.
                 new MaterialCost(World.Goods.Clothing, 25),
+
+                // And the carts its carters drive (D678, `workshop-and-the-carpenter.md §5`): Joe's standing rule is that
+                // the three make every good the game has (D587 call 5), so the cartwright country makes handcarts — a
+                // hamlet's worth, one a household. By cart only (tier 2), so no boat brings one yet either.
+                new MaterialCost(World.Goods.Handcart, 10),
             },
             MakesAnimals = 6,
             Wants = new[]
@@ -3262,6 +3314,28 @@ public sealed record SimConfig
             StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
             CoatWinters = CoatWinters,
         },
+
+        // ⭐ THE HANDCART (D678, `workshop-and-the-carpenter.md §5`): logs made into a cart at the workshop. In Slice W a
+        // good on a shelf; Slice H (`handcart.md`) gives it its trips, its armfuls and its slow on grass, on this row.
+        new GoodRow
+        {
+            Id = (int)World.Goods.Handcart,
+            Category = World.GoodCategory.Materials,
+            Name = "handcarts",
+
+            // Sized from the logs it takes, as clothing's 8 was from leather — a log's worth × `logs_per_handcart`,
+            // rounded to the iron tool's 20 (§5). No neighbour stocks one: a cart is the village's make.
+            TradeWorth = 20,
+            SourceName = "the workshop",
+
+            // ⛔ WHERE TOOLS LIVE, TO THE LETTER (Joe, D672 call 1; `tools-and-the-smith.md §3.5`): the warehouse, the
+            // founders' cart, the pile — never the market, never a granary. A cart is fetched once in years, not once a
+            // half-larder.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // The recipe on the good's row, the smith's shape (D446): a good with a `made_from` is a workshop product.
+            MadeFrom = Recipe(new MaterialCost(World.Goods.Logs, LogsPerHandcart)),
+        },
     };
 
     /// <summary>
@@ -3498,6 +3572,23 @@ public sealed record SimConfig
             // A met clothing limit stills the needle (D139); with none set, the shop sews toward
             // `LabourQuota.ClothingWanted` (`clothing.md §3.5`).
             LimitedBy = World.Goods.Clothing,
+            UsesTool = true,
+        },
+
+        // ⭐ THE CARPENTER (D678, `workshop-and-the-carpenter.md §4.2`) — logs into handcarts at the workshop, the tailor's
+        // stint one recipe over. A trade, so the founders' tools are his as they are the tailor's (D617: only the
+        // builder, the herdsman and the laborers wait for the smithy).
+        new JobRow
+        {
+            Id = (int)JobKind.Carpenter,
+            Name = "carpenter",
+            Plural = "carpenters",
+            Doing = "making handcarts",
+            WorksAt = BuildingKind.Workshop,
+
+            // A met handcarts limit stops the bench (D139); with none set, the workshop makes toward
+            // `LabourQuota.HandcartsWanted` and a spare (§4.4).
+            LimitedBy = World.Goods.Handcart,
             UsesTool = true,
         },
 
@@ -4030,6 +4121,23 @@ public sealed record SimConfig
             ExtentHeight = 1,
         },
 
+        // ⭐ THE WORKSHOP (D678, `specs/workshop-and-the-carpenter.md §4.1`) — logs to handcarts, in the smithy's shape:
+        // a hut's footprint, two seats, priced from its own keys. Learned by felling wood (§4.1a; Joe, D675–D676).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Workshop,
+            Name = "workshop",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WorkshopLogs),
+                new MaterialCost(World.Goods.Stone, WorkshopStone),
+            },
+            WorkTicks = WorkshopWorkTicks,
+            Seats = WorkshopCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
         // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
         new BuildingRow
@@ -4200,6 +4308,15 @@ public sealed record SimConfig
             YearsPhrase = "as a tailor",
             MasteryLine = "{0} has sewn the village's coats for {1} years. "
                 + "A hide is cut once and nothing is wasted.",
+        },
+        new SkillRow
+        {
+            Id = 10,
+            Name = "carpentry",
+            GrownBy = JobKind.Carpenter,
+            YearsPhrase = "as a carpenter",
+            MasteryLine = "{0} has made the village's carts for {1} years. "
+                + "A wheel is true before it is fitted.",
         },
 
         // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
@@ -5702,6 +5819,12 @@ public sealed record SimConfig
             throw new SimConfigException($"tailor_unlock_leather cannot be negative (got {TailorUnlockLeather}).");
         }
 
+        // The workshop's gate (D678): nought learns it at the first log felled; less is nothing.
+        if (WorkshopUnlockLogs < 0)
+        {
+            throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");
+        }
+
         // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,
         // and the unlocks may be nought (a modder's village that knows both from the start) but not less.
         foreach ((string key, int value) in new[]
@@ -5712,6 +5835,8 @@ public sealed record SimConfig
             ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
             ("leather_per_coat", LeatherPerCoat), ("sew_ticks", SewTicks), ("sews_per_stint", SewsPerStint),
             ("tailor_shop_capacity", TailorShopCapacity),
+            ("logs_per_handcart", LogsPerHandcart), ("make_ticks", MakeTicks), ("makes_per_stint", MakesPerStint),
+            ("workshop_capacity", WorkshopCapacity),
             ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
             ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
             ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
@@ -6064,6 +6189,26 @@ public sealed record SimConfig
                     throw new SimConfigException(
                         $"goods[{i}] ('{good.Name}') forges from {good.ForgedFrom[k].Amount} of "
                         + $"good {(int)good.ForgedFrom[k].Goods}; every input is more than nothing.");
+                }
+            }
+
+            // A workshop recipe (D678, `workshop-and-the-carpenter.md §4.3`): every input a good the catalogue has, and
+            // more than nothing of it — a carpenter asked for a good no store could hold would stand idle for ever,
+            // and the reason would read as a missing store rather than a missing line in a data file.
+            for (int k = 0; k < good.MadeFrom.Count; k++)
+            {
+                int input = (int)good.MadeFrom[k].Goods;
+                if (GoodsCatalog.All(row => row.Id != input))
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') has a made_from naming good {input}, which the catalogue does not have.");
+                }
+
+                if (good.MadeFrom[k].Amount <= 0)
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') has a made_from of {good.MadeFrom[k].Amount} of "
+                        + $"good {input}; every input is more than nothing.");
                 }
             }
         }

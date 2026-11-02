@@ -239,6 +239,19 @@ public sealed record GoodRow
     public IReadOnlyList<MaterialCost> ForgedFrom { get; init; } = new List<MaterialCost>();
 
     /// <summary>
+    /// What one make of it takes from a store at the workshop — <b>empty for anything no carpenter makes</b>
+    /// (D678, `workshop-and-the-carpenter.md §4.3`).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ForgedFrom"/>'s shape one building over (D446): <b>a good with a <c>made_from</c> is a workshop
+    /// product</b>, and the card's <i>Makes:</i> dropdown lists every row that has one — handcarts today; planks and
+    /// furniture later are a row and nothing else. A <c>Batch</c> has one input, so a recipe here has one line; the day a
+    /// product wants two (a wheel with an iron rim) the batch grows a second input, and that is its own slice.
+    /// </remarks>
+    [JsonPropertyName("made_from")]
+    public IReadOnlyList<MaterialCost> MadeFrom { get; init; } = new List<MaterialCost>();
+
+    /// <summary>
     /// Ticks one dig at a worked face of this good's seam takes — <b>zero for anything no face
     /// trade digs</b> (`iron-mine.md §3.1`, D449).
     /// </summary>

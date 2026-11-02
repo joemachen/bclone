@@ -201,6 +201,7 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Miller** | mill | — | wheat → flour → warehouse | 200 flour (a limit) | ✅ **BUILT** (D522, `food-chain.md`) — learned by reaping wheat; never grinds while the village is hungry |
 | **Baker** | bakery | — | flour + a firing of firewood → bread → granary | 1,000 bread (a limit) | ✅ **BUILT** (D522) — learned with the mill (D523); the oven lit once a stint, never with the winter's firewood |
 | **Tailor** | tailor's shop | — | leather → clothing → warehouse | none shipped (the tailor sews toward every adult + a year's wear; Joe's *50* is his to set) | ✅ built, played and merged (D659–D667); two leather a coat; `clothing.md` |
+| **Carpenter** | workshop | — | logs → handcarts → warehouse, the founders' cart or the pile (never the market) | none shipped (the carpenter makes one a household and a spare, then stops; the panel's `handcarts` row is Joe's ceiling) | ✅ built, unplayed (D678, `workshop-and-the-carpenter.md`); ten logs a cart; learned by felling 2,500 logs; a tool wears a use a make; ranked after the tailor |
 | **Market worker** | market | — | stocks the market; households shop there (no home deliveries since D372) | 8,000 (D612) | ✅ built (D14, D36, D372) — named *marketer*, plural *traders* (D188, D591) |
 
 **Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — brewer, teacher,

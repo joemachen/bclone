@@ -198,6 +198,13 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 15.</remarks>
     Tailor = 15,
+
+    /// <summary>
+    /// Make handcarts from logs at the workshop (D678, `workshop-and-the-carpenter.md §4.2`) — the tailor's stint, one
+    /// recipe over. Wanted against <c>LabourQuota.HandcartsShortfall</c>, one cart a household and a spare.
+    /// </summary>
+    /// <remarks>⛔ Appended at 16.</remarks>
+    Carpenter = 16,
 }
 
 /// <summary>
@@ -472,6 +479,21 @@ public sealed class Workplace
     /// sparsely, against the default, so a smithy nobody has touched mixes nothing.
     /// </remarks>
     public Goods ForgeGood { get; set; } = Goods.Tools;
+
+    /// <summary>
+    /// What a workshop makes — the player's choice on its card, <b>handcarts unless they say otherwise</b> (D678,
+    /// `workshop-and-the-carpenter.md §4.3`; Joe, D675 call 3: the field now, with one item to choose). Ignored by
+    /// every other workplace.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ForgeGood"/>'s twin: set through <c>SimWorld.SetMakeGood</c>, which refuses a good with no
+    /// <c>made_from</c>. Hashed sparsely against <see cref="DefaultMakeGood"/>, so a workshop left on handcarts mixes
+    /// nothing; saved as <c>make_good</c> on every workplace (a <c>Workplace</c> is one shape, as <c>forge_good</c> is).
+    /// </remarks>
+    public Goods MakeGood { get; set; } = DefaultMakeGood;
+
+    /// <summary>What a workshop makes before anybody touches it — the handcart. <see cref="Determinism.StateHash"/> tests against this.</summary>
+    public const Goods DefaultMakeGood = Goods.Handcart;
 
     /// <summary>
     /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>
@@ -808,6 +830,7 @@ public sealed class Workplace
         ["gathering_radius"] = GatheringRadius,
         ["mode"] = SaveWriter.Enum(Mode),
         ["forge_good"] = SaveWriter.Good(ForgeGood),
+        ["make_good"] = SaveWriter.Good(MakeGood),
         ["workers"] = SaveWriter.Ints(WorkerIds),
         ["construction"] = Construction?.ToSave(),
         ["store"] = Store.ToSave(),
@@ -848,6 +871,7 @@ public sealed class Workplace
             GatheringRadius = save.Int("gathering_radius"),
             Mode = save.Enum<WorkMode>("mode"),
             ForgeGood = save.Good("forge_good"),
+            MakeGood = save.Good("make_good"),
             Construction = site is null ? null : ConstructionSite.FromSave(site),
             Store = Stockpile.FromSave(save.Object("store")),
             FieldSixteenthsSown = save.Int("field_sixteenths_sown"),

@@ -166,10 +166,10 @@ public sealed class MaintenanceTests
     {
         SimLoop loop = AVillage();
         JsonObject doc = SaveGame.Capture(loop, "test", "now", "code");
-        Assert.Equal(9, SaveGame.Format);
+        Assert.Equal(10, SaveGame.Format); // 9 until D678 (the workshop).
         doc["format"] = 4;
         SaveFormatException refused = Assert.Throws<SaveFormatException>(() => SaveGame.Load(doc, loop.World.Config));
         Assert.Contains("Format 4", refused.Message, StringComparison.Ordinal);
-        Assert.Contains("reads 9", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("reads 10", refused.Message, StringComparison.Ordinal);
     }
 }

@@ -53,7 +53,8 @@ public readonly record struct LabourQuota
         int millers = 0,
         int bakers = 0,
         int herdsmen = 0,
-        int merchants = 0)
+        int merchants = 0,
+        int carpenters = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -74,6 +75,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Hunter] = hunters;
         _byJob[(int)JobKind.Smith] = smiths;
         _byJob[(int)JobKind.Tailor] = tailors;
+        _byJob[(int)JobKind.Carpenter] = carpenters;
         _byJob[(int)JobKind.Quarrier] = quarriers;
         _byJob[(int)JobKind.Miner] = miners;
         _byJob[(int)JobKind.Miller] = millers;
@@ -169,6 +171,9 @@ public readonly record struct LabourQuota
 
     /// <summary>Tailors the village wants (D659).</summary>
     public int Tailors => _byJob[(int)JobKind.Tailor];
+
+    /// <summary>Carpenters the village wants (D678).</summary>
+    public int Carpenters => _byJob[(int)JobKind.Carpenter];
 
     /// <summary>Millers the village wants (D522).</summary>
     public int Millers => _byJob[(int)JobKind.Miller];
@@ -310,6 +315,7 @@ public readonly record struct LabourQuota
         int buildersWanted = BuildersWanted(world);
         int smithsWanted = SmithsWanted(world);
         int tailorsWanted = TailorsWanted(world);
+        int carpentersWanted = CarpentersWanted(world);
         int quarriersWanted = QuarriersWanted(world);
         int minersWanted = MinersWanted(world);
         int millersWanted = MillersWanted(world);
@@ -326,6 +332,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Marketer] = marketersWanted;
         needed[(int)JobKind.Smith] = smithsWanted;
         needed[(int)JobKind.Tailor] = tailorsWanted;
+        needed[(int)JobKind.Carpenter] = carpentersWanted;
         needed[(int)JobKind.Quarrier] = quarriersWanted;
         needed[(int)JobKind.Miner] = minersWanted;
         needed[(int)JobKind.Miller] = millersWanted;
@@ -609,6 +616,11 @@ public readonly record struct LabourQuota
         // every hand above — a coat is upside on every winter errand, as a tool is on every action.
         int tailors = Take(ref free, Cap(tailorsWanted, TotalCapacityFor(world, JobKind.Tailor)));
 
+        // Handcarts, after coats and before stone (Joe, D675 call 4; `workshop-and-the-carpenter.md §4.4`): a convenience
+        // of the coat's kind, and a finite one — one a household and a spare — so he is wanted in a burst when a
+        // workshop first stands and rarely after.
+        int carpenters = Take(ref free, Cap(carpentersWanted, TotalCapacityFor(world, JobKind.Carpenter)));
+
         // Stone, after tools and before building (D434): discretionary like the smith's, and the
         // builders it feeds come next — a quarry the village cannot spare hands for is a quarry
         // whose sites wait, which the site's own note says (D237).
@@ -789,6 +801,7 @@ public readonly record struct LabourQuota
         hunters = Asked(world, JobKind.Hunter, hunters, hands);
         smiths = Asked(world, JobKind.Smith, smiths, hands);
         tailors = Asked(world, JobKind.Tailor, tailors, hands);
+        carpenters = Asked(world, JobKind.Carpenter, carpenters, hands);
         quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
         miners = Asked(world, JobKind.Miner, miners, hands);
         millers = Asked(world, JobKind.Miller, millers, hands);
@@ -817,6 +830,7 @@ public readonly record struct LabourQuota
         hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
         smiths = AtLeastPinned(world, JobKind.Smith, smiths);
         tailors = AtLeastPinned(world, JobKind.Tailor, tailors);
+        carpenters = AtLeastPinned(world, JobKind.Carpenter, carpenters);
         quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
         miners = AtLeastPinned(world, JobKind.Miner, miners);
         millers = AtLeastPinned(world, JobKind.Miller, millers);
@@ -827,7 +841,8 @@ public readonly record struct LabourQuota
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths, tailors: tailors,
-            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen, merchants: merchants);
+            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen, merchants: merchants,
+            carpenters: carpenters);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1468,6 +1483,56 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>
+    /// The handcart the shelves hold for the next household (`workshop-and-the-carpenter.md §4.4`, D678) — <b>one</b>,
+    /// so a new household fetches without waiting a stint. The tailor's *year's wear* has no analogue: carts wear by the
+    /// trip (Slice H), and until H nothing wears. ⏳ Measured in H, typed then.
+    /// </summary>
+    public const int HandcartSpare = 1;
+
+    /// <summary>
+    /// ⭐ The handcarts the village wants (`workshop-and-the-carpenter.md §4.4`, D678): <b>the households with a home,
+    /// less the households that own a cart</b>. In Slice W no household owns one (the household's cart is Slice H,
+    /// `handcart.md §3`), so it is the count of housed, living households.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <i>Households</i>, not adults and not homes: a cart serves the larder, which is the household's (Joe, D672
+    /// call 1); an empty house wants none, and a family with no roof has no larder to serve. A count over the
+    /// households list — the same cost as <see cref="ClothingWanted"/>'s over the villagers — read where the work is
+    /// decided and when the quota runs, never per tick.
+    /// </remarks>
+    public static int HandcartsWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int housed = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.HasHome && world.LivingMembersOf(household) > 0)
+            {
+                housed++;
+            }
+        }
+
+        return housed;
+    }
+
+    /// <summary>Every handcart in every store (D678).</summary>
+    public static int HandcartsOnTheShelves(SimWorld world) => world.InStores(Goods.Handcart);
+
+    /// <summary>
+    /// ⭐ The handcarts the village is short of (`workshop-and-the-carpenter.md §4.4`, D678) — <see cref="ClothingShortfall"/>'s
+    /// shape one good over: what the shelves should hold (<see cref="HandcartsWanted"/> and the <see cref="HandcartSpare"/>)
+    /// less what they do. The carpenters are hired against it, and the chip goes amber on it. ⚠️ The spare is in the
+    /// shortfall so the hiring and the bench's stop (<c>SimWorld.WhyTheBatchWaits</c>) agree to the cart.
+    /// </summary>
+    public static int HandcartsShortfall(SimWorld world)
+    {
+        int shortfall = HandcartsWanted(world) + HandcartSpare - HandcartsOnTheShelves(world);
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>
     /// ⭐ The tools a laborer may take — what the stores hold past the trades' year of cover, one for every working pair
     /// of hands in a tool trade (D617, Joe: trades first; `tools-and-the-smith.md §10.3`). The cover is the spare a hand
     /// <see cref="ToolShortfall"/> keeps, so the smiths go on forging for the trades and the laborers have what is over.
@@ -1668,6 +1733,18 @@ public readonly record struct LabourQuota
         // found an early return the cap below already did the work of).
         int seats = BatchSeatsWanted(world, JobKind.Tailor);
         int wanted = CeilingDivide(ClothingShortfall(world), VillageEconomy.CoatsSewnPerYearAtWorst(world.Config));
+        return wanted < seats ? wanted : seats;
+    }
+
+    /// <summary>
+    /// Carpenters wanted (`workshop-and-the-carpenter.md §4.4`, D678): the handcarts the village is short of over what one
+    /// carpenter makes a year — <see cref="TailorsWanted"/>'s shape — and never more than the seats a workshop with logs
+    /// to work can fill, so nobody is hired into a workshop that <see cref="SimWorld.WhyTheBatchWaits"/> says must wait.
+    /// </summary>
+    public static int CarpentersWanted(SimWorld world)
+    {
+        int seats = BatchSeatsWanted(world, JobKind.Carpenter);
+        int wanted = CeilingDivide(HandcartsShortfall(world), VillageEconomy.HandcartsMadePerYearAtWorst(world.Config));
         return wanted < seats ? wanted : seats;
     }
 

@@ -49,10 +49,15 @@ public sealed class PhaseFiveGoldenTests
     // hashed); and the overland neighbour makes clothing (a stock slot, hashed). Proved to move for those three alone:
     // with the counter unmixed, the neighbour rows gone and the unlock out of reach, both old constants pass.
     // Was 9279994292569338767.
-    private const ulong PhaseFiveGoldenHash = 2244450603637359139UL;
+    // RE-TAKEN (D678) — the workshop: the overland neighbour makes handcarts (a stock slot, hashed — D587's rule that the
+    // three make every good the game has, `TradeRowsTests`), the same cause as D661's third. This village fells 1,050 logs
+    // in its twenty years and does not learn the workshop (2,500). ⭐ PROVEN TO BE THE ONLY REASON: with that one
+    // neighbour line switched off, both old constants pass; the first full run, before the line existed, held them.
+    // Was 2244450603637359139.
+    private const ulong PhaseFiveGoldenHash = 1335932601571545014UL;
 
-    // Was 6069163189267979265 before D661.
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 9357705984530611765UL;
+    // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 16129168920486327744UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

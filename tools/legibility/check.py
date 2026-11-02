@@ -62,7 +62,7 @@ WORLD = {
 
 # Trades and goods drawn ON the map (`VillageMap.ColourOf(JobKind)` hands these to TradeGlyph; heaps and crates use
 # GoodsPalette). The same colours are the bar's and the cards' icons — shared, which is a finding of its own.
-WORLD_TRADES = {"Smith", "Quarrier", "Miner", "Miller", "Baker", "Herdsman", "Merchant", "Tailor"}
+WORLD_TRADES = {"Smith", "Quarrier", "Miner", "Miller", "Baker", "Herdsman", "Merchant", "Tailor", "Carpenter"}
 # BuildingGlyph / ToolGlyph — the bar's icons only; DestroyTone is the red brush's glyph and the base the destroy wash is
 # made from, never drawn on the valley by itself (its edge is DestroyEdge).
 UI = {"Unchosen", "Hand", "Undo", "Fire", "Thread", "DestroyTone"}

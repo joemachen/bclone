@@ -3,8 +3,10 @@
 **Decision:** `DESIGN.md §5`, *LOGISTICS — THE MECHANIC* (D669), candidate **(a)**: Joe, 2026-11-01 — *"hardcart (workshop
 and carpenter) — where are unused handcarts stored at — at the warehouse? what do they look like on the map? lets just
 think through what this means across all aspects first."* This is that thinking, written down so it outlives the chat.
-**Status:** 💭 **DESIGN SKETCH — NOTHING BUILT (D670; ALL SIX CALLS MADE AS PROPOSED, D672, 2026-11-01).** ⛔ Blocked on the workshop + carpenter slice (D553
-call 6, owed by `building-condition.md §4.6` — §5 here redefines it; **specced as `specs/workshop-and-the-carpenter.md`, D674, nothing built**). **✅ Joe made all six calls as proposed (D672: *"Yes, all
+**Status:** 💭 **DESIGN SKETCH — THE CART ITSELF NOT BUILT (D670; ALL SIX CALLS MADE AS PROPOSED, D672, 2026-11-01). ✅ SLICE W IS
+BUILT (D678, 2026-11-01, `specs/workshop-and-the-carpenter.md`, unplayed, unmerged on `claude/slice-workshop-2083f6`): the
+Workshop, the Carpenter and `Goods.Handcart` on a warehouse shelf — so this slice, H, is next, once Joe has played W.** ~~⛔ Blocked on the workshop + carpenter slice (D553
+call 6, owed by `building-condition.md §4.6` — §5 here redefines it; **specced as `specs/workshop-and-the-carpenter.md`, D674, nothing built**).~~ **✅ Joe made all six calls as proposed (D672: *"Yes, all
 six"*; §10), so the design is settled; every number below is still a proposal to be measured on `ZzLogistics` before it
 is typed.** Candidate (d), *nearby* given a
 meaning, is the near-term rule and is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`).

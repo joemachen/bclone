@@ -89,7 +89,9 @@ A horizon node (`not_yet`) can be in sight, never known: *"Nobody in this valley
 ```
 
 The `···` nodes are horizon nodes (`tech-tree.md §9`): in sight once their parent is known, never
-known in this version.
+known in this version. *Since:* the mill and the bakery on wheat reaped (D522), the bridges on the village's size and its
+crossings (D546), the tailor's shop on leather handled (D659), and **the workshop on logs felled** (`TechCondition.LogsFelled`,
+D678: *"{n} of {N} logs felled"*; the gate itself reads `SimWorld.WorkshopLearned`, `workshop-and-the-carpenter.md §4.1a`).
 
 ### 3.5 The introduction
 
