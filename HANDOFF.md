@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE SLICE W SPEC BRANCH (D677) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE SLICE W SPEC BRANCH (D677) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ⚠️ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, UNMERGED, OFF `main`): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D677) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D677, D680) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of the Slice W spec branch `claude/musing-rhodes-b6ffea` (D677) plus one docs commit making these lines true, pushed; origin agrees.** The spec branch was four docs-only commits — the Slice W spec (c5677cd),
 > `main` merged in with the entry renumbered D674 (d5f60ab), Joe's five calls answered (055938c, D675), his number for the unlock and
@@ -8,6 +8,19 @@
 > `src/`, `data/` or `tests/`, so the four checks stand on 421a372's tree. **The Slice W build was started in its own session the same
 > minute, in a worktree off this `main`** — its branch is named when it starts; its notes come back to the session that started it.
 > The tree is clean but for `bclone-tracker.xlsx`.
+>
+> **🔨 D680 — `slice/lane-bridge`, one commit off `main`, view only, UNPLAYED, UNMERGED.** Joe played the Slice W build (his save
+> `fernhollow-holly-kestrel-14`, format 10 — readable only by the build branch) and drew a red line where *"tons of villagers walk
+> and no path seems to show"*. His save, read with a scratch Python script over the gzipped JSON (`paths.wear` is dense little-endian
+> ushorts, `price_class` dense bytes, positions 32.32 fixed-point hex): the ground there is worn to the ceiling exactly where they
+> walk — two lanes a tile apart (x 3 and x 5, rows −5 to −1), the column between at wear **0** — and `TrailNetwork`'s one-tile
+> bridge welded them into one drawn lane down the middle. **Fix:** `TrailNetwork.Build` takes a `trodden` array (`PathWear.At > 0`)
+> and bridges only a trodden gap; a ladder's gap is trodden, so it still draws as one. Probe `trails:` two cases (`t` is trodden
+> grass in a posed shape). Red-checked 1 of 1 before the fix; the inverted condition ⛔ on both. Sim untouched, goldens 392.
+> **Numbers (D680):** view 0 warnings; probe 67 ✅ 0 ⛔ bar 151 `done.`; suite 1886 / 0 / 5 of 1891 in 17m06 (15m06 at D671; the view's builds and three probe runs ran beside it, so the clock is not clean). **Joe plays it, then merge at his word;
+> then tell the Slice W build session to merge `main` into its branch** (its worktree is `.claude/worktrees/slice-workshop-2083f6`,
+> and Joe plays from there with `.\run.bat`). ⚠️ D678 and D679 are Slice W's on its branch (the build, and Joe's trader call); D680 is this, so the numbers cross.
+> Also relayed to the build session this evening, Joe: *"sure traders can sell carts"* — it records the call.
 >
 > **✅ `specs/workshop-and-the-carpenter.md` has nothing open — status: *every call answered, ready to build, nothing built.***
 > Joe: *"2500 logs"* → `workshop_unlock_logs` 2,500 (his villages fell 70–100 a year, so Year 25–35; above the mill's 5,000 would be
@@ -8887,6 +8900,21 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAP D680 PAID FOR — A SHAPE TEST THAT READS ONLY THE WORN TILES CANNOT TELL A LADDER FROM TWO NEIGHBOURS
+
+- ⛔ **`TrailNetwork`'s one-tile bridge was written for a ladder and welded two separate lanes for two weeks unseen.** The worn
+  tiles alone look the same in both cases: two rails a tile apart. What differs is whether anyone has stepped in the gap, and
+  the sim has known that number since D358 (`PathWear.At`). *When a view rule has to tell two shapes apart, ask what the sim
+  already knows about the ground before inventing a geometric test* — the fix was one array and one `||`. The probe had a
+  ladder case and a two-tiles-apart case and nothing between them; **a posed case for each side of a rule's boundary, not
+  just each side of its intent.**
+- ⚠️ **Joe's format-10 save could not be opened by `main`'s build, so the save was read raw**: gzip, then JSON; `world.paths.wear`
+  is a dense base64 of little-endian `ushort`s in map order, `price_class` dense bytes, and every position is a 16-hex-digit
+  32.32 fixed-point number (two's complement). The script is `scratchpad/fern/wearmap.py`'s shape: an ASCII map of classes
+  and footprints answered the question in a minute, where opening the save in the game could not have shown wear = 0.
+- ⚠️ **A headless Godot can outlive `done.`** by a second or two; `tasklist` straight after the probe showed one each run.
+  Kill by the exact PID (`taskkill //PID n //F`); a loop over `tasklist` output was refused by the harness.
+
 ## ⛔ THE TRAPS D670–D671 PAID FOR — A STASH IN A BACKGROUND JOB, A SPEC'S POSE THAT ROTTED, AND THE SCRAP MOVED TO THE GRANARY
 
 - **⛔ A background job that `git stash`es holds every tracked file hostage until it pops.** The sweep's red check stashed the
@@ -9200,6 +9228,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **`slice/lane-bridge` (D680) — JOE PLAYS IT IN HIS FERNHOLLOW, THEN MERGE AT HIS WORD.** What to look for: the two lanes
+  either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
+  ladders of October still one lane. To see it on his format-10 save the build branch must merge `main` after this lands.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
   §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
   and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he
