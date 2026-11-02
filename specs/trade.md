@@ -105,7 +105,7 @@ asked the same day; those answers are in the last column.
   the overland neighbour makes it (25, half of D62's *"50 clothes"*) and the lowlands want it (25) — by cart only, so
   no boat carries a coat until carts exist. ✅ **Handcarts joined with the workshop (D678):** the overland neighbour makes
   them too (10, a hamlet's worth — one a household is the derived demand), by cart only, so no boat brings a cart either;
-  the guard that the three make every good between them is what asked.
+  the guard that the three make every good between them is what asked. **Joe approved it on 2026-11-01, in his words: *"sure traders can sell carts"* (D679).**
 - **Each neighbour keeps a stock per good**, in integers, **stepped once at each season turn** — its makes add, its wants
   take away, held between nothing and **double** its size. ⛔ Never per tick (CLAUDE.md: nothing derivable is rebuilt per
   tick, and nothing in the region changes between season turns).
