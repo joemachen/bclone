@@ -5732,6 +5732,7 @@ public partial class VillageMap : Control
         int height = maxY - minY + 5;
         var grade = new byte[width * height];
         var blocked = new bool[width * height];
+        var trodden = new bool[width * height];
 
         // ⭐ AND THE FENCES AND WHICH BUILDING STANDS WHERE (D605): a fence separates two tiles everywhere the network
         // looks, and a building with worn ground beside it gets its doorstep drawn. A building is told apart by the anchor
@@ -5749,6 +5750,8 @@ public partial class VillageMap : Control
                 IReadOnlyList<GridPos> standing = world.FootprintCovering(tile);
                 blocked[i] = !world.IsWalkable(tile) || standing.Count > 0;
                 grade[i] = blocked[i] ? (byte)0 : TrailGradeAt(tile);
+                // ⭐ And whether anyone has stepped there at all (D680): the network bridges a gap only where someone has.
+                trodden[i] = !blocked[i] && world.Paths.At(tile) > 0;
                 walls[i] = world.Zones.WallsOn(tile);
                 if (standing.Count > 0)
                 {
@@ -5770,7 +5773,7 @@ public partial class VillageMap : Control
             }
         }
 
-        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, point => TrailWander(point) * TrailWobble, walls, buildingOf, doors);
+        _network = TrailNetwork.Build(minX, minY, width, height, grade, blocked, trodden, point => TrailWander(point) * TrailWobble, walls, buildingOf, doors);
         _networkWindow = (minX, minY, width, height, grade, blocked);
         LastNetworkBuildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
     }
@@ -5955,9 +5958,10 @@ public partial class VillageMap : Control
         }
 
         // ⭐ A LADDER — two lanes a tile apart, walks crossing between them (Joe's screenshots): one lane down the middle.
+        // Its gap is trodden ('t') by the walks across it, which is what makes it a ladder (D680).
         TrailNetwork ladder = Shape(
             "wwwwwwwwww",
-            "w...w....w",
+            "wtttwttttw",
             "wwwwwwwwww");
         if (ladder.Lanes.Count > 3 || Furthest(ladder, p => Mathf.Abs(p.Y - 1f)) > 0.6f || ladder.BridgedTiles == 0)
         {
@@ -6079,6 +6083,15 @@ public partial class VillageMap : Control
         if (apart.Lanes.Count != 2 || apart.BridgedTiles != 0)
         {
             faults.Add($"two lanes two tiles apart drew as {apart.Lanes.Count} ({apart.BridgedTiles} gap tiles bridged)");
+        }
+
+        // ⭐ TWO LANES A TILE APART THAT NOBODY CROSSES BETWEEN STAY TWO (D680, Joe's Fernhollow): two packed lanes either side
+        // of a column nobody had ever stepped on were bridged, thinned and drawn as one lane down that column — a tile from
+        // where anyone walked. The gap is bridged only where it is trodden; this shape, with its gap 't', is the ladder above.
+        TrailNetwork uncrossed = Shape("wwwwwwww", "........", "wwwwwwww");
+        if (uncrossed.Lanes.Count != 2 || uncrossed.BridgedTiles != 0 || Nearest(uncrossed, p => Mathf.Abs(p.Y - 1f)) < 0.6f)
+        {
+            faults.Add($"two lanes a tile apart that nobody crosses between drew as {uncrossed.Lanes.Count} ({uncrossed.BridgedTiles} gap tiles bridged, a point {Nearest(uncrossed, p => Mathf.Abs(p.Y - 1f)):F2} from the untrodden middle)");
         }
 
         // ⚠️ Two lanes and, since D607, one spur to the building's wall — never a lane across it or a bridge over it.
@@ -6239,7 +6252,7 @@ public partial class VillageMap : Control
         }
 
         return faults.Count == 0
-            ? "[widths] trails: ✅ the network reads a row, a staircase and a corridor as one lane each, a ladder as one lane, "
+            ? "[widths] trails: ✅ the network reads a row, a staircase and a corridor as one lane each, a ladder as one lane, two lanes nobody crosses between as two, "
                 + $"a ring round a hut as one loop off the hut, a packed hub as {hub.Lanes.Count} spokes and {hub.Junctions.Count} junction; two lanes apart or walled "
                 + "stay two; a short lane up to a door stays; a lane past a one-tile store, and Joe's own village, go round it uncut; "
                 + $"lanes either side of a fence stay {fenced.Lanes.Count} and cross it only at its gate; a packed square with six lanes in "
@@ -6261,6 +6274,7 @@ public partial class VillageMap : Control
             int height = rows.Length + 2;
             var grade = new byte[width * height];
             var blocked = new bool[width * height];
+            var trodden = new bool[width * height];
             var buildingOf = new int[width * height];
             for (int y = 0; y < rows.Length; y++)
             {
@@ -6269,6 +6283,8 @@ public partial class VillageMap : Control
                     int i = ((y + 1) * width) + x + 1;
                     grade[i] = rows[y][x] switch { 'w' => (byte)1, 'p' => (byte)2, _ => (byte)0 };
                     blocked[i] = rows[y][x] == 'B';
+                    // ⭐ 't' is grass someone has stepped on (D680): worn ground is trodden too; '.' is ground nobody has crossed.
+                    trodden[i] = rows[y][x] is 'w' or 'p' or 't';
                 }
             }
 
@@ -6317,7 +6333,7 @@ public partial class VillageMap : Control
                 doors = new Dictionary<int, (int Door, int Step)> { [buildingOf[on]] = (on, step) };
             }
 
-            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, wander ? point => TrailWander(point) * TrailWobble : null, walls, buildingOf, doors);
+            return TrailNetwork.Build(-1, -1, width, height, grade, blocked, trodden, wander ? point => TrailWander(point) * TrailWobble : null, walls, buildingOf, doors);
 
             static byte WallBit(int dx, int dy) => (dx, dy) switch { (0, -1) => 1, (1, 0) => 2, (0, 1) => 4, (-1, 0) => 8, _ => 0 };
         }
@@ -6429,6 +6445,20 @@ public partial class VillageMap : Control
             return Enumerable.Range(0, count).Select(Find).Distinct().Count();
 
             int Find(int i) => root[i] == i ? i : root[i] = Find(root[i]);
+        }
+
+        static float Nearest(TrailNetwork network, Func<Vector2, float> off)
+        {
+            float best = float.MaxValue;
+            foreach (TrailNetwork.Lane lane in network.Lanes)
+            {
+                foreach (Vector2 point in lane.Points)
+                {
+                    best = Mathf.Min(best, off(point));
+                }
+            }
+
+            return best;
         }
 
         static float Furthest(TrailNetwork network, Func<Vector2, float> off)

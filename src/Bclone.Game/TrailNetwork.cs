@@ -22,7 +22,9 @@ namespace Bclone.Game;
 /// </para>
 /// <para>
 /// ⛔ <b>What it never does:</b> draw on a blocked tile (a building's footprint, or water nobody can walk) — the caller
-/// zeroes the grade there and a gap is never bridged across one; or bridge a gap two tiles wide, which is two lanes.
+/// zeroes the grade there and a gap is never bridged across one; or bridge a gap two tiles wide, which is two lanes;
+/// ⛔ or, since D680, bridge a gap nobody has stepped on — two packed lanes a tile apart with a never-trodden column
+/// between them are two lanes, not a ladder, and the caller says which tiles are trodden.
 /// ⛔ <b>Nor cross a fence</b> (D605): a wall separates two tiles in the bridging, the thinning, the tracing, the
 /// placing and every step drawn (<see cref="Linkage"/>).
 /// </para>
@@ -101,6 +103,11 @@ internal sealed class TrailNetwork
     /// <param name="height">The window's height in tiles.</param>
     /// <param name="grade">0 unworn, 1 worn, 2 packed — row-major; already 0 on every blocked tile.</param>
     /// <param name="blocked">Tiles no lane may be drawn on or bridged across.</param>
+    /// <param name="trodden">
+    /// ⭐ Tiles anyone has stepped on at all (wear above nothing), row-major (D680). A one-tile gap is bridged only where it is
+    /// trodden: a ladder's gap is crossed by the walks that make it a ladder, while two lanes a tile apart that nobody
+    /// crosses between are two lanes — Joe's Fernhollow drew one lane down a column nobody had ever walked.
+    /// </param>
     /// <param name="wander">The offset a point is moved by (the valley's seeded wander), or null for none.</param>
     /// <param name="walls">
     /// Each tile's walls as <c>ZoneMap</c>'s bits (1 north, 2 east, 4 south, 8 west), or null for none (D605): a wall
@@ -117,13 +124,13 @@ internal sealed class TrailNetwork
     /// well, a pile, a farm — by any side, as before.
     /// </param>
     public static TrailNetwork Build(
-        int originX, int originY, int width, int height, byte[] grade, bool[] blocked, Func<Vector2, Vector2>? wander,
+        int originX, int originY, int width, int height, byte[] grade, bool[] blocked, bool[] trodden, Func<Vector2, Vector2>? wander,
         byte[]? walls = null, int[]? buildingOf = null, IReadOnlyDictionary<int, (int Door, int Step)>? doors = null)
     {
         int n = width * height;
-        if (grade.Length != n || blocked.Length != n || (walls is not null && walls.Length != n) || (buildingOf is not null && buildingOf.Length != n))
+        if (grade.Length != n || blocked.Length != n || trodden.Length != n || (walls is not null && walls.Length != n) || (buildingOf is not null && buildingOf.Length != n))
         {
-            throw new ArgumentException($"A {width}×{height} window wants {n} grades, blocked flags, walls and buildings, not {grade.Length}, {blocked.Length}, {walls?.Length} and {buildingOf?.Length}.");
+            throw new ArgumentException($"A {width}×{height} window wants {n} grades, blocked flags, trodden flags, walls and buildings, not {grade.Length}, {blocked.Length}, {trodden.Length}, {walls?.Length} and {buildingOf?.Length}.");
         }
 
         var linked = new Linkage(width, height, walls);
@@ -140,7 +147,9 @@ internal sealed class TrailNetwork
                 continue;
             }
 
-            if (blocked[i])
+            // ⛔ Never across a blocked tile, and never a gap nobody has stepped on (D680): a ladder's gap is trodden by
+            // the walks across it; two lanes a tile apart that nobody crosses between are two lanes.
+            if (blocked[i] || !trodden[i])
             {
                 continue;
             }

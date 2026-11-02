@@ -9,7 +9,9 @@ D368, D396). ✅ D414 (2026-09-26) — walkers keep to the path the route takes 
 and ✅ D415 — the view draws a two-wide corridor as one lane and fills a yard only at a packed 3×3
 junction — PLAYED BY JOE AND MERGED (D416: *"looks so much better. keep it at 130 for now"*).
 ✅ D424 (2026-09-28) — PLAYED BY JOE AND MERGED (D425: *"looks good"*) — a step treads every tile it passes over, not only
-the one it lands on (§3.1; Joe's broken lane).**
+the one it lands on (§3.1; Joe's broken lane). ✅ D680 (2026-11-01) — the network bridges a one-tile gap only where
+someone has stepped on it: two packed lanes a tile apart that nobody crossed between no longer weld into one drawn lane
+down the untrodden middle (Joe's Fernhollow); view only, probe `trails:` two cases; merged into `main` (D681); UNPLAYED.**
 `PathWear`, `PathWearSystem`, the priced cost field (`TerrainCostField.Refill`, Dial's algorithm),
 cost-based leg ticks, the hash, six `path_*` keys, `DesirePathTests` (9); trails on the map, the
 *Paths* overlay (P), an inspector sentence, a probe line. Paving (§2.6's *upgrade an emerged path*)
@@ -319,6 +321,16 @@ with the reason that worn ground is now faster — **the first deliberate clock 
   — measured on Joe's own village it cut the three-tile lane up to a store's door and changed nothing else. Probes
   `trails:` (hand-drawn shapes straight into `TrailNetwork`), `paths:` (the valley's own network on its own ground, never on
   a building), `field lanes:` (D512 on the network).
+- [x] 🔨 **D680 — a gap is bridged only where someone has stepped.** Joe, playing Slice W's build (`fernhollow-holly-kestrel-14`,
+  Year 40), drew a red line *"where tons of villagers walk and no path seems to show"*. His save read: two lanes a tile apart
+  between the horizontal lane and the market, both packed to the ceiling, and the column between them at wear **0 — never
+  stepped on**. D581's bridge filled it (worn ground faced across it), the three columns thinned to one centre line, and the
+  drawn lane ran a tile from where anyone walked. Now `TrailNetwork.Build` takes a `trodden` array (`PathWear.At > 0`) beside
+  `blocked`, and a gap is bridged only where it is trodden. A ladder still draws as one lane — its gap *is* trodden by the
+  walks across it (D424: a step treads every tile it crosses); two lanes nobody crosses between stay two. Probe `trails:` —
+  the posed ladder's gap marked `t` (trodden grass, a new letter), and a new case, two lanes with an untrodden gap: two lanes,
+  nothing bridged, no point within 0.6 of the middle. Red-checked: the case before the fix ⛔ exactly as Fernhollow (*drew as
+  1, 8 gap tiles bridged, a point 0.00 from the untrodden middle*); the condition inverted ⛔ on the ladder and the pair both.
 - [x] ⛔ **D582 — a lane is never drawn across a building.** Joe's screenshot of D581: a lane straight across a one-tile
   store. Points never stood on a building, but the line between them could: tidying a ring's corner pixels round a
   one-tile building left a diamond through its corners, and smoothing and the wander pulled lanes inward. Now a dropped
