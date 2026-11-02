@@ -125,6 +125,12 @@ one-tile gaps, thin, merge touching junction pixels, trace, place on the middle 
 to a store's door on Joe's own village and changed nothing in any drawn shape. ⭐ *The lesson: a player's description of
 a fix ("proceed with C") is a hypothesis about the cause — read the village in the screenshot before building it.*
 
+⚠️ **The bridge welded lanes that were never one (D680, 2026-11-01).** Joe's Fernhollow: two packed lanes a tile apart, the
+column between them never stepped on, bridged into one block and thinned to one drawn lane down that column. The bridge
+was written for the ladder, whose gap *is* crossed; the difference is whether anyone has stepped in the gap, and the sim
+already knows (`PathWear.At`). **A gap is bridged only where it is trodden** — `desire-paths.md` D680. *The lesson: a shape
+test that reads only the worn tiles cannot tell a ladder from two neighbours; the wear underneath can.*
+
 ## 4.F Fences, stars, wiggles and doorsteps (D605) — Joe's notes on View I and the fence
 
 Joe, on View I and again after the fence: *"What is this wiggly path to the well"*, a path *"going through a house fence"*,
