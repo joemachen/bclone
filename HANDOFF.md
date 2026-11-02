@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681), LOCAL, NOT PUSHED; `origin/main` = bb4db9b (D677). LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ✅ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, MERGED D681): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ✅ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, MERGED D681): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D677, D680, D681) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -9,7 +9,7 @@
 > minute, in a worktree off this `main`** — its branch is named when it starts; its notes come back to the session that started it.
 > The tree is clean but for `bclone-tracker.xlsx`.
 >
-> **🔨 D680 — `slice/lane-bridge`, view only, UNPLAYED; MERGED INTO `main` AT JOE'S WORD (D681, NOT PUSHED).** Joe played the Slice W build (his save
+> **🔨 D680 — `slice/lane-bridge`, view only, UNPLAYED; MERGED INTO `main` AT JOE'S WORD (D681) AND PUSHED.** Joe played the Slice W build (his save
 > `fernhollow-holly-kestrel-14`, format 10 — readable only by the build branch) and drew a red line where *"tons of villagers walk
 > and no path seems to show"*. His save, read with a scratch Python script over the gzipped JSON (`paths.wear` is dense little-endian
 > ushorts, `price_class` dense bytes, positions 32.32 fixed-point hex): the ground there is worn to the ceiling exactly where they
@@ -9228,7 +9228,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **`slice/lane-bridge` (D680) — MERGED (D681); JOE PLAYS IT IN HIS FERNHOLLOW ONCE THE BUILD BRANCH TAKES `main`; PUSH AT HIS WORD.** What to look for: the two lanes
+- ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); THE BUILD BRANCH HAS TAKEN `main`; JOE PLAYS IT IN HIS FERNHOLLOW FROM THE BUILD WORKTREE.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
   ladders of October still one lane. To see it on his format-10 save the build branch must merge `main` after this lands.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
