@@ -1016,6 +1016,16 @@
   "make_ticks": 20,
   "makes_per_stint": 1,
 
+  // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A
+  // housed household without one sends a free member to the nearest store that
+  // racks tools (the warehouse, the founders' cart, the pile -- never the market)
+  // and walks it home; the shopper takes it from the doorstep and parks it again.
+  // handcart_uses: the shopping trips a cart lasts before it is worn out and the
+  // household fetches another -- tool_uses' shape, one good over. PROPOSAL (150, "a
+  // few years of shopping" at 4-6 trips an adult-year), measured in the wear slice
+  // before it is final.
+  "handcart_uses": 150,
+
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the
   // post's logs and stone were measured against hall-era holdings (D594, trade.md §8.4); the work

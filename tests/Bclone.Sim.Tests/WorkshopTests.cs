@@ -48,7 +48,9 @@ public sealed class WorkshopTests
         return workshop;
     }
 
-    private static int Carts(SimWorld world) => world.InStores(Goods.Handcart) + world.OnTheGround(Goods.Handcart);
+    /// <summary>Every cart the village has: on a shelf, on the ground, or — since Slice H — parked at a household's door.</summary>
+    private static int Carts(SimWorld world) =>
+        world.InStores(Goods.Handcart) + world.OnTheGround(Goods.Handcart) + world.Households.Count(h => h.HandcartUses > 0);
 
     // ---------------------------------------------------------------
     //  §4.3 — the make
@@ -117,7 +119,8 @@ public sealed class WorkshopTests
         Assert.True(world.HandcartsEverMade > 0, "Nothing was made, so nothing was racked.");
         Assert.Equal(0, market.Store[Goods.Handcart]);
         Assert.Equal(0, granary.Store[Goods.Handcart]);
-        Assert.Equal(world.HandcartsEverMade, world.StoreBuildings.Where(s => s.Kind is StoreKind.Warehouse or StoreKind.Cart or StoreKind.Pile).Sum(s => s.Store[Goods.Handcart]) + world.OnTheGround(Goods.Handcart));
+        // Racked where tools are, or — since Slice H — already fetched from there to a household's door.
+        Assert.Equal(world.HandcartsEverMade, world.StoreBuildings.Where(s => s.Kind is StoreKind.Warehouse or StoreKind.Cart or StoreKind.Pile).Sum(s => s.Store[Goods.Handcart]) + world.OnTheGround(Goods.Handcart) + world.Households.Count(h => h.HandcartUses > 0));
     }
 
     /// <summary>§9 guard 3: the player's ceiling (D62, D139) — a met handcarts limit stops the make, and the sentence names it.</summary>
@@ -183,8 +186,10 @@ public sealed class WorkshopTests
             loop.StepOnce();
         }
 
-        int stoppedAt = LabourQuota.HandcartsWanted(world) + LabourQuota.HandcartSpare;
-        _output.WriteLine($"{world.HandcartsEverMade} made; the derived stop is now {stoppedAt}.");
+        // Since Slice H the households fetch the carts he racks, and a carted household wants none — so the stop is the
+        // carts the households hold, the ones still wanted, and the spare.
+        int stoppedAt = world.Households.Count(h => h.HandcartUses > 0) + LabourQuota.HandcartsWanted(world) + LabourQuota.HandcartSpare;
+        _output.WriteLine($"{world.HandcartsEverMade} made; the derived stop is now {stoppedAt} ({world.Households.Count(h => h.HandcartUses > 0)} carted).");
         Assert.Equal(stoppedAt, world.HandcartsEverMade);
         Assert.Equal(stoppedAt, Carts(world));
     }
@@ -719,7 +724,7 @@ public sealed class WorkshopTests
         loop.Step(config.TicksPerSeason);
         Assert.True(world.WorkshopLearned);
 
-        Assert.Equal(10, SaveGame.Format);
+        Assert.Equal(11, SaveGame.Format); // 10 at D678; 11 since Slice H (`HandcartTests` holds the bump and the refusal).
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Workplace again = loaded.World.Workplaces.Single(w => w.Id == workshop.Id);

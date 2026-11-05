@@ -59,10 +59,9 @@ internal static class GoodsPalette
         // fish's blue. Judged by its heap's ink edge under the three-band rule, like every good (`check.py`).
         Goods.Clothing => new Color(0.40f, 0.52f, 0.34f),
 
-        // ⭐ THE CART COLOUR, CHOSEN ONCE (D678; `handcart.md §8` asks for one): a painted cart's slate blue-green, apart
-        // from every brown the valley already draws (logs, leather, bread, the trades' huts) and from the fish's river
-        // blue. Slice H draws the pushed cart, the parked chip and the founders' cart in it; the warehouse's crate today.
-        Goods.Handcart => new Color(0.42f, 0.54f, 0.58f),
+        // ⭐ THE CART COLOUR, CHOSEN ONCE (D678; `handcart.md §8` asks for one) and kept in one place since Slice H drew it
+        // three ways: `VillageMap.HandcartColour` — the pushed cart, the parked chip, the founders' cart and this crate.
+        Goods.Handcart => VillageMap.HandcartColour,
 
         // ⚠️ A MOD-ADDED GOOD GETS A COLOUR RATHER THAN A CRASH, and it is deliberately drab.
         // `goods-catalog.md §9.4` asks whether a mod-added good needs a display colour and calls

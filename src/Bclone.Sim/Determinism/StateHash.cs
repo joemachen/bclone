@@ -300,6 +300,15 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)household.FencedTiles[t].Y);
             }
 
+            // The household's handcart and the trips left in it (`handcart.md §3`, Slice H) — it decides whether a
+            // member walks for one and how deep the shopper's armful is. Sparse, under its own tag, so a village with
+            // no cart hashes as it did before carts existed (0x68 is retired above and never reused).
+            if (household.HandcartUses != 0)
+            {
+                hash = MixByte(hash, 0x70);
+                hash = MixUInt32(hash, (uint)household.HandcartUses);
+            }
+
             if (household.HomePosition is not null)
             {
             }
@@ -1265,6 +1274,13 @@ public static class StateHash
         {
             hash = MixUInt32(hash, 8u);
             hash = MixUInt32(hash, (uint)villager.CoatDays);
+        }
+
+        // The household's cart in their hands (`handcart.md §4`, Slice H) — it decides how much they carry and how fast
+        // they walk. Sparse and tagged like the coat, so a village with no cart hashes as it did before carts existed.
+        if (villager.PushingACart)
+        {
+            hash = MixUInt32(hash, 9u);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

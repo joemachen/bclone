@@ -585,6 +585,26 @@ public sealed class Villager
     /// </remarks>
     public int CoatDays { get; set; }
 
+    /// <summary>
+    /// Whether the household's handcart is in their hands just now (`handcart.md §4`, Slice H) — taken from the doorstep
+    /// as a shopping trip begins, parked again when they reach the door; and on the walk home with a new cart from the
+    /// store (<see cref="VillagerState.PushingAHandcart"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The cart is the household's (<c>Household.HandcartUses</c>); this says who has it.</b> While it is true the
+    /// shopper's armful is <c>cart_armfuls</c> deep, the leg is slow on grass and quick on a path, and every tile the
+    /// wheels cross is a path at once (§4–§7). Hashed sparsely under its own tag, so a village with no cart hashes as it
+    /// did before carts existed.
+    /// </para>
+    /// <para>
+    /// ⚠️ Cleared where the person stops being this household's — death, and moving house (<c>HouseholdSystem.MoveIn</c>).
+    /// The cart itself stays the household's: a pusher who dies on the road leaves it to be found, which the sim does
+    /// not step, so it simply counts as home. Written down rather than modelled: a cart is a good, not a positioned thing.
+    /// </para>
+    /// </remarks>
+    public bool PushingACart { get; set; }
+
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
 
@@ -788,7 +808,9 @@ public sealed class Villager
         VillagerState.TravelingToWater => "walking to the water",
         VillagerState.TravelingToGame => "walking out to the woods",
         VillagerState.Hunting => "hunting in the woods",
-            VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}" : "walking home",
+            VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}"
+                : PushingACart ? (IsCarrying ? "pushing a load home" : "pushing the cart home")
+                : "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
             VillagerState.TravelingToHut => $"walking to {where}",
@@ -798,7 +820,8 @@ public sealed class Villager
             VillagerState.Resting => atTheSteading ? $"resting at {where}" : "resting at home",
             VillagerState.Dead => "dead",
             VillagerState.HaulingToStore => "carrying a load to the store",
-            VillagerState.FetchingFromStore => "fetching supplies for home",
+            // The shopper with the household's cart (`handcart.md §8`): the same errand, a thing on the map behind them.
+            VillagerState.FetchingFromStore => PushingACart ? "pushing the cart to the shops" : "fetching supplies for home",
             VillagerState.SeekingShelter => "going indoors to get warm",
             VillagerState.CollectingForMarket => "collecting goods for the market",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
@@ -835,6 +858,8 @@ public sealed class Villager
             VillagerState.Making => BatchesThisStint > 0
                 ? $"making handcarts, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "truing a wheel for a handcart",
+            VillagerState.FetchingAHandcart => "fetching a handcart from a store",
+            VillagerState.PushingAHandcart => "pushing the new handcart home",
             VillagerState.Baking => BatchesThisStint > 0
                 ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
                 : "lighting the oven",
@@ -925,6 +950,7 @@ public sealed class Villager
             ["tool_uses"] = ToolUses,
             ["tool_good"] = SaveWriter.Good(ToolGood),
             ["coat_days"] = CoatDays,
+            ["pushing_a_cart"] = PushingACart,
             ["forges_this_stint"] = ForgesThisStint,
             ["digs_this_stint"] = DigsThisStint,
             ["batches_this_stint"] = BatchesThisStint,
@@ -983,6 +1009,7 @@ public sealed class Villager
             ToolUses = save.Int("tool_uses"),
             ToolGood = save.Good("tool_good"),
             CoatDays = save.Int("coat_days"),
+            PushingACart = save.Bool("pushing_a_cart"),
             ForgesThisStint = save.Int("forges_this_stint"),
             DigsThisStint = save.Int("digs_this_stint"),
             BatchesThisStint = save.Int("batches_this_stint"),

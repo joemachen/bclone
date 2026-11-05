@@ -1289,6 +1289,14 @@ public sealed record SimConfig
     [JsonPropertyName("makes_per_stint")]
     public int MakesPerStint { get; init; } = 1;
 
+    /// <summary>
+    /// The shopping trips a household's handcart lasts (`handcart.md §6`, Slice H) — what <c>Household.HandcartUses</c>
+    /// is filled to when a cart is taken from a store, worn one a round trip; at nought the cart is gone and the
+    /// household fetches another. <c>tool_uses</c>' shape, one good over. Validated at load: greater than nought.
+    /// </summary>
+    [JsonPropertyName("handcart_uses")]
+    public int HandcartUses { get; init; } = 150;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -5681,6 +5689,11 @@ public sealed record SimConfig
         if (MarketDetourTicks < 0)
         {
             throw new SimConfigException($"market_detour_ticks cannot be negative (got {MarketDetourTicks}); 0 is nearest-first.");
+        }
+
+        if (HandcartUses <= 0)
+        {
+            throw new SimConfigException($"handcart_uses must be greater than zero (got {HandcartUses}) — a cart of no trips is no cart.");
         }
 
         if (LeaveHomeAge < 0)

@@ -332,6 +332,15 @@ public enum VillagerState
 
     /// <summary>At the workshop, making logs into a handcart — a batch (D678, §4.3).</summary>
     Making,
+
+    /// <summary>
+    /// To the store that holds a handcart, for the household's own (`handcart.md §3`, Slice H) — the coat's errand one
+    /// good over, and the household's rather than the person's: one fetcher a household, none once it has one.
+    /// </summary>
+    FetchingAHandcart,
+
+    /// <summary>Pushing the household's new handcart home from the store, to park it at the door (`handcart.md §3`).</summary>
+    PushingAHandcart,
 }
 
 /// <summary>

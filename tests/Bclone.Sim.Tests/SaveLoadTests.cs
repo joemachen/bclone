@@ -364,14 +364,14 @@ public sealed class SaveLoadTests : IDisposable
             "LegTarget", "LegTicks", "LegWalked", "Carried", "ErrandX", "ErrandY", "ActionTicksRemaining", "JustAte",
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
-            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays",
+            "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
-            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed",
+            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {

@@ -132,6 +132,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.Sewing => "sewing coats",
         VillagerState.TravelingToWorkshop => "walking to the workshop",
         VillagerState.Making => "making handcarts",
+        VillagerState.FetchingAHandcart => "fetching a handcart from a store",
+        VillagerState.PushingAHandcart => "pushing a handcart home",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
         VillagerState.Quarrying => "cutting stone",
         VillagerState.TravelingToMine => "walking to the mine face",
@@ -424,6 +426,17 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // The coat's errand (D659), the tool's rule.
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     VillagerState.FetchingACoat);
+                return;
+
+            case VillagerState.FetchingAHandcart:
+                // The household's cart (`handcart.md §3`), the coat's rule — the store fixed at departure.
+                Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
+                    VillagerState.FetchingAHandcart);
+                return;
+
+            case VillagerState.PushingAHandcart:
+                // The new cart goes to the door it will be parked at — home, never the steading (§3).
+                Travel(world, villager, world.HomePoint(villager), VillagerState.Idle);
                 return;
 
             case VillagerState.WalkingToTheWell:
@@ -1208,9 +1221,70 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         villager.ActionTicksRemaining = 0;
+        if (!alreadyGoing)
+        {
+            TakeTheCartFromTheDoorstep(world, villager);
+        }
+
         villager.State = VillagerState.FetchingFromStore;
         Travel(world, villager, source.Position, VillagerState.FetchingFromStore);
         return true;
+    }
+
+    /// <summary>
+    /// ⭐ A shopper setting out from home takes the household's handcart with them (`handcart.md §4`, Slice H; Joe, D672
+    /// call 1: parked at the home, <i>"the shopper takes it from the doorstep — no detour"</i>). Only from the doorstep:
+    /// a trip begun at work or at a store goes without it, because a cart kept anywhere but the start of the trip costs
+    /// a walk to get it, and that walk is the one this slice exists to remove. One pusher a household at a time.
+    /// </summary>
+    /// <remarks>
+    /// Asked where a shopping trip begins — <c>Decide</c>'s fetch and the emergency restock — never on a re-plan
+    /// mid-walk, so a cart is taken once a trip. Parked again when the pusher reaches the door (<c>ArriveAt</c>).
+    /// </remarks>
+    private static void TakeTheCartFromTheDoorstep(SimWorld world, Villager villager)
+    {
+        Household household = world.HouseholdOf(villager);
+        if (household.HandcartUses <= 0
+            || household.HomePosition is not Point door
+            || villager.Tile != door.ToTile()
+            || SomebodyIsPushingTheCart(world, household))
+        {
+            return;
+        }
+
+        villager.PushingACart = true;
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} sets out with the {household.Name} handcart, {household.HandcartUses} trips left in it — {world.Clock}.");
+        }
+    }
+
+    /// <summary>Whether any living member of the household has its cart in their hands (`handcart.md §4`).</summary>
+    private static bool SomebodyIsPushingTheCart(SimWorld world, Household household)
+    {
+        for (int i = 0; i < household.MemberIds.Count; i++)
+        {
+            if (world.FindVillager(household.MemberIds[i]) is { Alive: true, PushingACart: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The pusher is home: the cart is parked at the door (`handcart.md §4`), and a shopping trip wears it a use (§6).
+    /// </summary>
+    private static void ParkTheCart(SimWorld world, Villager villager)
+    {
+        villager.PushingACart = false;
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} parks the {world.HouseholdOf(villager).Name} handcart at the door — {world.Clock}.");
+        }
     }
 
     /// <summary>Food first, then fuel — the one that kills soonest (D45's ordering).</summary>
@@ -2447,7 +2521,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// the two answers are the same place.
     /// </remarks>
     private static Point RestPointFor(SimWorld world, Villager villager) =>
-        villager.IsCarrying ? world.HomePoint(villager) : world.RestingPoint(villager);
+        // A load goes home, and so does the household's cart (`handcart.md §4`): it is parked at the door, never the steading.
+        villager.IsCarrying || villager.PushingACart ? world.HomePoint(villager) : world.RestingPoint(villager);
 
     /// <summary>
     /// Send a summer farmhand out to tend a sown tile of their own field, if a rest spell has just
@@ -2807,6 +2882,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         StoreBuilding? errand = villager.CanWork ? PlanFetch(world, villager) : null;
         if (errand is not null)
         {
+            // ⭐ AND THE HOUSEHOLD'S HANDCART GOES WITH THEM, FROM THE DOORSTEP (`handcart.md §4`, Slice H) — the one
+            // term in D668's shopping walk that was the village's to change: how much one person carries a trip.
+            TakeTheCartFromTheDoorstep(world, villager);
             villager.State = VillagerState.FetchingFromStore;
             Travel(world, villager, errand.Position, VillagerState.FetchingFromStore);
             return;
@@ -2858,6 +2936,15 @@ public sealed partial class BehaviorSystem : ISimSystem
         // childhood with none on their back — the carriers too, because walking is outdoors (D53). After the tool,
         // because a tool is the trade's and a coat is the person's; before the work, like the tool.
         if (TryFetchACoat(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ A HANDCART FOR EVERY HOUSEHOLD (Joe, D672 call 1; `handcart.md §3`): the coat's errand one good over, for a
+        // housed household with none — one fetcher at a time, from a store that racks tools. After the coat, because a
+        // coat is the person's and a cart the household's convenience; before the work, like both. Once in a cart's
+        // life, so it is not the household's half-larder errand and the market does not stock it.
+        if (TryFetchAHandcart(world, villager))
         {
             return;
         }
@@ -5138,6 +5225,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival == VillagerState.FetchingAHandcart)
+        {
+            TakeAHandcart(world, villager);
+            return;
+        }
+
         // On the field (D511): tend a while, then back to the steading. A tile reaped, a season
         // turned or a job lost on the way, and they turn round instead.
         if (onArrival == VillagerState.Tending)
@@ -5326,6 +5419,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (!atTheSteading)
         {
             UnloadAtHome(world, villager);
+
+            // ⭐ And the household's cart is parked at the door (`handcart.md §4`) — `RestPointFor` sends a pusher home,
+            // never to the steading, so this is the one place a cart comes to rest.
+            if (villager.PushingACart)
+            {
+                ParkTheCart(world, villager);
+            }
         }
 
         // Except what a larder is not for. Anyone who reaches their door still carrying
@@ -5555,6 +5655,89 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// <summary>A villager asks for a tool as <c>Decide</c> would, posed directly (D617) — their job, or none for a laborer.</summary>
     internal static bool TryFetchAToolForTest(SimWorld world, Villager villager) =>
         TryFetchATool(world, villager, world.FindWorkplace(villager.WorkplaceId));
+
+    /// <summary>A villager decides what to do next, posed directly (Slice H: where a shopper stands when they set off decides whether the cart goes too).</summary>
+    internal static void DecideForTest(SimWorld world, Villager villager) => Decide(world, villager);
+
+    /// <summary>
+    /// Walk to the nearest store holding a handcart, for the household's own (`handcart.md §3`, Slice H; Joe, D672 call
+    /// 1) — <see cref="TryFetchACoat"/>'s errand one good over, and the <b>household's</b> rather than the person's: a
+    /// housed household with no cart sends one free member; a roofless family has no door to park one at and sends
+    /// nobody. The row's stores only (the warehouse, the founders' cart, the pile — never the market), by the rows.
+    /// </summary>
+    private static bool TryFetchAHandcart(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying || villager.PushingACart)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        if (!household.HasHome || household.HandcartUses > 0 || SomebodyIsFetchingTheCart(world, household, villager))
+        {
+            return false;
+        }
+
+        StoreBuilding? source = NearestStoreHolding(world, villager.Tile, Goods.Handcart);
+        if (source is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = source.Tile.X;
+        villager.ErrandY = source.Tile.Y;
+        villager.State = VillagerState.FetchingAHandcart;
+        Travel(world, villager, source.Position, VillagerState.FetchingAHandcart);
+        return true;
+    }
+
+    /// <summary>Whether a housemate is already out for the household's cart — one fetcher a household (`handcart.md §3`).</summary>
+    private static bool SomebodyIsFetchingTheCart(SimWorld world, Household household, Villager villager)
+    {
+        for (int i = 0; i < household.MemberIds.Count; i++)
+        {
+            int id = household.MemberIds[i];
+            if (id != villager.Id
+                && world.FindVillager(id) is { Alive: true, State: VillagerState.FetchingAHandcart or VillagerState.PushingAHandcart })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// At the store: take a handcart off the shelf for the household and push it home (`handcart.md §3`). The cart is the
+    /// household's from here (<see cref="Household.HandcartUses"/> filled to <c>handcart_uses</c>); the walk home is the
+    /// fetcher's. Gone on the way, or the household carted meanwhile, and they decide again — nothing is conjured.
+    /// </summary>
+    private static void TakeAHandcart(SimWorld world, Villager villager)
+    {
+        StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
+        villager.ErrandX = 0;
+        villager.ErrandY = 0;
+        Household household = world.HouseholdOf(villager);
+        if (store is not null && household.HasHome && household.HandcartUses <= 0 && store.Store.TryTake(Goods.Handcart, 1))
+        {
+            household.HandcartUses = world.Config.HandcartUses;
+            villager.PushingACart = true;
+            if (world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "behavior",
+                    $"{villager.Name} took a handcart from {store.Name} for the {household.Name} household — {world.Clock}.");
+            }
+
+            villager.State = VillagerState.PushingAHandcart;
+            Travel(world, villager, world.HomePoint(villager), VillagerState.Idle);
+            return;
+        }
+
+        // ⛔ Home, not `Decide` — a refusal at a shelf they are standing beside would otherwise ask for the same cart in
+        // the same tick (the shelf still holds it; the household's own state refused it) and recurse until the stack
+        // went: the red-check's mutant did exactly that. The errand is spent; they decide again from their rest.
+        GoHome(world, villager);
+    }
 
     /// <summary>
     /// A builder sets off to raise a site — and a tool in their hands is worn a use, as any trade's is by a work action

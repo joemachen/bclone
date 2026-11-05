@@ -80,6 +80,14 @@ public partial class VillageMap : Control
     internal static readonly Color HomeColour = new("#b98a52");
 
     /// <summary>
+    /// ⭐ THE CART COLOUR, ONE ANSWER (Slice H, `handcart.md §8`; chosen at D678 in <see cref="GoodsPalette"/>, moved here
+    /// the day it had three drawings): a painted cart's slate blue-green, apart from every brown the valley draws and
+    /// from the fish's river blue. The founders' cart quad, the chip parked beside a home, the rectangle behind a
+    /// pushing villager and the warehouse's crate all read it from here; the goods palette hands it on.
+    /// </summary>
+    internal static readonly Color HandcartColour = new(0.42f, 0.54f, 0.58f);
+
+    /// <summary>
     /// How far each condition pulls a building's paint toward grey, then toward black — sound, worn, failing, fallen in
     /// (`building-condition.md §6`, D556). Steps, not a gradient: the state is the fact a player reads, and a fill that
     /// crept darker every season would be a number dressed as a colour.
@@ -267,6 +275,9 @@ public partial class VillageMap : Control
         // The barn and the post draw as their trades (D596): the store IS the building the herdsman and merchant work at.
         StoreKind.Barn => TradeGlyph.ColourOf(JobKind.Herdsman),
         StoreKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
+
+        // The founders' cart in the cart colour (Slice H, `handcart.md §8`; `art-inventory.md`'s gap) — it borrowed the market's.
+        StoreKind.Cart => HandcartColour,
         _ => MarketColour,
     };
 
@@ -2971,6 +2982,8 @@ public partial class VillageMap : Control
                 LifespanYears = 1,
                 Carried = new Stockpile(_world!.GoodsCatalog.Count),
                 Position = at,
+                // Posed on purpose (Slice H): the cart behind a pusher is drawn from the leg, never from the dot's place.
+                PushingACart = false,
             };
 
             float off = DrawnCentre(posed).DistanceTo(ToScreen(at));
@@ -3140,6 +3153,10 @@ public partial class VillageMap : Control
         // the overview says *"Stone 0 (+12 on the ground — no room in store)"* and until now
         // there was nowhere on screen to find the twelve.
         DrawHeaps();
+
+        // The households' handcarts, parked beside their doors (Slice H) — a chip in the heaps' geometry, over the
+        // houses and under the people, as the heaps are.
+        DrawParkedCarts();
 
         // Over the buildings so it is not hidden by one, under the people so it never
         // hides them — the same rule the rest of this method follows.
@@ -7897,6 +7914,166 @@ public partial class VillageMap : Control
 
     private readonly Dictionary<GridPos, int> _heapsOnTile = new();
 
+    /// <summary>
+    /// ⭐ A household's handcart stands at its door when nobody is pushing it (Slice H, `handcart.md §8`; Joe: <i>"i would
+    /// like to see the house tile to show when a house has a cart"</i>) — a chip beside the home in the heap chips'
+    /// geometry, so a street of homes with carts reads as one at a glance.
+    /// </summary>
+    /// <remarks>
+    /// Which households have a member out with the cart is read off the villagers once a frame — a derived set, never
+    /// kept; a cart in somebody's hands is drawn behind them instead (<see cref="DrawTheCartBehind"/>).
+    /// </remarks>
+    private void DrawParkedCarts()
+    {
+        SimWorld world = _world!;
+        _pushing.Clear();
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.PushingACart)
+            {
+                _pushing.Add(villager.HouseholdId);
+            }
+        }
+
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.HandcartUses <= 0 || household.HomeTile is not GridPos door || _pushing.Contains(household.Id))
+            {
+                continue;
+            }
+
+            DrawTheCartChip(CartChipRectOf(door));
+        }
+    }
+
+    private readonly HashSet<int> _pushing = new();
+
+    /// <summary>
+    /// Where a household's parked cart is drawn: the heap chip's place beside the home (<see cref="HeapRectOf"/>), a
+    /// chip's width further down — so a heap at the same door and the cart never sit on each other.
+    /// </summary>
+    private Rect2 CartChipRectOf(GridPos door)
+    {
+        Rect2 box = HeapRectOf(door);
+        box.Position += new Vector2(0f, box.Size.Y * 1.15f);
+        return box;
+    }
+
+    /// <summary>A cart seen from above: a bed in the cart colour, inked round like a heap, with its axle across it.</summary>
+    private void DrawTheCartChip(Rect2 box)
+    {
+        DrawRect(box, HandcartColour);
+        DrawRect(box, HeapEdge, filled: false, width: 2f);
+        float y = box.Position.Y + (box.Size.Y / 2f);
+        DrawLine(new Vector2(box.Position.X, y), new Vector2(box.End.X, y), HeapEdge, 1f);
+    }
+
+    /// <summary>
+    /// The cart behind a pushing villager (Slice H, `handcart.md §8`): a small rectangle trailing the dot, against the
+    /// way they are walking, in the cart colour.
+    /// </summary>
+    private void DrawTheCartBehind(Villager villager, Vector2 centre, float radius)
+    {
+        Vector2 heading = ToScreen(villager.LegTo) - ToScreen(villager.LegFrom);
+        Vector2[] quad = CartQuad(centre, radius, heading);
+        DrawColoredPolygon(quad, HandcartColour);
+        for (int c = 0; c < 4; c++)
+        {
+            DrawLine(quad[c], quad[(c + 1) % 4], HeapEdge, 1f);
+        }
+    }
+
+    /// <summary>
+    /// The pushed cart's four corners — behind the dot along <paramref name="heading"/> (below it when they stand still),
+    /// clear of the dot by a couple of pixels, as long as the dot is wide and a little narrower. Pure, for the probe.
+    /// </summary>
+    internal static Vector2[] CartQuad(Vector2 centre, float radius, Vector2 heading)
+    {
+        Vector2 forward = heading.LengthSquared() < 1e-6f ? new Vector2(0f, -1f) : heading.Normalized();
+        Vector2 side = new(-forward.Y, forward.X);
+        float length = Mathf.Max(3f, radius * 1.8f);
+        float width = Mathf.Max(2f, radius * 1.2f);
+        Vector2 cartCentre = centre - (forward * (radius + 2f + (length / 2f)));
+        Vector2 along = forward * (length / 2f);
+        Vector2 across = side * (width / 2f);
+        return new[]
+        {
+            cartCentre - along - across,
+            cartCentre + along - across,
+            cartCentre + along + across,
+            cartCentre - along + across,
+        };
+    }
+
+    /// <summary>
+    /// ⭐ A cart is seen (Slice H, `handcart.md §8`) — <b>a probe line</b>: the pushed cart's rectangle trails the dot
+    /// against its heading and never covers it, a standing pusher's cart hangs below; the parked chip sits beside a
+    /// building's door, outside its square, within a tile, and never on the heap chip of the same door; and the three
+    /// drawings and the goods palette are one colour.
+    /// </summary>
+    public string ACartIsSeen()
+    {
+        var faults = new List<string>();
+        var dot = new Vector2(100f, 100f);
+        const float Radius = 5f;
+        foreach ((Vector2 heading, string name) in new[] { (new Vector2(1f, 0f), "east"), (new Vector2(0f, 1f), "south"), (new Vector2(-3f, 4f), "south-west") })
+        {
+            Vector2[] quad = CartQuad(dot, Radius, heading);
+            Vector2 cartCentre = (quad[0] + quad[2]) / 2f;
+            Vector2 away = cartCentre - dot;
+            float behind = away.Normalized().Dot(heading.Normalized());
+            float nearest = quad.Min(c => c.DistanceTo(dot));
+            if (behind > -0.999f || nearest <= Radius || away.Length() > Radius * 4f)
+            {
+                faults.Add($"walking {name} the cart sits {away.Length():F1}px off at cos {behind:F2}, nearest corner {nearest:F1}px from a {Radius}px dot");
+            }
+        }
+
+        Vector2[] still = CartQuad(dot, Radius, Vector2.Zero);
+        if (((still[0] + still[2]) / 2f).Y <= dot.Y)
+        {
+            faults.Add("a standing pusher's cart is not drawn below the dot");
+        }
+
+        SimWorld world = _world!;
+        if (world.StoreBuildings.Count == 0)
+        {
+            faults.Add("no building to pose a parked cart beside");
+        }
+        else
+        {
+            GridPos door = world.StoreBuildings[0].Tile;
+            Rect2 chip = CartChipRectOf(door);
+            Rect2 heap = HeapRectOf(door);
+            (Vector2 _, Rect2 building) = BuildingBoxOn(door)!.Value;
+            if (chip.Intersects(building))
+            {
+                faults.Add("the parked cart is drawn under the building");
+            }
+
+            if (chip.GetCenter().DistanceTo(building.GetCenter()) > _pixelsPerTile * 1.6f)
+            {
+                faults.Add($"the parked cart is {chip.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from its door");
+            }
+
+            if (chip.Intersects(heap))
+            {
+                faults.Add("the parked cart sits on the heap chip of the same door");
+            }
+        }
+
+        if (ColourOf(StoreKind.Cart) != HandcartColour || GoodsPalette.ColourOf(Goods.Handcart) != HandcartColour)
+        {
+            faults.Add("the founders' cart, the handcart good and the cart colour are not one colour");
+        }
+
+        return faults.Count == 0
+            ? "[widths] cart: ✅ the pushed cart trails the dot and never covers it, the parked chip sits beside the door clear of the heap, the founders' cart and the good share its colour"
+            : $"[widths] cart: ⛔ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Every drawn heap chip and where it is — <b>the one place a chip's rectangle is decided</b>.</summary>
     /// <remarks>
     /// Two goods on one tile are two chips side by side, not one over the other. Shared by the
@@ -8208,6 +8385,12 @@ public partial class VillageMap : Control
                 LifeStage.Elder => ElderColour,
                 _ => AdultColour,
             };
+
+            // ⭐ The household's handcart behind whoever is pushing it (Slice H) — under the dot, so the person is never hidden.
+            if (villager.PushingACart)
+            {
+                DrawTheCartBehind(villager, centre, radius);
+            }
 
             DrawCircle(centre, radius, colour);
 

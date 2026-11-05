@@ -264,6 +264,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.FetchingATool => false,
         VillagerState.FetchingACoat => false,
 
+        // The household's cart, fetched and pushed home (Slice H) — the coat's errand one good over, nobody's trade.
+        VillagerState.FetchingAHandcart => false,
+        VillagerState.PushingAHandcart => false,
+
         // The forge, and the walk to it, is a smith out on their trade (D391).
         VillagerState.TravelingToSmithy => true,
         VillagerState.Forging => true,

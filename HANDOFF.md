@@ -1,6 +1,41 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE LODGE FIX (D685, 2026-11-04) ON TOP OF SLICE W (D684), LOCAL, NOT PUSHED; `origin/main` = 3bf167b (D684). ✅ ON `main` NOW: SLICE W — THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED, D682), THE CARPENTER, THE HANDCART ON A SHELF, SAVE FORMAT 10 (OLDER SAVES REFUSED IN WORDS) — PLAYED BY JOE TWICE; AND 🔨 THE LODGE FIX (D683, UNPLAYED): UNDER A MET MEAT LIMIT A SWOLLEN LODGE KEEPS ITS HUNTERS SEATED AS CARRIERS, ALL CARRYING AT ONCE, THE CARD SAYING WHY. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY D671, W D678, H NEXT), THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE H (`specs/handcart.md`, ALL SIX CALLS MADE) IN ITS OWN SESSION OFF THIS `main`; JOE PLAYS THE LODGE FROM `main`. ✅ `slice/lane-bridge` (D680, MERGED D681, PUSHED). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — THIS BRANCH `claude/slice-handcart-b0230a` = SLICE H IN BUILD (D686, 2026-11-04): PIECES 1–2 OF 5, THE HOUSEHOLD'S HANDCART OWNED, FETCHED, PUSHED, PARKED AND SEEN, SAVE FORMAT 11, UNPLAYED, UNMERGED; PIECES 3–5 (ARMFULS, WEAR, SPEED AND TRACKS) NEXT, EACH MEASURED BEFORE TYPED. `main` = THE MERGE OF THE LODGE FIX (D685, 2026-11-04) ON TOP OF SLICE W (D684), LOCAL, NOT PUSHED; `origin/main` = 3bf167b (D684). ✅ ON `main` NOW: SLICE W — THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED, D682), THE CARPENTER, THE HANDCART ON A SHELF, SAVE FORMAT 10 (OLDER SAVES REFUSED IN WORDS) — PLAYED BY JOE TWICE; AND 🔨 THE LODGE FIX (D683, UNPLAYED): UNDER A MET MEAT LIMIT A SWOLLEN LODGE KEEPS ITS HUNTERS SEATED AS CARRIERS, ALL CARRYING AT ONCE, THE CARD SAYING WHY. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY D671, W D678, H NEXT), THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE H (`specs/handcart.md`, ALL SIX CALLS MADE) IN ITS OWN SESSION OFF THIS `main`; JOE PLAYS THE LODGE FROM `main`. ✅ `slice/lane-bridge` (D680, MERGED D681, PUSHED). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D685 — THE LODGE FIX D683 MERGED ON TOP OF D684) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D686 — SLICE H, PIECES 1–2 OF 5, ON `claude/slice-handcart-b0230a`) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **This branch is `main` (47c1982, D685) plus Slice H's first commit(s). Not pushed, not merged. Joe has not played it.** The worktree
+> is `.claude/worktrees/slice-handcart-b0230a`; `.\run.bat` from there plays it (⚠️ format 11: his format-10 saves from the Slice W
+> builds are refused in words; a new game or a save made here).
+>
+> **✅ Built (D686, `specs/handcart.md` §3, §4, §8, §9, §11.1):** `Household.HandcartUses` (trips left, 0 = none) and
+> `Villager.PushingACart`, both sparse in the hash and saved (**format 11**); states `FetchingAHandcart` / `PushingAHandcart`;
+> `BehaviorSystem.TryFetchAHandcart` (the coat's errand one good over — a housed household with none sends one free member to the
+> nearest store racking a cart, never the market; one fetcher a household; the fetcher pushes it home to the door and parks it),
+> `TakeTheCartFromTheDoorstep` (the shopper takes it only when standing on the home tile; one pusher a household), `ParkTheCart` at
+> the door, `RestPointFor` sends a pusher home, death and `MoveIn` clear the flag, `HandcartsWanted` excludes carted households.
+> The view: `VillageMap.HandcartColour` (one answer; the founders' cart drawn in it), `DrawParkedCarts` (a chip beside the home),
+> `DrawTheCartBehind` (a rectangle trailing the pusher), the household card's CART line, probe lines `cart:` and `cart card:`,
+> `check.py` 0 of 41 fail. `handcart_uses` 150 is typed as the PROPOSAL (the take fills from it) and is measured in piece 4.
+>
+> **Guards:** `HandcartTests` 13, red-checked **21 mutants, 23 reds, two zeros written down** (§11.1). ⚠️ Slice W's guards 1, 2 and
+> 4 now count the carts households took (H leaked into W as W's §13 said it would). **The four checks:** suite **1923 / 1 / 5 of 1929 in 14m39** (16m37 at D685; the one red was `MaintenanceTests.AFormatFourSaveIsRefused`
+> pinning the refusal text *"reads 10"* — made *"reads 11"* after the run began, then green under its filter with `TradeRowsTests` and
+> `HandcartTests`, 26 of 26; a view build and a probe ran beside the suite, so the clock is not clean); view 0 warnings; probe 106 `[widths]` lines, 70 ✅, 0 ⛔, `cart:` ✅, `cart card:` ✅, bar 151, tile
+> centres ✅, new game ✅, `done.`, no Godot left; **goldens 398 → 398, none moved** (the unattended harness raises no workshop, so
+> no cart exists in any golden run; the format bump touches no hash).
+>
+> **▶️ NEXT, IN ORDER — pieces 3, 4, 5, each its own commit, each measured on `ZzLogistics` BEFORE its number is typed
+> (`tools/harness/ZzLogistics.cs` has the cart arms: `ZZ_CARTS`, `ZZ_ARMFULS`, `ZZ_NOCARTS` on Joe's saves, the `trips` and
+> `carts` lines):** (3) `cart_armfuls` — `CollectFromStore`'s `load` and `PlanFetch`'s `ATripsWorth` are `carry_capacity ×
+> cart_armfuls` while pushing; swept 2 / 3 / 4 against the Fetch share (toward the control's 3–13 %), trips a household-year
+> (~2.5× fewer), the median trip (unchanged); `carry_capacity` untouched. (4) wear — one use off at the door after a shopping trip
+> (`villager.State == TravelingHome` in `ParkTheCart`), gone at 0, the DEBUG line; `handcart_uses` measured. (5) `cart_off_path_slow_percent`
+> 150 — in `WalkedOver` a grass tile (`cost == BaseTileCost`) costs the percent while pushing, the route unchanged; the cart's pass
+> treads every footprint tile to `path_worn_at` at once (`Travel`'s footprint loop); the trodden and path share with carts against
+> without measured and written down, softening Joe's. Then the docs in the final commit (DESIGN §4/§5/§6/§7, this file,
+> `content-inventory.md`, `logistics.md §6` with the before-and-after), Joe plays, merges at his word.
+>
+> **— `main`'s block, as it stands at D685 —**
+> **⭐⭐ (main's block) WHERE THINGS ARE, 2026-11-04 (D685 — THE LODGE FIX D683 MERGED ON TOP OF D684) — ON WINDOWS.**
 >
 > **`main` = the merge of `claude/slice-lodge-carriers-bb1fd3` (D685, 2026-11-04), local, NOT pushed; `origin/main` = 3bf167b (D684).** The
 > branch was local `main` (the Slice W merge, D684) + the lodge fix (D683: d316f9b the code, 655c6af its docs) + the merge of `main` into it,
@@ -9011,6 +9046,30 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D686 PAID FOR — A REFUSAL BESIDE THE SHELF RECURSES, A CRASHED MUTANT READS "9 PASSED", AND PYTHON'S TEXT MODE REWRITES AN LF FILE
+
+- ⛔ **A take refused at a store the villager is standing on must not end in `Decide`.** `TakeAHandcart` refused (the household
+  carted meanwhile) and called `Decide`, which asked `TryFetchAHandcart` again, which found the same shelf still holding a cart two
+  steps away, walked it in the same tick, arrived, refused, and so on until the stack went. The coat's `TakeACoat` has the same
+  shape and gets away with it only because its refusal cases also stop the next ask. The cart's refusal goes `GoHome`. *Any
+  arrive-and-refuse branch: ask what the next `Decide` would do with the same world.*
+- ⛔ **A mutant that crashes the test host scores "Passed: 9 of 9" — no red, no failure, six tests simply missing.** D657's trap
+  (*a mutant that crashes is not a red*) in a new coat: the recursion above took the process down and the runner's summary line
+  looked green. **Read the TOTAL against the filter's count** (16 here), not the failed column. The runner now records the
+  summary line beside the reds for exactly this.
+- ⚠️ **A founder beside the shelf never walks — D659's trap, paid a third time.** Four mutants scored zero because the fixture's
+  founders stand on the warehouse at tick 0 and a fetch begins and ends inside one tick, and because `BehaviorSystem.Execute`'s
+  audit line is a before-and-after per villager, so a state that flips and flips back inside one `Act` is invisible to it too.
+  Stand everybody at their door (`StandAt(world.HomePoint(v))`) or pose the rule directly; the roofless founders were stood three
+  ticks off the cart by walking the ring until `TicksBetween > 2`.
+- ⚠️ **Python's text mode on Windows writes `\r\n` for every `\n`, and the repo's files are LF.** A mutant runner that did
+  `read_text` / `write_text` turned `BehaviorSystem.cs` CRLF on its first restore (`file` said *with CRLF line terminators*; the
+  byte hash check caught it). Open with `newline=""` both ways, or better **restore from the bytes read before the mutation**
+  (`write_bytes(original)`) — `str.replace(new, old, 1)` with an EMPTY `new` inserts `old` at position 0 of the file, which is
+  how two switch arms ended up above the `using` lines.
+- ⚠️ **`dotnet build` of the view in a fresh worktree reports `Time Elapsed 00:00:03` and 0 warnings** — check the dll is newer
+  than the edited source (`find … -newer`) before believing it compiled them; it had.
+
 ## ⛔ THE TRAPS D683 PAID FOR — A SEAT ASKED AT THE TOP OF THE QUOTA OUTRANKS A ROOF, A TYPED NOUGHT IS APPLIED AFTER THE HANDS ARE SPENT, AND THE CLAIM IS ON THE WALK TO THE HUT
 
 - ⛔ **A new want's RANK in `LabourQuota.For` is a design decision, and the mean will not tell you it is wrong.** The carriers for a
@@ -9410,6 +9469,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **SLICE H, PIECES 1–2 (D686, `claude/slice-handcart-b0230a`) — HIS TO PLAY WHEN THE SLICE IS WHOLE (PIECES 3–5 FOLLOW ON THE SAME
+  BRANCH).** What to look for (`.\run.bat` from the worktree; a new game or a format-11 save — his format-10 saves are refused): once
+  a workshop has racked carts, a member of each housed household walks to the warehouse, pushes a slate-blue cart home and parks it
+  — a chip beside the house; the household card reads *"a handcart, 150 trips left"*; a shopper leaving home pushes it to the shop
+  and back (*"pushing the cart to the shops"*, *"pushing a load home"*, the rectangle behind the dot); the founders' cart is slate
+  blue now, not the market's amber. Nothing it buys is in yet (pieces 3–5). `handcart_uses` 150 is a proposal, measured in piece 4.
 - ⏸️ **THE STALLED LODGE (D683) — MERGED INTO `main` AT HIS WORD (D685, 2026-11-04), UNPLAYED; JOE PLAYS IT FROM `main`.** What to look for in a village with a lodge past half and the meat row met (his Hollowmere): the lodge's card reading
   *"The village has its 2,500 meat (N stored), so the hunters are carrying it in rather than hunting — N waiting"*, the three
   hunters walking meat to the granary together rather than one at a time, the lodge below half within a season or two, and the

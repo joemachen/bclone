@@ -74,6 +74,9 @@ public partial class Main
 
         /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
         public required Label Door { get; init; }
+
+        /// <summary>A household's handcart and the trips left in it (Slice H, `handcart.md §8`). Hidden on every other kind, and with no cart.</summary>
+        public required Label Cart { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
@@ -434,6 +437,11 @@ public partial class Main
         door.Visible = false;
         column.AddChild(door);
 
+        // ---- a household's handcart (Slice H, `handcart.md §8`) ----
+        Label cart = Wrapped(Muted(string.Empty));
+        cart.Visible = false;
+        column.AddChild(cart);
+
         // ---- a person's sections (D431) ----
         VillagerParts person = BuildPersonParts();
         column.AddChild(person.Box);
@@ -540,6 +548,7 @@ public partial class Main
             Status = status,
             Wear = wear,
             Door = door,
+            Cart = cart,
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
@@ -752,6 +761,7 @@ public partial class Main
         // Each building's writer says its condition; a person, a site and anything without a row says none.
         card.Wear.Visible = false;
         card.Door.Visible = false;
+        card.Cart.Visible = false;
         card.Portrait.Wear = Condition.Sound;
 
         bool shown = card.Subject.Kind switch
@@ -1586,6 +1596,7 @@ public partial class Main
         Title(card, $"The {home.Name} household", renamable: true);
         Wear(card, world.WearOf(home), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(home)));
+        CartLine(card, CartSentence(world, home));
 
         int living = world.LivingMembersOf(home);
         int food = world.FoodIn(home.Stockpile);
@@ -2425,6 +2436,36 @@ public partial class Main
         card.Door.Text = said ?? string.Empty;
     }
 
+    /// <summary>Write the household's handcart line — or hide it, for a household with no cart (Slice H, `handcart.md §8`).</summary>
+    private static void CartLine(Card card, string? said)
+    {
+        card.Cart.Visible = said is not null;
+        card.Cart.Text = said ?? string.Empty;
+    }
+
+    /// <summary>
+    /// <i>"a handcart, 37 trips left"</i> — and who has it when it is out — or null for a household with none. One copy
+    /// for the card and its probe.
+    /// </summary>
+    private static string? CartSentence(SimWorld world, Household home)
+    {
+        if (home.HandcartUses <= 0)
+        {
+            return null;
+        }
+
+        string trips = home.HandcartUses == 1 ? "its last trip left" : $"{home.HandcartUses} trips left";
+        for (int i = 0; i < home.MemberIds.Count; i++)
+        {
+            if (world.FindVillager(home.MemberIds[i]) is { Alive: true, PushingACart: true } pusher)
+            {
+                return $"a handcart, {trips} — out with {pusher.Name}";
+            }
+        }
+
+        return $"a handcart, {trips}";
+    }
+
     /// <summary>Write the condition line and weather the portrait — or hide the line, for a thing with no row.</summary>
     private static void Wear(
         Card card, WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
@@ -3064,6 +3105,57 @@ public partial class Main
         return faults.Count == 0
             ? "[widths] coat: ✅ the card says the winters left in a coat, its last winter, and no coat"
             : $"[widths] coat: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// Probe `cart card:` (Slice H, `handcart.md §8`): the household card's CART line reads the trips left, who has it
+    /// out, and nothing with no cart — posed on a household and a member and put back, so the village is as it was.
+    /// </summary>
+    private string TheCardSaysTheCart()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Household? home = world.Households.FirstOrDefault(h => world.LivingMembersOf(h) > 0);
+        Villager? member = home is null ? null : world.Villagers.FirstOrDefault(v => v.Alive && v.HouseholdId == home.Id);
+        if (home is null || member is null)
+        {
+            return "[widths] cart card: ⛔ no household to pose a cart on";
+        }
+
+        int usesBefore = home.HandcartUses;
+        bool pushingBefore = member.PushingACart;
+        try
+        {
+            foreach ((int uses, bool pushing, string? expected) in new (int, bool, string?)[]
+            {
+                (37, false, "a handcart, 37 trips left"),
+                (37, true, $"a handcart, 37 trips left — out with {member.Name}"),
+                (1, false, "a handcart, its last trip left"),
+                (0, false, null),
+            })
+            {
+                home.HandcartUses = uses;
+                member.PushingACart = pushing;
+                OpenCard(new CardSubject(CardKind.Household, home.Id));
+                Card card = _selectedCard!;
+                string? said = card.Cart.Visible ? card.Cart.Text : null;
+                if (said != expected)
+                {
+                    faults.Add($"with {uses} trips{(pushing ? ", out" : string.Empty)} the card says \"{said ?? "(hidden)"}\" where it should say \"{expected ?? "(hidden)"}\"");
+                }
+
+                CloseCard(card);
+            }
+        }
+        finally
+        {
+            home.HandcartUses = usesBefore;
+            member.PushingACart = pushingBefore;
+        }
+
+        return faults.Count == 0
+            ? "[widths] cart card: ✅ the household card says the trips left in its handcart, who has it out, and nothing with none"
+            : $"[widths] cart card: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()

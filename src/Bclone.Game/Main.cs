@@ -541,6 +541,7 @@ public partial class Main : Control
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheCardSaysTheCoat());
+        GD.Print(TheCardSaysTheCart());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -568,6 +569,7 @@ public partial class Main : Control
         GD.Print(_map.AVillagerDrawsWhereTheyStand());
         GD.Print(VillageMap.TheCrowdDoesNotSkip());
         GD.Print(VillageMap.AMealIsSeen());
+        GD.Print(_map.ACartIsSeen());
         GD.Print(VillageMap.DashesEnd());
         GD.Print(_map.TheNomadsWalkInFromTheEdge());
         GD.Print(FrameWatch.SelfCheck());
