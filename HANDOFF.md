@@ -12,7 +12,7 @@
 > **▶️ NEXT — Slice H (`handcart.md`), running in its own session (`slice-h-build`) off this `main` since 2026-11-04, where `LabourQuota` and `BehaviorSystem` are now
 > settled; Joe plays the lodge from `main` (`.\run.bat`; the ⏸️ OPEN item at the top of the list says what to look for).**
 >
-> **— `main`'s own block, as it stands at D684 —**
+> **— `main`'s own block, as it stood at D684 (superseded by the block above: the lodge fix it calls *in flight* is merged, D685) —**
 > **⭐⭐ (main's block) WHERE THINGS ARE, 2026-11-04 (D678–D684) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of `claude/slice-workshop-2083f6` (D684, 2026-11-04) plus one docs commit making these lines true, pushed; origin agrees.** Slice W's branch
@@ -9417,8 +9417,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   in what is left — N waiting."* Two of his calls ride in it unasked and are his to overrule: the carriers are asked at the
   **marketer's rank** (a busy village builds and splits firewood before it carries meat it already has — measured, the other
   rank froze the harness's re-founders), and **every seat** of a swollen lodge is kept rather than one per hunt waiting. ⚠️ His
-  Hollowmere save is readable here only if it was made on a format-9 build; a save from the Slice W worktree (format 10) opens
-  only there, until W merges `main` with this in it.
+  Hollowmere save (format 10, made on the Slice W build) opens on `main` now that W is merged (D684); anything older is refused in words.
 - ✅ ~~⏸️ **SLICE W IS BUILT AND PLAYED ONCE (D678, `claude/slice-workshop-2083f6`; Fernhollow: learned at 3,080 logs, 10 carts made, all working) — HIS TO PLAY ON, THEN MERGE.**~~ **MERGED INTO `main` AT HIS WORD (D684, 2026-11-04).** ✅ **Played again 2026-11-04 (Hollowmere): *"everything else works properly for the workshop"*; his one change, the unlock to 1,500 (D682), is in.** `.\run.bat`: fell
   1,500 logs (2,500 until D682; his Hollowmere lit it at 2,511 in Year 34, and at 1,500 it lands around Year 20) and the village stops once — *"The village learned the wheelwright's
   trade"* — with the tree shown; a *Workshop* button lights under *Works*; mark it (25 logs, 12 stone), seat a carpenter from
@@ -9428,9 +9427,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   `make_ticks` 20, `makes_per_stint` 1, the spare 1): his to move in `data/sim.config.json` after play; D666's bar says a
   season too slow moves `makes_per_stint` to 2. ⚠️ His format-9 saves are refused by this build (his call, D675). **Then
   Slice H (`handcart.md`)**, measured on `ZzLogistics`.
-- ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); THE BUILD BRANCH HAS TAKEN `main`; JOE PLAYS IT IN HIS FERNHOLLOW FROM THE BUILD WORKTREE.** What to look for: the two lanes
+- ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); ON `main` WITH EVERYTHING ELSE SINCE D684; JOE HAS NOT YET SAID WHAT HE SAW IN FERNHOLLOW.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
-  ladders of October still one lane. The build branch merged `main` on 2026-11-01, so his format-10 save shows it from `.claude/worktrees/slice-workshop-2083f6`.
+  ladders of October still one lane. His Fernhollow save is format 10 and opens from `main`'s `.un.bat` now.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
   §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
   and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he
