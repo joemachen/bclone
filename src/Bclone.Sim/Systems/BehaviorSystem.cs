@@ -3660,7 +3660,14 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
-        if ((onlyWhenFull && !world.HutCannotTakeAnotherLoad(hut)) || !world.BufferWorthClearing(hut) || world.SomebodyIsClearing(hut.Tile))
+        // ⭐ EVERY HAND AT ONCE WHILE THE BUFFER IS SWOLLEN (D683). D370's one claim per hut was written
+        // for a buffer of about one armful, where a second walker finds it empty; Joe's lodge held
+        // fifty-five armfuls and one hunter drained it a trip at a time over years while two sat idle.
+        // While the hut holds an armful for every seated hand (`EveryHandMayCarry`) the claim is not
+        // asked; the marketer's single claim in `PlanMarketErrand` is unchanged.
+        if ((onlyWhenFull && !world.HutCannotTakeAnotherLoad(hut))
+            || !world.BufferWorthClearing(hut)
+            || (!world.EveryHandMayCarry(hut) && world.SomebodyIsClearing(hut.Tile)))
         {
             return false;
         }

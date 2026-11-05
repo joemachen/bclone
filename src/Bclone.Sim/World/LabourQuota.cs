@@ -526,14 +526,29 @@ public readonly record struct LabourQuota
         int lodgeSeats = TotalCapacityFor(world, JobKind.Hunter);
         int huntable = toFeedEveryone < lodgeSeats ? toFeedEveryone : lodgeSeats;
 
-        // ⚠️ A met limit stands the hunter down, and the lodge's buffer is then the MARKETER'S
-        // (D370). Keeping one seat per lodge worth clearing — D146's shape, *a met limit stops
-        // the felling and not the forester* — was built and measured twice: against D362's
-        // starvation guard (zero — the marketer's last-resort leg drains the lodge alone) and
-        // against six played openings over fifty years (43 people and 22 starved with it or
-        // without). Not kept. If a played village ever shows a lodge draining too slowly under a
-        // met limit, that seat is the lever, and `AVillageDoesNotStarveBesideAFullLodge` is the
-        // guard that would see it.
+        // ⭐⭐ A MET LIMIT STANDS THE HUNTER DOWN — UNLESS A LODGE IS SWOLLEN, WHEN EVERY SEAT OF IT
+        // IS KEPT FOR THE CARRYING (D683, Joe: *"Hunters carry it in"*). Until D683 a met limit zeroed
+        // the seats outright and the lodge's buffer was the MARKETER'S alone (D370). The one-seat version
+        // — D146's shape, *a met limit stops the felling and not the forester* — had been built and
+        // measured twice at zero (D362's starvation guard; six played openings over fifty years), dropped,
+        // and left here as *"if a played village ever shows a lodge draining too slowly under a met limit,
+        // that seat is the lever."* Joe's Hollowmere did (Year 25: 2,184 meat in the lodge and 636 on the
+        // shelves met the 2,500 row by themselves — `HeldAgainstItsLimit` counts every buffer, D420 — one
+        // hunter of three seated, two laborers idle, the lodge drained an armful a trip over years). The
+        // stall is self-sustaining: the uncollected meat keeps the limit met, and the met limit keeps the
+        // hunters off. So while any lodge is swollen (`BufferIsSwollen`, D394 — food at or above half its
+        // room) the quota asks for every seat of it, and the seated hunters carry instead of hunting
+        // (`TryClearOwnBuffer` under a met limit takes every armful, and `EveryHandMayCarry` lets them all
+        // go at once); below half the seats fall to zero as before and the marketer takes the rest.
+        // `SimWorld.SeatsKeptToDrainSwollenBuffers` says why every seat and not the seats held now.
+        //
+        // ⛔ THE CARRIERS ARE TAKEN AT THE MARKETER'S RANK, NOT HERE (`carriers`, below the builders).
+        // Taken here, at the hunter's rank — first of every trade — they outranked the firewood and the
+        // houses: on the harness's four-founder re-foundings beside a full lodge, three of the four were
+        // seated to carry meat the village already had and nobody built a roof, and the band froze in its
+        // first winter (frozen 4 → 16 in nearly every valley of the `every` arm). The meat is caught and
+        // the village has its limit of it; carrying it in is the marketer's errand (D370: *"when they have
+        // nothing more pressing"*), so it ranks where the marketer does.
         int hunters = meatIsEnough ? 0 : Take(ref free, huntable);
 
         int afterHunting = toFeedEveryone - hunters;
@@ -567,7 +582,9 @@ public readonly record struct LabourQuota
         // the sentence read as noise (Joe, 2026-09-15). The seats themselves are unchanged.
         // ⭐ D409: each rung asks after its own good, the question its villagers ask
         // (`SimWorld.WantsMoreOf`) — identical to `TheVillageWantsMoreFood` with no limits set.
-        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : 0;
+        // ⭐ D683: under a met limit the hunters the village wants are the carriers a swollen lodge keeps —
+        // the number `hunters` took above, so the panel and the seats agree.
+        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter);
         needed[(int)JobKind.Fisher] = world.WantsMoreOf(Goods.Fish) ? afterHunting : 0;
         needed[(int)JobKind.Forager] = world.WantsMoreOf(Goods.Produce) ? stillToFeed : 0;
 
@@ -736,6 +753,15 @@ public readonly record struct LabourQuota
                 ref free,
                 Cap(free / 2, TotalCapacityFor(world, JobKind.Forester) - foresters));
         }
+
+        // ⭐ THE CARRIERS A SWOLLEN LODGE KEEPS UNDER A MET MEAT LIMIT (D683) — the hunter's own seats, asked
+        // at the marketer's rank because the errand is the marketer's (the hunters' comment above says why
+        // not at the hunter's). Out of the hands nothing more pressing wants, never zeroed by the food floor:
+        // what they carry is food on its way to a shelf.
+        int carriers = meatIsEnough
+            ? Take(ref free, world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter))
+            : 0;
+        hunters += carriers;
 
         int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
 
@@ -971,6 +997,12 @@ public readonly record struct LabourQuota
         // the player typed must not be overruled while it does.
         JobKind.Farmer => StoppedByItsOwnLimit(world, kind)
             && world.FarmerSeatsWithGroundToWork() == 0,
+
+        // ⭐ AND A HUNTER ONLY WHILE NO LODGE IS SWOLLEN (D683). The forester's and the farmer's shape a
+        // third time: a met meat limit stops the hunting, and a lodge the hands cannot keep up with still
+        // has work — the carrying — so the trade is not reported as capped while it does.
+        JobKind.Hunter => StoppedByItsOwnLimit(world, kind)
+            && world.SeatsKeptToDrainSwollenBuffers(kind) == 0,
 
         // ⭐ AND A SMITH BY WHAT THE SMITHIES ARE SET TO FORGE (`tools-and-the-smith.md §9.3`).
         // The row's `limited_by` is the stone tool, and a met stone limit says nothing to a smithy

@@ -949,6 +949,117 @@ public sealed partial class SimWorld : IObstacles
             && FoodIn(workplace.Store) * 2 >= workplace.Store.Capacity;
     }
 
+    /// <summary>
+    /// ⭐ The seats a met limit keeps for the carrying (D683): every seat of every standing hut of this trade whose
+    /// buffer is swollen. Zero while none is — and then the old rule holds, a met limit stands the trade down.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's Hollowmere, Year 25: the lodge held 2,184 meat and the shelves 636, so the 2,500 meat row was met —
+    /// <see cref="HeldAgainstItsLimit"/> counts every buffer (D420) — and the met limit stood the hunters down. Nobody
+    /// but the producer and the marketer clears a buffer (D370), the marketer reaches a lodge only after every counter
+    /// is stocked and every dead larder emptied, and one carrier at a time took an armful a trip: the uncollected meat
+    /// kept the limit met, the met limit kept the hunters off, and the lodge drained over years while two laborers
+    /// stood idle. Joe's pick of three (D683): <i>"Hunters carry it in."</i> Measured first on the unattended harness
+    /// (`ZzLodge`): with a free lodge and the shipped limits, the lodge fills in Year 1 and sits swollen for the whole
+    /// fifty years with nobody seated in 29 valleys of 30 — there is no market there, so no marketer ever comes.
+    /// </para>
+    /// <para>
+    /// <b>Every seat, not one, and not "the seats held now".</b> Swollen is D394's own word for a buffer the hands
+    /// cannot keep up with, so the answer is all the hands. The quota derives what the village wants from its state
+    /// (D16); reading who happens to hold a seat would make what it wants depend on what the allocator last did, and
+    /// would read zero in exactly the stalled state this exists for. One carrier per hunt waiting
+    /// (<c>ceil(food / meat_yield)</c>) was the other candidate: on a three-seat lodge it differs from this by one seat
+    /// over a third of the swollen band, which no harness can tell apart, and it leaves a hunter standing as a laborer
+    /// beside a lodge whose card says the hands cannot keep up. The seats fall to zero the tick the buffer drops below
+    /// half; the marketer takes the rest as before.
+    /// </para>
+    /// </remarks>
+    public int SeatsKeptToDrainSwollenBuffers(JobKind kind)
+    {
+        int seats = 0;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace workplace = Workplaces[i];
+            if (workplace.Kind == kind && BufferIsSwollen(workplace))
+            {
+                seats += workplace.Places;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>
+    /// ⭐ Whether every one of a hut's own hands may carry out of its buffer at once rather than one at a time (D683):
+    /// the buffer is swollen (D394) and holds an armful for every seat filled, so nobody walks to it for nothing.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SomebodyIsClearing"/>'s one claim per hut (D370) was written for a buffer of about one armful, where a
+    /// second walker finds it empty; a lodge holds sixty-seven. Read only by the producer's own clearing
+    /// (<c>TryClearOwnBuffer</c>) — the marketer's single claim in <c>PlanMarketErrand</c> is untouched. A buffer below
+    /// an armful a hand keeps D370's one claim, so a farm's one-load buffer (D171) seldom qualifies and never sends a
+    /// farmer for an empty armful.
+    /// </remarks>
+    public bool EveryHandMayCarry(Workplace hut)
+    {
+        ArgumentNullException.ThrowIfNull(hut);
+        return BufferIsSwollen(hut) && FoodIn(hut.Store) >= Config.CarryCapacity * hut.WorkerIds.Count;
+    }
+
+    /// <summary>
+    /// The card's sentence for a buffer the hands cannot keep up with (D394) — and, when a met limit has stood the
+    /// trade down and kept its seats for the carrying (D683), why the hands are carrying rather than working.
+    /// </summary>
+    /// <remarks>
+    /// Joe's lodge card read <i>"Working — 2,184 waiting to be carried in, 55 armfuls"</i> with one hunter of three
+    /// seated and the meat row met, and he asked whether there were not enough hunters. The reason is the limit, and
+    /// the card names it; the top bar's ⚠ says the same thing from anywhere (<see cref="WhyTheLimitIsMet"/>).
+    /// </remarks>
+    public string SwollenBufferNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        int food = FoodIn(workplace.Store);
+        int armfuls = ArmfulsWaitingIn(workplace);
+        if (JobsCatalog.LimitedBy(workplace.Kind) is Goods limited && LimitIsMet(limited) && StockLimits.For(limited) is int limit)
+        {
+            return $"The village has its {limit.Grouped()} {GoodsCatalog.NameOf(limited)} ({HeldAgainstItsLimit(limited).Grouped()} stored), "
+                + $"so the {JobsCatalog.PluralOf(workplace.Kind)} are carrying it in rather than {JobsCatalog.DoingOf(workplace.Kind)} — "
+                + $"{food.Grouped()} waiting, {armfuls} armfuls.";
+        }
+
+        return $"Working — {food.Grouped()} waiting to be carried in, {armfuls} armfuls.";
+    }
+
+    /// <summary>
+    /// Why nobody is posted at a workplace the village has no use for just now — or null while somebody is, while the
+    /// village wants hands here (<see cref="IdleNote"/> says so and lights the marker), or while the player asked for
+    /// nobody (D136).
+    /// </summary>
+    /// <remarks>
+    /// D147 kept the map's marker quiet for an empty building the village has no use for and promised the inspector the
+    /// sentence instead — <i>"nobody works here — the village needs no foresters at the moment, because the logs limit
+    /// of 200 is met"</i> — and the card read <i>"Working — 0 of 3 at it"</i> instead for two months, until Joe's lodge
+    /// with nobody seated said it was working (D683). The reason is the quota's own
+    /// (<see cref="LabourQuota.WhyTheVillageWantsNone"/>), never restated here; the marker stays quiet.
+    /// </remarks>
+    public string? NobodyPostedNote(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+        if (workplace.IsSite || workplace.Closed || workplace.StaffingOverride == 0 || workplace.WorkerIds.Count > 0
+            || LabourQuota.For(this).For(workplace.Kind) > 0)
+        {
+            return null;
+        }
+
+        string why = LabourQuota.WhyTheVillageWantsNone(this, workplace.Kind)
+            ?? $"the village needs no {JobsCatalog.PluralOf(workplace.Kind)} at the moment";
+        string waiting = BufferWorthClearing(workplace)
+            ? $" The marketer carries in what is left — {FoodIn(workplace.Store).Grouped()} waiting."
+            : string.Empty;
+        return $"Nobody is posted here — {why}.{waiting}";
+    }
+
     public int FoodTheVillageHolds()
     {
         int total = FoodInGranaries();

@@ -3,7 +3,9 @@
 **Decisions:** D19, D253, D262, D277, D286, D288 — and **D3057(b)**, which chose hunting over
 livestock and is the argument for everything below.
 **Phase:** food breadth, immediately after fishing (D253: *"after town hall is fishing and hunting"*).
-**Status:** ✅ **ALL THREE SLICES SHIPPED** (slice 2 was built and then deleted on Joe's call — D297).
+**Status:** ✅ **ALL THREE SLICES SHIPPED** (slice 2 was built and then deleted on Joe's call — D297). ✅ **And the
+stalled lodge is fixed (D683, 2026-11-04; merged into `main` D685, unplayed): under a met meat
+limit a swollen lodge keeps every one of its seats and the hunters carry it in, all at once** — §6a.
 The lodge is placeable, staffable and worked; `Meat` and `Leather` are real; the buffer holds three hunts and a marketer runs it dry. **Available game is a function of standing woodland and nothing else** (§4). **The animals are drawn** (§9) — derived from forest tiles, no sim state, so felling a wood visibly empties it. `meat_yield` is **600**.
 **Owner:** Joe + Claude Code
 
@@ -144,6 +146,87 @@ the mechanism, then the content.*
   march the hunter home — *this is D281 exactly, and it will happen again if a state is reused.*
 - The lodge holds a local buffer a marketer runs dry, exactly as the farm and the fishery do — and the hunter drains it themselves when it cannot take another kill (D370; `fishing.md` has the rule). **And whoever clears it stands on the lodge for the tick they load** (D373): the load and the first step of the haul used to happen in one tick, so nobody was ever drawn at the lodge — Joe: *"they stop a few pixels before actually going to it and then turn around."* Guard: `AHunterClearingTheLodgeIsSeenStandingOnIt`.
   (`BuildingRow.LocalStoreCap`).
+
+### 6a. ⭐⭐ THE STALLED LODGE — UNDER A MET LIMIT THE HUNTERS CARRY IT IN (D683, Joe's call)
+
+**Joe's Hollowmere (`Hollowmere-plover-rowan-45`, Year 25):** the lodge held **2,184 meat** with **636 on the shelves**, the
+meat row set to 2,500, one hunter of three seated, two laborers idle, and the card reading *Working — 2,184 waiting to be
+carried in*. Joe: *"why is the hunter's lodge so backed up? just not enough hunters?"* Given three options he picked
+**"Hunters carry it in."**
+
+**The stall, traced:** the limit counts every buffer (D420, `stock-limits-and-laborers.md §4.5`), so the lodge's own meat
+met the row; a met row stood the hunters down (`LabourQuota`, D409); nobody but the producer and the marketer clears a
+buffer (D370), the marketer reaches a lodge only after every counter is stocked and every dead larder emptied
+(`PlanMarketErrand`), and D370's one claim per hut let one carrier at a time take an armful a trip. **So the stall is
+self-sustaining:** the uncollected meat keeps the limit met, the met limit keeps the hunters off, and one carrier drained
+2,264 meat 40 at a time over years. The quota's own comment had named this seat as *"the lever, if a played village ever
+shows a lodge draining too slowly under a met limit"* (D370) — it did.
+
+**The rule (three pieces, one lever):**
+
+1. **The quota keeps every seat of a swollen lodge under a met limit** (`SimWorld.SeatsKeptToDrainSwollenBuffers`; a
+   lodge is swollen at or above half its room, D394's own word for *a buffer the hands cannot keep up with*). Every seat,
+   not one and not *the seats held now*: the quota derives what the village wants from its state (D16), and reading who
+   happens to be seated would make the want depend on what the allocator last did — and read zero in exactly the stalled
+   state. *One carrier per hunt waiting* (`ceil(food / meat_yield)`) was the other candidate; on a three-seat lodge it
+   differs by one seat over a third of the swollen band, which no harness can tell apart, and it leaves a hunter standing
+   as a laborer beside a lodge whose card says the hands cannot keep up. **Below half the seats fall to nought as before**
+   and the marketer takes the rest (D370). ⛔ **The carriers are asked at the marketer's rank, not the hunter's.** Asked at
+   the hunter's — first of every trade — they outranked firewood and houses: on the harness's four-founder re-foundings
+   beside a full lodge, three of the four carried meat the village already had and nobody built a roof, and the band froze
+   in its first winter (frozen 4 → 16 in nearly every `every`-arm valley). The village has its meat; carrying it in is the
+   marketer's errand (*"when they have nothing more pressing"*), so it ranks where the marketer does, out of the hands
+   nothing more pressing wants — and is never zeroed by the food floor, since what it carries is food on its way to a shelf.
+2. **A seated hunter under a met limit carries instead of hunting** — the path that existed (`TryClearOwnBuffer`, every
+   armful once the village has its meat) — **and every seated hand may set off at once** (`SimWorld.EveryHandMayCarry`):
+   D370's one claim per hut was written for a buffer of about one armful, where a second walker finds it empty, and is not
+   asked while the buffer is swollen *and* holds an armful for every seat filled, so nobody walks for nothing. The
+   marketer's single claim in `PlanMarketErrand` is unchanged; a farm's one-load buffer (D171) seldom qualifies by
+   arithmetic. ⚠️ The claim is on the walk *to* the hut, not the haul away from it — so even before D683 three hunters
+   could be *carrying* at once; what the rule changes is that they may *set off* together.
+3. **The card says why** (`SimWorld.SwollenBufferNote`): *"The village has its 2,500 meat (2,820 stored), so the hunters
+   are carrying it in rather than hunting — 2,184 waiting, 55 armfuls."* And a lodge nobody is posted at says so
+   (`SimWorld.NobodyPostedNote`: *"Nobody is posted here — the meat limit of 2,500 is met. The marketer carries in what is
+   left — 1,200 waiting."*) where it used to read *Working — 0 of 3 at it* — D147 kept the map's marker quiet for an empty
+   building the village has no use for and promised the inspector that sentence; the card never carried it. `IdleNote`
+   and the marker are untouched; the sentence is the quota's own (`WhyTheVillageWantsNone`), never restated.
+
+**Guards** (`LodgeCarriersTests`, five; posed with eight founders because the carriers come after the foragers and the
+woodcutter the derivation wants, and four hands leave one): a lodge at 2,000 meat under a met row keeps all three seats,
+all three carry, two set off together (the third was mid-errand when the pass seated them), the lodge is below half within
+two seasons (115 ticks) and the seats are released after; a lodge below half under a met row still stands the hunters down
+and says *the meat limit of 500 is met*; three typed hunters clear a half-empty lodge one at a time (D370 holds below
+swollen); the two sentences. **Red-checked, 8 mutants, 12 reds, none kept at zero:** the carriers' arm gone 1; the many-hands
+exemption gone 2 (1 aimed; the other is the pose's history moving — D418); the claim never asked 2 (likewise); seats kept
+for an unswollen lodge 3; the trade still reported as capped 1; the note silent on the limit 1; the nobody-posted note
+silent 1 (⚠️ its first pose did not compile and scored a false zero — D420's trap — and was re-posed); `Needed` nought 1.
+
+**Measured before it was typed** (`tools/harness/ZzLodge.cs`, fifty years, a lodge raised free at t0, before → after; the
+untouched tree run from a detached worktree the same sitting):
+
+| arm | valleys | alive | starved | frozen | years a lodge sat above half (sum) | stall ticks: met row, swollen lodge, nobody seated | meat carried out of the lodges | hunts |
+|---|---|---|---|---|---|---|---|---|
+| `lodge x1` — the played opening + a lodge, the shipped limits (**Joe's state**) | 30 | **331 → 703** | 528 → 358 | 196 → 235 | 1,406 → 471 | 637,117 → 15,428 (29 → 10 valleys) | 99,637 → 1,639,606 | 1,695 → 9,670 |
+| `every x1` — + a fishery and a farm | 13 | 370 → 403 | 23 → 0 | 210 → 191 | 598 → 174 | 283,016 → 38,477 | 2,480 → 145,354 | 356 → 1,176 |
+| `lodge x10` — limits ×10 at Year 5 | 30 | 646 → 796 | 39 → 0 | 783 → 672 | 1,378 → 1,066 | 234,236 → 17,455 | 617,159 → 1,505,917 | 6,854 → 8,915 |
+| `every x10` | 13 | 278 → 278 | 0 → 0 | 359 → 365 | 598 → 428 | 140,450 → 48,610 | 66,918 → 126,436 | 978 → 1,183 |
+
+- **What the baseline says about the stall:** in every unattended valley the lodge fills in Year 1 (three hunts, 2,700),
+  meets the 2,500 row by itself, and sits swollen for the whole fifty years with nobody seated — 23,820 of 24,000 ticks in
+  valley after valley — because the unattended village has no market and so no marketer ever comes (D601). 528 starved beside
+  a full lodge across the `lodge x1` arm is D362's disaster, in the harness. ⚠️ **The harness is not a player (D447):** Joe's
+  village has a marketer and the stall there took years rather than for ever; the arm measures the rule's shape, not his game.
+- **What the fix does there:** the lodge is swollen a third as long, the stall is a hundredth of what it was (what is left is
+  the slack pass's cadence — up to 120 ticks between the quota asking and the allocator seating), fourteen times the meat
+  reaches a shelf, the hunters hunt five times as often (the limit un-meets as the shelves are eaten down), and alive doubles
+  in Joe's arm (up in 24 valleys of 30, down in 2). The `x10` arms, where no lodge alone can meet the row, move because a full
+  lodge now clears with every hand rather than one (`EveryHandMayCarry`).
+- **Read per seed before the mean (D664's trap):** `every`'s founders freeze roofless in Winter 1 in every valley (D648's
+  finished-farm shape) and what lives is a re-founding, so its arms are coin flips a change re-rolls; three valleys are dead in
+  both arms of every row. In Joe's arm two small valleys that lived on the baseline died after (seeds 105 and 115, 16 and 5
+  alive, both frozen) and none revived; in `lodge x10` three died and five revived. **The first take of this rule ranked the
+  carriers at the hunter's rank and read `every x1` alive 370 → 305, frozen 210 → 303** — the `ZZD` lines said why (the
+  re-founders carried meat instead of building a roof), which is how the carriers came to be asked at the marketer's rank.
 
 ---
 
