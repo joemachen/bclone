@@ -1297,6 +1297,14 @@ public sealed record SimConfig
     [JsonPropertyName("handcart_uses")]
     public int HandcartUses { get; init; } = 150;
 
+    /// <summary>
+    /// The armfuls a shopper carries a trip with the household's handcart in hand (`handcart.md §5`, Slice H) — the one
+    /// term in D668's shopping walk the village could change. <c>carry_capacity</c> is untouched (D537, one meaning); the
+    /// cart multiplies it. Validated at load: at least one (one is a cart that carries nothing extra).
+    /// </summary>
+    [JsonPropertyName("cart_armfuls")]
+    public int CartArmfuls { get; init; } = 3;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -5694,6 +5702,11 @@ public sealed record SimConfig
         if (HandcartUses <= 0)
         {
             throw new SimConfigException($"handcart_uses must be greater than zero (got {HandcartUses}) — a cart of no trips is no cart.");
+        }
+
+        if (CartArmfuls < 1)
+        {
+            throw new SimConfigException($"cart_armfuls must be at least one (got {CartArmfuls}); one is a cart that carries nothing extra.");
         }
 
         if (LeaveHomeAge < 0)

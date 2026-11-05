@@ -424,6 +424,96 @@ public sealed class HandcartTests
     }
 
     // ---------------------------------------------------------------
+    //  §5 — what it buys
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// §5: with the cart in hand a shopper brings `cart_armfuls` armfuls home — the shortfall up to that, never more than the
+    /// larder has room for; on foot the same shopper brings one armful. `carry_capacity` itself is untouched (D537).
+    /// </summary>
+    [Fact]
+    public void ACartedShopperBringsCartArmfulsHomeAndAWalkerOne()
+    {
+        // ⚠️ At an armful of 40, on purpose (D537's own pose): a founding couple wants 150, which a cart of three shipped armfuls
+        // (240) swallows whole, so the cap could not be seen at 80. The rule never reads the armful's size.
+        SimConfig config = Config with { CarryCapacity = 40 };
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        Assert.Equal(80, ShippedConfig.Load().CarryCapacity);
+        Assert.True(config.CartArmfuls >= 2, "The pose cannot tell a cart from an armful at one armful a cart.");
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        granary.Store.Receive(Goods.Produce, 5000);
+        Household home = Housed(world)[0];
+        Villager shopper = world.Villagers.First(v => v.Alive && v.CanWork && v.HouseholdId == home.Id);
+        int target = world.TargetFoodFor(home);
+        Assert.True(target > config.CarryCapacity * config.CartArmfuls,
+            $"a target of {target} fits in a cart's {config.CarryCapacity * config.CartArmfuls}, so the cap could not be seen");
+        SetLarder(home, 0);
+        shopper.StandAt(granary.Position);
+
+        // On foot: one armful.
+        shopper.PushingACart = false;
+        BehaviorSystem.CollectForTest(world, shopper);
+        int onFoot = shopper.Carried.Held;
+        shopper.Carried.TakeAll(Goods.Produce);
+
+        // With the cart: cart_armfuls of them, the larder's room allowing.
+        shopper.PushingACart = true;
+        home.HandcartUses = config.HandcartUses;
+        BehaviorSystem.CollectForTest(world, shopper);
+        int pushed = shopper.Carried.Held;
+        _output.WriteLine($"{home.Name} wants {target}: on foot {onFoot}, with the cart {pushed} (the larder has room for {home.Stockpile.FreeSpace}).");
+
+        Assert.Equal(config.CarryCapacity, onFoot);
+        Assert.Equal(Math.Min(config.CarryCapacity * config.CartArmfuls, Math.Min(target, home.Stockpile.FreeSpace)), pushed);
+        Assert.True(pushed > onFoot, "The cart carried no more than the arms.");
+    }
+
+    /// <summary>
+    /// §5: the trip's worth is the cart's when the cart goes — a market stocked for an armful is not stocked for three, so a
+    /// carted shopper at the door shops at the storehouse that holds the trip's worth (D372's scrap rule, the cart's size).
+    /// </summary>
+    [Fact]
+    public void ThePlanAsksForTheCartsWorth()
+    {
+        // At an armful of 40, as above: the couple's 150 is then over three armfuls, so a cart's worth differs from an armful's.
+        SimConfig config = Config with { CarryCapacity = 40 };
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        NobodyWorks(world);
+        foreach (Villager v in world.Villagers)
+        {
+            v.WorkplaceId = 0;
+        }
+
+        StoreBuilding market = world.AnyStoreOf(StoreKind.Market);
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        foreach (StoreBuilding s in world.StoreBuildings)
+        {
+            s.Store.TakeAll(Goods.Produce);
+        }
+
+        Household home = Housed(world)[0];
+        Villager shopper = world.Villagers.First(v => v.Alive && v.CanWork && v.HouseholdId == home.Id);
+        shopper.StandAt(world.HomePoint(shopper));
+        SetLarder(home, 0);
+        int target = world.TargetFoodFor(home);
+
+        // The market holds one armful and a little; the granary holds plenty.
+        market.Store.Receive(Goods.Produce, config.CarryCapacity + 10);
+        granary.Store.Receive(Goods.Produce, 2000);
+        Assert.True(target >= config.CarryCapacity * 2, $"a target of {target} is under two armfuls, so the cart's worth is the armful's");
+
+        home.HandcartUses = 0;
+        Assert.Same(market, BehaviorSystem.PlanFetchForTest(world, shopper));
+
+        home.HandcartUses = config.HandcartUses;
+        Assert.Same(granary, BehaviorSystem.PlanFetchForTest(world, shopper));
+
+        // And stocked for the cart's trip, the market wins again.
+        market.Store.Receive(Goods.Produce, config.CarryCapacity * config.CartArmfuls);
+        Assert.Same(market, BehaviorSystem.PlanFetchForTest(world, shopper));
+    }
+
+    // ---------------------------------------------------------------
     //  §9 — hashed, saved, said
     // ---------------------------------------------------------------
 
@@ -524,6 +614,11 @@ public sealed class HandcartTests
         SimConfigException refused = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "handcart_uses": 0 }""", "<modded>"));
         _output.WriteLine(refused.Message);
         Assert.Contains("handcart_uses", refused.Message, StringComparison.Ordinal);
+
+        Assert.Equal(3, shipped.CartArmfuls);
+        Assert.Equal(new SimConfig().CartArmfuls, shipped.CartArmfuls);
+        SimConfigException noArmful = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "cart_armfuls": 0 }""", "<modded>"));
+        Assert.Contains("cart_armfuls", noArmful.Message, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------

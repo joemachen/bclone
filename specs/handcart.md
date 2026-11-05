@@ -9,7 +9,8 @@ larder), D372 (the shop walk), D510 (an older save is refused in words), D291 (t
 guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`), red-checked and counted (§11). ✅ Piece 1 — the household's cart: owned,
 fetched like a coat, walked home, parked, taken from the doorstep, hashed, saved (format 11), said (§3, §4, §9). ✅ Piece 2 —
 seen: the chip beside the home, the rectangle behind the pusher, the card's line, the founders' cart in the cart colour,
-two probe lines (§8). ⏳ Piece 3 — what it buys (`cart_armfuls`, §5). ⏳ Piece 4 — wear (`handcart_uses` measured, §6).
+two probe lines (§8). ✅ Piece 3 — what it buys: `cart_armfuls` 3, swept 2/3/4 on the harness and Joe's Hollowmere before typed
+(§5; Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49). ⏳ Piece 4 — wear (`handcart_uses` measured, §6).
 ⏳ Piece 5 — speed and tracks (§6, §7).** Every number is a proposal until its piece's harness table is filled.
 Candidate (d), *nearby* given a meaning, is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`, D671).
 
@@ -103,13 +104,38 @@ The measured share is the **household's** shop walk, so the household's cart is 
 - **The marketer's cart is not in this slice** — ✅ Joe (call 6, D672): *later*; when it comes it is one more owner of the
   same good. Builders' and producers' hauls (the *Deliver* bucket) are out of scope; they were not the number.
 
-## 5. What it buys — `cart_armfuls` — ⏳ piece 3
+## 5. What it buys — `cart_armfuls` 3 — ✅ built and measured (piece 3, D687)
 
-A fetch today brings the shortfall capped at one armful (`ATripsWorth`, 80; `CollectFromStore`'s `load`). **With the cart
-in the shopper's hands the cap is `cart_armfuls` × `carry_capacity`**; `carry_capacity` itself is untouched (D537, one
-meaning). Three armfuls (240) fills a four-person larder's half in one trip where today it is two to five. **Proposed 3;
-swept at 2 / 3 / 4 on `ZzLogistics` before it is typed** — the Fetch share toward the control's 3–13 %, trips a
-household-year down ~2.5×, the median trip unchanged (the walk is the same walk, there are fewer).
+A fetch brought the shortfall capped at one armful (`ATripsWorth`, 80; `CollectFromStore`'s `load`). **With the cart in
+the shopper's hands the cap is `cart_armfuls` × `carry_capacity`** (`CollectFromStore`), and **the trip's worth the plan
+asks a shop to be stocked for is the cart's too** (`ArmfulsFor`: pushing already, or about to take it from the doorstep —
+`CanTakeTheCartFromTheDoorstep`, one predicate for the take and the plan — so D372's scrap rule asks for the load the shopper
+will actually carry: a market stocked for an armful is not stocked for three, and the storehouse that is wins that trip).
+`carry_capacity` itself is untouched (D537, one meaning); the arms are still the arms.
+
+**Measured before typed — `tools/harness/ZzLogistics.cs`, the cart arms (`ZZ_CARTS` racks carts in the founders' cart at Year
+3, since no unattended valley raises a workshop; `ZZ_ARMFULS`; `ZZ_NOCARTS` on a played save takes every cart out AND stops
+the carpenter with a handcarts limit of 0 — ⚠️ the first "before" forgot the carpenter and he re-made seven in five years).**
+Four living unattended valleys (seeds 1, 2, 4, 5; seed 7 dies), fifty years; and Joe's Hollowmere (`hollowmere-plover-rowan-45`,
+Year 25, 24 adults in 7 housed households, a workshop and 9 carts racked — D682's save), five years on. His Fernhollow save dies
+unattended under every arm and is excluded (a harness is not a player, D447).
+
+| arm | Fetch share (4 valleys, mean · range) | shopping trips a household-year | pushed trips (median ticks) | on foot (median) | Hollowmere Fetch | Hollowmere trips a hh-year | Hollowmere pushed (median) |
+|---|---|---|---|---|---|---|---|
+| no carts | 6.4 % (3.4–8.0) | **5.93** | — | 5,474 (8) | **17.6 %** | **5.69** | — (on foot median 27) |
+| `cart_armfuls` 2 | 5.2 % (2.5–6.8) | 4.48 | 3,315 (10) | 892 (5) | 13.2 % | 4.26 | 91 (29) |
+| **`cart_armfuls` 3** | **5.0 % (2.2–6.1)** | **4.08** | 3,085 (10) | 656 (6.5) | **11.3 %** | **3.49** | 91 (29) |
+| `cart_armfuls` 4 | 5.0 % (2.2–6.1) | 4.08 | 3,085 (10) | 656 (6.5) | 11.6 % | 3.49 | 89 (29) |
+
+**Reading.** Three and four are identical on every valley and within noise on Hollowmere: a half-larder shortfall never
+exceeds three armfuls (a four-person larder's half is 190), so the fourth armful is never carried. Two is measurably worse.
+**So `cart_armfuls` 3.** The payoff is Hollowmere's: **the Fetch share 17.6 → 11.3 %, a third of the shopping walk gone; trips
+a household-year 5.69 → 3.49 (1.6× fewer)** — short of §1's arithmetic (~2.5×), because a couple's half-larder shortfall (75)
+fitted one armful already and the cart buys them nothing; the big households are where it bites. The unattended control moves
+little (6.4 → 5.0 %) for the same reason: its households are couples 4–6 ticks from the store. ⚠️ **The pushed trips are the
+long ones** (median 29 ticks in Hollowmere against 27 for every trip before; the trips still made on foot are the short ones
+begun away from the door, median 16–20) — the walk is the same walk, there are fewer of them, which is what §1 asked. These
+are the numbers **before the slow grass walk (§6, piece 5)**; the verdict in `logistics.md §6` is re-measured after it.
 
 ## 6. Wear, speed — ⏳ pieces 4 and 5 (✅ Joe, call 5, D672)
 
@@ -224,7 +250,23 @@ every score: `HandcartTests`, `LegibilityTests`, `EveryVillagerStateIsDeliberate
 `done.`; `check.py` 0 of 41 fail. **The four checks (D686):** suite 1923 / 1 / 5 of 1929 in 14m39 — the one red a stale format pin
 (*"reads 10"*), fixed and green under its filter; view 0 warnings; probe 106 lines, 70 ✅, 0 ⛔; goldens 398 → 398.
 
-### 11.2–11.4 Pieces 3–5 — ⏳
+### 11.2 Piece 3 — what it buys (2 guards + a knob check, 5 mutants, 5 reds)
+
+| Guard | What it holds |
+|---|---|
+| `ACartedShopperBringsCartArmfulsHomeAndAWalkerOne` | at an armful of 40 (D537's pose: a couple's 150 fits a shipped cart whole): the same shopper collects 40 on foot and `cart_armfuls` × 40 with the cart, never past the larder's room; the shipped armful is still 80 |
+| `ThePlanAsksForTheCartsWorth` | a market holding an armful and a little, a granary holding plenty: on foot the market wins; carted at the door the granary wins; the market stocked for the cart's trip wins again |
+| `TheCartKnobsAreAsShipped` | `cart_armfuls` 3 in the data and the C# default; 0 refused at load |
+
+| Mutant | Reds |
+|---|---|
+| `CollectFromStore`'s load not multiplied | 1 |
+| `ATripsWorth` not multiplied | 1 |
+| `ArmfulsFor` reads the flag only (the doorstep take not foreseen) | 1 |
+| `cart_armfuls` 0 accepted | 1 |
+| the C# default 2 (the json governs; the guard reads both) | 1 |
+
+### 11.3–11.4 Pieces 4–5 — ⏳
 
 Written when built.
 

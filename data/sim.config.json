@@ -1025,6 +1025,18 @@
   // few years of shopping" at 4-6 trips an adult-year), measured in the wear slice
   // before it is final.
   "handcart_uses": 150,
+  // cart_armfuls: what the shopper carries a trip with the cart in hand, in
+  // armfuls of carry_capacity (80). carry_capacity itself is untouched (D537,
+  // one meaning). MEASURED before typed (handcart.md 5, D687): swept 2/3/4 on
+  // ZzLogistics -- four unattended valleys, fifty years, forty carts racked at
+  // Year 3: shopping trips a household-year 5.93 -> 4.48 / 4.08 / 4.08, the
+  // Fetch share 6.4% -> 5.2 / 5.0 / 5.0; Joe's Hollowmere (Y25, 7 households)
+  // five years on against the same save with every cart taken out and the
+  // carpenter stopped: trips 5.69 -> 4.26 / 3.49 / 3.49, Fetch 17.6% -> 13.2 /
+  // 11.3 / 11.6. Three and four are identical everywhere: a half-larder
+  // shortfall never exceeds three armfuls, so the fourth is never carried.
+  // Two is measurably worse. So 3.
+  "cart_armfuls": 3,
 
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the

@@ -14,7 +14,7 @@ namespace Bclone.Sim.Tests;
 //
 //   ZZ_SAVES=<folder, a COPY of Joe's saves> [ZZ_PICK=autosave-1.save] [ZZ_YEARS=5]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnJoesSaves
-//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50]
+//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_LABEL=name]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnTheHarness
 //
 // One ZZG line a year per village: every living adult's ticks in nine buckets — work / commute / deliver (the
@@ -22,6 +22,13 @@ namespace Bclone.Sim.Tests;
 // as shares. A ZZG spells line per walking bucket: spells, spells an adult-year, median, p90, longest, and the share
 // longer than a day (4 ticks), two and four. ZZG long names the five longest fetch-or-haul spells (who, from home, how
 // far out, which year). ZZG shops: every lived-in home's walk to the nearest store holding food, in ticks.
+//
+// SLICE H (handcart.md §5–§7): ZZ_CARTS=N puts N handcarts into the founders' cart store at Year 3, where the households
+// fetch them as the mechanic says (the unattended valley never raises a workshop, so this is the only way a harness
+// village is carted); ZZ_ARMFULS=k overrides cart_armfuls. The ZZG carts line: how many were taken, households carted at
+// the end, shopping trips an adult-year WITH the cart against without and their median ticks, and the ground — trodden
+// tiles and path tiles (worn or packed by class) of the valley's tiles, so the trodden share with carts against without
+// is one number apart. ZZG trips: shopping trips a housed-household-year (the fetch spells that turned at a shop).
 public sealed class ZzLogistics
 {
     private enum Bucket
@@ -69,10 +76,40 @@ public sealed class ZzLogistics
         }
 
         int years = Years(5);
-        SaveOpened opened = SaveFile.Open(path, ShippedConfig.Load());
+        SimConfig config = ShippedConfig.Load();
+        if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_ARMFULS"), out int armfuls))
+        {
+            config = config with { CartArmfuls = armfuls };
+        }
+
+        SaveOpened opened = SaveFile.Open(path, config);
         Assert.True(opened.Loop is not null, $"{opened.Refusal} {opened.Detail}");
         string village = Path.GetFileName(Path.GetDirectoryName(path)!);
-        Run(opened.Loop!, village, years, atYearThree: null);
+        string label = Environment.GetEnvironmentVariable("ZZ_LABEL") is string l ? $"{l}-{village}" : village;
+
+        // Slice H's "before" on a played save whose warehouse already racks carts (Hollowmere, Fernhollow — D682): take
+        // every cart off every shelf and every doorstep, so the same village is measured without the mechanic.
+        if (Environment.GetEnvironmentVariable("ZZ_NOCARTS") == "1")
+        {
+            SimWorld w = opened.Loop!.World;
+            int taken = 0;
+            foreach (StoreBuilding s in w.StoreBuildings)
+            {
+                taken += s.Store.TakeAll(Goods.Handcart);
+            }
+
+            foreach (Household h in w.Households)
+            {
+                taken += h.HandcartUses > 0 ? 1 : 0;
+                h.HandcartUses = 0;
+            }
+
+            // ⚠️ And the carpenter stopped (a handcarts limit of nought), or the first run's "before" re-made seven carts in five years.
+            w.SetStockLimit(Goods.Handcart, 0);
+            _o.WriteLine($"ZZG {label} nocarts: {taken} handcarts taken out of the village at load, the handcarts limit set to 0");
+        }
+
+        Run(opened.Loop!, label, years, atYearThree: null);
     }
 
     [Fact]
@@ -85,9 +122,16 @@ public sealed class ZzLogistics
         }
 
         int years = Years(50);
+        int carts = int.TryParse(Environment.GetEnvironmentVariable("ZZ_CARTS"), out int c) ? c : 0;
+        string label = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (carts > 0 ? $"carts{carts}" : "base");
         foreach (ulong seed in seeds.Split(',').Select(s => ulong.Parse(s.Trim(), System.Globalization.CultureInfo.InvariantCulture)))
         {
             SimConfig config = ShippedConfig.Load() with { Seed = seed };
+            if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_ARMFULS"), out int armfuls))
+            {
+                config = config with { CartArmfuls = armfuls };
+            }
+
             SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
             SimWorld world = loop.World;
             var limits = ShippedConfig.Load().StartingStockLimits;
@@ -100,10 +144,15 @@ public sealed class ZzLogistics
             }
 
             ColdStartTests.PlayTheOpening(world);
-            Run(loop, $"seed{seed}", years, atYearThree: () =>
+            Run(loop, $"{label}-seed{seed}", years, atYearThree: () =>
             {
                 ColdStartTests.MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 8);
                 ColdStartTests.MarkSomewhereNear(world, BuildingKind.Warehouse, world.Map.FoundingSite, 8);
+                if (carts > 0)
+                {
+                    int racked = world.AnyStoreOf(StoreKind.Cart).Store.Add(Goods.Handcart, carts);
+                    _o.WriteLine($"ZZG {label}-seed{seed} racked {racked} of {carts} handcarts in the founders' cart at Year 3");
+                }
             });
         }
     }
@@ -128,7 +177,7 @@ public sealed class ZzLogistics
         // The walk home is the back half of a shopping trip when the arms are full, and a commute when they are not.
         VillagerState.TravelingHome => v.IsCarrying ? Bucket.Fetch : Bucket.Commute,
         VillagerState.FetchingFromStore or VillagerState.FetchingACoat or VillagerState.FetchingATool
-            or VillagerState.WalkingToTheWell
+            or VillagerState.WalkingToTheWell or VillagerState.FetchingAHandcart or VillagerState.PushingAHandcart
             => Bucket.Fetch,
         VillagerState.CollectingForMarket or VillagerState.StockingTheMarket => Bucket.Market,
         // The producer's own load to the store (D385: every load to a store, never home) is part of producing,
@@ -152,6 +201,7 @@ public sealed class ZzLogistics
         public GridPos Far;
         public int FarDist;
         public int Year;
+        public bool Pushed;
     }
 
     private sealed record Spell(Bucket Bucket, int Ticks, string Who, GridPos From, GridPos Far, int FarDist, int Year);
@@ -198,6 +248,12 @@ public sealed class ZzLogistics
         int yearShown = world.Clock.Year;
         long t = 0;
 
+        // Slice H: shopping trips (a fetch spell that turned at a shop) with the cart and without, household-years, carts taken.
+        var tripsPushed = new List<int>();
+        var tripsOnFoot = new List<int>();
+        long housedHouseholdTicks = 0;
+        int cartsTaken = 0;
+
         void Close(Villager v, Open o, long now)
         {
             if (Array.IndexOf(Walking, o.Bucket) < 0)
@@ -216,6 +272,10 @@ public sealed class ZzLogistics
                 }
 
                 list.Add(ticks);
+                if (at != "elsewhere")
+                {
+                    (o.Pushed ? tripsPushed : tripsOnFoot).Add(ticks);
+                }
             }
 
             if (o.Bucket is Bucket.Fetch or Bucket.Haul)
@@ -249,10 +309,27 @@ public sealed class ZzLogistics
                 yearShown = world.Clock.Year;
             }
 
+            foreach (Household h in world.Households)
+            {
+                if (h.HasHome && world.LivingMembersOf(h) > 0)
+                {
+                    housedHouseholdTicks++;
+                }
+            }
+
             foreach (Villager v in world.Villagers)
             {
                 bool counts = v.Alive && v.CanWork;
                 open.TryGetValue(v, out Open? o);
+                if (counts && v.State == VillagerState.PushingAHandcart && (o is null || o.Bucket != Bucket.Fetch || !o.Pushed))
+                {
+                    cartsTaken++;
+                }
+
+                if (o is not null && v.PushingACart)
+                {
+                    o.Pushed = true;
+                }
                 if (!counts)
                 {
                     if (o is not null)
@@ -282,6 +359,7 @@ public sealed class ZzLogistics
                     o.Far = v.Tile;
                     o.FarDist = 0;
                     o.Year = world.Clock.Year;
+                    o.Pushed = v.PushingACart;
                 }
                 else
                 {
@@ -331,6 +409,18 @@ public sealed class ZzLogistics
             s.Sort();
             _o.WriteLine($"ZZG {label} fetchTo {at} n {s.Count} median {s[s.Count / 2]} p90 {s[Math.Min(s.Count - 1, (int)(s.Count * 0.9))]} max {s[^1]}");
         }
+
+        // Slice H (handcart.md §5–§7): the trips the cart made and the ground it left.
+        tripsPushed.Sort();
+        tripsOnFoot.Sort();
+        double householdYears = housedHouseholdTicks / (double)ticksPerYear;
+        int carted = world.Households.Count(h => h.HandcartUses > 0);
+        int mapTiles = world.Map.Width * world.Map.Height;
+        _o.WriteLine($"ZZG {label} trips shopping {tripsPushed.Count + tripsOnFoot.Count} perHouseholdYear {(tripsPushed.Count + tripsOnFoot.Count) / Math.Max(householdYears, 1e-9):F2} "
+            + $"householdYears {householdYears:F1} pushed {tripsPushed.Count} {Med(tripsPushed)} onFoot {tripsOnFoot.Count} {Med(tripsOnFoot)}");
+        _o.WriteLine($"ZZG {label} carts taken {cartsTaken} carted {carted} of {world.Households.Count(h => h.HasHome && world.LivingMembersOf(h) > 0)} housed "
+            + $"onShelves {world.InStores(Goods.Handcart)} trodden {world.Paths.TroddenTiles} path {world.Paths.PathTiles} of {mapTiles} tiles "
+            + $"({world.Paths.TroddenTiles * 100.0 / mapTiles:F1}% trodden, {world.Paths.PathTiles * 100.0 / mapTiles:F2}% path)");
 
         // Why a fetch is as long as it is: every lived-in home's walk to the nearest store holding any food, at the end —
         // and separately to the nearest market and the nearest storehouse holding food, the two D372 chooses between.

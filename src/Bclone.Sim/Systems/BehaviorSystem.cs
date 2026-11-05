@@ -1243,21 +1243,31 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void TakeTheCartFromTheDoorstep(SimWorld world, Villager villager)
     {
-        Household household = world.HouseholdOf(villager);
-        if (household.HandcartUses <= 0
-            || household.HomePosition is not Point door
-            || villager.Tile != door.ToTile()
-            || SomebodyIsPushingTheCart(world, household))
+        if (!CanTakeTheCartFromTheDoorstep(world, villager))
         {
             return;
         }
 
+        Household household = world.HouseholdOf(villager);
         villager.PushingACart = true;
         if (world.Logs(LogLevel.Debug))
         {
             world.Log(LogLevel.Debug, "behavior",
                 $"{villager.Name} sets out with the {household.Name} handcart, {household.HandcartUses} trips left in it — {world.Clock}.");
         }
+    }
+
+    /// <summary>
+    /// Whether a shopper deciding now would leave with the household's cart (`handcart.md §4`): it has one, they stand on
+    /// the home's tile, and nobody else is out with it. Read by the take and by the trip's worth, so the two agree.
+    /// </summary>
+    private static bool CanTakeTheCartFromTheDoorstep(SimWorld world, Villager villager)
+    {
+        Household household = world.HouseholdOf(villager);
+        return household.HandcartUses > 0
+            && household.HomePosition is Point door
+            && villager.Tile == door.ToTile()
+            && !SomebodyIsPushingTheCart(world, household);
     }
 
     /// <summary>Whether any living member of the household has its cart in their hands (`handcart.md §4`).</summary>
@@ -1549,10 +1559,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         int foodWanted = world.TargetFoodFor(household);
         int atHome = HeldOnceHome(world, household, villager, world.FoodIn);
         household.ToppingUpFood = StillShort(config, atHome, foodWanted, household.ToppingUpFood);
+        // ⭐ A trip's worth is the cart's when the cart goes (`handcart.md §5`): a market stocked for an armful is not stocked
+        // for three, so the scrap rule (D372) asks for the load the shopper will actually carry.
+        int armfuls = ArmfulsFor(world, villager);
         if (household.ToppingUpFood)
         {
             StoreBuilding? source = NearestShopHolding(
-                world, villager.Tile, ATripsWorth(config, foodWanted - atHome),
+                world, villager.Tile, ATripsWorth(config, foodWanted - atHome, armfuls),
                 (store, atLeast) => FoodItWillGiveUp(world, store) >= atLeast);
             if (source is not null)
             {
@@ -1575,14 +1588,28 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         return household.ToppingUpFirewood
             ? NearestShopHolding(
-                world, villager.Tile, ATripsWorth(config, firewoodFloor - firewoodAtHome),
+                world, villager.Tile, ATripsWorth(config, firewoodFloor - firewoodAtHome, armfuls),
                 (store, atLeast) => store.Gives(Goods.Firewood) && HeldOf(store.Store, Goods.Firewood) >= atLeast)
             : null;
     }
 
-    /// <summary>What a fetch would carry — the shortfall, up to an armful (D372).</summary>
-    private static int ATripsWorth(SimConfig config, int shortfall) =>
-        shortfall < config.CarryCapacity ? shortfall : config.CarryCapacity;
+    /// <summary>
+    /// What a fetch would carry — the shortfall, up to an armful (D372), or up to <c>cart_armfuls</c> of them with the
+    /// household's handcart in hand (`handcart.md §5`, Slice H).
+    /// </summary>
+    private static int ATripsWorth(SimConfig config, int shortfall, int armfuls)
+    {
+        int load = config.CarryCapacity * armfuls;
+        return shortfall < load ? shortfall : load;
+    }
+
+    /// <summary>
+    /// ⭐ How many armfuls this shopper's trip can carry (`handcart.md §5`): <c>cart_armfuls</c> with the household's cart in
+    /// their hands — already pushing it, or about to take it from the doorstep — and one otherwise. <c>carry_capacity</c>
+    /// itself is untouched (D537: one armful, one meaning); the cart is what multiplies it.
+    /// </summary>
+    private static int ArmfulsFor(SimWorld world, Villager villager) =>
+        villager.PushingACart || CanTakeTheCartFromTheDoorstep(world, villager) ? world.Config.CartArmfuls : 1;
 
     /// <summary>
     /// Whether a household is (still) short enough of a good to go for it — the trigger at
@@ -4540,7 +4567,11 @@ public sealed partial class BehaviorSystem : ISimSystem
     {
         Household household = world.HouseholdOf(villager);
         SimConfig config = world.Config;
-        int load = config.CarryCapacity;
+
+        // ⭐ THE CART IS WHAT A CART BUYS (`handcart.md §5`, Slice H): with the household's handcart in their hands the trip
+        // carries `cart_armfuls` armfuls — D668's shopping walk was consumption ÷ armful, and this is the one term the
+        // village could change. `carry_capacity` is untouched (D537); the arms are still the arms.
+        int load = config.CarryCapacity * (villager.PushingACart ? config.CartArmfuls : 1);
 
         // Whatever store they are actually standing at, rather than a plan made
         // before they set off — the village may have changed while they walked.
