@@ -1,6 +1,30 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ✅ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, MERGED D681): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — 🔨 THE STALLED LODGE FIXED (D683, 2026-11-04, `claude/slice-lodge-carriers-bb1fd3`, UNPLAYED, UNMERGED): UNDER A MET MEAT LIMIT A SWOLLEN LODGE KEEPS EVERY SEAT AND THE HUNTERS CARRY IT IN, AT THE MARKETER'S RANK, ALL AT ONCE; THE CARD SAYS WHY — JOE PLAYS, MERGES AT HIS WORD, BEFORE SLICE W TAKES `main`. `main` = THE MERGE OF `slice/lane-bridge` (D681) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ✅ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, MERGED D681): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D677, D680, D681) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D683) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = 51226d8 (the `slice/lane-bridge` merge, D681, plus one docs commit), pushed; origin agrees. This branch
+> (`claude/slice-lodge-carriers-bb1fd3`) is two commits past it: the fix and this handoff. Unplayed, unmerged, unpushed.** Merge
+> `--no-ff` at Joe's word, **before the Slice W build (`claude/slice-workshop-2083f6`, D678–D679, its own worktree) merges `main`**,
+> so the handcart slice (H) finds `LabourQuota` and `BehaviorSystem` settled. The tree is clean but for `bclone-tracker.xlsx`.
+>
+> **🔨 D683 — the stalled hunter's lodge, Joe's pick *"Hunters carry it in"* (`specs/hunting.md §6a`).** His Hollowmere at Year 25:
+> 2,184 meat in the lodge, 636 on the shelves, the meat row 2,500 met by the lodge itself (the limit counts every buffer, D420),
+> one hunter of three seated, two laborers idle, one carrier at a time taking 40 a trip for years. **The rule:** while a lodge is
+> swollen (half its room, D394) a met meat limit keeps every one of its seats — `SimWorld.SeatsKeptToDrainSwollenBuffers`, asked
+> at the **marketer's** rank (the hunter's rank froze the harness's re-founders roofless; measured, `ZZD` lines) — and the seated
+> hunters carry instead of hunting, every hand setting off at once (`EveryHandMayCarry`; D370's one claim is on the walk to the
+> hut and stays for an unswollen buffer); below half the seats fall to nought as before. The card: `SwollenBufferNote` names the
+> limit; `NobodyPostedNote` replaces *Working — 0 of 3 at it* for any building nobody is posted at, with the quota's own reason.
+> Guards `LodgeCarriersTests` (5), 8 mutants, 12 reds, no zero kept. Harness `tools/harness/ZzLodge.cs` + `lodge.py`: Joe's arm
+> alive 331 → 703 over 30 valleys, the stall a hundredth, meat on a shelf ×14 (`hunting.md §6a` has the table).
+> **Numbers (D683, the four checks on the final tree):** suite 1891 / 0 / 5 of 1896 in 20m56 (15m06 at D671, 17m06 at D680 — a two-seed harness trace ran beside it for its first minutes, so the clock is not clean; the merged tree's run is in the D684 merge below); view 0 warnings; probe 103 `[widths]` lines, 67 ✅, 0 ⛔, bar 151,
+> tile centres ✅, new game ✅, `done.`, no Godot left running; goldens grep 392 → 392, none moved.
+>
+> **▶️ NEXT — Joe plays it (`.\run.bat` from this worktree; the ⏸️ OPEN item at the top of the list says what to look for), merges at
+> his word; then the Slice W build merges `main` and Joe plays W; then Slice H (`handcart.md`).** ⚠️ D682 is Slice W's; this took D683.
+>
+> **— D681, as it was —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-11-01 (D677, D680, D681) — ON WINDOWS.**
 >
 > **`main` = the merge of the Slice W spec branch `claude/musing-rhodes-b6ffea` (D677) plus one docs commit making these lines true, pushed; origin agrees.** The spec branch was four docs-only commits — the Slice W spec (c5677cd),
 > `main` merged in with the entry renumbered D674 (d5f60ab), Joe's five calls answered (055938c, D675), his number for the unlock and
@@ -8900,6 +8924,33 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D683 PAID FOR — A SEAT ASKED AT THE TOP OF THE QUOTA OUTRANKS A ROOF, A TYPED NOUGHT IS APPLIED AFTER THE HANDS ARE SPENT, AND THE CLAIM IS ON THE WALK TO THE HUT
+
+- ⛔ **A new want's RANK in `LabourQuota.For` is a design decision, and the mean will not tell you it is wrong.** The carriers for a
+  swollen lodge were first taken at the hunter's rank — first of every trade — and the `lodge` arm read alive 331 → 668, a clear
+  win; the `every` arm read 370 → 305 with frozen 210 → 303, and only the per-death lines (`ZZ_DEATHS=1`, a `ZZD` a death) said
+  why: every re-founding band of four was seated three-to-carry meat the village already had, and nobody built a roof. Moved to
+  the marketer's rank (the errand is the marketer's), every arm improved. *Before typing a `Take(ref free, …)`, ask what it
+  takes the hands FROM, and read the deaths per seed on the arm whose villages are smallest.*
+- ⚠️ **`Asked` applies the player's typed numbers AFTER the derivation has shared the hands out**, so a fixture with four adults
+  and every other trade typed 0 still spends three of them on the derived foragers and woodcutter and leaves ONE for a trade asked
+  at the marketer's rank. A guard that wanted three carriers seated read *the village wants 1*. Pose eight founders
+  (`Config with { StartingHouseholds = 4 }`); do not read the one as the rule failing.
+- ⚠️ **D370's one claim (`SomebodyIsClearing`) is on the walk TO the hut (`ClearingABuffer`), not the haul away from it.** A guard
+  that counted `HaulingToStore` as "carrying" read three hunters carrying at once with the exemption switched OFF — the mutant
+  scored zero — because the claim is released the tick the armful is picked up. Count the approach leg; the honest claim is
+  *they set off together*, and the measured number was two of three (the third was mid-errand when the pass seated them).
+- ⚠️ **A fresh worktree's probe stops short of `done.` with `Unable to open file: res://.godot/imported/…ctex`** — Slice W's trap
+  (D678), paid again here: run `"$GODOT" --headless --import --path src/Bclone.Game` once. It writes 32 `.uid` files and
+  **six of them are tracked** (`Main.cs.uid`, `VillageMap.cs.uid`, `Minimap.cs.uid`, `ConfigLocator.cs.uid`, two shaders'): delete
+  the untracked ones from `git status`'s `??` list, never by glob — a glob took the tracked six and they had to be checked out
+  again. It also rewrites the `.import` files with LF, a line-ending-only diff (`git diff --ignore-space-at-eol` is empty).
+- ⚠️ **The unattended harness has no market, so its lodge stalls from Year 1 for ever** — the baseline's "stall ticks 23,820 of
+  24,000" in valley after valley is the rule's shape at its purest and nothing like Joe's village, where a marketer exists and
+  the stall took years. A number from this arm says *the rule works*, not *how it plays*; the second is his.
+- ⚠️ **The brief said the Phase 5 pose has a lodge; it has none** (`PhaseFiveGoldenTests` names no lodge, no hunter, no meat).
+  A brief is a hypothesis about the suite, like a filed finding (D452) — grep before predicting a golden's move.
+
 ## ⛔ THE TRAP D680 PAID FOR — A SHAPE TEST THAT READS ONLY THE WORN TILES CANNOT TELL A LADDER FROM TWO NEIGHBOURS
 
 - ⛔ **`TrailNetwork`'s one-tile bridge was written for a ladder and welded two separate lanes for two weeks unseen.** The worn
@@ -9228,6 +9279,16 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE STALLED LODGE (D683, `claude/slice-lodge-carriers-bb1fd3`) — JOE PLAYS, THEN MERGES AT HIS WORD, BEFORE SLICE W TAKES
+  `main`.** What to look for in a village with a lodge past half and the meat row met (his Hollowmere): the lodge's card reading
+  *"The village has its 2,500 meat (N stored), so the hunters are carrying it in rather than hunting — N waiting"*, the three
+  hunters walking meat to the granary together rather than one at a time, the lodge below half within a season or two, and the
+  hunters stood down after with the card reading *"Nobody is posted here — the meat limit of 2,500 is met. The marketer carries
+  in what is left — N waiting."* Two of his calls ride in it unasked and are his to overrule: the carriers are asked at the
+  **marketer's rank** (a busy village builds and splits firewood before it carries meat it already has — measured, the other
+  rank froze the harness's re-founders), and **every seat** of a swollen lodge is kept rather than one per hunt waiting. ⚠️ His
+  Hollowmere save is readable here only if it was made on a format-9 build; a save from the Slice W worktree (format 10) opens
+  only there, until W merges `main` with this in it.
 - ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); THE BUILD BRANCH HAS TAKEN `main`; JOE PLAYS IT IN HIS FERNHOLLOW FROM THE BUILD WORKTREE.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
   ladders of October still one lane. To see it on his format-10 save the build branch must merge `main` after this lands.
