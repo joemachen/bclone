@@ -602,6 +602,152 @@ public sealed class HandcartTests
     }
 
     // ---------------------------------------------------------------
+    //  §6–§7 — slow on grass, quick on the path; a cart's pass makes a path
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// §6: a leg's grass tiles cost `cart_off_path_slow_percent` of their ticks under a cart and a packed lane costs what it
+    /// always did — the walk slows, the grass count the lane rule reads is unchanged, and the route is the walker's.
+    /// </summary>
+    [Fact]
+    public void ACartIsSlowOnGrassAndQuickOnThePath()
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        Assert.True(config.CartOffPathSlowPercent > 100, "At 100 a cart is no slower, so the pose could show nothing.");
+        GridPos? start = ClearStretch(world, across: 6, down: 1);
+        Assert.NotNull(start);
+        var tiles = new List<GridPos>();
+        for (int x = 0; x <= 6; x++)
+        {
+            tiles.Add(new GridPos(start!.Value.X + x, start.Value.Y));
+        }
+
+        Assert.All(tiles, t => Assert.Equal(TravelCostField.BaseTileCost, world.TravelCost.CostToEnter(t)));
+        (int onFoot, int grassOnFoot) = BehaviorSystem.WalkedOver(world, tiles, tiles.Count - 1);
+        (int pushed, int grassPushed) = BehaviorSystem.WalkedOver(world, tiles, tiles.Count - 1, pushing: true);
+        int slow = (TravelCostField.BaseTileCost * config.CartOffPathSlowPercent / 100) - TravelCostField.BaseTileCost;
+        _output.WriteLine($"{tiles.Count} grass tiles: {onFoot} on foot, {pushed} under a cart ({slow} more a tile); grass counted {grassOnFoot} / {grassPushed}.");
+        Assert.Equal(tiles.Count, grassOnFoot);
+        Assert.Equal(grassOnFoot, grassPushed);
+        Assert.Equal(onFoot + (tiles.Count * slow), pushed);
+
+        // The same tiles packed: the cart pays what the walker pays.
+        foreach (GridPos t in tiles)
+        {
+            world.Paths.Tread(t, config.PathPackedAt + 5);
+        }
+
+        world.Paths.Decay(0);
+        Assert.All(tiles, t => Assert.True(world.TravelCost.CostToEnter(t) < TravelCostField.BaseTileCost, "the lane did not price as a path"));
+        (int onFootPacked, _) = BehaviorSystem.WalkedOver(world, tiles, tiles.Count - 1);
+        (int pushedPacked, _) = BehaviorSystem.WalkedOver(world, tiles, tiles.Count - 1, pushing: true);
+        Assert.Equal(onFootPacked, pushedPacked);
+        Assert.True(pushedPacked < pushed, "the packed lane is not quicker for the cart than the grass was");
+    }
+
+    /// <summary>
+    /// §7 (D587 call 8): one pass by a cart treads every tile its wheels cross to `path_worn_at`; a walker's pass leaves a
+    /// footstep; a tile already past the line takes the footstep, never a reset.
+    /// </summary>
+    [Fact]
+    public void ACartsPassMakesAPathWhereAWalkersLeavesAFootstep()
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        const int down = 8;
+        GridPos? start = ClearStretch(world, across: 1, down: down);
+        Assert.NotNull(start);
+        GridPos from = start!.Value;
+        var to = new GridPos(from.X, from.Y + down);
+        Villager walker = world.Villagers.First(v => v.Alive && v.CanWork);
+
+        // On foot first, over fresh grass: footsteps, under the line.
+        walker.PushingACart = false;
+        int stepsOnFoot = Walk(world, walker, from, to);
+        var afterFoot = Trodden(world, from, to);
+        Assert.True(afterFoot.Count > 0, "the walk trod nothing");
+        Assert.All(afterFoot.Values, wear => Assert.True(wear < config.PathWornAt, $"a walker's pass wore a tile to {wear}, a path"));
+
+        // One tile past the line already, then the cart's pass.
+        GridPos already = new(from.X, from.Y + (down / 2));
+        world.Paths.Tread(already, config.PathWornAt + 20 - world.Paths.At(already));
+        int alreadyBefore = world.Paths.At(already);
+        walker.PushingACart = true;
+        int stepsUnderTheCart = Walk(world, walker, from, to);
+        var afterCart = Trodden(world, from, to);
+        _output.WriteLine($"on foot: {afterFoot.Count} tiles at {afterFoot.Values.Min()}–{afterFoot.Values.Max()} in {stepsOnFoot} ticks; under the cart: {afterCart.Count} tiles at {afterCart.Values.Min()}–{afterCart.Values.Max()} in {stepsUnderTheCart} ticks (the line is {config.PathWornAt}).");
+        Assert.All(afterCart.Values, wear => Assert.True(wear >= config.PathWornAt, $"a cart's pass left a tile at {wear}, under the line"));
+        Assert.Equal(alreadyBefore + config.PathWearPerStep, world.Paths.At(already));
+
+        // §6, lived: the same grass took the cart longer — the leg's ticks carry the slow (the walker's footsteps left the
+        // tiles grass by class, so both walks were priced as grass).
+        Assert.True(stepsUnderTheCart > stepsOnFoot, $"the cart crossed {down} grass tiles in {stepsUnderTheCart} ticks against {stepsOnFoot} on foot — no slower");
+    }
+
+    private static int Walk(SimWorld world, Villager walker, GridPos from, GridPos to)
+    {
+        walker.StandAt(Point.CentreOf(from));
+        walker.LegTicks = Fixed.Zero;
+        int steps = 0;
+        while (steps < 100 && !(walker.Tile == to && walker.LegTicks == Fixed.Zero))
+        {
+            BehaviorSystem.TravelForTest(world, walker, to);
+            steps++;
+        }
+
+        Assert.Equal(to, walker.Tile);
+        return steps;
+    }
+
+    /// <summary>Every tile strictly between the two ends of a straight walk down a column, with its wear.</summary>
+    private static Dictionary<GridPos, int> Trodden(SimWorld world, GridPos from, GridPos to)
+    {
+        var trodden = new Dictionary<GridPos, int>();
+        for (int y = from.Y + 1; y < to.Y; y++)
+        {
+            var t = new GridPos(from.X, y);
+            trodden[t] = world.Paths.At(t);
+        }
+
+        return trodden;
+    }
+
+    /// <summary>Open, unbuilt, unwalled ground near the founding — `DesirePathTests.ClearStretch`'s shape.</summary>
+    private static GridPos? ClearStretch(SimWorld world, int across, int down)
+    {
+        bool Open(GridPos t) =>
+            world.Map.Contains(t) && TerrainRules.IsPassable(world.Map.TerrainAt(t))
+            && world.FootprintCovering(t).Count == 0 && world.Zones.WallsOn(t) == 0
+            && world.TravelCost.CostToEnter(t) == TravelCostField.BaseTileCost;
+        for (int r = 0; r < 20; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    var a = new GridPos(world.Map.FoundingSite.X + dx, world.Map.FoundingSite.Y + dy);
+                    bool clear = true;
+                    for (int y = -1; y <= down + 1 && clear; y++)
+                    {
+                        for (int x = -1; x <= across + 1 && clear; x++)
+                        {
+                            clear = Open(new GridPos(a.X + x, a.Y + y));
+                        }
+                    }
+
+                    if (clear)
+                    {
+                        return a;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // ---------------------------------------------------------------
     //  §9 — hashed, saved, said
     // ---------------------------------------------------------------
 
@@ -707,6 +853,11 @@ public sealed class HandcartTests
         Assert.Equal(new SimConfig().CartArmfuls, shipped.CartArmfuls);
         SimConfigException noArmful = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "cart_armfuls": 0 }""", "<modded>"));
         Assert.Contains("cart_armfuls", noArmful.Message, StringComparison.Ordinal);
+
+        Assert.Equal(150, shipped.CartOffPathSlowPercent);
+        Assert.Equal(new SimConfig().CartOffPathSlowPercent, shipped.CartOffPathSlowPercent);
+        SimConfigException quicker = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "cart_off_path_slow_percent": 99 }""", "<modded>"));
+        Assert.Contains("cart_off_path_slow_percent", quicker.Message, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------

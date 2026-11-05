@@ -14,7 +14,7 @@ namespace Bclone.Sim.Tests;
 //
 //   ZZ_SAVES=<folder, a COPY of Joe's saves> [ZZ_PICK=autosave-1.save] [ZZ_YEARS=5]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnJoesSaves
-//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_LABEL=name]
+//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_USES=n] [ZZ_SLOW=pct] [ZZ_LABEL=name]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnTheHarness
 //
 // One ZZG line a year per village: every living adult's ticks in nine buckets — work / commute / deliver (the
@@ -87,6 +87,11 @@ public sealed class ZzLogistics
             config = config with { HandcartUses = uses };
         }
 
+        if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_SLOW"), out int slow))
+        {
+            config = config with { CartOffPathSlowPercent = slow };
+        }
+
         SaveOpened opened = SaveFile.Open(path, config);
         Assert.True(opened.Loop is not null, $"{opened.Refusal} {opened.Detail}");
         string village = Path.GetFileName(Path.GetDirectoryName(path)!);
@@ -140,6 +145,11 @@ public sealed class ZzLogistics
             if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_USES"), out int uses))
             {
                 config = config with { HandcartUses = uses };
+            }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_SLOW"), out int slow))
+            {
+                config = config with { CartOffPathSlowPercent = slow };
             }
 
             SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());

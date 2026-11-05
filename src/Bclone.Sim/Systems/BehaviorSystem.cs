@@ -4084,13 +4084,19 @@ public sealed partial class BehaviorSystem : ISimSystem
                 }
 
                 // Already on the tile and not yet on the thing: the last fraction of a tile is walked
-                // like any other leg, at the tile's own price.
+                // like any other leg, at the tile's own price — and a cart's price on grass (`handcart.md §6`).
+                int entry = world.TravelCost.CostToEnter(target);
+                if (villager.PushingACart && entry == TravelCostField.BaseTileCost)
+                {
+                    entry = entry * world.Config.CartOffPathSlowPercent / 100;
+                }
+
                 villager.LegFrom = villager.Position;
                 villager.LegTo = place;
                 villager.LegTarget = target;
                 villager.LegTicks = AtLeastARaw(
                     villager.Position.DistanceTo(place)
-                    * Fixed.FromRatio(world.TravelCost.CostToEnter(target), TravelCostField.BaseTileCost));
+                    * Fixed.FromRatio(entry, TravelCostField.BaseTileCost));
                 villager.LegWalked = Fixed.Zero;
             }
             else if (pace == Fixed.Zero)
@@ -4173,6 +4179,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             // staircase they no longer take. ⛔ It trod only the tile it LANDED on until D424, and the
             // lane wore into dashes (Joe's broken lane). `LineOfSight.Footprints` has the whole story.
             int wearPerStep = world.Config.PathWearPerStep;
+            // ⭐ ONE PASS BY A CART MAKES A PATH (D587 call 8, Joe; `handcart.md §7`, Slice H): under a handcart every
+            // tile the wheels cross is trodden to `path_worn_at` at once — a tile already past it takes the footstep
+            // as any walker's. Drawn at the next season's sweep like every path, priced at the next spring (D358),
+            // ⛔ never a re-price per pass: every cost change clears every flow field, and carts drive daily.
+            bool cartPass = villager.PushingACart;
+            int wornAt = world.Config.PathWornAt;
             // ⭐ A BRIDGE'S DECK TAKES NO WEAR, AND A STEP ONTO IT FROM A BANK IS A CROSSING (D546): the
             // deck is a road already, and the crossings are what teach the village to build it in stone.
             GridPos was = stepFrom.ToTile();
@@ -4180,7 +4192,14 @@ public sealed partial class BehaviorSystem : ISimSystem
             {
                 if (world.DeckOn(tile) == 0)
                 {
-                    world.Paths.Tread(tile, wearPerStep);
+                    int amount = wearPerStep;
+                    if (cartPass)
+                    {
+                        int short_ = wornAt - world.Paths.At(tile);
+                        amount = short_ > amount ? short_ : amount;
+                    }
+
+                    world.Paths.Tread(tile, amount);
                 }
                 else if (world.DeckOn(was) == 0)
                 {
@@ -4329,7 +4348,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // first step out of a door cost nothing and a leg out of a house strode two tiles in a tick
         // — hidden for as long as a leg was rounded up to a whole tick.
         int routeSteps = furthest + 1;
-        (int walked, int grassToFurthest) = WalkedOver(world, route, furthest);
+        (int walked, int grassToFurthest) = WalkedOver(world, route, furthest, villager.PushingACart);
 
         // ⭐ THE LAST LEG ENDS WHERE THEY WILL STAND (D463), so arrival is walked, not jumped — if the
         // place is in sight and the line to it keeps to the lane as the line to the centre did
@@ -4363,22 +4382,36 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// the price clock B charges (D361, D463).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// ⭐ <b>A FAILING DECK SLOWS THE WALK, NOT THE ROUTE</b> (`building-condition.md §4.4`, D546 call 6, D555). The deck
     /// byte is already the dial's maximum, so the slow is charged here, on the leg's ticks: nobody re-routes round a
     /// bridge they can still cross, and the walker is visibly slower on it. Grass is counted before the slow, so a
     /// slowed deck is not mistaken for grass by the lane rule.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>AND A HANDCART IS SLOW ON GRASS, QUICK ON THE PATH</b> (`handcart.md §6`, Slice H; Joe, D672 call 5) — the
+    /// same shape one cause over: with <paramref name="pushing"/> a grass tile (one the field charges full price for)
+    /// costs <c>cart_off_path_slow_percent</c> of its ticks, a worn or packed tile what it always did. The route is the
+    /// walker's route; the cost field stays one (`DESIGN.md §2.6`, CLAUDE.md: never two).
+    /// </para>
     /// </remarks>
-    internal static (int Walked, int Grass) WalkedOver(SimWorld world, IReadOnlyList<GridPos> route, int furthest)
+    internal static (int Walked, int Grass) WalkedOver(SimWorld world, IReadOnlyList<GridPos> route, int furthest, bool pushing = false)
     {
         int walked = 0;
         int grass = 0;
         for (int i = 0; i <= furthest; i++)
         {
             int cost = world.TravelCost.CostToEnter(route[i]);
-            grass += cost == TravelCostField.BaseTileCost ? 1 : 0;
+            bool onGrass = cost == TravelCostField.BaseTileCost;
+            grass += onGrass ? 1 : 0;
             if (world.DeckIsSlow(route[i]))
             {
                 cost = cost * world.Config.FailingDeckSlowPercent / 100;
+            }
+
+            if (pushing && onGrass)
+            {
+                cost = cost * world.Config.CartOffPathSlowPercent / 100;
             }
 
             walked += cost;

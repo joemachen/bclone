@@ -1046,6 +1046,22 @@
   // shortfall never exceeds three armfuls, so the fourth is never carried.
   // Two is measurably worse. So 3.
   "cart_armfuls": 3,
+  // cart_off_path_slow_percent: a leg's GRASS tiles cost this share of their
+  // ticks under a cart; worn and packed tiles are unchanged -- the cart is slow on
+  // grass and quick on the path (Joe, D672 call 5). The failing deck's shape (150):
+  // the walk slows, never the route, so the cost field stays one. And a cart's
+  // pass treads every tile its wheels cross to path_worn_at at once (D587 call 8:
+  // one pass by a cart makes a path), drawn at the next season's sweep, priced at
+  // the next spring -- never a re-price per pass. MEASURED with and without
+  // (handcart.md 6-7, D689): on four unattended valleys over fifty years and on
+  // Joe's Hollowmere the slow moves nothing the instrument can see (Fetch 5.0% at
+  // 150 and at 100; Hollowmere 11.3% both; the pushed trip's median 10 / 29 ticks
+  // both ways) -- because a cart's line IS a path after its first pass, so the slow
+  // is paid once a route, on fresh grass, and legibly: 8 grass tiles take 12 ticks
+  // under a cart against 8 on foot. The cart's tread moved the valley's path
+  // tiles 0.62% -> 0.66% (Hollowmere 1.31% -> 1.32%): the shoppers' lines were
+  // paths already. Nothing to soften.
+  "cart_off_path_slow_percent": 150,
 
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the

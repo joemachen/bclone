@@ -5,15 +5,20 @@ cart thought through across every aspect), **D672 (Joe: *"Yes, all six"* — eve
 D678 / D682 / D684 (Slice W: the Workshop, the Carpenter and `Goods.Handcart` on a shelf — `specs/workshop-and-the-carpenter.md`),
 D537 (the armful, one meaning), D587 call 8 (a cart's pass makes a path), D30 (a tool follows the person; a cart serves the
 larder), D372 (the shop walk), D510 (an older save is refused in words), D291 (the hash is sparse over goods).
-**Status:** ▶️ **SLICE H IN BUILD, on `claude/slice-handcart-b0230a` (2026-11-04), piece by piece, each its own commit with its
-guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`), red-checked and counted (§11). ✅ Piece 1 — the household's cart: owned,
+**Status:** ✅ **SLICE H BUILT, on `claude/slice-handcart-b0230a` (2026-11-04, D686–D689), UNPLAYED, UNMERGED — five pieces, each its
+own commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 19 facts), red-checked and counted (§11: 36 mutants, 39
+reds, three zeros written down); every number measured on `ZzLogistics` before typed; no golden moved. The verdict against
+D668's measurement is `logistics.md §6`: Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49. Joe plays,
+then merges at his word.** ✅ Piece 1 — the household's cart: owned,
 fetched like a coat, walked home, parked, taken from the doorstep, hashed, saved (format 11), said (§3, §4, §9). ✅ Piece 2 —
 seen: the chip beside the home, the rectangle behind the pusher, the card's line, the founders' cart in the cart colour,
 two probe lines (§8). ✅ Piece 3 — what it buys: `cart_armfuls` 3, swept 2/3/4 on the harness and Joe's Hollowmere before typed
 (§5; Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49). ✅ Piece 4 — wear: one use a round trip at
 the door, gone at nought and another fetched; `handcart_uses` 150 measured as ~46 years of shopping and kept as Joe's number
 with the 20/40 arms put to him (§6).
-⏳ Piece 5 — speed and tracks (§6, §7).** Every number is a proposal until its piece's harness table is filled.
+✅ Piece 5 — speed and tracks: slow on grass (150, the failing deck's shape; measured to cost nothing a village can see, because
+a cart's line is a path after its first pass), every tile the wheels cross a path at once; the path tiles moved 0.62 → 0.66 % of
+the valley, 1.31 → 1.32 % in Hollowmere — the village is not webbed, nothing softened (§6, §7).**
 Candidate (d), *nearby* given a meaning, is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`, D671).
 
 > **Where this sits.** D668 measured a fifth of every adult's ticks in Joe's established villages as the household's
@@ -162,17 +167,42 @@ are the numbers **before the slow grass walk (§6, piece 5)**; the verdict in `l
   cart outlives its household** — the carpenter is a one-burst trade and the wear mechanic is, in play, dormant. *"A few
   years of shopping"* is 20–40. ⏸️ **His call (HANDOFF, open): 150 as he said, or 40 for a dozen years and a handful of logs
   a year.** Nothing else in the slice depends on it.
-- **Speed — ⏳ piece 5:** `cart_off_path_slow_percent` **150 on grass, 100 on worn and packed**, applied to the leg's ticks
-  as the failing deck is (`WalkedOver`) — **the route unchanged**, so the cart takes the walker's path and the cost field
-  stays one. Legible in a sentence: *the cart is slow on grass and quick on the path.* Measured with and without before typed.
+- **Speed — ✅ built (piece 5, D689):** `cart_off_path_slow_percent` **150 on grass, 100 on worn and packed**, applied to the
+  leg's ticks as the failing deck is — `WalkedOver(route, furthest, pushing)` multiplies a grass tile's entry cost (one the
+  field charges `BaseTileCost` for) while the walker pushes; a worn or packed tile pays what it always did; the grass count
+  the lane rule (D414) reads is unchanged; the last fraction of a tile in `Travel` pays the same price. **The route is the
+  walker's route and the cost field stays one** (`DESIGN.md §2.6`; CLAUDE.md: never two). Legible in a sentence and in a
+  guard: *the cart is slow on grass and quick on the path* — eight grass tiles take **12 ticks under a cart against 8 on foot**
+  (`ACartsPassMakesAPathWhereAWalkersLeavesAFootstep`). **Measured with and without (the `ZZ_SLOW` arm):** on four unattended
+  valleys over fifty years and on Hollowmere the slow moves nothing the instrument can see — Fetch 5.0 % at 150 and at 100,
+  Hollowmere 11.3 % both, the pushed trip's median 10 / 29 ticks both ways — **because a cart's line is a path after its
+  first pass (§7)**, so the slow is paid once a route, on fresh grass. 150 stands: it is the failing deck's number, it is
+  legible on a new route, and it costs the village nothing it can measure.
 
-## 7. Paths — ⏳ piece 5 (✅ Joe, call 4, D672)
+## 7. Paths — ✅ built and measured (piece 5, D689; ✅ Joe, call 4, D672)
 
-D587 call 8 rules it: **a cart's pass treads every tile it crosses to `path_worn_at` at once** — drawn at once, priced at
-the next spring, never a re-price per pass. With a cart at every doorstep, within a season every home is joined to the
-market by a track: §2.6's loop made literal, and a village webbed with cart lines. **Measured before anything softens
-it:** the trodden share of tiles and the path tiles with carts against without, on the harness; if it is too much, a cart
-pass wears to *worn* and not *packed*, or only a loaded pass counts — Joe's call, not this slice's.
+D587 call 8 rules it, as written: **a cart's pass treads every tile its wheels cross to `path_worn_at` at once** —
+`Travel`'s footprint loop, under `Villager.PushingACart`, treads each footprint tile by its shortfall to the line (or the
+ordinary `path_wear_per_step` once past it; a worn tile is never reset to the line); a bridge deck takes no wear as ever.
+**Drawn at the next season's sweep like every path** (the class moves at the sweep, D362 — *"at once"* in D587 means not
+waiting for the spring re-price), **priced at the next spring, never a re-price per pass** (every cost change clears every
+flow field, and carts drive daily — D358). Guard: `ACartsPassMakesAPathWhereAWalkersLeavesAFootstep` — a walker's pass over
+fresh grass leaves 3 a tile, a cart's leaves every tile at 30 or more, a tile already at 50 gains 3.
+
+**Measured — the trodden share and the path tiles, carts against without (§5's arms, the slice as built):**
+
+| | trodden tiles (of 9,600) | path tiles (worn or packed by class) |
+|---|---|---|
+| four unattended valleys, fifty years, no carts | 0.65 % | 0.62 % |
+| the same with carts (armfuls 3, uses 150, slow 150, the tread) | 0.68 % | 0.66 % |
+| Hollowmere, five years on, no carts | 1.3 % (129) | 1.31 % (126) |
+| Hollowmere with carts | 1.4 % (134) | 1.32 % (127) |
+
+**Reading: the village is not webbed.** The cart follows the walker's route, and the household's line to its shop was a
+path already — walked for food, water and firewood every few days (Joe's Fernhollow lanes sit at the wear ceiling, D680).
+The cart's tread adds a tile or two of path a village: the shoppers' lines were paths before the carts came. §2.6's loop
+is literal and quiet. **Nothing to soften, and nothing softened**: *worn not packed* and *a loaded pass only* stay in this
+section as the two levers if a played village ever shows otherwise — Joe's call, not this slice's.
 
 ## 8. What it looks like, and what it says — ✅ built (piece 2)
 
@@ -208,9 +238,15 @@ pass wears to *worn* and not *packed*, or only a loaded pass counts — Joe's ca
   guard**: the unattended harness raises no workshop, so no cart ever exists there and **no golden moves** for any piece
   of this slice. The format bump touches no hash.
 - **Determinism:** nothing here reads the clock or draws from `Rng`; the fetch and the push are walks through `Travel`.
-- **Acceptance is `ZzLogistics`** (pieces 3–5): on the harness with carts against without, and on Joe's format-10
-  saves where a workshop stands (Hollowmere, Fernhollow): the Fetch share toward the control's 3–13 %, trips a
-  household-year down ~2.5×, the median trip unchanged.
+- **Acceptance is `ZzLogistics`** — ✅ **measured, the slice as built against the same villages without a cart
+  (`logistics.md §6` carries the verdict):** Hollowmere (Joe's Year-25 save, 7 households) five years on — **Fetch share
+  17.6 → 11.3 %, shopping trips a household-year 5.69 → 3.49, fetch spells an adult-year 5.0 → 4.0, spells over four days
+  49.5 → 34.7 %**; four unattended valleys over fifty years — Fetch 6.4 → 5.0 %, trips 5.93 → 4.25. The pushed trip's median
+  (29 ticks in Hollowmere) is the long trip from the door it always was: the walk is the same walk, there are fewer. The
+  ~2.5× of §1 was the four-person larder's arithmetic; a couple's half-larder fitted one armful already, and the measured
+  village is a mix. ⚠️ Joe's Fernhollow save dies unattended under every arm (a harness is not a player, D447) and is
+  excluded. His format-10 saves were read for the measurement by a TEMPORARY, uncommitted format tolerance, restored and
+  checked by `git diff` before each commit.
 
 ## 10. Joe's calls — ✅ all six made as proposed, 2026-11-01 (D672: *"Yes, all six"*)
 
@@ -298,9 +334,25 @@ every score: `HandcartTests`, `LegibilityTests`, `EveryVillagerStateIsDeliberate
 | the walk home with a new cart wears it too | 1 (`AHouseholdWithoutACartFetchesOneAndWalksItHome`: a new cart parks with every trip in it) |
 | the worn-through line silent | 1 |
 
-### 11.4 Piece 5 — ⏳
+### 11.4 Piece 5 — speed and tracks (2 guards + a knob check, 7 mutants, 7 reds, 1 zero written down)
 
-Written when built.
+| Guard | What it holds |
+|---|---|
+| `ACartIsSlowOnGrassAndQuickOnThePath` | seven grass tiles: 70 on foot, 105 under a cart, the grass count the same; the same tiles packed and repriced: the cart pays what the walker pays, and less than it paid on grass |
+| `ACartsPassMakesAPathWhereAWalkersLeavesAFootstep` | a walker's pass over eight fresh grass tiles leaves 3 a tile in 8 ticks; a cart's pass leaves every tile at 30 or more in 12 ticks, and a tile already at 50 gains 3 |
+| `TheCartKnobsAreAsShipped` | `cart_off_path_slow_percent` 150 in the data and the C# default; 99 refused at load |
+
+| Mutant | Reds |
+|---|---|
+| the grass slow not applied in `WalkedOver` | 1 |
+| the slow applied to every tile, path too | 1 |
+| `PlanLeg` forgets the pusher | 1 — ⚠️ 0 until the tread guard counted the walk's ticks: the slow guard calls `WalkedOver` directly |
+| the cart's pass treads a footstep | 1 |
+| the cart's pass resets a worn tile to the line | 1 |
+| `cart_off_path_slow_percent` 99 accepted | 1 |
+| the last fraction of a tile in `Travel` forgets the cart | **0, written down**: `TravelForTest` walks to a tile's centre, so the fraction leg to a `standAt` point is never planned in a guard; the price is the same expression as `WalkedOver`'s and is read there |
+
+**The slice's red-check in all: 36 mutants, 39 reds, three zeros written down** (§11.1 two, §11.4 one).
 
 ## 12. Definition of Done
 

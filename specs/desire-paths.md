@@ -81,6 +81,14 @@ village held 2,000–6,400 wear: an abandoned hub path would have stayed packed 
 where §3.2 promises seasons. A tile is no more a path at 6,000 than at 100 — the class is the whole
 answer (§3.3) — so the excess only ever bought a path that could not fade.
 
+**⭐ A cart's pass makes a path (D587 call 8, Joe; built Slice H, D689, `handcart.md §7`).** Under a household's handcart
+(`Villager.PushingACart`) every footprint tile is trodden **to `path_worn_at` at once** — the tile's shortfall to the line, or
+the ordinary `path_wear_per_step` if it is past it — so one shopping trip wears the household's line to the market into a path.
+Drawn at the next season's sweep like every path (§3.4), priced at the next spring, ⛔ never a re-price per pass. The same
+leg is **slower on grass** under the cart (`cart_off_path_slow_percent`, `handcart.md §6`) — the walk, never the route. The
+trodden and path shares with carts against without are measured in `handcart.md §7`; softening (worn not packed, or a loaded
+pass only) is Joe's call.
+
 ### 3.2 Decay
 At every season boundary (`PathWearSystem`, after `CropSystem`), every tile fades by
 `path_wear_decay_per_season` (**6** since D362; D361 had 11, D358 shipped 4 in old units = 12 in
