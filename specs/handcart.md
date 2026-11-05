@@ -10,7 +10,9 @@ guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`), red-checked and counted (§1
 fetched like a coat, walked home, parked, taken from the doorstep, hashed, saved (format 11), said (§3, §4, §9). ✅ Piece 2 —
 seen: the chip beside the home, the rectangle behind the pusher, the card's line, the founders' cart in the cart colour,
 two probe lines (§8). ✅ Piece 3 — what it buys: `cart_armfuls` 3, swept 2/3/4 on the harness and Joe's Hollowmere before typed
-(§5; Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49). ⏳ Piece 4 — wear (`handcart_uses` measured, §6).
+(§5; Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49). ✅ Piece 4 — wear: one use a round trip at
+the door, gone at nought and another fetched; `handcart_uses` 150 measured as ~46 years of shopping and kept as Joe's number
+with the 20/40 arms put to him (§6).
 ⏳ Piece 5 — speed and tracks (§6, §7).** Every number is a proposal until its piece's harness table is filled.
 Candidate (d), *nearby* given a meaning, is built separately (`logistics.md §5.6`, `storage-and-distribution.md §14.9.7`, D671).
 
@@ -137,15 +139,32 @@ long ones** (median 29 ticks in Hollowmere against 27 for every trip before; the
 begun away from the door, median 16–20) — the walk is the same walk, there are fewer of them, which is what §1 asked. These
 are the numbers **before the slow grass walk (§6, piece 5)**; the verdict in `logistics.md §6` is re-measured after it.
 
-## 6. Wear, speed — ⏳ pieces 4 and 5 (✅ Joe, call 5, D672)
+## 6. Wear, speed — ✅ piece 4 (wear, D688); ⏳ piece 5 (speed) (✅ Joe, call 5, D672)
 
-- **Wear:** one use a round trip, taken where the pusher reaches the door from a shopping trip (never on the walk home
-  with a new cart); at 0 the cart is gone and the household fetches another. No repair: the condition system (D552) mends
-  buildings, and a cart is a good. `handcart_uses` **150 proposed** (a few years of shopping at 4–6 trips an adult-year),
-  measured in piece 4 before it is final — typed as the proposal in piece 1 because the take fills the field from it.
-- **Speed:** `cart_off_path_slow_percent` **150 on grass, 100 on worn and packed**, applied to the leg's ticks as the
-  failing deck is (`WalkedOver`) — **the route unchanged**, so the cart takes the walker's path and the cost field stays
-  one. Legible in a sentence: *the cart is slow on grass and quick on the path.* Measured with and without before typed.
+- **Wear — ✅ built (piece 4):** one use a round trip, taken at the door (`ParkTheCart`) when the pusher arrives home
+  **from a shopping trip** (`villager.State == TravelingHome`) — the walk home with a NEW cart (`PushingAHandcart`) wears
+  nothing, so a fresh cart parks with every trip in it. At 0 the cart is gone (a DEBUG line, *"The Bramble handcart is worn
+  through after its last trip"*), the card stops reading it, `HandcartsWanted` counts the household again and it fetches
+  another. No repair: the condition system (D552) mends buildings, and a cart is a good.
+
+  **`handcart_uses` 150 — Joe's number, kept; measured, and the measurement is put to him.** The harness (`ZZ_USES`, 200
+  carts racked so no household waits), four living valleys × fifty years, and Hollowmere five years on:
+
+  | `handcart_uses` | carts taken (4 valleys × 50 y) | a cart lasts (at ~3.2 pushed trips a household-year) | household-ticks carted | logs a valley-year | Fetch share | trips a household-year |
+  |---|---|---|---|---|---|---|
+  | 20 | 201 | ~6 years | 97.5 % | ~10 (a quarter of an unattended valley's 30–45 felled) | 5.2 % | 4.21 |
+  | 40 | 108 | ~12 years | 97.8 % | ~5 | 5.0 % | 4.08 |
+  | **150** | 44 | **~46 years** | 97.8 % | ~2 | 4.9 % | 4.05 |
+
+  Hollowmere (7 households, ~3.5 trips a year) replaced no cart in five years at any number — the window is too short to
+  see wear. **Reading:** the households stay carted whatever the number because the spare is on the shelf and the fetch is a
+  short walk; the number buys only how often the carpenter works and how many logs a village spends on carts. **At 150 a
+  cart outlives its household** — the carpenter is a one-burst trade and the wear mechanic is, in play, dormant. *"A few
+  years of shopping"* is 20–40. ⏸️ **His call (HANDOFF, open): 150 as he said, or 40 for a dozen years and a handful of logs
+  a year.** Nothing else in the slice depends on it.
+- **Speed — ⏳ piece 5:** `cart_off_path_slow_percent` **150 on grass, 100 on worn and packed**, applied to the leg's ticks
+  as the failing deck is (`WalkedOver`) — **the route unchanged**, so the cart takes the walker's path and the cost field
+  stays one. Legible in a sentence: *the cart is slow on grass and quick on the path.* Measured with and without before typed.
 
 ## 7. Paths — ⏳ piece 5 (✅ Joe, call 4, D672)
 
@@ -266,7 +285,20 @@ every score: `HandcartTests`, `LegibilityTests`, `EveryVillagerStateIsDeliberate
 | `cart_armfuls` 0 accepted | 1 |
 | the C# default 2 (the json governs; the guard reads both) | 1 |
 
-### 11.3–11.4 Pieces 4–5 — ⏳
+### 11.3 Piece 4 — wear (2 guards, 3 mutants, 4 reds)
+
+| Guard | What it holds |
+|---|---|
+| `ARoundTripWearsTheCartOneTrip` | a cart of 9 trips: nothing is worn on the road, 8 when the shopper is back at the door |
+| `AWornOutCartIsGoneAndAnotherIsFetched` | a cart on its last trip, two on the shelf, every other household carted: it wears to 0 at the door, the log says so once, the household fetches another (150) and one is left on the shelf |
+
+| Mutant | Reds |
+|---|---|
+| no wear | 2 |
+| the walk home with a new cart wears it too | 1 (`AHouseholdWithoutACartFetchesOneAndWalksItHome`: a new cart parks with every trip in it) |
+| the worn-through line silent | 1 |
+
+### 11.4 Piece 5 — ⏳
 
 Written when built.
 

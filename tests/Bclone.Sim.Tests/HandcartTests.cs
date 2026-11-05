@@ -514,6 +514,94 @@ public sealed class HandcartTests
     }
 
     // ---------------------------------------------------------------
+    //  §6 — wear
+    // ---------------------------------------------------------------
+
+    /// <summary>§6: a shopping round trip wears the cart one trip, taken at the door; a trip that never comes home wears none yet.</summary>
+    [Fact]
+    public void ARoundTripWearsTheCartOneTrip()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        NobodyWorks(world);
+        world.AnyStoreOf(StoreKind.Granary).Store.Receive(Goods.Produce, 2000);
+        Household home = Housed(world)[0];
+        home.HandcartUses = 9;
+        SetLarder(home, world.TargetFoodFor(home) * 40 / 100);
+
+        int tripsSeen = 0;
+        var wasPushing = new HashSet<int>();
+        for (int tick = 0; tick < config.TicksPerSeason && tripsSeen == 0; tick++)
+        {
+            loop.StepOnce();
+            foreach (int id in home.MemberIds)
+            {
+                if (world.FindVillager(id) is not { Alive: true } member)
+                {
+                    continue;
+                }
+
+                if (member.PushingACart)
+                {
+                    wasPushing.Add(id);
+                    Assert.Equal(9, home.HandcartUses); // Nothing is worn on the road.
+                }
+                else if (wasPushing.Remove(id))
+                {
+                    tripsSeen++;
+                }
+            }
+        }
+
+        Assert.True(tripsSeen > 0, "No round trip was made in a season.");
+        Assert.Equal(8, home.HandcartUses);
+    }
+
+    /// <summary>§6: at nought the cart is gone — the log says so — and the household fetches another from the shelf.</summary>
+    [Fact]
+    public void AWornOutCartIsGoneAndAnotherIsFetched()
+    {
+        SimConfig config = Config;
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+        NobodyWorks(world);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        world.AnyStoreOf(StoreKind.Granary).Store.Receive(Goods.Produce, 2000);
+        TheWarehouse(world).Store.Add(Goods.Handcart, 2);
+        Household home = Housed(world)[0];
+        home.HandcartUses = 1;
+        SetLarder(home, world.TargetFoodFor(home) * 30 / 100);
+        foreach (Villager v in world.Villagers)
+        {
+            v.StandAt(world.HomePoint(v));
+        }
+
+        // Every other household carted already, so the shelf's two are this household's to fetch.
+        foreach (Household other in Housed(world).Where(h => h != home))
+        {
+            other.HandcartUses = config.HandcartUses;
+        }
+
+        bool wornOut = false;
+        for (int tick = 0; tick < config.TicksPerSeason * 2; tick++)
+        {
+            loop.StepOnce();
+            wornOut |= home.HandcartUses == 0 && !home.MemberIds.Any(id => world.FindVillager(id) is { Alive: true, PushingACart: true });
+            if (wornOut && home.HandcartUses == config.HandcartUses)
+            {
+                break;
+            }
+        }
+
+        Assert.True(wornOut, "The cart on its last trip never wore out in two seasons.");
+        Assert.Equal(1, sink.Entries.Count(e => e.Message.Contains("handcart is worn through", StringComparison.Ordinal)));
+        Assert.Equal(config.HandcartUses, home.HandcartUses);
+        Assert.Equal(1, TheWarehouse(world).Store[Goods.Handcart]);
+    }
+
+    // ---------------------------------------------------------------
     //  §9 — hashed, saved, said
     // ---------------------------------------------------------------
 

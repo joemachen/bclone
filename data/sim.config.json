@@ -1021,9 +1021,18 @@
   // racks tools (the warehouse, the founders' cart, the pile -- never the market)
   // and walks it home; the shopper takes it from the doorstep and parks it again.
   // handcart_uses: the shopping trips a cart lasts before it is worn out and the
-  // household fetches another -- tool_uses' shape, one good over. PROPOSAL (150, "a
-  // few years of shopping" at 4-6 trips an adult-year), measured in the wear slice
-  // before it is final.
+  // household fetches another -- tool_uses' shape, one good over; worn a trip at
+  // the door, never on the walk home with a new one. Joe's proposal, 150 ("say
+  // 150: a few years of shopping", D672 call 5), MEASURED (handcart.md 6, D688):
+  // a carted household pushes ~3.2 shopping trips a year (four unattended valleys,
+  // fifty years; Hollowmere 3.5), so 150 is ~46 years -- a cart is in practice
+  // never replaced, and the carpenter is a one-burst trade (44 carts taken in 4
+  // valleys x 50 years, ~2 logs a valley-year). At 40 a cart lasts ~12 years (108
+  // carts, ~5 logs a year); at 20, ~6 years (201 carts, ~10 logs a year, a quarter
+  // of an unattended valley's timber). The households stay carted at every number
+  // (97-98% of household-ticks) because the spare is on the shelf. WARNING: 150 is
+  // kept because it is his number; "a few years" would be 20-40, and that is his
+  // call (HANDOFF, open).
   "handcart_uses": 150,
   // cart_armfuls: what the shopper carries a trip with the cart in hand, in
   // armfuls of carry_capacity (80). carry_capacity itself is untouched (D537,

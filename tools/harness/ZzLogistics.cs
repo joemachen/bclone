@@ -82,6 +82,11 @@ public sealed class ZzLogistics
             config = config with { CartArmfuls = armfuls };
         }
 
+        if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_USES"), out int uses))
+        {
+            config = config with { HandcartUses = uses };
+        }
+
         SaveOpened opened = SaveFile.Open(path, config);
         Assert.True(opened.Loop is not null, $"{opened.Refusal} {opened.Detail}");
         string village = Path.GetFileName(Path.GetDirectoryName(path)!);
@@ -130,6 +135,11 @@ public sealed class ZzLogistics
             if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_ARMFULS"), out int armfuls))
             {
                 config = config with { CartArmfuls = armfuls };
+            }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_USES"), out int uses))
+            {
+                config = config with { HandcartUses = uses };
             }
 
             SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
@@ -252,6 +262,7 @@ public sealed class ZzLogistics
         var tripsPushed = new List<int>();
         var tripsOnFoot = new List<int>();
         long housedHouseholdTicks = 0;
+        long cartedHouseholdTicks = 0;
         int cartsTaken = 0;
 
         void Close(Villager v, Open o, long now)
@@ -314,6 +325,7 @@ public sealed class ZzLogistics
                 if (h.HasHome && world.LivingMembersOf(h) > 0)
                 {
                     housedHouseholdTicks++;
+                    cartedHouseholdTicks += h.HandcartUses > 0 ? 1 : 0;
                 }
             }
 
@@ -419,6 +431,7 @@ public sealed class ZzLogistics
         _o.WriteLine($"ZZG {label} trips shopping {tripsPushed.Count + tripsOnFoot.Count} perHouseholdYear {(tripsPushed.Count + tripsOnFoot.Count) / Math.Max(householdYears, 1e-9):F2} "
             + $"householdYears {householdYears:F1} pushed {tripsPushed.Count} {Med(tripsPushed)} onFoot {tripsOnFoot.Count} {Med(tripsOnFoot)}");
         _o.WriteLine($"ZZG {label} carts taken {cartsTaken} carted {carted} of {world.Households.Count(h => h.HasHome && world.LivingMembersOf(h) > 0)} housed "
+            + $"cartedShare {cartedHouseholdTicks * 100.0 / Math.Max(housedHouseholdTicks, 1):F1}% uses {config.HandcartUses} "
             + $"onShelves {world.InStores(Goods.Handcart)} trodden {world.Paths.TroddenTiles} path {world.Paths.PathTiles} of {mapTiles} tiles "
             + $"({world.Paths.TroddenTiles * 100.0 / mapTiles:F1}% trodden, {world.Paths.PathTiles * 100.0 / mapTiles:F2}% path)");
 

@@ -1289,11 +1289,27 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </summary>
     private static void ParkTheCart(SimWorld world, Villager villager)
     {
+        Household household = world.HouseholdOf(villager);
         villager.PushingACart = false;
+
+        // ⭐ ONE USE A ROUND TRIP (`handcart.md §6`, Slice H; Joe, D672 call 5): a shopping trip home wears the cart a trip —
+        // `TravelingHome` is the back half of a shopping trip; the walk home with a NEW cart from the store
+        // (`PushingAHandcart`) wears nothing. At nought the cart is gone and the household fetches another; no repair,
+        // because a cart is a good and the condition system (D552) mends buildings.
+        if (villager.State == VillagerState.TravelingHome && household.HandcartUses > 0)
+        {
+            household.HandcartUses--;
+            if (household.HandcartUses == 0 && world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "behavior",
+                    $"The {household.Name} handcart is worn through after its last trip — {villager.Name} leaves it at the door; the household will fetch another — {world.Clock}.");
+            }
+        }
+
         if (world.Logs(LogLevel.Debug))
         {
             world.Log(LogLevel.Debug, "behavior",
-                $"{villager.Name} parks the {world.HouseholdOf(villager).Name} handcart at the door — {world.Clock}.");
+                $"{villager.Name} parks the {household.Name} handcart at the door, {household.HandcartUses} trips left in it — {world.Clock}.");
         }
     }
 
