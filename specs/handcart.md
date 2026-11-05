@@ -144,7 +144,7 @@ long ones** (median 29 ticks in Hollowmere against 27 for every trip before; the
 begun away from the door, median 16–20) — the walk is the same walk, there are fewer of them, which is what §1 asked. These
 are the numbers **before the slow grass walk (§6, piece 5)**; the verdict in `logistics.md §6` is re-measured after it.
 
-## 6. Wear, speed — ✅ piece 4 (wear, D688); ⏳ piece 5 (speed) (✅ Joe, call 5, D672)
+## 6. Wear, speed — ✅ piece 4 (wear, D688) and piece 5 (speed, D689) (✅ Joe, call 5, D672)
 
 - **Wear — ✅ built (piece 4):** one use a round trip, taken at the door (`ParkTheCart`) when the pusher arrives home
   **from a shopping trip** (`villager.State == TravelingHome`) — the walk home with a NEW cart (`PushingAHandcart`) wears
