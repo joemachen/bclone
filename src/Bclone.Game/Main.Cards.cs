@@ -1345,11 +1345,15 @@ public partial class Main
 
             // ⭐ A BUFFER THE HANDS CANNOT KEEP UP WITH SAYS SO (D394): Joe's lodge held 2,103 meat
             // — a hunt is 900 in fifteen ticks, a carry is forty — and its card read *Working*.
-            string? why = world.IdleNote(place);
+            // ⭐ AND SO DOES A BUILDING NOBODY IS POSTED AT (D683): the same lodge, a year on, read
+            // *Working — 2,184 waiting* with nobody seated, because `IdleNote` is silent for an empty
+            // building the village has no use for (D147) and the fallback said *Working*. The sim's
+            // sentences, both — `SwollenBufferNote` names the met limit that has the hunters carrying.
+            string? why = world.IdleNote(place) ?? world.NobodyPostedNote(place);
             bool swollen = why is null && world.BufferIsSwollen(place);
             Status(card, working: why is null && !swollen,
                 why ?? (swollen
-                    ? $"Working — {world.FoodIn(place.Store):N0} waiting to be carried in, {world.ArmfulsWaitingIn(place)} armfuls."
+                    ? world.SwollenBufferNote(place)
                     : $"Working — {place.WorkerIds.Count} of {place.Places} at it."));
 
             card.WorkersRow.Visible = true;

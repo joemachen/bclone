@@ -21,6 +21,10 @@ the predicate and ignored by two deposit paths). Guarded by `StockLimitTests` an
 >
 > **⭐⭐ D420 (2026-09-27) — A LOAD ON ITS WAY TO STORAGE COUNTS; THE HIDE GOES IN THE LODGE. §4.5.**
 > ✅ Built and guarded (`LimitInTransitTests`).
+>
+> **⭐ D683 (2026-11-04) — A MET MEAT LIMIT KEEPS A SWOLLEN LODGE'S SEATS FOR THE CARRYING.** The limit still counts every
+> buffer (D420 stands); what changes is who is kept to drain a swollen one — the hunters, at the marketer's rank, all at once
+> (`hunting.md §6a`). ✅ Built and guarded (`LodgeCarriersTests`), on `claude/slice-lodge-carriers-bb1fd3`, unplayed, unmerged.
 
 ---
 
@@ -186,7 +190,9 @@ headless left nobody alive in his game.
   still holds, generalised:** the limit reads what the thing it stops produces into.
 - **No food total.** Joe: *"remove produce entirely and add a forage row."* The forager's job names
   forage (`limited_by`, `jobs-catalog.md`), and each food trade stops at its own row only — a met
-  meat limit stands the hunters down and the mouths the lodge fed fall to the patches. With a row
+  meat limit stands the hunters down and the mouths the lodge fed fall to the patches *(⚠️ since D683, not while a lodge
+  is swollen: the row's own meat in the lodge met the row and nobody came for it, so a swollen lodge keeps every seat and
+  the hunters carry it in — `hunting.md §6a`)*. With a row
   set, the trade works toward it (D216, per good); with none, the village's derived need decides.
 - **The tension it opens, and where it is said:** the food rows can add up to less than the next
   child needs (`SimWorld.FoodABirthNeeds`) and births stop there. The **Food** heading adds its
@@ -249,7 +255,7 @@ reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang 
 `LabourAllocator` would then need teaching not to allocate to it — a rule invented purely to
 undo a type that should not have existed.
 
-**⛔ Laborers do not carry workplace buffers (D370, Joe — reversing D362's "the spare hands carry it").** A buffer is the producer's (when their hut cannot take another load) and the marketer's (when nothing is more pressing). What a laborer hauls: heaps off the ground (§4.3 of `goods-on-the-ground.md`, when storage has room), building materials, and the harvest help.
+**⛔ Laborers do not carry workplace buffers (D370, Joe — reversing D362's "the spare hands carry it").** A buffer is the producer's (when their hut cannot take another load) and the marketer's (when nothing is more pressing). What a laborer hauls: heaps off the ground (§4.3 of `goods-on-the-ground.md`, when storage has room), building materials, and the harvest help. ⭐ **And still nobody else's after D683:** when a met meat limit found a swollen lodge nobody came for (the limit counts the lodge's own meat, §4.5), the answer was not to let laborers at it but to keep the *hunters'* seats for the carrying — the producer's half of D370, kept past the limit (`hunting.md §6a`). Joe's idle laborers become carriers by being seated as hunters, at the marketer's rank.
 
 ### 5.2 ⛔ And the hauling errands do not exist — measured
 

@@ -186,6 +186,17 @@ against a number from an older commit.
   household firewood) and `ZZ_BARE=1` (nothing posed, the control; `ZZY` and `ZZX` only). ⚠️ `stone=` and `iron=` read the
   face stores, which a dig never reaches (it is carried to the nearest store): read `stoneHeld` / `ironHeld` and the
   `Quarrying` / `Mining` ticks, or count at the digger's arms as `PhaseFiveGoldenTests` does.
+- `ZzLodge.cs` + `lodge.py` — D683's measurement of the stalled hunter's lodge (`specs/hunting.md §6a`): a lodge raised free at
+  t0 on the played opening (`lodge`, 30 seeds) or beside a fishery and a farm (`every`, 13), under the shipped limits (`x1` —
+  Joe's state, meat 2,500 against a 2,700 lodge) or ZzClothing's ×10 at Year 5 (`x10`); fifty years. One `ZZL` line a run: alive /
+  peak / starved / frozen, the lodges' peak food, ticks and years any lodge was swollen, ticks the meat row was met, **stall**
+  ticks (met row, swollen lodge, nobody seated), hunter seat-ticks and those under a met row, hunters' carrying and hunting
+  ticks, the marketer's walks to a lodge, meat carried out, hunts. `ZZ_TRACE=1` a `ZZY` line a year; `ZZ_DEATHS=1` a `ZZD` line
+  per death (year, cause, state, seat, shelter, homes). `ZZ_ARMS`, `ZZ_LIMX`, `ZZ_SEEDS`, `ZZ_YEARS`. Copy in, `-c Release
+  --filter ZzLodge`, delete; `python -X utf8 -I tools/harness/lodge.py base.txt after.txt`. ⚠️ The unattended valley has no
+  market, so no marketer ever reaches its lodge: every valley stalls from Year 1 and the arm measures the rule, not the game Joe
+  plays. ⚠️ The `every` arm's founders freeze roofless in Winter 1 in every valley (D648's finished-farm trap); what lives is the
+  re-founding, so read `ZZD` before a mean — that is how the carriers' rank was found (ranked first they froze the re-founders).
 - `ZzLogistics.cs` — D668's measurement for `specs/logistics.md §4`: is real time lost on fetch walks? Two arms: `ZZ_SAVES=<a
   COPY of Joe's saves folder>` (`ZZ_PICK` defaults to `autosave-1.save`, one a village; `ZZ_YEARS` 5), and `ZZ_SEEDS=1,2,3`
   (the shipped config, the played opening, a granary and a warehouse at year 3; `ZZ_YEARS` 50) as the unattended control.
