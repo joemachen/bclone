@@ -918,4 +918,16 @@ public enum Goods
     /// <remarks>Appended, never renumbered. A material (D107): the warehouse's, never a granary's or the market's.
     /// How many winters it lasts is its row's (<c>GoodRow.CoatWinters</c>). The good D62's list called *"50 clothes"*.</remarks>
     Clothing = 14,
+
+    /// <summary>
+    /// ⭐ A handcart — logs made into a cart at the workshop by the carpenter (D678, `workshop-and-the-carpenter.md §5`).
+    /// In Slice W a good on a shelf with a name, a colour and a row; what it does for a household is Slice H
+    /// (`handcart.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// Appended, never renumbered. Stored where tools are — the warehouse, the founders' cart and the pile — <b>never the
+    /// market</b> (Joe, D672 call 1). ⚠️ <i>Handcart</i>, never <i>Cart</i>: <see cref="StoreKind.Cart"/> is the founders'
+    /// store, and the two must not be confused in code.
+    /// </remarks>
+    Handcart = 15,
 }

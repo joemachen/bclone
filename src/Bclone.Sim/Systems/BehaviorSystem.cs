@@ -130,6 +130,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.Baking => "baking bread",
         VillagerState.TravelingToTailor => "walking to the tailor's shop",
         VillagerState.Sewing => "sewing coats",
+        VillagerState.TravelingToWorkshop => "walking to the workshop",
+        VillagerState.Making => "making handcarts",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
         VillagerState.Quarrying => "cutting stone",
         VillagerState.TravelingToMine => "walking to the mine face",
@@ -469,7 +471,8 @@ public sealed partial class BehaviorSystem : ISimSystem
             case VillagerState.TravelingToMill:
             case VillagerState.TravelingToBakery:
             case VillagerState.TravelingToTailor:
-                // To the mill, the oven or the tailor's shop they hold a seat at (D522, D659), the smith's walk.
+            case VillagerState.TravelingToWorkshop:
+                // To the mill, the oven, the tailor's shop or the workshop they hold a seat at (D522, D659, D678), the smith's walk.
                 if (WorkplaceOf(world, villager) is not Workplace hut)
                 {
                     GoHome(world, villager);
@@ -626,19 +629,24 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static bool IsSewing(VillagerState state) =>
         state is VillagerState.TravelingToTailor or VillagerState.Sewing;
 
+    private static bool IsMaking(VillagerState state) =>
+        state is VillagerState.TravelingToWorkshop or VillagerState.Making;
+
     /// <summary>The work a walk to the mill or the oven arrives as (D522).</summary>
     private static VillagerState BatchState(VillagerState travelling) => travelling switch
     {
         VillagerState.TravelingToMill => VillagerState.Grinding,
         VillagerState.TravelingToTailor => VillagerState.Sewing,
+        VillagerState.TravelingToWorkshop => VillagerState.Making,
         _ => VillagerState.Baking,
     };
 
-    /// <summary>The work a batch trade does at its hut, and the walk there (D522, D659).</summary>
+    /// <summary>The work a batch trade does at its hut, and the walk there (D522, D659, D678).</summary>
     private static (VillagerState Walk, VillagerState Work) BatchStatesOf(JobKind trade) => trade switch
     {
         JobKind.Miller => (VillagerState.TravelingToMill, VillagerState.Grinding),
         JobKind.Tailor => (VillagerState.TravelingToTailor, VillagerState.Sewing),
+        JobKind.Carpenter => (VillagerState.TravelingToWorkshop, VillagerState.Making),
         _ => (VillagerState.TravelingToBakery, VillagerState.Baking),
     };
 
@@ -663,7 +671,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
         || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state) || IsSewing(state)
-        || IsHerding(state) || IsTradingAtThePost(state);
+        || IsMaking(state) || IsHerding(state) || IsTradingAtThePost(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -736,6 +744,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (IsSewing(state))
         {
             return JobKind.Tailor;
+        }
+
+        // And the carpenter (D678), a ninth.
+        if (IsMaking(state))
+        {
+            return JobKind.Carpenter;
         }
 
         // ⛔ D281's lesson, the fifth time: without this arm a herdsman is recalled home every tick.
@@ -5163,7 +5177,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing)
+        if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing or VillagerState.Making)
         {
             BeginBatches(world, villager, onArrival);
             return;
@@ -5390,6 +5404,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             VillagerState.Grinding => JobKind.Miller,
             VillagerState.Sewing => JobKind.Tailor,
+            VillagerState.Making => JobKind.Carpenter,
             _ => JobKind.Baker,
         };
         villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
@@ -6265,7 +6280,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // Picked up, not banked. The logs go to the warehouse on the way home,
                 // which is what makes them the village's rather than this family's.
                 villager.Carried.Receive(Goods.Logs, wood);
-                world.LogsEverFelled += wood;
+                world.Felled(wood);
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);
                 return;
@@ -6677,6 +6692,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             case VillagerState.Grinding:
             case VillagerState.Baking:
             case VillagerState.Sewing:
+            case VillagerState.Making:
                 FinishABatch(world, villager);
                 return;
 
@@ -6740,7 +6756,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             world.SetDown(villager.Tile, batch.Output, made - shelved);
         }
 
-        world.Batched(batch.Output, made);
+        world.Batched(batch.Output, made, shelved > 0 ? shelf : null);
 
         if (world.Logs(LogLevel.Debug))
         {

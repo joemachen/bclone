@@ -326,6 +326,12 @@ public enum VillagerState
 
     /// <summary>At the shop, sewing leather into a coat — a batch (D659, `clothing.md §3.5`).</summary>
     Sewing,
+
+    /// <summary>To the workshop they hold a seat at (D678, `workshop-and-the-carpenter.md §4.2`) — the tailor's walk.</summary>
+    TravelingToWorkshop,
+
+    /// <summary>At the workshop, making logs into a handcart — a batch (D678, §4.3).</summary>
+    Making,
 }
 
 /// <summary>

@@ -198,3 +198,11 @@ against a number from an older commit.
   12, how many homes would walk to a storehouse because the market is more than X one-way ticks further, and the median /
   p90 / max ticks each would save, read off the end state with no sim change. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
   while nothing else (a meal does not change state; shelter does) interrupts it. Copy in, `-c Release --filter ZzLogistics`, delete.
+- `ZzWorkshop.cs` — D678's table for `specs/workshop-and-the-carpenter.md §10`: what a workshop costs a village before any
+  cart does anything. The played opening on the shipped config (ZzBase's), seeds 200–299 (`ZZ_SEEDS` narrows; §10 used
+  200–254), fifty years; `ZZ_WORKSHOP=1` poses the workshop learned at Year 5, marks one beside the founding and **gives it
+  its stone** (no harness village holds any — the quarry is never learned unattended), `ZZ_LOGS=n` sets `logs_per_handcart`,
+  `ZZ_MAKES=n` `makes_per_stint`, `ZZ_LABEL` names the arm. One `ZZW` line a run: alive, peak, deaths, the year the workshop
+  stood, carts made and held, carpenter seat-years, logs held at 50, logs felled, the house sites' and every site's ticks
+  waiting on logs, housed households. Copy in, build **with a check for `0 Error(s)`**, `-c Release --filter ZzWorkshop`,
+  delete. ⚠️ Its first arm "ran" against the stale DLL after a build error (a name clash) — D611's trap, again.

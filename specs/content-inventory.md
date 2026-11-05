@@ -6,7 +6,8 @@
 > ⚠️ **DATED, NOT STALE-BY-ACCIDENT (D640): Parts A and B are `main` at D526.** Built and merged since, and NOT in
 > these tables: bridges (D551), building condition (D560), nomads (D584), trade and the herd — hay, cattle, the barn,
 > the trading post, the merchant (D608), doors (D626), clothing — the good (14), the tailor's shop (building 26) and the tailor
-> (trade 15) (D659–D667). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
+> (trade 15) (D659–D667); the workshop (building 27), the carpenter (trade 16, skill 10 *carpentry*) and the handcart
+> (good 15) (D678, unplayed). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
 > Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
 >
 > **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in
@@ -137,7 +138,8 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 ### Trades, planned
 
 📝 herdsman, teacher · 💭 tailor, weaver, tanner, butcher, brewer, dairy hand, smoker or salter, cellarhand, sawyer,
-charcoal burner, potter or brick burner, mason, carpenter (repairs, once buildings decay — Phase 5), cartwright,
+charcoal burner, potter or brick burner, mason, ~~carpenter (repairs, once buildings decay — Phase 5)~~ ✅ **carpenter (D678 —
+the workshop's, making handcarts; repairs stayed the builder's, D552)**, ~~cartwright~~ (the carpenter is the cartwright, D678),
 cooper, glassblower, papermaker, scribe, soapmaker, renderer, herbalist or apothecary, physician, priest,
 innkeeper, merchant, beekeeper, administrator.
 

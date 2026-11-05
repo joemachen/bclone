@@ -278,6 +278,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToTailor => true,
         VillagerState.Sewing => true,
 
+        // The workshop, and the walk to it (D678).
+        VillagerState.TravelingToWorkshop => true,
+        VillagerState.Making => true,
+
         // The walk to the face and the stint at it are a quarrier out on their trade (D434).
         VillagerState.TravelingToQuarry => true,
         VillagerState.Quarrying => true,

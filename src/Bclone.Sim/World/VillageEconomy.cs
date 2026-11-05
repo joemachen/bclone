@@ -461,6 +461,29 @@ public static class VillageEconomy
         return coats < 1 ? 1 : coats;
     }
 
+    /// <summary>A carpenter's stint: the worst walk there and back, and the makes (D678) — the tailor's shape.</summary>
+    public static int MakeStintTicks(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
+        int makes = config.MakesPerStint < 1 ? 1 : config.MakesPerStint;
+
+        return (worst * config.TravelTicksPerUnit * 2) + (makes * config.MakeTicks);
+    }
+
+    /// <summary>Handcarts one carpenter makes in a year, working every stint the year allows (D678) — <see cref="CoatsSewnPerYearAtWorst"/>'s shape.</summary>
+    public static int HandcartsMadePerYearAtWorst(SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        int available = config.TicksPerYear - MealsPerYear(config);
+        int stint = MakeStintTicks(config);
+        int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
+        int carts = stints * (config.MakesPerStint < 1 ? 1 : config.MakesPerStint);
+        return carts < 1 ? 1 : carts;
+    }
+
     /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>
     /// <remarks>Year-round work, like felling — a hut does not care what season it is.</remarks>
     public static int FirewoodMadePerYearAtWorst(SimConfig config)
@@ -1576,6 +1599,12 @@ public static class VillageEconomy
                 // number and the tool is the bonus, so nothing about survival depends on
                 // holding one. The quota asks for smiths when tools run short
                 // (`LabourQuota.SmithsWanted`); the floor stays where the village can live.
+                return 0;
+
+            case Goods.Handcart:
+                // ⭐ No floor for a handcart either, the tools' reason (D678, `workshop-and-the-carpenter.md §4.6`): a
+                // cart is upside above the floor — its payoff is Slice H's — so there is nothing to derive; the quota
+                // asks for carpenters while households lack one (`LabourQuota.CarpentersWanted`).
                 return 0;
 
             default:

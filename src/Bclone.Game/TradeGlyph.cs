@@ -88,6 +88,10 @@ public sealed partial class TradeGlyph : Control
         // The tailor takes the coat's moss green (D662) — `GoodsPalette`'s clothing, the good they make.
         JobKind.Tailor => new Color(0.40f, 0.52f, 0.34f),
 
+        // The carpenter takes fresh-sawn oak (D678) — a warm wood-brown lighter than logs' bark and nothing like the
+        // smith's iron grey; checked against the parchment by `tools/legibility/check.py`.
+        JobKind.Carpenter => new Color(0.78f, 0.60f, 0.38f),
+
         // The herdsman takes the barn's red-brown, the merchant the slate of a river boat (D596).
         JobKind.Herdsman => new Color("#8a4b32"),
         JobKind.Merchant => new Color("#5f6f8c"),
@@ -214,6 +218,14 @@ public sealed partial class TradeGlyph : Control
                 DrawLine(new Vector2(s * 0.22f, s * 0.80f), new Vector2(s * 0.74f, s * 0.24f), ink, 2.2f);
                 DrawCircle(new Vector2(s * 0.74f, s * 0.24f), s * 0.07f, new Color(0.10f, 0.10f, 0.12f));
                 DrawArc(new Vector2(s * 0.40f, s * 0.70f), s * 0.18f, 0f, Mathf.Pi * 1.6f, 10, ink, 1.4f);
+                break;
+
+            // A cartwheel (D678): the rim, the hub, and four spokes — the thing a carpenter trues.
+            case JobKind.Carpenter:
+                DrawArc(new Vector2(s * 0.50f, s * 0.52f), s * 0.34f, 0f, Mathf.Tau, 16, ink, 2.0f);
+                DrawCircle(new Vector2(s * 0.50f, s * 0.52f), s * 0.07f, ink);
+                DrawLine(new Vector2(s * 0.50f, s * 0.18f), new Vector2(s * 0.50f, s * 0.86f), ink, 1.4f);
+                DrawLine(new Vector2(s * 0.16f, s * 0.52f), new Vector2(s * 0.84f, s * 0.52f), ink, 1.4f);
                 break;
 
             // A loaf (D522): the rounded crust and two scores across it.

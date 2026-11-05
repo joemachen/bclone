@@ -831,6 +831,10 @@ public sealed class Villager
             VillagerState.Sewing => BatchesThisStint > 0
                 ? $"sewing coats, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "cutting a hide for a coat",
+            VillagerState.TravelingToWorkshop => $"walking to {where}",
+            VillagerState.Making => BatchesThisStint > 0
+                ? $"making handcarts, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
+                : "truing a wheel for a handcart",
             VillagerState.Baking => BatchesThisStint > 0
                 ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
                 : "lighting the oven",

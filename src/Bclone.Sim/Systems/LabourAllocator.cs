@@ -1142,7 +1142,9 @@ internal static class LabourAllocator
     private static readonly JobKind[] KindsInOrder =
     {
         JobKind.Hunter, JobKind.Fisher, JobKind.Forager, JobKind.Farmer, JobKind.Forester,
-        JobKind.Woodcutter, JobKind.Smith, JobKind.Tailor, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
+        // The carpenter after the tailor and before the quarrier (Joe, D675 call 4): a convenience of the coat's kind,
+        // wanted in a burst when a workshop first stands and rarely after (`workshop-and-the-carpenter.md §4.4`).
+        JobKind.Woodcutter, JobKind.Smith, JobKind.Tailor, JobKind.Carpenter, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
 
         // The herdsman after the baker, then the merchant, as the quota takes hands (D593, D594).
         JobKind.Herdsman, JobKind.Merchant,

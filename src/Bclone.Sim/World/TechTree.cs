@@ -37,6 +37,13 @@ public enum TechCondition
 
     /// <summary>Leather ever held — <see cref="SimWorld.LeatherEverHeld"/> against <c>tailor_unlock_leather</c> (D659).</summary>
     LeatherHeld,
+
+    /// <summary>
+    /// Logs ever felled — <see cref="SimWorld.LogsEverFelled"/> against <c>workshop_unlock_logs</c> (D678). ⚠️ The gate
+    /// itself reads <see cref="SimWorld.WorkshopLearned"/>, set where the counter crosses; the map reads the counter
+    /// so it can say how far (`workshop-and-the-carpenter.md §4.1a`).
+    /// </summary>
+    LogsFelled,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -157,6 +164,12 @@ public static class TechTree
         },
         new TechNodeRow
         {
+            Id = "workshop", Name = "The workshop", Unlocks = BuildingKind.Workshop, Condition = TechCondition.LogsFelled,
+            // One sentence, as the tailor's: the tree's card is 160 tall and the probe holds it there (`tech tree:`).
+            Says = "Fell enough timber, and somebody works out the wheelwright's trade — a workshop that makes a household's handcart.",
+        },
+        new TechNodeRow
+        {
             Id = "bridging", Name = "The wooden bridge", Unlocks = BuildingKind.Bridge, Condition = TechCondition.VillageSize,
             Says = "Grow the village, and somebody works out how to put a span of timber across the water.",
         },
@@ -230,6 +243,8 @@ public static class TechTree
                 return (world.WheatEverReaped, world.Config.MillUnlockWheat);
             case TechCondition.LeatherHeld:
                 return (world.LeatherEverHeld, world.Config.TailorUnlockLeather);
+            case TechCondition.LogsFelled:
+                return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
             case TechCondition.VillageSize:
                 return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
             case TechCondition.CrossingsWalked:
@@ -263,7 +278,7 @@ public static class TechTree
     /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
     public static bool IntroducesTheMap(TechCondition condition) =>
         condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
-            or TechCondition.WheatReaped or TechCondition.LeatherHeld;
+            or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

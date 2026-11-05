@@ -1,6 +1,77 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681) + ONE DOCS COMMIT, PUSHED; ORIGIN AGREES. LOGISTICS MEASURED, JOE PICKED TWO MECHANICS — *NEARBY* GIVEN A MEANING (`market_detour_ticks` 4, SWEPT D670, BUILT D671) AND THE HANDCART THOUGHT THROUGH (`specs/handcart.md`, ALL SIX CALLS MADE AS PROPOSED, D672). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️, THEN HOUSE TIERS. 📝 SLICE W (WORKSHOP + CARPENTER) IS SPECCED (D674, `specs/workshop-and-the-carpenter.md`) AND THE SPEC BRANCH IS MERGED INTO `main` (D677, PUSHED) — NOTHING BUILT; ✅ HIS FIVE CALLS ANSWERED (D675): LEARNED BY FELLING WOOD (`workshop_unlock_logs` **2,500, HIS NUMBER, D676**; HASHED AS A LEARNED FLAG, NO GOLDEN MOVES), NO SHIPPED LIMIT, `MakeGood` NOW AND SAVE FORMAT 10, CARPENTER AFTER TAILOR. NOTHING OPEN ON THE SPEC. NEXT: BUILD W (TDD PER ITS §9) — STARTED IN ITS OWN SESSION ON 2026-11-01, THEN SLICE H (THE HANDCART). ✅ `slice/lane-bridge` (D680, VIEW ONLY, UNPLAYED, MERGED D681): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF SLICE W (D684, 2026-11-04), LOCAL, NOT PUSHED; `origin/main` = 51226d8 (D681). ✅ SLICE W IS ON `main`: THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED — JOE'S NUMBER, LOWERED FROM 2,500 AFTER PLAY, D682: *"IT TOOK ME TOO LONG"*; THE FOUR FIFTY-YEAR GOLDEN ARMS CROSS IT AND MOVED ONCE, EACH PROVED), THE CARPENTER, THE HANDCART ON A SHELF (ONE A HOUSEHOLD AND A SPARE), THE *MAKES:* DROPDOWN, SAVE FORMAT 10 (OLDER SAVES REFUSED IN WORDS, HIS CALL) — PLAYED BY JOE TWICE: *"EVERYTHING ELSE WORKS PROPERLY FOR THE WORKSHOP"*. ▶️ THE LODGE FIX (D683, `claude/slice-lodge-carriers-bb1fd3`, ITS OWN SESSION) IS IN FLIGHT, UNMERGED: A MET MEAT LIMIT KEEPS A SWOLLEN LODGE'S HUNTERS SEATED AS CARRIERS, ALL CARRYING AT ONCE. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY D671, W D678, H NEXT), THEN HOUSE TIERS. NEXT: MERGE THE LODGE FIX AT HIS WORD, PUSH AT HIS WORD, THEN SLICE H (`specs/handcart.md`, ALL SIX CALLS MADE). ✅ `slice/lane-bridge` (D680, MERGED D681, PUSHED): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D677, D680, D681) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D678–D684) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` = the merge of `claude/slice-workshop-2083f6` (D684, 2026-11-04), local, NOT pushed; `origin/main` = 51226d8 (D681).** Slice W's branch
+> was four commits of its own — D678 the build, D679 Joe's trader call, the D681 `main` merge, D682 the unlock to 1,500 — merged `--no-ff` at his
+> *"Yes, merge"* after his second play, the *unmerged* lines corrected inside the merge commit (D640's trap); two conflicts (this banner and the
+> open list below, §7's tail) resolved by keeping both sides in number order. The code is the branch's tip, which passed the four checks at D682
+> (suite 1906 / 0 / 5 of 1911 in 16m25, view 0 warnings, probe 68 ✅ bar 151 `done.`, goldens 398 lines, the four fifty-year arms moved once and
+> proved). **In flight on its own branch, unmerged: the lodge fix (D683, `claude/slice-lodge-carriers-bb1fd3`, session `lodge-carriers`)** —
+> a met meat limit keeps a swollen lodge's hunters seated as carriers, all carrying at once, the card naming the reason; its session was waiting
+> on a clean suite run for its docs commit. ⚠️ `main` is format 10 now: every save before 2026-11-04 is refused in words. The tree is clean but
+> for `bclone-tracker.xlsx` (never staged).
+>
+> **✅ What is built (D678):** `BuildingKind.Workshop` 27 (25 logs / 12 stone / 40 ticks / two seats / 2×1, under *Works*
+> beside the smithy), **learned by felling wood** — `workshop_unlock_logs` 2,500, his number; checked where the counter
+> moves (`SimWorld.Felled`, both fell paths) and hashed as the flag `WorkshopLearned`, never the counter (§4.1a's gap is
+> written in `StateHash.cs` and asserted by `ALearnedWorkshopIsInTheFingerprint`). `JobKind.Carpenter` 16, after the tailor
+> and before the quarrier in the allocator's order, `uses_tool`, skill row 10 *carpentry*. `Goods.Handcart` 15, made as a
+> `Batch` from the handcart row's **`made_from`** column (ten logs → one cart, 20 ticks, one a stint, no firing), racked in
+> the warehouse, the founders' cart or the pile — **never the market** — and stopped by a set `handcarts` limit or, with
+> none, at **one a household and a spare** (`LabourQuota.HandcartsWanted` / `HandcartSpare` 1 / `HandcartsShortfall` /
+> `CarpentersWanted`). `Workplace.MakeGood` + `SimWorld.SetMakeGood`, hashed off its default; **save format 10**
+> (`make_good`, `workshop_learned`, `handcarts_ever_made`) — every format-9 save, his included, refused in words (his call,
+> D675). The view: a learned button under *Works* (`_workshopKnown`, its `IsKnown` arm), the card's *Makes:* dropdown (one
+> item, *Handcarts*), the handcarts chip amber while households lack a cart, a hut-with-a-wheel glyph and a cartwheel glyph,
+> fresh-sawn oak for the trade and a painted cart's slate for the good (`check.py` 0 of 41 fail), the tree's *workshop*
+> node with *"{n} of {N} logs felled"*, and a `workshop:` probe line.
+>
+> **📏 §10's table was filled before a number was typed** (`tools/harness/ZzWorkshop.cs`, 55 valleys × 4 arms): a workshop
+> at Year 5 makes one cart a household and a spare in a third of a seat-year and costs the roofs nothing a seed can see
+> (house sites waiting on logs: median +15 of ~1,690 site-ticks; alive −0.7 a valley inside sd 3, the same at 6, 10 and 15
+> logs a cart). Every proposal stood. ⚠️ The harness *gives* the workshop its stone — no unattended village holds any.
+>
+> **The four checks (this commit):** suite **1906 / 0 / 5 of 1911 in 15m15** (15m06 at D671 — the suite grew by 20 workshop facts and the harness ran beside the first two runs); view **0
+> warnings**; probe **✅ throughout**, `workshop:` ✅ (*Makes: reads Handcarts (1 item), the idle sentences fit a 268 card,
+> the Works row is 151 with the button and 151 without*), `filters:` ✅, `spoilers:` ✅ (handcarts and the carpenter unknown
+> at the founding), `tech tree:` ✅ 14 cards at 160, **bar 151**, `done.`; **goldens 392 before, 395 grep lines after (the RE-TAKEN
+> notes carry the four old values, as every re-take's does), every value unchanged but ⚠️ four — two pairs:
+> `FarmGoldenTests`' (that scenario clears a wood with the brush and fells 3,180 logs in twenty years, so the village
+> learns the workshop in it; the spec's §4.1b had not probed that runner; proven by switching the crossing off, the old
+> values pass) and `PhaseFiveGoldenTests`' (the overland neighbour makes handcarts, a hashed stock slot — D661's own third
+> cause; proven by switching that one line off, the old values pass; the first full run, before the line, held them). Both
+> re-pinned with the cause in the file. The fifty-year goldens hold at 1,602–1,770 felled.** 37
+> mutants, every one counted in the spec's §9 (three zeros written down, one of them turned red by a stronger guard).
+> The first suite run also caught two format pins (nine → ten) and D587's rule that the three neighbours make every good
+> the game has — so the overland neighbour makes handcarts (10, by cart only), and the spec's *"no neighbour stocks one"*
+> is struck.
+>
+> **✅ D682 (2026-11-04) — Joe played W and lowered the unlock.** Hollowmere (`Hollowmere-plover-rowan-45`): the workshop lit at
+> 2,511 logs in Summer, Year 34, a carpenter made carts, every household carted plus the spare, the idle sentence right —
+> *"everything else works properly for the workshop"*, and *"it took me too long for the workshop. bring it down to 1500."*
+> **`workshop_unlock_logs` is 1,500** (data, the C# default, the shipped-rows guard, the comments — one commit). ⚠️ **Four golden
+> arms moved once each, and that is expected, proved and written down, not a regression:** the unattended fifty-year villages
+> fell 1,602–1,770 by Year 50 (§4.1b's table) and now learn the workshop around Year 43–47 — `SkillTests` both arms and
+> `StockLimitTests` both constants (the two fixture arms run the same `VillageFixtures.Village`). Proof: the crossing alone
+> switched off (`&& Tick == ulong.MaxValue` in `SimWorld.Felled`), all four old values pass; restored, hash-checked, re-pinned
+> with the old values in the RE-TAKEN notes. The twenty-year goldens hold. The brief named the two shipped arms; the fixture
+> pair was the finding — read every row of §4.1b's table, not the rows a brief names. The four checks: suite **1906 / 0 / 5 of 1911 in 16m25** (15m15 at D678, nothing running beside it — a minute slower, the three fifty-year villages now stopping once each for the workshop; watched, not explained); view 0 warnings; probe **68 ✅ 0 ⛔**, `workshop:` ✅, `trails:` ✅, `tech tree:` 14 cards at 160, bar **151**, `done.`; goldens **395 grep lines before, 398 after** (the three RE-TAKEN notes carry the four old values), every value unchanged but the four named, none removed.
+>
+> **🔨 `main` (D681) merged into this branch, 2026-11-01:** D680's path-drawer fix — view only, `TrailNetwork.Build` bridges a
+> one-tile gap only where someone has stepped (`PathWear.At > 0`), so two packed lanes a tile apart stay two — is in this
+> worktree, and Joe's Fernhollow save (format 10, `fernhollow-holly-kestrel-14`) shows the two lanes from `.\run.bat` here.
+> The merge touched `TrailNetwork.cs`, one shared line of `VillageMap.cs` (the carpenter's colour beside the trodden array),
+> two path specs and these docs; the sim, data and tests are untouched by it, so the suite stands on b65dfc7's tree and the
+> view build and one probe run were the checks on the merged tree (numbers in the merge commit). Its own account: the
+> D680 paragraph in the superseded block below, `DESIGN.md §7` D680–D681.
+>
+> **▶️ NEXT — Joe plays W** (the ⏸️ OPEN item at the top of that list says what to look for), merges at his word, pushes;
+> **then Slice H (`handcart.md`)**, measured on `ZzLogistics`. The numbers (`logs_per_handcart` 10, `make_ticks` 20,
+> `makes_per_stint` 1, the spare 1) are measured defaults, his to move after play.
+>
+> **— D677, D680, D681, as `main` has it —**
+> **⭐⭐ (superseded) WHERE THINGS WERE, 2026-11-01 (D677) — ON WINDOWS.**
 >
 > **`main` = the merge of the Slice W spec branch `claude/musing-rhodes-b6ffea` (D677) plus one docs commit making these lines true, pushed; origin agrees.** The spec branch was four docs-only commits — the Slice W spec (c5677cd),
 > `main` merged in with the entry renumbered D674 (d5f60ab), Joe's five calls answered (055938c, D675), his number for the unlock and
@@ -8915,6 +8986,50 @@ Read `git status` after staging, every time.
 - ⚠️ **A headless Godot can outlive `done.`** by a second or two; `tasklist` straight after the probe showed one each run.
   Kill by the exact PID (`taskkill //PID n //F`); a loop over `tasklist` output was refused by the harness.
 
+## ⛔ THE TRAP D682 PAID FOR — A BRIEF THAT NAMES THE MOVERS IS A HYPOTHESIS; THE TABLE HAS EVERY ROW
+
+- ⚠️ **Lowering `workshop_unlock_logs` to 1,500 moved four golden arms, and the brief said two.** The brief read the two
+  *shipped* rows of §4.1b's table (1,770 and 1,602 at Year 50); the *fixture* row sat beside them at 1,701, and two golden
+  arms (`SkillTests`' fixture arm and `StockLimitTests.FixtureFiftyYearHash`) run that same `VillageFixtures.Village`. Run
+  every fifty-year arm before writing "two move" — the filtered run of all four took ten seconds and said so. A named
+  mover list is a hypothesis to check against the suite, never a count to type into the docs first.
+- ⚠️ **A quoted bash heredoc on this machine collapses `\\` to `\` inside a script**, so a Python anchor containing
+  `.\run.bat` silently held a carriage return and matched nothing. Scripts with backslashes go through the Write tool
+  (the memory rule, for a second reason); anchors avoid them altogether.
+
+## ⛔ THE TRAPS D678 PAID FOR — A FRESH WORKTREE HAS NO IMPORTS, A HARNESS VILLAGE HAS NO STONE, AND THE MODDED GOOD WAS CLOTHING
+
+- **A fresh worktree has no `.godot/imported/` cache, and the probe does not fail — it hangs.** `GrassLab.SelfCheck` threw a
+  `NullReferenceException` on a texture that was never imported, `done.` never printed, and a headless Godot sat at 500 MB
+  until `taskkill`. Before the first probe in a new worktree: `"$GODOT" --headless --path src/Bclone.Game --import`, then
+  remove the `.uid` files it writes beside scripts and shaders (`git ls-files --others --exclude-standard` — 30 here, plus
+  `shaders/*.uid`). The import is seconds; the hang cost a five-minute timeout and a kill.
+- **No harness village ever holds stone, so a paid workshop (or smithy) never stands in one.** The first ZzWorkshop arm
+  measured 55 valleys with the workshop *marked* and *never built* (`wsite logs0-stone12 stone 0`) and would have reported
+  "no cost" for a building that did not exist. Print the site's wants in the harness line; when the arm is about one
+  material, give the other and say so in the table.
+- **`ModdedGoodTests` had been testing clothing under the name "pitch" since D659.** The validator checks that every
+  built-in id is PRESENT, not what it is called, so a modded row at 14 satisfied clothing's slot for two slices — the exact
+  bug the file's own remark describes, for the fourth time. The handcart at 15 made the loader say so. **When a good ships,
+  the modded fixture's id moves, every time**, and `ModdedJobTests` / `ModdedBuildingTests` restate every built-in (D661).
+- **A mutant's reverse anchor must be unique, or the file stays mutated** (D661's trap, paid again): `has the "` matched the
+  forge's sentence too and the script stopped with `SimWorld.cs` changed. Hash every mutated file before and after and
+  `sha256sum -c` the set when the run ends; a `git diff --quiet` cannot stand in for it while the slice itself is uncommitted.
+- **`python -c "..."` with backticks in a C# comment**: bash ran the backticks as a command and wrote an empty substitution
+  into the file. Edit scripts go in a file, never inline (the memory rule, for a new reason).
+- **A mutant the analysers refuse scores zero** (D621): removing the only call to a private method is `IDE0051`, not a red.
+  Keep the call and make it unreachable (`&& Tick == ulong.MaxValue`).
+- **A golden runner you did not probe is a golden you have not predicted.** §4.1b probed four runs and said the farm
+  scenario was *"not expected"* to cross 2,500 because its runner was private and the Phase 5 pose read 1,050 at twenty
+  years; the farm scenario clears a wood with the brush and reads **3,180**. Both its goldens moved. Probe every golden's
+  own village — make the runner `internal` for the probe if it must — before writing *"no golden moves"*.
+- **A guard that counts the walk's ticks with the work's cannot see a skill arm.** `Making => false` in `SkillSystem`
+  scored zero against *"TicksIn > 0"* because the walk to the bench still grew the skill; the guard now asks for at least
+  the ticks seen at the bench. **And the forester's stand path (`BehaviorSystem`'s `CutYield` fell) is never taken by a
+  fixture village in a year** — every fell goes through the brush's `TakeFromTheGround` since the stands retired — so a
+  mutant there scored zero and is written down rather than hidden.
+
+
 ## ⛔ THE TRAPS D670–D671 PAID FOR — A STASH IN A BACKGROUND JOB, A SPEC'S POSE THAT ROTTED, AND THE SCRAP MOVED TO THE GRANARY
 
 - **⛔ A background job that `git stash`es holds every tracked file hostage until it pops.** The sweep's red check stashed the
@@ -9228,9 +9343,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ✅ ~~⏸️ **SLICE W IS BUILT AND PLAYED ONCE (D678, `claude/slice-workshop-2083f6`; Fernhollow: learned at 3,080 logs, 10 carts made, all working) — HIS TO PLAY ON, THEN MERGE.**~~ **MERGED INTO `main` AT HIS WORD (D684, 2026-11-04).** ✅ **Played again 2026-11-04 (Hollowmere): *"everything else works properly for the workshop"*; his one change, the unlock to 1,500 (D682), is in.** `.\run.bat`: fell
+  1,500 logs (2,500 until D682; his Hollowmere lit it at 2,511 in Year 34, and at 1,500 it lands around Year 20) and the village stops once — *"The village learned the wheelwright's
+  trade"* — with the tree shown; a *Workshop* button lights under *Works*; mark it (25 logs, 12 stone), seat a carpenter from
+  the Professions panel, watch logs become handcarts in the warehouse (the card's *Makes: Handcarts*, the warehouse's
+  *handcarts* row, the top bar's handcarts chip amber until every household has one and a spare), and read the idle
+  sentence once the village is carted. **The numbers are measured defaults, not played ones** (`logs_per_handcart` 10,
+  `make_ticks` 20, `makes_per_stint` 1, the spare 1): his to move in `data/sim.config.json` after play; D666's bar says a
+  season too slow moves `makes_per_stint` to 2. ⚠️ His format-9 saves are refused by this build (his call, D675). **Then
+  Slice H (`handcart.md`)**, measured on `ZzLogistics`.
 - ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); THE BUILD BRANCH HAS TAKEN `main`; JOE PLAYS IT IN HIS FERNHOLLOW FROM THE BUILD WORKTREE.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
-  ladders of October still one lane. To see it on his format-10 save the build branch must merge `main` after this lands.
+  ladders of October still one lane. The build branch merged `main` on 2026-11-01, so his format-10 save shows it from `.claude/worktrees/slice-workshop-2083f6`.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
   §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
   and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he

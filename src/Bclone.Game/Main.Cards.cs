@@ -133,6 +133,12 @@ public partial class Main
 
         /// <summary>The dropdown's items, in order — every tool a forge makes (D446).</summary>
         public List<Goods> ForgeGoods { get; } = new();
+        public VBoxContainer? MakeRow { get; set; }
+        public Label? MakeLabel { get; set; }
+        public OptionButton? Make { get; set; }
+
+        /// <summary>The Makes: dropdown's items, in order — every good with a `made_from` (D678); one today, the handcart.</summary>
+        public List<Goods> MakeGoods { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
 
@@ -923,6 +929,15 @@ public partial class Main
                 c.Forge.ItemSelected += index => Act(card, () => SetSelectedForgeGood((int)index));
                 forgeControls.AddChild(c.Forge);
 
+                // ⭐ What a workshop makes (D678, `workshop-and-the-carpenter.md §4.3`) — the Forges: dropdown's twin, every
+                // good row with a `made_from`; one item today (handcarts), and the point of building it now is that planks
+                // arrive as a row and nothing else.
+                c.MakeLabel = Muted("Makes:");
+                (c.MakeRow, HFlowContainer makeControls) = InspectorRow(body, c.MakeLabel);
+                c.Make = new OptionButton { FitToLongestItem = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+                c.Make.ItemSelected += index => Act(card, () => SetSelectedMakeGood((int)index));
+                makeControls.AddChild(c.Make);
+
                 // The build queue, for a site.
                 c.QueueLabel = Muted("Build queue:");
                 (c.QueueRow, HFlowContainer queueControls) = InspectorRow(body, c.QueueLabel);
@@ -1067,6 +1082,12 @@ public partial class Main
                     FillForge(world, c, place);
                 }
 
+                c.MakeRow!.Visible = built && place.Kind == JobKind.Carpenter;
+                if (c.MakeRow.Visible)
+                {
+                    FillMake(world, c, place);
+                }
+
                 c.QueueRow!.Visible = place.IsSite;
                 if (place.IsSite)
                 {
@@ -1121,6 +1142,38 @@ public partial class Main
                 c.Forge!.AddItem(Capitalise(row.Name));
                 c.Forge.SetItemTooltip(c.Forge.ItemCount - 1, $"{Capitalise(row.Name)}: {row.ToolUses} uses, {WhatAToolIsWorth(row)}.");
                 c.ForgeGoods.Add(best[i]);
+            }
+        }
+    }
+
+    /// <summary>The workshop's dropdown: every good a carpenter has a recipe for, in row order; the item this workshop is set to selected (D678).</summary>
+    private static void FillMake(SimWorld world, CardControls c, Workplace workshop)
+    {
+        AddMakeItems(world, c);
+        int selected = c.MakeGoods.IndexOf(workshop.MakeGood);
+        if (c.Make!.Selected != selected)
+        {
+            c.Make.Select(selected);
+        }
+    }
+
+    /// <summary>The dropdown's items, once: every good row with a `made_from`, in row order, so the handcart (the default) leads.</summary>
+    private static void AddMakeItems(SimWorld world, CardControls c)
+    {
+        if (c.MakeGoods.Count == 0)
+        {
+            for (int id = 0; id < world.GoodsCatalog.Count; id++)
+            {
+                GoodRow row = world.GoodsCatalog[(Goods)id];
+                if (row.MadeFrom.Count == 0)
+                {
+                    continue;
+                }
+
+                MaterialCost takes = row.MadeFrom[0];
+                c.Make!.AddItem(Capitalise(row.Name));
+                c.Make.SetItemTooltip(c.Make.ItemCount - 1, $"{Capitalise(row.Name)}: {takes.Amount} {world.GoodsCatalog.NameOf(takes.Goods)} each.");
+                c.MakeGoods.Add((Goods)id);
             }
         }
     }
@@ -2687,13 +2740,14 @@ public partial class Main
         var unknownGoods = Enumerable.Range(0, world.GoodsCatalog.Count).Select(g => (Goods)g).Where(g => !GoodKnown(g)).ToList();
         var unknownTrades = System.Enum.GetValues<JobKind>().Where(t => !TradeKnown(t)).ToList();
         if (!unknownGoods.Contains(Goods.IronTools) || !unknownGoods.Contains(Goods.Flour) || !unknownGoods.Contains(Goods.Bread)
-            || !unknownGoods.Contains(Goods.Clothing))
+            || !unknownGoods.Contains(Goods.Clothing) || !unknownGoods.Contains(Goods.Handcart))
         {
             faults.Add($"the founding knows goods it should not: unknown are only {string.Join(", ", unknownGoods)}");
         }
 
         if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner)
-            || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker) || !unknownTrades.Contains(JobKind.Tailor))
+            || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker) || !unknownTrades.Contains(JobKind.Tailor)
+            || !unknownTrades.Contains(JobKind.Carpenter))
         {
             faults.Add($"the founding knows trades it should not: unknown are only {string.Join(", ", unknownTrades)}");
         }
@@ -2747,11 +2801,11 @@ public partial class Main
 
         Ask("at the founding", learned: false);
 
-        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown) = (true, true, true, true, true, true, true);
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor, bool workshop) = (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (true, true, true, true, true, true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
-        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);
@@ -2853,6 +2907,120 @@ public partial class Main
     /// Probe `coat:` (D662, `clothing.md §8` item 4): the card's COAT line reads the coat — the winters left, its last winter,
     /// none — posed on a living adult's `CoatDays` and put back, so the village is as it was.
     /// </summary>
+    /// <summary>
+    /// The workshop's card says what it makes, and its idle sentence fits — <b>a probe line</b> (D678,
+    /// `workshop-and-the-carpenter.md §6`): the Makes: row posed on a standing workplace's card with <i>Handcarts</i> selected,
+    /// the longest of the four idle sentences inside the card's width, and the Works row of the bar no taller with the
+    /// workshop's button lit than without it. Posed in the view, never written to the sim; put back after.
+    /// </summary>
+    private string TheWorkshopSaysWhatItMakes()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        // Any workplace's card carries the rows (a site's too); at the founding there is none, so a builder's hut is marked
+        // for the pose, as the `cards:` line marks its site.
+        Workplace? place = world.Workplaces.Count > 0 ? world.Workplaces[0] : null;
+        GridPos founding = world.Map.FoundingSite;
+        for (int r = 3; r < 20 && place is null; r++)
+        {
+            for (int dx = -r; dx <= r && place is null; dx++)
+            {
+                var tile = new GridPos(founding.X + dx, founding.Y + r);
+                if (world.CanBuildAt(BuildingKind.BuilderHut, tile).Allowed && world.Mark(BuildingKind.BuilderHut, tile).Allowed)
+                {
+                    place = world.Workplaces.Find(w => w.Construction is { IsFinished: false } site && site.Kind == BuildingKind.BuilderHut);
+                }
+            }
+        }
+
+        if (place is null)
+        {
+            return "[widths] workshop: ⛔ no workplace to pose the card on, and nowhere to mark one";
+        }
+
+        OpenCard(new CardSubject(CardKind.Workplace, place.Id));
+        Card card = _selectedCard!;
+        CardControls c = card.Controls;
+        card.SettingsToggle.ButtonPressed = true;
+        card.Settings.Visible = true;
+        c.MakeRow!.Visible = true;
+        AddMakeItems(world, c);
+        int handcarts = c.MakeGoods.IndexOf(Goods.Handcart);
+        if (handcarts < 0)
+        {
+            faults.Add("the Makes: dropdown does not offer handcarts");
+        }
+        else
+        {
+            c.Make!.Select(handcarts);
+            if (c.Make.GetItemText(c.Make.Selected) != "Handcarts")
+            {
+                faults.Add($"the Makes: dropdown reads '{c.Make.GetItemText(c.Make.Selected)}' where it should read 'Handcarts'");
+            }
+        }
+
+        // The four idle sentences (§6), the longest posed: the derived stop names a count, the input refusal a store and the recipe.
+        string longest = $"{place.Name}: Nothing to make — every household has a handcart, and the shelves hold one for the next (12 stored).";
+        string refusal = $"{place.Name}: Nothing to make — no store within reach of {place.Name} has the {world.Config.LogsPerHandcart} logs a handcart takes.";
+        c.IdleRow!.Visible = true;
+        foreach (string sentence in new[] { longest, refusal })
+        {
+            c.IdleLabel!.Text = sentence;
+            ForceUpdateTransform();
+            float wants = card.Panel.GetCombinedMinimumSize().X;
+            if (wants > CardWidth + 1f)
+            {
+                faults.Add($"\"{sentence}\" widens the card to {wants:F0}");
+            }
+        }
+
+        float withinCard = card.Panel.GetCombinedMinimumSize().X;
+        CloseCard(card);
+        if (_controlBar is null)
+        {
+            return "[widths] workshop: ⛔ the control bar is not built";
+        }
+
+        // The Works row of the bar, with and without the workshop's button (§6: a tenth button may wrap the row, and the
+        // probe is what says so — if it wraps, the row is solved, never the number).
+        BuildTab wasOn = _tab;
+        BuildCategory? filterWas = _filter;
+        bool knownWas = _workshopKnown;
+        float Works(bool known)
+        {
+            _workshopKnown = known;
+            _tab = BuildTab.Build;
+            _filter = BuildCategory.Works;
+            RefreshTheStrip();
+            _controlBar.QueueSort();
+            ForceUpdateTransform();
+            return _controlBar.Size.Y;
+        }
+
+        float without = Works(false);
+        float with = Works(true);
+        bool lit = _workshopButton is { Visible: true };
+        _tab = wasOn;
+        _filter = filterWas;
+        _workshopKnown = knownWas;
+        RefreshTheStrip();
+        _controlBar.QueueSort();
+        ForceUpdateTransform();
+        if (!lit)
+        {
+            faults.Add("the Works row does not show the workshop's button once learned");
+        }
+
+        if (with > without + 1f)
+        {
+            faults.Add($"the workshop's button wraps the Works row: the bar is {with:F0} with it and {without:F0} without");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] workshop: ✅ Makes: reads Handcarts ({c.Make!.ItemCount} item), the idle sentences fit a {withinCard:F0} card, the Works row is {with:F0} with the button and {without:F0} without"
+            : $"[widths] workshop: ⛔ {string.Join("; ", faults)}";
+    }
+
     private string TheCardSaysTheCoat()
     {
         SimWorld world = _loop.World;
@@ -3172,6 +3340,35 @@ public partial class Main
                     if (wide > inner)
                     {
                         faults.Add($"the smithy's dropdown item '{c.Forge.GetItemText(i)}' needs {wide:F0} of the card's {inner:F0}");
+                    }
+                }
+            }
+
+            // ⭐ The workshop's Makes: dropdown (D678), the smithy's check one building over — every good with a `made_from`,
+            // at least the one (the handcart is the design, so the check is written for one), each inside the card.
+            if (c.MakeRow is not null)
+            {
+                c.MakeRow.Visible = true;
+                AddMakeItems(world, c);
+                int makeable = 0;
+                for (int id = 0; id < world.GoodsCatalog.Count; id++)
+                {
+                    makeable += world.GoodsCatalog[(Goods)id].MadeFrom.Count > 0 ? 1 : 0;
+                }
+
+                if (c.Make!.ItemCount != makeable || makeable < 1)
+                {
+                    faults.Add($"the workshop's dropdown offers {c.Make.ItemCount} goods of {makeable} a carpenter makes");
+                }
+
+                float inner = CardWidth - card.Panel.GetThemeStylebox("panel").GetMinimumSize().X;
+                for (int i = 0; i < c.Make.ItemCount; i++)
+                {
+                    float wide = c.Make.GetThemeFont("font").GetStringSize(c.Make.GetItemText(i), HorizontalAlignment.Left, -1, c.Make.GetThemeFontSize("font_size")).X
+                        + c.Make.GetThemeIcon("arrow").GetWidth() + 24f;
+                    if (wide > inner)
+                    {
+                        faults.Add($"the workshop's dropdown item '{c.Make.GetItemText(i)}' needs {wide:F0} of the card's {inner:F0}");
                     }
                 }
             }
