@@ -174,6 +174,7 @@ public partial class TechTreeView : Control
         TechCondition.KeptGranaryYears => $"{progress} of {of} years of a kept granary",
         TechCondition.FoundersGone => $"{progress} of {of} founders gone",
         TechCondition.LeatherHeld => $"{progress} of {of} leather handled",
+        TechCondition.LogsFelled => $"{progress} of {of} logs felled",
         _ => string.Empty,
     };
 

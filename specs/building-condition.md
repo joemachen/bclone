@@ -237,7 +237,8 @@ repair is served. That is the nomads' inheritance.
 ### 4.6 Not in this slice, said so
 
 - The **workshop, the carpenter and the builder's hammer** — follow-on (call 6); its shape, redefined, is sketched in
-  `handcart.md §5` (D670), the handcart being what the carpenter is for.
+  `handcart.md §5` (D670), the handcart being what the carpenter is for. ✅ **Built as `specs/workshop-and-the-carpenter.md`
+  (D678):** a new building, the builder's hut unchanged, no hammer — its §8 says what this hut does *not* do.
 - **Fire, storm, blight** — §4's own sentence (*telegraphed, legible, answerable*) before any of it.
 - **The library's record decay and keeper** — `tech-tree.md §7c`, lands with its own spec.
 - **House tiers** — read `wears_in_years` per row when they come (a stone cottage wears slower); their own spec.

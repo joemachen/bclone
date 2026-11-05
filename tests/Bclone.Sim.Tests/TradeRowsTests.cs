@@ -212,7 +212,7 @@ public sealed class TradeRowsTests
     // ---------------------------------------------------------------
 
     [Fact]
-    public void TheFormatIsNine() => Assert.Equal(9, SaveGame.Format); // 8 since D590 (trade); 9 since D660 (the coat).
+    public void TheFormatIsTen() => Assert.Equal(10, SaveGame.Format); // 8 since D590 (trade); 9 since D660 (the coat); 10 since D678 (the workshop).
 
     [Fact]
     public void TradeAndAHerdComeBackFromASave()

@@ -302,7 +302,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 15516440239506033514.
     // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 17250329924685123549.
     // RE-TAKEN (D625) — doors, the behaviour commit (D622–D625, `doors.md §11`), folded at Joe's word (D623: *"fold commits 2, 3 and 4's sim changes into one behaviour commit … goldens re-taken once"*): doorsteps kept clear, walks and catchment through the door, the founding's and an unmarked building's facings, a farmhouse, a barn and the cart with no door, the door priced into the economy (`DoorTiles`, `gather_yield` 123 → 135), the hay put out nearest the barn, a tend that would outlast summer not begun, and the three bugs the change surfaced (an emergency sent a villager whose arms were full, the re-founders' cart food was never counted in, a door opened into a pocket beside the founding site). ⭐ PROVEN: the parent commit (b10667c, D621) holds the old value with the suite green (1837 / 0 / 5), and every value here was read twice, identical. Was 335095228686958537.
-    private const ulong SeamGoldenHash = 12490923102850685382UL;
+    // RE-TAKEN (D678) — the workshop is learned by felling wood (`workshop-and-the-carpenter.md §4.1a`, Joe's 2,500): this scenario clears a wood with the harvest brush and fells **3,180 logs in twenty years**, so in it the village learns the workshop — `WorkshopLearned` (a tag byte) and `ShownTheTechTree` flip and the moment is raised. The spec's §4.1b had not probed this runner (private) and expected it not to cross; it does, and that is a finding written there, not a re-pin by habit. The fifty-year goldens (1,602–1,770 felled) hold. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off (`&& false` on `SimWorld.Felled`'s test) the old value passes; the parent (5b548ad, D677) holds it with the suite green. Was 12490923102850685382.
+    private const ulong SeamGoldenHash = 1511204165858373425UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -389,7 +390,9 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D625) — doors, the same folded behaviour commit as `SeamGoldenHash` above, with mastery off: it sat behind
     // that golden in the one test and surfaced only once it passed (D537's trap). Proven: the parent commit (b10667c, D621)
     // holds the old value with the suite green; read three times, identical. Was 7837485714083851781.
-    private const ulong SeamBeforeAnybodyGotBetter = 10861144845569800999UL;
+    // RE-TAKEN (D678) — the workshop learned in this scenario at 3,180 logs felled, as `SeamGoldenHash` above; the same
+    // proof (the crossing switched off, the old value passes). Was 10861144845569800999.
+    private const ulong SeamBeforeAnybodyGotBetter = 15219620512651737054UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]
@@ -400,7 +403,8 @@ public sealed class FarmGoldenTests
         ulong actual = StateHash.Compute(world);
         ulong withoutSkills = StateHash.ComputeIgnoringSkills(world);
         _output.WriteLine(
-            $"crops × harvest brush, {Years}y: {actual} (without skills {withoutSkills})");
+            $"crops × harvest brush, {Years}y: {actual} (without skills {withoutSkills}); "
+            + $"{world.LogsEverFelled} logs felled, the workshop {(world.WorkshopLearned ? "learned" : "not learned")} (D678)");
 
         Assert.Equal(SeamGoldenHash, actual);
         Assert.Equal(SeamBeforeAnybodyGotBetter, withoutSkills);

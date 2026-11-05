@@ -49,8 +49,12 @@ public static class SaveGame
     /// trade and the herd — the post's standing orders, the boat, the boats that came, the neighbours' stocks, and a
     /// workplace's herd (`trade.md §11` commit 1); every format-7 save Joe has is refused (no migrations before v1). 9 since
     /// D659: a villager's coat (`coat_days`) and the clothing good, which grows every stockpile and the stock-limits list
-    /// by a slot (`clothing.md §3.3`).</remarks>
-    public const int Format = 9;
+    /// by a slot (`clothing.md §3.3`). 10 since D678: the workshop — <c>make_good</c> on every workplace (what a workshop
+    /// is set to make, the smithy's <c>forge_good</c> one building over), <c>workshop_learned</c> and
+    /// <c>handcarts_ever_made</c>, and the handcart good, which grows every stockpile and the stock-limits list by a
+    /// slot (`workshop-and-the-carpenter.md §7`). Every format-9 save, Joe's included, is refused — his call (D675:
+    /// *"I don't mind starting a new game — that's actually my favourite part"*).</remarks>
+    public const int Format = 10;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

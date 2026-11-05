@@ -128,6 +128,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 | Iron mine | Trade colour + floor + seam palisade | ✅ | Mine mouth | 🟨 |
 | Mill | Trade colour | ✅ | **Watermill vs windmill** (B8) | 🟨 |
 | Bakery | Trade colour | ✅ | Oven smoke | 🟨 |
+| Workshop (D678) | Trade colour (fresh-sawn oak, `TradeGlyph.ColourOf(Carpenter)`) | ✅ a hut with a wheel leaning on its wall | A saw-pit, shavings; the cart itself is Slice H's (`handcart.md §8`, drawn in `GoodsPalette`'s handcart slate) | 🟨 |
 | Barn | Trade colour + cattle on its tiles | ✅ | **Tiers** (B8), hay | 🟨 |
 | Trading post | Trade colour + the boat docks here | ✅ | Jetty | 🟨 |
 | Library | `#6a7fc9` | ✅ | — | 🟨 |
@@ -197,9 +198,9 @@ gathering-radius ring; home-to-work route lines. All 🟨, all functional. Wheth
 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
-| **Building glyphs** (bar, cards) | 14px code-drawn silhouettes on a parchment chip with an ink edge (`BuildingGlyph.cs:139–312`), 21 kinds drawn | Locked / held / lit; one per kind | B1 | 🟨 — ⚠️ **bridge and stone bridge are grey squares** |
+| **Building glyphs** (bar, cards) | 14px code-drawn silhouettes on a parchment chip with an ink edge (`BuildingGlyph.cs:139–312`), 22 kinds drawn (the workshop's wheel, D678) | Locked / held / lit; one per kind | B1 | 🟨 — ⚠️ **bridge and stone bridge are grey squares** |
 | **Tool glyphs** | Code-drawn (`ToolGlyph.cs:120–210`): paint land, move, demolish, take back, empty, destroy, harvest trees/stone/iron/all, unmark | — | B1 | 🟨 — ⚠️ the drawn Cancel X is unused; the Cancel button is text (`Main.cs:7448`) |
-| **Trade glyphs** | Code-drawn, all 15 trades (`TradeGlyph.cs:105–235`); used only in the Professions panel | Could go on cards and the roster | B1 | 🟨 |
+| **Trade glyphs** | Code-drawn, all 17 trades (`TradeGlyph.cs:105–245`; the carpenter's cartwheel, D678); used only in the Professions panel | Could go on cards and the roster | B1 | 🟨 |
 | **Goods icons** | **No shapes — a colour chip only** (`GoodsPalette.cs:30–61`, `Main.cs:4518`, `:4529`) | One icon per good (14) | B1 | 🟨 — ⚠️ **iron tools and hay have no colour** (drab grey; iron tools reads as tools) |
 | Roadmap goods (coal, cloth, ale, medicine…) | A blank 10%-white chip (`Main.cs:4439`) | — | — | ⬜ |
 | Moment marks | 26px code-drawn: nomads, bridge, none (`MomentGlyph.cs:41–63`) | One per moment kind | B1 | 🟨 |

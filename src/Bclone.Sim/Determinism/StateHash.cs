@@ -397,6 +397,15 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.ForgeGood);
             }
 
+            // What a workshop makes (D678, `workshop-and-the-carpenter.md §4.3`) — the forge's rule one building over: a
+            // workshop left on handcarts mixes nothing, so every golden holds; its own tag, so a product cannot read as a
+            // forge kind.
+            if (workplace.MakeGood != Workplace.DefaultMakeGood)
+            {
+                hash = MixUInt32(hash, 0xF1u);
+                hash = MixUInt32(hash, (uint)workplace.MakeGood);
+            }
+
             // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
             // It decides how much ground the farm commits every spring, so two runs of one
             // seed that differ in it are different runs and must hash differently.
@@ -685,6 +694,24 @@ public static class StateHash
         if (world.ShownTheTechTree)
         {
             hash = MixByte(hash, 0x7E);
+        }
+
+        // ⭐ Whether the workshop has been learned (D678, `workshop-and-the-carpenter.md §4.1a`, choice 2) — a tag byte when
+        // true, `ShownTheTechTree`'s shape. The gate reads THIS FLAG, not `LogsEverFelled`, so the thing the sim reads is
+        // what is hashed: two villages that differ in what the player may build differ in hash (the `StoneEverDug`
+        // remark's sentence), and a village that has not learned it hashes byte for byte as before.
+        //
+        // ⚠️ THE GAP, STATED (D676): `LogsEverFelled` stays an unhashed statistic — the flag is set from it where it
+        // moves (`SimWorld.Felled`). So two villages at 100 and 2,400 logs felled hash alike and will diverge later: a
+        // FUTURE difference, not a present one. Everything felling changes in the present (the tile, the store, the
+        // villager's load and state) is hashed; the counter is saved (`logs_ever_felled`), so the round trip keeps it;
+        // and the fingerprint has never been asked to catch a nondeterminism that moved only this counter and nothing
+        // else. Hashing the counter densely would move every golden once for a difference below the gate that nothing
+        // reads (every village fells wood from day one). `WorkshopTests.ALearnedWorkshopIsInTheFingerprint` asserts the
+        // gap on purpose — read §4.1a before closing it.
+        if (world.WorkshopLearned)
+        {
+            hash = MixByte(hash, 0x7F);
         }
 
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----

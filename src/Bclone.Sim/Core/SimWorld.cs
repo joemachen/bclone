@@ -2553,7 +2553,7 @@ public sealed partial class SimWorld : IObstacles
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
-            JobKind.Miller or JobKind.Baker or JobKind.Tailor =>
+            JobKind.Miller or JobKind.Baker or JobKind.Tailor or JobKind.Carpenter =>
                 WhyTheBatchWaits(workplace) is string waits ? $"{workplace.Name}: {waits}" : null,
             JobKind.Quarrier or JobKind.Miner =>
                 WhyTheFaceIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
@@ -4027,6 +4027,13 @@ public sealed partial class SimWorld : IObstacles
             $"Nobody here sews yet — the village has handled {LeatherEverHeld} of the "
             + $"{Config.TailorUnlockLeather} leather it takes to learn.",
 
+        // ⭐ THE WORKSHOP IS LEARNED BY FELLING WOOD (Joe, D675–D676; `workshop-and-the-carpenter.md §4.1a`). ⚠️ The gate
+        // reads the FLAG, set where the counter crosses (`Felled`), never the counter — the flag is what is hashed; the
+        // sentence reads the counter and the knob so the player can see how far.
+        BuildingKind.Workshop when !WorkshopLearned =>
+            $"Nobody here builds carts yet — the village has felled {LogsEverFelled} of the "
+            + $"{Config.WorkshopUnlockLogs} logs it takes to learn.",
+
         BuildingKind.Mine when IronToolsEverForged < Config.MineUnlockIronTools =>
             "Nobody knows how to sink a mine yet — the smith has not worked iron. Set a smithy to "
             + $"forge iron tools ({IronToolsEverForged} of {Config.MineUnlockIronTools} forged).",
@@ -4096,8 +4103,8 @@ public sealed partial class SimWorld : IObstacles
             return known(BuildingKind.Smithy) || (goods == Goods.Tools && Config.CartTools > 0);
         }
 
-        // The mill's, the oven's and the tailor's goods wait on the building that makes them.
-        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker, JobKind.Tailor })
+        // The mill's, the oven's, the tailor's and the carpenter's goods wait on the building that makes them.
+        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker, JobKind.Tailor, JobKind.Carpenter })
         {
             if (BatchFor(trade) is Batch batch && batch.Output == goods
                 && JobsCatalog.WorksAt(trade) is BuildingKind maker)
@@ -4285,8 +4292,44 @@ public sealed partial class SimWorld : IObstacles
         JobKind.Tailor => new Batch(
             JobKind.Tailor, Goods.Leather, Config.LeatherPerCoat, Goods.Clothing, 1,
             Firing: 0, Config.SewTicks, Config.SewsPerStint, "sew", "a coat"),
+
+        // ⭐ THE CARPENTER (D678, `workshop-and-the-carpenter.md §4.3`): what the workshop is set to make, from its row's
+        // `made_from` — one line today (the `Batch` has one input). ⛔ Never a firing: a saw-pit has no fire, so the
+        // oven's winter-firewood guard is never asked.
+        JobKind.Carpenter => CarpentersBatch(),
         _ => null,
     };
+
+    /// <summary>
+    /// The carpenter's batch, read off the handcart's (or a modded product's) <c>made_from</c> row — the smith reads its
+    /// tool's <c>forged_from</c> the same way (D446). The workshop's product is <see cref="Workplace.MakeGood"/>; with
+    /// one product in the game every workshop's is the handcart, and the batch is asked of the trade, not the building.
+    /// </summary>
+    private Batch? CarpentersBatch()
+    {
+        Goods made = Workplace.DefaultMakeGood;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i] is { Kind: JobKind.Carpenter, IsSite: false } workshop)
+            {
+                made = workshop.MakeGood;
+                break;
+            }
+        }
+
+        if ((int)made < 0 || (int)made >= GoodsCatalog.Count || GoodsCatalog[made].MadeFrom is not { Count: > 0 } recipe)
+        {
+            return null;
+        }
+
+        return new Batch(
+            JobKind.Carpenter, recipe[0].Goods, recipe[0].Amount, made, 1,
+            Firing: 0, Config.MakeTicks, Config.MakesPerStint, "make", $"a {Singular(GoodsCatalog.NameOf(made))}");
+    }
+
+    /// <summary>"handcarts" → "handcart", "planks" → "plank" — a good's row names the plural, the batch speaks of one.</summary>
+    private static string Singular(string plural) =>
+        plural.EndsWith('s') && plural.Length > 1 ? plural[..^1] : plural;
 
     /// <summary>Why the mill's stones are still, in a sentence naming the store — or null when it can grind.</summary>
     public string? WhyTheMillIsStill(Workplace mill) => WhyTheBatchWaits(mill);
@@ -4346,6 +4389,16 @@ public sealed partial class SimWorld : IObstacles
                 + $"({HeldAgainstItsLimit(batch.Output)} stored).";
         }
 
+        // ⭐ THE CARPENTER, WITH NO LIMIT OF THE PLAYER'S, MAKES ONE A HOUSEHOLD AND A SPARE (`workshop-and-the-carpenter.md
+        // §4.4`, D678): the tailor's rule one good over. ⚠️ Read where the work is decided, never per tick: a count over the
+        // households list. The spare is `LabourQuota.HandcartSpare`, so the stop and the hiring cannot disagree.
+        if (batch.Trade == JobKind.Carpenter && StockLimits.For(batch.Output) is null
+            && HeldAgainstItsLimit(batch.Output) >= LabourQuota.HandcartsWanted(this) + LabourQuota.HandcartSpare)
+        {
+            return $"{nothing} — every household has a handcart, and the shelves hold one for the next "
+                + $"({HeldAgainstItsLimit(batch.Output)} stored).";
+        }
+
         // ⛔ The oven never takes firewood the homes still want (§5 rule 2, the forge's rule).
         if (batch.Firing > 0 && LabourQuota.FirewoodShortfall(this) > 0)
         {
@@ -4401,8 +4454,8 @@ public sealed partial class SimWorld : IObstacles
         return NearestStoreAccepting(from, made, store => store.Kind != StoreKind.Market && store.HasRoomFor(made));
     }
 
-    /// <summary>A batch has come out of a mill or an oven — counted where it is made (D522).</summary>
-    internal void Batched(Goods made, int amount)
+    /// <summary>A batch has come out of a mill or an oven — counted where it is made (D522); <paramref name="shelf"/> is where it went, for the first cart's line (D678).</summary>
+    internal void Batched(Goods made, int amount, StoreBuilding? shelf = null)
     {
         if (made == Goods.Flour)
         {
@@ -4416,6 +4469,64 @@ public sealed partial class SimWorld : IObstacles
         else if (made == Goods.Clothing)
         {
             CoatsEverSewn += amount;
+        }
+        else if (made == Goods.Handcart)
+        {
+            // ⭐ The story's line, once (D8/D9; `workshop-and-the-carpenter.md §6`): the first cart, and where it stands.
+            // Nothing per cart — the audit trail at DEBUG has every one.
+            if (HandcartsEverMade == 0 && Logs(LogLevel.Info))
+            {
+                Log(LogLevel.Info, "village", shelf is null
+                    ? $"The first handcart is made, and waits on the ground by the workshop for a store to take it — {Clock}."
+                    : $"The first handcart stands in {shelf.Name} — {Clock}.");
+            }
+
+            HandcartsEverMade += amount;
+        }
+    }
+
+    /// <summary>Handcarts ever made at a workshop — a statistic, not hashed, as <see cref="CoatsEverSewn"/> (D678).</summary>
+    public int HandcartsEverMade { get; internal set; }
+
+    /// <summary>
+    /// Whether the village has learned the workshop (D678, `workshop-and-the-carpenter.md §4.1a`) — set in
+    /// <see cref="Felled"/> when <see cref="LogsEverFelled"/> crosses <c>workshop_unlock_logs</c>; what
+    /// <see cref="WhyNotYet"/> reads for the workshop.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>State, and hashed sparsely</b> (a tag byte when true, <see cref="ShownTheTechTree"/>'s shape): it decides what
+    /// the player may build. The counter beside it stays a statistic — the flag is set from it where it moves, and the
+    /// flag is the state (D676). Saved as <c>workshop_learned</c>. Joe's call (D675): *"a larger number than anything else
+    /// we currently have in-game"* — 2,500 (D676), then 1,500 once he had played it (D682: *"it took me too long"*).
+    /// </remarks>
+    public bool WorkshopLearned { get; internal set; }
+
+    /// <summary>
+    /// <paramref name="amount"/> logs have come off a tree — counted at the stump (D382), and the workshop learned when
+    /// the count crosses <c>workshop_unlock_logs</c> (D678): a stop like the quarry's, paid for, no gift.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Checked where the counter moves, never per tick</b> (CLAUDE.md's rule), and <b>the flag is set here and only
+    /// here</b>, so a village loaded under a lowered knob learns at its next fell rather than at load — said in
+    /// `workshop-and-the-carpenter.md §4.1a`. Both fell paths come through here: the forester's stint
+    /// (`BehaviorSystem`) and the brush's clearing (<c>TakeFromTheGround</c>).
+    /// </remarks>
+    internal void Felled(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        LogsEverFelled += amount;
+        if (!WorkshopLearned && LogsEverFelled >= Config.WorkshopUnlockLogs)
+        {
+            WorkshopLearned = true;
+            LearnedByDoing(
+                "The village learned the wheelwright's trade",
+                $"The village has felled {LogsEverFelled} logs, and somebody has worked out how to true a wheel and hang "
+                + "a bed on it. Build a workshop, and a carpenter there makes a household's handcart from the village's "
+                + $"logs. {Clock.SeasonAndYear()}.");
         }
     }
 
@@ -4558,6 +4669,37 @@ public sealed partial class SimWorld : IObstacles
             if (Logs(LogLevel.Info))
             {
                 Log(LogLevel.Info, "labour", $"{smithy.Name} is set to forge {row.Name} — {Clock}.");
+            }
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>
+    /// Set what a workshop makes (`workshop-and-the-carpenter.md §4.3`, D678) — <see cref="SetForgeGood"/>'s twin: refused,
+    /// in a sentence, for anything that is not a workshop or a good with no <c>made_from</c>.
+    /// </summary>
+    public PlacementVerdict SetMakeGood(Workplace workshop, Goods made)
+    {
+        ArgumentNullException.ThrowIfNull(workshop);
+
+        if (workshop.Kind != JobKind.Carpenter)
+        {
+            return PlacementVerdict.No($"{workshop.Name} is not a workshop; nothing is made there.");
+        }
+
+        if ((int)made < 0 || (int)made >= GoodsCatalog.Count || GoodsCatalog[made] is not { } row
+            || row.MadeFrom.Count == 0)
+        {
+            return PlacementVerdict.No("A workshop makes only what a carpenter has a recipe for.");
+        }
+
+        if (workshop.MakeGood != made)
+        {
+            workshop.MakeGood = made;
+            if (Logs(LogLevel.Info))
+            {
+                Log(LogLevel.Info, "labour", $"{workshop.Name} is set to make {row.Name} — {Clock}.");
             }
         }
 
@@ -7020,8 +7162,8 @@ public sealed partial class SimWorld : IObstacles
             amount = YieldFor(by, JobKind.Forester, amount);
 
             // Counted at the stump — the whole tile's timber, whether it is carried off or set
-            // down beside it (D382; see `LogsEverFelled`).
-            LogsEverFelled += amount;
+            // down beside it (D382; see `LogsEverFelled`) — and the workshop learned when the count crosses (D678).
+            Felled(amount);
         }
         else if (yields.Value == Goods.Stone)
         {
@@ -11424,7 +11566,10 @@ public sealed partial class SimWorld : IObstacles
     /// real numbers, and the guard reads them.
     /// </para>
     /// <para>
-    /// Statistics, not state: nothing in the sim reads them, so they are not hashed.
+    /// Statistics, not state: nothing in the sim reads them, so they are not hashed. ⚠️ <b>Since D678 the workshop's
+    /// flag is set from this one where it moves (<see cref="Felled"/>), and the flag is the state</b> — the gate reads
+    /// <see cref="WorkshopLearned"/>, never this counter, so this stays a statistic (`workshop-and-the-carpenter.md
+    /// §4.1a`, choice 2; the gap is written beside the flag in `StateHash.cs`).
     /// </para>
     /// </remarks>
     public int LogsEverFelled { get; internal set; }
@@ -14701,6 +14846,8 @@ public sealed partial class SimWorld : IObstacles
             ["wheat_ever_reaped"] = WheatEverReaped,
             ["leather_ever_held"] = LeatherEverHeld,
             ["coats_ever_sewn"] = CoatsEverSewn,
+            ["handcarts_ever_made"] = HandcartsEverMade,
+            ["workshop_learned"] = WorkshopLearned,
             ["bridge_crossings"] = BridgeCrossings,
             ["flour_ever_ground"] = FlourEverGround,
             ["bread_ever_baked"] = BreadEverBaked,
@@ -14893,6 +15040,8 @@ public sealed partial class SimWorld : IObstacles
         WheatEverReaped = save.Int("wheat_ever_reaped");
         LeatherEverHeld = save.Int("leather_ever_held");
         CoatsEverSewn = save.Int("coats_ever_sewn");
+        HandcartsEverMade = save.Int("handcarts_ever_made");
+        WorkshopLearned = save.Bool("workshop_learned");
         BridgeCrossings = save.Int("bridge_crossings");
         FlourEverGround = save.Int("flour_ever_ground");
         BreadEverBaked = save.Int("bread_ever_baked");

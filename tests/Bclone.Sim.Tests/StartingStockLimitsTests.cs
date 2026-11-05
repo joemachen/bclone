@@ -64,6 +64,10 @@ public sealed class StartingStockLimitsTests
             // shipped golden for a good no village holds before a tailor stands. With none set, the tailor sews toward
             // `LabourQuota.ClothingWanted`; Joe's *"50 clothes"* (D62) is his to set on the panel.
             [Goods.Clothing] = null,
+
+            // ⛔ Handcarts ship with NO limit (Joe, D675 call 2; `workshop-and-the-carpenter.md §4.4`), clothing's reason
+            // (D660). With none set the carpenter makes one a household and a spare (`LabourQuota.HandcartsWanted`).
+            [Goods.Handcart] = null,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
