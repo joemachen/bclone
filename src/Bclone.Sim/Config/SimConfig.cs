@@ -1265,15 +1265,17 @@ public sealed record SimConfig
     /// <c>SimWorld.LogsEverFelled</c> where it moves; the crossing sets <c>SimWorld.WorkshopLearned</c>, which is the gate.
     /// </summary>
     /// <remarks>
-    /// <b>2,500 — Joe's number (D676: *"2500 logs"*)</b>, larger than every unlock in the game but the mill's, and his
-    /// own ask (D675: *"a larger number than anything else we currently have in-game"*). His played villages fell
-    /// 70–100 logs a year, so it lands around Year 25–35; the unattended valley fells 30–45 and reaches it at Year 55–80,
-    /// never inside a fifty-year golden (§4.1b). Validated at load like <see cref="QuarryUnlockStone"/>: at least nought.
+    /// <b>1,500 — Joe's number, twice</b>: 2,500 first (D676: *"2500 logs"*), then after playing it (D682, 2026-11-04:
+    /// *"it took me too long for the workshop. bring it down to 1500"*). Still larger than every unlock in the game but the
+    /// mill's, his own ask (D675: *"a larger number than anything else we currently have in-game"*). His Hollowmere felled
+    /// ~74 logs a year and lit it at 2,511 in Year 34; at 1,500 it lands around Year 20. ⚠️ The unattended valley fells
+    /// 30–45 a year and now crosses it around Year 45–48, inside the fifty-year goldens (§4.1b). Validated at load like
+    /// <see cref="QuarryUnlockStone"/>: at least nought.
     /// ⚠️ At nought the workshop is learned at the first log felled, not at the founding — the flag is set in the fell
     /// path, never per tick.
     /// </remarks>
     [JsonPropertyName("workshop_unlock_logs")]
-    public int WorkshopUnlockLogs { get; init; } = 2500;
+    public int WorkshopUnlockLogs { get; init; } = 1500;
 
     /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
     [JsonPropertyName("logs_per_handcart")]

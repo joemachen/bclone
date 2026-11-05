@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681), LOCAL, NOT PUSHED; `origin/main` = bb4db9b (D677). ✅ SLICE W IS BUILT (D678, 2026-11-01) ON `claude/slice-workshop-2083f6`, WITH `main` (D681) MERGED IN ON 2026-11-01, PLAYED ONCE BY JOE, UNMERGED: THE WORKSHOP (LEARNED AT 2,500 LOGS FELLED, JOE'S NUMBER), THE CARPENTER, THE HANDCART ON A SHELF (ONE A HOUSEHOLD AND A SPARE), THE *MAKES:* DROPDOWN, SAVE FORMAT 10; §10'S TABLE FILLED BEFORE THE NUMBERS WERE TYPED; 37 MUTANTS COUNTED; 392 GOLDENS, FOUR MOVED (THE FARM-AND-CLEAR PAIR LEARNS THE WORKSHOP AT 3,180 FELLED; THE PHASE 5 PAIR FOR THE NEIGHBOUR'S HANDCART SLOT, D661'S PRECEDENT — EACH PROVED, RE-PINNED). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY BUILT D671, W BUILT D678, H NEXT), THEN HOUSE TIERS. NEXT: JOE PLAYS W (`.\run.bat`), MERGES AT HIS WORD; THEN SLICE H (`specs/handcart.md`). ✅ `slice/lane-bridge` (D680, VIEW ONLY, MERGED INTO `main` D681 AND INTO THIS BRANCH): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE SHOWS TWO LANES FROM THIS WORKTREE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF `slice/lane-bridge` (D681), LOCAL, NOT PUSHED; `origin/main` = bb4db9b (D677). ✅ SLICE W IS BUILT (D678, 2026-11-01) ON `claude/slice-workshop-2083f6`, WITH `main` (D681) MERGED IN ON 2026-11-01, PLAYED BY JOE TWICE, UNMERGED: THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED — JOE'S NUMBER, LOWERED FROM 2,500 AFTER PLAY, D682 2026-11-04: *"IT TOOK ME TOO LONG"*; ⚠️ THE FOUR FIFTY-YEAR GOLDEN ARMS NOW CROSS IT AND MOVED ONCE, EACH PROVED), THE CARPENTER, THE HANDCART ON A SHELF (ONE A HOUSEHOLD AND A SPARE), THE *MAKES:* DROPDOWN, SAVE FORMAT 10; §10'S TABLE FILLED BEFORE THE NUMBERS WERE TYPED; 37 MUTANTS COUNTED; 392 GOLDENS, FOUR MOVED (THE FARM-AND-CLEAR PAIR LEARNS THE WORKSHOP AT 3,180 FELLED; THE PHASE 5 PAIR FOR THE NEIGHBOUR'S HANDCART SLOT, D661'S PRECEDENT — EACH PROVED, RE-PINNED). GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY BUILT D671, W BUILT D678, H NEXT), THEN HOUSE TIERS. NEXT: JOE PLAYS W (`.\run.bat`), MERGES AT HIS WORD; THEN SLICE H (`specs/handcart.md`). ✅ `slice/lane-bridge` (D680, VIEW ONLY, MERGED INTO `main` D681 AND INTO THIS BRANCH): THE PATH DRAWER BRIDGES A GAP ONLY WHERE SOMEONE HAS STEPPED — JOE'S FERNHOLLOW RED LINE SHOWS TWO LANES FROM THIS WORKTREE. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-01 (D678–D681) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D678–D682) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of `slice/lane-bridge` (D681, d2fa384), local, NOT pushed; `origin/main` = bb4db9b (D677). This branch
 > (`claude/slice-workshop-2083f6`, a worktree off `main`) has two commits of its own past it and has merged it back (D681, 2026-11-01): Slice W built — sim, data, tests, view and
@@ -41,6 +41,17 @@
 > The first suite run also caught two format pins (nine → ten) and D587's rule that the three neighbours make every good
 > the game has — so the overland neighbour makes handcarts (10, by cart only), and the spec's *"no neighbour stocks one"*
 > is struck.
+>
+> **✅ D682 (2026-11-04) — Joe played W and lowered the unlock.** Hollowmere (`Hollowmere-plover-rowan-45`): the workshop lit at
+> 2,511 logs in Summer, Year 34, a carpenter made carts, every household carted plus the spare, the idle sentence right —
+> *"everything else works properly for the workshop"*, and *"it took me too long for the workshop. bring it down to 1500."*
+> **`workshop_unlock_logs` is 1,500** (data, the C# default, the shipped-rows guard, the comments — one commit). ⚠️ **Four golden
+> arms moved once each, and that is expected, proved and written down, not a regression:** the unattended fifty-year villages
+> fell 1,602–1,770 by Year 50 (§4.1b's table) and now learn the workshop around Year 43–47 — `SkillTests` both arms and
+> `StockLimitTests` both constants (the two fixture arms run the same `VillageFixtures.Village`). Proof: the crossing alone
+> switched off (`&& Tick == ulong.MaxValue` in `SimWorld.Felled`), all four old values pass; restored, hash-checked, re-pinned
+> with the old values in the RE-TAKEN notes. The twenty-year goldens hold. The brief named the two shipped arms; the fixture
+> pair was the finding — read every row of §4.1b's table, not the rows a brief names. The four checks: suite **1906 / 0 / 5 of 1911 in 16m25** (15m15 at D678, nothing running beside it — a minute slower, the three fifty-year villages now stopping once each for the workshop; watched, not explained); view 0 warnings; probe **68 ✅ 0 ⛔**, `workshop:` ✅, `trails:` ✅, `tech tree:` 14 cards at 160, bar **151**, `done.`; goldens **395 grep lines before, 398 after** (the three RE-TAKEN notes carry the four old values), every value unchanged but the four named, none removed.
 >
 > **🔨 `main` (D681) merged into this branch, 2026-11-01:** D680's path-drawer fix — view only, `TrailNetwork.Build` bridges a
 > one-tile gap only where someone has stepped (`PathWear.At > 0`), so two packed lanes a tile apart stay two — is in this
@@ -8970,6 +8981,17 @@ Read `git status` after staging, every time.
 - ⚠️ **A headless Godot can outlive `done.`** by a second or two; `tasklist` straight after the probe showed one each run.
   Kill by the exact PID (`taskkill //PID n //F`); a loop over `tasklist` output was refused by the harness.
 
+## ⛔ THE TRAP D682 PAID FOR — A BRIEF THAT NAMES THE MOVERS IS A HYPOTHESIS; THE TABLE HAS EVERY ROW
+
+- ⚠️ **Lowering `workshop_unlock_logs` to 1,500 moved four golden arms, and the brief said two.** The brief read the two
+  *shipped* rows of §4.1b's table (1,770 and 1,602 at Year 50); the *fixture* row sat beside them at 1,701, and two golden
+  arms (`SkillTests`' fixture arm and `StockLimitTests.FixtureFiftyYearHash`) run that same `VillageFixtures.Village`. Run
+  every fifty-year arm before writing "two move" — the filtered run of all four took ten seconds and said so. A named
+  mover list is a hypothesis to check against the suite, never a count to type into the docs first.
+- ⚠️ **A quoted bash heredoc on this machine collapses `\\` to `\` inside a script**, so a Python anchor containing
+  `.\run.bat` silently held a carriage return and matched nothing. Scripts with backslashes go through the Write tool
+  (the memory rule, for a second reason); anchors avoid them altogether.
+
 ## ⛔ THE TRAPS D678 PAID FOR — A FRESH WORKTREE HAS NO IMPORTS, A HARNESS VILLAGE HAS NO STONE, AND THE MODDED GOOD WAS CLOTHING
 
 - **A fresh worktree has no `.godot/imported/` cache, and the probe does not fail — it hangs.** `GrassLab.SelfCheck` threw a
@@ -9316,8 +9338,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SLICE W IS BUILT AND PLAYED ONCE (D678, `claude/slice-workshop-2083f6`; Fernhollow: learned at 3,080 logs, 10 carts made, all working) — HIS TO PLAY ON, THEN MERGE.** `.\run.bat`: fell
-  2,500 logs (his villages reach it around Year 25–35) and the village stops once — *"The village learned the wheelwright's
+- ⏸️ **SLICE W IS BUILT AND PLAYED ONCE (D678, `claude/slice-workshop-2083f6`; Fernhollow: learned at 3,080 logs, 10 carts made, all working) — HIS TO PLAY ON, THEN MERGE.** ✅ **Played again 2026-11-04 (Hollowmere): *"everything else works properly for the workshop"*; his one change, the unlock to 1,500 (D682), is in.** `.\run.bat`: fell
+  1,500 logs (2,500 until D682; his Hollowmere lit it at 2,511 in Year 34, and at 1,500 it lands around Year 20) and the village stops once — *"The village learned the wheelwright's
   trade"* — with the tree shown; a *Workshop* button lights under *Works*; mark it (25 logs, 12 stone), seat a carpenter from
   the Professions panel, watch logs become handcarts in the warehouse (the card's *Makes: Handcarts*, the warehouse's
   *handcarts* row, the top bar's handcarts chip amber until every household has one and a spare), and read the idle

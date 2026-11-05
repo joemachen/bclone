@@ -51,7 +51,7 @@ public sealed class PhaseFiveGoldenTests
     // Was 9279994292569338767.
     // RE-TAKEN (D678) — the workshop: the overland neighbour makes handcarts (a stock slot, hashed — D587's rule that the
     // three make every good the game has, `TradeRowsTests`), the same cause as D661's third. This village fells 1,050 logs
-    // in its twenty years and does not learn the workshop (2,500). ⭐ PROVEN TO BE THE ONLY REASON: with that one
+    // in its twenty years and does not learn the workshop (2,500 then; 1,500 since D682, still out of reach). ⭐ PROVEN TO BE THE ONLY REASON: with that one
     // neighbour line switched off, both old constants pass; the first full run, before the line existed, held them.
     // Was 2244450603637359139.
     private const ulong PhaseFiveGoldenHash = 1335932601571545014UL;

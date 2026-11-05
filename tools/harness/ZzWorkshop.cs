@@ -55,7 +55,7 @@ public sealed class ZzWorkshop
 
             if (workshop && t == config.TicksPerYear * 5)
             {
-                // Posed learned (no harness village fells 2,500 logs by Year 5), then marked and paid for as a player would.
+                // Posed learned (no harness village fells 1,500 logs by Year 5), then marked and paid for as a player would.
                 world.WorkshopLearned = true;
                 MarkSomewhereNear(world, BuildingKind.Workshop, world.Map.FoundingSite, 8);
 

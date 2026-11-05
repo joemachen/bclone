@@ -1002,13 +1002,16 @@
   "workshop_capacity": 2,
   // THE WORKSHOP IS LEARNED BY FELLING WOOD (workshop-and-the-carpenter.md 4.1a,
   // Joe D675: "a larger number than anything else we currently have in-game";
-  // D676: "2500 logs"). Read against SimWorld.LogsEverFelled, counted at the
-  // stump (D382) -- a laborer's clearing counts, a split does not. His villages
-  // fell 70-100 a year, so this lands around Year 25-35; the unattended valley
-  // fells 30-45 and reaches it at Year 55-80, never inside a fifty-year golden.
-  // Above 5,000 (the mill's) it would come after Year 50 in nearly every village
-  // he has played. The quarry's and the tailor's shape: a stop, paid for, no gift.
-  "workshop_unlock_logs": 2500,
+  // D676: "2500 logs"; D682, his second call after playing it, 2026-11-04: "it
+  // took me too long for the workshop. bring it down to 1500"). Read against
+  // SimWorld.LogsEverFelled, counted at the stump (D382) -- a laborer's clearing
+  // counts, a split does not. His Hollowmere felled ~74 a year and lit the workshop
+  // at 2,511 in Year 34; at 1,500 it lands around Year 20. Still larger than every
+  // unlock in the game but the mill's (5,000). WARNING: the unattended valley fells
+  // 30-45 a year, so the fifty-year goldens now cross this around Year 45-48 and
+  // learn the workshop inside the run (the learned flag is hashed; 4.1b has the
+  // table). The quarry's and the tailor's shape: a stop, paid for, no gift.
+  "workshop_unlock_logs": 1500,
   "logs_per_handcart": 10,
   "make_ticks": 20,
   "makes_per_stint": 1,

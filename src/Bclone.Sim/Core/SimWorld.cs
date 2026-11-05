@@ -4386,7 +4386,7 @@ public sealed partial class SimWorld : IObstacles
     /// ⛔ <b>State, and hashed sparsely</b> (a tag byte when true, <see cref="ShownTheTechTree"/>'s shape): it decides what
     /// the player may build. The counter beside it stays a statistic — the flag is set from it where it moves, and the
     /// flag is the state (D676). Saved as <c>workshop_learned</c>. Joe's call (D675): *"a larger number than anything else
-    /// we currently have in-game"* — 2,500 (D676).
+    /// we currently have in-game"* — 2,500 (D676), then 1,500 once he had played it (D682: *"it took me too long"*).
     /// </remarks>
     public bool WorkshopLearned { get; internal set; }
 

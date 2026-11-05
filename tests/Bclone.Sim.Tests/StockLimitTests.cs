@@ -388,7 +388,12 @@ public sealed class StockLimitTests
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 11303534331429093217.
     // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 13986730816975584371.
     // RE-TAKEN (D625) — doors, the behaviour commit (D622–D625, `doors.md §11`), folded at Joe's word (D623: *"fold commits 2, 3 and 4's sim changes into one behaviour commit … goldens re-taken once"*): doorsteps kept clear, walks and catchment through the door, the founding's and an unmarked building's facings, a farmhouse, a barn and the cart with no door, the door priced into the economy (`DoorTiles`, `gather_yield` 123 → 135), the hay put out nearest the barn, a tend that would outlast summer not begun, and the three bugs the change surfaced (an emergency sent a villager whose arms were full, the re-founders' cart food was never counted in, a door opened into a pocket beside the founding site). ⭐ PROVEN: the parent commit (b10667c, D621) holds the old value with the suite green (1837 / 0 / 5), and every value here was read twice, identical. Was 10707258848844381306.
-    private const ulong FixtureFiftyYearHash = 17390278967619327199UL;
+    // RE-TAKEN (D682) — `workshop_unlock_logs` 2,500 → 1,500 (Joe, after playing Slice W, 2026-11-04: *"it took me too long for
+    // the workshop. bring it down to 1500"*): this village fells 1,251 logs by Year 40 and 1,701 by Year 50
+    // (`workshop-and-the-carpenter.md §4.1b`), so it now learns the workshop around Year 45 — the hashed flag `WorkshopLearned`
+    // and `LearnedByDoing`'s stop. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off in `SimWorld.Felled`
+    // (`&& Tick == ulong.MaxValue`), the old value passes. Was 17390278967619327199.
+    private const ulong FixtureFiftyYearHash = 2460416229105199918UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -508,7 +513,11 @@ public sealed class StockLimitTests
     // RE-TAKEN (D603) — Joe's seat defaults (D603: forester 2, now stated; forager 3; farmhouse 3). ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9aea43a, D602) holds the old value with the suite green, and this is its only sim change. Was 1409568693810175691.
     // RE-TAKEN (D612) — the market holds 8,000 and keeps 1,000 of each good it knows, its limits its split (D612, Joe's D607 notes: no longer 100 a household, and the half-for-food rule gone at a market), so the marketer's loads and the households' fetches land differently. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (de2b491, D611) holds the old value with the suite green, and this commit's only sim change is the market's. Was 6485759654357553653.
     // RE-TAKEN (D625) — doors, the behaviour commit (D622–D625, `doors.md §11`), folded at Joe's word (D623: *"fold commits 2, 3 and 4's sim changes into one behaviour commit … goldens re-taken once"*): doorsteps kept clear, walks and catchment through the door, the founding's and an unmarked building's facings, a farmhouse, a barn and the cart with no door, the door priced into the economy (`DoorTiles`, `gather_yield` 123 → 135), the hay put out nearest the barn, a tend that would outlast summer not begun, and the three bugs the change surfaced (an emergency sent a villager whose arms were full, the re-founders' cart food was never counted in, a door opened into a pocket beside the founding site). ⭐ PROVEN: the parent commit (b10667c, D621) holds the old value with the suite green (1837 / 0 / 5), and every value here was read twice, identical. Was 17458720737706957369.
-    private const ulong ShippedFiftyYearHash = 12295009579609975522UL;
+    // RE-TAKEN (D682) — `workshop_unlock_logs` 2,500 → 1,500 (Joe, 2026-11-04: *"it took me too long for the workshop. bring it
+    // down to 1500"*): the shipped village fells 1,194 logs by Year 40 and 1,602 by Year 50 (`workshop-and-the-carpenter.md
+    // §4.1b`), so it learns the workshop around Year 47. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off
+    // in `SimWorld.Felled` (`&& Tick == ulong.MaxValue`), the old value passes. Was 12295009579609975522.
+    private const ulong ShippedFiftyYearHash = 6661378206269367323UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

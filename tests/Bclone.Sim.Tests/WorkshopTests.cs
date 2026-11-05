@@ -410,7 +410,7 @@ public sealed class WorkshopTests
     [Fact]
     public void TheWorkshopIsLearnedAtTheNumberOfLogsFelled()
     {
-        // ⚠️ A knob that is not the default (7, not 2,500), so a mutant that reads a constant for the knob goes red.
+        // ⚠️ A knob that is not the default (7, not 1,500), so a mutant that reads a constant for the knob goes red.
         SimConfig config = Config with { WorkshopUnlockLogs = 7 };
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
 
@@ -554,7 +554,7 @@ public sealed class WorkshopTests
         Assert.Equal(12, shipped.WorkshopStone);
         Assert.Equal(40, shipped.WorkshopWorkTicks);
         Assert.Equal(2, shipped.WorkshopCapacity);
-        Assert.Equal(2_500, shipped.WorkshopUnlockLogs); // Joe's number (D676).
+        Assert.Equal(1_500, shipped.WorkshopUnlockLogs); // Joe's number, twice: 2,500 (D676), then 1,500 after play (D682).
         Assert.Equal(10, shipped.LogsPerHandcart);
         Assert.Equal(20, shipped.MakeTicks);
         Assert.Equal(1, shipped.MakesPerStint);

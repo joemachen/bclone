@@ -1,7 +1,8 @@
 # Spec: The Workshop, and the Carpenter who makes the handcart — Slice W
 
 **Decisions:** D674 (this document), **D675 (Joe's five calls on §11, answered 2026-11-01), D676 (his number for the
-unlock, 2,500, and the hash as a learned flag)**. It builds on D672 (Joe: *"Yes, all six"* — every call in `handcart.md §10`),
+unlock, 2,500, and the hash as a learned flag), D678 (built), D679 (traders can sell carts, his call), D682 (played; the unlock
+lowered to 1,500 at his second call)**. It builds on D672 (Joe: *"Yes, all six"* — every call in `handcart.md §10`),
 D670 (the handcart thought through; `handcart.md §5` redefines this slice), D553 call 6 (the slice as first owed:
 *the builder's hut growing into a workshop with a carpenter trade and the builder's hammer* — redefined here, see §8),
 D617 (every hands-on adult takes a tool once a smithy stands — why there is no hammer), D391 / D446 (the smithy and the
@@ -10,15 +11,17 @@ D522 / D659 (the `Batch` shape: mill, oven, tailor's shop — the third of its k
 limit stops the work), D109 (the player staffs), D62 (the player's ceiling over a derived floor), D382 (footprints
 per building type), D392 (a skill row is safe to add), D291 (the hash is sparse over goods), D510 (an older save is
 refused, never half-loaded), D660 (a typed starting limit is hashed and moves every golden).
-**Status:** ✅ **BUILT (D678, 2026-11-01) ON `claude/slice-workshop-2083f6` — SIM, DATA, TESTS, VIEW AND DOCS IN ONE COMMIT; UNPLAYED,
-UNMERGED.** `tests/Bclone.Sim.Tests/WorkshopTests.cs` holds §9's guards (20 facts), each red-checked and counted (§9 *as built*);
+**Status:** ✅ **BUILT (D678, 2026-11-01) ON `claude/slice-workshop-2083f6` — SIM, DATA, TESTS, VIEW AND DOCS IN ONE COMMIT; ✅ PLAYED BY JOE (2026-11-04, Hollowmere: the workshop lit at 2,511 logs in Summer,
+Year 34, a carpenter made carts, every household carted plus a spare, the idle sentence right — *"everything else works properly
+for the workshop"*); THE UNLOCK LOWERED TO 1,500 AT HIS SECOND CALL (D682: *"it took me too long for the workshop. bring it down
+to 1500"*), WHICH THE FOUR FIFTY-YEAR GOLDENS CROSS — EACH MOVED ONCE, PROVED AND RE-PINNED (§4.1b); UNMERGED.** `tests/Bclone.Sim.Tests/WorkshopTests.cs` holds §9's guards (20 facts), each red-checked and counted (§9 *as built*);
 §10's table was filled on the harness **before** a number was typed into `data/sim.config.json`, and every proposal stood
 (a workshop at Year 5 costs the roofs nothing a seed can see); the four checks are green, bar 151, `done.`; **392 goldens, every
 value unchanged but four — the farm-and-clear pair, which fells 3,180 logs in twenty years and learns the
 workshop (§4.1b), and the Phase 5 pair, for the overland neighbour's handcarts (§5; a hashed stock slot, D661's
 precedent) — each proved by switching its one cause off and re-pinned with it**; save format **10**. His answers (§11) stand as built: the workshop **learned by felling wood** — `workshop_unlock_logs`
-**2,500**, his number, the quarry's shape, hashed as a learned flag (§4.1a); **no shipped `handcarts` limit**; **`MakeGood`
-now**; the carpenter **after Tailor**. Owner: Joe + Claude Code. **Next: Joe plays it (`.\run.bat`), merges at his word; then
+**1,500** (2,500 at D676, lowered after play at D682), his number, the quarry's shape, hashed as a learned flag (§4.1a); **no shipped `handcarts` limit**; **`MakeGood`
+now**; the carpenter **after Tailor**. Owner: Joe + Claude Code. **Next: Joe plays on (`.\run.bat`), merges at his word; then
 Slice H (`handcart.md`).**
 
 > **Where this sits.** Logistics was measured (D668), Joe chose to change the game (D669) and picked two mechanics
@@ -118,7 +121,13 @@ doing, in the quarry's, mill's and tailor's shape, on logs felled:**
 - **The knob: `workshop_unlock_logs`**, read against **`SimWorld.LogsEverFelled`** — the counter that already exists,
   counted at the stump (D382: *what actually came off the tile*, a laborer's clearing included), saved as
   `logs_ever_felled`. Validated at load like `quarry_unlock_stone` (at least zero).
-- **The number: `workshop_unlock_logs` 2,500 — ✅ Joe's (D676, 2026-11-01: *"2500 logs"*).** The reasoning he was given
+- **✅ The number, lowered: `workshop_unlock_logs` 1,500 (D682, 2026-11-04).** Joe, after playing the build (Hollowmere: the
+  workshop lit at 2,511 logs in Summer, Year 34 — *"everything else works properly for the workshop"*): *"it took me too
+  long for the workshop. bring it down to 1500."* His Hollowmere felled ~74 logs a year, so **1,500 lands around Year 20**;
+  it is still larger than every unlock in the game but the mill's. ⚠️ **The unattended valley fells 30–45 a year and now
+  crosses it between Year 40 and 50, inside the fifty-year goldens — all four moved once, each proved (§4.1b).** The knob's
+  comment in `data/sim.config.json` carries both calls and the warning. *The D676 reasoning, as it was:*
+- **The number: `workshop_unlock_logs` ~~2,500~~ — ✅ Joe's (D676, 2026-11-01: *"2500 logs"*).** The reasoning he was given
   and took: his played villages fell roughly **70–100 logs a year** and stand at **2,600–4,500 logs felled after 25–50
   years** (one at 6,618), so **2,500 lands around Year 25–35** — after the mill in a farming village, sooner in one that
   cuts hard — while a number above `mill_unlock_wheat` 5,000, the largest in the game today, would arrive after Year 50
@@ -129,13 +138,16 @@ doing, in the quarry's, mill's and tailor's shape, on logs felled:**
   ```jsonc
   // THE WORKSHOP IS LEARNED BY FELLING WOOD (workshop-and-the-carpenter.md 4.1a,
   // Joe D675: "a larger number than anything else we currently have in-game";
-  // D676: "2500 logs"). Read against SimWorld.LogsEverFelled, counted at the
-  // stump (D382) -- a laborer's clearing counts, a split does not. His villages
-  // fell 70-100 a year, so this lands around Year 25-35; the unattended valley
-  // fells 30-45 and reaches it at Year 55-80, never inside a fifty-year golden.
-  // Above 5,000 (the mill's) it would come after Year 50 in nearly every village
-  // he has played. The quarry's and the tailor's shape: a stop, paid for, no gift.
-  "workshop_unlock_logs": 2500,
+  // D676: "2500 logs"; D682, his second call after playing it, 2026-11-04: "it
+  // took me too long for the workshop. bring it down to 1500"). Read against
+  // SimWorld.LogsEverFelled, counted at the stump (D382) -- a laborer's clearing
+  // counts, a split does not. His Hollowmere felled ~74 a year and lit the workshop
+  // at 2,511 in Year 34; at 1,500 it lands around Year 20. Still larger than every
+  // unlock in the game but the mill's (5,000). WARNING: the unattended valley fells
+  // 30-45 a year, so the fifty-year goldens now cross this around Year 45-48 and
+  // learn the workshop inside the run (the learned flag is hashed; 4.1b has the
+  // table). The quarry's and the tailor's shape: a stop, paid for, no gift.
+  "workshop_unlock_logs": 1500,
   ```
 - **The arm:** `WhyNotYet(Workshop)` while **`!WorkshopLearned`** — *"Nobody here builds carts yet — the village has
   felled {n} of the {N} logs it takes to learn."* (the sentence reads the counter and the knob; the gate reads the flag,
@@ -166,7 +178,7 @@ day something does: *two villages that differ here differ in what the player may
    sim reads *is* what is hashed: two villages that differ in what the player may build differ in hash, which is exactly
    the `StoneEverDug` remark's sentence. `LogsEverFelled` stays a statistic — its remark gains one line: *the workshop's
    flag is set from it where it moves, and the flag is the state*. **No golden moves** unless its village crosses the
-   number, and none does (§4.1b). **The gap, stated:** two villages at 100 and 2,400 logs felled hash alike and will
+   number — none did at 2,500; at 1,500 (D682) the four fifty-year arms do, and moved once, proved (§4.1b). **The gap, stated:** two villages at 100 and 2,400 logs felled hash alike and will
    diverge later — the counter's path to the gate is not in the fingerprint. It is a *future* difference, not a present
    one; everything felling changes in the present (the tile, the store, the villager's load and state) is hashed, so a
    nondeterminism that moved only this counter and nothing else is not a case the fingerprint has ever been asked to
@@ -177,27 +189,39 @@ day something does: *two villages that differ here differ in what the player may
 **A modded knob and a loaded village:** the flag is checked and set *in the fell path*, so a village loaded with a lower
 knob unlocks at its next fell, not at load — the quarry reads its counter live and would unlock at once; the difference is
 small and is said here. **The goldens that would cross the number would change behaviour, not only hash** — the crossing
-fires `LearnedByDoing` (a stop, a log line, `ShownTheTechTree` flipping) — and §4.1b says none does.
+fires `LearnedByDoing` (a stop, a log line, `ShownTheTechTree` flipping) — and §4.1b says which do: none at 2,500, the fifty-year runs at 1,500 (D682).
 
 ### 4.1b Which golden runs cross the number — measured, not guessed
 
 A throwaway probe (deleted; the run is here, as the D353 rule asks) stepped each golden's own village and read
 `LogsEverFelled` on the way, 2026-11-01, on `main`'s code (421a372):
 
-| Golden run | Year 10 | Year 20 | Year 25 | Year 30 | Year 40 | Year 50 | Crosses 2,500? |
-|---|---|---|---|---|---|---|---|
-| `SkillTests` fixture, 50 years (`VillageFixtures.Village`) | 165 | 426 | 636 | 801 | 1,251 | **1,701** | no |
-| `SkillTests` shipped, 50 years (`ShippedConfig.Established()`) | 555 | 777 | 957 | 1,122 | 1,392 | **1,770** | no |
-| `StockLimitTests.ShippedFiftyYearHash` (no limits set) | 150 | 402 | 567 | 819 | 1,194 | **1,602** | no |
-| `PhaseFiveGoldenTests`' pose, 20 years | 450 | **1,050** | — | — | — | — | no |
-| `FarmGoldenTests`' scenario, 20 years (crops × the harvest brush) | not probed — its runner is private; the pose above clears for a farm too and reads 1,050 at 20 | | | | | | ~~not expected~~ **✅ YES — 3,180 at 20 (D678, read in the build)**: the brush clears a whole wood, three times the pose's rate; the village learns the workshop in it, and both of its goldens moved and were re-pinned with the proof (the crossing switched off, the old values pass) |
+| Golden run | Year 10 | Year 20 | Year 25 | Year 30 | Year 40 | Year 50 | Crosses 2,500? | Crosses 1,500 (D682)? |
+|---|---|---|---|---|---|---|---|---|
+| `SkillTests` fixture, 50 years (`VillageFixtures.Village`) | 165 | 426 | 636 | 801 | 1,251 | **1,701** | no | **yes, ~Year 45** — moved (`SkillTests` fixture arm and `StockLimitTests.FixtureFiftyYearHash`, the same village), proved |
+| `SkillTests` shipped, 50 years (`ShippedConfig.Established()`) | 555 | 777 | 957 | 1,122 | 1,392 | **1,770** | no | **yes, ~Year 43** — moved, proved |
+| `StockLimitTests.ShippedFiftyYearHash` (no limits set) | 150 | 402 | 567 | 819 | 1,194 | **1,602** | no | **yes, ~Year 47** — moved, proved |
+| `PhaseFiveGoldenTests`' pose, 20 years | 450 | **1,050** | — | — | — | — | no | no (1,050 at twenty years) |
+| `FarmGoldenTests`' scenario, 20 years (crops × the harvest brush) | not probed — its runner is private; the pose above clears for a farm too and reads 1,050 at 20 | | | | | | ~~not expected~~ **✅ YES — 3,180 at 20 (D678, read in the build)**: the brush clears a whole wood, three times the pose's rate; the village learns the workshop in it, and both of its goldens moved and were re-pinned with the proof (the crossing switched off, the old values pass) | **yes** — 3,180 at twenty years; crossed at 2,500 already (D678) |
 
-- **No golden run crosses 2,500, or 2,000; the nearest is 1,770 at fifty years.** An unattended village fells 30–45 logs a
+- **At 2,500 (D676): no golden run crosses it, or 2,000; the nearest is 1,770 at fifty years.** An unattended village fells 30–45 logs a
   year; Joe's fell 70–100. So at Joe's 2,500 **no golden changes behaviour** (no `LearnedByDoing` fires inside one) **and,
   with the flag hashed rather than the counter (§4.1a choice 2), no golden moves at all.** The fifty-year unattended
   goldens are **not expected to cross**: at 30–45 a year they would reach 2,500 around Year 55–80, and they stop at 50. Below
   ~1,600 they would start to cross, and the number is not going there. ⚠️ A golden that *does* move in the build is a
   finding, not a re-pin.
+- **At 1,500 (D682, 2026-11-04) — the number went there, at Joe's second call, and the fifty-year runs cross it.** Three
+  villages, four golden arms: the fixture village (`SkillTests`' fixture arm and `StockLimitTests.FixtureFiftyYearHash` run
+  the same `VillageFixtures.Village`) at 1,251 by Year 40 and 1,701 by Year 50, so around Year 45; `SkillTests`' shipped arm
+  (1,392 → 1,770) around Year 43; `StockLimitTests.ShippedFiftyYearHash` (1,194 → 1,602) around Year 47. Each learns the
+  workshop inside its run — `WorkshopLearned` hashed, `LearnedByDoing`'s stop — and **each moved exactly once:** `SkillTests`
+  3828778980944462616 → 16912250691129698349 (fixture) and 14563583951307060232 → 2910132351223792017 (shipped);
+  `StockLimitTests` 17390278967619327199 → 2460416229105199918 (fixture) and 12295009579609975522 → 6661378206269367323
+  (shipped). ⭐ **Proved:** with the crossing alone switched off (`&& Tick == ulong.MaxValue` on the one `if` in
+  `SimWorld.Felled`), all four old values pass on the new knob; the file restored and hash-checked. The twenty-year runs do
+  not cross (the Phase 5 pose reads 1,050 at twenty; the farm scenario crossed already at 2,500); the Year-40 columns
+  (1,251 / 1,392 / 1,194) are all under 1,500, so the crossing sits between Year 40 and 50 in every fifty-year run.
+  `WorkshopTests` keeps reading the knob through its non-default 7, and asserts the shipped 1,500.
 - ⚠️ **What the table says about the number:** an unattended valley at 30–45 logs a year reaches 2,500 at year 55–80 and
   5,000 never; Joe's played villages at 70–100 reach 2,500 at year 25–35 and 5,000 at 50–70. The workshop at 2,500 is a
   mid-game building for a played village and a never for the harness — which is the smithy's and the tailor's lot too
@@ -618,8 +642,9 @@ fit a 268 card, the Works row is 151 with the button and 151 without*.
    `professions.md §4` a *Carpenter* row; `content-inventory.md`; `save-load.md §9` and its format history (format 10);
    `tech-tree.md`'s node list (the workshop node); `art-inventory.md` the glyph row;
    `building-condition.md §4.6` naming this spec; the `handcart.md` status line (*Slice W built; H next*).
-10. Joe plays it (`.\run.bat`): a workshop marked and raised, somebody making carts, the card's *Makes:* row, the
-    warehouse row, the idle sentence once the village is carted. Merged at his word only. **Then Slice H.**
+10. ✅ Joe plays it (2026-11-04, Hollowmere): a workshop marked and raised, somebody making carts, the card's *Makes:* row, the
+    warehouse row, the idle sentence once the village is carted — *"everything else works properly for the workshop"*; his one
+    change, the unlock to 1,500 (D682). Merged at his word only. **Then Slice H.**
 
 ## 13. Definition of Done
 
