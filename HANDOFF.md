@@ -1,10 +1,25 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — THIS BRANCH `claude/slice-handcart-b0230a` = SLICE H IN BUILD (D686, 2026-11-04): PIECES 1–2 OF 5, THE HOUSEHOLD'S HANDCART OWNED, FETCHED, PUSHED, PARKED AND SEEN, SAVE FORMAT 11, UNPLAYED, UNMERGED; PIECES 3–5 (ARMFULS, WEAR, SPEED AND TRACKS) NEXT, EACH MEASURED BEFORE TYPED. `main` = THE MERGE OF THE LODGE FIX (D685, 2026-11-04) ON TOP OF SLICE W (D684), LOCAL, NOT PUSHED; `origin/main` = 3bf167b (D684). ✅ ON `main` NOW: SLICE W — THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED, D682), THE CARPENTER, THE HANDCART ON A SHELF, SAVE FORMAT 10 (OLDER SAVES REFUSED IN WORDS) — PLAYED BY JOE TWICE; AND 🔨 THE LODGE FIX (D683, UNPLAYED): UNDER A MET MEAT LIMIT A SWOLLEN LODGE KEEPS ITS HUNTERS SEATED AS CARRIERS, ALL CARRYING AT ONCE, THE CARD SAYING WHY. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY D671, W D678, H NEXT), THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE H (`specs/handcart.md`, ALL SIX CALLS MADE) IN ITS OWN SESSION OFF THIS `main`; JOE PLAYS THE LODGE FROM `main`. ✅ `slice/lane-bridge` (D680, MERGED D681, PUSHED). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — THIS BRANCH `claude/slice-handcart-b0230a` = ✅ SLICE H BUILT (D686–D689, 2026-11-04): THE HOUSEHOLD'S HANDCART OWNED, FETCHED, PUSHED, PARKED, SEEN, THREE ARMFULS A TRIP, WORN A TRIP, SLOW ON GRASS, A PATH ON ITS FIRST PASS; SAVE FORMAT 11; MEASURED (HOLLOWMERE'S SHOPPING WALK 17.6 → 11.3 % OF ADULT TICKS); UNPLAYED, UNMERGED — JOE PLAYS, MERGES AT HIS WORD. `main` = THE MERGE OF THE LODGE FIX (D685, 2026-11-04) ON TOP OF SLICE W (D684), LOCAL, NOT PUSHED; `origin/main` = 3bf167b (D684). ✅ ON `main` NOW: SLICE W — THE WORKSHOP (LEARNED AT **1,500** LOGS FELLED, D682), THE CARPENTER, THE HANDCART ON A SHELF, SAVE FORMAT 10 (OLDER SAVES REFUSED IN WORDS) — PLAYED BY JOE TWICE; AND 🔨 THE LODGE FIX (D683, UNPLAYED): UNDER A MET MEAT LIMIT A SWOLLEN LODGE KEEPS ITS HUNTERS SEATED AS CARRIERS, ALL CARRYING AT ONCE, THE CARD SAYING WHY. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ▶️ (NEARBY D671, W D678, H NEXT), THEN HOUSE TIERS. NEXT: PUSH AT HIS WORD; SLICE H (`specs/handcart.md`, ALL SIX CALLS MADE) IN ITS OWN SESSION OFF THIS `main`; JOE PLAYS THE LODGE FROM `main`. ✅ `slice/lane-bridge` (D680, MERGED D681, PUSHED). READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D686 — SLICE H, PIECES 1–2 OF 5, ON `claude/slice-handcart-b0230a`) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-04 (D686–D689 — SLICE H BUILT, ON `claude/slice-handcart-b0230a`) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
-> **This branch is `main` (47c1982, D685) plus Slice H's first commit(s). Not pushed, not merged. Joe has not played it.** The worktree
-> is `.claude/worktrees/slice-handcart-b0230a`; `.\run.bat` from there plays it (⚠️ format 11: his format-10 saves from the Slice W
-> builds are refused in words; a new game or a save made here).
+> **This branch is `main` (47c1982, D685) plus Slice H's five piece commits and this docs commit. Not pushed, not merged. Joe has
+> not played it.** The worktree is `.claude/worktrees/slice-handcart-b0230a`; `.\run.bat` from there plays it (⚠️ format 11: his
+> format-10 saves from the Slice W builds are refused in words; a new game, or a format-11 save made here). **The four checks on
+> the final tree are in the D689 paragraph below.**
+>
+> **✅ The slice (`specs/handcart.md`, D686 pieces 1–2, D687 piece 3, D688 piece 4, D689 piece 5):** the cart below, then —
+> **piece 3** `cart_armfuls` 3 (`CollectFromStore`'s load and the plan's trip-worth are three armfuls with the cart in hand;
+> swept 2/3/4 on `ZzLogistics` before typed: three and four identical, two worse); **piece 4** wear, one use a trip at the door
+> (`ParkTheCart`, `TravelingHome` only), gone at nought and another fetched — `handcart_uses` 150 measured as ~46 years of
+> shopping at the measured 3.2 pushed trips a household-year, kept as Joe's number, 20/40 put to him (⏸️ OPEN); **piece 5**
+> `cart_off_path_slow_percent` 150 on grass only (`WalkedOver`'s `pushing`), the route unchanged, and the cart's pass treading
+> every footprint tile to `path_worn_at` (D587 call 8 as written) — measured: the slow costs nothing a village can see (a cart's
+> line is a path after its first pass), the tread adds a tile or two of path a village (0.62 → 0.66 %; Hollowmere 1.31 → 1.32 %),
+> nothing softened. **The verdict on D668 (`logistics.md §6.1`): Hollowmere five years on, carted against the same save with
+> every cart taken out and the carpenter stopped — Fetch share 17.6 → 11.3 %, shopping trips a household-year 5.69 → 3.49, the
+> trip that is left the same long trip from the door.** 19 guards, 36 mutants, 39 reds, three zeros written down (§11).
+> ⚠️ Joe's format-10 saves were read for the measurement by a TEMPORARY format tolerance (`scratchpad/format10.py`, never
+> committed; `git diff` checked before every commit). ⚠️ His Fernhollow save dies unattended under every arm — excluded (D447).
 >
 > **✅ Built (D686, `specs/handcart.md` §3, §4, §8, §9, §11.1):** `Household.HandcartUses` (trips left, 0 = none) and
 > `Villager.PushingACart`, both sparse in the hash and saved (**format 11**); states `FetchingAHandcart` / `PushingAHandcart`;
@@ -23,16 +38,15 @@
 > centres ✅, new game ✅, `done.`, no Godot left; **goldens 398 → 398, none moved** (the unattended harness raises no workshop, so
 > no cart exists in any golden run; the format bump touches no hash).
 >
-> **▶️ NEXT, IN ORDER — pieces 3, 4, 5, each its own commit, each measured on `ZzLogistics` BEFORE its number is typed
-> (`tools/harness/ZzLogistics.cs` has the cart arms: `ZZ_CARTS`, `ZZ_ARMFULS`, `ZZ_NOCARTS` on Joe's saves, the `trips` and
-> `carts` lines):** (3) `cart_armfuls` — `CollectFromStore`'s `load` and `PlanFetch`'s `ATripsWorth` are `carry_capacity ×
-> cart_armfuls` while pushing; swept 2 / 3 / 4 against the Fetch share (toward the control's 3–13 %), trips a household-year
-> (~2.5× fewer), the median trip (unchanged); `carry_capacity` untouched. (4) wear — one use off at the door after a shopping trip
-> (`villager.State == TravelingHome` in `ParkTheCart`), gone at 0, the DEBUG line; `handcart_uses` measured. (5) `cart_off_path_slow_percent`
-> 150 — in `WalkedOver` a grass tile (`cost == BaseTileCost`) costs the percent while pushing, the route unchanged; the cart's pass
-> treads every footprint tile to `path_worn_at` at once (`Travel`'s footprint loop); the trodden and path share with carts against
-> without measured and written down, softening Joe's. Then the docs in the final commit (DESIGN §4/§5/§6/§7, this file,
-> `content-inventory.md`, `logistics.md §6` with the before-and-after), Joe plays, merges at his word.
+> **The four checks on the final tree (D689, the docs commit):** suite **1930 / 0 / 5 of 1935 in 15m12** (16m37 at D685, 14m39 at D686 — the view build and one probe ran beside this run for a minute, so the clock is not clean; the suite grew by six handcart facts); view 0 warnings; probe 106 `[widths]` lines, 70 ✅, 0 ⛔, `cart:` ✅, `cart card:` ✅, bar 151, tile centres ✅, new game ✅, `done.`, no Godot left running; goldens
+> 398 → 398, none moved (no golden run has a cart: the unattended harness raises no workshop).
+>
+> **▶️ NEXT — Joe plays it (`.\run.bat` from this worktree; the ⏸️ OPEN item at the top of the list says what to look for), merges
+> at his word (`--no-ff`, the status lines made true inside the merge commit — D640's trap), pushes at his word. His two calls:
+> `handcart_uses` (150 as he said, or 20–40 for *"a few years"*) and whether the cart's track wants softening (measured: no).
+> Still owed from D668 outcome 2: the legibility sentence — the housing brush and the home card naming the walk to the nearest
+> SHOP. Then house tiers (D206), the last of gate item 1's four.** The harness arms stay in `tools/harness/ZzLogistics.cs`
+> (`ZZ_CARTS`, `ZZ_ARMFULS`, `ZZ_USES`, `ZZ_SLOW`, `ZZ_NOCARTS`, `ZZ_LABEL`) for the re-measure after his play.
 >
 > **— `main`'s block, as it stands at D685 —**
 > **⭐⭐ (main's block) WHERE THINGS ARE, 2026-11-04 (D685 — THE LODGE FIX D683 MERGED ON TOP OF D684) — ON WINDOWS.**
@@ -9046,7 +9060,23 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
-## ⛔ THE TRAPS D686 PAID FOR — A REFUSAL BESIDE THE SHELF RECURSES, A CRASHED MUTANT READS "9 PASSED", AND PYTHON'S TEXT MODE REWRITES AN LF FILE
+## ⛔ THE TRAPS D686–D689 PAID FOR — A REFUSAL BESIDE THE SHELF RECURSES, A CRASHED MUTANT READS "9 PASSED", PYTHON'S TEXT MODE REWRITES AN LF FILE, AND A "BEFORE" THAT FORGOT THE CARPENTER
+
+- ⛔ **A "before" arm on a played save must stop the maker, not only take the goods out.** `ZZ_NOCARTS` took every cart off every
+  shelf and doorstep at load — and Hollowmere's seated carpenter re-made seven in five years, so the first "without carts" line
+  was a carted village and read 12.4 % against 11.3 %, a non-result. With the handcarts limit set to 0 at load the true before is
+  17.6 %. *Taking a good out of a village that makes it measures nothing; read the `carts taken` column of your own before arm.*
+- ⚠️ **Two arms that read identically to the digit are a ceiling, not a bug** — `cart_armfuls` 3 and 4 produced the same trips,
+  the same Fetch share and the same medians on every valley, because a half-larder shortfall never exceeds three armfuls and the
+  fourth is never carried. The honest reading is *the knob stopped mattering here*, and the smaller number is the one to type.
+- ⚠️ **A mechanic can be built, guarded, legible and invisible to the instrument at once.** The slow on grass read 5.0 % against
+  5.0 % and 11.3 % against 11.3 %, because the cart's own tread makes its line a path on the first pass and every later trip is
+  on the path. The guard (12 ticks against 8 on eight grass tiles) is the proof it works; the arm is the proof it costs nothing;
+  both go in the spec, and neither is a reason to raise the number.
+- ⚠️ **The harness's households are couples, and a couple's half-larder fits one armful.** The 2.5× in the spec was a four-person
+  larder's arithmetic; the unattended control moved 5.93 → 4.25 trips and Hollowmere 5.69 → 3.49. A mechanic sized for the big
+  household is measured on the played village, not the control — and Joe's Fernhollow save died under every arm (D447), so one
+  played village carried the verdict.
 
 - ⛔ **A take refused at a store the villager is standing on must not end in `Decide`.** `TakeAHandcart` refused (the household
   carted meanwhile) and called `Decide`, which asked `TryFetchAHandcart` again, which found the same shelf still holding a cart two
@@ -9469,12 +9499,20 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **SLICE H, PIECES 1–2 (D686, `claude/slice-handcart-b0230a`) — HIS TO PLAY WHEN THE SLICE IS WHOLE (PIECES 3–5 FOLLOW ON THE SAME
-  BRANCH).** What to look for (`.\run.bat` from the worktree; a new game or a format-11 save — his format-10 saves are refused): once
-  a workshop has racked carts, a member of each housed household walks to the warehouse, pushes a slate-blue cart home and parks it
-  — a chip beside the house; the household card reads *"a handcart, 150 trips left"*; a shopper leaving home pushes it to the shop
-  and back (*"pushing the cart to the shops"*, *"pushing a load home"*, the rectangle behind the dot); the founders' cart is slate
-  blue now, not the market's amber. Nothing it buys is in yet (pieces 3–5). `handcart_uses` 150 is a proposal, measured in piece 4.
+- ⏸️ **SLICE H — THE HANDCART (D686–D689, `claude/slice-handcart-b0230a`) — BUILT, MEASURED, UNPLAYED; HIS TO PLAY, THEN MERGE AT HIS
+  WORD.** What to look for (`.\run.bat` from the worktree; a new game or a format-11 save — his format-10 saves are refused): once a
+  workshop has racked carts, a member of each housed household walks to the warehouse, pushes a slate-blue cart home and parks it —
+  a chip beside the house; the household card reads *"a handcart, 150 trips left"* (and *"— out with Alys"* while it is out); a shopper
+  leaving home pushes it to the shop and back (*"pushing the cart to the shops"*, *"pushing a load home"*, the rectangle behind the
+  dot) and brings three armfuls, so a big household shops once where it shopped two or three times; the cart's line is a path the
+  season after its first trip; the founders' cart is slate blue now, not the market's amber. **Two calls ride in it and are his:**
+  (1) **`handcart_uses` 150** — his *"say 150: a few years of shopping"*; measured, a carted household pushes ~3.2 trips a year, so 150
+  is ~46 years and a cart is never replaced in practice (the carpenter a one-burst trade, ~2 logs a valley-year); *a few years* is
+  **20–40** (6 / 12 years; 10 / 5 logs a valley-year; the households stay carted at every number). Kept at 150 because it is his
+  number; the table is `handcart.md §6`. (2) **The cart's track** — D587 call 8 as written; measured, it adds a tile or two of path a
+  village (the shoppers' lines were paths already), so nothing was softened; *worn not packed* and *a loaded pass only* are the two
+  levers if his village looks webbed. ⚠️ **The slow on grass is invisible in the numbers** (a cart's line is a path after its first
+  pass) and visible only on a fresh route — if he cannot see it in play, that is the measurement, not a bug.
 - ⏸️ **THE STALLED LODGE (D683) — MERGED INTO `main` AT HIS WORD (D685, 2026-11-04), UNPLAYED; JOE PLAYS IT FROM `main`.** What to look for in a village with a lodge past half and the meat row met (his Hollowmere): the lodge's card reading
   *"The village has its 2,500 meat (N stored), so the hunters are carrying it in rather than hunting — N waiting"*, the three
   hunters walking meat to the granary together rather than one at a time, the lodge below half within a season or two, and the
