@@ -415,6 +415,15 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.MakeGood);
             }
 
+            // The building's handcart and the trips left in it (`handcart.md §13.2`) — it decides whether a worker walks for
+            // one and how deep the counter's load is. Sparse under its own tag, so a village whose trades own no cart hashes
+            // as it did before they could.
+            if (workplace.HandcartUses != 0)
+            {
+                hash = MixUInt32(hash, 0xF2u);
+                hash = MixUInt32(hash, (uint)workplace.HandcartUses);
+            }
+
             // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
             // It decides how much ground the farm commits every spring, so two runs of one
             // seed that differ in it are different runs and must hash differently.
@@ -1281,6 +1290,13 @@ public static class StateHash
         if (villager.PushingACart)
         {
             hash = MixUInt32(hash, 9u);
+        }
+
+        // Whose cart it is (`handcart.md §13.2`) — the works' cart parks at the building and wears the building's count, the
+        // household's at the door. Sparse and tagged like the pusher's flag.
+        if (villager.CartForTheWorks)
+        {
+            hash = MixUInt32(hash, 10u);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

@@ -435,7 +435,22 @@ public sealed partial class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.PushingAHandcart:
-                // The new cart goes to the door it will be parked at — home, never the steading (§3).
+                // The new cart goes to the door it will be parked at — home, never the steading (§3); or the building's,
+                // for the works' cart (`handcart.md §13.2`), where the stocking arrival parks it.
+                if (villager.CartForTheWorks)
+                {
+                    if (WorkplaceOf(world, villager) is { IsACartOwner: true } works)
+                    {
+                        Travel(world, villager, works.Position, StockingStateOf(works));
+                        return;
+                    }
+
+                    // The seat gone on the walk: the cart counts as back at its building (§13.2), and they go home.
+                    LeaveTheWorksCartWhereItCounts(villager);
+                    GoHome(world, villager);
+                    return;
+                }
+
                 Travel(world, villager, world.HomePoint(villager), VillagerState.Idle);
                 return;
 
@@ -581,7 +596,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // on the delivery leg, which this leg would otherwise repeat: a hungry marketer
                 // eats the load they are carrying (D10) and then walks the rest of the leg with
                 // nothing in their hands.
-                if (!villager.IsCarrying || WorkplaceOf(world, villager) is not Workplace stall)
+                // ⭐ Except the market's own cart on its way back (`handcart.md §13.2`): empty arms, a cart behind them.
+                if ((!villager.IsCarrying && !villager.CartForTheWorks) || WorkplaceOf(world, villager) is not Workplace stall)
                 {
                     Decide(world, villager);
                     return;
@@ -1265,17 +1281,21 @@ public sealed partial class BehaviorSystem : ISimSystem
     {
         Household household = world.HouseholdOf(villager);
         return household.HandcartUses > 0
+            && !villager.PushingACart
             && household.HomePosition is Point door
             && villager.Tile == door.ToTile()
             && !SomebodyIsPushingTheCart(world, household);
     }
 
-    /// <summary>Whether any living member of the household has its cart in their hands (`handcart.md §4`).</summary>
+    /// <summary>
+    /// Whether any living member of the household has <b>its</b> cart in their hands (`handcart.md §4`) — the works' cart in
+    /// a marketer's hands is not the household's (§13.2).
+    /// </summary>
     private static bool SomebodyIsPushingTheCart(SimWorld world, Household household)
     {
         for (int i = 0; i < household.MemberIds.Count; i++)
         {
-            if (world.FindVillager(household.MemberIds[i]) is { Alive: true, PushingACart: true })
+            if (world.FindVillager(household.MemberIds[i]) is { Alive: true, PushingACart: true, CartForTheWorks: false })
             {
                 return true;
             }
@@ -1283,6 +1303,9 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         return false;
     }
+
+    /// <summary>The household's cart is in their hands — not the works' (`handcart.md §13.2`).</summary>
+    private static bool PushingTheHouseholdsCart(Villager villager) => villager.PushingACart && !villager.CartForTheWorks;
 
     /// <summary>
     /// The pusher is home: the cart is parked at the door (`handcart.md §4`), and a shopping trip wears it a use (§6).
@@ -1625,7 +1648,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// itself is untouched (D537: one armful, one meaning); the cart is what multiplies it.
     /// </summary>
     private static int ArmfulsFor(SimWorld world, Villager villager) =>
-        villager.PushingACart || CanTakeTheCartFromTheDoorstep(world, villager) ? world.Config.CartArmfuls : 1;
+        PushingTheHouseholdsCart(villager) || CanTakeTheCartFromTheDoorstep(world, villager) ? world.Config.CartArmfuls : 1;
 
     /// <summary>
     /// Whether a household is (still) short enough of a good to go for it — the trigger at
@@ -2089,9 +2112,30 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void WorkTheMarket(SimWorld world, Villager villager, Workplace job)
     {
+        // ⭐ A HANDCART FOR THE MARKET (`handcart.md §13.2`; Joe, 2026-11-05: "one more owner of the same good") — the
+        // household's errand one owner over, asked of the marketer when the market has none and they are free.
+        if (TryFetchTheWorksCart(world, villager, job))
+        {
+            return;
+        }
+
+        // ⭐ A pusher deciding at the market's door parks its cart first (`handcart.md §13.2`): a round trip ends here.
+        if (villager.CartForTheWorks && villager.PushingACart && villager.Tile == job.Tile)
+        {
+            ParkTheWorksCart(world, villager, job);
+        }
+
         MarketErrand? next = PlanMarketErrand(world, villager);
         if (next is null)
         {
+            // ⭐ THE MARKET'S CART COMES BACK BEFORE ANYTHING ELSE (`handcart.md §13.2`): a pusher away from the market with
+            // nothing left to carry for it pushes it back — the empty leg — rather than tidying ground or going home with it.
+            if (villager.CartForTheWorks && villager.PushingACart)
+            {
+                ReturnTheWorksCart(world, villager, job);
+                return;
+            }
+
             villager.WorkNote =
                 $"Nothing to move — {job.Name} is stocked, and no larder or buffer wants clearing.";
 
@@ -2111,6 +2155,10 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.WorkNote = string.Empty;
         villager.ErrandX = next.Value.Source.X;
         villager.ErrandY = next.Value.Source.Y;
+
+        // ⭐ THE MARKET'S CART GOES WITH THEM, FROM THE MARKET'S DOOR (`handcart.md §13.2`; §4's rule one owner over): only an
+        // errand that starts at the door takes it — a cart kept anywhere but the start of the trip costs a walk to get it.
+        TakeTheWorksCart(world, villager, job);
         villager.State = VillagerState.CollectingForMarket;
         Travel(world, villager, next.Value.Source, VillagerState.CollectingForMarket);
     }
@@ -2236,7 +2284,11 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        int load = world.Config.CarryCapacity;
+        // ⭐ THE CART IS WHAT A CART BUYS, FOR THE COUNTER TOO (`handcart.md §13.3`): with the market's handcart in hand the
+        // load is `cart_armfuls` armfuls — whole armfuls only, as many as the counter's room allows (D165's rule, the cart's
+        // size); on foot the one armful it always was. `carry_capacity` is untouched (D537).
+        int armful = world.Config.CarryCapacity;
+        int load = armful * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         Goods[] carried = MarketGoodsIn(world);
         for (int g = 0; g < carried.Length; g++)
@@ -2246,12 +2298,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             // Room under THIS counter's limit (D372), by the one door (D612): the limit less what it holds, within the room.
             int room = market.RoomFor(goods);
 
-            if (!market.Accepts(goods) || room < load)
+            if (!market.Accepts(goods) || room < armful)
             {
                 continue;
             }
 
-            int take = Smallest(load, HeldOf(source.Store, goods), room);
+            int take = Smallest(load, HeldOf(source.Store, goods), room - (room % armful));
             if (take <= 0 || !source.Store.TryTake(goods, take))
             {
                 continue;
@@ -2298,6 +2350,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                     villager.Carried.TryTake(goods, market.Put(goods, villager.Carried[goods]));
                 }
             }
+        }
+
+        // ⭐ AND THE MARKET'S CART IS PARKED AT ITS DOOR (`handcart.md §13.2`) — the counter is where its round trip ends.
+        if (villager.CartForTheWorks && WorkplaceOf(world, villager) is Workplace works)
+        {
+            ParkTheWorksCart(world, villager, works);
         }
 
         // ⭐ AND THE MARKETER STANDS AT THE COUNTER FOR THE TICK THEY STOCK IT (D373) — this
@@ -2840,6 +2898,32 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static void Decide(SimWorld world, Villager villager)
     {
         SimConfig config = world.Config;
+
+        // ⭐ THE WORKS' CART (`handcart.md §13.2`): a worker deciding afresh with no cart in hand is on no errand for one
+        // (the fetch ended at the shelf or was broken off), and a pusher who no longer holds a seat at a market or a post
+        // leaves the cart where it counts as back at its building — the household's death-and-move rule, one owner over.
+        if (villager.CartForTheWorks
+            && (!villager.PushingACart || !villager.CanWork || WorkplaceOf(world, villager) is not { IsACartOwner: true }))
+        {
+            LeaveTheWorksCartWhereItCounts(villager);
+        }
+
+        // ⭐ AND THE WORKS' BUSINESS FIRST WHILE THEIR CART IS IN HAND (`handcart.md §13.2`): the household's errands wait
+        // until the cart is back at its building, so a marketer never shops with the market's cart or parks it at home. The
+        // trade's own branch — the next errand from here with the cart, or the empty leg back.
+        if (villager.CartForTheWorks && WorkplaceOf(world, villager) is { IsACartOwner: true } worksInHand)
+        {
+            if (worksInHand.Kind == JobKind.Marketer)
+            {
+                WorkTheMarket(world, villager, worksInHand);
+            }
+            else if (!TryTrade(world, villager, worksInHand))
+            {
+                ReturnTheWorksCart(world, villager, worksInHand);
+            }
+
+            return;
+        }
 
         // Eating was already handled by TryEat before anything got here.
         // Forage — but only if there is anything to forage, and only if this
@@ -4620,7 +4704,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // ⭐ THE CART IS WHAT A CART BUYS (`handcart.md §5`, Slice H): with the household's handcart in their hands the trip
         // carries `cart_armfuls` armfuls — D668's shopping walk was consumption ÷ armful, and this is the one term the
         // village could change. `carry_capacity` is untouched (D537); the arms are still the arms.
-        int load = config.CarryCapacity * (villager.PushingACart ? config.CartArmfuls : 1);
+        int load = config.CarryCapacity * (PushingTheHouseholdsCart(villager) ? config.CartArmfuls : 1);
 
         // Whatever store they are actually standing at, rather than a plan made
         // before they set off — the village may have changed while they walked.
@@ -5020,7 +5104,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void LoadForTheRound(SimWorld world, Villager villager)
     {
-        int load = world.Config.CarryCapacity;
+        // The cart's load out of a buffer or a dead larder (`handcart.md §13.3`), the counter's rule.
+        int load = world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         // Standing at a storehouse: the counter's own load (§14.8, D197).
         for (int i = 0; i < world.StoreBuildings.Count; i++)
@@ -5501,8 +5586,8 @@ public sealed partial class BehaviorSystem : ISimSystem
             UnloadAtHome(world, villager);
 
             // ⭐ And the household's cart is parked at the door (`handcart.md §4`) — `RestPointFor` sends a pusher home,
-            // never to the steading, so this is the one place a cart comes to rest.
-            if (villager.PushingACart)
+            // never to the steading, so this is the one place a cart comes to rest. The works' cart never rests here (§13.2).
+            if (PushingTheHouseholdsCart(villager))
             {
                 ParkTheCart(world, villager);
             }
@@ -5797,6 +5882,33 @@ public sealed partial class BehaviorSystem : ISimSystem
         StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
         villager.ErrandX = 0;
         villager.ErrandY = 0;
+
+        // ⭐ FOR THE WORKS (`handcart.md §13.2`): the building's count is filled and the cart pushed to its door, where
+        // the stocking arrival parks it. The seat lost on the way, or the building carted meanwhile: nothing is conjured.
+        if (villager.CartForTheWorks)
+        {
+            Workplace? works = WorkplaceOf(world, villager);
+            if (store is not null && works is { IsACartOwner: true } && works.HandcartUses <= 0 && store.Store.TryTake(Goods.Handcart, 1))
+            {
+                works.HandcartUses = world.Config.HandcartUses;
+                villager.PushingACart = true;
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} took a handcart from {store.Name} for {works.Name} — {world.Clock}.");
+                }
+
+                villager.State = VillagerState.PushingAHandcart;
+                Travel(world, villager, works.Position, StockingStateOf(works));
+                return;
+            }
+
+            // ⛔ Home, not `Decide` — the household's reason (below), one owner over.
+            villager.CartForTheWorks = false;
+            GoHome(world, villager);
+            return;
+        }
+
         Household household = world.HouseholdOf(villager);
         if (store is not null && household.HasHome && household.HandcartUses <= 0 && store.Store.TryTake(Goods.Handcart, 1))
         {
@@ -5818,6 +5930,137 @@ public sealed partial class BehaviorSystem : ISimSystem
         // went: the red-check's mutant did exactly that. The errand is spent; they decide again from their rest.
         GoHome(world, villager);
     }
+
+    /// <summary>
+    /// Walk to the nearest store holding a handcart, for the <b>building's</b> own (`handcart.md §13.2`; Joe, 2026-11-05:
+    /// <i>"one more owner of the same good"</i>) — <see cref="TryFetchAHandcart"/> one owner over: a standing market or post
+    /// with no cart sends one free worker of it to the row's stores (never the market's own counter); one fetcher a building.
+    /// </summary>
+    private static bool TryFetchTheWorksCart(SimWorld world, Villager villager, Workplace works)
+    {
+        if (!works.IsACartOwner || works.HandcartUses > 0
+            || !villager.CanWork || villager.IsCarrying || villager.PushingACart
+            || SomebodyIsFetchingTheWorksCart(world, works, villager))
+        {
+            return false;
+        }
+
+        StoreBuilding? source = NearestStoreHolding(world, villager.Tile, Goods.Handcart);
+        if (source is null)
+        {
+            return false;
+        }
+
+        villager.ErrandX = source.Tile.X;
+        villager.ErrandY = source.Tile.Y;
+        villager.CartForTheWorks = true;
+        villager.State = VillagerState.FetchingAHandcart;
+        Travel(world, villager, source.Position, VillagerState.FetchingAHandcart);
+        return true;
+    }
+
+    /// <summary>
+    /// A worker setting out from the building's door takes its cart (`handcart.md §13.2`; §4's rule one owner over): the
+    /// building has one, they stand on its tile with empty hands, and no worker of it has it out — <b>one pusher a building</b>.
+    /// </summary>
+    private static void TakeTheWorksCart(SimWorld world, Villager villager, Workplace works)
+    {
+        if (works.HandcartUses <= 0 || villager.PushingACart || villager.Tile != works.Tile || SomebodyHasTheWorksCartOut(world, works))
+        {
+            return;
+        }
+
+        villager.PushingACart = true;
+        villager.CartForTheWorks = true;
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} sets out with the {works.Name} handcart, {works.HandcartUses} trips left in it — {world.Clock}.");
+        }
+    }
+
+    /// <summary>Whether a worker of the building has its cart in their hands (`handcart.md §13.2`).</summary>
+    private static bool SomebodyHasTheWorksCartOut(SimWorld world, Workplace works)
+    {
+        for (int i = 0; i < works.WorkerIds.Count; i++)
+        {
+            if (world.FindVillager(works.WorkerIds[i]) is { Alive: true, CartForTheWorks: true, PushingACart: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Nothing left to carry for the building: its cart goes back to its door (`handcart.md §13.2`) — the stocking leg with
+    /// empty arms, which the per-tick rule for an empty-armed stocker (D192's) excepts for a pusher. Standing at the door
+    /// already, the arrival parks it in the same tick.
+    /// </summary>
+    private static void ReturnTheWorksCart(SimWorld world, Villager villager, Workplace works)
+    {
+        villager.WorkNote = string.Empty;
+        villager.State = StockingStateOf(works);
+        Travel(world, villager, works.Position, StockingStateOf(works));
+    }
+
+    /// <summary>Whether a colleague is already out for the building's cart — one fetcher a building (`handcart.md §13.2`).</summary>
+    private static bool SomebodyIsFetchingTheWorksCart(SimWorld world, Workplace works, Villager villager)
+    {
+        for (int i = 0; i < works.WorkerIds.Count; i++)
+        {
+            int id = works.WorkerIds[i];
+            if (id != villager.Id
+                && world.FindVillager(id) is { Alive: true, CartForTheWorks: true, State: VillagerState.FetchingAHandcart or VillagerState.PushingAHandcart })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The pusher is at the building: the works' cart is parked at its door (`handcart.md §13.2`), and a round trip wears it
+    /// a use (§6's rule) — the walk in with a NEW cart (<see cref="VillagerState.PushingAHandcart"/>) wears nothing.
+    /// </summary>
+    private static void ParkTheWorksCart(SimWorld world, Villager villager, Workplace works)
+    {
+        bool aNewCart = villager.State == VillagerState.PushingAHandcart;
+        villager.PushingACart = false;
+        villager.CartForTheWorks = false;
+        if (!aNewCart && works.HandcartUses > 0)
+        {
+            works.HandcartUses--;
+            if (works.HandcartUses == 0 && world.Logs(LogLevel.Debug))
+            {
+                world.Log(LogLevel.Debug, "behavior",
+                    $"The {works.Name} handcart is worn through after its last trip — {villager.Name} leaves it at the door; a worker will fetch another — {world.Clock}.");
+            }
+        }
+
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} parks the {works.Name} handcart at its door, {works.HandcartUses} trips left in it — {world.Clock}.");
+        }
+    }
+
+    /// <summary>
+    /// The works' cart leaves this person's hands without a walk (`handcart.md §13.2`): the seat gone, the person dead, the
+    /// fetch broken off. The building's count is untouched — the cart counts as back at the building, as the household's
+    /// counts as home (a cart is a good, not a positioned thing).
+    /// </summary>
+    private static void LeaveTheWorksCartWhereItCounts(Villager villager)
+    {
+        villager.CartForTheWorks = false;
+        villager.PushingACart = false;
+    }
+
+    /// <summary>The leg that ends at a cart owner's door — the market's counter, or the post (`handcart.md §13.2`).</summary>
+    private static VillagerState StockingStateOf(Workplace works) =>
+        works.Kind == JobKind.Merchant ? VillagerState.StockingThePost : VillagerState.StockingTheMarket;
 
     /// <summary>
     /// A builder sets off to raise a site — and a tool in their hands is worn a use, as any trade's is by a work action

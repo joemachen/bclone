@@ -365,6 +365,7 @@ public sealed class SaveLoadTests : IDisposable
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
+            "CartForTheWorks",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]
@@ -379,7 +380,7 @@ public sealed class SaveLoadTests : IDisposable
             "GatheringRadius", "Mode", "ForgeGood", "MakeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
-            "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands",
+            "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands", "HandcartUses",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]

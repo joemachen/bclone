@@ -31,6 +31,19 @@ public sealed partial class BehaviorSystem
             return false;
         }
 
+        // ⭐ A HANDCART FOR THE POST (`handcart.md §13.2`): the market's errand one building over.
+        if (TryFetchTheWorksCart(world, villager, post))
+        {
+            return true;
+        }
+
+        // ⭐ A pusher deciding at the post parks its cart first (§13.2): a round trip ends here.
+        if (villager.CartForTheWorks && villager.PushingACart && villager.Tile == post.Tile)
+        {
+            ParkTheWorksCart(world, villager, post);
+        }
+
+        // The walk to the post for a boat's goods is empty-handed; the cart is taken there, when the load is (ArriveToTrade).
         if (world.GoodToBringHome(store) is not null)
         {
             villager.WorkNote = string.Empty;
@@ -45,11 +58,16 @@ public sealed partial class BehaviorSystem
             villager.WorkNote = string.Empty;
             villager.ErrandX = source.Tile.X;
             villager.ErrandY = source.Tile.Y;
+
+            // ⭐ The post's cart goes with them from the post's door (§13.2): the run comes back loaded.
+            TakeTheWorksCart(world, villager, post);
             villager.State = VillagerState.CollectingForThePost;
             Travel(world, villager, source.Position, VillagerState.CollectingForThePost);
             return true;
         }
 
+        // Nothing to carry. (A merchant holding the post's cart never gets here from the job branch: `Decide`'s works-first
+        // branch runs this method itself and, on false, pushes the cart back — `handcart.md §13.2`.)
         villager.WorkNote = world.TradeKeep.AnySet
             ? $"Nothing above what the village keeps to carry to {post.Name}."
             : $"Nothing to carry to {post.Name} — set what the village keeps, and the rest is sold.";
@@ -75,7 +93,9 @@ public sealed partial class BehaviorSystem
                     return true;
                 }
 
-                int armful = Math.Min(world.Config.CarryCapacity, Math.Min(world.AboveTheKeep(goods), source.Store[goods]));
+                // The cart's load with the post's handcart in hand (`handcart.md §13.3`) — still never below the keep, still within the post's room.
+                int armful = Math.Min(world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1),
+                    Math.Min(world.AboveTheKeep(goods), source.Store[goods]));
                 armful = Math.Min(armful, postStore.RoomFor(goods));
                 if (armful <= 0 || !source.Store.TryTake(goods, armful))
                 {
@@ -101,6 +121,12 @@ public sealed partial class BehaviorSystem
                             villager.Carried.TryTake(goods, store.Put(goods, villager.Carried[goods]));
                         }
                     }
+
+                    // ⭐ And the post's cart is parked at its door (`handcart.md §13.2`) — the post is where its round trip ends.
+                    if (villager.CartForTheWorks)
+                    {
+                        ParkTheWorksCart(world, villager, post);
+                    }
                 }
 
                 if (villager.IsCarrying)
@@ -124,7 +150,15 @@ public sealed partial class BehaviorSystem
                     return true;
                 }
 
-                int armful = Math.Min(world.Config.CarryCapacity, store.Store[goods]);
+                // ⭐ The post's cart for the run home (`handcart.md §13.2`): a cart brought here from the stores is parked
+                // (its round trip ended at the door), and the cart at the door is taken for the load home.
+                if (villager.CartForTheWorks && villager.PushingACart)
+                {
+                    ParkTheWorksCart(world, villager, post);
+                }
+
+                TakeTheWorksCart(world, villager, post);
+                int armful = Math.Min(world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1), store.Store[goods]);
                 if (!store.Store.TryTake(goods, armful))
                 {
                     Decide(world, villager);

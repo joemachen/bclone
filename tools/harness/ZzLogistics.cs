@@ -29,6 +29,14 @@ namespace Bclone.Sim.Tests;
 // the end, shopping trips an adult-year WITH the cart against without and their median ticks, and the ground — trodden
 // tiles and path tiles (worn or packed by class) of the valley's tiles, so the trodden share with carts against without
 // is one number apart. ZZG trips: shopping trips a housed-household-year (the fetch spells that turned at a shop).
+//
+// THE TRADES' CARTS (handcart.md §13): ZZG market: the marketer's loads put on the counter (restock trips) and loads
+// carried out of a buffer or a dead larder, the units a load, how many of each were made under the market's cart, and
+// trips a marketer-year; ZZG post: the merchant's loads down to the post and up from it the same way, a merchant-year.
+// ZZ_POST=1 raises a finished trading post at Year 3 on the harness (TradeTests.RaiseAPost) with a keep order of 400 on
+// firewood (its limit is 600), so the merchant has the woodcutter's surplus to carry down every year the harness runs;
+// ZZ_MARKET=1 raises a finished market near the founding at Year 3 (the harness valley raises none of its own). ZZG workscarts: which standing
+// markets and posts own a cart at the end and the trips left in it.
 public sealed class ZzLogistics
 {
     private enum Bucket
@@ -173,8 +181,58 @@ public sealed class ZzLogistics
                     int racked = world.AnyStoreOf(StoreKind.Cart).Store.Add(Goods.Handcart, carts);
                     _o.WriteLine($"ZZG {label}-seed{seed} racked {racked} of {carts} handcarts in the founders' cart at Year 3");
                 }
+
+                // ⚠️ The harness valley raises NO market of its own (the opening marks a granary and a warehouse, and a
+                // marked market is never built — the first run marked one and no valley raised it), so the marketer's trips
+                // can only be measured here with one RAISED: ZZ_MARKET=1 raises a finished market near the founding, the way
+                // TradeTests.RaiseAPost raises the post.
+                if (Environment.GetEnvironmentVariable("ZZ_MARKET") == "1")
+                {
+                    Workplace market = RaiseFinished(world, BuildingKind.Market, JobKind.Marketer);
+                    _o.WriteLine($"ZZG {label}-seed{seed} raised {market.Name} at ({market.Tile.X},{market.Tile.Y}) at Year 3");
+                }
+
+                if (Environment.GetEnvironmentVariable("ZZ_POST") == "1")
+                {
+                    Workplace post = TradeTests.RaiseAPost(world);
+                    world.TradeKeep.Set(Goods.Firewood, 400);
+                    _o.WriteLine($"ZZG {label}-seed{seed} raised {post.Name} at ({post.Tile.X},{post.Tile.Y}) at Year 3, keep 400 firewood (the limit is 600, so the woodcutter refills what the merchant carries down)");
+                }
             });
         }
+    }
+
+    /// <summary>A finished building of a kind that is a workplace, near the founding — the post's shape (TradeTests.RaiseAPost).</summary>
+    private static Workplace RaiseFinished(SimWorld world, BuildingKind kind, JobKind job)
+    {
+        GridPos founding = world.Map.FoundingSite;
+        for (int r = 3; r < 30; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    var at = new GridPos(founding.X + dx, founding.Y + dy);
+                    if (!world.Map.Contains(at) || world.HasSomethingToHarvest(at) || !world.CanBuildAt(kind, at).Allowed || !world.Mark(kind, at).Allowed)
+                    {
+                        continue;
+                    }
+
+                    Workplace site = world.Workplaces.Single(w => w.Construction?.Kind == kind && w.Construction.IsFinished == false);
+                    BuildFixtures.StockTheSite(site);
+                    for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+                    {
+                        site.Construction.Work();
+                    }
+
+                    GridPos stood = site.Tile;
+                    world.Complete(site);
+                    return world.Workplaces.Single(w => w.Kind == job && w.Tile == stood && !w.IsSite);
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"nowhere near the founding to raise a {kind}");
     }
 
     private static int Years(int fallback) =>
@@ -275,6 +333,11 @@ public sealed class ZzLogistics
         long cartedHouseholdTicks = 0;
         int cartsTaken = 0;
 
+        // The trades' carts (handcart.md §13): loads the marketer put on the counter and carried out of a buffer, loads the
+        // merchant carried down to the post and up from it — each counted on the tick the carrier leaves the state with the
+        // load, the units read on the tick before; and the carrier-ticks each trade worked, for trips a year.
+        var trade = new TradeTrips();
+
         void Close(Villager v, Open o, long now)
         {
             if (Array.IndexOf(Walking, o.Bucket) < 0)
@@ -363,6 +426,7 @@ public sealed class ZzLogistics
                     continue;
                 }
 
+                trade.See(world, v);
                 Bucket b = Classify(v);
                 adultTicksYear++;
                 adultTicksRun++;
@@ -445,6 +509,12 @@ public sealed class ZzLogistics
             + $"onShelves {world.InStores(Goods.Handcart)} trodden {world.Paths.TroddenTiles} path {world.Paths.PathTiles} of {mapTiles} tiles "
             + $"({world.Paths.TroddenTiles * 100.0 / mapTiles:F1}% trodden, {world.Paths.PathTiles * 100.0 / mapTiles:F2}% path)");
 
+        trade.Report(_o, label, ticksPerYear);
+        foreach (Workplace w in world.Workplaces.Where(w => !w.IsSite && w.Kind is JobKind.Marketer or JobKind.Merchant))
+        {
+            _o.WriteLine($"ZZG {label} workscarts {w.Kind} {w.Name} at ({w.Tile.X},{w.Tile.Y}) uses {WorksCartUses(w)} workers {w.WorkerIds.Count}");
+        }
+
         // Why a fetch is as long as it is: every lived-in home's walk to the nearest store holding any food, at the end —
         // and separately to the nearest market and the nearest storehouse holding food, the two D372 chooses between.
         var shops = world.StoreBuildings.Where(s => world.FoodIn(s.Store) > 0).ToList();
@@ -523,6 +593,79 @@ public sealed class ZzLogistics
         }
 
         static string Med(List<int> s) => s.Count == 0 ? "none" : $"median {s[s.Count / 2]} p90 {s[Math.Min(s.Count - 1, (int)(s.Count * 0.9))]} max {s[^1]}";
+    }
+
+    /// <summary>The works' cart's trips left — 0 before handcart.md §13 is built (the field does not exist yet), the field after.</summary>
+    private static int WorksCartUses(Workplace w) =>
+        typeof(Workplace).GetProperty("HandcartUses") is System.Reflection.PropertyInfo p ? (int)p.GetValue(w)! : 0;
+
+    /// <summary>Whether the cart in their hands is the works' — false before §13 is built, the flag after.</summary>
+    private static bool PushesTheWorksCart(Villager v) =>
+        typeof(Villager).GetProperty("CartForTheWorks") is System.Reflection.PropertyInfo p && (bool)p.GetValue(v)!;
+
+    private sealed class TradeTrips
+    {
+        private sealed class Last
+        {
+            public VillagerState State;
+            public int Held;
+            public bool Works;
+        }
+
+        private readonly Dictionary<Villager, Last> _last = new(ReferenceEqualityComparer.Instance);
+        public long MarketerTicks, MerchantTicks;
+        public readonly List<int> ToCounter = new(), ToCounterCarted = new(), FromBuffer = new(), FromBufferCarted = new();
+        public readonly List<int> ToPost = new(), ToPostCarted = new(), FromPost = new(), FromPostCarted = new();
+
+        public void See(SimWorld world, Villager v)
+        {
+            JobKind? job = world.FindWorkplace(v.WorkplaceId)?.Kind;
+            if (job == JobKind.Marketer) { MarketerTicks++; }
+            if (job == JobKind.Merchant) { MerchantTicks++; }
+
+            _last.TryGetValue(v, out Last? last);
+            if (last is not null && last.State != v.State)
+            {
+                // Leaving the carrying state: the load went where the state carried it (the arrival puts it down and
+                // re-decides in the same tick, so the units are the tick before's).
+                switch (last.State)
+                {
+                    case VillagerState.StockingTheMarket when last.Held > 0:
+                        (last.Works ? ToCounterCarted : ToCounter).Add(last.Held);
+                        break;
+                    case VillagerState.CollectingForMarket when v.State == VillagerState.HaulingToStore && v.Carried.Held > 0:
+                        (PushesTheWorksCart(v) ? FromBufferCarted : FromBuffer).Add(v.Carried.Held);
+                        break;
+                    case VillagerState.StockingThePost when last.Held > 0:
+                        (last.Works ? ToPostCarted : ToPost).Add(last.Held);
+                        break;
+                    case VillagerState.FetchingFromThePost when v.State == VillagerState.HaulingToStore && v.Carried.Held > 0:
+                        (PushesTheWorksCart(v) ? FromPostCarted : FromPost).Add(v.Carried.Held);
+                        break;
+                }
+            }
+
+            last ??= _last[v] = new Last();
+            last.State = v.State;
+            last.Held = v.Carried.Held;
+            last.Works = PushesTheWorksCart(v);
+        }
+
+        public void Report(ITestOutputHelper o, string label, int ticksPerYear)
+        {
+            double marketerYears = MarketerTicks / (double)ticksPerYear;
+            double merchantYears = MerchantTicks / (double)ticksPerYear;
+            o.WriteLine($"ZZG {label} market: marketerYears {marketerYears:F1} toCounter {Line(ToCounter, ToCounterCarted, marketerYears)} fromBuffer {Line(FromBuffer, FromBufferCarted, marketerYears)}");
+            o.WriteLine($"ZZG {label} post: merchantYears {merchantYears:F1} toPost {Line(ToPost, ToPostCarted, merchantYears)} fromPost {Line(FromPost, FromPostCarted, merchantYears)}");
+        }
+
+        private static string Line(List<int> onFoot, List<int> carted, double years)
+        {
+            int n = onFoot.Count + carted.Count;
+            long units = onFoot.Sum(x => (long)x) + carted.Sum(x => (long)x);
+            return $"trips {n} perYear {n / Math.Max(years, 1e-9):F1} units {units} unitsATrip {(n == 0 ? 0 : units / (double)n):F0} "
+                + $"carted {carted.Count} ({(carted.Count == 0 ? 0 : carted.Average()):F0} a trip) onFoot {onFoot.Count} ({(onFoot.Count == 0 ? 0 : onFoot.Average()):F0} a trip)";
+        }
     }
 
     private static string Columns(long[] ticks, long total)

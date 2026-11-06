@@ -55,8 +55,11 @@ public static class SaveGame
     /// slot (`workshop-and-the-carpenter.md §7`). Every format-9 save, Joe's included, is refused — his call (D675:
     /// *"I don't mind starting a new game — that's actually my favourite part"*). 11 since Slice H (`handcart.md §9`):
     /// a household's handcart (<c>handcart_uses</c>, the trips left in it) and whether a villager is pushing it
-    /// (<c>pushing_a_cart</c>); every format-10 save — the Slice W builds' — is refused in words.</remarks>
-    public const int Format = 11;
+    /// (<c>pushing_a_cart</c>); every format-10 save — the Slice W builds' — is refused in words. 12 since the trades' carts
+    /// (`handcart.md §13`): a workplace's handcart (<c>handcart_uses</c> on every workplace — the market's and the post's trips
+    /// left) and whose cart a villager pushes (<c>cart_for_the_works</c>); every format-11 save — the Slice H builds',
+    /// 2026-11-04 to 11-05 — is refused in words.</remarks>
+    public const int Format = 12;
 
     /// <summary>The whole of <paramref name="loop"/>'s village and its header, as a document.</summary>
     /// <exception cref="InvalidOperationException">The village faulted — there is nothing sound to save (§7).</exception>

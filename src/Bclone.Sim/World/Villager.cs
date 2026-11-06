@@ -605,6 +605,20 @@ public sealed class Villager
     /// </remarks>
     public bool PushingACart { get; set; }
 
+    /// <summary>
+    /// Whether the cart in their hands — or the one they are walking to fetch — is their <b>workplace's</b>, the market's or
+    /// the trading post's, and not the household's (`handcart.md §13.2`). <see cref="PushingACart"/> stays the one flag that
+    /// says a cart is in their hands (the slow grass walk, the tread and the rectangle behind the dot read it unchanged);
+    /// this says <i>whose</i>. Pushing the works' cart implies <see cref="PushingACart"/>.
+    /// </summary>
+    /// <remarks>
+    /// Set when a worker sets off for the building's cart or takes it from the building's door; cleared when the cart is
+    /// parked at the building, and where the person stops being the building's — death, or the seat lost — when the cart
+    /// counts as back at its building (written down rather than modelled, as the household's is). Moving house leaves it,
+    /// because the cart was never the household's. Hashed sparsely under its own tag.
+    /// </remarks>
+    public bool CartForTheWorks { get; set; }
+
     /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
     public int ForgesThisStint { get; set; }
 
@@ -838,7 +852,8 @@ public sealed class Villager
             VillagerState.HaulingToFarm => Carried[Goods.Meat] > 0
                 ? $"carrying the meat back to {where}"
                 : "carrying the harvest to the farm",
-            VillagerState.StockingTheMarket => "carrying goods to the market",
+            // The empty leg back with the market's cart (`handcart.md §13.2`): the loaded leg keeps its words.
+            VillagerState.StockingTheMarket => CartForTheWorks && !IsCarrying ? "pushing the market's handcart back" : "carrying goods to the market",
             VillagerState.FetchingATool => "fetching a tool from a store",
             VillagerState.FetchingACoat => "fetching a coat from a store",
             VillagerState.TravelingToSmithy => $"walking to {where}",
@@ -859,7 +874,8 @@ public sealed class Villager
                 ? $"making handcarts, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "truing a wheel for a handcart",
             VillagerState.FetchingAHandcart => "fetching a handcart from a store",
-            VillagerState.PushingAHandcart => "pushing the new handcart home",
+            // The works' cart (`handcart.md §13.5`): a new cart goes to the market or the post, not home.
+            VillagerState.PushingAHandcart => CartForTheWorks ? "pushing the new handcart to work" : "pushing the new handcart home",
             VillagerState.Baking => BatchesThisStint > 0
                 ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
                 : "lighting the oven",
@@ -881,7 +897,7 @@ public sealed class Villager
             VillagerState.FeedingTheHerd => $"carrying hay out to the herd at {where}",
             VillagerState.Culling => $"culling a beast the pasture at {where} cannot hold",
             VillagerState.CollectingForThePost => "collecting goods the village sells",
-            VillagerState.StockingThePost => $"carrying goods down to {where} to sell",
+            VillagerState.StockingThePost => CartForTheWorks && !IsCarrying ? "pushing the post's handcart back" : $"carrying goods down to {where} to sell",
             VillagerState.FetchingFromThePost => $"bringing home what a boat left at {where}",
             _ => State.ToString(),
         };
@@ -951,6 +967,7 @@ public sealed class Villager
             ["tool_good"] = SaveWriter.Good(ToolGood),
             ["coat_days"] = CoatDays,
             ["pushing_a_cart"] = PushingACart,
+            ["cart_for_the_works"] = CartForTheWorks,
             ["forges_this_stint"] = ForgesThisStint,
             ["digs_this_stint"] = DigsThisStint,
             ["batches_this_stint"] = BatchesThisStint,
@@ -1010,6 +1027,7 @@ public sealed class Villager
             ToolGood = save.Good("tool_good"),
             CoatDays = save.Int("coat_days"),
             PushingACart = save.Bool("pushing_a_cart"),
+            CartForTheWorks = save.Bool("cart_for_the_works"),
             ForgesThisStint = save.Int("forges_this_stint"),
             DigsThisStint = save.Int("digs_this_stint"),
             BatchesThisStint = save.Int("batches_this_stint"),

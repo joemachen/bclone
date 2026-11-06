@@ -75,7 +75,7 @@ public partial class Main
         /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
         public required Label Door { get; init; }
 
-        /// <summary>A household's handcart and the trips left in it (Slice H, `handcart.md §8`). Hidden on every other kind, and with no cart.</summary>
+        /// <summary>A household's handcart and the trips left in it (Slice H, `handcart.md §8`) — or a market's or a post's (`handcart.md §13.5`). Hidden on every other kind, and with no cart.</summary>
         public required Label Cart { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
@@ -1406,6 +1406,9 @@ public partial class Main
         {
             Wear(card, world.WearOf(place), world.Config);
 
+            // ⭐ The market's or the post's handcart (`handcart.md §13.5`): the household card's line, one owner over.
+            CartLine(card, place.IsACartOwner ? WorksCartSentence(world, place) : null);
+
             // ⭐ A BUFFER THE HANDS CANNOT KEEP UP WITH SAYS SO (D394): Joe's lodge held 2,103 meat
             // — a hunt is 900 in fifteen ticks, a carry is forty — and its card read *Working*.
             // ⭐ AND SO DOES A BUILDING NOBODY IS POSTED AT (D683): the same lodge, a year on, read
@@ -2457,7 +2460,31 @@ public partial class Main
         string trips = home.HandcartUses == 1 ? "its last trip left" : $"{home.HandcartUses} trips left";
         for (int i = 0; i < home.MemberIds.Count; i++)
         {
-            if (world.FindVillager(home.MemberIds[i]) is { Alive: true, PushingACart: true } pusher)
+            // The household's pushers only: a member out with the market's cart has not got this one (`handcart.md §13.5`).
+            if (world.FindVillager(home.MemberIds[i]) is { Alive: true, PushingACart: true, CartForTheWorks: false } pusher)
+            {
+                return $"a handcart, {trips} — out with {pusher.Name}";
+            }
+        }
+
+        return $"a handcart, {trips}";
+    }
+
+    /// <summary>
+    /// <i>"a handcart, 37 trips left"</i> for a market or a post — and which worker has it out — or null for one with none
+    /// (`handcart.md §13.5`). One copy for the card and its probe; the household's is <see cref="CartSentence"/>.
+    /// </summary>
+    private static string? WorksCartSentence(SimWorld world, Workplace works)
+    {
+        if (works.HandcartUses <= 0)
+        {
+            return null;
+        }
+
+        string trips = works.HandcartUses == 1 ? "its last trip left" : $"{works.HandcartUses} trips left";
+        for (int i = 0; i < works.WorkerIds.Count; i++)
+        {
+            if (world.FindVillager(works.WorkerIds[i]) is { Alive: true, CartForTheWorks: true, PushingACart: true } pusher)
             {
                 return $"a handcart, {trips} — out with {pusher.Name}";
             }
@@ -3153,8 +3180,71 @@ public partial class Main
             member.PushingACart = pushingBefore;
         }
 
+        // The trades' line (`handcart.md §13.5`): the same four sentences off a workplace — posed on whatever workplace the
+        // founding has (the `workshop:` probe has marked a builder's hut by now), with a member posed as its worker and put
+        // back. ⚠️ A site is not a cart owner, so its card hides the line; a standing market's card line is Joe's eyes.
+        Workplace? works = world.Workplaces.Count > 0 ? world.Workplaces[0] : null;
+        if (works is null)
+        {
+            faults.Add("no workplace to pose a trade's cart on");
+        }
+        else
+        {
+            int worksUsesBefore = works.HandcartUses;
+            bool worksBefore = member.CartForTheWorks;
+            bool pushingWorksBefore = member.PushingACart;
+            bool seated = works.WorkerIds.Contains(member.Id);
+            try
+            {
+                if (!seated)
+                {
+                    works.WorkerIds.Add(member.Id);
+                }
+
+                foreach ((int uses, bool pushing, string? expected) in new (int, bool, string?)[]
+                {
+                    (37, false, "a handcart, 37 trips left"),
+                    (37, true, $"a handcart, 37 trips left — out with {member.Name}"),
+                    (1, false, "a handcart, its last trip left"),
+                    (0, false, null),
+                })
+                {
+                    works.HandcartUses = uses;
+                    member.CartForTheWorks = pushing;
+                    member.PushingACart = pushing;
+                    string? said = WorksCartSentence(world, works);
+                    if (said != expected)
+                    {
+                        faults.Add($"with {uses} trips{(pushing ? ", out" : string.Empty)} the works' sentence reads \"{said ?? "(hidden)"}\" where it should read \"{expected ?? "(hidden)"}\"");
+                    }
+                }
+
+                works.HandcartUses = 37;
+                OpenCard(new CardSubject(CardKind.Workplace, works.Id));
+                Card card = _selectedCard!;
+                bool shown = card.Cart.Visible;
+                CloseCard(card);
+                if (shown != works.IsACartOwner)
+                {
+                    faults.Add(works.IsACartOwner
+                        ? "a cart owner's card hides its handcart line"
+                        : "a workplace that owns no cart shows a handcart line");
+                }
+            }
+            finally
+            {
+                works.HandcartUses = worksUsesBefore;
+                member.CartForTheWorks = worksBefore;
+                member.PushingACart = pushingWorksBefore;
+                if (!seated)
+                {
+                    works.WorkerIds.Remove(member.Id);
+                }
+            }
+        }
+
         return faults.Count == 0
-            ? "[widths] cart card: ✅ the household card says the trips left in its handcart, who has it out, and nothing with none"
+            ? "[widths] cart card: ✅ the household card says the trips left in its handcart, who has it out, and nothing with none; the works' sentence reads the same four ways, and a workplace that owns no cart shows no line"
             : $"[widths] cart card: ⛔ {string.Join("; ", faults)}";
     }
 

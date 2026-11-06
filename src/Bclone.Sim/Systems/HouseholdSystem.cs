@@ -488,8 +488,12 @@ public sealed class HouseholdSystem : ISimSystem
         villager.HouseholdId = household.Id;
         villager.Surname = household.Surname;
 
-        // The cart in their hands was the old household's and stays so (`handcart.md §3`): it counts as home there.
-        villager.PushingACart = false;
+        // The cart in their hands was the old household's and stays so (`handcart.md §3`): it counts as home there. The
+        // works' cart was never the household's (`handcart.md §13.2`) and stays in their hands.
+        if (!villager.CartForTheWorks)
+        {
+            villager.PushingACart = false;
+        }
 
         // Only if there is a door to stand at. A couple whose house is still being built
         // stays where they are and rests wherever RestingPlaceOf sends them (D102).

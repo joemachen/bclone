@@ -87,8 +87,10 @@ public sealed class MortalitySystem : ISimSystem
         villager.ActionTicksRemaining = 0;
 
         // The household's cart is not buried with them (`handcart.md §3`): it is the household's good, and counts as
-        // home from here — the walk that would find it is not stepped (`Villager.PushingACart`).
+        // home from here — the walk that would find it is not stepped (`Villager.PushingACart`). The works' cart the same
+        // (`handcart.md §13.2`): it counts as back at its building.
         villager.PushingACart = false;
+        villager.CartForTheWorks = false;
 
         string epitaph = cause switch
         {

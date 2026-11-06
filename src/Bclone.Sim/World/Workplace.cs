@@ -696,6 +696,26 @@ public sealed class Workplace
     public int HayCutThisYear { get; set; }
 
     /// <summary>
+    /// The trips left in the building's handcart — <b>0 for no cart</b> (`handcart.md §13.2`; Joe, 2026-11-05: <i>"one more
+    /// owner of the same good"</i>). Only a standing market or trading post ever owns one (<see cref="IsACartOwner"/>); every
+    /// other workplace stays at nought for ever.
+    /// </summary>
+    /// <remarks>
+    /// <c>Household.HandcartUses</c>' shape one owner over: the cart serves the <i>counter</i>, which is the building's, as the
+    /// household's serves the larder. Filled from a store's count by a worker who pushes it here (<c>BehaviorSystem.TakeAHandcart</c>),
+    /// worn a trip when a worker brings it back to the door, gone at nought and another fetched. Who has it in their hands is
+    /// <c>Villager.CartForTheWorks</c> (with <c>PushingACart</c>); a cart nobody has out stands at the building, which is where
+    /// the map draws it. Hashed sparsely under its own tag, so a village whose trades have no cart hashes as before.
+    /// </remarks>
+    public int HandcartUses { get; set; }
+
+    /// <summary>
+    /// Whether this building may own a handcart (`handcart.md §13.2`): a <b>standing, open</b> market or trading post. A site
+    /// is not an owner, and a closed building asks the carpenter for nothing.
+    /// </summary>
+    public bool IsACartOwner => !IsSite && Places > 0 && Kind is JobKind.Marketer or JobKind.Merchant;
+
+    /// <summary>
     /// The pasture a barn's fence closes round — its tiles as the zone map indexes them, sorted, frozen at <i>Fence the
     /// pasture</i> (D598, `livestock.md §0.2`). Empty on every other workplace and on an unfenced barn. A fact: saved,
     /// hashed sparsely. ⛔ Never follows the paint — the ground is locked while it is not empty.
@@ -850,6 +870,7 @@ public sealed class Workplace
         ["herd_growth"] = HerdGrowth,
         ["hay_put_out"] = HayPutOut,
         ["hay_cut_this_year"] = HayCutThisYear,
+        ["handcart_uses"] = HandcartUses,
         ["fenced_tiles"] = FencedTiles.Count == 0 ? null : SaveWriter.Ints(FencedTiles),
         ["fence_gate"] = SaveWriter.GridPos(FenceGate),
         ["fence_stands"] = FenceStands,
@@ -890,6 +911,7 @@ public sealed class Workplace
             HerdGrowth = save.Int("herd_growth"),
             HayPutOut = save.Int("hay_put_out"),
             HayCutThisYear = save.Int("hay_cut_this_year"),
+            HandcartUses = save.Int("handcart_uses"),
 
             // Read tolerantly (D598): a format-8 save written before fences has none of the three.
             FencedTiles = save.HasValue("fenced_tiles") ? save.Ints("fenced_tiles") : new List<int>(),

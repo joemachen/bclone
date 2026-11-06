@@ -287,6 +287,13 @@ only what its shelves will take brings in what it eats, and the ledger reads tha
 
 The last slice of D30, and the building half of D14. Joe settled the three things this spec had left vague.
 
+> 🔨 **The market owns a handcart since the trades' carts slice (`handcart.md §13`, D692–; Joe, 2026-11-05: *"one more owner of
+> the same good"*):** a standing market's `Workplace.HandcartUses`, fetched from the shelf by a free marketer; an errand that
+> starts at the market's door takes it (`TakeTheWorksCart`), the restock from a store (`LoadForTheMarket`) and the collection
+> from a buffer or a dead larder (`LoadForTheRound`) carry `cart_armfuls` armfuls under it, whole armfuls within the counter's
+> room; parked at the counter (`PutItInTheMarket`) and worn a trip there; brought back empty when a haul ends at a storehouse
+> and nothing else wants carrying. Nothing in §14.9's rules — the counter's limits, the shop walk, the day's order — changes.
+
 ### 14.1 What Joe asked for
 
 1. **More than one worker.** The market is a workplace with a real capacity, not a one-person post.
