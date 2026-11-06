@@ -81,7 +81,8 @@ public sealed class HandcartTests
             loop.StepOnce();
             foreach (Household household in world.Households)
             {
-                int fetching = household.MemberIds.Count(id => world.FindVillager(id) is { Alive: true, State: VillagerState.FetchingAHandcart });
+                // The household's fetchers — a member out for the MARKET's cart (§13) is not one.
+                int fetching = household.MemberIds.Count(id => world.FindVillager(id) is { Alive: true, State: VillagerState.FetchingAHandcart, CartForTheWorks: false });
                 Assert.True(fetching <= 1, $"{household.Name}: {fetching} members out for the one cart at once.");
                 if (household.HandcartUses > 0)
                 {
@@ -96,13 +97,15 @@ public sealed class HandcartTests
 
         int carted = world.Households.Count(h => h.HandcartUses > 0);
         int onShelves = world.InStores(Goods.Handcart);
+        // The market is an owner too since §13 — the allocator seats a marketer here, who may take one of the three.
+        int tradesCarted = world.Workplaces.Count(w => w.HandcartUses > 0);
         int handedOver = sink.Entries.Count(e => e.Message.Contains("took a handcart from", StringComparison.Ordinal));
-        _output.WriteLine($"{carted} of {housed} households carted + {onShelves} on the shelves = {carted + onShelves}; {handedOver} handed over; "
+        _output.WriteLine($"{carted} of {housed} households carted + {tradesCarted} trade(s) + {onShelves} on the shelves = {carted + tradesCarted + onShelves}; {handedOver} handed over; "
             + $"{fetchingTicks} villager-ticks walking for one, {pushingHomeTicks} pushing one home.");
 
         Assert.True(carted > 0, "Nobody fetched a handcart in a season.");
-        Assert.Equal(3, carted + onShelves);
-        Assert.Equal(carted, handedOver);
+        Assert.Equal(3, carted + tradesCarted + onShelves);
+        Assert.Equal(carted + tradesCarted, handedOver);
         Assert.True(fetchingTicks > 0, "A cart was taken without anybody being seen walking for it.");
         Assert.True(pushingHomeTicks > 0, "A cart reached a home without anybody being seen pushing it there.");
         Assert.All(world.Households.Where(h => h.HandcartUses > 0), h => Assert.Equal(config.HandcartUses, h.HandcartUses));
@@ -251,7 +254,8 @@ public sealed class HandcartTests
         Assert.True(gone.HasHome, "The dead family's home fell, so there is nowhere for a cart to wait.");
         Assert.Equal(17, gone.HandcartUses);
         Assert.Equal(
-            world.Households.Count(h => h.HasHome && h.HandcartUses <= 0 && world.LivingMembersOf(h) > 0),
+            world.Households.Count(h => h.HasHome && h.HandcartUses <= 0 && world.LivingMembersOf(h) > 0)
+                + world.Workplaces.Count(w => w.IsACartOwner && w.HandcartUses <= 0),
             LabourQuota.HandcartsWanted(world));
     }
 
@@ -267,7 +271,7 @@ public sealed class HandcartTests
         Assert.True(housed.Count >= 2, "Two housed households are needed to tell a count from a flag.");
         int wanted = LabourQuota.HandcartsWanted(world);
         int shortfall = LabourQuota.HandcartsShortfall(world);
-        Assert.Equal(housed.Count, wanted);
+        Assert.Equal(housed.Count + world.Workplaces.Count(w => w.IsACartOwner), wanted); // the fixture's market is an owner too (§13.2)
 
         housed[0].HandcartUses = 40;
         Assert.Equal(wanted - 1, LabourQuota.HandcartsWanted(world));
@@ -777,7 +781,7 @@ public sealed class HandcartTests
         pusher.PushingACart = true;
         TheWarehouse(world).Store.Add(Goods.Handcart, 2);
 
-        Assert.Equal(11, SaveGame.Format);
+        Assert.Equal(12, SaveGame.Format); // 11 at D686; 12 since the trades' carts (§13.7), whose own guard poses the refusal of 11.
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Assert.Equal(123, loaded.World.Households.Single(h => h.Id == home.Id).HandcartUses);
@@ -858,6 +862,323 @@ public sealed class HandcartTests
         Assert.Equal(new SimConfig().CartOffPathSlowPercent, shipped.CartOffPathSlowPercent);
         SimConfigException quicker = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "cart_off_path_slow_percent": 99 }""", "<modded>"));
         Assert.Contains("cart_off_path_slow_percent", quicker.Message, StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------
+    //  §13 — the trades' carts: the market's and the trading post's (Joe, 2026-11-05: "one more owner of the same good")
+    // ---------------------------------------------------------------
+
+    /// <summary>The fixture's one standing market, as a workplace — the owner of its cart (§13.2).</summary>
+    private static Workplace TheMarket(SimWorld world) => world.Workplaces.Single(w => w.Kind == JobKind.Marketer && !w.IsSite);
+
+    /// <summary>Every housed household carted, so the only owner wanting a cart is the trade under test.</summary>
+    private static void CartEveryHousehold(SimWorld world)
+    {
+        foreach (Household home in Housed(world))
+        {
+            home.HandcartUses = world.Config.HandcartUses;
+        }
+    }
+
+    /// <summary>A marketer, seated by pinning (the quota keeps a pinned trade seated, as TradeTests pins its merchant).</summary>
+    private static Villager PinAMarketer(SimWorld world, int skip = 0)
+    {
+        Villager marketer = world.Villagers.Where(v => v.Alive && v.CanWork).Skip(skip).First();
+        world.SetPinnedTrade(marketer, JobKind.Marketer);
+        return marketer;
+    }
+
+    /// <summary>§13.2: a standing market with no cart sends a free marketer for one — from a store that racks tools, never the market's own counter — who pushes it to the market and parks it there with every trip in it; no household's cart moves.</summary>
+    [Fact]
+    public void AMarketWithoutACartSendsItsMarketerForOneAndParksItThere()
+    {
+        SimConfig config = Config;
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        NobodyWorks(world);
+        CartEveryHousehold(world);
+        Workplace market = TheMarket(world);
+        StoreBuilding counter = world.AnyStoreOf(StoreKind.Market);
+        Villager marketer = PinAMarketer(world);
+        foreach (Villager v in world.Villagers.Where(v => v.Alive))
+        {
+            v.StandAt(world.HomePoint(v));
+        }
+
+        // Two carts straight into the market's own stockpile, past the row: nobody's to fetch (§13.2, D672 call 1).
+        counter.Store.Add(Goods.Handcart, 2);
+        for (int tick = 0; tick < config.TicksPerSeason / 2; tick++)
+        {
+            loop.StepOnce();
+            Assert.DoesNotContain(world.Villagers, v => v.State == VillagerState.FetchingAHandcart);
+        }
+
+        Assert.Equal(0, market.HandcartUses);
+        Assert.Equal(2, counter.Store.TakeAll(Goods.Handcart));
+
+        // Two on the warehouse shelf: the marketer walks for one and pushes it to the market.
+        TheWarehouse(world).Store.Add(Goods.Handcart, 2);
+        int fetchingTicks = 0;
+        int pushingTicks = 0;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager v in world.Villagers)
+            {
+                if (v.State is VillagerState.FetchingAHandcart or VillagerState.PushingAHandcart)
+                {
+                    Assert.True(v.CartForTheWorks, $"{v.Name} is out for a cart that is not the works' while every household is carted.");
+                    Assert.Equal(JobKind.Marketer, world.FindWorkplace(v.WorkplaceId)?.Kind);
+                }
+
+                fetchingTicks += v.State == VillagerState.FetchingAHandcart ? 1 : 0;
+                pushingTicks += v.State == VillagerState.PushingAHandcart ? 1 : 0;
+            }
+        }
+
+        _output.WriteLine($"{marketer.Name}: {fetchingTicks} ticks walking for the market's cart, {pushingTicks} pushing it to the market; the market has {market.HandcartUses} trips.");
+        Assert.True(fetchingTicks > 0, "Nobody was seen walking for the market's cart.");
+        Assert.True(pushingTicks > 0, "Nobody was seen pushing the market's cart to the market.");
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+        Assert.Equal(1, TheWarehouse(world).Store[Goods.Handcart]);
+        Assert.Equal(1, sink.Entries.Count(e => e.Message.Contains($"for {market.Name}", StringComparison.Ordinal) && e.Message.Contains("took a handcart", StringComparison.Ordinal)));
+        Assert.All(world.Villagers, v => Assert.False(v.CartForTheWorks, $"{v.Name} still has the market's cart in hand with it parked."));
+        Assert.All(Housed(world), h => Assert.True(h.HandcartUses > 0, $"{h.Name} lost its own cart while the market fetched one."));
+    }
+
+    /// <summary>§13.2, posed directly: one fetcher a market while a colleague is out for its cart, none once the market has one, and never a marketer with a load in hand.</summary>
+    [Fact]
+    public void OneFetcherAMarketAndNoneOnceCarted()
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        NobodyWorks(world);
+        CartEveryHousehold(world);
+        Workplace market = TheMarket(world);
+        TheWarehouse(world).Store.Add(Goods.Handcart, 5);
+        Villager first = PinAMarketer(world);
+        Villager second = PinAMarketer(world, skip: 1);
+        foreach (Villager v in world.Villagers)
+        {
+            v.WorkplaceId = 0;
+            v.StandAt(world.HomePoint(v));
+        }
+
+        first.WorkplaceId = market.Id;
+        second.WorkplaceId = market.Id;
+        market.WorkerIds.Add(first.Id);
+        market.WorkerIds.Add(second.Id);
+
+        // A colleague is already walking for it: the second stays.
+        first.State = VillagerState.FetchingAHandcart;
+        first.CartForTheWorks = true;
+        BehaviorSystem.DecideForTest(world, second);
+        Assert.NotEqual(VillagerState.FetchingAHandcart, second.State);
+
+        // Nobody out, no cart: the second goes, for the works.
+        first.State = VillagerState.Idle;
+        first.CartForTheWorks = false;
+        second.State = VillagerState.Idle;
+        BehaviorSystem.DecideForTest(world, second);
+        Assert.Equal(VillagerState.FetchingAHandcart, second.State);
+        Assert.True(second.CartForTheWorks);
+
+        // A carted market, carts still on the shelf: nobody walks for another.
+        second.State = VillagerState.Idle;
+        second.CartForTheWorks = false;
+        second.StandAt(world.HomePoint(second));
+        market.HandcartUses = 3;
+        BehaviorSystem.DecideForTest(world, first);
+        Assert.NotEqual(VillagerState.FetchingAHandcart, first.State);
+        Assert.Equal(5, TheWarehouse(world).Store[Goods.Handcart]);
+    }
+
+    /// <summary>§13.2: a standing trading post is an owner too — its merchant fetches one and parks it at the post.</summary>
+    [Fact]
+    public void APostWithoutACartSendsItsMerchantForOne()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink());
+        SimWorld world = loop.World;
+        SimConfig config = world.Config;
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        NobodyWorks(world);
+        CartEveryHousehold(world);
+        Workplace post = TradeTests.RaiseAPost(world);
+        TheWarehouse(world).Store.Add(Goods.Handcart, 2);
+        Villager merchant = world.Villagers.First(v => v.Alive && v.CanWork);
+        world.SetPinnedTrade(merchant, JobKind.Merchant);
+        foreach (Villager v in world.Villagers.Where(v => v.Alive))
+        {
+            v.StandAt(world.HomePoint(v));
+        }
+
+        int pushingTicks = 0;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            pushingTicks += world.Villagers.Count(v => v.State == VillagerState.PushingAHandcart && v.CartForTheWorks);
+        }
+
+        _output.WriteLine($"{merchant.Name}: {pushingTicks} ticks pushing the post's cart to the post; the post has {post.HandcartUses} trips.");
+        Assert.True(pushingTicks > 0, "Nobody was seen pushing the post's cart to the post.");
+        Assert.Equal(config.HandcartUses, post.HandcartUses);
+        Assert.Equal(1, TheWarehouse(world).Store[Goods.Handcart]);
+        Assert.Equal(0, TheMarket(world).HandcartUses); // nobody is seated at the market, so it waits
+        Assert.All(world.Villagers, v => Assert.False(v.CartForTheWorks, $"{v.Name} still has the post's cart in hand with it parked."));
+    }
+
+    /// <summary>§13.2: the quota counts a standing market and a standing post without a cart as an owner each — a site is not an owner, and a carted one wants none.</summary>
+    [Fact]
+    public void TheQuotaCountsAStandingMarketAndPostAsOwners()
+    {
+        SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink()).World;
+        Workplace market = TheMarket(world);
+        int households = Housed(world).Count;
+        Assert.Equal(households + 1, LabourQuota.HandcartsWanted(world));
+
+        market.HandcartUses = 5;
+        Assert.Equal(households, LabourQuota.HandcartsWanted(world));
+
+        // A post raised: one more owner; a site under construction is not one.
+        GridPos founding = world.Map.FoundingSite;
+        ColdStartTests.MarkSomewhereNear(world, BuildingKind.Market, founding, 6);
+        Assert.Contains(world.Workplaces, w => w.IsSite && w.Construction!.Kind == BuildingKind.Market);
+        Assert.Equal(households, LabourQuota.HandcartsWanted(world));
+        Workplace post = TradeTests.RaiseAPost(world);
+        Assert.Equal(households + 1, LabourQuota.HandcartsWanted(world));
+        post.HandcartUses = 1;
+        Assert.Equal(households, LabourQuota.HandcartsWanted(world));
+        Assert.Equal(LabourQuota.HandcartsWanted(world) + LabourQuota.HandcartSpare - world.InStores(Goods.Handcart), LabourQuota.HandcartsShortfall(world));
+    }
+
+    /// <summary>§13.2: a pusher who dies, or whose seat the allocator took, leaves the works' cart at its building — the flags clear, the building's trips stand.</summary>
+    [Fact]
+    public void APusherWhoLosesTheSeatOrDiesLeavesTheWorksCartAtTheBuilding()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        NobodyWorks(world);
+        CartEveryHousehold(world);
+        Workplace market = TheMarket(world);
+        market.HandcartUses = 17;
+        Villager marketer = PinAMarketer(world);
+        marketer.WorkplaceId = market.Id;
+        marketer.PushingACart = true;
+        marketer.CartForTheWorks = true;
+        marketer.StandAt(world.AnyStoreOf(StoreKind.Granary).Position);
+
+        // The seat gone: the next decision drops the cart where it counts as home, and the household's cart is not touched.
+        world.SetPinnedTrade(marketer, null);
+        marketer.WorkplaceId = 0;
+        Household home = world.HouseholdOf(marketer);
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.False(marketer.CartForTheWorks);
+        Assert.False(marketer.PushingACart);
+        Assert.Equal(17, market.HandcartUses);
+        Assert.Equal(config.HandcartUses, home.HandcartUses);
+
+        // A death on the road with the works' cart in hand.
+        marketer.WorkplaceId = market.Id;
+        marketer.PushingACart = true;
+        marketer.CartForTheWorks = true;
+        marketer.AgeYears = marketer.LifespanYears;
+        loop.StepOnce();
+        Assert.False(marketer.Alive, "The posed death did not happen.");
+        Assert.False(marketer.CartForTheWorks);
+        Assert.False(marketer.PushingACart);
+        Assert.Equal(17, market.HandcartUses);
+    }
+
+    [Fact]
+    public void TheHashCoversTheWorksCartAndItsPusher()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        ulong bare = StateHash.Compute(world);
+
+        TheMarket(world).HandcartUses = 5;
+        ulong carted = StateHash.Compute(world);
+        Assert.NotEqual(bare, carted);
+
+        world.Villagers[0].PushingACart = true;
+        ulong pushing = StateHash.Compute(world);
+        world.Villagers[0].CartForTheWorks = true;
+        Assert.NotEqual(pushing, StateHash.Compute(world));
+    }
+
+    [Fact]
+    public void TheWorksCartSurvivesTheRoundTripAndAFormatElevenSaveIsRefused()
+    {
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace market = TheMarket(world);
+        market.HandcartUses = 77;
+        Villager pusher = world.Villagers.First(v => v.Alive && v.CanWork);
+        pusher.PushingACart = true;
+        pusher.CartForTheWorks = true;
+
+        Assert.Equal(12, SaveGame.Format);
+        SimLoop loaded = Reload(loop);
+        Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
+        Assert.Equal(77, loaded.World.Workplaces.Single(w => w.Id == market.Id).HandcartUses);
+        Assert.True(loaded.World.Villagers.Single(v => v.Id == pusher.Id).CartForTheWorks);
+
+        loop.Step(config.TicksPerYear);
+        loaded.Step(config.TicksPerYear);
+        Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
+
+        // Joe's format-11 saves (the Slice H builds) — refused, naming the build.
+        string folder = Path.Combine(Path.GetTempPath(), "bclone-handcart-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            JsonObject document = SaveGame.Capture(loop, "0.0.1", "2026-11-05 12:00", NewGame.ShareCode(
+                config, NewGame.Defaults(config, world.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture))));
+            document["format"] = 11;
+            string path = Path.Combine(folder, $"format-eleven{SaveFile.Extension}");
+            SaveFile.Write(path, document);
+            SaveOpened opened = SaveFile.Open(path, config);
+            Assert.Null(opened.Loop);
+            Assert.Equal("Saved by build 0.0.1, whose saves this build cannot read.", opened.Refusal);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    /// <summary>§13.5: the works' cart's walks read as sentences — the new cart's walk in, and the empty leg back.</summary>
+    [Fact]
+    public void TheWorksCartStatesHaveSentences()
+    {
+        var villager = new Villager
+        {
+            Id = 1, Name = "Posed", LifespanYears = 45, Carried = new Stockpile(Stockpile.Kinds),
+        };
+
+        villager.CartForTheWorks = true;
+        villager.PushingACart = true;
+        villager.State = VillagerState.PushingAHandcart;
+        Assert.Equal("pushing the new handcart to work", villager.DescribeState());
+        villager.State = VillagerState.StockingTheMarket;
+        Assert.Equal("pushing the market's handcart back", villager.DescribeState());
+        villager.State = VillagerState.StockingThePost;
+        Assert.Equal("pushing the post's handcart back", villager.DescribeState());
+
+        // With a load in the arms the leg keeps its words; the rectangle behind the dot says the rest.
+        villager.Carried.Add(Goods.Produce, 10);
+        villager.State = VillagerState.StockingTheMarket;
+        Assert.Equal("carrying goods to the market", villager.DescribeState());
+
+        villager.CartForTheWorks = false;
+        villager.Carried.TakeAll(Goods.Produce);
+        villager.State = VillagerState.PushingAHandcart;
+        Assert.Equal("pushing the new handcart home", villager.DescribeState());
     }
 
     // ---------------------------------------------------------------

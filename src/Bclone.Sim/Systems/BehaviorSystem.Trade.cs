@@ -31,6 +31,12 @@ public sealed partial class BehaviorSystem
             return false;
         }
 
+        // ⭐ A HANDCART FOR THE POST (`handcart.md §13.2`): the market's errand one building over.
+        if (TryFetchTheWorksCart(world, villager, post))
+        {
+            return true;
+        }
+
         if (world.GoodToBringHome(store) is not null)
         {
             villager.WorkNote = string.Empty;
@@ -100,6 +106,12 @@ public sealed partial class BehaviorSystem
                         {
                             villager.Carried.TryTake(goods, store.Put(goods, villager.Carried[goods]));
                         }
+                    }
+
+                    // ⭐ And the post's cart is parked at its door (`handcart.md §13.2`) — the post is where its round trip ends.
+                    if (villager.CartForTheWorks)
+                    {
+                        ParkTheWorksCart(world, villager, post);
                     }
                 }
 

@@ -161,11 +161,14 @@ public sealed class WorkshopTests
         SimWorld world = loop.World;
         Workplace workshop = AWorkingWorkshop(world, logs: 2_000);
 
+        // The owners: the housed households, and the standing market (`handcart.md §13.2` — one more owner of the same good).
         int households = world.Households.Count(h => h.HasHome && world.LivingMembersOf(h) > 0);
+        int trades = world.Workplaces.Count(w => w.IsACartOwner);
         int wanted = LabourQuota.HandcartsWanted(world);
-        _output.WriteLine($"{households} housed households; the village wants {wanted} handcarts and {LabourQuota.HandcartSpare} spare.");
+        _output.WriteLine($"{households} housed households and {trades} trade owner(s); the village wants {wanted} handcarts and {LabourQuota.HandcartSpare} spare.");
         Assert.True(households > 0, "No housed household, so the stop would be at the spare alone and prove nothing.");
-        Assert.Equal(households, wanted);
+        Assert.Equal(1, trades); // the fixture's market
+        Assert.Equal(households + trades, wanted);
         Assert.Equal(1, LabourQuota.HandcartSpare);
         Assert.Null(world.StockLimits.For(Goods.Handcart));
 
@@ -209,9 +212,10 @@ public sealed class WorkshopTests
         Assert.True(gone.HasHome, "The dead family's home is still standing; the pose is a house with nobody in it.");
         Assert.Equal(before - 1, LabourQuota.HandcartsWanted(world));
 
-        // A living family with no roof wants none either: a cart serves a larder, and a larder is under a roof.
+        // A living family with no roof wants none either: a cart serves a larder, and a larder is under a roof. The
+        // fixture's market is the one owner beside the households (`handcart.md §13.2`).
         int housed = world.Households.Count(h => h.HasHome && world.LivingMembersOf(h) > 0);
-        Assert.Equal(housed, LabourQuota.HandcartsWanted(world));
+        Assert.Equal(housed + world.Workplaces.Count(w => w.IsACartOwner && w.HandcartUses <= 0), LabourQuota.HandcartsWanted(world));
     }
 
     /// <summary>§9 guard 6: the input refusal names the workshop, the store and what a cart takes.</summary>
@@ -724,7 +728,7 @@ public sealed class WorkshopTests
         loop.Step(config.TicksPerSeason);
         Assert.True(world.WorkshopLearned);
 
-        Assert.Equal(11, SaveGame.Format); // 10 at D678; 11 since Slice H (`HandcartTests` holds the bump and the refusal).
+        Assert.Equal(12, SaveGame.Format); // 10 at D678; 11 since Slice H; 12 since the trades' carts (`HandcartTests` holds the bump and the refusal).
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Workplace again = loaded.World.Workplaces.Single(w => w.Id == workshop.Id);

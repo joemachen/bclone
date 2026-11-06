@@ -212,7 +212,7 @@ public sealed class TradeRowsTests
     // ---------------------------------------------------------------
 
     [Fact]
-    public void TheFormatIsEleven() => Assert.Equal(11, SaveGame.Format); // 8 since D590 (trade); 9 since D660 (the coat); 10 since D678 (the workshop); 11 since Slice H (the household's handcart).
+    public void TheFormatIsTwelve() => Assert.Equal(12, SaveGame.Format); // 8 since D590 (trade); 9 since D660 (the coat); 10 since D678 (the workshop); 11 since Slice H (the household's handcart); 12 since the trades' carts (`handcart.md §13`).
 
     [Fact]
     public void TradeAndAHerdComeBackFromASave()

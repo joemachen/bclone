@@ -1524,7 +1524,9 @@ public readonly record struct LabourQuota
     /// <summary>
     /// ⭐ The handcarts the village wants (`workshop-and-the-carpenter.md §4.4`, D678): <b>the households with a home,
     /// less the households that own a cart</b> (<see cref="Household.HandcartUses"/> above nought — Slice H,
-    /// `handcart.md §3`), so the carpenter stops and the professions panel stays honest once the households are carted.
+    /// `handcart.md §3`), <b>and a standing market or trading post without one</b> (`handcart.md §13.2`; Joe, 2026-11-05:
+    /// <i>"one more owner of the same good"</i>), so the carpenter stops and the professions panel stays honest once the
+    /// households and the trades are carted.
     /// </summary>
     /// <remarks>
     /// ⚠️ <i>Households</i>, not adults and not homes: a cart serves the larder, which is the household's (Joe, D672
@@ -1541,6 +1543,15 @@ public readonly record struct LabourQuota
         {
             Household household = world.Households[i];
             if (household.HasHome && household.HandcartUses <= 0 && world.LivingMembersOf(household) > 0)
+            {
+                wanting++;
+            }
+        }
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.IsACartOwner && workplace.HandcartUses <= 0)
             {
                 wanting++;
             }
