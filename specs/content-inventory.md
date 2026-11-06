@@ -9,8 +9,8 @@
 > (trade 15) (D659–D667); the workshop (building 27), the carpenter (trade 16, skill 10 *carpentry*) and the handcart
 > (good 15) (D678, played D682); the household's cart — owned, fetched, pushed, worn, slow on grass, a path on its first pass
 > (Slice H, D686–D689, `handcart.md`, played and merged D690); the trades' carts — the market's and the trading post's, owned by the
-> workplace, fetched and pushed by the marketer and the merchant (`handcart.md §13`, 🔨 in progress on `claude/elastic-dewdney-d55a19`,
-> save format 12). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
+> workplace, fetched and pushed by the marketer and the merchant (`handcart.md §13`, D692–D694, built on `claude/elastic-dewdney-d55a19`,
+> unplayed; save format 12). Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
 > Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
 >
 > **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in

@@ -7927,10 +7927,21 @@ public partial class VillageMap : Control
     {
         SimWorld world = _world!;
         _pushing.Clear();
+        _worksPushing.Clear();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (villager.Alive && villager.PushingACart)
+            if (!villager.Alive || !villager.PushingACart)
+            {
+                continue;
+            }
+
+            // Whose cart is out (`handcart.md §13.5`): the works' cart in a marketer's hands leaves the home's chip standing.
+            if (villager.CartForTheWorks)
+            {
+                _worksPushing.Add(villager.WorkplaceId);
+            }
+            else
             {
                 _pushing.Add(villager.HouseholdId);
             }
@@ -7946,9 +7957,23 @@ public partial class VillageMap : Control
 
             DrawTheCartChip(CartChipRectOf(door));
         }
+
+        // ⭐ And the trades' carts beside the market and the post (`handcart.md §13.5`; Joe, 2026-11-05: one more owner of the
+        // same good) — the same chip in the same place on the building's tile, when nobody of the building has it out.
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.HandcartUses <= 0 || _worksPushing.Contains(workplace.Id))
+            {
+                continue;
+            }
+
+            DrawTheCartChip(CartChipRectOf(workplace.Tile));
+        }
     }
 
     private readonly HashSet<int> _pushing = new();
+    private readonly HashSet<int> _worksPushing = new();
 
     /// <summary>
     /// Where a household's parked cart is drawn: the heap chip's place beside the home (<see cref="HeapRectOf"/>), a
@@ -8010,8 +8035,9 @@ public partial class VillageMap : Control
     /// <summary>
     /// ⭐ A cart is seen (Slice H, `handcart.md §8`) — <b>a probe line</b>: the pushed cart's rectangle trails the dot
     /// against its heading and never covers it, a standing pusher's cart hangs below; the parked chip sits beside a
-    /// building's door, outside its square, within a tile, and never on the heap chip of the same door; and the three
-    /// drawings and the goods palette are one colour.
+    /// building's door, outside its square, within a tile, and never on the heap chip of the same door — beside a store's
+    /// and beside a workplace's (the market's and the post's chip, `handcart.md §13.5`); and the three drawings and the
+    /// goods palette are one colour.
     /// </summary>
     public string ACartIsSeen()
     {
@@ -8064,13 +8090,46 @@ public partial class VillageMap : Control
             }
         }
 
+        // The trades' chip (`handcart.md §13.5`): the same geometry on a workplace's tile — the `workshop:` probe has marked a
+        // builder's hut by now when the founding has no workplace, and a site's square is a building's square for this.
+        if (world.Workplaces.Count == 0)
+        {
+            faults.Add("no workplace to pose a trade's parked cart beside");
+        }
+        else
+        {
+            GridPos works = world.Workplaces[0].Tile;
+            Rect2 chip = CartChipRectOf(works);
+            if (BuildingBoxOn(works) is not (Vector2 _, Rect2 building))
+            {
+                faults.Add("the workplace draws no square to keep the trade's parked cart out of");
+            }
+            else
+            {
+                if (chip.Intersects(building))
+                {
+                    faults.Add("the trade's parked cart is drawn under its building");
+                }
+
+                if (chip.GetCenter().DistanceTo(building.GetCenter()) > _pixelsPerTile * 1.6f)
+                {
+                    faults.Add($"the trade's parked cart is {chip.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from its door");
+                }
+
+                if (chip.Intersects(HeapRectOf(works)))
+                {
+                    faults.Add("the trade's parked cart sits on the heap chip of the same door");
+                }
+            }
+        }
+
         if (ColourOf(StoreKind.Cart) != HandcartColour || GoodsPalette.ColourOf(Goods.Handcart) != HandcartColour)
         {
             faults.Add("the founders' cart, the handcart good and the cart colour are not one colour");
         }
 
         return faults.Count == 0
-            ? "[widths] cart: ✅ the pushed cart trails the dot and never covers it, the parked chip sits beside the door clear of the heap, the founders' cart and the good share its colour"
+            ? "[widths] cart: ✅ the pushed cart trails the dot and never covers it, the parked chip sits beside a store's door and a workplace's clear of the heap, the founders' cart and the good share its colour"
             : $"[widths] cart: ⛔ {string.Join("; ", faults)}";
     }
 

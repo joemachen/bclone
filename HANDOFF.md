@@ -1,6 +1,49 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF SLICE H (D690, 2026-11-05), LOCAL, NOT PUSHED; `origin/main` = cc79bd3 (D685 + A HANDOFF FIX). ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689: OWNED, FETCHED, PUSHED, PARKED, SEEN; THREE ARMFULS A TRIP; WORN A TRIP; SLOW ON GRASS; A PATH ON ITS FIRST PASS), THE LODGE FIX (D683) — SAVE FORMAT 11, OLDER SAVES REFUSED IN WORDS. PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*), THE LODGE NOT YET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅ (THE MECHANIC BUILT AND PLAYED; `logistics.md §6` HOLDS THE VERDICT), THEN HOUSE TIERS. NEXT: THE COLD WARNING NAMES THE COAT (D691, HERE), THEN THE MARKETER'S AND MERCHANT'S CARTS (THEIR OWN SLICE, JOE'S CALL 2026-11-05), THE OX CART LATER AS *HEAVY HAULAGE*; PUSH AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — 🔨 THE TRADES' CARTS (D692–D694, `claude/elastic-dewdney-d55a19`, 2026-11-05) ARE BUILT, MEASURED AND GUARDED IN THREE COMMITS, UNPLAYED, UNMERGED: THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE; SAVE FORMAT 12 (HIS FORMAT-11 SAVES REFUSED IN WORDS). OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR; ⚠️ HALF THE COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — HIS CALL. `main` = 6a2f4fe (D691) ON THE MERGE OF SLICE H (D690, 2026-11-05), LOCAL, NOT PUSHED; `origin/main` = cc79bd3 (D685 + A HANDOFF FIX). ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689: OWNED, FETCHED, PUSHED, PARKED, SEEN; THREE ARMFULS A TRIP; WORN A TRIP; SLOW ON GRASS; A PATH ON ITS FIRST PASS), THE LODGE FIX (D683) — SAVE FORMAT 11, OLDER SAVES REFUSED IN WORDS. PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*), THE LODGE NOT YET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅ (THE MECHANIC BUILT AND PLAYED; `logistics.md §6` HOLDS THE VERDICT), THEN HOUSE TIERS. NEXT: THE COLD WARNING NAMES THE COAT (D691, HERE), THEN THE MARKETER'S AND MERCHANT'S CARTS (THEIR OWN SLICE, JOE'S CALL 2026-11-05), THE OX CART LATER AS *HEAVY HAULAGE*; PUSH AT HIS WORD. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-05 (D690 — SLICE H MERGED; D691 — THE COLD LINE) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-05 (D692–D694 — THE TRADES' CARTS, ON `claude/elastic-dewdney-d55a19`) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **This branch is three commits past `main` 6a2f4fe (D691): piece 1 (D692) the owners, piece 2 (D693) what it buys, piece 3 (D694) the
+> look — the trades' carts, `specs/handcart.md §13`, Joe's pick after playing Slice H (*"does the marketer use a cart to move goods
+> around? and what about the trading post worker?"* → *one more owner of the same good*). Unplayed, unmerged, not pushed.** Joe plays
+> it from this worktree (`.\run.bat`; ⚠️ **save format 12** — his format-11 Oakhaven save and everything older are refused in words,
+> which he accepted; a new game, or a save made on this build), then merges `--no-ff` at his word with the status lines made true
+> inside the merge commit (D640's trap), pushes at his word.
+>
+> **What is built.** A standing market or trading post owns a handcart (`Workplace.HandcartUses`, `IsACartOwner`; saved `handcart_uses`,
+> hashed sparsely `0xF2`); whose cart a villager has is `Villager.CartForTheWorks` beside `PushingACart` (saved `cart_for_the_works`,
+> sparse tag 10). A free marketer or merchant fetches one from the shelf when the building has none (`TryFetchTheWorksCart` — the row's
+> stores, never the market's counter; one fetcher a building; the same two states, *"pushing the new handcart to work"*), pushes it to
+> the building and parks it. An errand that starts at the building's door takes it (`TakeTheWorksCart`, one pusher a building) and
+> carries `cart_armfuls` armfuls — the counter's restock (`LoadForTheMarket`, whole armfuls within the counter's room), a buffer or a
+> dead larder (`LoadForTheRound`), the merchant's run down and the run home from the post; parked at the building and worn a trip
+> (`ParkTheWorksCart`; a new cart's walk in wears none); when a haul ends at a storehouse, `Decide` runs the trade's branch first while
+> the cart is in hand and, with nothing left to carry, pushes it back empty (*"pushing the market's handcart back"*). A lost seat or a
+> death leaves the cart where it counts as back at the building. `HandcartsWanted` counts the two trades as owners, so the carpenter
+> makes one more. The household's predicates read the household's cart only (`PushingACart && !CartForTheWorks`). The map: the chip
+> beside the market and the post (`DrawParkedCarts`), the rectangle behind the pusher as before; the market's and the post's cards read
+> *"a handcart, 37 trips left — out with Alys"* (`WorksCartSentence`). Nothing about the household's cart changed (§3–§7 and their
+> numbers stand); the ox cart, the caravan and the laborers' hauls are not here.
+>
+> **Measured, before and after, same seeds and save (`handcart.md §13.6`; the instrument learned `market:`, `post:` and `workscarts`
+> lines and the arms `ZZ_MARKET=1` / `ZZ_POST=1`, which RAISE a finished market and post at Year 3 — a marked market is never built):**
+> Joe's Oakhaven (format 11, read by a TEMPORARY tolerance `scratchpad/format11.py`, reverted, `git diff` empty): the Market bucket
+> **9.1 → 8.2 % of adult ticks**, counter trips **18.3 → 14.4 a marketer-year**, 79 → 129 units a trip, the counter 29 % fuller; four
+> harness valleys 5.7 → 3.8 / 10.2 → 9.2 / 5.8 → 3.9 / 5.9 → 4.8 %, trips 25 → 18 / 13 → 10 / 12 → 8 / 15 → 11; the post's runs down
+> 46 → 29 and 17 → 13–14 where it has steady work. ⚠️ **Two honest findings:** a carted trip carries 93–190, not 240 (the counter is
+> short by an armful or two more often than three, and the room caps it); and **only half the counter trips are carted** — the rest
+> begin at home after a rest, because the marketer's day has no first leg to the market and `WorkTheMarket` sends them from their
+> doorstep straight to the granary. §4's rule to the letter; **his call** (⏸️ OPEN below): leave it, or give the marketer's day a first
+> leg to the market.
+>
+> **Guards and checks:** `HandcartTests` +16 facts (34 in all); piece 1 21 mutants / 31 reds / two zeros written down, piece 2 16 / 23 /
+> one, piece 3 the probe (`handcart.md §13.8`); `TryTrade`'s own return clause scored zero, was found dead and deleted. Five Slice H and
+> Slice W guards re-aimed to count the market as an owner. **Four checks on the final tree (D694):** suite **1946 / 0 / 5 of 1951 in 15m00** (14m14 at D693 with the same tests - the view and its probe ran beside it, nothing else; the view changed, the sim did not); view 0
+> warnings; probe 106 `[widths]` lines, 70 ✅, 0 ⛔, `cart:` ✅ (the chip beside a workplace too), `cart card:` ✅ (the works' sentence four
+> ways, a site's card hides it), bar 151, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 398 → 398, none moved (no golden run
+> racks a cart). ⚠️ The suite's clock: see D692–D694 (nothing ran beside it but a view build and a probe).
+>
+> **— the D690/D691 block, as `main` has it —**
+> **⭐⭐ (main's block) WHERE THINGS ARE, 2026-11-05 (D690 — SLICE H MERGED; D691 — THE COLD LINE) — ON WINDOWS.**
 >
 > **`main` = the merge of `claude/slice-handcart-b0230a` (D690, 2026-11-05), local, NOT pushed; `origin/main` = cc79bd3 (D685 + a HANDOFF
 > fix).** Slice H's five piece commits and two docs commits merged `--no-ff` at Joe's *"Yes, merge"* after he played it (Oakhaven-loam-raven-56,
@@ -9066,6 +9109,42 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D692–D694 PAID FOR — A MARKED MARKET IS NEVER RAISED, `open('w')` TRUNCATES BEFORE IT REJECTS, A HEREDOC THAT NEVER CAME, BACKTICKS IN A QUOTED ARGUMENT, A ZERO THAT WAS DEAD CODE, AND HALF THE TRIPS BEGIN AT HOME
+
+- ⛔ **The harness valley raises no market, and a market it MARKS is never built.** The first "before" run on `ZzLogistics` marked a
+  market at Year 3 and read `market 0 (0.0%)` and a `workscarts` line naming only the post for fifty years — no builder ever raised it
+  (stone, hands). Raise it finished (`RaiseFinished`, `TradeTests.RaiseAPost`'s shape) and print the raised building's tile in the
+  harness line, or an arm "with a market" measures a valley without one. The same for anything the unattended valley will not build.
+- ⛔⛔ **`open(path, 'w', newline='\\n')` — the newline doubly escaped — TRUNCATES THE FILE TO ZERO BYTES, THEN RAISES `ValueError`.**
+  It happened twice in one session to `tools/harness/ZzLogistics.cs` (restored from the `tests/` copy both times). Python opens and
+  truncates before it validates the argument. Write edit scripts with the editor tool, never from a heredoc that bash has had a
+  chance to re-escape; after any failed write, `wc -c` the target before anything else.
+- ⛔ **A bash heredoc meant for `python -X utf8 -I -` that bash never delivers leaves python reading stdin for ever** — a stray
+  `python - 2>/dev/null;` stub hung a call for the full five-minute timeout. And a `<<'EOF'` body holding `'''` and `\"` sequences
+  failed to parse at all (*unexpected EOF while looking for matching quote*). The memory note already says *scripts from a file,
+  never a heredoc*; this session paid for ignoring it three times. Write the script with the editor tool and run the file.
+- ⛔ **Backticks inside a double-quoted bash argument run as a command.** A D692 log line passed as `"… — \`Get-Process\` checked
+  first"` reached `DESIGN.md` as *"— checked first"*: bash substituted the command's (empty) output. Single-quote such arguments, or
+  put the text in a file.
+- ⚠️ **A fresh worktree's probe hangs on the missing import (D678's trap, paid a second time)** — `grass_seasons.png`'s `.ctex` was
+  not there, `done.` never printed, a headless Godot sat at 380 MB until `taskkill`. `"$GODOT" --headless --path src/Bclone.Game
+  --import` first, delete the `.uid` files, **and `git checkout -- src/Bclone.Game/icon.svg.import src/Bclone.Game/textures/`** —
+  the import rewrites seven tracked `.import` files with LF line endings and they show as modified.
+- ⭐ **A mutant that scores zero may be dead code, not a missing guard.** `TryTrade`'s own "push the cart back" clause scored 0 of 33:
+  a merchant holding the post's cart never reaches the job branch, because `Decide`'s works-first branch runs `TryTrade` itself and
+  returns the cart on false. Read a zero both ways before writing it down — this one was deleted (CLAUDE.md: dead code goes).
+- ⚠️ **A settled guard that counts "pushers" or "fetchers" must say WHOSE cart.** Three Slice H guards counted a household member in
+  `FetchingAHandcart` as the household's fetcher and went red the first time the market fetched; `WorkshopTests` counted carts wanted
+  as housed households and went red when the market became an owner. Every such count now adds `world.Workplaces.Count(w =>
+  w.IsACartOwner …)` or filters on `CartForTheWorks: false`. A new owner of an old good touches every guard that counted the old owners.
+- ⚠️ **Joe's format-11 saves need a temporary tolerance to be measured on a format-12 build** — `scratchpad/format11.py apply|revert`
+  (accepts 11, reads the two new fields with `HasValue`); never committed, `git diff` on the four files empty before the commit, and
+  **never applied while a red-check runs**: the format guard would read red under it and poison the count.
+- 📏 **The marketer's day has no first leg to the market, so half the counter trips begin at home and go on foot.** The instrument's
+  `carted N of M` column is what showed it (394 of 772 in seed 1, 66 of 144 in Oakhaven); the arithmetic alone would have promised
+  240 a trip under every trip. Any cart "kept at the building" is used only by trips that start there — measure that share before
+  promising a saving.
+
 ## ⛔ THE TRAPS D686–D689 PAID FOR — A REFUSAL BESIDE THE SHELF RECURSES, A CRASHED MUTANT READS "9 PASSED", PYTHON'S TEXT MODE REWRITES AN LF FILE, AND A "BEFORE" THAT FORGOT THE CARPENTER
 
 - ⛔ **A "before" arm on a played save must stop the maker, not only take the goods out.** `ZZ_NOCARTS` took every cart off every
@@ -9505,6 +9584,20 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE TRADES' CARTS (D692–D694, `claude/elastic-dewdney-d55a19`) — BUILT, MEASURED, UNPLAYED; HIS TO PLAY, THEN MERGE AT HIS WORD.**
+  What to look for (`.\run.bat` from the worktree; **format 12** — a new game, or a save made on this build; a village with a workshop
+  and carts racked): the marketer walking to the warehouse, pushing a cart to the market and leaving it there — a slate-blue chip beside
+  the market (and the post, once one stands with a merchant); the market's card reading *"a handcart, 150 trips left"* and *"— out with
+  Alys"* while a marketer has it; a marketer leaving the market with the rectangle behind the dot, putting three armfuls on the counter
+  at once and parking it; a marketer who hauled a lodge's meat to the granary pushing the empty cart back (*"pushing the market's
+  handcart back"*); the top bar's handcarts chip amber until the market has one too. **Two things ride in it and are his:**
+  (1) ⚠️ **Half the counter trips are still on foot** — a marketer who decides at home after a rest sets off for the granary from the
+  doorstep, and the cart is at the market (`handcart.md §13.6`: 66 of 144 trips carted in Oakhaven, 394 of 772 in a harness valley).
+  §4's rule to the letter, and the honest number. *Leave it* (the cart serves the trips that start at the counter) **or** *give the
+  marketer's day a first leg to the market* (a walk of a few ticks that puts the cart under nearly every trip — a change to the
+  marketer's day, measured first). (2) The merchant's numbers rest on a posed post with a keep order (no save of his has a post this
+  build can read); the runs down fell 46 → 29 and 17 → 13–14 a merchant-year where the post had steady work — his villages are the
+  real measurement, after the hall.
 - ✅ ~~⏸️ **SLICE H — THE HANDCART (D686–D689, `claude/slice-handcart-b0230a`) — BUILT, MEASURED, UNPLAYED; HIS TO PLAY, THEN MERGE AT HIS
   WORD.**~~ **PLAYED (Joe, 2026-11-05: *"the cart stuff seems pretty good"*) AND MERGED INTO `main` (D690).** What to look for (`.\run.bat` from the worktree; a new game or a format-11 save — his format-10 saves are refused): once a
   workshop has racked carts, a member of each housed household walks to the warehouse, pushes a slate-blue cart home and parks it —
@@ -9538,7 +9631,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   Slice H (`handcart.md`)**, measured on `ZzLogistics`.
 - ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); ON `main` WITH EVERYTHING ELSE SINCE D684; JOE HAS NOT YET SAID WHAT HE SAW IN FERNHOLLOW.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
-  ladders of October still one lane. His Fernhollow save is format 10 and opens from `main`'s `.un.bat` now.
+  ladders of October still one lane. His Fernhollow save is format 10 and opens from `main`'s `.
+un.bat` now.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
   §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
   and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he

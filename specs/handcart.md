@@ -368,9 +368,13 @@ checks green; no golden moved (the shipped harness builds no workshop); `logisti
 
 ## 13. The trades' carts — the market's and the trading post's (Joe, 2026-11-05: *"one more owner of the same good"*)
 
-**Status: 🔨 IN PROGRESS on `claude/elastic-dewdney-d55a19` (2026-11-05), off `main` 6a2f4fe (D691) — ✅ piece 1 built (D692: the owners, the fetch, the quota, save format 12); ✅ piece 2 built and measured (D693: the loads of three armfuls, the take at the door, the wear, the empty leg back — Oakhaven's Market bucket 9.1 → 8.2 %, counter trips 18.3 → 14.4 a marketer-year); piece 3 next. Three pieces, each its own
-commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, the §13 facts), red-checked and counted (§13.8); measured on
-`ZzLogistics` before typed (§13.6). Unplayed, unmerged.** The status line is made true at each commit.
+**Status: ✅ BUILT on `claude/elastic-dewdney-d55a19` (2026-11-05, D692–D694), off `main` 6a2f4fe (D691) — three pieces, each its own
+commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 16 §13 facts), red-checked and counted (§13.8: 37 mutants, 54 reds,
+three zeros written down, one dead clause found by a zero and deleted); measured before and after on `ZzLogistics` (§13.6: Oakhaven's
+Market bucket 9.1 → 8.2 % of adult ticks, counter trips 18.3 → 14.4 a marketer-year; ⚠️ half the counter trips begin at home on foot —
+Joe's call); no golden moved. UNPLAYED, UNMERGED — Joe plays, then merges at his word.** ✅ Piece 1 (D692): the owners, the fetch, the
+quota, save format 12. ✅ Piece 2 (D693): the loads of three armfuls, the take at the door, the wear, the empty leg back. ✅ Piece 3 (D694):
+the chip beside the building, the cards' line, the probes.
 
 > **Where this sits.** Joe, after playing Slice H (2026-11-05): *"does the marketer use a cart to move goods around? and what
 > about the trading post worker?"* — and his pick: build it next, as **one more owner of the same good**. Call 6 of D672 had put the
@@ -527,7 +531,7 @@ not read from these runs: a market with a cart is a different run of the seed, a
   silently re-pinned.
 - **Determinism:** nothing here reads the clock or draws from `Rng`.
 
-### 13.8 How it is tested — `HandcartTests`, the §13 facts
+### 13.8 How it is tested — `HandcartTests`, the §13 facts (16 facts; 37 mutants, 54 reds, three zeros written down)
 
 TDD, each guard red-checked by a mutant and the reds counted (D326); a zero is written down. The filter for every score:
 `HandcartTests`, `WorkshopTests.WithNoLimitSet…`, `WorkshopTests.AnEmptyHouse…`, `TradeRowsTests.TheFormat…`,
@@ -592,6 +596,13 @@ TDD, each guard red-checked by a mutant and the reds counted (D326); a zero is w
 | a pusher deciding at the market's door never parks | 1 — ⚠️ 0 until posed directly (no guard's haul ended at the counter) |
 | the worn-through line silent | 1 |
 | *(deleted, not scored)* `TryTrade`'s own return clause | scored 0 and was found dead — a pusher never reaches the merchant's job branch, because `Decide`'s works-first branch runs `TryTrade` itself and returns the cart on false; the clause is gone (CLAUDE.md: delete dead code) |
+
+#### 13.8.3 Piece 3 — the look (the probe, by hand)
+
+View only, so no sim guard: the `cart:` line poses the chip beside a workplace's tile (outside its square, within a tile, clear of its
+heap chip) beside the store's pose; the `cart card:` line poses the works' sentence four ways on a workplace and a member put back,
+and asks a site's card to hide the line. Both ✅ on the final tree; bar 151. ⚠️ A standing market's card line and the chip beside a
+live market are Joe's eyes (the view cannot raise a building, D596).
 
 ### 13.9 Definition of Done
 
