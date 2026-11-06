@@ -54,6 +54,16 @@ house), and ⛔ **not D69's third *"tattered furs"* rate.** Today's 15 days *is*
 arrived in; the coat is the upgrade with a before-and-after D69 wanted, and the cold-start floor D122
 tuned (`cold-start.md §7.3`) does not move. Joe, 2026-10-31: *"A roof you wear."*
 
+⭐ **The warning says whether there is a coat (D691, 2026-11-05).** Joe, on a winter log of *"… is dangerously cold and is
+going in to get warm"* with 23 coats in the warehouse: *"why are so many people cold when I have so much clothing
+available?"* Every adult in that village wore one (his save: `coat_days` > 0 for all seventeen). A coat buys **12.5 net days
+in the cold a stretch** before the break-off, not the winter — bare it is 7.5 — so a coated outdoor worker still goes in
+around day 25 of a winter, and the old sentence could not tell that from a bare one. Now it carries the villager's own
+days and the coat: *"X is dangerously cold after 13 days in the cold, coat and all, and is going in to get warm"* against
+*"… after 8 days in the cold with no coat …"*. The days are `Cold ÷ (the rate the coat gives × ticks a day)`, rounded.
+Guard `TheColdWarningSaysWhetherThereIsACoat` (`ShelterAndExposureTests`): red before the change (both lines identical),
+green after; the coat test inverted → red (1 of 1). The rule itself is unchanged — his call: *"say it in the log"*.
+
 ### 3.2 Who wears one: every adult
 Every living villager past childhood — working-age and elders, the carriers included, because walking
 is outdoors (D53: *"walking is outdoors, always"*) and the market trip is a winter walk. **Children do

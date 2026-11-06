@@ -41,7 +41,11 @@ would change `carry_capacity`*). It is also a thing on the map, which is what th
 ⚠️ **What this is not.** Not oxen or wagons (*Heavy Haulage* proper, the draught-animal node — `tech-tree.md §9.3`, Tier 2
 in `TECH-EXAMPLE.md:206`); not roads as a build (paving, `DESIGN.md §2.6`, open in §5); not the overland caravan
 (`trade.md §4.7`, which this unblocks); not a porter (D357 — the Marketer is the porter); not a bigger armful alone (D537);
-not the marketer's cart (Joe, call 6: later).
+not the marketer's cart (Joe, call 6: later). ⭐ **Joe's calls after playing H (2026-11-05):** the marketer's and the
+merchant's carts are **the next slice** — *"one more owner of the same good"*: the market and the trading post each own a
+cart parked at the building, their worker fetches it from the shelf, three armfuls a trip on the restock and the post's runs,
+the same wear and track; and **the ox cart stays the *Heavy Haulage* node**, later, after livestock — the handcart is the
+household's and does not upgrade.
 
 ## 2. What was already on the record — and what this slice reads
 

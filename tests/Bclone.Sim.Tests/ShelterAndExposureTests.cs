@@ -404,6 +404,76 @@ public sealed class ShelterAndExposureTests
     //  Determinism
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// ⭐ THE WARNING SAYS WHETHER THERE IS A COAT (D691). Joe, on a winter log full of *"… is dangerously cold and is
+    /// going in to get warm"* with 23 coats in the warehouse: <i>"why are so many people cold when I have so much
+    /// clothing available?"</i> Every adult in that village wore one. A coat is a roof you wear (D659): it slows the
+    /// chill to the sheltered rate and does not stop it, so a coated outdoor worker still crosses the line after
+    /// 12.5 net days out. The old sentence could not tell that case from a bare one, and he read it as "no coat".
+    /// Now the sentence carries the days and the coat.
+    /// </summary>
+    [Fact]
+    public void TheColdWarningSaysWhetherThereIsACoat()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config, sink);
+        while (loop.World.Clock.Season != Season.Winter)
+        {
+            loop.StepOnce();
+        }
+
+        SimWorld world = loop.World;
+        Household home = world.Households[0];
+        Villager coated = world.FindVillager(home.MemberIds[0])!;
+        Villager bare = world.FindVillager(home.MemberIds[1])!;
+        GridPos open = FarFromAnyBuilding(world);
+        coated.Position = Point.CentreOf(open);
+        bare.Position = Point.CentreOf(open);
+        coated.Cold = 0;
+        bare.Cold = 0;
+        coated.CoatDays = 90;
+        bare.CoatDays = 0;
+
+        // Long enough for both to cross the line (the bare one in 7.5 days, the coated one in 12.5), not long
+        // enough for anybody to die of it.
+        Chill(world, world.Config.ExposureTicksSheltered * world.Config.SeekShelterPercent / 100 + 2);
+
+        string? coatedLine = null;
+        string? bareLine = null;
+        foreach (LogEntry entry in sink.Entries)
+        {
+            if (entry.Message.StartsWith(coated.Name + " is dangerously cold", StringComparison.Ordinal))
+            {
+                coatedLine = entry.Message;
+            }
+            else if (entry.Message.StartsWith(bare.Name + " is dangerously cold", StringComparison.Ordinal))
+            {
+                bareLine = entry.Message;
+            }
+        }
+
+        _output.WriteLine($"coated: {coatedLine}");
+        _output.WriteLine($"bare:   {bareLine}");
+
+        Assert.NotNull(coatedLine);
+        Assert.NotNull(bareLine);
+        Assert.Contains("coat and all", coatedLine, StringComparison.Ordinal);
+        Assert.Contains("with no coat", bareLine, StringComparison.Ordinal);
+        Assert.Contains("going in to get warm", coatedLine, StringComparison.Ordinal);
+
+        // The days are the villager's own: the bare one crossed in about half the coated one's days.
+        int coatedDays = DaysIn(coatedLine);
+        int bareDays = DaysIn(bareLine);
+        Assert.True(coatedDays > bareDays, $"the coated villager's {coatedDays} days should be more than the bare one's {bareDays}");
+
+        static int DaysIn(string line)
+        {
+            int at = line.IndexOf(" days", StringComparison.Ordinal);
+            int start = line.LastIndexOf(' ', at - 1) + 1;
+            return int.Parse(line[start..at]);
+        }
+    }
+
     [Fact]
     public void TheHashCoversHowColdSomebodyIs()
     {

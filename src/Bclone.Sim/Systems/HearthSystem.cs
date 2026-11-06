@@ -216,9 +216,21 @@ public sealed class HearthSystem : ISimSystem
             // and saying it again then would train them to ignore it.
             if (before < warnAt && villager.Cold >= warnAt && warnAt > 0)
             {
+                // ⭐ THE SENTENCE SAYS WHETHER THERE IS A COAT, AND HOW LONG THEY HAVE BEEN IN THE COLD (D691). Joe, on
+                // a winter log of these with 23 coats in the warehouse: *"why are so many people cold when I have so
+                // much clothing available?"* — every adult wore one. A coat is a roof you wear (D659): it slows the
+                // chill, it does not stop it, so a coated outdoor worker crosses this line after 12.5 net days out.
+                // The days are the villager's own cold divided by the rate their coat gives them.
+                bool coated = villager.CoatDays > 0;
+                int perDay = (coated ? config.ExposurePerTickSheltered : config.ExposurePerTickOutdoors) * config.TicksPerDay;
+                int days = perDay > 0 ? (villager.Cold + (perDay / 2)) / perDay : 0;
                 world.Narrate(
-                    $"{villager.Name} is dangerously cold and is going in to get warm " +
-                    $"— {world.Clock.SeasonAndYear()}.", LogCategory.Warning);
+                    coated
+                        ? $"{villager.Name} is dangerously cold after {days} days in the cold, coat and all, and is going in to get warm "
+                            + $"— {world.Clock.SeasonAndYear()}."
+                        : $"{villager.Name} is dangerously cold after {days} days in the cold with no coat and is going in to get warm "
+                        + $"— {world.Clock.SeasonAndYear()}.",
+                    LogCategory.Warning);
             }
         }
     }
