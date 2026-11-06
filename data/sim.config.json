@@ -1016,6 +1016,53 @@
   "make_ticks": 20,
   "makes_per_stint": 1,
 
+  // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A
+  // housed household without one sends a free member to the nearest store that
+  // racks tools (the warehouse, the founders' cart, the pile -- never the market)
+  // and walks it home; the shopper takes it from the doorstep and parks it again.
+  // handcart_uses: the shopping trips a cart lasts before it is worn out and the
+  // household fetches another -- tool_uses' shape, one good over; worn a trip at
+  // the door, never on the walk home with a new one. Joe's proposal, 150 ("say
+  // 150: a few years of shopping", D672 call 5), MEASURED (handcart.md 6, D688):
+  // a carted household pushes ~3.2 shopping trips a year (four unattended valleys,
+  // fifty years; Hollowmere 3.5), so 150 is ~46 years -- a cart is in practice
+  // never replaced, and the carpenter is a one-burst trade (44 carts taken in 4
+  // valleys x 50 years, ~2 logs a valley-year). At 40 a cart lasts ~12 years (108
+  // carts, ~5 logs a year); at 20, ~6 years (201 carts, ~10 logs a year, a quarter
+  // of an unattended valley's timber). The households stay carted at every number
+  // (97-98% of household-ticks) because the spare is on the shelf. WARNING: 150 is
+  // kept because it is his number; "a few years" would be 20-40, and that is his
+  // call (HANDOFF, open).
+  "handcart_uses": 150,
+  // cart_armfuls: what the shopper carries a trip with the cart in hand, in
+  // armfuls of carry_capacity (80). carry_capacity itself is untouched (D537,
+  // one meaning). MEASURED before typed (handcart.md 5, D687): swept 2/3/4 on
+  // ZzLogistics -- four unattended valleys, fifty years, forty carts racked at
+  // Year 3: shopping trips a household-year 5.93 -> 4.48 / 4.08 / 4.08, the
+  // Fetch share 6.4% -> 5.2 / 5.0 / 5.0; Joe's Hollowmere (Y25, 7 households)
+  // five years on against the same save with every cart taken out and the
+  // carpenter stopped: trips 5.69 -> 4.26 / 3.49 / 3.49, Fetch 17.6% -> 13.2 /
+  // 11.3 / 11.6. Three and four are identical everywhere: a half-larder
+  // shortfall never exceeds three armfuls, so the fourth is never carried.
+  // Two is measurably worse. So 3.
+  "cart_armfuls": 3,
+  // cart_off_path_slow_percent: a leg's GRASS tiles cost this share of their
+  // ticks under a cart; worn and packed tiles are unchanged -- the cart is slow on
+  // grass and quick on the path (Joe, D672 call 5). The failing deck's shape (150):
+  // the walk slows, never the route, so the cost field stays one. And a cart's
+  // pass treads every tile its wheels cross to path_worn_at at once (D587 call 8:
+  // one pass by a cart makes a path), drawn at the next season's sweep, priced at
+  // the next spring -- never a re-price per pass. MEASURED with and without
+  // (handcart.md 6-7, D689): on four unattended valleys over fifty years and on
+  // Joe's Hollowmere the slow moves nothing the instrument can see (Fetch 5.0% at
+  // 150 and at 100; Hollowmere 11.3% both; the pushed trip's median 10 / 29 ticks
+  // both ways) -- because a cart's line IS a path after its first pass, so the slow
+  // is paid once a route, on fresh grass, and legibly: 8 grass tiles take 12 ticks
+  // under a cart against 8 on foot. The cart's tread moved the valley's path
+  // tiles 0.62% -> 0.66% (Hollowmere 1.31% -> 1.32%): the shoppers' lines were
+  // paths already. Nothing to soften.
+  "cart_off_path_slow_percent": 150,
+
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the
   // post's logs and stone were measured against hall-era holdings (D594, trade.md §8.4); the work

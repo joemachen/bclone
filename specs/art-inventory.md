@@ -115,7 +115,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 | Warehouse | `#8a7a63` + crates | ✅ | Stock seen (B14) | 🟨 |
 | Market | `MarketColour` `#c98f4a` + crates | ✅ | Stalls, stock (B14) | 🟨 |
 | Stockpile | ⚠️ draws in **MarketColour** — no colour of its own (`VillageMap.cs:262`) | ✅ | Stock heaps | 🟨 |
-| Founders' cart | ⚠️ draws in **MarketColour** — a store quad, no cart | — | A cart; a colour of its own, shared with the handcart (`handcart.md §8`, D670) | 🟨 |
+| Founders' cart | ✅ `HandcartColour` `#6b8a94` (Slice H, `handcart.md §8`) — a store quad in the cart colour, shared with the handcart; it borrowed `MarketColour` until then | — | A cart | 🟨 |
 | Builder's hut | ⚠️ **falls through to MarketColour** (`VillageMap.cs:8203`, `_ => MarketColour`) | ✅ | — | 🟨 |
 | Woodcutter's hut | `#9a6b3f` | ✅ | Log pile? | 🟨 |
 | Forager's hut | `#5aa04a` (the berry colour) | ✅ | — | 🟨 |
@@ -128,7 +128,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 | Iron mine | Trade colour + floor + seam palisade | ✅ | Mine mouth | 🟨 |
 | Mill | Trade colour | ✅ | **Watermill vs windmill** (B8) | 🟨 |
 | Bakery | Trade colour | ✅ | Oven smoke | 🟨 |
-| Workshop (D678) | Trade colour (fresh-sawn oak, `TradeGlyph.ColourOf(Carpenter)`) | ✅ a hut with a wheel leaning on its wall | A saw-pit, shavings; the cart itself is Slice H's (`handcart.md §8`, drawn in `GoodsPalette`'s handcart slate) | 🟨 |
+| Workshop (D678) | Trade colour (fresh-sawn oak, `TradeGlyph.ColourOf(Carpenter)`) | ✅ a hut with a wheel leaning on its wall | A saw-pit, shavings; the cart itself is drawn by Slice H (`handcart.md §8`, `VillageMap.HandcartColour`, §6 below) | 🟨 |
 | Barn | Trade colour + cattle on its tiles | ✅ | **Tiers** (B8), hay | 🟨 |
 | Trading post | Trade colour + the boat docks here | ✅ | Jetty | 🟨 |
 | Library | `#6a7fc9` | ✅ | — | 🟨 |
@@ -183,7 +183,8 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 | Fishing boats | ⬜ | — | — | ⬜ |
 | Overland caravan, cart road | ⬜ | — | blocked on carts (`trade.md §4.7`) | 💭 |
 | Smoke, fire, chimney | ⬜ — none anywhere | Per working building, winter hearths | B11 | ⬜ |
-| Tools on the ground, carts | ⬜ | — | The handcart is sketched (`handcart.md §8`, D670): a rectangle trailing the pushing villager's dot, a chip beside the home when parked, a crate in the warehouse | 💭 |
+| Tools on the ground | ⬜ | — | — | 💭 |
+| **The handcart** (Slice H, `handcart.md §8`) | ✅ placeholder: `HandcartColour` `#6b8a94` three ways — a chip beside the home in the heap chips' geometry with its axle across it when parked (`VillageMap.DrawParkedCarts`), a small rectangle trailing the pushing villager's dot against their heading (`DrawTheCartBehind`), a crate in the warehouse like any good | A drawn cart: wheels, a bed, a load | B1, B2 | 🟨 |
 | Doorsteps and the plaza | Drawn by the trail network (D605) | — | B6 | 🟨 |
 | Graves | ⬜ | Growing cemetery (D35) | — | 💭 |
 

@@ -294,9 +294,11 @@ batch trade's is.
 **With no limit set, the carpenter makes toward what the village wants — one cart a household:**
 
 - `LabourQuota.HandcartsWanted(world)` = **the households with a home, less the households that own a cart.** In
-  Slice W no household owns one (the household's cart is Slice H, `handcart.md §3`), so it is the count of housed
-  households; when H lands, the owned carts come off it and the shelves hold the spares. ⚠️ *Households*, not adults
-  and not homes: a cart serves the larder, which is the household's (Joe, call 1); an empty house wants none.
+  Slice W no household owned one, so it was the count of housed households; ✅ **since Slice H (`handcart.md §3`) a
+  household with `HandcartUses` above nought comes off it**, so a carted village wants none and the carpenter stops at
+  the spare. ⚠️ *Households*, not adults and not homes: a cart serves the larder, which is the household's (Joe, call 1);
+  an empty house wants none. ⚠️ *Guards 1, 2 and 4 below count the carts households have fetched as carts the village
+  has* — once H landed, a cart racked in the warehouse was in a household's hands within the season the guard watched.
 - `HandcartsShortfall` = `HandcartsWanted` **plus the spare** − carts on the shelves (every store's count), floored at 0 —
   `ClothingShortfall`'s shape. ⚠️ *As built (D678):* the spare is in the shortfall as well as in the stop, read from one
   constant (`LabourQuota.HandcartSpare`), so the hiring and the bench agree to the cart — with the spare in the stop alone

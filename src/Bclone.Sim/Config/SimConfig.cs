@@ -1289,6 +1289,31 @@ public sealed record SimConfig
     [JsonPropertyName("makes_per_stint")]
     public int MakesPerStint { get; init; } = 1;
 
+    /// <summary>
+    /// The shopping trips a household's handcart lasts (`handcart.md §6`, Slice H) — what <c>Household.HandcartUses</c>
+    /// is filled to when a cart is taken from a store, worn one a round trip; at nought the cart is gone and the
+    /// household fetches another. <c>tool_uses</c>' shape, one good over. Validated at load: greater than nought.
+    /// </summary>
+    [JsonPropertyName("handcart_uses")]
+    public int HandcartUses { get; init; } = 150;
+
+    /// <summary>
+    /// The armfuls a shopper carries a trip with the household's handcart in hand (`handcart.md §5`, Slice H) — the one
+    /// term in D668's shopping walk the village could change. <c>carry_capacity</c> is untouched (D537, one meaning); the
+    /// cart multiplies it. Validated at load: at least one (one is a cart that carries nothing extra).
+    /// </summary>
+    [JsonPropertyName("cart_armfuls")]
+    public int CartArmfuls { get; init; } = 3;
+
+    /// <summary>
+    /// A leg's grass tiles cost this share of their ticks under a handcart (`handcart.md §6`, Slice H; Joe, D672 call 5:
+    /// slower on grass) — worn and packed tiles are unchanged, so <i>the cart is slow on grass and quick on the path</i>.
+    /// <see cref="FailingDeckSlowPercent"/>'s shape: the walk slows, never the route; the cost field stays one (`DESIGN.md
+    /// §2.6`). Validated at load: at least 100.
+    /// </summary>
+    [JsonPropertyName("cart_off_path_slow_percent")]
+    public int CartOffPathSlowPercent { get; init; } = 150;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -5681,6 +5706,21 @@ public sealed record SimConfig
         if (MarketDetourTicks < 0)
         {
             throw new SimConfigException($"market_detour_ticks cannot be negative (got {MarketDetourTicks}); 0 is nearest-first.");
+        }
+
+        if (HandcartUses <= 0)
+        {
+            throw new SimConfigException($"handcart_uses must be greater than zero (got {HandcartUses}) — a cart of no trips is no cart.");
+        }
+
+        if (CartArmfuls < 1)
+        {
+            throw new SimConfigException($"cart_armfuls must be at least one (got {CartArmfuls}); one is a cart that carries nothing extra.");
+        }
+
+        if (CartOffPathSlowPercent < 100)
+        {
+            throw new SimConfigException($"cart_off_path_slow_percent must be at least 100 (got {CartOffPathSlowPercent}); 100 is a cart no slower on grass.");
         }
 
         if (LeaveHomeAge < 0)

@@ -283,6 +283,31 @@ companion. §7's Definition of Done closes at item 3 with this verdict; the mech
 **He picked two (D670): (d) now — the sweep is §5.6, the rule `storage-and-distribution.md §14.9.7` — and (a) to think
 through first, which is `handcart.md`.**
 
+### 6.1 The verdict on the mechanic — Slice H built and measured (D686–D689, 2026-11-04)
+
+The handcart is built (`handcart.md`: a household's good, fetched like a coat, parked at the door, three armfuls a trip,
+worn a trip, slow on grass, a path on its first pass) and this instrument measured it **before and after on the same
+villages** — the harness with forty carts racked at Year 3 against none, and Joe's Hollowmere (`hollowmere-plover-rowan-45`,
+his D682 save: Year 25, 24 adults in 7 housed households, a workshop and nine carts) five years on against the same save
+with every cart taken out and the carpenter stopped:
+
+| | Fetch share | shopping trips a household-year | fetch spells an adult-year | fetch spell median | over four days | path tiles |
+|---|---|---|---|---|---|---|
+| **Hollowmere, no carts** | **17.6 %** | **5.69** | 5.0 | 16 | 49.5 % | 1.31 % |
+| **Hollowmere, carted** | **11.3 %** | **3.49** | 4.0 | 8 | 34.7 % | 1.32 % |
+| four unattended valleys × 50 y, no carts | 6.4 % (3.4–8.0) | 5.93 | 3.1 | 8.5 | — | 0.62 % |
+| the same, carted | 5.0 % (2.3–6.9) | 4.25 | 2.5 | 10 | — | 0.66 % |
+
+**A third of a played village's shopping walk is gone (17.6 → 11.3 %), on 1.6× fewer trips; the walk that is left is the
+same walk** (the pushed trip's median is 29 ticks, the from-home trip it always was — fewer of them, not shorter). The
+unattended control, whose households are couples 4–6 ticks from their store, moves little, as §5 predicted it would. The
+~2.5× of `handcart.md §1` was the four-person larder's arithmetic; a couple's half-larder fitted one armful already. The
+cart's track adds a tile or two of path a village — the shoppers' lines were paths before the carts came — and the slow
+on grass costs nothing a village can measure, because a cart's line is a path after its first pass. ⚠️ Joe's Fernhollow
+save dies unattended under every arm and is excluded (D447). **Still open, D668 outcome 2's companion:** the legibility
+sentence — the housing brush and the home card naming the shop walk — is not built; whatever the cart buys, nothing on the
+brush yet says how far the shop is. The rest of what the number can mean is now Joe's to see in play.
+
 ⛔ **Whatever the outcome, the rule stays:** no fence the player cannot see (D112). A fetch that is too long is said on
 the card and in the log before it is forbidden anywhere.
 

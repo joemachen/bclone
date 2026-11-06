@@ -1238,6 +1238,25 @@ public sealed class Household
     /// </remarks>
     public int WaterDrawnOnDay { get; set; }
 
+    /// <summary>
+    /// The trips left in the household's handcart — <b>0 for no cart</b> (`handcart.md §3`, §6; Slice H, Joe's call
+    /// D672: a cart is the household's good, parked at the home).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>Villager.ToolUses</c>' shape, one owner over: filled from a store's count by a member who walks it home
+    /// (<c>BehaviorSystem.TakeAHandcart</c>), never conjured; worn a trip (§6); at zero the cart is gone and the
+    /// household fetches another. <b>On the household, not the villager</b>, because a cart serves the larder as a
+    /// tool serves the skill (D30) — so a family that dies out leaves it at the home for the next, as it leaves its
+    /// larder. Hashed sparsely, so a village with no cart hashes as it did before carts existed.
+    /// </para>
+    /// <para>
+    /// Who has it in their hands just now is <c>Villager.PushingACart</c>; a cart nobody is pushing stands at the door,
+    /// which is where the map draws it.
+    /// </para>
+    /// </remarks>
+    public int HandcartUses { get; set; }
+
     /// <summary>This household's food. Not the village's.</summary>
     public required Stockpile Stockpile { get; init; }
 
@@ -1313,6 +1332,7 @@ public sealed class Household
         ["topping_up_food"] = ToppingUpFood,
         ["topping_up_firewood"] = ToppingUpFirewood,
         ["water_drawn_on_day"] = WaterDrawnOnDay,
+        ["handcart_uses"] = HandcartUses,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
@@ -1335,6 +1355,7 @@ public sealed class Household
             ToppingUpFood = save.Bool("topping_up_food"),
             ToppingUpFirewood = save.Bool("topping_up_firewood"),
             WaterDrawnOnDay = save.Int("water_drawn_on_day"),
+            HandcartUses = save.Int("handcart_uses"),
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };
 

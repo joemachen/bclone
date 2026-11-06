@@ -86,6 +86,10 @@ public sealed class MortalitySystem : ISimSystem
         villager.DiedAtTick = world.Tick;
         villager.ActionTicksRemaining = 0;
 
+        // The household's cart is not buried with them (`handcart.md §3`): it is the household's good, and counts as
+        // home from here — the walk that would find it is not stepped (`Villager.PushingACart`).
+        villager.PushingACart = false;
+
         string epitaph = cause switch
         {
             CauseOfDeath.OldAge =>

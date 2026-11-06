@@ -65,7 +65,7 @@ One file, holding:
 
 | Part | What | Why |
 |---|---|---|
-| `format` | an integer, starting at 1 — **10 today (D678, Slice W): `make_good` on every workplace (the workshop's *Makes:* setting, `workshop-and-the-carpenter.md §4.3`), `workshop_learned`, `handcarts_ever_made`, and the handcart good, which grows every stockpile and the stock-limits list by a slot; 9 was the coat (D660). Every format-9 save, Joe's own included, is refused in words, and he accepted that before it was built (D675: *"I don't mind starting a new game — that's actually my favourite part"*)** | §7: a different number is refused |
+| `format` | an integer, starting at 1 — **11 today (Slice H, `handcart.md §9`): a household's handcart, `handcart_uses` (the trips left in it, 0 for none), and a villager's `pushing_a_cart`; every format-10 save — the Slice W builds', 2026-11-01 to 11-04 — is refused in words. 10 was Slice W (D678): `make_good` on every workplace (the workshop's *Makes:* setting, `workshop-and-the-carpenter.md §4.3`), `workshop_learned`, `handcarts_ever_made`, and the handcart good, which grows every stockpile and the stock-limits list by a slot; 9 was the coat (D660). Every format-9 save, Joe's own included, was refused in words, and he accepted that before it was built (D675: *"I don't mind starting a new game — that's actually my favourite part"*)** | §7: a different number is refused |
 | `build` | the `VERSION` that wrote it (`0.0.1` today) | said on the load list and in a refusal |
 | `share_code` | `NewGame.ShareCode` — the seed and every new-game row | the config is rebuilt from it (below) |
 | `village_name` | the name the player gave | never hashed, never in the share code |
@@ -289,6 +289,7 @@ and fails on any field not in its table (*Saved*, *Rebuilt* — compared too, so
 | the *nowhere to keep it* latch | **0 → 3** | ⛔ zero until the closed-stores pose existed; then the run-on year's **log** caught it (said twice) |
 | a new field nobody saved | 1 | `EveryFieldIsSavedOrNamed`, by name |
 | `make_good`, `workshop_learned`, `handcarts_ever_made` — Slice W's three (D678), one at a time | 1 each | `WorkshopTests`' round trip: the product, the flag and the count read back, hash to hash and a year on; format 10, a format-9 save refused in words |
+| `handcart_uses` (a household's cart), `pushing_a_cart` (who has it) — Slice H's two, one at a time; the format left at 10 | 1 each | `HandcartTests.ACartAndItsPusherSurviveTheRoundTripAndAFormatTenSaveIsRefused`: the trips and the flag read back, hash to hash and a year on; format 11, a format-10 save refused naming the build |
 
 ⭐ **The run-on year alone would have missed seven of the twelve dropped fields**, and §4's own hash guard would have
 missed all but two. The field guard is the one this feature rests on, as §9.4 said it would be.

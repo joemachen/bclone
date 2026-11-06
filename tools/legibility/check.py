@@ -39,7 +39,7 @@ WORLD = {
     "Parchment": "ground",
     # things with an area — the fill carries identity and is judged by the outline drawn round it (D637): "fill:<edge>"
     "HomeColour": "fill:Ink", "GranaryColour": "fill:Ink", "WarehouseColour": "fill:Ink", "MarketColour": "fill:Ink",
-    "HutColour": "fill:Ink", "LibraryColour": "fill:Ink", "TownHallColour": "fill:Ink", "WellColour": "fill:Ink",
+    "HandcartColour": "fill:Ink", "HutColour": "fill:Ink", "LibraryColour": "fill:Ink", "TownHallColour": "fill:Ink", "WellColour": "fill:Ink",
     "BridgeColour": "fill:Ink", "StoneBridgeColour": "fill:Ink", "FisheryColour": "fill:Ink", "BerryColour": "fill:Ink",
     "TreeColour": "fill:Ink", "SiteColour": "fill:SiteEdge", "DemolishColour": "fill:DemolishEdge",
     "CattleColour": "fill:CattleEdge", "HullColour": "fill:HullEdge", "SailColour": "fill:HullEdge",
@@ -74,7 +74,7 @@ WHAT = {
     "QuarryFloor": "quarry floor", "MineFloor": "mine floor", "WornPath": "footpath", "PackedPath": "packed trail",
     "Beyond": "outside the valley", "ValleyEdge": "valley border", "GridLine": "tile grid",
     "HomeColour": "house", "GranaryColour": "granary", "WarehouseColour": "warehouse", "MarketColour": "market",
-    "HutColour": "woodcutter", "LibraryColour": "library", "TownHallColour": "town hall", "WellColour": "well",
+    "HandcartColour": "handcart (the founders' cart; a cart parked at a door or pushed; the crate)", "HutColour": "woodcutter", "LibraryColour": "library", "TownHallColour": "town hall", "WellColour": "well",
     "BridgeColour": "wooden bridge", "StoneBridgeColour": "stone bridge", "FisheryColour": "fishery",
     "BerryColour": "forager's hut", "TreeColour": "forester's lodge", "SiteColour": "building site",
     "DemolishColour": "coming down", "AdultColour": "adult", "ChildColour": "child", "ElderColour": "elder",
@@ -302,7 +302,7 @@ def main() -> int:
     # ---- the rule ----
     p("\n## The value-band rule, tested\n")
     fills = [r for r in rows["fill"] if r[0] in ("HomeColour", "GranaryColour", "WarehouseColour", "MarketColour",
-             "HutColour", "LibraryColour", "TownHallColour", "WellColour", "FisheryColour", "BerryColour", "TreeColour",
+             "HandcartColour", "HutColour", "LibraryColour", "TownHallColour", "WellColour", "FisheryColour", "BerryColour", "TreeColour",
              "SiteColour", "DemolishColour", "BridgeColour", "StoneBridgeColour") or r[0].startswith("JobKind.")]
     pairs_now = pairs_dark = 0
     close = []
