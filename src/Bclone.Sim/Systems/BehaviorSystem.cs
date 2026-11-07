@@ -3255,8 +3255,15 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (theVillageNeedsFood && canHunt)
+        // ⭐ AND OUT FOR THE HIDES UNDER A MET MEAT ROW (D708, Joe: *"if meat limit is met, keep hunters there for leather.
+        // when leather and meat limits are met they can idle"*). The row's `also_limited_by` names leather; the buffer rule
+        // above is unchanged, so a hunter out for the hides still carries an armful of the lodge's meat in first.
+        bool forTheHides = canHunt && !theVillageNeedsFood && world.KeptWorkingForItsSecondGood(JobKind.Hunter);
+
+        if ((theVillageNeedsFood || forTheHides) && canHunt)
         {
+            villager.WorkNote = forTheHides ? world.SecondGoodNote(JobKind.Hunter) : string.Empty;
+
             // ⭐ INTO THE WOODS, NOT ONTO THE LODGE (D384). Joe: *"im not sure that hunters
             // spend any time at the hunting lodge or in the forest actually 'hunting'."* They
             // hunted standing on the lodge and re-armed in place; now each hunt walks to a
@@ -3281,8 +3288,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         // A hunter with a full village says so, the same way a forager and a fisher do (D216).
         if (canHunt && !theVillageNeedsFood)
         {
+            // D708: and when the hides are what the village has enough of too, the sentence says both.
+            string hides = world.StockLimits.For(Goods.Leather) is int leather && world.HeldAgainstItsLimit(Goods.Leather) >= leather
+                ? $", and its {leather.Grouped()} leather"
+                : string.Empty;
             villager.WorkNote = world.WhyTheVillageWantsNoMoreOf(Goods.Meat) is string enough
-                ? enough
+                ? enough + hides
                 : string.Empty;
         }
 

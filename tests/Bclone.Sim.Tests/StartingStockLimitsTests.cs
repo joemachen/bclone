@@ -83,6 +83,31 @@ public sealed class StartingStockLimitsTests
         Assert.False(fixture.StockLimits.AnySet);
     }
 
+    /// <summary>
+    /// ⭐ D709, Joe (2026-11-07): <i>"all unlocked items default limit"</i> of 50 (D697's rule, made a guard). Every good the
+    /// shipped game has ships with a starting limit, so the stock-limits panel never shows a good's "no limit" as 0 — and a
+    /// good added later without one fails here by name. Hay is the one exception, and it is his: 50 is less than a herd's
+    /// winter feed (a barn holds 400–500 before winter), so it waits for his number (HANDOFF ⏸️).
+    /// </summary>
+    [Fact]
+    public void EveryShippedGoodButHayStartsWithALimit()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        var catalog = new GoodsCatalog(shipped.GoodsCatalog);
+        var missing = new List<string>();
+        for (int id = 0; id < catalog.Count; id++)
+        {
+            string name = catalog[(Goods)id].Name;
+            if (name != "hay" && !shipped.StartingStockLimits.ContainsKey(name))
+            {
+                missing.Add(name);
+            }
+        }
+
+        _output.WriteLine($"{catalog.Count} goods; with no starting limit: {(missing.Count == 0 ? "none" : string.Join(", ", missing))}");
+        Assert.Empty(missing);
+    }
+
     [Fact]
     public void AStartingLimitThatNamesNoGoodIsRefusedAtLoad()
     {

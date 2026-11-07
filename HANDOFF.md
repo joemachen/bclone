@@ -1,6 +1,29 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), PUSHED; ORIGIN AGREES. ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: HE PLAYS FROM `main` (THE TRADES' CARTS, THE FIRST LEG, THE LIMITS, THE LODGE FIX — NONE PLAYED YET); ⏸️ HIS CALL: THE RESTOCK THRESHOLD UNDER A PARKED CART; THEN HOUSE TIERS — THE LAST GATE ITEM; THE OX CART LATER AS *HEAVY HAULAGE*. 🔨 ON `worktree-slice-cart-home`, UNPLAYED, UNMERGED (D700, 2026-11-06, HIS QUESTION): THE MARKETER AND THE MERCHANT TAKE THE BUILDING'S CART HOME FOR THE NIGHT AND LEAVE THE DOORSTEP CARTED — MEASURED ON TWELVE VALLEYS (THE MARKET SHARE −0.35 POINTS IN 11 OF 12, TWO-THIRDS OF THE FIRST LEGS GONE, TRIPS UNCHANGED); THE RESTOCK KNOB `restock_short_armfuls_with_cart` SHIPS AT 1 AND MEASURED AT 3 (−0.85 IN 12 OF 12, TRIPS −1 A MARKETER-YEAR IN 8 OF 12) — ⏸️ ITS NUMBER IS HIS. HE PLAYS FROM THE WORKTREE, MERGES AT HIS WORD. ▶️ THE ART IS UNPARKED FOR A SECOND LANE IN ITS OWN WORKTREE, SYSTEMS FIRST (D699, 2026-11-06) — THE RULE AND THE NO-GO TABLE ARE IN THE 🅿️ ART SECTION. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD BUT HAY WITH A STARTING LIMIT (D709), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
-> **⭐⭐ (this branch's block) WHERE THINGS ARE, 2026-11-06 (D700 — THE CART'S NIGHT AT HOME AND THE RESTOCK KNOB, ON `worktree-slice-cart-home`, OFF `main` d299b7b) — ON WINDOWS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-07 (D710: EVERYTHING MERGED AND PUSHED; TWO TRACKS) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+>
+> **`main` holds everything and origin agrees.** Joe played the four systems branches and the art and said *"merge and push and
+> commit in the most logical order. clean it all up for me."* Merged `--no-ff`, systems first, in the order the numbers were taken:
+> `worktree-slice-cart-home` (D700) → `slice/seam-reach-footprint` (D701) → `claude/recursing-northcutt-77f56b` (D702–D705, numbered at
+> the merge) → `claude/distracted-cori-b8df71` (D706, numbered at the merge). Then three of his calls of the same day, on `main`:
+> **D707** the restock knob ships at 3 (he left it to Claude); **D708** a met meat row keeps the hunters out while leather is under its
+> row, and they idle only when both are met (`also_limited_by` on the job row; the seats taken at the carriers' rank, D683's reason);
+> **D709** every shipped good but hay starts with a limit, guarded by name. Then the art (`claude/nostalgic-panini-a63043`, the terrain
+> shader in the Grass Lab, every option approved but the fake map), its D700–D710 renumbered **A1–A11**.
+>
+> **Not merged, on purpose:** `slice/restock-under-the-cart` — a second D700 answering the same call (D696's restock threshold) from a
+> session that did not know about cart-home's knob. Cart-home's knob at 3 is the same lever measured on twelve valleys; the branch's tip
+> is kept as the tag `superseded/restock-under-the-cart`.
+>
+> **⏸️ His, from this round:** hay's number (he said 50; a barn holds 400–500 before a winter, so 50 stops the cutting and starves the
+> herd — held, not typed; the ⏸️ list). **Cleaned up:** every worktree and local branch already in `main` removed; the art's standing
+> worktree is `.claude/worktrees/art` on branch `art`. **The two tracks are in `CLAUDE.md` — read them before cutting a branch.**
+>
+> **Next, systems: house tiers** (Phase 5 gate item 1's last). **Next, art: the terrain shader wired into the valley** (`terrain-shader.md`,
+> after house tiers touch `VillageMap.cs`, per the lane table below).
+>
+> **— the cart-home branch's block, as merged (D710) —**
+> **⭐⭐ (the cart-home branch's block) WHERE THINGS ARE, 2026-11-06 (D700 — THE CART'S NIGHT AT HOME AND THE RESTOCK KNOB, ON `worktree-slice-cart-home`, OFF `main` d299b7b) — ON WINDOWS.**
 >
 > **Built, measured, guarded; unplayed, unmerged.** Joe's question after D696: *"can the marketer take the cart home with him at the end of the
 > day so it's there at the beginning of the day? … is that feasible?"* Yes, with no new state (`handcart.md §13.2b`): a marketer or merchant
@@ -9244,6 +9267,22 @@ Read `git status` after staging, every time.
 - ⚠️ **Backticks inside a double-quoted `grep -c` pattern score 0 and look like a missing anchor** (D692's trap, met again on a
   HANDOFF banner): count anchors from a Python script, or single-quote the pattern.
 
+## ⛔ THE TRAPS D707–D710 PAID FOR — TWO SESSIONS, ONE CALL; A REVERSE-REPLACE RESTORE; PYTHON'S CRLF
+
+- ⛔ **Two sessions answered the same open call and neither knew.** D696 left *"the restock threshold under a parked cart"* on the ⏸️
+  list; `worktree-slice-cart-home` built it as a knob (2026-11-06) and `slice/restock-under-the-cart` built it as a rule (2026-11-07),
+  both D700, both rewriting `CounterShortOf`. **Claim an open item before building it** — the first commit writes *"🔨 being built on
+  `<branch>`"* on the ⏸️ line — and **one session per track** (`CLAUDE.md`, *Two tracks*). The loser is tagged, never merged.
+- ⛔ **A red-check restored by reverse-replace puts the anchor back at its FIRST occurrence, and an empty mutant's first occurrence is
+  byte 0.** A mutant that deleted `"handcarts": 50,` was "restored" by replacing `''` with it — which wrote it before the config's
+  opening brace. Caught by reading the file's head, not by the script, whose landing check passed. **Copy the file before the mutant
+  and copy it back**; a reverse replace is only safe for mutant text that is unique in the file.
+- ⚠️ **Python on Windows writes CRLF in text mode.** `open(p, 'w')` turned three LF files CRLF (git's warning said so); `newline=''`
+  on both the read and the write keeps the bytes. `git ls-files --eol` before committing.
+- ⭐ **Number at the merge, in merge order, and grep for the placeholder after** — D700–D706 went in the order the branches were cut,
+  so cart-home merged first though seam-reach was the checkout's own branch. The art's eleven are A1–A11 now; its five sentences that
+  name the systems' D700 (`cbdfd54`) kept the D.
+
 ## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
 
 - ⛔ **The stock-limits panel shows "no limit" as 0.** `AddStockLimitRow` puts `starts ?? 0` into the `SpinBox` and disables *clear*; a
@@ -9712,6 +9751,13 @@ so it looked settled for three months while nobody had settled it. ⭐ **Before 
 
 ## 🅿️ ART: PARKED (D639, 2026-10-26) → ▶️ UNPARKED FOR A SECOND LANE (D699, 2026-11-06) — SYSTEMS FIRST, ITS OWN WORKTREE, THESE FILES ONLY
 
+**⭐ THE TWO TRACKS (D710, 2026-11-07) — this replaces "each art slice in its own worktree".** Joe: *"ultimately i want 1 systems track
+and 1 art track and im not sure how to manage those without getting into this mess."* The mess was six branches in flight at once, two
+of them answering the same call, and three decisions numbered D700. **Systems:** the main checkout, one `slice/<thing>` branch at a time.
+**Art:** the standing worktree `.claude/worktrees/art`, branch `art`, forever — merged into `main` `--no-ff` when Joe approves a piece,
+and `git merge main` into it straight after, so it never drifts. **Art decisions take the A-series** (A1–A11 so far) and systems keep the
+D-series, so the two can never collide. The rest is in `CLAUDE.md`'s *Two tracks*.
+
 **The lane rule (D699).** Joe works art in parallel, in the gaps while a systems session runs, and the two never share a working folder or a file. Each art slice is a `slice/art-<thing>` branch in its own `git worktree`, merged `--no-ff` at his word like every other slice. **Systems stay the priority: a verdict wanted from Joe stops the art.** What the lane may touch, until house tiers (D206) merge:
 
 | ✅ The art lane's files | ⛔ Stay out — the systems lane's this month |
@@ -9747,18 +9793,24 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE CART'S NIGHT AT HOME (D700, `handcart.md §13.2b`) — BUILT ON `worktree-slice-cart-home`, MEASURED, UNPLAYED, UNMERGED; JOE PLAYS
+- ⏸️ **HAY'S STARTING LIMIT (D709) — HIS, AND 50 WAS NOT TYPED.** He said *"go with 50 for hay's limit"*. A herdsman cuts while the
+  barn holds less than a winter's hay for its pasture's full herd (`livestock.md §0.1`); the posed Phase 5 herds went into winter with
+  400–500 hay in the barn (`livestock.md`, D643–D646), and a met hay row stops the cutting (D139, the herdsman's `limited_by`). At 50 the
+  barn stops at 50 and the herd starves a beast a short day once it is out. **Two answers:** a number above a winter's feed (**500**
+  would clear every posed herd measured), or no limit and the panel's row saying *"none — the barn cuts a winter's worth"* in words
+  (`AddStockLimitRow`, `starts ?? 0`). `StartingStockLimitsTests.EveryShippedGoodButHayStartsWithALimit` names hay as the one exception.
+- ✅ **PLAYED AND MERGED (D710, 2026-11-07).** ⏸️ **THE CART'S NIGHT AT HOME (D700, `handcart.md §13.2b`) — BUILT ON `worktree-slice-cart-home`, MEASURED, UNPLAYED, UNMERGED; JOE PLAYS
   FROM THE WORKTREE, MERGES AT HIS WORD.** What to look for (`.\run.bat` in `.claude/worktrees/slice-cart-home`; format 12): the marketer
   pushing the market's cart home at the day's end and its chip standing beside their house under the household's own; the market's card
   *"— at Alys's door for the night"*, the household's *"the market 1 handcart stands here for the night"*; the morning errand leaving home
   carted with no walk to the market first; a second marketer still on foot; nothing of the household's cart changed.
-- ⏸️ **THE RESTOCK KNOB'S NUMBER — `restock_short_armfuls_with_cart` (D700, `handcart.md §13.2c`) — HIS.** ✅ ~~The restock threshold under a
+- ✅ **3 SHIPS (D707, 2026-11-07; Joe: *"go with what you think is best"*).** ~~⏸️ **THE RESTOCK KNOB'S NUMBER — `restock_short_armfuls_with_cart` (D700, `handcart.md §13.2c`) — HIS.**~~ ✅ ~~The restock threshold under a
   parked cart (D696's measurement)~~ **built as a knob and measured (§13.6, third table, twelve valleys):** at a market that owns a cart the
   counter is short only with room for this many armfuls; **1 ships** (D372 to the letter, no golden moves). **At 3:** the Market share of adult
   ticks 4.3 → 4.0 % (down in 12 of 12), the marketers' walking share 66 → 59 %, counter trips a marketer-year 10.9 → 9.4 (down in 8 of 12),
   units a carted trip 123 → 134, the households' shopping share 6.0 → 6.1 % (inside the noise). The cost: the second marketer on foot carries
   one armful to a counter three short. **Type 3 in `data/sim.config.json` (no golden moves — no golden run has a carted market), or leave 1.**
-- ⏸️ **THE FOUR BRIDGE FIXES (D702–D705, 2026-11-07) — ON `claude/recursing-northcutt-77f56b`, FOUR COMMITS, UNPLAYED, UNMERGED; JOE PLAYS,
+- ✅ **PLAYED AND MERGED (D710, 2026-11-07).** ⏸️ **THE FOUR BRIDGE FIXES (D702–D705, 2026-11-07) — ON `claude/recursing-northcutt-77f56b`, FOUR COMMITS, UNPLAYED, UNMERGED; JOE PLAYS,
   MERGES AT HIS WORD.** What to look for (`.\run.bat` from the worktree; a new game or a format-12 save): a wooden bridge's card reads
   *"The village learns stone after 1,000 crossings (N so far)"*; with the stone bridge in hand a click on a wooden one queues the rebuild and
   the bridge's own card then reads *"Being set in stone — 1st in the queue, 0 of 24 logs and 0 of 72 stone delivered, 0 % done."* under its
@@ -9766,7 +9818,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   finishes the log says *"Wooden bridge 1 is set in stone now and is stone bridge 1 from here"* and the card's title is the stone name; and
   **a villager crossing a diagonal bridge walks one straight line along it**, bank to bank. ⚠️ Not posed in any guard: a villager who stands
   in a bridge's end tile but off its end point (a teleport, or a job whose standing place is the tile's centre) still re-plans as before.
-- ⏸️ **HAY'S ROW READS 0 ON THE STOCK-LIMITS PANEL WITH NO LIMIT SET (D697's trap).** Clothing and handcarts start at 50 now at his word;
+- ⏸️ **→ THE HAY ITEM AT THE TOP OF THIS LIST (D709).** ~~**HAY'S ROW READS 0 ON THE STOCK-LIMITS PANEL WITH NO LIMIT SET (D697's trap).**~~ Clothing and handcarts start at 50 now at his word;
   hay has no limit (D590) and the panel shows *no limit* as 0 (`AddStockLimitRow`, `starts ?? 0`). A row that says *none* in words is the
   legibility fix; a typed number for hay is the other answer. His.
 - ⏸️ **THE MARKETER'S FIRST LEG AND THE LIMITS (D696–D697) — MERGED INTO `main` AT HIS WORD (D698, 2026-11-06), PUSHED, UNPLAYED; JOE PLAYS FROM
@@ -9859,7 +9911,7 @@ un.bat` now.
   seven unchanged), unmarked 222 → 222. Two valleys moving opposite ways with eight still is reshuffling, so the bar is held at
   the measured price with D671 named (`logistics.md §5.7`). If he reads it as a real cost of the margin, the knob is the lever
   and the bar goes back to one.
-- ⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
+- ✅ **ANSWERED (D708, 2026-11-07): *"if meat limit is met, keep hunters there for leather. when leather and meat limits are met they can idle."* Built.** ~~⏸️ **THE WINTER LODGE SITS IDLE BECAUSE THE MEAT LIMIT IS MET (traced D659, `clothing.md §5.3`).** Of 650 lodge-winters a hunter was
   hired in 151; in the rest meat was at or within one hunt of its limit. That is the stock limit working (D62). His call whether the
   quota keeps one hunter at the lodge in winter for the leather's sake, or the meat limit stays the only lever. Not changed.
 - ⏸️ **THE TAILOR IS HIRED ABOUT 7 % OF THE TIME (D663, `clothing.md §5.4`).** Demand is continuous (~8 coats a year) but at ×10

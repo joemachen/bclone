@@ -102,6 +102,20 @@ public sealed record JobRow
     public Goods? LimitedBy { get; init; }
 
     /// <summary>
+    /// A second good the trade brings in, or null — while its limit is set and not met, a met <see cref="LimitedBy"/>
+    /// does not stand the trade down (D708).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ Joe, 2026-11-07: <i>"if meat limit is met, keep hunters there for leather. when leather and meat limits are met they
+    /// can idle."</i> The hunter's row names leather here: a hunt brings meat and a hide, and the tailor's coats are sewn from
+    /// the hides (D659), so a met meat row used to leave the lodge idle in 499 of 650 winters while the tailor waited for
+    /// leather (`clothing.md §5.3`). <b>A column, not a switch on the kind</b>, so a modder's two-good trade is a row. A
+    /// second good with no limit set keeps nobody working: "no limit" asks for nothing of a good that is not food.
+    /// </remarks>
+    [JsonPropertyName("also_limited_by")]
+    public Goods? AlsoLimitedBy { get; init; }
+
+    /// <summary>
     /// Whether a hand in this trade carries a tool that wears with the work and adds to what it
     /// brings in (D391, `specs/tools-and-the-smith.md §3.2`).
     /// </summary>
@@ -203,6 +217,9 @@ public sealed class JobsCatalog
 
     /// <summary>Whose stock limit stands this trade down, or null.</summary>
     public Goods? LimitedBy(JobKind kind) => _rows[(int)kind].LimitedBy;
+
+    /// <summary>The second good that keeps this trade working under a met first limit, or null (D708).</summary>
+    public Goods? AlsoLimitedBy(JobKind kind) => _rows[(int)kind].AlsoLimitedBy;
 
     /// <summary>Whether a hand in this trade carries a tool (D391).</summary>
     public bool UsesTool(JobKind kind) => _rows[(int)kind].UsesTool;

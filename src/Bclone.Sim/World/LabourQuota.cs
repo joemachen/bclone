@@ -584,7 +584,8 @@ public readonly record struct LabourQuota
         // (`SimWorld.WantsMoreOf`) — identical to `TheVillageWantsMoreFood` with no limits set.
         // ⭐ D683: under a met limit the hunters the village wants are the carriers a swollen lodge keeps —
         // the number `hunters` took above, so the panel and the seats agree.
-        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter);
+        // ⭐ D708: and the seats kept for the hides, the same number the carriers' line takes below.
+        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : HuntersKeptUnderAMetMeatLimit(world, lodgeSeats);
         needed[(int)JobKind.Fisher] = world.WantsMoreOf(Goods.Fish) ? afterHunting : 0;
         needed[(int)JobKind.Forager] = world.WantsMoreOf(Goods.Produce) ? stillToFeed : 0;
 
@@ -758,8 +759,12 @@ public readonly record struct LabourQuota
         // at the marketer's rank because the errand is the marketer's (the hunters' comment above says why
         // not at the hunter's). Out of the hands nothing more pressing wants, never zeroed by the food floor:
         // what they carry is food on its way to a shelf.
+        //
+        // ⭐ AND THE HUNTERS OUT FOR THE HIDES (D708, Joe: *"if meat limit is met, keep hunters there for leather"*): while
+        // leather is under its row, every seat of the lodges — taken HERE, at the carriers' rank, for D683's reason: at the
+        // hunter's rank they would outrank the houses and the firewood for a good the village is not short of to live.
         int carriers = meatIsEnough
-            ? Take(ref free, world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter))
+            ? Take(ref free, HuntersKeptUnderAMetMeatLimit(world, lodgeSeats))
             : 0;
         hunters += carriers;
 
@@ -1002,7 +1007,8 @@ public readonly record struct LabourQuota
         // third time: a met meat limit stops the hunting, and a lodge the hands cannot keep up with still
         // has work — the carrying — so the trade is not reported as capped while it does.
         JobKind.Hunter => StoppedByItsOwnLimit(world, kind)
-            && world.SeatsKeptToDrainSwollenBuffers(kind) == 0,
+            && world.SeatsKeptToDrainSwollenBuffers(kind) == 0
+            && !world.KeptWorkingForItsSecondGood(kind),
 
         // ⭐ AND A SMITH BY WHAT THE SMITHIES ARE SET TO FORGE (`tools-and-the-smith.md §9.3`).
         // The row's `limited_by` is the stone tool, and a met stone limit says nothing to a smithy
@@ -1022,6 +1028,17 @@ public readonly record struct LabourQuota
         // cap has no business applying is not.**
         _ => StoppedByItsOwnLimit(world, kind),
     };
+
+    /// <summary>
+    /// The hunters a met meat row still keeps: the carriers a swollen lodge needs (D683), or every lodge seat while the
+    /// hides are wanted (D708) — whichever is more, so the panel, the seats and the plan agree.
+    /// </summary>
+    private static int HuntersKeptUnderAMetMeatLimit(SimWorld world, int lodgeSeats)
+    {
+        int carriers = world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter);
+        int forTheHides = world.KeptWorkingForItsSecondGood(JobKind.Hunter) ? lodgeSeats : 0;
+        return carriers > forTheHides ? carriers : forTheHides;
+    }
 
     /// <summary>
     /// Whether the good this trade makes (its <c>limited_by</c>) has a limit set and met — against

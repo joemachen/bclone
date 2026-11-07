@@ -29,9 +29,11 @@ public sealed class LodgeCarriersTests
     /// village settled a year with a lodge, one marketer, every other trade at nought and the hunters as typed —
     /// <c>null</c> is <i>the village decides</i>, the state Joe played in — every larder full, half the shelves cleared
     /// so storage has room (D370's premise), the lodge holding exactly <paramref name="meat"/> and the meat row set to
-    /// <paramref name="limit"/>, which the lodge alone meets.
+    /// <paramref name="limit"/>, which the lodge alone meets. ⭐ D708: the leather row is set too — met by what the village
+    /// holds when <paramref name="leatherMet"/> (D683's poses, where nothing but the carrying is wanted), five hundred short
+    /// otherwise (the hides keep the hunters out).
     /// </summary>
-    private static (SimLoop Loop, Workplace Lodge) ALodgeUnderAMetLimit(int meat, int limit, int? huntersTyped)
+    private static (SimLoop Loop, Workplace Lodge) ALodgeUnderAMetLimit(int meat, int limit, int? huntersTyped, bool leatherMet = true)
     {
         // Eight founders, not four: the carriers are asked at the marketer's rank, after the foragers and the
         // woodcutter the derivation wants first (a typed nought is applied after the hands are shared out, `Asked`),
@@ -72,6 +74,9 @@ public sealed class LodgeCarriersTests
         Assert.True(world.SomewhereToPut(Goods.Meat), "the premise: storage with room for the meat");
         Assert.True(world.SetStockLimit(Goods.Meat, limit).Allowed);
         Assert.True(world.LimitIsMet(Goods.Meat), $"the premise: the meat row is met ({world.HeldAgainstItsLimit(Goods.Meat)} held against {limit})");
+        int leather = world.HeldAgainstItsLimit(Goods.Leather);
+        Assert.True(world.SetStockLimit(Goods.Leather, leatherMet ? leather : leather + 500).Allowed);
+        Assert.Equal(leatherMet, world.LimitIsMet(Goods.Leather));
         return (loop, lodge);
     }
 
@@ -228,6 +233,85 @@ public sealed class LodgeCarriersTests
         _output.WriteLine($"the lodge went {before} → {lodge.Store[Goods.Meat]}; {carried.Count} hunters walked to it, at most {atOnce} at once");
         Assert.True(lodge.Store[Goods.Meat] <= before - config.CarryCapacity, "nobody carried an armful out of the lodge");
         Assert.Equal(1, atOnce);
+    }
+
+    /// <summary>
+    /// ⭐⭐ D708, Joe: <i>"if meat limit is met, keep hunters there for leather."</i> A lodge below half under a met meat row
+    /// keeps every seat while leather is under its row, and the hunters go out and hunt — the hides come home, and a hunter
+    /// says why they are out.
+    /// </summary>
+    [Fact]
+    public void AMetMeatLimitKeepsTheHuntersOutForTheHidesWhileLeatherIsShort()
+    {
+        (SimLoop loop, Workplace lodge) = ALodgeUnderAMetLimit(meat: 1_000, limit: 500, huntersTyped: null, leatherMet: false);
+        SimWorld world = loop.World;
+        SimConfig config = world.Config;
+        Assert.False(world.BufferIsSwollen(lodge), "the premise: not swollen, so D683's carriers do not keep the seats");
+        Assert.True(world.KeptWorkingForItsSecondGood(JobKind.Hunter));
+
+        LabourQuota quota = LabourQuota.For(world);
+        _output.WriteLine($"the village wants {quota.For(JobKind.Hunter)} hunters of {lodge.Places} seats; needed {quota.Needed(JobKind.Hunter)}");
+        Assert.Equal(lodge.Places, quota.For(JobKind.Hunter));
+        Assert.Equal(lodge.Places, quota.Needed(JobKind.Hunter));
+        Assert.Null(LabourQuota.WhyTheVillageWantsNone(world, JobKind.Hunter));
+
+        SeatThem(world);
+        Assert.Equal(lodge.Places, lodge.WorkerIds.Count);
+
+        int leatherBefore = world.HeldAgainstItsLimit(Goods.Leather);
+        int hunted = 0;
+        string? said = null;
+        for (int tick = 0; tick < config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            foreach (int id in lodge.WorkerIds)
+            {
+                Villager hunter = world.FindVillager(id)!;
+                if (hunter.State is VillagerState.Hunting or VillagerState.TravelingToGame)
+                {
+                    hunted++;
+                    said ??= hunter.WorkNote;
+                }
+            }
+        }
+
+        int leatherAfter = world.HeldAgainstItsLimit(Goods.Leather);
+        _output.WriteLine($"{hunted} hunter-ticks hunting in a season; leather {leatherBefore} → {leatherAfter}; said: {said}");
+        Assert.True(hunted > 0, "nobody hunted under a met meat row with leather short");
+        Assert.True(leatherAfter > leatherBefore, "no hide came home");
+        Assert.Contains("but only", said);
+        Assert.Contains("leather it asked for", said);
+    }
+
+    /// <summary>
+    /// D708's other half: <i>"when leather and meat limits are met they can idle."</i> The same lodge with both rows met
+    /// stands the hunters down — nobody seated, nobody hunting — and the trade is reported as capped.
+    /// </summary>
+    [Fact]
+    public void WithTheMeatAndTheLeatherBothMetTheHuntersIdle()
+    {
+        (SimLoop loop, Workplace lodge) = ALodgeUnderAMetLimit(meat: 1_000, limit: 500, huntersTyped: null, leatherMet: true);
+        SimWorld world = loop.World;
+        Assert.False(world.KeptWorkingForItsSecondGood(JobKind.Hunter));
+        Assert.Equal(0, LabourQuota.For(world).For(JobKind.Hunter));
+        Assert.Equal(0, LabourQuota.For(world).Needed(JobKind.Hunter));
+        Assert.NotNull(LabourQuota.WhyTheVillageWantsNone(world, JobKind.Hunter));
+
+        int hunted = 0;
+        for (int tick = 0; tick < world.Config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.State is VillagerState.Hunting or VillagerState.TravelingToGame)
+                {
+                    hunted++;
+                }
+            }
+        }
+
+        Assert.Equal(0, hunted);
+        Assert.Empty(lodge.WorkerIds);
     }
 
     /// <summary>The lodge card names the reason: the limit, and that the hunters are carrying rather than hunting.</summary>

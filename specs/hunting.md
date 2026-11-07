@@ -228,6 +228,28 @@ untouched tree run from a detached worktree the same sitting):
   carriers at the hunter's rank and read `every x1` alive 370 → 305, frozen 210 → 303** — the `ZZD` lines said why (the
   re-founders carried meat instead of building a roof), which is how the carriers came to be asked at the marketer's rank.
 
+### 6b. ⭐ OUT FOR THE HIDES — A MET MEAT ROW DOES NOT IDLE THE LODGE WHILE LEATHER IS SHORT (D708, Joe's call) — ✅ BUILT, MERGED
+
+**Joe, 2026-11-07:** *"if meat limit is met, keep hunters there for leather. when leather and meat limits are met they can idle."*
+The finding it answers is `clothing.md §5.3` (D659): of 650 lodge-winters a hunter was hired in 151, because the meat row was met,
+while the tailor waited for hides.
+
+- **The column:** the hunter's job row names `also_limited_by: leather` beside `limited_by: meat` (`JobRow.AlsoLimitedBy`). It is a
+  column, not a switch on the kind, so a modder's two-good trade is a row.
+- **The rule:** `SimWorld.KeptWorkingForItsSecondGood(kind)` is true when the first good's row is met but the second good has a limit
+  set and is under it, and the first good still has storage with room (D33: a hunt for the hide brings the meat home too). A second
+  good with no limit keeps nobody working.
+- **The plan:** a hunter whose village wants no more meat but is kept for the hides goes into the woods and hunts as usual. The
+  buffer rule before it is unchanged, so they still carry an armful of the lodge's meat in first. The card reads *"the village has its
+  2,500 meat, but only 120 of the 200 leather it asked for — hunting for the leather"*. With both rows met it reads *"… and its 200 leather"*.
+- **The quota:** every lodge seat is kept while the hides are wanted (`HuntersKeptUnderAMetMeatLimit`: the larger of §6a's carriers and
+  the seats). They are taken at the **carriers' rank**, for §6a's reason: at the hunter's rank, a good the village is not short of to
+  live would outrank the houses and the firewood. `Needed` reports the same number, and the trade is not reported as capped while it holds.
+- **Guards** (`LodgeCarriersTests`): `AMetMeatLimitKeepsTheHuntersOutForTheHidesWhileLeatherIsShort`,
+  `WithTheMeatAndTheLeatherBothMetTheHuntersIdle`. §6a's five poses now set the leather row met, so they still pose *"nothing but the
+  carrying is wanted"*. **4 mutants, 8 reds, no zero:** the plan's switch off (1), the leather limit ignored (5), the seats back to
+  §6a's (1), the capped arm without the clause (1).
+
 ---
 
 ## 7. ⭐ What it must be worth, and how that is settled

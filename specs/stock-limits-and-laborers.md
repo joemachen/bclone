@@ -201,6 +201,10 @@ headless left nobody alive in his game.
 - **Grouped by the good's own category** (`GoodRow.Category`: Food, Materials, FuelAndGoods), so a
   modded good lands in its group with no view code. Unset fails at load; anything edible is Food.
 
+### 4.4a ⭐ EVERY SHIPPED GOOD STARTS WITH A LIMIT — HAY THE ONE EXCEPTION, AND IT IS JOE'S (D697, D709)
+
+Joe (2026-11-06): *"unlocked items should start at 50 by default"*, and again on 2026-11-07: *"go with 50 for hay's limit (and for all unlocked items default limit)"*. A good with no limit shows as **0** on the panel (`AddStockLimitRow`, `starts ?? 0`), which reads as *stop making it*. So every good in `GoodsCatalog` has a `starting_stock_limits` row, and `StartingStockLimitsTests.EveryShippedGoodButHayStartsWithALimit` names any good added without one (red-checked: `handcarts` deleted, 1 red). **A new unlocked good ships at 50** unless its spec measures another number. **Hay is the exception, and it is held, not typed:** a met hay row stops the herdsman cutting (D139), and the posed herds went into winter with 400–500 hay in the barn (`livestock.md`, D643–D646). At 50 the herd starves. His number, in HANDOFF's ⏸️ list.
+
 ### 4.5 ⭐⭐ A LOAD ON ITS WAY TO STORAGE COUNTS, AND SO DOES THE HIDE IN THE LODGE (D420)
 
 Joe, 2026-09-27: *"A limit of 2000 forage means 2000 stored (or in transit to storage) in addition

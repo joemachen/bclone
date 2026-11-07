@@ -7577,9 +7577,9 @@ public sealed partial class SimWorld : IObstacles
 
         // The counter's room for this good, by the one door (D612): its limit less what it holds, within the building.
         // ⭐ UNDER A CART THE COUNTER MAY RUN DOWN FURTHER FIRST (`handcart.md §13.2c`, D700): a market that owns a handcart
-        // is short only with room for `restock_short_armfuls_with_cart` armfuls — 1 as shipped, this rule to the letter
+        // is short only with room for `restock_short_armfuls_with_cart` armfuls — 3 as shipped since D707 (1 is this rule to the letter)
         // (D696 measured a carted trip arriving to a shortfall of an armful and a bit, carrying 86–106 of 240); the number
-        // is Joe's. The scan for the owner runs only when the number is above one, so the shipped game pays nothing here.
+        // was Joe's, left to Claude (D707). The scan for the owner runs only when the number is above one — a walk of the workplaces, not a rebuild.
         int armful = Config.CarryCapacity;
         if (Config.RestockShortArmfulsWithCart > 1 && TheCartOwnerAt(market) is { HandcartUses: > 0 })
         {
@@ -14382,6 +14382,37 @@ public sealed partial class SimWorld : IObstacles
 
         return WhyTheVillageWantsNoMoreFood()
             ?? $"every store that takes food is full — {FoodInGranaries()} in the stores, and nowhere to put more";
+    }
+
+    /// <summary>
+    /// ⭐ Whether a trade stood down by its first good's met limit is kept working for its second (D708) — the hunter's
+    /// hides: the row's <c>also_limited_by</c> has a limit set and not met, and the first good still has a store with room
+    /// to go to.
+    /// </summary>
+    /// <remarks>
+    /// Joe, 2026-11-07: <i>"if meat limit is met, keep hunters there for leather. when leather and meat limits are met they
+    /// can idle."</i> The room clause is D33's: a hunt for the hide still brings the meat home, and meat with nowhere to go
+    /// is a load that cannot be put down. Read by the hunter's plan and by the quota, so the seat and the walk agree.
+    /// </remarks>
+    public bool KeptWorkingForItsSecondGood(JobKind kind) =>
+        JobsCatalog.LimitedBy(kind) is Goods first
+        && JobsCatalog.AlsoLimitedBy(kind) is Goods second
+        && StockLimits.For(second) is int limit
+        && HeldAgainstItsLimit(second) < limit
+        && SomewhereToPut(first);
+
+    /// <summary>
+    /// What a hunter out for the hides says (D708): <i>"the village has its 2,500 meat, but only 120 of the 200 leather it
+    /// asked for — hunting for the hides"</i>.
+    /// </summary>
+    public string SecondGoodNote(JobKind kind)
+    {
+        Goods first = JobsCatalog.LimitedBy(kind) ?? throw new InvalidOperationException($"{JobsCatalog.NameOf(kind)} names no limited_by");
+        Goods second = JobsCatalog.AlsoLimitedBy(kind) ?? throw new InvalidOperationException($"{JobsCatalog.NameOf(kind)} names no also_limited_by");
+        string firstHeld = StockLimits.For(first) is int firstLimit ? firstLimit.Grouped() : HeldAgainstItsLimit(first).Grouped();
+        int secondLimit = StockLimits.For(second) ?? 0;
+        return $"the village has its {firstHeld} {GoodsCatalog.NameOf(first)}, but only {HeldAgainstItsLimit(second).Grouped()} of the "
+            + $"{secondLimit.Grouped()} {GoodsCatalog.NameOf(second)} it asked for — {JobsCatalog.DoingOf(kind)} for the {GoodsCatalog.NameOf(second)}";
     }
 
     /// <summary>

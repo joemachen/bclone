@@ -209,6 +209,9 @@ raise the work done** (6.2 → 5.9 %, 8.2 → 8.2 %): the limit bounds the work,
 every-source founding in Year 1: the harness playing badly (D447), not a finding.
 
 ### 5.3 2026-10-31 — the baseline this build is held against (D659), and the leather flow
+
+> ⭐ **Answered 2026-11-07 (D708, `hunting.md §6b`):** the idle winter lodge below is the meat row working as built. Joe's call: *"if meat limit is met, keep hunters there for leather. when leather and meat limits are met they can idle."* The hunter's row names `also_limited_by: leather` now. The numbers below are the baseline from before that call.
+
 Re-taken on `main` at a9c6fde before C1, bare and coat (posed), limits ×10 at Year 5, with two new
 lines: **`ZZL`**, leather produced a valley (every rise in the valley's total leather — stores, buffers
 and arms), and **`ZZW`**, a trace on the first day of every winter of the lodges standing, the hunters

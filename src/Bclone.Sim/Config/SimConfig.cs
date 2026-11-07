@@ -1321,10 +1321,11 @@ public sealed record SimConfig
     /// a bit and carrying 86–106 of 240, so the cart was under the trip but the trip was not sized for the cart;
     /// <see cref="CartArmfuls"/> would size it. A market without a cart is short at one, as always. Read by
     /// <c>SimWorld.CounterShortOf</c>, the one predicate the marketer's plan and the quota share. Validated at load: at
-    /// least one. The number is Joe's; measured on <c>ZzLogistics</c> (`ZZ_RESTOCK`).
+    /// least one. Measured on <c>ZzLogistics</c> (`ZZ_RESTOCK`); <b>3 ships (D707)</b> — <see cref="CartArmfuls"/>, so a carted
+    /// restock is sized for the cart.
     /// </summary>
     [JsonPropertyName("restock_short_armfuls_with_cart")]
-    public int RestockShortArmfulsWithCart { get; init; } = 1;
+    public int RestockShortArmfulsWithCart { get; init; } = 3;
 
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
@@ -3529,9 +3530,13 @@ public sealed record SimConfig
             WorksAt = BuildingKind.HunterLodge,
 
             // ⛔ LIMITED BY MEAT, the same way the fisher is limited by fish: this column is the
-            // good a limit on THIS TRADE reads, and the trade makes meat. The leather is a
-            // by-product and nothing caps it, because nothing spends it yet.
+            // good a limit on THIS TRADE reads, and the trade makes meat.
             LimitedBy = World.Goods.Meat,
+
+            // ⭐ AND THE HIDES KEEP THEM OUT (D708, Joe: "if meat limit is met, keep hunters there for
+            // leather. when leather and meat limits are met they can idle"). The tailor sews coats from
+            // leather (D659), so a met meat row no longer idles the lodge while leather is short.
+            AlsoLimitedBy = World.Goods.Leather,
             UsesTool = true,
         },
         new JobRow

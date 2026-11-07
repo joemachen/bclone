@@ -21,6 +21,27 @@ You are helping build a ground-up, generational village-builder / survival sim (
      slice merged that morning (D159). A spec that lies about its own status is worse than no
      spec, because it is read at exactly the moment a session is trying to orient.
 
+## Two tracks — systems and art (D710, Joe's: *"1 systems track and 1 art track"*)
+On 2026-11-07 six branches were in flight at once: two answered the same open call without knowing it, and three
+decisions were numbered D700. These rules exist so that cannot happen again.
+
+| | **Systems** | **Art** |
+|---|---|---|
+| **Where** | the main checkout, `D:\Projects\bclone` | the standing worktree `.claude/worktrees/art` — never a new one |
+| **Branch** | one `slice/<thing>` at a time, cut from `main` | `art`, forever |
+| **Numbers** | `Dnnn` in DESIGN §7 | `Annn` in DESIGN §7 (A1–A11 are the terrain shader) |
+| **Files** | everything except the art lane's | only the table in HANDOFF's 🅿️ ART section |
+| **Merges** | `--no-ff` into `main` at Joe's word, then the branch is deleted | `--no-ff` into `main` when Joe approves a piece, then `git merge main` into `art` at once |
+
+- ⛔ **One session per track at a time.** A bug Joe finds while a slice is open goes onto that slice's branch as its
+  own commit. No new worktree or side session for it. If a second systems session is truly needed, it waits.
+- ⛔ **Claim an open call before building it.** Your first commit writes *"🔨 being built on `<branch>`"* on its
+  ⏸️ line in HANDOFF. Read the ⏸️ list for that marker before you start anything.
+- ⛔ **Never a placeholder number.** Take the next free D (or A) when you write the entry. The tracks cannot collide,
+  and inside a track only one branch is open.
+- **Systems merge first** when both are waiting. Before cutting a new slice, check `git branch --no-merged main`.
+  Anything other than `art` and the slice you are about to finish is a mess to raise with Joe, not to work around.
+
 ## The prime directive
 The game has six **Non-Negotiables** (DESIGN.md §1) — legibility, meditative pace, no combat, people-not-spreadsheet stories, generational time as core loop, traceable-over-clever. **These are constraints on every feature.**
 

@@ -1075,10 +1075,11 @@
   // 66 -> 59 %, counter trips a marketer-year 10.9 -> 9.4 (down in 8 of 12),
   // units a carted trip 123 -> 134, the households' shopping share 6.0 -> 6.1 %
   // (inside the noise). Under 3 the second marketer on foot carries one armful to
-  // a counter three short, which is the number's cost. The number is Joe's
-  // (HANDOFF, open); 1 moves no golden, and 3 would move none either (no golden
-  // run has a carted market).
-  "restock_short_armfuls_with_cart": 1,
+  // a counter three short, which is the number's cost. ⭐ 3 SHIPS (D707, Joe,
+  // 2026-11-07: "go with what you think is best" -- the table's number, which is
+  // cart_armfuls, so a carted restock is sized for the cart). No golden run has a
+  // carted market, so no golden moves.
+  "restock_short_armfuls_with_cart": 3,
 
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the

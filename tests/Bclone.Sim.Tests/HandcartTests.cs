@@ -1687,7 +1687,7 @@ public sealed class HandcartTests
 
     /// <summary>
     /// §13.2c: with `restock_short_armfuls_with_cart` 3 a counter at a market that owns a cart is short only with room for three
-    /// armfuls; the cart worn out, it is short at one again; the shipped number is one (D372 to the letter) and nought is refused.
+    /// armfuls; the cart worn out, it is short at one again; the shipped number is three (D707) and nought is refused.
     /// </summary>
     [Fact]
     public void TheCounterRunsDownToTheKnobsArmfulsUnderACartOnly()
@@ -1715,8 +1715,8 @@ public sealed class HandcartTests
         market.HandcartUses = 0;
         Assert.True(world.CounterShortOf(counter, Goods.Produce));
 
-        // As shipped the number is one — D372 to the letter — and nought is refused in words.
-        Assert.Equal(1, ShippedConfig.Load().RestockShortArmfulsWithCart);
+        // As shipped the number is three — a cart's load, D707 — and nought is refused in words.
+        Assert.Equal(3, ShippedConfig.Load().RestockShortArmfulsWithCart);
         SimConfigException refused = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "restock_short_armfuls_with_cart": 0 }""", "<modded>"));
         Assert.Contains("restock_short_armfuls_with_cart", refused.Message, StringComparison.Ordinal);
     }
