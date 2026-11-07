@@ -4,7 +4,7 @@
 and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
 SCALE 0.30 TILES (D706); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (D707–D708): GRAIN 0.065
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
-⚠️ The whole stack sits at §3.3's GPU bar (+0.08–0.10 ms at 1280 × 800); his call.** §2–§4 are the build; §4's table says which piece stands; §5
+The GPU bar is 1 ms a frame at 4K for the whole stack (D710, §3.3); everything on is +0.64–0.80 ms, inside it.** §2–§4 are the build; §4's table says which piece stands; §5
 waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
@@ -167,7 +167,10 @@ seldom reaches its ends, so the edge seldom wanders the whole reach.
 
 Re-measured with `tools/grass/lab_cost.gd`'s method as each layer lands (`grass-look.md §5`, open item 4). The tool's
 cases are fixed and it is not this lane's file, so the new cases run from a scratch copy; the numbers go in §6 beside
-`grass-look.md`'s table. Bar: the D632 budget's size, about +0.1 ms a frame at 1280 × 800 for the whole stack.
+`grass-look.md`'s table. Bar: the D632 budget's size, about +0.1 ms a frame at 1280 × 800 for the whole stack (until D710). ⭐ **Since D710,
+at Joe's word: 1 ms a frame at 4K on the RTX 3070 for the whole terrain stack**, about 6 % of a 60 fps frame. The old
+bar was the grass look's own cost reused as a size, not a share of a frame, and the runs' ±0.02 ms made it no test.
+It is measured again in the wired valley, and the bake (§5) is built only if that goes over.
 
 ⚠️ **Compare inside one session only.** On 2026-11-06 the same RTX 3070 read *approved, no grain* at **9.1 ms at 4K**
 against D632's ~1.7 (0.77 at 2560 × 1440, scaled), about five times higher, and **the shader as it stood before this
@@ -189,7 +192,7 @@ row from one run.
 | **edge bleed**, over the map | **+0.34 ms** | **+0.33 ms** | +11 %: a second read of the map and two noise lookups |
 | **everything** — world grain, map, snow, splat, bleed (same run) | **+0.64 ms over approved with grain** | **+0.80 ms** | +21 % / +27 %; **+0.078 / +0.098 ms at 1280 × 800: AT the +0.1 bar.** D703's run read the stack without splat and bleed at +0.096; this run read it at +0.074, so the runs differ by ±0.02 ms, about the size of piece 4 |
 
-⚠️ **The bar is spent before piece 4** (D703). **(D704: and the whole stack lands on it, inside the runs' own noise.
+⚠️ **The bar is spent before piece 4** (D703; that was the 0.1 ms bar — D710 made it 1 ms at 4K, which the stack fits). **(D704: and the whole stack lands on it, inside the runs' own noise.
 The bleed is the dear one; with splat alone the stack stays under.)** Snow's threshold is two octaves of value noise, eight integer hashes a
 pixel, about what the world grain's three octaves cost. Piece 4's warp adds more noise. So either the bar moves, which
 is Joe's call, or the noise is shared: snow's threshold and the bleed's warp could read one octave set, and in the game
@@ -246,8 +249,9 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **`VillageMap` draws the valley through the shader**, and the year's fraction and the snow amount become per-frame
   uniforms.
 - **The grain's overlay** finds its place between the map and the UI (§3.1).
-- **The GPU bar** (§3.3, D703–D704): the whole stack is at it. Two things that only the wired valley can do would buy
-  room: the snow's per-place threshold and the bleed's warp are pure functions of the tile, so the bake could store
+- **The GPU bar** (§3.3, D703–D704; 1 ms at 4K since D710, which the lab's stack fits): measured again in the wired
+  valley, whose own costs the lab cannot see (`Dressed`'s noise, below). If it goes over, two things only the wired
+  valley can do would buy room (the bake's 16 px a tile holds even the approved 0.30-tile warp at about 5 px a cycle): the snow's per-place threshold and the bleed's warp are pure functions of the tile, so the bake could store
   them in a channel and the shader read them for one texture fetch instead of four noise lookups.
 - **`Dressed`'s noise** — the wood's canopy, the stone's grain, the bloom — stays in the bake or moves into the shader.
   The lab does not draw it, so the lab's woods and stone are flatter than the game's.
