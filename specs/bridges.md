@@ -194,6 +194,13 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
   carrying `RebuildsBridge` (the relocation's shape, `MovingFrom`). **The wooden deck carries traffic until the stone one
   is finished** (Joe, call 4); then the deck's byte flips to stone and the routes re-price. The wood is not
   refunded — it is what the stone was set on.
+- **And it takes a stone name** (Joe, 2026-11-07, after playing: a bridge set in stone still titled *"wooden bridge 1"*):
+  `RaiseTheBridge`'s rebuild branch gives it the next name off the stone row's counter (`NameFor`), the same way a
+  fresh stone bridge is named — *not* a word swapped in the old name, because a stone bridge dragged fresh elsewhere may
+  already be *"stone bridge 1"* and bridges cannot be renamed, so the counter is what keeps the names apart. Said in the
+  log: *"Wooden bridge 1 is set in stone now and is stone bridge 1 from here — the wooden bridge carried the village
+  across while it was rebuilt, and the crossing is quicker for it."* The site keeps *"wooden bridge 1, in stone"* while it
+  is built. `_buildingsNamed` is saved and not hashed, the name a string the save already carries: no golden, no format.
 
 ### 5.4 Pulling one down
 
@@ -398,3 +405,9 @@ the far bank, and an 8×8 patch beyond it painted for homes.
 - **Found while building:** `CanBuildAt` let a well be marked on a bridge site's bank tile — the general placement path
   never asked about bridge ends (`NothingStandsOnABridgesEnd` caught it); and a bridge site on a wooded bank would have
   waited for ever on clearing nobody was asked to do (`ABridgeOnAWoodedBankIsNotHeldForClearing`).
+- 🔨 **The rebuilt bridge's name (2026-11-07, D70x — Joe, after playing: a stone bridge still titled *"wooden bridge 1"*):**
+  `RaiseTheBridge`'s rebuild branch takes the next name off the stone row's counter (§5.3). **Guards** —
+  `AClickRebuildsInStoneOpenThroughoutAndQuicker` extended (the name and the log line) and
+  `ARebuiltBridgeTakesTheNextStoneNameNotAWordSwap` (a fresh stone bridge first, then a wooden one rebuilt: the names
+  differ). Red before the fix, 2 of 2. Red-checked: **2 mutants, 3 reds** — the assignment dropped **2**; a word swap
+  (*wooden* → *stone* in the old name) **1**, the second fact only, which is why it exists. No golden moved.

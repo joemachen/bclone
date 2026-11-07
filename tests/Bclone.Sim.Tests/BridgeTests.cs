@@ -524,7 +524,8 @@ public sealed class BridgeTests
     [Fact]
     public void AClickRebuildsInStoneOpenThroughoutAndQuicker()
     {
-        SimWorld world = AValley(Open).World;
+        var sink = new InMemoryLogSink();
+        SimWorld world = SimFactory.CreatePhase0(Open, sink).World;
         Bridge bridge = RaiseABridge(world, ACrossing(world));
         GridPos village = world.FirstHomeOrFoundingSite();
         int woodenCost = world.TravelCost.Cost(bridge.Near.ToTile(), bridge.Far.ToTile());
@@ -553,6 +554,10 @@ public sealed class BridgeTests
 
         Assert.Same(bridge, world.Bridges.Single());
         Assert.Equal(BuildingKind.StoneBridge, bridge.Kind);
+        // ⭐ And it is called what it is now (Joe, 2026-11-07: a stone bridge still titled "wooden bridge 1").
+        Assert.Equal("stone bridge 1", bridge.Name);
+        Assert.Equal(1, sink.Entries.Count(e => e.Message.Contains(
+            "Wooden bridge 1 is set in stone now and is stone bridge 1 from here", StringComparison.Ordinal)));
         Assert.All(DeckOf(world, bridge), t => Assert.Equal(world.Config.BridgeStoneTileCost, world.DeckOn(t)));
         int stoneCost = world.TravelCost.Cost(bridge.Near.ToTile(), bridge.Far.ToTile());
         _output.WriteLine($"length {bridge.Length}: wood {woodenCost} → stone {stoneCost}");
@@ -562,6 +567,38 @@ public sealed class BridgeTests
         Crossing elsewhere = ACrossing(world, slant: 2, kind: BuildingKind.StoneBridge);
         Assert.True(world.MarkBridge(BuildingKind.StoneBridge, elsewhere.From, elsewhere.To).Allowed);
         Assert.False(world.Workplaces.Single(w => w.Construction is { BridgeTo: not null }).Construction!.RebuildsBridge);
+    }
+
+    /// <summary>
+    /// ⭐ A rebuilt bridge takes the next stone name off the counter, not a word swapped in its old one — a stone bridge
+    /// dragged fresh elsewhere may already be "stone bridge 1", and bridges cannot be renamed, so the counter is what
+    /// keeps the names apart (Joe, 2026-11-07).
+    /// </summary>
+    [Fact]
+    public void ARebuiltBridgeTakesTheNextStoneNameNotAWordSwap()
+    {
+        SimWorld world = AValley(Open).World;
+        Bridge fresh = RaiseABridge(world, ACrossing(world, slant: 2, kind: BuildingKind.StoneBridge), BuildingKind.StoneBridge);
+        Assert.Equal("stone bridge 1", fresh.Name);
+
+        Bridge wooden = RaiseABridge(world, ACrossing(world));
+        Assert.Equal("wooden bridge 1", wooden.Name);
+
+        Point onTheDeck = Point.CentreOf(DeckOf(world, wooden)[0]);
+        Assert.True(world.MarkBridge(BuildingKind.StoneBridge, onTheDeck, onTheDeck).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { BridgeTo: not null });
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+
+        Assert.Equal(BuildingKind.StoneBridge, wooden.Kind);
+        Assert.Equal("stone bridge 2", wooden.Name);
+        Assert.NotEqual(fresh.Name, wooden.Name);
+        Assert.Equal(2, world.Bridges.Select(b => b.Name).Distinct().Count());
     }
 
     // ---------------------------------------------------------------

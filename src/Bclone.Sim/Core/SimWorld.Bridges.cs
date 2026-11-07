@@ -404,8 +404,15 @@ public sealed partial class SimWorld
             string was = BuildingsCatalog.NameOf(old.Kind);
             old.Kind = kind;
             old.RaisedAtTick = Tick;
-            Narrate($"{Capitalised(name)} is set in stone now — the {was} carried the village across while it "
-                + $"was rebuilt, and the crossing is quicker for it. {Clock.SeasonAndYear()}.", LogCategory.Building);
+
+            // ⭐ AND IT IS CALLED WHAT IT IS NOW (Joe, 2026-11-07, after playing: a stone bridge still titled "wooden
+            // bridge 1"). The next name off the stone row's counter, NOT a word swapped in the old one: a stone bridge
+            // dragged fresh elsewhere may already be "stone bridge 1", and bridges cannot be renamed (`renamable: false`),
+            // so the counter is the only thing keeping the names apart. `_buildingsNamed` is saved and not hashed, and the
+            // name is a string the save already carries — no golden moves and no format bump.
+            old.Name = NameFor(kind);
+            Narrate($"{Capitalised(name)} is set in stone now and is {old.Name} from here — the {was} carried the village "
+                + $"across while it was rebuilt, and the crossing is quicker for it. {Clock.SeasonAndYear()}.", LogCategory.Building);
             return;
         }
 
