@@ -1197,9 +1197,11 @@
   // The stone bridge is learned by crossings walked over the bridges (Joe:
   // DOING), and rebuilt over a wooden one in place - the wooden deck carries the
   // village until the stone is set. Measured (D547): one bridge with a forager's
-  // hut across carries a median 23 crossings a year (12-60), so 150 is about
-  // six years of real use.
-  "stone_bridge_unlock_crossings": 150,
+  // hut across carries a median 23 crossings a year (12-60), so 150 was about
+  // six years of real use. Joe's call after playing (2026-11-07, his village at
+  // 1,511 crossings): 1000 - about forty years of one bridge, a generation or
+  // two of feet before the village knows stone.
+  "stone_bridge_unlock_crossings": 1000,
   "stone_bridge_stone_per_tile": 12,
   "stone_bridge_logs_per_tile": 4,
   "stone_bridge_work_ticks_per_tile": 15,

@@ -482,13 +482,61 @@ public sealed class BridgeTests
     /// ⭐ One walk across a bridge at an angle is one crossing, walked straight along it — counted where a step
     /// goes from land onto the deck, not per deck tile — and the deck takes no wear while the banks do.
     /// </summary>
+    /// <remarks>
+    /// ⭐ Tightened 2026-11-07 (Joe: <i>"when villagers cross a diagonal bridge, they clearly walk in a 'staircase'
+    /// pattern"</i>): slant 3, a stray under a quarter of a tile, and <b>exactly one leg whose two ends are the bridge's
+    /// two points</b>. The first form allowed half a tile at slant 2 and was green with the staircase — a tile-centre leg
+    /// over a one-wide slanted deck grazes water and breaks into axis-aligned jogs, and half a tile is what a jog is.
+    /// </remarks>
     [Fact]
     public void OneWalkAcrossIsOneStraightCrossingAndTheDeckTakesNoWear()
     {
         SimWorld world = AValley(Open).World;
-        Bridge bridge = RaiseABridge(world, ACrossing(world, slant: 2));
+        Bridge bridge = RaiseABridge(world, ACrossing(world, slant: 3));
         Assert.True(DeckOf(world, bridge).Count >= 2, "a one-tile deck cannot tell a crossing from a step");
 
+        (int steps, double furthest, int endToEnd) = WalkAcross(world, bridge);
+        GridPos far = bridge.Far.ToTile();
+        _output.WriteLine($"{steps} steps; furthest from the bridge's line {furthest:F3} tiles; {endToEnd} end-to-end legs");
+        Assert.Equal(1, world.BridgeCrossings);
+        Assert.Equal(1, bridge.Crossings);
+        Assert.Equal(1, endToEnd);
+        Assert.True(furthest < 0.25, $"the walk strayed {furthest:F2} tiles off the line — it did not go straight across");
+        Assert.All(DeckOf(world, bridge), t => Assert.Equal(0, world.Paths.At(t)));
+        Assert.True(world.Paths.At(far) > 0, "the far bank was stepped on and wore");
+    }
+
+    /// <summary>
+    /// ⭐ A bridge dragged from off-centre points is walked end to end along its own line — the leg aims at the deck's
+    /// end <em>points</em>, not the centres of its end tiles, which lie on a different line (2026-11-07).
+    /// </summary>
+    [Fact]
+    public void ABridgeDraggedOffCentreIsWalkedAlongItsOwnLine()
+    {
+        SimWorld world = AValley(Open).World;
+        Crossing centred = ACrossing(world, slant: 3);
+        Fixed nudge = Fixed.FromRatio(3, 10);
+        var offCentre = new Crossing(
+            new Point(centred.From.X + nudge, centred.From.Y),
+            new Point(centred.To.X + nudge, centred.To.Y - nudge));
+        Bridge bridge = RaiseABridge(world, offCentre);
+        Assert.NotEqual(Point.CentreOf(bridge.Near.ToTile()), bridge.Near);
+        Assert.NotEqual(Point.CentreOf(bridge.Far.ToTile()), bridge.Far);
+
+        (int steps, double furthest, int endToEnd) = WalkAcross(world, bridge);
+        _output.WriteLine($"{steps} steps; furthest from the bridge's line {furthest:F3} tiles; {endToEnd} end-to-end legs");
+        Assert.Equal(1, world.BridgeCrossings);
+        Assert.Equal(1, endToEnd);
+        Assert.True(furthest < 0.25, $"the walk strayed {furthest:F2} tiles off the line — it did not go straight across");
+    }
+
+    /// <summary>
+    /// Stand a villager on the bridge's near point and walk them to its far tile, a tick at a time: the ticks it took,
+    /// how far they ever stood from the bridge's own line (in tiles), and how many distinct legs ran from one of the
+    /// bridge's two points exactly to the other.
+    /// </summary>
+    private static (int Steps, double Furthest, int EndToEnd) WalkAcross(SimWorld world, Bridge bridge)
+    {
         Villager walker = world.Villagers.First(v => v.Alive);
         walker.StandAt(bridge.Near);
         GridPos far = bridge.Far.ToTile();
@@ -496,21 +544,25 @@ public sealed class BridgeTests
         double bx = bridge.Far.X.RawBits - ax, by = bridge.Far.Y.RawBits - ay;
         double furthest = 0;
         int steps = 0;
+        var legs = new HashSet<(Point From, Point To)>();
         while (steps < 100 && !(walker.Tile == far && walker.LegTicks == Fixed.Zero))
         {
             BehaviorSystem.TravelForTest(world, walker, far);
-            double px = walker.Position.X.RawBits - ax, py = walker.Position.Y.RawBits - ay;
-            furthest = Math.Max(furthest, Math.Abs((px * by) - (py * bx)) / Math.Sqrt((bx * bx) + (by * by)) / (1L << 32));
+            legs.Add((walker.LegFrom, walker.LegTo));
+            // Measured until the far tile is reached: the last hop inside it, from the bridge's end point to the tile's
+            // centre, is a walk's ordinary arrival (D463), not the deck.
+            if (walker.Tile != far)
+            {
+                double px = walker.Position.X.RawBits - ax, py = walker.Position.Y.RawBits - ay;
+                furthest = Math.Max(furthest, Math.Abs((px * by) - (py * bx)) / Math.Sqrt((bx * bx) + (by * by)) / (1L << 32));
+            }
+
             steps++;
         }
 
-        _output.WriteLine($"{steps} steps; furthest from the bridge's line {furthest:F3} tiles");
         Assert.Equal(far, walker.Tile);
-        Assert.Equal(1, world.BridgeCrossings);
-        Assert.Equal(1, bridge.Crossings);
-        Assert.True(furthest < 0.5, $"the walk strayed {furthest:F2} tiles off the line — it did not go straight across");
-        Assert.All(DeckOf(world, bridge), t => Assert.Equal(0, world.Paths.At(t)));
-        Assert.True(world.Paths.At(far) > 0, "the far bank was stepped on and wore");
+        int endToEnd = legs.Count(l => (l.From == bridge.Near && l.To == bridge.Far) || (l.From == bridge.Far && l.To == bridge.Near));
+        return (steps, furthest, endToEnd);
     }
 
     // ---------------------------------------------------------------
@@ -524,7 +576,8 @@ public sealed class BridgeTests
     [Fact]
     public void AClickRebuildsInStoneOpenThroughoutAndQuicker()
     {
-        SimWorld world = AValley(Open).World;
+        var sink = new InMemoryLogSink();
+        SimWorld world = SimFactory.CreatePhase0(Open, sink).World;
         Bridge bridge = RaiseABridge(world, ACrossing(world));
         GridPos village = world.FirstHomeOrFoundingSite();
         int woodenCost = world.TravelCost.Cost(bridge.Near.ToTile(), bridge.Far.ToTile());
@@ -553,6 +606,10 @@ public sealed class BridgeTests
 
         Assert.Same(bridge, world.Bridges.Single());
         Assert.Equal(BuildingKind.StoneBridge, bridge.Kind);
+        // ⭐ And it is called what it is now (Joe, 2026-11-07: a stone bridge still titled "wooden bridge 1").
+        Assert.Equal("stone bridge 1", bridge.Name);
+        Assert.Equal(1, sink.Entries.Count(e => e.Message.Contains(
+            "Wooden bridge 1 is set in stone now and is stone bridge 1 from here", StringComparison.Ordinal)));
         Assert.All(DeckOf(world, bridge), t => Assert.Equal(world.Config.BridgeStoneTileCost, world.DeckOn(t)));
         int stoneCost = world.TravelCost.Cost(bridge.Near.ToTile(), bridge.Far.ToTile());
         _output.WriteLine($"length {bridge.Length}: wood {woodenCost} → stone {stoneCost}");
@@ -562,6 +619,38 @@ public sealed class BridgeTests
         Crossing elsewhere = ACrossing(world, slant: 2, kind: BuildingKind.StoneBridge);
         Assert.True(world.MarkBridge(BuildingKind.StoneBridge, elsewhere.From, elsewhere.To).Allowed);
         Assert.False(world.Workplaces.Single(w => w.Construction is { BridgeTo: not null }).Construction!.RebuildsBridge);
+    }
+
+    /// <summary>
+    /// ⭐ A rebuilt bridge takes the next stone name off the counter, not a word swapped in its old one — a stone bridge
+    /// dragged fresh elsewhere may already be "stone bridge 1", and bridges cannot be renamed, so the counter is what
+    /// keeps the names apart (Joe, 2026-11-07).
+    /// </summary>
+    [Fact]
+    public void ARebuiltBridgeTakesTheNextStoneNameNotAWordSwap()
+    {
+        SimWorld world = AValley(Open).World;
+        Bridge fresh = RaiseABridge(world, ACrossing(world, slant: 2, kind: BuildingKind.StoneBridge), BuildingKind.StoneBridge);
+        Assert.Equal("stone bridge 1", fresh.Name);
+
+        Bridge wooden = RaiseABridge(world, ACrossing(world));
+        Assert.Equal("wooden bridge 1", wooden.Name);
+
+        Point onTheDeck = Point.CentreOf(DeckOf(world, wooden)[0]);
+        Assert.True(world.MarkBridge(BuildingKind.StoneBridge, onTheDeck, onTheDeck).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { BridgeTo: not null });
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+
+        Assert.Equal(BuildingKind.StoneBridge, wooden.Kind);
+        Assert.Equal("stone bridge 2", wooden.Name);
+        Assert.NotEqual(fresh.Name, wooden.Name);
+        Assert.Equal(2, world.Bridges.Select(b => b.Name).Distinct().Count());
     }
 
     // ---------------------------------------------------------------

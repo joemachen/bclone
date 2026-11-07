@@ -93,6 +93,21 @@ right-click lets go of a drag.
   Both stay inside Dial's 1..10 (`TerrainCostField.Refill` throws otherwise).
 - **Crossings**: a walker whose step goes from land onto a deck has crossed. Counted on the bridge (the card) and
   in the village's `BridgeCrossings` (the unlock, §5.2). Hashed once non-zero, so it is zero in every golden today.
+- ⭐ **A leg across a deck runs end to end** (2026-11-07, D705 — Joe, after playing: *"when villagers cross a diagonal
+  bridge, they clearly walk in a 'staircase' pattern"*). A slanted deck is a one-wide, edge-joined staircase of water
+  tiles made walkable, and the leg planner (`BehaviorSystem.PlanLeg`, `gridless.md` slice 4) aims at route tiles'
+  **centres**: the line from the walker to a deck tile's centre has a different slope from the bridge's own line, so it
+  grazes the water beside the deck, `LineOfSight.Clear` refuses it, and the walk breaks into axis-aligned jogs — the
+  staircase Joe saw. **The line between the bridge's two end *points* is the deck by construction** (`Bridge.TilesUnder`
+  is `LineOfSight.TilesCrossed` of that very segment), so when the greedy string-pull stops on a bridge's tile having come
+  onto it along the bridge, `AimAlongTheDeck` aims at those instead: standing exactly on one end, the leg runs to the
+  other end exactly, where the route reaches its tile; otherwise it runs to the end the route passed last — the point,
+  not its tile's centre — so the walker stands exactly on the end and plans again from there, where the first case
+  applies. `Clear` is asked of the end-to-end segment anyway (a fence laid across an abutment would keep today's leg);
+  a re-plan from mid-deck fits neither case and keeps today's behaviour. Clock B and `WalkedOver` read the leg's route
+  index unchanged, the deck still takes no wear, and `CrossedOnto` still fires once at the step from land onto the
+  deck. ⚠️ `Bridge.Near`/`Far` are the raw drag points — tile centres under Snap, anything under free placement — which
+  is why the leg aims at the *points*: the centres of the end tiles lie on a different line (the off-centre guard, §11).
 
 ---
 
@@ -180,7 +195,8 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
     hands, so it does not introduce the tech-tree map — the library's and the town hall's rule (D440). Through
     `LearnedByDoing` it set the hashed `ShownTheTechTree` in every village that reached ten first and **moved four
     goldens for a popup**; with it switched off they were byte-identical, which is how the cause was proven.
-- **The stone bridge: `stone_bridge_unlock_crossings` 150 crossings walked over the bridges** (§8.3). Tech node
+- **The stone bridge: `stone_bridge_unlock_crossings` 1000 crossings walked over the bridges** (§8.3; 150 until
+  2026-11-07 — Joe's call after playing, his village at 1,511 crossings: about forty years of one bridge). Tech node
   `stone-arch` (DOING, `LearnedByDoing` — it *is* learned with the feet), hangs from `bridging`. *"Feet have crossed
   the village's bridges N times, and somebody has worked out how to set a span in stone."* A crossing is a step from
   land onto a deck (`BehaviorSystem.Travel`), so one walk across is one crossing however long the span.
@@ -193,6 +209,13 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
   carrying `RebuildsBridge` (the relocation's shape, `MovingFrom`). **The wooden deck carries traffic until the stone one
   is finished** (Joe, call 4); then the deck's byte flips to stone and the routes re-price. The wood is not
   refunded — it is what the stone was set on.
+- **And it takes a stone name** (Joe, 2026-11-07, after playing: a bridge set in stone still titled *"wooden bridge 1"*):
+  `RaiseTheBridge`'s rebuild branch gives it the next name off the stone row's counter (`NameFor`), the same way a
+  fresh stone bridge is named — *not* a word swapped in the old name, because a stone bridge dragged fresh elsewhere may
+  already be *"stone bridge 1"* and bridges cannot be renamed, so the counter is what keeps the names apart. Said in the
+  log: *"Wooden bridge 1 is set in stone now and is stone bridge 1 from here — the wooden bridge carried the village
+  across while it was rebuilt, and the crossing is quicker for it."* The site keeps *"wooden bridge 1, in stone"* while it
+  is built. `_buildingsNamed` is saved and not hashed, the name a string the save already carries: no golden, no format.
 
 ### 5.4 Pulling one down
 
@@ -235,6 +258,18 @@ Instant, like a well, with the usual share of materials back — but **refused i
   The button sits on the Works shelf, hidden until learned, lit gold when it is. A bridge card: material, span, the
   crossings this year and in all, and on wood *"The village learns stone after N crossings (k so far)."* The river's
   ground sentence loses *"Nobody can cross it"*. A probe line `bridge:`.
+- **The card while a rebuild is queued** (2026-11-07, D704 — Joe, after playing: *"review what the 'upgrade queued'
+  look/feel is for a building's card and model — there should be note of the transition and its progress"*): the
+  wooden bridge's card went on saying *"It can be rebuilt in stone where it stands"* while its stone site already stood
+  at the near bank; the site's own card (clicked at the bank) and the map's band along the span knew, the bridge's card
+  did not. Now, with a rebuild site at its near end (`BridgeSiteAt`, `RebuildsBridge`), the card's status carries one more
+  sentence in words — *"Being set in stone — 2nd in the queue, 12 of 36 logs and 0 of 12 stone delivered, 31 % done."*
+  (`Main.Cards.BridgeRebuildSentence`: `QueuePositionOf`, each material's `Delivered` of its amount, and **the same
+  fraction the map's band fills by**, delivered plus work over materials plus work, so card and band agree) — and the
+  caption under the picture reads *"being set in stone — 31 % done"* with the whole sentence as its tooltip. ⚠️ The
+  sentence rides on the status line because it wraps; the caption is one clipped line of about forty-five characters.
+  View only; a third `WriteBridgeCard` pose in the `cards:` probe (the longest such line: a queue in the teens, two
+  materials in the thousands) inside the width. No sim change, no golden.
 
 ---
 
@@ -290,8 +325,11 @@ the far bank, and an 8×8 patch beyond it painted for homes.
   the hut — a village of four).
 - ⚠️ **Without the hut, every village crossed zero times in thirty years**: the unattended chooser never sites a home
   across while near-side paint is left. A bridge nothing needs is an idle bridge, not a measurement.
-- **`stone_bridge_unlock_crossings` = 150**: about six to seven years of one bridge in real use (2–3 for a busy one,
+- **`stone_bridge_unlock_crossings` = 150** *(as measured)*: about six to seven years of one bridge in real use (2–3 for a busy one,
   about 12 for a quiet one). The placeholder it replaced, 2,000, would have been ninety years.
+  - ⚠️ **1000 since 2026-11-07, Joe's call after playing** (his village stood at 1,511 crossings with the stone bridge long
+    learned): about forty years of one bridge at the median, a generation or two of feet — 17 for a busy one, about
+    eighty for a quiet one. The measurement above stands; the number it set was his to move.
 
 ---
 
@@ -394,3 +432,27 @@ the far bank, and an 8×8 patch beyond it painted for homes.
 - **Found while building:** `CanBuildAt` let a well be marked on a bridge site's bank tile — the general placement path
   never asked about bridge ends (`NothingStandsOnABridgesEnd` caught it); and a bridge site on a wooded bank would have
   waited for ever on clearing nobody was asked to do (`ABridgeOnAWoodedBankIsNotHeldForClearing`).
+- 🔨 **The rebuilt bridge's name (2026-11-07, D703 — Joe, after playing: a stone bridge still titled *"wooden bridge 1"*):**
+  `RaiseTheBridge`'s rebuild branch takes the next name off the stone row's counter (§5.3). **Guards** —
+  `AClickRebuildsInStoneOpenThroughoutAndQuicker` extended (the name and the log line) and
+  `ARebuiltBridgeTakesTheNextStoneNameNotAWordSwap` (a fresh stone bridge first, then a wooden one rebuilt: the names
+  differ). Red before the fix, 2 of 2. Red-checked: **2 mutants, 3 reds** — the assignment dropped **2**; a word swap
+  (*wooden* → *stone* in the old name) **1**, the second fact only, which is why it exists. No golden moved.
+- 🔨 **The card while a rebuild is queued (2026-11-07, D704; §7):** view only. The `cards:` probe's third `WriteBridgeCard`
+  pose (the longest rebuild line) inside the width and on the status line. Red-checked: **2 mutants, 1 red, one zero
+  written down** — the status drops the sentence **1** (*"a queued rebuild's progress is not on the bridge card's status
+  line"*); the sentence put on the caption with `ClipText` off **0**: a label whose overrun is *trim with ellipsis* never
+  demands its full width, so the card's minimum cannot see a caption overflow — the width check is kept for the title
+  and the numbers it has always measured, and the status-line check is the one with teeth. The probe stays at 106
+  `[widths]` lines, 70 ✅, 0 ⛔, bar 151, `done.`; no golden.
+- 🔨 **The straight deck (2026-11-07, D705; §3.1):** `BehaviorSystem.AimAlongTheDeck`, asked where `PlanLeg`'s greedy
+  loop breaks on a bridge's tile. **Guards** — `OneWalkAcrossIsOneStraightCrossingAndTheDeckTakesNoWear` tightened
+  (slant 3, stray under 0.25 of a tile measured until the far tile, **exactly one leg from one of the bridge's points to
+  the other**; the first form allowed 0.5 at slant 2 and was green with the staircase) and
+  `ABridgeDraggedOffCentreIsWalkedAlongItsOwnLine` (both ends nudged 0.3 of a tile off their centres). **Red before the
+  fix, 2 of 2**: 0 end-to-end legs on both, strays 0.411 and 0.602. After: 1 leg each, stray 0.000 on both (5 and 6
+  ticks). Red-checked: **2 mutants, 3 reds, no zeros** — the end-point case skipped (a walk from mid-bank falls back to
+  the staircase) **2**, strays 0.411 / 0.602 again; the end *tiles'* centres aimed at instead of the points **1**, the
+  off-centre pose only (the line to the far tile's centre was clear, so the leg went there, 0 end-to-end legs, stray
+  0.188), which is why that pose exists. `PhaseFiveGoldenTests`' bridge is slant 0 and its two hashes did not move; no
+  golden moved.

@@ -311,7 +311,11 @@ expensive inference in this project.*
    forager rose 721 → 768 per hour worked; with the clock tile, byte-identical to slice 3). ⛔
    **Setting `Position` from outside the walk drops the leg** (`WalkTo` is the walk's own door): a
    stale leg marched a teleported fisher back to where the line began. **Desire paths (§2.6) are
-   writable for the first time — next.**
+   writable for the first time — next.** ⭐ **A leg onto a bridge aims at the deck's end *points*,
+   not its tiles' centres (D705, 2026-11-07, `bridges.md §3.1`):** on a slanted deck the line to a
+   tile's centre has the wrong slope, grazes the water beside the one-wide deck and is refused, so
+   the walk broke into axis-aligned jogs — Joe's *"staircase"*; the segment between the bridge's two
+   points is the deck itself, so `AimAlongTheDeck` runs the leg end to end.
 5. ✅ **Clock B — the real clock (D361, 2026-09-12; Joe: *"clock b"*). BUILT; unplayed by Joe.** A leg costs the
    distance it actually is: **ticks = straight length × (the route's average entry cost ⁄
    `BaseTileCost`)**, rounded to nearest, never below one. The straight length is

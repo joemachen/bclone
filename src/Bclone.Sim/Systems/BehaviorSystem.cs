@@ -4421,11 +4421,19 @@ public sealed partial class BehaviorSystem : ISimSystem
         IReadOnlyList<GridPos> leaving = world.FootprintCovering(from);
         IReadOnlyList<GridPos> arriving = world.FootprintCovering(target);
         int furthest = 0;
+        Point? deckEnd = null;
         int routeGrass = world.TravelCost.CostToEnter(route[0]) == TravelCostField.BaseTileCost ? 1 : 0;
         for (int i = 1; i < route.Count; i++)
         {
             if (!LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[i]), leaving, arriving))
             {
+                // ⭐⭐ A LEG ACROSS A DECK RUNS END TO END (Joe, 2026-11-07: *"they clearly walk in a 'staircase'
+                // pattern"*). A slanted deck is a one-wide edge-joined staircase of water tiles made walkable, and the
+                // line from here to a deck TILE'S CENTRE has a different slope from the bridge's own line, so it grazes
+                // the water beside the deck and is refused — leg after leg, each one axis-aligned, which is the
+                // staircase Joe saw. The line between the bridge's two END POINTS is the deck by construction
+                // (`Bridge.TilesUnder` is `LineOfSight.TilesCrossed` of that very segment), so aim at those instead.
+                deckEnd = AimAlongTheDeck(world, villager, route, i, leaving, arriving, ref furthest);
                 break;
             }
 
@@ -4457,7 +4465,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         // across the builder's hut beside it and the Fletchers' fence round both. Found by
         // `NoStepEverCrossesAWall`. The villager walks through the building they are leaving to the
         // tile the route steps off from, and plans again from there.
-        if (furthest == 0
+        if (deckEnd is null
+            && furthest == 0
             && !LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[0]), leaving, arriving)
             && ExitToward(world, leaving, route[0]) is GridPos exit
             && exit != villager.Tile)
@@ -4471,7 +4480,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         villager.LegFrom = villager.Position;
-        villager.LegTo = Point.CentreOf(route[furthest]);
+        villager.LegTo = deckEnd ?? Point.CentreOf(route[furthest]);
         villager.LegTarget = target;
 
         // What the leg's route tiles cost to enter, and how many are grass — the price the clock below
@@ -4488,7 +4497,10 @@ public sealed partial class BehaviorSystem : ISimSystem
         // place is in sight and the line to it keeps to the lane as the line to the centre did
         // (D414). From the target tile's centre it always is, so otherwise the place is reached by a
         // short leg from the centre instead (`Travel`).
-        if (route[furthest] == target
+        // A leg aimed at a deck's end point already ends on a place to stand inside its tile; the centre would be a
+        // different line, and the whole point was to keep to the bridge's own.
+        if (deckEnd is null
+            && route[furthest] == target
             && PlaceToStand(world, target, standAt) is Point place
             && LineOfSight.Clear(world.Map, world, villager.Position, place, leaving, arriving)
             && GrassUnder(world, villager.Position, place) <= grassToFurthest + world.Config.PathShortcutGrassAllowance)
@@ -4509,6 +4521,87 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.LegTicks = AtLeastARaw(length * Fixed.FromRatio(walked, routeSteps * TravelCostField.BaseTileCost));
         villager.LegWalked = Fixed.Zero;
         return true;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Where a leg that the greedy string-pull stopped <em>on a bridge</em> should aim instead — one of the bridge's two
+    /// end points — or null to keep the ordinary waypoint (Joe, 2026-11-07, `bridges.md §3.1`, `gridless.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Asked only when the line to <c>route[blockedAt]</c>'s centre was refused and the route came onto that tile along
+    /// the bridge (the tile before it is the bridge's too — an end or a deck tile). Two cases, one rule:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>Standing exactly on one end</b>: the leg runs to the other end, exactly, where the route reaches its
+    /// tile — the segment between the two points IS the deck (<see cref="Bridge.TilesUnder"/>), so
+    /// <c>LineOfSight.Clear</c> holds for it by construction; it is asked anyway, and a refusal (a fence laid
+    /// across an abutment, say) keeps today's leg.</item>
+    /// <item><b>Otherwise</b>: the leg runs to the end the route passed last — the point, not its tile's centre — so the
+    /// walker stands exactly on the end and plans again from there, where the first case applies.</item>
+    /// </list>
+    /// <para>
+    /// A re-plan from mid-deck fits neither and keeps today's behaviour. <c>WalkedOver</c> and clock B read
+    /// <paramref name="furthest"/> unchanged; the deck still takes no wear; <c>CrossedOnto</c> still fires once, at the
+    /// step from land onto the deck. Once per leg, never per tick; <see cref="SimWorld.BridgeAt"/> walks a few bridges'
+    /// dozen tiles.
+    /// </para>
+    /// </remarks>
+    private static Point? AimAlongTheDeck(
+        SimWorld world, Villager villager, IReadOnlyList<GridPos> route, int blockedAt,
+        IReadOnlyList<GridPos> leaving, IReadOnlyList<GridPos> arriving, ref int furthest)
+    {
+        if (blockedAt < 1
+            || world.BridgeAt(route[blockedAt]) is not Bridge bridge
+            || !bridge.Holds(route[blockedAt - 1]))
+        {
+            return null;
+        }
+
+        GridPos nearTile = bridge.Near.ToTile();
+        GridPos farTile = bridge.Far.ToTile();
+
+        // On one end exactly: straight to the other, where the route reaches it.
+        Point? across = villager.Position == bridge.Near ? bridge.Far
+            : villager.Position == bridge.Far ? bridge.Near
+            : null;
+        if (across is Point otherEnd)
+        {
+            GridPos otherTile = otherEnd.ToTile();
+            for (int k = blockedAt; k < route.Count; k++)
+            {
+                if (route[k] == otherTile)
+                {
+                    if (!LineOfSight.Clear(world.Map, world, villager.Position, otherEnd, leaving, arriving))
+                    {
+                        return null;
+                    }
+
+                    furthest = k;
+                    return otherEnd;
+                }
+            }
+
+            return null;
+        }
+
+        // Otherwise to the end the route passed last — exactly, so the next plan starts on it.
+        for (int j = blockedAt - 1; j >= 0; j--)
+        {
+            if (route[j] == nearTile || route[j] == farTile)
+            {
+                Point end = route[j] == nearTile ? bridge.Near : bridge.Far;
+                if (!LineOfSight.Clear(world.Map, world, villager.Position, end, leaving, arriving))
+                {
+                    return null;
+                }
+
+                furthest = j;
+                return end;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

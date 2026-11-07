@@ -2310,22 +2310,74 @@ public partial class Main
     private bool ShowBridge(SimWorld world, Card card, Bridge bridge)
     {
         bool stone = bridge.Kind == BuildingKind.StoneBridge;
-        string next = stone
-            ? "Set in stone — the quicker crossing."
-            : world.IsUnlocked(BuildingKind.StoneBridge)
-                ? "It can be rebuilt in stone where it stands, and stays open while it is."
-                : $"The village learns stone after {world.Config.StoneBridgeUnlockCrossings:N0} crossings "
-                    + $"({world.BridgeCrossings:N0} so far).";
+
+        // ⭐ A REBUILD IN THE QUEUE SAYS SO ON THE BRIDGE ITSELF (Joe, 2026-11-07, after playing: *"there should be
+        // note of the transition and its progress"*). The card used to go on saying *"It can be rebuilt in stone where
+        // it stands"* while the stone site already stood at the near bank; the site's own card and the map's band along
+        // the span knew, the bridge's card did not. One sentence in words, the site card's shape, and the SAME fraction
+        // the map's band fills by, so the card and the band agree.
+        (string Sentence, string Caption)? rebuild =
+            world.BridgeSiteAt(bridge.Near.ToTile()) is Workplace site
+            && site.Construction is { IsFinished: false, RebuildsBridge: true } plan
+                ? BridgeRebuildSentence(world, site, plan)
+                : null;
+        string next = rebuild is { } queued
+            ? queued.Caption
+            : stone
+                ? "Set in stone — the quicker crossing."
+                : world.IsUnlocked(BuildingKind.StoneBridge)
+                    ? "It can be rebuilt in stone where it stands, and stays open while it is."
+                    : $"The village learns stone after {world.Config.StoneBridgeUnlockCrossings:N0} crossings "
+                        + $"({world.BridgeCrossings:N0} so far).";
         int water = bridge.Tiles().Count(t => world.Map.TerrainAt(t) == Terrain.Water);
         WriteBridgeCard(card, bridge.Name, world.BuildingsCatalog.NameOf(bridge.Kind), bridge.Length, water,
-            bridge.CrossingsThisYear, bridge.Crossings, next, stone);
+            bridge.CrossingsThisYear, bridge.Crossings, next, stone, rebuild?.Sentence);
         Wear(card, world.WearOf(bridge), world.Config, isABridge: true, bridge.Closed, bridge.KeptOpenBecause);
         return true;
     }
 
+    /// <summary>
+    /// The rebuild's progress in words — <i>"Being set in stone — 2nd in the queue, 12 of 36 logs and 0 of 12 stone
+    /// delivered, 31 % done."</i> — and the short caption under the picture. The fraction is the map band's
+    /// (<c>VillageMap</c>: delivered plus work over materials plus work), so the two never disagree.
+    /// </summary>
+    private (string Sentence, string Caption) BridgeRebuildSentence(SimWorld world, Workplace site, ConstructionSite plan)
+    {
+        // "Being set in stone" for the stone row; any other rebuilding row (none ships) is named off the catalogue.
+        string setting = plan.Kind == BuildingKind.StoneBridge
+            ? "set in stone"
+            : $"rebuilt as a {world.BuildingsCatalog.NameOf(plan.Kind)}";
+
+        var parts = new List<string>();
+        foreach (MaterialCost material in plan.Recipe.Materials)
+        {
+            parts.Add($"{plan.Delivered(material.Goods):N0} of {material.Amount:N0} {world.GoodsCatalog.NameOf(material.Goods)}");
+        }
+
+        string delivered = parts.Count switch
+        {
+            0 => "nothing to carry",
+            1 => $"{parts[0]} delivered",
+            _ => $"{string.Join(", ", parts.Take(parts.Count - 1))} and {parts[^1]} delivered",
+        };
+
+        int total = System.Math.Max(1, plan.Recipe.TotalMaterials + plan.Recipe.WorkTicks);
+        int percent = (plan.TotalDelivered + plan.WorkDone) * 100 / total;
+        return (
+            $"Being {setting} — {Ordinal(world.QueuePositionOf(site))} in the queue, {delivered}, {percent} % done.",
+            $"being {setting} — {percent} % done");
+    }
+
     /// <summary>The bridge card from plain facts — so the probe can pose one where none stands.</summary>
+    /// <remarks>
+    /// ⚠️ <paramref name="rebuilding"/> — the queued rebuild's progress — goes on the <b>status</b> line, which wraps,
+    /// not the caption, which is one clipped line with an ellipsis (about forty-five characters at its font): a sentence
+    /// naming two materials would have been cut off at *"12 of 36 lo…"*. The caption carries the short form and the
+    /// whole sentence as its tooltip.
+    /// </remarks>
     private void WriteBridgeCard(
-        Card card, string name, string kind, int length, int water, int thisYear, int crossings, string next, bool stone)
+        Card card, string name, string kind, int length, int water, int thisYear, int crossings, string next, bool stone,
+        string? rebuilding = null)
     {
         Title(card, name, renamable: false);
         card.Numbers.Visible = true;
@@ -2333,19 +2385,17 @@ public partial class Main
         card.WorkersRow.Visible = false;
         card.PeopleScroll.Visible = false;
 
-        Status(
-            card,
-            working: thisYear > 0,
-            thisYear > 0
-                ? $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water, crossed {thisYear:N0} "
-                    + $"{(thisYear == 1 ? "time" : "times")} this year."
-                : $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water. Nobody has crossed it this year.");
+        string crossed = thisYear > 0
+            ? $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water, crossed {thisYear:N0} "
+                + $"{(thisYear == 1 ? "time" : "times")} this year."
+            : $"A {kind} over {water} {(water == 1 ? "tile" : "tiles")} of water. Nobody has crossed it this year.";
+        Status(card, working: thisYear > 0, rebuilding is null ? crossed : $"{crossed} {rebuilding}");
 
         Number(card, 0, $"{length}", length == 1 ? "tile long" : "tiles long");
         Number(card, 1, $"{thisYear:N0}", "crossings this year");
         Number(card, 2, $"{crossings:N0}", "crossings in all");
         card.Caption.Text = next;
-        card.Caption.TooltipText = string.Empty;
+        card.Caption.TooltipText = rebuilding ?? string.Empty;
         card.Portrait.Show(stone ? VillageMap.StoneBridgeColour : VillageMap.BridgeColour,
             VillageMap.BridgeWidth, Mathf.Min(length, 4) * 0.8f, 0, null);
     }
@@ -3741,6 +3791,24 @@ public partial class Main
         if (quietBridge > CardWidth + 1f)
         {
             faults.Add($"a bridge nobody crossed this year widens a card's minimum to {quietBridge:F0}");
+        }
+
+        // ⭐ AND A WOODEN BRIDGE WITH ITS STONE REBUILD QUEUED (2026-11-07, Joe: "note of the transition and its
+        // progress"): the longest line the sim can say — a 40-letter name, the widest span, a queue in the teens and two
+        // materials in the thousands — inside the width, and the status is where it was put, not the clipped caption.
+        const string longestRebuild = "Being set in stone — 12th in the queue, 1,234 of 1,440 logs and 1,234 of 4,320 stone delivered, 31 % done.";
+        WriteBridgeCard(posed, new string('B', SimWorld.NameLengthLimit), "wooden bridge", world.Config.BridgeMaxLengthTiles,
+            world.Config.BridgeMaxLengthTiles - 2, 12_345, 1_234_567, "being set in stone — 31 % done", false, longestRebuild);
+        ForceUpdateTransform();
+        float rebuildingBridge = posed.Panel.GetCombinedMinimumSize().X;
+        if (rebuildingBridge > CardWidth + 1f)
+        {
+            faults.Add($"a wooden bridge with its stone rebuild queued widens a card's minimum to {rebuildingBridge:F0}");
+        }
+
+        if (!posed.Status.Text.EndsWith(longestRebuild, StringComparison.Ordinal))
+        {
+            faults.Add("a queued rebuild's progress is not on the bridge card's status line");
         }
 
         // ⭐ AND EVERY CONDITION (D556), posed on that card: the four states, the bridge's own failing and fallen-in
