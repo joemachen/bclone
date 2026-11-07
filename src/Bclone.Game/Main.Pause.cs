@@ -190,6 +190,7 @@ public partial class Main
             }
 
             PressAKey(Key.Key4);
+            PressAKey(Key.Key5);
             if (!_driver.IsPaused)
             {
                 faults.Add("a speed key reached the village behind the pause screen");
@@ -217,6 +218,146 @@ public partial class Main
             : $"[widths] pause: ❌ {string.Join("; ", faults)}";
 
         void PressAKey(Key key) => _UnhandledKeyInput(new InputEventKey { Keycode = key, Pressed = true });
+    }
+
+    /// <summary>
+    /// ⭐ Space pauses on the PRESS and the village stays paused through the RELEASE — a probe line (D70x, Joe:
+    /// <i>"space for pause should be pressed, not held"</i>); and 5 is 20x (<i>"20x = 5"</i>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ THE CAUSE WAS A FOCUS LEAK, NOT THE KEY HANDLER.</b> A Godot <see cref="Button"/> defaults to
+    /// <c>FocusMode.All</c>, so the speed button the player last clicked kept keyboard focus; Godot maps Space to
+    /// <c>ui_accept</c>, and a focused <see cref="BaseButton"/> fires <c>Pressed</c> on the key's release. The press
+    /// reached <c>_UnhandledKeyInput</c> and paused; the release pressed "1x" again. Every bar button now refuses focus
+    /// (<c>RefuseKeyboardFocus</c>), and this line holds it there.
+    /// </para>
+    /// <para>
+    /// Three clauses. <b>The rule:</b> no <see cref="BaseButton"/> under the bar takes focus. <b>The key:</b> 5 reads
+    /// 20x. <b>The symptom:</b> a synthetic left click on 1x through <see cref="Viewport.PushInput"/>, then a Space press
+    /// and release the same way — the village must be paused after the press and still paused after the release, and
+    /// nothing may hold focus afterwards. ⚠️ The third is only as good as headless GUI routing: if the click never
+    /// reaches 1x the line says so in words rather than claiming the release was tested, and Joe's hand check stands
+    /// (click 1x, press and release Space, the village must stay paused).
+    /// </para>
+    /// </remarks>
+    private string SpaceIsPressedNotHeld()
+    {
+        if (_controlBar is null)
+        {
+            return "[widths] space: ⛔ the control bar is not built";
+        }
+
+        var faults = new List<string>();
+
+        // The rule.
+        var focusable = new List<string>();
+        CollectFocusable(_controlBar, focusable);
+        if (focusable.Count > 0)
+        {
+            faults.Add($"{focusable.Count} bar button(s) take keyboard focus: {string.Join(", ", focusable)}");
+        }
+
+        double speedBefore = _driver.SpeedMultiplier;
+        string open = WhatIsOpen();
+        if (open != "nothing was open")
+        {
+            faults.Add($"the keys would not reach the village ({open})");
+        }
+
+        // The key.
+        SetSpeed(1.0);
+        _UnhandledKeyInput(new InputEventKey { Keycode = Key.Key5, Pressed = true });
+        if (_driver.SpeedMultiplier != 20.0)
+        {
+            faults.Add($"5 set {_driver.SpeedMultiplier}x, not 20x");
+        }
+
+        // The symptom, through the viewport so the GUI's own routing — focus included — decides who gets the key.
+        Viewport viewport = GetViewport();
+        viewport.GuiReleaseFocus();
+        string release;
+        Button? oneX = FindButton(_controlBar, "1x");
+        if (oneX is null)
+        {
+            faults.Add("no 1x button on the bar");
+            release = "no 1x to click";
+        }
+        else
+        {
+            SetSpeed(4.0);
+            Vector2 at = oneX.GetGlobalRect().GetCenter();
+            foreach (bool pressed in new[] { true, false })
+            {
+                viewport.PushInput(
+                    new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = pressed, Position = at, GlobalPosition = at },
+                    inLocalCoords: true);
+            }
+
+            if (_driver.SpeedMultiplier != 1.0)
+            {
+                release = $"⚠️ a synthetic click at {at.X:F0},{at.Y:F0} did not reach 1x headless (still {_driver.SpeedMultiplier}x) — "
+                    + "the release path is Joe's hand check";
+            }
+            else
+            {
+                viewport.PushInput(new InputEventKey { Keycode = Key.Space, PhysicalKeycode = Key.Space, Pressed = true });
+                bool pausedOnPress = _driver.IsPaused;
+                if (!pausedOnPress)
+                {
+                    faults.Add($"Space's press did not pause the village after a click on 1x ({_driver.SpeedMultiplier}x)");
+                }
+
+                viewport.PushInput(new InputEventKey { Keycode = Key.Space, PhysicalKeycode = Key.Space, Pressed = false });
+                if (pausedOnPress && !_driver.IsPaused)
+                {
+                    faults.Add($"Space's release resumed the village at {_driver.SpeedMultiplier}x — the clicked button fired on ui_accept's release");
+                }
+
+                release = "clicked 1x, Space's press paused, its release left it paused";
+            }
+
+            if (viewport.GuiGetFocusOwner() is Control owner)
+            {
+                faults.Add($"{owner.GetType().Name} \"{(owner as Button)?.Text}\" holds keyboard focus after the click");
+            }
+        }
+
+        SetSpeed(speedBefore);
+        return faults.Count == 0
+            ? $"[widths] space: ✅ no bar button takes keyboard focus; 5 is 20x; {release}"
+            : $"[widths] space: ❌ {string.Join("; ", faults)}";
+
+        static void CollectFocusable(Node under, List<string> into)
+        {
+            foreach (Node child in under.GetChildren())
+            {
+                if (child is BaseButton { FocusMode: not Control.FocusModeEnum.None } button)
+                {
+                    into.Add($"\"{(button as Button)?.Text ?? button.Name}\"");
+                }
+
+                CollectFocusable(child, into);
+            }
+        }
+
+        static Button? FindButton(Node under, string text)
+        {
+            foreach (Node child in under.GetChildren())
+            {
+                if (child is Button button && button.Text == text)
+                {
+                    return button;
+                }
+
+                if (FindButton(child, text) is Button found)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
     }
 
     /// <summary>
