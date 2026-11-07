@@ -52,7 +52,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Ploughed / sown / ripe field | Traced fills `#b39874` / `#a8b07a` / `#d6b55c`, drawn per tile, not baked (`VillageMap.cs:208–219`) | See §4 (crops) | B6 | 🟨 |
 | Valley edge and beyond | `#c4b48f` beyond, a 2px `#8c7a5c` edge (`VillageMap.cs:77`, `:4003`) | — | B6 | 🟨 |
 | Optional grid | 1px `#d2c29c` lines (`VillageMap.cs:4016`) | — | — | 🟨 debug aid |
-| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (D703), unjudged; the valley waits for house tiers |
+| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (D703); Joe's tuning is the lab's start and the snow is whiter, `#f8f6f1` (D707), not yet approved; the valley waits for house tiers |
 | Watercolour textures for stone, clay, dirt, the rest | ⬜ — flat fills in the band | — | B1, B6 | ⬜ 🅿️ parked list. ⚠️ *Clay has no terrain kind in the sim.* |
 | Paving (dirt → gravel → cobble) | ⬜ | 3 grades | B6 | 💭 `DESIGN.md §2.6`, no sim |
 | Dry ground (drought) | ⬜ | — | B11 | 💭 |
@@ -63,9 +63,9 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 |---|---|---|---|---|
 | **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (D700); all four pieces built in the lab (D701–D704), unjudged; the whole stack sits at the GPU bar; §4 says which piece stands |
 | Grass shader | `grass_lab.gdshader` + season and anti-tile includes, masks v02–v06, `grass_seasons.png` (256×16) | Integrated into the valley | B6 | ✅ look / ⬜ in game |
-| Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder | World-anchored grain | B6 | 🟨 lab only; world-anchored built behind a switch (D702), unjudged |
+| Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder | World-anchored grain | B6 | 🟨 lab only; world-anchored built behind a switch (D702); Joe's 0.065 tiles is the lab's start (D707), not yet approved |
 | Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 lab only: splat and bleed behind switches (D704), the river's edge held hard; ⭐ approved by Joe at sharpness 5.5, reach 0.33, scale 0.30 (D705–D706); the valley waits for house tiers |
-| Snow blend | ⬜ | lerp / lighten mode | B6 | 🟨 all three built in the lab (D703), Lerp recommended, unjudged |
+| Snow blend | ⬜ | lerp / lighten mode | B6 | 🟨 all three built in the lab (D703), Lerp recommended and Joe's pick (D707), not yet approved |
 | Debug readout backing | ⬜ — frame/draw lines are illegible on parchment (`Main.cs:8275`) | A dark backing | — | ⬜ 🅿️ parked list |
 
 ## 4. Trees and vegetation

@@ -2,7 +2,8 @@
 
 **Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
 and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
-SCALE 0.30 TILES (D706); THE MAP, THE GRAIN AND SNOW ARE UNJUDGED.
+SCALE 0.30 TILES (D706); THE GRAIN AND SNOW START AT HIS TUNING (D707), NOT YET
+APPROVED; THE MAP IS UNJUDGED.
 ⚠️ The whole stack sits at §3.3's GPU bar (+0.08–0.10 ms at 1280 × 800); his call.** §2–§4 are the build; §4's table says which piece stands; §5
 waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
@@ -42,17 +43,18 @@ all three blends behind one dropdown, so they are compared on the same ground:
 - **Lighten** — `max(ground, snow × coverage)`, per channel. Nothing beneath it survives where snow is brighter; between
   the two as a look, and the hardest edge of the three.
 
-**The snow colour** is `#f4f1ea`, L\* 95.2: the near white §2 asks for, warmed to sit on the paper rather than read as
+**The snow colour** is `#f8f6f1`, L\* 96.9, since D707 (Joe: D703's `#f4f1ea`, L\* 95.2, was "a bit too grey";
+"a touch whiter" raised every channel by about four levels and kept the warmth): the near white §2 asks for, warmed to sit on the paper rather than read as
 screen white. It lives in `looks/terrain_lab.tres`, not in the shader.
 
 **As built (D703):** `terrain_lab.gdshaderinc`'s `terrain_snow_*`, called from `grass_lab.gdshader` after the grass and
 before the transition marks, so the grain overlay lies over it. *Snow*, *Snow blend* (Lerp, Screen, Lighten),
-*Snow amount* (lab start 0.6), *Snow patchiness* (0–0.3, start 0.08) and **a fifth control the four above did not name,
-*Snow patch size*** (2–48 tiles a cycle, start 12): the place needs a size, and a number that only lives in a file
+*Snow amount* (lab start 0.56), *Snow patchiness* (0–0.3, start 0.03) and **a fifth control the four above did not name,
+*Snow patch size*** (2–48 tiles a cycle, start 3; the starts are Joe's since D707, D703 opened at 0.6, 0.08, 12): the place needs a size, and a number that only lives in a file
 cannot be judged by eye. The threshold is two octaves of `at_value_noise` at salts 71–72, the macro variation's
 weights. The amount is stretched by the patchiness before the smoothstep, `smoothstep(t − s, t + s, mix(−s, 1 + s,
 amount))`, so 0 is bare everywhere and 1 white everywhere whatever a place's threshold (measured: amount 0 renders
-byte-identical to snow off; amount 1, Lerp and Lighten, is `#f4f1ea` in 100 % of pixels, grain off). ⚠️ The noise is
+byte-identical to snow off; amount 1, Lerp and Lighten, is `#f4f1ea` in 100 % of pixels, grain off; at D707 Lerp is `#f8f6f1` in 100 %). ⚠️ The noise is
 not uniform, two octaves pile up round 0.5, so most of the change comes in the middle of the amount's range.
 
 - ⚠️ **Lighten draws a fringe.** It is a per-channel max, so where the cover is partial the grey `snow × cover` wins
@@ -98,8 +100,11 @@ the same).
 
 **As built (D702):** the three octaves keep the placeholder's ratios (1.3 : 5 : 37), *Grain scale* is the finest one's
 cycle in tiles (0.02–0.5), and each is `grass_antitile.gdshaderinc`'s `at_value_noise` at its own salt (61–63). The
-lab starts at **0.08 tiles**: two pixels a cycle at the lab's opening zoom, so the fibres are whole there and nowhere
-wider. Off is the placeholder exactly.
+lab started at 0.08 tiles: two pixels a cycle at the lab's opening zoom, so the fibres are whole there and nowhere
+wider. **Since D707 it starts at Joe's 0.065:** 1.6 px a cycle at 24 px a tile, so there the finest octave is about
+half faded to its mean, whole only from 31 px a tile up, 3.1 px at 48. He also had *Grain under the village* on: that is his pick
+for the wiring, but the box opens off, because it moves the screen grain under the village too, which is the
+approved look. Off is the placeholder exactly.
 
 - **The trade, to be looked at:** world-anchored grain magnifies with the zoom, 3.7× between the widest view (13 px a
   tile) and the closest (48). Fibres that read at one end are mush or sand at the other. Each octave therefore fades out

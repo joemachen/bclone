@@ -621,9 +621,9 @@ public sealed partial class GrassLab
         }
 
         Vector3 colour = lab._material.GetShaderParameter("snow_srgb").AsVector3();
-        if (colour != Srgb(start.SnowColour) || start.SnowColour.ToHtml(false) != "f4f1ea")
+        if (colour != Srgb(start.SnowColour) || start.SnowColour.ToHtml(false) != "f8f6f1")
         {
-            faults.Add($"the shader's snow is {colour}, the file's #{start.SnowColour.ToHtml(false)} (want the file's, and §2's #f4f1ea)");
+            faults.Add($"the shader's snow is {colour}, the file's #{start.SnowColour.ToHtml(false)} (want the file's, and §2's #f8f6f1)");
         }
 
         lab.ResetToApproved();
@@ -632,7 +632,7 @@ public sealed partial class GrassLab
             faults.Add("Reset to approved left the snow on");
         }
 
-        yield return Line("snow", "opens off, reaches the shader, draws the file's #f4f1ea, and Reset turns it off", faults);
+        yield return Line("snow", "opens off, reaches the shader, draws the file's #f8f6f1, and Reset turns it off", faults);
 
         // Snow blend: three, in the shader's order, and the file's at opening.
         faults = new List<string>();
