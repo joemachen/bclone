@@ -2029,10 +2029,11 @@ public sealed record SimConfig
 
     /// <summary>
     /// Crossings walked over bridges before the village learns to set a span in stone (Joe, D546: DOING).
-    /// Measured (D547): one bridge with work across carries a median 23 crossings a year — about six years.
+    /// Measured (D547): one bridge with work across carries a median 23 crossings a year, so 150 was about six years;
+    /// Joe's call after playing (2026-11-07, his village at 1,511): 1000 — about forty years of one bridge.
     /// </summary>
     [JsonPropertyName("stone_bridge_unlock_crossings")]
-    public int StoneBridgeUnlockCrossings { get; init; } = 150;
+    public int StoneBridgeUnlockCrossings { get; init; } = 1000;
 
     /// <summary>Ticks somebody stands at the well drawing water before walking home (D427).</summary>
     [JsonPropertyName("well_draw_ticks")]

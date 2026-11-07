@@ -180,7 +180,8 @@ Both are latched, saved, and hashed only once they are set, so no golden moves u
     hands, so it does not introduce the tech-tree map — the library's and the town hall's rule (D440). Through
     `LearnedByDoing` it set the hashed `ShownTheTechTree` in every village that reached ten first and **moved four
     goldens for a popup**; with it switched off they were byte-identical, which is how the cause was proven.
-- **The stone bridge: `stone_bridge_unlock_crossings` 150 crossings walked over the bridges** (§8.3). Tech node
+- **The stone bridge: `stone_bridge_unlock_crossings` 1000 crossings walked over the bridges** (§8.3; 150 until
+  2026-11-07 — Joe's call after playing, his village at 1,511 crossings: about forty years of one bridge). Tech node
   `stone-arch` (DOING, `LearnedByDoing` — it *is* learned with the feet), hangs from `bridging`. *"Feet have crossed
   the village's bridges N times, and somebody has worked out how to set a span in stone."* A crossing is a step from
   land onto a deck (`BehaviorSystem.Travel`), so one walk across is one crossing however long the span.
@@ -290,8 +291,11 @@ the far bank, and an 8×8 patch beyond it painted for homes.
   the hut — a village of four).
 - ⚠️ **Without the hut, every village crossed zero times in thirty years**: the unattended chooser never sites a home
   across while near-side paint is left. A bridge nothing needs is an idle bridge, not a measurement.
-- **`stone_bridge_unlock_crossings` = 150**: about six to seven years of one bridge in real use (2–3 for a busy one,
+- **`stone_bridge_unlock_crossings` = 150** *(as measured)*: about six to seven years of one bridge in real use (2–3 for a busy one,
   about 12 for a quiet one). The placeholder it replaced, 2,000, would have been ninety years.
+  - ⚠️ **1000 since 2026-11-07, Joe's call after playing** (his village stood at 1,511 crossings with the stone bridge long
+    learned): about forty years of one bridge at the median, a generation or two of feet — 17 for a busy one, about
+    eighty for a quiet one. The measurement above stands; the number it set was his to move.
 
 ---
 
