@@ -341,6 +341,15 @@ public enum VillagerState
 
     /// <summary>Pushing the household's new handcart home from the store, to park it at the door (`handcart.md §3`).</summary>
     PushingAHandcart,
+
+    /// <summary>
+    /// ⭐ THE MARKETER'S FIRST LEG (`handcart.md §13.2a`; Joe, 2026-11-06: <i>"have the marketer's day begin with a walk to
+    /// the market so the cart gets used on nearly every trip"</i>): a marketer deciding away from the market — at home after a
+    /// rest, or at the store a haul ended at — with an errand to run and the market's cart parked at its door walks to the
+    /// market first, empty-handed, and sets out from there with the cart. D693 measured half the counter trips beginning
+    /// away from the door and going on foot; this is the leg that puts the cart under them.
+    /// </summary>
+    WalkingToTheMarket,
 }
 
 /// <summary>

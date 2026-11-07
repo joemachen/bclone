@@ -1180,6 +1180,10 @@ public sealed class HandcartTests
         villager.Carried.TakeAll(Goods.Produce);
         villager.State = VillagerState.PushingAHandcart;
         Assert.Equal("pushing the new handcart home", villager.DescribeState());
+
+        // The first leg (§13.2a): empty-handed, no cart yet — the sentence says what the walk is for.
+        villager.State = VillagerState.WalkingToTheMarket;
+        Assert.Equal("walking to the market for its handcart", villager.DescribeState());
     }
 
     // ---------------------------------------------------------------
@@ -1259,7 +1263,11 @@ public sealed class HandcartTests
         Assert.All(Housed(world), h => Assert.True(h.HandcartUses > 0));
     }
 
-    /// <summary>§13.2, posed directly: one pusher a market — a colleague setting out while the cart is out goes on foot; and a marketer deciding away from the market takes no cart.</summary>
+    /// <summary>
+    /// §13.2, posed directly: one pusher a market — a colleague setting out while the cart is out goes on foot, straight to the
+    /// source; and a marketer deciding away from the market takes no cart from there — ⭐ since §13.2a (Joe, 2026-11-06) they
+    /// walk to the market for it first, the cart still at the door until they stand there.
+    /// </summary>
     [Fact]
     public void OnePusherAMarketAndNoCartFromAwayFromTheMarket()
     {
@@ -1281,17 +1289,108 @@ public sealed class HandcartTests
         Assert.False(second.PushingACart, "two marketers set off pushing the one cart");
         Assert.False(second.CartForTheWorks);
 
-        // Nobody out, but the second decides at the granary, not at the market: on foot, the cart stays at the market.
+        // Nobody out, but the second decides at the granary, not at the market: the first leg (§13.2a) — on foot to the
+        // market's door, nothing in the arms, the cart still parked there until they stand on its tile.
         first.PushingACart = false;
         first.CartForTheWorks = false;
         first.State = VillagerState.Idle;
         second.State = VillagerState.Idle;
         second.StandAt(granary.Position);
         BehaviorSystem.DecideForTest(world, second);
-        Assert.Contains(second.State, new[] { VillagerState.CollectingForMarket, VillagerState.StockingTheMarket });
+        Assert.Equal(VillagerState.WalkingToTheMarket, second.State);
         Assert.False(second.PushingACart, "a marketer who was nowhere near the market set off pushing its cart");
+        Assert.False(second.CartForTheWorks);
         Assert.Equal(config.HandcartUses, market.HandcartUses);
-        Assert.True(second.Carried.Held <= config.CarryCapacity, $"on foot the marketer took {second.Carried.Held}");
+        Assert.Equal(0, second.Carried.Held);
+    }
+
+    /// <summary>
+    /// ⭐ §13.2a (Joe, 2026-11-06: *"have the marketer's day begin with a walk to the market so the cart gets used on nearly
+    /// every trip"*): a marketer deciding at home, the market short and its cart parked at the door, walks to the market first
+    /// with nothing in hand, and the trip that follows is the cart's — three armfuls on the counter in one go.
+    /// </summary>
+    [Fact]
+    public void AMarketerDecidingAtHomeWalksToTheMarketForItsCartFirst()
+    {
+        SimConfig config = Config;
+        (SimLoop loop, SimWorld world, Workplace market, StoreBuilding counter, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
+        int cartLoad = config.CarryCapacity * config.CartArmfuls;
+        marketer.StandAt(world.HomePoint(marketer));
+        Assert.NotEqual(market.Tile, marketer.Tile);
+
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Equal(VillagerState.WalkingToTheMarket, marketer.State);
+        Assert.False(marketer.PushingACart);
+        Assert.Equal(0, marketer.Carried.Held);
+
+        int atTheDoor = -1;
+        int setOutWithTheCart = -1;
+        int stocked = -1;
+        for (int tick = 0; tick < config.TicksPerSeason && stocked < 0; tick++)
+        {
+            loop.StepOnce();
+            if (atTheDoor < 0 && marketer.Tile == market.Tile)
+            {
+                atTheDoor = tick;
+            }
+
+            if (setOutWithTheCart < 0 && marketer.PushingACart)
+            {
+                setOutWithTheCart = tick;
+                Assert.True(atTheDoor >= 0 && atTheDoor <= tick, "the cart was taken before the marketer reached the door");
+                Assert.True(marketer.CartForTheWorks);
+                Assert.Equal(VillagerState.CollectingForMarket, marketer.State);
+            }
+
+            if (counter.Store[Goods.Produce] > 0)
+            {
+                stocked = tick;
+            }
+        }
+
+        _output.WriteLine($"{marketer.Name}: at the door on tick {atTheDoor}, out with the cart on tick {setOutWithTheCart}, the counter stocked on tick {stocked} with {counter.Store[Goods.Produce]}.");
+        Assert.True(setOutWithTheCart >= 0, "the marketer never set out with the market's cart");
+        Assert.True(stocked >= 0, "the counter was never stocked");
+
+        // The cart's load, less what a hungry marketer ate of it on the longer walk (D10) — more than two armfuls, which no
+        // walker ever puts down at once.
+        Assert.True(counter.Store[Goods.Produce] > 2 * config.CarryCapacity && counter.Store[Goods.Produce] <= cartLoad,
+            $"the first trip put {counter.Store[Goods.Produce]} on the counter; a cart's load is {cartLoad}");
+    }
+
+    /// <summary>
+    /// §13.2a's two conditions, each alone: no cart at the market and the errand starts from home on foot, as before the leg
+    /// existed; a cart but nothing to move and nobody walks to the market for it.
+    /// </summary>
+    [Fact]
+    public void TheFirstLegIsWalkedOnlyForACartAndAnErrand()
+    {
+        SimConfig config = Config;
+
+        // No cart: straight to the granary, as always.
+        (_, SimWorld world, Workplace market, _, Villager marketer) = AMarketErrandPose(config, cartUses: 0);
+        marketer.StandAt(world.HomePoint(marketer));
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Contains(marketer.State, new[] { VillagerState.CollectingForMarket, VillagerState.StockingTheMarket });
+        Assert.False(marketer.PushingACart);
+
+        // A cart but nothing to move — the counter full of food and every other store bare, so no restock and no haul: no walk
+        // to the market for the cart.
+        (_, world, market, StoreBuilding counter, marketer) = AMarketErrandPose(config, config.HandcartUses);
+        counter.Store.Receive(Goods.Produce, counter.RoomFor(Goods.Produce));
+        foreach (StoreBuilding store in world.StoreBuildings.Where(store => store != counter))
+        {
+            for (int g = 0; g < world.GoodsCatalog.Count; g++)
+            {
+                store.Store.TakeAll((Goods)g);
+            }
+        }
+
+        marketer.StandAt(world.HomePoint(marketer));
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.NotEqual(VillagerState.WalkingToTheMarket, marketer.State);
+        Assert.NotEqual(VillagerState.CollectingForMarket, marketer.State);
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
     }
 
     /// <summary>

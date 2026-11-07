@@ -181,7 +181,7 @@ headless left nobody alive in his game.
 - **Starting limits are data:** `starting_stock_limits` in `data/sim.config.json`, keyed by the
   goods' names — ~~forage 2000, wheat 1000, fish 250, meat 250, logs 200, firewood 400, 200 for the
   rest~~ **since D611, Joe's panel as he plays it: forage, fish and meat 2,500; wheat 2,000; logs and stone 400;
-  firewood 600; stone tools 30;** iron and leather 200, flour 200, bread 1,000, iron tools 25, hay none. Empty by default, so a config that says nothing has no limits. An unknown
+  firewood 600; stone tools 30;** iron and leather 200, flour 200, bread 1,000, iron tools 25, hay none; ⭐ **clothing and handcarts 50 since D697** (Joe, 2026-11-06: *"clothing starts at 0 stock limit. unlocked items should start at 50 by default"* — they shipped with none from D660 and D675 so that no golden moved for a good no village holds before its building stands, and **the panel shows a good with no limit as 0** (`AddStockLimitRow`: the `SpinBox` reads `starts ?? 0`, the *clear* button disabled), which is what he read; 50 is his D62 number). Empty by default, so a config that says nothing has no limits. An unknown
   key fails at load. The panel seeds its rows from `StockLimits` and pushes nothing.
 - **One number per good — `SimWorld.HeldAgainstItsLimit`:** stores + heaps + (edible goods) the
   huts' buffers. *(Since D420, §4.5: every good's buffers, and the loads on their way to storage.)* `MayTake` / `LimitIsMet` read it, and so every stop does: the forester (D146), the

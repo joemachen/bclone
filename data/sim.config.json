@@ -1882,11 +1882,17 @@
     "iron tools": 25,
     "iron": 200,
     "leather": 200,
-    // HANDCARTS (workshop-and-the-carpenter.md 4.4, D674; Joe D675: none): no
-    // starting limit, as clothing (D660) -- a set limit is hashed and moves every
-    // golden. With none set the carpenter makes one a household and one spare,
-    // and stops. The panel's row is the ceiling if Joe wants one; the demand is
-    // one a household.
+    // ⭐ D697 -- UNLOCKED GOODS START AT 50 (Joe, 2026-11-06: "clothing starts at 0
+    // stock limit. unlocked items should start at 50 by default"). Clothing (D660)
+    // and handcarts (D675 call 2) shipped with NO limit so that no shipped golden
+    // moved for a good no village holds before its building stands -- and the
+    // panel showed that "no limit" as 0, which is what he read. 50 is his own
+    // number from D62 ("50 tools, 50 clothes"). The derived stops still drive the
+    // trades (LabourQuota.ClothingWanted, HandcartsWanted); 50 is the ceiling
+    // over them, as every row here is. HAY stays unlimited (D590): the herd's
+    // fodder is not an unlocked good and has no shelf of its own.
+    "clothing": 50,
+    "handcarts": 50,
   },
 
   // Names (D465, specs/names-and-birthdays.md): a first name is a prefix and a suffix

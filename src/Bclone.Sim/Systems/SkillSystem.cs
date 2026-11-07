@@ -240,6 +240,7 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.MakingFirewood => true,
         VillagerState.HaulingToStore => true,
         VillagerState.CollectingForMarket => true,
+        VillagerState.WalkingToTheMarket => true,
         VillagerState.FetchingMaterials => true,
         VillagerState.Building => true,
         VillagerState.Clearing => true,

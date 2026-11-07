@@ -372,7 +372,7 @@ checks green; no golden moved (the shipped harness builds no workshop); `logisti
 commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 16 §13 facts), red-checked and counted (§13.8: 37 mutants, 54 reds,
 three zeros written down, one dead clause found by a zero and deleted); measured before and after on `ZzLogistics` (§13.6: Oakhaven's
 Market bucket 9.1 → 8.2 % of adult ticks, counter trips 18.3 → 14.4 a marketer-year; ⚠️ half the counter trips begin at home on foot —
-Joe's call); no golden moved. MERGED INTO `main` AT JOE'S WORD (D695, 2026-11-06), UNPLAYED — Joe chose the merge over playing it first; he plays it from `main`.** ✅ Piece 1 (D692): the owners, the fetch, the
+Joe's call); no golden moved. MERGED INTO `main` AT JOE'S WORD (D695, 2026-11-06), UNPLAYED — Joe chose the merge over playing it first; he plays it from `main`. ⭐ §13.2a THE MARKETER'S FIRST LEG BUILT (D696, 2026-11-06, his call), measured (§13.6: carted counter trips 29–51 % → 58–74 %), MERGED INTO `main` AT JOE'S WORD (D698, 2026-11-06), UNPLAYED; ⏸️ the one-armful restock is the next call (§13.6).** ✅ Piece 1 (D692): the owners, the fetch, the
 quota, save format 12. ✅ Piece 2 (D693): the loads of three armfuls, the take at the door, the wear, the empty leg back. ✅ Piece 3 (D694):
 the chip beside the building, the cards' line, the probes.
 
@@ -441,6 +441,30 @@ runs (`BehaviorSystem.Trade.cs`) are the same shape one building over: an armful
   without a cart as an owner each (+1)** beside the housed, living households without one — so Oakhaven, every household carted and
   the shelves bare, wants one more and the carpenter makes it (and the spare).
 
+### 13.2a The marketer's first leg — to the market for the cart (Joe, 2026-11-06; D696)
+
+Joe, on §13.6's finding that half the counter trips began at home on foot: *"have the marketer's day begin with a walk to the market
+so the cart gets used on nearly every trip."* So:
+
+- **The rule.** A marketer deciding **away from the market's tile** — at home after a rest, or at the storehouse a haul ended at —
+  with **an errand to run** (`PlanMarketErrand` is not null) and **the market's cart parked at its door** (`TheWorksCartIsParked`:
+  `HandcartUses > 0` and no worker of it has it out — the same two things `TakeTheWorksCart` asks at the door) walks to the market
+  first, empty-handed, in its own state **`WalkingToTheMarket`** (*"walking to the market for its handcart"*), and the day is decided
+  again from the door, where `WorkTheMarket` takes the cart and sets out as §13.2 says. The errand is re-planned from the door, so the
+  source may differ from the one that sent them; the errand at home was only the proof that there is work.
+- **When it is not walked** — and the errand starts where they stand, on foot, as before the leg: no cart at the market; a colleague
+  out with it (one pusher a building, §13.2); nothing to move (then *"Nothing to move"*, spare work, home, as always). §4's rule stands
+  for everyone else: a cart kept anywhere but the start of the trip costs a walk to get it — this is that walk, chosen for the
+  marketer because the counter's trips are the market's whole livelihood.
+- **On the way.** `ActOne`'s case for the state walks on while the reason holds and re-decides from where they stand when it lapses
+  (the cart taken out by a colleague, the seat gone, a load in the arms); at the door the same case re-decides. One rule, no arrival
+  hook: a hook that set them idle at the door scored zero against every guard and was deleted (§13.8.4). `IsTrading` holds the
+  marketer's seat for the leg; `SkillSystem` counts it as the trade's work, as it counts `CollectingForMarket`; the instrument files
+  it under the Market bucket.
+- **Not the merchant's.** The post's runs begin at the post already (§13.2); nothing changes for them.
+- **Save, hash.** A new `VillagerState` value, appended; the state is saved by name and hashed as a byte — no field, **save format 12
+  stands**; no golden run has a market with a cart (§13.7), so no golden moves.
+
 ### 13.3 What it buys — the same `cart_armfuls`
 
 With the works' cart in hand the trip's load is **`cart_armfuls` × `carry_capacity`** (240 as shipped) in place of one armful:
@@ -495,6 +519,29 @@ years each, forty carts racked at Year 3 for the households, a finished market a
 | seed 5 | 5.9 → **4.8 %** | 14.5 → **10.8** | 74 → 93 | — → 266 of 701 (126) | 17.1 → 12.5 (69 → 83) | 0 → 0 |
 | **Joe's Oakhaven (Year 31 → 36, 2 marketers, 8 carted households, 10 carts on the shelf, no post)** | **9.1 → 8.2 %** | **18.3 → 14.4** | 79 → 129 | — → 66 of 144 (190) | — | — |
 
+**⭐ The first leg (§13.2a, D696, 2026-11-06) — before is piece 2 as merged (the rows above), after is the leg, the same four valleys,
+the same arms (seeds 1 / 2 / 4 / 5, fifty years, forty carts, a market and a post raised at Year 3). Oakhaven is format 11 and
+this build is format 12; it was not re-read.**
+
+| | Market share of adult ticks | counter trips a marketer-year | units a counter trip | counter trips under the cart (units a carted trip) | post: trips down a merchant-year (units) |
+|---|---|---|---|---|---|
+| seed 1 | 3.8 → 4.8 % | 18.2 → **12.6** | 98 → 90 | 394 of 772 = 51 % → **540 of 768 = 70 %** (128 → 100) | 29.2 (88) → 28.4 (76) |
+| seed 2 | 9.2 → 8.3 % | 9.5 → 9.6 | 66 → 86 | 217 of 607 = 36 % → **414 of 563 = 74 %** (93 → 96) | 9.0 (69) → 9.1 (56) |
+| seed 4 | 3.9 → 5.2 % | 7.6 → 9.1 | 75 → 77 | 143 of 485 = 29 % → **336 of 577 = 58 %** (95 → 86) | 13.9 (70) → 13.0 (70) |
+| seed 5 | 4.8 → 5.4 % | 10.8 → 11.0 | 93 → 94 | 266 of 701 = 38 % → **447 of 694 = 64 %** (126 → 106) | 12.5 (83) → 13.9 (77) |
+
+**Reading, honestly.** The leg does what Joe asked of it: the cart is under **58–74 % of the counter trips** where it was under
+29–51 %. What is left on foot is mostly the **second marketer** (seeds 1, 4 and 5 end with two at the market; one pusher a building)
+and the spells with the cart worn out and not yet replaced (seed 2's ends with 3 trips left in it). **But the trips did not fall and
+the Market bucket did not either** — it rose about a point in three valleys (the leg is a walk that was not there before) and the
+units a counter trip barely moved (90 / 86 / 77 / 94), because **a carted trip carries 86–106, not 240: the counter is restocked
+when it is short by one armful** (`CounterShortOf` asks for one; `LoadForTheMarket` loads whole armfuls within the room), so the
+cart arrives to a shortfall of one armful and a bit and brings that. The leg puts the cart under the trip; the trip is not sized for
+the cart. ⏸️ **Joe's call, the lever this measurement points at:** when the market's cart is parked, let the counter run down to **a
+cart's load short** before the restock fires (the threshold `CounterShortOf` reads, by the owner's cart — a number, measured first);
+or leave it, the cart's gain being the trips that are short by more. *(The post's columns moved too though nothing of the merchant's
+changed: a village that decides differently at the counter is a different fifty years everywhere — the usual chaos, not a cause.)*
+
 **Oakhaven** (format 11, read for the after-run by a TEMPORARY format tolerance — `scratchpad/format11.py`, applied, run, reverted,
 `git diff` empty before the commit, Slice H's practice): the market fetched one of the ten carts on the shelf in the first season,
 and in five years the Market bucket fell **9.1 → 8.2 % of adult ticks** and the counter trips **18.3 → 14.4 a marketer-year**; the
@@ -531,7 +578,7 @@ not read from these runs: a market with a cart is a different run of the seed, a
   silently re-pinned.
 - **Determinism:** nothing here reads the clock or draws from `Rng`.
 
-### 13.8 How it is tested — `HandcartTests`, the §13 facts (16 facts; 37 mutants, 54 reds, three zeros written down)
+### 13.8 How it is tested — `HandcartTests`, the §13 facts (18 facts; 45 mutants, 64 reds, five zeros written down, two dead clauses found by a zero and deleted)
 
 TDD, each guard red-checked by a mutant and the reds counted (D326); a zero is written down. The filter for every score:
 `HandcartTests`, `WorkshopTests.WithNoLimitSet…`, `WorkshopTests.AnEmptyHouse…`, `TradeRowsTests.TheFormat…`,
@@ -603,6 +650,26 @@ View only, so no sim guard: the `cart:` line poses the chip beside a workplace's
 heap chip) beside the store's pose; the `cart card:` line poses the works' sentence four ways on a workplace and a member put back,
 and asks a site's card to hide the line. Both ✅ on the final tree; bar 151. ⚠️ A standing market's card line and the chip beside a
 live market are Joe's eyes (the view cannot raise a building, D596).
+
+#### 13.8.4 The first leg (§13.2a, D696) — 2 guards + 1 re-aimed + 1 sentence, 8 mutants, 10 reds, 2 zeros written down, 1 redundant hook deleted
+
+| Guard | What it holds |
+|---|---|
+| `AMarketerDecidingAtHomeWalksToTheMarketForItsCartFirst` | the §13.8.2 pose with the marketer stood at home: one `Decide` → `WalkingToTheMarket`, no cart, empty hands; stepped, they reach the door before they push, set out `CollectingForMarket` with the works' cart, and the first trip puts more than two armfuls on the counter (a cart's load less what a hungry marketer ate on the longer walk, D10) |
+| `TheFirstLegIsWalkedOnlyForACartAndAnErrand` | no cart at the market → straight to the granary from home, as always; a cart, the counter full and every other store bare → no walk to the market, no `CollectingForMarket`, the cart untouched |
+| `OnePusherAMarketAndNoCartFromAwayFromTheMarket` *(re-aimed)* | the second half: nobody out, the second decides at the granary → `WalkingToTheMarket`, nothing in hand, the cart still at the door |
+| `TheWorksCartStatesHaveSentences` *(extended)* | *"walking to the market for its handcart"* |
+
+| Mutant | Reds |
+|---|---|
+| the leg never walked (`WorkTheMarket`'s block gated off) | 2 |
+| walked with no cart at the market (the parked check gone) | 1 |
+| walked with nothing to move (the block above the errand check) | 1 |
+| the tile check gone (walked from the door too — nobody ever takes the cart) | **5** |
+| the sentence wrong | 1 |
+| the per-tick case re-decides from away (its walk branch inverted) | **0, written down**: `Decide` → `WorkTheMarket` → the leg again, a tick's walk at a time; they still arrive, as D693's empty-leg zero did |
+| `IsTrading` without the leg (the seat not held for it) | **0, written down**: `ActOne`'s rule for an errand whose job is gone (line 304) is what the predicate feeds, and the leg's own case already re-decides when the seat goes |
+| *(deleted, not scored)* an arrival hook that set them idle at the door | scored 0 against every guard — the per-tick case re-decides at the door the next tick either way — and was deleted as redundant (D693's shape) |
 
 ### 13.9 Definition of Done
 

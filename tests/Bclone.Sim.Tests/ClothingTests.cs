@@ -230,7 +230,10 @@ public sealed class ClothingTests
 
         Assert.Equal(0, world.InStores(Goods.Clothing));
         Assert.All(world.Villagers, v => Assert.Equal(0, v.CoatDays));
-        Assert.Null(world.StockLimits.For(Goods.Clothing));
+
+        // ⭐ And the shipped limit is 50 (D697; Joe, 2026-11-06: "unlocked items should start at 50 by default") — none from D660 to
+        // D697, which the panel showed as 0.
+        Assert.Equal(50, world.StockLimits.For(Goods.Clothing));
     }
 
     // ---------------------------------------------------------------

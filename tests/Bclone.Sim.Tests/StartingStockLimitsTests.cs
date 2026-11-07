@@ -60,14 +60,13 @@ public sealed class StartingStockLimitsTests
             // limits, and a village with no barn must hash as it did.
             [Goods.Hay] = null,
 
-            // ⛔ Clothing ships with NO limit too (D659, `clothing.md §3.4`): a set limit is hashed and would move every
-            // shipped golden for a good no village holds before a tailor stands. With none set, the tailor sews toward
-            // `LabourQuota.ClothingWanted`; Joe's *"50 clothes"* (D62) is his to set on the panel.
-            [Goods.Clothing] = null,
-
-            // ⛔ Handcarts ship with NO limit (Joe, D675 call 2; `workshop-and-the-carpenter.md §4.4`), clothing's reason
-            // (D660). With none set the carpenter makes one a household and a spare (`LabourQuota.HandcartsWanted`).
-            [Goods.Handcart] = null,
+            // ⭐ Clothing and handcarts START AT 50 (D697; Joe, 2026-11-06: "clothing starts at 0 stock limit. unlocked
+            // items should start at 50 by default" — his "50 clothes" of D62). They shipped with NO limit from D660 and
+            // D675 so no shipped golden moved for a good no village holds before its building stands; the panel showed
+            // that as 0, which is what he read. The tailor and the carpenter still work toward their derived stops
+            // (`ClothingWanted`, `HandcartsWanted`); 50 is the ceiling over them.
+            [Goods.Clothing] = 50,
+            [Goods.Handcart] = 50,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

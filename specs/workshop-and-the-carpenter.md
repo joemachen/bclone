@@ -307,10 +307,12 @@ batch trade's is.
   household has a handcart, and the shelves hold one for the next (N stored)."* ⚠️ The spare: proposed **one**, so a
   new household fetches without waiting a stint — the tailor's *year's wear* has no analogue because carts wear by the
   trip (Slice H), and until H nothing wears. Measured in H, typed then; in W the derived stop is `HandcartsWanted + 1`.
-- No `starting_stock_limits` row for handcarts — **clothing's precedent (D660): a typed starting limit is hashed and
+- ~~No `starting_stock_limits` row for handcarts~~ — **clothing's precedent (D660): a typed starting limit is hashed and
   would move every shipped golden** (D446's one golden moved for `"iron tools": 200` alone). ✅ **Joe, D675 call 2:
-  none.** The panel still shows the row, unset; his number, if he ever wants one, is his to set on the panel. The config
-  comment, in its own voice:
+  none.** ⭐ **Superseded, D697 (Joe, 2026-11-06, after playing with the panel: *"clothing starts at 0 stock limit. unlocked items
+  should start at 50 by default"*): `"handcarts": 50` and `"clothing": 50`** — the panel showed the unset row as **0**, which he read as a
+  limit of nought; the derived stop (one a household and a spare) still drives the carpenter, 50 is the ceiling over it, and the
+  goldens that moved are named in D697. The config comment as it stood from D675 to D697, in its own voice:
 
   ```jsonc
   // HANDCARTS (workshop-and-the-carpenter.md 4.4, D674; Joe D675: none): no
@@ -607,7 +609,8 @@ proposal moves to 2 a stint; the number is his after play.
    has played. ✅ **The hash: the learned flag, sparse** (§4.1a choice 2, decided D676) — the gate reads the flag, no
    golden moves, the gap written down.
 2. ~~No shipped `handcarts` starting limit, or a typed number?~~ ✅ **None.** The derived stop — one a household and a
-   spare — is the default; the panel's row is his ceiling if he ever wants one.
+   spare — is the default; the panel's row is his ceiling if he ever wants one. *(⭐ Superseded D697, 2026-11-06: **50**, with
+   clothing's — *"unlocked items should start at 50 by default"*; the panel had shown *none* as 0. §4.4.)*
 3. ~~No `MakeGood` field until a second product, or the field now and format 10?~~ ✅ **Now.** The field, saved, hashed
    off its default, **save format 10**; his format-9 saves refused — *"I don't mind starting a new game — that's actually
    my favourite part."*

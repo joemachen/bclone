@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE TRADES' CARTS (D695, 2026-11-06) ON TOP OF SLICE H (D690) AND THE COLD LINE (D691), PUSHED; ORIGIN AGREES. ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. NEXT: HOUSE TIERS; THE OX CART LATER AS *HEAVY HAULAGE*. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), LOCAL, NOT PUSHED; `origin/main` = 31c2356 (D695 + A DOCS COMMIT). ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: PUSH AT HIS WORD; HE PLAYS FROM `main`; THEN HOUSE TIERS; THE OX CART LATER AS *HEAVY HAULAGE*. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695 — THE TRADES' CARTS D692–D694 MERGED) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695 PUSHED; D696–D697 MERGED, D698, NOT PUSHED) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of `claude/elastic-dewdney-d55a19` (D695, 2026-11-06), pushed the same day at Joe's word with the docs commit that made
 > these lines true; origin agrees.** The branch was three commits past `main` 6a2f4fe (D691): piece 1 (D692) the owners, piece 2 (D693) what it buys, piece 3
@@ -9,6 +9,17 @@
 > (he chose the merge over playing it first), unplayed, these lines corrected inside the merge commit (D640's trap). He plays it from
 > the main checkout (`.\run.bat`; ⚠️ **save format 12** — his format-11 Oakhaven save and everything older are refused in words, which
 > he accepted; a new game). Pushed. The worktree `.claude/worktrees/elastic-dewdney-d55a19` still stands, as the earlier ones do.
+>
+> **🔀 `main` = the merge of `slice/first-leg-and-limits` (D698, 2026-11-06; one commit, d9d9228, off 31c2356), local, NOT pushed; `origin/main` =
+> 31c2356. Merged `--no-ff` at Joe's *"Merge now"*, unplayed, these lines corrected inside the merge commit. The branch carried his two calls of
+> 2026-11-06 after the push:** (1) **D696, the marketer's first leg** (`handcart.md §13.2a`): *"have the marketer's day begin with a walk to
+> the market so the cart gets used on nearly every trip"* — a marketer deciding away from the market with an errand and the cart parked walks
+> to it first (`WalkingToTheMarket`); measured, the cart is under 58–74 % of counter trips (was 29–51 %), **but the trips and the Market
+> bucket did not fall**, because the counter is restocked when one armful short and a carted trip carries 86–106 — ⏸️ the restock threshold
+> under a parked cart is his next call (the ⏸️ OPEN list). (2) **D697, the starting limits**: *"clothing starts at 0 stock limit. unlocked
+> items should start at 50 by default"* — the panel showed a good with no limit as **0** (`SpinBox` value `starts ?? 0`), which is what he
+> read; clothing and handcarts now ship with a starting limit of 50 (`starting_stock_limits`), hay still none. Push at his word; he plays it
+> from `main` (`.\run.bat` from the main checkout — a new game, format 12; the panel's clothing and handcarts rows read 50).
 >
 > **What is built.** A standing market or trading post owns a handcart (`Workplace.HandcartUses`, `IsACartOwner`; saved `handcart_uses`,
 > hashed sparsely `0xF2`); whose cart a villager has is `Villager.CartForTheWorks` beside `PushingACart` (saved `cart_for_the_works`,
@@ -9110,6 +9121,20 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
+
+- ⛔ **The stock-limits panel shows "no limit" as 0.** `AddStockLimitRow` puts `starts ?? 0` into the `SpinBox` and disables *clear*; a
+  player cannot tell *"no opinion"* from *"stop making this"*, and Joe read clothing's unset row as a limit of nought (*"clothing starts
+  at 0 stock limit"*). D697 set the two unlocked goods to 50 at his word; **hay still reads 0 there with no limit set.** A row that says
+  *none* in words is the legibility fix, and nobody has asked for it yet — write it down before "fixing" hay by typing a number.
+- ⛔ **A walk that puts the cart under the trip is not a trip sized for the cart.** D696's first leg lifted carted counter trips from
+  29–51 % to 58–74 % and **moved neither the trips a year nor the Market bucket**: `CounterShortOf` fires the restock when the counter is
+  one armful short, so a cart arrives to a shortfall of an armful and a bit and carries 86–106 of 240. Measure the *load* a mechanic
+  carries, not only how often it is used — the `carted N (units a trip)` column is what said so. The threshold is Joe's call (⏸️ OPEN).
+- ⛔ **A mutant that makes code unreachable fails the build, not the test** (`case X when false:` → CS0162 as an error). Score it by
+  inverting the condition instead; and a hook that scores 0 because another rule already covers it is redundant code — delete it and
+  write the zero down (D693's shape), rather than keeping two rules for one arrival.
+
 ## ⛔ THE TRAPS D692–D694 PAID FOR — A MARKED MARKET IS NEVER RAISED, `open('w')` TRUNCATES BEFORE IT REJECTS, A HEREDOC THAT NEVER CAME, BACKTICKS IN A QUOTED ARGUMENT, A ZERO THAT WAS DEAD CODE, AND HALF THE TRIPS BEGIN AT HOME
 
 - ⛔ **The harness valley raises no market, and a market it MARKS is never built.** The first "before" run on `ZzLogistics` marked a
@@ -9592,11 +9617,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   Alys"* while a marketer has it; a marketer leaving the market with the rectangle behind the dot, putting three armfuls on the counter
   at once and parking it; a marketer who hauled a lodge's meat to the granary pushing the empty cart back (*"pushing the market's
   handcart back"*); the top bar's handcarts chip amber until the market has one too. **Two things ride in it and are his:**
-  (1) ⚠️ **Half the counter trips are still on foot** — a marketer who decides at home after a rest sets off for the granary from the
-  doorstep, and the cart is at the market (`handcart.md §13.6`: 66 of 144 trips carted in Oakhaven, 394 of 772 in a harness valley).
-  §4's rule to the letter, and the honest number. *Leave it* (the cart serves the trips that start at the counter) **or** *give the
-  marketer's day a first leg to the market* (a walk of a few ticks that puts the cart under nearly every trip — a change to the
-  marketer's day, measured first). (2) The merchant's numbers rest on a posed post with a keep order (no save of his has a post this
+  (1) ✅ ~~⚠️ **Half the counter trips are still on foot**~~ **his call (2026-11-06): the first leg, built — D696, `handcart.md §13.2a`,
+  merged into `main` D698.** The cart is under 58–74 % of counter trips now (was 29–51 %); what is left on foot is the second
+  marketer and the spells between a worn-out cart and the next. ⏸️ **AND THE CALL IT OPENED, HIS:** the trips a marketer-year and the
+  Market bucket did not fall, because `CounterShortOf` fires the restock when the counter is **one armful** short and so a carted trip
+  carries 86–106 of 240 — under a parked cart, let the counter run down to a cart's load short before the restock (a threshold by the
+  owner's cart, measured first), or leave it (§13.6's second table). (2) The merchant's numbers rest on a posed post with a keep order (no save of his has a post this
   build can read); the runs down fell 46 → 29 and 17 → 13–14 a merchant-year where the post had steady work — his villages are the
   real measurement, after the hall.
 - ✅ ~~⏸️ **SLICE H — THE HANDCART (D686–D689, `claude/slice-handcart-b0230a`) — BUILT, MEASURED, UNPLAYED; HIS TO PLAY, THEN MERGE AT HIS
