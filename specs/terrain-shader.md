@@ -137,8 +137,9 @@ Where they meet is two separate questions:
   no slider can move the bank. D342's other rule binds it too: a warp octave's wavelength must exceed the narrowest
   feature it may touch, and the river is two tiles wide, which is why the reach stops at half a tile.
 
-**As built (D704):** *Splat blending* and *Splat sharpness* (1–48, lab start 8), *Edge bleed*, *Bleed reach* (0–0.5
-tiles, start 0.25) and *Bleed scale* (0.25–4 tiles a cycle, start 1). Both read the coverage map and show nothing
+**As built (D704):** *Splat blending* and *Splat sharpness* (1–48, lab start 5.5), *Edge bleed*, *Bleed reach* (0–0.5
+tiles, start 0.33) and *Bleed scale* (0.25–4 tiles a cycle, start 0.30). The starts are Joe's first tuning (D705;
+D704 opened at 8, 0.25 and 1); the switches still open off, and none of it is approved. Both read the coverage map and show nothing
 without it. The bleed's warp is one octave of `at_value_noise` at salts 81–82, cheap on purpose (§3.3). Value noise
 seldom reaches its ends, so the edge seldom wanders the whole reach.
 
