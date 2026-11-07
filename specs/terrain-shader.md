@@ -1,6 +1,7 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** ✍️ **SPECCED, NOTHING BUILT YET (D700, 2026-11-06).** §2–§4 are the build; §4's table says which piece stands.
+**Status:** 🔨 **PIECE 1 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06), JOE HAS NOT LOOKED AT IT YET;
+PIECES 2–4 SPECCED (D700), NOT BUILT.** §2–§4 are the build; §4's table says which piece stands.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
@@ -105,13 +106,23 @@ Re-measured with `tools/grass/lab_cost.gd`'s method as each layer lands (`grass-
 cases are fixed and it is not this lane's file, so the new cases run from a scratch copy; the numbers go in §6 beside
 `grass-look.md`'s table. Bar: the D632 budget's size, about +0.1 ms a frame at 1280 × 800 for the whole stack.
 
+⚠️ **Compare inside one session only.** On 2026-11-06 the same RTX 3070 read *approved, no grain* at **9.1 ms at 4K**
+against D632's ~1.7 (0.77 at 2560 × 1440, scaled), about five times higher, and **the shader as it stood before this
+slice read the same** (A/B/A: 9.14 / 9.34 / 9.14 widest, 9.06 / 9.25 / 9.07 gameplay), so it is not this work. Why is not
+known (nothing else was on the GPU; the rounds repeat to three figures, which D632's did not). Until someone finds out,
+§3.3's numbers are differences, not absolutes, and `grass-look.md §5`'s table cannot be compared with them.
+
+| layer, against *approved, no grain* in the same run | widest, 4K | gameplay, 4K | as a share |
+|---|---|---|---|
+| **coverage map** (D701) | +0.50 ms | +0.49 ms | **+5 %** (+0.06 ms at 1280 × 800 on today's scale) |
+
 ## 4. The build — four pieces in the lab, one commit each
 
 Each piece is droppable: the branch is whole after any of them, and Joe can look at one and leave for a week.
 
 | # | Piece | Controls (the *Terrain* panel) | State |
 |---|---|---|---|
-| 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | ⬜ |
+| 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
 | 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain over the village* | ⬜ |
 | 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* | ⬜ |
 | 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⬜ |
@@ -122,7 +133,8 @@ the lab's origin, bilinear, clamped: **R grass, G wood, B stone, A water**, weig
 rather than a valley, because the lab's village is fixed: the placeholders stand on open grass, their wood stands on a
 wood, the river runs below the granary at the real two tiles wide, and woods and stone meet the river and each other,
 so every junction is on screen at the lab's opening zoom. Its edges wander by `ValleyTexture`'s own three warp octaves.
-It is a pure function of the tile: integer hashes, no RNG, no clock, no sim.
+It is a pure function of the tile: integer hashes, no RNG, no clock, no sim. Baked once on first switching it on, 0.44 s
+(measured), so the lab opens without paying for it.
 
 **Coverage** is `smoothstep(0.5, 0.5 + fade, R)`: nothing where grass does not win, rising from the contour inward,
 as `Winner`'s confidence does. Grass never lands on water or a wood. The grass term becomes `mix(1, grass, strength ×
@@ -163,8 +175,14 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **The approved look holds:** with every switch off the lab's renders are **byte-identical** to the same cases rendered
   before this slice (`lab_render.gd`, a cases file; `cmp`, not a tolerance). `lab_check.py parity` still applies.
 - **The probe** (`BCLONE_PROBE_WIDTHS=1`, headless): every new control reaches its uniform, opens off, and comes back on
-  *Reset*; the fake map is what §4 says. ⚠️ **A headless Godot compiles no shader**, so the probe cannot see a broken
-  one: every piece is also rendered windowed, and the log read for shader errors.
+  *Reset*; the fake map is what §4 says. ⚠️ **A shader that does not compile fails quietly:** a headless Godot does
+  compile it and logs `SHADER ERROR`, but every line above stays ✅, because a material holds whatever it is told. So
+  `terrain lab, shader:` asks the compiled shader for each uniform the panel sets (a failed one declares none). It
+  proves the shader compiles, not that it draws the right thing: each piece is also rendered windowed and looked at.
+- **Red-checked, piece 1 (D326):** 20 probe mutants, **24 reds, no zeros** (the file, the switch, the slider, *Reset*, the
+  palette, the panels, *Copy*, the map's sums, determinism, kinds, the river's width and place, the wood, the broken
+  and the renamed shader). The byte comparison too: a 1 % change on the off path differs in 5 of 5 cases, restored 0 of
+  5. ⚠️ **The on path's maths has no guard but eyes:** nothing mirrors `terrain_coverage` or `terrain_ground`.
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.

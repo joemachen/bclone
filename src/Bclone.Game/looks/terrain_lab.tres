@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GrassLabTerrain" load_steps=2 format=3]
+
+; The terrain options' starting values (`specs/terrain-shader.md §4`, D700). A LAB FILE: nothing here is approved, and
+; every switch stays off, so the lab opens at grass_approved.tres. "Reset to approved" returns to this file too.
+
+[ext_resource type="Script" path="res://GrassLabTerrain.cs" id="1_terrain"]
+
+[resource]
+script = ExtResource("1_terrain")
+CoverageOn = false
+CoverageFade = 0.25

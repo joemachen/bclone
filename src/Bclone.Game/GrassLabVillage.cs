@@ -30,8 +30,11 @@ internal sealed partial class GrassLabVillage : Control
 
     private static readonly Vector2 Granary = new(0.6f, 3.6f);
 
+    /// <summary>What has to stand on open grass in the fake valley: the probe asks (<see cref="GrassLabGround"/>).</summary>
+    internal static IEnumerable<Vector2> StandingOnGrass => Homes.Select(home => home.At).Append(Granary);
+
     /// <summary>The wood: these tiles, each with the game's own canopies on it.</summary>
-    private static readonly Rect2I Wood = new(7, -6, 5, 6);
+    internal static readonly Rect2I Wood = new(7, -6, 5, 6);
 
     private static readonly (Vector2 At, Color Colour)[] Villagers =
     {

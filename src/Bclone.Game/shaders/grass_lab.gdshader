@@ -13,6 +13,7 @@ shader_type canvas_item;
 
 #include "res://shaders/grass_seasons.gdshaderinc"
 #include "res://shaders/grass_antitile.gdshaderinc"
+#include "res://shaders/terrain_lab.gdshaderinc"
 
 // The ground, sRGB-encoded. No source_color hint: the value is used exactly as written.
 uniform vec3 ground_srgb = vec3(0.902, 0.839, 0.690);
@@ -53,6 +54,11 @@ uniform bool height_blend = false;
 
 // Tints where samples are being blended, so the seams can be found and looked at.
 uniform bool mark_transitions = false;
+
+// The terrain shader's options (`specs/terrain-shader.md`, D700), every one off at opening.
+// 4. The fake coverage map: the ground kinds under the grass, and the grass only where the map says.
+uniform bool coverage_on = false;
+uniform float coverage_fade = 0.25;
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -133,8 +139,15 @@ void fragment() {
         season += macro_season_amount * (2.0 * n.y - 1.0);
     }
 
+    vec3 ground = ground_srgb;
+    if (coverage_on) {
+        vec4 weights = terrain_weights(tile);
+        ground = terrain_ground(terrain_splat(weights, TERRAIN_HARD), weights.a, ground_srgb);
+        strength *= terrain_coverage(weights.r, coverage_fade);
+    }
+
     vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
-    vec3 colour = ground_srgb * mix(vec3(1.0), grass, strength);
+    vec3 colour = ground * mix(vec3(1.0), grass, strength);
     if (mark_transitions && ((wa > 0.0 && wa < 1.0) || hex_top < 0.98)) {
         colour = mix(colour, vec3(0.85, 0.1, 0.6), 0.45);
     }

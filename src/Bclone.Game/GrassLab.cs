@@ -26,6 +26,10 @@ namespace Bclone.Game;
 /// Only the view's own controls — the season, the zoom, the placeholders, the marks — are the lab's.
 /// </para>
 /// <para>
+/// ⭐ <b>The terrain shader is tuned here too</b> (D700, `specs/terrain-shader.md`): its options are in
+/// <c>GrassLab.Terrain.cs</c>, each behind a switch and off at opening, so all of this stays true.
+/// </para>
+/// <para>
 /// ⭐ <b>Joe's three after the first look (D630):</b> a <i>strength</i> that fades the grass to bare parchment; a
 /// <i>paper grain</i> multiplied over everything, because grain knocks the contrast down and changes how loud the
 /// grass reads; and <i>placeholders</i> — the game's own buildings, trees and villagers (<see cref="GrassLabVillage"/>)
@@ -191,13 +195,18 @@ public sealed partial class GrassLab : Control
         _copied.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(_copied);
 
-        var hint = new Label { Text = "h hides the panels", Modulate = new Color(1, 1, 1, 0.6f) };
+        var swap = new Button { Name = "Swap", Text = "Terrain / Anti-tiling" };
+        swap.Pressed += SwapTheCornerPanel;
+        body.AddChild(swap);
+
+        var hint = new Label { Text = "h hides the panels, t swaps the corner", Modulate = new Color(1, 1, 1, 0.6f) };
         hint.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(hint);
 
         Version.Select(Array.IndexOf(Versions, look.Masks));
         ShowVersion(look.Masks);
         BuildTheTilingPanel(look);
+        BuildTheTerrainPanel(GrassLabTerrain.StartingPoint);
         RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
     }
 
@@ -301,6 +310,7 @@ public sealed partial class GrassLab : Control
         Hex.ButtonPressed = look.HexOn;
         Sharpness.Value = look.HexSharpness;
         SelectBlend(look.HeightBlend);
+        ResetTheTerrain();
         _copied.Text = "reset to the approved look";
     }
 
@@ -324,10 +334,13 @@ public sealed partial class GrassLab : Control
         MixWidthTiles = (float)Width.Value,
     };
 
-    /// <summary><i>Copy current values</i>: the list on the clipboard and in the log, ready to paste back.</summary>
+    /// <summary>Joe's list, unchanged, and then the terrain options' own.</summary>
+    internal string CurrentValues() => $"{CurrentLook().Say()}\n\n{CurrentTerrain().Say()}";
+
+    /// <summary><i>Copy current values</i>: the lists on the clipboard and in the log, ready to paste back.</summary>
     private void CopyCurrentValues()
     {
-        string said = CurrentLook().Say();
+        string said = CurrentValues();
         DisplayServer.ClipboardSet(said);
         GD.Print(said);
         _copied.Text = "copied — paste it back to change the approved look";
@@ -361,6 +374,7 @@ public sealed partial class GrassLab : Control
         {
             _gpuSaidAt = 0.0;
             _gpu.Text = $"GPU {_gpuMs.ToString("0.00", CultureInfo.InvariantCulture)} ms a frame, the whole window";
+            _gpuOnTerrain.Text = _gpu.Text;
         }
     }
 
@@ -387,7 +401,10 @@ public sealed partial class GrassLab : Control
         if (key is InputEventKey { Pressed: true, Echo: false, Keycode: Key.H })
         {
             _panel.Visible = !_panel.Visible;
-            _tiling.Visible = _panel.Visible;
+        }
+        else if (key is InputEventKey { Pressed: true, Echo: false, Keycode: Key.T })
+        {
+            SwapTheCornerPanel();
         }
     }
 
@@ -529,6 +546,7 @@ public sealed partial class GrassLab : Control
     internal static string SelfCheck(Node host)
     {
         var faults = new List<string>();
+        var terrain = new List<string>();
 
         // ⭐ The file is the only place the numbers live (the class gives none), so every property must be set in it.
         string file = Godot.FileAccess.GetFileAsString(GrassLook.ApprovedPath);
@@ -637,6 +655,12 @@ public sealed partial class GrassLab : Control
             {
                 faults.Add("Reset to approved moved the season, the zoom or the placeholders");
             }
+
+            terrain.AddRange(TerrainSelfCheck(lab));
+            if (lab.DiffersFrom(approved) is string left)
+            {
+                faults.Add($"the terrain's controls left the look at {left}");
+            }
         }
         finally
         {
@@ -651,11 +675,12 @@ public sealed partial class GrassLab : Control
 
         ImportHolds("res://textures/grass/grass_seasons.png", mipmapped: false, Image.Format.Rgb8, faults);
 
-        return faults.Count == 0
+        string grass = faults.Count == 0
             ? $"[widths] grass lab: ✅ {GrassLook.ApprovedPath} sets every value, rejected options off; the lab opens at it "
                 + "over parchment with the placeholders standing, every control reaches what it moves, Reset brings the look back "
                 + "and Copy says it in Joe's list; the five masks import mipmapped and the atlas unmipped, each byte for byte its PNG"
             : $"[widths] grass lab: ❌ {string.Join("; ", faults)}";
+        return string.Join("\n", terrain.Prepend(grass));
     }
 
     private static void ImportHolds(string path, bool mipmapped, Image.Format format, List<string> faults)
