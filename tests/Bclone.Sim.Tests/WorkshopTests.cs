@@ -607,9 +607,10 @@ public sealed class WorkshopTests
         Assert.Equal(1, batch.PerStint);
         Assert.Equal(0, batch.Firing);
 
-        // No shipped starting limit (Joe, D675 call 2; D660's reason).
-        Assert.DoesNotContain("handcarts", shipped.StartingStockLimits.Keys);
-        Assert.Null(world.StockLimits.For(Goods.Handcart));
+        // A shipped starting limit of 50 since D697 (Joe, 2026-11-06: "unlocked items should start at 50 by default"); none from D675
+        // call 2 to D697, for D660's reason, and the panel showed that as 0.
+        Assert.Equal(50, shipped.StartingStockLimits["handcarts"]);
+        Assert.Equal(50, world.StockLimits.For(Goods.Handcart));
 
         Assert.Contains(shipped.Skills, s => s.GrownBy == JobKind.Carpenter && s.Name == "carpentry" && s.Id == 10);
         Assert.Contains(shipped.TechNodeRows, n => n.Id == "workshop" && n.Unlocks == BuildingKind.Workshop && n.Condition == TechCondition.LogsFelled);
@@ -659,7 +660,7 @@ public sealed class WorkshopTests
         SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Load(), new InMemoryLogSink()).World;
         Assert.False(world.WorkshopLearned);
         Assert.Equal((int)Goods.Handcart, world.GoodsCatalog.Count - 1);
-        Assert.Null(world.StockLimits.For(Goods.Handcart));
+        Assert.Equal(50, world.StockLimits.For(Goods.Handcart)); // D697: a set limit, hashed — the shipped goldens moved for it and say so
         Assert.Equal(0, world.InStores(Goods.Handcart));
         Assert.All(world.Workplaces, w => Assert.Equal(Goods.Handcart, w.MakeGood));
 

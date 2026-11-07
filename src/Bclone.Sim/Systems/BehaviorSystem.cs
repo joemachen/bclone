@@ -114,6 +114,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.FetchingFromStore => "fetching from a store",
         VillagerState.SeekingShelter => "going in to get warm",
         VillagerState.CollectingForMarket => "collecting for the market",
+        VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
         VillagerState.ClearingAStore => "clearing out a store",
@@ -518,6 +519,22 @@ public sealed partial class BehaviorSystem : ISimSystem
                     villager.State);
                 return;
 
+            case VillagerState.WalkingToTheMarket:
+                // ⭐ The first leg (`handcart.md §13.2a`): to the market's door for its cart. At the door the day is decided
+                // again from here, where `WorkTheMarket` takes the cart (they stand the tick they arrive, a stocker's D373);
+                // and the reason can lapse on the way — a colleague took the cart out, the seat went — and then too the
+                // day is decided again from where they stand, on foot, as before the leg existed. One rule, no arrival hook:
+                // an arrival hook that set them idle scored zero against every guard (§13.8.4) and was not kept.
+                if (WorkplaceOf(world, villager) is { Kind: JobKind.Marketer } ownMarket && villager.Tile != ownMarket.Tile
+                    && !villager.IsCarrying && !villager.PushingACart && TheWorksCartIsParked(world, ownMarket))
+                {
+                    Travel(world, villager, ownMarket.Position, VillagerState.WalkingToTheMarket);
+                    return;
+                }
+
+                Decide(world, villager);
+                return;
+
             case VillagerState.CollectingForMarket:
                 // To the pickup they chose when they set off, not to whatever is
                 // cheapest from this step. Re-deciding mid-walk let a marketer shuttle
@@ -687,7 +704,8 @@ public sealed partial class BehaviorSystem : ISimSystem
 
     private static bool IsTrading(VillagerState state) =>
         state is VillagerState.CollectingForMarket
-            or VillagerState.StockingTheMarket;
+            or VillagerState.StockingTheMarket
+            or VillagerState.WalkingToTheMarket;
 
     private static bool IsBuilding(VillagerState state) =>
         state is VillagerState.FetchingMaterials or VillagerState.Building;
@@ -2149,6 +2167,21 @@ public sealed partial class BehaviorSystem : ISimSystem
                 GoHome(world, villager);
             }
 
+            return;
+        }
+
+        // ⭐ THE FIRST LEG (`handcart.md §13.2a`; Joe, 2026-11-06: "have the marketer's day begin with a walk to the market so the
+        // cart gets used on nearly every trip"): an errand to run, the market's cart parked at its door, and the marketer not
+        // there — at home after a rest, or at the store a haul ended at — walks to the market first and sets out from it with
+        // the cart. D693 measured half the counter trips beginning away from the door and going on foot under §4's rule. No
+        // cart, or a colleague out with it, and the errand starts here on foot, as before.
+        if (villager.Tile != job.Tile && !villager.IsCarrying && !villager.PushingACart && TheWorksCartIsParked(world, job))
+        {
+            villager.WorkNote = string.Empty;
+            villager.ErrandX = job.Tile.X;
+            villager.ErrandY = job.Tile.Y;
+            villager.State = VillagerState.WalkingToTheMarket;
+            Travel(world, villager, job.Position, VillagerState.WalkingToTheMarket);
             return;
         }
 
@@ -5978,6 +6011,13 @@ public sealed partial class BehaviorSystem : ISimSystem
                 $"{villager.Name} sets out with the {works.Name} handcart, {works.HandcartUses} trips left in it — {world.Clock}.");
         }
     }
+
+    /// <summary>
+    /// Whether the building's cart stands at its door (`handcart.md §13.2a`): it has one, and no worker of it has it out.
+    /// The first leg is walked for exactly this; <see cref="TakeTheWorksCart"/> asks the same two things at the door.
+    /// </summary>
+    private static bool TheWorksCartIsParked(SimWorld world, Workplace works) =>
+        works.HandcartUses > 0 && !SomebodyHasTheWorksCartOut(world, works);
 
     /// <summary>Whether a worker of the building has its cart in their hands (`handcart.md §13.2`).</summary>
     private static bool SomebodyHasTheWorksCartOut(SimWorld world, Workplace works)

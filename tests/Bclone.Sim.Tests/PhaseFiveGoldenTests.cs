@@ -54,10 +54,14 @@ public sealed class PhaseFiveGoldenTests
     // in its twenty years and does not learn the workshop (2,500 then; 1,500 since D682, still out of reach). ⭐ PROVEN TO BE THE ONLY REASON: with that one
     // neighbour line switched off, both old constants pass; the first full run, before the line existed, held them.
     // Was 2244450603637359139.
-    private const ulong PhaseFiveGoldenHash = 1335932601571545014UL;
+    // RE-TAKEN (D697), BOTH — clothing and handcarts start at a limit of 50 (Joe, 2026-11-06: "unlocked items should start at 50 by
+    // default"); a set limit is hashed. ⭐ PROVEN BY ABLATION: with the two keys removed from `starting_stock_limits` and D696's first
+    // leg kept, both old constants pass — the leg moved nothing, the limits moved everything. Was 1335932601571545014.
+    private const ulong PhaseFiveGoldenHash = 4787056045438129767UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 16129168920486327744UL;
+    // Was 16129168920486327744 before D697 (the two starting limits, as above).
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 9909556109334633121UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

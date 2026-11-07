@@ -90,7 +90,10 @@ is the household shop (D372). In any season: a coat taken in spring wears nothin
 
 ### 3.4 The good: `Goods.Clothing`
 A material (D107), warehouse-, cart- and pile-stored, never a granary. Stock limit **50** — Joe's own
-number in D62 (*"… 50 tools, 50 clothes"*). `trade_worth` sized from leather's 3 and the leather a coat
+number in D62 (*"… 50 tools, 50 clothes"*) — ⚠️ *shipped with NONE from D660 to D697 (a set limit is hashed and would have moved every
+golden for a good no village held before a tailor stood; the tailor sewed toward `ClothingWanted` alone), and the panel showed that as
+**0**, which Joe read as a limit of nought; **50 in `starting_stock_limits` since D697 (2026-11-06, his: "unlocked items should start
+at 50 by default")*, the ceiling over the derived stop. `trade_worth` sized from leather's 3 and the leather a coat
 takes (8 at 2 a coat, D666). A new good gets its stock-limits row for free (`StockLimits.Kinds`); its colour is picked under
 the three-band rule (D637) and checked by `tools/legibility/check.py`.
 

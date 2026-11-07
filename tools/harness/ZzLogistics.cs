@@ -257,7 +257,7 @@ public sealed class ZzLogistics
         VillagerState.FetchingFromStore or VillagerState.FetchingACoat or VillagerState.FetchingATool
             or VillagerState.WalkingToTheWell or VillagerState.FetchingAHandcart or VillagerState.PushingAHandcart
             => Bucket.Fetch,
-        VillagerState.CollectingForMarket or VillagerState.StockingTheMarket => Bucket.Market,
+        VillagerState.CollectingForMarket or VillagerState.StockingTheMarket or VillagerState.WalkingToTheMarket => Bucket.Market,
         // The producer's own load to the store (D385: every load to a store, never home) is part of producing,
         // not logistics — its own column, so the fetch and haul columns are only goods moved a second time.
         VillagerState.HaulingToStore or VillagerState.HaulingToFarm => Bucket.Deliver,

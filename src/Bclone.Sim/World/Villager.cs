@@ -838,6 +838,8 @@ public sealed class Villager
             VillagerState.FetchingFromStore => PushingACart ? "pushing the cart to the shops" : "fetching supplies for home",
             VillagerState.SeekingShelter => "going indoors to get warm",
             VillagerState.CollectingForMarket => "collecting goods for the market",
+            // The first leg (`handcart.md §13.2a`): empty-handed, to the door the cart is parked at.
+            VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
             // Trees, stone or iron — the state does not know which, and "trees" was wrong for a
