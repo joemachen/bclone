@@ -95,7 +95,7 @@ public sealed partial class GrassLab
         heading.AddThemeFontSizeOverride("font_size", 20);
         body.AddChild(heading);
 
-        var note = new Label { Text = "splat and bleed approved; all off is the approved look", Modulate = new Color(1, 1, 1, 0.6f) };
+        var note = new Label { Text = "all but the map approved; all off is the approved look", Modulate = new Color(1, 1, 1, 0.6f) };
         note.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(note);
 

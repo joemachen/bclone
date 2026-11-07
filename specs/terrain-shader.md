@@ -2,8 +2,8 @@
 
 **Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
 and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
-SCALE 0.30 TILES (D706); THE GRAIN AND SNOW START AT HIS TUNING (D707), NOT YET
-APPROVED; THE MAP IS UNJUDGED.
+SCALE 0.30 TILES (D706); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (D707–D708): GRAIN 0.065
+TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
 ⚠️ The whole stack sits at §3.3's GPU bar (+0.08–0.10 ms at 1280 × 800); his call.** §2–§4 are the build; §4's table says which piece stands; §5
 waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
@@ -202,9 +202,9 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 | # | Piece | Controls (the *Terrain* panel) | State |
 |---|---|---|---|
 | 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
-| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | 🔨 built (D702), Joe's eyes pending |
-| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built D703) | 🔨 built (D703), Joe's eyes pending |
-| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | 🔨 built (D704; §3.2: the water keeps its hard edge under both), Joe's eyes pending |
+| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | ⭐ approved (D708): 0.065 tiles, under the village |
+| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built D703) | ⭐ approved (D708): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles |
+| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⭐ approved (D706): 5.5, 0.33, 0.30 tiles; §3.2: the water keeps its hard edge under both |
 
 **The fake map stands in for the bake, and is shaped like it.** One RGBA8 image, 8 px a tile, 120 × 80 tiles centred on
 the lab's origin, bilinear, clamped: **R grass, G wood, B stone, A water**, weights summing to one, off the map all grass

@@ -98,7 +98,7 @@ public sealed partial class GrassLabTerrain : Resource
     internal string Say()
     {
         var said = new StringBuilder();
-        said.AppendLine("TERRAIN LAB SETTINGS (options; splat and bleed approved, D706)");
+        said.AppendLine("TERRAIN LAB SETTINGS (options; all approved but the coverage map, D706-D708)");
         said.AppendLine($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
         said.AppendLine($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
             + $"Under the village: {(GrainUnderVillage ? "ON" : "OFF")}");
