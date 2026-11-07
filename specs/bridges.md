@@ -243,6 +243,18 @@ Instant, like a well, with the usual share of materials back — but **refused i
   The button sits on the Works shelf, hidden until learned, lit gold when it is. A bridge card: material, span, the
   crossings this year and in all, and on wood *"The village learns stone after N crossings (k so far)."* The river's
   ground sentence loses *"Nobody can cross it"*. A probe line `bridge:`.
+- **The card while a rebuild is queued** (2026-11-07, D70x — Joe, after playing: *"review what the 'upgrade queued'
+  look/feel is for a building's card and model — there should be note of the transition and its progress"*): the
+  wooden bridge's card went on saying *"It can be rebuilt in stone where it stands"* while its stone site already stood
+  at the near bank; the site's own card (clicked at the bank) and the map's band along the span knew, the bridge's card
+  did not. Now, with a rebuild site at its near end (`BridgeSiteAt`, `RebuildsBridge`), the card's status carries one more
+  sentence in words — *"Being set in stone — 2nd in the queue, 12 of 36 logs and 0 of 12 stone delivered, 31 % done."*
+  (`Main.Cards.BridgeRebuildSentence`: `QueuePositionOf`, each material's `Delivered` of its amount, and **the same
+  fraction the map's band fills by**, delivered plus work over materials plus work, so card and band agree) — and the
+  caption under the picture reads *"being set in stone — 31 % done"* with the whole sentence as its tooltip. ⚠️ The
+  sentence rides on the status line because it wraps; the caption is one clipped line of about forty-five characters.
+  View only; a third `WriteBridgeCard` pose in the `cards:` probe (the longest such line: a queue in the teens, two
+  materials in the thousands) inside the width. No sim change, no golden.
 
 ---
 
@@ -411,3 +423,10 @@ the far bank, and an 8×8 patch beyond it painted for homes.
   `ARebuiltBridgeTakesTheNextStoneNameNotAWordSwap` (a fresh stone bridge first, then a wooden one rebuilt: the names
   differ). Red before the fix, 2 of 2. Red-checked: **2 mutants, 3 reds** — the assignment dropped **2**; a word swap
   (*wooden* → *stone* in the old name) **1**, the second fact only, which is why it exists. No golden moved.
+- 🔨 **The card while a rebuild is queued (2026-11-07, D70x; §7):** view only. The `cards:` probe's third `WriteBridgeCard`
+  pose (the longest rebuild line) inside the width and on the status line. Red-checked: **2 mutants, 1 red, one zero
+  written down** — the status drops the sentence **1** (*"a queued rebuild's progress is not on the bridge card's status
+  line"*); the sentence put on the caption with `ClipText` off **0**: a label whose overrun is *trim with ellipsis* never
+  demands its full width, so the card's minimum cannot see a caption overflow — the width check is kept for the title
+  and the numbers it has always measured, and the status-line check is the one with teeth. The probe stays at 106
+  `[widths]` lines, 70 ✅, 0 ⛔, bar 151, `done.`; no golden.
