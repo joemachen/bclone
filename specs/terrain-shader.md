@@ -1,6 +1,6 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 📝 **NOT STARTED — design notes gathered, the spec is not written.** Nothing renders from this file yet.
+**Status:** 📝 **NOT STARTED — design notes gathered, the spec is not written.** Nothing renders from this file yet. ▶️ **The first slice of the art lane (D699, 2026-11-06): built and tuned in the Grass Lab first, against a fake coverage map; not wired into the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge.**
 The terrain shader is the next slice after the world colours' legibility (`world-legibility.md`). Owner: Joe + Claude
 Code.
 

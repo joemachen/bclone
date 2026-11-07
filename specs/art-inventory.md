@@ -2,7 +2,7 @@
 
 > **Status: an audit, read off `main` at 880db1e (2026-10-30, D653); B1 resolved (D654).** Joe: *"Build an art asset inventory for bclone so I
 > know everything that still needs real art."* Not a spec and not a plan — it invents nothing and decides nothing, and
-> **it does not reopen the art.** Everything here stays under HANDOFF's **🅿️ ART: PARKED** (D639) until Joe reopens it.
+> **it does not reopen the art.** ~~Everything here stays under HANDOFF's **🅿️ ART: PARKED** (D639) until Joe reopens it.~~ **Reopened in part (D699, 2026-11-06): a second lane, in its own worktree and systems first, works the view-only rows in files the systems lane does not open — the terrain shader in the lab (§3), the theme and font (§11), the app icon and splash (§12). The building, glyph, goods, tree and world-draw rows (§4–§10) wait for house tiers. The lane rule and the no-go table are HANDOFF's 🅿️ section.**
 > Companion to `content-inventory.md` (what the village *has*); this is what the village *looks like* and what stands in.
 > ⚠️ **Dated the day it was read.** A building, good or animal added after D653 is not in these tables.
 >
