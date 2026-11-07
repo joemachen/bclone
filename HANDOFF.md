@@ -16,8 +16,8 @@
 > is kept as the tag `superseded/restock-under-the-cart`.
 >
 > **⏸️ His, from this round:** hay's number (he said 50; a barn holds 400–500 before a winter, so 50 stops the cutting and starves the
-> herd — held, not typed; the ⏸️ list). **Cleaned up:** every worktree and local branch already in `main` removed; the art's standing
-> worktree is `.claude/worktrees/art` on branch `art`. **The two tracks are in `CLAUDE.md` — read them before cutting a branch.**
+> herd — held, not typed; the ⏸️ list). **Cleaned up:** 32 merged local branches and nine worktrees removed; the art's standing
+> worktree is `.claude/worktrees/art` on branch `art`. ⚠️ Left for Joe: the locked worktree `.claude/worktrees/slice-cart-home` (branch `worktree-slice-cart-home`, merged — a lock is its owner's "do not remove", so `git worktree unlock` it, then `git worktree remove` it); five empty folders under `.claude/worktrees/` held open by the Claude sessions that ran in them (they go when those sessions are archived); and two merged branches on GitHub, `slice/grass-seasons` and `slice/parchment-legibility` (`git push origin --delete …` — the agent is not permitted to delete remote branches). **The two tracks are in `CLAUDE.md` — read them before cutting a branch.**
 >
 > **Next, systems: house tiers** (Phase 5 gate item 1's last). **Next, art: the terrain shader wired into the valley** (`terrain-shader.md`,
 > after house tiers touch `VillageMap.cs`, per the lane table below).
