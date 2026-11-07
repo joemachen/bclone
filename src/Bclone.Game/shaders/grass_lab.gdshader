@@ -13,6 +13,7 @@ shader_type canvas_item;
 
 #include "res://shaders/grass_seasons.gdshaderinc"
 #include "res://shaders/grass_antitile.gdshaderinc"
+#include "res://shaders/terrain_lab.gdshaderinc"
 
 // The ground, sRGB-encoded. No source_color hint: the value is used exactly as written.
 uniform vec3 ground_srgb = vec3(0.902, 0.839, 0.690);
@@ -20,6 +21,9 @@ uniform vec3 ground_srgb = vec3(0.902, 0.839, 0.690);
 // The rect's size in screen pixels, so UV can be turned back into tiles.
 uniform vec2 size_px = vec2(1280.0, 800.0);
 uniform float px_per_tile = 24.0;
+// The tile at the window's centre: the lab's drag to pan (`specs/terrain-shader.md §3.1`, A3). A view control, like
+// the zoom; at its opening (0, 0) the sum is the tile exactly.
+uniform vec2 view_tile = vec2(0.0);
 uniform float tiles_per_repeat = 32.0;
 
 // 0 = bare parchment, 1 = the pack as painted: the grass multiply blended toward white (D630).
@@ -54,6 +58,25 @@ uniform bool height_blend = false;
 // Tints where samples are being blended, so the seams can be found and looked at.
 uniform bool mark_transitions = false;
 
+// The terrain shader's options (`specs/terrain-shader.md`, A1), every one off at opening.
+// 4. The fake coverage map: the ground kinds under the grass, and the grass only where the map says.
+uniform bool coverage_on = false;
+uniform float coverage_fade = 0.25;
+// 5. Snow (A4): its own layer and blend, over the grass, under the grain. The colour comes from terrain_lab.tres.
+uniform bool snow_on = false;
+uniform int snow_blend = 0;
+uniform float snow_amount = 0.0;
+uniform float snow_patchiness = 0.1;
+uniform float snow_patch_tiles = 12.0;
+uniform vec3 snow_srgb = vec3(1.0);
+// 6. Splat blending and edge bleed (A5): how wide the transition between ground kinds is, and how irregular. Both
+// need the coverage map; the water's contour moves under neither (§3.2, D342).
+uniform bool splat_on = false;
+uniform float splat_sharpness = 48.0;
+uniform bool bleed_on = false;
+uniform float bleed_reach_tiles = 0.0;
+uniform float bleed_scale_tiles = 1.0;
+
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
 
@@ -86,7 +109,7 @@ vec4 lab_masks(vec2 uv, vec2 gx, vec2 gy, int va, int vb, float wa) {
 
 void fragment() {
     // Tiles from the rect's centre, as the placeholder village counts them, so the two zoom together.
-    vec2 tile = (UV - 0.5) * size_px / px_per_tile;
+    vec2 tile = (UV - 0.5) * size_px / px_per_tile + view_tile;
     vec2 tile_uv = tile / tiles_per_repeat;
     vec2 gx = dFdx(tile_uv);
     vec2 gy = dFdy(tile_uv);
@@ -133,8 +156,30 @@ void fragment() {
         season += macro_season_amount * (2.0 * n.y - 1.0);
     }
 
+    vec3 ground = ground_srgb;
+    float water = 0.0;
+    if (coverage_on) {
+        vec4 weights = terrain_weights(tile);
+        vec4 kinds;
+        float grass_weight = weights.r;
+        if (splat_on || bleed_on) {
+            vec3 land = bleed_on ? terrain_bleed_land(tile, weights.rgb, bleed_reach_tiles, bleed_scale_tiles) : weights.rgb;
+            kinds = terrain_splat_keeping_water(weights, land, splat_on ? splat_sharpness : TERRAIN_HARD);
+            grass_weight = land.x / max(land.x + land.y + land.z, 1e-4) * (1.0 - weights.a);
+        } else {
+            kinds = terrain_splat(weights, TERRAIN_HARD);
+        }
+        water = kinds.a;
+        ground = terrain_ground(kinds, weights.a, ground_srgb);
+        strength *= terrain_coverage(grass_weight, coverage_fade);
+    }
+
     vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
-    vec3 colour = ground_srgb * mix(vec3(1.0), grass, strength);
+    vec3 colour = ground * mix(vec3(1.0), grass, strength);
+    if (snow_on) {
+        float cover = terrain_snow_cover(terrain_snow_threshold(tile, snow_patch_tiles), snow_amount, snow_patchiness);
+        colour = terrain_snow(colour, snow_srgb, cover * terrain_snow_off_water(water), snow_blend);
+    }
     if (mark_transitions && ((wa > 0.0 && wa < 1.0) || hex_top < 0.98)) {
         colour = mix(colour, vec3(0.85, 0.1, 0.6), 0.45);
     }

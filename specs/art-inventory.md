@@ -30,7 +30,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | **B3** | **Phases 7–8: a 3D front end (`src/Bclone.Game3D`) on top of the same sim**, the 2D view kept as the debug/probe view (`DESIGN.md §4`, "Phases 7 and 8"). If it stands, finished 2D world art is the debug view's. | Roadmap | Whether 2D world art is the shipped look or a stopgap. Tied to B2. |
 | **B4** | **Projection and turning.** The view is flat top-down (D27) and footprints turn freely — homes to any 1/64 turn (D411), any building since gridless, one piece at any angle (D650). The `art/` references are **fixed-orientation ¾ sprites** (origin 0.5, 1.0; `art/art-direction-hand-drawn-orthographic-asset-pipeline.jpg`). Nothing reconciles the two. Store crates already snap to a quarter turn (D423), which is a precedent. | Undecided | Every building, villager, animal and object sprite. A ¾ sprite cannot turn to 1/64. |
 | **B5** | **The tree look** — ink-outlined canopies over an in-band green, or mid-tone washes without lines (`world-legibility.md §7` call 4). Canopies sit in the ground's band as an interim (D637). | ⏸️ Joe's, parked | Canopies, saplings, the woods ground, berries and game drawn in the woods. |
-| **B6** | **The terrain shader's open questions** (`terrain-shader.md §2–3`, *not started*): snow's blend (lerp or lighten — Multiply cannot reach a colour lighter than parchment), paper grain anchored to the land or the window, ground kinds as flat fills, washes or textures, splat blending and edge bleed. | 🅿️ Parked | All terrain rows; the grass going into the valley; snow. |
+| **B6** | **The terrain shader's open questions** (`terrain-shader.md §2–4`, *specced A1, being built in the lab*): snow's blend (lerp or lighten — Multiply cannot reach a colour lighter than parchment), paper grain anchored to the land or the window, ground kinds as flat fills, washes or textures, splat blending and edge bleed. | 🅿️ Parked | All terrain rows; the grass going into the valley; snow. |
 | **B7** | **UI chrome: slate or parchment.** D637 call 3 keeps the UI's own chrome slate (only pictures of world things sit on a parchment chip); the `art/` references show parchment panels and wax seals. | Decided slate (D637), references disagree | Panels, windows, buttons, theme, font. |
 | **B8** | **Tiers, which are content not yet decided:** house tiers (cabin → cottage → manor; `DESIGN.md §5`, D206), barn tiers (lean-to → timber → stone; `TECH-EXAMPLE.md`), the mill as a watermill by water and a windmill elsewhere (`buildings-plan.md §4.3`). | 💭 No rows | Each tier needs its own art. |
 | **B9** | **The condition look** — *"steps rather than cracks or smoke"* (`building-condition.md` line 101) was Claude's call; Joe approved what he saw (D560) but never chose against cracks. | ✅ Played | Whether damage art is a tint or drawn wear. |
@@ -52,7 +52,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Ploughed / sown / ripe field | Traced fills `#b39874` / `#a8b07a` / `#d6b55c`, drawn per tile, not baked (`VillageMap.cs:208–219`) | See §4 (crops) | B6 | 🟨 |
 | Valley edge and beyond | `#c4b48f` beyond, a 2px `#8c7a5c` edge (`VillageMap.cs:77`, `:4003`) | — | B6 | 🟨 |
 | Optional grid | 1px `#d2c29c` lines (`VillageMap.cs:4016`) | — | — | 🟨 debug aid |
-| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | ⬜ |
+| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (A4); ⭐ approved at Joe's tuning (A9): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles, the amount the season's; the valley waits for house tiers |
 | Watercolour textures for stone, clay, dirt, the rest | ⬜ — flat fills in the band | — | B1, B6 | ⬜ 🅿️ parked list. ⚠️ *Clay has no terrain kind in the sim.* |
 | Paving (dirt → gravel → cobble) | ⬜ | 3 grades | B6 | 💭 `DESIGN.md §2.6`, no sim |
 | Dry ground (drought) | ⬜ | — | B11 | 💭 |
@@ -61,11 +61,11 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 | Item | Stands in now | Needs | Blocked by | State |
 |---|---|---|---|---|
-| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | ⬜ `terrain-shader.md`, not started |
+| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (A1); all four pieces built in the lab (A2–A5); splat, bleed, grain and snow approved (A7–A9), the map a lab fake; the whole stack fits the GPU bar, 1 ms at 4K (A11); §4 says which piece stands |
 | Grass shader | `grass_lab.gdshader` + season and anti-tile includes, masks v02–v06, `grass_seasons.png` (256×16) | Integrated into the valley | B6 | ✅ look / ⬜ in game |
-| Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder | World-anchored grain | B6 | 🟨 lab only |
-| Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 |
-| Snow blend | ⬜ | lerp / lighten mode | B6 | ⬜ |
+| Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder; the approved look's is 0.12 (A10) | World-anchored grain | B6 | 🟨 lab only; world-anchored built behind a switch (A3); ⭐ approved at 0.065 tiles, under the village (A9) |
+| Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 lab only: splat and bleed behind switches (A5), the river's edge held hard; ⭐ approved by Joe at sharpness 5.5, reach 0.33, scale 0.30 (A6–A7); the valley waits for house tiers |
+| Snow blend | ⬜ | lerp / lighten mode | B6 | 🟨 all three built in the lab (A4), ⭐ Lerp, approved (A9) |
 | Debug readout backing | ⬜ — frame/draw lines are illegible on parchment (`Main.cs:8275`) | A dark backing | — | ⬜ 🅿️ parked list |
 
 ## 4. Trees and vegetation

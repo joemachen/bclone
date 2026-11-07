@@ -30,8 +30,11 @@ internal sealed partial class GrassLabVillage : Control
 
     private static readonly Vector2 Granary = new(0.6f, 3.6f);
 
+    /// <summary>What has to stand on open grass in the fake valley: the probe asks (<see cref="GrassLabGround"/>).</summary>
+    internal static IEnumerable<Vector2> StandingOnGrass => Homes.Select(home => home.At).Append(Granary);
+
     /// <summary>The wood: these tiles, each with the game's own canopies on it.</summary>
-    private static readonly Rect2I Wood = new(7, -6, 5, 6);
+    internal static readonly Rect2I Wood = new(7, -6, 5, 6);
 
     private static readonly (Vector2 At, Color Colour)[] Villagers =
     {
@@ -44,6 +47,7 @@ internal sealed partial class GrassLabVillage : Control
     private readonly Vector2 _home;
     private readonly Vector2 _granary;
     private float _pixelsPerTile = (float)GrassLab.DefaultPixelsPerTile;
+    private Vector2 _view;
 
     internal GrassLabVillage()
     {
@@ -63,10 +67,23 @@ internal sealed partial class GrassLabVillage : Control
         }
     }
 
+    /// <summary>The tile at the window's centre, as the grass's <c>view_tile</c>: the lab's drag to pan (A3).</summary>
+    internal Vector2 View
+    {
+        get => _view;
+        set
+        {
+            _view = value;
+            QueueRedraw();
+        }
+    }
+
+    /// <summary>Where a tile is drawn: counted from the window's centre, less the view, as the grass counts (the probe asks).</summary>
+    internal Vector2 ToScreen(Vector2 tile) => (Size / 2f) + ((tile - _view) * _pixelsPerTile);
+
     public override void _Draw()
     {
         float ppt = _pixelsPerTile;
-        Vector2 ToScreen(Vector2 tile) => (Size / 2f) + (tile * ppt);
 
         // As `DrawTheWoods` lays them: each tile's canopies, darkened by their own shade.
         for (int y = Wood.Position.Y; y < Wood.End.Y; y++)

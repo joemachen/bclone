@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="GrassLabTerrain" load_steps=2 format=3]
+
+; The terrain options' starting values (`specs/terrain-shader.md §4`, A1). A LAB FILE: every switch stays off, so the lab
+; opens at grass_approved.tres. ⭐ APPROVED, Joe's: SplatSharpness, BleedReachTiles, BleedScaleTiles (A7);
+; GrainScaleTiles, and the grain UNDER the village though the box opens off (A9); SnowBlend, SnowPatchiness,
+; SnowPatchTiles, SnowColour (A9), SnowAmount being the season's to drive. The valley's wiring takes them from
+; here. The coverage map is the lab's fake and is not approved. "Reset to approved" returns to this file too.
+
+[ext_resource type="Script" path="res://GrassLabTerrain.cs" id="1_terrain"]
+
+[resource]
+script = ExtResource("1_terrain")
+CoverageOn = false
+CoverageFade = 0.25
+WorldGrainOn = false
+GrainScaleTiles = 0.065
+GrainUnderVillage = false
+SnowOn = false
+SnowBlend = 0
+SnowAmount = 0.56
+SnowPatchiness = 0.03
+SnowPatchTiles = 3.0
+SnowColour = Color(0.972549, 0.964706, 0.945098, 1)
+SplatOn = false
+SplatSharpness = 5.5
+BleedOn = false
+BleedReachTiles = 0.33
+BleedScaleTiles = 0.3
