@@ -2,7 +2,8 @@
 
 **Decision:** D632 (Joe, 2026-10-26: *"Lock in the grass look from the lab. The current settings are approved."*).
 Built on `seasonal-grass.md` (the pack, its import, THE SCENE, the anti-tiling options of §5.3). **Status:** ✅ **APPROVED
-AND RECORDED (D632); ITS OPEN ITEMS 1–3 CHECKED IN THE LAB AND KEPT AS THEY ARE (D633) — the lab opens at it; the
+AND RECORDED (D632); ITS OPEN ITEMS 1–3 CHECKED IN THE LAB AND KEPT AS THEY ARE (D633); PAPER GRAIN 0.15 → 0.12 AT
+JOE'S WORD (D709) — the lab opens at it; the
 game's valley does not draw it yet.** One file holds every value
 (`src/Bclone.Game/looks/grass_approved.tres`); nothing in `Bclone.Sim` changed. Owner: Joe + Claude Code.
 
@@ -33,7 +34,7 @@ APPROVED SETTINGS
 - Masks: v06
 - Strength: 0.80
 - Jitter: 0.15
-- Paper grain: 0.15
+- Paper grain: 0.12
 - Tiles per repeat: 63
 - Macro variation: ON. Tiles per cycle 85, strength amount 0.37, season amount 0.10
 - Hex tiling: ON. Blend sharpness 8.5, blend mode "Height — each stamp whole"
@@ -46,7 +47,7 @@ APPROVED SETTINGS
 | **Masks v06** | the layout — REPORT §5's strongest: closest to the reference, clean in every season |
 | **Strength 0.80** | the grass multiply blended 80 % of the way from bare parchment to the pack as painted |
 | **Jitter 0.15** | the snippet's stand-in for the per-stamp colour jitter a density mask cannot hold (README's value) |
-| **Paper grain 0.15** | ⚠️ **a starting point only.** The lab's grain is a placeholder (screen-anchored noise, `paper_grain.gdshader`); the real grain belongs to the full terrain shader |
+| **Paper grain 0.12** | the grain's strength. 0.15 at D632, "a starting point only"; **0.12 at Joe's word (D709)**, set while judging the world-anchored grain (`terrain-shader.md §3.1`, approved D708), which draws at this strength. ⚠️ `art/grass/`'s reference shots were rendered at 0.15 |
 | **Tiles per repeat 63** | one 2048² mask covers 63 × 63 tiles — 32.5 mask texels a tile. ✅ **Kept after the closer-zoom check** (D633; §7) |
 | **Macro variation 85 / 0.37 / 0.10** | two octaves of value noise, one cycle per 85 tiles: a region's strength × (1 − 0.37·n₁) — down to 63 % of 0.80 — and its season ± 0.10 (a tenth of a season early or late) |
 | **Hex tiling 8.5, Height** | each half-repeat hexagon of the mask turned and shifted by a hash of its lattice cell; weights raised to 8.5 (a narrow blend); Height keeps each stamp whole or drops it |
