@@ -174,8 +174,10 @@ asked the same day; those answers are in the last column.
   after — the marketer's two states, re-used. A load to the post is a load **to a store** (D385). 🔨 **The post owns a
   handcart since the trades' carts slice (`handcart.md §13`, D692–):** a standing post's `Workplace.HandcartUses`, fetched by a
   free merchant; the run down taken from the post's door and the run home taken at the post with a boat's goods carry
-  `cart_armfuls` armfuls (still never below *keep N*, still within the post's room); parked at the post and worn a trip there,
-  brought back empty when a run home ends at a store and nothing else wants carrying.
+  `cart_armfuls` armfuls (still never below *keep N*, still within the post's room); parked at the post and worn a trip there.
+  ~~Brought back empty when a run home ends at a store and nothing else wants carrying.~~ **Since D700 (`handcart.md §13.2b`): with
+  nothing left to carry the merchant takes the post's cart home for the night and sets out from the doorstep carted; a cart pushed
+  from home to the post for a boat's goods pays a trip at the post's door.**
 - **At the visit:** the boat takes what is at the post, up to its hold, at the day's rate, and leaves what the
   orders asked for, as far as its neighbour has plenty. Both halves are integers; a remainder stays at the post.
   - ✅ **As built (D595) — barter, so nothing is sold for nothing.** The goods at the post **with a keep order** that the

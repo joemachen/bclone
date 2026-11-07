@@ -2452,22 +2452,36 @@ public partial class Main
     /// </summary>
     private static string? CartSentence(SimWorld world, Household home)
     {
-        if (home.HandcartUses <= 0)
+        string? own = null;
+        if (home.HandcartUses > 0)
         {
-            return null;
-        }
-
-        string trips = home.HandcartUses == 1 ? "its last trip left" : $"{home.HandcartUses} trips left";
-        for (int i = 0; i < home.MemberIds.Count; i++)
-        {
-            // The household's pushers only: a member out with the market's cart has not got this one (`handcart.md §13.5`).
-            if (world.FindVillager(home.MemberIds[i]) is { Alive: true, PushingACart: true, CartForTheWorks: false } pusher)
+            string trips = home.HandcartUses == 1 ? "its last trip left" : $"{home.HandcartUses} trips left";
+            own = $"a handcart, {trips}";
+            for (int i = 0; i < home.MemberIds.Count; i++)
             {
-                return $"a handcart, {trips} — out with {pusher.Name}";
+                // The household's pushers only: a member out with the market's cart has not got this one (`handcart.md §13.5`).
+                if (world.FindVillager(home.MemberIds[i]) is { Alive: true, PushingACart: true, CartForTheWorks: false } pusher)
+                {
+                    own = $"a handcart, {trips} — out with {pusher.Name}";
+                    break;
+                }
             }
         }
 
-        return $"a handcart, {trips}";
+        // ⭐ A works' cart sleeping at this door (`handcart.md §13.2b`), named by its building, beside the household's own line.
+        string? night = null;
+        for (int i = 0; i < home.MemberIds.Count; i++)
+        {
+            if (world.FindVillager(home.MemberIds[i]) is { Alive: true } member
+                && world.TheWorksCartSleepsWith(member)
+                && world.FindWorkplace(member.WorkplaceId) is Workplace works)
+            {
+                night = $"the {works.Name} handcart stands here for the night";
+                break;
+            }
+        }
+
+        return own is null ? night : night is null ? own : $"{own}; {night}";
     }
 
     /// <summary>
@@ -2486,7 +2500,10 @@ public partial class Main
         {
             if (world.FindVillager(works.WorkerIds[i]) is { Alive: true, CartForTheWorks: true, PushingACart: true } pusher)
             {
-                return $"a handcart, {trips} — out with {pusher.Name}";
+                // Out on the road, or sleeping at the holder's door for the night (`handcart.md §13.2b`).
+                return world.TheWorksCartSleepsWith(pusher)
+                    ? $"a handcart, {trips} — at {pusher.Name}'s door for the night"
+                    : $"a handcart, {trips} — out with {pusher.Name}";
             }
         }
 
@@ -3229,6 +3246,44 @@ public partial class Main
                     faults.Add(works.IsACartOwner
                         ? "a cart owner's card hides its handcart line"
                         : "a workplace that owns no cart shows a handcart line");
+                }
+
+                // The night (`handcart.md §13.2b`): the holder resting at home with the works' cart — the works' sentence names
+                // the door, and the household's card names the building beside its own line. Posed and put back.
+                VillagerState stateBefore = member.State;
+                Point atBefore = member.Position;
+                int workplaceBefore = member.WorkplaceId;
+                try
+                {
+                    member.CartForTheWorks = true;
+                    member.PushingACart = true;
+                    member.State = VillagerState.Resting;
+                    member.WorkplaceId = works.Id;
+                    member.StandAt(world.RestingPoint(member));
+                    string? night = WorksCartSentence(world, works);
+                    string expectedNight = $"a handcart, 37 trips left — at {member.Name}'s door for the night";
+                    if (night != expectedNight)
+                    {
+                        faults.Add($"with the holder resting at home the works' sentence reads \"{night ?? "(hidden)"}\" where it should read \"{expectedNight}\"");
+                    }
+
+                    home.HandcartUses = 37;
+                    OpenCard(new CardSubject(CardKind.Household, home.Id));
+                    Card homeCard = _selectedCard!;
+                    string said = homeCard.Cart.Visible ? homeCard.Cart.Text : "(hidden)";
+                    CloseCard(homeCard);
+                    string expectedHome = $"a handcart, 37 trips left; the {works.Name} handcart stands here for the night";
+                    if (said != expectedHome)
+                    {
+                        faults.Add($"with the works' cart sleeping at the door the household's card says \"{said}\" where it should say \"{expectedHome}\"");
+                    }
+                }
+                finally
+                {
+                    member.State = stateBefore;
+                    member.StandAt(atBefore);
+                    member.WorkplaceId = workplaceBefore;
+                    home.HandcartUses = usesBefore;
                 }
             }
             finally

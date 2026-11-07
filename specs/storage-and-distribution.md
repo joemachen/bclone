@@ -291,8 +291,12 @@ The last slice of D30, and the building half of D14. Joe settled the three thing
 > the same good"*):** a standing market's `Workplace.HandcartUses`, fetched from the shelf by a free marketer; an errand that
 > starts at the market's door takes it (`TakeTheWorksCart`), the restock from a store (`LoadForTheMarket`) and the collection
 > from a buffer or a dead larder (`LoadForTheRound`) carry `cart_armfuls` armfuls under it, whole armfuls within the counter's
-> room; parked at the counter (`PutItInTheMarket`) and worn a trip there; brought back empty when a haul ends at a storehouse
-> and nothing else wants carrying. Nothing in §14.9's rules — the counter's limits, the shop walk, the day's order — changes.
+> room; parked at the counter (`PutItInTheMarket`) and worn a trip there. ~~Brought back empty when a haul ends at a storehouse
+> and nothing else wants carrying.~~ **Since D700 (`handcart.md §13.2b`): with nothing left to move the marketer takes the market's
+> cart home for the night and leaves the doorstep carted in the morning; the household never shops with it.** Nothing in §14.9's
+> rules — the counter's limits, the shop walk, the day's order — changes, **but one knob now sits under D372's one-armful restock:
+> `restock_short_armfuls_with_cart` (`handcart.md §13.2c`) — at a market that owns a cart the counter is short only with room for
+> that many armfuls; 1 as shipped, D372 to the letter, and the number is Joe's.**
 
 ### 14.1 What Joe asked for
 

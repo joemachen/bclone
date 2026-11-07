@@ -2146,11 +2146,14 @@ public sealed partial class BehaviorSystem : ISimSystem
         MarketErrand? next = PlanMarketErrand(world, villager);
         if (next is null)
         {
-            // ⭐ THE MARKET'S CART COMES BACK BEFORE ANYTHING ELSE (`handcart.md §13.2`): a pusher away from the market with
-            // nothing left to carry for it pushes it back — the empty leg — rather than tidying ground or going home with it.
+            // ⭐ THE MARKET'S CART GOES HOME WITH THEM (`handcart.md §13.2b`; Joe, 2026-11-06: "can the marketer take the cart
+            // home with him at the end of the day so it's there at the beginning of the day?"): a pusher away from the market
+            // with nothing left to carry for it — a haul that ended at the granary — pushes it home for the night rather than
+            // back to the market's door (D693's empty leg), and tomorrow's errand leaves the doorstep carted. A pusher does
+            // no spare work: a cart is parked at a door, never left on a heap's tile.
             if (villager.CartForTheWorks && villager.PushingACart)
             {
-                ReturnTheWorksCart(world, villager, job);
+                GoHomeWithTheWorksCart(world, villager, job);
                 return;
             }
 
@@ -2164,7 +2167,10 @@ public sealed partial class BehaviorSystem : ISimSystem
             // year beside a pile with room for them (`AGoodTheShedRefusesStillReachesAStoreThatWillHaveIt`).
             if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
             {
-                GoHome(world, villager);
+                // ⭐ And the day ends with the cart (`handcart.md §13.2b`): at the market's door with nothing to do the marketer
+                // takes it home for the night; anywhere else they go home as before and the first leg (§13.2a) fetches it tomorrow.
+                TakeTheWorksCart(world, villager, job);
+                GoHomeWithTheWorksCart(world, villager, job);
             }
 
             return;
@@ -2941,21 +2947,30 @@ public sealed partial class BehaviorSystem : ISimSystem
             LeaveTheWorksCartWhereItCounts(villager);
         }
 
-        // ⭐ AND THE WORKS' BUSINESS FIRST WHILE THEIR CART IS IN HAND (`handcart.md §13.2`): the household's errands wait
-        // until the cart is back at its building, so a marketer never shops with the market's cart or parks it at home. The
-        // trade's own branch — the next errand from here with the cart, or the empty leg back.
+        // ⭐ AND THE WORKS' BUSINESS FIRST WHILE THEIR CART IS IN HAND (`handcart.md §13.2`, §13.2b): the household's errands
+        // wait while the works' cart is in hand, so a marketer never shops with the market's cart — it sleeps at their door
+        // (§13.2b) but is never the household's. The trade's own branch: the next errand from here with the cart, or home with it.
         if (villager.CartForTheWorks && WorkplaceOf(world, villager) is { IsACartOwner: true } worksInHand)
         {
             if (worksInHand.Kind == JobKind.Marketer)
             {
                 WorkTheMarket(world, villager, worksInHand);
-            }
-            else if (!TryTrade(world, villager, worksInHand))
-            {
-                ReturnTheWorksCart(world, villager, worksInHand);
+                return;
             }
 
-            return;
+            if (TryTrade(world, villager, worksInHand))
+            {
+                return;
+            }
+
+            // ⭐ Nothing to carry for the post and its cart still in hand — away from the post, a run that ended at a
+            // storehouse: home with it for the night (`handcart.md §13.2b`). Parked at the post's door by `TryTrade` instead,
+            // the flags are clear and the merchant's own branch below ends the day the ordinary way.
+            if (villager.PushingACart)
+            {
+                GoHomeWithTheWorksCart(world, villager, worksInHand);
+                return;
+            }
         }
 
         // Eating was already handled by TryEat before anything got here.
@@ -3554,7 +3569,9 @@ public sealed partial class BehaviorSystem : ISimSystem
 
             if (!TryTidyGround(world, villager) && !TryHelpWithHarvest(world, villager))
             {
-                GoHome(world, villager);
+                // ⭐ The day ends with the post's cart (`handcart.md §13.2b`): at the post's door it is taken home for the night.
+                TakeTheWorksCart(world, villager, job);
+                GoHomeWithTheWorksCart(world, villager, job);
             }
 
             return;
@@ -6034,15 +6051,23 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Nothing left to carry for the building: its cart goes back to its door (`handcart.md §13.2`) — the stocking leg with
-    /// empty arms, which the per-tick rule for an empty-armed stocker (D192's) excepts for a pusher. Standing at the door
-    /// already, the arrival parks it in the same tick.
+    /// The day ends with the works' cart (`handcart.md §13.2b`; Joe, 2026-11-06: <i>"can the marketer take the cart home with
+    /// him at the end of the day so it's there at the beginning of the day?"</i>): a pusher with nothing left to carry for the
+    /// building goes home with it and rests with it at the door — <see cref="RestPointFor"/> sends a pusher home — so the
+    /// morning's errand leaves the doorstep carted (<see cref="Decide"/>'s works-first clause). Not pushing (the cart parked
+    /// at the door, or never taken), this is <see cref="GoHome"/>. The night wears nothing: wear is the round trip's, taken
+    /// at the building (§13.2). Until D700 this was <c>ReturnTheWorksCart</c>, the empty leg back to the door (D693).
     /// </summary>
-    private static void ReturnTheWorksCart(SimWorld world, Villager villager, Workplace works)
+    private static void GoHomeWithTheWorksCart(SimWorld world, Villager villager, Workplace works)
     {
+        if (villager.CartForTheWorks && villager.PushingACart && villager.Tile != world.HomePlaceOf(villager) && world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} pushes the {works.Name} handcart home for the night, {works.HandcartUses} trips left in it — {world.Clock}.");
+        }
+
         villager.WorkNote = string.Empty;
-        villager.State = StockingStateOf(works);
-        Travel(world, villager, works.Position, StockingStateOf(works));
+        GoHome(world, villager);
     }
 
     /// <summary>Whether a colleague is already out for the building's cart — one fetcher a building (`handcart.md §13.2`).</summary>

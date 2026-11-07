@@ -372,7 +372,7 @@ checks green; no golden moved (the shipped harness builds no workshop); `logisti
 commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 16 §13 facts), red-checked and counted (§13.8: 37 mutants, 54 reds,
 three zeros written down, one dead clause found by a zero and deleted); measured before and after on `ZzLogistics` (§13.6: Oakhaven's
 Market bucket 9.1 → 8.2 % of adult ticks, counter trips 18.3 → 14.4 a marketer-year; ⚠️ half the counter trips begin at home on foot —
-Joe's call); no golden moved. MERGED INTO `main` AT JOE'S WORD (D695, 2026-11-06), UNPLAYED — Joe chose the merge over playing it first; he plays it from `main`. ⭐ §13.2a THE MARKETER'S FIRST LEG BUILT (D696, 2026-11-06, his call), measured (§13.6: carted counter trips 29–51 % → 58–74 %), MERGED INTO `main` AT JOE'S WORD (D698, 2026-11-06), UNPLAYED; ⏸️ the one-armful restock is the next call (§13.6).** ✅ Piece 1 (D692): the owners, the fetch, the
+Joe's call); no golden moved. MERGED INTO `main` AT JOE'S WORD (D695, 2026-11-06), UNPLAYED — Joe chose the merge over playing it first; he plays it from `main`. ⭐ §13.2a THE MARKETER'S FIRST LEG BUILT (D696, 2026-11-06, his call), measured (§13.6: carted counter trips 29–51 % → 58–74 %), MERGED INTO `main` AT JOE'S WORD (D698, 2026-11-06), UNPLAYED; ⏸️ the one-armful restock is the next call (§13.6). ⭐ §13.2b–§13.2c THE CART'S NIGHT AT HOME AND THE RESTOCK KNOB BUILT (D700, 2026-11-06; Joe: *"can the marketer take the cart home with him at the end of the day so it's there at the beginning of the day?"*), measured on twelve valleys with a before-arm (§13.6, third table: the Market share −0.35 points in 11 of 12, two-thirds of the first legs gone, trips unchanged; the knob at 3: −0.85 in 12 of 12, trips −1 a marketer-year in 8 of 12), 7 guards + 3 re-aimed, 12 mutants, 21 reds, one zero written down (§13.8.5); the knob ships at 1 (D372 to the letter) and ⏸️ its number is Joe's. ON `worktree-slice-cart-home`, UNPLAYED, UNMERGED.** ✅ Piece 1 (D692): the owners, the fetch, the
 quota, save format 12. ✅ Piece 2 (D693): the loads of three armfuls, the take at the door, the wear, the empty leg back. ✅ Piece 3 (D694):
 the chip beside the building, the cards' line, the probes.
 
@@ -425,7 +425,9 @@ runs (`BehaviorSystem.Trade.cs`) are the same shape one building over: an armful
   (`FetchingFromThePost`'s arrival), the new cart pushed in — the flags clear and **the cart wears one trip** (§6's wear, one use
   a round trip, taken at the door), except for a new cart's own walk in. At nought the cart is gone (a DEBUG line), `HandcartsWanted`
   counts the building again and a worker fetches another.
-- **The cart comes back.** The marketer's buffer and larder legs and the merchant's haul from the post end at a *storehouse*, not
+- **The cart comes back** *(⚠️ superseded in part by §13.2b, D700: with nothing left to carry the pusher now goes **home** with it
+  for the night, not back to the door; the empty leg below survives only for a pusher who ate the load on the stocking leg, D10).*
+  The marketer's buffer and larder legs and the merchant's haul from the post end at a *storehouse*, not
   at the building; the household never has this problem because a shopping trip is out and back. So: **a worker holding the
   works' cart away from the building puts the building's work first** — `Decide` runs the trade's branch before the household's
   errands while `CartForTheWorks` is set — and **with nothing left to carry, takes the cart back** before going home, tidying ground
@@ -464,6 +466,69 @@ so the cart gets used on nearly every trip."* So:
 - **Not the merchant's.** The post's runs begin at the post already (§13.2); nothing changes for them.
 - **Save, hash.** A new `VillagerState` value, appended; the state is saved by name and hashed as a byte — no field, **save format 12
   stands**; no golden run has a market with a cart (§13.7), so no golden moves.
+
+### 13.2b The cart goes home for the night (Joe, 2026-11-06; D700)
+
+Joe, on §13.6's second table — the first leg put the cart under the trip and added a walk: *"can the marketer take the cart home
+with him at the end of the day so it's there at the beginning of the day? so houses of marketers and traders will have an extra
+cart? is that feasible?"* Feasible, and smaller than the leg was: the two flags of §13.2 already say it.
+
+- **The rule.** A marketer (or merchant) whose day ends with the building's cart — **at the building's door with nothing to move
+  and no spare work**, or **away from it with the cart in hand and nothing left to carry** (a haul that ended at the granary) —
+  pushes it **home** (`GoHomeWithTheWorksCart` → `GoHome`; `RestPointFor` already sends a pusher home, never the steading) and
+  rests with it: `PushingACart && CartForTheWorks` at the home tile *is* the cart at their door. D693's empty leg back
+  (`ReturnTheWorksCart`, *"pushing the market's handcart back"* from a storehouse) is gone; the sentence stays for a pusher who
+  ate the load on the stocking leg (D10) and still has the cart to park. The arrival home parks only the *household's* cart
+  (§13.2's predicates stand), so the works' flags survive the night and nothing of the household's moves.
+- **The morning.** `Decide`'s works-first clause (§13.2) runs the trade's branch for anyone holding the works' cart, so the holder
+  wakes to the market's business and leaves the doorstep **carted** — the first leg (§13.2a) asks `!PushingACart` and is skipped;
+  it stays for the mornings the cart is at the market (a colleague parked it; a worn cart's replacement; a day that ended in spare
+  work). Nothing to move: they rest on at home with the cart (a rest spell, D385's shape) and `Decide` asks again after it.
+- **Spare work (D372) stays on foot.** At the door with nothing to move the cart is parked (the door clause) and the marketer tidies
+  ground or helps a harvest **without it**; only the walk home takes it. A pusher away from the building does no spare work — a cart
+  is parked at a door, never left on a heap's tile — so with nothing to carry they go straight home with it.
+- **Not an extra cart.** The market's one cart sleeps at the marketer's door; the household cannot shop with it (§13.2's rule,
+  unchanged: a marketer never shops with the market's cart), and `CanTakeTheCartFromTheDoorstep`, `SomebodyIsPushingTheCart` and
+  the home's own chip read the household's cart only. Letting the household use it would be a second design — a perk of the seat, a
+  shared wear count, a cart out shopping when the market wants it — and is Joe's to ask for.
+- **Wear.** Unchanged in its rule: one use a round trip, taken when the cart is parked at the building (§13.2). The night at home
+  wears nothing of itself — the marketer's morning restock from the doorstep parks and wears at the counter exactly as a round from
+  the door did. ⚠️ **But a round that ends at a building's door wears one whichever door it began at:** a merchant who pushes the
+  cart from home to the post for a boat's goods pays a trip at the post's door (`FetchingFromThePost`'s arrival parks before it
+  takes), where the same morning on foot paid nothing. Written down, not hidden; `TheMerchantTakesThePostsCartForBothRuns` counts it.
+- **⚠️ What D693 actually did after a haul — found by the red-check (M1 scored zero until the guard looked at the morning after).**
+  A haul's arrival at a storehouse sends every hauler but a reaping farmer or a cutting herdsman **home** before they decide
+  (`ArriveAt`, D30's trip model), so under D693 the works' cart already slept at the marketer's door after every haul, and the
+  "empty leg back" ran **from their own door the next morning** — a push to the market, a park and a wear, then the errand. §13.2b
+  removes that morning push and its wear, and adds the take-home from the building's door at the day's end; the sentence in §13.2
+  ("takes the cart back before going home") described the code only for a pusher who decided away from home.
+- **Two workers, one cart.** One pusher a building (§13.2). The holder keeps it overnight; a colleague at the door in the morning
+  finds it out (`SomebodyHasTheWorksCartOut`) and goes on foot, as when the holder is on an errand.
+- **A seat lost, a death, a move:** `LeaveTheWorksCartWhereItCounts` — the cart counts as back at the building, from a home as from
+  the road (§13.2); a holder who moves house keeps pushing it. **Homeless:** `HomePoint` is the founders' cart or the founding for a
+  villager with no home; the works' cart sleeps there with them.
+- **What it says.** *"pushing the handcart home for the night"* (`TravelingHome`, the works' cart, empty arms — the state has no
+  world to name the building); the market's card: *"a handcart, 37 trips left — at Alys's door for the night"* while the holder
+  rests (`SimWorld.TheWorksCartSleepsWith`); the household's card: *"the market 1 handcart stands here for the night"* beside its
+  own line; a chip beside the home under the household's own (§13.5).
+- **Save, hash.** No field: both flags are saved and hashed already (§13.2); a resting pusher is a new combination of old facts.
+  **Save format 12 stands**; no golden run has a market with a cart (§13.7), so no golden moves.
+- **The instrument's honesty (§13.6).** `ZzLogistics` buckets `TravelingHome` with empty arms as *Commute*, so the empty leg back
+  (Market) becoming the walk home (Commute) lowers the Market bucket by accounting as well as by the saved morning leg — the third
+  table reports the marketers' **whole walking share** beside the Market bucket, the first legs walked, and the ticks the cart slept
+  at a door and was pushed home.
+
+### 13.2c The restock under a cart — `restock_short_armfuls_with_cart` (the lever D696 pointed at; Joe's open call)
+
+- `CounterShortOf` (D372) says a counter is short when it has room for **one armful** and a storehouse holds the good — the
+  marketer's plan and `MarketersWanted` read the one predicate. Under a cart that is the arithmetic D696 measured: the cart arrives to
+  a shortfall of an armful and a bit and carries 86–106 of 240.
+- **The knob:** at a market that **owns a handcart** (`Workplace.HandcartUses > 0`, parked or in hand — `SimWorld.TheCartOwnerAt`,
+  a scan asked only while the number is above one), the counter is short only with room for `restock_short_armfuls_with_cart`
+  armfuls. **1 as shipped** — D372 to the letter, so no golden moves and nothing changes until Joe types a number; `cart_armfuls` (3)
+  sizes the trip for the cart. A market without a cart, or whose cart is worn out, is back to one. The second marketer on foot
+  under a 3 carries one armful to a counter three short — the cost of the number, in the table. Validated at load: at least one.
+- Measured on `ZzLogistics` (`ZZ_RESTOCK=n`) beside §13.2b, §13.6's third table; **the number is Joe's.**
 
 ### 13.3 What it buys — the same `cart_armfuls`
 
@@ -567,6 +632,46 @@ keep caps it); no run home happens because no boat buys without a buy order (D59
 not read from these runs: a market with a cart is a different run of the seed, and its shopping trips (5.08 → 5.97, 4.17 →
 5.06, 4.62 → 4.23, 4.22 → 5.05) move with the valley's population, not with the trades' carts.
 
+**⭐ The cart's night at home and the restock knob (§13.2b–§13.2c, D700, 2026-11-06) — twelve valleys, fifty years each, forty carts
+racked, a market and a post raised at Year 3; three arms on the same seeds and the same instrument: `before12` = `main`'s
+`BehaviorSystem.cs` (D698's code, swapped in for the run and put back byte for byte), `after12` = §13.2b with the knob at its shipped 1,
+`after12k3` = §13.2b with `ZZ_RESTOCK=3`. The instrument learned the trade's whole walking share, the first legs begun, and the ticks
+the works' cart slept at a worker's door — the walk home with the cart is a *Commute* tick, not Market, so the Market bucket alone
+would flatter the change.**
+
+| seed | Market share of adult ticks | marketers' walking share | counter trips a marketer-year | units a counter trip | carted share of counter trips | units a carted trip | first legs walked (50 y) | ticks the cart slept at a door | post: runs down a merchant-year | households' shopping share (Fetch) | alive at 50 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 4.8 % → 4.6 % → 4.0 % | 64.3 % → 58.4 % → 64.2 % | 12.6 → 12.9 → 15.2 | 90 → 91 → 99 | 70 % → 65 % → 69 % | 100 → 105 → 114 | 523 → 124 → 92 | 93 → 5500 → 4561 | 28.4 → 26.2 → 24.9 | 6.0 % → 6.0 % → 7.0 % | 12 → 14 → 16 |
+| 2 | 8.3 % → 7.3 % → 7.5 % | 69.7 % → 68.1 % → 65.2 % | 9.6 → 10.3 → 9.9 | 86 → 92 → 89 | 74 % → 78 % → 80 % | 96 → 102 → 99 | 349 → 87 → 84 | 119 → 4883 → 6102 | 9.1 → 9.4 → 7.9 | 9.4 % → 9.1 % → 9.1 % | 10 → 7 → 4 |
+| 3 | 2.0 % → 1.7 % → 1.1 % | 19.6 % → 17.2 % → 10.8 % | 2.4 → 2.4 → 1.6 | 109 → 114 → 133 | 40 % → 53 % → 50 % | 183 → 148 → 191 | 9 → 7 → 3 | 6 → 317 → 640 | 0.0 → 0.0 → 0.0 | 1.5 % → 1.5 % → 1.2 % | 0 → 0 → 0 |
+| 4 | 5.2 % → 5.7 % → 3.9 % | 59.4 % → 65.6 % → 46.1 % | 9.1 → 11.9 → 7.6 | 77 → 72 → 98 | 58 % → 65 % → 64 % | 86 → 82 → 118 | 352 → 79 → 62 | 88 → 4677 → 7629 | 13.0 → 12.0 → 13.8 | 5.7 % → 6.4 % → 5.3 % | 8 → 9 → 5 |
+| 5 | 5.4 % → 4.6 % → 4.2 % | 69.8 % → 68.1 % → 60.6 % | 11.0 → 11.8 → 9.9 | 94 → 106 → 111 | 64 % → 64 % → 65 % | 106 → 124 → 134 | 415 → 131 → 83 | 75 → 3810 → 4859 | 13.9 → 12.5 → 12.6 | 5.7 % → 5.5 % → 6.4 % | 14 → 23 → 17 |
+| 6 | 4.5 % → 4.1 % → 3.6 % | 76.8 % → 74.6 % → 65.9 % | 12.7 → 11.6 → 10.2 | 97 → 103 → 126 | 61 % → 65 % → 64 % | 114 → 122 → 157 | 272 → 116 → 102 | 80 → 2670 → 4024 | 14.1 → 13.7 → 14.6 | 5.0 % → 5.3 % → 5.4 % | 25 → 20 → 21 |
+| 7 | 1.7 % → 1.6 % → 1.3 % | 36.2 % → 33.2 % → 31.7 % | 4.5 → 4.5 → 3.5 | 103 → 103 → 129 | 56 % → 56 % → 54 % | 134 → 134 → 173 | 6 → 5 → 5 | 3 → 394 → 461 | 0.0 → 0.0 → 0.0 | 1.8 % → 1.6 % → 2.0 % | 0 → 0 → 0 |
+| 8 | 8.4 % → 6.7 % → 7.2 % | 59.2 % → 58.5 % → 51.4 % | 6.9 → 7.3 → 7.0 | 77 → 72 → 67 | 60 % → 66 % → 62 % | 84 → 78 → 75 | 266 → 97 → 65 | 51 → 5473 → 7196 | 13.2 → 14.9 → 13.7 | 6.9 % → 9.2 % → 8.0 % | 11 → 8 → 3 |
+| 9 | 4.9 % → 4.7 % → 4.3 % | 72.1 % → 71.0 % → 70.5 % | 9.7 → 9.9 → 8.8 | 112 → 114 → 133 | 64 % → 64 % → 64 % | 135 → 136 → 167 | 349 → 117 → 65 | 51 → 3275 → 3202 | 6.0 → 6.7 → 7.4 | 8.0 % → 6.2 % → 6.2 % | 24 → 22 → 14 |
+| 10 | 1.7 % → 1.4 % → 1.6 % | 74.8 % → 76.1 % → 63.7 % | 12.2 → 12.9 → 12.2 | 123 → 132 → 132 | 100 % → 100 % → 98 % | 123 → 132 → 133 | 30 → 20 → 12 | 0 → 209 → 529 | 10.0 → 14.7 → 9.1 | 5.7 % → 5.9 % → 6.0 % | 0 → 0 → 0 |
+| 11 | 4.3 % → 3.9 % → 4.2 % | 73.1 % → 55.6 % → 57.3 % | 12.9 → 8.7 → 8.9 | 112 → 101 → 97 | 82 % → 76 % → 69 % | 122 → 112 → 111 | 208 → 80 → 76 | 32 → 4623 → 5467 | 19.6 → 16.0 → 16.4 | 7.5 % → 7.5 % → 8.4 % | 10 → 9 → 9 |
+| 12 | 4.4 % → 3.9 % → 3.4 % | 73.4 % → 66.7 % → 58.0 % | 16.7 → 16.4 → 15.7 | 111 → 106 → 123 | 70 % → 67 % → 68 % | 128 → 124 → 147 | 430 → 106 → 94 | 84 → 4135 → 5179 | 29.6 → 24.9 → 25.5 | 6.0 % → 5.9 % → 5.3 % | 14 → 19 → 25 |
+
+**Medians across the twelve (before → night → night + knob 3), and the paired seed-by-seed difference:** the Market share of adult
+ticks **4.7 → 4.3 → 4.0 %** (−0.35, down in 11 of 12; −0.85, down in 12 of 12); the marketers' walking share **69.8 → 66.2 → 59.3 %**
+(−1.95, 10 of 12; −9.0, 12 of 12); counter trips a marketer-year **10.3 → 10.9 → 9.4** (+0.25, down in 3 of 12; **−0.95, down in 8 of
+12**); units a counter trip 100 → 103 → 117, a carted trip 118 → 123 → 134; the carted share 64 → 65 → 64 %; **the first legs walked
+in fifty years 310 → 92 → 70** (12 of 12); the ticks the cart slept at a door 63 → 3,972 → 4,710; the post's runs down 13.1 → 13.1 →
+13.1; the households' shopping share 5.8 → 6.0 → 6.1 % (+0.0, +0.25); alive at 50, 10.5 → 9 → 7 (paired +0 / −0.5 — a coin; seeds 3,
+7 and 10 die out before the market matters in every arm).
+
+**Reading, honestly.** *(1)* The night rule does what Joe asked — the morning walk to the market for the cart is gone two times in
+three — and it is a small, **consistent** gain: the Market bucket falls in 11 of 12 valleys and the marketers walk about two points
+less of their year. *(2)* **It does not reduce the trips**: 10.3 → 10.9 a marketer-year, because the restock still fires an armful
+short and a carted trip still carries ~120 of 240. *(3)* **The knob is the lever**: at 3 the trips fall in 8 of 12 (−1 a marketer-year),
+a carted trip carries 134, the marketers walk nine points less of their year and the Market bucket falls in every valley — and the
+households' shopping share does not move (+0.25 points, inside the noise), so the counter running three armfuls short before the
+restock did not visibly cost the shoppers here. *(4)* The 63 night-ticks in the before-arm are D693's hauls: the cart already slept at
+home after a haul (§13.2b's note). *(5)* Four seeds were inside the chaos — the first run of 1 / 2 / 4 / 5 read two down, one up, one
+flat — which is why there are twelve and a paired column. ⏸️ **The knob's number is Joe's: 3 is what the table says, 1 is what ships.**
+
 ### 13.7 Save, determinism, goldens
 
 - **Save format 11 → 12:** `handcart_uses` on every workplace, `cart_for_the_works` on every villager; every format-11 save is
@@ -622,7 +727,7 @@ TDD, each guard red-checked by a mutant and the reds counted (D326); a zero is w
 |---|---|
 | `TheMarketerTakesTheMarketsCartAndBringsThreeArmfulsToTheCounter` | a market short of food beside a stocked granary, the marketer stood at the market: they set out with the cart (every cart they push is the works'), the counter takes `cart_armfuls` × `carry_capacity` in one trip, the cart is parked at the market and worn one, the flags clear, every household keeps its own |
 | `OnePusherAMarketAndNoCartFromAwayFromTheMarket` | posed directly: a colleague out with it, the second sets off on foot; nobody out but the second decides at the granary — on foot, an armful at most, the cart's trips untouched |
-| `TheMarketsCartComesBackFromAHaulToTheStore` | every counter limit nought, a farm brimming: the marketer hauls more than an armful out of the buffer under the cart, is seen pushing it back empty (*"pushing the market's handcart back"*), parks it at the market, worn one for the round |
+| ~~`TheMarketsCartComesBackFromAHaulToTheStore`~~ → `TheMarketsCartGoesHomeForTheNightAfterAHaul` (re-aimed by §13.2b, D700) | every counter limit nought, a farm brimming: the marketer hauls more than an armful out of the buffer under the cart, then — nothing left to carry — is seen *"pushing the handcart home for the night"*, never back at the market, rests at home with it unworn, and the household's cart is untouched |
 | `APusherDecidingAtTheMarketsDoorParksFirst` | posed standing at the market with the cart in hand: parked and worn before the next errand takes it out again |
 | `AMarketerWithTheWorksCartDoesTheMarketsWorkBeforeTheHouseholds` | the household's only adult, larder at 20 %, standing at the granary with the market's cart: the counter's load of three armfuls, not the shopping; the household's cart untouched |
 | `TheWorksCartWearsATripAndIsReplacedAtNought` | a market cart of one trip, two on the shelf: worn to nought at the door, the log says so once, another fetched to `handcart_uses`, one left |
@@ -671,8 +776,39 @@ live market are Joe's eyes (the view cannot raise a building, D596).
 | `IsTrading` without the leg (the seat not held for it) | **0, written down**: `ActOne`'s rule for an errand whose job is gone (line 304) is what the predicate feeds, and the leg's own case already re-decides when the seat goes |
 | *(deleted, not scored)* an arrival hook that set them idle at the door | scored 0 against every guard — the per-tick case re-decides at the door the next tick either way — and was deleted as redundant (D693's shape) |
 
+#### 13.8.5 The cart's night at home and the restock knob (§13.2b–§13.2c, D700) — 7 guards + 1 sentence + 3 re-aimed, 12 mutants, 21 reds, 1 zero written down
+
+| Guard | What it holds |
+|---|---|
+| `AMarketerWithNothingToMoveAtTheDoorTakesTheCartHomeForTheNight` | the counter full and every store bare: the marketer at the door leaves pushing (*"pushing the handcart home for the night"*), the market's count unworn; walks home and rests with it (`TheWorksCartSleepsWith`), the household's own cart untouched; **the morning after, still nothing to move, they stay** — never D693's push back from the door; a colleague at the market's door finds the cart out and goes on foot; a death at home counts it back at the market |
+| `TheMarketsCartGoesHomeForTheNightAfterAHaul` *(re-aimed from `…ComesBackFromAHaulToTheStore`)* | every counter limit nought, a farm brimming: more than an armful hauled under the cart, no empty leg, the walk home seen and said, resting at home with the cart unworn, the household's cart untouched |
+| `AMarketerWakingWithTheCartLeavesTheDoorstepCartedWithNoFirstLeg` | at home with the cart, an errand waiting: `CollectingForMarket` from the doorstep, never `WalkingToTheMarket`; a cart's load carried to the counter; every park at the door wears one and no more |
+| `AMerchantWithNothingToCarryTakesThePostsCartHomeForTheNight` | at the post's door with nothing kept and nothing left by a boat: home pushing; away with the cart in hand and nothing to carry: home, never back; a low larder and nobody else to shop: still home with the cart, not shopping with it |
+| `AMarketerWithNothingToMoveTidiesGroundOnFootAndLeavesTheCartAtTheDoor` | a heap three tiles off: `TidyingGround` without the cart, the market's count unworn |
+| `TheWorksCartSleepsOnlyWithARestingHolderAtHome` | true for a resting holder at home; false on the walk home, false resting at the market, false for the household's cart, false without the pusher's flag |
+| `TheCounterRunsDownToTheKnobsArmfulsUnderACartOnly` | the knob at 3: two armfuls short is not short, three is; the market's cart worn out, one is short again; the shipped number is 1; nought refused in words |
+| `TheWorksCartStatesHaveSentences` *(+ the night)* | *"pushing the handcart home for the night"* for the works' cart with empty arms on `TravelingHome`; the household's *"pushing the cart home"* unchanged |
+| *(re-aimed)* `AMarketWithoutACartSendsItsMarketerForOneAndParksItThere`, `APostWithoutACartSendsItsMerchantForOne` | after the fetch a holder is the building's own worker (home for the night or on an errand) and nobody else |
+| *(re-aimed)* `TheMerchantTakesThePostsCartForBothRuns` | the run down parks and wears; the merchant takes the cart home; the boat's goods fetched from home — the arrival parks (the second wear) and takes; hauled home, no empty leg, the cart sleeps at the merchant's door; two wears in all |
+
+| Mutant | Reds (of 42) |
+|---|---|
+| M1 a pusher away from the market with nothing to carry pushes it **back** (D693's empty leg) | **1** — ⚠️ *scored 0 at first*: the door guard ended at the first night, and after a haul the arrival sends the hauler home before deciding, so the mutant's push ran from the doorstep next morning, unseen; the guard looks at the morning after now |
+| M2 the day's-end take at the market's door dropped | 1 |
+| M3 `Decide`'s works-first branch lets a merchant holding the cart fall through to the household's errands | 1 |
+| M4 the day's-end take at the post's door dropped | 2 |
+| M5 `TheWorksCartSleepsWith` ignores whether the holder is resting | 3 |
+| M6 the knob read but never applied | 1 |
+| M7 the knob applies at a market whose cart is worn out | 1 |
+| M8 the owner scan runs at the shipped number too (the `> 1` guard dropped) | **0, written down** — a performance clause: at 1 the multiplied armful is the armful, so the shipped path is byte-identical with or without the scan |
+| M9 the night's sentence is the household's | 4 |
+| M12 the cart taken before spare work | 1 |
+| M13 the arrival at home parks any cart as the household's | 3 |
+| M14 the cart dropped where it counts before the walk home | 3 |
+
 ### 13.9 Definition of Done
 
 Pieces 1–3 built, measured and guarded; the four checks green; no golden moved (or each mover proven); §13.6's table filled before
 and after; `storage-and-distribution.md §14`, `trade.md §4.5`, `save-load.md`, `content-inventory.md`, `DESIGN.md §4`, §6, §7 and
-`HANDOFF.md` in the same commits as the code. Joe plays it, then merges at his word.
+`HANDOFF.md` in the same commits as the code. Joe plays it, then merges at his word. **§13.2b–§13.2c (D700):** the same, with §13.6's
+third table filled on twelve valleys and a before-arm under the same instrument; the knob ships at 1 and its number is Joe's.
