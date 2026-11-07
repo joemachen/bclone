@@ -1,7 +1,8 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
 **Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
-and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07), JOE HAS NOT JUDGED ANY.
+and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
+SCALE 0.30 TILES (D706); THE MAP, THE GRAIN AND SNOW ARE UNJUDGED.
 ⚠️ The whole stack sits at §3.3's GPU bar (+0.08–0.10 ms at 1280 × 800); his call.** §2–§4 are the build; §4's table says which piece stands; §5
 waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
@@ -139,7 +140,10 @@ Where they meet is two separate questions:
 
 **As built (D704):** *Splat blending* and *Splat sharpness* (1–48, lab start 5.5), *Edge bleed*, *Bleed reach* (0–0.5
 tiles, start 0.33) and *Bleed scale* (0.25–4 tiles a cycle, start 0.30). The starts are Joe's first tuning (D705;
-D704 opened at 8, 0.25 and 1); the switches still open off, and none of it is approved. Both read the coverage map and show nothing
+D704 opened at 8, 0.25 and 1), ⭐ **approved by him at those values (D706)**; the switches still open off, and the
+valley's wiring (§5) takes the three values from `terrain_lab.tres`. ⚠️ The approval was of the lab's fake map: at
+scale 0.30 the warp's cycle is shorter than its reach (a fray, not a wander), so look again on the real valley for a
+land feature one tile thin (D342's rule). Both read the coverage map and show nothing
 without it. The bleed's warp is one octave of `at_value_noise` at salts 81–82, cheap on purpose (§3.3). Value noise
 seldom reaches its ends, so the edge seldom wanders the whole reach.
 
