@@ -52,7 +52,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Ploughed / sown / ripe field | Traced fills `#b39874` / `#a8b07a` / `#d6b55c`, drawn per tile, not baked (`VillageMap.cs:208–219`) | See §4 (crops) | B6 | 🟨 |
 | Valley edge and beyond | `#c4b48f` beyond, a 2px `#8c7a5c` edge (`VillageMap.cs:77`, `:4003`) | — | B6 | 🟨 |
 | Optional grid | 1px `#d2c29c` lines (`VillageMap.cs:4016`) | — | — | 🟨 debug aid |
-| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | ⬜ |
+| **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (D703), unjudged; the valley waits for house tiers |
 | Watercolour textures for stone, clay, dirt, the rest | ⬜ — flat fills in the band | — | B1, B6 | ⬜ 🅿️ parked list. ⚠️ *Clay has no terrain kind in the sim.* |
 | Paving (dirt → gravel → cobble) | ⬜ | 3 grades | B6 | 💭 `DESIGN.md §2.6`, no sim |
 | Dry ground (drought) | ⬜ | — | B11 | 💭 |
@@ -61,11 +61,11 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 | Item | Stands in now | Needs | Blocked by | State |
 |---|---|---|---|---|
-| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (D700); pieces 1–2 of 4 built in the lab (D701–D702), unjudged; §4 says which piece stands |
+| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (D700); pieces 1–3 of 4 built in the lab (D701–D703), unjudged; §4 says which piece stands |
 | Grass shader | `grass_lab.gdshader` + season and anti-tile includes, masks v02–v06, `grass_seasons.png` (256×16) | Integrated into the valley | B6 | ✅ look / ⬜ in game |
 | Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder | World-anchored grain | B6 | 🟨 lab only; world-anchored built behind a switch (D702), unjudged |
 | Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 |
-| Snow blend | ⬜ | lerp / lighten mode | B6 | ⬜ |
+| Snow blend | ⬜ | lerp / lighten mode | B6 | 🟨 all three built in the lab (D703), Lerp recommended, unjudged |
 | Debug readout backing | ⬜ — frame/draw lines are illegible on parchment (`Main.cs:8275`) | A dark backing | — | ⬜ 🅿️ parked list |
 
 ## 4. Trees and vegetation

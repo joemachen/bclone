@@ -44,6 +44,33 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public bool GrainUnderVillage { get; set; }
 
+    /// <summary>Snow, its own layer over the grass with its own blend: Multiply cannot lighten (D703).</summary>
+    [Export]
+    public bool SnowOn { get; set; }
+
+    /// <summary>How snow meets what is under it: 0 Lerp, 1 Screen, 2 Lighten (`terrain-shader.md §2`).</summary>
+    [Export]
+    public int SnowBlend { get; set; }
+
+    /// <summary>How much of the valley is white, 0 to 1: one number for the whole valley.</summary>
+    [Export]
+    public float SnowAmount { get; set; }
+
+    /// <summary>How soft a patch's edge is, in the threshold's units: 0 is a hard line.</summary>
+    [Export]
+    public float SnowPatchiness { get; set; }
+
+    /// <summary>How big the patches are, in tiles a cycle of the threshold's noise.</summary>
+    [Export]
+    public float SnowPatchTiles { get; set; }
+
+    /// <summary>The snow, sRGB: near white, warmed to sit on the paper.</summary>
+    [Export]
+    public Color SnowColour { get; set; }
+
+    /// <summary>The blends' names, in <see cref="SnowBlend"/>'s order.</summary>
+    internal static readonly string[] SnowBlends = { "Lerp", "Screen", "Lighten" };
+
     /// <summary>The options, from their file.</summary>
     internal static GrassLabTerrain StartingPoint => GD.Load<GrassLabTerrain>(LabPath);
 
@@ -53,8 +80,11 @@ public sealed partial class GrassLabTerrain : Resource
         var said = new StringBuilder();
         said.AppendLine("TERRAIN LAB SETTINGS (options, none approved)");
         said.AppendLine($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
-        said.Append($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
+        said.AppendLine($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
             + $"Under the village: {(GrainUnderVillage ? "ON" : "OFF")}");
+        said.Append($"- Snow: {(SnowOn ? "ON" : "OFF")}. Blend {SnowBlends[Math.Clamp(SnowBlend, 0, SnowBlends.Length - 1)]}. "
+            + $"Amount {SnowAmount.ToString("0.00", CultureInfo.InvariantCulture)}. Patchiness {SnowPatchiness.ToString("0.00", CultureInfo.InvariantCulture)}. "
+            + $"Patch {SnowPatchTiles.ToString("0", CultureInfo.InvariantCulture)} tiles. Colour #{SnowColour.ToHtml(false)}");
         return said.ToString();
     }
 }

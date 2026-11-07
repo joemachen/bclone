@@ -1,8 +1,8 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 🔨 **PIECES 1 AND 2 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
-and drag to pan, D702, 2026-11-07), JOE HAS NOT JUDGED EITHER; PIECES 3–4 SPECCED (D700), NOT BUILT.** §2–§4 are the
-build; §4's table says which piece stands.
+**Status:** 🔨 **PIECES 1–3 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
+and drag to pan, D702, 2026-11-07; snow, D703, 2026-11-07), JOE HAS NOT JUDGED ANY; PIECE 4 SPECCED (D700), NOT
+BUILT.** §2–§4 are the build; §4's table says which piece stands.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
@@ -43,6 +43,26 @@ all three blends behind one dropdown, so they are compared on the same ground:
 **The snow colour** is `#f4f1ea`, L\* 95.2: the near white §2 asks for, warmed to sit on the paper rather than read as
 screen white. It lives in `looks/terrain_lab.tres`, not in the shader.
 
+**As built (D703):** `terrain_lab.gdshaderinc`'s `terrain_snow_*`, called from `grass_lab.gdshader` after the grass and
+before the transition marks, so the grain overlay lies over it. *Snow*, *Snow blend* (Lerp, Screen, Lighten),
+*Snow amount* (lab start 0.6), *Snow patchiness* (0–0.3, start 0.08) and **a fifth control the four above did not name,
+*Snow patch size*** (2–48 tiles a cycle, start 12): the place needs a size, and a number that only lives in a file
+cannot be judged by eye. The threshold is two octaves of `at_value_noise` at salts 71–72, the macro variation's
+weights. The amount is stretched by the patchiness before the smoothstep, `smoothstep(t − s, t + s, mix(−s, 1 + s,
+amount))`, so 0 is bare everywhere and 1 white everywhere whatever a place's threshold (measured: amount 0 renders
+byte-identical to snow off; amount 1, Lerp and Lighten, is `#f4f1ea` in 100 % of pixels, grain off). ⚠️ The noise is
+not uniform, two octaves pile up round 0.5, so most of the change comes in the middle of the amount's range.
+
+- ⚠️ **Lighten draws a fringe.** It is a per-channel max, so where the cover is partial the grey `snow × cover` wins
+  the blue channel over the yellow ground and loses the other two: a purplish ring round every bare patch, widest at
+  high patchiness. Expected from the maths, visible in the renders.
+- ⛔ **Water: the snow follows the water as drawn, not its weight** (found by measurement before commit). The first
+  build faded snow out on the water's raw weight between 0.3 and 0.5, as above. Where three kinds meet, water wins
+  below 0.5, so half-strength snow lay on visible river there: up to 74 levels off, within 6 px of the bank. The snow
+  now uses the water's **drawn share**, `terrain_splat`'s `.a`, so it stops at the bank's own contour and piece 4's
+  splat blending carries it along. Measured after: no deep-water pixel changes; the bank's anti-aliased edge, 2 px at
+  most, moves a median 2 levels.
+
 **The questions this section carried, answered:**
 
 - **Where coverage comes from.** ⚠️ **The sim has no snow and no weather** (searched 2026-11-06: `snow` appears only in
@@ -60,7 +80,9 @@ screen white. It lives in `looks/terrain_lab.tres`, not in the shader.
 - **What snow does to the value band.** It raises the ground's light end. Dark and ink-outlined things gain contrast; any
   light fill loses what little it had — the adult villager's dot (`#e8e2d4`) first. The placeholders in the lab show this
   at once. `tools/legibility/check.py` is the systems lane's this month, so it is run read-only on a scratch copy with a
-  snow ground, and what it says goes in §6 before snow ships.
+  snow ground, and what it says goes in §6 before snow ships. ⚠️ **(D703: the dot is stale.** The adult's dot is
+  `#454135` in today's `VillageMap.cs`, dark. The light fills now are the cattle `#e6dcc4`, the sail `#efe6d2` and the
+  flour heap `#ebe0c7`, and each is outlined, so on snow they read by the outline alone. §6 has the check's result.)
 
 ## 3. The rest of the shader
 
@@ -133,6 +155,13 @@ row from one run.
 | the placeholder's screen grain at the approved strength (D630; 2026-11-07) | +0.34 ms | +0.31 ms | +22 % / +20 % |
 | **world-anchored grain** in its place (D702; same run) | **+0.13 ms over it** | **+0.12 ms over it** | **+7 %** over the screen grain; +0.016 ms at 1280 × 800 |
 | world grain and the coverage map together (same run) | +0.53 ms | +0.53 ms | +35 % / +34 %; **+0.19 / +0.22 ms at 4K over the approved look with its grain, +0.027 ms at 1280 × 800: inside the +0.1 bar** |
+| **snow**, Lerp, over the approved look with its grain (D703; 2026-11-07, a second run: *approved, no grain* read **2.51 ms** at 4K, against 1.51 that morning — trap 8 again) | **+0.43 ms** | **+0.43 ms** | **+14 %** over approved with grain; +0.053 ms at 1280 × 800. Lighten the same within 0.02 ms |
+| world grain, coverage map and snow together (same run) | +0.78 ms over approved with grain | +0.78 ms | +26 %; **+0.096 ms at 1280 × 800: AT the +0.1 bar, with piece 4 still to come** |
+
+⚠️ **The bar is spent before piece 4** (D703). Snow's threshold is two octaves of value noise, eight integer hashes a
+pixel, about what the world grain's three octaves cost. Piece 4's warp adds more noise. So either the bar moves, which
+is Joe's call, or the noise is shared: snow's threshold and the bleed's warp could read one octave set, and in the game
+a place's threshold is a constant that the bake could store in a channel, costing nothing per frame (§5).
 
 ## 4. The build — four pieces in the lab, one commit each
 
@@ -142,7 +171,7 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 |---|---|---|---|
 | 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
 | 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | 🔨 built (D702), Joe's eyes pending |
-| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* | ⬜ |
+| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built D703) | 🔨 built (D703), Joe's eyes pending |
 | 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⬜ |
 
 **The fake map stands in for the bake, and is shaped like it.** One RGBA8 image, 8 px a tile, 120 × 80 tiles centred on
@@ -210,6 +239,25 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **The anchoring, measured** (piece 2, windowed, not in the probe): a pan of 84 × 54 px at 24 px a tile, and the panned
   picture compared with the unpanned one shifted by the same: **world grain 0.00 % of pixels off by more than 2 levels,
   the screen grain 88 %**, the grass with no grain 0.00 %. Nothing mirrors the octaves' fade; that is eyes.
+- **Red-checked, piece 3 (D703):** 19 probe mutants, **24 reds, no zeros** (the file's switch, amount, blend and colour,
+  a renamed uniform and an include that does not compile, the switch, the blend's uniform and its order, each slider
+  reaching the wrong uniform or none, *Reset* for every control, the colour not the file's, and *Copy*). ⚠️ **Nine
+  scored zero on the first run, every one an anchor and not a guard:** the edit scripts had written CRLF (HANDOFF trap
+  11), so an anchor ending in `\n` matched nothing; rerun on LF, all nine went red. **Two render mutants the probe
+  cannot see:** snow drawn whatever the switch says changes **5 of 5** approved renders; snow let onto the river
+  changes **62,932** deep-water pixels. Restored, 0 and 0.
+- **Snow, measured** (piece 3, windowed renders, grain off unless said): amount 0 is byte-identical to snow off;
+  amount 1 is `#f4f1ea` in 100.00 % of pixels for Lerp and for Lighten; over the fake map at amount 1, no deep-water
+  pixel changes, and the bank's anti-aliased edge (2 px at most) moves a median 2 levels. With the approved grain
+  anchored to the world, full Lerp snow spans L\* 84.9–92.4 (p1–p99) and its middle is L\* 88.9: **the grain takes
+  snow from 95 to about 89, three above bare parchment (86).** Snow reads as white beside the grass, not beside the
+  paper.
+- **The value band on snow** (`check.py` run read-only on a scratch copy, its `ground.json` plus two snow grounds
+  measured from those renders: full and half Lerp): **no new failure**. 0 of 26 things that must read at 3:1, 0 of 41
+  outlined things; every wash still seen (work ground ΔE 7.4 → 6.9, the selected one 14.6 → 12.6). The lightest common
+  ground rises from L\* 82.6 to 92.4, and the parchment-coloured workplace falls to 1.06:1 against the middle of the
+  snow, but it is outlined. ⚠️ The check judges colours, not draw sites: a light fill that lost its ink edge would
+  vanish into snow and still pass (the eye-check in HANDOFF's art list).
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.

@@ -62,6 +62,13 @@ uniform bool mark_transitions = false;
 // 4. The fake coverage map: the ground kinds under the grass, and the grass only where the map says.
 uniform bool coverage_on = false;
 uniform float coverage_fade = 0.25;
+// 5. Snow (D703): its own layer and blend, over the grass, under the grain. The colour comes from terrain_lab.tres.
+uniform bool snow_on = false;
+uniform int snow_blend = 0;
+uniform float snow_amount = 0.0;
+uniform float snow_patchiness = 0.1;
+uniform float snow_patch_tiles = 12.0;
+uniform vec3 snow_srgb = vec3(1.0);
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -143,14 +150,21 @@ void fragment() {
     }
 
     vec3 ground = ground_srgb;
+    float water = 0.0;
     if (coverage_on) {
         vec4 weights = terrain_weights(tile);
-        ground = terrain_ground(terrain_splat(weights, TERRAIN_HARD), weights.a, ground_srgb);
+        vec4 kinds = terrain_splat(weights, TERRAIN_HARD);
+        water = kinds.a;
+        ground = terrain_ground(kinds, weights.a, ground_srgb);
         strength *= terrain_coverage(weights.r, coverage_fade);
     }
 
     vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
     vec3 colour = ground * mix(vec3(1.0), grass, strength);
+    if (snow_on) {
+        float cover = terrain_snow_cover(terrain_snow_threshold(tile, snow_patch_tiles), snow_amount, snow_patchiness);
+        colour = terrain_snow(colour, snow_srgb, cover * terrain_snow_off_water(water), snow_blend);
+    }
     if (mark_transitions && ((wa > 0.0 && wa < 1.0) || hex_top < 0.98)) {
         colour = mix(colour, vec3(0.85, 0.1, 0.6), 0.45);
     }

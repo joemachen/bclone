@@ -43,3 +43,38 @@ vec3 terrain_ground(vec4 k, float water_weight, vec3 parchment) {
 float terrain_coverage(float grass_weight, float fade) {
     return smoothstep(0.5, 0.5 + max(fade, 1e-3), grass_weight);
 }
+
+// ---- Snow (`specs/terrain-shader.md §2`, D703) -------------------------------------------------------------------
+// Its own layer with its own blend, over the grass and under the paper grain: Multiply only darkens, so it cannot make
+// a white. ⚠️ Uses grass_antitile.gdshaderinc's at_value_noise, so that file is included first.
+
+// Where snow lies first: a threshold per place, two octaves of the macro variation's integer-hash noise at their own
+// salts. Thin snow is therefore always in the same places.
+float terrain_snow_threshold(vec2 tile, float patch_tiles) {
+    vec2 p = tile / patch_tiles;
+    return 0.65 * at_value_noise(p, 71u) + 0.35 * at_value_noise(p * 2.03 + 13.0, 72u);
+}
+
+// How white a place is: `smoothstep(t - s, t + s, amount)`, the amount stretched by the patchiness first so that 0 is
+// bare everywhere and 1 white everywhere, whatever the threshold.
+float terrain_snow_cover(float threshold, float amount, float patchiness) {
+    float s = max(patchiness, 1e-3);
+    return smoothstep(threshold - s, threshold + s, mix(-s, 1.0 + s, amount));
+}
+
+// Snow does not lie on the river: none wherever water is drawn, so the snow's edge is the bank's own contour. ⚠️ The
+// water's DRAWN share (terrain_splat's .a), never its raw weight: where three kinds meet, water wins below 0.5, and a
+// ramp on the weight laid half-strength snow on visible water there (measured, D703).
+float terrain_snow_off_water(float water_drawn) {
+    return 1.0 - water_drawn;
+}
+
+// The three blends §2 compares: 0 Lerp (covers), 1 Screen (lifts, the darks show through), 2 Lighten (the brighter wins).
+vec3 terrain_snow(vec3 ground, vec3 snow, float cover, int blend) {
+    if (blend == 1) {
+        return 1.0 - (1.0 - ground) * (1.0 - snow * cover);
+    } else if (blend == 2) {
+        return max(ground, snow * cover);
+    }
+    return mix(ground, snow, cover);
+}

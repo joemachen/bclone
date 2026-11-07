@@ -14,7 +14,7 @@ public sealed partial class GrassLab
     private static readonly string[] TerrainUniforms =
     {
         "coverage_on", "coverage_fade", "ground_map", "ground_map_tiles", "kind_wood", "kind_stone", "kind_water", "kind_shallows",
-        "view_tile",
+        "view_tile", "snow_on", "snow_blend", "snow_amount", "snow_patchiness", "snow_patch_tiles", "snow_srgb",
     };
 
     /// <summary>Every uniform this file and the zoom set on the grain: the probe asks its compiled shader too.</summary>
@@ -36,6 +36,16 @@ public sealed partial class GrassLab
     internal HSlider GrainScale { get; private set; } = null!;
 
     internal CheckBox GrainUnder { get; private set; } = null!;
+
+    internal CheckBox Snow { get; private set; } = null!;
+
+    internal OptionButton SnowBlend { get; private set; } = null!;
+
+    internal HSlider SnowAmount { get; private set; } = null!;
+
+    internal HSlider SnowPatchiness { get; private set; } = null!;
+
+    internal HSlider SnowPatchSize { get; private set; } = null!;
 
     /// <summary>
     /// The tile at the window's centre (D702): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
@@ -109,6 +119,27 @@ public sealed partial class GrassLab
         body.AddChild(GrainUnder);
         SetTheView(Vector2.Zero);
 
+        // Piece 3 (D703): snow, its own layer with its own blend. Its colour is the file's, never a slider.
+        Snow = AddSwitch(body, "Snow", "snow_on", look.SnowOn);
+        SnowBlend = new OptionButton { Name = "Snow blend" };
+        SnowBlend.AddItem("Lerp — covers");
+        SnowBlend.AddItem("Screen — lifts, darks show");
+        SnowBlend.AddItem("Lighten — the brighter wins");
+        SnowBlend.ItemSelected += index => _material.SetShaderParameter("snow_blend", (int)index);
+        body.AddChild(Row("Snow blend", SnowBlend, null));
+        SnowAmount = AddSlider(body, "Snow amount", 0.0, 1.0, 0.01, look.SnowAmount, Sets("snow_amount"), Plain("0.00"));
+        SnowPatchiness = AddSlider(body, "Snow patchiness", 0.0, 0.3, 0.01, look.SnowPatchiness, Sets("snow_patchiness"), Plain("0.00"));
+        SnowPatchSize = AddSlider(
+            body,
+            "Snow patch size",
+            2.0,
+            48.0,
+            1.0,
+            look.SnowPatchTiles,
+            Sets("snow_patch_tiles"),
+            v => $"{v.ToString("0", CultureInfo.InvariantCulture)} tiles");
+        SetTheSnowFromFile(look);
+
         _gpuOnTerrain = new Label { Name = "GpuOnTerrain", Modulate = new Color(1, 1, 1, 0.75f) };
         _gpuOnTerrain.AddThemeFontSizeOverride("font_size", 13);
         body.AddChild(_gpuOnTerrain);
@@ -132,6 +163,14 @@ public sealed partial class GrassLab
     {
         _terrainShown = !_terrainShown;
         ShowTheCornerPanel();
+    }
+
+    /// <summary>The snow's blend and colour as the file says: the colour has no control, so a file edit shows on <i>Reset</i>.</summary>
+    private void SetTheSnowFromFile(GrassLabTerrain look)
+    {
+        SnowBlend.Select(look.SnowBlend);
+        _material.SetShaderParameter("snow_blend", look.SnowBlend);
+        _material.SetShaderParameter("snow_srgb", Srgb(look.SnowColour));
     }
 
     /// <summary>The fake map, baked once on first switching it on (0.44 s, measured), so the lab opens without paying for it.</summary>
@@ -180,6 +219,11 @@ public sealed partial class GrassLab
         WorldGrain.ButtonPressed = look.WorldGrainOn;
         GrainScale.Value = look.GrainScaleTiles;
         GrainUnder.ButtonPressed = look.GrainUnderVillage;
+        Snow.ButtonPressed = look.SnowOn;
+        SnowAmount.Value = look.SnowAmount;
+        SnowPatchiness.Value = look.SnowPatchiness;
+        SnowPatchSize.Value = look.SnowPatchTiles;
+        SetTheSnowFromFile(look);
     }
 
     /// <summary>The panel's options, as a <see cref="GrassLabTerrain"/>.</summary>
@@ -190,7 +234,20 @@ public sealed partial class GrassLab
         WorldGrainOn = WorldGrain.ButtonPressed,
         GrainScaleTiles = (float)GrainScale.Value,
         GrainUnderVillage = GrainUnder.ButtonPressed,
+        SnowOn = Snow.ButtonPressed,
+        SnowBlend = SnowBlend.Selected,
+        SnowAmount = (float)SnowAmount.Value,
+        SnowPatchiness = (float)SnowPatchiness.Value,
+        SnowPatchTiles = (float)SnowPatchSize.Value,
+        SnowColour = SnowColourShown(),
     };
+
+    /// <summary>The colour the shader has, back as a <see cref="Color"/>, so <i>Copy</i> says what is drawn.</summary>
+    private Color SnowColourShown()
+    {
+        Vector3 srgb = _material.GetShaderParameter("snow_srgb").AsVector3();
+        return new Color(srgb.X, srgb.Y, srgb.Z);
+    }
 
     private static Vector3 Srgb(Color colour) => new(colour.R, colour.G, colour.B);
 
@@ -345,7 +402,8 @@ public sealed partial class GrassLab
         string[] said = lab.CurrentValues().Split("\n\n");
         if (said.Length != 2 || said[0] != GrassLook.Approved.Say() || said[1] != GrassLabTerrain.StartingPoint.Say()
             || !said[1].Contains("- Coverage map: OFF. Fade ", StringComparison.Ordinal)
-            || !said[1].Contains("\n- World-anchored grain: OFF. Scale ", StringComparison.Ordinal))
+            || !said[1].Contains("\n- World-anchored grain: OFF. Scale ", StringComparison.Ordinal)
+            || !said[1].Contains("\n- Snow: OFF. Blend Lerp. Amount ", StringComparison.Ordinal))
         {
             faults.Add($"Copy says \"{lab.CurrentValues()}\"");
         }
@@ -353,6 +411,11 @@ public sealed partial class GrassLab
         yield return Line("copy", "Copy says Joe's list unchanged, then the options' own", faults);
 
         foreach (string line in GrainSelfCheck(lab))
+        {
+            yield return line;
+        }
+
+        foreach (string line in SnowSelfCheck(lab))
         {
             yield return line;
         }
@@ -494,6 +557,99 @@ public sealed partial class GrassLab
         }
 
         yield return Line("pan", "opens at the origin; a drag moves grass, grain and placeholders by the same tiles, stops at the map's edge, survives Reset, and c centres it", faults);
+    }
+
+    /// <summary>Piece 3's lines (D703): the snow's switch, blend, three sliders and colour. <paramref name="lab"/> is left at the approved look.</summary>
+    private static IEnumerable<string> SnowSelfCheck(GrassLab lab)
+    {
+        float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();
+        bool Flag(string name) => lab._material.GetShaderParameter(name).AsBool();
+        int Blend() => lab._material.GetShaderParameter("snow_blend").AsInt32();
+        static string Line(string what, string good, List<string> faults) => faults.Count == 0
+            ? $"[widths] terrain lab, {what}: ✅ {good}"
+            : $"[widths] terrain lab, {what}: ❌ {string.Join("; ", faults)}";
+        GrassLabTerrain start = GrassLabTerrain.StartingPoint;
+
+        // Snow: the switch, and the colour, which is the file's and §2's.
+        var faults = new List<string>();
+        if (lab.Snow.ButtonPressed || Flag("snow_on"))
+        {
+            faults.Add($"opens with the box {lab.Snow.ButtonPressed}, the uniform {Flag("snow_on")} (want off)");
+        }
+
+        lab.Snow.ButtonPressed = true;
+        if (!Flag("snow_on"))
+        {
+            faults.Add("switched on, the uniform stayed off");
+        }
+
+        Vector3 colour = lab._material.GetShaderParameter("snow_srgb").AsVector3();
+        if (colour != Srgb(start.SnowColour) || start.SnowColour.ToHtml(false) != "f4f1ea")
+        {
+            faults.Add($"the shader's snow is {colour}, the file's #{start.SnowColour.ToHtml(false)} (want the file's, and §2's #f4f1ea)");
+        }
+
+        lab.ResetToApproved();
+        if (lab.Snow.ButtonPressed || Flag("snow_on"))
+        {
+            faults.Add("Reset to approved left the snow on");
+        }
+
+        yield return Line("snow", "opens off, reaches the shader, draws the file's #f4f1ea, and Reset turns it off", faults);
+
+        // Snow blend: three, in the shader's order, and the file's at opening.
+        faults = new List<string>();
+        if (lab.SnowBlend.ItemCount != GrassLabTerrain.SnowBlends.Length || lab.SnowBlend.Selected != start.SnowBlend || Blend() != start.SnowBlend)
+        {
+            faults.Add($"opens with {lab.SnowBlend.ItemCount} blends at {lab.SnowBlend.Selected}, the shader at {Blend()} (want 3, the file's {start.SnowBlend} on both)");
+        }
+
+        for (int i = 0; i < GrassLabTerrain.SnowBlends.Length; i++)
+        {
+            lab.SnowBlend.Select(i);
+            lab.SnowBlend.EmitSignal(OptionButton.SignalName.ItemSelected, (long)i);
+            if (Blend() != i || !lab.SnowBlend.GetItemText(i).StartsWith(GrassLabTerrain.SnowBlends[i], StringComparison.Ordinal))
+            {
+                faults.Add($"\"{lab.SnowBlend.GetItemText(i)}\" reached the shader as {Blend()} (want {i}, {GrassLabTerrain.SnowBlends[i]})");
+            }
+        }
+
+        lab.ResetToApproved();
+        if (lab.SnowBlend.Selected != start.SnowBlend || Blend() != start.SnowBlend)
+        {
+            faults.Add($"Reset left the blend at {lab.SnowBlend.Selected}, the shader at {Blend()}");
+        }
+
+        yield return Line("snow blend", "opens at the file's Lerp, each of Lerp, Screen and Lighten reaches the shader as its own number, and Reset brings it back", faults);
+
+        // The three sliders.
+        foreach ((string what, HSlider slider, string uniform, float file, double probe) in new[]
+        {
+            ("snow amount", lab.SnowAmount, "snow_amount", start.SnowAmount, 0.25),
+            ("snow patchiness", lab.SnowPatchiness, "snow_patchiness", start.SnowPatchiness, 0.2),
+            ("snow patch size", lab.SnowPatchSize, "snow_patch_tiles", start.SnowPatchTiles, 30.0),
+        })
+        {
+            faults = new List<string>();
+            if (Math.Abs(Uniform(uniform) - file) > 1e-6f)
+            {
+                faults.Add($"opens at {Uniform(uniform)} (want the file's {file})");
+            }
+
+            slider.Value = probe;
+            if (Math.Abs(Uniform(uniform) - (float)probe) > 1e-6f)
+            {
+                faults.Add($"{probe} reached the shader as {Uniform(uniform)}");
+            }
+
+            lab.ResetToApproved();
+            if (Math.Abs(Uniform(uniform) - file) > 1e-6f)
+            {
+                faults.Add($"Reset left it at {Uniform(uniform)}");
+            }
+
+            yield return Line(what, "opens at the file's value, reaches the shader, and Reset brings it back", faults);
+        }
     }
 
     /// <summary>The fake map is what `terrain-shader.md §4` says it is.</summary>
