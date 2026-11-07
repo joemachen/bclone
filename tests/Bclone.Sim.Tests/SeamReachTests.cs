@@ -131,6 +131,89 @@ public sealed class SeamReachTests
         Assert.Contains("across the water", verdict.Reason, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⭐ THE REACH IS MEASURED FROM THE NEAREST TILE OF THE BUILDING (D701; Joe, 2026-11-07: <i>"why cant i build a quarry near
+    /// this particular stone seam. it works for all other seams."</i>). A 2×1 quarry's anchor is its right-hand tile, so rock at
+    /// the reach past its left end was one too far from the anchor and refused while the same rock on the right passed. Now rock
+    /// at the reach from the left tile is allowed AND the claim sees it; one tile further is refused with how far off the
+    /// nearest is; a corner of the grown box is refused by the diamond's distance; and a ghost turned a quarter reads the reach
+    /// from its own far end.
+    /// </summary>
+    [Fact]
+    public void TheReachIsMeasuredFromTheNearestTileOfTheBuilding()
+    {
+        SimWorld off = AValley(Shipped with { FaceReachTiles = 0 });
+        SimWorld on = AValley(Shipped);
+        GridPos? found = FindASite(off, BuildingKind.Quarry, at => AllOpenGrassAround(off, at, Reach + 5));
+        Assert.NotNull(found);
+        GridPos site = found!.Value;
+
+        List<GridPos> footprint = on.FootprintOf(BuildingKind.Quarry, on.AnchorOn(BuildingKind.Quarry, site)).CoveredTiles();
+        Assert.Equal(2, footprint.Count);
+        int left = footprint.Min(t => t.X);
+        Assert.Equal(site.X - 1, left);
+
+        // The reach past the left end: Reach from the building, Reach + 1 from its anchor. Allowed, and the claim sees the seam.
+        var within = new GridPos(left - Reach, site.Y);
+        Assert.True(on.SetTerrain(within, Terrain.Rock));
+        PlacementVerdict allowed = on.CanBuildAt(BuildingKind.Quarry, site);
+        Assert.True(allowed.Allowed, allowed.Reason);
+        Assert.Contains(within, on.SeamToClaim(BuildingKind.Quarry, site));
+        Assert.True(on.SetTerrain(within, Terrain.Grass));
+
+        // One tile further: refused, and the sentence says how far off the nearest is.
+        var beyond = new GridPos(left - Reach - 1, site.Y);
+        Assert.True(on.SetTerrain(beyond, Terrain.Rock));
+        PlacementVerdict refused = on.CanBuildAt(BuildingKind.Quarry, site);
+        _output.WriteLine($"rock {Reach + 1} past the left end of a quarry at {site}: {refused.Reason}");
+        Assert.False(refused.Allowed);
+        Assert.Contains($"none within {Reach} tiles", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains($"the nearest is {Reach + 1} tiles off", refused.Reason, StringComparison.Ordinal);
+        Assert.Empty(on.SeamToClaim(BuildingKind.Quarry, site));
+        Assert.True(on.SetTerrain(beyond, Terrain.Grass));
+
+        // A corner of the grown box: Reach across and Reach up is 2 × Reach by the diamond, not Reach.
+        var corner = new GridPos(left - Reach, site.Y - Reach);
+        Assert.True(on.SetTerrain(corner, Terrain.Rock));
+        refused = on.CanBuildAt(BuildingKind.Quarry, site);
+        Assert.False(refused.Allowed, "a corner of the grown box passed as within reach");
+        Assert.Contains($"the nearest is {2 * Reach} tiles off", refused.Reason, StringComparison.Ordinal);
+        Assert.True(on.SetTerrain(corner, Terrain.Grass));
+
+        // Turned a quarter: the reach is read from whatever tiles the turned footprint covers (a half-tile anchor joins six),
+        // so rock at the reach above its topmost row is allowed — the far end, not the anchor, decides.
+        Angle turned = Angle.FromTurnFraction(1, 4);
+        Point anchor = on.AnchorOn(BuildingKind.Quarry, site);
+        List<GridPos> tall = on.FootprintOf(BuildingKind.Quarry, anchor, turned).CoveredTiles();
+        int top = tall.Min(t => t.Y);
+        Assert.True(top < site.Y, "the turned footprint should reach a row above the anchor's");
+        var above = new GridPos(tall.Min(t => t.X), top - Reach);
+        Assert.True(Distance(above, site) > Reach, "the pose must put the rock out of the anchor's own reach");
+        Assert.True(on.SetTerrain(above, Terrain.Rock));
+        PlacementVerdict turnedOk = on.CanBuildAt(BuildingKind.Quarry, anchor, facing: turned);
+        Assert.True(turnedOk.Allowed, turnedOk.Reason);
+        Assert.True(on.SetTerrain(above, Terrain.Grass));
+    }
+
+    /// <summary>Every tile within <paramref name="radius"/> (a square) is grass the village can walk to.</summary>
+    private static bool AllOpenGrassAround(SimWorld world, GridPos centre, int radius)
+    {
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                var at = new GridPos(centre.X + dx, centre.Y + dy);
+                if (!world.Map.Contains(at) || world.Map.TerrainAt(at) != Terrain.Grass
+                    || !world.TravelCost.CanReach(world.Map.FoundingSite, at))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     // ---------------------------------------------------------------
     //  Painting
     // ---------------------------------------------------------------

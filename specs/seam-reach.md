@@ -4,7 +4,11 @@
 stands by). **Status:** ✅ **placement within 2 tiles built, played and merged (D540, D541, D545); ✅ D561 — a quarry or a
 mine paints the whole seam it stands by) — built, played and merged (D562).** ✅ **§8 (D613): claimed, not painted — a quarry or a mine takes the
 whole seam it stands by when it is finished, drawn round with a palisade; the brush goes. SPECCED AND BUILT (D613), PLAYED AND MERGED (D615).** `SeamReachTests` (8)
-green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved.
+green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved. ⭐ **D701 (2026-11-07,
+Joe: *"why cant i build a quarry near this particular stone seam. it works for all other seams."*): the reach is measured from the
+building's NEAREST tile, not its anchor tile, in the placement, the claim and the paint rule alike, and the refusal names how far off
+the nearest seam is — on `slice/seam-reach-footprint`, UNPLAYED, UNMERGED.** `TheReachIsMeasuredFromTheNearestTileOfTheBuilding`;
+4 mutants, 18 reds (14 of them the rings array thrown past its end), no zero. No golden moved.
 
 ---
 
@@ -53,12 +57,18 @@ seam is already named on the **job** row: `works_face` is `Rock` for the quarrie
 - **A new building-row field, `face_reach`** (tiles; 0 = no rule). The quarry and the mine set it; nothing else.
   The ground it asks for is the face its trade works (`JobsCatalog.WorksFace` of the row's trade), so a modded face
   trade gets the rule by setting one number.
-- **`CanBuildAt` refuses** a quarry or a mine with no tile of its face within `face_reach` of the building's tile
-  (the lodge's diamond, `|dx| + |dy| ≤ reach`), **counting only face tiles the village can walk to**
+- **`CanBuildAt` refuses** a quarry or a mine with no tile of its face within `face_reach` of the building's **nearest tile**
+  (⭐ D701 — the diamond `|dx| + |dy| ≤ reach` measured from the footprint's rectangle, `SimWorld.TilesWithinReachOf`, not from
+  the anchor tile alone as D540 built it: `AnchorOn` puts a 2×1 quarry's anchor on its right-hand tile, so rock at the reach past
+  its left end was one tile too far and refused while the same rock on the right passed — Joe, 2026-11-07: *"it works for all
+  other seams"*; the claim (§8.1) and the paint rule read the same tiles, so a quarry allowed always has a seam to claim),
+  **counting only face tiles the village can walk to**
   (`TravelCost.CanReach`), the D110/D111 lesson: a seam across the river is not near, it is unreachable, and the
   sentence says which.
 - **The order and the words**, after the reachability check, beside the fishery and lodge rules:
-  - none at all within reach: *"A quarry has to stand near rock, and there is none within 2 tiles of there."*
+  - none at all within reach: *"A quarry has to stand near rock, and there is none within 2 tiles of there."* — and, since
+    D701, when a seam the village can reach and nobody holds lies within four more tiles, *"… — the nearest is 3 tiles off."*
+    (the next rings only, never the whole map; a seam another building holds, or one cut off, keeps its own sentence).
   - only across water: *"The rock near there is across the water — the quarriers could not reach it."*
 - **Moving a building** (`relocate`) goes through `CanBuildAt`, so the rule holds there too.
 - **A building already standing is never refused after the fact**: a save from before this slice keeps a quarry in
@@ -80,6 +90,9 @@ seam is already named on the **job** row: `works_face` is `Rock` for the quarrie
 5. The shipped rows carry the reach (`QuarryReach`, `MineReach` pins), and a modded face row gets the rule from data.
 6. Existing quarry and mine tests still find a place (they search outward from the seam: `SomewhereAQuarryFits`).
 7. No golden moves (no golden village marks a quarry or a mine); `git diff` says so.
+8. ⭐ D701: rock at the reach past the building's far end is allowed AND claimed; one tile further is refused with *"the nearest
+   is 3 tiles off"*; a corner of the grown box (the diamond's 2 × reach) is refused; a ghost turned a quarter reads the reach from
+   its own far end (`TheReachIsMeasuredFromTheNearestTileOfTheBuilding`).
 
 ---
 
@@ -164,8 +177,8 @@ whole seam it stands by** — his own D561 reach, where today the brush may pain
 
 ### 8.1 The rule
 
-- **Which seam.** Of the face tiles inside the building's placement diamond (`|dx| + |dy| ≤ face_reach_tiles`, the
-  diamond `CanBuildAt` already asks — §3), the one **nearest the building's tile by that same distance**, ties broken by
+- **Which seam.** Of the face tiles within `face_reach_tiles` of the building's **nearest tile** (the same tiles `CanBuildAt`
+  asks — §3; ⭐ D701, the anchor tile's diamond before), the one **nearest the building by that same distance**, ties broken by
   map order, that the village can walk to (`TravelCost.CanReach`) and that **no other building holds**. Its seam is the
   one claimed: every tile joined to it through its eight neighbours, of the same face (`SimWorld.SeamPatchOf`, D561 — rock
   and iron never one seam). Never an `Rng` draw, so the same quarry on the same ground claims the same seam every run.

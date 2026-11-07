@@ -119,8 +119,17 @@ public sealed partial class SimWorld
     /// <param name="kind">The building.</param>
     /// <param name="position">Its tile.</param>
     /// <param name="claimant">The workplace that would hold it, or 0 for a building not yet raised: its own ground is no obstacle.</param>
-    public IReadOnlyList<GridPos> SeamToClaim(BuildingKind kind, GridPos position, int claimant = 0)
+    public IReadOnlyList<GridPos> SeamToClaim(BuildingKind kind, GridPos position, int claimant = 0) =>
+        SeamToClaim(kind, FootprintOf(kind, AnchorOn(kind, position)).CoveredTiles(), claimant);
+
+    /// <summary>
+    /// The seam a building with this footprint would claim (§8.1): of the face tiles within reach of its NEAREST tile (D701 —
+    /// the reach was the anchor tile's diamond until then, so a 2×1 quarry reached two tiles right and one left), the nearest,
+    /// ties in map order, that the village can walk to and nobody holds; then every tile joined to it.
+    /// </summary>
+    public IReadOnlyList<GridPos> SeamToClaim(BuildingKind kind, IReadOnlyList<GridPos> footprint, int claimant = 0)
     {
+        ArgumentNullException.ThrowIfNull(footprint);
         if (BuildingsCatalog[kind]?.MustBeNear is not NearRule near
             || BuildingsCatalog.EmployedBy(kind) is not JobKind trade
             || JobsCatalog.FaceOf(trade) is not Terrain face
@@ -130,37 +139,81 @@ public sealed partial class SimWorld
         }
 
         GridPos village = FirstHomeOrFoundingSite();
-        for (int distance = 0; distance <= near.Tiles; distance++)
+        foreach ((GridPos at, _) in TilesWithinReachOf(footprint, near.Tiles))
         {
-            for (int dy = -distance; dy <= distance; dy++)
+            if (!Map.Contains(at) || Map.TerrainAt(at) != face || !TravelCost.CanReach(village, at)
+                || HolderOfTheSeam(SeamPatchOf(at), claimant) is not null)
             {
-                int span = distance - Math.Abs(dy);
-                foreach (int dx in span == 0 ? new[] { 0 } : new[] { -span, span })
+                continue;
+            }
+
+            var claim = new List<GridPos>();
+            IReadOnlyList<int> seam = SeamTilesOf(SeamPatchOf(at));
+            for (int i = 0; i < seam.Count; i++)
+            {
+                GridPos tile = Zones.PositionOf(seam[i]);
+                if (MayClaim(face, tile, claimant, village))
                 {
-                    var at = new GridPos(position.X + dx, position.Y + dy);
-                    if (!Map.Contains(at) || Map.TerrainAt(at) != face || !TravelCost.CanReach(village, at)
-                        || HolderOfTheSeam(SeamPatchOf(at), claimant) is not null)
-                    {
-                        continue;
-                    }
+                    claim.Add(tile);
+                }
+            }
 
-                    var claim = new List<GridPos>();
-                    IReadOnlyList<int> seam = SeamTilesOf(SeamPatchOf(at));
-                    for (int i = 0; i < seam.Count; i++)
-                    {
-                        GridPos tile = Zones.PositionOf(seam[i]);
-                        if (MayClaim(face, tile, claimant, village))
-                        {
-                            claim.Add(tile);
-                        }
-                    }
+            return claim;
+        }
 
-                    return claim;
+        return System.Array.Empty<GridPos>();
+    }
+
+    /// <summary>
+    /// ⭐ THE TILES WITHIN <paramref name="reach"/> OF THE NEAREST TILE OF A FOOTPRINT (D701; `seam-reach.md §3`). D540's diamond
+    /// (`|dx| + |dy| ≤ reach`) was asked of the anchor tile alone, and `AnchorOn` puts a 2×1's anchor on its right-hand tile —
+    /// so rock a tile past the left end was three tiles off and refused while the same seam on the right passed (Joe,
+    /// 2026-11-07: <i>"why cant i build a quarry near this particular stone seam. it works for all other seams."</i>). Now the
+    /// distance is to the footprint's rectangle: <c>dx = max(0, minX − x, x − maxX)</c>, the same for y, kept where
+    /// <c>dx + dy ≤ reach</c>. Yielded in rings of increasing distance and map order (y, then x) within a ring, so a
+    /// "nearest first, ties in map order" reader keeps its shape. A 2×1 at reach 2 is 24 tiles; nothing is kept between asks.
+    /// </summary>
+    internal static IEnumerable<(GridPos Tile, int Distance)> TilesWithinReachOf(IReadOnlyList<GridPos> footprint, int reach)
+    {
+        if (footprint.Count == 0)
+        {
+            yield break;
+        }
+
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        for (int i = 0; i < footprint.Count; i++)
+        {
+            minX = Math.Min(minX, footprint[i].X);
+            maxX = Math.Max(maxX, footprint[i].X);
+            minY = Math.Min(minY, footprint[i].Y);
+            maxY = Math.Max(maxY, footprint[i].Y);
+        }
+
+        var rings = new List<GridPos>[reach + 1];
+        for (int y = minY - reach; y <= maxY + reach; y++)
+        {
+            int dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
+            for (int x = minX - reach; x <= maxX + reach; x++)
+            {
+                int dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
+                int distance = dx + dy;
+                if (distance <= reach)
+                {
+                    (rings[distance] ??= new List<GridPos>()).Add(new GridPos(x, y));
                 }
             }
         }
 
-        return System.Array.Empty<GridPos>();
+        for (int distance = 0; distance <= reach; distance++)
+        {
+            if (rings[distance] is List<GridPos> ring)
+            {
+                for (int i = 0; i < ring.Count; i++)
+                {
+                    yield return (ring[i], distance);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -221,7 +274,7 @@ public sealed partial class SimWorld
         }
 
         int claimed = 0;
-        IReadOnlyList<GridPos> seam = SeamToClaim(kind, workplace.Position.ToTile(), workplace.Id);
+        IReadOnlyList<GridPos> seam = SeamToClaim(kind, workplace.Footprint.CoveredTiles(), workplace.Id);
         for (int i = 0; i < seam.Count; i++)
         {
             claimed += PaintWorkGround(workplace, seam[i]).Allowed ? 1 : 0;
@@ -242,17 +295,12 @@ public sealed partial class SimWorld
             return false;
         }
 
-        GridPos at = workplace.Position.ToTile();
-        for (int dy = -near.Tiles; dy <= near.Tiles; dy++)
+        // Within reach of the building's nearest tile (D701), the same tiles the placement and the claim read.
+        foreach ((GridPos nearby, _) in TilesWithinReachOf(workplace.Footprint.CoveredTiles(), near.Tiles))
         {
-            int span = near.Tiles - Math.Abs(dy);
-            for (int dx = -span; dx <= span; dx++)
+            if (Map.Contains(nearby) && Map.TerrainAt(nearby) == near.Terrain && SeamPatchOf(nearby) == patch)
             {
-                var nearby = new GridPos(at.X + dx, at.Y + dy);
-                if (Map.Contains(nearby) && Map.TerrainAt(nearby) == near.Terrain && SeamPatchOf(nearby) == patch)
-                {
-                    return true;
-                }
+                return true;
             }
         }
 

@@ -21,6 +21,13 @@
 > read; clothing and handcarts now ship with a starting limit of 50 (`starting_stock_limits`), hay still none. Pushed; he plays it
 > from `main` (`.\run.bat` from the main checkout — a new game, format 12; the panel's clothing and handcarts rows read 50).
 >
+> **🔨 `slice/seam-reach-footprint` (a branch in the main checkout, off `main` d299b7b; unplayed, unmerged, not pushed) — Joe's play note of
+> 2026-11-07, D701:** *"why cant i build a quarry near this particular stone seam. it works for all other seams."* The seam reach was asked
+> of the anchor tile alone, and a 2×1 quarry's anchor is its right-hand tile; now the placement, the claim and the paint rule read the
+> reach from the building's nearest tile (`SimWorld.TilesWithinReachOf`), and the refusal names how far off the nearest seam is. ⚠️ His
+> saves held no rock at the tooltip's tile, so the instance is unconfirmed — if a quarry is refused again, **read the sentence**: held
+> (a hut's painted ground covers a seam tile), cut off, walled off, or out of reach. Merge `--no-ff` at his word after he plays.
+>
 > **What is built.** A standing market or trading post owns a handcart (`Workplace.HandcartUses`, `IsACartOwner`; saved `handcart_uses`,
 > hashed sparsely `0xF2`); whose cart a villager has is `Villager.CartForTheWorks` beside `PushingACart` (saved `cart_for_the_works`,
 > sparse tag 10). A free marketer or merchant fetches one from the shelf when the building has none (`TryFetchTheWorksCart` — the row's
@@ -9120,6 +9127,17 @@ Read `git status` after staging, every time.
   hue. A single "ground colour" would have hidden that; test against the percentiles of the rendered ground.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
+
+## ⛔ THE TRAPS D701 PAID FOR — A REACH ASKED OF THE ANCHOR TILE IS LOPSIDED ON ANY BUILDING WIDER THAN ONE
+
+- ⛔ **A distance rule asked of the anchor tile alone is asymmetric on a 2×1.** `AnchorOn` puts an even-width building's anchor on
+  its right-hand (or bottom) tile, so a reach of 2 was 2 tiles one way and 1 the other, and Joe met it as "works for all other seams
+  but this one". Any rule that says *within N tiles of the building* must read the footprint (`TilesWithinReachOf`), and THREE rules
+  read the same diamond here (placement, claim, paint) — fix one and a quarry is admitted that claims nothing. Grep for the diamond
+  loop (`span = reach - Math.Abs(dy)`) before declaring a reach rule fixed.
+- ⛔ **A save that does not hold the moment cannot name the cause.** The newest saves had no rock at the tooltip's tile at all; an hour
+  of forensics ended at "unconfirmed". When the instance matters, ask Joe for the refusal sentence or a save taken at the moment,
+  before reading terrain bytes.
 
 ## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
 

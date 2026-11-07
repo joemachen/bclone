@@ -12,7 +12,7 @@ namespace Bclone.Sim.Tests;
 /// <summary>
 /// ⭐ Claimed, not painted (D613, `seam-reach.md §8`): a finished quarry or mine takes the whole seam it stands by — the
 /// nearest face in its placement diamond the village can walk to and nobody holds — through the brush's own door, and the
-/// ghost's preview (<see cref="SimWorld.SeamToClaim"/>) is what completion claims. Joe: <i>"when the player places a mine or
+/// ghost's preview (<see cref="SimWorld.SeamToClaim(BuildingKind, GridPos, int)"/>) is what completion claims. Joe: <i>"when the player places a mine or
 /// quarry near its ore node, the building 'smart draws' a type of mining/fence structure around the nearest node"</i>.
 /// </summary>
 public sealed class SeamClaimTests
