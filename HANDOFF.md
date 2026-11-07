@@ -1,6 +1,6 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), LOCAL, NOT PUSHED; `origin/main` = 31c2356 (D695 + A DOCS COMMIT). ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: PUSH AT HIS WORD; HE PLAYS FROM `main`; THEN HOUSE TIERS; THE OX CART LATER AS *HEAVY HAULAGE*. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), PUSHED; ORIGIN AGREES. ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: HE PLAYS FROM `main` (THE TRADES' CARTS, THE FIRST LEG, THE LIMITS, THE LODGE FIX — NONE PLAYED YET); ⏸️ HIS CALL: THE RESTOCK THRESHOLD UNDER A PARKED CART; THEN HOUSE TIERS — THE LAST GATE ITEM; THE OX CART LATER AS *HEAVY HAULAGE*. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
-> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695 PUSHED; D696–D697 MERGED, D698, NOT PUSHED) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
+> **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695–D698 ALL ON `main` AND PUSHED; ORIGIN AGREES) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of `claude/elastic-dewdney-d55a19` (D695, 2026-11-06), pushed the same day at Joe's word with the docs commit that made
 > these lines true; origin agrees.** The branch was three commits past `main` 6a2f4fe (D691): piece 1 (D692) the owners, piece 2 (D693) what it buys, piece 3
@@ -10,15 +10,15 @@
 > the main checkout (`.\run.bat`; ⚠️ **save format 12** — his format-11 Oakhaven save and everything older are refused in words, which
 > he accepted; a new game). Pushed. The worktree `.claude/worktrees/elastic-dewdney-d55a19` still stands, as the earlier ones do.
 >
-> **🔀 `main` = the merge of `slice/first-leg-and-limits` (D698, 2026-11-06; one commit, d9d9228, off 31c2356), local, NOT pushed; `origin/main` =
-> 31c2356. Merged `--no-ff` at Joe's *"Merge now"*, unplayed, these lines corrected inside the merge commit. The branch carried his two calls of
+> **🔀 `main` = the merge of `slice/first-leg-and-limits` (D698, 2026-11-06; one commit, d9d9228, off 31c2356), pushed the same day at Joe's
+> word with this docs commit; origin agrees. Merged `--no-ff` at Joe's *"Merge now"*, unplayed, these lines corrected inside the merge commit. The branch carried his two calls of
 > 2026-11-06 after the push:** (1) **D696, the marketer's first leg** (`handcart.md §13.2a`): *"have the marketer's day begin with a walk to
 > the market so the cart gets used on nearly every trip"* — a marketer deciding away from the market with an errand and the cart parked walks
 > to it first (`WalkingToTheMarket`); measured, the cart is under 58–74 % of counter trips (was 29–51 %), **but the trips and the Market
 > bucket did not fall**, because the counter is restocked when one armful short and a carted trip carries 86–106 — ⏸️ the restock threshold
 > under a parked cart is his next call (the ⏸️ OPEN list). (2) **D697, the starting limits**: *"clothing starts at 0 stock limit. unlocked
 > items should start at 50 by default"* — the panel showed a good with no limit as **0** (`SpinBox` value `starts ?? 0`), which is what he
-> read; clothing and handcarts now ship with a starting limit of 50 (`starting_stock_limits`), hay still none. Push at his word; he plays it
+> read; clothing and handcarts now ship with a starting limit of 50 (`starting_stock_limits`), hay still none. Pushed; he plays it
 > from `main` (`.\run.bat` from the main checkout — a new game, format 12; the panel's clothing and handcarts rows read 50).
 >
 > **What is built.** A standing market or trading post owns a handcart (`Workplace.HandcartUses`, `IsACartOwner`; saved `handcart_uses`,
@@ -9610,6 +9610,19 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE RESTOCK THRESHOLD UNDER A PARKED CART (D696's measurement, 2026-11-06) — HIS.** The first leg put the market's cart under
+  58–74 % of counter trips and moved neither the trips a marketer-year nor the Market bucket (`handcart.md §13.6`, the second table):
+  `CounterShortOf` fires the restock when the counter is **one armful** short, so a carted trip carries 86–106 of a possible 240. The
+  lever: when the market's cart is parked at its door, let the counter run down to **a cart's load short** before the restock fires (a
+  threshold read by the owner's cart — a number, measured first on `ZzLogistics` as every number here is), or leave it as it is. Nothing
+  built; nothing waits on it but the cart's gain.
+- ⏸️ **HAY'S ROW READS 0 ON THE STOCK-LIMITS PANEL WITH NO LIMIT SET (D697's trap).** Clothing and handcarts start at 50 now at his word;
+  hay has no limit (D590) and the panel shows *no limit* as 0 (`AddStockLimitRow`, `starts ?? 0`). A row that says *none* in words is the
+  legibility fix; a typed number for hay is the other answer. His.
+- ⏸️ **THE MARKETER'S FIRST LEG AND THE LIMITS (D696–D697) — MERGED INTO `main` AT HIS WORD (D698, 2026-11-06), PUSHED, UNPLAYED; JOE PLAYS FROM
+  `main`.** What to look for (a new game, format 12): the stock-limits panel's clothing and handcarts rows read 50 before he touches them; a
+  marketer at home after a rest, with the market's cart parked, walks to the market first (*"walking to the market for its handcart"*) and
+  leaves it pushing the cart, not on foot; a second marketer while the first has the cart still goes on foot (one pusher a building).
 - ⏸️ **THE TRADES' CARTS (D692–D694) — MERGED INTO `main` AT HIS WORD (D695, 2026-11-06), UNPLAYED; JOE PLAYS IT FROM `main`.**
   What to look for (`.\run.bat` from the main checkout; **format 12** — a new game, or a save made on this build; a village with a workshop
   and carts racked): the marketer walking to the warehouse, pushing a cart to the market and leaving it there — a slate-blue chip beside
