@@ -93,6 +93,21 @@ right-click lets go of a drag.
   Both stay inside Dial's 1..10 (`TerrainCostField.Refill` throws otherwise).
 - **Crossings**: a walker whose step goes from land onto a deck has crossed. Counted on the bridge (the card) and
   in the village's `BridgeCrossings` (the unlock, §5.2). Hashed once non-zero, so it is zero in every golden today.
+- ⭐ **A leg across a deck runs end to end** (2026-11-07, D70x — Joe, after playing: *"when villagers cross a diagonal
+  bridge, they clearly walk in a 'staircase' pattern"*). A slanted deck is a one-wide, edge-joined staircase of water
+  tiles made walkable, and the leg planner (`BehaviorSystem.PlanLeg`, `gridless.md` slice 4) aims at route tiles'
+  **centres**: the line from the walker to a deck tile's centre has a different slope from the bridge's own line, so it
+  grazes the water beside the deck, `LineOfSight.Clear` refuses it, and the walk breaks into axis-aligned jogs — the
+  staircase Joe saw. **The line between the bridge's two end *points* is the deck by construction** (`Bridge.TilesUnder`
+  is `LineOfSight.TilesCrossed` of that very segment), so when the greedy string-pull stops on a bridge's tile having come
+  onto it along the bridge, `AimAlongTheDeck` aims at those instead: standing exactly on one end, the leg runs to the
+  other end exactly, where the route reaches its tile; otherwise it runs to the end the route passed last — the point,
+  not its tile's centre — so the walker stands exactly on the end and plans again from there, where the first case
+  applies. `Clear` is asked of the end-to-end segment anyway (a fence laid across an abutment would keep today's leg);
+  a re-plan from mid-deck fits neither case and keeps today's behaviour. Clock B and `WalkedOver` read the leg's route
+  index unchanged, the deck still takes no wear, and `CrossedOnto` still fires once at the step from land onto the
+  deck. ⚠️ `Bridge.Near`/`Far` are the raw drag points — tile centres under Snap, anything under free placement — which
+  is why the leg aims at the *points*: the centres of the end tiles lie on a different line (the off-centre guard, §11).
 
 ---
 
@@ -430,3 +445,14 @@ the far bank, and an 8×8 patch beyond it painted for homes.
   demands its full width, so the card's minimum cannot see a caption overflow — the width check is kept for the title
   and the numbers it has always measured, and the status-line check is the one with teeth. The probe stays at 106
   `[widths]` lines, 70 ✅, 0 ⛔, bar 151, `done.`; no golden.
+- 🔨 **The straight deck (2026-11-07, D70x; §3.1):** `BehaviorSystem.AimAlongTheDeck`, asked where `PlanLeg`'s greedy
+  loop breaks on a bridge's tile. **Guards** — `OneWalkAcrossIsOneStraightCrossingAndTheDeckTakesNoWear` tightened
+  (slant 3, stray under 0.25 of a tile measured until the far tile, **exactly one leg from one of the bridge's points to
+  the other**; the first form allowed 0.5 at slant 2 and was green with the staircase) and
+  `ABridgeDraggedOffCentreIsWalkedAlongItsOwnLine` (both ends nudged 0.3 of a tile off their centres). **Red before the
+  fix, 2 of 2**: 0 end-to-end legs on both, strays 0.411 and 0.602. After: 1 leg each, stray 0.000 on both (5 and 6
+  ticks). Red-checked: **2 mutants, 3 reds, no zeros** — the end-point case skipped (a walk from mid-bank falls back to
+  the staircase) **2**, strays 0.411 / 0.602 again; the end *tiles'* centres aimed at instead of the points **1**, the
+  off-centre pose only (the line to the far tile's centre was clear, so the leg went there, 0 end-to-end legs, stray
+  0.188), which is why that pose exists. `PhaseFiveGoldenTests`' bridge is slant 0 and its two hashes did not move; no
+  golden moved.

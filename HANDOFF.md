@@ -9121,6 +9121,29 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS THE FOUR BRIDGE FIXES (D70x, 2026-11-07) PAID FOR — A TILE-CENTRE LEG OVER A ONE-WIDE SLANTED DECK GRAZES WATER, A CLIPPED CAPTION CANNOT BE MEASURED, AND A FRESH WORKTREE HAS NO IMPORTS
+
+- ⛔ **A tile-centre leg over a one-wide slanted deck grazes the water — aim at the deck's end *points*.** A bridge's tiles are
+  `LineOfSight.TilesCrossed` of its own segment, so the only straight line that stays on a slanted deck is the line between its two
+  end points; the line from anywhere to a deck tile's *centre* has a different slope, clips the water beside the deck, `Clear` refuses
+  it, and the string-pull falls back to axis-aligned jogs — Joe's *"staircase"*. `BehaviorSystem.AimAlongTheDeck` aims at `Bridge.Near`
+  / `Far` (the raw drag points, not tile centres — under free placement they are anywhere in the tile). **The guard that let it ship
+  allowed half a tile of stray at slant 2**, and half a tile is exactly what one jog is: measure the thing you mean (here, *one leg whose
+  ends are the bridge's two points*), not a tolerance that the failure fits inside. And measure the stray *until the far tile* — the last
+  hop inside it to the tile's centre is a walk's ordinary arrival (D463) and reads as 0.23 of a tile off the bridge's line.
+- ⛔ **A card caption cannot be measured for overflow.** The caption is a one-line `Label` with `ClipText` and `TrimEllipsis`; a label
+  with trim-ellipsis overrun never demands its full width, so `GetCombinedMinimumSize().X` is blind to a sentence that is cut at forty-five
+  characters — a mutant that put a 110-character sentence there scored **zero** against the width check (D70x-3). A sentence the player must
+  read goes on the **status** line, which wraps; the probe asserts *where* the sentence is, not how wide the card is. ⚠️ The two existing
+  bridge captions (71 and 62 characters) clip the same way today, with an empty tooltip — found, not fixed.
+- ⛔ **A fresh worktree has no Godot imports (D678's trap, paid again).** The first probe died at the Grass Lab self-check on a missing
+  `grass_seasons.png` import (a `NullReferenceException` in `GrassLab.ImportHolds`) and never printed `done.`, with no Godot left to kill. The
+  remedy is unchanged: `"$GODOT" --headless --path src/Bclone.Game --import`, then delete the untracked `*.cs.uid` files and `git checkout`
+  the `.import` sidecars it rewrote (eight of them), then the probe. A probe that stops before `done.` with no Godot running is this, not a hang.
+- ⛔ **A placeholder number in a §7 entry is a hand-over, not a decision.** Four sessions wrote §7 the same day; this one's entries are
+  `D70x-1..4` for the merging session to number. Grep for `D70x` before the merge commit and after it: a placeholder that reaches `main` is
+  a cross-reference nothing can follow.
+
 ## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
 
 - ⛔ **The stock-limits panel shows "no limit" as 0.** `AddStockLimitRow` puts `starts ?? 0` into the `SpinBox` and disables *clear*; a
@@ -9623,6 +9646,15 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **Watercolour textures for stone, clay, dirt and the other terrains** — today they are flat fills in the band.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **THE FOUR BRIDGE FIXES (D70x-1..4, 2026-11-07) — ON `claude/recursing-northcutt-77f56b`, FOUR COMMITS, UNPLAYED, UNMERGED; JOE PLAYS,
+  MERGES AT HIS WORD.** What to look for (`.\run.bat` from the worktree; a new game or a format-12 save): a wooden bridge's card reads
+  *"The village learns stone after 1,000 crossings (N so far)"*; with the stone bridge in hand a click on a wooden one queues the rebuild and
+  the bridge's own card then reads *"Being set in stone — 1st in the queue, 0 of 24 logs and 0 of 72 stone delivered, 0 % done."* under its
+  status, the caption *"being set in stone — 0 % done"*, and the map's band along the span fills as the card's percentage rises; when it
+  finishes the log says *"Wooden bridge 1 is set in stone now and is stone bridge 1 from here"* and the card's title is the stone name; and
+  **a villager crossing a diagonal bridge walks one straight line along it**, bank to bank. ⚠️ Not posed in any guard: a villager who stands
+  in a bridge's end tile but off its end point (a teleport, or a job whose standing place is the tile's centre) still re-plans as before.
 
 - ⏸️ **THE RESTOCK THRESHOLD UNDER A PARKED CART (D696's measurement, 2026-11-06) — HIS.** The first leg put the market's cart under
   58–74 % of counter trips and moved neither the trips a marketer-year nor the Market bucket (`handcart.md §13.6`, the second table):
