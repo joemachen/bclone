@@ -15,6 +15,7 @@ public sealed partial class GrassLab
     {
         "coverage_on", "coverage_fade", "ground_map", "ground_map_tiles", "kind_wood", "kind_stone", "kind_water", "kind_shallows",
         "view_tile", "snow_on", "snow_blend", "snow_amount", "snow_patchiness", "snow_patch_tiles", "snow_srgb",
+        "splat_on", "splat_sharpness", "bleed_on", "bleed_reach_tiles", "bleed_scale_tiles",
     };
 
     /// <summary>Every uniform this file and the zoom set on the grain: the probe asks its compiled shader too.</summary>
@@ -46,6 +47,16 @@ public sealed partial class GrassLab
     internal HSlider SnowPatchiness { get; private set; } = null!;
 
     internal HSlider SnowPatchSize { get; private set; } = null!;
+
+    internal CheckBox Splat { get; private set; } = null!;
+
+    internal HSlider SplatSharpness { get; private set; } = null!;
+
+    internal CheckBox Bleed { get; private set; } = null!;
+
+    internal HSlider BleedReach { get; private set; } = null!;
+
+    internal HSlider BleedScale { get; private set; } = null!;
 
     /// <summary>
     /// The tile at the window's centre (D702): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
@@ -140,6 +151,13 @@ public sealed partial class GrassLab
             v => $"{v.ToString("0", CultureInfo.InvariantCulture)} tiles");
         SetTheSnowFromFile(look);
 
+        // Piece 4 (D704): how the ground kinds meet. Both read the coverage map, so they show only with it on.
+        Splat = AddSwitch(body, "Splat blending", "splat_on", look.SplatOn);
+        SplatSharpness = AddSlider(body, "Splat sharpness", 1.0, 48.0, 0.5, look.SplatSharpness, Sets("splat_sharpness"), Plain("0.0"));
+        Bleed = AddSwitch(body, "Edge bleed", "bleed_on", look.BleedOn);
+        BleedReach = AddSlider(body, "Bleed reach", 0.0, 0.5, 0.01, look.BleedReachTiles, Sets("bleed_reach_tiles"), Tiles("0.00"));
+        BleedScale = AddSlider(body, "Bleed scale", 0.25, 4.0, 0.05, look.BleedScaleTiles, Sets("bleed_scale_tiles"), Tiles("0.00"));
+
         _gpuOnTerrain = new Label { Name = "GpuOnTerrain", Modulate = new Color(1, 1, 1, 0.75f) };
         _gpuOnTerrain.AddThemeFontSizeOverride("font_size", 13);
         body.AddChild(_gpuOnTerrain);
@@ -224,6 +242,11 @@ public sealed partial class GrassLab
         SnowPatchiness.Value = look.SnowPatchiness;
         SnowPatchSize.Value = look.SnowPatchTiles;
         SetTheSnowFromFile(look);
+        Splat.ButtonPressed = look.SplatOn;
+        SplatSharpness.Value = look.SplatSharpness;
+        Bleed.ButtonPressed = look.BleedOn;
+        BleedReach.Value = look.BleedReachTiles;
+        BleedScale.Value = look.BleedScaleTiles;
     }
 
     /// <summary>The panel's options, as a <see cref="GrassLabTerrain"/>.</summary>
@@ -240,7 +263,15 @@ public sealed partial class GrassLab
         SnowPatchiness = (float)SnowPatchiness.Value,
         SnowPatchTiles = (float)SnowPatchSize.Value,
         SnowColour = SnowColourShown(),
+        SplatOn = Splat.ButtonPressed,
+        SplatSharpness = (float)SplatSharpness.Value,
+        BleedOn = Bleed.ButtonPressed,
+        BleedReachTiles = (float)BleedReach.Value,
+        BleedScaleTiles = (float)BleedScale.Value,
     };
+
+    /// <summary>A value said in tiles.</summary>
+    private static Func<double, string> Tiles(string format) => v => $"{v.ToString(format, CultureInfo.InvariantCulture)} tiles";
 
     /// <summary>The colour the shader has, back as a <see cref="Color"/>, so <i>Copy</i> says what is drawn.</summary>
     private Color SnowColourShown()
@@ -403,7 +434,8 @@ public sealed partial class GrassLab
         if (said.Length != 2 || said[0] != GrassLook.Approved.Say() || said[1] != GrassLabTerrain.StartingPoint.Say()
             || !said[1].Contains("- Coverage map: OFF. Fade ", StringComparison.Ordinal)
             || !said[1].Contains("\n- World-anchored grain: OFF. Scale ", StringComparison.Ordinal)
-            || !said[1].Contains("\n- Snow: OFF. Blend Lerp. Amount ", StringComparison.Ordinal))
+            || !said[1].Contains("\n- Snow: OFF. Blend Lerp. Amount ", StringComparison.Ordinal)
+            || !said[1].Contains("\n- Splat blending: OFF. Sharpness ", StringComparison.Ordinal))
         {
             faults.Add($"Copy says \"{lab.CurrentValues()}\"");
         }
@@ -416,6 +448,11 @@ public sealed partial class GrassLab
         }
 
         foreach (string line in SnowSelfCheck(lab))
+        {
+            yield return line;
+        }
+
+        foreach (string line in SplatSelfCheck(lab))
         {
             yield return line;
         }
@@ -649,6 +686,78 @@ public sealed partial class GrassLab
             }
 
             yield return Line(what, "opens at the file's value, reaches the shader, and Reset brings it back", faults);
+        }
+    }
+
+    /// <summary>Piece 4's lines (D704): two switches and three sliders. <paramref name="lab"/> is left at the approved look.</summary>
+    private static IEnumerable<string> SplatSelfCheck(GrassLab lab)
+    {
+        float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();
+        bool Flag(string name) => lab._material.GetShaderParameter(name).AsBool();
+        static string Line(string what, string good, List<string> faults) => faults.Count == 0
+            ? $"[widths] terrain lab, {what}: ✅ {good}"
+            : $"[widths] terrain lab, {what}: ❌ {string.Join("; ", faults)}";
+        GrassLabTerrain start = GrassLabTerrain.StartingPoint;
+
+        foreach ((string what, CheckBox box, string uniform) in new[]
+        {
+            ("splat blending", lab.Splat, "splat_on"),
+            ("edge bleed", lab.Bleed, "bleed_on"),
+        })
+        {
+            var faults = new List<string>();
+            if (box.ButtonPressed || Flag(uniform))
+            {
+                faults.Add($"opens with the box {box.ButtonPressed}, the uniform {Flag(uniform)} (want off)");
+            }
+
+            box.ButtonPressed = true;
+            if (!Flag(uniform))
+            {
+                faults.Add("switched on, the uniform stayed off");
+            }
+
+            lab.ResetToApproved();
+            if (box.ButtonPressed || Flag(uniform))
+            {
+                faults.Add($"Reset to approved left {what} on");
+            }
+
+            yield return Line(what, "opens off, reaches the shader, and Reset turns it off", faults);
+        }
+
+        foreach ((string what, HSlider slider, string uniform, float file, double probe) in new[]
+        {
+            ("splat sharpness", lab.SplatSharpness, "splat_sharpness", start.SplatSharpness, 3.0),
+            ("bleed reach", lab.BleedReach, "bleed_reach_tiles", start.BleedReachTiles, 0.4),
+            ("bleed scale", lab.BleedScale, "bleed_scale_tiles", start.BleedScaleTiles, 2.5),
+        })
+        {
+            var faults = new List<string>();
+            if (Math.Abs(Uniform(uniform) - file) > 1e-6f)
+            {
+                faults.Add($"opens at {Uniform(uniform)} (want the file's {file})");
+            }
+
+            slider.Value = probe;
+            if (Math.Abs(Uniform(uniform) - (float)probe) > 1e-6f)
+            {
+                faults.Add($"{probe} reached the shader as {Uniform(uniform)}");
+            }
+
+            lab.ResetToApproved();
+            if (Math.Abs(Uniform(uniform) - file) > 1e-6f)
+            {
+                faults.Add($"Reset left it at {Uniform(uniform)}");
+            }
+
+            yield return Line(what, "opens at the file's value, reaches the shader, and Reset brings it back", faults);
+        }
+
+        // ⛔ The reach stops at half a tile (D342's rule, §3.2): the river is two tiles wide.
+        if (lab.BleedReach.MaxValue > 0.5)
+        {
+            yield return $"[widths] terrain lab, bleed's limit: ❌ the reach goes to {lab.BleedReach.MaxValue} tiles (half a tile at most)";
         }
     }
 

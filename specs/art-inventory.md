@@ -61,10 +61,10 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 | Item | Stands in now | Needs | Blocked by | State |
 |---|---|---|---|---|
-| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (D700); pieces 1–3 of 4 built in the lab (D701–D703), unjudged; §4 says which piece stands |
+| **The valley's terrain shader** | ⬜ — the valley is a `DrawTextureRect` of the CPU bake (`VillageMap.cs:5224`) | One canvas_item shader with a coverage channel (D628 option A) | B6 | 🟨 `terrain-shader.md` specced (D700); all four pieces built in the lab (D701–D704), unjudged; the whole stack sits at the GPU bar; §4 says which piece stands |
 | Grass shader | `grass_lab.gdshader` + season and anti-tile includes, masks v02–v06, `grass_seasons.png` (256×16) | Integrated into the valley | B6 | ✅ look / ⬜ in game |
 | Paper grain | `paper_grain.gdshader`, procedural, **screen-anchored** placeholder, strength 0.15 a placeholder | World-anchored grain | B6 | 🟨 lab only; world-anchored built behind a switch (D702), unjudged |
-| Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 |
+| Splat blending between ground kinds | The bake's domain-warp and 3×3 kernel give smooth contours (`ValleyTexture.cs:468–588`); no blending | Blend + edge bleed | B6 | 🟨 lab only: splat and bleed behind switches (D704), the river's edge held hard; unjudged |
 | Snow blend | ⬜ | lerp / lighten mode | B6 | 🟨 all three built in the lab (D703), Lerp recommended, unjudged |
 | Debug readout backing | ⬜ — frame/draw lines are illegible on parchment (`Main.cs:8275`) | A dark backing | — | ⬜ 🅿️ parked list |
 

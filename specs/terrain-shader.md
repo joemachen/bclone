@@ -1,8 +1,9 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 🔨 **PIECES 1–3 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
-and drag to pan, D702, 2026-11-07; snow, D703, 2026-11-07), JOE HAS NOT JUDGED ANY; PIECE 4 SPECCED (D700), NOT
-BUILT.** §2–§4 are the build; §4's table says which piece stands.
+**Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
+and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07), JOE HAS NOT JUDGED ANY.
+⚠️ The whole stack sits at §3.3's GPU bar (+0.08–0.10 ms at 1280 × 800); his call.** §2–§4 are the build; §4's table says which piece stands; §5
+waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
@@ -136,6 +137,22 @@ Where they meet is two separate questions:
   no slider can move the bank. D342's other rule binds it too: a warp octave's wavelength must exceed the narrowest
   feature it may touch, and the river is two tiles wide, which is why the reach stops at half a tile.
 
+**As built (D704):** *Splat blending* and *Splat sharpness* (1–48, lab start 8), *Edge bleed*, *Bleed reach* (0–0.5
+tiles, start 0.25) and *Bleed scale* (0.25–4 tiles a cycle, start 1). Both read the coverage map and show nothing
+without it. The bleed's warp is one octave of `at_value_noise` at salts 81–82, cheap on purpose (§3.3). Value noise
+seldom reaches its ends, so the edge seldom wanders the whole reach.
+
+- ⛔ **The water is separated from the land, by construction.** `terrain_splat_keeping_water` takes the water's drawn
+  share from the unwarped weights, and the land kinds split what is left by their own, perhaps bled, weights. Both
+  switches off keeps the old line exactly, so the coverage map's renders are byte-identical to piece 2's.
+- ⚠️ **Spec changed: the splat does not soften the bank either.** §3.2 above has *Splat sharpness* run every kind, water
+  included. Built so, sharpness 1 washed the river a tile into the land, and the river's drawn pixels fell 22 % (88,657
+  to 69,401). The bank is where a villager cannot walk (D342), so the water's share keeps the hard power whatever the
+  slider says, and the splat runs between land kinds only. A soft bank is a one-word change if Joe wants to see one.
+- ⚠️ **Found by measurement: deep river drew as NaN.** Where there is no land at all, every land share is
+  `(1e-3)^sharpness`, which underflows to 0, and 0 / 0 painted about 19,000 river pixels wrong, even at sharpness 48
+  and reach 0. That case now returns early (its share is multiplied by a land total of 0 anyway).
+
 ### 3.3 GPU cost
 
 Re-measured with `tools/grass/lab_cost.gd`'s method as each layer lands (`grass-look.md §5`, open item 4). The tool's
@@ -157,8 +174,13 @@ row from one run.
 | world grain and the coverage map together (same run) | +0.53 ms | +0.53 ms | +35 % / +34 %; **+0.19 / +0.22 ms at 4K over the approved look with its grain, +0.027 ms at 1280 × 800: inside the +0.1 bar** |
 | **snow**, Lerp, over the approved look with its grain (D703; 2026-11-07, a second run: *approved, no grain* read **2.51 ms** at 4K, against 1.51 that morning — trap 8 again) | **+0.43 ms** | **+0.43 ms** | **+14 %** over approved with grain; +0.053 ms at 1280 × 800. Lighten the same within 0.02 ms |
 | world grain, coverage map and snow together (same run) | +0.78 ms over approved with grain | +0.78 ms | +26 %; **+0.096 ms at 1280 × 800: AT the +0.1 bar, with piece 4 still to come** |
+| *(D704; 2026-11-07, a third run: *approved, no grain* 2.48 ms)* **coverage map** alone, over approved with grain | +0.16 ms | +0.16 ms | +5 %, as D701 found in the slow session |
+| **splat blending**, over the map | **+0.08 ms** | **+0.09 ms** | +3 % |
+| **edge bleed**, over the map | **+0.34 ms** | **+0.33 ms** | +11 %: a second read of the map and two noise lookups |
+| **everything** — world grain, map, snow, splat, bleed (same run) | **+0.64 ms over approved with grain** | **+0.80 ms** | +21 % / +27 %; **+0.078 / +0.098 ms at 1280 × 800: AT the +0.1 bar.** D703's run read the stack without splat and bleed at +0.096; this run read it at +0.074, so the runs differ by ±0.02 ms, about the size of piece 4 |
 
-⚠️ **The bar is spent before piece 4** (D703). Snow's threshold is two octaves of value noise, eight integer hashes a
+⚠️ **The bar is spent before piece 4** (D703). **(D704: and the whole stack lands on it, inside the runs' own noise.
+The bleed is the dear one; with splat alone the stack stays under.)** Snow's threshold is two octaves of value noise, eight integer hashes a
 pixel, about what the world grain's three octaves cost. Piece 4's warp adds more noise. So either the bar moves, which
 is Joe's call, or the noise is shared: snow's threshold and the bleed's warp could read one octave set, and in the game
 a place's threshold is a constant that the bake could store in a channel, costing nothing per frame (§5).
@@ -172,7 +194,7 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 | 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
 | 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | 🔨 built (D702), Joe's eyes pending |
 | 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built D703) | 🔨 built (D703), Joe's eyes pending |
-| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⬜ |
+| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | 🔨 built (D704; §3.2: the water keeps its hard edge under both), Joe's eyes pending |
 
 **The fake map stands in for the bake, and is shaped like it.** One RGBA8 image, 8 px a tile, 120 × 80 tiles centred on
 the lab's origin, bilinear, clamped: **R grass, G wood, B stone, A water**, weights summing to one, off the map all grass
@@ -214,6 +236,9 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **`VillageMap` draws the valley through the shader**, and the year's fraction and the snow amount become per-frame
   uniforms.
 - **The grain's overlay** finds its place between the map and the UI (§3.1).
+- **The GPU bar** (§3.3, D703–D704): the whole stack is at it. Two things that only the wired valley can do would buy
+  room: the snow's per-place threshold and the bleed's warp are pure functions of the tile, so the bake could store
+  them in a channel and the shader read them for one texture fetch instead of four noise lookups.
 - **`Dressed`'s noise** — the wood's canopy, the stone's grain, the bloom — stays in the bake or moves into the shader.
   The lab does not draw it, so the lab's woods and stone are flatter than the game's.
 
@@ -246,6 +271,19 @@ Not in this slice, and not to be started until house tiers merge on `main`:
   11), so an anchor ending in `\n` matched nothing; rerun on LF, all nine went red. **Two render mutants the probe
   cannot see:** snow drawn whatever the switch says changes **5 of 5** approved renders; snow let onto the river
   changes **62,932** deep-water pixels. Restored, 0 and 0.
+- **Red-checked, piece 4 (D704):** 16 probe mutants, **20 reds, no zeros** (the file's switch and reach, a renamed
+  uniform and an include that does not compile, both switches, each slider reaching the wrong uniform or none, *Reset*
+  for all five, the reach past half a tile, *Copy*). Every anchor was checked against an LF file first (trap 11).
+  **Three render mutants:** the bleed drawn with its switch off changes the coverage map's render (piece 2's
+  byte-identical one); the water's edge softened with the splat changes the river at **19,256 px** (built: 10); the
+  water warped by the bleed changes it at **30,715 px** (built: 1). ⚠️ `bleed's limit` prints only when it fails: a
+  guard with no green line, kept so because it is a property of the slider and not a control.
+- **Splat and bleed, measured** (piece 4, grain off, coverage map on, against both switches off): with both off the
+  map's render is byte-identical to piece 2's; splat at 48 and bleed at reach 0 are within **1 level** everywhere;
+  the river's drawn pixels (88,657) differ at **1–3 px** under the bleed at its full half-tile reach, at either scale,
+  and at **10 px** under the splat at sharpness 1. 3.8 % of the land changes by more than 2 levels at full reach, 14 %
+  at sharpness 1. What they look like is eyes: at 8 the edges soften, at 2 the woods are a wash; at full reach and a
+  fine scale the edges fray into droplets.
 - **Snow, measured** (piece 3, windowed renders, grain off unless said): amount 0 is byte-identical to snow off;
   amount 1 is `#f4f1ea` in 100.00 % of pixels for Lerp and for Lighten; over the fake map at amount 1, no deep-water
   pixel changes, and the bank's anti-aliased edge (2 px at most) moves a median 2 levels. With the approved grain

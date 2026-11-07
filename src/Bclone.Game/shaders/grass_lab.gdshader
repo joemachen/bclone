@@ -69,6 +69,13 @@ uniform float snow_amount = 0.0;
 uniform float snow_patchiness = 0.1;
 uniform float snow_patch_tiles = 12.0;
 uniform vec3 snow_srgb = vec3(1.0);
+// 6. Splat blending and edge bleed (D704): how wide the transition between ground kinds is, and how irregular. Both
+// need the coverage map; the water's contour moves under neither (§3.2, D342).
+uniform bool splat_on = false;
+uniform float splat_sharpness = 48.0;
+uniform bool bleed_on = false;
+uniform float bleed_reach_tiles = 0.0;
+uniform float bleed_scale_tiles = 1.0;
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -153,10 +160,18 @@ void fragment() {
     float water = 0.0;
     if (coverage_on) {
         vec4 weights = terrain_weights(tile);
-        vec4 kinds = terrain_splat(weights, TERRAIN_HARD);
+        vec4 kinds;
+        float grass_weight = weights.r;
+        if (splat_on || bleed_on) {
+            vec3 land = bleed_on ? terrain_bleed_land(tile, weights.rgb, bleed_reach_tiles, bleed_scale_tiles) : weights.rgb;
+            kinds = terrain_splat_keeping_water(weights, land, splat_on ? splat_sharpness : TERRAIN_HARD);
+            grass_weight = land.x / max(land.x + land.y + land.z, 1e-4) * (1.0 - weights.a);
+        } else {
+            kinds = terrain_splat(weights, TERRAIN_HARD);
+        }
         water = kinds.a;
         ground = terrain_ground(kinds, weights.a, ground_srgb);
-        strength *= terrain_coverage(weights.r, coverage_fade);
+        strength *= terrain_coverage(grass_weight, coverage_fade);
     }
 
     vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);

@@ -78,3 +78,37 @@ vec3 terrain_snow(vec3 ground, vec3 snow, float cover, int blend) {
     }
     return mix(ground, snow, cover);
 }
+
+// ---- Splat blending and edge bleed (`specs/terrain-shader.md §3.2`, D704) ----------------------------------------
+
+// The land kinds' shares among themselves (grass, wood, stone) at `sharpness`: terrain_splat without the water.
+vec3 terrain_splat_land(vec3 w, float sharpness) {
+    float top = max(max(w.x, w.y), w.z);
+    // ⚠️ Deep in the river there is no land at all: every share would be (1e-3)^sharpness, which underflows to 0, and
+    // 0 / 0 drew the river as NaN (measured, D704). The share is multiplied by the land's total, 0 here, so any will do.
+    if (top < 1e-4) {
+        return vec3(1.0, 0.0, 0.0);
+    }
+    vec3 p = pow(max(w / max(top, 1e-4), vec3(1e-3)), vec3(sharpness));
+    return p / (p.x + p.y + p.z);
+}
+
+// ⛔ The water keeps its contour (D342): its drawn share comes from the UNWARPED weights at the bake's HARD power,
+// and the land kinds split whatever is left by their own (perhaps bled) weights at `sharpness`. So no slider can move
+// or soften the bank: splat and bleed run between land kinds only. (D704: a soft water edge at sharpness 1 washed
+// the river a tile into the land and drew it 22 % smaller; the bank is where a villager cannot walk.) With `land` the
+// unwarped weights and `sharpness` the hard power this is terrain_splat exactly, up to rounding.
+vec4 terrain_splat_keeping_water(vec4 plain, vec3 land, float sharpness) {
+    float water = terrain_splat(plain, TERRAIN_HARD).a;
+    return vec4(terrain_splat_land(land, sharpness) * (1.0 - water), water);
+}
+
+// The land kinds' weights read a little way off, so a land edge wanders like pigment past the line on damp paper. The
+// warp is one octave of value noise at its own salts, `reach` tiles at most, `scale` tiles a cycle. Where the warped
+// point falls in the river there is no land to read, so the place keeps its own.
+vec3 terrain_bleed_land(vec2 tile, vec3 plain, float reach, float scale) {
+    vec2 p = tile / max(scale, 1e-3);
+    vec2 warp = (vec2(at_value_noise(p, 81u), at_value_noise(p + 37.0, 82u)) * 2.0 - 1.0) * reach;
+    vec3 land = terrain_weights(tile + warp).rgb;
+    return (land.x + land.y + land.z) > 1e-3 ? land : plain;
+}

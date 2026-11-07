@@ -71,6 +71,26 @@ public sealed partial class GrassLabTerrain : Resource
     /// <summary>The blends' names, in <see cref="SnowBlend"/>'s order.</summary>
     internal static readonly string[] SnowBlends = { "Lerp", "Screen", "Lighten" };
 
+    /// <summary>Ground kinds blended over a width, <c>w^sharpness</c>, rather than the bake's hard contour (D704).</summary>
+    [Export]
+    public bool SplatOn { get; set; }
+
+    /// <summary>The splat's power: 48 is the bake's hard contour, 1 a wide wash.</summary>
+    [Export]
+    public float SplatSharpness { get; set; }
+
+    /// <summary>Land edges warped by a noise of their own, as pigment runs past the line; never the water's (D342).</summary>
+    [Export]
+    public bool BleedOn { get; set; }
+
+    /// <summary>How far a land edge may wander, in tiles (0–0.5).</summary>
+    [Export]
+    public float BleedReachTiles { get; set; }
+
+    /// <summary>The bleed's noise, in tiles a cycle.</summary>
+    [Export]
+    public float BleedScaleTiles { get; set; }
+
     /// <summary>The options, from their file.</summary>
     internal static GrassLabTerrain StartingPoint => GD.Load<GrassLabTerrain>(LabPath);
 
@@ -82,9 +102,12 @@ public sealed partial class GrassLabTerrain : Resource
         said.AppendLine($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
         said.AppendLine($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
             + $"Under the village: {(GrainUnderVillage ? "ON" : "OFF")}");
-        said.Append($"- Snow: {(SnowOn ? "ON" : "OFF")}. Blend {SnowBlends[Math.Clamp(SnowBlend, 0, SnowBlends.Length - 1)]}. "
+        said.AppendLine($"- Snow: {(SnowOn ? "ON" : "OFF")}. Blend {SnowBlends[Math.Clamp(SnowBlend, 0, SnowBlends.Length - 1)]}. "
             + $"Amount {SnowAmount.ToString("0.00", CultureInfo.InvariantCulture)}. Patchiness {SnowPatchiness.ToString("0.00", CultureInfo.InvariantCulture)}. "
             + $"Patch {SnowPatchTiles.ToString("0", CultureInfo.InvariantCulture)} tiles. Colour #{SnowColour.ToHtml(false)}");
+        said.Append($"- Splat blending: {(SplatOn ? "ON" : "OFF")}. Sharpness {SplatSharpness.ToString("0.0", CultureInfo.InvariantCulture)}. "
+            + $"Edge bleed: {(BleedOn ? "ON" : "OFF")}. Reach {BleedReachTiles.ToString("0.00", CultureInfo.InvariantCulture)} tiles. "
+            + $"Scale {BleedScaleTiles.ToString("0.00", CultureInfo.InvariantCulture)} tiles");
         return said.ToString();
     }
 }
