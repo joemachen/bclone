@@ -5,7 +5,7 @@ using Godot;
 namespace Bclone.Game;
 
 /// <summary>
-/// ⭐ The terrain shader's options in the lab (`specs/terrain-shader.md §4`, D700): each behind its own switch, off at
+/// ⭐ The terrain shader's options in the lab (`specs/terrain-shader.md §4`, A1): each behind its own switch, off at
 /// opening, so the lab still opens at the approved look.
 /// </summary>
 public sealed partial class GrassLab
@@ -59,7 +59,7 @@ public sealed partial class GrassLab
     internal HSlider BleedScale { get; private set; } = null!;
 
     /// <summary>
-    /// The tile at the window's centre (D702): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
+    /// The tile at the window's centre (A3): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
     /// map and placeholders all read it, so they move together.
     /// </summary>
     internal Vector2 View { get; private set; }
@@ -110,7 +110,7 @@ public sealed partial class GrassLab
         Coverage.ButtonPressed = look.CoverageOn;
         CoverageFade = AddSlider(body, "Coverage fade", 0.0, 0.5, 0.01, look.CoverageFade, Sets("coverage_fade"), Plain("0.00"));
 
-        // Piece 2 (D702): the grain anchored to the land. Its strength stays the left panel's *Paper grain*.
+        // Piece 2 (A3): the grain anchored to the land. Its strength stays the left panel's *Paper grain*.
         WorldGrain = new CheckBox { Name = "World-anchored grain", Text = "World-anchored grain", ButtonPressed = look.WorldGrainOn };
         WorldGrain.Toggled += on => _grainMaterial.SetShaderParameter("world_on", on);
         _grainMaterial.SetShaderParameter("world_on", look.WorldGrainOn);
@@ -130,7 +130,7 @@ public sealed partial class GrassLab
         body.AddChild(GrainUnder);
         SetTheView(Vector2.Zero);
 
-        // Piece 3 (D703): snow, its own layer with its own blend. Its colour is the file's, never a slider.
+        // Piece 3 (A4): snow, its own layer with its own blend. Its colour is the file's, never a slider.
         Snow = AddSwitch(body, "Snow", "snow_on", look.SnowOn);
         SnowBlend = new OptionButton { Name = "Snow blend" };
         SnowBlend.AddItem("Lerp — covers");
@@ -151,7 +151,7 @@ public sealed partial class GrassLab
             v => $"{v.ToString("0", CultureInfo.InvariantCulture)} tiles");
         SetTheSnowFromFile(look);
 
-        // Piece 4 (D704): how the ground kinds meet. Both read the coverage map, so they show only with it on.
+        // Piece 4 (A5): how the ground kinds meet. Both read the coverage map, so they show only with it on.
         Splat = AddSwitch(body, "Splat blending", "splat_on", look.SplatOn);
         SplatSharpness = AddSlider(body, "Splat sharpness", 1.0, 48.0, 0.5, look.SplatSharpness, Sets("splat_sharpness"), Plain("0.0"));
         Bleed = AddSwitch(body, "Edge bleed", "bleed_on", look.BleedOn);
@@ -283,7 +283,7 @@ public sealed partial class GrassLab
     private static Vector3 Srgb(Color colour) => new(colour.R, colour.G, colour.B);
 
     /// <summary>
-    /// The probe's lines for the terrain (D700), one a control. <paramref name="lab"/> stands at the approved look, and
+    /// The probe's lines for the terrain (A1), one a control. <paramref name="lab"/> stands at the approved look, and
     /// is left there.
     /// </summary>
     private static IEnumerable<string> TerrainSelfCheck(GrassLab lab)
@@ -460,7 +460,7 @@ public sealed partial class GrassLab
         yield return GroundCheck();
     }
 
-    /// <summary>Piece 2's lines (D702): the grain's three controls and the pan. <paramref name="lab"/> is left at the approved look.</summary>
+    /// <summary>Piece 2's lines (A3): the grain's three controls and the pan. <paramref name="lab"/> is left at the approved look.</summary>
     private static IEnumerable<string> GrainSelfCheck(GrassLab lab)
     {
         float Grain(string name) => lab._grainMaterial.GetShaderParameter(name).AsSingle();
@@ -596,7 +596,7 @@ public sealed partial class GrassLab
         yield return Line("pan", "opens at the origin; a drag moves grass, grain and placeholders by the same tiles, stops at the map's edge, survives Reset, and c centres it", faults);
     }
 
-    /// <summary>Piece 3's lines (D703): the snow's switch, blend, three sliders and colour. <paramref name="lab"/> is left at the approved look.</summary>
+    /// <summary>Piece 3's lines (A4): the snow's switch, blend, three sliders and colour. <paramref name="lab"/> is left at the approved look.</summary>
     private static IEnumerable<string> SnowSelfCheck(GrassLab lab)
     {
         float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();
@@ -689,7 +689,7 @@ public sealed partial class GrassLab
         }
     }
 
-    /// <summary>Piece 4's lines (D704): two switches and three sliders. <paramref name="lab"/> is left at the approved look.</summary>
+    /// <summary>Piece 4's lines (A5): two switches and three sliders. <paramref name="lab"/> is left at the approved look.</summary>
     private static IEnumerable<string> SplatSelfCheck(GrassLab lab)
     {
         float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();

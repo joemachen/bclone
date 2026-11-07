@@ -21,7 +21,7 @@ uniform vec3 ground_srgb = vec3(0.902, 0.839, 0.690);
 // The rect's size in screen pixels, so UV can be turned back into tiles.
 uniform vec2 size_px = vec2(1280.0, 800.0);
 uniform float px_per_tile = 24.0;
-// The tile at the window's centre: the lab's drag to pan (`specs/terrain-shader.md §3.1`, D702). A view control, like
+// The tile at the window's centre: the lab's drag to pan (`specs/terrain-shader.md §3.1`, A3). A view control, like
 // the zoom; at its opening (0, 0) the sum is the tile exactly.
 uniform vec2 view_tile = vec2(0.0);
 uniform float tiles_per_repeat = 32.0;
@@ -58,18 +58,18 @@ uniform bool height_blend = false;
 // Tints where samples are being blended, so the seams can be found and looked at.
 uniform bool mark_transitions = false;
 
-// The terrain shader's options (`specs/terrain-shader.md`, D700), every one off at opening.
+// The terrain shader's options (`specs/terrain-shader.md`, A1), every one off at opening.
 // 4. The fake coverage map: the ground kinds under the grass, and the grass only where the map says.
 uniform bool coverage_on = false;
 uniform float coverage_fade = 0.25;
-// 5. Snow (D703): its own layer and blend, over the grass, under the grain. The colour comes from terrain_lab.tres.
+// 5. Snow (A4): its own layer and blend, over the grass, under the grain. The colour comes from terrain_lab.tres.
 uniform bool snow_on = false;
 uniform int snow_blend = 0;
 uniform float snow_amount = 0.0;
 uniform float snow_patchiness = 0.1;
 uniform float snow_patch_tiles = 12.0;
 uniform vec3 snow_srgb = vec3(1.0);
-// 6. Splat blending and edge bleed (D704): how wide the transition between ground kinds is, and how irregular. Both
+// 6. Splat blending and edge bleed (A5): how wide the transition between ground kinds is, and how irregular. Both
 // need the coverage map; the water's contour moves under neither (§3.2, D342).
 uniform bool splat_on = false;
 uniform float splat_sharpness = 48.0;

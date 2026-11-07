@@ -4,7 +4,7 @@
 // Three octaves of value noise — fibres, tooth, and a faint cloud. No image asset. Drawn only when amount > 0, so at 0
 // it is not there at all rather than a multiply by one.
 //
-// Two ways to anchor it, behind `world_on` (`specs/terrain-shader.md §3.1`, D702):
+// Two ways to anchor it, behind `world_on` (`specs/terrain-shader.md §3.1`, A3):
 //   off — the placeholder, in screen pixels (D630). The paper stays still while the land pans under it.
 //   on  — in tiles, so the paper moves with the land: integer hashes (the sine hash is not the same on every GPU),
 //         the finest octave `grain_scale_tiles` a cycle and the others at the placeholder's ratios. Each octave fades to
@@ -17,7 +17,7 @@ render_mode blend_mul;
 
 uniform float amount = 0.15;
 
-// World-anchored (D702), off at opening. size_px, px_per_tile and view_tile are the grass's own, so the two agree on
+// World-anchored (A3), off at opening. size_px, px_per_tile and view_tile are the grass's own, so the two agree on
 // where a tile is.
 uniform bool world_on = false;
 uniform float grain_scale_tiles = 0.08;

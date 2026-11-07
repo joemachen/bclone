@@ -1,10 +1,10 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
-and drag to pan, D702; snow, D703; splat blending and edge bleed, D704 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
-SCALE 0.30 TILES (D706); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (D707–D708): GRAIN 0.065
+**Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, A2, 2026-11-06; world-anchored grain
+and drag to pan, A3; snow, A4; splat blending and edge bleed, A5 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
+SCALE 0.30 TILES (A7); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (A8–A9): GRAIN 0.065
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
-The GPU bar is 1 ms a frame at 4K for the whole stack (D710, §3.3); everything on is +0.64–0.80 ms, inside it.** §2–§4 are the build; §4's table says which piece stands; §5
+The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it.** §2–§4 are the build; §4's table says which piece stands; §5
 waits for house tiers.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
@@ -43,18 +43,18 @@ all three blends behind one dropdown, so they are compared on the same ground:
 - **Lighten** — `max(ground, snow × coverage)`, per channel. Nothing beneath it survives where snow is brighter; between
   the two as a look, and the hardest edge of the three.
 
-**The snow colour** is `#f8f6f1`, L\* 96.9, since D707 (Joe: D703's `#f4f1ea`, L\* 95.2, was "a bit too grey";
+**The snow colour** is `#f8f6f1`, L\* 96.9, since A8 (Joe: A4's `#f4f1ea`, L\* 95.2, was "a bit too grey";
 "a touch whiter" raised every channel by about four levels and kept the warmth): the near white §2 asks for, warmed to sit on the paper rather than read as
 screen white. It lives in `looks/terrain_lab.tres`, not in the shader.
 
-**As built (D703):** `terrain_lab.gdshaderinc`'s `terrain_snow_*`, called from `grass_lab.gdshader` after the grass and
+**As built (A4):** `terrain_lab.gdshaderinc`'s `terrain_snow_*`, called from `grass_lab.gdshader` after the grass and
 before the transition marks, so the grain overlay lies over it. *Snow*, *Snow blend* (Lerp, Screen, Lighten),
 *Snow amount* (lab start 0.56), *Snow patchiness* (0–0.3, start 0.03) and **a fifth control the four above did not name,
-*Snow patch size*** (2–48 tiles a cycle, start 3; the starts are Joe's since D707, D703 opened at 0.6, 0.08, 12): the place needs a size, and a number that only lives in a file
+*Snow patch size*** (2–48 tiles a cycle, start 3; the starts are Joe's since A8, A4 opened at 0.6, 0.08, 12): the place needs a size, and a number that only lives in a file
 cannot be judged by eye. The threshold is two octaves of `at_value_noise` at salts 71–72, the macro variation's
 weights. The amount is stretched by the patchiness before the smoothstep, `smoothstep(t − s, t + s, mix(−s, 1 + s,
 amount))`, so 0 is bare everywhere and 1 white everywhere whatever a place's threshold (measured: amount 0 renders
-byte-identical to snow off; amount 1, Lerp and Lighten, is `#f4f1ea` in 100 % of pixels, grain off; at D707 Lerp is `#f8f6f1` in 100 %). ⚠️ The noise is
+byte-identical to snow off; amount 1, Lerp and Lighten, is `#f4f1ea` in 100 % of pixels, grain off; at A8 Lerp is `#f8f6f1` in 100 %). ⚠️ The noise is
 not uniform, two octaves pile up round 0.5, so most of the change comes in the middle of the amount's range.
 
 - ⚠️ **Lighten draws a fringe.** It is a per-channel max, so where the cover is partial the grey `snow × cover` wins
@@ -84,7 +84,7 @@ not uniform, two octaves pile up round 0.5, so most of the change comes in the m
 - **What snow does to the value band.** It raises the ground's light end. Dark and ink-outlined things gain contrast; any
   light fill loses what little it had — the adult villager's dot (`#e8e2d4`) first. The placeholders in the lab show this
   at once. `tools/legibility/check.py` is the systems lane's this month, so it is run read-only on a scratch copy with a
-  snow ground, and what it says goes in §6 before snow ships. ⚠️ **(D703: the dot is stale.** The adult's dot is
+  snow ground, and what it says goes in §6 before snow ships. ⚠️ **(A4: the dot is stale.** The adult's dot is
   `#454135` in today's `VillageMap.cs`, dark. The light fills now are the cattle `#e6dcc4`, the sail `#efe6d2` and the
   flour heap `#ebe0c7`, and each is outlined, so on snow they read by the outline alone. §6 has the check's result.)
 
@@ -98,10 +98,10 @@ Built as a switch on the same overlay (`paper_grain.gdshader`): tile space in pl
 scale* slider in tiles, integer hashes (the sine hash is not the same on every GPU, and §6 asks that a place always looks
 the same).
 
-**As built (D702):** the three octaves keep the placeholder's ratios (1.3 : 5 : 37), *Grain scale* is the finest one's
+**As built (A3):** the three octaves keep the placeholder's ratios (1.3 : 5 : 37), *Grain scale* is the finest one's
 cycle in tiles (0.02–0.5), and each is `grass_antitile.gdshaderinc`'s `at_value_noise` at its own salt (61–63). The
 lab started at 0.08 tiles: two pixels a cycle at the lab's opening zoom, so the fibres are whole there and nowhere
-wider. **Since D707 it starts at Joe's 0.065:** 1.6 px a cycle at 24 px a tile, so there the finest octave is about
+wider. **Since A8 it starts at Joe's 0.065:** 1.6 px a cycle at 24 px a tile, so there the finest octave is about
 half faded to its mean, whole only from 31 px a tile up, 3.1 px at 48. He also had *Grain under the village* on: that is his pick
 for the wiring, but the box opens off, because it moves the screen grain under the village too, which is the
 approved look. Off is the placeholder exactly.
@@ -119,7 +119,7 @@ approved look. Off is the placeholder exactly.
   built:** a left or middle drag on the land; `view_tile`, the tile at the window's centre, on the grass's and the
   grain's shaders and the placeholders; stopped at the fake map's edge (±60 × ±40 tiles); **c** centres it.
 - **Over the village or under it.** The lab's grain lies over the placeholders too (D630). In the game that is an overlay
-  above the map and below the UI, not a line in this shader. ⚠️ **Built as *Grain under the village*, off** (D702; the
+  above the map and below the UI, not a line in this shader. ⚠️ **Built as *Grain under the village*, off** (A3; the
   spec said *over*, on): a switch that opened on would break §4's rule that every switch opens off and all off is the
   approved look, which the probe checks. Off is D630's order; on moves the grain between the ground and the
   placeholders, so only the land has tooth.
@@ -143,9 +143,9 @@ Where they meet is two separate questions:
   no slider can move the bank. D342's other rule binds it too: a warp octave's wavelength must exceed the narrowest
   feature it may touch, and the river is two tiles wide, which is why the reach stops at half a tile.
 
-**As built (D704):** *Splat blending* and *Splat sharpness* (1–48, lab start 5.5), *Edge bleed*, *Bleed reach* (0–0.5
-tiles, start 0.33) and *Bleed scale* (0.25–4 tiles a cycle, start 0.30). The starts are Joe's first tuning (D705;
-D704 opened at 8, 0.25 and 1), ⭐ **approved by him at those values (D706)**; the switches still open off, and the
+**As built (A5):** *Splat blending* and *Splat sharpness* (1–48, lab start 5.5), *Edge bleed*, *Bleed reach* (0–0.5
+tiles, start 0.33) and *Bleed scale* (0.25–4 tiles a cycle, start 0.30). The starts are Joe's first tuning (A6;
+A5 opened at 8, 0.25 and 1), ⭐ **approved by him at those values (A7)**; the switches still open off, and the
 valley's wiring (§5) takes the three values from `terrain_lab.tres`. ⚠️ The approval was of the lab's fake map: at
 scale 0.30 the warp's cycle is shorter than its reach (a fray, not a wander), so look again on the real valley for a
 land feature one tile thin (D342's rule). Both read the coverage map and show nothing
@@ -167,7 +167,7 @@ seldom reaches its ends, so the edge seldom wanders the whole reach.
 
 Re-measured with `tools/grass/lab_cost.gd`'s method as each layer lands (`grass-look.md §5`, open item 4). The tool's
 cases are fixed and it is not this lane's file, so the new cases run from a scratch copy; the numbers go in §6 beside
-`grass-look.md`'s table. Bar: the D632 budget's size, about +0.1 ms a frame at 1280 × 800 for the whole stack (until D710). ⭐ **Since D710,
+`grass-look.md`'s table. Bar: the D632 budget's size, about +0.1 ms a frame at 1280 × 800 for the whole stack (until A11). ⭐ **Since A11,
 at Joe's word: 1 ms a frame at 4K on the RTX 3070 for the whole terrain stack**, about 6 % of a 60 fps frame. The old
 bar was the grass look's own cost reused as a size, not a share of a frame, and the runs' ±0.02 ms made it no test.
 It is measured again in the wired valley, and the bake (§5) is built only if that goes over.
@@ -181,18 +181,18 @@ row from one run.
 
 | layer, against *approved, no grain* in the same run | widest, 4K | gameplay, 4K | as a share |
 |---|---|---|---|
-| **coverage map** (D701; 2026-11-06, the slow session) | +0.50 ms | +0.49 ms | **+5 %** |
+| **coverage map** (A2; 2026-11-06, the slow session) | +0.50 ms | +0.49 ms | **+5 %** |
 | the placeholder's screen grain at the approved strength (D630; 2026-11-07) | +0.34 ms | +0.31 ms | +22 % / +20 % |
-| **world-anchored grain** in its place (D702; same run) | **+0.13 ms over it** | **+0.12 ms over it** | **+7 %** over the screen grain; +0.016 ms at 1280 × 800 |
+| **world-anchored grain** in its place (A3; same run) | **+0.13 ms over it** | **+0.12 ms over it** | **+7 %** over the screen grain; +0.016 ms at 1280 × 800 |
 | world grain and the coverage map together (same run) | +0.53 ms | +0.53 ms | +35 % / +34 %; **+0.19 / +0.22 ms at 4K over the approved look with its grain, +0.027 ms at 1280 × 800: inside the +0.1 bar** |
-| **snow**, Lerp, over the approved look with its grain (D703; 2026-11-07, a second run: *approved, no grain* read **2.51 ms** at 4K, against 1.51 that morning — trap 8 again) | **+0.43 ms** | **+0.43 ms** | **+14 %** over approved with grain; +0.053 ms at 1280 × 800. Lighten the same within 0.02 ms |
+| **snow**, Lerp, over the approved look with its grain (A4; 2026-11-07, a second run: *approved, no grain* read **2.51 ms** at 4K, against 1.51 that morning — trap 8 again) | **+0.43 ms** | **+0.43 ms** | **+14 %** over approved with grain; +0.053 ms at 1280 × 800. Lighten the same within 0.02 ms |
 | world grain, coverage map and snow together (same run) | +0.78 ms over approved with grain | +0.78 ms | +26 %; **+0.096 ms at 1280 × 800: AT the +0.1 bar, with piece 4 still to come** |
-| *(D704; 2026-11-07, a third run: *approved, no grain* 2.48 ms)* **coverage map** alone, over approved with grain | +0.16 ms | +0.16 ms | +5 %, as D701 found in the slow session |
+| *(A5; 2026-11-07, a third run: *approved, no grain* 2.48 ms)* **coverage map** alone, over approved with grain | +0.16 ms | +0.16 ms | +5 %, as A2 found in the slow session |
 | **splat blending**, over the map | **+0.08 ms** | **+0.09 ms** | +3 % |
 | **edge bleed**, over the map | **+0.34 ms** | **+0.33 ms** | +11 %: a second read of the map and two noise lookups |
-| **everything** — world grain, map, snow, splat, bleed (same run) | **+0.64 ms over approved with grain** | **+0.80 ms** | +21 % / +27 %; **+0.078 / +0.098 ms at 1280 × 800: AT the +0.1 bar.** D703's run read the stack without splat and bleed at +0.096; this run read it at +0.074, so the runs differ by ±0.02 ms, about the size of piece 4 |
+| **everything** — world grain, map, snow, splat, bleed (same run) | **+0.64 ms over approved with grain** | **+0.80 ms** | +21 % / +27 %; **+0.078 / +0.098 ms at 1280 × 800: AT the +0.1 bar.** A4's run read the stack without splat and bleed at +0.096; this run read it at +0.074, so the runs differ by ±0.02 ms, about the size of piece 4 |
 
-⚠️ **The bar is spent before piece 4** (D703; that was the 0.1 ms bar — D710 made it 1 ms at 4K, which the stack fits). **(D704: and the whole stack lands on it, inside the runs' own noise.
+⚠️ **The bar is spent before piece 4** (A4; that was the 0.1 ms bar — A11 made it 1 ms at 4K, which the stack fits). **(A5: and the whole stack lands on it, inside the runs' own noise.
 The bleed is the dear one; with splat alone the stack stays under.)** Snow's threshold is two octaves of value noise, eight integer hashes a
 pixel, about what the world grain's three octaves cost. Piece 4's warp adds more noise. So either the bar moves, which
 is Joe's call, or the noise is shared: snow's threshold and the bleed's warp could read one octave set, and in the game
@@ -204,10 +204,10 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 
 | # | Piece | Controls (the *Terrain* panel) | State |
 |---|---|---|---|
-| 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
-| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | ⭐ approved (D708): 0.065 tiles, under the village |
-| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built D703) | ⭐ approved (D708): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles |
-| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⭐ approved (D706): 5.5, 0.33, 0.30 tiles; §3.2: the water keeps its hard edge under both |
+| 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (A2), Joe's eyes pending |
+| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | ⭐ approved (A9): 0.065 tiles, under the village |
+| 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* · *Snow patch size* (§2: a fifth, built A4) | ⭐ approved (A9): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles |
+| 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⭐ approved (A7): 5.5, 0.33, 0.30 tiles; §3.2: the water keeps its hard edge under both |
 
 **The fake map stands in for the bake, and is shaped like it.** One RGBA8 image, 8 px a tile, 120 × 80 tiles centred on
 the lab's origin, bilinear, clamped: **R grass, G wood, B stone, A water**, weights summing to one, off the map all grass
@@ -249,7 +249,7 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **`VillageMap` draws the valley through the shader**, and the year's fraction and the snow amount become per-frame
   uniforms.
 - **The grain's overlay** finds its place between the map and the UI (§3.1).
-- **The GPU bar** (§3.3, D703–D704; 1 ms at 4K since D710, which the lab's stack fits): measured again in the wired
+- **The GPU bar** (§3.3, A4–A5; 1 ms at 4K since A11, which the lab's stack fits): measured again in the wired
   valley, whose own costs the lab cannot see (`Dressed`'s noise, below). If it goes over, two things only the wired
   valley can do would buy room (the bake's 16 px a tile holds even the approved 0.30-tile warp at about 5 px a cycle): the snow's per-place threshold and the bleed's warp are pure functions of the tile, so the bake could store
   them in a channel and the shader read them for one texture fetch instead of four noise lookups.
@@ -269,7 +269,7 @@ Not in this slice, and not to be started until house tiers merge on `main`:
   palette, the panels, *Copy*, the map's sums, determinism, kinds, the river's width and place, the wood, the broken
   and the renamed shader). The byte comparison too: a 1 % change on the off path differs in 5 of 5 cases, restored 0 of
   5. ⚠️ **The on path's maths has no guard but eyes:** nothing mirrors `terrain_coverage` or `terrain_ground`.
-- **Red-checked, piece 2 (D702):** 24 probe mutants, **28 reds, no zeros** (the file's switches and value, both shaders'
+- **Red-checked, piece 2 (A3):** 24 probe mutants, **28 reds, no zeros** (the file's switches and value, both shaders'
   uniforms and a grain shader that does not compile, the switch, the zoom and the window's size reaching the grain, the
   slider, the order of grain and village, *Reset* for each, the pan reaching grass, grain and placeholders, its sign,
   its button, its clamp, *Reset* leaving it, **c**, and *Copy*). ⚠️ **One scored zero on the first run** — the
@@ -278,14 +278,14 @@ Not in this slice, and not to be started until house tiers merge on `main`:
 - **The anchoring, measured** (piece 2, windowed, not in the probe): a pan of 84 × 54 px at 24 px a tile, and the panned
   picture compared with the unpanned one shifted by the same: **world grain 0.00 % of pixels off by more than 2 levels,
   the screen grain 88 %**, the grass with no grain 0.00 %. Nothing mirrors the octaves' fade; that is eyes.
-- **Red-checked, piece 3 (D703):** 19 probe mutants, **24 reds, no zeros** (the file's switch, amount, blend and colour,
+- **Red-checked, piece 3 (A4):** 19 probe mutants, **24 reds, no zeros** (the file's switch, amount, blend and colour,
   a renamed uniform and an include that does not compile, the switch, the blend's uniform and its order, each slider
   reaching the wrong uniform or none, *Reset* for every control, the colour not the file's, and *Copy*). ⚠️ **Nine
   scored zero on the first run, every one an anchor and not a guard:** the edit scripts had written CRLF (HANDOFF trap
   11), so an anchor ending in `\n` matched nothing; rerun on LF, all nine went red. **Two render mutants the probe
   cannot see:** snow drawn whatever the switch says changes **5 of 5** approved renders; snow let onto the river
   changes **62,932** deep-water pixels. Restored, 0 and 0.
-- **Red-checked, piece 4 (D704):** 16 probe mutants, **20 reds, no zeros** (the file's switch and reach, a renamed
+- **Red-checked, piece 4 (A5):** 16 probe mutants, **20 reds, no zeros** (the file's switch and reach, a renamed
   uniform and an include that does not compile, both switches, each slider reaching the wrong uniform or none, *Reset*
   for all five, the reach past half a tile, *Copy*). Every anchor was checked against an LF file first (trap 11).
   **Three render mutants:** the bleed drawn with its switch off changes the coverage map's render (piece 2's

@@ -4,7 +4,7 @@ namespace Bclone.Game;
 
 /// <summary>
 /// ⭐ The lab's fake valley — <b>a coverage map standing in for the bake's</b>, so the terrain shader can be tuned
-/// without touching <see cref="ValleyTexture"/> (`specs/terrain-shader.md §4`, D700).
+/// without touching <see cref="ValleyTexture"/> (`specs/terrain-shader.md §4`, A1).
 /// </summary>
 /// <remarks>
 /// <para>

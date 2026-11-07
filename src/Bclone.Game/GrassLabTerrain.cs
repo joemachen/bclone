@@ -6,7 +6,7 @@ namespace Bclone.Game;
 
 /// <summary>
 /// The terrain options' starting values — <b>a lab file, and nothing in it is approved</b>
-/// (`specs/terrain-shader.md §4`, D700).
+/// (`specs/terrain-shader.md §4`, A1).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,7 +32,7 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public float CoverageFade { get; set; }
 
-    /// <summary>The paper's grain in tiles rather than screen pixels, so it moves with the land (D702).</summary>
+    /// <summary>The paper's grain in tiles rather than screen pixels, so it moves with the land (A3).</summary>
     [Export]
     public bool WorldGrainOn { get; set; }
 
@@ -44,7 +44,7 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public bool GrainUnderVillage { get; set; }
 
-    /// <summary>Snow, its own layer over the grass with its own blend: Multiply cannot lighten (D703).</summary>
+    /// <summary>Snow, its own layer over the grass with its own blend: Multiply cannot lighten (A4).</summary>
     [Export]
     public bool SnowOn { get; set; }
 
@@ -71,7 +71,7 @@ public sealed partial class GrassLabTerrain : Resource
     /// <summary>The blends' names, in <see cref="SnowBlend"/>'s order.</summary>
     internal static readonly string[] SnowBlends = { "Lerp", "Screen", "Lighten" };
 
-    /// <summary>Ground kinds blended over a width, <c>w^sharpness</c>, rather than the bake's hard contour (D704).</summary>
+    /// <summary>Ground kinds blended over a width, <c>w^sharpness</c>, rather than the bake's hard contour (A5).</summary>
     [Export]
     public bool SplatOn { get; set; }
 
@@ -98,7 +98,7 @@ public sealed partial class GrassLabTerrain : Resource
     internal string Say()
     {
         var said = new StringBuilder();
-        said.AppendLine("TERRAIN LAB SETTINGS (options; all approved but the coverage map, D706-D708)");
+        said.AppendLine("TERRAIN LAB SETTINGS (options; all approved but the coverage map, A7-A9)");
         said.AppendLine($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
         said.AppendLine($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
             + $"Under the village: {(GrainUnderVillage ? "ON" : "OFF")}");

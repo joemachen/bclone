@@ -18,7 +18,7 @@ namespace Bclone.Game;
 /// One full-window rect with one material (<c>shaders/grass_lab.gdshader</c>, which includes the pack's snippet
 /// unchanged), and a panel of sliders that only set uniforms — nothing is rebuilt when a slider moves. Only the
 /// version on show is loaded (§6.5). Launched with <c>.\run.bat grass</c>; <b>H</b> hides the panels, a drag pans
-/// and <b>C</b> centres (D702).
+/// and <b>C</b> centres (A3).
 /// </para>
 /// <para>
 /// ⭐⭐ <b>It opens at the approved look</b> (D632, `specs/grass-look.md`): every look value comes from
@@ -27,7 +27,7 @@ namespace Bclone.Game;
 /// Only the view's own controls — the season, the zoom, the placeholders, the marks — are the lab's.
 /// </para>
 /// <para>
-/// ⭐ <b>The terrain shader is tuned here too</b> (D700, `specs/terrain-shader.md`): its options are in
+/// ⭐ <b>The terrain shader is tuned here too</b> (A1, `specs/terrain-shader.md`): its options are in
 /// <c>GrassLab.Terrain.cs</c>, each behind a switch and off at opening, so all of this stays true.
 /// </para>
 /// <para>

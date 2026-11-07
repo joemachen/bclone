@@ -67,7 +67,7 @@ internal sealed partial class GrassLabVillage : Control
         }
     }
 
-    /// <summary>The tile at the window's centre, as the grass's <c>view_tile</c>: the lab's drag to pan (D702).</summary>
+    /// <summary>The tile at the window's centre, as the grass's <c>view_tile</c>: the lab's drag to pan (A3).</summary>
     internal Vector2 View
     {
         get => _view;

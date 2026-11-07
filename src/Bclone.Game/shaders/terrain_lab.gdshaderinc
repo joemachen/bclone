@@ -1,4 +1,4 @@
-// The terrain shader's layers (`specs/terrain-shader.md`, D700). LAB ONLY until the valley is wired (§5).
+// The terrain shader's layers (`specs/terrain-shader.md`, A1). LAB ONLY until the valley is wired (§5).
 //
 // Pure functions of place: no TIME, no clock. Every layer is behind its own switch in grass_lab.gdshader, and with every
 // switch off that shader draws the approved look byte for byte. The uniform defaults here are "off", not a look: the
@@ -44,7 +44,7 @@ float terrain_coverage(float grass_weight, float fade) {
     return smoothstep(0.5, 0.5 + max(fade, 1e-3), grass_weight);
 }
 
-// ---- Snow (`specs/terrain-shader.md §2`, D703) -------------------------------------------------------------------
+// ---- Snow (`specs/terrain-shader.md §2`, A4) -------------------------------------------------------------------
 // Its own layer with its own blend, over the grass and under the paper grain: Multiply only darkens, so it cannot make
 // a white. ⚠️ Uses grass_antitile.gdshaderinc's at_value_noise, so that file is included first.
 
@@ -64,7 +64,7 @@ float terrain_snow_cover(float threshold, float amount, float patchiness) {
 
 // Snow does not lie on the river: none wherever water is drawn, so the snow's edge is the bank's own contour. ⚠️ The
 // water's DRAWN share (terrain_splat's .a), never its raw weight: where three kinds meet, water wins below 0.5, and a
-// ramp on the weight laid half-strength snow on visible water there (measured, D703).
+// ramp on the weight laid half-strength snow on visible water there (measured, A4).
 float terrain_snow_off_water(float water_drawn) {
     return 1.0 - water_drawn;
 }
@@ -79,13 +79,13 @@ vec3 terrain_snow(vec3 ground, vec3 snow, float cover, int blend) {
     return mix(ground, snow, cover);
 }
 
-// ---- Splat blending and edge bleed (`specs/terrain-shader.md §3.2`, D704) ----------------------------------------
+// ---- Splat blending and edge bleed (`specs/terrain-shader.md §3.2`, A5) ----------------------------------------
 
 // The land kinds' shares among themselves (grass, wood, stone) at `sharpness`: terrain_splat without the water.
 vec3 terrain_splat_land(vec3 w, float sharpness) {
     float top = max(max(w.x, w.y), w.z);
     // ⚠️ Deep in the river there is no land at all: every share would be (1e-3)^sharpness, which underflows to 0, and
-    // 0 / 0 drew the river as NaN (measured, D704). The share is multiplied by the land's total, 0 here, so any will do.
+    // 0 / 0 drew the river as NaN (measured, A5). The share is multiplied by the land's total, 0 here, so any will do.
     if (top < 1e-4) {
         return vec3(1.0, 0.0, 0.0);
     }
@@ -95,7 +95,7 @@ vec3 terrain_splat_land(vec3 w, float sharpness) {
 
 // ⛔ The water keeps its contour (D342): its drawn share comes from the UNWARPED weights at the bake's HARD power,
 // and the land kinds split whatever is left by their own (perhaps bled) weights at `sharpness`. So no slider can move
-// or soften the bank: splat and bleed run between land kinds only. (D704: a soft water edge at sharpness 1 washed
+// or soften the bank: splat and bleed run between land kinds only. (A5: a soft water edge at sharpness 1 washed
 // the river a tile into the land and drew it 22 % smaller; the bank is where a villager cannot walk.) With `land` the
 // unwarped weights and `sharpness` the hard power this is terrain_splat exactly, up to rounding.
 vec4 terrain_splat_keeping_water(vec4 plain, vec3 land, float sharpness) {
