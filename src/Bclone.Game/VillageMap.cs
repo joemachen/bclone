@@ -1394,7 +1394,7 @@ public partial class VillageMap : Control
                     // ⭐ AND THE SEAM IT WOULD CLAIM, BEFORE THE CLICK (D613) — the sim's own preview, asked here as the ghost
                     // moves, so the drawing is what completion will take.
                     _ghostClaim = _verdict.Allowed
-                        ? PastureFenceLines(new List<GridPos>(_world.SeamToClaim(_building.Value, _hoveredPoint.ToTile())), null)
+                        ? PastureFenceLines(new List<GridPos>(_world.SeamToClaim(_building.Value, _world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing).CoveredTiles())), null)
                         : new List<Vector2[]>();
                 }
 
@@ -4603,7 +4603,7 @@ public partial class VillageMap : Control
             else if (w.Construction is { Demolishing: false, Repairing: false, Kind: BuildingKind kind }
                 && _world.BuildingsCatalog.EmployedBy(kind) is JobKind trade && _world.JobsCatalog.FaceOf(trade) is not null)
             {
-                claimed = new List<GridPos>(_world.SeamToClaim(kind, w.Position.ToTile()));
+                claimed = new List<GridPos>(_world.SeamToClaim(kind, w.Footprint.CoveredTiles()));
                 stakes = PalisadeEdge with { A = 0.35f };
             }
             else

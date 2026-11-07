@@ -4196,39 +4196,65 @@ public sealed partial class SimWorld : IObstacles
     /// Why this building may not stand here for want of its ground nearby — or null when a tile of it the village can
     /// walk to lies within the rule's reach (D540).
     /// </summary>
-    private string? WhyNotNearItsGround(BuildingKind kind, GridPos position, NearRule near, GridPos village, bool alreadyStanding = false)
+    private string? WhyNotNearItsGround(BuildingKind kind, IReadOnlyList<GridPos> footprint, NearRule near, GridPos village, bool alreadyStanding = false)
     {
         bool cutOff = false;
         Workplace? heldBy = null;
-        for (int dy = -near.Tiles; dy <= near.Tiles; dy++)
+        bool claims = BuildingsCatalog.EmployedBy(kind) is JobKind faceTrade && JobsCatalog.FaceOf(faceTrade) is not null;
+
+        // ⭐ WITHIN REACH OF THE BUILDING'S NEAREST TILE (D701), not of its anchor tile alone — the same tiles the claim reads
+        // (`SeamToClaim`), so a quarry allowed here always has a seam to claim. Rings of increasing distance, so the scan past
+        // the reach below reports the nearest.
+        foreach ((GridPos at, int distance) in TilesWithinReachOf(footprint, near.Tiles + NearestSeamTold))
         {
-            int span = near.Tiles - Math.Abs(dy);
-            for (int dx = -span; dx <= span; dx++)
+            if (!Map.Contains(at) || Map.TerrainAt(at) != near.Terrain)
             {
-                var at = new GridPos(position.X + dx, position.Y + dy);
-                if (!Map.Contains(at) || Map.TerrainAt(at) != near.Terrain)
+                continue;
+            }
+
+            if (distance > near.Tiles)
+            {
+                // Out of reach: the sentence below names how far the nearest reachable seam nobody holds is (D701), so the
+                // player can tell a seam two tiles too far from no seam at all. Nothing else is read out here.
+                if (TravelCost.CanReach(village, at) && (!claims || HolderOfTheSeam(SeamPatchOf(at)) is null))
                 {
+                    string groundOff = Describe(near.Terrain);
+                    string nameOff = BuildingsCatalog[kind]!.Name;
+                    string anOff = "aeiou".Contains(nameOff[0], StringComparison.Ordinal) ? "An" : "A";
+                    return heldBy is not null || cutOff
+                        ? NotNearSentence(kind, near, heldBy, cutOff)
+                        : $"{anOff} {nameOff} has to stand near {groundOff}, and there is none within {near.Tiles} tiles of there — "
+                            + $"the nearest is {distance} tiles off.";
+                }
+
+                continue;
+            }
+
+            if (TravelCost.CanReach(village, at))
+            {
+                // ⭐ A SEAM OF ITS OWN (D613): a quarry or a mine claims the seam it stands by, so one another building
+                // holds is no ground for a new one. ⚠️ Not asked of a move — the building's own seam is its own.
+                if (!alreadyStanding && claims && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder)
+                {
+                    heldBy ??= holder;
                     continue;
                 }
 
-                if (TravelCost.CanReach(village, at))
-                {
-                    // ⭐ A SEAM OF ITS OWN (D613): a quarry or a mine claims the seam it stands by, so one another building
-                    // holds is no ground for a new one. ⚠️ Not asked of a move — the building's own seam is its own.
-                    if (!alreadyStanding && BuildingsCatalog.EmployedBy(kind) is JobKind faceTrade && JobsCatalog.FaceOf(faceTrade) is not null
-                        && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder)
-                    {
-                        heldBy ??= holder;
-                        continue;
-                    }
-
-                    return null;
-                }
-
-                cutOff = true;
+                return null;
             }
+
+            cutOff = true;
         }
 
+        return NotNearSentence(kind, near, heldBy, cutOff);
+    }
+
+    /// <summary>How far past the reach the refusal looks for the nearest seam to name (D701) — rings, never the whole map.</summary>
+    private const int NearestSeamTold = 4;
+
+    /// <summary>The refusal when nothing within reach will do: held by another, cut off, or none at all (`seam-reach.md §3`).</summary>
+    private string NotNearSentence(BuildingKind kind, NearRule near, Workplace? heldBy, bool cutOff)
+    {
         string ground = Describe(near.Terrain);
         string named = BuildingsCatalog[kind]!.Name;
         if (heldBy is not null)
@@ -9253,7 +9279,7 @@ public sealed partial class SimWorld : IObstacles
         // asked of a reach like the lodge's. ⚠️ Counted only where the village can walk (D110/D111): rock across
         // the river is not near, it is cut off, and the sentence says which mistake it is.
         if (BuildingsCatalog[kind]?.MustBeNear is NearRule near
-            && WhyNotNearItsGround(kind, position, near, village, alreadyStanding) is string notNear)
+            && WhyNotNearItsGround(kind, onTheGround, near, village, alreadyStanding) is string notNear)
         {
             return PlacementVerdict.No(notNear);
         }
