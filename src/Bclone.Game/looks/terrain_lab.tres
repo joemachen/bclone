@@ -9,3 +9,6 @@
 script = ExtResource("1_terrain")
 CoverageOn = false
 CoverageFade = 0.25
+WorldGrainOn = false
+GrainScaleTiles = 0.08
+GrainUnderVillage = false

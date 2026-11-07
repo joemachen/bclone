@@ -21,6 +21,9 @@ uniform vec3 ground_srgb = vec3(0.902, 0.839, 0.690);
 // The rect's size in screen pixels, so UV can be turned back into tiles.
 uniform vec2 size_px = vec2(1280.0, 800.0);
 uniform float px_per_tile = 24.0;
+// The tile at the window's centre: the lab's drag to pan (`specs/terrain-shader.md §3.1`, D702). A view control, like
+// the zoom; at its opening (0, 0) the sum is the tile exactly.
+uniform vec2 view_tile = vec2(0.0);
 uniform float tiles_per_repeat = 32.0;
 
 // 0 = bare parchment, 1 = the pack as painted: the grass multiply blended toward white (D630).
@@ -92,7 +95,7 @@ vec4 lab_masks(vec2 uv, vec2 gx, vec2 gy, int va, int vb, float wa) {
 
 void fragment() {
     // Tiles from the rect's centre, as the placeholder village counts them, so the two zoom together.
-    vec2 tile = (UV - 0.5) * size_px / px_per_tile;
+    vec2 tile = (UV - 0.5) * size_px / px_per_tile + view_tile;
     vec2 tile_uv = tile / tiles_per_repeat;
     vec2 gx = dFdx(tile_uv);
     vec2 gy = dFdy(tile_uv);

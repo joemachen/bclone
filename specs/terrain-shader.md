@@ -1,7 +1,8 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 🔨 **PIECE 1 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06), JOE HAS NOT LOOKED AT IT YET;
-PIECES 2–4 SPECCED (D700), NOT BUILT.** §2–§4 are the build; §4's table says which piece stands.
+**Status:** 🔨 **PIECES 1 AND 2 OF 4 BUILT IN THE LAB (the fake coverage map, D701, 2026-11-06; world-anchored grain
+and drag to pan, D702, 2026-11-07), JOE HAS NOT JUDGED EITHER; PIECES 3–4 SPECCED (D700), NOT BUILT.** §2–§4 are the
+build; §4's table says which piece stands.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
@@ -71,15 +72,28 @@ Built as a switch on the same overlay (`paper_grain.gdshader`): tile space in pl
 scale* slider in tiles, integer hashes (the sine hash is not the same on every GPU, and §6 asks that a place always looks
 the same).
 
+**As built (D702):** the three octaves keep the placeholder's ratios (1.3 : 5 : 37), *Grain scale* is the finest one's
+cycle in tiles (0.02–0.5), and each is `grass_antitile.gdshaderinc`'s `at_value_noise` at its own salt (61–63). The
+lab starts at **0.08 tiles**: two pixels a cycle at the lab's opening zoom, so the fibres are whole there and nowhere
+wider. Off is the placeholder exactly.
+
 - **The trade, to be looked at:** world-anchored grain magnifies with the zoom, 3.7× between the widest view (13 px a
   tile) and the closest (48). Fibres that read at one end are mush or sand at the other. Each octave therefore fades out
   as it nears a pixel (below two pixels a cycle) rather than aliasing, and the *Grain scale* slider is where Joe finds
-  the size that holds up across the range.
+  the size that holds up across the range. **As built:** an octave is whole from two pixels a cycle and gone at one,
+  and it fades **to its own mean**, not to nothing, so zooming out loses fibres without lightening the page. At 0.08 the
+  widest view keeps only the tooth and the cloud; at 48 px a tile the fibres are about four pixels, a visible mottle.
+  ⚠️ From about 0.2 up the value noise's square lattice starts to show; a rotated or gradient noise is the fix if Joe
+  wants grain that coarse.
 - ⚠️ **The lab must pan to show any of this.** It never has (`seasonal-grass.md §5.2`). Drag to pan arrives with this
-  piece: a view control like the zoom, moving grass, village and map together, left where it is by *Reset*.
+  piece: a view control like the zoom, moving grass, village and map together, left where it is by *Reset*. **As
+  built:** a left or middle drag on the land; `view_tile`, the tile at the window's centre, on the grass's and the
+  grain's shaders and the placeholders; stopped at the fake map's edge (±60 × ±40 tiles); **c** centres it.
 - **Over the village or under it.** The lab's grain lies over the placeholders too (D630). In the game that is an overlay
-  above the map and below the UI, not a line in this shader; *Grain over the village* stays on as D630 has it, and off
-  draws it under the placeholders so the two can be compared.
+  above the map and below the UI, not a line in this shader. ⚠️ **Built as *Grain under the village*, off** (D702; the
+  spec said *over*, on): a switch that opened on would break §4's rule that every switch opens off and all off is the
+  approved look, which the probe checks. Off is D630's order; on moves the grain between the ground and the
+  placeholders, so only the land has tooth.
 
 ### 3.2 The ground kinds — flat fills, and how they meet
 
@@ -108,13 +122,17 @@ cases are fixed and it is not this lane's file, so the new cases run from a scra
 
 ⚠️ **Compare inside one session only.** On 2026-11-06 the same RTX 3070 read *approved, no grain* at **9.1 ms at 4K**
 against D632's ~1.7 (0.77 at 2560 × 1440, scaled), about five times higher, and **the shader as it stood before this
-slice read the same** (A/B/A: 9.14 / 9.34 / 9.14 widest, 9.06 / 9.25 / 9.07 gameplay), so it is not this work. Why is not
-known (nothing else was on the GPU; the rounds repeat to three figures, which D632's did not). Until someone finds out,
-§3.3's numbers are differences, not absolutes, and `grass-look.md §5`'s table cannot be compared with them.
+slice read the same** (A/B/A: 9.14 / 9.34 / 9.14 widest, 9.06 / 9.25 / 9.07 gameplay), so it is not this work. **On
+2026-11-07 the same case read 1.51 ms**, D632's scale again, with no change to the approved path between (its renders
+byte-identical): the 9.1 was the machine that session, cause still unknown. So §3.3's numbers stay differences, each
+row from one run.
 
 | layer, against *approved, no grain* in the same run | widest, 4K | gameplay, 4K | as a share |
 |---|---|---|---|
-| **coverage map** (D701) | +0.50 ms | +0.49 ms | **+5 %** (+0.06 ms at 1280 × 800 on today's scale) |
+| **coverage map** (D701; 2026-11-06, the slow session) | +0.50 ms | +0.49 ms | **+5 %** |
+| the placeholder's screen grain at the approved strength (D630; 2026-11-07) | +0.34 ms | +0.31 ms | +22 % / +20 % |
+| **world-anchored grain** in its place (D702; same run) | **+0.13 ms over it** | **+0.12 ms over it** | **+7 %** over the screen grain; +0.016 ms at 1280 × 800 |
+| world grain and the coverage map together (same run) | +0.53 ms | +0.53 ms | +35 % / +34 %; **+0.19 / +0.22 ms at 4K over the approved look with its grain, +0.027 ms at 1280 × 800: inside the +0.1 bar** |
 
 ## 4. The build — four pieces in the lab, one commit each
 
@@ -123,7 +141,7 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 | # | Piece | Controls (the *Terrain* panel) | State |
 |---|---|---|---|
 | 1 | **The fake coverage map** (`GrassLabGround.cs`) | *Coverage map* switch · *Coverage fade* | 🔨 built (D701), Joe's eyes pending |
-| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain over the village* | ⬜ |
+| 2 | **World-anchored paper grain**, and drag to pan | *World-anchored grain* switch · *Grain scale* · *Grain under the village* (§3.1: built *under*, off) · drag, **c** centres | 🔨 built (D702), Joe's eyes pending |
 | 3 | **Snow** | *Snow* switch · *Snow blend* (Lerp, Screen, Lighten) · *Snow amount* · *Snow patchiness* | ⬜ |
 | 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⬜ |
 
@@ -183,6 +201,15 @@ Not in this slice, and not to be started until house tiers merge on `main`:
   palette, the panels, *Copy*, the map's sums, determinism, kinds, the river's width and place, the wood, the broken
   and the renamed shader). The byte comparison too: a 1 % change on the off path differs in 5 of 5 cases, restored 0 of
   5. ⚠️ **The on path's maths has no guard but eyes:** nothing mirrors `terrain_coverage` or `terrain_ground`.
+- **Red-checked, piece 2 (D702):** 24 probe mutants, **28 reds, no zeros** (the file's switches and value, both shaders'
+  uniforms and a grain shader that does not compile, the switch, the zoom and the window's size reaching the grain, the
+  slider, the order of grain and village, *Reset* for each, the pan reaching grass, grain and placeholders, its sign,
+  its button, its clamp, *Reset* leaving it, **c**, and *Copy*). ⚠️ **One scored zero on the first run** — the
+  placeholders ignoring the view, because the probe read their `View` and not where they draw; `ToScreen` became a method
+  the probe asks, and the mutant then went red. With every switch off the renders are still byte-identical (5 of 5).
+- **The anchoring, measured** (piece 2, windowed, not in the probe): a pan of 84 × 54 px at 24 px a tile, and the panned
+  picture compared with the unpanned one shifted by the same: **world grain 0.00 % of pixels off by more than 2 levels,
+  the screen grain 88 %**, the grass with no grain 0.00 %. Nothing mirrors the octaves' fade; that is eyes.
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.

@@ -17,7 +17,8 @@ namespace Bclone.Game;
 /// <para>
 /// One full-window rect with one material (<c>shaders/grass_lab.gdshader</c>, which includes the pack's snippet
 /// unchanged), and a panel of sliders that only set uniforms — nothing is rebuilt when a slider moves. Only the
-/// version on show is loaded (§6.5). Launched with <c>.\run.bat grass</c>; <b>H</b> hides the panels.
+/// version on show is loaded (§6.5). Launched with <c>.\run.bat grass</c>; <b>H</b> hides the panels, a drag pans
+/// and <b>C</b> centres (D702).
 /// </para>
 /// <para>
 /// ⭐⭐ <b>It opens at the approved look</b> (D632, `specs/grass-look.md`): every look value comes from
@@ -126,7 +127,11 @@ public sealed partial class GrassLab : Control
         _ground = new ColorRect { Name = "Ground", Material = _material, MouseFilter = MouseFilterEnum.Ignore };
         _ground.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(_ground);
-        _ground.Resized += () => _material.SetShaderParameter("size_px", _ground.Size);
+        _ground.Resized += () =>
+        {
+            _material.SetShaderParameter("size_px", _ground.Size);
+            _grainMaterial.SetShaderParameter("size_px", _ground.Size);
+        };
 
         // The placeholder village stands on the grass, and the paper's grain lies over both.
         Village = new GrassLabVillage { Name = "Village" };
@@ -173,6 +178,7 @@ public sealed partial class GrassLab : Control
             v =>
             {
                 _material.SetShaderParameter("px_per_tile", (float)v);
+                _grainMaterial.SetShaderParameter("px_per_tile", (float)v);
                 Village.PixelsPerTile = (float)v;
             },
             Plain("0"));
@@ -199,7 +205,7 @@ public sealed partial class GrassLab : Control
         swap.Pressed += SwapTheCornerPanel;
         body.AddChild(swap);
 
-        var hint = new Label { Text = "h hides the panels, t swaps the corner", Modulate = new Color(1, 1, 1, 0.6f) };
+        var hint = new Label { Text = "drag pans, c centres, h hides the panels, t swaps the corner", Modulate = new Color(1, 1, 1, 0.6f) };
         hint.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(hint);
 
@@ -405,6 +411,10 @@ public sealed partial class GrassLab : Control
         else if (key is InputEventKey { Pressed: true, Echo: false, Keycode: Key.T })
         {
             SwapTheCornerPanel();
+        }
+        else if (key is InputEventKey { Pressed: true, Echo: false, Keycode: Key.C })
+        {
+            CentreTheView();
         }
     }
 

@@ -32,6 +32,18 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public float CoverageFade { get; set; }
 
+    /// <summary>The paper's grain in tiles rather than screen pixels, so it moves with the land (D702).</summary>
+    [Export]
+    public bool WorldGrainOn { get; set; }
+
+    /// <summary>The world-anchored grain's finest octave, in tiles a cycle; the other two keep the placeholder's ratios.</summary>
+    [Export]
+    public float GrainScaleTiles { get; set; }
+
+    /// <summary>The grain drawn under the placeholders rather than over them (D630 lays it over).</summary>
+    [Export]
+    public bool GrainUnderVillage { get; set; }
+
     /// <summary>The options, from their file.</summary>
     internal static GrassLabTerrain StartingPoint => GD.Load<GrassLabTerrain>(LabPath);
 
@@ -40,7 +52,9 @@ public sealed partial class GrassLabTerrain : Resource
     {
         var said = new StringBuilder();
         said.AppendLine("TERRAIN LAB SETTINGS (options, none approved)");
-        said.Append($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
+        said.AppendLine($"- Coverage map: {(CoverageOn ? "ON" : "OFF")}. Fade {CoverageFade.ToString("0.00", CultureInfo.InvariantCulture)}");
+        said.Append($"- World-anchored grain: {(WorldGrainOn ? "ON" : "OFF")}. Scale {GrainScaleTiles.ToString("0.000", CultureInfo.InvariantCulture)} tiles. "
+            + $"Under the village: {(GrainUnderVillage ? "ON" : "OFF")}");
         return said.ToString();
     }
 }
