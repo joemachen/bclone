@@ -1062,6 +1062,23 @@
   // tiles 0.62% -> 0.66% (Hollowmere 1.31% -> 1.32%): the shoppers' lines were
   // paths already. Nothing to soften.
   "cart_off_path_slow_percent": 150,
+  // restock_short_armfuls_with_cart: at a market that OWNS a handcart (parked at
+  // its door or in its marketer's hands), the counter is short -- and the restock
+  // fires -- only when it has room for this many armfuls of carry_capacity; a
+  // market without a cart is short at one, as always (D372). 1 is D372 to the
+  // letter: D696 measured the carted trip arriving to a shortfall of an armful and
+  // a bit and carrying 86-106 of a possible 240 -- the cart under the trip, the
+  // trip not sized for the cart. cart_armfuls (3) would size it. MEASURED on
+  // ZzLogistics (handcart.md 13.6, third table, D700): twelve valleys x fifty
+  // years with the cart's night at home (13.2b), 1 against 3 -- the Market share
+  // of adult ticks 4.3 -> 4.0 % (down in 12 of 12), the marketers' walking share
+  // 66 -> 59 %, counter trips a marketer-year 10.9 -> 9.4 (down in 8 of 12),
+  // units a carted trip 123 -> 134, the households' shopping share 6.0 -> 6.1 %
+  // (inside the noise). Under 3 the second marketer on foot carries one armful to
+  // a counter three short, which is the number's cost. The number is Joe's
+  // (HANDOFF, open); 1 moves no golden, and 3 would move none either (no golden
+  // run has a carted market).
+  "restock_short_armfuls_with_cart": 1,
 
   // TRADE AND THE HERD (D590, specs/trade.md §11 commit 1, specs/livestock.md §0). Nothing can raise a
   // barn or a post until the view gives them buttons (commit 6). The barn's room is derived (D593); the

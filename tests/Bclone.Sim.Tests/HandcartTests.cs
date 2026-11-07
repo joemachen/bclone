@@ -945,7 +945,10 @@ public sealed class HandcartTests
         Assert.InRange(market.HandcartUses, config.HandcartUses - 5, config.HandcartUses);
         Assert.Equal(1, TheWarehouse(world).Store[Goods.Handcart]);
         Assert.Equal(1, sink.Entries.Count(e => e.Message.Contains($"for {market.Name}", StringComparison.Ordinal) && e.Message.Contains("took a handcart", StringComparison.Ordinal)));
-        Assert.All(world.Villagers, v => Assert.False(v.CartForTheWorks, $"{v.Name} still has the market's cart in hand with it parked."));
+        // The fetcher parks it at the market and works the counter with it; with nothing to move they keep it for the night (§13.2b),
+        // so a holder is the market's own worker and nobody else.
+        Assert.All(world.Villagers, v => Assert.True(!v.CartForTheWorks || (v.PushingACart && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Marketer),
+            $"{v.Name} holds the market's cart without a seat at the market."));
         Assert.All(Housed(world), h => Assert.True(h.HandcartUses > 0, $"{h.Name} lost its own cart while the market fetched one."));
     }
 
@@ -1028,7 +1031,9 @@ public sealed class HandcartTests
         Assert.Equal(config.HandcartUses, post.HandcartUses);
         Assert.Equal(1, TheWarehouse(world).Store[Goods.Handcart]);
         Assert.Equal(0, TheMarket(world).HandcartUses); // nobody is seated at the market, so it waits
-        Assert.All(world.Villagers, v => Assert.False(v.CartForTheWorks, $"{v.Name} still has the post's cart in hand with it parked."));
+        // Parked at the post by the fetcher, then — nothing to carry — taken home for the night (§13.2b): a holder is the merchant.
+        Assert.All(world.Villagers, v => Assert.True(!v.CartForTheWorks || (v.PushingACart && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Merchant),
+            $"{v.Name} holds the post's cart without a seat at the post."));
     }
 
     /// <summary>§13.2: the quota counts a standing market and a standing post without a cart as an owner each — a site is not an owner, and a carted one wants none.</summary>
@@ -1184,6 +1189,14 @@ public sealed class HandcartTests
         // The first leg (§13.2a): empty-handed, no cart yet — the sentence says what the walk is for.
         villager.State = VillagerState.WalkingToTheMarket;
         Assert.Equal("walking to the market for its handcart", villager.DescribeState());
+
+        // The night (§13.2b): the works' cart pushed home with empty arms; the household's cart keeps its words.
+        villager.CartForTheWorks = true;
+        villager.PushingACart = true;
+        villager.State = VillagerState.TravelingHome;
+        Assert.Equal("pushing the handcart home for the night", villager.DescribeState());
+        villager.CartForTheWorks = false;
+        Assert.Equal("pushing the cart home", villager.DescribeState());
     }
 
     // ---------------------------------------------------------------
@@ -1394,11 +1407,12 @@ public sealed class HandcartTests
     }
 
     /// <summary>
-    /// §13.2: a marketer who hauls a buffer to the granary with the market's cart brings the cart back — the empty leg is
-    /// seen (*"pushing the market's handcart back"*), the cart is parked at the market and worn once for the round.
+    /// §13.2b: a marketer who hauls a buffer to the granary with the market's cart and then has nothing left to carry goes
+    /// <b>home</b> with it for the night (*"pushing the handcart home for the night"*) — never D693's empty leg back — rests
+    /// at home with the cart unworn, and the household's own cart is untouched.
     /// </summary>
     [Fact]
-    public void TheMarketsCartComesBackFromAHaulToTheStore()
+    public void TheMarketsCartGoesHomeForTheNightAfterAHaul()
     {
         SimConfig config = Config;
         (SimLoop loop, SimWorld world, Workplace market, StoreBuilding counter, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
@@ -1421,12 +1435,13 @@ public sealed class HandcartTests
         farm.Store.Add(Goods.Produce, farm.Store.Capacity);
         Assert.True(world.BufferWorthClearing(farm), $"the farm's buffer is not worth clearing (the granary holds {world.FoodIn(granary.Store)} of {granary.Store.Capacity}), so there is nothing to order");
 
+        Household home = world.HouseholdOf(marketer);
+        marketer.Rhythm = 0; // a fresh world's first ticks are a rest in place (D190's stagger)
         int biggestHaul = 0;
         int emptyLegTicks = 0;
-        int saidBack = 0;
-        int parked = 0;
-        bool wasPushing = false;
-        for (int tick = 0; tick < config.TicksPerSeason * 2 && parked == 0; tick++)
+        int homeLegTicks = 0;
+        int saidHome = 0;
+        for (int tick = 0; tick < config.TicksPerSeason * 2 && !world.TheWorksCartSleepsWith(marketer); tick++)
         {
             loop.StepOnce();
             if (marketer.PushingACart && marketer.State == VillagerState.HaulingToStore)
@@ -1437,24 +1452,286 @@ public sealed class HandcartTests
             if (marketer.PushingACart && marketer.State == VillagerState.StockingTheMarket && !marketer.IsCarrying)
             {
                 emptyLegTicks++;
-                saidBack += marketer.DescribeState() == "pushing the market's handcart back" ? 1 : 0;
             }
 
+            if (marketer.PushingACart && marketer.State == VillagerState.TravelingHome)
+            {
+                homeLegTicks++;
+                saidHome += marketer.DescribeState() == "pushing the handcart home for the night" ? 1 : 0;
+            }
+        }
+
+        _output.WriteLine($"{marketer.Name} hauled at most {biggestHaul} out of the farm with the cart, pushed it home for {homeLegTicks} ticks, is {marketer.State} at ({marketer.Tile.X},{marketer.Tile.Y}); {market.HandcartUses} trips left.");
+        Assert.True(biggestHaul > config.CarryCapacity, $"the haul out of the buffer was {biggestHaul}, an armful or less");
+        Assert.Equal(0, emptyLegTicks);
+        Assert.True(homeLegTicks > 0, "the cart was never pushed home for the night");
+        Assert.True(saidHome > 0, "the walk home never read 'pushing the handcart home for the night'");
+        Assert.Equal(VillagerState.Resting, marketer.State);
+        Assert.Equal(world.HomePlaceOf(marketer), marketer.Tile);
+        Assert.True(world.TheWorksCartSleepsWith(marketer), "the cart did not sleep at the marketer's door");
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+        Assert.Equal(config.HandcartUses, home.HandcartUses);
+    }
+
+    /// <summary>
+    /// §13.2b: at the market's door with nothing to move the marketer takes the cart home for the night — seen and said — and
+    /// rests with it at the door, the market's count and the household's own cart untouched; a colleague at the door next
+    /// morning finds it out and goes on foot (one pusher a building); a death at home counts it back at the market.
+    /// </summary>
+    [Fact]
+    public void AMarketerWithNothingToMoveAtTheDoorTakesTheCartHomeForTheNight()
+    {
+        SimConfig config = Config;
+        (SimLoop loop, SimWorld world, Workplace market, StoreBuilding counter, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
+        NothingToMove(world, counter);
+        Household home = world.HouseholdOf(marketer);
+        marketer.Rhythm = 0; // a fresh world's first ticks are a rest in place (D190's stagger); a rest at the door re-decides and parks
+        Assert.Equal(market.Tile, marketer.Tile);
+
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Equal(VillagerState.TravelingHome, marketer.State);
+        Assert.True(marketer.CartForTheWorks && marketer.PushingACart, "the marketer left the market's door without its cart");
+        Assert.Equal("pushing the handcart home for the night", marketer.DescribeState());
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+
+        int walked = 0;
+        for (; walked < config.TicksPerSeason && !world.TheWorksCartSleepsWith(marketer); walked++)
+        {
+            loop.StepOnce();
+        }
+
+        _output.WriteLine($"{marketer.Name} was home and resting after {walked} ticks with the {market.Name} cart; the household's cart has {home.HandcartUses} trips.");
+        Assert.Equal(VillagerState.Resting, marketer.State);
+        Assert.Equal(world.HomePlaceOf(marketer), marketer.Tile);
+        Assert.True(world.TheWorksCartSleepsWith(marketer), "the cart did not sleep at the marketer's door");
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+        Assert.Equal(config.HandcartUses, home.HandcartUses);
+
+        // The morning after, still nothing to move: the holder decides at home and stays — never D693's push back to the market
+        // with empty arms, which until D700 ran from this very door (a haul's arrival sends every hauler home before they decide).
+        marketer.State = VillagerState.Idle;
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Equal(VillagerState.Resting, marketer.State);
+        Assert.True(world.TheWorksCartSleepsWith(marketer), "the holder left home with the cart though there was nothing to move");
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+
+        // Morning, an errand again: a colleague at the market's door finds the cart out with the holder and goes on foot.
+        world.AnyStoreOf(StoreKind.Granary).Store.Receive(Goods.Produce, 3000);
+        counter.Store.TakeAll(Goods.Produce);
+        Villager colleague = PinAMarketer(world, skip: 1);
+        colleague.WorkplaceId = market.Id;
+        market.WorkerIds.Add(colleague.Id);
+        colleague.StandAt(market.Position);
+        BehaviorSystem.DecideForTest(world, colleague);
+        Assert.Equal(VillagerState.CollectingForMarket, colleague.State);
+        Assert.False(colleague.PushingACart, "the colleague took a cart that was sleeping at the holder's door");
+
+        // A death at home with the cart: it counts as back at the market (§13.2's rule, from a home as from the road).
+        marketer.AgeYears = marketer.LifespanYears;
+        loop.StepOnce();
+        Assert.False(marketer.Alive, "The posed death did not happen.");
+        Assert.False(marketer.CartForTheWorks || marketer.PushingACart);
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+    }
+
+    /// <summary>
+    /// §13.2b: a marketer waking at home with the market's cart sets out from the doorstep carted — no first leg (§13.2a) — and
+    /// the counter gets a cart's load; parked at the market on arrival, worn once, as every round trip is.
+    /// </summary>
+    [Fact]
+    public void AMarketerWakingWithTheCartLeavesTheDoorstepCartedWithNoFirstLeg()
+    {
+        SimConfig config = Config;
+        (SimLoop loop, SimWorld world, Workplace market, StoreBuilding counter, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
+        int cartLoad = config.CarryCapacity * config.CartArmfuls;
+        marketer.StandAt(world.HomePoint(marketer));
+        marketer.PushingACart = true;
+        marketer.CartForTheWorks = true;
+        marketer.State = VillagerState.Idle;
+        marketer.Rhythm = 0; // a fresh world's first ticks are a rest in place (D190's stagger); the pose is the morning after
+        Assert.NotEqual(market.Tile, marketer.Tile);
+
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Equal(VillagerState.CollectingForMarket, marketer.State);
+        Assert.True(marketer.CartForTheWorks && marketer.PushingACart, "the cart was left at the door");
+
+        int stocked = -1;
+        int biggestLoad = 0;
+        int parks = 0;
+        bool wasPushing = true;
+        for (int tick = 0; tick < config.TicksPerSeason && stocked < 0; tick++)
+        {
+            loop.StepOnce();
+            Assert.NotEqual(VillagerState.WalkingToTheMarket, marketer.State);
+            if (marketer.State == VillagerState.StockingTheMarket)
+            {
+                biggestLoad = Math.Max(biggestLoad, marketer.Carried.Held);
+            }
+
+            // A park at the door: the flags clear on the market's tile (the shoppers may empty the counter the same tick, D372).
             if (wasPushing && !marketer.PushingACart)
             {
-                parked++;
+                parks++;
                 Assert.Equal(market.Tile, marketer.Tile);
             }
 
             wasPushing = marketer.PushingACart;
+            if (parks > 0 && stocked < 0)
+            {
+                stocked = tick;
+            }
         }
 
-        _output.WriteLine($"{marketer.Name} hauled at most {biggestHaul} out of the farm with the cart, pushed it back empty for {emptyLegTicks} ticks, parked {parked}; {market.HandcartUses} trips left.");
-        Assert.True(biggestHaul > config.CarryCapacity, $"the haul out of the buffer was {biggestHaul}, an armful or less");
-        Assert.True(emptyLegTicks > 0, "the cart never came back empty to the market");
-        Assert.True(saidBack > 0, "the empty leg never read 'pushing the market's handcart back'");
-        Assert.Equal(1, parked);
-        Assert.Equal(config.HandcartUses - 1, market.HandcartUses);
+        _output.WriteLine($"{marketer.Name}: the first round from home ended at the counter on tick {stocked}, carrying {biggestLoad}; {parks} park(s), {market.HandcartUses} trips left.");
+        Assert.True(stocked >= 0, "the marketer never brought a load to the counter");
+        Assert.Equal(cartLoad, biggestLoad);
+        Assert.Equal(config.HandcartUses - parks, market.HandcartUses);
+    }
+
+    /// <summary>
+    /// §13.2b for the post: a merchant with nothing to carry takes the post's cart home for the night from its door, and a
+    /// merchant away from the post with the cart in hand and nothing to carry goes home with it rather than back.
+    /// </summary>
+    [Fact]
+    public void AMerchantWithNothingToCarryTakesThePostsCartHomeForTheNight()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink());
+        SimWorld world = loop.World;
+        SimConfig config = world.Config;
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        NobodyWorks(world);
+        CartEveryHousehold(world);
+        Workplace post = TradeTests.RaiseAPost(world);
+        post.HandcartUses = config.HandcartUses;
+        Villager merchant = world.Villagers.First(v => v.Alive && v.CanWork);
+        world.SetPinnedTrade(merchant, JobKind.Merchant);
+        merchant.WorkplaceId = post.Id;
+        post.WorkerIds.Add(merchant.Id);
+        foreach (Villager v in world.Villagers.Where(v => v.Alive))
+        {
+            v.StandAt(world.HomePoint(v));
+        }
+
+        // At the post's door, the cart parked, nothing kept and nothing a boat left: home with it.
+        merchant.StandAt(post.Position);
+        BehaviorSystem.DecideForTest(world, merchant);
+        Assert.Equal(VillagerState.TravelingHome, merchant.State);
+        Assert.True(merchant.CartForTheWorks && merchant.PushingACart, "the merchant left the post's door without its cart");
+
+        // Away from the post with the cart in hand and nothing to carry: home with it, never D693's empty leg back.
+        merchant.StandAt(TheWarehouse(world).Position);
+        merchant.State = VillagerState.Idle;
+        BehaviorSystem.DecideForTest(world, merchant);
+        Assert.Equal(VillagerState.TravelingHome, merchant.State);
+        Assert.True(merchant.CartForTheWorks && merchant.PushingACart);
+        Assert.Equal(config.HandcartUses, post.HandcartUses);
+
+        // And the household's errands wait while the post's cart is in hand (§13.2): a low larder at home, nobody else to shop —
+        // the merchant still goes home with the cart rather than shopping with it.
+        Household home = world.HouseholdOf(merchant);
+        foreach (Villager housemate in world.Villagers.Where(v => v.HouseholdId == home.Id && v != merchant))
+        {
+            housemate.Alive = false; // the spare-hand rule (D385) would hand the shopping to a housemate at home
+        }
+
+        SetLarder(home, world.TargetFoodFor(home) * 20 / 100);
+        merchant.State = VillagerState.Idle;
+        Assert.True(BehaviorSystem.PlanFetchForTest(world, merchant) is not null, "the pose does not want a fetch");
+        BehaviorSystem.DecideForTest(world, merchant);
+        Assert.Equal(VillagerState.TravelingHome, merchant.State);
+        Assert.True(merchant.CartForTheWorks && merchant.PushingACart, "the merchant shopped with the post's cart");
+    }
+
+    /// <summary>§13.2b: spare work (D372) stays on foot — at the door with nothing to move and a heap on the ground, the marketer tidies without the cart, which stays parked and unworn.</summary>
+    [Fact]
+    public void AMarketerWithNothingToMoveTidiesGroundOnFootAndLeavesTheCartAtTheDoor()
+    {
+        SimConfig config = Config;
+        (_, SimWorld world, Workplace market, StoreBuilding counter, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
+        NothingToMove(world, counter);
+        marketer.Rhythm = 0;
+        world.SetDown(new GridPos(market.Tile.X + 3, market.Tile.Y), Goods.Logs, 5);
+
+        BehaviorSystem.DecideForTest(world, marketer);
+        Assert.Equal(VillagerState.TidyingGround, marketer.State);
+        Assert.False(marketer.PushingACart || marketer.CartForTheWorks, "the marketer took the market's cart to tidy a heap");
+        Assert.Equal(config.HandcartUses, market.HandcartUses);
+    }
+
+    /// <summary>§13.2b: the works' cart sleeps only with a holder resting where they rest — not on the road, not at the market, and never the household's cart.</summary>
+    [Fact]
+    public void TheWorksCartSleepsOnlyWithARestingHolderAtHome()
+    {
+        SimConfig config = Config;
+        (_, SimWorld world, Workplace market, _, Villager marketer) = AMarketErrandPose(config, config.HandcartUses);
+        marketer.StandAt(world.HomePoint(marketer));
+        marketer.PushingACart = true;
+        marketer.CartForTheWorks = true;
+        marketer.State = VillagerState.Resting;
+        Assert.True(world.TheWorksCartSleepsWith(marketer));
+
+        marketer.State = VillagerState.TravelingHome;
+        Assert.False(world.TheWorksCartSleepsWith(marketer));
+
+        marketer.State = VillagerState.Resting;
+        marketer.StandAt(market.Position);
+        Assert.False(world.TheWorksCartSleepsWith(marketer));
+
+        marketer.StandAt(world.HomePoint(marketer));
+        marketer.CartForTheWorks = false;
+        Assert.False(world.TheWorksCartSleepsWith(marketer), "the household's cart was read as the works' sleeping at the door");
+        marketer.CartForTheWorks = true;
+        marketer.PushingACart = false;
+        Assert.False(world.TheWorksCartSleepsWith(marketer));
+    }
+
+    /// <summary>
+    /// §13.2c: with `restock_short_armfuls_with_cart` 3 a counter at a market that owns a cart is short only with room for three
+    /// armfuls; the cart worn out, it is short at one again; the shipped number is one (D372 to the letter) and nought is refused.
+    /// </summary>
+    [Fact]
+    public void TheCounterRunsDownToTheKnobsArmfulsUnderACartOnly()
+    {
+        SimConfig config = Config with { RestockShortArmfulsWithCart = 3 };
+        (_, SimWorld world, Workplace market, StoreBuilding counter, _) = AMarketErrandPose(config, config.HandcartUses);
+        int armful = config.CarryCapacity;
+        int limit = world.MarketStockLimit(counter, Goods.Produce);
+        Assert.True(limit >= 3 * armful, $"the counter's limit of {limit} cannot be three armfuls short");
+
+        // Two armfuls short under a cart: not short.
+        counter.Store.TakeAll(Goods.Produce);
+        counter.Store.Receive(Goods.Produce, limit - (2 * armful));
+        Assert.Equal(2 * armful, counter.RoomFor(Goods.Produce));
+        Assert.False(world.CounterShortOf(counter, Goods.Produce));
+
+        // Three short: short.
+        Assert.True(counter.Store.TryTake(Goods.Produce, armful));
+        Assert.True(world.CounterShortOf(counter, Goods.Produce));
+
+        // One short: not under a cart; short once the market's cart is worn out.
+        counter.Store.Receive(Goods.Produce, 2 * armful);
+        Assert.Equal(armful, counter.RoomFor(Goods.Produce));
+        Assert.False(world.CounterShortOf(counter, Goods.Produce));
+        market.HandcartUses = 0;
+        Assert.True(world.CounterShortOf(counter, Goods.Produce));
+
+        // As shipped the number is one — D372 to the letter — and nought is refused in words.
+        Assert.Equal(1, ShippedConfig.Load().RestockShortArmfulsWithCart);
+        SimConfigException refused = Assert.Throws<SimConfigException>(() => SimConfigLoader.Parse("""{ "restock_short_armfuls_with_cart": 0 }""", "<modded>"));
+        Assert.Contains("restock_short_armfuls_with_cart", refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>The counter full and every other store bare, so no restock and no haul exists (§13.2a's second case).</summary>
+    private static void NothingToMove(SimWorld world, StoreBuilding counter)
+    {
+        counter.Store.Receive(Goods.Produce, counter.RoomFor(Goods.Produce));
+        foreach (StoreBuilding store in world.StoreBuildings.Where(store => store != counter))
+        {
+            for (int g = 0; g < world.GoodsCatalog.Count; g++)
+            {
+                store.Store.TakeAll((Goods)g);
+            }
+        }
     }
 
     /// <summary>
@@ -1600,7 +1877,8 @@ public sealed class HandcartTests
         Assert.Equal(cartLoad, biggestDown);
         Assert.Equal(cartLoad, postStore.Store[Goods.Stone]);
         loop.Step(2);
-        Assert.False(merchant.CartForTheWorks, "the cart was not parked at the post after the run down");
+        Assert.True(!merchant.CartForTheWorks || merchant.State is VillagerState.TravelingHome or VillagerState.Resting,
+            "the cart was neither parked at the post after the run down nor taken home for the night");
         Assert.Equal(config.HandcartUses - 1, post.HandcartUses);
 
         // What a boat left: a cart's load of logs at the post, no keep order on logs — it goes home with the cart, and the cart comes back.
@@ -1609,8 +1887,9 @@ public sealed class HandcartTests
         Assert.Equal(cartLoad, postStore.Put(Goods.Logs, cartLoad));
         int biggestHome = 0;
         int emptyLegTicks = 0;
-        int saidBack = 0;
-        for (int tick = 0; tick < config.TicksPerSeason && !(world.InStores(Goods.Logs) == logsBefore + cartLoad && !merchant.PushingACart); tick++)
+        int homeLegTicks = 0;
+        int saidHome = 0;
+        for (int tick = 0; tick < config.TicksPerSeason && !(world.InStores(Goods.Logs) == logsBefore + cartLoad && world.TheWorksCartSleepsWith(merchant)); tick++)
         {
             loop.StepOnce();
             if (merchant.State == VillagerState.HaulingToStore && merchant.PushingACart && merchant.CartForTheWorks)
@@ -1621,16 +1900,25 @@ public sealed class HandcartTests
             if (merchant.State == VillagerState.StockingThePost && merchant.CartForTheWorks && !merchant.IsCarrying)
             {
                 emptyLegTicks++;
-                saidBack += merchant.DescribeState() == "pushing the post's handcart back" ? 1 : 0;
+            }
+
+            if (merchant.State == VillagerState.TravelingHome && merchant.CartForTheWorks)
+            {
+                homeLegTicks++;
+                saidHome += merchant.DescribeState() == "pushing the handcart home for the night" ? 1 : 0;
             }
         }
 
-        _output.WriteLine($"home: {biggestHome} in one trip, {emptyLegTicks} ticks pushing the cart back; the post's cart has {post.HandcartUses} trips.");
+        _output.WriteLine($"home: {biggestHome} in one trip, {homeLegTicks} ticks pushing the cart home for the night, {emptyLegTicks} back empty; the post's cart has {post.HandcartUses} trips.");
         Assert.Equal(cartLoad, biggestHome);
         Assert.Equal(logsBefore + cartLoad, world.InStores(Goods.Logs));
-        Assert.True(emptyLegTicks > 0, "the post's cart never came back empty");
-        Assert.True(saidBack > 0, "the empty leg never read 'pushing the post's handcart back'");
-        Assert.False(merchant.CartForTheWorks);
+        // §13.2b: the haul home ends the day — the cart sleeps at the merchant's door, never D693's empty leg back to the post.
+        Assert.Equal(0, emptyLegTicks);
+        Assert.True(homeLegTicks > 0, "the post's cart was never pushed home for the night");
+        Assert.True(saidHome > 0, "the walk home never read 'pushing the handcart home for the night'");
+        Assert.True(world.TheWorksCartSleepsWith(merchant), "the cart did not sleep at the merchant's door");
+        // Two parks at the post's door wore it: the run down, and the arrival from home for the boat's goods — a round that ends at
+        // the door wears one whichever door it began at (§13.2b).
         Assert.Equal(config.HandcartUses - 2, post.HandcartUses);
     }
 

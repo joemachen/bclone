@@ -7928,6 +7928,7 @@ public partial class VillageMap : Control
         SimWorld world = _world!;
         _pushing.Clear();
         _worksPushing.Clear();
+        _worksAtADoor.Clear();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -7940,6 +7941,12 @@ public partial class VillageMap : Control
             if (villager.CartForTheWorks)
             {
                 _worksPushing.Add(villager.WorkplaceId);
+
+                // ⭐ A works' cart sleeping at its holder's door (§13.2b) is drawn there, under the household's own chip.
+                if (world.TheWorksCartSleepsWith(villager))
+                {
+                    _worksAtADoor.Add(villager);
+                }
             }
             else
             {
@@ -7970,10 +7977,38 @@ public partial class VillageMap : Control
 
             DrawTheCartChip(CartChipRectOf(workplace.Tile));
         }
+
+        // ⭐ The trades' carts sleeping at a worker's door (`handcart.md §13.2b`): the chip beside the home, a chip's height below
+        // the household's own when that one stands there too, so the two never sit on each other. A holder with no home rests
+        // at the founders' cart or the founding and draws no chip there.
+        for (int i = 0; i < _worksAtADoor.Count; i++)
+        {
+            Villager holder = _worksAtADoor[i];
+            Household household = world.HouseholdOf(holder);
+            if (household.HomeTile is not GridPos door)
+            {
+                continue;
+            }
+
+            DrawTheCartChip(OvernightCartChipRectOf(door, household.HandcartUses > 0 && !_pushing.Contains(household.Id)));
+        }
     }
 
     private readonly HashSet<int> _pushing = new();
     private readonly HashSet<int> _worksPushing = new();
+    private readonly List<Villager> _worksAtADoor = new();
+
+    /// <summary>Where a works' cart sleeping at a home is drawn (`handcart.md §13.2b`): the household's chip's place, or one chip lower when the household's own cart stands there.</summary>
+    private Rect2 OvernightCartChipRectOf(GridPos door, bool belowTheHouseholds)
+    {
+        Rect2 box = CartChipRectOf(door);
+        if (belowTheHouseholds)
+        {
+            box.Position += new Vector2(0f, box.Size.Y * 1.15f);
+        }
+
+        return box;
+    }
 
     /// <summary>
     /// Where a household's parked cart is drawn: the heap chip's place beside the home (<see cref="HeapRectOf"/>), a
@@ -8087,6 +8122,23 @@ public partial class VillageMap : Control
             if (chip.Intersects(heap))
             {
                 faults.Add("the parked cart sits on the heap chip of the same door");
+            }
+
+            // A works' cart sleeping at the same door (`handcart.md §13.2b`): under the household's chip, off the building, within reach.
+            Rect2 night = OvernightCartChipRectOf(door, belowTheHouseholds: true);
+            if (night.Intersects(chip) || night.Intersects(heap) || night.Intersects(building))
+            {
+                faults.Add("the works' cart sleeping at a door sits on the household's chip, the heap or the building");
+            }
+
+            if (night.GetCenter().DistanceTo(building.GetCenter()) > _pixelsPerTile * 2.2f)
+            {
+                faults.Add($"the works' cart sleeping at a door is {night.GetCenter().DistanceTo(building.GetCenter()) / _pixelsPerTile:F2} tiles from it");
+            }
+
+            if (OvernightCartChipRectOf(door, belowTheHouseholds: false) != chip)
+            {
+                faults.Add("a works' cart sleeping at a door with no household cart is not drawn in the household chip's place");
             }
         }
 
@@ -8446,7 +8498,8 @@ public partial class VillageMap : Control
             };
 
             // ⭐ The household's handcart behind whoever is pushing it (Slice H) — under the dot, so the person is never hidden.
-            if (villager.PushingACart)
+            // A works' cart sleeping at the door (`handcart.md §13.2b`) is the chip beside the home, not a cart behind a sleeper.
+            if (villager.PushingACart && !world.TheWorksCartSleepsWith(villager))
             {
                 DrawTheCartBehind(villager, centre, radius);
             }

@@ -14,7 +14,7 @@ namespace Bclone.Sim.Tests;
 //
 //   ZZ_SAVES=<folder, a COPY of Joe's saves> [ZZ_PICK=autosave-1.save] [ZZ_YEARS=5]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnJoesSaves
-//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_USES=n] [ZZ_SLOW=pct] [ZZ_LABEL=name]
+//   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_USES=n] [ZZ_SLOW=pct] [ZZ_RESTOCK=armfuls] [ZZ_LABEL=name]
 //       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnTheHarness
 //
 // One ZZG line a year per village: every living adult's ticks in nine buckets — work / commute / deliver (the
@@ -37,6 +37,11 @@ namespace Bclone.Sim.Tests;
 // firewood (its limit is 600), so the merchant has the woodcutter's surplus to carry down every year the harness runs;
 // ZZ_MARKET=1 raises a finished market near the founding at Year 3 (the harness valley raises none of its own). ZZG workscarts: which standing
 // markets and posts own a cart at the end and the trips left in it.
+//
+// THE CART'S NIGHT AT HOME (handcart.md §13.2b, D700): the market: and post: lines end with the trade's WHOLE walking share
+// of its ticks (the walk home with the cart is a Commute tick, not Market, so the Market bucket alone would flatter the
+// change), the first legs begun (WalkingToTheMarket), the ticks the works' cart slept at a worker's door and the ticks it
+// was pushed home. ZZ_RESTOCK=n sets restock_short_armfuls_with_cart (§13.2c).
 public sealed class ZzLogistics
 {
     private enum Bucket
@@ -100,6 +105,11 @@ public sealed class ZzLogistics
             config = config with { CartOffPathSlowPercent = slow };
         }
 
+        if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_RESTOCK"), out int restock))
+        {
+            config = config with { RestockShortArmfulsWithCart = restock };
+        }
+
         SaveOpened opened = SaveFile.Open(path, config);
         Assert.True(opened.Loop is not null, $"{opened.Refusal} {opened.Detail}");
         string village = Path.GetFileName(Path.GetDirectoryName(path)!);
@@ -158,6 +168,11 @@ public sealed class ZzLogistics
             if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_SLOW"), out int slow))
             {
                 config = config with { CartOffPathSlowPercent = slow };
+            }
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("ZZ_RESTOCK"), out int restock))
+            {
+                config = config with { RestockShortArmfulsWithCart = restock };
             }
 
             SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
@@ -614,6 +629,8 @@ public sealed class ZzLogistics
 
         private readonly Dictionary<Villager, Last> _last = new(ReferenceEqualityComparer.Instance);
         public long MarketerTicks, MerchantTicks;
+        public long MarketerWalkingTicks, MerchantWalkingTicks, MarketNightTicks, PostNightTicks, MarketHomeLegTicks, PostHomeLegTicks;
+        public int FirstLegs;
         public readonly List<int> ToCounter = new(), ToCounterCarted = new(), FromBuffer = new(), FromBufferCarted = new();
         public readonly List<int> ToPost = new(), ToPostCarted = new(), FromPost = new(), FromPostCarted = new();
 
@@ -623,9 +640,31 @@ public sealed class ZzLogistics
             if (job == JobKind.Marketer) { MarketerTicks++; }
             if (job == JobKind.Merchant) { MerchantTicks++; }
 
+            // §13.2b (D700): the trade's whole walking share, the cart's nights at a worker's door and its legs home.
+            if (job is JobKind.Marketer or JobKind.Merchant)
+            {
+                bool walking = Array.IndexOf(Walking, Classify(v)) >= 0;
+                bool night = PushesTheWorksCart(v) && v.State == VillagerState.Resting;
+                bool homeLeg = PushesTheWorksCart(v) && v.State == VillagerState.TravelingHome;
+                if (job == JobKind.Marketer)
+                {
+                    MarketerWalkingTicks += walking ? 1 : 0;
+                    MarketNightTicks += night ? 1 : 0;
+                    MarketHomeLegTicks += homeLeg ? 1 : 0;
+                }
+                else
+                {
+                    MerchantWalkingTicks += walking ? 1 : 0;
+                    PostNightTicks += night ? 1 : 0;
+                    PostHomeLegTicks += homeLeg ? 1 : 0;
+                }
+            }
+
             _last.TryGetValue(v, out Last? last);
             if (last is not null && last.State != v.State)
             {
+                if (v.State == VillagerState.WalkingToTheMarket) { FirstLegs++; }
+
                 // Leaving the carrying state: the load went where the state carried it (the arrival puts it down and
                 // re-decides in the same tick, so the units are the tick before's).
                 switch (last.State)
@@ -655,8 +694,10 @@ public sealed class ZzLogistics
         {
             double marketerYears = MarketerTicks / (double)ticksPerYear;
             double merchantYears = MerchantTicks / (double)ticksPerYear;
-            o.WriteLine($"ZZG {label} market: marketerYears {marketerYears:F1} toCounter {Line(ToCounter, ToCounterCarted, marketerYears)} fromBuffer {Line(FromBuffer, FromBufferCarted, marketerYears)}");
-            o.WriteLine($"ZZG {label} post: merchantYears {merchantYears:F1} toPost {Line(ToPost, ToPostCarted, merchantYears)} fromPost {Line(FromPost, FromPostCarted, merchantYears)}");
+            o.WriteLine($"ZZG {label} market: marketerYears {marketerYears:F1} toCounter {Line(ToCounter, ToCounterCarted, marketerYears)} fromBuffer {Line(FromBuffer, FromBufferCarted, marketerYears)} "
+                + $"walking {MarketerWalkingTicks * 100.0 / Math.Max(1, MarketerTicks):F1}% firstLegs {FirstLegs} nightTicks {MarketNightTicks} homeLegTicks {MarketHomeLegTicks}");
+            o.WriteLine($"ZZG {label} post: merchantYears {merchantYears:F1} toPost {Line(ToPost, ToPostCarted, merchantYears)} fromPost {Line(FromPost, FromPostCarted, merchantYears)} "
+                + $"walking {MerchantWalkingTicks * 100.0 / Math.Max(1, MerchantTicks):F1}% nightTicks {PostNightTicks} homeLegTicks {PostHomeLegTicks}");
         }
 
         private static string Line(List<int> onFoot, List<int> carted, double years)

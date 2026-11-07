@@ -7524,6 +7524,22 @@ public sealed partial class SimWorld : IObstacles
         return false;
     }
 
+    /// <summary>The standing market or post on a store's tile that can own a handcart (`handcart.md §13.2`), or null.</summary>
+    /// <remarks>A scan of the workplaces, asked only while <c>restock_short_armfuls_with_cart</c> is above one (§13.2c).</remarks>
+    private Workplace? TheCartOwnerAt(StoreBuilding store)
+    {
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace works = Workplaces[i];
+            if (works.IsACartOwner && works.Tile == store.Tile)
+            {
+                return works;
+            }
+        }
+
+        return null;
+    }
+
     public bool CounterShortOf(StoreBuilding market, Goods goods)
     {
         ArgumentNullException.ThrowIfNull(market);
@@ -7534,7 +7550,16 @@ public sealed partial class SimWorld : IObstacles
         }
 
         // The counter's room for this good, by the one door (D612): its limit less what it holds, within the building.
+        // ⭐ UNDER A CART THE COUNTER MAY RUN DOWN FURTHER FIRST (`handcart.md §13.2c`, D700): a market that owns a handcart
+        // is short only with room for `restock_short_armfuls_with_cart` armfuls — 1 as shipped, this rule to the letter
+        // (D696 measured a carted trip arriving to a shortfall of an armful and a bit, carrying 86–106 of 240); the number
+        // is Joe's. The scan for the owner runs only when the number is above one, so the shipped game pays nothing here.
         int armful = Config.CarryCapacity;
+        if (Config.RestockShortArmfulsWithCart > 1 && TheCartOwnerAt(market) is { HandcartUses: > 0 })
+        {
+            armful *= Config.RestockShortArmfulsWithCart;
+        }
+
         if (market.RoomFor(goods) < armful)
         {
             return false;
@@ -14432,6 +14457,20 @@ public sealed partial class SimWorld : IObstacles
         }
 
         return room;
+    }
+
+    /// <summary>
+    /// Whether the works' cart is sleeping at this villager's door (`handcart.md §13.2b`, D700): they hold it, they are
+    /// resting, and they stand where they rest. The card's sentence and the map's chip read this one copy; the sim itself
+    /// asks nothing of it — a resting holder is two flags it already keeps.
+    /// </summary>
+    public bool TheWorksCartSleepsWith(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        return villager.CartForTheWorks
+            && villager.PushingACart
+            && villager.State == VillagerState.Resting
+            && villager.Tile == RestingPlaceOf(villager);
     }
 
     /// <summary>

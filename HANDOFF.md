@@ -1,5 +1,34 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), PUSHED; ORIGIN AGREES. ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: HE PLAYS FROM `main` (THE TRADES' CARTS, THE FIRST LEG, THE LIMITS, THE LODGE FIX — NONE PLAYED YET); ⏸️ HIS CALL: THE RESTOCK THRESHOLD UNDER A PARKED CART; THEN HOUSE TIERS — THE LAST GATE ITEM; THE OX CART LATER AS *HEAVY HAULAGE*. ▶️ THE ART IS UNPARKED FOR A SECOND LANE IN ITS OWN WORKTREE, SYSTEMS FIRST (D699, 2026-11-06) — THE RULE AND THE NO-GO TABLE ARE IN THE 🅿️ ART SECTION. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE MERGE OF THE FIRST LEG AND THE LIMITS (D698, 2026-11-06) ON TOP OF THE TRADES' CARTS (D695), PUSHED; ORIGIN AGREES. ✅ ON `main` NOW: THE WHOLE LOGISTICS THREAD — *NEARBY* (D671), THE WORKSHOP AND THE CARPENTER (D678, LEARNED AT 1,500 LOGS), THE HOUSEHOLD'S HANDCART (D686–D689), THE LODGE FIX (D683), THE COLD WARNING NAMING THE COAT (D691), AND 🔨 THE TRADES' CARTS (D692–D694, UNPLAYED): THE MARKET AND THE TRADING POST EACH OWN A HANDCART, THEIR WORKER FETCHES IT, TAKES IT AT THE DOOR, CARRIES THREE ARMFULS, PARKS AND WEARS IT THERE — OAKHAVEN'S MARKET BUCKET 9.1 → 8.2 %, COUNTER TRIPS 18.3 → 14.4 A MARKETER-YEAR. **SAVE FORMAT 12** (EVERY SAVE BEFORE 2026-11-05 REFUSED IN WORDS). PLAYED BY JOE: W TWICE, H ONCE (*"THE CART STUFF SEEMS PRETTY GOOD"*); THE LODGE AND THE TRADES' CARTS NOT YET. ⏸️ HIS CALL: HALF THE MARKETER'S COUNTER TRIPS STILL BEGIN AT HOME ON FOOT — LEAVE IT, OR A FIRST LEG TO THE MARKET. GATE ITEM 1: DOORS ✅, CLOTHING ✅, LOGISTICS ✅, THEN HOUSE TIERS — THE LAST GATE ITEM. 🔨 ON `main` NOW TOO, UNPLAYED (D696–D697, MERGED D698 AT HIS WORD): THE MARKETER'S FIRST LEG (D696 — HIS CALL; THE CART UNDER 58–74 % OF COUNTER TRIPS, THE TRIPS NOT FEWER BECAUSE THE COUNTER IS RESTOCKED ONE ARMFUL SHORT — ⏸️ THE THRESHOLD IS HIS NEXT CALL) AND THE STARTING LIMITS FOR CLOTHING AND HANDCARTS (D697 — HIS CALL: *"UNLOCKED ITEMS SHOULD START AT 50 BY DEFAULT"*). NEXT: HE PLAYS FROM `main` (THE TRADES' CARTS, THE FIRST LEG, THE LIMITS, THE LODGE FIX — NONE PLAYED YET); ⏸️ HIS CALL: THE RESTOCK THRESHOLD UNDER A PARKED CART; THEN HOUSE TIERS — THE LAST GATE ITEM; THE OX CART LATER AS *HEAVY HAULAGE*. 🔨 ON `worktree-slice-cart-home`, UNPLAYED, UNMERGED (D700, 2026-11-06, HIS QUESTION): THE MARKETER AND THE MERCHANT TAKE THE BUILDING'S CART HOME FOR THE NIGHT AND LEAVE THE DOORSTEP CARTED — MEASURED ON TWELVE VALLEYS (THE MARKET SHARE −0.35 POINTS IN 11 OF 12, TWO-THIRDS OF THE FIRST LEGS GONE, TRIPS UNCHANGED); THE RESTOCK KNOB `restock_short_armfuls_with_cart` SHIPS AT 1 AND MEASURED AT 3 (−0.85 IN 12 OF 12, TRIPS −1 A MARKETER-YEAR IN 8 OF 12) — ⏸️ ITS NUMBER IS HIS. HE PLAYS FROM THE WORKTREE, MERGES AT HIS WORD. ▶️ THE ART IS UNPARKED FOR A SECOND LANE IN ITS OWN WORKTREE, SYSTEMS FIRST (D699, 2026-11-06) — THE RULE AND THE NO-GO TABLE ARE IN THE 🅿️ ART SECTION. READ THE TOP BANNER, THEN `DESIGN.md §0–§6` AND THE LAST ~20 OF §7.**
 
+> **⭐⭐ (this branch's block) WHERE THINGS ARE, 2026-11-06 (D700 — THE CART'S NIGHT AT HOME AND THE RESTOCK KNOB, ON `worktree-slice-cart-home`, OFF `main` d299b7b) — ON WINDOWS.**
+>
+> **Built, measured, guarded; unplayed, unmerged.** Joe's question after D696: *"can the marketer take the cart home with him at the end of the
+> day so it's there at the beginning of the day? … is that feasible?"* Yes, with no new state (`handcart.md §13.2b`): a marketer or merchant
+> whose day ends with the building's cart pushes it home (*"pushing the handcart home for the night"*), rests with it (the two flags of §13.2
+> on a resting villager at home), wakes to the market's business and leaves the doorstep carted; the first leg (D696) fires only when the
+> cart is at the market; spare work stays on foot; the household never shops with it; a colleague finds it out and walks; a death counts it
+> back. D693's empty leg back (`ReturnTheWorksCart`) is gone. **The knob (§13.2c):** `restock_short_armfuls_with_cart` — at a market that owns a
+> cart the counter is short only with room for that many armfuls; **1 as shipped** (D372 to the letter, no golden moves), measured at 3.
+> **The view:** the chip under the household's at the holder's door, *"— at Alys's door for the night"*, the household card naming the building.
+>
+> **Measured (`handcart.md §13.6`, third table): twelve valleys × fifty years, a before-arm of `main`'s code under the same instrument; medians
+> before → night → night + knob 3:** Market share **4.7 → 4.3 → 4.0 %** (down in 11, then 12 of 12), the marketers' walking share **69.8 → 66.2 →
+> 59.3 %**, counter trips a marketer-year **10.3 → 10.9 → 9.4** (only the knob moves them: down in 8 of 12), units a carted trip 118 → 123 → 134,
+> the first legs in fifty years **310 → 92 → 70**, the shoppers' share 5.8 → 6.0 → 6.1 % (noise). ⚠️ Honest: the night rule is small and
+> consistent and buys no fewer trips; the knob is the lever; part of the Market bucket's fall is accounting (the walk home is a Commute tick).
+>
+> **Guards:** `HandcartTests` 42 — 7 new, the night's sentence, 3 re-aimed; **12 mutants, 21 reds, one zero written down** (§13.8.5). ⚠️ M1 scored
+> zero at first — see the D700 trap below. **The four checks:** suite **1954 / 0 / 5 of 1959 in 14m52** (wall-clock; xUnit's own duration 14 m 49 s; 15m46 at D697 — nothing ran beside it); view 0 warnings; probe 106 `[widths]` lines, 70 ✅, 0 ⛔, `cart:` ✅,
+> `cart card:` ✅ (both red-checked 1 of 1), bar 151, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 401 → 401, none moved.
+>
+> **▶️ NEXT — Joe plays it (`.\run.bat` from `.claude/worktrees/slice-cart-home`; format 12 — a new game or a save made on D695 or later):** a
+> marketer at the market with nothing to move pushing the cart home at the day's end, the slate-blue chip beside their house under the
+> household's own, the market's card reading *"a handcart, 149 trips left — at Alys's door for the night"*, the household's card *"a handcart,
+> 150 trips left; the market 1 handcart stands here for the night"*, and the morning errand leaving the doorstep with the rectangle behind the
+> dot and no walk to the market first. **Merges at his word (`--no-ff`, the status lines made true inside the merge commit — D640's trap).
+> ⏸️ His call riding in it: the knob's number** — 3 is what the table says, 1 is what ships (the ⏸️ OPEN list). Then house tiers.
+>
+> **— `main`'s block, as it stands at D699 —**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695–D698 ALL ON `main` AND PUSHED; ORIGIN AGREES) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` = the merge of `claude/elastic-dewdney-d55a19` (D695, 2026-11-06), pushed the same day at Joe's word with the docs commit that made
@@ -9121,6 +9150,31 @@ Read `git status` after staging, every time.
 - **Python edits through a `python -` heredoc with `\*` in the anchors failed to match** and stopped half-applied
   (the assert caught it, nothing written). Backslash-heavy edits: the Edit tool, or a script file (memory rule).
 
+## ⛔ THE TRAPS D700 PAID FOR — A GUARD THAT STOPPED AT THE FIRST NIGHT, A HAUL'S ARRIVAL THAT SENDS EVERYONE HOME, A FRESH WORLD'S FIRST TICKS ARE A REST, AND "0 Error(s)" CONTAINS "error"
+
+- ⛔ **A guard that stops at the first sign of the new behaviour cannot see the old behaviour resume.** Mutant M1 (the pusher away from the
+  market with nothing to carry pushes the cart BACK, D693's empty leg) scored **zero** against seven new facts, because every loop ended the
+  moment the cart slept at home — and the mutant's push ran from the doorstep the next morning. **Pose the morning after** (`State = Idle`,
+  `DecideForTest`, assert they stay). It scores 1 now, and the lesson is in D700.
+- ⭐ **A haul's arrival at a storehouse sends every hauler but a reaping farmer or a cutting herdsman HOME before they decide**
+  (`ArriveAt`, the D30 trip model, `BehaviorSystem.cs` ~5351). D693's spec said the works' cart "comes back before going home" after a
+  haul; the code sent the marketer home with it and pushed it back empty from their own door next morning. Read the arrival, not the
+  branch, when a rule says "and then".
+- ⚠️ **A fresh world's first ticks are a rest in place (`Villager.Rhythm`, D190's meal stagger):** a guard that loops until `Resting`
+  stops at tick 0 with the villager where the pose put them. Set `Rhythm = 0` on the posed villager, or loop on the real condition
+  (`TheWorksCartSleepsWith`), never on the state alone.
+- ⚠️ **The shoppers may empty the counter in the very tick the marketer stocks it** (D372's shop): a guard that reads the counter's stock at
+  the first park saw 0 after a 240 delivery. Count the parks and the load carried, not the counter.
+- ⛔ **`"error" in build.stdout.lower()` is true of every clean build — "0 Error(s)".** Two probe mutants read "DID NOT BUILD" and
+  scored zero for a line that was the success summary. Check the exit code, or `error CS` / `error MSB`.
+- ⚠️ **Four seeds are inside the chaos for a rule about one worker's day:** seeds 1 / 2 / 4 / 5 read the Market share two down, one up, one
+  flat. Twelve seeds and a **paired** seed-by-seed difference (median, range, "down in n of 12") said what four could not; the before-arm
+  must run under the same instrument (`main`'s `BehaviorSystem.cs` swapped in for the run from a scratchpad copy, put back and `cmp`-ed).
+- ⚠️ **The worktree-isolation guard refuses `L=$(grep -n …)` arithmetic and compound `dotnet … --logger "console;…"` lines.** Put the
+  measurement in a `.sh` in the scratchpad and run the file; read with `Grep -A` instead of `sed -n "$L,…"`.
+- ⚠️ **A harness copy under `tests/` is in use while its run goes — do not build in the checkout until it finishes** (D498's lock, again);
+  and a view mutant's rebuild beside a timed suite is the clock's noise (D329) — the probe's red-checks ran before the suite here.
+
 ## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
 
 - ⛔ **The stock-limits panel shows "no limit" as 0.** `AddStockLimitRow` puts `starts ?? 0` into the `SpinBox` and disables *clear*; a
@@ -9624,12 +9678,17 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE RESTOCK THRESHOLD UNDER A PARKED CART (D696's measurement, 2026-11-06) — HIS.** The first leg put the market's cart under
-  58–74 % of counter trips and moved neither the trips a marketer-year nor the Market bucket (`handcart.md §13.6`, the second table):
-  `CounterShortOf` fires the restock when the counter is **one armful** short, so a carted trip carries 86–106 of a possible 240. The
-  lever: when the market's cart is parked at its door, let the counter run down to **a cart's load short** before the restock fires (a
-  threshold read by the owner's cart — a number, measured first on `ZzLogistics` as every number here is), or leave it as it is. Nothing
-  built; nothing waits on it but the cart's gain.
+- ⏸️ **THE CART'S NIGHT AT HOME (D700, `handcart.md §13.2b`) — BUILT ON `worktree-slice-cart-home`, MEASURED, UNPLAYED, UNMERGED; JOE PLAYS
+  FROM THE WORKTREE, MERGES AT HIS WORD.** What to look for (`.\run.bat` in `.claude/worktrees/slice-cart-home`; format 12): the marketer
+  pushing the market's cart home at the day's end and its chip standing beside their house under the household's own; the market's card
+  *"— at Alys's door for the night"*, the household's *"the market 1 handcart stands here for the night"*; the morning errand leaving home
+  carted with no walk to the market first; a second marketer still on foot; nothing of the household's cart changed.
+- ⏸️ **THE RESTOCK KNOB'S NUMBER — `restock_short_armfuls_with_cart` (D700, `handcart.md §13.2c`) — HIS.** ✅ ~~The restock threshold under a
+  parked cart (D696's measurement)~~ **built as a knob and measured (§13.6, third table, twelve valleys):** at a market that owns a cart the
+  counter is short only with room for this many armfuls; **1 ships** (D372 to the letter, no golden moves). **At 3:** the Market share of adult
+  ticks 4.3 → 4.0 % (down in 12 of 12), the marketers' walking share 66 → 59 %, counter trips a marketer-year 10.9 → 9.4 (down in 8 of 12),
+  units a carted trip 123 → 134, the households' shopping share 6.0 → 6.1 % (inside the noise). The cost: the second marketer on foot carries
+  one armful to a counter three short. **Type 3 in `data/sim.config.json` (no golden moves — no golden run has a carted market), or leave 1.**
 - ⏸️ **HAY'S ROW READS 0 ON THE STOCK-LIMITS PANEL WITH NO LIMIT SET (D697's trap).** Clothing and handcarts start at 50 now at his word;
   hay has no limit (D590) and the panel shows *no limit* as 0 (`AddStockLimitRow`, `starts ?? 0`). A row that says *none* in words is the
   legibility fix; a typed number for hay is the other answer. His.

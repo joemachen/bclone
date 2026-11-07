@@ -1314,6 +1314,18 @@ public sealed record SimConfig
     [JsonPropertyName("cart_off_path_slow_percent")]
     public int CartOffPathSlowPercent { get; init; } = 150;
 
+    /// <summary>
+    /// At a market that owns a handcart (`Workplace.HandcartUses` &gt; 0, parked or in its marketer's hands), the counter is
+    /// short — and the restock fires — only with room for this many armfuls of <c>carry_capacity</c> (`handcart.md §13.2c`,
+    /// D700). 1 is D372's one-armful rule to the letter: D696 measured a carted trip arriving to a shortfall of an armful and
+    /// a bit and carrying 86–106 of 240, so the cart was under the trip but the trip was not sized for the cart;
+    /// <see cref="CartArmfuls"/> would size it. A market without a cart is short at one, as always. Read by
+    /// <c>SimWorld.CounterShortOf</c>, the one predicate the marketer's plan and the quota share. Validated at load: at
+    /// least one. The number is Joe's; measured on <c>ZzLogistics</c> (`ZZ_RESTOCK`).
+    /// </summary>
+    [JsonPropertyName("restock_short_armfuls_with_cart")]
+    public int RestockShortArmfulsWithCart { get; init; } = 1;
+
     /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
     /// <remarks>
     /// <para>
@@ -5721,6 +5733,11 @@ public sealed record SimConfig
         if (CartOffPathSlowPercent < 100)
         {
             throw new SimConfigException($"cart_off_path_slow_percent must be at least 100 (got {CartOffPathSlowPercent}); 100 is a cart no slower on grass.");
+        }
+
+        if (RestockShortArmfulsWithCart < 1)
+        {
+            throw new SimConfigException($"restock_short_armfuls_with_cart must be at least one (got {RestockShortArmfulsWithCart}); one is the counter short by an armful, as without a cart.");
         }
 
         if (LeaveHomeAge < 0)

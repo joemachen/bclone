@@ -823,7 +823,8 @@ public sealed class Villager
         VillagerState.TravelingToGame => "walking out to the woods",
         VillagerState.Hunting => "hunting in the woods",
             VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}"
-                : PushingACart ? (IsCarrying ? "pushing a load home" : "pushing the cart home")
+                // The works' cart home for the night (`handcart.md §13.2b`); the household's as before (§8).
+                : PushingACart ? (IsCarrying ? "pushing a load home" : CartForTheWorks ? "pushing the handcart home for the night" : "pushing the cart home")
                 : "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
