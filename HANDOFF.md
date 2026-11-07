@@ -31,6 +31,12 @@
 > **— `main`'s block, as it stands at D699 —**
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-06 (D695–D698 ALL ON `main` AND PUSHED; ORIGIN AGREES) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
+> **🔨 ON `claude/distracted-cori-b8df71` (D706, 2026-11-07), VIEW ONLY, ONE COMMIT, UNMERGED, UNPLAYED: the speed keys 1–5 (5 = 20×) and Space as a
+> press, not a hold** — the "held" pause was a focus leak (a clicked speed button kept Godot's default `FocusMode.All` and fired on
+> Space's release); every bar button now refuses keyboard focus, no settings option; new probe line `space:`, the release path reproduced
+> headless. `DESIGN.md §6`'s block, `specs/title-and-pause.md §5.1`, and **⛔ THE TRAP D706 PAID FOR** below. Joe's hand check: click
+> *1x*, press and release Space, the village stays paused. Numbered D706 at the merge.
+>
 > **`main` = the merge of `claude/elastic-dewdney-d55a19` (D695, 2026-11-06), pushed the same day at Joe's word with the docs commit that made
 > these lines true; origin agrees.** The branch was three commits past `main` 6a2f4fe (D691): piece 1 (D692) the owners, piece 2 (D693) what it buys, piece 3
 > (D694) the look — the trades' carts, `specs/handcart.md §13`, Joe's pick after playing Slice H (*"does the marketer use a cart to move
@@ -9215,6 +9221,28 @@ Read `git status` after staging, every time.
 - ⛔ **A placeholder number in a §7 entry is a hand-over, not a decision.** Four sessions wrote §7 the same day; this one's entries are
   `D70x-1..4` for the merging session to number (numbered D702–D705 at the merge). Grep for `D70x` before the merge commit and after it: a placeholder that reaches `main` is
   a cross-reference nothing can follow.
+
+## ⛔ THE TRAP D706 PAID FOR — A FOCUSED GODOT BUTTON FIRES ON SPACE'S RELEASE; EVERY BAR BUTTON NEEDS `FocusMode.None`
+
+- ⛔ **"Space pauses only while held" was not the key handler.** `_UnhandledKeyInput` filtered `Pressed: true, Echo: false` and
+  toggled correctly all along. A Godot `Button` defaults to `FocusMode.All`, so the speed button the player last *clicked* kept
+  keyboard focus; Godot maps Space (and Enter) to `ui_accept`, and a focused `BaseButton` emits `Pressed` on the key's **release** —
+  the press reached the handler and paused, the release re-pressed *1x*. Any button a player clicks between keystrokes does this.
+  `RefuseKeyboardFocus(body)` sweeps the control bar once after it is built; the `space:` probe line faults any `BaseButton` under it
+  that takes focus. **A button added to the bar at build time is covered by the sweep; one added to it later, or a new bar, is not —
+  the probe is what says so.** Do not add a settings option for it: a leak is not a preference (Joe offered the option; D706).
+- ⭐ **Headless GUI routing DOES deliver a synthetic click and key.** `GetViewport().PushInput(new InputEventMouseButton { ButtonIndex =
+  Left, Pressed, Position = at, GlobalPosition = at }, inLocalCoords: true)` at `button.GetGlobalRect().GetCenter()` pressed *1x*, and
+  `PushInput(new InputEventKey { Keycode = Key.Space, PhysicalKeycode = Key.Space, Pressed = … })` went through the focus owner and
+  then `_UnhandledKeyInput`. ⭐ **M1 is Joe's symptom reproduced headless, word for word**: with the sweep gone, the synthetic click left *1x* holding focus, Space's press paused and its release resumed the village at 1× — the probe saw the leak before the fix and its absence after. So a focus bug can be reproduced in the probe, not only by Joe's hand — but write the
+  "did not reach it" branch in words, so a routing change reads as untested rather than as passed.
+- ⚠️ **A fresh worktree has no Godot import cache, and the probe HANGS there rather than failing** (D678's trap, paid again):
+  `GrassLab.SelfCheck` cannot load `grass_seasons.png`, prints the error and the process sits printing `[frame]` lines until killed.
+  `tasklist`, `taskkill //PID n //F`, then `"$GODOT" --headless --import --path src/Bclone.Game`, then `git clean -fq --
+  'src/Bclone.Game/*.uid'` and `git checkout -- src/Bclone.Game/icon.svg.import src/Bclone.Game/textures/` — the import rewrites seven
+  tracked `.import` files and drops a `.uid` beside every `.cs`. **Import before the first probe in any new worktree.**
+- ⚠️ **Backticks inside a double-quoted `grep -c` pattern score 0 and look like a missing anchor** (D692's trap, met again on a
+  HANDOFF banner): count anchors from a Python script, or single-quote the pattern.
 
 ## ⛔ THE TRAPS D696–D697 PAID FOR — A GOOD WITH NO LIMIT READS AS 0 ON THE PANEL, AND A LEG PUT THE CART UNDER THE TRIP WITHOUT SIZING THE TRIP FOR THE CART
 

@@ -6,7 +6,8 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 *Continue* and *Load…* on the new-game screen *"until the title screen exists"*, *Save* in Settings *"until the
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
-**Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** View only; nothing in
+**Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** 🔨 **D706 (2026-11-07): the speed keys 1–5 and the bar's focus rule (§5.1, §8.3)
+— on `claude/distracted-cori-b8df71`, view only, unmerged, unplayed.** View only; nothing in
 `Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
 ❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
@@ -83,13 +84,29 @@ new-game screen's shape (`NewGameScreen`, which raises events and Main acts on t
     the chosen one opens — see §6 for why that order needs care.
   - **Settings** — closes the pause screen and opens the Settings window. ⚠️ **The village stays paused** (the
     kept speed is not given back), because the player went to Settings, not back to the village; Space or a
-    speed key resumes as always.
+    speed key resumes as always (§5.1).
   - **Quit to title** — autosaves (*"on quit to title"*), then the title screen.
   - **Quit to desktop** — autosaves (*"on quit"*), then closes the game.
 - **On a village stopped by an error** (`_halted`): *Save* is refused in the log exactly as today; the two
   quits go without saving — `Autosave` already returns on a halted village — and their tooltip says so:
   *"The village stopped on an error and will not be saved — the last autosave is from Year N."*
 - **Settings loses its Save row** and its caption. The share-out tick stays where it is.
+
+### 5.1 The speed keys, and why no bar button may keep focus (D706, 2026-11-07)
+
+- **The keys:** Space toggles paused ↔ 1×; **1 = 1×, 2 = 2×, 3 = 4×, 4 = 10×, 5 = 20×** (Joe: *"i want to add keybinds to the speed changes: 1x = 1, 2x = 2, 4x = 3, 10x = 4, 20x = 5"* — 1–4 existed,
+  5 was the one missing; the 20× button has been on the bar since 2026-08-29). The hint under the bar reads *"space to
+  pause · 1-5 speed · …"*. While the pause screen is up all five do nothing (§5; the `pause:` line presses 4 and 5).
+- **Space is a press, not a hold** (Joe: *"space for pause should be pressed, not held = or offer that option in the settings menu"*). ⛔ **It always was a toggle in the handler** — `_UnhandledKeyInput`
+  filters `Pressed: true, Echo: false` and flips paused ↔ 1×. What made it read as "held" was a **focus leak**: a Godot
+  `Button` defaults to `FocusMode.All`, so the speed button the player last *clicked* kept keyboard focus; Godot maps
+  Space to `ui_accept`; and a focused `BaseButton` fires `Pressed` on the key's **release**. The press reached the handler
+  and paused the village; the release re-pressed *1x*. **The rule: every button on the control bar — speed, skip, Centre
+  on village, Settings, Records, Tree, the tabs, the filters, Cancel, the brush's shape and the whole strip — refuses
+  keyboard focus.** `RefuseKeyboardFocus` sweeps the bar once after it is built, and the `space:` probe line (§8) faults
+  any `BaseButton` under it that takes focus, so a later button cannot leak quietly. **No settings option**: the cause is
+  a leak, not a preference, and the option Joe offered would have been a switch for a bug. `LineEdit` and `SpinBox` keep
+  focus as before (the rename box, the stock limits) — the WASD poll already yields to a focused `LineEdit` (D379).
 
 ## 6. Leaving a village — the scene is reloaded, never torn down
 
@@ -120,6 +137,7 @@ and one style box), and `_ExitTree` already disposes the audit log.
 | Continue, none | *No saved village yet.* |
 | New-game screen | **Back** |
 | Pause | **Paused** · *{village} — {Day N, Season, Year N}* · **Resume** · **Save** · **Load…** · **Settings** · **Quit to title** · **Quit to desktop** |
+| Hint under the bar (D706) | *space to pause · 1-5 speed · WASD pan · wheel zoom · r turn · tab routes · home recentre · c fold panels · h hide them* |
 | Pause, halted | *The village stopped on an error and will not be saved — the last autosave is from Year N.* |
 | Under Save (D518) | *Saved as test.* · *Saved as test, replacing the earlier save of that name.* · *Nothing is saved while the probe runs.* · the halted refusal · *The village could not be saved (…). The last save still stands.* |
 | Audit log | *Autosaved (on quit to title) to …* · *Autosaved (before loading another) to …* |
@@ -136,7 +154,24 @@ Two new lines, each red-checked (D326) by breaking the thing it claims and count
    paused; Esc again closes it and gives back the speed it found (posed at 4×); Settings has no Save row; the
    pause screen has one. It never presses Save, Load or a quit (the probe never touches the player's saves, and
    a quit would end the probe).
+3. **`space:`** (D706) — three clauses on the running village, after `pause:`. **The rule:** no `BaseButton` under the
+   control bar takes keyboard focus (named if one does). **The key:** 5 reads 20×. **The symptom, reproduced headless:**
+   a synthetic left click on *1x* through `Viewport.PushInput` (press and release at the button's centre), then a Space
+   press and release pushed the same way — the village must be paused after the press, still paused after the release,
+   and nothing may hold focus afterwards. ⚠️ If the click does not reach *1x* the line says so in words (*"a synthetic
+   click … did not reach 1x headless — the release path is Joe's hand check"*) rather than claiming the release was
+   tested. **It did reach it** (2026-11-07): the line reads *"clicked 1x, Space's press paused, its release left it
+   paused"*.
 - `bar height` stays **151**, `tile centres`, `new game:` and `save:` stay ✅, and `done.` prints.
+- **Red-checked (D706)** — each mutant's landing confirmed by one exact match before its probe ran:
+
+  | Mutant | Broke | Read |
+  |---|---|---|
+  | M1 | the focus sweep never runs (every bar button at Godot's default) | `space:` ❌ 3 reds: 62 bar buttons take keyboard focus (every one named, *Pause* to *Unmark*); *Space's release resumed the village at 1x — the clicked button fired on ui_accept's release*; *Button "1x" holds keyboard focus after the click* |
+  | M2 | *Settings* given `FocusMode.All` back after the sweep | `space:` ❌ 1 red: *1 bar button(s) take keyboard focus: "Settings"* |
+  | M3 | the `Key5` case removed | `space:` ❌ 1 red: *5 set 1x, not 20x* |
+
+  **3 mutants, 5 reds, no zeros.** ⭐ **M1 is Joe's symptom reproduced headless, word for word**: with the sweep gone, the synthetic click left *1x* holding focus, Space's press paused and its release resumed the village at 1× — the probe saw the leak before the fix and its absence after.
 - **Red-checked (D517)** — each mutant's landing confirmed by a single exact match before its probe ran:
 
   | Mutant | Broke | Read |

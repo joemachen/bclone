@@ -628,6 +628,7 @@ public partial class Main : Control
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());
+        GD.Print(SpaceIsPressedNotHeld());
 
         // Trade and the herd (D596): last but one, so the orders they set and clear disturb no other line.
         GD.Print(TheHerdGrazesItsPasture());
@@ -1967,6 +1968,10 @@ public partial class Main : Control
             case Key.Key2: SetSpeed(2.0); break;
             case Key.Key3: SetSpeed(4.0); break;
             case Key.Key4: SetSpeed(10.0); break;
+
+            // ⭐ 5 IS 20x (D706, Joe: *"1x = 1, 2x = 2, 4x = 3, 10x = 4, 20x = 5"*). The 20x button has
+            // been on the bar since 2026-08-29; the key was the one missing from the row.
+            case Key.Key5: SetSpeed(20.0); break;
             case Key.Tab: CycleDetail(); break;
             case Key.P: ToggleWear(); break;
 
@@ -5596,6 +5601,19 @@ public partial class Main : Control
         BuildTheStrip();
         RefreshTheStrip();
 
+        // ⛔⛔ NO BUTTON ON THIS BAR MAY KEEP KEYBOARD FOCUS (D706, Joe: *"space for pause should be
+        // pressed, not held"*). Space was a toggle all along — `_UnhandledKeyInput` filters
+        // `Pressed: true, Echo: false` — and the pause still read as "held", because a Godot `Button`
+        // defaults to `FocusMode.All`: the speed button the player last CLICKED kept keyboard focus,
+        // Godot maps Space to `ui_accept`, and a focused `BaseButton` fires `Pressed` on the key's
+        // RELEASE. So the press reached the handler and paused the village, and the release pressed
+        // "1x" again. **A focus leak, not a preference** — which is why there is no settings option
+        // for it. Swept once here rather than set at twelve creation sites; the `space:` probe line
+        // faults any button under the bar that takes focus, so a later addition cannot leak quietly.
+        // `LineEdit` and `SpinBox` are not buttons and are left alone (the WASD poll already asks
+        // `GuiGetFocusOwner() is LineEdit`).
+        RefuseKeyboardFocus(body);
+
         // ⭐ THE BAR RELIGHTS ITSELF FROM THE MAP, NOT FROM THE BUTTON THAT WAS PRESSED. Wiring
         // each button to light its own tab would go wrong the moment anything else changed the
         // tool — right-clicking to cancel, or the ground brush being handed over from a
@@ -5619,7 +5637,7 @@ public partial class Main : Control
         _map.ToolAnnounced += _ => RelightTheStrip();
 
         body.AddChild(Wrapped(Muted(
-            "space to pause · 1-4 speed · WASD pan · wheel zoom · r turn · tab routes · "
+            "space to pause · 1-5 speed · WASD pan · wheel zoom · r turn · tab routes · "
             + "home recentre · c fold panels · h hide them")));
     }
 
@@ -8437,6 +8455,24 @@ public partial class Main : Control
         GD.Print($"[skip] ran {ran} ticks ({ran / (float)_loop.World.Config.TicksPerYear:F1} years) "
             + $"in {watch.Elapsed.TotalSeconds:F2}s, now {_loop.World.Clock}"
             + (onAMoment ? " — stopped early on a moment" : string.Empty));
+    }
+
+    /// <summary>
+    /// Every <see cref="BaseButton"/> under <paramref name="under"/> refuses keyboard focus (D706) — see the note
+    /// where the control bar calls it: a focused button fires on Space's release, which is what made the pause read
+    /// as "held".
+    /// </summary>
+    private static void RefuseKeyboardFocus(Node under)
+    {
+        foreach (Node child in under.GetChildren())
+        {
+            if (child is BaseButton button)
+            {
+                button.FocusMode = Control.FocusModeEnum.None;
+            }
+
+            RefuseKeyboardFocus(child);
+        }
     }
 
     private Button SpeedButton(string text, double multiplier)
