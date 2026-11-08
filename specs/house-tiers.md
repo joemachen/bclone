@@ -10,11 +10,12 @@ is a lit hearth), D546–D551 (the bridge: a second row, rebuilt in place while 
 (building condition: wear on a derived clock, the builders mend), D674–D682 (the workshop: a counter, a learned flag
 hashed only when true), D709 (every good starts with a limit — firewood at 600), D576 (a stop through `LearnedByDoing`
 sets a hashed flag and moved four goldens).
-**Status:** ✍️ **SPECCED (D716, 2026-11-07) ON `slice/house-tiers` — NOTHING BUILT. Joe answered (D717, §11): call 2
-(one village-wide choice, Cabin until changed) ✅ as recommended; call 3 (24 / 12 / 5 first, the cabin's raise measured
-after) ✅; the manor holds 8; each tier a bigger larder and its own look. ⏸️ STILL HIS: the gates — *"i dont want it to be
-stone related. it should feel earned"*, cottages around Year 30, manors around Year 80–90 — §4.4 offers ideas, one
-recommended; and which perks beyond the larder (§4.8).** Every number is a proposal until §10's table is filled.
+**Status:** ✍️ **SPECCED (D716), EVERY CALL ANSWERED (D717, D718 — 2026-11-07/08) ON `slice/house-tiers`; THE BUILD
+STARTS WITH PIECE 1, THE GENERATION (§14).** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
+24 / 12 / 5 first, the cabin's raise measured after; **the family tree gates both rungs** (a new generation born into the
+valley + the village grown to hold it — cottages ~Year 30, manors ~Year 80–90); every house holds 5; a bigger larder and
+its own look each; the three perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1, drawn bigger.
+Every number is a proposal until §10's table is filled.
 Owner: Joe + Claude Code.
 
 > **Where this sits.** Phase 5's exit gate, item 1: *"Four stay, and are built in his order: doors commit 5 → clothing →
@@ -81,26 +82,21 @@ birth gate, the glyph, the cards). ⚠️ **That routing is the slice's real cod
 |---|---|---|---|
 | Row | `BuildingKind.Home` (5) — today's house, renamed in words only | `BuildingKind.Cottage` (28) | `BuildingKind.Manor` (29) |
 | Extent | 2×1 | **2×1** | **2×1** (drawn taller — §6; a bigger footprint is §11 call 4) |
-| Holds | 5 (`max_household_size`) | **5** | **8** ✅ (Joe, D717) |
+| Holds | 5 (`max_household_size`) | **5** | **5** (8 at D717, back to 5 at D718 — Joe: *"keep it at 5"*) |
 | Firewood a winter | **24** (today's, to the log) | **12** (D206: −50 %) | **5** (D206: −80 % is 4.8) |
 | Recipe (proposal) | 30 logs, 0 stone, 30 ticks (today's) | 20 logs, 30 stone, 45 ticks | 30 logs, 45 stone, 60 ticks |
 | Wears / fails / ruin (proposal) | 8 / 12 / 20 years (today's) | 16 / 24 / 40 | 16 / 24 / 40 |
-| Larder (`local_store_cap`) (proposal) | 400 | **600** | **1,000** — Joe, D717: each tier bigger than the last |
+| Larder (`local_store_cap`) (proposal) | 400 | **600** | **800** — Joe, D717: each tier bigger than the last |
 
 - ⭐ **Same footprint, recommended.** A bigger manor would move the plot, the lane, the fence, the door and `ChooseSite`'s
   packing at once (D386, D388, D619). The manor is *drawn* as a bigger house on the same ground — a second storey, two
-  chimneys (§6) — and a wider footprint stays open as §11 call 4.
-- ⭐ **The manor holds 8 (Joe, D717) — TECH-EXAMPLE's number, and the density axis D153 reserved arriving on the third
-  rung.** What it moves, to be measured in arm B: the birth gate (`HouseholdCapacity` asked of the household's own row —
-  a manor family may have more children); fewer new households forming, so fewer new houses and less sprawl (a logistics
-  gain, `logistics.md §5`). ⛔ **The survival floor still budgets every household at `max_household_size` 5**
-  (`SpareHandsAt`): the floor is derived for a village of cabins, and a manor village is a Year-80 village far above it.
-  A guard says so, so the gap is a decision rather than an accident. The cabin and the cottage stay at 5 (D153: at five
-  the cap binds and the village stops dying out).
+  chimneys (§6). ✅ Joe, D718: *"I agree with your manor footprint/bigger drawing idea."*
+- ✅ **Every house holds 5 (D718).** Joe raised the manor to 8 at D717 and withdrew it the next day: *"nevermind on
+  increasing the resident volume of a manor. keep it at 5."* So D153's cap and the floor's `max_household_size` budget
+  stay true of every house; the density axis stays closed.
 - **Larders grow with the tier (Joe, D717).** At `stockpile_target` 95 a family of five wants 475 food (+ the hearth's
   share): a cabin's 400 caps any family of four or more (D399, measured as the largest number that still bites); a
-  cottage's **600** holds a full family of five with room; a manor's **1,000** holds a full family of eight (760 + the
-  hearth). So a better house is fewer walks to the granary — the shopping round trip D668 measured at a fifth of every
+  cottage's **600** holds a full family of five with room; a manor's **800** holds more than a winter for them. So a better house is fewer walks to the granary — the shopping round trip D668 measured at a fifth of every
   adult's ticks. The numbers are proposals for arm B; the validator's *"a cap below a winter's firewood + one armful"*
   refusal applies per row.
 - ⛔ **No morale** (D206's manor *"+25 % Morale"*): morale is Phase 6 (D207), and a hidden home-tick bonus is the
@@ -185,8 +181,9 @@ line runs roughly: grandchildren of the founders from ~Year 15, great-grandchild
   who learned beside a master becomes a master. The knowledge pillar exactly; ⚠️ needs who-taught-whom recorded, and the
   timing is luck of the founding.
 
-**Recommended: A for the cottage, and A for the manor — one idea, two rungs** (C is the alternative manor if Joe wants the
-manor earned by cottages). ⛔ `StoneEverLaid`, the first draft's gate, is withdrawn (Joe); the manor's *6 cottages and a
+**✅ CHOSEN: A for both rungs (Joe, D718: *"I love the family tree unlock idea!"*).** B–E are kept above as the
+reasoning, not built. *(It was: **Recommended: A for the cottage, and A for the manor — one idea, two rungs** (C is the alternative manor if Joe wants the
+manor earned by cottages).)* ⛔ `StoneEverLaid`, the first draft's gate, is withdrawn (Joe); the manor's *6 cottages and a
 workshop* goes with it.
 
 ### 4.5 Who upgrades — the player says what, the sim says where and when
@@ -234,12 +231,12 @@ wrong"*.
 | Perk | Cabin | Cottage | Manor | Why it is legible, not a hidden multiplier | Recommended? |
 |---|---|---|---|---|---|
 | Firewood a winter | 24 | 12 | 5 | the card says it; the woodpile shows it | ✅ settled |
-| Larder | 400 | 600 | 1,000 | fewer walks to the granary, on the map | ✅ Joe's |
-| Holds | 5 | 5 | 8 | the family on the card | ✅ Joe's |
-| **Lasts** — wears / fails / ruin | 8 / 12 / 20 y | 16 / 24 / 40 | 16 / 24 / 40 | the condition on the card and the map; fewer repairs | ⭐ yes |
-| **Keeps its warmth** — days a fireless house shelters before it kills (`exposure_days_sheltered` per row) | 25 | 30 | 40 | *"A cold cottage keeps a family safe 30 days without a fire"* on the card. ⚠️ Insurance, not a daily gain — nobody in Joe's villages has ever frozen — but it is what *insulated* means | ⭐ yes |
-| **Bears the family's name** — *"Ashford Manor"* on the map, the card and the log; *"the Ashford cottage"* | — | name | name | §1.4, stories from people: the house becomes a place with a history. Derived from the household, never stored | ⭐ yes |
-| **Keeps the family together** — a couple formed in a manor with room may stay in it rather than wait for a house of their own | — | — | ✅ | what *holds 8* means in practice: fewer houses, less sprawl, three generations under one roof. Moves the households formed; measured in arm B | ⏸️ Joe |
+| Larder | 400 | 600 | 800 | fewer walks to the granary, on the map | ✅ Joe's |
+| Holds | 5 | 5 | 5 | the family on the card | ✅ Joe's (D718) |
+| **Lasts** — wears / fails / ruin | 8 / 12 / 20 y | 16 / 24 / 40 | 16 / 24 / 40 | the condition on the card and the map; fewer repairs | ✅ Joe's (D718) |
+| **Keeps its warmth** — days a fireless house shelters before it kills (`exposure_days_sheltered` per row) | 25 | 30 | 40 | *"A cold cottage keeps a family safe 30 days without a fire"* on the card. ⚠️ Insurance, not a daily gain — nobody in Joe's villages has ever frozen — but it is what *insulated* means | ✅ Joe's (D718) |
+| **Bears the family's name** — *"Ashford Manor"* on the map, the card and the log; *"the Ashford cottage"* | — | name | name | §1.4, stories from people: the house becomes a place with a history. Derived from the household, never stored | ✅ Joe's (D718) |
+| ~~**Keeps the family together**~~ | — | — | — | moot: every house holds 5 (D718) | ⛔ withdrawn |
 | A **kitchen garden** in the plot, tended as fallback work (D357's legible cousin) | — | later | later | a person walks out to it | later — its own slice |
 | TECH-EXAMPLE's **+25 % morale** | — | — | Phase 6 | when morale exists (D207), as a stated, carded rule | recorded |
 | ⛔ Faster work, more births, longer lives from a better house | | | | the invisible multiplier §1.1 / D207 / D357 refuse | refused |
@@ -344,7 +341,7 @@ arms (an unattended valley plays badly — pair every table with Joe's saves bef
 | Arm | What it answers |
 |---|---|
 | **A — control** (main's code) | the baseline: alive at 10 / 50, cold deaths, logs felled, heating's share, woodcutter seat-years, firewood held |
-| **B — cottages chosen** when learned (cabin 24, cottage 12, manor 5; larders 400 / 600 / 1,000; the manor holds 8) | **the year each gate's factors cross** (for A: the first birth of each generation, and the year the village holds 25 and 45 — so the two gates land at ~Year 30 and ~80–90); stone and builder-time the rebuilds cost; logs and woodcutting saved; granary walks saved by the larders; with the manor at 8, households formed and births; does a rebuild ever delay a roofless family |
+| **B — cottages chosen** when learned (cabin 24, cottage 12, manor 5; larders 400 / 600 / 800; every house holds 5) | **the year each gate's factors cross** (for A: the first birth of each generation, and the year the village holds 25 and 45 — so the two gates land at ~Year 30 and ~80–90); stone and builder-time the rebuilds cost; logs and woodcutting saved; granary walks saved by the larders; does a rebuild ever delay a roofless family |
 | **C — the cabin raised** to 48 / 64 / 80, re-derived (call 3) | the founding: cold deaths Years 1–10, alive at 10; logs felled ×?; forest cover at 50; does the 600 firewood limit bind; is winter still *"a rhythm, not a crisis"* (§0) |
 | **D — C with cottages** | how much of C's cost the ladder gives back, and by when |
 
@@ -357,29 +354,19 @@ lands in *his* villages, not only the harness's.
 - ✅ **Call 2 — the player chooses once, the sim does the rest** (§4.5). Joe: *"agree"*.
 - ✅ **Call 3 — two steps**: 24 / 12 / 5 in this slice, the cabin's raise toward 60–80 its own measured commit (§10 arm C).
   Joe: *"sure sounds good i suppose"*.
-- ✅ **The manor holds 8** (§4.1). Joe: *"insulated manor should also allow up to 8 people to live in one home."*
-- ✅ **Larders grow with the tier** (§4.1, proposal 400 / 600 / 1,000). Joe: *"stone cottage should have a bigger larder than
+- ~~✅ **The manor holds 8** (§4.1). Joe: *"insulated manor should also allow up to 8 people to live in one home."*~~ Withdrawn by him at D718.
+- ✅ **Larders grow with the tier** (§4.1, proposal 400 / 600 / 800). Joe: *"stone cottage should have a bigger larder than
   wooden cabin. and manor should have a larger larder"*.
 - ✅ **Each tier its own look** (§6). Joe: *"each house state will needs its own look/design changes so the player can see
   the upgrade."*
 - ⛔ **The first draft's gates are withdrawn** — *"i dont want it to be stone related. it should feel earned"*.
 
-**⏸️ Still his:**
-
-**Call 1 — the gates** (§4.4), cottages around Year 30 and manors around Year 80–90, each two-factor. **Recommended: idea
-A for both rungs — a new generation born into the valley, and the village grown to hold it** (cottage: the fourth
-generation and 25 people; manor: the generation that lands Year 80–90, and 45 people). Alternatives: B (a cabin that has
-outlived its builders — lands ~Year 35–45), C (the manor earned by a cottage that has housed three generations), D (the
-town hall's 40th year — 85 and 89 in his two villages with a hall), E (a master builder taught by a master).
-
-**Call 4 — the perks** (§4.8). **Recommended for this slice:** the larder (his), *lasts* (twice the years), *keeps its
-warmth* (30 and 40 days without a fire against the cabin's 25), and *bears the family's name* (*"Ashford Manor"*). **His
-call:** whether a manor *keeps the family together* — a couple formed in it may stay while there is room. Later: the
-kitchen garden; morale's +25 % in Phase 6.
-
-**Call 5 — the manor's footprint.** **Recommended: the same 2×1, drawn bigger** (two storeys, two chimneys). A wider
-footprint (3×1 or 2×2) fills the yard and moves the plot, the fence, the door and the site-chooser together — its own
-measured change if the look alone does not read.
+- ✅ **Call 1 — the gates: the family tree, both rungs** (§4.4 idea A). Joe, D718: *"I love the family tree unlock idea!"*
+  The generation numbers and the populations (proposed 4th + 25 and the ~Year-80–90 generation + 45) are set by §10's arm
+  B before they are typed.
+- ✅ **Every house holds 5** (D718) — the manor's 8 withdrawn: *"keep it at 5"*.
+- ✅ **Call 4 — the perks: lasts, keeps its warmth, bears the family's name** (§4.8). Joe, D718: *"go with your 3 perks!"*
+- ✅ **Call 5 — the manor 2×1, drawn bigger.** Joe, D718: *"I agree with your manor footprint/bigger drawing idea."*
 
 **The costs, unchanged as proposals** (measured in arm B): cabin 30 logs; cottage 20 logs + 30 stone, 45 ticks; manor
 30 logs + 45 stone, 60 ticks. *(Stone stays in the price — it is what a stone house is made of; the gate is what is no
@@ -399,3 +386,19 @@ longer stone.)* And save format 13 refuses his format-12 saves, as before.
 ## 13. Definition of Done
 
 METHODOLOGY §3's six, with item 4 (the manual QA) as Joe's play above, and Phase 5 gate item 1 closed by it.
+
+## 14. The build, in pieces (D718)
+
+One commit each, docs in the same commit, every guard red-checked and counted; the four checks before each is called done.
+
+1. **The generation** — `Villager.Generation`: founders and arriving nomads 1, a child one more than the elder of its two
+   parents; saved (format 13), unhashed; the villager card's *"Nth generation in the valley"*. Then §10's arm B reads, on
+   the harness, the year each generation is first born and the year the village first holds 25 and 45 — **the numbers
+   for both gates come from that table, not from the arithmetic in §4.4.**
+2. **The rows and the burn** — the Cottage and Manor rows, `winter_firewood` spread over the beat (byte-identical for the
+   cabin), `Household.HomeKind` behind `HomeRowOf` (every `BuildingKind.Home` site accounted for), per-row larder, wear and
+   `exposure_days_sheltered`, `LabourQuota` per home.
+3. **The gates and the choice** — the two latched flags on the family tree, `WhyNotYet`, the tech-map nodes, the moments;
+   *Build homes as* on the housing brush; new homes at the chosen tier; `RebuildsHome`, one at a time behind every site.
+4. **The view** — each tier's look, the cards (tier, burn, warmth, rebuild progress, the family's name), the probe line.
+
