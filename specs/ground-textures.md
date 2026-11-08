@@ -1,6 +1,6 @@
 # Spec: Ground-kind textures — Joe's watercolour, one seamless tile per kind
 
-**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). Stone, iron and water not painted: piece 2 next. Woods first.**
+**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). 🎨 `ground_stone.png` AND `ground_water.png` PAINTED AND MEASURED (A16, 2026-11-08), NOT YET SEEN BY JOE; piece 2's lab half not built. Iron not painted.**
 The format Joe paints to, before he paints. The art lane's next slice after the terrain shader (`terrain-shader.md`, A1–A11),
 lab only until house tiers merge (`terrain-shader.md §5`). Joe's calls, 2026-11-07: **full colour**, not a value-only wash;
 **woods first**, through the whole loop, before the other three are painted. Owner: Joe + Claude Code.
@@ -70,6 +70,22 @@ unchanged. The villagers' dots (L\* 27–28) read **3.9 : 1 against the tile's m
 dark pixels sit a hair under 3 : 1, which the check reports and does not fail (it judges marks against p1, as the grass
 is judged). ⚠️ If Joe wants the margin, the tile's floor is a *painting* knob — less grain and mottle, or a lighter base
 — and not a shader one; a rebuild is a minute.
+
+**Stone and water, measured (A16).** `ground_stone.png`: L\* min 58.71, p0.1 63.54, p1 65.37, p50 70.82, p99 74.89, max
+78.62; mean `#b5ac9a` (L\* 70.67, a\* −0.04, b\* 10.24) against `#b4ab99` (70.27, 0.13, 10.43), hue 90.2° vs 89.3°, mean
+per-pixel ΔE 4.27 — granulation, warm `#b79e82` and cool `#9fa497` drift inside it, hue 90° against iron's 65°.
+`ground_water.png`: L\* min 57.72, p0.1 58.18, p1 58.57, p50 60.47, p99 62.07, max 63.29; mean `#6e97ae` (L\* 60.43,
+a\* −8.24, b\* −16.39) against `#6f97ad` (60.36, −8.10, −15.87), hue 243.3° vs 243.0°, mean per-pixel ΔE 1.57. Both
+seamless (wrapped edge at or under the interior mean). `check.py` on a scratch copy with each tile's percentiles sampled
+in as a ground: **0 of 26 marks and 0 of 41 outlined things fail**, unchanged. The dots read **4.53 : 1 against the stone's
+mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 1 on the water**.
+- ⛔ **For water the §3 floor is not the binding limit — the dots are.** The palette's water is L\* 60.4, and every
+  mark at L\* ≤ 29 holds 3 : 1 only down to about **L\* 58.2**, so flat water already passes with 0.2 to spare (all 26
+  marks at 3.1–3.2 : 1). The first water tile met §3 (p1 56.4) and **put 21 of the 26 marks under 3 : 1**. The tile that
+  ships keeps its value drift inside ±2 L\* (p1 58.6) and carries the wash in **hue** instead — green `#6894a3` to blue
+  `#6e94b5` at one lightness. *A darker or busier water is a palette call (lighter `WaterColour`), not a painting one.*
+- ⚠️ The work-ground wash (`#4a9ba8` at 16 %) is not seen over water (ΔE 2.2) — over flat water too; the tile changes
+  nothing there. Reported for the wiring, not this piece's.
 
 ## 4. How the shader draws it
 
