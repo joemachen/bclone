@@ -29,7 +29,12 @@ public sealed partial class GrassLab
     private static readonly Vector2 ViewLimit = new(GrassLabGround.TilesWide / 2f, GrassLabGround.TilesTall / 2f);
 
     private PanelContainer _terrain = null!;
+    private ScrollContainer _terrainScroll = null!;
+    private VBoxContainer _terrainBody = null!;
     private Label _gpuOnTerrain = null!;
+
+    /// <summary>The panel's own top and bottom margins (its StyleBoxFlat) plus the 16 px it keeps from the window's edges.</summary>
+    private const float TerrainChrome = 12f + 12f + 16f + 16f;
     private bool _terrainShown = true;
 
     internal CheckBox Coverage { get; private set; } = null!;
@@ -102,9 +107,14 @@ public sealed partial class GrassLab
         _terrain.OffsetTop = 16f;
         AddChild(_terrain);
 
-        var body = new VBoxContainer();
+        // ⚠️ With piece 5 the panel outgrew a 1080-tall window, and a PanelContainer neither clips nor scrolls (Joe's first
+        // look at A14). The body scrolls, capped to the window's height, so every control can be reached at any size.
+        _terrainScroll = new ScrollContainer { Name = "TerrainScroll", HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        _terrain.AddChild(_terrainScroll);
+        var body = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         body.AddThemeConstantOverride("separation", 4);
-        _terrain.AddChild(body);
+        _terrainScroll.AddChild(body);
+        _terrainBody = body;
 
         var heading = new Label { Text = "Terrain" };
         heading.AddThemeFontSizeOverride("font_size", 20);
@@ -185,6 +195,9 @@ public sealed partial class GrassLab
             }
         };
         GroundTextures.ButtonPressed = look.GroundTexturesOn;
+        var needsTheMap = new Label { Text = "draws on the coverage map's woods: tick Coverage map", Modulate = new Color(1, 1, 1, 0.6f) };
+        needsTheMap.AddThemeFontSizeOverride("font_size", 12);
+        body.AddChild(needsTheMap);
         TextureTiles = AddSlider(body, "Texture tiles per repeat", 16.0, 128.0, 1.0, look.TextureTilesPerRepeat, Sets("ground_tex_tiles"), Plain("0"));
         TextureAntiTiling = new OptionButton { Name = "Texture anti-tiling" };
         TextureAntiTiling.AddItem("Off — as painted");
@@ -201,6 +214,21 @@ public sealed partial class GrassLab
         // ⚠️ Follows the left panel, so `lab_render.gd` and `lab_cost.gd`, which hide it and *Tiling* by name, need no change.
         _panel.VisibilityChanged += ShowTheCornerPanel;
         ShowTheCornerPanel();
+        _ground.Resized += FitTheCornerPanel;
+        FitTheCornerPanel();
+    }
+
+    private void FitTheCornerPanel() => FitTheCornerPanel(GetViewportRect().Size.Y);
+
+    /// <summary>
+    /// The Terrain panel's scroll is as tall as its body, or as tall as a window <paramref name="windowHeight"/> px high
+    /// allows, whichever is less: the panel hugs its content on a tall screen and scrolls on a short one. Minimum sizes,
+    /// not laid-out sizes, so the probe can ask before a frame has drawn, and with any window height it likes.
+    /// </summary>
+    private void FitTheCornerPanel(float windowHeight)
+    {
+        float room = Mathf.Max(windowHeight - TerrainChrome, 120f);
+        _terrainScroll.CustomMinimumSize = new Vector2(0f, Mathf.Min(_terrainBody.GetCombinedMinimumSize().Y, room));
     }
 
     /// <summary>Whichever of the two the corner is showing, and neither when the left panel is hidden.</summary>
@@ -436,7 +464,28 @@ public sealed partial class GrassLab
             faults.Add("showing the left panel did not bring the terrain panel back");
         }
 
-        yield return Line("panels", "the corner opens on Terrain, swaps with Anti-tiling, and follows the left panel", faults);
+        // The body scrolls inside the window (Joe's 1080-tall window cut piece 5's controls off): the scroll's height is
+        // the body's, or the window's room, whichever is less. Asked at the probe's own window and at a 600 px one, where
+        // the body cannot fit and the cap must bite; then left at the probe's.
+        float body = lab._terrainBody.GetCombinedMinimumSize().Y;
+        float own = lab.GetViewportRect().Size.Y;
+        foreach (float window in new[] { own, 600f, own })
+        {
+            lab.FitTheCornerPanel(window);
+            float room = window - TerrainChrome;
+            float cap = lab._terrainScroll.CustomMinimumSize.Y;
+            if (Math.Abs(cap - Math.Min(body, room)) > 0.5f)
+            {
+                faults.Add($"in a {window} px window the Terrain panel's scroll is {cap} px tall for a body of {body} px and {room} px of room (want the smaller)");
+            }
+        }
+
+        if (body <= 600f - TerrainChrome)
+        {
+            faults.Add($"the body is only {body} px, so the 600 px window does not test the cap");
+        }
+
+        yield return Line("panels", $"the corner opens on Terrain, swaps with Anti-tiling, follows the left panel, and its body ({body:0} px) is capped to the window's height ({own - TerrainChrome:0} px of room here, {600f - TerrainChrome:0} in a 600 px window)", faults);
 
         // Coverage map: the switch.
         faults = new List<string>();
