@@ -17,10 +17,23 @@ public sealed partial class GrassLab
         "view_tile", "snow_on", "snow_blend", "snow_amount", "snow_patchiness", "snow_patch_tiles", "snow_srgb",
         "splat_on", "splat_sharpness", "bleed_on", "bleed_reach_tiles", "bleed_scale_tiles",
         "ground_wood", "ground_tex_on", "ground_tex_tiles", "ground_tex_antitile", "kind_young", "ground_young_preview",
+        "ground_stone", "ground_water",
     };
 
     /// <summary>Joe's woods tile (`specs/ground-textures.md §2`, A13): 2048², 64 × 64 tiles, lossless, mipmapped.</summary>
     internal const string WoodsTilePath = "res://textures/ground/ground_woods.png";
+
+    /// <summary>The stone seam's tile (A16), as the woods'.</summary>
+    internal const string StoneTilePath = "res://textures/ground/ground_stone.png";
+
+    /// <summary>The water's tile (A16), as the woods'; the shallows are derived from it in the shader.</summary>
+    internal const string WaterTilePath = "res://textures/ground/ground_water.png";
+
+    /// <summary>Each painted kind's sampler and its tile, in the order the loader loads them and the probe asks.</summary>
+    private static readonly (string Uniform, string Path)[] PaintedTiles =
+    {
+        ("ground_wood", WoodsTilePath), ("ground_stone", StoneTilePath), ("ground_water", WaterTilePath),
+    };
 
     /// <summary>Every uniform this file and the zoom set on the grain: the probe asks its compiled shader too.</summary>
     private static readonly string[] GrainUniforms = { "amount", "world_on", "grain_scale_tiles", "size_px", "px_per_tile", "view_tile" };
@@ -75,8 +88,8 @@ public sealed partial class GrassLab
 
     internal CheckBox YoungWood { get; private set; } = null!;
 
-    /// <summary>True once the woods tile has been loaded — only when the textures are first switched on, as the map is baked.</summary>
-    internal bool WoodLoaded { get; private set; }
+    /// <summary>True once the painted tiles have been loaded — only when the textures are first switched on, as the map is baked.</summary>
+    internal bool TilesLoaded { get; private set; }
 
     /// <summary>
     /// The tile at the window's centre (A3): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
@@ -183,19 +196,20 @@ public sealed partial class GrassLab
         BleedReach = AddSlider(body, "Bleed reach", 0.0, 0.5, 0.01, look.BleedReachTiles, Sets("bleed_reach_tiles"), Tiles("0.00"));
         BleedScale = AddSlider(body, "Bleed scale", 0.25, 4.0, 0.05, look.BleedScaleTiles, Sets("bleed_scale_tiles"), Tiles("0.00"));
 
-        // Piece 5 (A14, `ground-textures.md §5` piece 1): Joe's painted woods tile for kind_wood. Needs the coverage map to
-        // have a wood to draw on. Young wood is derived from it by the palette's ratio, so the ratio's other half is set here.
+        // Piece 5 (A14, `ground-textures.md §5` pieces 1–2, A17): Joe's painted woods, stone and water tiles for kind_wood,
+        // kind_stone and kind_water — one switch for all three, the shallows derived from the water in the shader. Needs the
+        // coverage map to have a ground to draw on. Young wood is derived from it by the palette's ratio, so the ratio's other half is set here.
         _material.SetShaderParameter("kind_young", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling)));
         GroundTextures = AddSwitch(body, "Ground textures", "ground_tex_on", false);
         GroundTextures.Toggled += on =>
         {
             if (on)
             {
-                LoadTheWood();
+                LoadTheTiles();
             }
         };
         GroundTextures.ButtonPressed = look.GroundTexturesOn;
-        var needsTheMap = new Label { Text = "draws on the coverage map's woods: tick Coverage map", Modulate = new Color(1, 1, 1, 0.6f) };
+        var needsTheMap = new Label { Text = "draws on the coverage map's ground: tick Coverage map", Modulate = new Color(1, 1, 1, 0.6f) };
         needsTheMap.AddThemeFontSizeOverride("font_size", 12);
         body.AddChild(needsTheMap);
         TextureTiles = AddSlider(body, "Texture tiles per repeat", 16.0, 128.0, 1.0, look.TextureTilesPerRepeat, Sets("ground_tex_tiles"), Plain("0"));
@@ -262,16 +276,20 @@ public sealed partial class GrassLab
         _material.SetShaderParameter("ground_tex_antitile", which);
     }
 
-    /// <summary>Joe's woods tile, loaded once on first switching the textures on: ~21 MB of VRAM with its mipmaps.</summary>
-    private void LoadTheWood()
+    /// <summary>Joe's woods, stone and water tiles, loaded once on first switching the textures on: ~21 MB of VRAM each with its mipmaps.</summary>
+    private void LoadTheTiles()
     {
-        if (WoodLoaded)
+        if (TilesLoaded)
         {
             return;
         }
 
-        _material.SetShaderParameter("ground_wood", GD.Load<Texture2D>(WoodsTilePath));
-        WoodLoaded = true;
+        foreach ((string uniform, string path) in PaintedTiles)
+        {
+            _material.SetShaderParameter(uniform, GD.Load<Texture2D>(path));
+        }
+
+        TilesLoaded = true;
     }
 
     /// <summary>The fake map, baked once on first switching it on (0.44 s, measured), so the lab opens without paying for it.</summary>
@@ -591,17 +609,26 @@ public sealed partial class GrassLab
 
         // Ground textures: the switch, and the loader behind it.
         var faults = new List<string>();
-        if (lab.GroundTextures.ButtonPressed || Flag("ground_tex_on") || lab.WoodLoaded)
+        if (lab.GroundTextures.ButtonPressed || Flag("ground_tex_on") || lab.TilesLoaded)
         {
-            faults.Add($"opens with the box {lab.GroundTextures.ButtonPressed}, the uniform {Flag("ground_tex_on")}, the tile loaded {lab.WoodLoaded} (want off, off, not loaded)");
+            faults.Add($"opens with the box {lab.GroundTextures.ButtonPressed}, the uniform {Flag("ground_tex_on")}, the tiles loaded {lab.TilesLoaded} (want off, off, not loaded)");
         }
 
         lab.GroundTextures.ButtonPressed = true;
-        var wood = lab._material.GetShaderParameter("ground_wood").As<Texture2D>();
-        if (!Flag("ground_tex_on") || !lab.WoodLoaded || wood is null || !wood.ResourcePath.EndsWith("ground_woods.png", StringComparison.Ordinal)
-            || wood.GetWidth() != 2048 || wood.GetHeight() != 2048)
+        if (!Flag("ground_tex_on") || !lab.TilesLoaded)
         {
-            faults.Add($"switched on: the uniform {Flag("ground_tex_on")}, loaded {lab.WoodLoaded}, {wood?.ResourcePath ?? "no tile"} of {wood?.GetWidth()} x {wood?.GetHeight()} (want on, loaded, {WoodsTilePath} at 2048 x 2048)");
+            faults.Add($"switched on: the uniform {Flag("ground_tex_on")}, loaded {lab.TilesLoaded} (want on, loaded)");
+        }
+
+        // ⚠️ Its own list, never the loader's PaintedTiles: a tile dropped from that list would drop its check with it
+        // (red-checked, A17 — the first version scored zero on exactly that).
+        foreach ((string uniform, string file) in new[] { ("ground_wood", "ground_woods.png"), ("ground_stone", "ground_stone.png"), ("ground_water", "ground_water.png") })
+        {
+            var tile = lab._material.GetShaderParameter(uniform).As<Texture2D>();
+            if (tile is null || tile.ResourcePath != $"res://textures/ground/{file}" || tile.GetWidth() != 2048 || tile.GetHeight() != 2048)
+            {
+                faults.Add($"switched on, {uniform} holds {tile?.ResourcePath ?? "no tile"} of {tile?.GetWidth()} x {tile?.GetHeight()} (want res://textures/ground/{file} at 2048 x 2048)");
+            }
         }
 
         Vector3 young = lab._material.GetShaderParameter("kind_young").AsVector3();
@@ -616,7 +643,7 @@ public sealed partial class GrassLab
             faults.Add("Reset to approved left the ground textures on");
         }
 
-        yield return Line("ground textures", $"opens off and unloaded, switched on loads {WoodsTilePath} at 2048 x 2048 into the shader over the palette's young wood, and Reset turns it off", faults);
+        yield return Line("ground textures", $"opens off and unloaded, switched on loads the woods, stone and water tiles at 2048 x 2048 each into their samplers over the palette's young wood, and Reset turns it off", faults);
 
         // Texture tiles per repeat: the slider, and 64 is the painting's own scale.
         faults = new List<string>();
@@ -689,6 +716,14 @@ public sealed partial class GrassLab
         faults = new List<string>();
         ImportHolds(WoodsTilePath, mipmapped: true, Image.Format.Rgb8, faults);
         yield return Line("woods tile import", $"{WoodsTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
+
+        faults = new List<string>();
+        ImportHolds(StoneTilePath, mipmapped: true, Image.Format.Rgb8, faults);
+        yield return Line("stone tile import", $"{StoneTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
+
+        faults = new List<string>();
+        ImportHolds(WaterTilePath, mipmapped: true, Image.Format.Rgb8, faults);
+        yield return Line("water tile import", $"{WaterTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
     }
 
     /// <summary>Piece 2's lines (A3): the grain's three controls and the pan. <paramref name="lab"/> is left at the approved look.</summary>

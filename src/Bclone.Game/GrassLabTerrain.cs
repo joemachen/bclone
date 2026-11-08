@@ -91,7 +91,7 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public float BleedScaleTiles { get; set; }
 
-    /// <summary>Joe's painted ground tiles in place of the kinds' flat colours (`ground-textures.md`, A14): the woods first.</summary>
+    /// <summary>Joe's painted ground tiles in place of the kinds' flat colours (`ground-textures.md`, A14, A17): woods, stone and water.</summary>
     [Export]
     public bool GroundTexturesOn { get; set; }
 

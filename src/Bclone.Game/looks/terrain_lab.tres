@@ -5,7 +5,7 @@
 ; GrainScaleTiles, and the grain UNDER the village though the box opens off (A9); SnowBlend, SnowPatchiness,
 ; SnowPatchTiles, SnowColour (A9), SnowAmount being the season's to drive. The valley's wiring takes them from
 ; here. The coverage map is the lab's fake and is not approved. "Reset to approved" returns to this file too.
-; The ground textures (A14, specs/ground-textures.md): Joe's painted woods tile, off until he approves it in the lab;
+; The ground textures (A14, specs/ground-textures.md): Joe's painted woods, stone and water tiles (A17), off until he approves them;
 ; TextureTilesPerRepeat 64 is the painting's own scale; TextureAntiTiling 0 Off, 1 Hex.
 
 [ext_resource type="Script" path="res://GrassLabTerrain.cs" id="1_terrain"]

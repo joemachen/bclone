@@ -1,6 +1,6 @@
 # Spec: Ground-kind textures — Joe's watercolour, one seamless tile per kind
 
-**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). 🎨 `ground_stone.png` AND `ground_water.png` PAINTED AND MEASURED (A16, 2026-11-08), NOT YET SEEN BY JOE; piece 2's lab half not built. Iron not painted.**
+**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). 🎨 `ground_stone.png` AND `ground_water.png` PAINTED AND MEASURED (A16, 2026-11-08); 🔨 PIECE 2 BUILT IN THE LAB (A17, 2026-11-08): the one *Ground textures* switch draws all three painted kinds, the shallows derived from the water tile; every switch off at opening and the approved renders byte-identical. NOT YET SEEN BY JOE; not merged. Iron not painted.**
 The format Joe paints to, before he paints. The art lane's next slice after the terrain shader (`terrain-shader.md`, A1–A11),
 lab only until house tiers merge (`terrain-shader.md §5`). Joe's calls, 2026-11-07: **full colour**, not a value-only wash;
 **woods first**, through the whole loop, before the other three are painted. Owner: Joe + Claude Code.
@@ -108,18 +108,34 @@ mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 
   switching on (about 21 MB of VRAM with its mipmaps), as the fake map is baked on first switching on. ⚠️ **"Repeating" is
   not an import flag in Godot 4** — the `.import` holds lossless and mipmapped; the repeat is the sampler's own
   `repeat_enable` hint in the shader, which the probe's `woods tile import` line does not see and the renders do.
+- **Built (A17, piece 2):** the sampling is one function, `terrain_painted(sampler, …)`, which `terrain_wood`,
+  `terrain_stone` and `terrain_water` call with `ground_wood`, `ground_stone` and `ground_water` — same `textureGrad`,
+  same Hex path, same linear blend. **The shallows** are `terrain_shallows(water) = water × (kind_shallows ÷ kind_water)`
+  per channel (`#9cbccb ÷ #6f97ad`), and `terrain_ground` mixes them with the deep water by the **same**
+  `smoothstep(0.45, 0.95, water_weight)` as before, so the bank and the fill still cannot disagree (D338). With the
+  switch off `terrain_ground` is handed `kind_wood`, `kind_stone`, `kind_water` and `kind_shallows` themselves — the
+  shallows are *not* computed as water × ratio there, because that is not `kind_shallows` to the last bit. **One switch**
+  for the three kinds, as §5 allows. **A kind not drawn at a pixel is not sampled** (its share is exactly 0 at the hard
+  contour): the derivatives are taken where every pixel runs and `textureGrad` is legal inside the branch, so the drawn
+  colour is the same and the cost is paid only where a kind shows. The loader is `LoadTheTiles` (`TilesLoaded`):
+  the three tiles on first switching on, ~21 MB of VRAM each.
 - **Cost:** a texture read per kind drawn, three with hex tiling, inside A11's bar (1 ms a frame at 4K for the whole
   stack). Measured each piece. **Piece 1 (A14; RTX 3070, 4K, one run, against *coverage map, no grain* in the same run,
   `lab_cost.gd`'s method):** the woods texture **+0.13 ms** at the widest zoom and **+0.04 ms** at gameplay; **hex +0.67 /
   +0.68 ms**; the young preview +0.04 / +0.06 (the run's noise). With A5's stack at +0.64–0.80 ms, the plain texture stays
   inside the bar; **hex would take the whole stack to about +1.3–1.5 ms, over it** — Joe's to weigh against the repeat.
+  **Piece 2 (A17; same machine and method, two runs, the low-clock rounds agreeing):** all three textures **+0.04 ms**
+  at both zooms; **hex +0.20 / +0.21 ms**; young +0.04 (noise). Cheaper than piece 1's wood alone, because a kind is now
+  sampled only where it is drawn, and the fake map is mostly grass. ⚠️ **So the cost is per screenful of painted kind,
+  not per screen:** a view that is all woods, stone or water pays about piece 1's per-pixel price (hex ~+0.67 ms), since
+  each pixel still samples one kind (two at a border). The valley's real share of those kinds is measured when it is wired.
 
 ## 5. The pieces, each its own commit, each ending at Joe's eyes
 
 | # | piece | starts when | controls |
 |---|---|---|---|
 | 1 | **Woods**: the loader, `ground_woods.png` drawn as the woods floor, young wood derived — 🔨 **built (A14), Joe's eyes pending** | ✅ arrived and approved (A13–A14) | *Ground textures* switch · *Texture tiles per repeat* (start 64) · *Texture anti-tiling* (Off, Hex) · *Young wood preview* (added A14: the derived colour needs a way to be seen) |
-| 2 | **Stone and water**, shallows derived from the depth ramp | after 1 is approved, and the tiles arrive | the same, per kind if he wants them apart |
+| 2 | **Stone and water**, shallows derived from the depth ramp — 🎨 **tiles painted (A16)**, 🔨 **built in the lab (A17), Joe's eyes pending** | after 1 is approved, and the tiles arrive | the same — **one switch for all three kinds** (A17); per kind only if he wants them apart |
 | 3 | **Iron**: the fake coverage map gains a fifth kind (it holds four today: grass, wood, stone, water) | the tile arrives | — |
 
 Each piece: probe lines for every new control and for the import settings, the approved renders byte-identical with the
