@@ -18,6 +18,57 @@ uniform vec3 kind_shallows = vec3(0.5);
 // How the weights are sharpened into one kind: at this power a kind's edge is the bake's hard contour.
 const float TERRAIN_HARD = 48.0;
 
+// ---- The painted ground kinds (`specs/ground-textures.md`, A12–A14) --------------------------------------------
+// Joe's woods tile in place of kind_wood: 2048² sRGB covering 64 × 64 tiles, imported lossless and mipmapped. Sampled
+// as written, like the kinds (no source_color): the colour he paints is the colour drawn. White until it is loaded, so
+// a tile that never arrived shows, rather than drawing black.
+uniform sampler2D ground_wood : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform bool ground_tex_on = false;
+// How many tiles one repeat of the painting covers: 64 is the painting's own scale, 32 px a tile.
+uniform float ground_tex_tiles = 64.0;
+// 0 Off: the tile repeats as painted. 1 Hex: the grass's hex tiling (at_tri_grid, at_turn, at_shift), each hexagon of
+// the repeat turned and shifted, the three samples blended by their weights at the grass's `hex_sharpness`.
+uniform int ground_tex_antitile = 0;
+// Young wood is derived, never painted: the woods tile × (young ÷ woods) per channel (§1). The preview draws every
+// wood that way, so the derived colour can be judged before a kind exists to carry it.
+uniform vec3 kind_young = vec3(0.5);
+uniform bool ground_young_preview = false;
+
+// Hex lattice vertices per repeat of the painting, the grass's own (grass_lab.gdshader's HEX_PER_REPEAT).
+const float TERRAIN_HEX_PER_REPEAT = 2.0;
+
+// The woods floor at a tile: the painting, or its hex-tiled blend; young if the preview says. `gx_tile`/`gy_tile` are
+// the tile's screen derivatives, so the mip level is right whatever turn a hexagon takes (textureGrad, as the grass).
+// ⚠️ The blend is linear. The grass's Height blend keys on a stamp's density (D632); a colour wash has none to key
+// on, and its blend is judged in the lab (`ground-textures.md §4`).
+vec3 terrain_wood(vec2 tile, vec2 gx_tile, vec2 gy_tile, float hex_sharpness) {
+    vec2 uv = tile / ground_tex_tiles;
+    vec2 gx = gx_tile / ground_tex_tiles;
+    vec2 gy = gy_tile / ground_tex_tiles;
+    vec3 wood;
+    if (ground_tex_antitile == 1) {
+        vec3 w;
+        ivec2 v1;
+        ivec2 v2;
+        ivec2 v3;
+        at_tri_grid(uv * TERRAIN_HEX_PER_REPEAT, w, v1, v2, v3);
+        w = pow(w, vec3(hex_sharpness));
+        w = w / max(w.x + w.y + w.z, 1e-6);
+        mat2 r1 = at_turn(v1);
+        mat2 r2 = at_turn(v2);
+        mat2 r3 = at_turn(v3);
+        wood = textureGrad(ground_wood, r1 * uv + at_shift(v1), r1 * gx, r1 * gy).rgb * w.x
+            + textureGrad(ground_wood, r2 * uv + at_shift(v2), r2 * gx, r2 * gy).rgb * w.y
+            + textureGrad(ground_wood, r3 * uv + at_shift(v3), r3 * gx, r3 * gy).rgb * w.z;
+    } else {
+        wood = textureGrad(ground_wood, uv, gx, gy).rgb;
+    }
+    if (ground_young_preview) {
+        wood *= kind_young / max(kind_wood, vec3(1e-3));
+    }
+    return wood;
+}
+
 // The map's weights at a tile, tiles counted from the map's centre. Off the map the clamp reads its edge: grass.
 vec4 terrain_weights(vec2 tile) {
     return texture(ground_map, tile / ground_map_tiles + 0.5);
@@ -32,10 +83,11 @@ vec4 terrain_splat(vec4 w, float sharpness) {
 }
 
 // The ground under the grass. The grass's own ground is the parchment; the river's depth is ValleyTexture.Dressed's,
-// shallows at the bank, read off the same weight as the fill, so the two cannot disagree (D338).
-vec3 terrain_ground(vec4 k, float water_weight, vec3 parchment) {
+// shallows at the bank, read off the same weight as the fill, so the two cannot disagree (D338). `wood` is kind_wood,
+// or the painted tile at this place (terrain_wood) when the ground textures are on (A14).
+vec3 terrain_ground(vec4 k, float water_weight, vec3 parchment, vec3 wood) {
     vec3 water = mix(kind_shallows, kind_water, smoothstep(0.45, 0.95, water_weight));
-    return parchment * k.x + kind_wood * k.y + kind_stone * k.z + water * k.w;
+    return parchment * k.x + wood * k.y + kind_stone * k.z + water * k.w;
 }
 
 // How much grass a place takes: none where grass does not win, rising from the contour inward, as ValleyTexture.Winner's

@@ -1,6 +1,6 @@
 # Spec: Ground-kind textures — Joe's watercolour, one seamless tile per kind
 
-**Status:** 🎨 **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13, 2026-11-07) — inside every §3 limit, unmerged, waiting for Joe's eye; THE LOADER (§5 PIECE 1) NOT BUILT. 🔨 on `art`. Woods first.**
+**Status:** 🔨 **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. UNMERGED; Joe's eye on the tile in the lab is next. Stone, iron and water not painted. On `art`. Woods first.**
 The format Joe paints to, before he paints. The art lane's next slice after the terrain shader (`terrain-shader.md`, A1–A11),
 lab only until house tiers merge (`terrain-shader.md §5`). Joe's calls, 2026-11-07: **full colour**, not a value-only wash;
 **woods first**, through the whole loop, before the other three are painted. Owner: Joe + Claude Code.
@@ -61,6 +61,16 @@ that dips too dark takes the band with it.
 ΔE to the palette colour. `tools/legibility/check.py` is run on a scratch copy with the textured grounds sampled in, as A4
 did for snow. A tile outside the limits is shown to Joe with the numbers before anything is approved.
 
+**Woods, measured (A13–A14).** `ground_woods.png`: L\* min 54.00, p0.1 58.25, p1 60.13, p50 65.95, p99 70.68, max 74.25;
+mean `#9ba57b` (L\* 65.84, a\* −10.67, b\* 20.33) against `#9aa47a` (65.61, −10.92, 20.67), hue 117.7° vs 117.8°, mean
+per-pixel ΔE 4.62. `check.py` on a scratch copy with the tile's mean, its darkest 1 % (`#8d926e`, L\* 59.3) and its darkest
+0.1 % (`#8a8d6b`, L\* 57.6) sampled in as grounds: all three in the band, **0 of 41 outlined things and 0 of 26 marks fail**,
+unchanged. The villagers' dots (L\* 27–28) read **3.9 : 1 against the tile's mean, 3.14 : 1 against its darkest 1 %, and
+2.96 : 1 against its darkest 0.1 %** (3.87 : 1 against today's flat woods); the ink outline 4.6 : 1 at worst. The rarest
+dark pixels sit a hair under 3 : 1, which the check reports and does not fail (it judges marks against p1, as the grass
+is judged). ⚠️ If Joe wants the margin, the tile's floor is a *painting* knob — less grain and mottle, or a lighter base
+— and not a shader one; a rebuild is a minute.
+
 ## 4. How the shader draws it
 
 - `terrain_ground` (`terrain_lab.gdshaderinc`) samples each painted kind at `tile / 64` instead of using a flat
@@ -71,14 +81,28 @@ did for snow. A tile outside the limits is shown to Joe with the numbers before 
   colour wash may blend differently from a density mask, so the blend is a choice in the lab, not a given.
 - **Behind a switch, off when the lab opens.** With it off, the lab draws byte-for-byte what it draws today, which is the
   rule every terrain piece has kept.
+- **Built (A14, piece 1):** `terrain_wood` in `terrain_lab.gdshaderinc` samples `ground_wood` at `tile / ground_tex_tiles`
+  with `textureGrad`, so the mip level is right under a hexagon's turn; `terrain_ground` takes the wood it returns in place of
+  `kind_wood`, and with the switch off is handed `kind_wood` itself, so the off path is the old maths exactly. **Hex** reuses
+  `at_tri_grid`, `at_turn` and `at_shift` with the grass's *Blend sharpness* (`hex_sharpness`), two hexagons a repeat as the
+  grass has. ⚠️ **Its blend is linear:** the grass's Height blend keys on a stamp's density, which a colour wash has not got;
+  if the lab shows ghosting at the hexagon borders a wash-specific blend is the next option, not a given. **Young wood** is the
+  spec's ratio (`kind_young / kind_wood` per channel, `#b3b98d / #9aa47a`) behind *Young wood preview*, which draws every wood
+  that way so the derived colour can be judged before a kind exists to carry it. **The loader** reads the tile on first
+  switching on (about 21 MB of VRAM with its mipmaps), as the fake map is baked on first switching on. ⚠️ **"Repeating" is
+  not an import flag in Godot 4** — the `.import` holds lossless and mipmapped; the repeat is the sampler's own
+  `repeat_enable` hint in the shader, which the probe's `woods tile import` line does not see and the renders do.
 - **Cost:** a texture read per kind drawn, three with hex tiling, inside A11's bar (1 ms a frame at 4K for the whole
-  stack). Measured each piece.
+  stack). Measured each piece. **Piece 1 (A14; RTX 3070, 4K, one run, against *coverage map, no grain* in the same run,
+  `lab_cost.gd`'s method):** the woods texture **+0.13 ms** at the widest zoom and **+0.04 ms** at gameplay; **hex +0.67 /
+  +0.68 ms**; the young preview +0.04 / +0.06 (the run's noise). With A5's stack at +0.64–0.80 ms, the plain texture stays
+  inside the bar; **hex would take the whole stack to about +1.3–1.5 ms, over it** — Joe's to weigh against the repeat.
 
 ## 5. The pieces, each its own commit, each ending at Joe's eyes
 
 | # | piece | starts when | controls |
 |---|---|---|---|
-| 1 | **Woods**: the loader, `ground_woods.png` drawn as the woods floor, young wood derived | Joe's `ground_woods.png` arrives | *Ground textures* switch · *Texture tiles per repeat* (start 64) · *Texture anti-tiling* (Off, Hex) |
+| 1 | **Woods**: the loader, `ground_woods.png` drawn as the woods floor, young wood derived — 🔨 **built (A14), Joe's eyes pending** | ✅ arrived and approved (A13–A14) | *Ground textures* switch · *Texture tiles per repeat* (start 64) · *Texture anti-tiling* (Off, Hex) · *Young wood preview* (added A14: the derived colour needs a way to be seen) |
 | 2 | **Stone and water**, shallows derived from the depth ramp | after 1 is approved, and the tiles arrive | the same, per kind if he wants them apart |
 | 3 | **Iron**: the fake coverage map gains a fifth kind (it holds four today: grass, wood, stone, water) | the tile arrives | — |
 

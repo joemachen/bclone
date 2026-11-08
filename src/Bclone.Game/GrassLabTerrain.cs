@@ -91,6 +91,25 @@ public sealed partial class GrassLabTerrain : Resource
     [Export]
     public float BleedScaleTiles { get; set; }
 
+    /// <summary>Joe's painted ground tiles in place of the kinds' flat colours (`ground-textures.md`, A14): the woods first.</summary>
+    [Export]
+    public bool GroundTexturesOn { get; set; }
+
+    /// <summary>How many tiles one repeat of a painting covers; 64 is the paintings' own scale, 32 px a tile.</summary>
+    [Export]
+    public float TextureTilesPerRepeat { get; set; }
+
+    /// <summary>How the painting's repeat is hidden: 0 Off (as painted), 1 Hex (the grass's hex tiling).</summary>
+    [Export]
+    public int TextureAntiTiling { get; set; }
+
+    /// <summary>Every wood drawn as young wood — the woods tile × (young ÷ woods) — so the derived colour can be judged.</summary>
+    [Export]
+    public bool YoungWoodPreview { get; set; }
+
+    /// <summary>The anti-tilings' names, in <see cref="TextureAntiTiling"/>'s order.</summary>
+    internal static readonly string[] TextureAntiTilings = { "Off", "Hex" };
+
     /// <summary>The options, from their file.</summary>
     internal static GrassLabTerrain StartingPoint => GD.Load<GrassLabTerrain>(LabPath);
 
@@ -105,9 +124,12 @@ public sealed partial class GrassLabTerrain : Resource
         said.AppendLine($"- Snow: {(SnowOn ? "ON" : "OFF")}. Blend {SnowBlends[Math.Clamp(SnowBlend, 0, SnowBlends.Length - 1)]}. "
             + $"Amount {SnowAmount.ToString("0.00", CultureInfo.InvariantCulture)}. Patchiness {SnowPatchiness.ToString("0.00", CultureInfo.InvariantCulture)}. "
             + $"Patch {SnowPatchTiles.ToString("0", CultureInfo.InvariantCulture)} tiles. Colour #{SnowColour.ToHtml(false)}");
-        said.Append($"- Splat blending: {(SplatOn ? "ON" : "OFF")}. Sharpness {SplatSharpness.ToString("0.0", CultureInfo.InvariantCulture)}. "
+        said.AppendLine($"- Splat blending: {(SplatOn ? "ON" : "OFF")}. Sharpness {SplatSharpness.ToString("0.0", CultureInfo.InvariantCulture)}. "
             + $"Edge bleed: {(BleedOn ? "ON" : "OFF")}. Reach {BleedReachTiles.ToString("0.00", CultureInfo.InvariantCulture)} tiles. "
             + $"Scale {BleedScaleTiles.ToString("0.00", CultureInfo.InvariantCulture)} tiles");
+        said.Append($"- Ground textures: {(GroundTexturesOn ? "ON" : "OFF")}. Tiles per repeat {TextureTilesPerRepeat.ToString("0", CultureInfo.InvariantCulture)}. "
+            + $"Anti-tiling {TextureAntiTilings[Math.Clamp(TextureAntiTiling, 0, TextureAntiTilings.Length - 1)]}. "
+            + $"Young wood preview: {(YoungWoodPreview ? "ON" : "OFF")}");
         return said.ToString();
     }
 }
