@@ -621,6 +621,9 @@ public partial class Main : Control
         // warehouses stand — so the rule the draw obeys is read on every kind that exists.
         GD.Print(_map.EveryStoreShowsItsStock());
 
+        // ⭐ The fences (D712), twelve years in: whatever the village has built by now is counted.
+        GD.Print(_map.FencesShowWhateverTheShading());
+
         // ⭐ The doors (`doors.md §12.6`), twelve years in, when every kind that has one stands.
         GD.Print(_map.EveryDoorIsDrawnOnItsWall());
         GD.Print(_map.TheGhostStartsTowardTheStore());

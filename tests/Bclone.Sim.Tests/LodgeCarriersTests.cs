@@ -246,6 +246,11 @@ public sealed class LodgeCarriersTests
         (SimLoop loop, Workplace lodge) = ALodgeUnderAMetLimit(meat: 1_000, limit: 500, huntersTyped: null, leatherMet: false);
         SimWorld world = loop.World;
         SimConfig config = world.Config;
+
+        // D714: met, but under twice the row — the limit set to what the village holds, so the cap does not bind.
+        Assert.True(world.SetStockLimit(Goods.Meat, world.HeldAgainstItsLimit(Goods.Meat)).Allowed);
+        Assert.True(world.LimitIsMet(Goods.Meat));
+        Assert.False(world.PastTheSecondGoodCap(Goods.Meat), "the premise: under twice the meat row");
         Assert.False(world.BufferIsSwollen(lodge), "the premise: not swollen, so D683's carriers do not keep the seats");
         Assert.True(world.KeptWorkingForItsSecondGood(JobKind.Hunter));
 
@@ -281,6 +286,52 @@ public sealed class LodgeCarriersTests
         Assert.True(leatherAfter > leatherBefore, "no hide came home");
         Assert.Contains("but only", said);
         Assert.Contains("leather it asked for", said);
+    }
+
+    /// <summary>
+    /// ⭐ D714, Joe: <i>"Cap at 2× meat limit."</i> His Elderwood ran the meat to twice its 2,500 with hunters out for hides
+    /// (~69 meat a hide). With leather short but the village holding twice its meat row, nobody is kept for the hides,
+    /// nobody hunts in a season, and the hunter's sentence names the cap.
+    /// </summary>
+    [Fact]
+    public void PastTwiceTheMeatRowTheHidesWait()
+    {
+        (SimLoop loop, Workplace lodge) = ALodgeUnderAMetLimit(meat: 1_000, limit: 500, huntersTyped: null, leatherMet: false);
+        SimWorld world = loop.World;
+        int held = world.HeldAgainstItsLimit(Goods.Meat);
+        Assert.True(world.SetStockLimit(Goods.Meat, held / 2).Allowed);
+        Assert.True(world.PastTheSecondGoodCap(Goods.Meat), $"the premise: {held} meat is twice a row of {held / 2}");
+        Assert.False(world.LimitIsMet(Goods.Leather), "the premise: leather is short");
+        Assert.False(world.BufferIsSwollen(lodge), "the premise: not swollen, so D683's carriers do not keep the seats");
+
+        Assert.False(world.KeptWorkingForItsSecondGood(JobKind.Hunter));
+        Assert.Equal(0, LabourQuota.For(world).For(JobKind.Hunter));
+        Assert.Equal(0, LabourQuota.For(world).Needed(JobKind.Hunter));
+
+        string? note = world.SecondGoodCapNote(JobKind.Hunter);
+        _output.WriteLine(note ?? "(null)");
+        Assert.NotNull(note);
+        Assert.Contains("past twice its", note);
+        Assert.Contains("the leather waits", note);
+
+        int hunted = 0;
+        for (int tick = 0; tick < world.Config.TicksPerSeason; tick++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.State is VillagerState.Hunting or VillagerState.TravelingToGame)
+                {
+                    hunted++;
+                }
+            }
+        }
+
+        Assert.Equal(0, hunted);
+
+        // Under the cap the D708 rule holds again, and the sentence says nothing about the cap.
+        Assert.True(world.SetStockLimit(Goods.Meat, world.HeldAgainstItsLimit(Goods.Meat)).Allowed);
+        Assert.Null(world.SecondGoodCapNote(JobKind.Hunter));
     }
 
     /// <summary>

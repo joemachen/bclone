@@ -1,5 +1,10 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
+> **🔨 `slice/elderwood-notes` (systems, off `main` 3062981; unplayed, unmerged) — D712–D714 from Joe's Elderwood play:** the fence
+> drawn whatever the shading (view), a shop short when no ONE store holds a batch (the 1+1 leather stall), and the hide hunt capped at
+> twice the meat limit (his call). His save `elderwood-thorn-bay-54` shows all three; he loads it from the main checkout on this
+> branch, plays, and merges at his word.
+>
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-07 (D710: EVERYTHING MERGED AND PUSHED; TWO TRACKS) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
 > **`main` holds everything and origin agrees.** Joe played the four systems branches and the art and said *"merge and push and
@@ -9267,6 +9272,16 @@ Read `git status` after staging, every time.
 - ⚠️ **Backticks inside a double-quoted `grep -c` pattern score 0 and look like a missing anchor** (D692's trap, met again on a
   HANDOFF banner): count anchors from a Python script, or single-quote the pattern.
 
+## ⛔ THE TRAPS D712–D714 PAID FOR — A SHORTAGE ASKED OF THE TOTAL, A WALL FILED AS PAINT
+
+- ⛔ **A shop's "short" asked of the stores' total disagreed with a fetch asked of one store, and the village stalled for years.**
+  Elderwood: 1 leather in each of two stores was "a coat's worth" to the carriers and "none" to the tailor. When two rules gate
+  one flow, they must read the same predicate (`StoreHoldingABatchOf`), not two that agree only when the stock is in one place.
+- ⛔ **A structure filed under a shading layer vanishes with it.** The pasture fence, the yard fences and the palisade were
+  `_zoneOutlines` on the paint's layers; Joe's shading was off. Things that stand in the world go on `Layer.Built`.
+- ⭐ **Read his save before believing his guess, again:** *"sits forever"* read as the D370 armful rule; the saves said a 1+1
+  split and a tailor idle since Year 70, which no reading of the code alone would have found.
+
 ## ⛔ THE TRAPS D707–D710 PAID FOR — TWO SESSIONS, ONE CALL; A REVERSE-REPLACE RESTORE; PYTHON'S CRLF
 
 - ⛔ **Two sessions answered the same open call and neither knew.** D696 left *"the restock threshold under a parked cart"* on the ⏸️
@@ -9795,6 +9810,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.** What
+  to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
+  lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and
+  say *"… past twice its 2,500 — the leather waits …"*. Cattle: set the trading post's cattle row to buy; only the upriver boat
+  brings them.
 - ✅ **ANSWERED: HAY 2,000 (D711, 2026-11-07; Joe: *"Hay at 2,000"*), after 500 was put back to him with the barn's real number (one full barn's winter is 1,728). Guarded: never below one barn's room.** ~~⏸️ **HAY'S STARTING LIMIT (D709) — HIS, AND 50 WAS NOT TYPED.**~~ He said *"go with 50 for hay's limit"*. A herdsman cuts while the
   barn holds less than a winter's hay for its pasture's full herd (`livestock.md §0.1`); the posed Phase 5 herds went into winter with
   400–500 hay in the barn (`livestock.md`, D643–D646), and a met hay row stops the cutting (D139, the herdsman's `limited_by`). At 50 the

@@ -110,7 +110,7 @@ fence drawn from its walls (faint while a site, the gate a gap), the brush's rub
 `fence:` (`Main.Trade.cs`). ⚠️ Not probed: the button's press against a real barn, the fence's draw call, the rubber's
 colour — Joe's eyes. ✅ **Played (D600); drawn round since D610** (Joe: *"barns that have round fences should be round,
 not stairstep"*): the fenced tiles traced and rounded as a yard's outline is, the gate's span cut out at its posts —
-the walls, the tiles and the gate unchanged, the line within half a tile of every wall (probed). Unplayed.
+the walls, the tiles and the gate unchanged, the line within half a tile of every wall (probed). Unplayed. ⭐ **Drawn whatever the shading since D712:** Joe's Elderwood barn read *"Fenced — 64 tiles and one gate"* with no fence on the map, because the fence was filed under the work-ground shading and his was off. Fences, yard fences and palisades are `Layer.Built` now, which no switch hides (probe `fences:`).
 
 ### 0.2.1 Joe's calls (2026-10-17)
 

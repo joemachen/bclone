@@ -825,6 +825,18 @@ public sealed record SimConfig
     [JsonPropertyName("leather_yield")]
     public int LeatherYield { get; init; } = 10;
 
+    /// <summary>
+    /// The share of its first good's limit at which a trade kept working for its second good stops (D714) — the hunter out
+    /// for hides (D708) stands down once the village holds this much of its meat limit. 200: Joe's <i>"Cap at 2× meat limit"</i>.
+    /// </summary>
+    /// <remarks>
+    /// A hunt brings about 69 meat for each hide (his Elderwood: 46,020 meat, 667 leather), so a leather row under its limit
+    /// drove the meat to twice its row and kept the lodge swollen. Validated at load: at least 100 — below that the cap
+    /// would bind before the first limit does, and D708 would never fire.
+    /// </remarks>
+    [JsonPropertyName("second_good_cap_percent")]
+    public int SecondGoodCapPercent { get; init; } = 200;
+
     /// <summary>What a forester's hut costs to raise.</summary>
     [JsonPropertyName("forester_hut_logs")]
     public int ForesterHutLogs { get; init; } = 25;
@@ -5739,6 +5751,11 @@ public sealed record SimConfig
         if (CartOffPathSlowPercent < 100)
         {
             throw new SimConfigException($"cart_off_path_slow_percent must be at least 100 (got {CartOffPathSlowPercent}); 100 is a cart no slower on grass.");
+        }
+
+        if (SecondGoodCapPercent < 100)
+        {
+            throw new SimConfigException($"second_good_cap_percent must be at least 100 (got {SecondGoodCapPercent}); below that a trade could never be kept working for its second good.");
         }
 
         if (RestockShortArmfulsWithCart < 1)

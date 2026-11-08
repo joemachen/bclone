@@ -249,6 +249,12 @@ while the tailor waited for hides.
   `WithTheMeatAndTheLeatherBothMetTheHuntersIdle`. §6a's five poses now set the leather row met, so they still pose *"nothing but the
   carrying is wanted"*. **4 mutants, 8 reds, no zero:** the plan's switch off (1), the leather limit ignored (5), the seats back to
   §6a's (1), the capped arm without the clause (1).
+- ⭐ **THE CAP (D714, Joe 2026-11-07: *"Cap at 2× meat limit"*).** His Elderwood brought 46,020 meat with 667 hides (~69 meat a hide), so
+  with leather short the hunters ran the meat to twice its 2,500 and kept the lodge swollen. `KeptWorkingForItsSecondGood` now also
+  asks `!PastTheSecondGoodCap(first)`: the first good under `second_good_cap_percent` (200) of its limit. Past it the hunters stand
+  down and say so: *"the village has 5,021 meat, past twice its 2,500 — the leather waits (79 of the 200 asked for)"*
+  (`SecondGoodCapNote`). Guard `PastTwiceTheMeatRowTheHidesWait`; the D708 fact re-posed under the cap. 2 mutants, 2 reds (the clause
+  dropped; the number ignored).
 
 ---
 

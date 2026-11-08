@@ -163,6 +163,47 @@ public sealed class LeatherOutOfTheLodgeTests
     }
 
     /// <summary>
+    /// ⭐⭐ D713 — Joe's Elderwood: 1 leather in the stockpile and 1 in the warehouse from Year 33 to Year 74, 77 hides in the
+    /// lodge, and no coat sewn after Year 70. The stores' TOTAL was a coat's worth, so the shop was "not short"; the tailor
+    /// fetches a coat's worth from ONE store and found none. "Short" now asks the shop's own question.
+    /// </summary>
+    [Fact]
+    public void ACoatsWorthSplitBetweenTwoStoresLeavesTheShopShort()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Workplace lodge = HuntingTests.RaiseALodgeFor(world);
+        Workplace shop = TailorTests.RaiseAShop(world);
+        NoLeatherOnAnyShelf(world);
+        lodge.Store.Add(Goods.Leather, 10);
+        int aCoat = world.Config.LeatherPerCoat;
+        Assert.Equal(2, aCoat);
+
+        // A second warehouse, as Elderwood had a stockpile beside its warehouse.
+        WorkshopTests.RaiseAStoreBeside(world, BuildingKind.Warehouse, shop.Tile);
+        var takers = world.StoreBuildings.Where(s => s.IsStorage && s.Accepts(Goods.Leather) && s.Kind != StoreKind.Market).ToList();
+        _output.WriteLine($"stores that take leather: {string.Join(", ", takers.Select(s => s.Name))}");
+        Assert.True(takers.Count >= 2, "the premise: two stores that take leather, as Elderwood's stockpile and warehouse");
+
+        // One hide in each of two stores: a coat's worth in all, and none in any one.
+        takers[0].Store.Add(Goods.Leather, 1);
+        takers[1].Store.Add(Goods.Leather, 1);
+        Assert.Equal(aCoat, world.InStores(Goods.Leather));
+        Assert.Null(world.StoreHoldingABatchOf(shop.Tile, world.BatchFor(JobKind.Tailor)!.Value));
+        Assert.NotNull(world.WhyTheBatchWaits(shop));
+        _output.WriteLine($"the shop: {world.WhyTheBatchWaits(shop)}");
+
+        Assert.True(world.AStandingShopIsShortOf(Goods.Leather, 10), "a coat's worth split two ways leaves the shop short");
+        Assert.Equal(Goods.Leather, world.GoodWorthClearing(lodge));
+
+        // A coat's worth in ONE store, and the shop is not short — the D664 rule as it was.
+        takers[1].Store.TakeAll(Goods.Leather);
+        takers[0].Store.Add(Goods.Leather, 1);
+        Assert.Null(world.WhyTheBatchWaits(shop));
+        Assert.False(world.AStandingShopIsShortOf(Goods.Leather, 10));
+        Assert.Null(world.GoodWorthClearing(lodge));
+    }
+
+    /// <summary>
     /// Joe's Greyford, Year 26: 1,800 meat in the lodge all year with the hunters at work, so "food first" named the meat on
     /// every trip and 16 hides waited. A shop starving for its input gets one armful of hides, then the meat again (D665).
     /// </summary>

@@ -109,6 +109,13 @@ sews a year at the worst walk, rounded up. Taken after smiths in the quota's ord
 the panel's sentence (*"the village wants a tailor"*) and the chip's amber.
 
 ### 3.5a How the hides leave the lodge (D664)
+
+> ⭐ **D713 (2026-11-07): rule B's "short" is the shop's own question now** — *no store the shop can reach holds a batch*
+> (`SimWorld.StoreHoldingABatchOf`, the input half of `StoreForTheBatch`), not *the stores' total is under a batch*. Joe's
+> Elderwood held 1 leather in the stockpile and 1 in the warehouse from Year 33 to Year 74: a coat's worth in total, so the
+> 77 hides in the lodge were never "needed", and the tailor, who fetches from one store, found none and sewed nothing after
+> Year 70 (300 coats, clothing 0). Guard `LeatherOutOfTheLodgeTests.ACoatsWorthSplitBetweenTwoStoresLeavesTheShopShort` (1 red
+> with the total put back). It reaches every batch shop the same way: the carpenter, the miller and the baker.
 The hunt's hide goes into the lodge with the meat (D420), and a buffer leaves on a carrier's errand — the hunter's own
 when the lodge cannot take another hunt (while the village wants meat), else the marketer's, last in his round (D370).
 **Joe's Year-54 village held 50 hides in the lodge and none in any store for two years**, with a tailor who had nothing
