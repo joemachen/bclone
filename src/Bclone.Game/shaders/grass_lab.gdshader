@@ -76,6 +76,9 @@ uniform float splat_sharpness = 48.0;
 uniform bool bleed_on = false;
 uniform float bleed_reach_tiles = 0.0;
 uniform float bleed_scale_tiles = 1.0;
+// 7. Ground textures (A14, `specs/ground-textures.md`): Joe's painted woods tile in place of kind_wood, repeating or
+// hex-tiled, young wood derived. Its uniforms are the include's (ground_wood, ground_tex_on, ground_tex_tiles,
+// ground_tex_antitile, kind_young, ground_young_preview); off, the wood is kind_wood exactly.
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -170,7 +173,8 @@ void fragment() {
             kinds = terrain_splat(weights, TERRAIN_HARD);
         }
         water = kinds.a;
-        ground = terrain_ground(kinds, weights.a, ground_srgb);
+        vec3 wood = ground_tex_on ? terrain_wood(tile, dFdx(tile), dFdy(tile), hex_sharpness) : kind_wood;
+        ground = terrain_ground(kinds, weights.a, ground_srgb, wood);
         strength *= terrain_coverage(grass_weight, coverage_fade);
     }
 

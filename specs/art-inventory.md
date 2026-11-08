@@ -53,7 +53,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Valley edge and beyond | `#c4b48f` beyond, a 2px `#8c7a5c` edge (`VillageMap.cs:77`, `:4003`) | — | B6 | 🟨 |
 | Optional grid | 1px `#d2c29c` lines (`VillageMap.cs:4016`) | — | — | 🟨 debug aid |
 | **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (A4); ⭐ approved at Joe's tuning (A9): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles, the amount the season's; the valley waits for house tiers |
-| Watercolour textures for stone, clay, dirt, the rest | ⬜ — flat fills in the band | — | B1, B6 | ⬜ 🅿️ parked list. ⚠️ *Clay has no terrain kind in the sim.* |
+| Watercolour textures for stone, clay, dirt, the rest | ⬜ — flat fills in the band | woods, stone, iron, water (young wood and shallows derived) | B6 | ✍️ specced, `ground-textures.md` (A12): full colour, one seamless 2048² tile a kind, woods first; nothing painted. Fields and quarry floors wait for `VillageMap`. ⚠️ *Clay has no terrain kind in the sim.* |
 | Paving (dirt → gravel → cobble) | ⬜ | 3 grades | B6 | 💭 `DESIGN.md §2.6`, no sim |
 | Dry ground (drought) | ⬜ | — | B11 | 💭 |
 

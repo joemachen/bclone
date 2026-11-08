@@ -16,7 +16,11 @@ public sealed partial class GrassLab
         "coverage_on", "coverage_fade", "ground_map", "ground_map_tiles", "kind_wood", "kind_stone", "kind_water", "kind_shallows",
         "view_tile", "snow_on", "snow_blend", "snow_amount", "snow_patchiness", "snow_patch_tiles", "snow_srgb",
         "splat_on", "splat_sharpness", "bleed_on", "bleed_reach_tiles", "bleed_scale_tiles",
+        "ground_wood", "ground_tex_on", "ground_tex_tiles", "ground_tex_antitile", "kind_young", "ground_young_preview",
     };
+
+    /// <summary>Joe's woods tile (`specs/ground-textures.md §2`, A13): 2048², 64 × 64 tiles, lossless, mipmapped.</summary>
+    internal const string WoodsTilePath = "res://textures/ground/ground_woods.png";
 
     /// <summary>Every uniform this file and the zoom set on the grain: the probe asks its compiled shader too.</summary>
     private static readonly string[] GrainUniforms = { "amount", "world_on", "grain_scale_tiles", "size_px", "px_per_tile", "view_tile" };
@@ -25,7 +29,12 @@ public sealed partial class GrassLab
     private static readonly Vector2 ViewLimit = new(GrassLabGround.TilesWide / 2f, GrassLabGround.TilesTall / 2f);
 
     private PanelContainer _terrain = null!;
+    private ScrollContainer _terrainScroll = null!;
+    private VBoxContainer _terrainBody = null!;
     private Label _gpuOnTerrain = null!;
+
+    /// <summary>The panel's own top and bottom margins (its StyleBoxFlat) plus the 16 px it keeps from the window's edges.</summary>
+    private const float TerrainChrome = 12f + 12f + 16f + 16f;
     private bool _terrainShown = true;
 
     internal CheckBox Coverage { get; private set; } = null!;
@@ -58,6 +67,17 @@ public sealed partial class GrassLab
 
     internal HSlider BleedScale { get; private set; } = null!;
 
+    internal CheckBox GroundTextures { get; private set; } = null!;
+
+    internal HSlider TextureTiles { get; private set; } = null!;
+
+    internal OptionButton TextureAntiTiling { get; private set; } = null!;
+
+    internal CheckBox YoungWood { get; private set; } = null!;
+
+    /// <summary>True once the woods tile has been loaded — only when the textures are first switched on, as the map is baked.</summary>
+    internal bool WoodLoaded { get; private set; }
+
     /// <summary>
     /// The tile at the window's centre (A3): a view control, like the zoom, so <i>Reset</i> leaves it. Grass, grain,
     /// map and placeholders all read it, so they move together.
@@ -87,9 +107,14 @@ public sealed partial class GrassLab
         _terrain.OffsetTop = 16f;
         AddChild(_terrain);
 
-        var body = new VBoxContainer();
+        // ⚠️ With piece 5 the panel outgrew a 1080-tall window, and a PanelContainer neither clips nor scrolls (Joe's first
+        // look at A14). The body scrolls, capped to the window's height, so every control can be reached at any size.
+        _terrainScroll = new ScrollContainer { Name = "TerrainScroll", HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        _terrain.AddChild(_terrainScroll);
+        var body = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         body.AddThemeConstantOverride("separation", 4);
-        _terrain.AddChild(body);
+        _terrainScroll.AddChild(body);
+        _terrainBody = body;
 
         var heading = new Label { Text = "Terrain" };
         heading.AddThemeFontSizeOverride("font_size", 20);
@@ -158,6 +183,30 @@ public sealed partial class GrassLab
         BleedReach = AddSlider(body, "Bleed reach", 0.0, 0.5, 0.01, look.BleedReachTiles, Sets("bleed_reach_tiles"), Tiles("0.00"));
         BleedScale = AddSlider(body, "Bleed scale", 0.25, 4.0, 0.05, look.BleedScaleTiles, Sets("bleed_scale_tiles"), Tiles("0.00"));
 
+        // Piece 5 (A14, `ground-textures.md §5` piece 1): Joe's painted woods tile for kind_wood. Needs the coverage map to
+        // have a wood to draw on. Young wood is derived from it by the palette's ratio, so the ratio's other half is set here.
+        _material.SetShaderParameter("kind_young", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling)));
+        GroundTextures = AddSwitch(body, "Ground textures", "ground_tex_on", false);
+        GroundTextures.Toggled += on =>
+        {
+            if (on)
+            {
+                LoadTheWood();
+            }
+        };
+        GroundTextures.ButtonPressed = look.GroundTexturesOn;
+        var needsTheMap = new Label { Text = "draws on the coverage map's woods: tick Coverage map", Modulate = new Color(1, 1, 1, 0.6f) };
+        needsTheMap.AddThemeFontSizeOverride("font_size", 12);
+        body.AddChild(needsTheMap);
+        TextureTiles = AddSlider(body, "Texture tiles per repeat", 16.0, 128.0, 1.0, look.TextureTilesPerRepeat, Sets("ground_tex_tiles"), Plain("0"));
+        TextureAntiTiling = new OptionButton { Name = "Texture anti-tiling" };
+        TextureAntiTiling.AddItem("Off — as painted");
+        TextureAntiTiling.AddItem("Hex — turned and shifted");
+        TextureAntiTiling.ItemSelected += index => _material.SetShaderParameter("ground_tex_antitile", (int)index);
+        body.AddChild(Row("Texture anti-tiling", TextureAntiTiling, null));
+        SetTheAntiTiling(look.TextureAntiTiling);
+        YoungWood = AddSwitch(body, "Young wood preview", "ground_young_preview", look.YoungWoodPreview);
+
         _gpuOnTerrain = new Label { Name = "GpuOnTerrain", Modulate = new Color(1, 1, 1, 0.75f) };
         _gpuOnTerrain.AddThemeFontSizeOverride("font_size", 13);
         body.AddChild(_gpuOnTerrain);
@@ -165,6 +214,21 @@ public sealed partial class GrassLab
         // ⚠️ Follows the left panel, so `lab_render.gd` and `lab_cost.gd`, which hide it and *Tiling* by name, need no change.
         _panel.VisibilityChanged += ShowTheCornerPanel;
         ShowTheCornerPanel();
+        _ground.Resized += FitTheCornerPanel;
+        FitTheCornerPanel();
+    }
+
+    private void FitTheCornerPanel() => FitTheCornerPanel(GetViewportRect().Size.Y);
+
+    /// <summary>
+    /// The Terrain panel's scroll is as tall as its body, or as tall as a window <paramref name="windowHeight"/> px high
+    /// allows, whichever is less: the panel hugs its content on a tall screen and scrolls on a short one. Minimum sizes,
+    /// not laid-out sizes, so the probe can ask before a frame has drawn, and with any window height it likes.
+    /// </summary>
+    private void FitTheCornerPanel(float windowHeight)
+    {
+        float room = Mathf.Max(windowHeight - TerrainChrome, 120f);
+        _terrainScroll.CustomMinimumSize = new Vector2(0f, Mathf.Min(_terrainBody.GetCombinedMinimumSize().Y, room));
     }
 
     /// <summary>Whichever of the two the corner is showing, and neither when the left panel is hidden.</summary>
@@ -189,6 +253,25 @@ public sealed partial class GrassLab
         SnowBlend.Select(look.SnowBlend);
         _material.SetShaderParameter("snow_blend", look.SnowBlend);
         _material.SetShaderParameter("snow_srgb", Srgb(look.SnowColour));
+    }
+
+    /// <summary>The painting's anti-tiling, option and uniform together.</summary>
+    private void SetTheAntiTiling(int which)
+    {
+        TextureAntiTiling.Select(which);
+        _material.SetShaderParameter("ground_tex_antitile", which);
+    }
+
+    /// <summary>Joe's woods tile, loaded once on first switching the textures on: ~21 MB of VRAM with its mipmaps.</summary>
+    private void LoadTheWood()
+    {
+        if (WoodLoaded)
+        {
+            return;
+        }
+
+        _material.SetShaderParameter("ground_wood", GD.Load<Texture2D>(WoodsTilePath));
+        WoodLoaded = true;
     }
 
     /// <summary>The fake map, baked once on first switching it on (0.44 s, measured), so the lab opens without paying for it.</summary>
@@ -247,6 +330,10 @@ public sealed partial class GrassLab
         Bleed.ButtonPressed = look.BleedOn;
         BleedReach.Value = look.BleedReachTiles;
         BleedScale.Value = look.BleedScaleTiles;
+        GroundTextures.ButtonPressed = look.GroundTexturesOn;
+        TextureTiles.Value = look.TextureTilesPerRepeat;
+        SetTheAntiTiling(look.TextureAntiTiling);
+        YoungWood.ButtonPressed = look.YoungWoodPreview;
     }
 
     /// <summary>The panel's options, as a <see cref="GrassLabTerrain"/>.</summary>
@@ -268,6 +355,10 @@ public sealed partial class GrassLab
         BleedOn = Bleed.ButtonPressed,
         BleedReachTiles = (float)BleedReach.Value,
         BleedScaleTiles = (float)BleedScale.Value,
+        GroundTexturesOn = GroundTextures.ButtonPressed,
+        TextureTilesPerRepeat = (float)TextureTiles.Value,
+        TextureAntiTiling = TextureAntiTiling.Selected,
+        YoungWoodPreview = YoungWood.ButtonPressed,
     };
 
     /// <summary>A value said in tiles.</summary>
@@ -373,7 +464,28 @@ public sealed partial class GrassLab
             faults.Add("showing the left panel did not bring the terrain panel back");
         }
 
-        yield return Line("panels", "the corner opens on Terrain, swaps with Anti-tiling, and follows the left panel", faults);
+        // The body scrolls inside the window (Joe's 1080-tall window cut piece 5's controls off): the scroll's height is
+        // the body's, or the window's room, whichever is less. Asked at the probe's own window and at a 600 px one, where
+        // the body cannot fit and the cap must bite; then left at the probe's.
+        float body = lab._terrainBody.GetCombinedMinimumSize().Y;
+        float own = lab.GetViewportRect().Size.Y;
+        foreach (float window in new[] { own, 600f, own })
+        {
+            lab.FitTheCornerPanel(window);
+            float room = window - TerrainChrome;
+            float cap = lab._terrainScroll.CustomMinimumSize.Y;
+            if (Math.Abs(cap - Math.Min(body, room)) > 0.5f)
+            {
+                faults.Add($"in a {window} px window the Terrain panel's scroll is {cap} px tall for a body of {body} px and {room} px of room (want the smaller)");
+            }
+        }
+
+        if (body <= 600f - TerrainChrome)
+        {
+            faults.Add($"the body is only {body} px, so the 600 px window does not test the cap");
+        }
+
+        yield return Line("panels", $"the corner opens on Terrain, swaps with Anti-tiling, follows the left panel, and its body ({body:0} px) is capped to the window's height ({own - TerrainChrome:0} px of room here, {600f - TerrainChrome:0} in a 600 px window)", faults);
 
         // Coverage map: the switch.
         faults = new List<string>();
@@ -435,7 +547,8 @@ public sealed partial class GrassLab
             || !said[1].Contains("- Coverage map: OFF. Fade ", StringComparison.Ordinal)
             || !said[1].Contains("\n- World-anchored grain: OFF. Scale ", StringComparison.Ordinal)
             || !said[1].Contains("\n- Snow: OFF. Blend Lerp. Amount ", StringComparison.Ordinal)
-            || !said[1].Contains("\n- Splat blending: OFF. Sharpness ", StringComparison.Ordinal))
+            || !said[1].Contains("\n- Splat blending: OFF. Sharpness ", StringComparison.Ordinal)
+            || !said[1].Contains("\n- Ground textures: OFF. Tiles per repeat 64. Anti-tiling Off. Young wood preview: OFF", StringComparison.Ordinal))
         {
             faults.Add($"Copy says \"{lab.CurrentValues()}\"");
         }
@@ -457,7 +570,125 @@ public sealed partial class GrassLab
             yield return line;
         }
 
+        foreach (string line in GroundTextureSelfCheck(lab))
+        {
+            yield return line;
+        }
+
         yield return GroundCheck();
+    }
+
+    /// <summary>Piece 5's lines (A14): the textures' switch and loader, the tiles slider, the anti-tiling, the young-wood preview, and the tile's import. <paramref name="lab"/> is left at the approved look.</summary>
+    private static IEnumerable<string> GroundTextureSelfCheck(GrassLab lab)
+    {
+        float Uniform(string name) => lab._material.GetShaderParameter(name).AsSingle();
+        bool Flag(string name) => lab._material.GetShaderParameter(name).AsBool();
+        int AntiTiling() => lab._material.GetShaderParameter("ground_tex_antitile").AsInt32();
+        static string Line(string what, string good, List<string> faults) => faults.Count == 0
+            ? $"[widths] terrain lab, {what}: ✅ {good}"
+            : $"[widths] terrain lab, {what}: ❌ {string.Join("; ", faults)}";
+        GrassLabTerrain start = GrassLabTerrain.StartingPoint;
+
+        // Ground textures: the switch, and the loader behind it.
+        var faults = new List<string>();
+        if (lab.GroundTextures.ButtonPressed || Flag("ground_tex_on") || lab.WoodLoaded)
+        {
+            faults.Add($"opens with the box {lab.GroundTextures.ButtonPressed}, the uniform {Flag("ground_tex_on")}, the tile loaded {lab.WoodLoaded} (want off, off, not loaded)");
+        }
+
+        lab.GroundTextures.ButtonPressed = true;
+        var wood = lab._material.GetShaderParameter("ground_wood").As<Texture2D>();
+        if (!Flag("ground_tex_on") || !lab.WoodLoaded || wood is null || !wood.ResourcePath.EndsWith("ground_woods.png", StringComparison.Ordinal)
+            || wood.GetWidth() != 2048 || wood.GetHeight() != 2048)
+        {
+            faults.Add($"switched on: the uniform {Flag("ground_tex_on")}, loaded {lab.WoodLoaded}, {wood?.ResourcePath ?? "no tile"} of {wood?.GetWidth()} x {wood?.GetHeight()} (want on, loaded, {WoodsTilePath} at 2048 x 2048)");
+        }
+
+        Vector3 young = lab._material.GetShaderParameter("kind_young").AsVector3();
+        if (young != Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling)) || VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling).ToHtml(false) != "b3b98d")
+        {
+            faults.Add($"young wood's colour is {young}, the palette's #{VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling).ToHtml(false)} (want the palette's, and §1's #b3b98d)");
+        }
+
+        lab.ResetToApproved();
+        if (lab.GroundTextures.ButtonPressed || Flag("ground_tex_on"))
+        {
+            faults.Add("Reset to approved left the ground textures on");
+        }
+
+        yield return Line("ground textures", $"opens off and unloaded, switched on loads {WoodsTilePath} at 2048 x 2048 into the shader over the palette's young wood, and Reset turns it off", faults);
+
+        // Texture tiles per repeat: the slider, and 64 is the painting's own scale.
+        faults = new List<string>();
+        if (Math.Abs(Uniform("ground_tex_tiles") - start.TextureTilesPerRepeat) > 1e-6f || Math.Abs(start.TextureTilesPerRepeat - 64f) > 1e-6f)
+        {
+            faults.Add($"opens at {Uniform("ground_tex_tiles")} (want the file's {start.TextureTilesPerRepeat}, and the painting's 64)");
+        }
+
+        lab.TextureTiles.Value = 32.0;
+        if (Math.Abs(Uniform("ground_tex_tiles") - 32f) > 1e-6f)
+        {
+            faults.Add($"32 reached the shader as {Uniform("ground_tex_tiles")}");
+        }
+
+        lab.ResetToApproved();
+        if (Math.Abs(Uniform("ground_tex_tiles") - start.TextureTilesPerRepeat) > 1e-6f)
+        {
+            faults.Add($"Reset left it at {Uniform("ground_tex_tiles")}");
+        }
+
+        yield return Line("texture tiles per repeat", "opens at the file's 64, the painting's own scale, reaches the shader, and Reset brings it back", faults);
+
+        // Texture anti-tiling: Off and Hex, in the shader's order, the file's at opening.
+        faults = new List<string>();
+        if (lab.TextureAntiTiling.ItemCount != GrassLabTerrain.TextureAntiTilings.Length || lab.TextureAntiTiling.Selected != start.TextureAntiTiling || AntiTiling() != start.TextureAntiTiling)
+        {
+            faults.Add($"opens with {lab.TextureAntiTiling.ItemCount} options at {lab.TextureAntiTiling.Selected}, the shader at {AntiTiling()} (want 2, the file's {start.TextureAntiTiling} on both)");
+        }
+
+        for (int i = 0; i < GrassLabTerrain.TextureAntiTilings.Length; i++)
+        {
+            lab.TextureAntiTiling.Select(i);
+            lab.TextureAntiTiling.EmitSignal(OptionButton.SignalName.ItemSelected, (long)i);
+            if (AntiTiling() != i || !lab.TextureAntiTiling.GetItemText(i).StartsWith(GrassLabTerrain.TextureAntiTilings[i], StringComparison.Ordinal))
+            {
+                faults.Add($"\"{lab.TextureAntiTiling.GetItemText(i)}\" reached the shader as {AntiTiling()} (want {i}, {GrassLabTerrain.TextureAntiTilings[i]})");
+            }
+        }
+
+        lab.ResetToApproved();
+        if (lab.TextureAntiTiling.Selected != start.TextureAntiTiling || AntiTiling() != start.TextureAntiTiling)
+        {
+            faults.Add($"Reset left the anti-tiling at {lab.TextureAntiTiling.Selected}, the shader at {AntiTiling()}");
+        }
+
+        yield return Line("texture anti-tiling", "opens at the file's Off, each of Off and Hex reaches the shader as its own number, and Reset brings it back", faults);
+
+        // Young wood preview: the switch.
+        faults = new List<string>();
+        if (lab.YoungWood.ButtonPressed || Flag("ground_young_preview"))
+        {
+            faults.Add($"opens with the box {lab.YoungWood.ButtonPressed}, the uniform {Flag("ground_young_preview")} (want off)");
+        }
+
+        lab.YoungWood.ButtonPressed = true;
+        if (!Flag("ground_young_preview"))
+        {
+            faults.Add("switched on, the uniform stayed off");
+        }
+
+        lab.ResetToApproved();
+        if (lab.YoungWood.ButtonPressed || Flag("ground_young_preview"))
+        {
+            faults.Add("Reset to approved left the young wood preview on");
+        }
+
+        yield return Line("young wood preview", "opens off, reaches the shader, and Reset turns it off", faults);
+
+        // The tile's import (`ground-textures.md §4`): lossless and mipmapped, level 0 byte for byte the PNG, as the masks are.
+        faults = new List<string>();
+        ImportHolds(WoodsTilePath, mipmapped: true, Image.Format.Rgb8, faults);
+        yield return Line("woods tile import", $"{WoodsTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
     }
 
     /// <summary>Piece 2's lines (A3): the grain's three controls and the pan. <paramref name="lab"/> is left at the approved look.</summary>
