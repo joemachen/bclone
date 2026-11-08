@@ -808,7 +808,7 @@ public sealed class WorkshopTests
     """;
 
     /// <summary>A store raised on the first buildable tile out from <paramref name="near"/>, stocked and finished at once.</summary>
-    private static StoreBuilding RaiseAStoreBeside(SimWorld world, BuildingKind kind, GridPos near)
+    internal static StoreBuilding RaiseAStoreBeside(SimWorld world, BuildingKind kind, GridPos near)
     {
         GridPos? at = null;
         for (int radius = 1; radius < 20 && at is null; radius++)

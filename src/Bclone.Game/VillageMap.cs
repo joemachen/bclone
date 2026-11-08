@@ -4576,7 +4576,7 @@ public partial class VillageMap : Control
             Color colour = barn.FenceStands ? FenceEdge : FenceEdge with { A = 0.35f };
             foreach (Vector2[] line in PastureFenceLines(tiles, opening))
             {
-                _zoneOutlines.Add((Layer.WorkGround, colour, line));
+                _zoneOutlines.Add((Layer.Built, colour, line));
             }
         }
 
@@ -4613,10 +4613,10 @@ public partial class VillageMap : Control
 
             foreach (Vector2[] line in PastureFenceLines(claimed, null))
             {
-                _zoneOutlines.Add((Layer.WorkGround, stakes, line));
+                _zoneOutlines.Add((Layer.Built, stakes, line));
                 foreach (Vector2 post in PalisadePosts(line))
                 {
-                    _palisadePosts.Add((Layer.WorkGround, stakes, post));
+                    _palisadePosts.Add((Layer.Built, stakes, post));
                 }
             }
         }
@@ -4924,7 +4924,7 @@ public partial class VillageMap : Control
         }
 
         (Vector2 from, Vector2 to) = FenceSide(tile, dx, dy);
-        _zoneOutlines.Add((Layer.Residential, edge, new[] { from, to }));
+        _zoneOutlines.Add((Layer.Built, edge, new[] { from, to }));
     }
 
     /// <summary>
@@ -7266,8 +7266,14 @@ public partial class VillageMap : Control
     /// <remarks>
     /// ⚠️ The wash and the outline are drawn by different code from the same sub-tiles, so
     /// the layer had to stop being *"whichever colour it came out"*.
+    /// <para>
+    /// ⭐ <b><see cref="Built"/> is not paint, and no switch hides it</b> (D712). A yard's fence, a pasture's fence and a
+    /// quarry's palisade are walls a villager walks round (D404, D599, D613). Filed under the shading they stand on, they
+    /// vanished with it: Joe's Elderwood barn, *"Fenced — 64 tiles and one gate"* on its card and no fence on the map,
+    /// because his work-ground shading was off.
+    /// </para>
     /// </remarks>
-    private enum Layer { Residential, WorkGround, Harvest, Destroy }
+    private enum Layer { Residential, WorkGround, Harvest, Destroy, Built }
 
     /// <summary>The smoothed borders of every painted region, and what they were traced from.</summary>
     /// <remarks>
@@ -7379,6 +7385,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private bool Showing(Layer layer) => HeldLayer == layer || layer switch
     {
+        Layer.Built => true,
         Layer.Residential => _showResidential,
         Layer.WorkGround => _showWorkGround,
         _ => _showHarvest,
@@ -7432,6 +7439,66 @@ public partial class VillageMap : Control
     {
         _showHarvest = on;
         QueueRedraw();
+    }
+
+    /// <summary>
+    /// The probe's <c>fences:</c> line (D712): with every shading switched off, every fence and palisade line the trace holds is
+    /// still drawn — the same count as with every shading on, and more than none — and the player's switches are left as they were.
+    /// </summary>
+    /// <remarks>Counted by colour, so a fence filed back under a shading layer is caught whichever layer it went to.</remarks>
+    internal string FencesShowWhateverTheShading()
+    {
+        if (_world is null)
+        {
+            return "[widths] fences: ⛔ no village to look at";
+        }
+
+        (bool homes, bool ground, bool harvest) = (_showResidential, _showWorkGround, _showHarvest);
+        TraceTheZonesIfTheyMoved(_world.Zones);
+
+        SetShadings(true);
+        int withAll = FenceLinesDrawn();
+        SetShadings(false);
+        int withNone = FenceLinesDrawn();
+
+        ShowResidentialLand(homes);
+        ShowWorkGround(ground);
+        ShowHarvestLand(harvest);
+
+        // ⚠️ A ZERO, WRITTEN DOWN (D712): the probe's unattended village paints no housing and raises no barn or quarry, so it
+        // holds no fence to count, and neither a plot nor a quarry's unlock can be posed from the view (both are the sim's
+        // internals). The line says so rather than passing; Joe's Elderwood barn is the measurement until a pose exists.
+        if (withAll == 0)
+        {
+            return "[widths] fences: ⚠️ not measured — the probe's village holds no yard fence, pasture fence or palisade to count (D712's zero)";
+        }
+
+        return withNone == withAll
+            ? $"[widths] fences: ✅ {withNone} fence and palisade lines drawn with every shading off, as with every shading on"
+            : $"[widths] fences: ⛔ {withNone} fence and palisade lines drawn with every shading off against {withAll} with every shading on";
+
+        void SetShadings(bool on)
+        {
+            ShowResidentialLand(on);
+            ShowWorkGround(on);
+            ShowHarvestLand(on);
+        }
+
+        int FenceLinesDrawn()
+        {
+            int drawn = 0;
+            foreach ((Layer layer, Color edge, _) in _zoneOutlines)
+            {
+                bool fence = (edge.R, edge.G, edge.B) == (FenceEdge.R, FenceEdge.G, FenceEdge.B)
+                    || (edge.R, edge.G, edge.B) == (PalisadeEdge.R, PalisadeEdge.G, PalisadeEdge.B);
+                if (fence && Showing(layer))
+                {
+                    drawn++;
+                }
+            }
+
+            return drawn;
+        }
     }
 
     /// <summary>

@@ -3292,9 +3292,8 @@ public sealed partial class BehaviorSystem : ISimSystem
             string hides = world.StockLimits.For(Goods.Leather) is int leather && world.HeldAgainstItsLimit(Goods.Leather) >= leather
                 ? $", and its {leather.Grouped()} leather"
                 : string.Empty;
-            villager.WorkNote = world.WhyTheVillageWantsNoMoreOf(Goods.Meat) is string enough
-                ? enough + hides
-                : string.Empty;
+            villager.WorkNote = world.SecondGoodCapNote(JobKind.Hunter)
+                ?? (world.WhyTheVillageWantsNoMoreOf(Goods.Meat) is string enough ? enough + hides : string.Empty);
         }
 
         bool canFish = villager.CanWork && job?.Kind == JobKind.Fisher;

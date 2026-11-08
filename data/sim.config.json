@@ -983,6 +983,13 @@
   // three times over. Hides stay scarce; coats are cheap, and the better cloth
   // to come (wool, cotton) gets its own recipe.
   "leather_per_coat": 2,
+  // second_good_cap_percent (D714, Joe 2026-11-07: "Cap at 2x meat limit"): a
+  // trade kept working for its second good (the hunter for hides, D708) stops
+  // once its first good reaches this share of its limit. A hunt brings ~69 meat
+  // for every hide (Joe's Elderwood: 46,020 meat to 667 leather), so without it
+  // a leather row under its limit ran the meat to twice its 2,500 and kept the
+  // lodge swollen. 200 = twice the meat limit. At least 100.
+  "second_good_cap_percent": 200,
   "sew_ticks": 10,
   "sews_per_stint": 2,
   "tailor_shop_capacity": 2,

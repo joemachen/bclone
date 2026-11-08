@@ -3699,7 +3699,15 @@ public sealed partial class SimWorld : IObstacles
     /// the one case D370's <i>below an armful is nobody's walk</i> gives way, and it is named: a good a standing shop
     /// is starving for. Never a food — a hungry village is the food floor's business (D362), not a shop's.
     /// </summary>
-    /// <remarks>Asked when a carrier decides and when the quota counts the marketer's errands — never per tick.</remarks>
+    /// <remarks>
+    /// <para>Asked when a carrier decides and when the quota counts the marketer's errands — never per tick.</para>
+    /// <para>
+    /// ⛔ <b>"Short" is the shop's own question: no store it can reach holds a batch</b> (D713, <see cref="StoreHoldingABatchOf"/>).
+    /// It was the stores' TOTAL against a batch, and the two disagreed in Joe's Elderwood for forty years: 1 leather in the
+    /// stockpile and 1 in the warehouse made 2, a coat's worth, so the 77 hides in the lodge were "not needed" — while
+    /// the tailor, who fetches a batch from one store, found none and sewed nothing from Year 70.
+    /// </para>
+    /// </remarks>
     public bool AStandingShopIsShortOf(Goods goods, int held)
     {
         if (GoodsCatalog.Edible(goods))
@@ -3715,7 +3723,7 @@ public sealed partial class SimWorld : IObstacles
                 continue;
             }
 
-            return held >= batch.InputPerBatch && InStores(goods) < batch.InputPerBatch;
+            return held >= batch.InputPerBatch && StoreHoldingABatchOf(shop.Tile, batch) is null;
         }
 
         return false;
@@ -4455,9 +4463,17 @@ public sealed partial class SimWorld : IObstacles
         NearestStoreAccepting(
             from,
             batch.Input,
-            store => store.Kind != StoreKind.Market
-                && store.Store[batch.Input] >= batch.InputPerBatch
-                && store.Store[Goods.Firewood] >= batch.Firing);
+            store => HoldsABatchOf(store, batch) && store.Store[Goods.Firewood] >= batch.Firing);
+
+    /// <summary>
+    /// The nearest store holding one batch's <b>input</b>, firewood aside — the half of <see cref="StoreForTheBatch"/> that
+    /// <see cref="AStandingShopIsShortOf"/> asks, so the shop's fetch and the carriers' "is it short?" are one question (D713).
+    /// </summary>
+    public StoreBuilding? StoreHoldingABatchOf(GridPos from, Batch batch) =>
+        NearestStoreAccepting(from, batch.Input, store => HoldsABatchOf(store, batch));
+
+    private static bool HoldsABatchOf(StoreBuilding store, Batch batch) =>
+        store.Kind != StoreKind.Market && store.Store[batch.Input] >= batch.InputPerBatch;
 
     /// <summary>
     /// Where a batch's output goes: the store it came from if that takes it, else the nearest store
@@ -14399,7 +14415,35 @@ public sealed partial class SimWorld : IObstacles
         && JobsCatalog.AlsoLimitedBy(kind) is Goods second
         && StockLimits.For(second) is int limit
         && HeldAgainstItsLimit(second) < limit
-        && SomewhereToPut(first);
+        && SomewhereToPut(first)
+        && !PastTheSecondGoodCap(first);
+
+    /// <summary>
+    /// ⭐ Whether the first good stands at or past <c>second_good_cap_percent</c> of its limit (D714, Joe: <i>"Cap at 2× meat
+    /// limit"</i>) — then a trade kept working for its second good stands down. A good with no limit has no cap.
+    /// </summary>
+    public bool PastTheSecondGoodCap(Goods first) =>
+        StockLimits.For(first) is int limit
+        && (long)HeldAgainstItsLimit(first) * 100 >= (long)limit * Config.SecondGoodCapPercent;
+
+    /// <summary>
+    /// What a hunter stood down by the cap says (D714), or null when the cap is not why: <i>"the village has 5,021 meat, past
+    /// twice its 2,500 — the hides wait (79 of the 200 leather)"</i>.
+    /// </summary>
+    public string? SecondGoodCapNote(JobKind kind)
+    {
+        if (JobsCatalog.LimitedBy(kind) is not Goods first || JobsCatalog.AlsoLimitedBy(kind) is not Goods second
+            || StockLimits.For(first) is not int firstLimit || StockLimits.For(second) is not int secondLimit
+            || HeldAgainstItsLimit(second) >= secondLimit || !PastTheSecondGoodCap(first))
+        {
+            return null;
+        }
+
+        string share = Config.SecondGoodCapPercent == 200 ? "twice" : $"{Config.SecondGoodCapPercent} % of";
+        return $"the village has {HeldAgainstItsLimit(first).Grouped()} {GoodsCatalog.NameOf(first)}, past {share} its "
+            + $"{firstLimit.Grouped()} — the {GoodsCatalog.NameOf(second)} waits ({HeldAgainstItsLimit(second).Grouped()} of the "
+            + $"{secondLimit.Grouped()} asked for)";
+    }
 
     /// <summary>
     /// What a hunter out for the hides says (D708): <i>"the village has its 2,500 meat, but only 120 of the 200 leather it
