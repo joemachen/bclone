@@ -1,7 +1,8 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
 > **✍️ HOUSE TIERS SPECCED ON `slice/house-tiers` (D716, 2026-11-07), OFF `main` 4399ccc — `specs/house-tiers.md`, NOTHING BUILT.**
-> Joe's three calls are at the top of ⏸️ OPEN below (and §11 of the spec). Two findings worth carrying: **§5's *"6–8×"* is stale** —
+> Joe answered half on the same day (D717: the choice his once, 24 / 12 / 5 first, the manor holds 8, bigger larders, a look each,
+> the stone gate withdrawn); the gates and the perks are still his, at the top of ⏸️ OPEN below (and §11 of the spec). Two findings worth carrying: **§5's *"6–8×"* is stale** —
 > the burn is 24 a winter today (D365), so his 60–80 is 2.5–3.3×; and heating is already **23–40 %** of everything his Elderwood fells
 > (Year 33 / 77), which is where the ladder's teeth are. **Next: his answers, then TDD per §9, §10's harness table before any number is
 > typed.**
@@ -9827,14 +9828,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **🔨 being built on `slice/house-tiers` — HOUSE TIERS, SPECCED (D716, 2026-11-07, `specs/house-tiers.md`), NOTHING BUILT; THREE
-  CALLS ARE JOE'S (§11), EACH WITH A RECOMMENDATION.** (1) The costs and gates — cottage learned by **stone laid** in the village's
-  buildings around Year 20–25, 20 logs + 30 stone; manor by **6 cottages raised with a workshop standing**, 30 logs + 45 stone; both
-  stone rows wear twice as slowly; all three hold 5 and stand 2×1. (2) Who upgrades — a village-wide *Build homes as: Cabin · Cottage ·
-  Manor* on the housing brush, **Cabin until he changes it**; standing homes rebuilt in place one at a time behind all other work, the
-  family at home throughout. (3) The firewood number — ship the ladder on today's **24 / 12 / 5** first (a number a winter on the row:
-  the D189 grid is gone), then the cabin's raise toward his 60–80 as its own measured commit (§10 arm C: 48 / 64 / 80). Save format 13
-  refuses his format-12 saves. **Build nothing until he answers.**
+- ⏸️ **🔨 being built on `slice/house-tiers` — HOUSE TIERS, SPECCED (D716) AND HALF ANSWERED (D717, 2026-11-07), NOTHING BUILT.**
+  ✅ His: one village-wide *Build homes as: Cabin · Cottage · Manor*, Cabin until changed, homes rebuilt in place one at a time;
+  24 / 12 / 5 firewood first, the cabin's raise toward 60–80 its own measured commit; the manor holds 8; larders grow by tier
+  (400 / 600 / 1,000 proposed); each tier its own look. ⛔ The stone-laid gate withdrawn: *"it should feel earned"*.
+  **⏸️ Still his (`house-tiers.md §11`):** (1) the gates — cottages ~Year 30, manors ~Year 80–90, two factors each; five ideas in
+  §4.4, recommended **a new generation born into the valley + the village grown to 25 / 45**; (4) the perks in §4.8 — recommended
+  *lasts*, *keeps its warmth*, *bears the family's name*; his: a manor keeping a new couple at home; (5) the manor's footprint —
+  recommended 2×1 drawn bigger. Save format 13 refuses his format-12 saves. **Build nothing until he answers.**
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and
