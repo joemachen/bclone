@@ -360,7 +360,8 @@ public sealed class SkillTests
     // RE-TAKEN (D522), THE SHIPPED ONE ONLY — the shipped game starts with limits on the new flour (200, Joe's "200 for everything else") and bread (1,000, wheat's own), and a set limit is hashed. This village builds no mill. ⭐ PROVEN TO BE THE ONLY REASON: with those two lines taken out of the data the old value passes. The fixture sets no limits and did not move. Was 527323685715353248.
     // RE-TAKEN (D611), THE SHIPPED ONE ONLY — the starting stock limits are Joe's panel (D608: forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600; stone tools 30); a set limit is hashed, and the village works to them. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9949612, D610) holds the old value with the suite green, and this commit's only sim change is those eight numbers in `starting_stock_limits`. The fixture sets no limits and did not move. Was 1854911485487116989.
     // RE-TAKEN (D697), THE SHIPPED ONE ONLY — clothing and handcarts start at a limit of 50 (Joe, 2026-11-06: "clothing starts at 0 stock limit. unlocked items should start at 50 by default"); a set limit is hashed. ⭐ PROVEN BY ABLATION: the two keys removed and D696's first leg kept, the old constant passes — the leg moved nothing (no golden village has a market with a cart). Was 2910132351223792017.
-    [InlineData(true, 7411431236382396372UL)]
+    // RE-TAKEN (D711), THE SHIPPED ONE ONLY — hay starts at a limit of 2,000 (Joe, 2026-11-07: "Hay at 2,000"); a set limit is hashed. ⭐ PROVEN NOT TO PLAY DIFFERENTLY: a probe over the same fifty years read no barn and 0 hay held at every tick, so the limit can never bind; the fixture sets no limits and did not move. Was 7411431236382396372.
+    [InlineData(true, 8538422907031301040UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

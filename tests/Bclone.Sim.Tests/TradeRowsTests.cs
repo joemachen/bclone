@@ -57,16 +57,19 @@ public sealed class TradeRowsTests
 
     /// <summary>Hay is kept only in a barn (D52's lesson: a good that shares a room is a shortage nobody can read).</summary>
     [Fact]
-    public void HayIsKeptOnlyInABarnAndShipsWithNoLimit()
+    public void HayIsKeptOnlyInABarnAndShipsWithAWintersLimit()
     {
         SimWorld world = Shipped();
         Assert.Equal("hay", world.GoodsCatalog.NameOf(Goods.Hay));
         Assert.Equal(new[] { StoreKind.Barn }, world.GoodsCatalog[Goods.Hay].StoredBy);
         Assert.False(world.GoodsCatalog.Edible(Goods.Hay), "hay is for the herd, never a villager's meal");
 
-        // ⛔ No starting limit: D522 moved the shipped golden by adding two (`trade.md §11.1`).
-        Assert.False(ShippedConfig.Load().StartingStockLimits.ContainsKey("hay"));
-        Assert.Null(world.StockLimits.For(Goods.Hay));
+        // ⭐ D711: Joe's 2,000 — and ⛔ never below one full barn's winter, because a met hay row stops the cutting (D139) and
+        // a limit under the barn's room starves the herd it was cut for. 50 would have; 500 feeds four or five head.
+        Assert.Equal(2_000, ShippedConfig.Load().StartingStockLimits["hay"]);
+        int barnsWinter = VillageEconomy.BarnHayRoom(world.Config);
+        Assert.True(world.StockLimits.For(Goods.Hay) >= barnsWinter,
+            $"the hay limit of {world.StockLimits.For(Goods.Hay)} is below one full barn's winter of {barnsWinter} — the herd would starve");
 
         // And nothing else is stored by a barn or a post, so no hauler carries anything there by accident.
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
