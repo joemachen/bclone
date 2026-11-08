@@ -1909,10 +1909,16 @@
     // panel showed that "no limit" as 0, which is what he read. 50 is his own
     // number from D62 ("50 tools, 50 clothes"). The derived stops still drive the
     // trades (LabourQuota.ClothingWanted, HandcartsWanted); 50 is the ceiling
-    // over them, as every row here is. HAY stays unlimited (D590): the herd's
-    // fodder is not an unlocked good and has no shelf of its own.
+    // over them, as every row here is.
     "clothing": 50,
     "handcarts": 50,
+    // ⭐ D711 -- HAY 2,000 (Joe, 2026-11-07: "Hay at 2,000"). Unlimited until now
+    // (D590). NOT 50 like the other unlocked goods: a met hay row stops the cutting
+    // (D139), and one full barn's winter is 1,728 -- 2 herdsmen x 8 head x 108 hay a
+    // head (2 a day x 30 days x the 180 % margin; VillageEconomy.BarnHayRoom). 50
+    // starves a herd; 500 feeds four or five head. The limit counts every barn, so a
+    // second full barn wants it raised. Guarded: never below one barn's room.
+    "hay": 2000,
   },
 
   // Names (D465, specs/names-and-birthdays.md): a first name is a prefix and a suffix

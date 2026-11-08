@@ -316,7 +316,7 @@ limits for forage, logs and firewood, and those with a fishery for fish.
 holds nearly everything at its limit. A *keep* at half the limit leaves half the limit to sell, so a size of half the
 limit means one boat's worth of a village's spare takes a neighbour from short (it offers double) to rested (it offers
 the worth). So: forage 1,000; wheat and bread 500; fish and meat 125; logs, stone, iron, leather and flour 100; firewood
-200; stone and iron tools 12. Hay has no limit; 400 is a quarter of a barn's room. Animals stay 6.
+200; stone and iron tools 12. Hay had no limit then (2,000 since D711, one full barn's winter of 1,728 and a little over); 400 is a quarter of a barn's room. Animals stay 6.
 
 **The post's price — 30 logs, 24 stone, kept.** All four hall-era villages held logs at their limit (200) and stone at
 120–200: the post is a sixth of their logs and at most a fifth of their stone. Its 800 room is about a quarter of

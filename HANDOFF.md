@@ -1,4 +1,4 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD BUT HAY WITH A STARTING LIMIT (D709), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
+# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
 > **⭐⭐ START HERE — WHERE THINGS ARE, 2026-11-07 (D710: EVERYTHING MERGED AND PUSHED; TWO TRACKS) — ON WINDOWS. A FRESH SESSION READS THIS BLOCK AND STOPS.**
 >
@@ -15,8 +15,8 @@
 > session that did not know about cart-home's knob. Cart-home's knob at 3 is the same lever measured on twelve valleys; the branch's tip
 > is kept as the tag `superseded/restock-under-the-cart`.
 >
-> **⏸️ His, from this round:** hay's number (he said 50; a barn holds 400–500 before a winter, so 50 stops the cutting and starves the
-> herd — held, not typed; the ⏸️ list). **Cleaned up:** 32 merged local branches and nine worktrees removed; the art's standing
+> **✅ Hay 2,000 (D711, on `main`):** he said 50, then 500; one full barn's winter is 1,728 (2 herdsmen × 8 head × 108), so 2,000 —
+> his pick once the number was put to him. ⚠️ The limit counts every barn: a second full barn wants it raised. **Cleaned up:** 32 merged local branches and nine worktrees removed; the art's standing
 > worktree is `.claude/worktrees/art` on branch `art`. ⚠️ Left for Joe: the locked worktree `.claude/worktrees/slice-cart-home` (branch `worktree-slice-cart-home`, merged — a lock is its owner's "do not remove", so `git worktree unlock` it, then `git worktree remove` it); five empty folders under `.claude/worktrees/` held open by the Claude sessions that ran in them (they go when those sessions are archived); and two merged branches on GitHub, `slice/grass-seasons` and `slice/parchment-legibility` (`git push origin --delete …` — the agent is not permitted to delete remote branches). **The two tracks are in `CLAUDE.md` — read them before cutting a branch.**
 >
 > **Next, systems: house tiers** (Phase 5 gate item 1's last). **Next, art: the terrain shader wired into the valley** (`terrain-shader.md`,
@@ -9795,7 +9795,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **HAY'S STARTING LIMIT (D709) — HIS, AND 50 WAS NOT TYPED.** He said *"go with 50 for hay's limit"*. A herdsman cuts while the
+- ✅ **ANSWERED: HAY 2,000 (D711, 2026-11-07; Joe: *"Hay at 2,000"*), after 500 was put back to him with the barn's real number (one full barn's winter is 1,728). Guarded: never below one barn's room.** ~~⏸️ **HAY'S STARTING LIMIT (D709) — HIS, AND 50 WAS NOT TYPED.**~~ He said *"go with 50 for hay's limit"*. A herdsman cuts while the
   barn holds less than a winter's hay for its pasture's full herd (`livestock.md §0.1`); the posed Phase 5 herds went into winter with
   400–500 hay in the barn (`livestock.md`, D643–D646), and a met hay row stops the cutting (D139, the herdsman's `limited_by`). At 50 the
   barn stops at 50 and the herd starves a beast a short day once it is out. **Two answers:** a number above a winter's feed (**500**

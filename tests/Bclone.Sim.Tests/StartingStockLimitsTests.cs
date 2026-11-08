@@ -56,9 +56,9 @@ public sealed class StartingStockLimitsTests
             [Goods.Flour] = 200,
             [Goods.Bread] = 1000,
 
-            // ⛔ Hay ships with NO limit (D590, `trade.md §11.1`): D522 moved the shipped golden by adding two starting
-            // limits, and a village with no barn must hash as it did.
-            [Goods.Hay] = null,
+            // ⭐ Hay 2,000 (D711, Joe's): one full barn's winter is 1,728, so the row never starves a herd
+            // (`TradeRowsTests.HayIsKeptOnlyInABarnAndShipsWithAWintersLimit`). It shipped with none until then (D590).
+            [Goods.Hay] = 2_000,
 
             // ⭐ Clothing and handcarts START AT 50 (D697; Joe, 2026-11-06: "clothing starts at 0 stock limit. unlocked
             // items should start at 50 by default" — his "50 clothes" of D62). They shipped with NO limit from D660 and
@@ -86,11 +86,10 @@ public sealed class StartingStockLimitsTests
     /// <summary>
     /// ⭐ D709, Joe (2026-11-07): <i>"all unlocked items default limit"</i> of 50 (D697's rule, made a guard). Every good the
     /// shipped game has ships with a starting limit, so the stock-limits panel never shows a good's "no limit" as 0 — and a
-    /// good added later without one fails here by name. Hay is the one exception, and it is his: 50 is less than a herd's
-    /// winter feed (a barn holds 400–500 before winter), so it waits for his number (HANDOFF ⏸️).
+    /// good added later without one fails here by name. Hay was the one exception until D711 gave it Joe's 2,000.
     /// </summary>
     [Fact]
-    public void EveryShippedGoodButHayStartsWithALimit()
+    public void EveryShippedGoodStartsWithALimit()
     {
         SimConfig shipped = ShippedConfig.Load();
         var catalog = new GoodsCatalog(shipped.GoodsCatalog);
@@ -98,7 +97,7 @@ public sealed class StartingStockLimitsTests
         for (int id = 0; id < catalog.Count; id++)
         {
             string name = catalog[(Goods)id].Name;
-            if (name != "hay" && !shipped.StartingStockLimits.ContainsKey(name))
+            if (!shipped.StartingStockLimits.ContainsKey(name))
             {
                 missing.Add(name);
             }

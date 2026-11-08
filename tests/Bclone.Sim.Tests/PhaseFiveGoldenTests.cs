@@ -57,11 +57,14 @@ public sealed class PhaseFiveGoldenTests
     // RE-TAKEN (D697), BOTH — clothing and handcarts start at a limit of 50 (Joe, 2026-11-06: "unlocked items should start at 50 by
     // default"); a set limit is hashed. ⭐ PROVEN BY ABLATION: with the two keys removed from `starting_stock_limits` and D696's first
     // leg kept, both old constants pass — the leg moved nothing, the limits moved everything. Was 1335932601571545014.
-    private const ulong PhaseFiveGoldenHash = 4787056045438129767UL;
+    // RE-TAKEN (D711), BOTH — hay starts at a limit of 2,000 (Joe, 2026-11-07: "Hay at 2,000"); a set limit is hashed. ⭐ PROVEN NOT
+    // TO PLAY DIFFERENTLY: a probe over the same twenty years read at most 498 hay held and 5 head, so the 2,000 row never binds.
+    // Was 4787056045438129767.
+    private const ulong PhaseFiveGoldenHash = 12846455207324797399UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
-    // Was 16129168920486327744 before D697 (the two starting limits, as above).
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 9909556109334633121UL;
+    // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 14087957849486892753UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);
