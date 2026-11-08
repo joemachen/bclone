@@ -1,6 +1,6 @@
 # Spec: Ground-kind textures — Joe's watercolour, one seamless tile per kind
 
-**Status:** ✍️ **SPECCED (A12, 2026-11-07); NOTHING PAINTED, NOTHING BUILT. 🔨 being built on `art`. Woods first.**
+**Status:** 🎨 **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13, 2026-11-07) — inside every §3 limit, unmerged, waiting for Joe's eye; THE LOADER (§5 PIECE 1) NOT BUILT. 🔨 on `art`. Woods first.**
 The format Joe paints to, before he paints. The art lane's next slice after the terrain shader (`terrain-shader.md`, A1–A11),
 lab only until house tiers merge (`terrain-shader.md §5`). Joe's calls, 2026-11-07: **full colour**, not a value-only wash;
 **woods first**, through the whole loop, before the other three are painted. Owner: Joe + Claude Code.
