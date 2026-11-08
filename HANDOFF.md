@@ -1,5 +1,11 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
+> **✍️ HOUSE TIERS SPECCED ON `slice/house-tiers` (D716, 2026-11-07), OFF `main` 4399ccc — `specs/house-tiers.md`, NOTHING BUILT.**
+> Joe's three calls are at the top of ⏸️ OPEN below (and §11 of the spec). Two findings worth carrying: **§5's *"6–8×"* is stale** —
+> the burn is 24 a winter today (D365), so his 60–80 is 2.5–3.3×; and heating is already **23–40 %** of everything his Elderwood fells
+> (Year 33 / 77), which is where the ladder's teeth are. **Next: his answers, then TDD per §9, §10's harness table before any number is
+> typed.**
+>
 > **✅ `slice/elderwood-notes` PLAYED AND MERGED INTO `main` (D715, 2026-11-07; Joe: *"Played, merge it"*), branch deleted, pushed at his word — D712–D714 from Joe's Elderwood play:** the fence
 > drawn whatever the shading (view), a shop short when no ONE store holds a batch (the 1+1 leather stall), and the hide hunt capped at
 > twice the meat limit (his call). Played on his save `elderwood-thorn-bay-54` and merged. **Next, systems: house tiers.**
@@ -9271,6 +9277,18 @@ Read `git status` after staging, every time.
 - ⚠️ **Backticks inside a double-quoted `grep -c` pattern score 0 and look like a missing anchor** (D692's trap, met again on a
   HANDOFF banner): count anchors from a Python script, or single-quote the pattern.
 
+## ⛔ THE TRAPS D716 NEARLY PAID FOR — A "BEST ALIVE" READ HIDES THE DEAD MASTER, A COUNTER'S NAME IS NOT ITS SCOPE, AND A WARNING'S MULTIPLE IS DATED
+
+- ⛔ **A save read of "the best living carpenter" said no village of Joe's had ever had a master — and the spec said so.** Read
+  again with the dead included, Elderwood's Rantis had mastered between Year 53 and 61 and died at 77. A save's `villagers`
+  list keeps the dead; *"has the village ever…"* is asked of all of them, *"does it now…"* of the living. **Count both and say which.**
+- ⛔ **Mastery is on skill `work`, not skill `ticks`** (`mastery_years` × a year's ticks × `skill_work_per_idle_tick` 100 =
+  960,000). A ticks column read against a guessed threshold looked plausible and was the wrong unit.
+- ⛔ **`StoneEverDug` is stone dug BY HAND** — it stops rising when the quarry stands (192–612 for life in every save). A counter's
+  name is a claim about its scope; read where it is incremented before building a gate on it.
+- ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
+  multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
+
 ## ⛔ THE TRAPS D712–D714 PAID FOR — A SHORTAGE ASKED OF THE TOTAL, A WALL FILED AS PAINT
 
 - ⛔ **A shop's "short" asked of the stores' total disagreed with a fetch asked of one store, and the village stalled for years.**
@@ -9809,6 +9827,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **🔨 being built on `slice/house-tiers` — HOUSE TIERS, SPECCED (D716, 2026-11-07, `specs/house-tiers.md`), NOTHING BUILT; THREE
+  CALLS ARE JOE'S (§11), EACH WITH A RECOMMENDATION.** (1) The costs and gates — cottage learned by **stone laid** in the village's
+  buildings around Year 20–25, 20 logs + 30 stone; manor by **6 cottages raised with a workshop standing**, 30 logs + 45 stone; both
+  stone rows wear twice as slowly; all three hold 5 and stand 2×1. (2) Who upgrades — a village-wide *Build homes as: Cabin · Cottage ·
+  Manor* on the housing brush, **Cabin until he changes it**; standing homes rebuilt in place one at a time behind all other work, the
+  family at home throughout. (3) The firewood number — ship the ladder on today's **24 / 12 / 5** first (a number a winter on the row:
+  the D189 grid is gone), then the cabin's raise toward his 60–80 as its own measured commit (§10 arm C: 48 / 64 / 80). Save format 13
+  refuses his format-12 saves. **Build nothing until he answers.**
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and
