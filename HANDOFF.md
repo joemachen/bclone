@@ -1,6 +1,6 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
-> **✅ `slice/elderwood-notes` PLAYED AND MERGED INTO `main` (D715, 2026-11-07; Joe: *"Played, merge it"*), branch deleted, not yet pushed — D712–D714 from Joe's Elderwood play:** the fence
+> **✅ `slice/elderwood-notes` PLAYED AND MERGED INTO `main` (D715, 2026-11-07; Joe: *"Played, merge it"*), branch deleted, pushed at his word — D712–D714 from Joe's Elderwood play:** the fence
 > drawn whatever the shading (view), a shop short when no ONE store holds a batch (the 1+1 leather stall), and the hide hunt capped at
 > twice the meat limit (his call). Played on his save `elderwood-thorn-bay-54` and merged. **Next, systems: house tiers.**
 >
