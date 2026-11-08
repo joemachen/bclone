@@ -155,6 +155,8 @@ founding — Stonebridge's founders brought one on day one, Elderwood's first na
 ⭐ **And generations come quickly here** — `adult_age` is 12 and the first native child is born in Year 1, so the fastest
 line runs roughly: grandchildren of the founders from ~Year 15, great-grandchildren ~Year 30, and a further generation every
 ~14–16 years after (arithmetic, not yet measured — the sim does not record a villager's generation today).
+⚠️ **The arithmetic was wrong by half — measured at piece 1 (D719, §10): generations come ~22–25 years apart**, not 15.
+A child of 12 is an adult, but a new couple needs a house of its own before it has children (D71), and that wait is the gap.
 
 **The ideas, each two-factor:**
 
@@ -185,6 +187,29 @@ line runs roughly: grandchildren of the founders from ~Year 15, great-grandchild
 reasoning, not built. *(It was: **Recommended: A for the cottage, and A for the manor — one idea, two rungs** (C is the alternative manor if Joe wants the
 manor earned by cottages).)* ⛔ `StoneEverLaid`, the first draft's gate, is withdrawn (Joe); the manor's *6 cottages and a
 workshop* goes with it.
+
+**📏 The numbers, measured (D719, piece 1 — `tools/harness/ZzGenerations.cs`, §10).** The first birth of each generation,
+the fastest line in each valley, 100 years:
+
+| | 3rd (the founders' grandchildren) | 4th | 5th |
+|---|---|---|---|
+| Fixture, 25 valleys | Year 20–25 (13 valleys) | 43–51 (4) | 69 (1) |
+| Shipped, 25 valleys | Year 22 (3) | 43, 51 (2) | 86 (1) |
+
+⚠️ **Most unattended valleys never reach a third generation at all** — the harness paints no housing, so grown children
+never get a house to start a family in (D447: a harness is not a player). Where families do form, the spacing is steady at
+22–25 years. **Populations are read off Joe's saves instead** (the table above): 20 people around Year 25–30, 25 around
+35–45, 45 around 60–70.
+
+**So, against Joe's Year 30 and Year 80–90:**
+- **Cottage: the 3rd generation is born *and* the village holds 20** — the grandchildren come by Year 20–25, so the village's
+  size is what holds it back, landing ~Year 25–32 in his villages. *(Not the 4th — at 43–51 it is a generation late.)* The
+  moment: *"Wyn Ashford is born — the founders' first grandchild …"*.
+- **Manor: the 5th generation is born *and* the village holds 45** — 45 people by ~Year 60–70 in his villages, so the
+  founders' great-great-grandchildren hold it back, landing ~Year 70–86.
+- Proposed keys: `cottage_unlock_generation` 3, `cottage_unlock_population` 20, `manor_unlock_generation` 5,
+  `manor_unlock_population` 45 — typed in piece 3. ⚠️ Both are the earliest line in the valley, so a village with more
+  young families gets there sooner; both read *most ever alive*, which a village that shrinks back does not lose (D547).
 
 ### 4.5 Who upgrades — the player says what, the sim says where and when
 
@@ -348,6 +373,12 @@ arms (an unattended valley plays badly — pair every table with Joe's saves bef
 And Joe's saves, read not re-simulated: homes and felling by year (§2's table, all of them), so the cottage's year
 lands in *his* villages, not only the harness's.
 
+**📏 Arm B's first half, filled at piece 1 (D719):** `ZzGenerations` — 25 fixture and 25 shipped valleys × 100 years, the
+opening played, a granary and a warehouse at Year 3, unattended; one `ZZG` line a valley (peak, alive every ten years, the
+first year 15 / 20 / 25 / 30 / 45 are held, the first birth of each generation). The table and its reading are in §4.4.
+Empty at Year 100: 13 fixture valleys of 25 and 4 shipped (the unattended shape, D143); peak 5–26 and 4–27, never 30. Copy in, `-c Release --filter
+ZzGenerations`, delete.
+
 ## 11. Joe's calls
 
 **Answered (D717, 2026-11-07):**
@@ -391,10 +422,11 @@ METHODOLOGY §3's six, with item 4 (the manual QA) as Joe's play above, and Phas
 
 One commit each, docs in the same commit, every guard red-checked and counted; the four checks before each is called done.
 
-1. **The generation** — `Villager.Generation`: founders and arriving nomads 1, a child one more than the elder of its two
-   parents; saved (format 13), unhashed; the villager card's *"Nth generation in the valley"*. Then §10's arm B reads, on
-   the harness, the year each generation is first born and the year the village first holds 25 and 45 — **the numbers
-   for both gates come from that table, not from the arithmetic in §4.4.**
+1. ✅ **The generation — BUILT (D719, 2026-11-08).** `Villager.Generation`: founders and arriving nomads 1, a child one
+   more than the elder of its two parents (`HouseholdSystem.FertileCoupleOf`, the birth gate's own finder); saved (format
+   13), unhashed; the villager card's *"Third generation in the valley"*. `HouseTierTests`: 4 guards, 6 mutants, 9 reds by
+   guard (17 by case), no zeros. §10's arm B read the timing (§4.4's 📏 table) — **the numbers for both gates come from it,
+   not from the arithmetic.**
 2. **The rows and the burn** — the Cottage and Manor rows, `winter_firewood` spread over the beat (byte-identical for the
    cabin), `Household.HomeKind` behind `HomeRowOf` (every `BuildingKind.Home` site accounted for), per-row larder, wear and
    `exposure_days_sheltered`, `LabourQuota` per home.

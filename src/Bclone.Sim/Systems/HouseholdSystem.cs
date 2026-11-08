@@ -558,6 +558,11 @@ public sealed class HouseholdSystem : ISimSystem
             ? world.Rng.NextInt(0, config.TicksPerDay)
             : 0;
 
+        // ⭐ One generation past the elder parent (`house-tiers.md §4.4`, D718) — the couple the gate above just found.
+        // No draw and nothing hashed, so no stream and no golden moves for it.
+        (Villager mother, Villager father) = FertileCoupleOf(world, household, config)
+            ?? throw new InvalidOperationException($"A child was born to the {household.Name} household, which has no couple.");
+
         var child = new Villager
         {
             Id = id,
@@ -565,6 +570,7 @@ public sealed class HouseholdSystem : ISimSystem
             Surname = household.Surname,
             LifespanYears = lifespan,
             Rhythm = rhythm,
+            Generation = Math.Max(mother.Generation, father.Generation) + 1,
             Carried = world.NewStockpile(),
 
             // ⭐ And their hunger apart — see the founding path for why the action stagger alone
@@ -772,7 +778,15 @@ public sealed class HouseholdSystem : ISimSystem
     /// and would let the village grow without ever forming a new household - which
     /// hides the very problem household formation exists to solve.
     /// </remarks>
-    private static bool HasFertileCouple(SimWorld world, Household household, SimConfig config)
+    private static bool HasFertileCouple(SimWorld world, Household household, SimConfig config) =>
+        FertileCoupleOf(world, household, config) is not null;
+
+    /// <summary>The household's fertile couple — the first such pair in member order — or null.</summary>
+    /// <remarks>
+    /// One finder for the birth gate and the birth, so the parents a child's generation is read from are the couple that
+    /// let it be born (D370's lesson: two finders that disagree).
+    /// </remarks>
+    private static (Villager, Villager)? FertileCoupleOf(SimWorld world, Household household, SimConfig config)
     {
         for (int i = 0; i < household.MemberIds.Count; i++)
         {
@@ -787,11 +801,11 @@ public sealed class HouseholdSystem : ISimSystem
                 && partner.HouseholdId == household.Id
                 && IsFertile(partner, config))
             {
-                return true;
+                return (member, partner);
             }
         }
 
-        return false;
+        return null;
     }
 
     private static bool IsFertile(Villager villager, SimConfig config) =>

@@ -729,7 +729,7 @@ public sealed class WorkshopTests
         loop.Step(config.TicksPerSeason);
         Assert.True(world.WorkshopLearned);
 
-        Assert.Equal(12, SaveGame.Format); // 10 at D678; 11 since Slice H; 12 since the trades' carts (`HandcartTests` holds the bump and the refusal).
+        Assert.Equal(13, SaveGame.Format); // 10 at D678; 11 since Slice H; 12 since the trades' carts; 13 since house tiers (`HouseTierTests` holds the bump and the refusal).
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Workplace again = loaded.World.Workplaces.Single(w => w.Id == workshop.Id);

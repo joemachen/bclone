@@ -1709,7 +1709,9 @@ public partial class Main
         Household home = world.HouseholdOf(villager);
         // ⭐ And their birthday, on its own line (D468) — the day they turn a year older.
         card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household"
-            + $"\nBorn {world.BirthdayOf(villager)}";
+            + $"\nBorn {world.BirthdayOf(villager)}"
+            // ⭐ The family tree the house tiers are learned on (`house-tiers.md §4.4`, D718): "Third generation in the valley".
+            + $"\n{Capitalise(GenerationInTheValley(villager.Generation))}";
 
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
@@ -2713,6 +2715,14 @@ public partial class Main
         return world.FindWorkplace(villager.WorkplaceId) is Workplace job
             ? ProfessionName(world, job.Kind)
             : "laborer";
+    }
+
+    /// <summary>Which generation in the valley, in words — "first" for the founders and every grown nomad (`house-tiers.md §4.4`).</summary>
+    private static string GenerationInTheValley(int generation)
+    {
+        string[] words = { "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth" };
+        string which = generation >= 1 && generation <= words.Length ? words[generation - 1] : $"{generation}th";
+        return $"{which} generation in the valley";
     }
 
     private static string Capitalise(string text) =>

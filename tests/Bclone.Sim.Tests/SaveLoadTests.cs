@@ -365,7 +365,7 @@ public sealed class SaveLoadTests : IDisposable
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
-            "CartForTheWorks",
+            "CartForTheWorks", "Generation",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]

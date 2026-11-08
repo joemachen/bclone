@@ -9280,6 +9280,14 @@ Read `git status` after staging, every time.
 
 ## ⛔ THE TRAPS D716 NEARLY PAID FOR — A "BEST ALIVE" READ HIDES THE DEAD MASTER, A COUNTER'S NAME IS NOT ITS SCOPE, AND A WARNING'S MULTIPLE IS DATED
 
+- ⛔ **(D719) A mutant script read `dotnet test -v q` for `Failed` lines and scored six zeros.** Quiet prints none. Pass
+  `--logger "console;verbosity=normal"` and print the `Total / Passed / Failed` line beside the count, so a zero says whether
+  anything ran — D422's trap, met again from a fresh script.
+- ⛔ **(D719) An unattended harness valley almost never has grandchildren**: it paints no housing, so its grown children never get a
+  house to start a family in (D71). Anything measured on generations needs the valleys where families formed, named as such.
+- ⚠️ **(D719) "Adult at 12" is not a generation of 12–15 years.** Measured, it is 22–25: the couple waits for a roof. Arithmetic
+  from one config key told Joe a wrong year; the harness put it right before a number was typed.
+
 - ⛔ **A save read of "the best living carpenter" said no village of Joe's had ever had a master — and the spec said so.** Read
   again with the dead included, Elderwood's Rantis had mastered between Year 53 and 61 and died at 77. A save's `villagers`
   list keeps the dead; *"has the village ever…"* is asked of all of them, *"does it now…"* of the living. **Count both and say which.**
@@ -9833,7 +9841,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   toward 60–80 its own measured commit later; **the family tree gates both rungs** (a new generation born in the valley + the village
   grown to hold it — cottages ~Year 30, manors ~Year 80–90, the numbers from the harness); every house holds 5; larders 400 / 600 / 800
   proposed; the perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1 drawn bigger. Save format 13 refuses his
-  format-12 saves. **Piece 1 (the generation) first; Joe plays when the four pieces are in, merges at his word.**
+  format-12 saves. ✅ **Piece 1 built (D719): the generation, format 13; measured — generations 22–25 years apart, so the gates
+  are proposed as the 3rd generation + 20 people (~Year 25–32) and the 5th + 45 (~Year 70–86).** Next: piece 2, the rows and the
+  burn. Joe plays when the four pieces are in, merges at his word.
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and

@@ -292,6 +292,7 @@ and fails on any field not in its table (*Saved*, *Rebuilt* — compared too, so
 | `handcart_uses` (a household's cart), `pushing_a_cart` (who has it) — Slice H's two, one at a time; the format left at 10 | 1 each | `HandcartTests.ACartAndItsPusherSurviveTheRoundTripAndAFormatTenSaveIsRefused`: the trips and the flag read back, hash to hash and a year on; format 11, a format-10 save refused naming the build |
 | `handcart_uses` (a workplace's cart), `cart_for_the_works` (whose cart a villager pushes) — the trades' two (`handcart.md §13`), one at a time; the format left at 11 | 1 each | `HandcartTests.TheWorksCartSurvivesTheRoundTripAndAFormatElevenSaveIsRefused`: the trips and the flag read back, hash to hash and a year on; format 12, a format-11 save refused naming the build |
 
+| `generation` (a villager's generation in the valley, `house-tiers.md §14.1`, D719); the format 12 → 13 | 1 + 1 | `HouseTierTests.TheGenerationIsSavedAndNotHashed` (read back, and ⛔ deliberately unhashed — the gap asserted) and `EverySavedFieldComesBackAsItWas` (8 poses red with it dropped); `AFormatTwelveSaveIsRefused` |
 ⭐ **The run-on year alone would have missed seven of the twelve dropped fields**, and §4's own hash guard would have
 missed all but two. The field guard is the one this feature rests on, as §9.4 said it would be.
 

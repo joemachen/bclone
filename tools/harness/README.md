@@ -217,3 +217,4 @@ against a number from an older commit.
   stood, carts made and held, carpenter seat-years, logs held at 50, logs felled, the house sites' and every site's ticks
   waiting on logs, housed households. Copy in, build **with a check for `0 Error(s)`**, `-c Release --filter ZzWorkshop`,
   delete. ⚠️ Its first arm "ran" against the stale DLL after a build error (a name clash) — D611's trap, again.
+- `ZzGenerations.cs` — D719's timing for the house tiers' family-tree gates (`house-tiers.md §4.4`, §10): per valley the first birth of each generation and the first year 15 / 20 / 25 / 30 / 45 are held, over `ZZ_YEARS` (100); `ZZ_FIX=1` for the fixture. ⚠️ Most valleys never reach a 3rd generation (no housing painted). Copy in, `-c Release --filter ZzGenerations`, delete.

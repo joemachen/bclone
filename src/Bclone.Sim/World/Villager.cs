@@ -293,6 +293,19 @@ public sealed class Villager
     public ulong ArrivedAtTick { get; init; }
 
     /// <summary>
+    /// Which generation in the valley this villager is (`house-tiers.md §4.4`, D718): <b>1</b> for a founder, a re-founder
+    /// and a grown nomad — new to the valley however old — and for a child born here <b>one more than the elder of its two
+    /// parents</b>. The family tree the house tiers are learned on (Joe: <i>"I love the family tree unlock idea!"</i>).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Saved, not hashed</b> — a statistic the gates count, D676's shape: the flag a gate latches is what the sim reads,
+    /// and that is what gets hashed. Two villages that differ only here hash alike until a gate latches;
+    /// <c>HouseTierTests.TheGenerationIsSavedAndNotHashed</c> asserts the gap so nobody "fixes" it unread. Set by the birth
+    /// (<c>HouseholdSystem.TryBirth</c>), never changed after.
+    /// </remarks>
+    public int Generation { get; internal set; } = 1;
+
+    /// <summary>
     /// Years lived — one more on each birthday, not at New Year (D468). Maintained where it changes
     /// (<c>ClockSystem</c>, on the tick a year since <see cref="BirthTick"/> completes), never
     /// recomputed per tick; derived from <see cref="BirthTick"/>, so not hashed (D335). It stops at
@@ -941,6 +954,7 @@ public sealed class Villager
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
             ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
+            ["generation"] = Generation,
             ["age_years"] = AgeYears,
             ["vigour"] = Vigour,
             ["vigour_stage"] = SaveWriter.Enum(Stage),
@@ -1002,6 +1016,7 @@ public sealed class Villager
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
             ArrivedAtTick = save.ULong("arrived_at"),
+            Generation = save.Int("generation"),
             AgeYears = save.Int("age_years"),
             Vigour = save.Int("vigour"),
             Stage = save.Enum<VigourStage>("vigour_stage"),
