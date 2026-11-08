@@ -128,7 +128,7 @@ approved look. Off is the placeholder exactly.
 
 The ground kinds stay **flat fills in the band, in `VillageMap`'s palette**, and only the river's depth comes across from
 `ValleyTexture.Dressed` (shallows at the bank, the same contour as the fill). Washes and textures per kind are Joe's
-paint, not this slice's (`art-inventory.md §2`); the shader takes them as a later input without changing shape.
+paint, not this slice's (`art-inventory.md §2`; the format he paints to is `ground-textures.md`, A12); the shader takes them as a later input without changing shape.
 
 Where they meet is two separate questions:
 

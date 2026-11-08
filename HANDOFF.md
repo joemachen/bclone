@@ -9791,7 +9791,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **The debug readout text is illegible on parchment** — the frame/draw readout lines over the map need a dark backing.
 - **Eye-check every building, heap and fence for a missing ink edge.** `check.py` reads colours and its table *says*
   which fills are outlined; a draw site that drops its outline still passes, and no probe line looks.
-- **Watercolour textures for stone, clay, dirt and the other terrains** — today they are flat fills in the band.
+- **Watercolour textures for stone, clay, dirt and the other terrains** — today they are flat fills in the band. **🔨 being built on `art`** (A12, 2026-11-07): `specs/ground-textures.md` is the format Joe paints to, full colour, one seamless 2048² tile per kind at 32 px a tile; **woods first**, then stone and water, then iron. Nothing painted yet; piece 1 starts when `ground_woods.png` arrives. Fields, quarry and mine floors wait (they are `VillageMap`'s).
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
