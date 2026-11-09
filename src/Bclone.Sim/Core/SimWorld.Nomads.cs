@@ -253,6 +253,9 @@ public sealed partial class SimWorld
         // carries no verbs (Moment.cs) — there is nothing to decide, only something to know.
         string where = WhereTheBandCamps;
         bool learnedToBridge = Settle(band);
+
+        // A band can carry the village past a house's number too (`house-tiers.md §4.4`, D721) — said here, one popup (D576).
+        string? learnedHouses = WhatTheBandTaughtOfHouses();
         NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
 
         // ⭐ TWO SHORT PARAGRAPHS, NOT A WALL (Joe, D577, from a screenshot: *"too verbose … 1-2 sentences only"*): who
@@ -265,6 +268,11 @@ public sealed partial class SimWorld
         {
             body += Moment.ParagraphBreak + TheyBroughtTheBridge;
             marks.Add(MomentMark.Bridge);
+        }
+
+        if (learnedHouses is not null)
+        {
+            body += Moment.ParagraphBreak + learnedHouses;
         }
 
         RaiseMoment($"Nomads have settled {where}", body, stops: true, LogCategory.Discovery, marks);

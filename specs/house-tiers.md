@@ -11,7 +11,7 @@ is a lit hearth), D546–D551 (the bridge: a second row, rebuilt in place while 
 hashed only when true), D709 (every good starts with a limit — firewood at 600), D576 (a stop through `LearnedByDoing`
 sets a hashed flag and moved four goldens).
 **Status:** ✍️ **SPECCED (D716), EVERY CALL ANSWERED (D717, D718 — 2026-11-07/08) ON `slice/house-tiers`; THE BUILD
-STARTS WITH PIECE 1, THE GENERATION (§14); PIECES 1–2 BUILT (D719, D720).** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
+STARTS WITH PIECE 1, THE GENERATION (§14); PIECES 1–3 BUILT (D719, D720, D721) — PIECE 4, EACH TIER'S LOOK, IS NEXT.** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
 24 / 12 / 5 first, the cabin's raise measured after; **the family tree gates both rungs** (a new generation born into the
 valley + the village grown to hold it — cottages ~Year 30, manors ~Year 80–90); every house holds 5; a bigger larder and
 its own look each; the three perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1, drawn bigger.
@@ -207,8 +207,8 @@ never get a house to start a family in (D447: a harness is not a player). Where 
   moment: *"Wyn Ashford is born — the founders' first grandchild …"*.
 - **Manor: the 5th generation is born *and* the village holds 45** — 45 people by ~Year 60–70 in his villages, so the
   founders' great-great-grandchildren hold it back, landing ~Year 70–86.
-- Proposed keys: `cottage_unlock_generation` 3, `cottage_unlock_population` 20, `manor_unlock_generation` 5,
-  `manor_unlock_population` 45 — typed in piece 3. ⚠️ Both are the earliest line in the valley, so a village with more
+- Keys: `cottage_unlock_generation` 3, `cottage_unlock_population` 20, `manor_unlock_generation` 5,
+  `manor_unlock_population` 45 — ✅ **typed in piece 3 (D721)**, the C# defaults and `data/sim.config.json` together. ⚠️ Both are the earliest line in the valley, so a village with more
   young families gets there sooner; both read *most ever alive*, which a village that shrinks back does not lose (D547).
 
 ### 4.5 Who upgrades — the player says what, the sim says where and when
@@ -229,6 +229,14 @@ Cottage · Manor"*, each button appearing when learned.**
   *Cottage* comes back as a cottage. (A ruined home's family is roofless meanwhile, as today.)
 - **Choosing a lower tier again** stops further rebuilds; nothing is pulled back down.
 - A choice above what is learned is refused in words; the buttons for it are not shown.
+- **Built (D721), with three rules the build had to decide:** (1) **the worn first** — among the houses below the choice, a
+  worn one is rebuilt before a sound one nearer the hut, so a repair the village owes anyway is the one that becomes the
+  rebuild; (2) **a repair already under way is let finish** — the house is mended as it is and rebuilt in its turn; an
+  untouched one is called off for the rebuild; (3) **a fresh choice re-aims a rebuild nobody has started** — so *Manor*
+  chosen over a waiting cottage site never costs a street two lots of stone (§8), and *Cabin* calls it off; one already
+  started is finished. The next rebuild is raised when the choice is made, when one finishes, and at the season's walk as
+  the catch-all — never per tick. The site belongs to no household (`ForHouseholdId` 0): the house is found by its tile at
+  the finish, so a family that died out meanwhile hands the cottage to whoever moved in (§8's first row).
 
 **Rejected, with the reason:**
 - *(b) A tier painted per area* (a stone street and a timber street) — the most legible on the map, but a second
@@ -294,7 +302,9 @@ None new. Logs and stone. *(Planks, bricks, mortar — later, §4.1.)*
   one of each and checks they differ.
 - **The villager card**: *"Fourth generation in the valley"* (idea A, §4.4).
 - **The tech-tree map**: the two nodes in the fog where `tech-tree-map.md` already draws a stone cottage, each with its
-  two factors as *"{n} of {N}"*.
+  two factors as *"{n} of {N}"*. ✅ Built (D721): the cottage no longer hangs from the mason's horizon (*"i dont want it to
+  be stone related"*); it is in sight from the founding, *"1 of 3 generations · 4 of 20 people"*, and its bar is the lesser
+  of the two; the manor hangs from it and waits in the fog until the cottage is learned.
 - **The moments**: for idea A, *"Wyn Ashford is born — the fourth generation in the valley. A village that has buried its
   grandparents' parents here means to stay, and has learned to build in stone. The housing brush can build stone cottages
   now — they burn half the firewood and keep a bigger larder."* Through `LearnedByDoing` — ⚠️ D576's trap: that sets the
@@ -309,9 +319,16 @@ None new. Logs and stone. *(Planks, bricks, mortar — later, §4.1.)*
   save is refused in words (no migrations before v1). ⏸️ Joe has accepted this before (*"I don't mind starting a new game"*,
   D675); restated in §11 so it is not assumed.
 - **Hash — sparse, so a cabin village hashes as today:** `HomeKind` as a tag byte only when it is not the cabin; the
-  choice only when it is not *Cabin*; the two learned flags only when true; `RebuildsHome` with the site. What the gates
+  choice only when it is not *Cabin*; the two learned flags only when true; `RebuildsHome` with the site. ✅ Built: `0x80`
+  the house's kind (D720), `0x81` / `0x82` the two latches, `0x83` + the row the choice, `0x84` + the row + the flag on any
+  house's site above the cabin (D721). The format stayed 13: every new field (`cottage_learned`, `manor_learned`,
+  `homes_built_as`, `rebuilds_home`) is new in this slice's own format, and no format-13 save exists outside it. What the gates
   count is an **unhashed statistic** (D676's shape: two villages a generation apart hash alike until the flag latches —
   the gap is written where the flag is hashed and asserted by a guard, so nobody "fixes" it unread).
+- **📏 Read at piece 3 (D721): four goldens moved, all by the byte.** Both fifty-year villages, fixture and shipped, in
+  `SkillTests` and `StockLimitTests`, cross the cottage at Years 37 / 22 and 30 / 26 (the 3rd generation, 22–31 people).
+  Switched off, the old values pass; switched on with only the tag bytes unmixed, they pass too — the earlier stop sets
+  `ShownTheTechTree` years before the workshop would, and by Year 50 it is set either way. Nothing the villages do changes.
 - **Expected goldens: none move — unless a golden run crosses the cottage's number**, which latches the flag (and the
   tech-map flag, D576). The Phase 5 posed village raises a smithy, quarry, mine, mill, bakery, post and barn in twenty
   years; whether that crosses is read at build time, and if it does each moved golden is proved by switching the crossing
@@ -439,7 +456,17 @@ One commit each, docs in the same commit, every guard red-checked and counted; t
    sites stay the cabin's by the validator's rule; the 6 that raise and finish a house's site are piece 3's (new homes at
    the chosen tier, the rebuild). Nothing in play
    makes a cottage yet — no golden can reach one. `HouseTierTests` +10 guards (the cabin's identity beat by beat, any winter whole and even, a real winter per row, the roof's chill per row and the hearth reading it, stone lasting twice, the larder's walls and target, the woodcutters' demand, the kind saved and hashed only off the cabin, a dwelling off the house's ground refused) and the modded guard re-aimed (a warehouse with beds is still refused); 14 mutants, 16 reds by guard; ⚠️ two scored zero first — the hearth reading the row (only the helper was tested) and the food target (no family wanted more than the walls) — and each got the guard it lacked; three mutants did not build at first (IDE0060, CS0162) and were rewritten so they did. ⚠️ Not posed: the empty-house swap carrying the kind, the repair's and the demolition's price by row, and the birth gate's capacity by row (every house holds 5, so a mutant there is invisible by construction). **Four checks:** suite **1976 / 0 / 5 of 1981 in 15m40** (nothing beside it; an earlier run read 27m28 with something else on the machine — the clean one is this); view build 0 warnings; probe 129 `[widths]` lines, 92 ✅, 0 ⛔, bar 151, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 403 → 403, none moved.
-3. **The gates and the choice** — the two latched flags on the family tree, `WhyNotYet`, the tech-map nodes, the moments;
-   *Build homes as* on the housing brush; new homes at the chosen tier; `RebuildsHome`, one at a time behind every site.
+3. ✅ **The gates and the choice — BUILT (D721, 2026-11-08).** `SimWorld.CottageLearned` / `ManorLearned`, latched by
+   `LatchTheFamilyTree` at a birth (`HouseholdSystem`, then `LearnedByDoing`'s stop, which introduces the map) and at a band's
+   settling (a paragraph in the nomads' own moment — one popup, D576 — and no map); `DeepestGenerationBorn` derived and
+   cached as `MostEverAlive` is; `WhyNotYet`'s two arms with both numbers; the tech-map's `CottageFamilyTree` /
+   `ManorFamilyTree` nodes. `HomesBuiltAs` (Cabin by default and after learning), `SetHomesBuiltAs` refusing in words above
+   what is learned; `MarkHome` marks at the chosen row (the cabin's words and price untouched); `ConstructionSite.RebuildsHome`
+   on the house's own footprint, `EffectiveQueueRank` behind every other site, `MoveInBuildQueue` refusing it, a demolition
+   cancelling it with its delivery refunded; `StandsOnABuilding` (a repair or a rebuild) at the four sites that let a repair
+   stand on its building. The view: *Build homes as* — **Cabins · Cottages · Manors** beside *Paint land*, under All and Homes,
+   the chosen one lit, §6's tooltip from the rows' numbers; a rebuild's site card says *"Being rebuilt"*. ⚠️ **The home card's
+   rebuild-progress sentence (the bridge's, D704) is piece 4's**, with the look. `HouseTierTests` +13 guards (each latch the tick both factors hold, posed with either binding, and the manor waiting; a band crossing it said in its own moment; the map and the gate; the latches and the choice saved and hashed only when set; the choice refused above what is learned; the unattended village rebuilds nothing; the rebuild one at a time with the families at home, the fence kept and a new couple's house raised a cottage; behind every site; the worn first, its repair the rebuild, a ruin an open cottage; a half-mended house mended first; Manor straight from a cabin, a fresh choice re-aiming and Cabin calling off; a house coming down taking its rebuild; the rebuild saved and hashed); `TechTreeTests.FogLiftsANodeAtATime` re-aimed at the mason's horizon; `EveryFieldIsSavedOrNamed` names the four fields and the two caches. **29 mutants, 28 red, 35 reds by guard, one zero written down** — the rebuild as a second shape on the ground (`StandsOnABuilding`): a house's tiles were cleared when it went up and its own shape already stands there, so no pose can see it; kept for D555's reason. ⚠️ Two more scored zero first: the worn-first mutant was not the rule (it left `worn == bestWorn`, so the first candidate's wornness stuck — rewritten to switch wornness off, 1 red), and the band's crossing had no pose (it got `ABandThatCarriesTheVillageOverTheLineSaysSoInItsOwnMoment`, 1 red). **Four goldens moved, all by one byte:** both fifty-year villages (fixture and shipped) in `SkillTests` and `StockLimitTests` learn the cottage inside the run — Years 37 / 22 and 30 / 26, the 3rd generation and 22–31 people — and `CottageLearned` is hashed. Proved by D682's method: with the crossing switched off all four old values pass, and with the crossing on and only the two tag bytes unmixed they pass too (the earlier stop sets `ShownTheTechTree` years before the workshop would; by Year 50 it is set either way). Nothing the villages do changes. Goldens grep 403 → 407 (four values re-pinned, four *Was* lines added). **Four checks:** suite **1989 / 0 / 5 of 1994 in 16m26** (nothing beside it; an earlier run read 1988 / 1 — the last mutant still compiled in, HANDOFF's D721 trap — and was re-run after a `--no-incremental` build); view build 0 warnings; probe 129 `[widths]` lines, 92 ✅, 0 ⛔, bar 151, tile centres ✅, new game ✅, `tech tree:` 15 cards at 160, `done.`, no Godot left; goldens 403 → 407, four moved and proved.
+4. **The view** — each tier's look, the cards (tier, burn, warmth, rebuild progress, the family's name), the probe line.
 4. **The view** — each tier's look, the cards (tier, burn, warmth, rebuild progress, the family's name), the probe line.
 

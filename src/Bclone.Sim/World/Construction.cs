@@ -14,6 +14,21 @@ public static class BuildingKinds
 {
     /// <summary>Whether <paramref name="kind"/> is a retired id — one that ships no row and may be absent from any catalogue.</summary>
     public static bool IsRetired(BuildingKind kind) => kind == BuildingKind.Longhouse;
+
+    /// <summary>Whether <paramref name="kind"/> is one of the three houses (`house-tiers.md §4.1`) — the cabin, the cottage, the manor.</summary>
+    public static bool IsDwelling(BuildingKind kind) => kind is BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor;
+
+    /// <summary>
+    /// Where a house stands on the ladder (`house-tiers.md §4.5`): the cabin 0, the cottage 1, the manor 2 — what a
+    /// rebuild compares, so a manor is never "rebuilt" as a cottage. −1 for anything that is not a house.
+    /// </summary>
+    public static int TierOf(BuildingKind kind) => kind switch
+    {
+        BuildingKind.Home => 0,
+        BuildingKind.Cottage => 1,
+        BuildingKind.Manor => 2,
+        _ => -1,
+    };
 }
 
 /// <summary>What the player can put up.</summary>
@@ -701,6 +716,18 @@ public sealed class ConstructionSite
     public bool RebuildsBridge { get; init; }
 
     /// <summary>
+    /// Whether this site rebuilds a standing house as <see cref="Kind"/> where it stands (`house-tiers.md §4.5`, D721) —
+    /// the bridge's <see cref="RebuildsBridge"/> shape: the family lives in the old house until this one is finished, the
+    /// fence, the door and the plot are kept, and the old timber is not refunded.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ It stands on the house, as a repair's site does, so it waits on no clearing and is no second shape on the ground
+    /// (<c>SimWorld.StandsOnABuilding</c>). It belongs to no household: the house is found by its tile when it is done,
+    /// so a family that died out meanwhile hands the cottage to whoever moved in.
+    /// </remarks>
+    public bool RebuildsHome { get; init; }
+
+    /// <summary>
     /// For a pasture's fence, its barn's workplace id (D598, `livestock.md §0.2`) — the site stands at the gate's outside
     /// tile and finishing it walls that barn's fenced tiles. Zero for every other site.
     /// </summary>
@@ -959,6 +986,7 @@ public sealed class ConstructionSite
             ["demolishing"] = Demolishing,
             ["bridge_to"] = SaveWriter.Point(BridgeTo),
             ["rebuilds_bridge"] = RebuildsBridge,
+            ["rebuilds_home"] = RebuildsHome,
             ["fences_barn"] = FencesBarnId,
             ["repairing"] = Repairing,
             ["work_ticks"] = Recipe.WorkTicks,
@@ -987,6 +1015,7 @@ public sealed class ConstructionSite
             Demolishing = save.Bool("demolishing"),
             BridgeTo = save.NullablePoint("bridge_to"),
             RebuildsBridge = save.Bool("rebuilds_bridge"),
+            RebuildsHome = save.Bool("rebuilds_home"),
             FencesBarnId = save.HasValue("fences_barn") ? save.Int("fences_barn") : 0,
             Repairing = save.Bool("repairing"),
             WorkDone = save.Int("work_done"),

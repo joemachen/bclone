@@ -606,8 +606,10 @@ public sealed class HouseholdSystem : ISimSystem
             $"{child.FullName} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
             $"The village is now {world.Population}.", LogCategory.Life);
 
-        // ⭐ A birth is the only way the village grows, so it is where it learns to bridge (D546: SCALE).
+        // ⭐ A birth is the only way the village grows, so it is where it learns to bridge (D546: SCALE) — and where a new
+        // generation is born, so where the family tree teaches its houses (`house-tiers.md §4.4`, D721).
         world.NoticeTheVillageSize(knewHowToBridge);
+        world.NoticeTheFamilyTree(child);
     }
 
     /// <summary>

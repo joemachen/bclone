@@ -221,8 +221,9 @@ public sealed partial class SimWorld
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            // A repair's site stands on the building it mends, whose door is listed already; a bridge's has none.
-            if (!IsABridgeSite(Workplaces[i]) && !IsARepairSite(Workplaces[i]))
+            // A repair's site stands on the building it mends, whose door is listed already, and so does a house's rebuild
+            // (D721); a bridge's has none.
+            if (!IsABridgeSite(Workplaces[i]) && !StandsOnABuilding(Workplaces[i]))
             {
                 // A site is named for what it raises ("granary 2", not "granary 2 (building)").
                 Add(Workplaces[i].Footprint, DoorOf(Workplaces[i]), Workplaces[i].Construction?.Name ?? Workplaces[i].Name);

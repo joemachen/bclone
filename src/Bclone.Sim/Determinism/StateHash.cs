@@ -486,6 +486,15 @@ public static class StateHash
                 hash = MixByte(hash, workplace.FenceStands ? (byte)1 : (byte)0);
             }
 
+            // A house's site above the cabin carries its row, and a rebuild says so (`house-tiers.md §7`, D721) — sparse, so
+            // a village that never chose a tier mixes nothing for any site.
+            if (workplace.Construction is { } houseSite && BuildingKinds.TierOf(houseSite.Kind) > 0)
+            {
+                hash = MixByte(hash, 0x84);
+                hash = MixUInt32(hash, (uint)houseSite.Kind);
+                hash = MixByte(hash, houseSite.RebuildsHome ? (byte)1 : (byte)0);
+            }
+
             // A fence's site carries its barn (D598) — sparse, as a bridge site's far bank is.
             if (workplace.Construction is { FencesBarnId: not 0 } fenceSite)
             {
@@ -737,6 +746,28 @@ public static class StateHash
         if (world.WorkshopLearned)
         {
             hash = MixByte(hash, 0x7F);
+        }
+
+        // ⭐ The houses the family tree has taught, and what the village builds its homes as (`house-tiers.md §7`, D721) —
+        // a tag byte each, only when learned or chosen, so a village of cabins hashes byte for byte as before.
+        //
+        // ⚠️ THE GAP, STATED (D676's shape): the two factors — the deepest generation born and the most ever alive — are
+        // derived from the villagers and mixed nowhere as such. Two villages a generation apart hash alike until the
+        // latch; the latch is what the sim reads, and it is mixed here. `HouseTierTests` asserts the gap on purpose.
+        if (world.CottageLearned)
+        {
+            hash = MixByte(hash, 0x81);
+        }
+
+        if (world.ManorLearned)
+        {
+            hash = MixByte(hash, 0x82);
+        }
+
+        if (world.HomesBuiltAs != BuildingKind.Home)
+        {
+            hash = MixByte(hash, 0x83);
+            hash = MixUInt32(hash, (uint)world.HomesBuiltAs);
         }
 
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----

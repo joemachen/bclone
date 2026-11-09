@@ -152,8 +152,12 @@ public sealed partial class SimWorld
                 // The house's own footprint — its origin is the anchor, not the front point the household keeps (`HomeAnchorOn`).
                 if (HomeFootprintOf(household) is Footprint house)
                 {
-                    // A house site whatever the house, mended at its own row's price (D719: a cottage's repair is a cottage's).
-                    RaiseARepairIfNoneFor(BuildingKind.Home, house.Origin, name, house.Facing, BuildingRecipe.For(household.HomeKind, Config));
+                    // A house site whatever the house, mended at its own row's price (D719: a cottage's repair is a cottage's)
+                    // — unless it stands below the choice, when its repair is the rebuild (`house-tiers.md §4.5`, D721).
+                    if (!RebuildsInsteadOfMending(household, house))
+                    {
+                        RaiseARepairIfNoneFor(BuildingKind.Home, house.Origin, name, house.Facing, BuildingRecipe.For(household.HomeKind, Config));
+                    }
                 }
             }
 
@@ -308,6 +312,13 @@ public sealed partial class SimWorld
                 StandingChanged();
             }
         }
+
+        // ⭐ The rebuilds' catch-all (`house-tiers.md §4.5`, D721): a rebuild cancelled, a house that came down, a cabin
+        // finished from a mark older than the choice — the next is raised here, once a season, never per tick.
+        if (_raiseRepairs)
+        {
+            RaiseTheNextRebuild();
+        }
     }
 
     /// <summary>The level a thing reached since the last season's turn, said once (`building-condition.md §6`).</summary>
@@ -388,7 +399,8 @@ public sealed partial class SimWorld
         return null;
     }
 
-    /// <summary>Whether this workplace is a repair's site — it stands on the building it mends and must not wait on clearing.</summary>
+    /// <summary>Whether this workplace is a repair's site. ⚠️ What stands on a building and waits on no clearing is
+    /// <see cref="StandsOnABuilding"/>, which a house's rebuild does too (D721).</summary>
     internal static bool IsARepairSite(Workplace workplace) => workplace.Construction is { Repairing: true };
 
     internal void RaiseARepairIfNoneFor(BuildingKind kind, Point position, string name, Angle facing, BuildingRecipe whole)

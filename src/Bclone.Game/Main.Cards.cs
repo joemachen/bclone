@@ -1385,7 +1385,9 @@ public partial class Main
             // a site fully supplied). The status names what is missing, in the sim's own words
             // (`DescribeWhatIsMissing`), so a clipped number cell can never hide it.
             // ⭐ A repair says it is one (D556): the builders are mending something that stands, not raising it.
-            string queued = $"{(site.Repairing ? "Being repaired" : "Being built")} — {Ordinal(world.QueuePositionOf(place))} in the queue";
+            // And a house's rebuild (D721): the family lives in the old house while the new one goes up over it.
+            string doing = site.Repairing ? "Being repaired" : site.RebuildsHome ? "Being rebuilt" : "Being built";
+            string queued = $"{doing} — {Ordinal(world.QueuePositionOf(place))} in the queue";
             Status(card, working: false, site.HasMaterials
                 ? queued + "."
                 : $"{queued} · still wants {site.DescribeWhatIsMissing(world.GoodsCatalog)}.");

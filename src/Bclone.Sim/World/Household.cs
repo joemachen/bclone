@@ -1027,7 +1027,7 @@ public sealed class Household
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace place = world.Workplaces[i];
-            if (place.Construction is { Kind: BuildingKind.Home, Demolishing: false } site && site.ForHouseholdId != householdId)
+            if (place.Construction is { Demolishing: false } site && BuildingKinds.IsDwelling(site.Kind) && site.ForHouseholdId != householdId)
             {
                 list.Add((place.Position, site.Facing));
             }

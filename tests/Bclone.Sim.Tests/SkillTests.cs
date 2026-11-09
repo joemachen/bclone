@@ -350,7 +350,14 @@ public sealed class SkillTests
     // the run: `SimWorld.WorkshopLearned` is hashed (a tag byte), and `LearnedByDoing` fires (a stop, `ShownTheTechTree`).
     // ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off (`&& Tick == ulong.MaxValue` on the one `if` in
     // `SimWorld.Felled`), both old values pass. Were 3828778980944462616 (fixture) and 14563583951307060232 (shipped).
-    [InlineData(false, 16912250691129698349UL)]
+    // RE-TAKEN (D721), THE FIXTURE — the stone cottage is learned on the family tree (`house-tiers.md §4.4`, D721: the 3rd generation
+    // born + 20 people held); this village crosses it in Year 37 (22 alive at the peak by then), and `CottageLearned` is
+    // hashed (a tag byte). ⭐ PROVEN TO BE THE ONLY REASON, AND THE BYTE ALONE: with the crossing switched off (`&& Tick ==
+    // ulong.MaxValue` on the latch's `if`) the old value passes — and so it does with the crossing on, its moment raised,
+    // and only the two tag bytes unmixed: the earlier `LearnedByDoing` sets `ShownTheTechTree` years before the workshop
+    // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
+    // 16912250691129698349 (fixture).
+    [InlineData(false, 5630912825231854938UL)]
     // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
     // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
     // RE-TAKEN (D452), THE SHIPPED ONE ONLY — a forester's planting seats count grass only (`SimWorld.IsGroundToPlant`), so a hut whose ground is all saplings stops holding hands it cannot use (found D434). ⭐ PROVEN TO BE THE ONLY REASON: with that one line back on the old rule the old value passes. The fixture did not move. Was 2125978012891394948 (shipped).
@@ -361,7 +368,14 @@ public sealed class SkillTests
     // RE-TAKEN (D611), THE SHIPPED ONE ONLY — the starting stock limits are Joe's panel (D608: forage, fish, meat 2,500; wheat 2,000; logs, stone 400; firewood 600; stone tools 30); a set limit is hashed, and the village works to them. ⭐ PROVEN TO BE THE ONLY REASON: the parent commit (9949612, D610) holds the old value with the suite green, and this commit's only sim change is those eight numbers in `starting_stock_limits`. The fixture sets no limits and did not move. Was 1854911485487116989.
     // RE-TAKEN (D697), THE SHIPPED ONE ONLY — clothing and handcarts start at a limit of 50 (Joe, 2026-11-06: "clothing starts at 0 stock limit. unlocked items should start at 50 by default"); a set limit is hashed. ⭐ PROVEN BY ABLATION: the two keys removed and D696's first leg kept, the old constant passes — the leg moved nothing (no golden village has a market with a cart). Was 2910132351223792017.
     // RE-TAKEN (D711), THE SHIPPED ONE ONLY — hay starts at a limit of 2,000 (Joe, 2026-11-07: "Hay at 2,000"); a set limit is hashed. ⭐ PROVEN NOT TO PLAY DIFFERENTLY: a probe over the same fifty years read no barn and 0 hay held at every tick, so the limit can never bind; the fixture sets no limits and did not move. Was 7411431236382396372.
-    [InlineData(true, 8538422907031301040UL)]
+    // RE-TAKEN (D721), THE SHIPPED ONE — the stone cottage is learned on the family tree (`house-tiers.md §4.4`, D721: the 3rd generation
+    // born + 20 people held); this village crosses it in Year 22 (30 alive at the peak by then), and `CottageLearned` is
+    // hashed (a tag byte). ⭐ PROVEN TO BE THE ONLY REASON, AND THE BYTE ALONE: with the crossing switched off (`&& Tick ==
+    // ulong.MaxValue` on the latch's `if`) the old value passes — and so it does with the crossing on, its moment raised,
+    // and only the two tag bytes unmixed: the earlier `LearnedByDoing` sets `ShownTheTechTree` years before the workshop
+    // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
+    // 8538422907031301040 (shipped).
+    [InlineData(true, 12313259098049656473UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

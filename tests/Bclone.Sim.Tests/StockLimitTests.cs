@@ -393,7 +393,14 @@ public sealed class StockLimitTests
     // (`workshop-and-the-carpenter.md §4.1b`), so it now learns the workshop around Year 45 — the hashed flag `WorkshopLearned`
     // and `LearnedByDoing`'s stop. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off in `SimWorld.Felled`
     // (`&& Tick == ulong.MaxValue`), the old value passes. Was 17390278967619327199.
-    private const ulong FixtureFiftyYearHash = 2460416229105199918UL;
+    // RE-TAKEN (D721) — the stone cottage is learned on the family tree (`house-tiers.md §4.4`, D721: the 3rd generation
+    // born + 20 people held); this village crosses it in Year 30 (25 alive at the peak by then), and `CottageLearned` is
+    // hashed (a tag byte). ⭐ PROVEN TO BE THE ONLY REASON, AND THE BYTE ALONE: with the crossing switched off (`&& Tick ==
+    // ulong.MaxValue` on the latch's `if`) the old value passes — and so it does with the crossing on, its moment raised,
+    // and only the two tag bytes unmixed: the earlier `LearnedByDoing` sets `ShownTheTechTree` years before the workshop
+    // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
+    // 2460416229105199918.
+    private const ulong FixtureFiftyYearHash = 2939480164378330515UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -517,7 +524,14 @@ public sealed class StockLimitTests
     // down to 1500"*): the shipped village fells 1,194 logs by Year 40 and 1,602 by Year 50 (`workshop-and-the-carpenter.md
     // §4.1b`), so it learns the workshop around Year 47. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off
     // in `SimWorld.Felled` (`&& Tick == ulong.MaxValue`), the old value passes. Was 12295009579609975522.
-    private const ulong ShippedFiftyYearHash = 6661378206269367323UL;
+    // RE-TAKEN (D721) — the stone cottage is learned on the family tree (`house-tiers.md §4.4`, D721: the 3rd generation
+    // born + 20 people held); this village crosses it in Year 26 (31 alive at the peak by then), and `CottageLearned` is
+    // hashed (a tag byte). ⭐ PROVEN TO BE THE ONLY REASON, AND THE BYTE ALONE: with the crossing switched off (`&& Tick ==
+    // ulong.MaxValue` on the latch's `if`) the old value passes — and so it does with the crossing on, its moment raised,
+    // and only the two tag bytes unmixed: the earlier `LearnedByDoing` sets `ShownTheTechTree` years before the workshop
+    // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
+    // 6661378206269367323.
+    private const ulong ShippedFiftyYearHash = 1984555868935464164UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

@@ -790,6 +790,24 @@
   "manor_exposure_days_sheltered": 40,
   "stone_house_lasts_percent": 200,
 
+  // ---- House tiers: the family tree (house-tiers.md 4.4, D718, D721) ----
+  // Each kind of house is learned when a new generation is born into the
+  // valley AND the village has grown to hold it (Joe, D718: "I love the
+  // family tree unlock idea!"). A founder or a grown nomad is the first
+  // generation; a child is one past the elder of its two parents (D719).
+  // MEASURED, not reasoned (D719, ZzGenerations): the 3rd generation is
+  // first born at Year 20-25, the 4th at 43-51, the 5th at 69-86; Joe's
+  // saves hold ~20 people at Year 25-30 and ~45 at Year 60-70. So: the
+  // cottage at the 3rd generation + 20 people (~Year 25-32, his Year 30),
+  // the manor at the 5th + 45 (~Year 70-86, his 80-90), the cottage first.
+  // Checked at a birth and an arrival, never per tick; once learned, never
+  // lost. Learning changes nothing by itself: the housing brush's "Build
+  // homes as" stays Cabin until the player says otherwise.
+  "cottage_unlock_generation": 3,
+  "cottage_unlock_population": 20,
+  "manor_unlock_generation": 5,
+  "manor_unlock_population": 45,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

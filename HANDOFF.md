@@ -1,6 +1,11 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
-> **✍️ HOUSE TIERS SPECCED ON `slice/house-tiers` (D716, 2026-11-07), OFF `main` 4399ccc — `specs/house-tiers.md`, NOTHING BUILT.**
+> **🔨 HOUSE TIERS, PIECES 1–3 OF 4 BUILT ON `slice/house-tiers` (D719–D721, 2026-11-08), UNPLAYED, UNMERGED.** Piece 3 (D721): the
+> family tree learns the cottage (3rd generation + 20 people) and the manor (5th + 45); *Build homes as — Cabins · Cottages · Manors*
+> beside *Paint land*, Cabins until Joe picks; the older houses rebuilt in place one at a time behind every site. Four goldens moved by
+> the cottage's learned byte alone (proved). **Next: piece 4, each tier's look and the home card; then Joe plays.** The ⏸️ line has it all.
+>
+> **✍️ HOUSE TIERS SPECCED ON `slice/house-tiers` (D716, 2026-11-07), OFF `main` 4399ccc — `specs/house-tiers.md`, NOTHING BUILT** *(then; see above)*.
 > Joe answered every call by D718 (the choice his once, 24 / 12 / 5 first, the family tree for both gates, every house at 5, bigger
 > larders, a look each, three perks, the manor drawn bigger); the build is four pieces (`house-tiers.md §14`), the generation first. Two findings worth carrying: **§5's *"6–8×"* is stale** —
 > the burn is 24 a winter today (D365), so his 60–80 is 2.5–3.3×; and heating is already **23–40 %** of everything his Elderwood fells
@@ -9280,6 +9285,23 @@ Read `git status` after staging, every time.
 
 ## ⛔ THE TRAPS D716 NEARLY PAID FOR — A "BEST ALIVE" READ HIDES THE DEAD MASTER, A COUNTER'S NAME IS NOT ITS SCOPE, AND A WARNING'S MULTIPLE IS DATED
 
+- ⛔⛔ **(D721) `shutil.copy2` restores the file's OLD mtime, so the build after the last mutant is a no-op — and the suite,
+  the probe and every check after it run THE LAST MUTANT.** Found because the full suite went red on a guard that was green
+  alone: M28 was still in `Bclone.Sim.dll` (the restored source was "older" than the mutant's DLL). Each mutant itself is
+  sound (its own write is new, so MSBuild recompiles every source as it now is); only the state *after* the script is stale.
+  **After any mutant script: `touch` every file it touched (or restore with `shutil.copy`), build `--no-incremental`, and grep
+  the source for the last mutant's text before trusting a green.** The `filecmp` check proves the bytes, never the binary.
+- ⛔ **(D721) A mutant must remove the rule it is named for, not one arm of it.** "The worn are not first" was written as
+  `|| (worn && !bestWorn && distance < 0)`, which left `worn == bestWorn` in the tie-break — so the first candidate's wornness
+  stuck and a sound cabin still could not displace a worn one: zero reds, and the guard was fine. Switching wornness itself off
+  (`&& household.Id < 0` on the `bool worn`) scored 1. **Before writing a zero down, read the mutated expression as the rule.**
+- ⛔ **(D721) A golden that moves for a latch: prove it is the byte, not the behaviour.** Switching the crossing off only says the
+  crossing is the cause; a second arm with the crossing ON and only the tag bytes unmixed says nothing else changed (the four
+  fifty-year villages learn the cottage at Years 22–37; the stop set `ShownTheTechTree` early, and by Year 50 it is set either
+  way). Two arms, each an `&& Tick == ulong.MaxValue` on one `if`, filtered to the four goldens: about two minutes an arm.
+- ⚠️ **(D721) The catch-all hides its callers.** The season's walk raises the next rebuild at its end, so a mutant that removes
+  an earlier raise (the walk's worn-house branch) often lands in the same state a line later. Pose the case only that branch
+  decides — here, a repair stacked on a house whose rebuild already stands.
 - ⛔ **(D720) Test a rule where the sim reads it, not only its helper.** `RoofChillAt` had a guard; the hearth's call to it had
   none, and the mutant that put the old rate back in the hearth scored zero. Same shape for a `Math.Min` whose other arm
   always won in the pose (the food target): pose the case where the arm under test is the one that decides.
@@ -9849,8 +9871,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   proposed; the perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1 drawn bigger. Save format 13 refuses his
   format-12 saves. ✅ **Piece 1 built (D719): the generation, format 13; measured — generations 22–25 years apart, so the gates
   are proposed as the 3rd generation + 20 people (~Year 25–32) and the 5th + 45 (~Year 70–86).** ✅ **Piece 2 built (D720): the
-  cottage and manor rows, the burn by row (the cabin byte-identical), `HomeKind` behind `HomeRowOf`.** Next: piece 3, the gates
-  and *Build homes as*. Joe plays when the four pieces are in, merges at his word.
+  cottage and manor rows, the burn by row (the cabin byte-identical), `HomeKind` behind `HomeRowOf`.** ✅ **Piece 3 built (D721):
+  the gates typed as 3rd generation + 20 and 5th + 45, latched at a birth or a band; *Build homes as — Cabins · Cottages · Manors*
+  beside *Paint land*, Cabins until he picks; the rebuild in place, one at a time behind every site, the worn first; four goldens
+  moved by the cottage's learned byte alone (proved).** Next: piece 4, each tier's look and the home card (the rebuild-progress
+  sentence). Joe plays when the four pieces are in — learn the cottage (or pose it), pick *Cottages*, watch a street rebuilt —
+  and merges at his word.
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and

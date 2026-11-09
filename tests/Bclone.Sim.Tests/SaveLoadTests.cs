@@ -326,7 +326,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
-            "HandcartsEverMade", "WorkshopLearned",
+            "HandcartsEverMade", "WorkshopLearned", "CottageLearned", "ManorLearned", "HomesBuiltAs",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
@@ -355,6 +355,8 @@ public sealed class SaveLoadTests : IDisposable
             "_pastureLocks",
             // Whether the walk under way may raise repairs (D567): set by the caller on every walk, never read between them.
             "_raiseRepairs",
+            // The deepest generation born (D721): derived from the villagers, as the most ever alive is.
+            "_deepestGenerationFor", "_deepestGeneration",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {
@@ -394,7 +396,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(ConstructionSite), Kept.Saved, new[]
         {
             "Kind", "Name", "ForHouseholdId", "MovingFrom", "Facing", "Demolishing", "Recipe", "_delivered", "WorkDone",
-            "BridgeTo", "RebuildsBridge", "Repairing", "FencesBarnId",
+            "BridgeTo", "RebuildsBridge", "Repairing", "FencesBarnId", "RebuildsHome",
         }),
         (typeof(BuildingRecipe), Kept.Saved, new[] { "_materials", "WorkTicks" }),
         (typeof(GeneratedMap), Kept.Saved, new[]

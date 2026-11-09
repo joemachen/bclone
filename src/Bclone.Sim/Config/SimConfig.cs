@@ -2461,6 +2461,37 @@ public sealed record SimConfig
     [JsonPropertyName("stone_house_lasts_percent")]
     public int StoneHouseLastsPercent { get; init; } = 200;
 
+    /// <summary>
+    /// The generation that must be born in the valley before the stone cottage is learned (`house-tiers.md §4.4`, idea A,
+    /// D718: Joe, <i>"I love the family tree unlock idea!"</i>) — read against <c>SimWorld.DeepestGenerationBorn</c>.
+    /// </summary>
+    /// <remarks>
+    /// <b>3, the founders' grandchildren</b>, measured at D719 (`ZzGenerations`): the 3rd generation is first born at Year
+    /// 20–25 and the 4th at 43–51, so with <see cref="CottageUnlockPopulation"/> the cottage lands ~Year 25–32 in Joe's
+    /// villages, against his Year 30. ⚠️ Checked where the factors change — a birth and an arrival — never per tick, and
+    /// the latch (<c>SimWorld.CottageLearned</c>) is the gate; at 1 the founders satisfy it before anybody is born.
+    /// </remarks>
+    [JsonPropertyName("cottage_unlock_generation")]
+    public int CottageUnlockGeneration { get; init; } = 3;
+
+    /// <summary>The most people the village must have held at once before the stone cottage is learned (§4.4) — <c>MostEverAlive</c>.</summary>
+    /// <remarks><b>20</b>: Joe's saves hold 18–27 at Year ~30 (D719), so the size is what holds the 3rd generation back.</remarks>
+    [JsonPropertyName("cottage_unlock_population")]
+    public int CottageUnlockPopulation { get; init; } = 20;
+
+    /// <summary>The generation that must be born before the insulated manor is learned (§4.4) — and the cottage first.</summary>
+    /// <remarks>
+    /// <b>5, the founders' great-great-grandchildren</b>: first born at Year 69 and 86 in the only valleys that reached it
+    /// (D719). With <see cref="ManorUnlockPopulation"/> the manor lands ~Year 70–86, against Joe's Year 80–90.
+    /// </remarks>
+    [JsonPropertyName("manor_unlock_generation")]
+    public int ManorUnlockGeneration { get; init; } = 5;
+
+    /// <summary>The most people the village must have held before the insulated manor is learned (§4.4).</summary>
+    /// <remarks><b>45</b>: Joe's saves hold 45–60 at Year ~70–77 (D719).</remarks>
+    [JsonPropertyName("manor_unlock_population")]
+    public int ManorUnlockPopulation { get; init; } = 45;
+
     // `pile_work_ticks` WAS HERE AND IS GONE (D96, Joe). It said "small, but not zero — the
     // work is what makes placing a pile a decision with a cost", and the cost turned out to
     // belong somewhere better: a pile may only go on ground that is already clear, so ITS
@@ -6017,6 +6048,15 @@ public sealed record SimConfig
         if (WorkshopUnlockLogs < 0)
         {
             throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");
+        }
+
+        // The house tiers' family tree (`house-tiers.md §4.4`): every villager is at least the first generation, so a
+        // generation below one is a gate that cannot mean anything; a population may be nought (a modder's valley).
+        if (CottageUnlockGeneration < 1 || ManorUnlockGeneration < 1 || CottageUnlockPopulation < 0 || ManorUnlockPopulation < 0)
+        {
+            throw new SimConfigException(
+                "cottage_unlock_generation and manor_unlock_generation must be at least 1, and the two populations at least 0 "
+                + $"(got {CottageUnlockGeneration}, {ManorUnlockGeneration}, {CottageUnlockPopulation}, {ManorUnlockPopulation}).");
         }
 
         // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,

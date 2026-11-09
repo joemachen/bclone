@@ -406,6 +406,528 @@ public sealed class HouseTierTests
         (config with { Buildings = config.BuildingRows.ToList() }).Validate();
     }
 
+    // ---------------------------------------------------------------
+    // Piece 3 — the gates and the choice (§14.3): the family tree latches each house; Build homes as says what is built.
+    // ---------------------------------------------------------------
+
+    /// <summary>A three-family fixture village with the family tree's four numbers set for the pose.</summary>
+    private static SimConfig Tree(int cottageGeneration, int cottagePeople, int manorGeneration, int manorPeople) =>
+        Village with
+        {
+            StartingHouseholds = 3,
+            CottageUnlockGeneration = cottageGeneration,
+            CottageUnlockPopulation = cottagePeople,
+            ManorUnlockGeneration = manorGeneration,
+            ManorUnlockPopulation = manorPeople,
+        };
+
+    /// <summary>
+    /// ⭐ §9.4–§9.5: each latch holds exactly when both its factors do, not a tick before either — posed twice over sixty
+    /// fixture years, once with the generation the binding factor (the people already there) and once with the people
+    /// binding (the founders already the generation); and the manor, whose own two factors are met long before the cottage
+    /// is, waits for it.
+    /// </summary>
+    [Fact]
+    public void EachHouseIsLearnedTheTickBothItsFactorsHoldAndTheManorWaitsForTheCottage()
+    {
+        SimLoop probe = SimFactory.CreatePhase0(Tree(3, 1, 2, 1), new InMemoryLogSink());
+        int founders = probe.World.Villagers.Count;
+        foreach ((int gen, int people, string binds) in new[] { (3, 1, "the generation"), (1, founders + 3, "the people") })
+        {
+            SimLoop loop = SimFactory.CreatePhase0(Tree(gen, people, 2, 1), new InMemoryLogSink());
+            SimWorld world = loop.World;
+            Assert.False(world.CottageLearned);
+            string why = world.WhyNotYet(BuildingKind.Cottage) ?? string.Empty;
+            Assert.Contains($"{people} people ({world.MostEverAlive} so far)", why, StringComparison.Ordinal);
+            Assert.Contains($"the {SimWorld.GenerationWord(gen)} generation", why, StringComparison.Ordinal);
+
+            int learnedAt = -1;
+            int manorAt = -1;
+            int manorHeldWithoutTheCottage = 0;
+            int ticks = 60 * world.Config.TicksPerYear;
+            for (int t = 0; t < ticks && manorAt < 0; t++)
+            {
+                loop.StepOnce();
+                bool cottageHolds = world.DeepestGenerationBorn >= gen && world.MostEverAlive >= people;
+                Assert.Equal(cottageHolds, world.CottageLearned);
+                bool manorsOwn = world.DeepestGenerationBorn >= 2 && world.MostEverAlive >= 1;
+                Assert.Equal(manorsOwn && world.CottageLearned, world.ManorLearned);
+                if (manorsOwn && !world.CottageLearned)
+                {
+                    manorHeldWithoutTheCottage++;
+                }
+
+                learnedAt = learnedAt < 0 && world.CottageLearned ? t : learnedAt;
+                manorAt = manorAt < 0 && world.ManorLearned ? t : manorAt;
+            }
+
+            _output.WriteLine($"{binds} binding: cottage at tick {learnedAt}, manor at {manorAt} (its own factors held "
+                + $"{manorHeldWithoutTheCottage} ticks before); deepest {world.DeepestGenerationBorn}, most alive {world.MostEverAlive}");
+            Assert.True(learnedAt >= 0, $"the pose needs the cottage learned ({binds} binding)");
+            Assert.True(manorAt >= learnedAt, "the manor is never learned before the cottage");
+            Assert.True(gen == 1 || manorHeldWithoutTheCottage > 0, "the pose needs the manor's own factors met before the cottage");
+            Assert.True(world.IsUnlocked(BuildingKind.Cottage) && world.IsUnlocked(BuildingKind.Manor));
+            Assert.Contains(world.Moments, m => m.Body.Contains("build in stone", StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>
+    /// A band that carries the village over the cottage's number latches it the tick it settles, and says so in the nomads'
+    /// own moment — one popup (D576) — without introducing the tech-tree map: it is the village's size, not its hands.
+    /// </summary>
+    [Fact]
+    public void ABandThatCarriesTheVillageOverTheLineSaysSoInItsOwnMoment()
+    {
+        // A scout of the same valley, its cottage out of reach, finds the first band's tick and the peak just before it.
+        SimLoop scout = SimFactory.CreatePhase0(Tree(1, 9999, 99, 0), new InMemoryLogSink());
+        int peakBefore = 0;
+        ulong settledAt = 0;
+        for (int t = 0; t < 20 * scout.World.Config.TicksPerYear && settledAt == 0; t++)
+        {
+            int peak = scout.World.MostEverAlive;
+            scout.StepOnce();
+            if (scout.World.Villagers.Any(v => v.ArrivedAtTick != 0UL))
+            {
+                settledAt = scout.World.Tick;
+                peakBefore = peak;
+            }
+        }
+
+        Assert.True(settledAt > 0, "the pose needs a band to settle in twenty years");
+
+        // The same valley with the line one past that peak: no birth before the band can reach it, and the band does.
+        SimLoop loop = SimFactory.CreatePhase0(Tree(1, peakBefore + 1, 99, 0), new InMemoryLogSink());
+        SimWorld world = loop.World;
+        while (world.Tick < settledAt - 1)
+        {
+            loop.StepOnce();
+            Assert.False(world.CottageLearned, $"learned at tick {world.Tick}, before the band");
+        }
+
+        bool shown = world.ShownTheTechTree;
+        int moments = world.Moments.Count;
+        loop.StepOnce();
+        _output.WriteLine($"a band settled at tick {settledAt}; the peak before it {peakBefore}");
+        Assert.True(world.CottageLearned);
+        Moment said = Assert.Single(world.Moments.Skip(moments));
+        Assert.Contains("build in stone", said.Body, StringComparison.Ordinal);
+        Assert.Equal(shown, world.ShownTheTechTree);
+    }
+
+    /// <summary>
+    /// The map reads the gate (§6): the cottage's node unlocks the cottage on the family tree with both numbers, in sight
+    /// from the founding; the manor's waits in the fog behind it; known is the latch, never the counters.
+    /// </summary>
+    [Fact]
+    public void TheMapAndTheGateReadTheFamilyTree()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Village, new InMemoryLogSink()).World;
+        TechNodeRow cottage = world.Config.TechNodeRows.Single(n => n.Id == "cottage");
+        TechNodeRow manor = world.Config.TechNodeRows.Single(n => n.Id == "manor");
+        Assert.Equal((BuildingKind.Cottage, TechCondition.CottageFamilyTree), (cottage.Unlocks!.Value, cottage.Condition));
+        Assert.Equal((BuildingKind.Manor, TechCondition.ManorFamilyTree), (manor.Unlocks!.Value, manor.Condition));
+        Assert.Equal(new[] { "cottage" }, manor.Requires);
+
+        Assert.Equal((1, 3, world.MostEverAlive, 20), TechTree.FamilyTreeOf(world, TechCondition.CottageFamilyTree));
+        Assert.Equal((1, 5, world.MostEverAlive, 45), TechTree.FamilyTreeOf(world, TechCondition.ManorFamilyTree));
+        Assert.Equal(TechState.InSight, TechTree.StateOf(world, cottage).State);
+        Assert.Equal(TechState.Fogged, TechTree.StateOf(world, manor).State);
+        Assert.Equal((0, 100), TechTree.ProgressOf(world, TechCondition.ManorFamilyTree));
+        Assert.False(world.IsUnlocked(BuildingKind.Cottage));
+        Assert.Contains("build in stone", world.WhyNotYet(BuildingKind.Manor)!, StringComparison.Ordinal);
+
+        world.CottageLearned = true;
+        Assert.Equal(TechState.Known, TechTree.StateOf(world, cottage).State);
+        Assert.Equal(TechState.InSight, TechTree.StateOf(world, manor).State);
+        Assert.True(world.IsUnlocked(BuildingKind.Cottage));
+        Assert.Contains($"45 people ({world.MostEverAlive} so far)", world.WhyNotYet(BuildingKind.Manor)!, StringComparison.Ordinal);
+
+        world.ManorLearned = true;
+        Assert.Equal(TechState.Known, TechTree.StateOf(world, manor).State);
+        Assert.Null(world.WhyNotYet(BuildingKind.Manor));
+        Assert.True(TechTree.IntroducesTheMap(TechCondition.CottageFamilyTree));
+    }
+
+    /// <summary>
+    /// §7 / §9.16: the two latches and the choice are saved, and hashed only when set — so a village of cabins that has
+    /// learned nothing hashes byte for byte as before. (The factors' gap — the generation unhashed — is
+    /// <see cref="TheGenerationIsSavedAndNotHashed"/>'s.)
+    /// </summary>
+    [Fact]
+    public void TheLatchesAndTheChoiceAreSavedAndHashedOnlyWhenSet()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ulong nothing = StateHash.Compute(world);
+        world.CottageLearned = true;
+        ulong cottage = StateHash.Compute(world);
+        world.ManorLearned = true;
+        ulong manor = StateHash.Compute(world);
+        world.HomesBuiltAs = BuildingKind.Manor;
+        ulong chosen = StateHash.Compute(world);
+        Assert.Equal(4, new[] { nothing, cottage, manor, chosen }.Distinct().Count());
+
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-11-08 12:00", "test");
+        SimWorld back = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null).World;
+        Assert.True(back.CottageLearned && back.ManorLearned);
+        Assert.Equal(BuildingKind.Manor, back.HomesBuiltAs);
+        Assert.Equal(chosen, StateHash.Compute(back));
+
+        world.CottageLearned = false;
+        world.ManorLearned = false;
+        world.HomesBuiltAs = BuildingKind.Home;
+        Assert.Equal(nothing, StateHash.Compute(world));
+    }
+
+    /// <summary>§4.5: the choice is Cabin, refused in words above what is learned, and refused for anything not a house.</summary>
+    [Fact]
+    public void TheChoiceIsCabinAndRefusedAboveWhatIsLearned()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Village, new InMemoryLogSink()).World;
+        Assert.Equal(BuildingKind.Home, world.HomesBuiltAs);
+        Assert.Equal(world.WhyNotYet(BuildingKind.Cottage), world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.NotNull(world.SetHomesBuiltAs(BuildingKind.Granary));
+        Assert.Equal(BuildingKind.Home, world.HomesBuiltAs);
+
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.Equal(BuildingKind.Cottage, world.HomesBuiltAs);
+        Assert.NotNull(world.SetHomesBuiltAs(BuildingKind.Manor));
+        Assert.Equal(BuildingKind.Cottage, world.HomesBuiltAs);
+
+        world.ManorLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Manor));
+        Assert.Equal(BuildingKind.Manor, world.HomesBuiltAs);
+    }
+
+    /// <summary>A fixture village with stone and logs in store and two hands kept on building.</summary>
+    private static SimLoop AVillageToRebuild(SimConfig config)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        StoreBuilding store = world.StoreBuildings.First(s => s.Gives(Goods.Logs) && s.Gives(Goods.Stone));
+        store.Store.Receive(Goods.Logs, 600);
+        store.Store.Receive(Goods.Stone, 600);
+        foreach (Villager builder in world.Villagers.Where(v => v.Alive && v.CanWork).Take(2))
+        {
+            world.SetPinnedTrade(builder, JobKind.Builder);
+        }
+
+        return loop;
+    }
+
+    private static GridPos TileOf(SimWorld world, Household household) => world.HomeFootprintOf(household)!.Value.Origin.ToTile();
+
+    private static bool StandsOn(Workplace? site, SimWorld world, Household household) =>
+        site is not null && site.Footprint.Covers(TileOf(world, household));
+
+    /// <summary>
+    /// ⭐ §9.6, the unattended guard: a village that has learned both houses and was not told builds and rebuilds nothing
+    /// in stone — fifteen years, stone in store.
+    /// </summary>
+    [Fact]
+    public void ALearnedVillageThatWasNotToldRebuildsNothing()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        world.ManorLearned = true;
+        for (int year = 0; year < 15; year++)
+        {
+            loop.Step(world.Config.TicksPerYear);
+            Assert.All(world.Households, h => Assert.Equal(BuildingKind.Home, h.HomeKind));
+            Assert.DoesNotContain(world.Workplaces, w => w.Construction is { } site && BuildingKinds.TierOf(site.Kind) > 0);
+        }
+
+        Assert.Equal(BuildingKind.Home, world.HomesBuiltAs);
+    }
+
+    /// <summary>
+    /// ⭐ §9.7: under <i>Cottage</i> the standing cabins are rebuilt where they stand, never two at once; every family is
+    /// housed the whole time; the fence is the one it had; the kind, raised-at and repaired-at are set at the finish — and a
+    /// new couple's house is marked a cottage.
+    /// </summary>
+    [Fact]
+    public void UnderCottageTheCabinsAreRebuiltOneAtATimeWithTheFamiliesAtHome()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        List<Household> housed = Housed(world);
+        Assert.True(housed.Count >= 3, "the pose needs three standing cabins");
+        var fences = housed.ToDictionary(h => h.Id, h => h.FencedTiles.ToList());
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.NotNull(world.StandingRebuild());
+
+        int rebuilt = 0;
+        int newHomes = 0;
+        var marked = new HashSet<int>();
+        var kinds = housed.ToDictionary(h => h.Id, h => h.HomeKind);
+        int ticks = 25 * world.Config.TicksPerYear;
+        for (int t = 0; t < ticks && (rebuilt < housed.Count || newHomes == 0); t++)
+        {
+            ulong before = world.Tick;
+            loop.StepOnce();
+            Assert.True(world.Workplaces.Count(w => w.Construction is { RebuildsHome: true }) <= 1, "two rebuilds at once");
+            var sitesNow = new HashSet<int>();
+            foreach (Workplace site in world.Workplaces)
+            {
+                if (site.Construction is { RebuildsHome: false, Repairing: false, Demolishing: false } plan
+                    && BuildingKinds.IsDwelling(plan.Kind) && plan.ForHouseholdId != 0)
+                {
+                    // A new couple's house: a cottage, and one a family (the roofless queue asks `HomeSiteFor` of any row).
+                    Assert.Equal(BuildingKind.Cottage, plan.Kind);
+                    Assert.True(sitesNow.Add(plan.ForHouseholdId), "two house sites for one family");
+                    marked.Add(plan.ForHouseholdId);
+                }
+            }
+
+            // ⭐ And raised: the family moves into a cottage, not a cabin with a cottage's price.
+            foreach (int id in marked.Where(id => !sitesNow.Contains(id)).ToList())
+            {
+                marked.Remove(id);
+                if (world.FindHousehold(id) is { HasHome: true } moved)
+                {
+                    Assert.Equal(BuildingKind.Cottage, moved.HomeKind);
+                    newHomes++;
+                }
+            }
+
+            foreach (Household h in housed)
+            {
+                Assert.True(h.HasHome, $"the {h.Name} household lost its roof while its house was rebuilt");
+                Assert.Equal(fences[h.Id], h.FencedTiles);
+                if (h.HomeKind != kinds[h.Id])
+                {
+                    Assert.Equal(BuildingKind.Cottage, h.HomeKind);
+                    Assert.InRange(h.HomeRaisedAtTick, before, world.Tick);
+                    Assert.Equal(0UL, h.HomeRepairedAtTick);
+                    Assert.Equal(600, h.Stockpile.Capacity);
+                    kinds[h.Id] = h.HomeKind;
+                    rebuilt++;
+                }
+            }
+        }
+
+        _output.WriteLine($"{rebuilt} of {housed.Count} rebuilt by Year {world.Clock.Year}; {newHomes} new homes raised as cottages");
+        Assert.Equal(housed.Count, rebuilt);
+        Assert.True(newHomes > 0, "the pose needs a new couple's house raised under Cottage");
+    }
+
+    /// <summary>A repair already under way is let finish (§4.5): the rebuild goes to another house, and the mending stays.</summary>
+    [Fact]
+    public void AHalfMendedHouseIsMendedBeforeItIsRebuilt()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        loop.Step(10 * world.Config.TicksPerYear);
+        foreach (Workplace mending in world.Workplaces.Where(w => w.Construction is { Repairing: true }).ToList())
+        {
+            world.CancelConstruction(mending);
+        }
+
+        List<Household> homes = Housed(world);
+        foreach (Household h in homes)
+        {
+            h.HomeRepairedAtTick = world.Tick;
+        }
+
+        Household worn = homes[0];
+        worn.HomeRaisedAtTick = 1;
+        worn.HomeRepairedAtTick = 0;
+        world.TendWhatStands();
+        Workplace repair = world.RepairSiteAt(TileOf(world, worn))!;
+        Assert.Equal(1, repair.Construction!.Deliver(Goods.Logs, 1));
+
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.NotNull(world.StandingRebuild());
+        Assert.False(StandsOn(world.StandingRebuild(), world, worn), "a half-mended house was taken for the rebuild");
+        Assert.Same(repair, world.RepairSiteAt(TileOf(world, worn)));
+    }
+
+    /// <summary>⭐ §9.8: a rebuild is behind every other site — a granary marked after it is ahead of it, and neither can be moved past the other.</summary>
+    [Fact]
+    public void ARebuildWaitsBehindEveryOtherSite()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Workplace rebuild = world.StandingRebuild()!;
+        Assert.True(world.Mark(BuildingKind.Granary, ClearGroundNear(world, BuildingKind.Granary)).Allowed);
+        Workplace granary = world.Workplaces.Single(w => w.Construction is { Kind: BuildingKind.Granary });
+        Assert.True(granary.Id > rebuild.Id, "the pose needs the granary marked after the rebuild");
+
+        List<Workplace> queue = world.BuildQueue();
+        Assert.Same(rebuild, queue[^1]);
+        Assert.Same(granary, world.NextToBuild());
+        Assert.False(world.MoveInBuildQueue(rebuild, -1));
+        Assert.False(world.MoveInBuildQueue(queue[^2], +1));
+    }
+
+    /// <summary>
+    /// ⭐ §9.9: a worn cabin under <i>Cottage</i> is rebuilt before a sound one nearer the hut, its untouched repair becomes
+    /// the rebuild, and a ruin comes back an open cottage; the walk never raises a repair on a house whose rebuild stands.
+    /// </summary>
+    [Fact]
+    public void AWornCabinIsRebuiltNotRepairedAndARuinComesBackACottage()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        loop.Step(25 * world.Config.TicksPerYear);
+        foreach (Workplace mending in world.Workplaces.Where(w => w.Construction is { Repairing: true }).ToList())
+        {
+            world.CancelConstruction(mending);
+        }
+
+        Point hut = world.Workplaces.First(w => w.Kind == JobKind.Builder && !w.IsSite).Position;
+        List<Household> byDistance = Housed(world)
+            .OrderBy(h => world.HomeFootprintOf(h)!.Value.Origin.DistanceTo(hut)).ThenBy(h => h.Id).ToList();
+        Assert.True(byDistance.Count >= 3, "the pose needs three standing cabins");
+        foreach (Household h in byDistance)
+        {
+            h.HomeRepairedAtTick = world.Tick;
+            h.HomeClosed = false;
+        }
+
+        // The farthest two: one worn, one a ruin (twenty-five years since raised, never mended).
+        Household worn = byDistance[^2];
+        Household ruin = byDistance[^1];
+        worn.HomeRaisedAtTick = 1;
+        worn.HomeRepairedAtTick = world.Tick - (9UL * (ulong)world.Config.TicksPerYear);
+        ruin.HomeRaisedAtTick = 1;
+        ruin.HomeRepairedAtTick = 0;
+        Assert.Equal(Condition.Worn, world.ConditionOf(worn));
+        Assert.Equal(Condition.Ruin, world.ConditionOf(ruin));
+
+        // Under Cabin the walk mends them, and closes the ruin.
+        world.TendWhatStands();
+        Assert.NotNull(world.RepairSiteAt(TileOf(world, worn)));
+        Assert.NotNull(world.RepairSiteAt(TileOf(world, ruin)));
+        Assert.True(ruin.HomeClosed);
+
+        // Under Cottage the worn are first, nearest of them first — and the repair becomes the rebuild.
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Household first = StandsOn(world.StandingRebuild(), world, worn) ? worn : ruin;
+        Assert.True(StandsOn(world.StandingRebuild(), world, first), "the rebuild went to a sound cabin before the worn ones");
+        Assert.Null(world.RepairSiteAt(TileOf(world, first)));
+
+        // The walk does not stack a repair on a house whose rebuild stands.
+        world.TendWhatStands();
+        Assert.Null(world.RepairSiteAt(TileOf(world, first)));
+
+        world.Complete(world.StandingRebuild()!);
+        Assert.Equal(BuildingKind.Cottage, first.HomeKind);
+        Household second = first == worn ? ruin : worn;
+        Assert.True(StandsOn(world.StandingRebuild(), world, second), "the next rebuild went past the other worn cabin");
+        world.Complete(world.StandingRebuild()!);
+        foreach (Household h in new[] { worn, ruin })
+        {
+            Assert.Equal(BuildingKind.Cottage, h.HomeKind);
+            Assert.Equal(Condition.Sound, world.ConditionOf(h));
+            Assert.False(h.HomeClosed);
+            Assert.Null(world.RepairSiteAt(TileOf(world, h)));
+        }
+    }
+
+    /// <summary>
+    /// §9.10 and §4.5's last two rules: <i>Manor</i> over a cabin goes straight to a manor; a fresh choice re-aims a rebuild
+    /// nobody has started; lowering it calls an untouched one off and raises no more; one already under way is finished.
+    /// </summary>
+    [Fact]
+    public void ManorOverACabinGoesStraightToManorAndLoweringStopsTheRebuilds()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        world.ManorLearned = true;
+
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.Equal(BuildingKind.Cottage, world.StandingRebuild()!.Construction!.Kind);
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Manor));
+        Workplace manor = world.StandingRebuild()!;
+        Assert.Equal(BuildingKind.Manor, manor.Construction!.Kind);
+        Household cabin = world.HouseholdAt(manor.Tile)!;
+        Assert.Equal(BuildingKind.Home, cabin.HomeKind);
+        world.Complete(manor);
+        Assert.Equal(BuildingKind.Manor, cabin.HomeKind);
+        Assert.Equal(800, cabin.Stockpile.Capacity);
+
+        // Lowered: the next, untouched, is called off, and the season's walk raises none.
+        Assert.NotNull(world.StandingRebuild());
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Home));
+        Assert.Null(world.StandingRebuild());
+        world.TendWhatStands();
+        Assert.Null(world.StandingRebuild());
+
+        // Started, it is finished.
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Workplace started = world.StandingRebuild()!;
+        Assert.Equal(1, started.Construction!.Deliver(Goods.Logs, 1));
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Home));
+        Assert.Same(started, world.StandingRebuild());
+    }
+
+    /// <summary>§8: a house pulled down takes its rebuild with it, and what was delivered goes back.</summary>
+    [Fact]
+    public void AHouseComingDownTakesItsRebuildWithIt()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Workplace rebuild = world.StandingRebuild()!;
+        Household family = world.HouseholdAt(rebuild.Tile)!;
+        Assert.Equal(1, rebuild.Construction!.Deliver(Goods.Stone, 1));
+        int stoneBefore = world.StoreBuildings.Sum(s => s.Store[Goods.Stone]);
+
+        Assert.True(world.MarkDemolition(TileOf(world, family)).Allowed);
+        Assert.DoesNotContain(rebuild, world.Workplaces);
+        Assert.False(StandsOn(world.StandingRebuild(), world, family));
+        Assert.Equal(stoneBefore + 1, world.StoreBuildings.Sum(s => s.Store[Goods.Stone]));
+    }
+
+    /// <summary>§9.15: a village mid-rebuild, saved and loaded, hashes as it did live, the site still a rebuild of its row.</summary>
+    [Fact]
+    public void ARebuildIsSavedAndHashed()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        loop.Step(world.Config.TicksPerDay * 3);
+        Workplace rebuild = world.StandingRebuild()!;
+
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-11-08 12:00", "test");
+        SimWorld back = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null).World;
+        Workplace loaded = back.StandingRebuild()!;
+        Assert.Equal((rebuild.Id, BuildingKind.Cottage), (loaded.Id, loaded.Construction!.Kind));
+        Assert.Equal(StateHash.Compute(world), StateHash.Compute(back));
+    }
+
+    private static GridPos ClearGroundNear(SimWorld world, BuildingKind kind)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 1; radius < 14; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (!world.HasSomethingToHarvest(at) && world.CanBuildAt(kind, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No clear ground near the founding site.");
+    }
+
     /// <summary>The elder generation of each household's living, paired, fertile-age couple — the parents of a birth.</summary>
     private static Dictionary<int, int> ElderParentGenerationByHousehold(SimWorld world)
     {

@@ -4094,6 +4094,9 @@ public sealed partial class SimWorld : IObstacles
         BuildingKind.Barn or BuildingKind.TradingPost when TownHall is null =>
             "Strangers do not trade with a homestead — the village needs its town hall standing first.",
 
+        // ⭐ THE HOUSES (`house-tiers.md §4.4`, D721): the family tree, both rungs — read off the latches, never the counters.
+        BuildingKind.Cottage or BuildingKind.Manor => WhyNoHouseYet(kind),
+
         // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
         _ => WhyNoBridgeYet(kind),
     };
@@ -6724,8 +6727,8 @@ public sealed partial class SimWorld : IObstacles
         }
 
         // ⭐ NOR DOES A REPAIR (D555): it stands on the building it mends, whose ground was cleared when it went up —
-        // and a bridge's repair stands on a bank, which may be wooded and is walkable as it is.
-        if (IsARepairSite(site))
+        // and a bridge's repair stands on a bank, which may be wooded and is walkable as it is. Nor a house's rebuild (D721).
+        if (StandsOnABuilding(site))
         {
             return null;
         }
@@ -8153,10 +8156,16 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.Fine;
         }
 
-        // A building coming down has nothing to mend (`building-condition.md §7`).
+        // A building coming down has nothing to mend (`building-condition.md §7`), and a house nothing to rebuild (D721):
+        // what was delivered goes back, as a cancelled site's does.
         if (RepairSiteAt(tile) is Workplace mending)
         {
             CancelConstruction(mending);
+        }
+
+        if (StandingRebuild() is Workplace rebuilding && rebuilding.Footprint.Covers(tile))
+        {
+            CancelConstruction(rebuilding);
         }
 
         StandingChanged();
@@ -9716,8 +9725,13 @@ public sealed partial class SimWorld : IObstacles
         }
 
         int yardTiles = fenced.Count - plot.House.Count;
-        BuildingRecipe recipe = HomeRecipeWithFence(yardTiles);
-        string name = yardTiles > 0 ? $"a house and {yardTiles} tiles of fence" : "a house";
+
+        // ⭐ AT THE CHOSEN TIER (`house-tiers.md §4.5`, D721): that row's recipe and work, with the fence. The cabin's words
+        // and price are today's to the letter, so a village that never chose marks exactly what it always did.
+        BuildingKind dwelling = HomesBuiltAs;
+        BuildingRecipe recipe = HomeRecipeWithFence(yardTiles, dwelling);
+        string house = dwelling == BuildingKind.Home ? "a house" : $"a {BuildingsCatalog.NameOf(dwelling)}";
+        string name = yardTiles > 0 ? $"{house} and {yardTiles} tiles of fence" : house;
 
         // ⚠️ AND WHEN THAT PROMISE IS BROKEN, SAY SO (D110). `ChooseSite` is supposed to have
         // found reachable ground, and in seed 11 of the twelve-seed arm it did not — a house
@@ -9742,7 +9756,7 @@ public sealed partial class SimWorld : IObstacles
         AskForTheGroundUnder(HomeFootprintAt(site.Front, site.Facing));
 
         RaiseSiteFor(
-            BuildingKind.Home, HomeAnchorOn(site.Front, site.Facing), name, recipe, householdId,
+            dwelling, HomeAnchorOn(site.Front, site.Facing), name, recipe, householdId,
             facing: site.Facing);
     }
 
@@ -10219,6 +10233,12 @@ public sealed partial class SimWorld : IObstacles
             return false;
         }
 
+        // ⛔ A house's rebuild waits behind every other site (D721) — it is not moved, and nothing is moved past it.
+        if (site.Construction is { RebuildsHome: true } || queue[to].Construction is { RebuildsHome: true })
+        {
+            return false;
+        }
+
         // Both ends are pinned explicitly, because either may still be sitting on its id.
         // Leaving one null would let it drift the moment anything else was reordered.
         Workplace other = queue[to];
@@ -10269,7 +10289,8 @@ public sealed partial class SimWorld : IObstacles
     {
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i].Construction is { Kind: BuildingKind.Home } plan
+            // Any house's (D721), never a rebuild: a rebuild belongs to no household, and its family already has a roof.
+            if (Workplaces[i].Construction is { RebuildsHome: false } plan && BuildingKinds.IsDwelling(plan.Kind)
                 && plan.ForHouseholdId == householdId)
             {
                 return Workplaces[i];
@@ -10301,7 +10322,8 @@ public sealed partial class SimWorld : IObstacles
         Angle facing = default,
         Point? bridgeTo = null,
         bool rebuildsBridge = false,
-        int fencesBarnId = 0)
+        int fencesBarnId = 0,
+        bool rebuildsHome = false)
     {
         BuildingGeneration++;
         StandingChanged();
@@ -10331,6 +10353,7 @@ public sealed partial class SimWorld : IObstacles
                 BridgeTo = bridgeTo,
                 RebuildsBridge = rebuildsBridge,
                 FencesBarnId = fencesBarnId,
+                RebuildsHome = rebuildsHome,
             },
         });
 
@@ -10586,7 +10609,8 @@ public sealed partial class SimWorld : IObstacles
             UnlockThePasture(unfenced);
         }
 
-        if (site.Construction.Kind == BuildingKind.Home)
+        // A rebuild's family lives in the house it stood on, and keeps its plot (D721).
+        if (BuildingKinds.IsDwelling(site.Construction.Kind) && !site.Construction.RebuildsHome)
         {
             // The plot was the family's from the marking (D386); the ground is free again, and
             // the fence that was never built is forgotten (D388).
@@ -10640,6 +10664,13 @@ public sealed partial class SimWorld : IObstacles
             return;
         }
 
+        // ⭐ A HOUSE'S REBUILD TURNS THE HOUSE ON ITS TILES INTO THE NEW ROW (`house-tiers.md §4.5`, D721) — raising nothing.
+        if (plan.RebuildsHome)
+        {
+            FinishARebuild(site, plan);
+            return;
+        }
+
         // ⭐ A BRIDGE'S SITE OPENS A DECK RATHER THAN RAISING A BUILDING (D546, `bridges.md §5`).
         if (plan.BridgeTo is not null)
         {
@@ -10682,7 +10713,7 @@ public sealed partial class SimWorld : IObstacles
             // The household is named on the site rather than looked up now, so a family who
             // waited two years gets THAT house — not whichever roofless family happens to be
             // first in the list on the day it is done.
-            case BuildingKind.Home:
+            case BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor:
                 Household? family = FindHousehold(plan.ForHouseholdId);
                 if (family is null)
                 {
@@ -10706,6 +10737,9 @@ public sealed partial class SimWorld : IObstacles
                 family.HomeRaisedAtTick = Tick;
                 family.HomeRepairedAtTick = 0;
                 NeedsMoreResidentialLand = false;
+
+                // The row it was marked as (D721) — a cabin for a village that never chose, which it already was.
+                SetHomeKind(family, plan.Kind);
 
                 // A house is the one building that does not go through `RaiseFinished`.
                 RetireTheClearingMark(FootprintOf(BuildingKind.Home, site.Position, plan.Facing));
@@ -12988,7 +13022,7 @@ public sealed partial class SimWorld : IObstacles
         {
             // A bridge's site is not a shape on the ground (see `StandingShapes`); its ends refuse a
             // building through `SomethingStandsAt`.
-            if (!IsABridgeSite(Workplaces[i]) && !IsARepairSite(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
+            if (!IsABridgeSite(Workplaces[i]) && !StandsOnABuilding(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
             {
                 return true;
             }
@@ -13247,7 +13281,7 @@ public sealed partial class SimWorld : IObstacles
             // too, it took over the tiles' owner in the index, and the opener then opened the site's shape instead of
             // the building's — a granary under repair was unreachable to everyone fetching food from it (found by
             // `TheMarketKeepsLardersFromRunningDry`: a 15-tick dry spell against a round trip of -2).
-            if (IsABridgeSite(Workplaces[i]) || IsARepairSite(Workplaces[i]))
+            if (IsABridgeSite(Workplaces[i]) || StandsOnABuilding(Workplaces[i]))
             {
                 continue;
             }
@@ -15037,6 +15071,9 @@ public sealed partial class SimWorld : IObstacles
             ["coats_ever_sewn"] = CoatsEverSewn,
             ["handcarts_ever_made"] = HandcartsEverMade,
             ["workshop_learned"] = WorkshopLearned,
+            ["cottage_learned"] = CottageLearned,
+            ["manor_learned"] = ManorLearned,
+            ["homes_built_as"] = SaveWriter.Enum(HomesBuiltAs),
             ["bridge_crossings"] = BridgeCrossings,
             ["flour_ever_ground"] = FlourEverGround,
             ["bread_ever_baked"] = BreadEverBaked,
@@ -15231,6 +15268,9 @@ public sealed partial class SimWorld : IObstacles
         CoatsEverSewn = save.Int("coats_ever_sewn");
         HandcartsEverMade = save.Int("handcarts_ever_made");
         WorkshopLearned = save.Bool("workshop_learned");
+        CottageLearned = save.Bool("cottage_learned");
+        ManorLearned = save.Bool("manor_learned");
+        HomesBuiltAs = save.Enum<BuildingKind>("homes_built_as");
         BridgeCrossings = save.Int("bridge_crossings");
         FlourEverGround = save.Int("flour_ever_ground");
         BreadEverBaked = save.Int("bread_ever_baked");

@@ -1416,6 +1416,13 @@ public partial class Main : Control
             entry.Button.Visible = true;
         }
 
+        // And all three Build homes as buttons, as in a village that has learned the manor (D721).
+        foreach ((BuildingKind _, Button button) in _homesAs)
+        {
+            wereShowing.Add((button, button.Visible));
+            button.Visible = true;
+        }
+
         // And the Records button the hall will show (D397) — posed for the same reason.
         bool recordsWas = _recordsButton?.Visible ?? false;
         if (_recordsButton is not null)
@@ -2123,6 +2130,9 @@ public partial class Main : Control
     /// </remarks>
     private readonly List<(BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark)> _strip = new();
 
+    /// <summary>The <i>Build homes as</i> buttons (D721) — beside the land brush, kept apart from the strip's tools.</summary>
+    private readonly List<(BuildingKind Kind, Button Button)> _homesAs = new();
+
     private readonly List<(BuildTab Tab, Button Button)> _tabButtons = new();
 
     private readonly List<(BuildCategory? Category, Button Button)> _filterButtons = new();
@@ -2250,6 +2260,21 @@ public partial class Main : Control
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
         RefreshALearnedButton(world, BuildingKind.StoneBridge, null, _stoneBridgeButton, ref _stoneBridgeKnown, ref _stoneBridgeTried);
+
+        // ⭐ The houses (D721): a choice on the brush's bar rather than a building to place, so nothing to light as a gift.
+        RefreshAHouseTier(world, BuildingKind.Cottage, ref _cottageKnown);
+        RefreshAHouseTier(world, BuildingKind.Manor, ref _manorKnown);
+    }
+
+    /// <summary>A house the family tree has taught — its <i>Build homes as</i> button shown from then on (D721).</summary>
+    private void RefreshAHouseTier(SimWorld world, BuildingKind dwelling, ref bool knownSoFar)
+    {
+        bool known = world.IsUnlocked(dwelling);
+        if (knownSoFar != known)
+        {
+            knownSoFar = known;
+            RefreshTheStrip();
+        }
     }
 
     /// <summary>A building learned by doing — the quarry, the mine — on the bar (D440, D449).</summary>
@@ -2291,6 +2316,8 @@ public partial class Main : Control
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
     private bool _stoneBridgeTried;
+    private bool _cottageKnown;
+    private bool _manorKnown;
     private bool _smithyKnown;
 
     /// <summary>
@@ -7415,6 +7442,15 @@ public partial class Main : Control
             }
         }
 
+        // And a house the family tree has taught shows its Build homes as button (D721).
+        foreach ((BuildingKind kind, Button _) in _homesAs)
+        {
+            if (EarnedYet(kind))
+            {
+                earned++;
+            }
+        }
+
         // The hall standing shows the Records button on the controls row (D397) — a fourth thing.
         if (_recordsButton is { Visible: true })
         {
@@ -7621,6 +7657,25 @@ public partial class Main : Control
         Add(BuildTab.Build, BuildCategory.Homes, "Paint land", ToolMark.PaintLand,
             () => _map.BeginPainting(1));
 
+        // ⭐ BUILD HOMES AS (`house-tiers.md §4.5`, §6, D721): one village-wide choice beside the brush — the cabin always,
+        // the cottage and the manor as the family tree teaches them, the chosen one lit. ⚠️ NOT IN `_strip`: they are a
+        // setting, not a tool, and the strip's lit button is the hand's (the `hints:` probe reads the last one pressed).
+        foreach ((BuildingKind kind, string label) in new[]
+        {
+            (BuildingKind.Home, "Cabins"), (BuildingKind.Cottage, "Cottages"), (BuildingKind.Manor, "Manors"),
+        })
+        {
+            if (!catalogue.Has((int)kind))
+            {
+                continue;
+            }
+
+            BuildingKind captured = kind;
+            Button button = StripButton(label, new BuildingGlyph(kind, true), () => ChooseHomesAs(captured));
+            _homesAs.Add((kind, button));
+            _stripRow.AddChild(button);
+        }
+
         // ⛔ MOVE AND EMPTY SHIP WITH THE SIM FEATURES THEY DRIVE, and their absence is what Joe
         // hit: *"I don't see anything in the UI that allows me to move a building?"* and *"no
         // option to 'empty' to another storage building."* **Both had been built and neither was
@@ -7661,6 +7716,35 @@ public partial class Main : Control
             _strip.Add((tab, category, button, null, mark));
             _stripRow.AddChild(button);
         }
+    }
+
+    /// <summary>The player chose what the village builds its homes as — refused in words above what is learned (D721).</summary>
+    private void ChooseHomesAs(BuildingKind dwelling)
+    {
+        if (_loop.World.SetHomesBuiltAs(dwelling) is string refused)
+        {
+            SayInTheLog(refused);
+        }
+
+        RelightTheStrip();
+    }
+
+    /// <summary>What a <i>Build homes as</i> button does, in words (`house-tiers.md §6`) — the rows' own numbers.</summary>
+    private string HomesAsTooltip(BuildingKind dwelling)
+    {
+        BuildingsCatalog catalogue = _loop.World.BuildingsCatalog;
+        int cabin = catalogue[BuildingKind.Home]?.WinterFirewood ?? 0;
+        if (dwelling == BuildingKind.Home)
+        {
+            return $"Build homes as: Cabin. New homes are built as wooden cabins, which burn {cabin} firewood a winter, and "
+                + "no house is rebuilt.";
+        }
+
+        BuildingRow? row = catalogue[dwelling];
+        string lower = dwelling == BuildingKind.Manor ? "the cabins and cottages" : "the cabins";
+        return $"Build homes as: {(dwelling == BuildingKind.Manor ? "Manor" : "Cottage")}. New homes are built as {row?.Name}s, and "
+            + $"the builders rebuild {lower} one at a time when nothing else is waiting. A {row?.Name} burns "
+            + $"{row?.WinterFirewood} firewood a winter where a cabin burns {cabin}.";
     }
 
     /// <summary>One button on the strip: a drawn mark over its word.</summary>
@@ -7802,6 +7886,12 @@ public partial class Main : Control
             entry.Button.Visible = onThisTab && pastTheFilter && EarnedYet(entry.Kind);
         }
 
+        // Build homes as (D721): on Build, under All and Homes, each as it is learned.
+        foreach ((BuildingKind kind, Button button) in _homesAs)
+        {
+            button.Visible = building && (_filter is null || _filter == BuildCategory.Homes) && EarnedYet(kind);
+        }
+
         // The professions panel asks the same question of the same flags (D460), and so do the
         // dropdown, the stores, the stock limits and the bar's more (D502).
         ShowTheKnownTrades();
@@ -7869,6 +7959,10 @@ public partial class Main : Control
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 
+        // The houses the family tree teaches (D721) — the sim's latches, through `IsUnlocked`.
+        BuildingKind.Cottage => _cottageKnown,
+        BuildingKind.Manor => _manorKnown,
+
         // ⛔ THE BARN AND THE POST WAIT FOR THE TOWN HALL (D590) — without this arm the `_ => true` below lit a tab at
         // the founding for buildings nobody may place (the probe's `filters:` line caught it). Their buttons come in
         // commit 6 of `trade.md §11`.
@@ -7923,6 +8017,14 @@ public partial class Main : Control
                 || (entry.Mark is not null && entry.Mark == mark);
             entry.Button.SetPressedNoSignal(lit);
             entry.Button.TooltipText = lit ? sentence : string.Empty;
+        }
+
+        // Build homes as (D721): the choice is lit, whatever is in the hand.
+        BuildingKind chosen = _loop.World.HomesBuiltAs;
+        foreach ((BuildingKind kind, Button button) in _homesAs)
+        {
+            button.SetPressedNoSignal(kind == chosen);
+            button.TooltipText = HomesAsTooltip(kind);
         }
     }
 
