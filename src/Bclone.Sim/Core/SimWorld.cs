@@ -9730,7 +9730,7 @@ public sealed partial class SimWorld : IObstacles
         // and price are today's to the letter, so a village that never chose marks exactly what it always did.
         BuildingKind dwelling = HomesBuiltAs;
         BuildingRecipe recipe = HomeRecipeWithFence(yardTiles, dwelling);
-        string house = dwelling == BuildingKind.Home ? "a house" : $"a {BuildingsCatalog.NameOf(dwelling)}";
+        string house = dwelling == BuildingKind.Home ? "a house" : WithArticle(BuildingsCatalog.NameOf(dwelling));
         string name = yardTiles > 0 ? $"{house} and {yardTiles} tiles of fence" : house;
 
         // ⚠️ AND WHEN THAT PROMISE IS BROKEN, SAY SO (D110). `ChooseSite` is supposed to have

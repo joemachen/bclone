@@ -69,8 +69,8 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Warehouse => VillageMap.StoreTone,
         BuildingKind.Market => VillageMap.MarketTone,
         BuildingKind.Pile => VillageMap.StoneTone,
-        // Every house the dwelling colour until each tier has its own look (`house-tiers.md §14.4`).
-        BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor => VillageMap.DwellingColour,
+        // ⭐ Each house its own tier's colour (`house-tiers.md §6`, D722) — the map's walls, one fact.
+        BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor => VillageMap.DwellingColourOf(kind),
         BuildingKind.Library => VillageMap.LibraryTone,
         BuildingKind.TownHall => VillageMap.CivicTone,
         BuildingKind.Well => VillageMap.WellTone,
@@ -174,11 +174,32 @@ public sealed partial class BuildingGlyph : Control
 
             // A house: a roof, a wall and a door.
             case BuildingKind.Home:
-            case BuildingKind.Cottage:
-            case BuildingKind.Manor:
                 Roof(new Rect2(s * 0.14f, s * 0.14f, s * 0.72f, s * 0.28f), ink);
                 DrawRect(new Rect2(s * 0.22f, s * 0.42f, s * 0.56f, s * 0.44f), ink);
                 DrawRect(new Rect2(s * 0.44f, s * 0.60f, s * 0.14f, s * 0.26f), Paint(VillageMap.Ink));
+                break;
+
+            // ⭐ A stone cottage (D722): the house's shape in grey stone, under a slate roof, with its chimney.
+            case BuildingKind.Cottage:
+                DrawRect(new Rect2(s * 0.62f, s * 0.10f, s * 0.12f, s * 0.22f), Paint(VillageMap.Ink));
+                Roof(new Rect2(s * 0.12f, s * 0.14f, s * 0.76f, s * 0.28f), Paint(VillageMap.SlateColour));
+                DrawRect(new Rect2(s * 0.20f, s * 0.42f, s * 0.60f, s * 0.44f), ink);
+                DrawRect(new Rect2(s * 0.44f, s * 0.60f, s * 0.14f, s * 0.26f), Paint(VillageMap.Ink));
+                break;
+
+            // ⭐ An insulated manor (D722): wider and two storeys high — a window row over the door — under a dark roof
+            // with a chimney at each end.
+            case BuildingKind.Manor:
+                DrawRect(new Rect2(s * 0.12f, s * 0.04f, s * 0.10f, s * 0.20f), Paint(VillageMap.Ink));
+                DrawRect(new Rect2(s * 0.78f, s * 0.04f, s * 0.10f, s * 0.20f), Paint(VillageMap.Ink));
+                Roof(new Rect2(s * 0.04f, s * 0.08f, s * 0.92f, s * 0.24f), Paint(VillageMap.ManorRoofColour));
+                DrawRect(new Rect2(s * 0.10f, s * 0.32f, s * 0.80f, s * 0.58f), ink);
+                for (int i = 0; i < 3; i++)
+                {
+                    DrawRect(new Rect2(s * (0.20f + (i * 0.24f)), s * 0.42f, s * 0.12f, s * 0.12f), Paint(VillageMap.Ink));
+                }
+
+                DrawRect(new Rect2(s * 0.44f, s * 0.64f, s * 0.12f, s * 0.26f), Paint(VillageMap.Ink));
                 break;
 
             // A hut with a hammer laid across it.

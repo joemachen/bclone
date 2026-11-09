@@ -394,6 +394,16 @@ public sealed record BuildingRow
     [JsonPropertyName("exposure_days_sheltered")]
     public int ExposureDaysSheltered { get; init; }
 
+    /// <summary>
+    /// What a house of this row is called after the family in it (`house-tiers.md §4.8`, <i>bears the family's name</i> —
+    /// Joe, D718): <c>{family}</c> is the household's name, so <i>"the {family} cottage"</i> is <i>"the Ashford
+    /// cottage"</i> and <i>"{family} Manor"</i> is <i>"Ashford Manor"</i>. Null for a house with no name — the cabin's.
+    /// </summary>
+    /// <remarks>Words, not a number: derived where it is said (<c>SimWorld.HouseNameOf</c>), never stored or hashed. Only a
+    /// dwelling row may carry one, and it must name the family — both refused at load.</remarks>
+    [JsonPropertyName("house_name")]
+    public string? HouseName { get; init; }
+
     /// <summary>Years before it is <em>failing</em> — the card warns, and a wooden deck slows (§4.4).</summary>
     [JsonPropertyName("fails_in_years")]
     public int FailsInYears { get; init; }

@@ -907,6 +907,93 @@ public sealed class HouseTierTests
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(back));
     }
 
+    // ---------------------------------------------------------------
+    // Piece 4 — the view's facts (§14.4): the family's name on a stone house, a house's own rebuild, the log's two lines.
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ §4.8, <i>bears the family's name</i> (Joe, D718: <i>"go with your 3 perks!"</i>): a cottage is <i>"the Ashford
+    /// cottage"</i>, a manor <i>"Ashford Manor"</i> — derived from the household, never stored — and a cabin, or a family with
+    /// no house, has none.
+    /// </summary>
+    [Fact]
+    public void AStoneHouseBearsTheFamilysName()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Village with { StartingHouseholds = 2 }, new InMemoryLogSink()).World;
+        Household family = Housed(world)[0];
+        Assert.Null(world.HouseNameOf(family));
+
+        world.SetHomeKind(family, BuildingKind.Cottage);
+        Assert.Equal($"the {family.Name} cottage", world.HouseNameOf(family));
+
+        world.SetHomeKind(family, BuildingKind.Manor);
+        Assert.Equal($"{family.Name} Manor", world.HouseNameOf(family));
+
+        family.Rename("Thornwood");
+        Assert.Equal("Thornwood Manor", world.HouseNameOf(family));
+
+        Point? home = family.HomePosition;
+        family.HomePosition = null;
+        Assert.Null(world.HouseNameOf(family));
+        family.HomePosition = home;
+    }
+
+    /// <summary>A name is a dwelling's, and names the family — refused at load otherwise, by the row's name.</summary>
+    [Fact]
+    public void AHouseNameIsADwellingsAndNamesTheFamily()
+    {
+        SimConfig config = Village;
+        var nameless = config.BuildingRows
+            .Select(r => r.Id == (int)BuildingKind.Cottage ? r with { HouseName = "the cottage" } : r).ToList();
+        SimConfigException blew = Assert.Throws<SimConfigException>(() => (config with { Buildings = nameless }).Validate());
+        _output.WriteLine(blew.Message);
+        Assert.Contains("stone cottage", blew.Message, StringComparison.Ordinal);
+
+        var namedGranary = config.BuildingRows
+            .Select(r => r.Id == (int)BuildingKind.Granary ? r with { HouseName = "the {family} granary" } : r).ToList();
+        blew = Assert.Throws<SimConfigException>(() => (config with { Buildings = namedGranary }).Validate());
+        _output.WriteLine(blew.Message);
+        Assert.Contains("granary", blew.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The house knows its own rebuild — what the home card reads its progress from (§6) — and the log says the rebuild's
+    /// start and its finish (§7), the finished house by its new name, with its article right (<i>"an insulated manor"</i>).
+    /// </summary>
+    [Fact]
+    public void AHouseKnowsItsRebuildAndTheLogSaysItsStartAndFinish()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        var log = (InMemoryLogSink)world.Logger;
+        world.CottageLearned = true;
+        world.ManorLearned = true;
+        Assert.All(Housed(world), h => Assert.Null(world.RebuildOf(h)));
+
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Workplace rebuild = world.StandingRebuild()!;
+        Household family = world.HouseholdAt(rebuild.Tile)!;
+        Assert.Same(rebuild, world.RebuildOf(family));
+        Assert.All(Housed(world).Where(h => h.Id != family.Id), h => Assert.Null(world.RebuildOf(h)));
+        string raised = $"The {family.Name} household's house is to be rebuilt as a stone cottage";
+        Assert.Contains(log.Entries, e => e.Level == LogLevel.Info && e.Message.StartsWith(raised, StringComparison.Ordinal));
+
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Manor));
+        Workplace manor = world.StandingRebuild()!;
+        Assert.Same(manor, world.RebuildOf(family));
+        string reaimed = $"The {family.Name} household's house is to be rebuilt as an insulated manor";
+        Assert.Contains(log.Entries, e => e.Message.StartsWith(reaimed, StringComparison.Ordinal));
+
+        world.Complete(manor);
+        Assert.False(StandsOn(world.RebuildOf(family), world, family));
+        LogEntry finished = Assert.Single(log.Entries, e => e.Message.Contains($"is rebuilt as {family.Name} Manor", StringComparison.Ordinal));
+        _output.WriteLine(finished.Message);
+        Assert.Equal(LogLevel.Info, finished.Level);
+        Assert.StartsWith($"The {family.Name} household's house is rebuilt", finished.Message, StringComparison.Ordinal);
+        Assert.Contains("5 firewood a winter where the old one burned 24", finished.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(log.Entries, e => e.Message.Contains(" a insulated", StringComparison.Ordinal));
+    }
+
     private static GridPos ClearGroundNear(SimWorld world, BuildingKind kind)
     {
         GridPos site = world.Map.FoundingSite;

@@ -4350,6 +4350,7 @@ public sealed record SimConfig
             LocalStoreCap = CottageStoreCap,
             WinterFirewood = CottageWinterFirewood,
             ExposureDaysSheltered = CottageExposureDaysSheltered,
+            HouseName = "the {family} cottage",
             ExtentWidth = 2,
         },
         new BuildingRow
@@ -4368,6 +4369,7 @@ public sealed record SimConfig
             LocalStoreCap = ManorStoreCap,
             WinterFirewood = ManorWinterFirewood,
             ExposureDaysSheltered = ManorExposureDaysSheltered,
+            HouseName = "{family} Manor",
             ExtentWidth = 2,
         },
 
@@ -6736,6 +6738,16 @@ public sealed record SimConfig
                         + "(local_store_cap) and be nothing else — no store, no seats; the longhouse that once housed people "
                         + "another way was removed (D571).");
                 }
+            }
+
+            // ⭐ A HOUSE'S NAME IS A DWELLING'S, AND NAMES THE FAMILY (`house-tiers.md §4.8`, D722): on a granary it would never
+            // be said; without `{family}` every cottage in the valley would bear the same name.
+            if (row.HouseName is string named
+                && (row.HouseCapacity <= 0 || !named.Contains("{family}", StringComparison.Ordinal)))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_name \"{named}\", but only a dwelling (house_capacity "
+                    + "above zero) bears a family's name, and the name must say where the family's goes — {family}.");
             }
 
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.

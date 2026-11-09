@@ -163,7 +163,7 @@ public sealed partial class SimWorld
             : "A village that has buried generations here builds to last them, and has learned to build tight.";
         string choice = house == BuildingKind.Cottage ? "Cottage" : "Manor";
         return $"{who}. {why} Set the housing brush's Build homes as to {choice}, and new homes are built as {row.Name}s and the "
-            + $"cabins rebuilt one at a time — a {row.Name} burns {row.WinterFirewood} firewood a winter where a cabin burns "
+            + $"{(house == BuildingKind.Manor ? "cabins and cottages" : "cabins")} rebuilt one at a time — {WithArticle(row.Name)} burns {row.WinterFirewood} firewood a winter where a cabin burns "
             + $"{cabin.WinterFirewood}, and keeps a bigger larder. {Clock.SeasonAndYear()}.";
     }
 
@@ -264,6 +264,35 @@ public sealed partial class SimWorld
         return null;
     }
 
+    /// <summary>
+    /// The rebuild standing on this family's house, or null — what the home card reads its progress from (`house-tiers.md
+    /// §6`, D722). A rebuild belongs to no household (<c>ForHouseholdId</c> 0), so it is found by the house's tile.
+    /// </summary>
+    public Workplace? RebuildOf(Household household) =>
+        HomeFootprintOf(household) is Footprint house && StandingRebuild() is Workplace standing
+            && standing.Footprint.Covers(house.Origin.ToTile())
+            ? standing
+            : null;
+
+    /// <summary>
+    /// What this family's house is called — <i>"the Ashford cottage"</i>, <i>"Ashford Manor"</i> — or null for a house
+    /// whose row bears no name (the cabin) and a family with no house (`house-tiers.md §4.8`, D722). Derived, never stored.
+    /// </summary>
+    /// <remarks>A family with no house is read as the cabin's by <see cref="HomeRowOf"/>, the one door — so it bears no name
+    /// without a second check here (one was written, and its mutant scored zero: it was a copy of that rule).</remarks>
+    public string? HouseNameOf(Household household) =>
+        HomeRowOf(household).HouseName is string named
+            ? named.Replace("{family}", household.Name, StringComparison.Ordinal)
+            : null;
+
+    /// <summary>A name with its article — <i>"a stone cottage"</i>, <i>"an insulated manor"</i>.</summary>
+    public static string WithArticle(string name) =>
+        (name.Length > 0 && "aeiouAEIOU".Contains(name[0], StringComparison.Ordinal) ? "an " : "a ") + name;
+
+    /// <summary>The house in the log's words: its name, or <i>"the Ashford household's house"</i> for one without.</summary>
+    private string TheHouseOf(Household household) =>
+        HouseNameOf(household) ?? $"the {household.Name} household's {BuildingsCatalog.NameOf(household.HomeKind)}";
+
     /// <summary>Whether a house stands below the chosen tier — what a rebuild is for.</summary>
     private bool IsBelowTheChoice(Household household) =>
         household.HasHome && BuildingKinds.TierOf(household.HomeKind) < BuildingKinds.TierOf(HomesBuiltAs);
@@ -354,9 +383,14 @@ public sealed partial class SimWorld
         }
 
         BuildingKind to = HomesBuiltAs;
-        string name = $"the {household.Name} household's house, rebuilt as a {BuildingsCatalog.NameOf(to)}";
+        string becomes = WithArticle(BuildingsCatalog.NameOf(to));
+        string name = $"the {household.Name} household's house, rebuilt as {becomes}";
         RaiseSiteFor(to, house.Origin, name, BuildingRecipe.For(to, Config), forHouseholdId: 0, facing: house.Facing,
             rebuildsHome: true);
+
+        // ⭐ The rebuild's start, in the log (§7, D722) — the finish says the rest.
+        Narrate($"{Capitalised(TheHouseOf(household))} is to be rebuilt as {becomes} where it stands — the family lives in "
+            + $"it until the new one is finished. {Clock.SeasonAndYear()}.", LogCategory.Building);
     }
 
     /// <summary>
@@ -376,13 +410,17 @@ public sealed partial class SimWorld
         }
 
         int burned = WinterFirewoodOf(family);
+        string was = TheHouseOf(family);
         StandingChanged();
         SetHomeKind(family, plan.Kind);
         family.HomeRaisedAtTick = Tick;
         family.HomeRepairedAtTick = 0;
         family.HomeClosed = false;
-        Narrate($"The {family.Name} household's house is rebuilt as a {BuildingsCatalog.NameOf(plan.Kind)} — it burns "
-            + $"{WinterFirewoodOf(family)} firewood a winter where it burned {burned}. {Clock.SeasonAndYear()}.",
+
+        // ⭐ By its new name (§4.8, D722): "…is rebuilt as Ashford Manor — it burns 5 firewood a winter where the old one
+        // burned 24." A row with no name is said with its article.
+        Narrate($"{Capitalised(was)} is rebuilt as {HouseNameOf(family) ?? WithArticle(BuildingsCatalog.NameOf(plan.Kind))} — "
+            + $"it burns {WinterFirewoodOf(family)} firewood a winter where the old one burned {burned}. {Clock.SeasonAndYear()}.",
             LogCategory.Building);
         RaiseTheNextRebuild();
     }

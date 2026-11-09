@@ -75,6 +75,9 @@ public partial class Main
         /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
         public required Label Door { get; init; }
 
+        /// <summary>A household's house — its tier, the firewood it burns and the days it keeps them without a fire (D722). Hidden on every other kind.</summary>
+        public required Label House { get; init; }
+
         /// <summary>A household's handcart and the trips left in it (Slice H, `handcart.md §8`) — or a market's or a post's (`handcart.md §13.5`). Hidden on every other kind, and with no cart.</summary>
         public required Label Cart { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
@@ -437,6 +440,11 @@ public partial class Main
         door.Visible = false;
         column.AddChild(door);
 
+        // ---- a household's house: what it burns and how long it keeps them (`house-tiers.md §6`, D722) ----
+        Label house = Wrapped(Muted(string.Empty));
+        house.Visible = false;
+        column.AddChild(house);
+
         // ---- a household's handcart (Slice H, `handcart.md §8`) ----
         Label cart = Wrapped(Muted(string.Empty));
         cart.Visible = false;
@@ -548,6 +556,7 @@ public partial class Main
             Status = status,
             Wear = wear,
             Door = door,
+            House = house,
             Cart = cart,
             WorkersRow = workersRow,
             Workers = count,
@@ -761,6 +770,7 @@ public partial class Main
         // Each building's writer says its condition; a person, a site and anything without a row says none.
         card.Wear.Visible = false;
         card.Door.Visible = false;
+        card.House.Visible = false;
         card.Cart.Visible = false;
         card.Portrait.Wear = Condition.Sound;
 
@@ -1603,11 +1613,25 @@ public partial class Main
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(home)));
         CartLine(card, CartSentence(world, home));
 
+        // ⭐ THE HOUSE ITSELF (`house-tiers.md §6`, D722): its tier, what it burns against a cabin, how long it keeps them
+        // without a fire — and, while the builders rebuild it, the bridge's sentence (D704) on the status, which wraps.
+        BuildingRow houseRow = world.HomeRowOf(home);
+        BuildingRow cabin = world.BuildingsCatalog[BuildingKind.Home] ?? houseRow;
+        HouseLine(card, home.HomePosition is null ? null
+            : HouseSentence(TierWordOf(home.HomeKind, houseRow), houseRow.WinterFirewood, cabin.WinterFirewood,
+                houseRow.ExposureDaysSheltered > 0 ? houseRow.ExposureDaysSheltered : world.Config.ExposureDaysSheltered,
+                isTheCabin: home.HomeKind == BuildingKind.Home));
+        string? rebuilding = world.RebuildOf(home) is Workplace site && site.Construction is { IsFinished: false } plan
+            ? RebuildSentence(world, site, plan, $"rebuilt as {TierWordOf(plan.Kind, world.BuildingsCatalog[plan.Kind] ?? houseRow)}").Sentence
+            : null;
+
         int living = world.LivingMembersOf(home);
         int food = world.FoodIn(home.Stockpile);
         int foodTarget = world.TargetFoodFor(home);
         int fuel = home.Stockpile.Firewood;
-        int fuelTarget = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
+
+        // The family's own want — a cottage keeps half a cabin's woodpile (`house-tiers.md §4.3`, D720).
+        int fuelTarget = world.FirewoodWantedFor(home);
 
         if (living == 0)
         {
@@ -1628,6 +1652,11 @@ public partial class Main
                     : share <= world.Config.RestockEmergencyPercent ? $"Nearly out of food — larder at {share}%; somebody is going for more."
                     : home.ToppingUpFood ? $"Fed — larder at {share}%, topping it up from the market."
                     : $"Fed and warm — larder at {share}%; they go to the market at half.");
+        }
+
+        if (rebuilding is not null)
+        {
+            Status(card, working: card.Status.Modulate == Colors.White, $"{card.Status.Text} {rebuilding}");
         }
 
         card.WorkersRow.Visible = false;
@@ -1663,18 +1692,44 @@ public partial class Main
         // Room for the rows it has, up to four; past four it scrolls (Joe).
         card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, shown)));
 
-        float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
-        float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
-        card.Portrait.Show(VillageMap.HomeColour, wide * 0.8f, deep * 0.8f, home.HomeFacing.Raw, null);
+        // ⭐ Each tier its own picture (D722): the map's walls and roof marks, the manor drawn bigger.
+        float drawn = VillageMap.DrawnShareOf(home.HomeKind);
+        card.Portrait.Show(VillageMap.DwellingColourOf(home.HomeKind), houseRow.ExtentWidth * drawn, houseRow.ExtentHeight * drawn,
+            home.HomeFacing.Raw, null, home.HomeKind);
 
         // ⭐ WHY THE HOUSE IS WHERE IT IS (D386): the chooser's own sentence, in the currency it
         // scored — *"10 tiles to work and 3 to the granary, facing the lane to the south, beside
         // the Ashfords."* Held on the household from the day the site was chosen.
+        // ⭐ And a stone house by the family's name (`house-tiers.md §4.8`, D722): *"Ashford Manor — 10 tiles to work…"*.
+        string named = world.HouseNameOf(home) ?? "a wooden cabin";
         card.Caption.Text = home.HomePosition is null
             ? "no house"
-            : home.WhyHere.Length > 0 ? $"a wooden cabin — {home.WhyHere}" : "a wooden cabin";
+            : home.WhyHere.Length > 0 ? $"{named} — {home.WhyHere}" : named;
+        card.Caption.TooltipText = home.HomePosition is null ? string.Empty : card.Caption.Text;
         return true;
     }
+
+    /// <summary>
+    /// A house's tier in words, with its article — <i>"a wooden cabin"</i> for the cabin row (whose own word is "house",
+    /// D719), <i>"a stone cottage"</i>, <i>"an insulated manor"</i> off the others' rows.
+    /// </summary>
+    private static string TierWordOf(BuildingKind kind, BuildingRow row) =>
+        kind == BuildingKind.Home ? "a wooden cabin" : SimWorld.WithArticle(row.Name);
+
+    /// <summary>Write the household's house line — or hide it, for a family with no house (D722).</summary>
+    private static void HouseLine(Card card, string? said)
+    {
+        card.House.Visible = said is not null;
+        card.House.Text = said ?? string.Empty;
+    }
+
+    /// <summary>
+    /// <i>"A stone cottage — burns 12 firewood a winter (a cabin burns 24), and keeps them 30 days without a fire."</i>
+    /// (`house-tiers.md §6`, §4.8's <i>keeps its warmth</i>, D722). From plain facts, so the probe can pose every tier.
+    /// </summary>
+    private static string HouseSentence(string tier, int burns, int cabinBurns, int shelteredDays, bool isTheCabin) =>
+        $"{Capitalise(tier)} — burns {burns:N0} firewood a winter{(isTheCabin ? string.Empty : $" (a cabin burns {cabinBurns:N0})")}, "
+        + $"and keeps them {shelteredDays:N0} days without a fire.";
 
     /// <summary>
     /// A person's card (D431): who they are, what they are doing now, then WORK · TOOL · NEEDS ·
@@ -2323,7 +2378,7 @@ public partial class Main
         (string Sentence, string Caption)? rebuild =
             world.BridgeSiteAt(bridge.Near.ToTile()) is Workplace site
             && site.Construction is { IsFinished: false, RebuildsBridge: true } plan
-                ? BridgeRebuildSentence(world, site, plan)
+                ? RebuildSentence(world, site, plan, BridgeSetting(world, plan))
                 : null;
         string next = rebuild is { } queued
             ? queued.Caption
@@ -2340,18 +2395,20 @@ public partial class Main
         return true;
     }
 
-    /// <summary>
-    /// The rebuild's progress in words — <i>"Being set in stone — 2nd in the queue, 12 of 36 logs and 0 of 12 stone
-    /// delivered, 31 % done."</i> — and the short caption under the picture. The fraction is the map band's
-    /// (<c>VillageMap</c>: delivered plus work over materials plus work), so the two never disagree.
-    /// </summary>
-    private (string Sentence, string Caption) BridgeRebuildSentence(SimWorld world, Workplace site, ConstructionSite plan)
-    {
-        // "Being set in stone" for the stone row; any other rebuilding row (none ships) is named off the catalogue.
-        string setting = plan.Kind == BuildingKind.StoneBridge
+    /// <summary>"Being set in stone" for the stone row; any other rebuilding row (none ships) is named off the catalogue.</summary>
+    private static string BridgeSetting(SimWorld world, ConstructionSite plan) =>
+        plan.Kind == BuildingKind.StoneBridge
             ? "set in stone"
-            : $"rebuilt as a {world.BuildingsCatalog.NameOf(plan.Kind)}";
+            : $"rebuilt as {SimWorld.WithArticle(world.BuildingsCatalog.NameOf(plan.Kind))}";
 
+    /// <summary>
+    /// A rebuild's progress in words — <i>"Being set in stone — 2nd in the queue, 12 of 36 logs and 0 of 12 stone
+    /// delivered, 31 % done."</i>, a bridge's (D704) or a house's (<i>"Being rebuilt as a stone cottage — …"</i>, D722) —
+    /// and the short caption under the picture. The fraction is the map band's (<c>VillageMap</c>: delivered plus work
+    /// over materials plus work), so the two never disagree.
+    /// </summary>
+    private (string Sentence, string Caption) RebuildSentence(SimWorld world, Workplace site, ConstructionSite plan, string setting)
+    {
         var parts = new List<string>();
         foreach (MaterialCost material in plan.Recipe.Materials)
         {
@@ -3365,6 +3422,131 @@ public partial class Main
             : $"[widths] cart card: ⛔ {string.Join("; ", faults)}";
     }
 
+    /// <summary>
+    /// Probe `house tiers:` (`house-tiers.md §6`, D722): each house its own look — the three fills apart, the marks apart
+    /// (none on the cabin), the manor drawn bigger, the bar's glyph in the map's colour; the three <i>Build homes as</i>
+    /// buttons labelled; and the household card saying its house, with every tier's line and the longest rebuild sentence
+    /// the sim can say inside the card's width, on the status (which wraps), not the clipped caption.
+    /// </summary>
+    private string TheHouseTiersReadApart()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        BuildingKind[] tiers = { BuildingKind.Home, BuildingKind.Cottage, BuildingKind.Manor };
+
+        // ---- the looks ----
+        var marks = new int[tiers.Length];
+        for (int i = 0; i < tiers.Length; i++)
+        {
+            marks[i] = VillageMap.HouseMarksAt(tiers[i], Vector2.Zero, 1.6f, 0.8f, 0, 32f).Count;
+            if (BuildingGlyph.ColourOf(tiers[i]) != VillageMap.DwellingColourOf(tiers[i]))
+            {
+                faults.Add($"the bar draws a {tiers[i]} in another colour than the map");
+            }
+
+            for (int j = 0; j < i; j++)
+            {
+                if (VillageMap.DwellingColourOf(tiers[i]) == VillageMap.DwellingColourOf(tiers[j]))
+                {
+                    faults.Add($"a {tiers[i]} and a {tiers[j]} are drawn in one colour");
+                }
+
+                if (marks[i] == marks[j])
+                {
+                    faults.Add($"a {tiers[i]} and a {tiers[j]} wear the same {marks[i]} marks");
+                }
+            }
+        }
+
+        if (marks[0] != 0)
+        {
+            faults.Add($"the cabin wears {marks[0]} marks — it is drawn as it always was");
+        }
+
+        if (VillageMap.DrawnShareOf(BuildingKind.Manor) <= VillageMap.DrawnShareOf(BuildingKind.Home))
+        {
+            faults.Add("the manor is not drawn bigger than the cabin");
+        }
+
+        // ---- the three buttons ----
+        string[] labels = _homesAs.Select(b => b.Button.Text).ToArray();
+        if (string.Join(" · ", labels) != "Cabins · Cottages · Manors")
+        {
+            faults.Add($"the Build homes as buttons read \"{string.Join(" · ", labels)}\"");
+        }
+
+        // ---- the card ----
+        // ⚠️ The probe's founding has painted no housing, so its families are roofless here: the real card is read for that
+        // (no house line, "no house"), and a cabin's own line is read if one stands; every tier is posed below.
+        Household? home = world.Households.FirstOrDefault(h => h.HasHome && world.LivingMembersOf(h) > 0)
+            ?? world.Households.FirstOrDefault(h => world.LivingMembersOf(h) > 0);
+        if (home is null)
+        {
+            return "[widths] house tiers: ⛔ no family to open a card on";
+        }
+
+        OpenCard(new CardSubject(CardKind.Household, home.Id));
+        Card card = _selectedCard!;
+        BuildingRow cabin = world.BuildingsCatalog[BuildingKind.Home]!;
+        string cabinSays = HouseSentence("a wooden cabin", cabin.WinterFirewood, cabin.WinterFirewood,
+            cabin.ExposureDaysSheltered > 0 ? cabin.ExposureDaysSheltered : world.Config.ExposureDaysSheltered, isTheCabin: true);
+        string? expected = home.HasHome ? cabinSays : null;
+        string? said = card.House.Visible ? card.House.Text : null;
+        if (said != expected)
+        {
+            faults.Add($"{(home.HasHome ? "a cabin's" : "a roofless family's")} card says \"{said ?? "(hidden)"}\" where it should say \"{expected ?? "(hidden)"}\"");
+        }
+
+        if (!card.Caption.Text.StartsWith(home.HasHome ? "a wooden cabin" : "no house", StringComparison.Ordinal))
+        {
+            faults.Add($"{(home.HasHome ? "a cabin's" : "a roofless family's")} caption reads \"{card.Caption.Text}\"");
+        }
+
+        string read = home.HasHome ? "a cabin's card says its house" : "a roofless family's card says no house";
+
+        // Posed: the longest family name, every tier's line, and the longest rebuild — a manor, a queue in the teens, two
+        // materials in the thousands.
+        Title(card, $"The {new string('N', SimWorld.NameLengthLimit)} household", renamable: true);
+        foreach (BuildingKind tier in tiers)
+        {
+            BuildingRow row = world.BuildingsCatalog[tier]!;
+            HouseLine(card, HouseSentence(TierWordOf(tier, row), 1_234, 1_234, 1_234, isTheCabin: tier == BuildingKind.Home));
+            if (!card.House.Visible)
+            {
+                faults.Add($"{TierWordOf(tier, row)}'s house line is hidden");
+            }
+
+            ForceUpdateTransform();
+            float wide = card.Panel.GetCombinedMinimumSize().X;
+            if (wide > CardWidth + 1f)
+            {
+                faults.Add($"{TierWordOf(tier, row)}'s house line widens the card's minimum to {wide:F0}");
+            }
+        }
+
+        string longest = $"Being rebuilt as {TierWordOf(BuildingKind.Manor, world.BuildingsCatalog[BuildingKind.Manor]!)} — 12th in "
+            + "the queue, 1,234 of 1,440 logs and 1,234 of 4,320 stone delivered, 31 % done.";
+        Status(card, working: true, $"Nearly out of food — larder at 12%; somebody is going for more. {longest}");
+        ForceUpdateTransform();
+        float rebuilding = card.Panel.GetCombinedMinimumSize().X;
+        if (rebuilding > CardWidth + 1f)
+        {
+            faults.Add($"a house's rebuild widens the card's minimum to {rebuilding:F0}");
+        }
+
+        if (!card.Status.Text.EndsWith(longest, StringComparison.Ordinal) || card.Status.AutowrapMode == TextServer.AutowrapMode.Off)
+        {
+            faults.Add("a house's rebuild is not on the card's wrapping status line");
+        }
+
+        CloseCard(card);
+        return faults.Count == 0
+            ? $"[widths] house tiers: ✅ three looks apart (marks {string.Join(" / ", marks)}, the manor drawn at "
+                + $"{VillageMap.DrawnShareOf(BuildingKind.Manor):F2}), the bar in the map's colours, {string.Join(" · ", labels)}; "
+                + $"{read}, and every tier's line and the longest rebuild fit {CardWidth:F0}"
+            : $"[widths] house tiers: ⛔ {string.Join("; ", faults)}";
+    }
+
     private string TheCardsHoldTheirShape()
     {
         SimWorld world = _loop.World;
@@ -3940,15 +4122,19 @@ public sealed partial class BuildingPortrait : Control
         }
     }
 
-    public void Show(Color fill, float wideTiles, float tallTiles, ushort facing, Color? ring)
+    /// <remarks><c>house</c> is a house's row, for the marks its tier wears inside its walls (D722) — null for every other building.</remarks>
+    public void Show(Color fill, float wideTiles, float tallTiles, ushort facing, Color? ring, BuildingKind? house = null)
     {
         _fill = fill;
         _wide = wideTiles;
         _tall = tallTiles;
         _facing = facing;
         _ring = ring;
+        _house = house;
         QueueRedraw();
     }
+
+    private BuildingKind? _house;
 
     public override void _Draw()
     {
@@ -3963,6 +4149,14 @@ public sealed partial class BuildingPortrait : Control
         Vector2[] quad = VillageMap.FootprintQuadAt(centre, _wide, _tall, _facing, pixelsPerTile);
         Color fill = VillageMap.Weathered(_fill, _wear);
         DrawColoredPolygon(quad, fill with { A = 0.85f });
+        if (_house is BuildingKind house)
+        {
+            foreach ((Vector2[] shape, Color colour) in VillageMap.HouseMarksAt(house, centre, _wide, _tall, _facing, pixelsPerTile))
+            {
+                DrawColoredPolygon(shape, VillageMap.Weathered(colour, _wear));
+            }
+        }
+
         for (int i = 0; i < 4; i++)
         {
             if (_wear == Condition.Ruin)

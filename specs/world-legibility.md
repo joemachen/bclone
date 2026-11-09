@@ -218,3 +218,19 @@ in the table. Then the art was parked (`HANDOFF.md`, 🅿️ ART: PARKED).
 
 ⚠️ **What the check cannot see:** it reads colours, and its table *says* which fills are outlined. A draw site that
 dropped its ink edge would still pass. The probe has no line for it either; Joe's eyes in play are the check on that.
+
+## 10. The house tiers' colours (D722)
+
+Each house its own look (`house-tiers.md §6`), added to `VillageMap.cs`'s palette block and classified in `check.py`:
+
+| band | what | value |
+|---|---|---|
+| things with an area, inked | the stone cottage (the stone bridge's grey — one stone, one colour) | `CottageColour` = `StoneBridgeColour` `#a8a49b` |
+| | the insulated manor (pale dressed stone, a value step above the cottage) | `ManorColour` `#cdc3ac` |
+| | the roofs, drawn inside the inked walls: the cottage's slate, the manor's darker slate | `SlateColour` `#66717a`, `ManorRoofColour` `#4a535c` |
+| lines, L\* ≤ 29 | the manor's yard wall (grey where a fence is brown) | `StoneWallEdge` `#3b3936`, 3.6:1 |
+
+`check.py` after: things 0 of 45 fail, read 0 of 27, washes 1 (the waiting clear zone, accepted as before). The cabin, the
+cottage and the manor sit a step apart in hue and in value (brown, mid grey, pale), so a colour-blind eye keeps the value
+step; the probe's `house tiers:` line holds the three fills and their marks apart.
+

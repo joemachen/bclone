@@ -1,6 +1,11 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
-> **🔨 HOUSE TIERS, PIECES 1–3 OF 4 BUILT ON `slice/house-tiers` (D719–D721, 2026-11-08), UNPLAYED, UNMERGED.** Piece 3 (D721): the
+> **🔨 HOUSE TIERS, ALL FOUR PIECES BUILT ON `slice/house-tiers` (D719–D722, 2026-11-08/09), UNPLAYED, UNMERGED — ⏸️ JOE PLAYS IT, THEN
+> MERGES AT HIS WORD.** Piece 4 (D722): each tier its own look on the map, the bar and the minimap; the home card names a stone house
+> after its family and says its winter, its fireless days and its rebuild's progress; the log says a rebuild's start and finish.
+> No golden moved. The ⏸️ line says how to reach the cottage quickly.
+>
+> **(Pieces 1–3, as they stood.)** Piece 3 (D721): the
 > family tree learns the cottage (3rd generation + 20 people) and the manor (5th + 45); *Build homes as — Cabins · Cottages · Manors*
 > beside *Paint land*, Cabins until Joe picks; the older houses rebuilt in place one at a time behind every site. Four goldens moved by
 > the cottage's learned byte alone (proved). **Next: piece 4, each tier's look and the home card; then Joe plays.** The ⏸️ line has it all.
@@ -9291,6 +9296,7 @@ Read `git status` after staging, every time.
   sound (its own write is new, so MSBuild recompiles every source as it now is); only the state *after* the script is stale.
   **After any mutant script: `touch` every file it touched (or restore with `shutil.copy`), build `--no-incremental`, and grep
   the source for the last mutant's text before trusting a green.** The `filecmp` check proves the bytes, never the binary.
+- ⛔ **(D722) A house is drawn AFTER the sites, so whatever stands on a house's own ground is hidden under it.** A repair's and a rebuild's site (`StandsOnABuilding`) were being drawn by `DrawWorkplaces` and painted over by `DrawHomes` a moment later — piece 3's rebuild was invisible on the map and nobody could have seen it in a probe whose founding has no house. The rebuild is drawn by the house now (`_rebuildDrawn`, picked up from the walk already made). ⚠️ **A repair still is not** — a mended house shows nothing while it is mended; logged, not changed. And: **a probe with no house in it cannot red-check anything drawn on a house** — three of piece 4's zeros are that; Joe's play is the check.
 - ⛔ **(D721) A mutant must remove the rule it is named for, not one arm of it.** "The worn are not first" was written as
   `|| (worn && !bestWorn && distance < 0)`, which left `worn == bestWorn` in the tie-break — so the first candidate's wornness
   stuck and a sound cabin still could not displace a worn one: zero reds, and the guard was fine. Switching wornness itself off
@@ -9874,9 +9880,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   cottage and manor rows, the burn by row (the cabin byte-identical), `HomeKind` behind `HomeRowOf`.** ✅ **Piece 3 built (D721):
   the gates typed as 3rd generation + 20 and 5th + 45, latched at a birth or a band; *Build homes as — Cabins · Cottages · Manors*
   beside *Paint land*, Cabins until he picks; the rebuild in place, one at a time behind every site, the worn first; four goldens
-  moved by the cottage's learned byte alone (proved).** Next: piece 4, each tier's look and the home card (the rebuild-progress
-  sentence). Joe plays when the four pieces are in — learn the cottage (or pose it), pick *Cottages*, watch a street rebuilt —
-  and merges at his word.
+  moved by the cottage's learned byte alone (proved).** ✅ **Piece 4 built (D722): each tier its own look (grey cottage under
+  slate, a pale manor drawn bigger with two storeys, two chimneys and a stone yard wall; the rebuild rising over the old house),
+  the home card naming a stone house after its family with its winter, its fireless days and its rebuild's progress, the log's
+  start and finish; no golden moved. THE SLICE IS BUILT.** ⏸️ **Joe's: play it** — reach the cottage (3rd generation + 20 people,
+  ~Year 25–32; for a quick look, a new game with `cottage_unlock_generation` 2 and `cottage_unlock_population` 4 in
+  `data/sim.config.json` learns it at the first birth — put them back after), pick *Cottages*, watch a street rebuilt one house at
+  a time — **then merge at his word.** ⚠️ `specs/art-inventory.md` B8 (the art lane's file) still says the house tiers have no
+  rows; the art lane updates it after the merge.
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and
