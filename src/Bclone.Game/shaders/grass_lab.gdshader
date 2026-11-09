@@ -76,9 +76,10 @@ uniform float splat_sharpness = 48.0;
 uniform bool bleed_on = false;
 uniform float bleed_reach_tiles = 0.0;
 uniform float bleed_scale_tiles = 1.0;
-// 7. Ground textures (A14, `specs/ground-textures.md`): Joe's painted woods tile in place of kind_wood, repeating or
-// hex-tiled, young wood derived. Its uniforms are the include's (ground_wood, ground_tex_on, ground_tex_tiles,
-// ground_tex_antitile, kind_young, ground_young_preview); off, the wood is kind_wood exactly.
+// 7. Ground textures (A14, A17, `specs/ground-textures.md`): Joe's painted woods, stone and water tiles in place of
+// kind_wood, kind_stone and kind_water, repeating or hex-tiled; young wood and the shallows derived. Its uniforms are
+// the include's (ground_wood, ground_stone, ground_water, ground_tex_on, ground_tex_tiles, ground_tex_antitile,
+// kind_young, ground_young_preview); off, the four colours are the palette's exactly.
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -173,8 +174,26 @@ void fragment() {
             kinds = terrain_splat(weights, TERRAIN_HARD);
         }
         water = kinds.a;
-        vec3 wood = ground_tex_on ? terrain_wood(tile, dFdx(tile), dFdy(tile), hex_sharpness) : kind_wood;
-        ground = terrain_ground(kinds, weights.a, ground_srgb, wood);
+        vec3 wood = kind_wood;
+        vec3 stone = kind_stone;
+        vec3 deep = kind_water;
+        vec3 shallows = kind_shallows;
+        if (ground_tex_on) {
+            // Derivatives here, where every pixel runs; a kind not drawn at this place is not sampled (its share is 0).
+            vec2 tx = dFdx(tile);
+            vec2 ty = dFdy(tile);
+            if (kinds.y > 0.0) {
+                wood = terrain_wood(tile, tx, ty, hex_sharpness);
+            }
+            if (kinds.z > 0.0) {
+                stone = terrain_stone(tile, tx, ty, hex_sharpness);
+            }
+            if (kinds.w > 0.0) {
+                deep = terrain_water(tile, tx, ty, hex_sharpness);
+                shallows = terrain_shallows(deep);
+            }
+        }
+        ground = terrain_ground(kinds, weights.a, ground_srgb, wood, stone, deep, shallows);
         strength *= terrain_coverage(grass_weight, coverage_fade);
     }
 
