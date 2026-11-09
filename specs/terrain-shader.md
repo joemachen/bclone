@@ -210,8 +210,11 @@ Each piece is droppable: the branch is whole after any of them, and Joe can look
 | 4 | **Splat blending and edge bleed** | *Splat blending* switch · *Splat sharpness* · *Edge bleed* switch · *Bleed reach* · *Bleed scale* | ⭐ approved (A7): 5.5, 0.33, 0.30 tiles; §3.2: the water keeps its hard edge under both |
 
 **The fake map stands in for the bake, and is shaped like it.** One RGBA8 image, 8 px a tile, 120 × 80 tiles centred on
-the lab's origin, bilinear, clamped: **R grass, G wood, B stone, A water**, weights summing to one, off the map all grass
-(as `ValleyTexture.Blended` reads it). R is the coverage channel the bake will write. It is laid out as a test scene
+the lab's origin, bilinear, clamped: **R grass, G wood, B seam, A water**, weights summing to one, off the map all grass
+(as `ValleyTexture.Blended` reads it). R is the coverage channel the bake will write. **The seam is stone or iron**
+(A20, `ground-textures.md §5` piece 3): a second, one-channel image beside it (`ground_map_iron`) is white where an iron
+patch is nearer than any stone one and black elsewhere, so splat, bleed and the water's contour stay four-way and the
+kind flips only midway between seams, on grass. It is laid out as a test scene
 rather than a valley, because the lab's village is fixed: the placeholders stand on open grass, their wood stands on a
 wood, the river runs below the granary at the real two tiles wide, and woods and stone meet the river and each other,
 so every junction is on screen at the lab's opening zoom. Its edges wander by `ValleyTexture`'s own three warp octaves.

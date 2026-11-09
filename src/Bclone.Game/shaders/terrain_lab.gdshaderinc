@@ -4,27 +4,32 @@
 // switch off that shader draws the approved look byte for byte. The uniform defaults here are "off", not a look: the
 // starting values are in res://looks/terrain_lab.tres.
 
-// The fake coverage map (GrassLabGround.cs), weights: R grass, G wood, B stone, A water. Data, so no source_color.
+// The fake coverage map (GrassLabGround.cs), weights: R grass, G wood, B seam, A water. Data, so no source_color.
 // R is the channel ValleyTexture's bake will write.
 uniform sampler2D ground_map : hint_default_white, filter_linear, repeat_disable;
 uniform vec2 ground_map_tiles = vec2(120.0, 80.0);
+// Which seam B is (A20): white iron, black stone. The fifth kind rides on the seam's weight, so splat, bleed and the
+// water's contour stay four-way; the map flips only midway between seams, on grass. Black until baked: all stone.
+uniform sampler2D ground_map_iron : hint_default_black, filter_linear, repeat_disable;
 
 // The ground kinds, sRGB-encoded, from VillageMap's palette. No source_color: used exactly as written.
 uniform vec3 kind_wood = vec3(0.5);
 uniform vec3 kind_stone = vec3(0.5);
 uniform vec3 kind_water = vec3(0.5);
 uniform vec3 kind_shallows = vec3(0.5);
+uniform vec3 kind_iron = vec3(0.5);
 
 // How the weights are sharpened into one kind: at this power a kind's edge is the bake's hard contour.
 const float TERRAIN_HARD = 48.0;
 
 // ---- The painted ground kinds (`specs/ground-textures.md`, A12–A17) --------------------------------------------
-// Joe's tiles in place of kind_wood, kind_stone and kind_water: 2048² sRGB each, covering 64 × 64 tiles, imported
+// Joe's tiles in place of kind_wood, kind_stone, kind_iron and kind_water: 2048² sRGB each, covering 64 × 64 tiles, imported
 // lossless and mipmapped. Sampled as written, like the kinds (no source_color): the colour painted is the colour drawn.
 // White until loaded, so a tile that never arrived shows, rather than drawing black.
 uniform sampler2D ground_wood : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform sampler2D ground_stone : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform sampler2D ground_water : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform sampler2D ground_iron : hint_default_white, filter_linear_mipmap, repeat_enable;
 uniform bool ground_tex_on = false;
 // How many tiles one repeat of the painting covers: 64 is the painting's own scale, 32 px a tile.
 uniform float ground_tex_tiles = 64.0;
@@ -80,6 +85,11 @@ vec3 terrain_stone(vec2 tile, vec2 gx_tile, vec2 gy_tile, float hex_sharpness) {
     return terrain_painted(ground_stone, tile, gx_tile, gy_tile, hex_sharpness);
 }
 
+// The iron seam: the iron tile (A20).
+vec3 terrain_iron(vec2 tile, vec2 gx_tile, vec2 gy_tile, float hex_sharpness) {
+    return terrain_painted(ground_iron, tile, gx_tile, gy_tile, hex_sharpness);
+}
+
 // Deep water: the water tile (A16).
 vec3 terrain_water(vec2 tile, vec2 gx_tile, vec2 gy_tile, float hex_sharpness) {
     return terrain_painted(ground_water, tile, gx_tile, gy_tile, hex_sharpness);
@@ -96,6 +106,12 @@ vec4 terrain_weights(vec2 tile) {
     return texture(ground_map, tile / ground_map_tiles + 0.5);
 }
 
+// Whether the seam at a tile is iron (A20). A pick, not a blend: the map is one or the other wherever a seam is drawn.
+// textureLod, because the caller asks only where a seam is drawn (a branch), and the map has one level anyway.
+bool terrain_seam_is_iron(vec2 tile) {
+    return textureLod(ground_map_iron, tile / ground_map_tiles + 0.5, 0.0).r >= 0.5;
+}
+
 // Each kind's share once the weights are raised to `sharpness`. The top weight is scaled to one first, so the power
 // never underflows where every kind is small.
 vec4 terrain_splat(vec4 w, float sharpness) {
@@ -105,12 +121,13 @@ vec4 terrain_splat(vec4 w, float sharpness) {
 }
 
 // The ground under the grass. The grass's own ground is the parchment; the river's depth is ValleyTexture.Dressed's,
-// shallows at the bank, read off the same weight as the fill, so the two cannot disagree (D338). With the ground
-// textures off the four colours are kind_wood, kind_stone, kind_water and kind_shallows exactly; on, they are the painted
-// tiles at this place and the shallows derived from the water's (A14, A17) — the same ramp either way.
-vec3 terrain_ground(vec4 k, float water_weight, vec3 parchment, vec3 wood, vec3 stone, vec3 deep, vec3 shallows) {
+// shallows at the bank, read off the same weight as the fill, so the two cannot disagree (D338). `seam` is the stone or
+// the iron, whichever the seam is here (A20). With the ground textures off the colours are kind_wood, kind_stone or
+// kind_iron, kind_water and kind_shallows exactly; on, they are the painted tiles at this place and the shallows derived
+// from the water's (A14, A17, A20) — the same ramp either way.
+vec3 terrain_ground(vec4 k, float water_weight, vec3 parchment, vec3 wood, vec3 seam, vec3 deep, vec3 shallows) {
     vec3 water = mix(shallows, deep, smoothstep(0.45, 0.95, water_weight));
-    return parchment * k.x + wood * k.y + stone * k.z + water * k.w;
+    return parchment * k.x + wood * k.y + seam * k.z + water * k.w;
 }
 
 // How much grass a place takes: none where grass does not win, rising from the contour inward, as ValleyTexture.Winner's
