@@ -52,8 +52,8 @@ public sealed partial class SimWorld
 
     /// <summary>The family's house, or sound for a family with no house.</summary>
     public Condition ConditionOf(Household household) =>
-        household.HasHome && BuildingsCatalog[BuildingKind.Home] is BuildingRow row
-            ? ConditionRules.Of(household.HomeRaisedAtTick, household.HomeRepairedAtTick, Tick, row, Config)
+        household.HasHome
+            ? ConditionRules.Of(household.HomeRaisedAtTick, household.HomeRepairedAtTick, Tick, HomeRowOf(household), Config)
             : Condition.Sound;
 
     public Condition ConditionOf(Bridge bridge) =>
@@ -83,8 +83,8 @@ public sealed partial class SimWorld
 
     /// <summary>The family's house, or null for a family with none.</summary>
     public WearReport? WearOf(Household household) =>
-        household.HasHome && BuildingsCatalog[BuildingKind.Home] is BuildingRow row
-            ? Report(household.HomeRaisedAtTick, household.HomeRepairedAtTick, row)
+        household.HasHome
+            ? Report(household.HomeRaisedAtTick, household.HomeRepairedAtTick, HomeRowOf(household))
             : null;
 
     public WearReport? WearOf(Bridge bridge) =>
@@ -136,10 +136,12 @@ public sealed partial class SimWorld
         for (int i = 0; i < Households.Count; i++)
         {
             Household household = Households[i];
-            if (!household.HasHome || BuildingsCatalog[BuildingKind.Home] is not BuildingRow row)
+            if (!household.HasHome)
             {
                 continue;
             }
+
+            BuildingRow row = HomeRowOf(household);
 
             Condition now = ConditionOf(household);
             Condition before = ConditionRules.Of(household.HomeRaisedAtTick, household.HomeRepairedAtTick, aSeasonAgo, row, Config);
@@ -150,7 +152,8 @@ public sealed partial class SimWorld
                 // The house's own footprint — its origin is the anchor, not the front point the household keeps (`HomeAnchorOn`).
                 if (HomeFootprintOf(household) is Footprint house)
                 {
-                    RaiseARepairIfNoneFor(BuildingKind.Home, house.Origin, name, house.Facing, BuildingRecipe.For(BuildingKind.Home, Config));
+                    // A house site whatever the house, mended at its own row's price (D719: a cottage's repair is a cottage's).
+                    RaiseARepairIfNoneFor(BuildingKind.Home, house.Origin, name, house.Facing, BuildingRecipe.For(household.HomeKind, Config));
                 }
             }
 

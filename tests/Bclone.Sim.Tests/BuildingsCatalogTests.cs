@@ -279,6 +279,10 @@ public sealed class BuildingsCatalogTests
                 BuildingKind.FishingHut => config.FishingHutStoreCap,
                 BuildingKind.HunterLodge => config.HunterLodgeStoreCap,
                 BuildingKind.Home => config.HomeStoreCap,
+
+                // ⭐ The house ladder's two (D719): the hook D206 named, cashed as two rows.
+                BuildingKind.Cottage => config.CottageStoreCap,
+                BuildingKind.Manor => config.ManorStoreCap,
                 _ => 0,
             };
 
@@ -293,7 +297,7 @@ public sealed class BuildingsCatalogTests
                 kind == BuildingKind.HunterLodge ? config.HuntingRadius : 0,
                 row.HuntingRadius);
             Assert.Equal(
-                kind == BuildingKind.Home ? config.MaxHouseholdSize : 0,
+                kind is BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor ? config.MaxHouseholdSize : 0,
                 row.HouseCapacity);
         }
     }

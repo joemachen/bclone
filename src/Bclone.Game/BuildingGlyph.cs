@@ -69,7 +69,8 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Warehouse => VillageMap.StoreTone,
         BuildingKind.Market => VillageMap.MarketTone,
         BuildingKind.Pile => VillageMap.StoneTone,
-        BuildingKind.Home => VillageMap.DwellingColour,
+        // Every house the dwelling colour until each tier has its own look (`house-tiers.md §14.4`).
+        BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor => VillageMap.DwellingColour,
         BuildingKind.Library => VillageMap.LibraryTone,
         BuildingKind.TownHall => VillageMap.CivicTone,
         BuildingKind.Well => VillageMap.WellTone,
@@ -173,6 +174,8 @@ public sealed partial class BuildingGlyph : Control
 
             // A house: a roof, a wall and a door.
             case BuildingKind.Home:
+            case BuildingKind.Cottage:
+            case BuildingKind.Manor:
                 Roof(new Rect2(s * 0.14f, s * 0.14f, s * 0.72f, s * 0.28f), ink);
                 DrawRect(new Rect2(s * 0.22f, s * 0.42f, s * 0.56f, s * 0.44f), ink);
                 DrawRect(new Rect2(s * 0.44f, s * 0.60f, s * 0.14f, s * 0.26f), Paint(VillageMap.Ink));

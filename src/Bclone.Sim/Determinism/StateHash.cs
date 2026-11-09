@@ -286,6 +286,13 @@ public static class StateHash
                 {
                     hash = MixByte(hash, 0x60);
                 }
+
+                // Which house it is (D719, `house-tiers.md §7`) — sparse, so a village of cabins hashes as it always did.
+                if (household.HomeKind != BuildingKind.Home)
+                {
+                    hash = MixByte(hash, 0x80);
+                    hash = MixUInt32(hash, (uint)household.HomeKind);
+                }
             }
 
             // 0x68 was `Household.LodgedIn` (D566; retired with the longhouse, D571) — sparse, so a family that never

@@ -241,7 +241,7 @@ repair is served. That is the nomads' inheritance.
   (D678):** a new building, the builder's hut unchanged, no hammer — its §8 says what this hut does *not* do.
 - **Fire, storm, blight** — §4's own sentence (*telegraphed, legible, answerable*) before any of it.
 - **The library's record decay and keeper** — `tech-tree.md §7c`, lands with its own spec.
-- **House tiers** — read `wears_in_years` per row when they come (a stone cottage wears slower); their own spec.
+- **House tiers** — read `wears_in_years` per row when they come (a stone cottage wears slower); their own spec. ✅ **Done (D720, `house-tiers.md`):** a stone cottage and a manor wear at `stone_house_lasts_percent` (200) of the three years, and a house's condition, wear and repair price are asked of its own row (`SimWorld.HomeRowOf`).
 - **Mild-weather vs winter on the house's firewood** — D206's 6–8× burn axis, untouched.
 
 ---

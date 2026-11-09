@@ -561,11 +561,54 @@ public sealed partial class SimWorld : IObstacles
     internal Stockpile NewLarder() =>
         new(GoodsCatalog.Count) { Capacity = LarderCapacity };
 
-    /// <summary>How much a larder holds, food and firewood together (D399).</summary>
-    public int LarderCapacity =>
-        BuildingsCatalog[BuildingKind.Home]?.LocalStoreCap is int cap && cap > 0
+    /// <summary>How much a larder holds, food and firewood together (D399) — the cabin's, and a roofless family's.</summary>
+    public int LarderCapacity => LarderCapacityOf(BuildingKind.Home);
+
+    /// <summary>A dwelling row's larder (`house-tiers.md §4.1`): 400 a cabin, 600 a cottage, 800 a manor as shipped.</summary>
+    public int LarderCapacityOf(BuildingKind dwelling) =>
+        BuildingsCatalog[dwelling]?.LocalStoreCap is int cap && cap > 0
             ? cap
             : int.MaxValue;
+
+    /// <summary>
+    /// ⭐ THE ONE DOOR (`house-tiers.md §4.6`, D719): the row the family's house is — cabin, cottage or manor — and the
+    /// cabin's for a family with no house. Everything about a house that a row says (its burn, its larder, its wear,
+    /// its warmth, its recipe, how many it holds) is asked here. ⚠️ The house's GROUND is not: every dwelling row stands
+    /// on the cabin's extent (the validator refuses any other), so the footprint, the plot and the fence read the cabin.
+    /// </summary>
+    public BuildingRow HomeRowOf(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        BuildingKind kind = household.HasHome ? household.HomeKind : BuildingKind.Home;
+        return BuildingsCatalog[kind] ?? BuildingsCatalog[BuildingKind.Home]
+            ?? throw new InvalidOperationException("The catalogue has no house row.");
+    }
+
+    /// <summary>
+    /// Make the family's house <paramref name="dwelling"/> — the kind and the larder's walls together, so a larder is
+    /// never the wrong size for its house (`house-tiers.md §4.1`). A family moving into a smaller house keeps what it
+    /// holds; the walls only refuse what comes next.
+    /// </summary>
+    internal void SetHomeKind(Household household, BuildingKind dwelling)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        household.HomeKind = dwelling;
+        household.Stockpile.Capacity = LarderCapacityOf(dwelling);
+    }
+
+    /// <summary>
+    /// Firewood the family's house burns in a winter (`house-tiers.md §4.2`) — its row's <c>winter_firewood</c>. For the
+    /// cabin it is <see cref="VillageEconomy.FirewoodPerHouseholdPerWinter"/> to the log.
+    /// </summary>
+    public int WinterFirewoodOf(Household household) => HomeRowOf(household).WinterFirewood;
+
+    /// <summary>
+    /// What the family keeps at home against a winter — a winter's burn and the buffer over it, the household's own
+    /// house's (`house-tiers.md §4.3`). For the cabin it is <see cref="VillageEconomy.FirewoodStoreWantedPerHousehold"/>.
+    /// ⛔ The survival floor is NOT this: <c>VillageEconomy</c> still derives against the cabin (§4.3).
+    /// </summary>
+    public int FirewoodWantedFor(Household household) =>
+        WinterFirewoodOf(household) * Config.WinterBufferPercent / 100;
 
     /// <summary>Structured sink. Entries are stamped with the current tick.</summary>
     public ISimLogger Logger { get; }
@@ -8081,7 +8124,9 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.Fine;
         }
 
-        BuildingKind? kind = HouseholdAt(tile) is not null
+        // A house is pulled down as a house site; its work is its own row's (a cottage takes longer, D719).
+        Household? houseHere = HouseholdAt(tile);
+        BuildingKind? kind = houseHere is not null
             ? BuildingKind.Home
             : WhatStandsAt(tile);
 
@@ -8098,7 +8143,7 @@ public sealed partial class SimWorld : IObstacles
         // *The fix is to ask while the building is still there rather than to guess afterwards.*
         Angle facing = FacingOfWhatStandsAt(tile);
 
-        int work = BuildingsCatalog.RecipeOf(kind.Value).WorkTicks
+        int work = BuildingsCatalog.RecipeOf(houseHere?.HomeKind ?? kind.Value).WorkTicks
             * Config.DemolitionWorkPercent / 100;
 
         // Nothing to take apart — it goes now, exactly as it always did.
@@ -8241,6 +8286,8 @@ public sealed partial class SimWorld : IObstacles
             family.HomeRaisedAtTick = 0;
             family.HomeRepairedAtTick = 0;
             family.WhyHere = "";
+            BuildingKind was = family.HomeKind;
+            SetHomeKind(family, BuildingKind.Home);
             ReleasePlotOf(family.Id);
 
             // The fence comes down with the house and its logs come back with it (D388).
@@ -8248,7 +8295,7 @@ public sealed partial class SimWorld : IObstacles
             family.FencedTiles = new List<GridPos>();
 
             string recovered = ReturnToStore(
-                tile, RefundFor(HomeRecipeWithFence(yardTiles)));
+                tile, RefundFor(HomeRecipeWithFence(yardTiles, was)));
 
             Narrate($"The {family.Name} household's house at {tile} came down — "
                 + $"{recovered} went back to store. {Clock.SeasonAndYear()}.", LogCategory.Building);
@@ -8969,9 +9016,9 @@ public sealed partial class SimWorld : IObstacles
     /// A house's recipe with its fence (D388): the catalogue's house, plus
     /// <see cref="SimConfig.FenceLogsPerTile"/> for every yard tile the fence encloses.
     /// </summary>
-    internal BuildingRecipe HomeRecipeWithFence(int yardTiles)
+    internal BuildingRecipe HomeRecipeWithFence(int yardTiles, BuildingKind dwelling = BuildingKind.Home)
     {
-        BuildingRecipe house = BuildingRecipe.For(BuildingKind.Home, Config);
+        BuildingRecipe house = BuildingRecipe.For(dwelling, Config);
         int fence = yardTiles < 0 ? 0 : yardTiles * Config.FenceLogsPerTile;
         if (fence <= 0)
         {
@@ -11416,7 +11463,7 @@ public sealed partial class SimWorld : IObstacles
         // family in them — "the Thatcher household" — which is a better name than any number
         // and the one every sentence about a home already uses. "House 47" would be the row
         // in a table D56 objected to, in the one place the objection still holds.
-        if (kind == BuildingKind.Home)
+        if (kind is BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor)
         {
             return "a house";
         }
@@ -14164,9 +14211,11 @@ public sealed partial class SimWorld : IObstacles
     public int TargetFoodFor(Household household)
     {
         int wanted = Config.StockpileTarget * Math.Max(1, LivingMembersOf(household));
-        int room = LarderCapacity == int.MaxValue
+        // The family's own house's walls and its own hearth's share (D719): a cottage keeps more food at home.
+        int walls = LarderCapacityOf(household.HasHome ? household.HomeKind : BuildingKind.Home);
+        int room = walls == int.MaxValue
             ? int.MaxValue
-            : LarderCapacity - VillageEconomy.FirewoodStoreWantedPerHousehold(Config);
+            : walls - FirewoodWantedFor(household);
 
         return wanted < room ? wanted : room;
     }

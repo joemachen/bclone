@@ -11,7 +11,7 @@ is a lit hearth), D546–D551 (the bridge: a second row, rebuilt in place while 
 hashed only when true), D709 (every good starts with a limit — firewood at 600), D576 (a stop through `LearnedByDoing`
 sets a hashed flag and moved four goldens).
 **Status:** ✍️ **SPECCED (D716), EVERY CALL ANSWERED (D717, D718 — 2026-11-07/08) ON `slice/house-tiers`; THE BUILD
-STARTS WITH PIECE 1, THE GENERATION (§14).** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
+STARTS WITH PIECE 1, THE GENERATION (§14); PIECES 1–2 BUILT (D719, D720).** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
 24 / 12 / 5 first, the cabin's raise measured after; **the family tree gates both rungs** (a new generation born into the
 valley + the village grown to hold it — cottages ~Year 30, manors ~Year 80–90); every house holds 5; a bigger larder and
 its own look each; the three perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1, drawn bigger.
@@ -427,9 +427,18 @@ One commit each, docs in the same commit, every guard red-checked and counted; t
    13), unhashed; the villager card's *"Third generation in the valley"*. `HouseTierTests`: 4 guards, 6 mutants, 9 reds by
    guard (17 by case), no zeros. §10's arm B read the timing (§4.4's 📏 table) — **the numbers for both gates come from it,
    not from the arithmetic.**
-2. **The rows and the burn** — the Cottage and Manor rows, `winter_firewood` spread over the beat (byte-identical for the
-   cabin), `Household.HomeKind` behind `HomeRowOf` (every `BuildingKind.Home` site accounted for), per-row larder, wear and
-   `exposure_days_sheltered`, `LabourQuota` per home.
+2. ✅ **The rows and the burn — BUILT (D720, 2026-11-08).** `BuildingKind.Cottage` 28 and `Manor` 29, two dwelling rows on
+   the cabin's 2×1 (`cottage_*` / `manor_*` keys, `stone_house_lasts_percent` 200); the columns `winter_firewood` (the
+   cabin's derived from the two old keys — 24, byte for byte) and `exposure_days_sheltered`; the hearth's burn spread
+   ⌊(k+1)W/B⌋ − ⌊kW/B⌋ (`HearthSystem.BurnOnBeat`); `Household.HomeKind` (saved, hashed only off the cabin) set through
+   `SimWorld.SetHomeKind`, which sizes the larder; `HomeRowOf` read by condition, wear, repair price, demolition, the food
+   target, the family's firewood want (`FirewoodWantedFor`, three behaviour sites), the woodcutters' demand and the roof's
+   chill (`RoofChillAt`); the validator's D571 refusal narrowed to *a dwelling stands on the house's ground, keeps a
+   larder and is nothing else*; the build menu and the cards' site probe skip every dwelling row. **Of the 23 sim lines that named
+   `BuildingKind.Home`:** 3 are the row and its validator; 9 read the household's row now; the 5 footprint / extent / yard
+   sites stay the cabin's by the validator's rule; the 6 that raise and finish a house's site are piece 3's (new homes at
+   the chosen tier, the rebuild). Nothing in play
+   makes a cottage yet — no golden can reach one. `HouseTierTests` +10 guards (the cabin's identity beat by beat, any winter whole and even, a real winter per row, the roof's chill per row and the hearth reading it, stone lasting twice, the larder's walls and target, the woodcutters' demand, the kind saved and hashed only off the cabin, a dwelling off the house's ground refused) and the modded guard re-aimed (a warehouse with beds is still refused); 14 mutants, 16 reds by guard; ⚠️ two scored zero first — the hearth reading the row (only the helper was tested) and the food target (no family wanted more than the walls) — and each got the guard it lacked; three mutants did not build at first (IDE0060, CS0162) and were rewritten so they did. ⚠️ Not posed: the empty-house swap carrying the kind, the repair's and the demolition's price by row, and the birth gate's capacity by row (every house holds 5, so a mutant there is invisible by construction). **Four checks:** suite **1976 / 0 / 5 of 1981 in 15m40** (nothing beside it; an earlier run read 27m28 with something else on the machine — the clean one is this); view build 0 warnings; probe 129 `[widths]` lines, 92 ✅, 0 ⛔, bar 151, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 403 → 403, none moved.
 3. **The gates and the choice** — the two latched flags on the family tree, `WhyNotYet`, the tech-map nodes, the moments;
    *Build homes as* on the housing brush; new homes at the chosen tier; `RebuildsHome`, one at a time behind every site.
 4. **The view** — each tier's look, the cards (tier, burn, warmth, rebuild progress, the family's name), the probe line.

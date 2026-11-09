@@ -3453,7 +3453,7 @@ public partial class Main
         foreach (BuildingKind kind in System.Enum.GetValues<BuildingKind>())
         {
             // A retired id (D571) has no row and no recipe to ask about.
-            if (kind == BuildingKind.Home || !world.BuildingsCatalog.Has((int)kind) || BuildingRecipe.For(kind, world.Config).Materials.Count < 2)
+            if (!world.BuildingsCatalog.Has((int)kind) || world.BuildingsCatalog[kind]?.HouseCapacity > 0 || BuildingRecipe.For(kind, world.Config).Materials.Count < 2)
             {
                 continue;
             }

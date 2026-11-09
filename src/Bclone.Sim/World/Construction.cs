@@ -394,6 +394,16 @@ public enum BuildingKind
     /// against <c>SimWorld.LogsEverFelled</c> (§4.1a; Joe, D675–D676). <b>Appended at 27.</b>
     /// </summary>
     Workshop = 27,
+
+    /// <summary>
+    /// ⭐ The Stone Cottage — the house ladder's second rung (`specs/house-tiers.md`, D716–D718): a dwelling row on the
+    /// cabin's 2×1 ground that burns half the firewood, keeps a bigger larder, lasts twice as long and stays warm longer
+    /// without a fire. Learned on the family tree (piece 3); a household lives in one when <c>Household.HomeKind</c> says so.
+    /// </summary>
+    Cottage = 28,
+
+    /// <summary>The Insulated Manor — the third rung (`specs/house-tiers.md`): the same 2×1 ground, drawn bigger.</summary>
+    Manor = 29,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

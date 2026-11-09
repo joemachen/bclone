@@ -762,6 +762,34 @@
   // (D206): a stone cottage raises it by changing a row.
   "home_store_cap": 400,
 
+  // ---- House tiers (D716-D719, specs/house-tiers.md) ----------
+  // Wooden Cabin -> Stone Cottage -> Insulated Manor on the firewood axis
+  // (D206, Joe's ladder). Three dwelling rows, one mechanism: every house
+  // stands on the cabin's 2x1 ground and holds 5 (Joe, D718: "keep it at
+  // 5"). The CABIN's winter is not here: it is the two keys it always was
+  // (ceil(days_per_season / firewood_burn_interval_days) x
+  // firewood_per_winter_day = 24), so a village of cabins burns, and
+  // hashes, exactly as before. A house burns its winter evenly over the
+  // beats, so any number below is reachable (D189's grid is gone).
+  //
+  // EVERY NUMBER IS A PROPOSAL until the spec's arm B is filled on the
+  // harness: the stone prices and work, the larders (Joe: each tier
+  // bigger than the last), the fireless days ("keeps its warmth") and
+  // how long stone lasts ("lasts", 200 = twice the cabin's 8/12/20 years).
+  "cottage_logs": 20,
+  "cottage_stone": 30,
+  "cottage_work_ticks": 45,
+  "cottage_store_cap": 600,
+  "cottage_winter_firewood": 12,
+  "cottage_exposure_days_sheltered": 30,
+  "manor_logs": 30,
+  "manor_stone": 45,
+  "manor_work_ticks": 60,
+  "manor_store_cap": 800,
+  "manor_winter_firewood": 5,
+  "manor_exposure_days_sheltered": 40,
+  "stone_house_lasts_percent": 200,
+
   // ---- The builder's hut (D108) ------------------------------
   // Where the village's builders work from. Nothing is raised without
   // one: a construction site is an errand the hut's crew walks out to,

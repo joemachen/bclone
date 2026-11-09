@@ -121,6 +121,14 @@ public sealed class Household
     /// </summary>
     public ulong HomeRaisedAtTick { get; set; }
 
+    /// <summary>
+    /// Which dwelling row the house is (`specs/house-tiers.md §4.6`, D719): the cabin (<see cref="BuildingKind.Home"/>),
+    /// the stone cottage or the insulated manor. Meaningful only while <see cref="HomePosition"/> is set; travels with the
+    /// house when a family moves into an empty one and goes back to the cabin when the house comes down. Set through
+    /// <c>SimWorld.SetHomeKind</c>, which sizes the larder to the row. Saved; hashed only when it is not the cabin.
+    /// </summary>
+    public BuildingKind HomeKind { get; internal set; } = BuildingKind.Home;
+
     /// <summary>The tick the builders last mended the house, or 0 never.</summary>
     public ulong HomeRepairedAtTick { get; set; }
 
@@ -1325,6 +1333,7 @@ public sealed class Household
         ["home_raised_at"] = SaveWriter.Hex(HomeRaisedAtTick),
         ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
         ["home_closed"] = HomeClosed,
+        ["home_kind"] = SaveWriter.Enum(HomeKind),
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1348,6 +1357,7 @@ public sealed class Household
             HomeRaisedAtTick = save.ULong("home_raised_at"),
             HomeRepairedAtTick = save.ULong("home_repaired_at"),
             HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
+            HomeKind = save.Enum<BuildingKind>("home_kind"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

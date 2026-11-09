@@ -1351,6 +1351,7 @@ public readonly record struct LabourQuota
         // people without a single soul freezing.
         int demand = 0;
         int homes = 0;
+        int winters = 0;
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
@@ -1360,8 +1361,9 @@ public readonly record struct LabourQuota
             }
 
             homes++;
+            winters += world.WinterFirewoodOf(household);
 
-            int wanted = VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config);
+            int wanted = world.FirewoodWantedFor(household);
             int missing = wanted - household.Stockpile.Firewood;
             if (missing > 0)
             {
@@ -1377,7 +1379,9 @@ public readonly record struct LabourQuota
         // people with its firewood exactly at target and no buffer, and one winter took
         // twenty-eight of them. Including the burn makes this proportional control
         // rather than a switch, which is what a woodpile IS.
-        demand += homes * VillageEconomy.FirewoodPerHouseholdPerWinter(world.Config);
+        // Each house's own winter (D719): a village of cottages wants half the woodcutting. For cabins it is
+        // homes × FirewoodPerHouseholdPerWinter, as it always was.
+        demand += winters;
 
         // Across every warehouse (D38): a household can fetch from any of them, so all of
         // them are supply. Reading one would have had the village cutting wood it

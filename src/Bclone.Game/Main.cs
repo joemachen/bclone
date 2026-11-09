@@ -7549,9 +7549,9 @@ public partial class Main : Control
         {
             var kind = (BuildingKind)id;
             // ⭐ Nor a pasture's fence (D598): it is put up from its barn's card, round the ground the barn was given.
-            if (kind == BuildingKind.Home || !catalogue.Has(id) || catalogue[kind]?.EnclosesPasture == true)
+            if (!catalogue.Has(id) || catalogue[kind]?.HouseCapacity > 0 || catalogue[kind]?.EnclosesPasture == true)
             {
-                // The house is the brush's; a retired id (D571) has no row to make a button of.
+                // Every house is the brush's — the cabin, the cottage and the manor (D719); a retired id (D571) has no row to make a button of.
                 continue;
             }
 

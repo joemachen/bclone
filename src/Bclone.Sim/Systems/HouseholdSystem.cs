@@ -167,6 +167,8 @@ public sealed class HouseholdSystem : ISimSystem
                 household.HomeFacing = standingEmpty.HomeFacing;
                 household.HomeRaisedAtTick = standingEmpty.HomeRaisedAtTick;
                 household.HomeRepairedAtTick = standingEmpty.HomeRepairedAtTick;
+                world.SetHomeKind(household, standingEmpty.HomeKind);
+                world.SetHomeKind(standingEmpty, BuildingKind.Home);
                 household.WhyHere = standingEmpty.WhyHere;
                 household.FencedTiles = standingEmpty.FencedTiles;
                 standingEmpty.HomePosition = null;
@@ -648,7 +650,7 @@ public sealed class HouseholdSystem : ISimSystem
         // lever, it was scenery. At five it binds, and the shipped village stops dying out
         // (300 unattended years: final 0 at seven, final 20 at five, nobody starving either way).
         if (world.LivingMembersOf(household)
-            >= VillageEconomy.HouseholdCapacity(BuildingKind.Home, config))
+            >= VillageEconomy.HouseholdCapacity(household.HasHome ? household.HomeKind : BuildingKind.Home, config))
         {
             return false;
         }

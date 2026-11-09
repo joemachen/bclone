@@ -9280,6 +9280,12 @@ Read `git status` after staging, every time.
 
 ## ⛔ THE TRAPS D716 NEARLY PAID FOR — A "BEST ALIVE" READ HIDES THE DEAD MASTER, A COUNTER'S NAME IS NOT ITS SCOPE, AND A WARNING'S MULTIPLE IS DATED
 
+- ⛔ **(D720) Test a rule where the sim reads it, not only its helper.** `RoofChillAt` had a guard; the hearth's call to it had
+  none, and the mutant that put the old rate back in the hearth scored zero. Same shape for a `Math.Min` whose other arm
+  always won in the pose (the food target): pose the case where the arm under test is the one that decides.
+- ⛔ **(D720) The analyzers break naive mutants**: a mutant that leaves a parameter unused fails IDE0060, one that writes
+  `if (false)` fails CS0162 — *DID NOT BUILD*, which proves nothing (D450). Keep the parameter read, compare to an
+  impossible value instead.
 - ⛔ **(D719) A mutant script read `dotnet test -v q` for `Failed` lines and scored six zeros.** Quiet prints none. Pass
   `--logger "console;verbosity=normal"` and print the `Total / Passed / Failed` line beside the count, so a zero says whether
   anything ran — D422's trap, met again from a fresh script.
@@ -9842,8 +9848,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   grown to hold it — cottages ~Year 30, manors ~Year 80–90, the numbers from the harness); every house holds 5; larders 400 / 600 / 800
   proposed; the perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1 drawn bigger. Save format 13 refuses his
   format-12 saves. ✅ **Piece 1 built (D719): the generation, format 13; measured — generations 22–25 years apart, so the gates
-  are proposed as the 3rd generation + 20 people (~Year 25–32) and the 5th + 45 (~Year 70–86).** Next: piece 2, the rows and the
-  burn. Joe plays when the four pieces are in, merges at his word.
+  are proposed as the 3rd generation + 20 people (~Year 25–32) and the 5th + 45 (~Year 70–86).** ✅ **Piece 2 built (D720): the
+  cottage and manor rows, the burn by row (the cabin byte-identical), `HomeKind` behind `HomeRowOf`.** Next: piece 3, the gates
+  and *Build homes as*. Joe plays when the four pieces are in, merges at his word.
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and

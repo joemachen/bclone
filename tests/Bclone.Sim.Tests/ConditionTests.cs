@@ -190,8 +190,10 @@ public sealed class ConditionTests
             }
             else
             {
+                // ⭐ A stone house lasts (D720, `house-tiers.md §4.8`): its three years at `stone_house_lasts_percent`.
+                int lasts = (BuildingKind)row.Id is BuildingKind.Cottage or BuildingKind.Manor ? config.StoneHouseLastsPercent : 100;
                 Assert.Equal(
-                    (config.BuildingWearsInYears, config.BuildingFailsInYears, config.BuildingRuinedInYears),
+                    (config.BuildingWearsInYears * lasts / 100, config.BuildingFailsInYears * lasts / 100, config.BuildingRuinedInYears * lasts / 100),
                     (row.WearsInYears, row.FailsInYears, row.RuinedInYears));
             }
         }
