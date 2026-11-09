@@ -17,7 +17,7 @@ public sealed partial class GrassLab
         "view_tile", "snow_on", "snow_blend", "snow_amount", "snow_patchiness", "snow_patch_tiles", "snow_srgb",
         "splat_on", "splat_sharpness", "bleed_on", "bleed_reach_tiles", "bleed_scale_tiles",
         "ground_wood", "ground_tex_on", "ground_tex_tiles", "ground_tex_antitile", "kind_young", "ground_young_preview",
-        "ground_stone", "ground_water",
+        "ground_stone", "ground_water", "ground_map_iron", "kind_iron", "ground_iron",
     };
 
     /// <summary>Joe's woods tile (`specs/ground-textures.md §2`, A13): 2048², 64 × 64 tiles, lossless, mipmapped.</summary>
@@ -29,10 +29,13 @@ public sealed partial class GrassLab
     /// <summary>The water's tile (A16), as the woods'; the shallows are derived from it in the shader.</summary>
     internal const string WaterTilePath = "res://textures/ground/ground_water.png";
 
+    /// <summary>The iron seam's tile (A20), as the woods'.</summary>
+    internal const string IronTilePath = "res://textures/ground/ground_iron.png";
+
     /// <summary>Each painted kind's sampler and its tile, in the order the loader loads them and the probe asks.</summary>
     private static readonly (string Uniform, string Path)[] PaintedTiles =
     {
-        ("ground_wood", WoodsTilePath), ("ground_stone", StoneTilePath), ("ground_water", WaterTilePath),
+        ("ground_wood", WoodsTilePath), ("ground_stone", StoneTilePath), ("ground_water", WaterTilePath), ("ground_iron", IronTilePath),
     };
 
     /// <summary>Every uniform this file and the zoom set on the grain: the probe asks its compiled shader too.</summary>
@@ -110,6 +113,7 @@ public sealed partial class GrassLab
         _material.SetShaderParameter("kind_stone", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Rock)));
         _material.SetShaderParameter("kind_water", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Water)));
         _material.SetShaderParameter("kind_shallows", Srgb(VillageMap.ShallowsColour));
+        _material.SetShaderParameter("kind_iron", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.IronDeposit)));
 
         _terrain = Panel("Terrain");
         _terrain.AnchorLeft = 1f;
@@ -196,8 +200,8 @@ public sealed partial class GrassLab
         BleedReach = AddSlider(body, "Bleed reach", 0.0, 0.5, 0.01, look.BleedReachTiles, Sets("bleed_reach_tiles"), Tiles("0.00"));
         BleedScale = AddSlider(body, "Bleed scale", 0.25, 4.0, 0.05, look.BleedScaleTiles, Sets("bleed_scale_tiles"), Tiles("0.00"));
 
-        // Piece 5 (A14, `ground-textures.md §5` pieces 1–2, A17): Joe's painted woods, stone and water tiles for kind_wood,
-        // kind_stone and kind_water — one switch for all three, the shallows derived from the water in the shader. Needs the
+        // Piece 5 (A14, `ground-textures.md §5` pieces 1–3, A17, A20): Joe's painted woods, stone, iron and water tiles for
+        // kind_wood, kind_stone, kind_iron and kind_water — one switch for all four, the shallows derived from the water in the shader. Needs the
         // coverage map to have a ground to draw on. Young wood is derived from it by the palette's ratio, so the ratio's other half is set here.
         _material.SetShaderParameter("kind_young", Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Sapling)));
         GroundTextures = AddSwitch(body, "Ground textures", "ground_tex_on", false);
@@ -276,7 +280,7 @@ public sealed partial class GrassLab
         _material.SetShaderParameter("ground_tex_antitile", which);
     }
 
-    /// <summary>Joe's woods, stone and water tiles, loaded once on first switching the textures on: ~21 MB of VRAM each with its mipmaps.</summary>
+    /// <summary>Joe's woods, stone, water and iron tiles, loaded once on first switching the textures on: ~21 MB of VRAM each with its mipmaps.</summary>
     private void LoadTheTiles()
     {
         if (TilesLoaded)
@@ -301,6 +305,7 @@ public sealed partial class GrassLab
         }
 
         _material.SetShaderParameter("ground_map", GrassLabGround.Texture());
+        _material.SetShaderParameter("ground_map_iron", GrassLabGround.IronTexture());
         GroundLoaded = true;
     }
 
@@ -520,10 +525,17 @@ public sealed partial class GrassLab
             faults.Add($"switched on: the uniform {Flag("coverage_on")}, baked {lab.GroundLoaded}, a map of {map?.GetWidth()} x {map?.GetHeight()}");
         }
 
+        var ironMap = lab._material.GetShaderParameter("ground_map_iron").As<Texture2D>();
+        if (ironMap is null || ironMap.GetWidth() != GrassLabGround.ImageWide || ironMap.GetHeight() != GrassLabGround.ImageTall)
+        {
+            faults.Add($"switched on, the seam's kind is a map of {ironMap?.GetWidth()} x {ironMap?.GetHeight()} (want the map's {GrassLabGround.ImageWide} x {GrassLabGround.ImageTall})");
+        }
+
         if (lab._material.GetShaderParameter("kind_water").AsVector3() != Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Water))
             || lab._material.GetShaderParameter("kind_wood").AsVector3() != Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Forest))
             || lab._material.GetShaderParameter("kind_stone").AsVector3() != Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.Rock))
-            || lab._material.GetShaderParameter("kind_shallows").AsVector3() != Srgb(VillageMap.ShallowsColour))
+            || lab._material.GetShaderParameter("kind_shallows").AsVector3() != Srgb(VillageMap.ShallowsColour)
+            || lab._material.GetShaderParameter("kind_iron").AsVector3() != Srgb(VillageMap.ColourOf(Bclone.Sim.World.Terrain.IronDeposit)))
         {
             faults.Add("the ground kinds are not VillageMap's palette");
         }
@@ -534,7 +546,7 @@ public sealed partial class GrassLab
             faults.Add("Reset to approved left the coverage map on");
         }
 
-        yield return Line("coverage map", "opens off and unbaked, reaches the shader with a map of the right size over VillageMap's palette, and Reset turns it off", faults);
+        yield return Line("coverage map", "opens off and unbaked, reaches the shader with a map and its seams' kind at the right size over VillageMap's palette, iron's included, and Reset turns it off", faults);
 
         // Coverage fade: the slider.
         faults = new List<string>();
@@ -622,7 +634,7 @@ public sealed partial class GrassLab
 
         // ⚠️ Its own list, never the loader's PaintedTiles: a tile dropped from that list would drop its check with it
         // (red-checked, A17 — the first version scored zero on exactly that).
-        foreach ((string uniform, string file) in new[] { ("ground_wood", "ground_woods.png"), ("ground_stone", "ground_stone.png"), ("ground_water", "ground_water.png") })
+        foreach ((string uniform, string file) in new[] { ("ground_wood", "ground_woods.png"), ("ground_stone", "ground_stone.png"), ("ground_water", "ground_water.png"), ("ground_iron", "ground_iron.png") })
         {
             var tile = lab._material.GetShaderParameter(uniform).As<Texture2D>();
             if (tile is null || tile.ResourcePath != $"res://textures/ground/{file}" || tile.GetWidth() != 2048 || tile.GetHeight() != 2048)
@@ -643,7 +655,7 @@ public sealed partial class GrassLab
             faults.Add("Reset to approved left the ground textures on");
         }
 
-        yield return Line("ground textures", $"opens off and unloaded, switched on loads the woods, stone and water tiles at 2048 x 2048 each into their samplers over the palette's young wood, and Reset turns it off", faults);
+        yield return Line("ground textures", $"opens off and unloaded, switched on loads the woods, stone, water and iron tiles at 2048 x 2048 each into their samplers over the palette's young wood, and Reset turns it off", faults);
 
         // Texture tiles per repeat: the slider, and 64 is the painting's own scale.
         faults = new List<string>();
@@ -724,6 +736,10 @@ public sealed partial class GrassLab
         faults = new List<string>();
         ImportHolds(WaterTilePath, mipmapped: true, Image.Format.Rgb8, faults);
         yield return Line("water tile import", $"{WaterTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
+
+        faults = new List<string>();
+        ImportHolds(IronTilePath, mipmapped: true, Image.Format.Rgb8, faults);
+        yield return Line("iron tile import", $"{IronTilePath} imports mipmapped and lossless, byte for byte its PNG", faults);
     }
 
     /// <summary>Piece 2's lines (A3): the grain's three controls and the pan. <paramref name="lab"/> is left at the approved look.</summary>
@@ -1032,12 +1048,14 @@ public sealed partial class GrassLab
     {
         var faults = new List<string>();
         byte[] first = GrassLabGround.Bake();
-        if (!first.AsSpan().SequenceEqual(GrassLabGround.Bake()))
+        byte[] iron = GrassLabGround.BakeIron();
+        if (!first.AsSpan().SequenceEqual(GrassLabGround.Bake()) || !iron.AsSpan().SequenceEqual(GrassLabGround.BakeIron()))
         {
             faults.Add("two bakes disagree, so a place does not always look the same");
         }
 
-        var kinds = new bool[4];
+        // Grass, wood, stone, iron, water: the seam (B) is stone or iron as the second map says (A20).
+        var kinds = new bool[5];
         for (int i = 0; i < first.Length; i += 4)
         {
             if (first[i] + first[i + 1] + first[i + 2] + first[i + 3] != 255)
@@ -1046,15 +1064,41 @@ public sealed partial class GrassLab
                 break;
             }
 
-            for (int k = 0; k < 4; k++)
-            {
-                kinds[k] |= first[i + k] > 200;
-            }
+            bool isIron = iron[i / 4] == 255;
+            kinds[0] |= first[i] > 200;
+            kinds[1] |= first[i + 1] > 200;
+            kinds[2] |= first[i + 2] > 200 && !isIron;
+            kinds[3] |= first[i + 2] > 200 && isIron;
+            kinds[4] |= first[i + 3] > 200;
         }
 
         if (Array.IndexOf(kinds, false) >= 0)
         {
-            faults.Add($"a kind never wins: grass, wood, stone, water = {string.Join(", ", kinds)}");
+            faults.Add($"a kind never wins: grass, wood, stone, iron, water = {string.Join(", ", kinds)}");
+        }
+
+        // ⛔ The seam's kind is a pick, so it must not change within a texel of anywhere a seam is drawn from: bilinear
+        // reads a texel's neighbours, and an iron beside a stone would draw half of each at the line.
+        int mixed = 0;
+        for (int y = 0; y < GrassLabGround.ImageTall; y++)
+        {
+            for (int x = 0; x < GrassLabGround.ImageWide; x++)
+            {
+                int at = (y * GrassLabGround.ImageWide) + x;
+                if (iron[at] is not (0 or 255))
+                {
+                    mixed++;
+                }
+                else if (first[(at * 4) + 2] > 0 && !OneSeamRound(iron, x, y))
+                {
+                    mixed++;
+                }
+            }
+        }
+
+        if (mixed > 0)
+        {
+            faults.Add($"{mixed} seam texels have stone and iron within a texel of them (the kind must be one or the other wherever a seam is drawn)");
         }
 
         foreach (Vector2 standing in GrassLabVillage.StandingOnGrass)
@@ -1079,8 +1123,28 @@ public sealed partial class GrassLab
         }
 
         return faults.Count == 0
-            ? "[widths] terrain lab, fake map: ✅ a pure function of the tile, every texel's weights sum to one, all four kinds win "
-                + $"somewhere, the placeholders stand on grass and their wood on a wood, the river never under two tiles (narrowest {narrowest:0.00})"
+            ? "[widths] terrain lab, fake map: ✅ a pure function of the tile, every texel's weights sum to one, all five kinds win "
+                + $"somewhere, every seam all stone or all iron a texel round, the placeholders stand on grass and their wood on a wood, the river never under two tiles (narrowest {narrowest:0.00})"
             : $"[widths] terrain lab, fake map: ❌ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>True when the seam's kind is the same at a texel and its eight neighbours (clamped at the edge, as the sampler is).</summary>
+    private static bool OneSeamRound(byte[] iron, int x, int y)
+    {
+        byte kind = iron[(y * GrassLabGround.ImageWide) + x];
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int nx = Math.Clamp(x + dx, 0, GrassLabGround.ImageWide - 1);
+                int ny = Math.Clamp(y + dy, 0, GrassLabGround.ImageTall - 1);
+                if (iron[(ny * GrassLabGround.ImageWide) + nx] != kind)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

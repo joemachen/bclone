@@ -1,6 +1,6 @@
 # Spec: Ground-kind textures — Joe's watercolour, one seamless tile per kind
 
-**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). 🎨 `ground_stone.png` AND `ground_water.png` PAINTED AND MEASURED (A16, 2026-11-08); 🔨 PIECE 2 BUILT IN THE LAB (A17, 2026-11-08): the one *Ground textures* switch draws all three painted kinds, the shallows derived from the water tile; every switch off at opening and the approved renders byte-identical. ⭐ APPROVED BY JOE (A18, 2026-11-08: *"approved"*) — the stone and water tiles, the derived shallows, one switch for all three. ⭐ MERGED INTO `main` AT HIS WORD (A19, 2026-11-08: *"Merge art now"*) and pushed (*"Push main"*). Iron not painted: piece 3 next.**
+**Status:** ✅ **SPECCED (A12); `ground_woods.png` PAINTED AND MEASURED (A13) AND APPROVED BY JOE (A14); PIECE 1 BUILT IN THE LAB (A14, 2026-11-07): the loader, the *Ground textures* switch, *Texture tiles per repeat*, *Texture anti-tiling* (Off, Hex), *Young wood preview*, every switch off at opening and the approved renders byte-identical. ⭐ MERGED INTO `main` AT JOE'S WORD (A15, 2026-11-08). 🎨 `ground_stone.png` AND `ground_water.png` PAINTED AND MEASURED (A16, 2026-11-08); 🔨 PIECE 2 BUILT IN THE LAB (A17, 2026-11-08): the one *Ground textures* switch draws all three painted kinds, the shallows derived from the water tile; every switch off at opening and the approved renders byte-identical. ⭐ APPROVED BY JOE (A18, 2026-11-08: *"approved"*) — the stone and water tiles, the derived shallows, one switch for all three. ⭐ MERGED INTO `main` AT HIS WORD (A19, 2026-11-08: *"Merge art now"*) and pushed (*"Push main"*). 🎨 `ground_iron.png` PAINTED AND MEASURED AND 🔨 PIECE 3 BUILT IN THE LAB (A20, 2026-11-09): the fake map's fifth kind rides on the seam, the one switch draws all four painted kinds; every switch off at opening, the 32 approved renders byte-identical. ⏳ UNSEEN BY JOE, UNMERGED, ON `art`.**
 The format Joe paints to, before he paints. The art lane's next slice after the terrain shader (`terrain-shader.md`, A1–A11),
 lab only until house tiers merge (`terrain-shader.md §5`). Joe's calls, 2026-11-07: **full colour**, not a value-only wash;
 **woods first**, through the whole loop, before the other three are painted. Owner: Joe + Claude Code.
@@ -19,7 +19,7 @@ the edges, the grass still multiplies over the parchment, snow still lies on top
 |---|---|
 | **woods floor** (`Terrain.Forest`, `#9aa47a`, L\* 65.6) | **young wood**: the woods tile × (young ÷ woods) per channel, `#b3b98d` ÷ `#9aa47a` |
 | **stone seam** (`Terrain.Rock`, `#b4ab99`, L\* 70.3) | — |
-| **iron seam** (`#b9906f`, L\* 62.9) | — |
+| **iron seam** (`Terrain.IronDeposit`, `#b9906f`, L\* 62.9) | — |
 | **water** (`Terrain.Water`, `#6f97ad`, L\* 60.4) | **shallows**: the water tile × (shallows ÷ water) per channel, read off the same weight as today's depth ramp, so the bank and the fill cannot disagree (D338) |
 
 **Not in this spec:** the ploughed, sown and ripe fields and the quarry and mine floors. Those are drawn by `VillageMap.cs`,
@@ -87,6 +87,17 @@ mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 
 - ⚠️ The work-ground wash (`#4a9ba8` at 16 %) is not seen over water (ΔE 2.2) — over flat water too; the tile changes
   nothing there. Reported for the wiring, not this piece's.
 
+**Iron, measured (A20).** `ground_iron.png`: L\* min 54.52, p0.1 57.75, p1 59.07, p50 63.12, p99 66.45, max 69.25; mean
+`#ba9070` (L\* 63.04, a\* 11.12, b\* 23.10) against `#b9906f` (62.85, 11.01, 23.47), hue 64.3° vs 64.9° — 26° from the
+stone's 90° (D67) — mean per-pixel ΔE 3.16, p99 7.47: a rust wash drifting between ochre `#a98a5b` and red-brown
+`#bb816c` at one lightness, its value held tighter than the stone's (iron sits 4.7 L\* above the dots' floor, the stone
+12). Seamless: wrapped ΣΔLab 2.79 left↔right and 2.66 top↔bottom against interior means 2.72 / 2.68 and maxima 2.90 /
+2.88, and no cross in the 1024-offset view at three times the contrast. `check.py` on a scratch copy with the tile's
+percentiles sampled in as a ground (art trap 16): **0 of 26 marks and 0 of 41 outlined things fail**; the iron's p1
+(L\* 59.1) becomes the darkest common ground, so the 3 : 1 line moves from L\* 29.3 to 28.7 and every mark still clears
+it. The dots read **3.56 : 1 against the tile's mean, 3.12 : 1 at its darkest 1 %, 2.98 : 1 at 0.1 %** (3.53 : 1
+against flat iron) — the woods' margin (2.96 at p0.1), reported and not failed, as the woods' was.
+
 ## 4. How the shader draws it
 
 - `terrain_ground` (`terrain_lab.gdshaderinc`) samples each painted kind at `tile / 64` instead of using a flat
@@ -119,6 +130,19 @@ mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 
   contour): the derivatives are taken where every pixel runs and `textureGrad` is legal inside the branch, so the drawn
   colour is the same and the cost is paid only where a kind shows. The loader is `LoadTheTiles` (`TilesLoaded`):
   the three tiles on first switching on, ~21 MB of VRAM each.
+- **Built (A20, piece 3):** `terrain_iron` calls `terrain_painted` with `ground_iron`, as the other three. ⭐ **The fifth
+  kind rides on the seam:** the fake map's B is now *the seam's* weight (stone or iron — the spec has called both seams
+  from the start), and a second one-channel map, `ground_map_iron` (`GrassLabGround.BakeIron`), is white where an iron
+  patch is nearer than any stone one and black elsewhere. So splat, bleed and the water's contour stay four-way, exactly
+  as approved, and the kind flips only midway between seams, out on the grass. The shader asks it only where a seam is
+  drawn (`kinds.z > 0`), as a pick (`≥ 0.5`), never a blend: `seam = iron ? kind_iron : kind_stone`, and with the
+  textures on `iron ? terrain_iron(…) : terrain_stone(…)` — only one of the two tiles is ever read at a pixel. Where the
+  map is black, or before it is baked (`hint_default_black`), the path is the stone's exactly. The map has **one iron
+  seam**, at (−9.5, −8) with radii 3.2 × 2.2 tiles, on the grass between the village and the western wood, on screen at
+  the opening zoom and about seven tiles from the nearest stone. ⚠️ **An iron seam touching a stone one would meet at a
+  hard line, not a splatted edge** — the probe's `fake map` line fails any seam texel with both kinds within a texel of
+  it (red-checked: an iron laid against the east stone is 235 such texels); the valley's own encoding is the wiring's.
+  Iron's flat colour is `VillageMap`'s `IronDeposit` (`#b9906f`) as `kind_iron`; the loader reads four tiles.
 - **Cost:** a texture read per kind drawn, three with hex tiling, inside A11's bar (1 ms a frame at 4K for the whole
   stack). Measured each piece. **Piece 1 (A14; RTX 3070, 4K, one run, against *coverage map, no grain* in the same run,
   `lab_cost.gd`'s method):** the woods texture **+0.13 ms** at the widest zoom and **+0.04 ms** at gameplay; **hex +0.67 /
@@ -129,6 +153,11 @@ mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 
   sampled only where it is drawn, and the fake map is mostly grass. ⚠️ **So the cost is per screenful of painted kind,
   not per screen:** a view that is all woods, stone or water pays about piece 1's per-pixel price (hex ~+0.67 ms), since
   each pixel still samples one kind (two at a border). The valley's real share of those kinds is measured when it is wired.
+  **Piece 3 (A20; same machine and method, A/B of HEAD's shader files against the new ones, alternated four runs in one
+  sitting):** **no difference the runs can see.** The plain coverage map's own baseline wandered 1.63–1.80 ms at 4K
+  between runs, more than any step between the two shaders; inside a run the textures add +0.01–0.05 ms and hex
+  +0.12–0.18 ms for both alike (one round at the widest zoom read +0.31 / +0.33 off a low baseline). Iron costs one R8
+  fetch on seam pixels only — the iron tile replaces the stone's read there, never adds to it.
 
 ## 5. The pieces, each its own commit, each ending at Joe's eyes
 
@@ -136,7 +165,7 @@ mean, 3.84 : 1 at its darkest 1 %, 3.62 : 1 at 0.1 %**; **3.26, 3.07 and 3.03 : 
 |---|---|---|---|
 | 1 | **Woods**: the loader, `ground_woods.png` drawn as the woods floor, young wood derived — 🔨 **built (A14), Joe's eyes pending** | ✅ arrived and approved (A13–A14) | *Ground textures* switch · *Texture tiles per repeat* (start 64) · *Texture anti-tiling* (Off, Hex) · *Young wood preview* (added A14: the derived colour needs a way to be seen) |
 | 2 | **Stone and water**, shallows derived from the depth ramp — 🎨 **tiles painted (A16)**, 🔨 **built in the lab (A17)**, ⭐ **approved (A18)** | after 1 is approved, and the tiles arrive | the same — **one switch for all three kinds** (A17); per kind only if he wants them apart |
-| 3 | **Iron**: the fake coverage map gains a fifth kind (it holds four today: grass, wood, stone, water) | the tile arrives | — |
+| 3 | **Iron**: the fake coverage map gains a fifth kind (it held four: grass, wood, stone, water) — 🎨 **tile painted** and 🔨 **built in the lab (A20)**, Joe's eyes pending | the tile arrives | — the same one switch, now for all four kinds |
 
 Each piece: probe lines for every new control and for the import settings, the approved renders byte-identical with the
 switch off, the §3 numbers, a red-check of every new guard, and the cost against A11.

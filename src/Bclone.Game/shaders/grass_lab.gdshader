@@ -76,10 +76,10 @@ uniform float splat_sharpness = 48.0;
 uniform bool bleed_on = false;
 uniform float bleed_reach_tiles = 0.0;
 uniform float bleed_scale_tiles = 1.0;
-// 7. Ground textures (A14, A17, `specs/ground-textures.md`): Joe's painted woods, stone and water tiles in place of
-// kind_wood, kind_stone and kind_water, repeating or hex-tiled; young wood and the shallows derived. Its uniforms are
-// the include's (ground_wood, ground_stone, ground_water, ground_tex_on, ground_tex_tiles, ground_tex_antitile,
-// kind_young, ground_young_preview); off, the four colours are the palette's exactly.
+// 7. Ground textures (A14, A17, A20, `specs/ground-textures.md`): Joe's painted woods, stone, iron and water tiles in
+// place of kind_wood, kind_stone, kind_iron and kind_water, repeating or hex-tiled; young wood and the shallows derived.
+// Its uniforms are the include's (ground_wood, ground_stone, ground_iron, ground_water, ground_tex_on, ground_tex_tiles,
+// ground_tex_antitile, kind_young, ground_young_preview); off, the five colours are the palette's exactly.
 
 // Hex lattice vertices per repeat: each hexagon is about half a repeat across.
 const float HEX_PER_REPEAT = 2.0;
@@ -175,7 +175,10 @@ void fragment() {
         }
         water = kinds.a;
         vec3 wood = kind_wood;
-        vec3 stone = kind_stone;
+        // The seam is stone or iron (A20), asked only where a seam is drawn; elsewhere, and wherever the iron map is
+        // black, this is the stone's path exactly.
+        bool iron = kinds.z > 0.0 && terrain_seam_is_iron(tile);
+        vec3 seam = iron ? kind_iron : kind_stone;
         vec3 deep = kind_water;
         vec3 shallows = kind_shallows;
         if (ground_tex_on) {
@@ -186,14 +189,14 @@ void fragment() {
                 wood = terrain_wood(tile, tx, ty, hex_sharpness);
             }
             if (kinds.z > 0.0) {
-                stone = terrain_stone(tile, tx, ty, hex_sharpness);
+                seam = iron ? terrain_iron(tile, tx, ty, hex_sharpness) : terrain_stone(tile, tx, ty, hex_sharpness);
             }
             if (kinds.w > 0.0) {
                 deep = terrain_water(tile, tx, ty, hex_sharpness);
                 shallows = terrain_shallows(deep);
             }
         }
-        ground = terrain_ground(kinds, weights.a, ground_srgb, wood, stone, deep, shallows);
+        ground = terrain_ground(kinds, weights.a, ground_srgb, wood, seam, deep, shallows);
         strength *= terrain_coverage(grass_weight, coverage_fade);
     }
 

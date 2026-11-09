@@ -8,8 +8,15 @@ namespace Bclone.Game;
 /// </summary>
 /// <remarks>
 /// <para>
-/// One RGBA8 image of weights: <b>R grass, G wood, B stone, A water</b>, summing to one, off the map all grass as
+/// One RGBA8 image of weights: <b>R grass, G wood, B seam, A water</b>, summing to one, off the map all grass as
 /// <c>ValleyTexture.Blended</c> reads it. R is the channel the bake will write when the shader is wired in.
+/// </para>
+/// <para>
+/// ⭐ <b>The fifth kind rides on the seam (A20, `ground-textures.md §5` piece 3).</b> Stone and iron are both seams, so B is
+/// the seam's weight and a second, one-channel image says <i>which</i> seam: 255 iron, 0 stone, for whichever seam's patch
+/// is nearer. Splat, bleed and the water's contour therefore stay four-way, as approved, and the choice flips only midway
+/// between a stone and an iron, out on the grass where no seam is drawn — so where a seam shows, it is all one or the
+/// other. ⚠️ An iron seam touching a stone one would meet at a hard line, not a splatted edge; this map has none.
 /// </para>
 /// <para>
 /// ⚠️ <b>A test scene, not a valley.</b> The lab's village is fixed, so the ground is laid out round it: the placeholders
@@ -74,16 +81,32 @@ internal static class GrassLabGround
         (new Vector2(40f, 24f), new Vector2(8f, 4f)),
     };
 
-    /// <summary>The weights at a tile: wood, stone and water, and the grass what is left.</summary>
-    internal static (float Grass, float Wood, float Stone, float Water) WeightsAt(Vector2 tile)
+    /// <summary>
+    /// Where the iron lies (A20): one seam on the grass between the village and the western wood, on screen at the
+    /// opening zoom and about seven tiles from the nearest stone.
+    /// </summary>
+    private static readonly (Vector2 At, Vector2 Radii)[] Irons =
+    {
+        (new Vector2(-9.5f, -8f), new Vector2(3.2f, 2.2f)),
+    };
+
+    /// <summary>
+    /// The weights at a tile: wood, a seam and water, and the grass what is left. The seam is stone or iron, whichever
+    /// patch is nearer, and its weight is the stronger of the two — which, away from the iron, is the stone's own.
+    /// </summary>
+    internal static (float Grass, float Wood, float Stone, float Iron, float Water) WeightsAt(Vector2 tile)
     {
         Vector2 at = Warped(tile);
         float water = Ramp(RiverInside(at));
         float wander = WoodWander * ((2f * Noise(tile.X * 0.22f, tile.Y * 0.22f, 64u)) - 1f);
         float wood = (1f - water) * Strongest(Woods, at, wander);
-        float stone = (1f - water - wood) * Strongest(Stones, at, 0f);
-        return (1f - water - wood - stone, wood, stone, water);
+        float seam = (1f - water - wood) * Math.Max(Strongest(Stones, at, 0f), Strongest(Irons, at, 0f));
+        bool iron = IronIsNearer(at);
+        return (1f - water - wood - seam, wood, iron ? 0f : seam, iron ? seam : 0f, water);
     }
+
+    /// <summary>True where an iron patch is nearer than any stone one, by how far inside each the point is.</summary>
+    private static bool IronIsNearer(Vector2 at) => Deepest(Irons, at) > Deepest(Stones, at);
 
     /// <summary>The whole map, as the texture's bytes; R is whatever the others leave, so a texel sums to 255 exactly.</summary>
     internal static byte[] Bake()
@@ -93,9 +116,9 @@ internal static class GrassLabGround
         {
             for (int x = 0; x < ImageWide; x++)
             {
-                (_, float wood, float stone, float water) = WeightsAt(TileOf(x, y));
+                (_, float wood, float stone, float iron, float water) = WeightsAt(TileOf(x, y));
                 int g = Mathf.RoundToInt(wood * 255f);
-                int b = Mathf.RoundToInt(stone * 255f);
+                int b = Mathf.RoundToInt((stone + iron) * 255f);
                 int a = Mathf.RoundToInt(water * 255f);
                 int at = ((y * ImageWide) + x) * 4;
                 bytes[at] = (byte)Math.Max(0, 255 - g - b - a);
@@ -111,6 +134,25 @@ internal static class GrassLabGround
     /// <summary>The map as a texture. Linear filtering and the clamp are the shader's sampler hints.</summary>
     internal static ImageTexture Texture() =>
         ImageTexture.CreateFromImage(Image.CreateFromData(ImageWide, ImageTall, false, Image.Format.Rgba8, Bake()));
+
+    /// <summary>Which seam B is, a byte a texel: 255 where the iron is nearer, 0 where the stone is (A20).</summary>
+    internal static byte[] BakeIron()
+    {
+        var bytes = new byte[ImageWide * ImageTall];
+        for (int y = 0; y < ImageTall; y++)
+        {
+            for (int x = 0; x < ImageWide; x++)
+            {
+                bytes[(y * ImageWide) + x] = IronIsNearer(Warped(TileOf(x, y))) ? (byte)255 : (byte)0;
+            }
+        }
+
+        return bytes;
+    }
+
+    /// <summary>The seam's kind as a texture, beside the map, with the map's hints.</summary>
+    internal static ImageTexture IronTexture() =>
+        ImageTexture.CreateFromImage(Image.CreateFromData(ImageWide, ImageTall, false, Image.Format.R8, BakeIron()));
 
     /// <summary>The tile a texel's centre stands on, in tiles from the map's centre.</summary>
     internal static Vector2 TileOf(int x, int y) => new(
@@ -168,12 +210,27 @@ internal static class GrassLabGround
         float strongest = 0f;
         foreach ((Vector2 centre, Vector2 radii) in patches)
         {
-            float inside = (1f - ((at - centre) / radii).Length()) * Math.Min(radii.X, radii.Y);
-            strongest = Math.Max(strongest, Ramp(inside + wander));
+            strongest = Math.Max(strongest, Ramp(Inside(centre, radii, at) + wander));
         }
 
         return strongest;
     }
+
+    /// <summary>How far inside the nearest of a kind's patches a point is, in tiles; negative outside them all.</summary>
+    private static float Deepest((Vector2 At, Vector2 Radii)[] patches, Vector2 at)
+    {
+        float deepest = float.MinValue;
+        foreach ((Vector2 centre, Vector2 radii) in patches)
+        {
+            deepest = Math.Max(deepest, Inside(centre, radii, at));
+        }
+
+        return deepest;
+    }
+
+    /// <summary>How far inside one patch's ellipse a point is, in tiles of its shorter radius; negative outside.</summary>
+    private static float Inside(Vector2 centre, Vector2 radii, Vector2 at) =>
+        (1f - ((at - centre) / radii).Length()) * Math.Min(radii.X, radii.Y);
 
     /// <summary>From tiles inside a contour to a weight: a half at the contour, whole a tile in, as the bake's kernel is.</summary>
     private static float Ramp(float tilesInside) => Mathf.SmoothStep(-1f, 1f, tilesInside);
