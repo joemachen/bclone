@@ -6,7 +6,8 @@ SCALE 0.30 TILES (A7); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (A8–A9): GRAIN
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
 The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it. MERGED INTO `main` (D710, 2026-11-07), still in the lab only — not wired into the valley. ✍️ THE VALLEY'S WIRING
 SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5; ALL SIX CALLS ANSWERED BY JOE, AS RECOMMENDED,
-LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). NOTHING BUILT YET.** §2–§4 are the
+LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). 🔨 PIECE 1 BUILT (A24, 2026-11-09): THE MIX IN
+THE BAKE — NOTHING DRAWS IT YET, THE GAME'S BAKE DOES NOT KEEP IT, THE COLOUR BYTE-IDENTICAL. NEXT: PIECE 2.** §2–§4 are the
 lab's build; §4's table says which piece stands; §5 is the wiring, its calls and its three pieces.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
@@ -382,6 +383,28 @@ used once"*) and falling snow.
 | 2 | **The valley through the shader** (`VillageMap.cs`, `valley_terrain.gdshader`, the tick): a child canvas item behind the map draws the beyond, the parchment and the shaded valley, and `VillageMap` skips those three when the tick is on; per frame, uniforms only (D338) — pixels a tile, the season and its blend, the snow's amount; **and the before/after slider** (A23: a second tick, the old bake left of a draggable line, the new look right of it) | **tick off:** `VillageMap`'s draw calls unchanged, and windowed renders of a fixed valley at fixed zooms `cmp`-identical before and after (a scratch render script — `tools/` is not the lane's); the probe asks the compiled shader for its uniforms (art trap 6), the tick opens off, every value is the look files'; **on:** renders, then Joe's eyes |
 | 3 | **The cost, in the valley** | call 4's two bars, A/B in one session; the snow's threshold and the bleed's warp baked only if over |
 
+**Piece 1, as built (A24, 2026-11-09).** `ValleyTexture(withWeights: true)` keeps the mix; **the default does not**, so
+the game, the new-game preview and the title pay nothing until piece 2's tick asks (lean, A23). `Winner` is split: `Weigh`
+does the warp, the kernel and the jitter and hands back every kind's weight, `Winner` picks from them as before, and the
+mix's texels (`PaintTheMix`, in `PaintOneTile`'s loop, so a felling patches both) take the same weights at each texel's
+exact centre (`TexelCentre`: `2·wx + 0.5` colour pixels — the sample point is a float now, which an int converts to
+exactly). The two images are `WeightsTexture` (RGBA8 960 × 640) and `SharesTexture` (RG8), 3.69 MB, uploaded whole on a
+re-bake. The probe's `valley mix:` line, beside `valley bake:` in the line `Main.cs` already prints, saves
+`logs/valley-mix.png` (opaque for eyes: red grass, green wood, blue seam, black water) and the shares.
+
+| measured on the founding valley (seed 12345) | |
+|---|---|
+| the colour bake | **byte-identical** — `logs/valley-bake.png` `cmp`'d against the one saved before the change; `seams drawn:` unchanged (99.8 % / 91.1 %) |
+| the mix's kind against the colour's, read as the shader will (bilinear, the top of four, shares at a half) | **99.85 %** of 1,627,392 boundary pixels; 2,361 differ (floor 99.5 %) |
+| water drawn where the bake has none, or none where it has | **444 pixels, at most 1 px — a sixteenth of a tile** — from the bake's bank (floor 2 px, an eighth) |
+| the whole bake with the mix, against the colour alone | **~1.75 s against ~1.2–1.4 s** (+0.4–0.5 s, once, at the founding); a felling's patch 47 → ~60 ms; the mix's upload **1.0 ms** |
+| the colour alone, before and after | 1,202 → 1,224–1,366 ms across five runs, the earlier side of it the same position in the check; the preview 374 → 376–397 ms — inside the runs' spread |
+
+⚠️ **Found reading the mix:** several of the founding valley's seams are **one tile thin** (the blue threads in
+`valley-mix.png`). A7's warning is about exactly that, the bleed fraying a one-tile feature, so piece 2 looks there first.
+⚠️ **Fixed in passing:** the colour's own self-check put every felled tile back as *forest*, so a sapling it felled came
+back grown and the probe went on with a valley the check had changed; it now puts back what was there.
+
 ## 6. Verification, and what the lab cannot say
 
 - **The approved look holds:** with every switch off the lab's renders are **byte-identical** to the same cases rendered
@@ -436,6 +459,14 @@ used once"*) and falling snow.
   ground rises from L\* 82.6 to 92.4, and the parchment-coloured workplace falls to 1.06:1 against the middle of the
   snow, but it is outlined. ⚠️ The check judges colours, not draw sites: a light fill that lost its ink edge would
   vanish into snow and still pass (the eye-check in HANDOFF's art list).
+- **Red-checked, the valley's piece 1 (A24):** 10 mutant runs, **10 reds, one zero kept**. Determinism (a mix that
+  flips by bake), the fast path (a flat forest's mix saying young wood), the incremental patch (the mix skipped on a
+  re-bake), the colour untouched (the mix writing a colour byte — 2 reds), the contour (a texel sampled at its corner:
+  99.09 %; wood and seam swapped: 56 %; the young share inverted: 61 %) and the water (its share inflated: the bank 4 px
+  out, both arms). ⚠️ **The zero:** the first "writes into the colour" mutant flipped `_pixels[wx·4]`, which each tile
+  visits eight times, so every flip undid itself — a dud mutant, rewritten to flip each pixel once (M4b). ⚠️ **And one
+  red on the wrong arm:** the determinism mutant first failed as *incremental* because a later arm overwrote the earlier
+  failure; a failure already said now stands, and rerun it failed on its own arm.
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
