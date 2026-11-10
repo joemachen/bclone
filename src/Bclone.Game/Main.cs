@@ -578,6 +578,7 @@ public partial class Main : Control
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
+        GD.Print(_map.TheWatercolourHolds());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
@@ -6778,6 +6779,21 @@ public partial class Main : Control
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
         _viewToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
+
+        // ⭐ THE VALLEY IN WATERCOLOUR (A25, `terrain-shader.md §5`; Joe, A23: *"Yes add a tick box"*, and a before/after
+        // slider *"like in the attached image"*). Off until he approves the look. The art lane's two ticks in this file, at
+        // his word; everything behind them is `VillageMap.Watercolour.cs`.
+        var watercolour = new CheckBox { Text = "paint the valley in watercolour" };
+        watercolour.AddThemeFontSizeOverride("font_size", 12);
+        watercolour.Toggled += on => _map.ShowWatercolour(on);
+        body.AddChild(watercolour);
+        _viewToggles.Add(("watercolour", "the valley in watercolour", watercolour, () => _map.WatercolourShown));
+
+        var beforeAfter = new CheckBox { Text = "before/after slider over the watercolour" };
+        beforeAfter.AddThemeFontSizeOverride("font_size", 12);
+        beforeAfter.Toggled += on => _map.ShowBeforeAfter(on);
+        body.AddChild(beforeAfter);
+        _viewToggles.Add(("before_after", "the before/after slider", beforeAfter, () => _map.BeforeAfterShown));
 
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in

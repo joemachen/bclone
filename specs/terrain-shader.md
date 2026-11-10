@@ -7,7 +7,8 @@ TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. 
 The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it. MERGED INTO `main` (D710, 2026-11-07), still in the lab only — not wired into the valley. ✍️ THE VALLEY'S WIRING
 SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5; ALL SIX CALLS ANSWERED BY JOE, AS RECOMMENDED,
 LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). 🔨 PIECE 1 BUILT (A24, 2026-11-09): THE MIX IN
-THE BAKE — NOTHING DRAWS IT YET, THE GAME'S BAKE DOES NOT KEEP IT, THE COLOUR BYTE-IDENTICAL. NEXT: PIECE 2.** §2–§4 are the
+THE BAKE — THE COLOUR BYTE-IDENTICAL. 🔨 PIECE 2 BUILT (A25, 2026-11-09): THE VALLEY THROUGH THE SHADER BEHIND JOE'S
+TICK, WITH THE BEFORE/AFTER LINE; TICK OFF BYTE-IDENTICAL TO BEFORE; +1.35–1.73 MS AT 4K. ⏸️ JOE'S EYES. THEN PIECE 3.** §2–§4 are the
 lab's build; §4's table says which piece stands; §5 is the wiring, its calls and its three pieces.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
@@ -400,6 +401,39 @@ re-bake. The probe's `valley mix:` line, beside `valley bake:` in the line `Main
 | the whole bake with the mix, against the colour alone | **~1.75 s against ~1.2–1.4 s** (+0.4–0.5 s, once, at the founding); a felling's patch 47 → ~60 ms; the mix's upload **1.0 ms** |
 | the colour alone, before and after | 1,202 → 1,224–1,366 ms across five runs, the earlier side of it the same position in the check; the preview 374 → 376–397 ms — inside the runs' spread |
 
+**Piece 2, as built (A25, 2026-11-09).** `shaders/valley_terrain.gdshader` and `VillageMap.Watercolour.cs`; two
+Settings ticks in `Main.cs` beside *draw the tile grid* (Joe's OK, A23): ***paint the valley in watercolour*** and
+***before/after slider over the watercolour***, both off, both remembered like every map tick (D504).
+
+- **The layer.** A `Control` child of the map, `ShowBehindParent`, its one rect the map's whole size, built on the tick's
+  first switching on — the shader, the masks, the four tiles and a bake that keeps the mix (A24) are loaded then and never
+  before (lean). The shader paints the map's Beyond outside the valley (it no longer has the map's rect under it), the
+  bake left of the line, the new look right of it. `VillageMap._Draw` leaves out the Beyond, the parchment and the bake
+  with the tick on; everything else it draws as before, over the layer.
+- **The look** is the lab's functions on the real mix: the approved grass (masks hex-tiled, height blend, macro), the
+  ground's mix bled (0.33 / 0.30 tiles) and splatted (5.5) between land kinds with the water's contour kept, Joe's four
+  painted tiles plainly repeating at 64 tiles, young wood the woods tile × the young ratio by the young share and iron
+  against stone by the iron share (both sharpened at the splat's power), the shallows derived, coverage at fade 0.25, the
+  snow (Lerp, `#f8f6f1`) on the season, and the grain (0.12 at 0.065 tiles) on the ground only. Every value is read from
+  `grass_approved.tres` and `terrain_lab.tres`; the shader holds none. ⚠️ **One departure from the lab, for lean:** a
+  painted kind is read only where its share exceeds 0.002 (half a level of 255); in the lab every kind's share is above 0
+  wherever the splat is on, because the splat's floor `(1e-3)^5.5` does not underflow, so the lab reads every tile at
+  every pixel.
+- **The year** (`TheYearAt`, pure in the tick): the season holds two thirds, turns over the last third (D628); snow =
+  autumn's turn, then winter's hold whole, then winter's turn melting (A23).
+- **The line** (Joe's image): a hairline in the map's ink, a handle with two chevrons at mid-height, *Before* and
+  *After* at the top; a press within 10 px of it takes hold before anything under it is clicked, a drag moves it, a release
+  lets go. It opens mid-map.
+
+| measured, 2026-11-09 | |
+|---|---|
+| **tick off against the build before piece 2** | **byte-identical** — windowed renders of the founding valley at tick 0, the opening zoom and the widest (`cmp`, scratch `render.gd`: the frame-sample door, the tree paused at founding); and tick off again after on, byte-identical to tick off first |
+| the probe | `watercolour:` ✅ — opens off with nothing loaded; on, the shader declares all 46 uniforms the map sets, each value the look files' and the palette's; the mix and the colour handed over; the line taken and dragged, a press 40 px off not; the year's grass and snow on five moments; off, as it was |
+| **the GPU, 4K, RTX 3070** (scratch `measure4k.gd`: the game inside a 3840 × 2160 SubViewport, `lab_cost.gd`'s method; three rounds a case alternating off and on in one sitting, medians) | **opening zoom 0.28 → 1.63 ms (+1.35); widest 0.36 → 2.09 ms (+1.73)** — inside call 4's 3.5 ms bar for the whole switch by half. The terrain layers' own share against A11's 1 ms needs a grass-only case: piece 3. ⚠️ At 1280 × 800 the same A/B read +0.9–1.0 ms — the GPU at low clock on a light load (art trap 8); the 4K run is the measurement |
+
+⚠️ **Not measured by anything but eyes:** what it looks like in play — the seasons turning, the snow, fields and paths over
+the grass, the one-tile seams under the bleed. Joe's to look at.
+
 ⚠️ **Found reading the mix:** several of the founding valley's seams are **one tile thin** (the blue threads in
 `valley-mix.png`). A7's warning is about exactly that, the bleed fraying a one-tile feature, so piece 2 looks there first.
 ⚠️ **Fixed in passing:** the colour's own self-check put every felled tile back as *forest*, so a sapling it felled came
@@ -467,6 +501,15 @@ back grown and the probe went on with a valley the check had changed; it now put
   visits eight times, so every flip undid itself — a dud mutant, rewritten to flip each pixel once (M4b). ⚠️ **And one
   red on the wrong arm:** the determinism mutant first failed as *incremental* because a later arm overwrote the earlier
   failure; a failure already said now stands, and rerun it failed on its own arm.
+- **Red-checked, the valley's piece 2 (A25):** 12 probe mutants, **14 reds, no zeros** — a shader that does not
+  compile, a uniform renamed, a look value not the file's, the tick opening on (2), the layer over the map not behind it
+  (2), the bake not swapped for the mix, a press anywhere taking the line, a season holding half, the snow in spring's
+  turn, off leaving the layer showing, the line never reaching the shader, young wood in the woods' colour. ⚠️ The second
+  red of "over, not behind" was the probe's own fault — its early return left the tick on for the line after; it puts the
+  tick back now. **Two render mutants on the tick-off path** (the probe cannot draw): the before/after line drawn with
+  the ticks off changes both tick-off renders (2 reds); ⚠️ **the Beyond left out with the tick off scored zero, kept** —
+  in both frames the valley fills the window, so no Beyond is on screen to lose. A frame with the valley's edge in view
+  is what would catch it; none of today's two has one.
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
