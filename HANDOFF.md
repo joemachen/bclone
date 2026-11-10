@@ -9873,6 +9873,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   `specs/terrain-shader.md` (specced A1, all four pieces built in the lab A2–A5) holds what is settled.
 - **Snow needs a non-Multiply blend** — it is lighter than parchment, which Multiply cannot reach
   (`terrain-shader.md §2`). Built in the lab as its own layer, three blends behind a switch (A4); ⭐ Lerp at `#f8f6f1` approved (A9).
+- **Falling snow — an idea, not a to-do** (Joe asked, A23: *"will you show the falling snow?"*). The terrain slice draws snow lying
+  on the ground only. Snow in the air is weather over the whole map: its own layer and cost, following the season (the sim has no
+  weather). A later piece if he asks for it (`terrain-shader.md §5.3`).
 - **The tree look — undecided** (`world-legibility.md §7`, call 4). Canopies sit in the ground's band as an interim.
 - **D68's *Foundation* look — retire or keep, undecided** (`world-legibility.md §7`, call 5).
 - **The debug readout text is illegible on parchment** — the frame/draw readout lines over the map need a dark backing.
@@ -9882,8 +9885,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **🔨 being built on `art` — THE TERRAIN SHADER IN THE VALLEY: SPECCED (A22, 2026-11-09), SIX CALLS HIS, NOTHING BUILT
-  (`specs/terrain-shader.md §5.2`).** Each with a recommendation: (1) the ground's mix in a second, smaller image beside the bake,
+- ⏸️ **🔨 being built on `art` — THE TERRAIN SHADER IN THE VALLEY: SPECCED (A22, 2026-11-09); ✅ ALL SIX ANSWERED BY JOE AS
+  RECOMMENDED (A23): *"1. yes 2. yes 3. ground only 4. OK … keep them as lean as possible … 5. Yes add a tick box … 6. yes."*
+  Leanness is a standing ask (every piece reports its cost); a before/after slider joins piece 2; falling snow is a later piece,
+  his to ask for. NEXT: PIECE 1, the weights in the bake.** (`specs/terrain-shader.md §5.2`.) As they were put, each with a recommendation: (1) the ground's mix in a second, smaller image beside the bake,
   not its alpha; (2) the bake's own mottle (canopy, stone grain, bloom) stays in the bake and the shader draws his paintings
   instead; (3) the paper grain inside the ground shader — land and snow have tooth, paths, fields and everything standing do not;
   (4) A11's 1 ms for the terrain layers plus 3.5 ms at 4K for the whole switch, because the grass itself is new to the game;

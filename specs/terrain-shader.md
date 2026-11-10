@@ -5,7 +5,8 @@ and drag to pan, A3; snow, A4; splat blending and edge bleed, A5 — all 2026-11
 SCALE 0.30 TILES (A7); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (A8–A9): GRAIN 0.065
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
 The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it. MERGED INTO `main` (D710, 2026-11-07), still in the lab only — not wired into the valley. ✍️ THE VALLEY'S WIRING
-SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5, SIX CALLS JOE'S, NOTHING BUILT.** §2–§4 are the
+SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5; ALL SIX CALLS ANSWERED BY JOE, AS RECOMMENDED,
+LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). NOTHING BUILT YET.** §2–§4 are the
 lab's build; §4's table says which piece stands; §5 is the wiring, its calls and its three pieces.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
@@ -242,12 +243,12 @@ coverage)`, so at coverage 1 it is the approved sum exactly.
   `grass_lab.gdshader`. The pack's snippet and `grass_antitile.gdshaderinc` are not edited.
 - **A probe line per control** in `GrassLab.SelfCheck`, each `[widths] terrain lab, …`.
 
-## 5. Wiring it into the valley (A22) — specced, ⏸️ six calls Joe's, nothing built
+## 5. Wiring it into the valley (A22) — specced; six calls answered by Joe (A23); nothing built
 
 House tiers merged (D724, 2026-11-09), so `VillageMap.cs`, `ValleyTexture.cs` and the glyphs are the art lane's for this
 slice (HANDOFF's banner). Until A22 this section was the list of what waited; each of its five items is answered in §5.2
 (the coverage channel → call 1, `Dressed`'s noise → call 2, the grain's overlay → call 3, the GPU bar → call 4,
-`VillageMap` drawing through the shader → §5.4 piece 2). **Nothing is built until Joe answers §5.2.**
+`VillageMap` drawing through the shader → §5.4 piece 2). **Joe answered §5.2 (A23); piece 1 is next.**
 
 ### 5.1 What the valley does today — read from the code, 2026-11-09
 
@@ -274,6 +275,15 @@ slice (HANDOFF's banner). Until A22 this section was the list of what waited; ea
 - **The game has no grass and no grain today.** The wiring brings both for the first time, not only the terrain layers.
 
 ### 5.2 The calls, Joe's — each with a recommendation
+
+✅ **ANSWERED (A23, 2026-11-09), after a plain-words retelling:** *"1. yes 2. yes 3. ground only 4. OK - but i like that
+we're keeping an eye on hardware resource costs. let's try to keep them as lean as possible for optimized performance
+5. Yes add a tick box … 6. yes."* So: (1) the second image; (2) the mottle stays in the bake; (3) **(a)**, the grain in the
+ground shader; (4) both bars, **and leanness is a standing instruction** — every piece reports its cost against both, the
+cheaper of two equal looks is the one built, and a lever (§3.3's bake of the snow threshold and bleed warp) is pulled
+when a piece comes near a bar, not only over it; (5) the tick box; (6) the winter blend, mid-winter fully white.
+**Two asks rode in, answered in §5.3:** a before/after slider (*"i dont want it if it is insane effort and would only be
+used once"*) and falling snow.
 
 1. **Where the ground's mix lives** (the old "coverage channel"). ⭐ **Recommended: a second, smaller image beside the
    bake — never the bake's alpha.** The shader needs more than one coverage number: it needs *how much of each kind is at
@@ -353,12 +363,23 @@ slice (HANDOFF's banner). Until A22 this section was the list of what waited; ea
   `shaders/valley_terrain.gdshader`, which includes the lab's files and calls the same functions; anything added to
   `terrain_lab.gdshaderinc` is a new function, and the lab's renders are `cmp`'d before and after.
 
+- **A before/after slider (A23, Joe's ask): built, as part of piece 2, behind a second tick** (*before/after slider*,
+  under the first). Not insane: the old valley is already a loaded image, so the shader draws it left of a line and the
+  new look right of it — one uniform, a few lines, and the new look's cost is paid only on its side. The fiddly half is
+  the handle: drawn by `VillageMap`, and a drag that starts on it must move the line rather than pan the map. And it is
+  not used once — every later ground painting (fields, quarry and mine floors, seasonal woods) is judged against what
+  it replaces. Off, nothing is drawn and the tick costs nothing.
+- **Falling snow (A23, Joe asked): not in this slice.** This slice is snow lying on the ground. Snow in the air is weather
+  drawn over the whole map — its own layer, its own cost, and its own questions (how thick, how often; the sim has no
+  weather, so it would follow the season as the ground's snow does, never the sim). Recorded on HANDOFF's art list as a
+  later piece, his to ask for.
+
 ### 5.4 The build, after his answers — three pieces, one commit each, each ending at his eyes
 
 | # | piece | what proves it |
 |---|---|---|
 | 1 | **The weights in the bake** (`ValleyTexture.cs`): `Winner`'s weights kept, the two images (call 1) written in the same loop and patched incrementally like the colour, saved beside the bake's PNG under `logs/` | the colour bake byte-identical (its PNG `cmp`'d before and after; `valley bake:` and `seams drawn:` unchanged); the weights' incremental re-bake equal to a full one and the fast path equal to the slow, as the colour's are; **the weights' hard contour against the bake's own winner** — every 16-px pixel's kind read back from the 8-px weights, bilinear, at power 48: the share that disagree, and the farthest a disagreeing water pixel lies from the bake's bank (D342; measured first, then the floor set under it); the bake's time and the upload, printed |
-| 2 | **The valley through the shader** (`VillageMap.cs`, `valley_terrain.gdshader`, the tick): a child canvas item behind the map draws the beyond, the parchment and the shaded valley, and `VillageMap` skips those three when the tick is on; per frame, uniforms only (D338) — pixels a tile, the season and its blend, the snow's amount | **tick off:** `VillageMap`'s draw calls unchanged, and windowed renders of a fixed valley at fixed zooms `cmp`-identical before and after (a scratch render script — `tools/` is not the lane's); the probe asks the compiled shader for its uniforms (art trap 6), the tick opens off, every value is the look files'; **on:** renders, then Joe's eyes |
+| 2 | **The valley through the shader** (`VillageMap.cs`, `valley_terrain.gdshader`, the tick): a child canvas item behind the map draws the beyond, the parchment and the shaded valley, and `VillageMap` skips those three when the tick is on; per frame, uniforms only (D338) — pixels a tile, the season and its blend, the snow's amount; **and the before/after slider** (A23: a second tick, the old bake left of a draggable line, the new look right of it) | **tick off:** `VillageMap`'s draw calls unchanged, and windowed renders of a fixed valley at fixed zooms `cmp`-identical before and after (a scratch render script — `tools/` is not the lane's); the probe asks the compiled shader for its uniforms (art trap 6), the tick opens off, every value is the look files'; **on:** renders, then Joe's eyes |
 | 3 | **The cost, in the valley** | call 4's two bars, A/B in one session; the snow's threshold and the bleed's warp baked only if over |
 
 ## 6. Verification, and what the lab cannot say
