@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING PAINTED OR BUILT — ⏸️ WAITING ON JOE'S ATLAS (§3).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING PAINTED OR BUILT — ⏸️ WAITING ON JOE'S ATLAS (§3), AND ON ONE CALL BEFORE HE PAINTS IT: THE SHADOW (§6, A32).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -101,6 +101,14 @@ in the chunk's mesh instead of crowns:
 ✅ **ANSWERED (A30, 2026-11-10), all four as recommended:** ~~angled like the concept~~ ⛔ **reversed (A31): straight down —
 *"we shouldnt draw at an angle. buildings must rotate."*** — when told the angle leans on how buildings are drawn; one leafy
 kind first; Joe provides the eight drawings to §3; fewer, bigger trees, 1–2 a tile. **Next: his atlas, then piece 1.**
+
+⏸️ **One more call before he paints (A32, found when the measuring was written):** §3 asks for *a soft shadow cast down-right on
+the transparent ground*, and §4 says *alpha fully opaque or fully clear*. A shadow that lets the ground through is neither, so
+the two cannot both hold. ⭐ **Recommended: (a) the shadow is the one exception.** Paint it as a soft, see-through dark wash.
+The opaque-or-clear rule applies to the crown's own edge, and the measuring reports the shadow separately. This is the easiest
+to paint, and the shadow falls on whatever ground lies beneath. **(b)** No painted shadow: the game draws one from each crown's
+outline, shifted down-right. That keeps the alpha clean and gives one shadow everywhere, at the cost of more game work and one
+more thing to tune. Either way, mirroring along the light's diagonal keeps the shadow down-right.
 
 1. **The angle.** Trees drawn at a slight angle with their trunks showing, like the concept, standing on our flat
    top-down map — or straight down, crowns only. ⭐ **Recommended: the angle, like the concept.** Most hand-drawn maps do
