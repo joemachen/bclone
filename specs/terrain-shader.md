@@ -4,10 +4,11 @@
 and drag to pan, A3; snow, A4; splat blending and edge bleed, A5 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
 SCALE 0.30 TILES (A7); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (A8–A9): GRAIN 0.065
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
-The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it. MERGED INTO `main` (D710, 2026-11-07), still in the lab only — not wired into the valley.** §2–§4 are the build; §4's table says which piece stands; §5
-waits for house tiers.
+The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything on is +0.64–0.80 ms, inside it. MERGED INTO `main` (D710, 2026-11-07), still in the lab only — not wired into the valley. ✍️ THE VALLEY'S WIRING
+SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5, SIX CALLS JOE'S, NOTHING BUILT.** §2–§4 are the
+lab's build; §4's table says which piece stands; §5 is the wiring, its calls and its three pieces.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
-the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merge (§5).** Joe's eyes are the
+the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
 The terrain shader is the next slice after the world colours' legibility (`world-legibility.md`). Owner: Joe + Claude
 Code.
@@ -241,23 +242,124 @@ coverage)`, so at coverage 1 it is the approved sum exactly.
   `grass_lab.gdshader`. The pack's snippet and `grass_antitile.gdshaderinc` are not edited.
 - **A probe line per control** in `GrassLab.SelfCheck`, each `[widths] terrain lab, …`.
 
-## 5. What waits for house tiers
+## 5. Wiring it into the valley (A22) — specced, ⏸️ six calls Joe's, nothing built
 
-Not in this slice, and not to be started until house tiers merge on `main`:
+House tiers merged (D724, 2026-11-09), so `VillageMap.cs`, `ValleyTexture.cs` and the glyphs are the art lane's for this
+slice (HANDOFF's banner). Until A22 this section was the list of what waited; each of its five items is answered in §5.2
+(the coverage channel → call 1, `Dressed`'s noise → call 2, the grain's overlay → call 3, the GPU bar → call 4,
+`VillageMap` drawing through the shader → §5.4 piece 2). **Nothing is built until Joe answers §5.2.**
 
-- **`ValleyTexture.cs` writes the coverage channel.** `Winner`'s loop already holds it. ⚠️ The bake's alpha is a constant
-  255 and looks free, but the new-game preview draws the same bake with no shader, so coverage in alpha needs that
-  draw to ignore it; a second image needs a second upload on every re-bake. To be settled when it is wired. The splat
-  weights ask the same question, and a smooth field can be coarser than the bake.
-- **`VillageMap` draws the valley through the shader**, and the year's fraction and the snow amount become per-frame
-  uniforms.
-- **The grain's overlay** finds its place between the map and the UI (§3.1).
-- **The GPU bar** (§3.3, A4–A5; 1 ms at 4K since A11, which the lab's stack fits): measured again in the wired
-  valley, whose own costs the lab cannot see (`Dressed`'s noise, below). If it goes over, two things only the wired
-  valley can do would buy room (the bake's 16 px a tile holds even the approved 0.30-tile warp at about 5 px a cycle): the snow's per-place threshold and the bleed's warp are pure functions of the tile, so the bake could store
-  them in a channel and the shader read them for one texture fetch instead of four noise lookups.
-- **`Dressed`'s noise** — the wood's canopy, the stone's grain, the bloom — stays in the bake or moves into the shader.
-  The lab does not draw it, so the lab's woods and stone are flatter than the game's.
+### 5.1 What the valley does today — read from the code, 2026-11-09
+
+- **One bake, three readers.** `ValleyTexture` bakes the valley at 16 px a tile (1,920 × 1,280 for the 120 × 80
+  valley, RGBA8, 9.8 MB) as **finished colour**: `Winner` picks one kind a pixel and `Dressed` paints it — the palette
+  colour, plus the canopy's two noise octaves (lift 0.13, young wood 0.06), the stone's and iron's grain (0.09), the open
+  ground's bloom (0.035), and the river's depth from how decisively the water won. Its alpha is a constant 255. Three
+  things draw it, all with ordinary alpha blending: `VillageMap.DrawTheBakedValley` (one `DrawTextureRect`), the new-game
+  preview (`NewGameScreen`, a `TextureRect`, re-baked on every change at a few px a tile) and the title backdrop
+  (`TitleScreen`, a `TextureRect`).
+- **The bake keeps only the winner.** `Winner` weighs every kind over a 3 × 3 kernel after the warp and each kind's
+  jitter (`HowFreeToWander`), then throws all but the top one away. **The lab's fake map is those thrown-away weights**,
+  and they are what splat, bleed, coverage and the ground textures read.
+- **Six kinds, not four.** The valley has grass (worked ground is baked as grass, under the per-tile fields), forest,
+  sapling, rock, iron and water. The fake map carries four weights and the iron pick (A20); the valley adds young wood,
+  which the lab only previews (*Young wood preview*, A14).
+- ⛔ **A material shades every draw of its canvas item.** `VillageMap` is one `Control` that draws the whole village in
+  one `_Draw` — ground, trails, fields, washes, woods' game, herds, bridges, buildings, heaps, carts, people, the ghost. A
+  `ShaderMaterial` on it would run the terrain shader over every building and villager. **The valley needs a canvas item
+  of its own.** (`VillageMap` has no children today.)
+- **Drawn over the bake, inside `DrawValley`:** the trails (`WornPath`, 60 % alpha), the worked ground (fields, opaque),
+  the live canopies (from 24 px a tile), the wear (`WearWash`, 70 %), the residential land (28 %), the valley's edge and
+  the grid. Then, in `_Draw`, the woods' game, the herds, the boat, the bridges and everything that stands or walks.
+- **The game has no grass and no grain today.** The wiring brings both for the first time, not only the terrain layers.
+
+### 5.2 The calls, Joe's — each with a recommendation
+
+1. **Where the ground's mix lives** (the old "coverage channel"). ⭐ **Recommended: a second, smaller image beside the
+   bake — never the bake's alpha.** The shader needs more than one coverage number: it needs *how much of each kind is at
+   each spot*, because that is what blends the edges and picks the painting, and one spare channel cannot hold six
+   kinds. Alpha would also make the new-game preview and the title backdrop see-through, since they draw the bake
+   straight. So **the colour bake stays byte for byte what it is**, and the game's bake writes, in the same loop, the
+   weights it throws away today: **one RGBA8 image in the fake map's layout** (R grass, G wood, B seam, A water, summing
+   to one) **and one RG8 beside it** (R the share of the wood that is young, G the share of the seam that is iron), **at
+   8 px a tile**, the fake map's resolution — what the approved values were judged on. 960 × 640: 2.5 + 1.2 MB, against
+   the colour's 9.8, uploaded whole whenever a felling re-bakes, as the colour is (an `ImageTexture` has no partial
+   update). *Not recommended:* 16 px a tile (four times the upload, for a smooth field the bilinear read smooths
+   anyway); alpha (above).
+   - ⚠️ **Shares, not the lab's pick.** The young and iron shares are fractions, sharpened at the splat's own power, so
+     forest meets young wood and stone meets iron the way every land edge meets. A pick (A20's `≥ 0.5`) meets at a hard
+     line (HANDOFF art trap 18), and in the valley young wood touches its forest all the time: a forager's thinning
+     turns tiles inside a wood into saplings, and regrowth seeds them at its edge (`SimWorld`, `RegrowthSystem`). Young wood costs no extra read (the woods tile × `mix(1, young ÷ woods, share)`, A14's ratio); stone
+     and iron read both tiles only where a seam is part of each.
+2. **The bake's dressing — `Dressed`'s noise.** ⭐ **Recommended: it stays in the bake, and the shader does not draw
+   it.** With the shader on, the woods, stone, iron and water are Joe's paintings and the meadow is the grass pack; the
+   canopy's dapple, the stone's speckle and the meadow's bloom would be a second texture laid over his. The bake still
+   draws them wherever the bake is drawn: the switch off, the new-game preview, the title. The river's depth comes
+   across, as in the lab (`terrain_ground`'s shallows, the same ramp, D338). **So the wired valley is the lab's look,
+   which is the look he approved.** *Not recommended:* porting the noise into the shader (a cost per pixel to paint
+   over his paintings), or drawing the baked colour under the paintings (two images read and blended for a mottle
+   nobody sees).
+3. **Where the grain sits.** He picked *under the village* (A9). In the game that is one of three places:
+   - ⭐ **(a) In the ground shader — recommended.** The meadow, the woods, the stone, the water and the snow have tooth;
+     the paths, fields, washes, live trees and everything standing are drawn on top without it. Free — no extra draw —
+     and it is the lab's order for everything the lab draws. The paths and washes are partly see-through (60 %, 70 %,
+     28 %), so the tooth shows faintly through them; the fields are opaque, so they are smooth.
+   - (b) **Its own layer over the ground *and* its marks** — paths, fields, washes — under the trees, animals, buildings
+     and people. Needs `DrawValley`'s half of `VillageMap` moved onto a canvas item of its own: a large diff in the
+     view's busiest file. The thing to build if (a) shows smooth fields in a grainy valley and they look wrong.
+   - (c) **Over everything, under the UI** — D630's first order, the lab with the box off. One overlay node, cheap; but
+     buildings and people get grain, which he turned down at A9.
+4. **The GPU bar.** A11's 1 ms a frame at 4K is for the terrain layers, measured **over the approved grass**. ⚠️
+   **Today's valley pays for neither**: it draws one plain texture. So the switch also brings the grass look itself,
+   which D632 approved but never put against a frame: the approved grass with its grain reads 0.83–0.91 ms at 2560 ×
+   1440 (D632), and 1.5–2.5 ms at 4K in the lab's later runs; the terrain layers are +0.64–0.80 on top (§3.3).
+   **Estimated: the switch costs about 2–3.5 ms a frame at 4K on the 3070 — about a quarter of that in a 1920 × 1080
+   window.** ⭐ **Recommended:** A11's 1 ms stays the bar for the terrain layers, and a second bar covers the switch as
+   a whole — today's valley against everything on — at **3.5 ms at 4K** (about a fifth of a 60 fps frame at 4K, a
+   twentieth at 1080). Both measured in the wired valley, A/B inside one session (art trap 8), at the widest and the
+   gameplay zoom. Over either, the first lever is §3.3's: bake the snow's threshold and the bleed's warp into spare
+   channels, one texture read for four noise lookups; the next is the grass's own hex tiling, which is the approved
+   look and so his.
+5. **Where the switch lives** *(new — the lab has a panel; the game does not)*. ⭐ **Recommended: a tick on the settings'
+   view list beside *draw the tile grid*, off until he approves the look**, then on by default with today's valley as
+   its off. That is about six lines in `Main.cs` (`_viewToggles`) — the systems lane's file and not on the art lane's
+   list, so it needs his OK. *The alternative,* a key with no tick, touches `Main.cs` too (its input). Everything else
+   lives in `VillageMap.cs`, `ValleyTexture.cs` and `shaders/`, and the new probe lines ride in checks `Main.cs`
+   already prints (`ValleyTexture.SelfCheck`).
+6. **Snow through the year** *(new — the lab drives it with a slider; in the valley the season does, A9, and no number
+   says how)*. ⭐ **Recommended: snow follows the grass's own winter blend** (`seasonal-grass.md §6.4`): it starts to lie
+   as autumn turns over its last ten days, lies through winter's first twenty, and melts as winter turns to spring over
+   its last ten — so the snow and the winter grass come and go together, and the patches show on the way in and out (the
+   place threshold, §2). A pure function of the tick within the season, a uniform per frame; the sim untouched. **How
+   deep mid-winter goes:** ⭐ **1, the whole valley white** (the value band was checked at full Lerp snow — no new
+   failure, §6); or **0.56**, the patchy cover he looked at in the lab, all winter long.
+
+### 5.3 Settled without asking — his to overrule
+
+- **His approved values are the look,** read from the two look files and nothing else: the grass at
+  `grass_approved.tres` (paper grain 0.12, A10); splat 5.5, bleed 0.33 and 0.30 tiles (A7); the grain world-anchored at
+  0.065 tiles (A9); snow Lerp `#f8f6f1`, patchiness 0.03, patch 3 tiles (A9); the ground textures repeating plainly at
+  64 tiles (A14–A21 — hex stays off, it was over the bar, A14). ⚠️ **Coverage fade 0.25 is the fake map's and not
+  approved:** the real coverage is the first new thing he judges in the valley (A9).
+- **The new-game preview, the title backdrop and the minimap stay on the bake and the palette** (`ground-textures.md §6`'s
+  open line): the four tiles' means sit 0.07–0.40 L\* from the palette (woods 0.23, stone 0.40, iron 0.19, water 0.07),
+  too close to see at a preview's few pixels a tile.
+- **The grass grows wherever the bake says grass** — worked ground included, under the fields, which cover it; through
+  the paths and washes it shows in part. Whether a worn path or a building's footprint clears the grass is a later piece
+  (it would read the sim's wear, a second counter to watch), and only if he asks.
+- **A7's warning stands:** at bleed scale 0.30 the warp's cycle is shorter than its reach (a fray, not a wander), so a
+  land feature one tile thin is looked for in the real valley (D342's rule).
+- **The lab does not change**, nor do its 32 reference renders: the valley gets its own shader,
+  `shaders/valley_terrain.gdshader`, which includes the lab's files and calls the same functions; anything added to
+  `terrain_lab.gdshaderinc` is a new function, and the lab's renders are `cmp`'d before and after.
+
+### 5.4 The build, after his answers — three pieces, one commit each, each ending at his eyes
+
+| # | piece | what proves it |
+|---|---|---|
+| 1 | **The weights in the bake** (`ValleyTexture.cs`): `Winner`'s weights kept, the two images (call 1) written in the same loop and patched incrementally like the colour, saved beside the bake's PNG under `logs/` | the colour bake byte-identical (its PNG `cmp`'d before and after; `valley bake:` and `seams drawn:` unchanged); the weights' incremental re-bake equal to a full one and the fast path equal to the slow, as the colour's are; **the weights' hard contour against the bake's own winner** — every 16-px pixel's kind read back from the 8-px weights, bilinear, at power 48: the share that disagree, and the farthest a disagreeing water pixel lies from the bake's bank (D342; measured first, then the floor set under it); the bake's time and the upload, printed |
+| 2 | **The valley through the shader** (`VillageMap.cs`, `valley_terrain.gdshader`, the tick): a child canvas item behind the map draws the beyond, the parchment and the shaded valley, and `VillageMap` skips those three when the tick is on; per frame, uniforms only (D338) — pixels a tile, the season and its blend, the snow's amount | **tick off:** `VillageMap`'s draw calls unchanged, and windowed renders of a fixed valley at fixed zooms `cmp`-identical before and after (a scratch render script — `tools/` is not the lane's); the probe asks the compiled shader for its uniforms (art trap 6), the tick opens off, every value is the look files'; **on:** renders, then Joe's eyes |
+| 3 | **The cost, in the valley** | call 4's two bars, A/B in one session; the snow's threshold and the bleed's warp baked only if over |
 
 ## 6. Verification, and what the lab cannot say
 

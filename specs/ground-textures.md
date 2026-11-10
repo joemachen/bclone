@@ -174,4 +174,6 @@ switch off, the §3 numbers, a red-check of every new guard, and the cost agains
 
 - Woods in seasons (§1): later tiles, if he wants them.
 - Worked stone and iron (a quarry's floor is `VillageMap`'s): waits for house tiers.
-- Whether the minimap and the far-view bake take a tile's mean or stay on the palette: decided when the valley is wired.
+- Whether the minimap and the far-view bake take a tile's mean or stay on the palette: **proposed, the palette**
+  (`terrain-shader.md §5.3`, A22 — the means sit 0.07–0.40 L\* from it); his to overrule. Drawing the four tiles in the
+  valley is `terrain-shader.md §5`, specced A22, waiting on his calls.
