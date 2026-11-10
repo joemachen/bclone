@@ -166,7 +166,7 @@ internal sealed class MeshBuilder
     }
 
     /// <summary>
-    /// ⭐ One cell of a 4 × 2 atlas as a square in tile space (the painted trees, <c>tree-sprites.md §5</c>, A35):
+    /// ⭐ One cell of the tree atlas as a square in tile space (the painted trees, <c>tree-sprites.md §5</c>, A35):
     /// centred on <paramref name="centre"/>, <paramref name="half"/> tiles from the middle to each side, white so the
     /// texture is drawn as painted. <paramref name="mirrored"/> lays the cell mirrored across its up-left to down-right
     /// diagonal (a transpose) — the one turn that keeps the painted light where it is (A31).
@@ -188,10 +188,13 @@ internal sealed class MeshBuilder
         AddUv(bl, Uv(0f, 1f));
     }
 
-    /// <summary>The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across, 2 down.</summary>
+    /// <summary>
+    /// The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across; 5 down since the three more kinds (A36) — two rows of
+    /// leafy trees, then a row each of conifers, birches and willows.
+    /// </summary>
     internal const int SpriteColumns = 4;
 
-    internal const int SpriteRows = 2;
+    internal const int SpriteRows = 5;
 
     /// <summary>Add everything laid down so far as one triangle surface of <paramref name="mesh"/>, in 2D.</summary>
     /// <remarks>

@@ -3250,8 +3250,26 @@ public partial class VillageMap : Control
 
         // Over the buildings so it is not hidden by one, under the people so it never
         // hides them — the same rule the rest of this method follows.
-        DrawSelectedTile();
+        // ⭐ With Joe's painted trees (A36) the selection waits until after the canopy, which covers the rest.
+        bool canopyOver = _paintedTrees && _treesShown;
+        if (!canopyOver)
+        {
+            DrawSelectedTile();
+        }
+
         DrawVillagers();
+
+        // ⭐⭐ THE PAINTED CANOPY OVER THE WHOLE VILLAGE (A36, Joe: *"buildings should be covered by trees"*, and asked
+        // what should stay above the canopy, *"Everything under"*). With the watercolour tick on, the trees are drawn
+        // after every building, heap, cart and villager, so a branch overhanging a house or a path hides it as a real one
+        // would. ⚠️ A villager in the woods is hidden too — his call, made knowing it (A36); the *draw the trees* tick is
+        // the way to see under. Only what is in the player's hand stays above: the selection, the ghost, the brushful
+        // and the before/after line. With the tick off the order above is the order it always was, to the byte.
+        if (canopyOver)
+        {
+            DrawThePaintedCanopy();
+            DrawSelectedTile();
+        }
 
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
@@ -5434,11 +5452,6 @@ public partial class VillageMap : Control
         }
 
         RefreshTheScenery(_world!);
-        if (_paintedTrees)
-        {
-            DrawThePaintedTrees(minX, maxX, minY, maxY);
-        }
-
         DrawTheSceneryChunks(minX, maxX, minY, maxY, berries: false);
     }
 

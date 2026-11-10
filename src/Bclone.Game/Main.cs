@@ -6796,6 +6796,14 @@ public partial class Main : Control
         body.AddChild(beforeAfter);
         _viewToggles.Add(("before_after", "the before/after slider", beforeAfter, () => _map.BeforeAfterShown));
 
+        // ⭐ THE TREES, ON OR OFF (A36, Joe: *"give settings options to disable trees (so user can see land underneath)"*).
+        // On by default: the map opens as it was. Off hides every tree, in either look; boulders and berries stay.
+        var trees = new CheckBox { Text = "draw the trees", ButtonPressed = true };
+        trees.AddThemeFontSizeOverride("font_size", 12);
+        trees.Toggled += on => _map.ShowTrees(on);
+        body.AddChild(trees);
+        _viewToggles.Add(("trees", "the trees", trees, () => _map.TreesShown));
+
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in
         // the settings."*). **One each rather than a single "painted ground" tick was his call**,

@@ -63,6 +63,29 @@ public partial class VillageMap
     /// </summary>
     private bool _paintedTrees;
 
+    /// <summary>
+    /// The Settings tick <i>draw the trees</i> (A36, Joe: *"give settings options to disable trees (so user can see land
+    /// underneath)"*). On by default, so the map opens as it was; off, no tree is meshed — crowns or painted — and the
+    /// ground under the woods shows. Boulders and berries stay.
+    /// </summary>
+    private bool _treesShown = true;
+
+    /// <summary>Whether the trees are drawn — the Settings tick's state.</summary>
+    public bool TreesShown => _treesShown;
+
+    /// <summary>The <i>draw the trees</i> tick: every chunk re-meshed once, on the next refresh.</summary>
+    public void ShowTrees(bool on)
+    {
+        if (on == _treesShown)
+        {
+            return;
+        }
+
+        _treesShown = on;
+        _sceneryOf = null;
+        QueueRedraw();
+    }
+
     /// <summary>The atlas, wrapped so it is drawn mipmapped (the map's own filter is plain linear) — null until the tick first goes on.</summary>
     private CanvasTexture? _treeAtlas;
 
@@ -197,10 +220,12 @@ public partial class VillageMap
         // The atlas as imported (HANDOFF art trap 2): its size, lossless (RGBA8 — a VRAM import would be another format), mipmapped.
         Texture2D? atlas = ResourceLoader.Exists(TreeSpritesPath) ? GD.Load<Texture2D>(TreeSpritesPath) : null;
         Image? image = atlas?.GetImage();
-        if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 512
+        // ⛔ Named from the spec, not the code (trap 17): 256 px cells, 4 across, 5 down — two rows leafy, then a row each of
+        // conifer, birch and willow (A36).
+        if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 1280
             || image.GetFormat() != Image.Format.Rgba8 || !image.HasMipmaps())
         {
-            faults.Add($"{TreeSpritesPath} is {atlas?.GetWidth()} × {atlas?.GetHeight()}, {image?.GetFormat()}, mipmaps {image?.HasMipmaps()} (want 1024 × 512, Rgba8, mipmapped)");
+            faults.Add($"{TreeSpritesPath} is {atlas?.GetWidth()} × {atlas?.GetHeight()}, {image?.GetFormat()}, mipmaps {image?.HasMipmaps()} (want 1024 × 1280, Rgba8, mipmapped)");
         }
 
         // Off: no trees mesh, the crowns as ever.
@@ -234,7 +259,9 @@ public partial class VillageMap
         }
 
         // Every tree a whole cell of the atlas, of a painted tree's size; and the valley uses every drawing, both faces.
-        var cells = new bool[MeshBuilder.SpriteColumns * MeshBuilder.SpriteRows];
+        var cells = new bool[8 + 4 + 4 + 4]; // 8 leafy, 4 each conifer, birch, willow (A36)
+        int conifers = 0, birches = 0, willows = 0, misplaced = 0;
+        string? firstMisplaced = null;
         int mirroredTrees = 0, trees = 0, wrong = 0, grownSized = 0, youngSized = 0;
 
         // ⛔ The sizes named here from the spec, not read off the code's constants (trap 17; the first build read
@@ -244,7 +271,8 @@ public partial class VillageMap
         float grownLow = CellTiles * 0.85f, grownHigh = CellTiles * 1.10f;
         float youngLow = grownLow * 0.55f, youngHigh = grownHigh * 0.55f;
         string? firstWrong = null;
-        const float Du = 1f / MeshBuilder.SpriteColumns, Dv = 1f / MeshBuilder.SpriteRows;
+        const float Du = 256f / 1024f, Dv = 256f / 1280f;
+        const int Across = 4;
         foreach (SceneryChunk chunk in _scenery)
         {
             if (chunk.Trees.GetSurfaceCount() == 0)
@@ -258,8 +286,8 @@ public partial class VillageMap
             for (int v = 0; v + 5 < at.Length; v += 6)
             {
                 trees++;
-                int cell = (int)(uv[v].X / Du) + ((int)(uv[v].Y / Dv) * MeshBuilder.SpriteColumns);
-                Vector2 corner = new(cell % MeshBuilder.SpriteColumns * Du, cell / MeshBuilder.SpriteColumns * Dv);
+                int cell = (int)((uv[v].X / Du) + 1e-3f) + ((int)((uv[v].Y / Dv) + 1e-3f) * Across);
+                Vector2 corner = new(cell % Across * Du, cell / Across * Dv);
                 bool mirrored = uv[v + 1].IsEqualApprox(corner + new Vector2(0f, Dv));
                 bool plain = uv[v + 1].IsEqualApprox(corner + new Vector2(Du, 0f));
                 float side = at[v + 1].X - at[v].X;
@@ -279,12 +307,84 @@ public partial class VillageMap
 
                 cells[cell] = true;
                 mirroredTrees += mirrored ? 1 : 0;
+
+                // ⭐ Each kind where its place says (A36), read off the tree's own foot — not off KindOf, which is what is
+                // being checked: a willow within reach of water, a birch within reach of open ground.
+                Vector2 foot = (at[v] + at[v + 2]) / 2f;
+                if (cell >= 16)
+                {
+                    willows++;
+                    if (!Near(foot, t => t == Terrain.Water))
+                    {
+                        misplaced++;
+                        firstMisplaced ??= $"a willow at {foot} with no water near";
+                    }
+                }
+                else if (cell >= 12)
+                {
+                    birches++;
+                    if (!Near(foot, t => t is not (Terrain.Forest or Terrain.Sapling or Terrain.Water)))
+                    {
+                        misplaced++;
+                        firstMisplaced ??= $"a birch at {foot} inside the wood";
+                    }
+                }
+                else if (cell >= 8)
+                {
+                    conifers++;
+                }
             }
         }
 
         if (grownSized != grownTrees || youngSized != youngTrees)
         {
             faults.Add($"{grownSized} trees are a grown tree's size ({grownLow:F2}–{grownHigh:F2} tiles; want {grownTrees}) and {youngSized} a young one's ({youngLow:F2}–{youngHigh:F2}; want {youngTrees})");
+        }
+
+        // Willows and birches on the valley's water and edges, both; conifers a stand's share, not none and not most.
+        float coniferShare = trees == 0 ? 0f : conifers / (float)trees;
+        if (misplaced > 0 || willows == 0 || birches == 0 || coniferShare < 0.08f || coniferShare > 0.40f)
+        {
+            faults.Add($"{misplaced} trees out of their place (first: {firstMisplaced}); {willows} willows, {birches} birches, conifers {coniferShare:P0} of the trees (want 0, some, some, 8–40 %)");
+        }
+
+        // The trees tick (A36): off, no painted tree; back on, every one.
+        bool wasTrees = _treesShown;
+        ShowTrees(false);
+        RefreshTheScenery(world);
+        (int _, int hiddenTrees) = Totals();
+        ShowTrees(true);
+        RefreshTheScenery(world);
+        (int _, int shownTrees) = Totals();
+        if (hiddenTrees != 0 || shownTrees != onTrees)
+        {
+            faults.Add($"the trees tick off leaves {hiddenTrees} painted-tree vertices and on brings back {shownTrees} (want 0 and {onTrees})");
+        }
+
+        // ⭐ A fell at a chunk's edge re-meshes the chunk beside it (A36: the kinds read their neighbours). A wooded tile on
+        // a chunk's right edge with a chunk beyond it is felled by hand and put back, as the scenery line's fell is.
+        int edgeAt = -1;
+        for (int i = 0; i < map.Tiles.Count && edgeAt < 0; i++)
+        {
+            int x = i % map.Width;
+            edgeAt = map.Tiles[i] == Terrain.Forest && x % ChunkTiles == ChunkTiles - 1 && x + 1 < map.Width ? i : -1;
+        }
+
+        int rebuiltForAFell = 0;
+        if (edgeAt >= 0)
+        {
+            var edge = new GridPos(map.MinX + (edgeAt % map.Width), map.MinY + (edgeAt / map.Width));
+            map.SetTerrain(edge, Terrain.Grass);
+            RefreshTheScenery(world, generation: _sceneryAtGeneration + 1);
+            rebuiltForAFell = LastSceneryChunksBuilt;
+            map.SetTerrain(edge, Terrain.Forest);
+            RefreshTheScenery(world, generation: _sceneryAtGeneration + 1);
+            _sceneryAtGeneration = world.TerrainGeneration;
+        }
+
+        if (rebuiltForAFell < 2)
+        {
+            faults.Add($"a fell on a chunk's edge re-meshed {rebuiltForAFell} chunks (want its own and the one beside it, 2 or more)");
         }
 
         int used = cells.Count(c => c);
@@ -302,6 +402,18 @@ public partial class VillageMap
             faults.Add($"switched back off, {backTrees} painted-tree vertices and {backStanding} standing (want 0 and {offStanding})");
         }
 
+        // The trees tick with the watercolour off too: the crowns go, the boulders stay.
+        ShowTrees(false);
+        RefreshTheScenery(world);
+        (int bareStanding, int _) = Totals();
+        ShowTrees(wasTrees);
+        RefreshTheScenery(world);
+        (int againStanding, int _) = Totals();
+        if (!wasOn && wasTrees && (offStanding - bareStanding != discs || againStanding != offStanding))
+        {
+            faults.Add($"with the watercolour off, the trees tick off takes {offStanding - bareStanding} vertices (want the crowns' {discs}) and on gives back to {againStanding} (want {offStanding})");
+        }
+
         if (youngAt >= 0)
         {
             map.SetTerrain(planted, Terrain.Forest);
@@ -315,8 +427,26 @@ public partial class VillageMap
         }
 
         return faults.Count == 0
-            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 512, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; off, no painted tree and the canopies to the vertex"
+            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 1280, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; {conifers} conifers in stands ({coniferShare:P0}), {willows} willows each by water, {birches} birches each at an edge; a fell on a chunk's edge re-meshes {rebuiltForAFell} chunks; the trees tick hides and brings back every tree in either look; off, no painted tree and the canopies to the vertex"
             : $"[widths] painted trees: ⛔ {string.Join("; ", faults)}";
+
+        bool Near(Vector2 foot, System.Func<Terrain, bool> wanted)
+        {
+            // Within a tree's reach of its tile and one tile beyond: CanopySpread (0.55) plus a tile, rounded out to 2.
+            int fx = Mathf.RoundToInt(foot.X), fy = Mathf.RoundToInt(foot.Y);
+            for (int dy = -2; dy <= 2; dy++)
+            {
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    if (wanted(map.TerrainAt(new GridPos(fx + dx, fy + dy))))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         (int Standing, int Trees) Totals()
         {
