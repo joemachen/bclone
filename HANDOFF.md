@@ -1,7 +1,7 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
 > **🔀 HOUSE TIERS MERGED INTO `main` AT JOE'S WORD (D724, 2026-11-09: *"Merge it now"*) — PIECES 1–4 PLAYED, PIECE 5'S SWITCHES MERGED
-> UNPLAYED (his call); `slice/house-tiers` deleted; NOT PUSHED.** Merged over the art lane's ground textures (A12–A21); §7's tail was the one
+> UNPLAYED (his call); `slice/house-tiers` deleted; PUSHED AT HIS WORD.** Merged over the art lane's ground textures (A12–A21); §7's tail was the one
 > conflict, both kept. **Next, art: wire the terrain shader into the valley — `VillageMap.cs` and the glyphs are free (the lane table's
 > *"until house tiers merge"* has come). Next, systems: Phase 5's gate — logistics' last item, then items 3–5.** The switches are Joe's
 > to look at in play: *Rebuild older homes* on the bar, *Keep this house as it is* on the home card.
@@ -9897,7 +9897,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   the home card naming a stone house after its family with its winter, its fireless days and its rebuild's progress, the log's
   start and finish; no golden moved. THE SLICE IS BUILT.** ✅ **Played by Joe (D723): *"yep, looks good"*.** ✅ **Piece 5 built
   (D723), his ask from that play: *Rebuild older homes* on the bar and *Keep this house as it is* on the home card; his piece-4
-  saves still load.** ✅ **MERGED INTO `main` AT HIS WORD (D724): *"Merge it now"* — the switches unplayed, his call; not pushed.** *(As it read before piece 5:)* **Joe's: play it** — reach the cottage (3rd generation + 20 people,
+  saves still load.** ✅ **MERGED INTO `main` AT HIS WORD (D724): *"Merge it now"* — the switches unplayed, his call; pushed at his word (*"Push it"*).** *(As it read before piece 5:)* **Joe's: play it** — reach the cottage (3rd generation + 20 people,
   ~Year 25–32; for a quick look, a new game with `cottage_unlock_generation` 2 and `cottage_unlock_population` 4 in
   `data/sim.config.json` learns it at the first birth — put them back after), pick *Cottages*, watch a street rebuilt one house at
   a time — **then merge at his word.** ⚠️ `specs/art-inventory.md` B8 (the art lane's file) still says the house tiers have no
