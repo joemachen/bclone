@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING PAINTED OR BUILT — ⏸️ WAITING ON JOE'S ATLAS (§3); THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; NOT IN THE REPO YET; ⏸️ HIS EYES, THEN PIECE 1.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -101,7 +101,9 @@ in the chunk's mesh instead of crowns:
 
 ✅ **ANSWERED (A30, 2026-11-10), all four as recommended:** ~~angled like the concept~~ ⛔ **reversed (A31): straight down —
 *"we shouldnt draw at an angle. buildings must rotate."*** — when told the angle leans on how buildings are drawn; one leafy
-kind first; Joe provides the eight drawings to §3; fewer, bigger trees, 1–2 a tile. **Next: his atlas, then piece 1.**
+kind first; Joe provides the eight drawings to §3 *(changed A34 at his word, *"use COMS to paint it in photoshop"*: Claude paints
+them in Photoshop by script, as the ground tiles were — `D:\Projects\brushes\trees\build_tree_sprites.jsx`)*; fewer, bigger trees,
+1–2 a tile. **Next: his eyes on the atlas (A34), then piece 1.**
 
 ✅ **ANSWERED (A33, 2026-11-10): (a), as recommended — Joe: *"option a"*.** The shadow is painted, a see-through wash, the one
 exception (§3, §4). The call as it was put:
