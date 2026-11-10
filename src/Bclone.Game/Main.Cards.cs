@@ -109,6 +109,9 @@ public partial class Main
     private sealed class CardControls
     {
         public VBoxContainer? FullRow { get; set; }
+
+        /// <summary><i>Keep this house as it is</i> (D723) — a household's one setting.</summary>
+        public CheckBox? KeepHouse { get; set; }
         public Button? FullMarker { get; set; }
         public List<(Goods Goods, HBoxContainer Row, Label Name, Label Amount, Button Take)> Storage { get; } = new();
 
@@ -983,6 +986,27 @@ public partial class Main
                 break;
             }
 
+            // ⭐ KEEP THIS HOUSE AS IT IS (`house-tiers.md §4.5`, D723; Joe: *"'auto upgrade tier' tickbox on each home's
+            // card?"*): the rebuilds pass it over, and the builders still mend it.
+            case CardKind.Household:
+            {
+                c.KeepHouse = new CheckBox
+                {
+                    Text = "Keep this house as it is",
+                    TooltipText = "Ticked, the builders pass this house over when they rebuild the older homes, and mend it as "
+                        + "it is. It stays with the house if another family moves in.",
+                };
+                c.KeepHouse.Toggled += on => Act(card, () =>
+                {
+                    if (_loop.World.FindHousehold(card.Subject.Id) is Household home)
+                    {
+                        _loop.World.SetKeepsItsHouse(home, on);
+                    }
+                });
+                body.AddChild(c.KeepHouse);
+                break;
+            }
+
             default:
                 break;
         }
@@ -1126,6 +1150,17 @@ public partial class Main
                     c.PostNote!.Text = world.SayWhatThePostWillDo();
                 }
 
+                break;
+            }
+
+            // A house's own setting, once there is a house above the cabin to keep it from (D723) — and the fold with it.
+            case CardKind.Household when world.FindHousehold(card.Subject.Id) is Household home:
+            {
+                bool shown = home.HasHome && world.CottageLearned;
+                c.KeepHouse!.Visible = shown;
+                c.KeepHouse.SetPressedNoSignal(home.KeepsItsHouse);
+                card.SettingsToggle.Visible = shown;
+                card.Settings.Visible = shown && card.SettingsToggle.ButtonPressed;
                 break;
             }
 
@@ -3475,6 +3510,25 @@ public partial class Main
             faults.Add($"the Build homes as buttons read \"{string.Join(" · ", labels)}\"");
         }
 
+        // ---- Rebuild older homes (D723): the bar's tickbox is the sim's switch, both ways, put back as it was ----
+        if (_rebuildOlder is null || _rebuildOlder.Text != "Rebuild older homes")
+        {
+            faults.Add("the bar has no Rebuild older homes tickbox");
+        }
+        else
+        {
+            bool was = world.RebuildsOlderHomes;
+            _rebuildOlder.ButtonPressed = false;
+            bool offTakes = !world.RebuildsOlderHomes;
+            _rebuildOlder.ButtonPressed = true;
+            bool onTakes = world.RebuildsOlderHomes;
+            _rebuildOlder.ButtonPressed = was;
+            if (!offTakes || !onTakes)
+            {
+                faults.Add($"ticking Rebuild older homes {(offTakes ? "on" : "off")} does not reach the village");
+            }
+        }
+
         // ---- the card ----
         // ⚠️ The probe's founding has painted no housing, so its families are roofless here: the real card is read for that
         // (no house line, "no house"), and a cabin's own line is read if one stands; every tier is posed below.
@@ -3503,6 +3557,18 @@ public partial class Main
         }
 
         string read = home.HasHome ? "a cabin's card says its house" : "a roofless family's card says no house";
+
+        // Keep this house as it is (D723): on the card, and offered only where there is a house and a stone one to keep it from.
+        bool keepOffered = home.HasHome && world.CottageLearned;
+        if (card.Controls.KeepHouse is not CheckBox keep)
+        {
+            faults.Add("a household's card has no Keep this house as it is");
+        }
+        else if (keep.Visible != keepOffered || card.SettingsToggle.Visible != keepOffered)
+        {
+            faults.Add($"Keep this house as it is is {(keep.Visible ? "shown" : "hidden")} (its fold {(card.SettingsToggle.Visible ? "shown" : "hidden")}) "
+                + $"where it should be {(keepOffered ? "shown" : "hidden")}");
+        }
 
         // Posed: the longest family name, every tier's line, and the longest rebuild — a manor, a queue in the teens, two
         // materials in the thousands.
@@ -3543,7 +3609,8 @@ public partial class Main
         return faults.Count == 0
             ? $"[widths] house tiers: ✅ three looks apart (marks {string.Join(" / ", marks)}, the manor drawn at "
                 + $"{VillageMap.DrawnShareOf(BuildingKind.Manor):F2}), the bar in the map's colours, {string.Join(" · ", labels)}; "
-                + $"{read}, and every tier's line and the longest rebuild fit {CardWidth:F0}"
+                + $"{read}, Keep this house as it is {(keepOffered ? "offered" : "not offered before a stone house is learned")}, "
+                + $"Rebuild older homes reaches the village both ways, and every tier's line and the longest rebuild fit {CardWidth:F0}"
             : $"[widths] house tiers: ⛔ {string.Join("; ", faults)}";
     }
 

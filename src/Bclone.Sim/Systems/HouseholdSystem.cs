@@ -169,6 +169,8 @@ public sealed class HouseholdSystem : ISimSystem
                 household.HomeRepairedAtTick = standingEmpty.HomeRepairedAtTick;
                 world.SetHomeKind(household, standingEmpty.HomeKind);
                 world.SetHomeKind(standingEmpty, BuildingKind.Home);
+                household.KeepsItsHouse = standingEmpty.KeepsItsHouse;
+                standingEmpty.KeepsItsHouse = false;
                 household.WhyHere = standingEmpty.WhyHere;
                 household.FencedTiles = standingEmpty.FencedTiles;
                 standingEmpty.HomePosition = null;

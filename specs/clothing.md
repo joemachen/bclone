@@ -49,6 +49,10 @@ arm of the one `switch` in `ChillTheUnsheltered` reads the roof's rate when they
 `Roof` and `Fire` arms do not change: **a coat never helps under a fireless roof**, so a household out
 of firewood still freezes, and fuel stays the winter's axis (D45, D53, D69).
 
+⭐ **A later, warmer coat will reverse the next refusal for itself (Joe, D723):** wool from sheep, no chill outdoors or under
+a fireless roof — *"fewer to none going in to get warm lines in a properly clothed village (in a later phase)"*. Recorded in
+DESIGN §4, Phase 6; this coat is unchanged by it.
+
 ⛔ **Not D45's literal *"removes the outdoor danger entirely"*** (open ground safer than an unheated
 house), and ⛔ **not D69's third *"tattered furs"* rate.** Today's 15 days *is* the furs the founders
 arrived in; the coat is the upgrade with a before-and-after D69 wanted, and the cold-start floor D122

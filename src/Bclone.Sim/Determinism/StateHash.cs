@@ -293,6 +293,12 @@ public static class StateHash
                     hash = MixByte(hash, 0x80);
                     hash = MixUInt32(hash, (uint)household.HomeKind);
                 }
+
+                // Kept as it is (D723) — only when set.
+                if (household.KeepsItsHouse)
+                {
+                    hash = MixByte(hash, 0x86);
+                }
             }
 
             // 0x68 was `Household.LodgedIn` (D566; retired with the longhouse, D571) — sparse, so a family that never
@@ -768,6 +774,12 @@ public static class StateHash
         {
             hash = MixByte(hash, 0x83);
             hash = MixUInt32(hash, (uint)world.HomesBuiltAs);
+        }
+
+        // Rebuild older homes, unticked (D723) — only when off.
+        if (!world.RebuildsOlderHomes)
+        {
+            hash = MixByte(hash, 0x85);
         }
 
         // ---- The libraries, and what is written in them (Phase 4 slice 2) ----

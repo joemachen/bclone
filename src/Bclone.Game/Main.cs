@@ -1417,11 +1417,17 @@ public partial class Main : Control
             entry.Button.Visible = true;
         }
 
-        // And all three Build homes as buttons, as in a village that has learned the manor (D721).
+        // And all three Build homes as buttons, as in a village that has learned the manor (D721), and Rebuild older homes (D723).
         foreach ((BuildingKind _, Button button) in _homesAs)
         {
             wereShowing.Add((button, button.Visible));
             button.Visible = true;
+        }
+
+        if (_rebuildOlder is not null)
+        {
+            wereShowing.Add((_rebuildOlder, _rebuildOlder.Visible));
+            _rebuildOlder.Visible = true;
         }
 
         // And the Records button the hall will show (D397) — posed for the same reason.
@@ -2133,6 +2139,9 @@ public partial class Main : Control
 
     /// <summary>The <i>Build homes as</i> buttons (D721) — beside the land brush, kept apart from the strip's tools.</summary>
     private readonly List<(BuildingKind Kind, Button Button)> _homesAs = new();
+
+    /// <summary><i>Rebuild older homes</i> (D723) — beside the <i>Build homes as</i> buttons, shown once a house above the cabin is learned.</summary>
+    private CheckBox? _rebuildOlder;
 
     private readonly List<(BuildTab Tab, Button Button)> _tabButtons = new();
 
@@ -7677,6 +7686,25 @@ public partial class Main : Control
             _stripRow.AddChild(button);
         }
 
+        // ⭐ REBUILD OLDER HOMES (`house-tiers.md §4.5`, D723; Joe: *"the user should have the option to disable automatic
+        // house tier upgrades"*): ticked, the builders rebuild the standing houses below the choice; unticked, new homes are
+        // still raised at it and nothing standing is touched. Shown once a house above the cabin is learned.
+        _rebuildOlder = new CheckBox
+        {
+            Text = "Rebuild older homes",
+            ButtonPressed = true,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            TooltipText = "Ticked, the builders rebuild the older houses as the chosen kind, one at a time when nothing else is "
+                + "waiting. Unticked, new homes are still built as the chosen kind and nothing standing is touched. A house "
+                + "can be kept as it is from its own card.",
+        };
+        _rebuildOlder.Toggled += on =>
+        {
+            _loop.World.SetRebuildsOlderHomes(on);
+            RelightTheStrip();
+        };
+        _stripRow.AddChild(_rebuildOlder);
+
         // ⛔ MOVE AND EMPTY SHIP WITH THE SIM FEATURES THEY DRIVE, and their absence is what Joe
         // hit: *"I don't see anything in the UI that allows me to move a building?"* and *"no
         // option to 'empty' to another storage building."* **Both had been built and neither was
@@ -7743,9 +7771,10 @@ public partial class Main : Control
 
         BuildingRow? row = catalogue[dwelling];
         string lower = dwelling == BuildingKind.Manor ? "the cabins and cottages" : "the cabins";
-        return $"Build homes as: {(dwelling == BuildingKind.Manor ? "Manor" : "Cottage")}. New homes are built as {row?.Name}s, and "
-            + $"the builders rebuild {lower} one at a time when nothing else is waiting. A {row?.Name} burns "
-            + $"{row?.WinterFirewood} firewood a winter where a cabin burns {cabin}.";
+        string name = row?.Name ?? "house";
+        return $"Build homes as: {(dwelling == BuildingKind.Manor ? "Manor" : "Cottage")}. New homes are built as {name}s, and "
+            + $"while Rebuild older homes is ticked the builders rebuild {lower} one at a time when nothing else is waiting. "
+            + $"{Capitalise(SimWorld.WithArticle(name))} burns {row?.WinterFirewood} firewood a winter where a cabin burns {cabin}.";
     }
 
     /// <summary>One button on the strip: a drawn mark over its word.</summary>
@@ -7893,6 +7922,11 @@ public partial class Main : Control
             button.Visible = building && (_filter is null || _filter == BuildCategory.Homes) && EarnedYet(kind);
         }
 
+        if (_rebuildOlder is not null)
+        {
+            _rebuildOlder.Visible = building && (_filter is null || _filter == BuildCategory.Homes) && EarnedYet(BuildingKind.Cottage);
+        }
+
         // The professions panel asks the same question of the same flags (D460), and so do the
         // dropdown, the stores, the stock limits and the bar's more (D502).
         ShowTheKnownTrades();
@@ -8027,6 +8061,8 @@ public partial class Main : Control
             button.SetPressedNoSignal(kind == chosen);
             button.TooltipText = HomesAsTooltip(kind);
         }
+
+        _rebuildOlder?.SetPressedNoSignal(_loop.World.RebuildsOlderHomes);
     }
 
     /// <summary>Which mark on the strip a tool is drawn by, or null for the buildings.</summary>

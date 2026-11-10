@@ -294,8 +294,65 @@ public sealed partial class SimWorld
         HouseNameOf(household) ?? $"the {household.Name} household's {BuildingsCatalog.NameOf(household.HomeKind)}";
 
     /// <summary>Whether a house stands below the chosen tier — what a rebuild is for.</summary>
+    /// <remarks>⭐ And one the player lets the builders take (D723): not kept as it is, and older homes are being rebuilt.
+    /// The worn-first search, the season's walk and a fresh choice all ask here, so a kept house is mended as it is.</remarks>
     private bool IsBelowTheChoice(Household household) =>
-        household.HasHome && BuildingKinds.TierOf(household.HomeKind) < BuildingKinds.TierOf(HomesBuiltAs);
+        household.HasHome && RebuildsOlderHomes && !household.KeepsItsHouse
+        && BuildingKinds.TierOf(household.HomeKind) < BuildingKinds.TierOf(HomesBuiltAs);
+
+    /// <summary>
+    /// <i>Rebuild older homes</i> — the bar's tickbox beside <i>Cabins · Cottages · Manors</i> (`house-tiers.md §4.5`, D723).
+    /// On by default; off, new homes are still raised at the chosen row and nothing standing is touched.
+    /// </summary>
+    /// <remarks>Saved as <c>rebuilds_older_homes</c> and hashed only when off.</remarks>
+    public bool RebuildsOlderHomes { get; internal set; } = true;
+
+    /// <summary>
+    /// The player ticks or unticks <i>Rebuild older homes</i>. Off: a rebuild nobody has started is called off, one under way
+    /// is finished. On: the next is raised at once.
+    /// </summary>
+    public void SetRebuildsOlderHomes(bool on)
+    {
+        if (on == RebuildsOlderHomes)
+        {
+            return;
+        }
+
+        RebuildsOlderHomes = on;
+        if (!on && StandingRebuild() is Workplace standing && !HasBeenStarted(standing.Construction!))
+        {
+            RetireWorkplace(standing);
+        }
+
+        Narrate(on
+            ? $"The builders will rebuild the older houses again, one at a time. {Clock.SeasonAndYear()}."
+            : $"The builders will leave the older houses as they are; new homes are still built as "
+                + $"{(HomesBuiltAs == BuildingKind.Home ? "wooden cabins" : BuildingsCatalog.NameOf(HomesBuiltAs) + "s")}. "
+                + $"{Clock.SeasonAndYear()}.",
+            LogCategory.Building);
+        RaiseTheNextRebuild();
+    }
+
+    /// <summary>
+    /// The player ticks or unticks <i>Keep this house as it is</i> on a home's card (D723). Kept: a rebuild nobody has
+    /// started on it is called off and the next house's raised; one under way is finished. Let go: it waits its turn.
+    /// </summary>
+    public void SetKeepsItsHouse(Household household, bool keep)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        if (keep == household.KeepsItsHouse)
+        {
+            return;
+        }
+
+        household.KeepsItsHouse = keep;
+        if (keep && RebuildOf(household) is Workplace mine && !HasBeenStarted(mine.Construction!))
+        {
+            RetireWorkplace(mine);
+        }
+
+        RaiseTheNextRebuild();
+    }
 
     private static bool HasBeenStarted(ConstructionSite site) => site.WorkDone > 0 || site.TotalDelivered > 0;
 

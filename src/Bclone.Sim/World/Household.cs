@@ -129,6 +129,14 @@ public sealed class Household
     /// </summary>
     public BuildingKind HomeKind { get; internal set; } = BuildingKind.Home;
 
+    /// <summary>
+    /// <i>Keep this house as it is</i> (`house-tiers.md §4.5`, D723; Joe: <i>"the user should have the option to disable
+    /// automatic house tier upgrades"</i>): every rebuild passes the house over, and it is mended as it is. The house's, like
+    /// <see cref="HomeKind"/> — it goes with the house to a family that moves in and is cleared when it comes down. Set
+    /// through <c>SimWorld.SetKeepsItsHouse</c>. Saved and hashed only when set.
+    /// </summary>
+    public bool KeepsItsHouse { get; internal set; }
+
     /// <summary>The tick the builders last mended the house, or 0 never.</summary>
     public ulong HomeRepairedAtTick { get; set; }
 
@@ -1334,6 +1342,9 @@ public sealed class Household
         ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
         ["home_closed"] = HomeClosed,
         ["home_kind"] = SaveWriter.Enum(HomeKind),
+
+        // Only when set (D723) — so a save without it, every format-13 save before piece 5, reads a house the rebuilds may take.
+        ["keeps_its_house"] = KeepsItsHouse ? true : null,
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1358,6 +1369,7 @@ public sealed class Household
             HomeRepairedAtTick = save.ULong("home_repaired_at"),
             HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
             HomeKind = save.Enum<BuildingKind>("home_kind"),
+            KeepsItsHouse = save.HasValue("keeps_its_house") && save.Bool("keeps_its_house"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

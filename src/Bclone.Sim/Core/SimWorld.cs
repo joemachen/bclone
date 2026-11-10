@@ -8297,6 +8297,7 @@ public sealed partial class SimWorld : IObstacles
             family.WhyHere = "";
             BuildingKind was = family.HomeKind;
             SetHomeKind(family, BuildingKind.Home);
+            family.KeepsItsHouse = false;
             ReleasePlotOf(family.Id);
 
             // The fence comes down with the house and its logs come back with it (D388).
@@ -15074,6 +15075,9 @@ public sealed partial class SimWorld : IObstacles
             ["cottage_learned"] = CottageLearned,
             ["manor_learned"] = ManorLearned,
             ["homes_built_as"] = SaveWriter.Enum(HomesBuiltAs),
+
+            // Only when off (D723) — so a save without it, every format-13 save before piece 5, reads the rebuilds on.
+            ["rebuilds_older_homes"] = RebuildsOlderHomes ? null : false,
             ["bridge_crossings"] = BridgeCrossings,
             ["flour_ever_ground"] = FlourEverGround,
             ["bread_ever_baked"] = BreadEverBaked,
@@ -15271,6 +15275,7 @@ public sealed partial class SimWorld : IObstacles
         CottageLearned = save.Bool("cottage_learned");
         ManorLearned = save.Bool("manor_learned");
         HomesBuiltAs = save.Enum<BuildingKind>("homes_built_as");
+        RebuildsOlderHomes = !save.HasValue("rebuilds_older_homes") || save.Bool("rebuilds_older_homes");
         BridgeCrossings = save.Int("bridge_crossings");
         FlourEverGround = save.Int("flour_ever_ground");
         BreadEverBaked = save.Int("bread_ever_baked");

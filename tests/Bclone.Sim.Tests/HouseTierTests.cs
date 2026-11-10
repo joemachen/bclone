@@ -994,6 +994,185 @@ public sealed class HouseTierTests
         Assert.DoesNotContain(log.Entries, e => e.Message.Contains(" a insulated", StringComparison.Ordinal));
     }
 
+    // ---------------------------------------------------------------
+    // Piece 5 — the two switches (§4.5, D723): Rebuild older homes on the bar, Keep this house as it is on the card.
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ <i>Rebuild older homes</i> unticked (Joe, D723): new homes are still raised at the chosen row, and nothing standing
+    /// is touched — no rebuild raised, a waiting one called off, a started one finished. Ticked again, the next is raised.
+    /// </summary>
+    [Fact]
+    public void UntickedRebuildOlderHomesLeavesTheStreetButNotTheNewHomes()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        world.CottageLearned = true;
+        Assert.True(world.RebuildsOlderHomes);
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Assert.NotNull(world.StandingRebuild());
+
+        // Off: the waiting rebuild is called off, the season's walk raises none.
+        world.SetRebuildsOlderHomes(false);
+        Assert.Null(world.StandingRebuild());
+        world.TendWhatStands();
+        Assert.Null(world.StandingRebuild());
+
+        // On again: the next is raised at once; started, it survives the switch going off.
+        world.SetRebuildsOlderHomes(true);
+        Workplace started = world.StandingRebuild()!;
+        Assert.Equal(1, started.Construction!.Deliver(Goods.Logs, 1));
+        world.SetRebuildsOlderHomes(false);
+        Assert.Same(started, world.StandingRebuild());
+        world.Complete(started);
+        Assert.Null(world.StandingRebuild());
+
+        // Off for years: no house's kind changes but by that one finished rebuild, and a new couple's house is a cottage.
+        var kinds = Housed(world).ToDictionary(h => h.Id, h => h.HomeKind);
+        int newHomes = 0;
+        for (int t = 0; t < 25 * world.Config.TicksPerYear && newHomes == 0; t++)
+        {
+            loop.StepOnce();
+            Assert.Null(world.StandingRebuild());
+            foreach (Workplace site in world.Workplaces)
+            {
+                if (site.Construction is { RebuildsHome: false, Repairing: false, Demolishing: false } plan
+                    && BuildingKinds.IsDwelling(plan.Kind) && plan.ForHouseholdId != 0)
+                {
+                    Assert.Equal(BuildingKind.Cottage, plan.Kind);
+                    newHomes++;
+                }
+            }
+        }
+
+        Assert.All(kinds, k => Assert.Equal(k.Value, world.FindHousehold(k.Key)!.HomeKind));
+        Assert.True(newHomes > 0, "the pose needs a new couple's house marked with the switch off");
+    }
+
+    /// <summary>
+    /// ⭐ <i>Keep this house as it is</i> (Joe, D723): a kept house is passed over — its waiting rebuild called off and the
+    /// next house's raised — and a worn one is mended as it is. Every house kept, none is rebuilt; one let go waits its turn.
+    /// </summary>
+    [Fact]
+    public void AKeptHouseIsPassedOverAndMendedAsItIs()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+
+        // Old enough for a house to be worn: ten years on, every house freshly mended and nothing being mended.
+        loop.Step(10 * world.Config.TicksPerYear);
+        foreach (Workplace mending in world.Workplaces.Where(w => w.Construction is { Repairing: true }).ToList())
+        {
+            world.CancelConstruction(mending);
+        }
+
+        foreach (Household h in Housed(world))
+        {
+            h.HomeRepairedAtTick = world.Tick;
+            h.HomeClosed = false;
+        }
+
+        world.CottageLearned = true;
+        Assert.Null(world.SetHomesBuiltAs(BuildingKind.Cottage));
+        Household first = world.HouseholdAt(world.StandingRebuild()!.Tile)!;
+        Assert.False(first.KeepsItsHouse);
+
+        world.SetKeepsItsHouse(first, true);
+        Assert.Null(world.RebuildOf(first));
+        Workplace next = world.StandingRebuild()!;
+        Assert.NotEqual(first.Id, world.HouseholdAt(next.Tile)!.Id);
+
+        foreach (Household h in Housed(world))
+        {
+            world.SetKeepsItsHouse(h, true);
+        }
+
+        Assert.Null(world.StandingRebuild());
+
+        // Worn and kept: the walk mends it as a cabin.
+        first.HomeRaisedAtTick = 1;
+        first.HomeRepairedAtTick = world.Tick - (9UL * (ulong)world.Config.TicksPerYear);
+        Assert.Equal(Condition.Worn, world.ConditionOf(first));
+        world.TendWhatStands();
+        Assert.Null(world.StandingRebuild());
+        Assert.NotNull(world.RepairSiteAt(TileOf(world, first)));
+
+        // Let go: it waits its turn again — and, worn, it is first, its repair the rebuild.
+        world.SetKeepsItsHouse(first, false);
+        Assert.True(StandsOn(world.StandingRebuild(), world, first));
+        Assert.Null(world.RepairSiteAt(TileOf(world, first)));
+
+        // It is the house's: a kept house that comes down is kept no longer.
+        Household gone = Housed(world).First(h => h.Id != first.Id);
+        Assert.True(gone.KeepsItsHouse);
+        GridPos tile = TileOf(world, gone);
+        Assert.True(world.MarkDemolition(tile).Allowed);
+        world.Complete(world.DemolitionSiteAt(tile)!);
+        Assert.False(gone.HasHome);
+        Assert.False(gone.KeepsItsHouse);
+    }
+
+    /// <summary>The two switches are saved and hashed only off their defaults; a save without them reads the defaults.</summary>
+    [Fact]
+    public void TheSwitchesAreSavedAndHashedOnlyOffTheirDefaults()
+    {
+        SimLoop loop = AVillageToRebuild(Village with { StartingHouseholds = 3 });
+        SimWorld world = loop.World;
+        Household family = Housed(world)[0];
+        ulong plain = StateHash.Compute(world);
+
+        world.SetRebuildsOlderHomes(false);
+        ulong off = StateHash.Compute(world);
+        Assert.NotEqual(plain, off);
+        world.SetKeepsItsHouse(family, true);
+        ulong kept = StateHash.Compute(world);
+        Assert.NotEqual(off, kept);
+
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-11-09 12:00", "test");
+        SimWorld back = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null).World;
+        Assert.False(back.RebuildsOlderHomes);
+        Assert.True(back.FindHousehold(family.Id)!.KeepsItsHouse);
+        Assert.Equal(kept, StateHash.Compute(back));
+
+        world.SetRebuildsOlderHomes(true);
+        world.SetKeepsItsHouse(family, false);
+        Assert.Equal(plain, StateHash.Compute(world));
+        // A save from before piece 5 — the two keys absent — reads the defaults (Joe's format-13 saves still load).
+        JsonObject older = JsonNode.Parse(SaveFile.TextOf(SaveGame.Capture(loop, "test", "2026-11-09 12:00", "test")))!.AsObject();
+        Assert.True(Strip(older, "rebuilds_older_homes", "keeps_its_house") > 0, "the save carries neither key");
+        SimWorld plainBack = SaveGame.Load(older, world.Config, null).World;
+        Assert.True(plainBack.RebuildsOlderHomes);
+        Assert.All(plainBack.Households, h => Assert.False(h.KeepsItsHouse));
+        Assert.Equal(plain, StateHash.Compute(plainBack));
+    }
+
+    /// <summary>Every property of these names, anywhere in the document, removed — how many there were.</summary>
+    private static int Strip(JsonNode? node, params string[] keys)
+    {
+        int removed = 0;
+        if (node is JsonObject obj)
+        {
+            foreach (string key in keys)
+            {
+                removed += obj.Remove(key) ? 1 : 0;
+            }
+
+            foreach (KeyValuePair<string, JsonNode?> child in obj.ToList())
+            {
+                removed += Strip(child.Value, keys);
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (JsonNode? item in array)
+            {
+                removed += Strip(item, keys);
+            }
+        }
+
+        return removed;
+    }
+
     private static GridPos ClearGroundNear(SimWorld world, BuildingKind kind)
     {
         GridPos site = world.Map.FoundingSite;
