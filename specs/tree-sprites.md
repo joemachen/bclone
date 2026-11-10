@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING PAINTED OR BUILT — ⏸️ WAITING ON JOE'S ATLAS (§3), AND ON ONE CALL BEFORE HE PAINTS IT: THE SHADOW (§6, A32).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING PAINTED OR BUILT — ⏸️ WAITING ON JOE'S ATLAS (§3); THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -49,7 +49,8 @@ fruit and berries (`ForageShown`, its own row).
 **How to paint it so it survives the game:**
 - **Ink and wash, as the concept:** a sepia ink line round the crown's lobes (the A27 ink, `#3a2d20`), and a few inner
   strokes for the clumps of leaves; a watercolour wash inside, the lit side up-left warmer and lighter, the shadow side
-  cooler and darker; a soft shadow cast down-right on the transparent ground (it lands on whatever ground is there).
+  cooler and darker; a soft shadow cast down-right on the transparent ground (it lands on whatever ground is there) —
+  **a see-through dark wash, the one exception to §4's alpha rule** (A33).
 - **Eight different trees, not one tree eight times:** differing crown shapes, heights and lean. A wood is a few hundred of
   them; one memorable blot repeats.
 - ⚠️ **The game does not turn a tree — the light is painted in.** A crown turned a quarter would carry its lit side round
@@ -67,7 +68,7 @@ fruit and berries (`ForageShown`, its own row).
 |---|---|---|
 | **The crown's middle tone at L\* ≥ 50**; ink and shadow (L\* < 50) **under 20 %** of a crown's pixels | `world-legibility.md §9` | a villager's dot (L\* ≤ 29) walking among trees must still read at 3 : 1 against the crowns round it; the dots are drawn over scenery, but the eye finds them by contrast |
 | **The crowns' mean within the woods' hue family**, `TreeCanopy` `#7d8c5c`'s | the minimap and the far view use the palette | the woods must still read as the same thing at every zoom |
-| **Alpha: fully opaque or fully clear,** a 1–2 px soft edge at most | the mipmaps | a large half-clear halo greys at the widest zoom |
+| **The crown's alpha: fully opaque or fully clear,** a 1–2 px soft edge at most; **the cast shadow is the one exception** — a see-through wash down-right of the crown, measured apart (A33) | the mipmaps | a large half-clear halo greys at the widest zoom; a shadow is meant to be half-clear, and greying fainter at the widest zoom is harmless |
 
 **Measured, not eyeballed**, as the ground tiles were (`ground-textures.md §3`): each tree's crown L\* at p1, p50, p99,
 its ink share, its mean ΔE to `TreeCanopy`, and `tools/legibility/check.py` on a scratch copy with the crowns sampled in
@@ -101,6 +102,9 @@ in the chunk's mesh instead of crowns:
 ✅ **ANSWERED (A30, 2026-11-10), all four as recommended:** ~~angled like the concept~~ ⛔ **reversed (A31): straight down —
 *"we shouldnt draw at an angle. buildings must rotate."*** — when told the angle leans on how buildings are drawn; one leafy
 kind first; Joe provides the eight drawings to §3; fewer, bigger trees, 1–2 a tile. **Next: his atlas, then piece 1.**
+
+✅ **ANSWERED (A33, 2026-11-10): (a), as recommended — Joe: *"option a"*.** The shadow is painted, a see-through wash, the one
+exception (§3, §4). The call as it was put:
 
 ⏸️ **One more call before he paints (A32, found when the measuring was written):** §3 asks for *a soft shadow cast down-right on
 the transparent ground*, and §4 says *alpha fully opaque or fully clear*. A shadow that lets the ground through is neither, so

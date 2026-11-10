@@ -9892,7 +9892,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   wires them; (4) fewer, bigger trees — 1–2 a tile, about a tile across. ✅ **ANSWERED (A30), all four as recommended — and the angle
   REVERSED (A31): *"we shouldnt draw at an angle. buildings must rotate."* Trees are crowns seen from above, mirrored along the light's
   diagonal, never turned; every sprite on the map is drawn straight down (B4 answered). ⏸️ WAITING ON JOE'S ATLAS (`tree_sprites.png`,
-  eight leafy crowns to §3), then piece 1.** ⏸️ **AND ONE CALL BEFORE HE PAINTS (A32): the shadow.** §3 asks for a soft cast shadow, and §4
+  eight leafy crowns to §3), then piece 1.** ✅ **THE SHADOW ANSWERED (A33): (a), *"option a"* — painted, see-through, the one exception.** The call as put (A32): §3 asks for a soft cast shadow, and §4
   says opaque or clear. Recommended: (a) the shadow is a see-through wash and the one exception; or (b) the game draws it. Nothing builds
   before the atlas: the spec allows no stand-in. The §4 measuring script (`measure_trees.py`, 3 of 3 reds on a synthetic atlas) waits in
   the session notes folder, outside the repo: `tools/` is the systems lane's.
