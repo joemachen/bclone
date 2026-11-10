@@ -60,13 +60,20 @@ uniform float snow_patch_tiles = 3.0;
 uniform float grain_amount = 0.12;
 uniform float grain_scale_tiles = 0.065;
 
-// The ink and the pooling (A27, `terrain-shader.md §7`; valley_watercolour.tres): a pen line on every terrain boundary,
-// constant on screen, and each wash darker at its own edge. Off at 0 strength.
+// The ink and the pooling (A27–A28, `terrain-shader.md §7`; valley_watercolour.tres): a pen stroke on the river's bank —
+// ⛔ only there: woods and seams are not outlined (Joe, A28: "the trees themselves have an outline, but the ground isn't
+// outlined") — and the river's wash darker at its own edge. Off at 0 strength.
 uniform vec3 ink_srgb = vec3(0.23, 0.18, 0.13);
 uniform float ink_strength = 0.0;
-uniform float ink_width_px = 1.2;
-uniform float bank_ink_scale = 1.4;
-uniform float ink_wobble = 0.0;
+uniform float ink_width_px = 1.8;
+// The pen's pressure: how far the width swells and thins along the stroke (0 even, 1 from nothing to double), and how
+// long one swell is, in tiles.
+uniform float ink_pressure = 0.0;
+uniform float ink_pressure_tiles = 2.5;
+// Where the pressure is lowest the pen lifts: the share of the pressure's range under which the stroke breaks.
+uniform float ink_lifts = 0.0;
+// How far the ink's edge creeps into the paper's fibres, in screen pixels.
+uniform float ink_feather_px = 0.0;
 uniform float pool_strength = 0.0;
 uniform float pool_width_px = 3.0;
 
@@ -97,9 +104,20 @@ float valley_px_from_half(float share) {
     return abs(share - 0.5) / max(length(slope), 1e-5);
 }
 
-// A pen line `width` pixels wide on a contour: whole at its heart, gone a pixel past its edge.
-float valley_line(float px_away, float width) {
-    return 1.0 - smoothstep(0.5 * width, 0.5 * width + 1.0, px_away);
+// ⭐ An ink stroke on a contour (A28, Joe: "i want it to look like actual ink"), how dark it lies at this pixel, 0 to 1.
+// Three things a pen does that a vector line does not: its PRESSURE swells and thins the stroke along its length, and the
+// ink is a touch denser where it is laid thick; where the pressure is lightest the pen LIFTS and the stroke breaks; and
+// its edge FEATHERS into the paper's fibres, ragged at a pixel's scale. All three are world-anchored noise, so the stroke
+// holds still on the land as the view pans, and is the same stroke every time a place is seen.
+float valley_ink_stroke(vec2 tile, float px_away) {
+    float pressure = at_value_noise(tile / max(ink_pressure_tiles, 1e-3), 91u);
+    float width = ink_width_px * max(0.0, 1.0 + ink_pressure * (2.0 * pressure - 1.0));
+    float lifted = smoothstep(ink_lifts, ink_lifts + 0.12, pressure);
+    // Fibres about two and a half screen pixels across, wherever the zoom: the paper's scale, not the land's.
+    float fibre = (at_value_noise(tile * px_per_tile / 2.5, 92u) - 0.5) * 2.0 * ink_feather_px;
+    float edge = 0.5 * width;
+    float body = 1.0 - smoothstep(edge - 0.5, edge + 0.5 + ink_feather_px, px_away + fibre);
+    return body * lifted * mix(0.8, 1.0, pressure);
 }
 
 // Pigment pooled at a wash's edge: whole at the contour, gone `reach` pixels inside — and nothing outside the wash.
@@ -169,17 +187,15 @@ void fragment() {
         float young = valley_share(shares.r, splat_sharpness);
         float iron = valley_share(shares.g, splat_sharpness);
 
-        // The contours, in screen pixels — taken here, outside every branch below, because they are derivatives (A27).
-        // ⭐ The pen follows the edge before the bleed, and the wash bleeds past the pen, as a watercolour map is made: a
-        // pen on the bled edge drew A7's fray as a ragged, specked line (seen in the first render). The pooling stays on
-        // the wash's own, bled, edge. The water's contour is unwarped either way (D342).
-        vec4 penned = terrain_splat_keeping_water(weights, weights.rgb, splat_sharpness);
-        float pen_wood = valley_px_from_half(penned.y);
-        float pen_seam = valley_px_from_half(penned.z);
-        float from_wood = valley_px_from_half(kinds.y);
-        float from_seam = valley_px_from_half(kinds.z);
-        float from_water = valley_px_from_half(kinds.w);
-        float from_iron = valley_px_from_half(iron);
+        // The bank's contour, in screen pixels — taken here, outside every branch below, because it is a derivative (A27).
+        // The water's weight is unwarped (D342), so the stroke lies on the bank the villagers cannot cross.
+        // ⚠️ From the RAW weight, not the drawn (hard) share (A28): the drawn share goes from land to water in about three
+        // pixels and is flat either side, so its slope says nothing past them — a stroke or a pooling measured from it could
+        // never be wider than three pixels, whatever the file asked (seen: 1.2 and 2.6 px drew the same line). The raw
+        // weight changes over a tile, and crosses a half on the drawn bank wherever two kinds meet.
+        // ⚠️ Only the bank (A28): A27 also inked the woods' and seams' edges (on the unbled edge, after the bled one drew A7's
+        // fray as a ragged line), and Joe ruled the ground is not outlined — the trees are.
+        float from_water = valley_px_from_half(weights.a);
 
         vec3 wood = kind_wood;
         vec3 seam = kind_stone;
@@ -204,12 +220,10 @@ void fragment() {
         vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
         vec3 colour = ground * mix(vec3(1.0), grass, strength);
 
-        // Pooling (A27): the woods', the seam's and the river's washes darker at their own edges, as pigment gathers
-        // where a wash dries. In the wash, under the snow — snow covers the pooled wash as it covers the rest.
+        // Pooling (A27): the river's wash darker at its own edge, as pigment gathers where a wash dries. Only the river's
+        // since A28 — on the woods and seams a darker rim read as the outline Joe ruled out. Under the snow.
         if (pool_strength > 0.0) {
-            float pool = max(max(valley_pool(kinds.y, from_wood, pool_width_px), valley_pool(kinds.z, from_seam, pool_width_px)),
-                valley_pool(kinds.w, from_water, pool_width_px));
-            colour *= 1.0 - pool_strength * pool;
+            colour *= 1.0 - pool_strength * valley_pool(weights.a, from_water, pool_width_px);
         }
 
         // Snow on the season's amount (A23), in the approved blend (Lerp, A9): its noise is asked only while there is snow.
@@ -218,15 +232,10 @@ void fragment() {
             colour = terrain_snow(colour, snow_srgb, cover * terrain_snow_off_water(kinds.a), snow_blend);
         }
 
-        // The ink (A27): a pen line on the woods', the seam's and the river's contours, and between stone and iron where a
-        // seam is drawn — over the snow, so the map still reads in winter, and under the paper's grain, which is the paper's
-        // tooth under the pen. Its width wanders a little along the line, as a hand's does. The bank is drawn heavier.
+        // The ink (A27–A28): a pen stroke on the river's bank — over the snow, so the map still reads in winter, and under
+        // the paper's grain, which is the paper's tooth under the pen.
         if (ink_strength > 0.0) {
-            float width = ink_width_px * (1.0 + ink_wobble * (2.0 * at_value_noise(tile * 1.7, 91u) - 1.0));
-            float line = max(valley_line(pen_wood, width), valley_line(pen_seam, width));
-            line = max(line, valley_line(from_water, width * bank_ink_scale));
-            line = max(line, valley_line(from_iron, width) * step(0.5, penned.z));
-            colour = mix(colour, ink_srgb, ink_strength * line);
+            colour = mix(colour, ink_srgb, ink_strength * valley_ink_stroke(tile, from_water));
         }
 
         // The paper's grain on the ground (A23, call 3), over the snow (§2), world-anchored at A9's scale.

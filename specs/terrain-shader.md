@@ -10,7 +10,8 @@ LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). 🔨 PIECE
 THE BAKE — THE COLOUR BYTE-IDENTICAL. 🔨 PIECE 2 BUILT (A25, 2026-11-09): THE VALLEY THROUGH THE SHADER BEHIND JOE'S
 TICK, WITH THE BEFORE/AFTER LINE; TICK OFF BYTE-IDENTICAL TO BEFORE; +1.35–1.73 MS AT 4K. JOE PLAYED IT: *"QUITE A WAYS
 AWAY FROM THE CONCEPT ART"* — HIS ART DIRECTION AND FOUR CALLS (A26), §7; 🔨 ITS PIECE 1, INK AND POOLING, BUILT (A27,
-2026-11-10), +1.87 MS AT 4K. ⏸️ JOE'S EYES ON THE INK.** §2–§4 are the lab's build; §4's table says which piece stands;
+2026-11-10), +1.87 MS AT 4K; REVISED AT HIS WORD (A28): THE GROUND NOT OUTLINED, THE BANK A PEN STROKE, THE TREES
+OUTLINED. ⏸️ JOE'S EYES.** §2–§4 are the lab's build; §4's table says which piece stands;
 §5 is the wiring, its calls and its three pieces; §7 is the way toward the concept.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
@@ -549,7 +550,7 @@ shown to him. (4) **ink first**, then calmer ground, the river, winter, relief.
 
 | # | piece | state |
 |---|---|---|
-| 1 | **Ink and pooling** | 🔨 built (A27) |
+| 1 | **Ink and pooling** | 🔨 built (A27); revised at Joe's word (A28): the bank only, a pen stroke, the trees outlined |
 | 2 | **Calmer ground** — the grass's strength and macro variation at the wide zoom, a low-frequency meadow tint for the mottle, the coverage fade. ⛔ Changes the approved grass look (D632, A10): every value his word | — |
 | 3 | **The river drawn** — echo lines, darker channel, flow strokes along the river's tangent, downstream by the valley's *River runs*, on a clock that stops with the game | — |
 | 4 | **Winter with structure** — the call-3 peak, shadow washes, capped canopies (`VillageMap`'s canopy colours by `TheYearAt`), the icy rim | — |
@@ -574,3 +575,32 @@ pooling 0.16 over 3 px. **Nothing in it is approved yet.**
 | the probe | `watercolour:` ✅, all 53 uniforms declared, the look file's seven values reaching the layer, a file that draws no ink refused |
 | GPU, 4K, the 3070, alternating rounds | the switch **+1.87 ms** at both zooms (opening 0.26 → 2.14, widest 0.27 → 2.14) — the ink about +0.05–0.5 of it; inside 3.5 |
 | the Beyond, in frame | ⚠️ still never — the widest zoom fits the window at any size (2400 × 1400 tried), so the valley fills every frame; catching it needs a pan to the edge (art trap 21 stands) |
+
+**Piece 1, revised at Joe's word (A28, 2026-11-10).** He played the ink: *"forests/wooded areas and ore seams shouldn't get
+ink outlines. look closely at the trees in the concept art - the trees themselves have an outline, but the ground isn't
+outlined. add more stroke to the line too … i want it to look like actual ink."* So:
+- **The ground is not outlined.** Woods and seams lose their lines and their pooling (a darker rim read as an outline);
+  only the river keeps a pen line, and a pooled edge inside its wash.
+- **The bank is a stroke, not a line** (`valley_ink_stroke`): the pen's **pressure** swells and thins it along the bank
+  (0.65 of its width, a swell every 2.5 tiles) and the ink is a touch denser where laid thick; where the pressure is
+  lightest the pen **lifts** and the stroke breaks (under 0.15 of the range); its edge **feathers** into the paper's fibres
+  (0.7 px, at the paper's scale, not the land's). 2.6 px at middle pressure, strength 0.9. All world-anchored noise, so
+  the stroke holds still on the land.
+- ⚠️ **Measured from the river's raw weight, not its drawn share.** The drawn (hard) share crosses from land to water in
+  about three pixels and is flat either side, so a stroke measured from it could never be wider than that — 1.2 px and
+  2.6 px drew the same line. The raw weight changes over a tile and crosses a half on the drawn bank wherever two kinds
+  meet; it also takes most of the facets off the bank (the mix's bilinear runs).
+- **The trees are outlined** (`VillageMap.Meshes.cs`, `Canopies`, only while the tick is on): each crown laid on its own
+  disc of the ink 0.05 tiles wider, crown by crown, so an overlapping crown draws its edge across the one before — the
+  concept's scalloped clumps. Each crown is a cloud, not a coin (`MeshBuilder.Crown`: 32 points, 5–7 lobes 0.24 deep, a
+  pure function of where it stands), with a lighter patch (0.28) on its sunlit side, up and left. About 230 vertices a
+  tree against 36; at 0 ink not one vertex changes. ⚠️ **A stand-in, not the concept's trees:** those are illustrations
+  — and drawn in three-quarter view (trunks showing), which is the art inventory's B4 (projection) and B5 (the tree look).
+  Real trees are a painted sprite set, an art asset, Joe's call.
+
+| measured, 2026-11-10 | |
+|---|---|
+| tick off | byte-identical to `b6b5af4` at both zooms, and after switching on and off (the canopies re-meshed both ways) |
+| the probe | `watercolour:` ✅ — 55 uniforms; the trees' ink the file's while on and exactly 0 after |
+| GPU, 4K, the 3070 | ⚠️ **this session the card read about twice the earlier ones** (off 0.58 ms, not 0.27). **A/B in one sitting, A27 against A28:** opening +3.0 → +3.2 ms, widest +3.4 → +3.3 — the same cost. Against A23's 3.5 ms bar today's state is close to it; **the cost split (§5.4 piece 3) comes before the river and winter add more** |
+| red-check | 3 probe mutants, 3 reds; a render mutant (crowns drawn lobed with the tick off) red at the opening zoom, zero at the widest — no live trees are drawn there |

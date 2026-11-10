@@ -60,6 +60,33 @@ internal sealed class MeshBuilder
         }
     }
 
+    /// <summary>How many points round a lobed crown: enough for seven lobes to read as bumps, not corners.</summary>
+    private const int CrownSegments = 32;
+
+    private static readonly Vector2[] CrownUnit = UnitCircle(CrownSegments);
+
+    /// <summary>
+    /// ⭐ A tree's crown drawn as a cloud, not a coin (A28): a disc whose radius rises and falls round it, <paramref name="lobes"/>
+    /// times, by <paramref name="depth"/> of the radius — the bumps of a canopy seen from above. <paramref name="turn"/> turns
+    /// the bumps, so neighbouring crowns differ.
+    /// </summary>
+    public void Crown(Vector2 centre, float radius, Color colour, int lobes, float turn, float depth)
+    {
+        for (int i = 0; i < CrownSegments; i++)
+        {
+            int next = (i + 1) % CrownSegments;
+            Add(centre, colour);
+            Add(centre + (CrownUnit[i] * CrownRadius(i)), colour);
+            Add(centre + (CrownUnit[next] * CrownRadius(next)), colour);
+        }
+
+        float CrownRadius(int at)
+        {
+            float angle = Mathf.Tau * at / CrownSegments;
+            return radius * (1f - depth + (depth * Mathf.Abs(Mathf.Sin((angle * lobes * 0.5f) + turn))));
+        }
+    }
+
     /// <summary>A straight band of the given half-width between two points — <c>DrawLine</c> with a width.</summary>
     public void Band(Vector2 from, Vector2 to, float halfWidth, Color colour)
     {
@@ -166,12 +193,12 @@ internal sealed class MeshBuilder
         _colours.Add(colour);
     }
 
-    private static Vector2[] UnitCircle()
+    private static Vector2[] UnitCircle(int segments = Segments)
     {
-        var unit = new Vector2[Segments];
-        for (int i = 0; i < Segments; i++)
+        var unit = new Vector2[segments];
+        for (int i = 0; i < segments; i++)
         {
-            double angle = Math.Tau * i / Segments;
+            double angle = Math.Tau * i / segments;
             unit[i] = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
         }
 

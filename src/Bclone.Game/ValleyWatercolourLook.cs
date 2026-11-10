@@ -27,19 +27,37 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float InkStrength { get; set; }
 
-    /// <summary>The line's width in screen pixels — the same at every zoom, as a pen's is on paper.</summary>
+    /// <summary>
+    /// The bank's stroke at its middle pressure, in screen pixels — the same at every zoom, as a pen's is on paper. ⛔ The
+    /// bank is the only ground the pen draws (A28: woods and seams are not outlined; the trees are).
+    /// </summary>
     [Export]
     public float InkWidthPx { get; set; }
 
-    /// <summary>How much heavier the river's bank is drawn than a woods' or a seam's edge.</summary>
+    /// <summary>How far the pen's pressure swells and thins the stroke along its length: 0 even, 1 from nothing to double.</summary>
     [Export]
-    public float BankInkScale { get; set; }
+    public float InkPressure { get; set; }
 
-    /// <summary>How much a line's width wanders along it, 0 to 1 of the width: the pen's hand.</summary>
+    /// <summary>How long one swell of the pen's pressure is, along the bank, in tiles.</summary>
     [Export]
-    public float InkWobble { get; set; }
+    public float InkPressureTiles { get; set; }
 
-    /// <summary>How much darker a wash lies at its own edge, where the pigment pools as it dries (0 to 1).</summary>
+    /// <summary>Where the pressure is lightest the pen lifts: the share of the pressure's range under which the stroke breaks.</summary>
+    [Export]
+    public float InkLifts { get; set; }
+
+    /// <summary>How far the ink's edge creeps raggedly into the paper's fibres, in screen pixels.</summary>
+    [Export]
+    public float InkFeatherPx { get; set; }
+
+    /// <summary>
+    /// How far each tree's ink outline reaches past its crown, in tiles (A28: the trees are outlined, the ground is not). In
+    /// tiles, because the crowns are a mesh in tiles: a pixel and a half at 32 px a tile, three at the closest zoom.
+    /// </summary>
+    [Export]
+    public float TreeInkTiles { get; set; }
+
+    /// <summary>How much darker the river's wash lies at its own edge, where the pigment pools as it dries (0 to 1).</summary>
     [Export]
     public float PoolStrength { get; set; }
 

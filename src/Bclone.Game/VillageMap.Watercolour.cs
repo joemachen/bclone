@@ -48,6 +48,13 @@ public partial class VillageMap
     private Control? _watercolourLayer;
     private ShaderMaterial? _watercolourMaterial;
 
+    /// <summary>
+    /// The ink under each tree's crown, in tiles past its edge, and its colour (A28) — 0 with the tick off, so the canopies
+    /// mesh exactly as they did. Read by <c>Canopies</c> when a chunk is meshed.
+    /// </summary>
+    private float _canopyInkTiles;
+    private Color _canopyInk;
+
     /// <summary>Whether the valley is drawn in watercolour — the Settings tick's state.</summary>
     public bool WatercolourShown => _watercolour;
 
@@ -73,6 +80,18 @@ public partial class VillageMap
         if (_watercolourLayer is not null)
         {
             _watercolourLayer.Visible = on;
+        }
+
+        // The trees' ink (A28): the canopies are meshed once and kept, so a change of ink re-meshes every chunk — once, on
+        // the next refresh, by forgetting which map was meshed.
+        ValleyWatercolourLook? look = on ? ValleyWatercolourLook.Current : null;
+        float inkTiles = look?.TreeInkTiles ?? 0f;
+        Color ink = look?.InkColour ?? default;
+        if (inkTiles != _canopyInkTiles || ink != _canopyInk)
+        {
+            _canopyInkTiles = inkTiles;
+            _canopyInk = ink;
+            _sceneryOf = null;
         }
 
         QueueRedraw();
@@ -134,8 +153,10 @@ public partial class VillageMap
         material.SetShaderParameter("ink_srgb", Srgb(watercolour.InkColour));
         material.SetShaderParameter("ink_strength", watercolour.InkStrength);
         material.SetShaderParameter("ink_width_px", watercolour.InkWidthPx);
-        material.SetShaderParameter("bank_ink_scale", watercolour.BankInkScale);
-        material.SetShaderParameter("ink_wobble", watercolour.InkWobble);
+        material.SetShaderParameter("ink_pressure", watercolour.InkPressure);
+        material.SetShaderParameter("ink_pressure_tiles", watercolour.InkPressureTiles);
+        material.SetShaderParameter("ink_lifts", watercolour.InkLifts);
+        material.SetShaderParameter("ink_feather_px", watercolour.InkFeatherPx);
         material.SetShaderParameter("pool_strength", watercolour.PoolStrength);
         material.SetShaderParameter("pool_width_px", watercolour.PoolWidthPx);
 
@@ -312,7 +333,8 @@ public partial class VillageMap
         "beyond_srgb", "ground_srgb", "kind_wood", "kind_young", "kind_stone", "kind_iron", "kind_water", "kind_shallows",
         "ground_wood", "ground_stone", "ground_iron", "ground_water", "valley_colour", "ground_map", "ground_map_shares",
         "ground_map_tiles", "valley_origin_px", "valley_size_px", "px_per_tile", "grass_season", "snow_amount", "split_u",
-        "ink_srgb", "ink_strength", "ink_width_px", "bank_ink_scale", "ink_wobble", "pool_strength", "pool_width_px",
+        "ink_srgb", "ink_strength", "ink_width_px", "ink_pressure", "ink_pressure_tiles", "ink_lifts", "ink_feather_px",
+        "pool_strength", "pool_width_px",
     };
 
     /// <summary>
@@ -389,14 +411,22 @@ public partial class VillageMap
         ValleyWatercolourLook watercolour = ValleyWatercolourLook.Current;
         Near("ink_strength", watercolour.InkStrength);
         Near("ink_width_px", watercolour.InkWidthPx);
-        Near("bank_ink_scale", watercolour.BankInkScale);
-        Near("ink_wobble", watercolour.InkWobble);
+        Near("ink_pressure", watercolour.InkPressure);
+        Near("ink_pressure_tiles", watercolour.InkPressureTiles);
+        Near("ink_lifts", watercolour.InkLifts);
+        Near("ink_feather_px", watercolour.InkFeatherPx);
         Near("pool_strength", watercolour.PoolStrength);
         Near("pool_width_px", watercolour.PoolWidthPx);
         Same("ink_srgb", material.GetShaderParameter("ink_srgb").AsVector3() == Srgb(watercolour.InkColour));
         if (watercolour.InkStrength <= 0f || watercolour.InkWidthPx <= 0f)
         {
             faults.Add($"{ValleyWatercolourLook.Path} draws no ink (strength {watercolour.InkStrength}, width {watercolour.InkWidthPx})");
+        }
+
+        // The trees' ink (A28): the file's, in the canopies' mesh, while on.
+        if (watercolour.TreeInkTiles <= 0f || _canopyInkTiles != watercolour.TreeInkTiles || _canopyInk != watercolour.InkColour)
+        {
+            faults.Add($"the trees' ink is {_canopyInkTiles} tiles of {_canopyInk} (want the file's {watercolour.TreeInkTiles} of {watercolour.InkColour}, above 0)");
         }
         Same("macro_on", material.GetShaderParameter("macro_on").AsBool() == look.MacroOn);
         Same("hex_on", material.GetShaderParameter("hex_on").AsBool() == look.HexOn);
@@ -473,10 +503,16 @@ public partial class VillageMap
             faults.Add("switched off, the layer still shows");
         }
 
+        // ⛔ Off, the trees mesh as they always did: no ink at all, so not one vertex differs (A28).
+        if (!wasOn && _canopyInkTiles != 0f)
+        {
+            faults.Add($"switched off, the trees still carry {_canopyInkTiles} tiles of ink");
+        }
+
         return Said();
 
         string Said() => faults.Count == 0
-            ? $"[widths] watercolour: ✅ opens off with nothing loaded; on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days; off, as it was"
+            ? $"[widths] watercolour: ✅ opens off with nothing loaded; on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days, the trees inked; off, as it was"
             : $"[widths] watercolour: ⛔ {string.Join("; ", faults)}";
 
         void Near(string uniform, float want)

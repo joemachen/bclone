@@ -328,7 +328,7 @@ public partial class VillageMap
                     Terrain terrain = map.TerrainAt(tile);
                     if (terrain is Terrain.Forest or Terrain.Sapling)
                     {
-                        Canopies(_standing, tile, grown: terrain == Terrain.Forest);
+                        Canopies(_standing, tile, grown: terrain == Terrain.Forest, _canopyInkTiles, _canopyInk);
                     }
                 }
             }
@@ -415,7 +415,13 @@ public partial class VillageMap
     }
 
     /// <summary>The trees standing on one tile, and the ones leaning off it — into the mesh.</summary>
-    private static void Canopies(MeshBuilder into, GridPos tile, bool grown)
+    /// <remarks>
+    /// ⭐ With <paramref name="inkTiles"/> above 0 (the valley in watercolour, A28) each crown is laid on a disc of ink a
+    /// little wider than itself, crown by crown, so a crown that overlaps the one before draws its ink edge across it —
+    /// the scalloped, outlined clumps of the concept's trees (Joe: <i>"the trees themselves have an outline, but the ground
+    /// isn't outlined"</i>). At 0 not one vertex changes, so the map with the tick off is the map it was.
+    /// </remarks>
+    private static void Canopies(MeshBuilder into, GridPos tile, bool grown, float inkTiles, Color ink)
     {
         float radius = grown ? CanopyRadius : 0.13f;
         Color trunk = grown ? TreeCanopy : SaplingCanopy;
@@ -423,9 +429,31 @@ public partial class VillageMap
         for (int i = 0; i < TreesOn(tile, grown); i++)
         {
             (Vector2 where, float shade) = CanopyOn(tile, i);
-            into.Disc(where, radius * shade, trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade });
+            Color crown = trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade };
+            if (inkTiles <= 0f)
+            {
+                into.Disc(where, radius * shade, crown);
+                continue;
+            }
+
+            // Inked (A28): a cloud of a crown, its bumps and their turn a pure function of where it stands (so a tree is
+            // the same tree every time it is meshed), on its ink, with a lighter crown on its sunlit side, up and left —
+            // the light the map's pen assumes.
+            float size = radius * shade;
+            int lobes = 5 + (int)(Mathf.PosMod((where.X * 7.31f) + (where.Y * 3.17f), 1f) * 3f);
+            float turn = Mathf.PosMod((where.X * 12.9898f) + (where.Y * 78.233f), Mathf.Tau);
+            into.Crown(where, size + inkTiles, ink, lobes, turn, CrownLobeDepth);
+            into.Crown(where, size, crown, lobes, turn, CrownLobeDepth);
+            Color lit = crown.Lightened(CrownLit);
+            into.Disc(where + new Vector2(-0.22f * size, -0.22f * size), size * 0.5f, lit);
         }
     }
+
+    /// <summary>How deep a crown's bumps are, as a share of its radius (A28).</summary>
+    private const float CrownLobeDepth = 0.24f;
+
+    /// <summary>How much lighter a crown's sunlit side is (A28).</summary>
+    private const float CrownLit = 0.28f;
 
     /// <summary>
     /// Every tile a quarry or a mine works as a face, by index — from each face workplace's own
