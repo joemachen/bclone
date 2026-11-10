@@ -428,7 +428,7 @@ That must be a standing, visible, actionable state — surfaced years ahead of t
 | Node | Unlocked by | Notes |
 |---|---|---|
 | Timber frame | — | Starting practice |
-| ★ Stone footing / **Masonry & Stonecutting** | SCALE + TERRAIN (stone) | *Stone Cottage.* Permanence milestone — **and the first house upgrade**, which closes `DESIGN.md §5`'s open decision |
+| ★ Stone footing / **Masonry & Stonecutting** | ~~SCALE + TERRAIN (stone)~~ **the family tree (D721)**: the 3rd generation born + 20 people held — Joe, D717: *"i dont want it to be stone related"* (`house-tiers.md §4.4`); the insulated manor at the 5th + 45 | *Stone Cottage.* Permanence milestone — **and the first house upgrade**, which closes `DESIGN.md §5`'s open decision |
 | Mortar | ADJ (lime burner + builder) | |
 | ★ **Stone Excavation** | SCALE + TERRAIN (stone) | *Quarry & Slate Works.* The source the whole tier stands on |
 | Watermill | TERRAIN (fall on river) | The headline terrain gate |

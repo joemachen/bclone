@@ -807,9 +807,18 @@ public sealed class Workplace
     /// ⚠️ <b>Demolitions still sort among themselves by id</b>, so the order they were marked in
     /// survives — the same promise the ordinary fallback makes.
     /// </para>
+    /// <para>
+    /// ⭐ <b>And a house's rebuild trails it</b> (`house-tiers.md §4.5`, D721): behind every other site, among themselves by
+    /// id — so a granary, a roofless family's house or a repair is never delayed by a village improving its streets. There
+    /// is only ever one standing, and <c>SimWorld.MoveInBuildQueue</c> will not move it.
+    /// </para>
     /// </remarks>
-    public int EffectiveQueueRank =>
-        Construction is { Demolishing: true } ? int.MinValue / 2 + Id : QueueRank ?? Id;
+    public int EffectiveQueueRank => Construction switch
+    {
+        { Demolishing: true } => int.MinValue / 2 + Id,
+        { RebuildsHome: true } => int.MaxValue / 2 + Id,
+        _ => QueueRank ?? Id,
+    };
 
     /// <summary>
     /// Hands the village will actually staff here — the override if there is one,

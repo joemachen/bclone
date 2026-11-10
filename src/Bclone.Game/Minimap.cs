@@ -186,9 +186,11 @@ public partial class Minimap : Control
 
             // A house whose family has died still stands, and reads as abandoned — the same
             // rule the big map follows, because the same thing is true.
+            // Each house in its own tier's colour (`house-tiers.md §6`, D722) — the map's, one fact.
+            Color dwelling = VillageMap.DwellingColourOf(household.HomeKind);
             Color colour = world.LivingMembersOf(household) > 0
-                ? VillageMap.DwellingColour
-                : VillageMap.DwellingColour with { A = 0.3f };
+                ? dwelling
+                : dwelling with { A = 0.3f };
 
             Mark(home, colour, dot);
         }

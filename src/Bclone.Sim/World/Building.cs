@@ -374,6 +374,36 @@ public sealed record BuildingRow
     [JsonPropertyName("wears_in_years")]
     public int WearsInYears { get; init; }
 
+    /// <summary>
+    /// Firewood a household burns in a winter in a dwelling of this row (`specs/house-tiers.md §4.2`, D716) — Joe's own
+    /// unit (*"60–80 firewood per winter"*). Burned evenly over the winter's beats (<c>firewood_burn_interval_days</c>):
+    /// on beat <i>k</i> of <i>B</i>, ⌊(k+1)·W/B⌋ − ⌊k·W/B⌋, so any number is reachable and D189's grid is gone.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ The shipped cabin's is DERIVED from the two keys it always was (⌈days ÷ interval⌉ × <c>firewood_per_winter_day</c>),
+    /// so it is 3 on every beat as before, and every fixture that moves those keys moves the cabin with it. Zero on a
+    /// dwelling row is a house nobody keeps a fire in; <c>firewood_per_winter_day</c> 0 still switches fuel off everywhere.
+    /// </remarks>
+    [JsonPropertyName("winter_firewood")]
+    public int WinterFirewood { get; init; }
+
+    /// <summary>
+    /// Days a household is safe under this roof with no fire before the cold kills (`house-tiers.md §4.8`, *keeps its
+    /// warmth*). <b>0 = <c>exposure_days_sheltered</c></b>, the cabin's and every other roof's.
+    /// </summary>
+    [JsonPropertyName("exposure_days_sheltered")]
+    public int ExposureDaysSheltered { get; init; }
+
+    /// <summary>
+    /// What a house of this row is called after the family in it (`house-tiers.md §4.8`, <i>bears the family's name</i> —
+    /// Joe, D718): <c>{family}</c> is the household's name, so <i>"the {family} cottage"</i> is <i>"the Ashford
+    /// cottage"</i> and <i>"{family} Manor"</i> is <i>"Ashford Manor"</i>. Null for a house with no name — the cabin's.
+    /// </summary>
+    /// <remarks>Words, not a number: derived where it is said (<c>SimWorld.HouseNameOf</c>), never stored or hashed. Only a
+    /// dwelling row may carry one, and it must name the family — both refused at load.</remarks>
+    [JsonPropertyName("house_name")]
+    public string? HouseName { get; init; }
+
     /// <summary>Years before it is <em>failing</em> — the card warns, and a wooden deck slows (§4.4).</summary>
     [JsonPropertyName("fails_in_years")]
     public int FailsInYears { get; init; }

@@ -81,7 +81,7 @@ public partial class TechTreeView : Control
             lowest = Math.Max(lowest, row);
 
             var at = new Vector2(Margin + (depth * (CardWidth + Gap)), Margin + (row * (CardHeight + (Gap / 2f))));
-            PanelContainer card = CardFor(node, stateOf(node));
+            PanelContainer card = CardFor(node, stateOf(node), world);
             card.Position = at;
             card.Size = new Vector2(CardWidth, CardHeight);
             AddChild(card);
@@ -116,7 +116,7 @@ public partial class TechTreeView : Control
         }
     }
 
-    private static PanelContainer CardFor(TechNodeRow node, (TechState State, int Progress, int Of) at)
+    private static PanelContainer CardFor(TechNodeRow node, (TechState State, int Progress, int Of) at, SimWorld world)
     {
         (TechState state, int progress, int of) = at;
 
@@ -160,7 +160,9 @@ public partial class TechTreeView : Control
                 CustomMinimumSize = new Vector2(0f, 6f),
             };
             box.AddChild(bar);
-            box.AddChild(Line(HowFar(node.Condition, progress, of), 12));
+            box.AddChild(Line(node.Condition is TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree
+                ? FamilyTreeHowFar(TechTree.FamilyTreeOf(world, node.Condition))
+                : HowFar(node.Condition, progress, of), 12));
         }
 
         return card;
@@ -177,6 +179,11 @@ public partial class TechTreeView : Control
         TechCondition.LogsFelled => $"{progress} of {of} logs felled",
         _ => string.Empty,
     };
+
+    /// <summary>The family tree's two factors in words (`house-tiers.md §6`, D721) — both numbers, never a percentage.</summary>
+    private static string FamilyTreeHowFar((int Generation, int OfGeneration, int People, int OfPeople) far) =>
+        $"{Math.Min(far.Generation, far.OfGeneration)} of {far.OfGeneration} generations · "
+        + $"{Math.Min(far.People, far.OfPeople)} of {far.OfPeople} people";
 
     private static Label Line(string text, int size, bool bold = false)
     {

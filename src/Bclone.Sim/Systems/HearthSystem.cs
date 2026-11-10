@@ -74,7 +74,7 @@ public sealed class HearthSystem : ISimSystem
             && world.Tick % (ulong)config.TicksPerDay == 0UL;
         if (onTheBeat)
         {
-            BurnADaysFirewood(world, config);
+            BurnADaysFirewood(world, config, dayOfWinter / config.FirewoodBurnIntervalDays);
         }
 
         // The coats wear on the day's first tick, before the chill — so the day a coat runs out is a bare day.
@@ -113,8 +113,42 @@ public sealed class HearthSystem : ISimSystem
     /// <summary>Winter only, for now. Shoulder seasons are a config change away.</summary>
     private static bool IsHeatingSeason(Season season) => season == Season.Winter;
 
-    private static void BurnADaysFirewood(SimWorld world, SimConfig config)
+    /// <summary>
+    /// What a house of <paramref name="winterFirewood"/> a winter burns on beat <paramref name="beat"/> of
+    /// <paramref name="beats"/> (`house-tiers.md §4.2`, D719): ⌊(k+1)·W/B⌋ − ⌊k·W/B⌋ — evenly spread, summing to W, and
+    /// for the cabin (W = B × <c>firewood_per_winter_day</c>) exactly <c>firewood_per_winter_day</c> on every beat.
+    /// </summary>
+    internal static int BurnOnBeat(int winterFirewood, int beat, int beats)
     {
+        if (beats <= 0 || winterFirewood <= 0 || beat < 0 || beat >= beats)
+        {
+            return 0;
+        }
+
+        long w = winterFirewood;
+        return (int)(((beat + 1) * w / beats) - (beat * w / beats));
+    }
+
+    /// <summary>
+    /// What a tick under a fireless roof at <paramref name="at"/> costs (D45; `house-tiers.md §4.8`, *keeps its warmth*):
+    /// a house's own row says how many days it shelters, every other roof is <c>exposure_days_sheltered</c>.
+    /// </summary>
+    internal static int RoofChillAt(SimWorld world, GridPos at)
+    {
+        SimConfig config = world.Config;
+        if (world.HouseholdAt(at) is Household household
+            && world.HomeRowOf(household).ExposureDaysSheltered is int days && days > 0
+            && days != config.ExposureDaysSheltered && config.ExposureThreshold > 0)
+        {
+            return config.ExposureThreshold / (days * config.TicksPerDay);
+        }
+
+        return config.ExposurePerTickSheltered;
+    }
+
+    private static void BurnADaysFirewood(SimWorld world, SimConfig config, int beat)
+    {
+        int beats = (config.DaysPerSeason + config.FirewoodBurnIntervalDays - 1) / config.FirewoodBurnIntervalDays;
         for (int i = 0; i < world.Households.Count; i++)
         {
             Household household = world.Households[i];
@@ -130,7 +164,8 @@ public sealed class HearthSystem : ISimSystem
             // cost. Measured: an established village's stores ran dry in year six and both homes
             // wintered four more years on 1–2 logs, nobody cold. The last logs burn now, and the
             // house is cold on the next beat.
-            int burn = Math.Min(household.Stockpile.Firewood, config.FirewoodPerWinterDay);
+            // The house's own winter, spread over the beats (D719) — 3 a beat for the cabin, as it always was.
+            int burn = Math.Min(household.Stockpile.Firewood, BurnOnBeat(world.WinterFirewoodOf(household), beat, beats));
             if (burn <= 0 || !household.Stockpile.TryTake(Goods.Firewood, burn))
             {
                 continue;
@@ -194,7 +229,7 @@ public sealed class HearthSystem : ISimSystem
             villager.Cold += world.ShelterAt(villager.Tile) switch
             {
                 Shelter.Fire => -config.ThawPerTickAtAFire,
-                Shelter.Roof => config.ExposurePerTickSheltered,
+                Shelter.Roof => RoofChillAt(world, villager.Tile),
                 _ => villager.CoatDays > 0 ? config.ExposurePerTickSheltered : config.ExposurePerTickOutdoors,
             };
 

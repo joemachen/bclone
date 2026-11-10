@@ -2404,6 +2404,94 @@ public sealed record SimConfig
     [JsonPropertyName("home_work_ticks")]
     public int HomeWorkTicks { get; init; } = 30;
 
+    // ---- House tiers (`specs/house-tiers.md`, D716–D719) — every number a proposal until §10's arm B is filled ----
+
+    /// <summary>Logs a stone cottage takes to raise (`house-tiers.md §4.1`).</summary>
+    [JsonPropertyName("cottage_logs")]
+    public int CottageLogs { get; init; } = 20;
+
+    /// <summary>Stone a stone cottage takes to raise.</summary>
+    [JsonPropertyName("cottage_stone")]
+    public int CottageStone { get; init; } = 30;
+
+    /// <summary>Ticks of work a stone cottage takes.</summary>
+    [JsonPropertyName("cottage_work_ticks")]
+    public int CottageWorkTicks { get; init; } = 45;
+
+    /// <summary>A stone cottage's larder, food and firewood together — bigger than the cabin's (Joe, D717).</summary>
+    [JsonPropertyName("cottage_store_cap")]
+    public int CottageStoreCap { get; init; } = 600;
+
+    /// <summary>Firewood a stone cottage burns in a winter — half the cabin's 24 (D206).</summary>
+    [JsonPropertyName("cottage_winter_firewood")]
+    public int CottageWinterFirewood { get; init; } = 12;
+
+    /// <summary>Days a fireless stone cottage keeps a family safe (the cabin's is <c>exposure_days_sheltered</c>).</summary>
+    [JsonPropertyName("cottage_exposure_days_sheltered")]
+    public int CottageExposureDaysSheltered { get; init; } = 30;
+
+    /// <summary>Logs an insulated manor takes to raise.</summary>
+    [JsonPropertyName("manor_logs")]
+    public int ManorLogs { get; init; } = 30;
+
+    /// <summary>Stone an insulated manor takes to raise.</summary>
+    [JsonPropertyName("manor_stone")]
+    public int ManorStone { get; init; } = 45;
+
+    /// <summary>Ticks of work an insulated manor takes.</summary>
+    [JsonPropertyName("manor_work_ticks")]
+    public int ManorWorkTicks { get; init; } = 60;
+
+    /// <summary>An insulated manor's larder — bigger than the cottage's (Joe, D717).</summary>
+    [JsonPropertyName("manor_store_cap")]
+    public int ManorStoreCap { get; init; } = 800;
+
+    /// <summary>Firewood an insulated manor burns in a winter — D206's −80 % of 24 is 4.8.</summary>
+    [JsonPropertyName("manor_winter_firewood")]
+    public int ManorWinterFirewood { get; init; } = 5;
+
+    /// <summary>Days a fireless insulated manor keeps a family safe.</summary>
+    [JsonPropertyName("manor_exposure_days_sheltered")]
+    public int ManorExposureDaysSheltered { get; init; } = 40;
+
+    /// <summary>
+    /// How long a stone house lasts against a timber one, as a percentage of <c>building_wears_in_years</c> and its two
+    /// siblings (`house-tiers.md §4.8`, *lasts*; Joe, D718). 200: a cottage is worn at 16 years where a cabin is at 8.
+    /// </summary>
+    [JsonPropertyName("stone_house_lasts_percent")]
+    public int StoneHouseLastsPercent { get; init; } = 200;
+
+    /// <summary>
+    /// The generation that must be born in the valley before the stone cottage is learned (`house-tiers.md §4.4`, idea A,
+    /// D718: Joe, <i>"I love the family tree unlock idea!"</i>) — read against <c>SimWorld.DeepestGenerationBorn</c>.
+    /// </summary>
+    /// <remarks>
+    /// <b>3, the founders' grandchildren</b>, measured at D719 (`ZzGenerations`): the 3rd generation is first born at Year
+    /// 20–25 and the 4th at 43–51, so with <see cref="CottageUnlockPopulation"/> the cottage lands ~Year 25–32 in Joe's
+    /// villages, against his Year 30. ⚠️ Checked where the factors change — a birth and an arrival — never per tick, and
+    /// the latch (<c>SimWorld.CottageLearned</c>) is the gate; at 1 the founders satisfy it before anybody is born.
+    /// </remarks>
+    [JsonPropertyName("cottage_unlock_generation")]
+    public int CottageUnlockGeneration { get; init; } = 3;
+
+    /// <summary>The most people the village must have held at once before the stone cottage is learned (§4.4) — <c>MostEverAlive</c>.</summary>
+    /// <remarks><b>20</b>: Joe's saves hold 18–27 at Year ~30 (D719), so the size is what holds the 3rd generation back.</remarks>
+    [JsonPropertyName("cottage_unlock_population")]
+    public int CottageUnlockPopulation { get; init; } = 20;
+
+    /// <summary>The generation that must be born before the insulated manor is learned (§4.4) — and the cottage first.</summary>
+    /// <remarks>
+    /// <b>5, the founders' great-great-grandchildren</b>: first born at Year 69 and 86 in the only valleys that reached it
+    /// (D719). With <see cref="ManorUnlockPopulation"/> the manor lands ~Year 70–86, against Joe's Year 80–90.
+    /// </remarks>
+    [JsonPropertyName("manor_unlock_generation")]
+    public int ManorUnlockGeneration { get; init; } = 5;
+
+    /// <summary>The most people the village must have held before the insulated manor is learned (§4.4).</summary>
+    /// <remarks><b>45</b>: Joe's saves hold 45–60 at Year ~70–77 (D719).</remarks>
+    [JsonPropertyName("manor_unlock_population")]
+    public int ManorUnlockPopulation { get; init; } = 45;
+
     // `pile_work_ticks` WAS HERE AND IS GONE (D96, Joe). It said "small, but not zero — the
     // work is what makes placing a pile a decision with a cost", and the cost turned out to
     // belong somewhere better: a pile may only go on ground that is already clear, so ITS
@@ -3843,6 +3931,11 @@ public sealed record SimConfig
             HouseCapacity = MaxHouseholdSize,
             LocalStoreCap = HomeStoreCap,
 
+            // ⭐ The cabin's winter is the two keys it always was (`house-tiers.md §4.2`): 3 on every beat, byte for byte.
+            WinterFirewood = FirewoodBurnIntervalDays < 1 ? 0
+                : VillageEconomy.CeilingDivide(DaysPerSeason, FirewoodBurnIntervalDays) * FirewoodPerWinterDay,
+            ExposureDaysSheltered = ExposureDaysSheltered,
+
             // ⭐ TWO WIDE, ONE DEEP (D386): a house stands across the front of its plot with its
             // long side on the lane (`footprints.md §2` had it at 1×1 and said this row was
             // Phase 5's). Anchored for its facing by `SimWorld.HomeAnchorOn`, so it claims
@@ -4241,6 +4334,45 @@ public sealed record SimConfig
             EnclosesPasture = true,
         },
 
+        // ⭐ THE HOUSE LADDER (D206; `specs/house-tiers.md`, D716–D719): two more dwelling rows on the cabin's 2×1 ground.
+        // Three rows, one mechanism — a household's `HomeKind` says which it lives in, `SimWorld.HomeRowOf` reads it.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Cottage,
+            Name = "stone cottage",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, CottageLogs),
+                new MaterialCost(World.Goods.Stone, CottageStone),
+            },
+            WorkTicks = CottageWorkTicks,
+            HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = CottageStoreCap,
+            WinterFirewood = CottageWinterFirewood,
+            ExposureDaysSheltered = CottageExposureDaysSheltered,
+            HouseName = "the {family} cottage",
+            ExtentWidth = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Manor,
+            Name = "insulated manor",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, ManorLogs),
+                new MaterialCost(World.Goods.Stone, ManorStone),
+            },
+            WorkTicks = ManorWorkTicks,
+
+            // Five, like every house (Joe, D718: *"keep it at 5"*).
+            HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = ManorStoreCap,
+            WinterFirewood = ManorWinterFirewood,
+            ExposureDaysSheltered = ManorExposureDaysSheltered,
+            HouseName = "{family} Manor",
+            ExtentWidth = 2,
+        },
+
         // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
         // Joe, D568: *"longhouse should be removed from the game"*). `BuildingKind.Longhouse = 14` is a RETIRED id:
         // it ships no row, is never renumbered and never reissued; a modder may type a row with it, which is then
@@ -4267,11 +4399,13 @@ public sealed record SimConfig
                 continue;
             }
 
+            // ⭐ A stone house lasts (`house-tiers.md §4.8`; Joe, D718): its three thresholds at `stone_house_lasts_percent`.
+            int lasts = id is BuildingKind.Cottage or BuildingKind.Manor ? StoneHouseLastsPercent : 100;
             rows[i] = rows[i] with
             {
-                WearsInYears = BuildingWearsInYears,
-                FailsInYears = BuildingFailsInYears,
-                RuinedInYears = BuildingRuinedInYears,
+                WearsInYears = BuildingWearsInYears * lasts / 100,
+                FailsInYears = BuildingFailsInYears * lasts / 100,
+                RuinedInYears = BuildingRuinedInYears * lasts / 100,
             };
         }
 
@@ -5410,6 +5544,17 @@ public sealed record SimConfig
             throw new SimConfigException($"face_reach_tiles must be zero or more (got {FaceReachTiles}).");
         }
 
+        // ⭐ THE HOUSE LADDER (D719, `house-tiers.md`): a stone house lasts at least as long as a timber one, burns a
+        // winter of zero or more, keeps warm for zero (the shared roof) or more days, and keeps a larder.
+        if (StoneHouseLastsPercent < 100 || CottageWinterFirewood < 0 || ManorWinterFirewood < 0
+            || CottageExposureDaysSheltered < 0 || ManorExposureDaysSheltered < 0 || CottageStoreCap <= 0 || ManorStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                "stone_house_lasts_percent must be 100 or more; cottage_ and manor_winter_firewood and _exposure_days_sheltered "
+                + $"zero or more; cottage_ and manor_store_cap above zero (got {StoneHouseLastsPercent}, {CottageWinterFirewood}, "
+                + $"{ManorWinterFirewood}, {CottageExposureDaysSheltered}, {ManorExposureDaysSheltered}, {CottageStoreCap}, {ManorStoreCap}).");
+        }
+
         if (BridgeMaxLengthTiles < 2 || BridgeUnlockPopulation < 0 || StoneBridgeUnlockCrossings < 0)
         {
             throw new SimConfigException(
@@ -5905,6 +6050,15 @@ public sealed record SimConfig
         if (WorkshopUnlockLogs < 0)
         {
             throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");
+        }
+
+        // The house tiers' family tree (`house-tiers.md §4.4`): every villager is at least the first generation, so a
+        // generation below one is a gate that cannot mean anything; a population may be nought (a modder's valley).
+        if (CottageUnlockGeneration < 1 || ManorUnlockGeneration < 1 || CottageUnlockPopulation < 0 || ManorUnlockPopulation < 0)
+        {
+            throw new SimConfigException(
+                "cottage_unlock_generation and manor_unlock_generation must be at least 1, and the two populations at least 0 "
+                + $"(got {CottageUnlockGeneration}, {ManorUnlockGeneration}, {CottageUnlockPopulation}, {ManorUnlockPopulation}).");
         }
 
         // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,
@@ -6561,12 +6715,39 @@ public sealed record SimConfig
             // ⛔ ONLY THE HOUSE ROW HOUSES ANYBODY (D571). The longhouse was the one other row that carried
             // `house_capacity`, and `RaiseFinished` turned any such row into one; with it gone, a modder's
             // `house_capacity` on any other row would be raised and shelter nobody for ever. Refused at load.
-            // ⚠️ The house ladder (D206: cabin → cottage → manor, three house rows) lifts this when it lands.
+            // ⭐ THE HOUSE LADDER LIFTED IT (D719, `house-tiers.md §4.6`): three dwelling rows now. What the refusal still
+            // guards is the longhouse's lesson — a row that houses somebody must be a HOUSE: it stands on the house row's
+            // ground (every plot, fence and door is drawn from it, D386) and keeps a larder.
             if (row.HouseCapacity > 0 && row.Id != (int)BuildingKind.Home)
             {
+                BuildingRow? house = null;
+                for (int h = 0; h < rows.Count; h++)
+                {
+                    if (rows[h].Id == (int)BuildingKind.Home)
+                    {
+                        house = rows[h];
+                    }
+                }
+
+                if (house is null || row.ExtentWidth != house.ExtentWidth || row.ExtentHeight != house.ExtentHeight
+                    || row.LocalStoreCap <= 0 || row.Stores is not null || (row.Seats ?? 0) > 0)
+                {
+                    throw new SimConfigException(
+                        $"buildings[{i}] (id {row.Id}, {row.Name}) has house_capacity {row.HouseCapacity}, but a dwelling must "
+                        + $"stand on the house row's {house?.ExtentWidth ?? 1}×{house?.ExtentHeight ?? 1} ground, keep a larder "
+                        + "(local_store_cap) and be nothing else — no store, no seats; the longhouse that once housed people "
+                        + "another way was removed (D571).");
+                }
+            }
+
+            // ⭐ A HOUSE'S NAME IS A DWELLING'S, AND NAMES THE FAMILY (`house-tiers.md §4.8`, D722): on a granary it would never
+            // be said; without `{family}` every cottage in the valley would bear the same name.
+            if (row.HouseName is string named
+                && (row.HouseCapacity <= 0 || !named.Contains("{family}", StringComparison.Ordinal)))
+            {
                 throw new SimConfigException(
-                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_capacity {row.HouseCapacity}, but only the "
-                    + $"house row (id {(int)BuildingKind.Home}) houses anybody — the longhouse that once did was removed (D571).");
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_name \"{named}\", but only a dwelling (house_capacity "
+                    + "above zero) bears a family's name, and the name must say where the family's goes — {family}.");
             }
 
             // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.

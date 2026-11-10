@@ -52,7 +52,6 @@ public sealed class TechTreeTests
         SimWorld world = AVillage();
         TechNodeRow quarry = Node(world, "quarry");
         TechNodeRow mason = Node(world, "mason");
-        TechNodeRow cottage = Node(world, "cottage");
 
         Assert.Equal(TechState.Fogged, TechTree.StateOf(world, quarry).State);
         Assert.Equal(TechState.Fogged, TechTree.StateOf(world, mason).State);
@@ -65,8 +64,11 @@ public sealed class TechTreeTests
         Assert.Equal(TechState.Known, TechTree.StateOf(world, quarry).State);
         Assert.Equal(TechState.InSight, TechTree.StateOf(world, mason).State);
 
-        // The horizon is seen, never reached — and what hangs from it stays in the fog.
-        Assert.Equal(TechState.Fogged, TechTree.StateOf(world, cottage).State);
+        // The horizon is seen, never reached, however much stone is dug. (The stone cottage hung from it and stayed in the
+        // fog until D721 moved it to the family tree — Joe, D717: *"i dont want it to be stone related"*; its own fog is
+        // `HouseTierTests.TheMapAndTheGateReadTheFamilyTree`'s.)
+        world.StoneEverDug = world.Config.QuarryUnlockStone * 100;
+        Assert.Equal(TechState.InSight, TechTree.StateOf(world, mason).State);
     }
 
     /// <summary>

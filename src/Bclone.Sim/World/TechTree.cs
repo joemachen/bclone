@@ -44,6 +44,16 @@ public enum TechCondition
     /// so it can say how far (`workshop-and-the-carpenter.md §4.1a`).
     /// </summary>
     LogsFelled,
+
+    /// <summary>
+    /// The stone cottage's family tree (`house-tiers.md §4.4`, D721): <c>cottage_unlock_generation</c> born in the valley
+    /// and <c>cottage_unlock_population</c> held — <see cref="SimWorld.DeepestGenerationBorn"/> and
+    /// <see cref="SimWorld.MostEverAlive"/>. ⚠️ Known reads <see cref="SimWorld.CottageLearned"/>, the latch.
+    /// </summary>
+    CottageFamilyTree,
+
+    /// <summary>The insulated manor's family tree (§4.4) — the cottage learned first, then its own two factors; the latch is <see cref="SimWorld.ManorLearned"/>.</summary>
+    ManorFamilyTree,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -132,10 +142,18 @@ public static class TechTree
             Id = "mason", Name = "The mason's yard", Condition = TechCondition.NotYet, Requires = new[] { "quarry" },
             Says = "Cut stone dressed into blocks — what every lasting building stands on.",
         },
+        // ⭐ THE FAMILY TREE, BOTH RUNGS (`house-tiers.md §4.4`, D721) — no longer hung from the mason: Joe, D717, *"i dont
+        // want it to be stone related. it should feel earned"*. One sentence each: the tree's card is 160 tall (`tech tree:`).
         new TechNodeRow
         {
-            Id = "cottage", Name = "The stone cottage", Condition = TechCondition.NotYet, Requires = new[] { "mason" },
-            Says = "A house of dressed stone, that burns half the firewood of a wooden one.",
+            Id = "cottage", Name = "The stone cottage", Unlocks = BuildingKind.Cottage, Condition = TechCondition.CottageFamilyTree,
+            Says = "Raise grandchildren in the valley and grow the village, and it learns to build in stone — half the firewood.",
+        },
+        new TechNodeRow
+        {
+            Id = "manor", Name = "The insulated manor", Unlocks = BuildingKind.Manor, Condition = TechCondition.ManorFamilyTree,
+            Requires = new[] { "cottage" },
+            Says = "Generations more, and a bigger village, and it learns to build tight — a house that barely needs a fire.",
         },
         new TechNodeRow
         {
@@ -198,6 +216,8 @@ public static class TechTree
             TechCondition.NotYet => false,
             TechCondition.FoundersGone => world.SaidTheFoundersAreGone,
             TechCondition.KeptGranaryYears => world.HasLiteracy,
+            TechCondition.CottageFamilyTree => world.CottageLearned,
+            TechCondition.ManorFamilyTree => world.ManorLearned,
             _ => of > 0 && progress >= of,
         };
 
@@ -249,6 +269,18 @@ public static class TechTree
                 return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
             case TechCondition.CrossingsWalked:
                 return (world.BridgeCrossings, world.Config.StoneBridgeUnlockCrossings);
+            case TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree:
+                // Two factors, one bar: the lesser of the two in hundredths, so the bar is full only when both are.
+                // The manor's is nought until the cottage is learned, so it waits in the fog behind it.
+                (int generation, int ofGeneration, int people, int ofPeople) = FamilyTreeOf(world, condition);
+                if (condition == TechCondition.ManorFamilyTree && !world.CottageLearned)
+                {
+                    return (0, 100);
+                }
+
+                int byGeneration = ofGeneration <= 0 ? 100 : Math.Min(100, generation * 100 / ofGeneration);
+                int byPeople = ofPeople <= 0 ? 100 : Math.Min(100, people * 100 / ofPeople);
+                return (Math.Min(byGeneration, byPeople), 100);
             case TechCondition.KeptGranaryYears:
                 int years = world.FirstGranaryTick == 0 || world.Tick < world.FirstGranaryTick
                     ? 0
@@ -275,10 +307,24 @@ public static class TechTree
         }
     }
 
+    /// <summary>
+    /// The family tree's two factors, each against its number (`house-tiers.md §4.4`) — what the card says beside the bar:
+    /// the deepest generation born, and the most people ever held.
+    /// </summary>
+    public static (int Generation, int OfGeneration, int People, int OfPeople) FamilyTreeOf(SimWorld world, TechCondition condition)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        return condition == TechCondition.ManorFamilyTree
+            ? (world.DeepestGenerationBorn, world.Config.ManorUnlockGeneration, world.MostEverAlive, world.Config.ManorUnlockPopulation)
+            : (world.DeepestGenerationBorn, world.Config.CottageUnlockGeneration, world.MostEverAlive, world.Config.CottageUnlockPopulation);
+    }
+
     /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
+    /// <remarks>The family tree is said through <c>LearnedByDoing</c> at a birth (D721), so it introduces the map too.</remarks>
     public static bool IntroducesTheMap(TechCondition condition) =>
         condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
-            or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled;
+            or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled
+            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

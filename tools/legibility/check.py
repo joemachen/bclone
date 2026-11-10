@@ -38,7 +38,10 @@ WORLD = {
     "WornPath": "ground", "PackedPath": "ground", "Beyond": "ground", "ValleyEdge": "ground", "GridLine": "ground",
     "Parchment": "ground",
     # things with an area — the fill carries identity and is judged by the outline drawn round it (D637): "fill:<edge>"
-    "HomeColour": "fill:Ink", "GranaryColour": "fill:Ink", "WarehouseColour": "fill:Ink", "MarketColour": "fill:Ink",
+    "HomeColour": "fill:Ink", "CottageColour": "fill:Ink", "ManorColour": "fill:Ink",
+    # a stone house's roofs, drawn inside its inked walls (D722)
+    "SlateColour": "fill:Ink", "ManorRoofColour": "fill:Ink",
+    "GranaryColour": "fill:Ink", "WarehouseColour": "fill:Ink", "MarketColour": "fill:Ink",
     "HandcartColour": "fill:Ink", "HutColour": "fill:Ink", "LibraryColour": "fill:Ink", "TownHallColour": "fill:Ink", "WellColour": "fill:Ink",
     "BridgeColour": "fill:Ink", "StoneBridgeColour": "fill:Ink", "FisheryColour": "fill:Ink", "BerryColour": "fill:Ink",
     "TreeColour": "fill:Ink", "SiteColour": "fill:SiteEdge", "DemolishColour": "fill:DemolishEdge",
@@ -48,7 +51,7 @@ WORLD = {
     "BerryMark": "read",
     # lines and marks
     "Ink": "read", "SiteEdge": "read", "DemolishEdge": "read",
-    "FenceEdge": "read", "PalisadeEdge": "read", "CattleEdge": "read", "HullEdge": "read", "HeapEdge": "read",
+    "FenceEdge": "read", "StoneWallEdge": "read", "PalisadeEdge": "read", "CattleEdge": "read", "HullEdge": "read", "HeapEdge": "read",
     "DoorColour": "read", "FullStoreColour": "read", "IdleWorkplaceColour": "read", "SelectedRing": "read",
     "MealMark": "read", "ArrivalMark": "read",
     "ResidentialEdge": "read", "HarvestEdge": "read", "DestroyEdge": "read", "WorkGroundEdge": "read",
@@ -73,13 +76,14 @@ WHAT = {
     "IronColour": "iron seam", "FieldColour": "ploughed field", "SownColour": "sown field", "RipeColour": "ripe field",
     "QuarryFloor": "quarry floor", "MineFloor": "mine floor", "WornPath": "footpath", "PackedPath": "packed trail",
     "Beyond": "outside the valley", "ValleyEdge": "valley border", "GridLine": "tile grid",
-    "HomeColour": "house", "GranaryColour": "granary", "WarehouseColour": "warehouse", "MarketColour": "market",
+    "HomeColour": "house (the wooden cabin)", "CottageColour": "stone cottage", "ManorColour": "insulated manor",
+    "SlateColour": "cottage's slate roof", "ManorRoofColour": "manor's roof", "GranaryColour": "granary", "WarehouseColour": "warehouse", "MarketColour": "market",
     "HandcartColour": "handcart (the founders' cart; a cart parked at a door or pushed; the crate)", "HutColour": "woodcutter", "LibraryColour": "library", "TownHallColour": "town hall", "WellColour": "well",
     "BridgeColour": "wooden bridge", "StoneBridgeColour": "stone bridge", "FisheryColour": "fishery",
     "BerryColour": "forager's hut", "TreeColour": "forester's lodge", "SiteColour": "building site",
     "DemolishColour": "coming down", "AdultColour": "adult", "ChildColour": "child", "ElderColour": "elder",
     "CattleColour": "cattle", "GameColour": "wild game", "HullColour": "boat hull", "SailColour": "sail",
-    "FenceEdge": "household fence", "PalisadeEdge": "seam palisade", "CattleEdge": "cattle outline",
+    "FenceEdge": "household fence", "StoneWallEdge": "manor's yard wall", "PalisadeEdge": "seam palisade", "CattleEdge": "cattle outline",
     "HullEdge": "hull outline", "HeapEdge": "heap / crate outline", "DoorColour": "door notch",
     "FullStoreColour": "full-store ring", "IdleWorkplaceColour": "idle-workplace ring", "SelectedRing": "selection ring",
     "MealMark": "meal mark", "ArrivalMark": "arrival chevron", "ResidentialEdge": "housing zone edge",
@@ -301,7 +305,7 @@ def main() -> int:
 
     # ---- the rule ----
     p("\n## The value-band rule, tested\n")
-    fills = [r for r in rows["fill"] if r[0] in ("HomeColour", "GranaryColour", "WarehouseColour", "MarketColour",
+    fills = [r for r in rows["fill"] if r[0] in ("HomeColour", "CottageColour", "ManorColour", "GranaryColour", "WarehouseColour", "MarketColour",
              "HandcartColour", "HutColour", "LibraryColour", "TownHallColour", "WellColour", "FisheryColour", "BerryColour", "TreeColour",
              "SiteColour", "DemolishColour", "BridgeColour", "StoneBridgeColour") or r[0].startswith("JobKind.")]
     pairs_now = pairs_dark = 0

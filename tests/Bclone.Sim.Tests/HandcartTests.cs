@@ -781,7 +781,7 @@ public sealed class HandcartTests
         pusher.PushingACart = true;
         TheWarehouse(world).Store.Add(Goods.Handcart, 2);
 
-        Assert.Equal(12, SaveGame.Format); // 11 at D686; 12 since the trades' carts (§13.7), whose own guard poses the refusal of 11.
+        Assert.Equal(13, SaveGame.Format); // 11 at D686; 12 since the trades' carts (§13.7), whose own guard poses the refusal of 11; 13 since house tiers (`HouseTierTests` holds the bump and the refusal of 12).
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Assert.Equal(123, loaded.World.Households.Single(h => h.Id == home.Id).HandcartUses);
@@ -1128,7 +1128,7 @@ public sealed class HandcartTests
         pusher.PushingACart = true;
         pusher.CartForTheWorks = true;
 
-        Assert.Equal(12, SaveGame.Format);
+        Assert.Equal(13, SaveGame.Format); // 13 since house tiers (`HouseTierTests`).
         SimLoop loaded = Reload(loop);
         Assert.Equal(StateHash.Compute(world), StateHash.Compute(loaded.World));
         Assert.Equal(77, loaded.World.Workplaces.Single(w => w.Id == market.Id).HandcartUses);

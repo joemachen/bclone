@@ -1,5 +1,33 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = EVERYTHING MERGED AND PUSHED (D710, 2026-11-07): THE CART'S NIGHT AT HOME (D700), THE SEAM REACH (D701), THE BRIDGE FIXES (D702–D705), THE SPEED KEYS (D706), THE RESTOCK KNOB AT 3 (D707), HUNTERS OUT FOR THE HIDES (D708), EVERY GOOD WITH A STARTING LIMIT (D709) AND HAY AT 2,000 (D711), AND THE ART'S TERRAIN SHADER IN THE LAB (A1–A11). ONE SYSTEMS TRACK AND ONE ART TRACK FROM HERE (CLAUDE.md). NEXT: HOUSE TIERS.**
 
+> **🔀 HOUSE TIERS MERGED INTO `main` AT JOE'S WORD (D724, 2026-11-09: *"Merge it now"*) — PIECES 1–4 PLAYED, PIECE 5'S SWITCHES MERGED
+> UNPLAYED (his call); `slice/house-tiers` deleted; NOT PUSHED.** Merged over the art lane's ground textures (A12–A21); §7's tail was the one
+> conflict, both kept. **Next, art: wire the terrain shader into the valley — `VillageMap.cs` and the glyphs are free (the lane table's
+> *"until house tiers merge"* has come). Next, systems: Phase 5's gate — logistics' last item, then items 3–5.** The switches are Joe's
+> to look at in play: *Rebuild older homes* on the bar, *Keep this house as it is* on the home card.
+>
+> **(Before the merge.) 🔨 HOUSE TIERS: PIECES 1–4 PLAYED BY JOE (*"yep, looks good"*), PIECE 5 — HIS TWO SWITCHES — BUILT ON `slice/house-tiers` (D723,
+> 2026-11-09), UNPLAYED, UNMERGED — ⏸️ JOE PLAYS THE SWITCHES, THEN MERGES AT HIS WORD.** *Rebuild older homes* on the bar (off: new homes
+> still the chosen kind, nothing standing touched) and *Keep this house as it is* on the home card. His piece-4 saves still load. Warm
+> clothing (a wool coat that keeps the winter out) is recorded for Phase 6. After the merge, the art lane wires the terrain shader in.
+>
+> **(Piece 4, as it stood.) 🔨 HOUSE TIERS, ALL FOUR PIECES BUILT ON `slice/house-tiers` (D719–D722, 2026-11-08/09), UNPLAYED, UNMERGED — ⏸️ JOE PLAYS IT, THEN
+> MERGES AT HIS WORD.** Piece 4 (D722): each tier its own look on the map, the bar and the minimap; the home card names a stone house
+> after its family and says its winter, its fireless days and its rebuild's progress; the log says a rebuild's start and finish.
+> No golden moved. The ⏸️ line says how to reach the cottage quickly.
+>
+> **(Pieces 1–3, as they stood.)** Piece 3 (D721): the
+> family tree learns the cottage (3rd generation + 20 people) and the manor (5th + 45); *Build homes as — Cabins · Cottages · Manors*
+> beside *Paint land*, Cabins until Joe picks; the older houses rebuilt in place one at a time behind every site. Four goldens moved by
+> the cottage's learned byte alone (proved). **Next: piece 4, each tier's look and the home card; then Joe plays.** The ⏸️ line has it all.
+>
+> **✍️ HOUSE TIERS SPECCED ON `slice/house-tiers` (D716, 2026-11-07), OFF `main` 4399ccc — `specs/house-tiers.md`, NOTHING BUILT** *(then; see above)*.
+> Joe answered every call by D718 (the choice his once, 24 / 12 / 5 first, the family tree for both gates, every house at 5, bigger
+> larders, a look each, three perks, the manor drawn bigger); the build is four pieces (`house-tiers.md §14`), the generation first. Two findings worth carrying: **§5's *"6–8×"* is stale** —
+> the burn is 24 a winter today (D365), so his 60–80 is 2.5–3.3×; and heating is already **23–40 %** of everything his Elderwood fells
+> (Year 33 / 77), which is where the ladder's teeth are. **Next: his answers, then TDD per §9, §10's harness table before any number is
+> typed.**
+>
 > **✅ `slice/elderwood-notes` PLAYED AND MERGED INTO `main` (D715, 2026-11-07; Joe: *"Played, merge it"*), branch deleted, pushed at his word — D712–D714 from Joe's Elderwood play:** the fence
 > drawn whatever the shading (view), a shop short when no ONE store holds a batch (the 1+1 leather stall), and the hide hunt capped at
 > twice the meat limit (his call). Played on his save `elderwood-thorn-bay-54` and merged. **Next, systems: house tiers.**
@@ -9271,6 +9299,51 @@ Read `git status` after staging, every time.
 - ⚠️ **Backticks inside a double-quoted `grep -c` pattern score 0 and look like a missing anchor** (D692's trap, met again on a
   HANDOFF banner): count anchors from a Python script, or single-quote the pattern.
 
+## ⛔ THE TRAPS D716 NEARLY PAID FOR — A "BEST ALIVE" READ HIDES THE DEAD MASTER, A COUNTER'S NAME IS NOT ITS SCOPE, AND A WARNING'S MULTIPLE IS DATED
+
+- ⛔⛔ **(D721) `shutil.copy2` restores the file's OLD mtime, so the build after the last mutant is a no-op — and the suite,
+  the probe and every check after it run THE LAST MUTANT.** Found because the full suite went red on a guard that was green
+  alone: M28 was still in `Bclone.Sim.dll` (the restored source was "older" than the mutant's DLL). Each mutant itself is
+  sound (its own write is new, so MSBuild recompiles every source as it now is); only the state *after* the script is stale.
+  **After any mutant script: `touch` every file it touched (or restore with `shutil.copy`), build `--no-incremental`, and grep
+  the source for the last mutant's text before trusting a green.** The `filecmp` check proves the bytes, never the binary.
+- ⛔ **(D723) A save field written `? value : null` is still in the file — as `"key": null`.** `JsonObject` keeps a null property; it is `SaveReader.HasValue` that reads null as absent. So *"only when set"* is true of what the loader sees, not of the text: a guard that says `DoesNotContain("keeps_its_house")` fails on a correct save. To pose a save from before a field existed, strip the key from the parsed document (`HouseTierTests.Strip`), then load it. And: **a house posed at tick 0 cannot be worn** — condition is years since raised or mended, so age the village before you age a house (`AKeptHouseIsPassedOverAndMendedAsItIs` steps ten years first).
+- ⛔ **(D722) A house is drawn AFTER the sites, so whatever stands on a house's own ground is hidden under it.** A repair's and a rebuild's site (`StandsOnABuilding`) were being drawn by `DrawWorkplaces` and painted over by `DrawHomes` a moment later — piece 3's rebuild was invisible on the map and nobody could have seen it in a probe whose founding has no house. The rebuild is drawn by the house now (`_rebuildDrawn`, picked up from the walk already made). ⚠️ **A repair still is not** — a mended house shows nothing while it is mended; logged, not changed. And: **a probe with no house in it cannot red-check anything drawn on a house** — three of piece 4's zeros are that; Joe's play is the check.
+- ⛔ **(D721) A mutant must remove the rule it is named for, not one arm of it.** "The worn are not first" was written as
+  `|| (worn && !bestWorn && distance < 0)`, which left `worn == bestWorn` in the tie-break — so the first candidate's wornness
+  stuck and a sound cabin still could not displace a worn one: zero reds, and the guard was fine. Switching wornness itself off
+  (`&& household.Id < 0` on the `bool worn`) scored 1. **Before writing a zero down, read the mutated expression as the rule.**
+- ⛔ **(D721) A golden that moves for a latch: prove it is the byte, not the behaviour.** Switching the crossing off only says the
+  crossing is the cause; a second arm with the crossing ON and only the tag bytes unmixed says nothing else changed (the four
+  fifty-year villages learn the cottage at Years 22–37; the stop set `ShownTheTechTree` early, and by Year 50 it is set either
+  way). Two arms, each an `&& Tick == ulong.MaxValue` on one `if`, filtered to the four goldens: about two minutes an arm.
+- ⚠️ **(D721) The catch-all hides its callers.** The season's walk raises the next rebuild at its end, so a mutant that removes
+  an earlier raise (the walk's worn-house branch) often lands in the same state a line later. Pose the case only that branch
+  decides — here, a repair stacked on a house whose rebuild already stands.
+- ⛔ **(D720) Test a rule where the sim reads it, not only its helper.** `RoofChillAt` had a guard; the hearth's call to it had
+  none, and the mutant that put the old rate back in the hearth scored zero. Same shape for a `Math.Min` whose other arm
+  always won in the pose (the food target): pose the case where the arm under test is the one that decides.
+- ⛔ **(D720) The analyzers break naive mutants**: a mutant that leaves a parameter unused fails IDE0060, one that writes
+  `if (false)` fails CS0162 — *DID NOT BUILD*, which proves nothing (D450). Keep the parameter read, compare to an
+  impossible value instead.
+- ⛔ **(D719) A mutant script read `dotnet test -v q` for `Failed` lines and scored six zeros.** Quiet prints none. Pass
+  `--logger "console;verbosity=normal"` and print the `Total / Passed / Failed` line beside the count, so a zero says whether
+  anything ran — D422's trap, met again from a fresh script.
+- ⛔ **(D719) An unattended harness valley almost never has grandchildren**: it paints no housing, so its grown children never get a
+  house to start a family in (D71). Anything measured on generations needs the valleys where families formed, named as such.
+- ⚠️ **(D719) "Adult at 12" is not a generation of 12–15 years.** Measured, it is 22–25: the couple waits for a roof. Arithmetic
+  from one config key told Joe a wrong year; the harness put it right before a number was typed.
+
+- ⛔ **A save read of "the best living carpenter" said no village of Joe's had ever had a master — and the spec said so.** Read
+  again with the dead included, Elderwood's Rantis had mastered between Year 53 and 61 and died at 77. A save's `villagers`
+  list keeps the dead; *"has the village ever…"* is asked of all of them, *"does it now…"* of the living. **Count both and say which.**
+- ⛔ **Mastery is on skill `work`, not skill `ticks`** (`mastery_years` × a year's ticks × `skill_work_per_idle_tick` 100 =
+  960,000). A ticks column read against a guessed threshold looked plausible and was the wrong unit.
+- ⛔ **`StoneEverDug` is stone dug BY HAND** — it stops rising when the quarry stands (192–612 for life in every save). A counter's
+  name is a claim about its scope; read where it is incremented before building a gate on it.
+- ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
+  multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
+
 ## ⛔ THE TRAPS D712–D714 PAID FOR — A SHORTAGE ASKED OF THE TOTAL, A WALL FILED AS PAINT
 
 - ⛔ **A shop's "short" asked of the stores' total disagreed with a fetch asked of one store, and the village stalled for years.**
@@ -9809,6 +9882,26 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **🔨 being built on `slice/house-tiers` — HOUSE TIERS: EVERY CALL ANSWERED (D716–D718), THE BUILD IN FOUR PIECES (`house-tiers.md §14`).**
+  His: one village-wide *Build homes as: Cabin · Cottage · Manor*, Cabin until changed; 24 / 12 / 5 firewood first, the cabin's raise
+  toward 60–80 its own measured commit later; **the family tree gates both rungs** (a new generation born in the valley + the village
+  grown to hold it — cottages ~Year 30, manors ~Year 80–90, the numbers from the harness); every house holds 5; larders 400 / 600 / 800
+  proposed; the perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1 drawn bigger. Save format 13 refuses his
+  format-12 saves. ✅ **Piece 1 built (D719): the generation, format 13; measured — generations 22–25 years apart, so the gates
+  are proposed as the 3rd generation + 20 people (~Year 25–32) and the 5th + 45 (~Year 70–86).** ✅ **Piece 2 built (D720): the
+  cottage and manor rows, the burn by row (the cabin byte-identical), `HomeKind` behind `HomeRowOf`.** ✅ **Piece 3 built (D721):
+  the gates typed as 3rd generation + 20 and 5th + 45, latched at a birth or a band; *Build homes as — Cabins · Cottages · Manors*
+  beside *Paint land*, Cabins until he picks; the rebuild in place, one at a time behind every site, the worn first; four goldens
+  moved by the cottage's learned byte alone (proved).** ✅ **Piece 4 built (D722): each tier its own look (grey cottage under
+  slate, a pale manor drawn bigger with two storeys, two chimneys and a stone yard wall; the rebuild rising over the old house),
+  the home card naming a stone house after its family with its winter, its fireless days and its rebuild's progress, the log's
+  start and finish; no golden moved. THE SLICE IS BUILT.** ✅ **Played by Joe (D723): *"yep, looks good"*.** ✅ **Piece 5 built
+  (D723), his ask from that play: *Rebuild older homes* on the bar and *Keep this house as it is* on the home card; his piece-4
+  saves still load.** ✅ **MERGED INTO `main` AT HIS WORD (D724): *"Merge it now"* — the switches unplayed, his call; not pushed.** *(As it read before piece 5:)* **Joe's: play it** — reach the cottage (3rd generation + 20 people,
+  ~Year 25–32; for a quick look, a new game with `cottage_unlock_generation` 2 and `cottage_unlock_population` 4 in
+  `data/sim.config.json` learns it at the first birth — put them back after), pick *Cottages*, watch a street rebuilt one house at
+  a time — **then merge at his word.** ⚠️ `specs/art-inventory.md` B8 (the art lane's file) still says the house tiers have no
+  rows; the art lane updates it after the merge.
 - ✅ **PLAYED AND MERGED (D715, 2026-11-07).** ~~⏸️ **🔨 being built on `slice/elderwood-notes` — D712–D714, BUILT, UNPLAYED; JOE PLAYS HIS ELDERWOOD SAVE, THEN MERGE AT HIS WORD.**~~ What
   to look for: the barn's fence (and the yards' fences) on the map with the ground and housing shading off; within a season the
   lodge's 77 hides go to a store and Larkron sews again (coats past 300); once the meat is past 5,000 the hunters stand down and

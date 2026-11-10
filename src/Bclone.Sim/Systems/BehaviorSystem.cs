@@ -1377,7 +1377,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         int fuelFloor =
-            VillageEconomy.FirewoodStoreWantedPerHousehold(world.Config) * share / 100;
+            world.FirewoodWantedFor(household) * share / 100;
 
         return household.Stockpile.Firewood < fuelFloor ? Goods.Firewood : null;
     }
@@ -1638,7 +1638,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             return null;
         }
 
-        int firewoodFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(config);
+        int firewoodFloor = world.FirewoodWantedFor(household);
         int firewoodAtHome = HeldOnceHome(world, household, villager, larder => larder.Firewood);
         household.ToppingUpFirewood = StillShort(
             config, firewoodAtHome, firewoodFloor, household.ToppingUpFirewood);
@@ -4930,7 +4930,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        int firewoodShort = VillageEconomy.FirewoodStoreWantedPerHousehold(config)
+        int firewoodShort = world.FirewoodWantedFor(household)
             - HeldOnceHome(world, household, villager, larder => larder.Firewood);
 
         // ⚠️ NO MORE THAN THE LARDER HAS ROOM FOR (D407). A larder's walls are shared by food and

@@ -123,7 +123,7 @@ public sealed class Stockpile
     /// their cap with the market, where a short fetch is the answer to a small larder.
     /// </para>
     /// </remarks>
-    public int Capacity { get; init; } = int.MaxValue;
+    public int Capacity { get; internal set; } = int.MaxValue;
 
     /// <summary>Everything held here, of every kind. What <see cref="Capacity"/> limits.</summary>
     public int Held

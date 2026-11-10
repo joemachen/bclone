@@ -82,7 +82,7 @@ A horizon node (`not_yet`) can be in sight, never known: *"Nobody in this valley
 ### 3.4 The first version's nodes (Joe: what exists, plus a fogged horizon)
 
 ```
-  stone dug ──► Quarry ──► Mason's yard ··· ──► Stone cottage ···
+  stone dug ──► Quarry ──► Mason's yard ···
   iron dug ───► Smithy ──► Iron mine (an iron tool forged, D449)
   a kept granary ► Library ──► School ···
   the founders gone ► Town hall
@@ -92,6 +92,11 @@ The `···` nodes are horizon nodes (`tech-tree.md §9`): in sight once their p
 known in this version. *Since:* the mill and the bakery on wheat reaped (D522), the bridges on the village's size and its
 crossings (D546), the tailor's shop on leather handled (D659), and **the workshop on logs felled** (`TechCondition.LogsFelled`,
 D678: *"{n} of {N} logs felled"*; the gate itself reads `SimWorld.WorkshopLearned`, `workshop-and-the-carpenter.md §4.1a`).
+**And the two houses on the family tree** (D721, `house-tiers.md §4.4`): the stone cottage left the mason's horizon (Joe,
+D717: *"i dont want it to be stone related"*) for `cottage_family_tree` — the 3rd generation born and 20 people held, in sight
+from the founding as *"1 of 3 generations · 4 of 20 people"*, its bar the lesser of the two — and the insulated manor hangs
+from it on `manor_family_tree` (the 5th + 45), in the fog until the cottage is learned. Known reads the latches
+(`CottageLearned`, `ManorLearned`), never the counters. The mason's yard now has nothing hanging from it.
 
 ### 3.5 The introduction
 

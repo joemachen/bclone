@@ -167,6 +167,10 @@ public sealed class HouseholdSystem : ISimSystem
                 household.HomeFacing = standingEmpty.HomeFacing;
                 household.HomeRaisedAtTick = standingEmpty.HomeRaisedAtTick;
                 household.HomeRepairedAtTick = standingEmpty.HomeRepairedAtTick;
+                world.SetHomeKind(household, standingEmpty.HomeKind);
+                world.SetHomeKind(standingEmpty, BuildingKind.Home);
+                household.KeepsItsHouse = standingEmpty.KeepsItsHouse;
+                standingEmpty.KeepsItsHouse = false;
                 household.WhyHere = standingEmpty.WhyHere;
                 household.FencedTiles = standingEmpty.FencedTiles;
                 standingEmpty.HomePosition = null;
@@ -558,6 +562,11 @@ public sealed class HouseholdSystem : ISimSystem
             ? world.Rng.NextInt(0, config.TicksPerDay)
             : 0;
 
+        // ⭐ One generation past the elder parent (`house-tiers.md §4.4`, D718) — the couple the gate above just found.
+        // No draw and nothing hashed, so no stream and no golden moves for it.
+        (Villager mother, Villager father) = FertileCoupleOf(world, household, config)
+            ?? throw new InvalidOperationException($"A child was born to the {household.Name} household, which has no couple.");
+
         var child = new Villager
         {
             Id = id,
@@ -565,6 +574,7 @@ public sealed class HouseholdSystem : ISimSystem
             Surname = household.Surname,
             LifespanYears = lifespan,
             Rhythm = rhythm,
+            Generation = Math.Max(mother.Generation, father.Generation) + 1,
             Carried = world.NewStockpile(),
 
             // ⭐ And their hunger apart — see the founding path for why the action stagger alone
@@ -598,8 +608,10 @@ public sealed class HouseholdSystem : ISimSystem
             $"{child.FullName} was born to the {household.Name} household — {world.Clock.SeasonAndYear()}. " +
             $"The village is now {world.Population}.", LogCategory.Life);
 
-        // ⭐ A birth is the only way the village grows, so it is where it learns to bridge (D546: SCALE).
+        // ⭐ A birth is the only way the village grows, so it is where it learns to bridge (D546: SCALE) — and where a new
+        // generation is born, so where the family tree teaches its houses (`house-tiers.md §4.4`, D721).
         world.NoticeTheVillageSize(knewHowToBridge);
+        world.NoticeTheFamilyTree(child);
     }
 
     /// <summary>
@@ -642,7 +654,7 @@ public sealed class HouseholdSystem : ISimSystem
         // lever, it was scenery. At five it binds, and the shipped village stops dying out
         // (300 unattended years: final 0 at seven, final 20 at five, nobody starving either way).
         if (world.LivingMembersOf(household)
-            >= VillageEconomy.HouseholdCapacity(BuildingKind.Home, config))
+            >= VillageEconomy.HouseholdCapacity(household.HasHome ? household.HomeKind : BuildingKind.Home, config))
         {
             return false;
         }
@@ -772,7 +784,15 @@ public sealed class HouseholdSystem : ISimSystem
     /// and would let the village grow without ever forming a new household - which
     /// hides the very problem household formation exists to solve.
     /// </remarks>
-    private static bool HasFertileCouple(SimWorld world, Household household, SimConfig config)
+    private static bool HasFertileCouple(SimWorld world, Household household, SimConfig config) =>
+        FertileCoupleOf(world, household, config) is not null;
+
+    /// <summary>The household's fertile couple — the first such pair in member order — or null.</summary>
+    /// <remarks>
+    /// One finder for the birth gate and the birth, so the parents a child's generation is read from are the couple that
+    /// let it be born (D370's lesson: two finders that disagree).
+    /// </remarks>
+    private static (Villager, Villager)? FertileCoupleOf(SimWorld world, Household household, SimConfig config)
     {
         for (int i = 0; i < household.MemberIds.Count; i++)
         {
@@ -787,11 +807,11 @@ public sealed class HouseholdSystem : ISimSystem
                 && partner.HouseholdId == household.Id
                 && IsFertile(partner, config))
             {
-                return true;
+                return (member, partner);
             }
         }
 
-        return false;
+        return null;
     }
 
     private static bool IsFertile(Villager villager, SimConfig config) =>

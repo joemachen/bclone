@@ -121,6 +121,22 @@ public sealed class Household
     /// </summary>
     public ulong HomeRaisedAtTick { get; set; }
 
+    /// <summary>
+    /// Which dwelling row the house is (`specs/house-tiers.md §4.6`, D719): the cabin (<see cref="BuildingKind.Home"/>),
+    /// the stone cottage or the insulated manor. Meaningful only while <see cref="HomePosition"/> is set; travels with the
+    /// house when a family moves into an empty one and goes back to the cabin when the house comes down. Set through
+    /// <c>SimWorld.SetHomeKind</c>, which sizes the larder to the row. Saved; hashed only when it is not the cabin.
+    /// </summary>
+    public BuildingKind HomeKind { get; internal set; } = BuildingKind.Home;
+
+    /// <summary>
+    /// <i>Keep this house as it is</i> (`house-tiers.md §4.5`, D723; Joe: <i>"the user should have the option to disable
+    /// automatic house tier upgrades"</i>): every rebuild passes the house over, and it is mended as it is. The house's, like
+    /// <see cref="HomeKind"/> — it goes with the house to a family that moves in and is cleared when it comes down. Set
+    /// through <c>SimWorld.SetKeepsItsHouse</c>. Saved and hashed only when set.
+    /// </summary>
+    public bool KeepsItsHouse { get; internal set; }
+
     /// <summary>The tick the builders last mended the house, or 0 never.</summary>
     public ulong HomeRepairedAtTick { get; set; }
 
@@ -1019,7 +1035,7 @@ public sealed class Household
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace place = world.Workplaces[i];
-            if (place.Construction is { Kind: BuildingKind.Home, Demolishing: false } site && site.ForHouseholdId != householdId)
+            if (place.Construction is { Demolishing: false } site && BuildingKinds.IsDwelling(site.Kind) && site.ForHouseholdId != householdId)
             {
                 list.Add((place.Position, site.Facing));
             }
@@ -1325,6 +1341,10 @@ public sealed class Household
         ["home_raised_at"] = SaveWriter.Hex(HomeRaisedAtTick),
         ["home_repaired_at"] = SaveWriter.Hex(HomeRepairedAtTick),
         ["home_closed"] = HomeClosed,
+        ["home_kind"] = SaveWriter.Enum(HomeKind),
+
+        // Only when set (D723) — so a save without it, every format-13 save before piece 5, reads a house the rebuilds may take.
+        ["keeps_its_house"] = KeepsItsHouse ? true : null,
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1348,6 +1368,8 @@ public sealed class Household
             HomeRaisedAtTick = save.ULong("home_raised_at"),
             HomeRepairedAtTick = save.ULong("home_repaired_at"),
             HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
+            HomeKind = save.Enum<BuildingKind>("home_kind"),
+            KeepsItsHouse = save.HasValue("keeps_its_house") && save.Bool("keeps_its_house"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

@@ -79,6 +79,78 @@ public partial class VillageMap : Control
     private static readonly Color GridLine = new("#d2c29c");
     internal static readonly Color HomeColour = new("#b98a52");
 
+    // ⭐⭐ EACH HOUSE ITS OWN LOOK (`house-tiers.md §6`, D722; Joe, D717: *"each house state will needs its own look/design
+    // changes so the player can see the upgrade"*). Three fills a step apart in hue AND value — timber brown, the stone
+    // bridge's own grey, pale dressed stone — so the street reads its tiers in a glance and a colour-blind eye still has
+    // the value step; each inked round like every building (D637), so `check.py` judges them by the outline. The roofs
+    // are marks inside the walls: slate on the cottage, a darker two-storey slate on the manor (`HouseMarksAt`).
+
+    /// <summary>The insulated manor's walls: pale dressed stone, lighter than the cottage's rubble grey.</summary>
+    internal static readonly Color ManorColour = new("#cdc3ac");
+
+    /// <summary>A cottage's slate roof, seen from above inside its stone walls.</summary>
+    internal static readonly Color SlateColour = new("#66717a");
+
+    /// <summary>A manor's roof: darker slate, its upper storey a step lighter.</summary>
+    internal static readonly Color ManorRoofColour = new("#4a535c");
+
+    /// <summary>A manor's yard wall: low dry stone, grey where a cabin's fence is brown — a line, so dark (D637's band).</summary>
+    private static readonly Color StoneWallEdge = new("#3b3936");
+
+    /// <summary>The colour a house of this row is drawn in — the map, the minimap, the card and the bar read it here.</summary>
+    internal static Color DwellingColourOf(BuildingKind kind) => kind switch
+    {
+        BuildingKind.Cottage => CottageColour,
+        BuildingKind.Manor => ManorColour,
+        _ => HomeColour,
+    };
+
+    /// <summary>
+    /// How much of its ground a house is drawn over — the manor is plainly bigger on the same 2×1 (Joe, D718: <i>"I agree
+    /// with your manor footprint/bigger drawing idea"</i>); every other building is drawn at 0.8 so neighbours stay apart.
+    /// </summary>
+    internal static float DrawnShareOf(BuildingKind kind) => kind == BuildingKind.Manor ? 0.92f : 0.8f;
+
+    /// <summary>
+    /// ⭐ The marks a house wears inside its walls, in its own turned frame — <b>none on the cabin</b>; on the cottage a slate
+    /// roof, its ridge and one chimney; on the manor a darker roof, an upper storey stepped in from it, its ridge and two
+    /// chimneys. The map, the card's picture and the probe all draw from this one list, so they cannot disagree.
+    /// </summary>
+    /// <remarks><c>wide</c> and <c>deep</c> are the drawn size in tiles, already scaled by <see cref="DrawnShareOf"/>.</remarks>
+    internal static List<(Vector2[] Shape, Color Colour)> HouseMarksAt(
+        BuildingKind kind, Vector2 centre, float wide, float deep, ushort facing, float pixelsPerTile)
+    {
+        var marks = new List<(Vector2[], Color)>();
+        if (kind is not (BuildingKind.Cottage or BuildingKind.Manor))
+        {
+            return marks;
+        }
+
+        bool manor = kind == BuildingKind.Manor;
+        float radians = facing * Mathf.Tau / 65536f;
+        var along = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        Vector2 At(float x) => centre + (along * x * pixelsPerTile);
+        Vector2[] Quad(Vector2 at, float w, float d) => FootprintQuadAt(at, w, d, facing, pixelsPerTile);
+
+        Color roof = manor ? ManorRoofColour : SlateColour;
+        marks.Add((Quad(centre, wide * 0.86f, deep * 0.62f), roof));
+        if (manor)
+        {
+            // The upper storey: a second roof stepped in from the first, a shade lighter, so the house reads two high.
+            marks.Add((Quad(centre, wide * 0.60f, deep * 0.36f), roof.Lightened(0.18f)));
+        }
+
+        marks.Add((Quad(centre, wide * (manor ? 0.60f : 0.86f), deep * 0.07f), roof.Darkened(0.35f)));
+
+        float chimney = Mathf.Min(wide, deep) * 0.2f;
+        foreach (float x in manor ? new[] { -0.36f, 0.36f } : new[] { 0.3f })
+        {
+            marks.Add((Quad(At(wide * x), chimney, chimney), Ink));
+        }
+
+        return marks;
+    }
+
     /// <summary>
     /// ⭐ THE CART COLOUR, ONE ANSWER (Slice H, `handcart.md §8`; chosen at D678 in <see cref="GoodsPalette"/>, moved here
     /// the day it had three drawings): a painted cart's slate blue-green, apart from every brown the valley draws and
@@ -252,6 +324,12 @@ public partial class VillageMap : Control
 
     /// <summary>A stone bridge (D546) — dressed grey, lighter than the rock seams so the two are not confused.</summary>
     internal static readonly Color StoneBridgeColour = new("#a8a49b");
+
+    /// <summary>
+    /// The stone cottage's walls (D722): the stone bridge's grey — one stone, one colour on the map. ⚠️ Declared after it:
+    /// a static field reads another in the order they are written, and one read before it is set is transparent black.
+    /// </summary>
+    internal static readonly Color CottageColour = StoneBridgeColour;
 
     /// <summary>The ring round a store with no room left (D140).</summary>
     /// <remarks>
@@ -2500,13 +2578,14 @@ public partial class VillageMap : Control
             Check(s.Name, s.Position, s.ExtentWidth * 0.8f, s.ExtentHeight * 0.8f, s.Facing.Raw, world.DoorOf(s));
         }
 
-        float homeWide = (world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1) * 0.8f;
-        float homeDeep = (world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1) * 0.8f;
         foreach (Household h in world.Households)
         {
             if (h.HomePosition is Point home)
             {
-                Check($"the {h.Name} house", home, homeWide, homeDeep, h.HomeFacing.Raw, world.DoorOf(h));
+                // Each house at its own row's ground and drawn share — the manor is drawn bigger (D722).
+                BuildingRow row = world.HomeRowOf(h);
+                float share = DrawnShareOf(h.HomeKind);
+                Check($"the {h.Name} house", home, row.ExtentWidth * share, row.ExtentHeight * share, h.HomeFacing.Raw, world.DoorOf(h));
             }
         }
 
@@ -4531,8 +4610,13 @@ public partial class VillageMap : Control
         // the villagers could not feel, which is the invisible-rule failure §1.1 forbids.
         for (int i = 0; i < plotOwners.Count; i++)
         {
-            bool standing = _world.FindHousehold(plotOwners[i])?.HasHome == true;
-            Color edge = standing ? FenceEdge : FenceEdge with { A = 0.35f };
+            Household? owner = _world.FindHousehold(plotOwners[i]);
+            bool standing = owner?.HasHome == true;
+
+            // ⭐ A manor's yard is walled in low dry stone (`house-tiers.md §6`, D722) — grey where a fence is brown. The
+            // outlines are re-traced when anything standing changes, and a rebuild's finish is such a change.
+            Color fence = owner?.HomeKind == BuildingKind.Manor ? StoneWallEdge : FenceEdge;
+            Color edge = standing ? fence : fence with { A = 0.35f };
             HashSet<GridPos> ground = plotsByOwner[plotOwners[i]];
             foreach (GridPos tile in ground)
             {
@@ -7070,12 +7154,22 @@ public partial class VillageMap : Control
     {
         SimWorld world = _world!;
         int selectedWorkplace = world.FindVillager(_selectedVillagerId)?.WorkplaceId ?? 0;
+        _rebuildDrawn = null;
 
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace workplace = world.Workplaces[i];
             Vector2 centre = ToScreen(workplace.Position);
             Color colour = ColourOf(workplace.Kind);
+
+            // ⭐ A HOUSE'S REBUILD IS DRAWN BY THE HOUSE (D722): it stands on the house's own ground, and the house is drawn
+            // after the sites — so the new walls rise over the old in `DrawHomes`, never hidden under them. Picked up from
+            // this walk, which is made anyway, rather than looked for again.
+            if (workplace.Construction is { RebuildsHome: true })
+            {
+                _rebuildDrawn = workplace;
+                continue;
+            }
 
             // ⛔ THE CATCHMENT RING IS GONE WITH THE CATCHMENT. It drew *"how far it is
             // reasonable to come from"* as a faint circle — the fence made visible rather
@@ -7490,6 +7584,7 @@ public partial class VillageMap : Control
             foreach ((Layer layer, Color edge, _) in _zoneOutlines)
             {
                 bool fence = (edge.R, edge.G, edge.B) == (FenceEdge.R, FenceEdge.G, FenceEdge.B)
+                    || (edge.R, edge.G, edge.B) == (StoneWallEdge.R, StoneWallEdge.G, StoneWallEdge.B)
                     || (edge.R, edge.G, edge.B) == (PalisadeEdge.R, PalisadeEdge.G, PalisadeEdge.B);
                 if (fence && Showing(layer))
                 {
@@ -7550,9 +7645,13 @@ public partial class VillageMap : Control
             : $"[widths] brushes: ⛔ {string.Join("; ", faults)}";
     }
 
+    /// <summary>The house rebuild met in this frame's walk of the workplaces — drawn over its house by <see cref="DrawHomes"/>.</summary>
+    private Workplace? _rebuildDrawn;
+
     private void DrawHomes()
     {
         SimWorld world = _world!;
+        Household? rebuilding = _rebuildDrawn is Workplace rebuild ? world.HouseholdAt(rebuild.Tile) : null;
 
         for (int i = 0; i < world.Households.Count; i++)
         {
@@ -7574,22 +7673,55 @@ public partial class VillageMap : Control
             // is a darker notch on the local north edge, which the facing turns toward the lane
             // (`PlotShape.LaneDirection` and this rotation agree — guarded).
             Vector2 centre = ToScreen(site);
-            float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
-            float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
+            BuildingKind kind = household.HomeKind;
+            BuildingRow row = world.HomeRowOf(household);
+            float share = DrawnShareOf(kind);
+            float wide = row.ExtentWidth * share;
+            float deep = row.ExtentHeight * share;
             ushort facing = household.HomeFacing.Raw;
             Condition worn = world.ConditionOf(household);
-            Color weathered = Weathered(HomeColour, worn);
-            Color paint = occupied ? weathered : weathered with { A = 0.25f };
+            float alpha = occupied ? 1f : 0.25f;
+            Color weathered = Weathered(DwellingColourOf(kind), worn);
 
             // A house whose family has died still stands, and reads as abandoned. One that has fallen in has a broken
             // edge, as every building does (D556).
-            Vector2[] house = FootprintQuad(centre, wide * 0.8f, deep * 0.8f, facing);
-            DrawColoredPolygon(house, paint);
+            Vector2[] house = FootprintQuad(centre, wide, deep, facing);
+            DrawColoredPolygon(house, weathered with { A = alpha });
+
+            // ⭐ Each tier its own look (§6, D722): the cottage's slate and chimney, the manor's two storeys — weathered as
+            // the walls are, faint as they are when nobody lives there.
+            foreach ((Vector2[] shape, Color colour) in HouseMarksAt(kind, centre, wide, deep, facing, _pixelsPerTile))
+            {
+                DrawColoredPolygon(shape, Weathered(colour, worn) with { A = alpha });
+            }
+
+            // ⭐ THE NEW WALLS RISING OVER THE OLD (§6, D722) — the stone bridge's band (D704): the new row's colour fills the
+            // house from its own back wall as stone and work arrive, by the same fraction the card says, the old house
+            // under it until the finish. The rebuild's site is not drawn again by the workplaces (above).
+            if (rebuilding?.Id == household.Id && _rebuildDrawn!.Construction is { } plan)
+            {
+                int total = System.Math.Max(1, plan.Recipe.TotalMaterials + plan.Recipe.WorkTicks);
+                float done = Mathf.Clamp((plan.TotalDelivered + plan.WorkDone) / (float)total, 0f, 1f);
+                float rising = DrawnShareOf(plan.Kind) / share;
+                if (done > 0f)
+                {
+                    DrawColoredPolygon(
+                        FootprintQuad(centre, wide * rising, deep * rising, facing, 1f - done, 1f),
+                        DwellingColourOf(plan.Kind) with { A = 0.8f });
+                }
+
+                Vector2[] outline = FootprintQuad(centre, wide * rising, deep * rising, facing);
+                for (int edge = 0; edge < 4; edge++)
+                {
+                    DrawLine(outline[edge], outline[(edge + 1) % 4], SiteEdge, 2f);
+                }
+            }
+
             DrawEdges(house, occupied ? Ink : Ink with { A = 0.35f }, fallenIn: worn == Condition.Ruin);
 
             // ⭐ ON THE WALL THE SIM'S DOOR OPENS THROUGH (`doors.md §12.2`): the front, as it always drew, unless the front
             // is blocked.
-            DrawDoor(centre, wide * 0.8f, deep * 0.8f, facing, world.DoorOf(household), occupied ? DoorColour : DoorColour with { A = 0.25f });
+            DrawDoor(centre, wide, deep, facing, world.DoorOf(household), occupied ? DoorColour : DoorColour with { A = 0.25f });
         }
     }
 
@@ -8359,9 +8491,9 @@ public partial class VillageMap : Control
 
         if (world.HouseholdAt(tile) is Household household && household.HomePosition is Point home)
         {
-            float wide = world.BuildingsCatalog[BuildingKind.Home]?.ExtentWidth ?? 1;
-            float deep = world.BuildingsCatalog[BuildingKind.Home]?.ExtentHeight ?? 1;
-            return BoxOf(ToScreen(home), wide * 0.8f, deep * 0.8f, household.HomeFacing.Raw);
+            BuildingRow row = world.HomeRowOf(household);
+            float share = DrawnShareOf(household.HomeKind);
+            return BoxOf(ToScreen(home), row.ExtentWidth * share, row.ExtentHeight * share, household.HomeFacing.Raw);
         }
 
         if (world.LibraryCovering(tile) is Library library)
