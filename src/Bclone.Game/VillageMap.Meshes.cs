@@ -160,8 +160,12 @@ public partial class VillageMap
     {
         public readonly ArrayMesh Standing = new();
         public readonly ArrayMesh Berries = new();
+
+        /// <summary>The painted trees (A35) — textured with the atlas, so a mesh of their own; empty with the tick off.</summary>
+        public readonly ArrayMesh Trees = new();
         public int StandingVertices;
         public int BerryVertices;
+        public int TreeVertices;
     }
 
     private SceneryChunk[] _scenery = System.Array.Empty<SceneryChunk>();
@@ -187,6 +191,7 @@ public partial class VillageMap
     private int _chunksDown;
     private readonly MeshBuilder _standing = new();
     private readonly MeshBuilder _berries = new();
+    private readonly MeshBuilder _trees = new();
 
     /// <summary>How long the last scenery build took and how many chunks it touched — for the probe.</summary>
     public double LastSceneryBuildMs { get; private set; }
@@ -268,6 +273,25 @@ public partial class VillageMap
 
                     _sceneryShadow[i] = tiles[i];
                     dirty[ChunkOf(i % map.Width, i / map.Width)] = true;
+
+                    // ⭐ A painted tree's kind reads its neighbours (A36: willows by the water, birches at a wood's edge),
+                    // so a tile felled at a chunk's edge re-meshes the chunks beside it too. Only with the painted trees:
+                    // with the tick off one chunk rebuilds a fell, as it always has (D366's probe counts it).
+                    if (_paintedTrees)
+                    {
+                        int x = i % map.Width, y = i / map.Width;
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int nx = x + dx, ny = y + dy;
+                                if (nx >= 0 && ny >= 0 && nx < map.Width && ny < map.Height)
+                                {
+                                    dirty[ChunkOf(nx, ny)] = true;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -320,15 +344,25 @@ public partial class VillageMap
         if (standing)
         {
             _standing.Clear();
+            _trees.Clear();
             for (int y = fromY; y < toY; y++)
             {
                 for (int x = fromX; x < toX; x++)
                 {
                     var tile = new GridPos(x, y);
                     Terrain terrain = map.TerrainAt(tile);
-                    if (terrain is Terrain.Forest or Terrain.Sapling)
+                    // ⭐ Unless the player has asked to see the land under the trees (A36, the *draw the trees* tick).
+                    if (terrain is Terrain.Forest or Terrain.Sapling && _treesShown)
                     {
-                        Canopies(_standing, tile, grown: terrain == Terrain.Forest);
+                        // The painted trees with the tick on (A35), into their own textured mesh; the crowns otherwise, as ever.
+                        if (_paintedTrees)
+                        {
+                            PaintedTrees(_trees, map, tile, grown: terrain == Terrain.Forest);
+                        }
+                        else
+                        {
+                            Canopies(_standing, tile, grown: terrain == Terrain.Forest, _canopyInkTiles, _canopyInk);
+                        }
                     }
                 }
             }
@@ -357,6 +391,9 @@ public partial class VillageMap
             into.Standing.ClearSurfaces();
             _standing.AddSurfaceTo(into.Standing);
             into.StandingVertices = _standing.VertexCount;
+            into.Trees.ClearSurfaces();
+            _trees.AddSurfaceTo(into.Trees);
+            into.TreeVertices = _trees.VertexCount;
         }
 
         if (berries)
@@ -414,8 +451,218 @@ public partial class VillageMap
         }
     }
 
+    /// <summary>
+    /// ⭐⭐ The painted canopy (A36) — drawn by <c>_Draw</c> over the whole village, <b>at every zoom</b>: the far view's
+    /// woods are trees too (<c>tree-sprites.md §5</c>, piece 3). The crowns' zoom floor (<c>TreeZoomFloor</c>) was set by
+    /// ~5,700 unbatched discs (D338); the painted trees are a mesh a chunk, the whole valley one draw a chunk, and the
+    /// atlas's mipmaps draw a tree a few pixels wide without shimmering.
+    /// </summary>
+    private void DrawThePaintedCanopy()
+    {
+        long started = Stopwatch.GetTimestamp();
+        Vector2 first = ToTile(Vector2.Zero);
+        Vector2 last = ToTile(Size);
+        RefreshTheScenery(_world!);
+        DrawThePaintedTrees(Mathf.FloorToInt(first.X), Mathf.CeilToInt(last.X), Mathf.FloorToInt(first.Y), Mathf.CeilToInt(last.Y));
+        _treesNow += Since(started);
+    }
+
+    /// <summary>The chunks on screen's tree meshes, textured with the atlas (A35).</summary>
+    /// <remarks>
+    /// A painted tree reaches further than a crown — its foot up to <c>CanopySpread</c> off its tile and its cell
+    /// <see cref="PaintedTreeHalf"/> × 1.1 round that — so a chunk two tiles off the screen's edge can still have leaves on it.
+    /// </remarks>
+    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY)
+    {
+        GeneratedMap map = _sceneryOf!;
+        Transform2D toScreen = TileToScreen();
+        Rid canvas = GetCanvasItem();
+        Rid atlas = _treeAtlas!.GetRid();
+        const int Reach = 2;
+
+        int firstCx = Mathf.Clamp((minX - Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int lastCx = Mathf.Clamp((maxX + Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int firstCy = Mathf.Clamp((minY - Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+        int lastCy = Mathf.Clamp((maxY + Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+
+        for (int cy = firstCy; cy <= lastCy; cy++)
+        {
+            for (int cx = firstCx; cx <= lastCx; cx++)
+            {
+                ArrayMesh mesh = _scenery[(cy * _chunksAcross) + cx].Trees;
+                if (mesh.GetSurfaceCount() > 0)
+                {
+                    RenderingServer.CanvasItemAddMesh(canvas, mesh.GetRid(), toScreen, Colors.White, atlas);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Joe's painted trees on one tile (<c>tree-sprites.md §5</c>, A35): fewer and bigger than the crowns (call 4, A30:
+    /// 1–2 a grown tile), each a cell of the atlas laid on <see cref="CanopyOn"/>'s place, tile by tile as the crowns are.
+    /// </summary>
+    private static void PaintedTrees(MeshBuilder into, GeneratedMap map, GridPos tile, bool grown)
+    {
+        for (int i = 0; i < PaintedTreesOn(tile, grown); i++)
+        {
+            (Vector2 where, float _) = CanopyOn(tile, i);
+            (int cell, bool mirrored, float scale) = PaintedTreeOn(tile, i, grown, KindOf(map, tile, i));
+            into.Sprite(where, PaintedTreeHalf * scale, cell, mirrored);
+        }
+    }
+
+    /// <summary>The four kinds of painted tree (A36): what the atlas holds, and what a place grows.</summary>
+    internal enum TreeKind
+    {
+        Leafy,
+        Conifer,
+        Birch,
+        Willow,
+    }
+
+    /// <summary>
+    /// ⭐⭐ Which kind a painted tree is — <b>chosen by place, never at random</b> (A36, Joe: <i>"more types of tree sprites
+    /// to show different tree types/shapes (conifers, etc)"</i>; his three: conifers, birch, willow by the water).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Willows by the water:</b> on a wooded tile with water beside it (any of eight), <see cref="WillowShare"/> of its
+    /// trees. <b>Conifers in stands:</b> where a slow field over the valley (<see cref="StandNoise"/>, a lattice
+    /// <see cref="ConiferStandTiles"/> apart) runs high, so firs come in groves that end raggedly rather than one here and
+    /// one there. <b>Birches at the edges:</b> on a wooded tile with open ground beside it (any of four),
+    /// <see cref="BirchShare"/> of its trees. <b>Leafy</b> everywhere else.
+    /// </para>
+    /// <para>
+    /// ⛔ A <c>static</c> of the tile and its neighbours (D337's guard): no tick, no clock, no RNG. The sim has one kind of
+    /// wood (A30, call 2); a kind is decoration chosen by place — the same timber, the same yield.
+    /// </para>
+    /// </remarks>
+    internal static TreeKind KindOf(GeneratedMap map, GridPos tile, int which)
+    {
+        uint spin = Scramble(tile.X + KindSalt, tile.Y - KindSalt) >> (which * 9);
+        float roll = (spin % 1000) / 1000f;
+        if (roll < WillowShare && Beside(map, tile, Terrain.Water, diagonals: true))
+        {
+            return TreeKind.Willow;
+        }
+
+        float ragged = ((((spin >> 10) % 100) / 100f) - 0.5f) * 0.12f;
+        if (StandNoise(tile) + ragged > ConiferStand)
+        {
+            return TreeKind.Conifer;
+        }
+
+        if (roll < BirchShare && Beside(map, tile, terrain: null, diagonals: false))
+        {
+            return TreeKind.Birch;
+        }
+
+        return TreeKind.Leafy;
+    }
+
+    /// <summary>
+    /// Whether a neighbour of <paramref name="tile"/> is <paramref name="terrain"/> — or, with it null, open ground (not wood,
+    /// not young wood, not water). Off the valley reads as grass, so the valley's rim is a wood's edge.
+    /// </summary>
+    private static bool Beside(GeneratedMap map, GridPos tile, Terrain? terrain, bool diagonals)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                if ((dx == 0 && dy == 0) || (!diagonals && dx != 0 && dy != 0))
+                {
+                    continue;
+                }
+
+                Terrain there = map.TerrainAt(new GridPos(tile.X + dx, tile.Y + dy));
+                bool hit = terrain is Terrain wanted
+                    ? there == wanted
+                    : there is not (Terrain.Forest or Terrain.Sapling or Terrain.Water);
+                if (hit)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// A slow field over the valley, 0–1, smooth between lattice points <see cref="ConiferStandTiles"/> apart: value noise
+    /// from <see cref="Scramble"/>, so a stand of conifers is a place, the same every time it is drawn.
+    /// </summary>
+    internal static float StandNoise(GridPos tile)
+    {
+        float fx = tile.X / ConiferStandTiles, fy = tile.Y / ConiferStandTiles;
+        int x0 = Mathf.FloorToInt(fx), y0 = Mathf.FloorToInt(fy);
+        float tx = Smooth(fx - x0), ty = Smooth(fy - y0);
+        float top = Mathf.Lerp(Lattice(x0, y0), Lattice(x0 + 1, y0), tx);
+        float bottom = Mathf.Lerp(Lattice(x0, y0 + 1), Lattice(x0 + 1, y0 + 1), tx);
+        return Mathf.Lerp(top, bottom, ty);
+
+        static float Smooth(float t) => t * t * (3f - (2f * t));
+        static float Lattice(int x, int y) => (Scramble((x * 31) + StandSalt, (y * 17) - StandSalt) % 1000) / 1000f;
+    }
+
+    /// <summary>How far apart the conifer field's lattice points are, in tiles: a stand a few tiles to a dozen across.</summary>
+    private const float ConiferStandTiles = 9f;
+
+    /// <summary>Where the field turns to conifers — tuned so about a fifth of the valley's trees are firs (A36).</summary>
+    internal const float ConiferStand = 0.62f;
+
+    /// <summary>The share of a waterside wooded tile's trees that are willows.</summary>
+    internal const float WillowShare = 0.6f;
+
+    /// <summary>The share of a wood's edge tiles' trees that are birches.</summary>
+    internal const float BirchShare = 0.4f;
+
+    private const int KindSalt = 7411;
+
+    private const int StandSalt = 3307;
+
+    /// <summary>How many painted trees stand on a tile: 1–2 grown (A30, call 4), 2 young ones.</summary>
+    internal static int PaintedTreesOn(GridPos tile, bool grown) =>
+        grown ? 1 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
+
+    /// <summary>
+    /// ⭐⭐ Which drawing a painted tree is, whether it is mirrored, and how big — <b>a `static` of the tile</b>, D337's
+    /// guard: it cannot reach a tick or a clock, so a wood never shimmers and a place always shows the same trees.
+    /// </summary>
+    /// <remarks>
+    /// Mirrored across the light's diagonal or not (A31: never turned — the light is painted in); × 0.85–1.10 (§5); a young
+    /// tile draws the grown set at <see cref="YoungTreeScale"/> until the young atlas exists (piece 2).
+    /// </remarks>
+    internal static (int Cell, bool Mirrored, float Scale) PaintedTreeOn(GridPos tile, int which, bool grown, TreeKind kind)
+    {
+        uint spin = Scramble(tile.X - PaintedTreeSalt, tile.Y + PaintedTreeSalt) >> (which * 11);
+
+        // The atlas (A36): cells 0–7 the leafy trees, then four each of conifer, birch and willow.
+        int cell = kind == TreeKind.Leafy ? (int)(spin % 8) : 8 + (((int)kind - 1) * 4) + (int)(spin % 4);
+        bool mirrored = ((spin >> 3) & 1u) != 0;
+        float scale = 0.85f + (((spin >> 4) % 26) / 100f);
+        return (cell, mirrored, grown ? scale : scale * YoungTreeScale);
+    }
+
+    /// <summary>Half a painted tree's cell in tiles: 256 px of painting at 128 px a tile (<c>tree-sprites.md §3</c>).</summary>
+    internal const float PaintedTreeHalf = 1f;
+
+    /// <summary>A young tile's trees, as a share of a grown one's, until the young atlas exists (§5, piece 2).</summary>
+    internal const float YoungTreeScale = 0.55f;
+
+    /// <summary>Keeps which painted tree stands where out of step with where it stands (<see cref="TreeSalt"/>).</summary>
+    private const int PaintedTreeSalt = 6247;
+
     /// <summary>The trees standing on one tile, and the ones leaning off it — into the mesh.</summary>
-    private static void Canopies(MeshBuilder into, GridPos tile, bool grown)
+    /// <remarks>
+    /// ⭐ With <paramref name="inkTiles"/> above 0 (the valley in watercolour, A28) each crown is laid on a disc of ink a
+    /// little wider than itself, crown by crown, so a crown that overlaps the one before draws its ink edge across it —
+    /// the scalloped, outlined clumps of the concept's trees (Joe: <i>"the trees themselves have an outline, but the ground
+    /// isn't outlined"</i>). At 0 not one vertex changes, so the map with the tick off is the map it was.
+    /// </remarks>
+    private static void Canopies(MeshBuilder into, GridPos tile, bool grown, float inkTiles, Color ink)
     {
         float radius = grown ? CanopyRadius : 0.13f;
         Color trunk = grown ? TreeCanopy : SaplingCanopy;
@@ -423,9 +670,31 @@ public partial class VillageMap
         for (int i = 0; i < TreesOn(tile, grown); i++)
         {
             (Vector2 where, float shade) = CanopyOn(tile, i);
-            into.Disc(where, radius * shade, trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade });
+            Color crown = trunk with { R = trunk.R * shade, G = trunk.G * shade, B = trunk.B * shade };
+            if (inkTiles <= 0f)
+            {
+                into.Disc(where, radius * shade, crown);
+                continue;
+            }
+
+            // Inked (A28): a cloud of a crown, its bumps and their turn a pure function of where it stands (so a tree is
+            // the same tree every time it is meshed), on its ink, with a lighter crown on its sunlit side, up and left —
+            // the light the map's pen assumes.
+            float size = radius * shade;
+            int lobes = 5 + (int)(Mathf.PosMod((where.X * 7.31f) + (where.Y * 3.17f), 1f) * 3f);
+            float turn = Mathf.PosMod((where.X * 12.9898f) + (where.Y * 78.233f), Mathf.Tau);
+            into.Crown(where, size + inkTiles, ink, lobes, turn, CrownLobeDepth);
+            into.Crown(where, size, crown, lobes, turn, CrownLobeDepth);
+            Color lit = crown.Lightened(CrownLit);
+            into.Disc(where + new Vector2(-0.22f * size, -0.22f * size), size * 0.5f, lit);
         }
     }
+
+    /// <summary>How deep a crown's bumps are, as a share of its radius (A28).</summary>
+    private const float CrownLobeDepth = 0.24f;
+
+    /// <summary>How much lighter a crown's sunlit side is (A28).</summary>
+    private const float CrownLit = 0.28f;
 
     /// <summary>
     /// Every tile a quarry or a mine works as a face, by index — from each face workplace's own

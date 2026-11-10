@@ -213,10 +213,56 @@ internal sealed class ValleyTexture
     /// </remarks>
     private readonly int _perTile;
 
-    internal ValleyTexture(int pixelsPerTile = PixelsPerTile)
+    /// <summary>
+    /// ⭐ How many texels a tile gets in the ground's MIX (<c>terrain-shader.md §5.2</c>, call 1, A22–A23) — the lab's fake
+    /// map's own resolution, which is what Joe approved the look on.
+    /// </summary>
+    /// <remarks>
+    /// A quarter of the colour's pixels, because the shader reads the mix bilinearly and sharpens it: a smooth field does
+    /// not need the colour's sixteen. ⚠️ <b>It must divide <see cref="PixelsPerTile"/></b>, so a texel's centre is a
+    /// sample point the colour's arithmetic can name exactly (<see cref="TexelCentre"/>).
+    /// </remarks>
+    internal const int WeightsPerTile = 8;
+
+    /// <summary>
+    /// ⭐⭐ The weights <see cref="Winner"/> throws away, kept — <b>only for a bake that asks</b> (A22–A23, Joe:
+    /// <i>"keep them as lean as possible"</i>). The new-game preview and the title draw the colour and never pay for this.
+    /// </summary>
+    private readonly bool _withWeights;
+
+    /// <summary>
+    /// The ground's mix, RGBA8, in the lab's fake map's layout (<c>terrain-shader.md §4</c>): <b>R grass, G wood, B seam,
+    /// A water</b>, each a kind's share of the jittered weights, so the four sum to one and the top one is
+    /// <see cref="Winner"/>'s (worked ground counts as grass, as everywhere in the bake).
+    /// </summary>
+    private byte[]? _weights;
+
+    /// <summary>
+    /// RG8 beside the mix: <b>R the share of the wood that is young, G the share of the seam that is iron</b> — fractions, not
+    /// the lab's pick, so forest meets young wood and stone meets iron the way every land edge meets (§5.2, HANDOFF art
+    /// trap 18). 0 where the mix has no wood, or no seam.
+    /// </summary>
+    private byte[]? _shares;
+
+    private Image? _weightsImage;
+    private ImageTexture? _weightsTexture;
+    private Image? _sharesImage;
+    private ImageTexture? _sharesTexture;
+
+    internal ValleyTexture(int pixelsPerTile = PixelsPerTile, bool withWeights = false)
     {
         _perTile = Mathf.Clamp(pixelsPerTile, 1, PixelsPerTile);
+        _withWeights = withWeights;
     }
+
+    /// <summary>The ground's mix (<see cref="_weights"/>), or null for a bake that did not ask for it.</summary>
+    internal ImageTexture? WeightsTexture => _weightsTexture;
+
+    /// <summary>The young and iron shares (<see cref="_shares"/>), or null for a bake that did not ask for it.</summary>
+    internal ImageTexture? SharesTexture => _sharesTexture;
+
+    /// <summary>How long the last bake spent handing the mix to the GPU — the cost a felling adds (§5.2, call 1).</summary>
+    internal double LastWeightsUploadMs { get; private set; }
 
     /// <summary>Bake <paramref name="world"/> whole, as if for the first time — the preview's refresh.</summary>
     /// <remarks>
@@ -320,6 +366,7 @@ internal sealed class ValleyTexture
                 _image.GetWidth(), _image.GetHeight(), false, Image.Format.Rgba8, _pixels);
 
             _texture!.Update(_image);
+            UploadTheWeights(fresh: false);
         }
 
         LastBakedTiles = repainted;
@@ -339,6 +386,12 @@ internal sealed class ValleyTexture
         int tall = _height * _perTile;
         _pixels = new byte[wide * tall * 4];
 
+        if (_withWeights)
+        {
+            _weights = new byte[_width * WeightsPerTile * _height * WeightsPerTile * 4];
+            _shares = new byte[_width * WeightsPerTile * _height * WeightsPerTile * 2];
+        }
+
         _shadowTerrain = new Terrain[_width * _height];
 
         for (int i = 0; i < _shadowTerrain.Length; i++)
@@ -351,10 +404,44 @@ internal sealed class ValleyTexture
 
         _image = Image.CreateFromData(wide, tall, false, Image.Format.Rgba8, _pixels);
         _texture = ImageTexture.CreateFromImage(_image);
+        UploadTheWeights(fresh: true);
 
         LastBakeMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
         LastBakedTiles = _width * _height;
         _bakedAtGeneration = world.TerrainGeneration;
+    }
+
+    /// <summary>
+    /// Hand the mix and the shares to the GPU — whole, as the colour goes (an <c>ImageTexture</c> has no partial update),
+    /// and timed, because it is what every felling adds once the valley draws through the shader (§5.2, call 1).
+    /// </summary>
+    private void UploadTheWeights(bool fresh)
+    {
+        if (_weights is null || _shares is null)
+        {
+            return;
+        }
+
+        long started = Stopwatch.GetTimestamp();
+        int wide = _width * WeightsPerTile;
+        int tall = _height * WeightsPerTile;
+
+        if (fresh)
+        {
+            _weightsImage = Image.CreateFromData(wide, tall, false, Image.Format.Rgba8, _weights);
+            _weightsTexture = ImageTexture.CreateFromImage(_weightsImage);
+            _sharesImage = Image.CreateFromData(wide, tall, false, Image.Format.Rg8, _shares);
+            _sharesTexture = ImageTexture.CreateFromImage(_sharesImage);
+        }
+        else
+        {
+            _weightsImage!.SetData(wide, tall, false, Image.Format.Rgba8, _weights);
+            _weightsTexture!.Update(_weightsImage);
+            _sharesImage!.SetData(wide, tall, false, Image.Format.Rg8, _shares);
+            _sharesTexture!.Update(_sharesImage);
+        }
+
+        LastWeightsUploadMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
     }
 
     /// <summary>Repaint every pixel of a rectangle of tiles, clipped to the valley.</summary>
@@ -416,7 +503,118 @@ internal sealed class ValleyTexture
                 pixels[at + 3] = 255;
             }
         }
+
+        if (_weights is not null)
+        {
+            PaintTheMix(map, tx, ty, painted, flat);
+        }
     }
+
+    /// <summary>
+    /// ⭐ One tile's texels of the mix and the shares — <b>from the same weights <see cref="Winner"/> chooses by</b>, so the
+    /// mix's top kind is the colour's kind and the two cannot disagree about where anything is (D338).
+    /// </summary>
+    /// <remarks>
+    /// A flat tile is its own kind whole, as the colour's fast path paints it; the reach that makes that sound for the
+    /// colour makes it sound here, and the self-check's slow bake compares the two for the mix too.
+    /// </remarks>
+    private void PaintTheMix(GeneratedMap map, int tx, int ty, Terrain painted, bool flat)
+    {
+        Span<Terrain> kinds = stackalloc Terrain[9];
+        Span<float> weights = stackalloc float[9];
+        Span<float> mix = stackalloc float[6];
+        int stride = _width * WeightsPerTile;
+
+        for (int y = 0; y < WeightsPerTile; y++)
+        {
+            for (int x = 0; x < WeightsPerTile; x++)
+            {
+                int wx = (tx * WeightsPerTile) + x;
+                int wy = (ty * WeightsPerTile) + y;
+
+                if (flat)
+                {
+                    kinds[0] = painted;
+                    weights[0] = 1f;
+                    MixOf(kinds, weights, 1, mix);
+                }
+                else
+                {
+                    int found = Weigh(map, TexelCentre(wx), TexelCentre(wy), kinds, weights, out _);
+                    MixOf(kinds, weights, found, mix);
+                }
+
+                int at = ((wy * stride) + wx) * 4;
+                _weights![at] = Byte(mix[0]);
+                _weights[at + 1] = Byte(mix[1]);
+                _weights[at + 2] = Byte(mix[2]);
+                _weights[at + 3] = Byte(mix[3]);
+
+                int share = ((wy * stride) + wx) * 2;
+                _shares![share] = Byte(mix[4]);
+                _shares[share + 1] = Byte(mix[5]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⛔ Where a texel of the mix samples, in the colour's pixel coordinates — <b>its centre, exactly</b>.
+    /// </summary>
+    /// <remarks>
+    /// The colour's pixel <c>px</c> is sampled at <c>px + 0.5</c> (<see cref="Weigh"/>'s first line). A texel of the mix
+    /// spans <c>PixelsPerTile / WeightsPerTile</c> of them, so its centre is half that past its start, and the argument
+    /// that lands there is half a colour pixel less. At 16 and 8: <c>2·wx + 0.5</c>. ⚠️ Sampling at the colour pixel
+    /// under the centre instead (as the coarse preview does) puts every texel 1/32 of a tile off, and the shader's
+    /// bilinear read would then draw every edge that far from the colour's.
+    /// </remarks>
+    private static float TexelCentre(int texel)
+    {
+        const float span = PixelsPerTile / (float)WeightsPerTile;
+        return (texel * span) + (span / 2f) - 0.5f;
+    }
+
+    /// <summary>
+    /// The six numbers of the mix from a pixel's weighed kinds: grass, wood, seam, water (shares of the whole), then the
+    /// young share of the wood and the iron share of the seam.
+    /// </summary>
+    private static void MixOf(ReadOnlySpan<Terrain> kinds, ReadOnlySpan<float> weights, int found, Span<float> mix)
+    {
+        float grass = 0f, forest = 0f, sapling = 0f, rock = 0f, iron = 0f, water = 0f;
+
+        for (int i = 0; i < found; i++)
+        {
+            switch (kinds[i])
+            {
+                case Terrain.Forest: forest += weights[i]; break;
+                case Terrain.Sapling: sapling += weights[i]; break;
+                case Terrain.Rock: rock += weights[i]; break;
+                case Terrain.IronDeposit: iron += weights[i]; break;
+                case Terrain.Water: water += weights[i]; break;
+                default: grass += weights[i]; break;
+            }
+        }
+
+        float wood = forest + sapling;
+        float seam = rock + iron;
+        float all = grass + wood + seam + water;
+
+        if (all <= 0f)
+        {
+            // Nothing weighed — the bake's own answer for that case is grass (`Winner`).
+            grass = 1f;
+            all = 1f;
+        }
+
+        mix[0] = grass / all;
+        mix[1] = wood / all;
+        mix[2] = seam / all;
+        mix[3] = water / all;
+        mix[4] = wood > 0f ? sapling / wood : 0f;
+        mix[5] = seam > 0f ? iron / seam : 0f;
+    }
+
+    /// <summary>A share in [0, 1] as a byte, rounded to the nearest — the mix is data, read back by a sharpening.</summary>
+    private static byte Byte(float share) => (byte)((Mathf.Clamp(share, 0f, 1f) * 255f) + 0.5f);
 
     /// <summary>
     /// ⛔⛔ Whether every tile within reach is the same kind — <b>and it has to
@@ -475,6 +673,43 @@ internal sealed class ValleyTexture
     /// the seam check (<see cref="SeamsHugTheirTiles"/>) asks too, so it measures what is drawn and not a copy of it.</summary>
     private Terrain Winner(GeneratedMap map, int px, int py, out float confidence)
     {
+        Span<Terrain> kinds = stackalloc Terrain[9];
+        Span<float> weights = stackalloc float[9];
+        int found = Weigh(map, px, py, kinds, weights, out float total);
+
+        if (found == 0)
+        {
+            confidence = 1f;
+            return Terrain.Grass;
+        }
+
+        int winner = 0;
+        for (int i = 1; i < found; i++)
+        {
+            if (weights[i] > weights[winner])
+            {
+                winner = i;
+            }
+        }
+
+        // How decisively it won: ~0.5 at a contour between two kinds, 1 deep inside one.
+        confidence = total <= 0f ? 1f : Mathf.Clamp(weights[winner] / total, 0f, 1f);
+
+        return kinds[winner];
+    }
+
+    /// <summary>
+    /// ⭐ Every kind's weight at one sample point, warped and jittered — <b>what <see cref="Winner"/> chooses from, and what
+    /// the mix keeps</b> (A23). Returns how many kinds were found; <paramref name="total"/> is their weight before the
+    /// jitter, which <see cref="Winner"/>'s confidence divides by.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Pixel coordinates as a float, so a texel of the mix can sample its exact centre</b> (<see cref="TexelCentre"/>).
+    /// An int pixel converts exactly and every sum below is the one the int version did, so the colour is byte for byte
+    /// what it was — which the probe's bake comparison, not this comment, is the proof of.
+    /// </remarks>
+    private int Weigh(GeneratedMap map, float px, float py, Span<Terrain> kinds, Span<float> weights, out float total)
+    {
         // Pixel centre, in tile-centre coordinates: tile i's centre sits at exactly i.
         float cx = ((px + 0.5f) / PixelsPerTile) - 0.5f;
         float cy = ((py + 0.5f) / PixelsPerTile) - 0.5f;
@@ -494,10 +729,8 @@ internal sealed class ValleyTexture
         // rounded pond rather than a diamond — its weight has nothing to share with. Nine
         // neighbours can hold at most nine kinds, so a flat pair of arrays beats a dictionary and
         // allocates nothing; this runs for every boundary pixel in the valley.
-        Span<Terrain> kinds = stackalloc Terrain[9];
-        Span<float> weights = stackalloc float[9];
         int found = 0;
-        float total = 0f;
+        total = 0f;
 
         for (int dy = -KernelScanTiles; dy <= KernelScanTiles; dy++)
         {
@@ -550,8 +783,7 @@ internal sealed class ValleyTexture
 
         if (found == 0)
         {
-            confidence = 1f;
-            return Terrain.Grass;
+            return 0;
         }
 
         // ⭐⭐ THE EDGE OF EACH KIND IS JITTERED SEPARATELY, WHICH IS WHAT UN-DIAMONDS
@@ -572,19 +804,7 @@ internal sealed class ValleyTexture
             weights[i] *= Mathf.Max(0.05f, 1f + (HowFreeToWander(kinds[i]) * jitter));
         }
 
-        int winner = 0;
-        for (int i = 1; i < found; i++)
-        {
-            if (weights[i] > weights[winner])
-            {
-                winner = i;
-            }
-        }
-
-        // How decisively it won: ~0.5 at a contour between two kinds, 1 deep inside one.
-        confidence = total <= 0f ? 1f : Mathf.Clamp(weights[winner] / total, 0f, 1f);
-
-        return kinds[winner];
+        return found;
     }
 
     /// <summary>
@@ -690,12 +910,36 @@ internal sealed class ValleyTexture
     {
         System.ArgumentNullException.ThrowIfNull(world);
 
-        var first = new ValleyTexture();
+        // ⭐ Every bake below keeps the mix too (A23), so each comparison the colour has always had is made for the mix
+        // in the same breath; `plain` is the game's bake as it is today, with no mix, to prove the mix touches no colour.
+        // ⚠️ `plain` third, not first: its time is the line's "whole valley", and the first bake of a run pays the warm-up —
+        // timed first it read 1,374–1,430 ms against the 1,202 the old line's fourth bake read (A23).
+        var first = new ValleyTexture(withWeights: true);
         first.Refresh(world);
 
-        var second = new ValleyTexture();
+        var second = new ValleyTexture(withWeights: true);
         second.Refresh(world);
 
+        var plain = new ValleyTexture();
+        plain.Refresh(world);
+
+        string mix = second.TheMixCheck(world.Map, plain);
+        if (!SameMix(first, second))
+        {
+            mix = "[widths] valley mix: ⛔ two bakes of one valley disagree about the mix — something in the "
+                + "weighing is reading state that moves";
+        }
+
+        string colour = TheColourCheck(world, first, second, plain.LastBakeMs, ref mix);
+        return $"{colour}\n{mix}";
+    }
+
+    /// <summary>
+    /// The colour's own guards, as they always were (D342), on bakes that keep the mix — and each one asked of the mix too,
+    /// which replaces <paramref name="mix"/>'s line with what failed.
+    /// </summary>
+    private static string TheColourCheck(SimWorld world, ValleyTexture first, ValleyTexture second, double plainMs, ref string mix)
+    {
         if (!SamePixels(first._pixels!, second._pixels!))
         {
             return "[widths] valley bake: ⛔ two bakes of one valley disagree — something "
@@ -706,7 +950,7 @@ internal sealed class ValleyTexture
         // looks uniform is painted a flat colour without consulting the field at all — and
         // that is only sound if the reach is genuinely as far as a warped sample can travel.
         // **Paint the whole valley the slow way and require it to be byte-identical.**
-        var slowly = new ValleyTexture { _neverFlat = true };
+        var slowly = new ValleyTexture(withWeights: true) { _neverFlat = true };
         slowly.Refresh(world);
 
         if (!SamePixels(first._pixels!, slowly._pixels!))
@@ -715,6 +959,17 @@ internal sealed class ValleyTexture
                 + $"field — a reach of {TilesOfInfluence} tiles is shorter than a warped "
                 + "sample travels, so tiles are being painted flat that have a boundary in them";
         }
+
+        // ⚠️ A failure already said is kept: a later arm overwrote the determinism arm's red in the red-check (A24's M1).
+        if (mix.Contains('✅', System.StringComparison.Ordinal) && !SameMix(first, slowly))
+        {
+            mix = "[widths] valley mix: ⛔ the flat-tile fast path disagrees with the weighing — a flat tile's mix is "
+                + "not the one-kind mix the slow path weighs there";
+        }
+
+        // ⚠️ Each tile's own kind, to put back (A23): this restored every felled tile as forest, so a sapling the guard
+        // felled came back a grown wood, and the probe went on with a valley the guard had changed.
+        var was = new System.Collections.Generic.List<Terrain>();
 
         // ⚠️ CHANGED IN PLACES THE BAKE ACTUALLY CARES ABOUT, AND SCATTERED. Clearing
         // grass to grass would be a change nothing can see, and the guard would pass having
@@ -743,19 +998,21 @@ internal sealed class ValleyTexture
 
         for (int i = 0; i < moved.Count; i++)
         {
+            was.Add(world.Map.TerrainAt(moved[i]));
             world.Map.SetTerrain(moved[i], Terrain.Grass);
         }
 
         // The counter the view watches, bumped by hand: this is a guard, not a village.
         first.Refresh(world, force: false, generation: world.TerrainGeneration + 1);
         double patchMs = first.LastBakeMs;
+        double uploadMs = first.LastWeightsUploadMs;
 
-        var fromScratch = new ValleyTexture();
+        var fromScratch = new ValleyTexture(withWeights: true);
         fromScratch.Refresh(world);
 
         for (int i = 0; i < moved.Count; i++)
         {
-            world.Map.SetTerrain(moved[i], Terrain.Forest);
+            world.Map.SetTerrain(moved[i], was[i]);
         }
 
         if (!SamePixels(first._pixels!, fromScratch._pixels!))
@@ -765,10 +1022,255 @@ internal sealed class ValleyTexture
                 + "small and the valley has stale seams in it";
         }
 
+        // A failure already said stands; only a mix still green is asked this one.
+        if (mix.Contains('✅', System.StringComparison.Ordinal))
+        {
+            mix = SameMix(first, fromScratch)
+                ? $"{mix} · {moved.Count} felled tiles patched with it, the mix's upload {uploadMs:F1}ms"
+                : $"[widths] valley mix: ⛔ after felling {moved.Count} scattered tiles the incremental mix differs from "
+                    + "a full one — the mix is not repainted with the colour, or not as far";
+        }
+
+        // ⚠️ The game's bake keeps no mix until the valley draws through the shader (§5.4 piece 2), so its whole-valley
+        // time is still the colour's alone — `plain`'s; the slow and patched bakes here keep the mix and say so.
         return $"[widths] valley bake: ✅ {first.PixelCount / 1000}k pixels at "
             + $"{PixelsPerTile}/tile, reach {TilesOfInfluence} tiles · whole valley "
-            + $"{fromScratch.LastBakeMs:F0}ms once ({slowly.LastBakeMs:F0}ms with the fast path "
-            + $"off, and identical), {moved.Count} felled tiles patched in {patchMs:F1}ms";
+            + $"{plainMs:F0}ms once ({slowly.LastBakeMs:F0}ms with the fast path "
+            + $"off and the mix, and identical), {moved.Count} felled tiles patched in {patchMs:F1}ms with the mix";
+    }
+
+    /// <summary>Whether two bakes hold the same mix and the same shares, byte for byte.</summary>
+    private static bool SameMix(ValleyTexture left, ValleyTexture right) =>
+        SamePixels(left._weights!, right._weights!) && SamePixels(left._shares!, right._shares!);
+
+    /// <summary>
+    /// ⭐⭐ The mix's own line — <b>and the arm that matters: is the kind the shader will draw from the mix the kind the
+    /// colour draws?</b> (<c>terrain-shader.md §5.4</c> piece 1, A23.)
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every colour pixel is asked twice: the bake's own kind (<see cref="Winner"/>, or the tile's own where the fast path
+    /// paints it flat), and the kind the mix gives at that pixel's centre <b>read the way the shader will read it</b> —
+    /// bilinear between the four nearest texels, clamped at the edge, the top of grass, wood, seam and water, then the
+    /// shares at a half for young wood and iron. That is the mix at the shader's hard power (48), which is the colour's
+    /// contour (§3.2).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The water is held hardest</b> (D342: a river drawn off its tiles puts villagers on water). For every pixel where
+    /// the two disagree about water, the distance to the nearest pixel where the bake agrees with what the mix draws there —
+    /// how far the drawn bank strays from the bake's. ⚠️ <b>The floors were set from the founding valley's reading</b>, not
+    /// guessed; the line prints the reading every run.
+    /// </para>
+    /// <para>
+    /// And <b>the mix must not touch the colour</b>: this bake's colour against <paramref name="plain"/>'s, a bake with no
+    /// mix at all, byte for byte.
+    /// </para>
+    /// </remarks>
+    private string TheMixCheck(GeneratedMap map, ValleyTexture plain)
+    {
+        if (!SamePixels(_pixels!, plain._pixels!))
+        {
+            return "[widths] valley mix: ⛔ a bake that keeps the mix paints different colour from one that does not — "
+                + "the weighing has changed what the valley looks like";
+        }
+
+        int wide = _width * PixelsPerTile;
+        int tall = _height * PixelsPerTile;
+        var baked = new byte[wide * tall];
+        var drawn = new byte[wide * tall];
+        int boundary = 0;
+        int disagree = 0;
+
+        for (int ty = 0; ty < _height; ty++)
+        {
+            for (int tx = 0; tx < _width; tx++)
+            {
+                var tile = new GridPos(_minX + tx, _minY + ty);
+                Terrain here = map.TerrainAt(tile);
+                Terrain painted = IsWorked(here) ? Terrain.Grass : here;
+                bool flat = NeighbourhoodIsFlat(map, tile, painted);
+
+                for (int y = 0; y < PixelsPerTile; y++)
+                {
+                    for (int x = 0; x < PixelsPerTile; x++)
+                    {
+                        int px = (tx * PixelsPerTile) + x;
+                        int py = (ty * PixelsPerTile) + y;
+                        int at = (py * wide) + px;
+
+                        Terrain bake = flat ? painted : Winner(map, px, py, out _);
+                        Terrain read = KindTheMixDraws(px, py);
+                        baked[at] = (byte)bake;
+                        drawn[at] = (byte)read;
+
+                        boundary += flat ? 0 : 1;
+                        disagree += bake == read ? 0 : 1;
+                    }
+                }
+            }
+        }
+
+        (int waterOff, int farthest) = HowFarTheWaterStrays(baked, drawn, wide, tall);
+        double agree = boundary == 0 ? 1d : 1d - (disagree / (double)boundary);
+        float farthestTiles = farthest / (float)PixelsPerTile;
+        int bytes = (_weights!.Length + _shares!.Length) / 1000;
+
+        string said = $"{_width * WeightsPerTile}×{_height * WeightsPerTile} RGBA8 + RG8 at {WeightsPerTile}/tile, {bytes}k bytes · "
+            + $"read as the shader reads it, its kind is the colour's at {agree:P2} of {boundary:N0} boundary pixels "
+            + $"({disagree:N0} differ); water drawn where the bake has none, or none where it has, at {waterOff:N0} pixels, "
+            + $"at most {farthestTiles:F3} tiles from the bake's bank · whole valley {plain.LastBakeMs:F0}ms for the colour, "
+            + $"{LastBakeMs:F0}ms with the mix";
+
+        SaveTheMix();
+
+        return agree >= MixAgreesFloor && farthest <= MixWaterStraysAtMostPixels
+            ? $"[widths] valley mix: ✅ {said}"
+            : $"[widths] valley mix: ⛔ under {MixAgreesFloor:P1} or water past {MixWaterStraysAtMostPixels}px — {said}";
+    }
+
+    /// <summary>
+    /// The least share of boundary pixels where the mix's kind is the colour's (A23: the founding valley reads 99.85 %,
+    /// 2,361 of 1,627,392 differing — forest against young wood and stone against iron where three kinds meet, and the
+    /// bilinear read's rounding at every edge).
+    /// </summary>
+    private const double MixAgreesFloor = 0.995;
+
+    /// <summary>
+    /// How far, in colour pixels, water drawn from the mix may lie from the bake's bank (A23: the founding valley reads
+    /// 1 — 444 pixels, none past a sixteenth of a tile; the floor is the spec's eighth, D342).
+    /// </summary>
+    private const int MixWaterStraysAtMostPixels = 2;
+
+    /// <summary>
+    /// The kind the shader will draw at a colour pixel from the mix, at the hard power: bilinear, clamped, the top of the
+    /// four, then a share at a half.
+    /// </summary>
+    private Terrain KindTheMixDraws(int px, int py)
+    {
+        Span<float> mix = stackalloc float[6];
+        const float texelsPerPixel = WeightsPerTile / (float)PixelsPerTile;
+        float u = ((px + 0.5f) * texelsPerPixel) - 0.5f;
+        float v = ((py + 0.5f) * texelsPerPixel) - 0.5f;
+        int u0 = Mathf.FloorToInt(u);
+        int v0 = Mathf.FloorToInt(v);
+        float fu = u - u0;
+        float fv = v - v0;
+        int wide = _width * WeightsPerTile;
+        int tall = _height * WeightsPerTile;
+
+        for (int c = 0; c < 6; c++)
+        {
+            float top = Mathf.Lerp(Texel(u0, v0, c), Texel(u0 + 1, v0, c), fu);
+            float bottom = Mathf.Lerp(Texel(u0, v0 + 1, c), Texel(u0 + 1, v0 + 1, c), fu);
+            mix[c] = Mathf.Lerp(top, bottom, fv);
+        }
+
+        int best = 0;
+        for (int c = 1; c < 4; c++)
+        {
+            if (mix[c] > mix[best])
+            {
+                best = c;
+            }
+        }
+
+        return best switch
+        {
+            1 => mix[4] >= 0.5f ? Terrain.Sapling : Terrain.Forest,
+            2 => mix[5] >= 0.5f ? Terrain.IronDeposit : Terrain.Rock,
+            3 => Terrain.Water,
+            _ => Terrain.Grass,
+        };
+
+        float Texel(int x, int y, int channel)
+        {
+            x = Mathf.Clamp(x, 0, wide - 1);
+            y = Mathf.Clamp(y, 0, tall - 1);
+            int at = (y * wide) + x;
+            return channel < 4 ? _weights![(at * 4) + channel] / 255f : _shares![(at * 2) + channel - 4] / 255f;
+        }
+    }
+
+    /// <summary>
+    /// ⛔ Where the mix and the bake disagree about water: how many pixels, and the farthest any of them lies from a pixel
+    /// where the bake agrees with what the mix draws there — searched out to a tile, and a tile reported past it.
+    /// </summary>
+    private static (int Pixels, int Farthest) HowFarTheWaterStrays(byte[] baked, byte[] drawn, int wide, int tall)
+    {
+        const byte water = (byte)Terrain.Water;
+        int pixels = 0;
+        int farthest = 0;
+
+        for (int py = 0; py < tall; py++)
+        {
+            for (int px = 0; px < wide; px++)
+            {
+                int at = (py * wide) + px;
+                bool drawnWet = drawn[at] == water;
+                if ((baked[at] == water) == drawnWet)
+                {
+                    continue;
+                }
+
+                pixels++;
+                int reach = PixelsPerTile + 1;
+                for (int r = 1; r <= PixelsPerTile && reach > PixelsPerTile; r++)
+                {
+                    for (int dy = -r; dy <= r && reach > PixelsPerTile; dy++)
+                    {
+                        for (int dx = -r; dx <= r; dx++)
+                        {
+                            int x = px + dx;
+                            int y = py + dy;
+                            if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dy)) != r
+                                || x < 0 || y < 0 || x >= wide || y >= tall)
+                            {
+                                continue;
+                            }
+
+                            if ((baked[(y * wide) + x] == water) == drawnWet)
+                            {
+                                reach = r;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                farthest = System.Math.Max(farthest, reach);
+            }
+        }
+
+        return (pixels, farthest);
+    }
+
+    /// <summary>
+    /// The mix and the shares as PNGs beside the bake's (<c>logs/</c>, which <c>.gitignore</c> covers) — the probe cannot
+    /// see a drawing, but a session can open a file (D342).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Saved opaque, for eyes</b>: the mix keeps water in alpha, so as it stands a viewer shows the river and nothing
+    /// else (A24, the first look). Here alpha is 255 and the water reads as black: red grass, green wood, blue seam.
+    /// </remarks>
+    private void SaveTheMix()
+    {
+        if (_weights is null || _sharesImage is null)
+        {
+            return;
+        }
+
+        string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "logs");
+        System.IO.Directory.CreateDirectory(folder);
+
+        byte[] seen = (byte[])_weights.Clone();
+        for (int i = 3; i < seen.Length; i += 4)
+        {
+            seen[i] = 255;
+        }
+
+        Image.CreateFromData(_width * WeightsPerTile, _height * WeightsPerTile, false, Image.Format.Rgba8, seen)
+            .SavePng(System.IO.Path.Combine(folder, "valley-mix.png"));
+        _sharesImage.SavePng(System.IO.Path.Combine(folder, "valley-mix-shares.png"));
     }
 
     /// <summary>
@@ -939,7 +1441,7 @@ internal sealed class ValleyTexture
     /// reach the tick would shimmer, and the compiler is a better guard than a test looking for
     /// it. <paramref name="perTile"/> is how many cells of noise fit across a tile.
     /// </remarks>
-    private static float Wobble(int px, int py, int salt, float perTile = 1.6f)
+    private static float Wobble(float px, float py, int salt, float perTile = 1.6f)
     {
         float scale = perTile / PixelsPerTile;
         float fx = px * scale;

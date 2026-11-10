@@ -1368,6 +1368,12 @@ public partial class VillageMap : Control
             return;
         }
 
+        // ⭐ The before/after line, if a press lands on it, before anything under it is clicked (A25).
+        if (TheBeforeAfterLineTakes(@event))
+        {
+            return;
+        }
+
         // The ghost follows the cursor, and the verdict is recomputed as it moves.
         // CanBuildAt is pure, so asking it every frame costs nothing and changes
         // nothing — which is what lets the answer be shown BEFORE anybody commits.
@@ -3200,7 +3206,12 @@ public partial class VillageMap : Control
 
         // Everything outside the valley reads as off-the-map rather than as more of
         // the same ground, so an empty corner is legibly an edge and not a bug.
-        DrawRect(new Rect2(Vector2.Zero, Size), Beyond);
+        // ⭐ With the valley in watercolour, its layer behind the map paints the Beyond too (A25).
+        if (!_watercolour)
+        {
+            DrawRect(new Rect2(Vector2.Zero, Size), Beyond);
+        }
+
         DrawValley();
 
         // ⭐ WHAT LIVES AND GROWS SITS ON THE GROUND, UNDER EVERYTHING THE PLAYER ACTS ON. Animals
@@ -3239,12 +3250,33 @@ public partial class VillageMap : Control
 
         // Over the buildings so it is not hidden by one, under the people so it never
         // hides them — the same rule the rest of this method follows.
-        DrawSelectedTile();
+        // ⭐ With Joe's painted trees (A36) the selection waits until after the canopy, which covers the rest.
+        bool canopyOver = _paintedTrees && _treesShown;
+        if (!canopyOver)
+        {
+            DrawSelectedTile();
+        }
+
         DrawVillagers();
+
+        // ⭐⭐ THE PAINTED CANOPY OVER THE WHOLE VILLAGE (A36, Joe: *"buildings should be covered by trees"*, and asked
+        // what should stay above the canopy, *"Everything under"*). With the watercolour tick on, the trees are drawn
+        // after every building, heap, cart and villager, so a branch overhanging a house or a path hides it as a real one
+        // would. ⚠️ A villager in the woods is hidden too — his call, made knowing it (A36); the *draw the trees* tick is
+        // the way to see under. Only what is in the player's hand stays above: the selection, the ghost, the brushful
+        // and the before/after line. With the tick off the order above is the order it always was, to the byte.
+        if (canopyOver)
+        {
+            DrawThePaintedCanopy();
+            DrawSelectedTile();
+        }
 
         // The ghost last, over everything, because it is the thing being decided.
         DrawTheGhost();
         DrawTheBrushful();
+
+        // The before/after line over even the ghost: it is a tool in the hand (A25). Draws nothing unless both ticks are on.
+        DrawTheBeforeAfterLine();
 
         RecordTheFrame(frameStarted);
     }
@@ -4348,7 +4380,10 @@ public partial class VillageMap : Control
         Vector2 bottomRight = ToScreen(new Vector2(config.MapMaxX + 0.5f, config.MapMaxY + 0.5f));
         var valley = new Rect2(topLeft, bottomRight - topLeft);
 
-        DrawRect(valley, Ground);
+        if (!_watercolour)
+        {
+            DrawRect(valley, Ground);
+        }
 
         // Clipped to what is actually on screen: at full zoom-in a loop over 120
         // columns is mostly wasted, and at full zoom-out it is 120 lines a pixel apart.
@@ -4364,7 +4399,15 @@ public partial class VillageMap : Control
         // ground the rest of the village stands on — and because without it a
         // generated valley is invisible, which makes "is this seed worth playing?"
         // a question nobody can answer by looking.
-        DrawTheBakedValley(valley);
+        // ⭐ Or, with the tick on, the same ground through the terrain shader, on the layer behind the map (A25).
+        if (_watercolour)
+        {
+            PaintTheWatercolour(valley);
+        }
+        else
+        {
+            DrawTheBakedValley(valley);
+        }
 
         // ⭐ The trails go straight onto the ground, under every field, tree and wash — they ARE
         // ground, worn through (D358).
@@ -5628,7 +5671,8 @@ public partial class VillageMap : Control
         }
     }
 
-    private readonly ValleyTexture _valley = new();
+    /// <summary>The bake. ⚠️ Not readonly: the watercolour tick swaps it, once, for one that keeps the ground's mix (A25).</summary>
+    private ValleyTexture _valley = new();
 
     // ---------------------------------------------------------------
     //  Desire paths (§2.6, D358, `specs/desire-paths.md §8` slice 2)

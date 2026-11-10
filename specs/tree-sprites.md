@@ -1,0 +1,185 @@
+# Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
+
+**Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. Not merged into `main`: that waits for his word. Still to build: young trees (piece 2), seasons (piece 4).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
+trees, yes. Owner: Joe + Claude Code.
+
+---
+
+## 1. What this is, and what it is not
+
+Today a tree is drawn as a disc: 3–4 crowns a woods tile, 0.4 tiles across, one colour (`TreeCanopy` `#7d8c5c`), shown
+only from 24 px a tile up (`TreeZoomFloor`); below that the woods are the painted woods floor alone. With the watercolour
+tick on (A28) each disc is a lobed crown on its own ink outline with a lit side — **a stand-in**. The concept's trees are
+**illustrations**: ink line and watercolour wash, about a tile across, clumped, overlapping. They are drawn at a
+three-quarter angle with trunks showing — ⛔ **which this game does not take** (A31, Joe: *"we shouldnt draw at an angle.
+buildings must rotate."*): an angled drawing cannot turn, and a house turns to any of 64 angles. So everything on the map
+is drawn **straight down**, and the trees are painted crowns seen from above, keeping the concept's ink, wash and clumping.
+
+This spec is the **format Joe's trees are painted to**, and how the game draws them. It replaces the crowns *only while
+the watercolour tick is on*, as every terrain piece has; with the tick off the map is byte for byte what it is today.
+
+**Not in this spec:** buildings, villagers, animals and other sprites — they follow the same convention, straight down
+(`art-inventory.md` B4, answered A31); the far-view woods (below `TreeZoomFloor`, still the woods floor painting — §5, piece 3);
+fruit and berries (`ForageShown`, its own row).
+
+## 2. What the sim says, and must keep saying
+
+- **A tree is a tile.** The sim knows `Forest` and `Sapling` tiles and nothing finer (`GeneratedMap.Terrain`). How many
+  trees a tile shows, where, and which drawing is a **pure function of the tile** (`CanopyOn`'s rule, D337 — a `static`
+  of the position, so a wood never shimmers and a place always looks the same). Nothing in this spec reads the tick, a
+  clock or an RNG.
+- **Felling is legible.** A felled tile loses its trees at once, and a sapling tile shows young trees. The chunk
+  re-meshes as today (`VillageMap.Meshes.cs`, only the chunk whose tiles changed).
+- ~~**Trees never hide people or buildings.** Scenery is drawn under everything that stands or walks (`_Draw`'s order), so
+  a crown overhanging a neighbouring tile lies *under* a villager or a house there, as the woods' game does.~~ *(Reversed
+  for the painted trees at Joe's word, A36: "buildings should be covered by trees"; asked what should stay above the
+  canopy, he chose "Everything under".)* **With the watercolour tick on, the painted canopy is drawn over the whole
+  village** — buildings, sites, heaps, carts, routes, animals, berries, villagers — and only what is in the player's hand
+  stays above it: the selection, the placement ghost, the brushful, the before/after line. ⚠️ **A Non-Negotiable tension,
+  flagged to Joe before building and recorded (DESIGN §1, legibility):** a villager walking or working in the woods —
+  a woodcutter at their tree — is hidden under the canopy. The answer in the game is the *draw the trees* tick (§8), which
+  shows the land and everyone on it. With the watercolour tick off the order is the old one, to the byte.
+
+## 3. The file Joe delivers
+
+| | |
+|---|---|
+| **Name** | `tree_sprites.png` (one atlas), later `tree_sprites_young.png` and season sets (§5) |
+| **Layout** | a grid of **256 × 256 px cells**, 4 across × 2 down to start (8 trees) — 1024 × 512, RGBA, 8 bits, sRGB, PNG, **transparent background** (straight alpha). **Since A36: 4 × 5, 1024 × 1280** — rows 1–2 the eight leafy trees, row 3 four conifers, row 4 four birches, row 5 four willows (§8) |
+| **Scale** | **128 px of painting is one game tile** (the closest zoom is 48 px a tile, so a tree is drawn at 0.38× or less — sharp everywhere, mipmapped). A mature tree's **crown about 1.0–1.3 tiles across** (128–166 px) |
+| **Anchor** | **the centre of each cell is the centre of the crown** (origin 0.5, 0.5). The game lays that point on the tree's place. ⚠️ Not `art/`'s asset sheet's 0.5, 1.0 — that is a ¾ convention (A31) |
+| **Angle** | **Straight down — a crown seen from above, no trunk** (A31: the map's sprites must turn). **Light from the upper left**, so a crown's lit side is up-left and its shadow falls down-right |
+| **The source** | PSDs stay in Joe's pack, outside the repo, as the grass's and the ground tiles' do; the repo gets the PNG and its `.import` (lossless, mipmapped — HANDOFF art trap 2) |
+
+**How to paint it so it survives the game:**
+- **Ink and wash, as the concept:** a sepia ink line round the crown's lobes (the A27 ink, `#3a2d20`), and a few inner
+  strokes for the clumps of leaves; a watercolour wash inside, the lit side up-left warmer and lighter, the shadow side
+  cooler and darker; a soft shadow cast down-right on the transparent ground (it lands on whatever ground is there) —
+  **a see-through dark wash, the one exception to §4's alpha rule** (A33).
+- **Eight different trees, not one tree eight times:** differing crown shapes, heights and lean. A wood is a few hundred of
+  them; one memorable blot repeats.
+- ⚠️ **The game does not turn a tree — the light is painted in.** A crown turned a quarter would carry its lit side round
+  with it, and the wood would be lit from four directions. The one move that keeps the light where it is: **mirroring across
+  the up-left to down-right diagonal** (the light's own line), which the game does by the tree's place, so each drawing has
+  two faces and the eight drawings carry the rest of the variety. Turning freely is a later option only if the light is
+  painted as a separate layer.
+- **Leave a margin:** nothing within 8 px of a cell's edge (mipmaps bleed neighbours together).
+- **Detail under ~6 px of painting is lost** at the widest zoom the trees show at (24 px a tile: the painting is drawn at
+  0.19×).
+
+## 4. The limits, checked rather than asked for
+
+| rule | value | why |
+|---|---|---|
+| **The crown's middle tone at L\* ≥ 50**; ink and shadow (L\* < 50) **under 20 %** of a crown's pixels | `world-legibility.md §9` | a villager's dot (L\* ≤ 29) walking among trees must still read at 3 : 1 against the crowns round it; the dots are drawn over scenery, but the eye finds them by contrast |
+| **The crowns' mean within the woods' hue family**, `TreeCanopy` `#7d8c5c`'s | the minimap and the far view use the palette | the woods must still read as the same thing at every zoom |
+| **The crown's alpha: fully opaque or fully clear,** a 1–2 px soft edge at most; **the cast shadow is the one exception** — a see-through wash down-right of the crown, measured apart (A33) | the mipmaps | a large half-clear halo greys at the widest zoom; a shadow is meant to be half-clear, and greying fainter at the widest zoom is harmless |
+
+**Measured, not eyeballed**, as the ground tiles were (`ground-textures.md §3`): each tree's crown L\* at p1, p50, p99,
+its ink share, its mean ΔE to `TreeCanopy`, and `tools/legibility/check.py` on a scratch copy with the crowns sampled in
+(art trap 16). A tree outside the limits goes to Joe with the numbers before anything is built on it.
+
+## 5. How the game draws them, and the pieces
+
+**The drawing (piece 1).** In `Canopies` (`VillageMap.Meshes.cs`), with the tick on, each tree becomes one textured quad
+in the chunk's mesh instead of crowns:
+- **Where:** the tree's foot at `CanopyOn`'s place; **how many:** `TreesOn` scaled for bigger trees — call 4 (the concept's
+  are fewer and larger: 1–2 a tile).
+- **Which drawing, and mirrored across the light's diagonal or not:** from the tile's own hash, so a tree is the same tree
+  every time. (Mirroring across the up-left/down-right diagonal keeps the light where it was.)
+- **Size:** the cell at 128 px a tile, × 0.85–1.1 by the same hash; a sapling tile draws the young set (piece 2), or the
+  mature set at 0.55 until it exists.
+- **Order:** as the crowns are laid today, tile by tile; seen from above, no tree stands in front of another.
+- **Cost — leaner than now:** 6 vertices a tree against the stand-in's ~230 (A28) and the discs' 36, one atlas texture
+  (~2.8 MB with mipmaps), one draw a chunk (`CanvasItemAddMesh` with the texture). Measured with `measure4k.gd` in one
+  sitting, A/B against the stand-in.
+- **Behind the tick:** off, `Canopies` draws the discs to the vertex as now (the A28 guard: tick off byte-identical).
+
+| # | piece | starts when |
+|---|---|---|
+| 1 | **Mature trees** — the loader, the atlas, the quads, the sort; the probe lines (the import, the atlas's size, the tick reaching the meshes, off untouched) | the atlas arrives and is measured inside §4 |
+
+**Piece 1, as built (A35).** `VillageMap.Watercolour.cs` loads the atlas on the tick's first switching on and wraps it in
+a `CanvasTexture` drawn `LinearWithMipmaps` (the map's own filter is plain linear, and changing the map's would move every
+other textured draw). `BuildChunk` lays each wooded tile's trees with `PaintedTrees` into **a mesh of their own per chunk**
+(`SceneryChunk.Trees`), because a textured mesh cannot share a surface with the untextured boulders. `DrawTheTrees` draws
+every visible chunk's tree mesh before the standing meshes, so the boulders stay over the leaves; it reaches 2 tiles past
+the screen, where the crowns reached 1. `MeshBuilder.Sprite` lays a cell as 6 vertices with UVs, and transposes the cell for
+the mirrored face; a builder refuses a mix of sprites and plain fills. Counts and choices are `static`s of the tile:
+`PaintedTreesOn` (1–2 grown, 2 young), `PaintedTreeOn` (the drawing, the face, × 0.85–1.10, young × 0.55), and the
+foot on `CanopyOn`'s place. ⛔ A missing atlas is said with `GD.PushError`, and the inked crowns stand in.
+
+**Piece 1, verified (A35):** tick off, windowed renders at founding at four zooms (the opening, which is the closest, two
+further out, the widest) byte-identical to `8f1f53e`; the probe's `painted trees:` line (sizes and counts named from this
+spec, not from the code; a tile made young for the check); red-checked, 13 mutants, 12 red, with the one zero (trees 30 %
+too big) fixed and red after; GPU at 4K, three back-to-back runs: tick on 2.02 and 1.94 ms with the painted trees against
+2.43 ms with the inked crowns, tick off 0.262 ms in each, so no dearer than the stand-in. Vertices: 22,620 for 3,770 trees
+against the crowns' 316,368 as discs.
+| 2 | **Young trees** — `tree_sprites_young.png`, the sapling tiles | 1 approved, the atlas arrives |
+| 3 | **The far view** — trees below 24 px a tile, at a coarser density, so the woods are trees at every zoom as in the concept (cost measured first: the whole valley's trees on screen at once) | 1 approved — 🔨 **BUILT (A36) at full density**: the whole valley's 3,770 trees on screen cost +0.1–0.2 ms at 4K, inside the runs' own spread, so nothing is thinned; the mipmaps draw a tree a few pixels wide |
+| 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece |
+
+## 6. Joe's calls, put in plain words (A29)
+
+✅ **ANSWERED (A30, 2026-11-10), all four as recommended:** ~~angled like the concept~~ ⛔ **reversed (A31): straight down —
+*"we shouldnt draw at an angle. buildings must rotate."*** — when told the angle leans on how buildings are drawn; one leafy
+kind first; Joe provides the eight drawings to §3 *(changed A34 at his word, *"use COMS to paint it in photoshop"*: Claude paints
+them in Photoshop by script, as the ground tiles were — `D:\Projects\brushes\trees\build_tree_sprites.jsx`)*; fewer, bigger trees,
+1–2 a tile. **Next: his eyes on the atlas (A34), then piece 1.**
+
+✅ **ANSWERED (A33, 2026-11-10): (a), as recommended — Joe: *"option a"*.** The shadow is painted, a see-through wash, the one
+exception (§3, §4). The call as it was put:
+
+⏸️ **One more call before he paints (A32, found when the measuring was written):** §3 asks for *a soft shadow cast down-right on
+the transparent ground*, and §4 says *alpha fully opaque or fully clear*. A shadow that lets the ground through is neither, so
+the two cannot both hold. ⭐ **Recommended: (a) the shadow is the one exception.** Paint it as a soft, see-through dark wash.
+The opaque-or-clear rule applies to the crown's own edge, and the measuring reports the shadow separately. This is the easiest
+to paint, and the shadow falls on whatever ground lies beneath. **(b)** No painted shadow: the game draws one from each crown's
+outline, shifted down-right. That keeps the alpha clean and gives one shadow everywhere, at the cost of more game work and one
+more thing to tune. Either way, mirroring along the light's diagonal keeps the shadow down-right.
+
+1. **The angle.** Trees drawn at a slight angle with their trunks showing, like the concept, standing on our flat
+   top-down map — or straight down, crowns only. ⭐ **Recommended: the angle, like the concept.** Most hand-drawn maps do
+   this. ⚠️ It decides the buildings too, when they get art (B4): angled sprites can't spin to the 64 turns a house can
+   take today — a later call, but this one leans on it.
+2. **What kinds.** ⭐ **Recommended: one leafy kind first** (eight drawings), conifers later as a second set. The sim has
+   one kind of wood; a conifer stand would be decoration chosen by place, the same timber.
+3. **Who draws them.** ⭐ **Recommended: Joe paints or sources them to §3** (Photoshop, as the ground tiles, or a generator
+   he trusts), and the session measures, cuts and wires them. The procedural stand-in (A28) stays until then.
+4. **How many a tile.** ⭐ **Recommended: fewer, bigger — 1–2 trees a tile, about a tile across**, as the concept has. The
+   woods would read as clumps of trees rather than a carpet of dots. The sim doesn't change: trees are tiles.
+
+## 8. Three more kinds, the canopy over the village, the trees tick (A36)
+
+Joe, after playing piece 1: *"I want you to make more types of tree sprites to show different tree types/shapes
+(conifers, etc) - like 2-3 more types for a nice variety."* Asked which, he chose all three recommended: **conifers,
+birch, willow by the water**. A30's call 2 (*one leafy kind first, conifers later*) is the "later".
+
+**Painted** in Photoshop by script (`D:\Projects\brushes\trees\build_tree_kinds.jsx`, the leafy trees' layers, so the
+four read as one hand), four of each, measured inside §4:
+- **Conifer** — a fir from above: three tiers of shaggy spikes, a ridge to each, blue-green; ~0.75–0.9 tiles.
+- **Birch** — small and airy: a loose cluster of little lobes round a slight middle, light yellow-green, a finer pen;
+  ~0.65–0.8 tiles.
+- **Willow** — one soft pale mass with a fringe of hanging lobes and strands falling from the middle; ~1.1–1.25 tiles.
+
+**Placed by place, never at random** (`KindOf`, a `static` of the tile and its neighbours — D337): a waterside wooded tile
+(water any of eight round it) grows willows (60 % of its trees); conifers stand where a slow value-noise field over the
+valley (lattice 9 tiles) runs above 0.62, so they come in groves with ragged edges; a wood's edge tile (open ground any of
+four round it) grows birches (40 %); leafy everywhere else. The sim has one kind of wood: the same timber, the same yield.
+In the founding valley: 28 % conifers, 151 willows, 387 birches, of 3,770 trees. A fell re-meshes the chunks beside it
+when the painted trees are on, since a neighbour's kind can change with it.
+
+**The canopy over the village** (§2, changed). **The *draw the trees* tick** in Settings, on by default: off, no tree is
+meshed in either look — the land, the boulders and the berries show. **Every zoom** (piece 3): the painted trees have no
+zoom floor.
+
+## 7. Verification (each piece)
+
+- **Tick off:** windowed renders at the opening zoom byte-identical to the build before the piece (`render.gd`, cmp).
+- **The probe:** the atlas imported lossless and mipmapped at 1024 × 512; the tick reaching the meshes (vertex counts
+  that match the tree count × 6); off, the discs' count as today; red-checked, reds counted (D326).
+- **The limits (§4)**, measured and `check.py` read-only on a scratch copy.
+- **The GPU:** `measure4k.gd`, the trees' piece A/B against the stand-in in one sitting (HANDOFF art trap 22).
+- **The four checks** in `CLAUDE.md`; Joe's eyes; merged only at his word.
