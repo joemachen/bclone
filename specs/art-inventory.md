@@ -72,8 +72,8 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
-| **Mature tree** | 3–4 discs per forest tile, `#7d8c5c`, r 0.20, per-disc shade; only above ~24 px a tile, the bake below (`VillageMap.Meshes.cs:418–427`; `VillageMap.cs:4947`, `:5118`) | Seasons (leaf colour, bare winter) — **no spec asks**; felled/stump | B5, B4 | 🟨 interim |
-| Sapling | 2 smaller discs, `#98a56f`, r 0.13 (`Meshes.cs:420`) | Growth to mature | B5 | 🟨 |
+| **Mature tree** | 3–4 discs per forest tile, `#7d8c5c`, r 0.20, per-disc shade; only above ~24 px a tile, the bake below (`VillageMap.Meshes.cs:418–427`; `VillageMap.cs:4947`, `:5118`) | Seasons (leaf colour, bare winter) — `tree-sprites.md` piece 4; felled/stump. **🔨 A35: with the watercolour tick on, Joe's painted atlas (`textures/trees/tree_sprites.png`, 8 crowns from above), 1–2 a tile** | B5, B4 | 🟨 interim (tick off) / 🔨 painted (tick on, piece 1) |
+| Sapling | 2 smaller discs, `#98a56f`, r 0.13 (`Meshes.cs:420`); with the tick on (A35) 2 painted trees at 0.55 until the young atlas | Growth to mature; `tree_sprites_young.png` (piece 2) | B5 | 🟨 |
 | Tree species | ⬜ — the sim has no species, only Forest and Sapling | — | B10-ish (content) | 💭 |
 | Berry bush (forage) | 3 discs `#840c26` on 1 woodland tile in 16, toggleable (`Meshes.cs:362–382`) | Picked / regrowing, seasons | B5 | 🟨 |
 | Wheat field — ploughed | Field fill + 3 furrow lines at 0.8× | — | B6 | 🟨 |

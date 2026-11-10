@@ -579,6 +579,7 @@ public partial class Main : Control
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
         GD.Print(_map.TheWatercolourHolds());
+        GD.Print(_map.ThePaintedTreesHold());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());

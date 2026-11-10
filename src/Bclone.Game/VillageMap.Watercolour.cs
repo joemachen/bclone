@@ -1,4 +1,5 @@
 using Bclone.Sim.Config;
+using Bclone.Sim.Core;
 using Bclone.Sim.World;
 using Godot;
 
@@ -55,6 +56,19 @@ public partial class VillageMap
     private float _canopyInkTiles;
     private Color _canopyInk;
 
+    /// <summary>
+    /// ⭐ Joe's painted trees (<c>specs/tree-sprites.md §5</c>, piece 1, A35): with the tick on, each tree is a cell of
+    /// <see cref="TreeSpritesPath"/> laid as one textured square, in place of the inked crowns — read by
+    /// <c>BuildChunk</c> when a chunk is meshed. False with the tick off, so not one vertex of the canopies changes.
+    /// </summary>
+    private bool _paintedTrees;
+
+    /// <summary>The atlas, wrapped so it is drawn mipmapped (the map's own filter is plain linear) — null until the tick first goes on.</summary>
+    private CanvasTexture? _treeAtlas;
+
+    /// <summary>The tree atlas (<c>tree-sprites.md §3</c>): 4 × 2 cells of 256 px, 128 px of painting a tile (A34).</summary>
+    internal const string TreeSpritesPath = "res://textures/trees/tree_sprites.png";
+
     /// <summary>Whether the valley is drawn in watercolour — the Settings tick's state.</summary>
     public bool WatercolourShown => _watercolour;
 
@@ -94,7 +108,227 @@ public partial class VillageMap
             _sceneryOf = null;
         }
 
+        // The painted trees (A35): on with the tick, if the atlas loads; a change re-meshes every chunk, once, the same way.
+        bool painted = on && TheTreeAtlas() is not null;
+        if (painted != _paintedTrees)
+        {
+            _paintedTrees = painted;
+            _sceneryOf = null;
+        }
+
         QueueRedraw();
+    }
+
+    /// <summary>
+    /// The atlas, loaded on the first switching on and kept (A23's leanness), wrapped in a <see cref="CanvasTexture"/> that
+    /// samples its mipmaps: the trees are drawn at 0.38× of their painting at the closest zoom and 0.19× at the widest.
+    /// ⛔ A missing atlas is said loudly and the inked crowns stand in, so the valley never draws without trees.
+    /// </summary>
+    private CanvasTexture? TheTreeAtlas()
+    {
+        if (_treeAtlas is not null)
+        {
+            return _treeAtlas;
+        }
+
+        Texture2D? atlas = ResourceLoader.Exists(TreeSpritesPath) ? GD.Load<Texture2D>(TreeSpritesPath) : null;
+        if (atlas is null)
+        {
+            GD.PushError($"[watercolour] the tree atlas {TreeSpritesPath} did not load — the inked crowns (A28) stand in");
+            return null;
+        }
+
+        _treeAtlas = new CanvasTexture { DiffuseTexture = atlas, TextureFilter = TextureFilterEnum.LinearWithMipmaps };
+        return _treeAtlas;
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>painted trees:</c> line (A35, <c>tree-sprites.md §7</c>) — everything about the trees that can be
+    /// checked headless: the atlas as imported, the tick reaching the meshes, every tree a whole cell of the right size,
+    /// and off, the canopies to the vertex.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ The draw itself (<c>DrawThePaintedTrees</c>) runs only inside <c>_Draw</c>, which never runs headless (D340); what
+    /// it draws is these meshes, and a windowed render is its check.
+    /// </remarks>
+    internal string ThePaintedTreesHold()
+    {
+        if (_world is null)
+        {
+            return "[widths] painted trees: ⛔ no world to draw";
+        }
+
+        SimWorld world = _world;
+        GeneratedMap map = world.Map;
+        var faults = new System.Collections.Generic.List<string>();
+        bool wasOn = _watercolour;
+
+        // ⚠️ The probe's valley has no young wood, so one grown tile is made young for this line and put back after it
+        // (the felling check's way, `TheSceneryIsMeshed`) — or the young trees would go unchecked.
+        int youngAt = -1;
+        for (int i = 0; i < map.Tiles.Count && youngAt < 0; i++)
+        {
+            youngAt = map.Tiles[i] == Terrain.Forest ? i : -1;
+        }
+
+        GridPos planted = youngAt < 0 ? default : new GridPos(map.MinX + (youngAt % map.Width), map.MinY + (youngAt / map.Width));
+        if (youngAt >= 0)
+        {
+            map.SetTerrain(planted, Terrain.Sapling);
+            _sceneryOf = null;
+        }
+
+        // What the valley should hold: its crowns' discs with the tick off (36 vertices a disc), its painted trees' squares on.
+        int discs = 0, squares = 0, woodTiles = 0, grownTiles = 0, youngTrees = 0;
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            if (map.Tiles[i] is Terrain.Forest or Terrain.Sapling)
+            {
+                var tile = new GridPos(map.MinX + (i % map.Width), map.MinY + (i / map.Width));
+                bool grown = map.Tiles[i] == Terrain.Forest;
+                discs += TreesOn(tile, grown) * 36;
+                squares += PaintedTreesOn(tile, grown) * 6;
+                woodTiles++;
+                grownTiles += grown ? 1 : 0;
+                youngTrees += grown ? 0 : PaintedTreesOn(tile, grown);
+            }
+        }
+
+        // The atlas as imported (HANDOFF art trap 2): its size, lossless (RGBA8 — a VRAM import would be another format), mipmapped.
+        Texture2D? atlas = ResourceLoader.Exists(TreeSpritesPath) ? GD.Load<Texture2D>(TreeSpritesPath) : null;
+        Image? image = atlas?.GetImage();
+        if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 512
+            || image.GetFormat() != Image.Format.Rgba8 || !image.HasMipmaps())
+        {
+            faults.Add($"{TreeSpritesPath} is {atlas?.GetWidth()} × {atlas?.GetHeight()}, {image?.GetFormat()}, mipmaps {image?.HasMipmaps()} (want 1024 × 512, Rgba8, mipmapped)");
+        }
+
+        // Off: no trees mesh, the crowns as ever.
+        ShowWatercolour(false);
+        RefreshTheScenery(world);
+        (int offStanding, int offTrees) = Totals();
+        if (offTrees != 0 || _paintedTrees)
+        {
+            faults.Add($"off, {offTrees} painted-tree vertices are meshed (want none)");
+        }
+
+        // On: every tree a square, and the crowns gone from the standing mesh.
+        ShowWatercolour(true);
+        RefreshTheScenery(world);
+        (int onStanding, int onTrees) = Totals();
+        if (!_paintedTrees || _treeAtlas?.TextureFilter != TextureFilterEnum.LinearWithMipmaps || _treeAtlas.DiffuseTexture?.ResourcePath != TreeSpritesPath)
+        {
+            faults.Add($"on, the trees are painted {_paintedTrees}, the atlas {_treeAtlas?.DiffuseTexture?.ResourcePath} drawn {_treeAtlas?.TextureFilter} (want true, {TreeSpritesPath}, LinearWithMipmaps)");
+        }
+
+        if (onTrees != squares || offStanding - onStanding != discs)
+        {
+            faults.Add($"on, {onTrees} painted-tree vertices (want {squares}) and the standing mesh {offStanding - onStanding} lighter (want the crowns' {discs})");
+        }
+
+        // ⛔ Named here, not read off the code's own count (HANDOFF art trap 17): 1–2 trees a grown tile (A30, call 4), both.
+        int grownTrees = (onTrees / 6) - youngTrees;
+        if (grownTrees <= grownTiles || grownTrees >= 2 * grownTiles)
+        {
+            faults.Add($"{grownTrees} painted trees on {grownTiles} grown tiles (want 1–2 a tile, both: strictly between {grownTiles} and {2 * grownTiles})");
+        }
+
+        // Every tree a whole cell of the atlas, of a painted tree's size; and the valley uses every drawing, both faces.
+        var cells = new bool[MeshBuilder.SpriteColumns * MeshBuilder.SpriteRows];
+        int mirroredTrees = 0, trees = 0, wrong = 0, grownSized = 0, youngSized = 0;
+
+        // ⛔ The sizes named here from the spec, not read off the code's constants (trap 17; the first build read
+        // PaintedTreeHalf and a mutant making every tree 30 % too big scored zero): a cell is 256 px of painting at 128 px
+        // a tile, so 2 tiles across, × 0.85–1.10; a young tree × 0.55 of that (`tree-sprites.md §3`, §5).
+        const float CellTiles = 256f / 128f;
+        float grownLow = CellTiles * 0.85f, grownHigh = CellTiles * 1.10f;
+        float youngLow = grownLow * 0.55f, youngHigh = grownHigh * 0.55f;
+        string? firstWrong = null;
+        const float Du = 1f / MeshBuilder.SpriteColumns, Dv = 1f / MeshBuilder.SpriteRows;
+        foreach (SceneryChunk chunk in _scenery)
+        {
+            if (chunk.Trees.GetSurfaceCount() == 0)
+            {
+                continue;
+            }
+
+            Godot.Collections.Array arrays = chunk.Trees.SurfaceGetArrays(0);
+            Vector2[] at = arrays[(int)Mesh.ArrayType.Vertex].AsVector2Array();
+            Vector2[] uv = arrays[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+            for (int v = 0; v + 5 < at.Length; v += 6)
+            {
+                trees++;
+                int cell = (int)(uv[v].X / Du) + ((int)(uv[v].Y / Dv) * MeshBuilder.SpriteColumns);
+                Vector2 corner = new(cell % MeshBuilder.SpriteColumns * Du, cell / MeshBuilder.SpriteColumns * Dv);
+                bool mirrored = uv[v + 1].IsEqualApprox(corner + new Vector2(0f, Dv));
+                bool plain = uv[v + 1].IsEqualApprox(corner + new Vector2(Du, 0f));
+                float side = at[v + 1].X - at[v].X;
+                bool whole = uv[v].IsEqualApprox(corner) && uv[v + 2].IsEqualApprox(corner + new Vector2(Du, Dv)) && (mirrored || plain);
+                bool grownSize = side >= grownLow - 1e-3f && side <= grownHigh + 1e-3f;
+                bool youngSize = side >= youngLow - 1e-3f && side <= youngHigh + 1e-3f;
+                grownSized += grownSize ? 1 : 0;
+                youngSized += youngSize ? 1 : 0;
+                bool sized = (grownSize || youngSize)
+                    && Mathf.Abs(at[v + 2].Y - at[v].Y - side) < 1e-3f; // tile coordinates near 50 carry float noise past IsEqualApprox's 1e-6
+                if (!whole || !sized)
+                {
+                    wrong++;
+                    firstWrong ??= $"uv {uv[v]}–{uv[v + 2]}, {side:F2} tiles across";
+                    continue;
+                }
+
+                cells[cell] = true;
+                mirroredTrees += mirrored ? 1 : 0;
+            }
+        }
+
+        if (grownSized != grownTrees || youngSized != youngTrees)
+        {
+            faults.Add($"{grownSized} trees are a grown tree's size ({grownLow:F2}–{grownHigh:F2} tiles; want {grownTrees}) and {youngSized} a young one's ({youngLow:F2}–{youngHigh:F2}; want {youngTrees})");
+        }
+
+        int used = cells.Count(c => c);
+        if (wrong > 0 || used != cells.Length || mirroredTrees == 0 || mirroredTrees == trees)
+        {
+            faults.Add($"{wrong} of {trees} trees are not a whole cell of a tree's size (first: {firstWrong}); {used} of {cells.Length} drawings used, {mirroredTrees} mirrored (want 0, all, some but not all)");
+        }
+
+        // Back as it was: off, the canopies to the vertex.
+        ShowWatercolour(wasOn);
+        RefreshTheScenery(world);
+        (int backStanding, int backTrees) = Totals();
+        if (!wasOn && (backTrees != 0 || backStanding != offStanding))
+        {
+            faults.Add($"switched back off, {backTrees} painted-tree vertices and {backStanding} standing (want 0 and {offStanding})");
+        }
+
+        if (youngAt >= 0)
+        {
+            map.SetTerrain(planted, Terrain.Forest);
+            _sceneryOf = null;
+            RefreshTheScenery(world);
+        }
+
+        if (youngTrees == 0)
+        {
+            faults.Add("no young tree was checked");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 512, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; off, no painted tree and the canopies to the vertex"
+            : $"[widths] painted trees: ⛔ {string.Join("; ", faults)}";
+
+        (int Standing, int Trees) Totals()
+        {
+            int standing = 0, painted = 0;
+            foreach (SceneryChunk chunk in _scenery)
+            {
+                standing += chunk.StandingVertices;
+                painted += chunk.TreeVertices;
+            }
+
+            return (standing, painted);
+        }
     }
 
     /// <summary>The Settings tick <i>before/after slider</i> (A23): the line between today's valley and the watercolour.</summary>

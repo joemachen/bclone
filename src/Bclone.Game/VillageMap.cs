@@ -5434,6 +5434,11 @@ public partial class VillageMap : Control
         }
 
         RefreshTheScenery(_world!);
+        if (_paintedTrees)
+        {
+            DrawThePaintedTrees(minX, maxX, minY, maxY);
+        }
+
         DrawTheSceneryChunks(minX, maxX, minY, maxY, berries: false);
     }
 

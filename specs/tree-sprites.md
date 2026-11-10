@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; NOT IN THE REPO YET; ⏸️ HIS EYES, THEN PIECE 1.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ⏸️ HIS EYES ON PIECE 1.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -93,6 +93,23 @@ in the chunk's mesh instead of crowns:
 | # | piece | starts when |
 |---|---|---|
 | 1 | **Mature trees** — the loader, the atlas, the quads, the sort; the probe lines (the import, the atlas's size, the tick reaching the meshes, off untouched) | the atlas arrives and is measured inside §4 |
+
+**Piece 1, as built (A35).** `VillageMap.Watercolour.cs` loads the atlas on the tick's first switching on and wraps it in
+a `CanvasTexture` drawn `LinearWithMipmaps` (the map's own filter is plain linear, and changing the map's would move every
+other textured draw). `BuildChunk` lays each wooded tile's trees with `PaintedTrees` into **a mesh of their own per chunk**
+(`SceneryChunk.Trees`), because a textured mesh cannot share a surface with the untextured boulders. `DrawTheTrees` draws
+every visible chunk's tree mesh before the standing meshes, so the boulders stay over the leaves; it reaches 2 tiles past
+the screen, where the crowns reached 1. `MeshBuilder.Sprite` lays a cell as 6 vertices with UVs, and transposes the cell for
+the mirrored face; a builder refuses a mix of sprites and plain fills. Counts and choices are `static`s of the tile:
+`PaintedTreesOn` (1–2 grown, 2 young), `PaintedTreeOn` (the drawing, the face, × 0.85–1.10, young × 0.55), and the
+foot on `CanopyOn`'s place. ⛔ A missing atlas is said with `GD.PushError`, and the inked crowns stand in.
+
+**Piece 1, verified (A35):** tick off, windowed renders at founding at four zooms (the opening, which is the closest, two
+further out, the widest) byte-identical to `8f1f53e`; the probe's `painted trees:` line (sizes and counts named from this
+spec, not from the code; a tile made young for the check); red-checked, 13 mutants, 12 red, with the one zero (trees 30 %
+too big) fixed and red after; GPU at 4K, three back-to-back runs: tick on 2.02 and 1.94 ms with the painted trees against
+2.43 ms with the inked crowns, tick off 0.262 ms in each, so no dearer than the stand-in. Vertices: 22,620 for 3,770 trees
+against the crowns' 316,368 as discs.
 | 2 | **Young trees** — `tree_sprites_young.png`, the sapling tiles | 1 approved, the atlas arrives |
 | 3 | **The far view** — trees below 24 px a tile, at a coarser density, so the woods are trees at every zoom as in the concept (cost measured first: the whole valley's trees on screen at once) | 1 approved |
 | 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece |

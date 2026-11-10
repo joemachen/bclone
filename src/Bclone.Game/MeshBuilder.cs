@@ -40,6 +40,12 @@ internal sealed class MeshBuilder
     private readonly List<Vector2> _vertices = new();
     private readonly List<Color> _colours = new();
 
+    /// <summary>
+    /// Texture coordinates — laid down only by <see cref="Sprite"/> (the painted trees, A35). A builder that never lays a
+    /// sprite never writes them, so every untextured mesh is the mesh it was, to the byte.
+    /// </summary>
+    private readonly List<Vector2> _uvs = new();
+
     /// <summary>How many vertices have been laid down since the last <see cref="Clear"/>.</summary>
     public int VertexCount => _vertices.Count;
 
@@ -47,6 +53,7 @@ internal sealed class MeshBuilder
     {
         _vertices.Clear();
         _colours.Clear();
+        _uvs.Clear();
     }
 
     /// <summary>A filled disc as a fan of triangles.</summary>
@@ -158,6 +165,34 @@ internal sealed class MeshBuilder
         }
     }
 
+    /// <summary>
+    /// ⭐ One cell of a 4 × 2 atlas as a square in tile space (the painted trees, <c>tree-sprites.md §5</c>, A35):
+    /// centred on <paramref name="centre"/>, <paramref name="half"/> tiles from the middle to each side, white so the
+    /// texture is drawn as painted. <paramref name="mirrored"/> lays the cell mirrored across its up-left to down-right
+    /// diagonal (a transpose) — the one turn that keeps the painted light where it is (A31).
+    /// </summary>
+    /// <remarks>⛔ A builder holds sprites or plain fills, never both: <see cref="AddSurfaceTo"/> refuses a mix.</remarks>
+    public void Sprite(Vector2 centre, float half, int cell, bool mirrored)
+    {
+        const float Du = 1f / SpriteColumns, Dv = 1f / SpriteRows;
+        float u0 = (cell % SpriteColumns) * Du, v0 = (cell / SpriteColumns) * Dv;
+        Vector2 Uv(float s, float t) => mirrored ? new Vector2(u0 + (t * Du), v0 + (s * Dv)) : new Vector2(u0 + (s * Du), v0 + (t * Dv));
+
+        Vector2 tl = centre + new Vector2(-half, -half), tr = centre + new Vector2(half, -half);
+        Vector2 br = centre + new Vector2(half, half), bl = centre + new Vector2(-half, half);
+        AddUv(tl, Uv(0f, 0f));
+        AddUv(tr, Uv(1f, 0f));
+        AddUv(br, Uv(1f, 1f));
+        AddUv(tl, Uv(0f, 0f));
+        AddUv(br, Uv(1f, 1f));
+        AddUv(bl, Uv(0f, 1f));
+    }
+
+    /// <summary>The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across, 2 down.</summary>
+    internal const int SpriteColumns = 4;
+
+    internal const int SpriteRows = 2;
+
     /// <summary>Add everything laid down so far as one triangle surface of <paramref name="mesh"/>, in 2D.</summary>
     /// <remarks>
     /// ⚠️ A <c>Vector2[]</c> vertex array is what makes the surface a 2D mesh — the canvas draws it
@@ -174,6 +209,15 @@ internal sealed class MeshBuilder
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = _vertices.ToArray();
         arrays[(int)Mesh.ArrayType.Color] = _colours.ToArray();
+        if (_uvs.Count > 0)
+        {
+            if (_uvs.Count != _vertices.Count)
+            {
+                throw new InvalidOperationException($"a mesh of {_vertices.Count} vertices has {_uvs.Count} texture coordinates — sprites and plain fills were mixed in one builder");
+            }
+
+            arrays[(int)Mesh.ArrayType.TexUV] = _uvs.ToArray();
+        }
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
     }
 
@@ -191,6 +235,12 @@ internal sealed class MeshBuilder
     {
         _vertices.Add(at);
         _colours.Add(colour);
+    }
+
+    private void AddUv(Vector2 at, Vector2 uv)
+    {
+        Add(at, Colors.White);
+        _uvs.Add(uv);
     }
 
     private static Vector2[] UnitCircle(int segments = Segments)

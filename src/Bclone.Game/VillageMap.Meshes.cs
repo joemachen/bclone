@@ -160,8 +160,12 @@ public partial class VillageMap
     {
         public readonly ArrayMesh Standing = new();
         public readonly ArrayMesh Berries = new();
+
+        /// <summary>The painted trees (A35) — textured with the atlas, so a mesh of their own; empty with the tick off.</summary>
+        public readonly ArrayMesh Trees = new();
         public int StandingVertices;
         public int BerryVertices;
+        public int TreeVertices;
     }
 
     private SceneryChunk[] _scenery = System.Array.Empty<SceneryChunk>();
@@ -187,6 +191,7 @@ public partial class VillageMap
     private int _chunksDown;
     private readonly MeshBuilder _standing = new();
     private readonly MeshBuilder _berries = new();
+    private readonly MeshBuilder _trees = new();
 
     /// <summary>How long the last scenery build took and how many chunks it touched — for the probe.</summary>
     public double LastSceneryBuildMs { get; private set; }
@@ -320,6 +325,7 @@ public partial class VillageMap
         if (standing)
         {
             _standing.Clear();
+            _trees.Clear();
             for (int y = fromY; y < toY; y++)
             {
                 for (int x = fromX; x < toX; x++)
@@ -328,7 +334,15 @@ public partial class VillageMap
                     Terrain terrain = map.TerrainAt(tile);
                     if (terrain is Terrain.Forest or Terrain.Sapling)
                     {
-                        Canopies(_standing, tile, grown: terrain == Terrain.Forest, _canopyInkTiles, _canopyInk);
+                        // The painted trees with the tick on (A35), into their own textured mesh; the crowns otherwise, as ever.
+                        if (_paintedTrees)
+                        {
+                            PaintedTrees(_trees, tile, grown: terrain == Terrain.Forest);
+                        }
+                        else
+                        {
+                            Canopies(_standing, tile, grown: terrain == Terrain.Forest, _canopyInkTiles, _canopyInk);
+                        }
                     }
                 }
             }
@@ -357,6 +371,9 @@ public partial class VillageMap
             into.Standing.ClearSurfaces();
             _standing.AddSurfaceTo(into.Standing);
             into.StandingVertices = _standing.VertexCount;
+            into.Trees.ClearSurfaces();
+            _trees.AddSurfaceTo(into.Trees);
+            into.TreeVertices = _trees.VertexCount;
         }
 
         if (berries)
@@ -413,6 +430,84 @@ public partial class VillageMap
             }
         }
     }
+
+    /// <summary>
+    /// ⭐ The painted trees (A35) — every chunk's tree mesh on screen, textured with the atlas, drawn <b>before</b> the
+    /// standing meshes so a boulder beside a wood still sits over the leaves (<c>BuildChunk</c>'s order).
+    /// </summary>
+    /// <remarks>
+    /// A painted tree reaches further than a crown — its foot up to <c>CanopySpread</c> off its tile and its cell
+    /// <see cref="PaintedTreeHalf"/> × 1.1 round that — so a chunk two tiles off the screen's edge can still have leaves on it.
+    /// </remarks>
+    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY)
+    {
+        GeneratedMap map = _sceneryOf!;
+        Transform2D toScreen = TileToScreen();
+        Rid canvas = GetCanvasItem();
+        Rid atlas = _treeAtlas!.GetRid();
+        const int Reach = 2;
+
+        int firstCx = Mathf.Clamp((minX - Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int lastCx = Mathf.Clamp((maxX + Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int firstCy = Mathf.Clamp((minY - Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+        int lastCy = Mathf.Clamp((maxY + Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+
+        for (int cy = firstCy; cy <= lastCy; cy++)
+        {
+            for (int cx = firstCx; cx <= lastCx; cx++)
+            {
+                ArrayMesh mesh = _scenery[(cy * _chunksAcross) + cx].Trees;
+                if (mesh.GetSurfaceCount() > 0)
+                {
+                    RenderingServer.CanvasItemAddMesh(canvas, mesh.GetRid(), toScreen, Colors.White, atlas);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Joe's painted trees on one tile (<c>tree-sprites.md §5</c>, A35): fewer and bigger than the crowns (call 4, A30:
+    /// 1–2 a grown tile), each a cell of the atlas laid on <see cref="CanopyOn"/>'s place, tile by tile as the crowns are.
+    /// </summary>
+    private static void PaintedTrees(MeshBuilder into, GridPos tile, bool grown)
+    {
+        for (int i = 0; i < PaintedTreesOn(tile, grown); i++)
+        {
+            (Vector2 where, float _) = CanopyOn(tile, i);
+            (int cell, bool mirrored, float scale) = PaintedTreeOn(tile, i, grown);
+            into.Sprite(where, PaintedTreeHalf * scale, cell, mirrored);
+        }
+    }
+
+    /// <summary>How many painted trees stand on a tile: 1–2 grown (A30, call 4), 2 young ones.</summary>
+    internal static int PaintedTreesOn(GridPos tile, bool grown) =>
+        grown ? 1 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
+
+    /// <summary>
+    /// ⭐⭐ Which drawing a painted tree is, whether it is mirrored, and how big — <b>a `static` of the tile</b>, D337's
+    /// guard: it cannot reach a tick or a clock, so a wood never shimmers and a place always shows the same trees.
+    /// </summary>
+    /// <remarks>
+    /// Mirrored across the light's diagonal or not (A31: never turned — the light is painted in); × 0.85–1.10 (§5); a young
+    /// tile draws the grown set at <see cref="YoungTreeScale"/> until the young atlas exists (piece 2).
+    /// </remarks>
+    internal static (int Cell, bool Mirrored, float Scale) PaintedTreeOn(GridPos tile, int which, bool grown)
+    {
+        uint spin = Scramble(tile.X - PaintedTreeSalt, tile.Y + PaintedTreeSalt) >> (which * 11);
+        int cell = (int)(spin % (MeshBuilder.SpriteColumns * MeshBuilder.SpriteRows));
+        bool mirrored = ((spin >> 3) & 1u) != 0;
+        float scale = 0.85f + (((spin >> 4) % 26) / 100f);
+        return (cell, mirrored, grown ? scale : scale * YoungTreeScale);
+    }
+
+    /// <summary>Half a painted tree's cell in tiles: 256 px of painting at 128 px a tile (<c>tree-sprites.md §3</c>).</summary>
+    internal const float PaintedTreeHalf = 1f;
+
+    /// <summary>A young tile's trees, as a share of a grown one's, until the young atlas exists (§5, piece 2).</summary>
+    internal const float YoungTreeScale = 0.55f;
+
+    /// <summary>Keeps which painted tree stands where out of step with where it stands (<see cref="TreeSalt"/>).</summary>
+    private const int PaintedTreeSalt = 6247;
 
     /// <summary>The trees standing on one tile, and the ones leaning off it — into the mesh.</summary>
     /// <remarks>
