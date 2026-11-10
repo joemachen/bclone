@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Still to build: young trees (piece 2), seasons (piece 4).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Still to build: young trees (piece 2). ✍️ SEASONS (piece 4) SPECCED WITH §7'S WINTER AS ONE PIECE (A40, §9); ⏸️ FOUR CALLS JOE'S.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -119,7 +119,7 @@ too big) fixed and red after; GPU at 4K, three back-to-back runs: tick on 2.02 a
 against the crowns' 316,368 as discs.
 | 2 | **Young trees** — `tree_sprites_young.png`, the sapling tiles | 1 approved, the atlas arrives |
 | 3 | **The far view** — trees below 24 px a tile, at a coarser density, so the woods are trees at every zoom as in the concept (cost measured first: the whole valley's trees on screen at once) | 1 approved — 🔨 **BUILT (A36) at full density**: the whole valley's 3,770 trees on screen cost +0.1–0.2 ms at 4K, inside the runs' own spread, so nothing is thinned; the mipmaps draw a tree a few pixels wide |
-| 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece |
+| 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece — ✍️ **SPECCED WITH IT (A40, §9): one piece, winter and the trees; four calls Joe's** |
 
 ## 6. Joe's calls, put in plain words (A29)
 
@@ -174,6 +174,57 @@ when the painted trees are on, since a neighbour's kind can change with it.
 **The canopy over the village** (§2, changed). **The *draw the trees* tick** in Settings, on by default: off, no tree is
 meshed in either look — the land, the boulders and the berries show. **Every zoom** (piece 3): the painted trees have no
 zoom floor.
+
+## 9. Through the year — winter and the trees (A40, piece 4 with `terrain-shader.md §7` piece 4)
+
+**Why.** Joe, asked what next, chose *"Winter and the trees"*. His own Year 8 winter screenshot shows it: the valley goes
+white and every tree stays its summer green, pasted on the snow. And the snow itself is still A23's *"white blanket"*
+for most of winter, which A26 call 3 already replaced on paper.
+
+**What is already settled (A26, not asked again):** the winter ground is a drawing, not a blanket. **Patchy cover with a
+peak about 0.7–0.8** (measured and shown to Joe); **cool blue-grey shadow washes** in the snow; **the river dark with an
+icy rim**; **the ink kept over the snow** (the bank's pen line already draws over it). All in the valley shader, behind
+the watercolour tick, as every §7 piece.
+
+**What is new — the trees through the year.** The painted trees change with the season by **swapping the atlas they are
+drawn with**, never by re-meshing: the meshes, the places, the kinds and the mirroring stay as they are. Each season set is
+the same 1024 × 1280 grid as `tree_sprites.png`, cell for cell, painted by script from the same shapes (so a tree keeps its
+outline from summer into autumn and its place into winter):
+
+| file | when | what changes |
+|---|---|---|
+| `tree_sprites.png` | spring, summer | — (A34, A36) |
+| `tree_sprites_autumn.png` | autumn | leafy russet, orange and gold, mixed by tree; birches gold; willows pale yellow; conifers as summer |
+| `tree_sprites_winter.png` | winter | leafy, birch and willow bare (calls 1); conifers snow-laden (call 2) |
+
+**How a season turns (call 4).** The valley's year is `TheYearAt` (a season holds for its first two thirds, then turns
+over the last third, the grass and the snow on the same clock). The trees use the same clock: while a season turns, each
+chunk is drawn twice, the outgoing atlas, then the incoming one over it at the turn's share. Outside a turn there is one
+draw a chunk, as now. **Cost:** two more atlases, about 7 MB of video memory each with mipmaps, loaded the first time
+autumn arrives (A23's leanness); two draws a chunk only during a turn — measured at 4K, A/B, before it is called done.
+
+**Winter's legibility bonus.** Bare deciduous woods are see-through: the land, the paths and the villagers under the
+trees show again in winter. That eases A36's tension (the canopy hides a villager in the woods) for a quarter of the year,
+and is the concept's own winter.
+
+**§4's limits per season.** The middle tone at L\* ≥ 50 and ink and shadow under 20 % hold for every set. Autumn's hue is
+its own, not the woods' (that is the point). A bare tree is mostly transparent: its limits are read on its branches and
+its snow, and `measure_trees.py` reports the share of the cell that is tree.
+
+**Not in this piece:** spring blossom or a fresh-green spring set (spring draws the summer set); felled stumps; falling
+leaves or falling snow (weather is its own layer, A23's *"a later piece if he asks for it"*); the young trees (piece 2).
+
+### Joe's calls (A40), in plain words, each with a recommendation
+
+1. **The leafy trees, birches and willows in winter.** ⭐ **Recommended: bare** — an ink drawing of the branches seen from
+   above, a little snow lying on their upper-left sides, the ground showing through. The alternatives: their summer
+   crowns with snow on top (green leaves in winter), or bare with no snow at all.
+2. **The conifers in winter.** ⭐ **Recommended: snow on them** — white lying on each tier's lit side, still dark green
+   underneath, so the firs are the dark shapes in a white valley, as in the concept. Or unchanged.
+3. **Autumn.** ⭐ **Recommended: an autumn set** — the leafy trees turn russet, orange and gold (each tree its own), the
+   birches gold, the willows pale yellow, the conifers stay green. Or no autumn: summer straight to winter.
+4. **How the change shows.** ⭐ **Recommended: a slow crossfade over the season's turn** — the last third of a season, the
+   same days the grass and the snow turn, so the woods colour and then bare over about ten days. Or a switch on one day.
 
 ## 7. Verification (each piece)
 
