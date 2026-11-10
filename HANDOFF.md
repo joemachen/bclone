@@ -9885,6 +9885,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE
+  INKED DISCS. NOTHING PAINTED OR BUILT. Four calls his (§6), each with a recommendation:** (1) trees drawn at an angle with trunks
+  showing, like the concept (it leans on how buildings are drawn later, B4); (2) one leafy kind first, conifers later; (3) he paints or
+  sources eight trees to §3's format (256 px cells, 128 px a tile, anchored at the trunk's foot, ink and wash), the session measures and
+  wires them; (4) fewer, bigger trees — 1–2 a tile, about a tile across. **His answers, then the atlas, then piece 1.**
 - ⏸️ **🔨 being built on `art` — THE TERRAIN SHADER IN THE VALLEY: SPECCED (A22, 2026-11-09); ✅ ALL SIX ANSWERED BY JOE AS
   RECOMMENDED (A23): *"1. yes 2. yes 3. ground only 4. OK … keep them as lean as possible … 5. Yes add a tick box … 6. yes."*
   Leanness is a standing ask (every piece reports its cost); a before/after slider joins piece 2; falling snow is a later piece,
