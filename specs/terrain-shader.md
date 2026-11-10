@@ -1,6 +1,6 @@
 # Spec: The terrain shader — the valley drawn over parchment
 
-**Status:** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, A2, 2026-11-06; world-anchored grain
+**Status:** ⭐ **§5'S WIRING (A22–A25) AND §7'S INK AND POOLING (A26–A28) MERGED INTO `main` AT JOE'S WORD (A38, 2026-11-10, *"Merge art now"*, `f48cfab`) — behind the *paint the valley in watercolour* tick, off by default; §7's values not yet approved as a look.** 🔨 **ALL FOUR PIECES BUILT IN THE LAB (the fake coverage map, A2, 2026-11-06; world-anchored grain
 and drag to pan, A3; snow, A4; splat blending and edge bleed, A5 — all 2026-11-07). ⭐ JOE APPROVED SPLAT AND BLEED AT SHARPNESS 5.5, REACH 0.33,
 SCALE 0.30 TILES (A7); ⭐ AND THE GRAIN AND SNOW AT HIS TUNING (A8–A9): GRAIN 0.065
 TILES, UNDER THE VILLAGE; SNOW LERP, `#f8f6f1`, PATCHINESS 0.03, PATCH 3 TILES. THE MAP IS THE LAB'S FAKE, NOT JUDGED.
