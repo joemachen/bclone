@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
-**Status:** ✍️ **SPECCED (A29, 2026-11-10), NOTHING PAINTED OR BUILT.** ⏸️ Four calls are Joe's (§6), put to him in plain
-words. Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+**Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED AS RECOMMENDED (A30). NOTHING PAINTED OR BUILT —
+⏸️ WAITING ON JOE'S ATLAS (§3).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -90,6 +90,9 @@ in the chunk's mesh instead of crowns:
 | 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece |
 
 ## 6. Joe's calls, put in plain words (A29)
+
+✅ **ANSWERED (A30, 2026-11-10), all four as recommended:** angled like the concept; one leafy kind first; Joe provides the
+eight drawings to §3; fewer, bigger trees, 1–2 a tile. **Next: his atlas, then piece 1.**
 
 1. **The angle.** Trees drawn at a slight angle with their trunks showing, like the concept, standing on our flat
    top-down map — or straight down, crowns only. ⭐ **Recommended: the angle, like the concept.** Most hand-drawn maps do
