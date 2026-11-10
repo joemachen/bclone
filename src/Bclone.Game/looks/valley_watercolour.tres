@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ValleyWatercolourLook" load_steps=2 format=3]
+
+; The valley's watercolour, on its way toward the concept art (`specs/terrain-shader.md §7`, A26-A27). Joe's art
+; direction, A26: ink first, wash second. NOTHING HERE IS APPROVED YET: these are the first values, for his eyes.
+; Ink: a warm sepia-black pen line on every terrain boundary, constant on screen, the river's bank heavier.
+; Pooling: a wash darker at its own edge, where watercolour pigment gathers as it dries.
+
+[ext_resource type="Script" path="res://ValleyWatercolourLook.cs" id="1_look"]
+
+[resource]
+script = ExtResource("1_look")
+InkColour = Color(0.227451, 0.176471, 0.12549, 1)
+InkStrength = 0.75
+InkWidthPx = 1.2
+BankInkScale = 1.4
+InkWobble = 0.35
+PoolStrength = 0.16
+PoolWidthPx = 3.0

@@ -8,8 +8,10 @@ The GPU bar is 1 ms a frame at 4K for the whole stack (A11, §3.3); everything o
 SPECCED (A22, 2026-11-09, on `art`, after house tiers merged, D724): §5; ALL SIX CALLS ANSWERED BY JOE, AS RECOMMENDED,
 LEAN AS A STANDING ASK, A BEFORE/AFTER SLIDER ADDED TO PIECE 2 (A23). 🔨 PIECE 1 BUILT (A24, 2026-11-09): THE MIX IN
 THE BAKE — THE COLOUR BYTE-IDENTICAL. 🔨 PIECE 2 BUILT (A25, 2026-11-09): THE VALLEY THROUGH THE SHADER BEHIND JOE'S
-TICK, WITH THE BEFORE/AFTER LINE; TICK OFF BYTE-IDENTICAL TO BEFORE; +1.35–1.73 MS AT 4K. ⏸️ JOE'S EYES. THEN PIECE 3.** §2–§4 are the
-lab's build; §4's table says which piece stands; §5 is the wiring, its calls and its three pieces.
+TICK, WITH THE BEFORE/AFTER LINE; TICK OFF BYTE-IDENTICAL TO BEFORE; +1.35–1.73 MS AT 4K. JOE PLAYED IT: *"QUITE A WAYS
+AWAY FROM THE CONCEPT ART"* — HIS ART DIRECTION AND FOUR CALLS (A26), §7; 🔨 ITS PIECE 1, INK AND POOLING, BUILT (A27,
+2026-11-10), +1.87 MS AT 4K. ⏸️ JOE'S EYES ON THE INK.** §2–§4 are the lab's build; §4's table says which piece stands;
+§5 is the wiring, its calls and its three pieces; §7 is the way toward the concept.
 ▶️ **The first slice of the art lane (D699): built and tuned in the Grass Lab, against a fake coverage map; not wired into
 the valley (`VillageMap`'s `DrawTextureRect`, `ValleyTexture`'s bake) until house tiers merged (D724) — the wiring is §5.** Joe's eyes are the
 test for the look; nothing here is approved until he says so, and the approved grass look (`grass-look.md`) does not move.
@@ -515,3 +517,60 @@ back grown and the probe went on with a valley the check had changed; it now put
 - **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
 - **Not known until the valley is wired:** how any of this reads under the real bake and its dressing, or beside fences,
   fields and paths, which the lab does not draw.
+
+## 7. Toward the concept (A26–A27) — Joe's art direction, five pieces, ink built
+
+**Why (A26, 2026-11-10).** Joe played piece 2 and found it *"quite a ways away from the concept art"* (`art/` — the
+inked, painted map with illustrated buildings), and named three gaps: no lines for height, no inked and flowing river
+(*"i would like the game to animate this in some way"*), and a winter that is *"just a white blanket"*. Set side by side,
+the gaps ranked by cost: **(1) no ink** — the concept is drawn first and painted second, every edge a sepia pen line;
+**(2) busy mid-scale mottle** — house-sized yellow and green blotches where the concept has calm washes, the detail at
+the edges; **(3) no relief**; **(4) water with no drawing in it**; **(5) illustrated trees and buildings** — the biggest
+visual gap, but the art inventory's B4/B5 and building art, not this shader's.
+
+**The brief every piece is judged against.**
+- **Ink first, wash second.** One warm sepia-black ink (`#3a2d20`, ~75 %), a line ~1–1.5 screen px, the same at every
+  zoom, a little wobbly, the river's bank heavier. Every terrain boundary gets one; worked ground keeps `VillageMap`'s.
+- **Calm washes, detail at the edges.** Near-flat tint with faint granulation; pigment pooled darker at each wash's edge;
+  the meadow varying over tens of tiles, not two.
+- **A narrower, warmer palette**, held to the band (L\* ≥ 50) by `check.py` on a scratch copy.
+- **Relief by hachure** — contour lines up the valley sides, hachures down the steeper parts, in the ink, lighter.
+- **Water drawn, not filled** — inked bank, two echo lines, a darker channel, flow strokes drifting downstream.
+- **Winter is a drawing too** — the ink survives the snow; cool blue-grey shadow washes; woods dark and capped; the river
+  dark with an icy rim; cover patchy.
+
+**Joe's four calls (A26, all as recommended):** (1) **relief decorative now** — land rising away from the river, changing
+nothing in the sim; when the real height layer comes (D477) the drawing reads it. ⚠️ A deliberate exception to "what is
+drawn is real", recorded so no session mistakes it for terrain. (2) **the water flows only while time runs** — pause looks
+paused. (3) **winter patchy, with shadows** — replaces A23's fully white mid-winter; the peak about 0.7–0.8, measured and
+shown to him. (4) **ink first**, then calmer ground, the river, winter, relief.
+
+**The five pieces**, each behind the watercolour tick, the lab untouched, tick off byte-identical, each at Joe's eyes:
+
+| # | piece | state |
+|---|---|---|
+| 1 | **Ink and pooling** | 🔨 built (A27) |
+| 2 | **Calmer ground** — the grass's strength and macro variation at the wide zoom, a low-frequency meadow tint for the mottle, the coverage fade. ⛔ Changes the approved grass look (D632, A10): every value his word | — |
+| 3 | **The river drawn** — echo lines, darker channel, flow strokes along the river's tangent, downstream by the valley's *River runs*, on a clock that stops with the game | — |
+| 4 | **Winter with structure** — the call-3 peak, shadow washes, capped canopies (`VillageMap`'s canopy colours by `TheYearAt`), the icy rim | — |
+| 5 | **Relief** — a "height above the river" field baked once beside the mix (distance to water, blurred; it never changes in play), contour lines and hachures | — |
+
+**Piece 1, as built (A27, 2026-11-10).** The values live in a new look file, `looks/valley_watercolour.tres`
+(`ValleyWatercolourLook.cs`, no defaults, like `GrassLook`): ink `#3a2d20` at 0.75, 1.2 px, the bank × 1.4, wobble 0.35;
+pooling 0.16 over 3 px. **Nothing in it is approved yet.**
+- **The line** is drawn where a kind's share crosses a half — the contour where the colour changes kind — its distance
+  in screen pixels from the share's own slope (`dFdx`, `dFdy`), so it is the same width at every zoom; its width wanders
+  by one octave of `at_value_noise` (salt 91). Woods, seams and the river each get one, and stone meets iron by a line
+  where a seam is drawn; forest and young wood do not (a line there would read as a fence).
+- ⭐ **The pen follows the edge before the bleed, and the wash bleeds past it** — the first render drew the pen on the bled
+  edge and it came out ragged and specked: A7's warning (*"a fray, not a wander"*) made visible. The pen now takes the
+  unbled shares (one more splat a pixel); the river's is the unwarped weight either way (D342).
+- **The pooling** darkens each of the three washes inside its own, bled, edge — under the snow (snow covers the pooled
+  wash), while the ink lies over the snow and under the grain.
+
+| measured, 2026-11-10 | |
+|---|---|
+| tick off | byte-identical to `b6b5af4` at both zooms (`render.gd`, `cmp`) |
+| the probe | `watercolour:` ✅, all 53 uniforms declared, the look file's seven values reaching the layer, a file that draws no ink refused |
+| GPU, 4K, the 3070, alternating rounds | the switch **+1.87 ms** at both zooms (opening 0.26 → 2.14, widest 0.27 → 2.14) — the ink about +0.05–0.5 of it; inside 3.5 |
+| the Beyond, in frame | ⚠️ still never — the widest zoom fits the window at any size (2400 × 1400 tried), so the valley fills every frame; catching it needs a pan to the edge (art trap 21 stands) |

@@ -129,6 +129,16 @@ public partial class VillageMap
         material.SetShaderParameter("ground_tex_tiles", terrain.TextureTilesPerRepeat);
         material.SetShaderParameter("ground_tex_antitile", terrain.TextureAntiTiling);
 
+        // The ink and the pooling (A27): the art direction's first piece, from its own look file — nothing approved yet.
+        ValleyWatercolourLook watercolour = ValleyWatercolourLook.Current;
+        material.SetShaderParameter("ink_srgb", Srgb(watercolour.InkColour));
+        material.SetShaderParameter("ink_strength", watercolour.InkStrength);
+        material.SetShaderParameter("ink_width_px", watercolour.InkWidthPx);
+        material.SetShaderParameter("bank_ink_scale", watercolour.BankInkScale);
+        material.SetShaderParameter("ink_wobble", watercolour.InkWobble);
+        material.SetShaderParameter("pool_strength", watercolour.PoolStrength);
+        material.SetShaderParameter("pool_width_px", watercolour.PoolWidthPx);
+
         // The map's own colours, and Joe's four painted tiles (A13–A21).
         material.SetShaderParameter("beyond_srgb", Srgb(Beyond));
         material.SetShaderParameter("ground_srgb", Srgb(Ground));
@@ -302,6 +312,7 @@ public partial class VillageMap
         "beyond_srgb", "ground_srgb", "kind_wood", "kind_young", "kind_stone", "kind_iron", "kind_water", "kind_shallows",
         "ground_wood", "ground_stone", "ground_iron", "ground_water", "valley_colour", "ground_map", "ground_map_shares",
         "ground_map_tiles", "valley_origin_px", "valley_size_px", "px_per_tile", "grass_season", "snow_amount", "split_u",
+        "ink_srgb", "ink_strength", "ink_width_px", "bank_ink_scale", "ink_wobble", "pool_strength", "pool_width_px",
     };
 
     /// <summary>
@@ -375,6 +386,18 @@ public partial class VillageMap
         Near("snow_patchiness", terrain.SnowPatchiness);
         Near("snow_patch_tiles", terrain.SnowPatchTiles);
         Near("ground_tex_tiles", terrain.TextureTilesPerRepeat);
+        ValleyWatercolourLook watercolour = ValleyWatercolourLook.Current;
+        Near("ink_strength", watercolour.InkStrength);
+        Near("ink_width_px", watercolour.InkWidthPx);
+        Near("bank_ink_scale", watercolour.BankInkScale);
+        Near("ink_wobble", watercolour.InkWobble);
+        Near("pool_strength", watercolour.PoolStrength);
+        Near("pool_width_px", watercolour.PoolWidthPx);
+        Same("ink_srgb", material.GetShaderParameter("ink_srgb").AsVector3() == Srgb(watercolour.InkColour));
+        if (watercolour.InkStrength <= 0f || watercolour.InkWidthPx <= 0f)
+        {
+            faults.Add($"{ValleyWatercolourLook.Path} draws no ink (strength {watercolour.InkStrength}, width {watercolour.InkWidthPx})");
+        }
         Same("macro_on", material.GetShaderParameter("macro_on").AsBool() == look.MacroOn);
         Same("hex_on", material.GetShaderParameter("hex_on").AsBool() == look.HexOn);
         Same("height_blend", material.GetShaderParameter("height_blend").AsBool() == look.HeightBlend);
