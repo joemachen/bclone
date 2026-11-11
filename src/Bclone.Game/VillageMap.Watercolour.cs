@@ -70,6 +70,106 @@ public partial class VillageMap
     /// </summary>
     private bool _treesShown = true;
 
+    /// <summary>
+    /// ⭐ The river's clock (A45, <c>river-drawn.md §4.4</c>): real seconds times the game's speed (A46,
+    /// <see cref="_flowPace"/>), summed while the village runs and the <i>moving water</i> tick is on, wrapped at
+    /// <see cref="_flowPeriod"/>. A view clock, never the sim's; 0 at founding,
+    /// so a render paused at tick 0 is the same picture in any build.
+    /// </summary>
+    private double _flowClock;
+
+    /// <summary>The clock's period, in seconds: the ripples' grid drifts a whole <see cref="RippleRepeatCells"/> in it.</summary>
+    private double _flowPeriod = 1.0;
+
+    /// <summary>Whether the water moves — the Settings tick <i>moving water</i> (A45 call 4), on by default.</summary>
+    private bool _waterMoves = true;
+
+    /// <summary>The river's own coordinates (A45, §3), and the world they were built for: once a world.</summary>
+    private RiverTable? _riverTable;
+    private SimWorld? _riverOf;
+
+    /// <summary>
+    /// How many cells down the river the ripples' pattern runs before it repeats (A45, §4.4) — longer than any river
+    /// (256 × 1.6 tiles), and what lets the clock wrap without a jump.
+    /// </summary>
+    internal const int RippleRepeatCells = 256;
+
+    /// <summary>Whether the river's ripples move — the Settings tick's state.</summary>
+    public bool MovingWaterShown => _waterMoves;
+
+    /// <summary>The Settings tick <i>moving water</i> (A45 call 4): off, the ripples are drawn but hold still.</summary>
+    public void ShowMovingWater(bool on) => _waterMoves = on;
+
+    /// <summary>
+    /// ⭐ The river keeps the game's speed (A46, Joe: <i>"Keep the game's speed"</i>, reversing A45's call 1 after he saw
+    /// both): how many seconds of flow a real second gives — the game's speed multiplier, set by <c>Main</c> on every
+    /// refresh. 1 at 1×, 20 at 20×; a pause stops the clock by <see cref="Paused"/> whatever this says.
+    /// </summary>
+    private double _flowPace = 1.0;
+
+    /// <summary>How fast the river runs against real time: the game's speed (A46).</summary>
+    internal double FlowPace => _flowPace;
+
+    /// <summary>Sets the river's pace to the game's speed (A46) — <c>Main</c>'s refresh, every frame.</summary>
+    public void SetFlowPace(double pace) => _flowPace = pace;
+
+    /// <summary>The river clock's frame step: real seconds times the game's speed (A46) while the village runs and the water moves, nothing otherwise.</summary>
+    private void TickTheFlowClock(double delta)
+    {
+        // Not before the layer is first built: until then there is nothing to move, and the clock starts at 0 with it.
+        if (Paused || !_waterMoves || _watercolourMaterial is null)
+        {
+            return;
+        }
+
+        _flowClock = (_flowClock + (delta * _flowPace)) % _flowPeriod;
+        if (_watercolour)
+        {
+            _watercolourMaterial?.SetShaderParameter("flow_seconds", (float)_flowClock);
+        }
+    }
+
+    /// <summary>
+    /// The raw water weight a straight bank has <paramref name="tilesIn"/> tiles inside it (A45, §4.1) — what the bake's
+    /// kernel (<see cref="ValleyTexture"/>: a smooth falloff on the squared distance, <see cref="ValleyTexture.KernelTiles"/>
+    /// across) gives there, averaged along the bank. The echo lines are that weight's contours. ⚠️ A copy of the kernel's
+    /// shape, not a call into it: the probe names the spec's measured values so a change to either shows.
+    /// </summary>
+    internal static float BankWeightAt(float tilesIn)
+    {
+        const int along = 16;
+        float reach = ValleyTexture.KernelTiles;
+        double sum = 0;
+        for (int s = 0; s < along; s++)
+        {
+            float cx = 0.5f + tilesIn;
+            float cy = s / (float)along;
+            double water = 0, all = 0;
+            for (int gy = -3; gy <= 3; gy++)
+            {
+                for (int gx = -3; gx <= 4; gx++)
+                {
+                    float away = ((gx - cx) * (gx - cx)) + ((gy - cy) * (gy - cy));
+                    if (away >= reach * reach)
+                    {
+                        continue;
+                    }
+
+                    float weight = 1f - Mathf.SmoothStep(0f, reach * reach, away);
+                    all += weight;
+                    if (gx >= 1)
+                    {
+                        water += weight;
+                    }
+                }
+            }
+
+            sum += water / all;
+        }
+
+        return (float)(sum / along);
+    }
+
     /// <summary>Whether the trees are drawn — the Settings tick's state.</summary>
     public bool TreesShown => _treesShown;
 
@@ -644,6 +744,34 @@ public partial class VillageMap
         material.SetShaderParameter("ice_width_tiles", watercolour.IceWidthTiles);
         material.SetShaderParameter("ice_strength", watercolour.IceStrength);
         material.SetShaderParameter("river_winter_darken", watercolour.RiverWinterDarken);
+        material.SetShaderParameter("channel_strength", watercolour.ChannelStrength);
+        material.SetShaderParameter("echo_strength", watercolour.EchoStrength);
+        material.SetShaderParameter("echo_width_share", watercolour.EchoWidthShare);
+        material.SetShaderParameter("echo_tiles", new Vector2(watercolour.EchoNearTiles, watercolour.EchoFarTiles));
+        material.SetShaderParameter("echo_levels", new Vector2(BankWeightAt(watercolour.EchoNearTiles), BankWeightAt(watercolour.EchoFarTiles)));
+        material.SetShaderParameter("echo_lifts", watercolour.EchoLifts);
+        material.SetShaderParameter("echo_dash_tiles", watercolour.EchoDashTiles);
+        material.SetShaderParameter("echo_fade_px", watercolour.EchoFadePx);
+        material.SetShaderParameter("ripple_strength", watercolour.RippleStrength);
+        material.SetShaderParameter("ripple_width_px", watercolour.RippleWidthPx);
+        material.SetShaderParameter("ripple_cell_tiles", watercolour.RippleCellTiles);
+        material.SetShaderParameter("ripple_share", watercolour.RippleShare);
+        material.SetShaderParameter("ripple_length_tiles", watercolour.RippleLengthTiles);
+        material.SetShaderParameter("ripple_bow_tiles", watercolour.RippleBowTiles);
+        material.SetShaderParameter("ripple_bank_tiles", watercolour.RippleBankTiles);
+        material.SetShaderParameter("ripple_bank_level", BankWeightAt(watercolour.RippleBankTiles));
+        material.SetShaderParameter("ripple_drift", watercolour.RippleDriftTilesPerSecond);
+        material.SetShaderParameter("ripple_fade_px", watercolour.RippleFadePxPerTile);
+        material.SetShaderParameter("ripple_repeat_cells", RippleRepeatCells);
+
+        // The clock's period: the grid drifts RippleRepeatCells cells in it, and a whole number of lives fit it, so the wrap
+        // is not seen (§4.4). The life the shader is given is the file's, rounded to fit.
+        _flowPeriod = RippleRepeatCells * watercolour.RippleCellTiles.X / Math.Max(watercolour.RippleDriftTilesPerSecond, 1e-3f);
+        double lives = Math.Max(1.0, Math.Round(_flowPeriod / Math.Max(watercolour.RippleLifeSeconds, 1e-3f)));
+        material.SetShaderParameter("flow_period_s", (float)_flowPeriod);
+        material.SetShaderParameter("ripple_life_s", (float)(_flowPeriod / lives));
+        _flowClock %= _flowPeriod;
+        material.SetShaderParameter("flow_seconds", (float)_flowClock);
 
         // The map's own colours, and Joe's four painted tiles (A13–A21).
         material.SetShaderParameter("beyond_srgb", Srgb(Beyond));
@@ -693,6 +821,7 @@ public partial class VillageMap
         material.SetShaderParameter("valley_origin_px", valley.Position);
         material.SetShaderParameter("valley_size_px", valley.Size);
         material.SetShaderParameter("px_per_tile", _pixelsPerTile);
+        HandTheRiverOver(material, config);
 
         (float season, float snow) = TheYearAt(_world.Tick + _alpha, config.TicksPerSeason);
         material.SetShaderParameter("grass_season", season);
@@ -700,6 +829,49 @@ public partial class VillageMap
 
         float split = _beforeAfter && valley.Size.X > 0f ? ((_splitShare * Size.X) - valley.Position.X) / valley.Size.X : -1f;
         material.SetShaderParameter("split_u", split);
+    }
+
+    /// <summary>
+    /// ⭐ The river's own coordinates handed to the layer (A45, <c>river-drawn.md §3</c>) — <b>built once a world</b>, from
+    /// its water tiles and the course it was cut down, because no <c>SetTerrain</c> makes or unmakes water. Never per frame
+    /// (CLAUDE.md): a new world, or a load, is the only thing that rebuilds it.
+    /// </summary>
+    private void HandTheRiverOver(ShaderMaterial material, SimConfig config)
+    {
+        if (ReferenceEquals(_riverOf, _world))
+        {
+            return;
+        }
+
+        _riverOf = _world;
+        _riverTable = RiverTable.Of(TheWaterTiles(), config.MapWidth, config.MapHeight, MapGenerator.CourseOf(config, _world!.Seed));
+        material.SetShaderParameter("river_on", _riverTable is not null);
+        if (_riverTable is null)
+        {
+            return;
+        }
+
+        material.SetShaderParameter("river_table", _riverTable.ToTexture());
+        material.SetShaderParameter("river_rows", (float)_riverTable.Rows);
+        material.SetShaderParameter("river_along", _riverTable.Along);
+        material.SetShaderParameter("river_across", _riverTable.Across);
+        material.SetShaderParameter("river_offset", _riverTable.Offset);
+    }
+
+    /// <summary>The valley's water, row by row from its north-west corner, as <see cref="RiverTable.Of"/> reads it.</summary>
+    private bool[] TheWaterTiles()
+    {
+        SimConfig config = _world!.Config;
+        var water = new bool[config.MapWidth * config.MapHeight];
+        for (int j = 0; j < config.MapHeight; j++)
+        {
+            for (int i = 0; i < config.MapWidth; i++)
+            {
+                water[(j * config.MapWidth) + i] = _world.Map.TerrainAt(new GridPos(config.MapMinX + i, config.MapMinY + j)) == Terrain.Water;
+            }
+        }
+
+        return water;
     }
 
     /// <summary>
@@ -820,7 +992,11 @@ public partial class VillageMap
         "ground_map_tiles", "valley_origin_px", "valley_size_px", "px_per_tile", "grass_season", "snow_amount", "split_u",
         "ink_srgb", "ink_strength", "ink_width_px", "ink_pressure", "ink_pressure_tiles", "ink_lifts", "ink_feather_px",
         "pool_strength", "pool_width_px", "snow_peak", "snow_shadow_srgb", "snow_shadow_strength", "ice_srgb",
-        "ice_width_tiles", "ice_strength", "river_winter_darken",
+        "ice_width_tiles", "ice_strength", "river_winter_darken", "river_on", "river_table", "river_rows", "river_along",
+        "river_across", "river_offset", "channel_strength", "echo_strength", "echo_width_share", "echo_levels", "echo_tiles",
+        "echo_lifts", "echo_dash_tiles", "echo_fade_px", "ripple_strength", "ripple_width_px", "ripple_cell_tiles",
+        "ripple_share", "ripple_length_tiles", "ripple_bow_tiles", "ripple_bank_tiles", "ripple_bank_level", "ripple_drift", "ripple_life_s",
+        "ripple_fade_px", "ripple_repeat_cells", "flow_seconds", "flow_period_s",
     };
 
     /// <summary>
@@ -1040,6 +1216,319 @@ public partial class VillageMap
             if (Mathf.Abs(s - season) > 1e-4f || Mathf.Abs(w - snow) > 1e-4f)
             {
                 faults.Add($"{when}: grass season {s:F3}, snow {w:F3} (want {season:F3}, {snow:F3})");
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>river drawn:</c> line (A45, <c>river-drawn.md §7</c>) — the river's table, its clock and its values,
+    /// everything about the drawn river that can be checked headless. How it looks is the windowed renders and Joe's eyes.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Every expectation here is the probe's own</b> (HANDOFF art traps 17 and 25): each course's row and across,
+    /// which way is downstream, the straight rivers' middles and widths, and the bank's weights at the echoes' depths are
+    /// written out below, not read from <see cref="RiverTable"/> or the look file.
+    /// </remarks>
+    internal string TheRiverDrawnHolds()
+    {
+        var faults = new System.Collections.Generic.List<string>();
+        if (_world is null)
+        {
+            return "[widths] river drawn: ⛔ no world to draw";
+        }
+
+        SimConfig config = _world.Config;
+        int width = config.MapWidth;
+        int height = config.MapHeight;
+        float root2 = MathF.Sqrt(2f);
+        string worst = "";
+
+        // (a) The founding valley's table, against the tiles counted here.
+        string course = MapGenerator.CourseOf(config, _world.Seed);
+        bool[] water = TheWaterTiles();
+        RiverTable? table = Built(water, width, height, course);
+        if (table is null)
+        {
+            faults.Add($"the founding valley ({course}, {config.RiverWidthTiles} tiles wide) has no river table");
+        }
+        else
+        {
+            int rows = course is "we" ? width : course is "ns" ? height : width + height - 1;
+            float spacing = course is "nwse" or "swne" ? root2 : 1f;
+            var low = new float[rows];
+            var high = new float[rows];
+            var count = new int[rows];
+            Array.Fill(low, float.MaxValue);
+            Array.Fill(high, float.MinValue);
+            for (int j = 0; j < height; j++)
+            {
+                for (int i = 0; i < width; i++)
+                {
+                    if (!water[(j * width) + i])
+                    {
+                        continue;
+                    }
+
+                    (int row, float across) = course switch
+                    {
+                        "we" => (i, j + 0.5f),
+                        "ns" => (j, i + 0.5f),
+                        "nwse" => (i + j, (i - j) / root2),
+                        _ => (i - j + height - 1, (i + j + 1) / root2),
+                    };
+                    low[row] = Math.Min(low[row], across);
+                    high[row] = Math.Max(high[row], across);
+                    count[row]++;
+                }
+            }
+
+            if (table.Rows != rows)
+            {
+                faults.Add($"the table has {table.Rows} rows for a {course} river on {width} × {height} (want {rows})");
+            }
+
+            float farthest = 0f;
+            double rawHalves = 0, tableHalves = 0;
+            int wet = 0;
+            for (int r = 0; r < Math.Min(rows, table.Rows); r++)
+            {
+                if (count[r] == 0)
+                {
+                    continue;
+                }
+
+                wet++;
+
+                // One run a row: the carve's promise, and what makes a table of rows enough.
+                float run = high[r] - low[r] + spacing;
+                if (MathF.Abs(run - (count[r] * spacing)) > 1e-3f)
+                {
+                    faults.Add($"row {r} holds {count[r]} water tiles over {run:F2} tiles: not one run");
+                    break;
+                }
+
+                float stray = MathF.Max(low[r] - table.Centre[r], table.Centre[r] - high[r]);
+                if (stray > farthest)
+                {
+                    farthest = stray;
+                    worst = $"row {r}";
+                }
+
+                rawHalves += count[r] * spacing / 2f;
+                tableHalves += table.HalfWidth[r];
+            }
+
+            // The smoothed middle may round a sharp bend (the founding valley's worst, measured A45: 1.11 tiles past its
+            // row's water), but never by more than a tile and a half. It only steers the ripples: they keep off the bank by
+            // the water's own weight.
+            if (farthest > 1.5f)
+            {
+                faults.Add($"the smoothed middle leaves the water by {farthest:F2} tiles at {worst} (want within 1.5)");
+            }
+
+            if (wet == 0 || Math.Abs((tableHalves / wet) - (rawHalves / wet)) > 0.05 * (rawHalves / wet))
+            {
+                faults.Add($"the table's mean half-width {tableHalves / Math.Max(1, wet):F2} against the tiles' {rawHalves / Math.Max(1, wet):F2} (want within 5 %)");
+            }
+
+            for (int r = 1; r < table.Rows; r++)
+            {
+                if (table.Down[r] <= table.Down[r - 1] || table.Lean[r] <= 0.5f || table.Lean[r] > 1f)
+                {
+                    faults.Add($"row {r}: down {table.Down[r - 1]:F3} → {table.Down[r]:F3}, lean {table.Lean[r]:F3} (want growing, lean in (0.5, 1])");
+                    break;
+                }
+            }
+
+            worst = $"{course}, {wet} rows wet, the middle within {farthest:F2} tiles of its water";
+        }
+
+        // (b) Four made-up rivers, one a course: which way is downstream, named here — east, south, south-east, north-east.
+        const int w = 40, h = 30;
+        foreach ((string way, int di, int dj, float half) in new[] { ("we", 1, 0, 1.5f), ("ns", 0, 1, 1.5f), ("nwse", 1, 1, root2), ("swne", 1, -1, root2) })
+        {
+            var made = new bool[w * h];
+            for (int j = 0; j < h; j++)
+            {
+                for (int i = 0; i < w; i++)
+                {
+                    made[(j * w) + i] = way switch
+                    {
+                        "we" => j is >= 14 and <= 16,
+                        "ns" => i is >= 19 and <= 21,
+                        "nwse" => i - j is >= 8 and < 12,
+                        _ => i + j is >= 32 and < 36,
+                    };
+                }
+            }
+
+            RiverTable? straight = Built(made, w, h, way);
+            if (straight is null)
+            {
+                faults.Add($"a made-up {way} river has no table");
+                continue;
+            }
+
+            // A tile in the river near the middle, and the tile two steps downstream of it.
+            (int ai, int aj) = way switch { "we" => (18, 15), "ns" => (20, 13), "nwse" => (24, 15), _ => (18, 15) };
+            (int bi, int bj) = (ai + (2 * di), aj + (2 * dj));
+            float rowA = new Vector2(ai + 0.5f, aj + 0.5f).Dot(straight.Along) + straight.Offset;
+            float rowB = new Vector2(bi + 0.5f, bj + 0.5f).Dot(straight.Along) + straight.Offset;
+            int ra = (int)MathF.Floor(rowA);
+            int rb = (int)MathF.Floor(rowB);
+            if (!made[(aj * w) + ai] || !made[(bj * w) + bi] || MathF.Abs(rowA - ra - 0.5f) > 1e-4f || ra < 0 || rb >= straight.Rows
+                || straight.Down[rb] <= straight.Down[ra])
+            {
+                faults.Add($"a made-up {way} river: ({ai},{aj}) is row {rowA:F2}, two steps downstream ({bi},{bj}) row {rowB:F2} (want both in the river, a centre on a row's middle, down growing)");
+                continue;
+            }
+
+            // A diagonal's rows hold alternate halves of its strip (x − y of one parity, then the other), so its raw middle
+            // steps ±0.35 tiles row to row; smoothed over nine rows that leaves under 0.05.
+            float expected = way switch { "we" => 15.5f, "ns" => 20.5f, "nwse" => 9.5f / root2, _ => 34.5f / root2 };
+            float within = way is "we" or "ns" ? 1e-3f : 0.05f;
+            int mid = straight.Rows / 2;
+            if (MathF.Abs(straight.Centre[mid] - expected) > within || MathF.Abs(straight.HalfWidth[mid] - half) > 1e-3f
+                || MathF.Abs(straight.Lean[mid] - 1f) > 1e-4f)
+            {
+                faults.Add($"a made-up {way} river's middle row: centre {straight.Centre[mid]:F3}, half {straight.HalfWidth[mid]:F3}, lean {straight.Lean[mid]:F4} (want {expected:F3}, {half:F3}, 1)");
+            }
+        }
+
+        if (RiverTable.Of(new bool[w * h], w, h, "we") is not null)
+        {
+            faults.Add("a valley with no water has a river table");
+        }
+
+        // (c) The values reaching the layer, each part on, and the clock.
+        bool wasOn = _watercolour;
+        ShowWatercolour(true);
+        ShaderMaterial material = _watercolourMaterial!;
+        Vector2 topLeft = ToScreen(new Vector2(config.MapMinX - 0.5f, config.MapMinY - 0.5f));
+        Vector2 bottomRight = ToScreen(new Vector2(config.MapMaxX + 0.5f, config.MapMaxY + 0.5f));
+        PaintTheWatercolour(new Rect2(topLeft, bottomRight - topLeft));
+
+        ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+        if (look.ChannelStrength <= 0f || look.EchoStrength <= 0f || look.RippleStrength <= 0f || look.RippleShare <= 0f
+            || look.RippleDriftTilesPerSecond <= 0f)
+        {
+            faults.Add($"{ValleyWatercolourLook.Path} draws no channel ({look.ChannelStrength}), echoes ({look.EchoStrength}) or moving ripples ({look.RippleStrength}, {look.RippleShare} of cells, {look.RippleDriftTilesPerSecond} tiles/s)");
+        }
+
+        Near("channel_strength", look.ChannelStrength);
+        Near("echo_strength", look.EchoStrength);
+        Near("echo_width_share", look.EchoWidthShare);
+        Near("echo_lifts", look.EchoLifts);
+        Near("echo_dash_tiles", look.EchoDashTiles);
+        Near("echo_fade_px", look.EchoFadePx);
+        Near("ripple_strength", look.RippleStrength);
+        Near("ripple_width_px", look.RippleWidthPx);
+        Near("ripple_share", look.RippleShare);
+        Near("ripple_bow_tiles", look.RippleBowTiles);
+        Near("ripple_bank_tiles", look.RippleBankTiles);
+        Near("ripple_bank_level", BankWeightAt(look.RippleBankTiles));
+        Near("ripple_drift", look.RippleDriftTilesPerSecond);
+        Near("ripple_fade_px", look.RippleFadePxPerTile);
+        Same("ripple_cell_tiles", material.GetShaderParameter("ripple_cell_tiles").AsVector2() == look.RippleCellTiles);
+        Same("ripple_length_tiles", material.GetShaderParameter("ripple_length_tiles").AsVector2() == look.RippleLengthTiles);
+        Same("echo_tiles", material.GetShaderParameter("echo_tiles").AsVector2() == new Vector2(look.EchoNearTiles, look.EchoFarTiles));
+        Same("river_on", material.GetShaderParameter("river_on").AsBool() == (table is not null));
+        if (table is not null)
+        {
+            Near("river_rows", table.Rows);
+        }
+
+        // The echoes' contours: the weight a straight bank has at 0.15 and 0.32 tiles in, as measured for the spec (A45) —
+        // 0.675 and 0.886, averaged along the bank. A change to the bake's kernel or to the copy of it moves these.
+        Vector2 levels = material.GetShaderParameter("echo_levels").AsVector2();
+        if (MathF.Abs(BankWeightAt(0.15f) - 0.675f) > 0.02f || MathF.Abs(BankWeightAt(0.32f) - 0.886f) > 0.02f
+            || MathF.Abs(levels.X - BankWeightAt(look.EchoNearTiles)) > 1e-5f || MathF.Abs(levels.Y - BankWeightAt(look.EchoFarTiles)) > 1e-5f
+            || levels.Y >= 0.99f)
+        {
+            faults.Add($"the echoes' weights: a bank at 0.15 and 0.32 tiles in weighs {BankWeightAt(0.15f):F3} and {BankWeightAt(0.32f):F3} (want 0.675 and 0.886), the layer has {levels} (want the file's depths' and under 0.99, where the weight still slopes)");
+        }
+
+        // The clock: the period a whole number of lives, the grid drifting RippleRepeatCells cells in it.
+        float period = material.GetShaderParameter("flow_period_s").AsSingle();
+        float life = material.GetShaderParameter("ripple_life_s").AsSingle();
+        float drifted = period * look.RippleDriftTilesPerSecond / look.RippleCellTiles.X;
+        float lives = period / life;
+        if (MathF.Abs(drifted - 256f) > 1e-2f || MathF.Abs(lives - MathF.Round(lives)) > 1e-3f
+            || MathF.Abs(life - look.RippleLifeSeconds) > 0.1f * look.RippleLifeSeconds)
+        {
+            faults.Add($"the clock's period {period:F2} s drifts {drifted:F3} cells (want 256) over {lives:F3} lives of {life:F3} s (want whole, near the file's {look.RippleLifeSeconds})");
+        }
+
+        // Paused it stands; the tick off it stands; running at 1× it takes the frame's real seconds; at 20× twenty times
+        // them (A46: the river keeps the game's speed); at the period it wraps.
+        double clockWas = _flowClock;
+        bool pausedWas = Paused;
+        bool movesWas = _waterMoves;
+        double paceWas = _flowPace;
+        _flowPace = 1.0;
+        _flowClock = 10.0;
+        Paused = true;
+        TickTheFlowClock(1.0);
+        bool stood = _flowClock == 10.0;
+        Paused = false;
+        _waterMoves = false;
+        TickTheFlowClock(1.0);
+        bool held = _flowClock == 10.0;
+        _waterMoves = true;
+        TickTheFlowClock(1.0);
+        bool ran = Math.Abs(_flowClock - 11.0) < 1e-9 && Math.Abs(material.GetShaderParameter("flow_seconds").AsSingle() - 11f) < 1e-5f;
+        _flowPace = 20.0;
+        TickTheFlowClock(1.0);
+        bool raced = Math.Abs(_flowClock - 31.0) < 1e-9;
+        _flowPace = 1.0;
+        _flowClock = _flowPeriod - 0.25;
+        TickTheFlowClock(0.5);
+        bool wrapped = Math.Abs(_flowClock - 0.25) < 1e-6;
+        _flowClock = clockWas;
+        Paused = pausedWas;
+        _waterMoves = movesWas;
+        _flowPace = paceWas;
+        material.SetShaderParameter("flow_seconds", (float)_flowClock);
+        if (!stood || !held || !ran || !raced || !wrapped)
+        {
+            faults.Add($"the clock: paused it stood {stood}, the tick off it held {held}, running it took a second {ran}, at 20× twenty {raced}, at its period it wrapped {wrapped} (want all true)");
+        }
+
+        ShowWatercolour(wasOn);
+
+        return faults.Count == 0
+            ? $"[widths] river drawn: ✅ the founding valley's table one run a row ({worst}); four made-up rivers run east, south, south-east and north-east, middles and widths as cut; no water, no table; the channel, the echoes at a bank's 0.675 and 0.886 and the ripples on, every value the file's; the clock still paused and with the tick off, the game's speed running (1× a second a second, 20× twenty), wrapping at {period:F0} s"
+            : $"[widths] river drawn: ⛔ {string.Join("; ", faults)}";
+
+        void Near(string uniform, float want)
+        {
+            float got = material.GetShaderParameter(uniform).AsSingle();
+            if (Mathf.Abs(got - want) > 1e-5f)
+            {
+                faults.Add($"{uniform} is {got} (want {want})");
+            }
+        }
+
+        void Same(string what, bool holds)
+        {
+            if (!holds)
+            {
+                faults.Add($"{what} is not the look file's");
+            }
+        }
+
+        // ⚠️ A table that throws is a fault on this line, said with what threw — not an exception out of the probe, which
+        // never reaches `done.` and leaves a headless Godot running (the red-check's first mutant hung it for 15 minutes).
+        RiverTable? Built(bool[] tiles, int across, int down, string way)
+        {
+            try
+            {
+                return RiverTable.Of(tiles, across, down, way);
+            }
+            catch (Exception thrown) when (thrown is IndexOutOfRangeException or ArgumentException or InvalidOperationException)
+            {
+                faults.Add($"a {way} table on {across} × {down} threw {thrown.GetType().Name}: {thrown.Message}");
+                return null;
             }
         }
     }

@@ -88,6 +88,43 @@ uniform float ice_width_tiles = 0.0;
 uniform float ice_strength = 0.0;
 uniform float river_winter_darken = 0.0;
 
+// The river drawn (A45, `specs/river-drawn.md`): echo lines just inside the bank, the channel darker down the middle,
+// ripples drifting downstream. Off at 0 strength, each. The river's own coordinates come from RiverTable — one row a
+// step down its course (middle, half-width, distance down, lean), read once a water pixel.
+uniform bool river_on = false;
+uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
+uniform float river_rows = 1.0;
+uniform vec2 river_along = vec2(1.0, 0.0);
+uniform vec2 river_across = vec2(0.0, 1.0);
+uniform float river_offset = 0.0;
+uniform float channel_strength = 0.0;
+uniform float echo_strength = 0.0;
+uniform float echo_width_share = 0.5;
+// The raw water weight at each echo's depth on a straight bank (VillageMap.BankWeightAt), and the depths, in tiles.
+uniform vec2 echo_levels = vec2(0.7, 0.9);
+uniform vec2 echo_tiles = vec2(0.15, 0.32);
+uniform float echo_lifts = 0.5;
+uniform float echo_dash_tiles = 1.2;
+uniform float echo_fade_px = 3.0;
+uniform float ripple_strength = 0.0;
+uniform float ripple_width_px = 1.0;
+uniform vec2 ripple_cell_tiles = vec2(1.6, 0.6);
+uniform float ripple_share = 0.45;
+uniform vec2 ripple_length_tiles = vec2(0.5, 0.9);
+uniform float ripple_bow_tiles = 0.06;
+uniform float ripple_bank_tiles = 0.35;
+// The raw water weight a straight bank has ripple_bank_tiles inside it (VillageMap.BankWeightAt): the ripples keep to
+// water weighed above it, so they keep off the drawn bank itself, step for step, whatever the table's smoothed middle does.
+uniform float ripple_bank_level = 0.93;
+uniform float ripple_drift = 0.35;
+uniform float ripple_life_s = 6.0;
+uniform float ripple_fade_px = 12.0;
+uniform int ripple_repeat_cells = 256;
+// The view's clock (never the sim's): real seconds while the game runs, still while it is paused (A26 call 2), the same
+// at every speed (A45 call 1), wrapped at flow_period_s — a whole number of lives and of cells' drift, so no jump.
+uniform float flow_seconds = 0.0;
+uniform float flow_period_s = 1170.0;
+
 // Hex lattice vertices per repeat: the grass's own (grass_lab.gdshader's HEX_PER_REPEAT).
 const float VALLEY_HEX_PER_REPEAT = 2.0;
 // A share below this moves no byte of the colour (under half a level of 255), so the kind's painting is not read.
@@ -120,15 +157,62 @@ float valley_px_from_half(float share) {
 // ink is a touch denser where it is laid thick; where the pressure is lightest the pen LIFTS and the stroke breaks; and
 // its edge FEATHERS into the paper's fibres, ragged at a pixel's scale. All three are world-anchored noise, so the stroke
 // holds still on the land as the view pans, and is the same stroke every time a place is seen.
-float valley_ink_stroke(vec2 tile, float px_away) {
-    float pressure = at_value_noise(tile / max(ink_pressure_tiles, 1e-3), 91u);
-    float width = ink_width_px * max(0.0, 1.0 + ink_pressure * (2.0 * pressure - 1.0));
-    float lifted = smoothstep(ink_lifts, ink_lifts + 0.12, pressure);
+// The pen itself, for the bank and its echoes (A45): a width, how long a swell of pressure is, where it lifts, and a salt
+// so each line breaks in its own places.
+float valley_pen(vec2 tile, float px_away, float width_px, float pressure_tiles, float lifts, uint salt) {
+    float pressure = at_value_noise(tile / max(pressure_tiles, 1e-3), salt);
+    float width = width_px * max(0.0, 1.0 + ink_pressure * (2.0 * pressure - 1.0));
+    float lifted = smoothstep(lifts, lifts + 0.12, pressure);
     // Fibres about two and a half screen pixels across, wherever the zoom: the paper's scale, not the land's.
     float fibre = (at_value_noise(tile * px_per_tile / 2.5, 92u) - 0.5) * 2.0 * ink_feather_px;
     float edge = 0.5 * width;
     float body = 1.0 - smoothstep(edge - 0.5, edge + 0.5 + ink_feather_px, px_away + fibre);
     return body * lifted * mix(0.8, 1.0, pressure);
+}
+
+float valley_ink_stroke(vec2 tile, float px_away) {
+    return valley_pen(tile, px_away, ink_width_px, ink_pressure_tiles, ink_lifts, 91u);
+}
+
+// ⭐ The ripples (A45, `river-drawn.md §4.3`), how dark at this pixel, 0 to 1: short bowed pen marks laid on a grid in the
+// river's own coordinates — `down` the river and `across` it, in tiles — that drifts downstream with the clock. Each cell
+// holds a ripple for a life of `ripple_life_s`, fading in over its first third and out over its last, drawn anew each
+// life, so the water is never a conveyor belt. One cell is asked: a ripple never leaves its own.
+float valley_ripples(float down, float across, float water) {
+    float u = down - ripple_drift * flow_seconds;
+    float ci = floor(u / ripple_cell_tiles.x);
+    float cj = floor(across / ripple_cell_tiles.y);
+    vec2 local = vec2(u - ci * ripple_cell_tiles.x, across - cj * ripple_cell_tiles.y);
+    // The cell's place down the river, wrapped at ripple_repeat_cells: the clock's wrap moves the grid that many cells.
+    float repeat = float(ripple_repeat_cells);
+    int im = int(ci - repeat * floor(ci / repeat));
+    ivec2 cell = ivec2(im, int(cj));
+    float age = flow_seconds / ripple_life_s + at_rand(cell, 81u);
+    int lives = max(1, int(round(flow_period_s / ripple_life_s)));
+    int life = int(floor(age)) % lives;
+    ivec2 drawn = ivec2(im + ripple_repeat_cells * life, int(cj));
+    if (at_rand(drawn, 82u) >= ripple_share) {
+        return 0.0;
+    }
+
+    float len = mix(ripple_length_tiles.x, ripple_length_tiles.y, at_rand(drawn, 83u));
+    float cu = mix(0.5 * ripple_length_tiles.y, ripple_cell_tiles.x - 0.5 * ripple_length_tiles.y, at_rand(drawn, 84u));
+    float margin = ripple_bow_tiles + 0.1;
+    float cw = mix(margin, ripple_cell_tiles.y - margin, at_rand(drawn, 85u));
+    float bow = at_rand(drawn, 86u) < 0.5 ? -ripple_bow_tiles : ripple_bow_tiles;
+    float x = (local.x - cu) / (0.5 * len);
+    if (abs(x) >= 1.0) {
+        return 0.0;
+    }
+
+    float rise = 1.0 - x * x;
+    float px_away = abs(local.y - (cw + bow * rise)) * px_per_tile;
+    float edge = 0.5 * ripple_width_px * sqrt(rise);
+    float body = 1.0 - smoothstep(edge - 0.5, edge + 0.5, px_away);
+    float f = fract(age);
+    float lived = smoothstep(0.0, 1.0 / 3.0, f) * (1.0 - smoothstep(2.0 / 3.0, 1.0, f));
+    float off_bank = smoothstep(ripple_bank_level, 1.0, water);
+    return body * lived * off_bank;
 }
 
 // Pigment pooled at a wash's edge: whole at the contour, gone `reach` pixels inside — and nothing outside the wash.
@@ -207,6 +291,8 @@ void fragment() {
         // ⚠️ Only the bank (A28): A27 also inked the woods' and seams' edges (on the unbled edge, after the bled one drew A7's
         // fray as a ragged line), and Joe ruled the ground is not outlined — the trees are.
         float from_water = valley_px_from_half(weights.a);
+        // The water weight's slope on screen, for the echo lines' own contours (A45) — a derivative, so taken here.
+        float water_slope = max(length(vec2(dFdx(weights.a), dFdy(weights.a))), 1e-5);
 
         vec3 wood = kind_wood;
         vec3 seam = kind_stone;
@@ -230,6 +316,26 @@ void fragment() {
 
         vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
         vec3 colour = ground * mix(vec3(1.0), grass, strength);
+
+        // The river's own coordinates (A45, `river-drawn.md §3`): one row of the table, read only where water is drawn.
+        // `across` is square to the river (the lean undoes the course's square), `down` how far it has run.
+        float river_down = 0.0;
+        float river_across_tiles = 0.0;
+        float river_half = 0.0;
+        bool on_river = river_on && kinds.a > VALLEY_SEEN;
+        if (on_river) {
+            vec2 corner = tile + 0.5 * ground_map_tiles;
+            vec4 row = textureLod(river_table, vec2((dot(corner, river_along) + river_offset) / river_rows, 0.5), 0.0);
+            river_across_tiles = (dot(corner, river_across) - row.x) * row.w;
+            river_half = row.y * row.w;
+            river_down = row.z;
+
+            // The channel (§4.2): the wash darker toward the middle, easing to nothing at the bank.
+            if (channel_strength > 0.0) {
+                float deep = smoothstep(0.0, 1.0, 1.0 - clamp(abs(river_across_tiles) / max(river_half, 1e-3), 0.0, 1.0));
+                colour *= 1.0 - channel_strength * deep * kinds.a;
+            }
+        }
 
         // Pooling (A27): the river's wash darker at its own edge, as pigment gathers where a wash dries. Only the river's
         // since A28 — on the woods and seams a darker rim read as the outline Joe ruled out. Under the snow.
@@ -262,6 +368,29 @@ void fragment() {
 
         // The ink (A27–A28): a pen stroke on the river's bank — over the snow, so the map still reads in winter, and under
         // the paper's grain, which is the paper's tooth under the pen.
+        // The river drawn (A45): the echo lines and the ripples, in the same ink, under the bank's own stroke.
+        if (on_river && weights.a > 0.5) {
+            if (echo_strength > 0.0) {
+                // Two contours of the raw water weight, each at the weight a straight bank has at its depth (§4.1), held
+                // still; each fades out where it would lie within echo_fade_px of the bank (the wide zoom).
+                vec2 seen = smoothstep(vec2(echo_fade_px), vec2(2.0 * echo_fade_px), echo_tiles * px_per_tile);
+                float near = valley_pen(tile, abs(weights.a - echo_levels.x) / water_slope, ink_width_px * echo_width_share,
+                    echo_dash_tiles, echo_lifts, 93u);
+                float far = valley_pen(tile, abs(weights.a - echo_levels.y) / water_slope, ink_width_px * echo_width_share,
+                    echo_dash_tiles, echo_lifts, 94u);
+                colour = mix(colour, ink_srgb, echo_strength * seen.x * near * kinds.a);
+                colour = mix(colour, ink_srgb, echo_strength * seen.y * far * kinds.a);
+            }
+
+            if (ripple_strength > 0.0) {
+                float seen = smoothstep(ripple_fade_px * (2.0 / 3.0), ripple_fade_px, px_per_tile);
+                if (seen > 0.0) {
+                    float ripple = valley_ripples(river_down, river_across_tiles, weights.a);
+                    colour = mix(colour, ink_srgb, ripple_strength * seen * ripple * kinds.a);
+                }
+            }
+        }
+
         if (ink_strength > 0.0) {
             colour = mix(colour, ink_srgb, ink_strength * valley_ink_stroke(tile, from_water));
         }

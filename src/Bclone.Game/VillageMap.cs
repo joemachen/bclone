@@ -697,6 +697,9 @@ public partial class VillageMap : Control
         // The walk-in's clock (D573): real seconds too, but still while the village is paused.
         TickTheWalkClock(delta);
 
+        // The river's clock (A45): real seconds while the village runs and the water may move.
+        TickTheFlowClock(delta);
+
         // Polled rather than event-driven: held keys have to pan smoothly, and key
         // events only fire on press and repeat.
         // ⛔ AND NOT WHILE SOMEBODY IS TYPING (D379). This used to say polling globally was safe

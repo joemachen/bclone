@@ -59,7 +59,7 @@ internal sealed class ValleyTexture
 
 
     /// <summary>How far the kernel reaches when weighing a kind of ground, in tiles.</summary>
-    private const float KernelTiles = 1f;
+    internal const float KernelTiles = 1f;
 
     /// <summary>
     /// How many tiles either side <see cref="Blended"/> actually scans. ⚠️ <b>Widen this
