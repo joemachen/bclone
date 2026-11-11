@@ -65,6 +65,37 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float PoolWidthPx { get; set; }
 
+    /// <summary>
+    /// The year's snow at its height, as a share of a blanket (A41, A26 call 3: <i>"winter patchy, with shadows"</i>): below 1
+    /// the snow lies in drifts with the ground between.
+    /// </summary>
+    [Export]
+    public float SnowPeak { get; set; }
+
+    /// <summary>The cool tint multiplied into the snow on a drift's lee, sRGB (A41).</summary>
+    [Export]
+    public Color SnowShadowColour { get; set; }
+
+    /// <summary>How strongly a drift's lee takes the cool tint, 0 to 1 (A41).</summary>
+    [Export]
+    public float SnowShadowStrength { get; set; }
+
+    /// <summary>The ice at the river's rim in winter, sRGB (A41).</summary>
+    [Export]
+    public Color IceColour { get; set; }
+
+    /// <summary>How far in from the bank the ice reaches, in tiles (A41).</summary>
+    [Export]
+    public float IceWidthTiles { get; set; }
+
+    /// <summary>How white the rim's ice lies at the height of winter, 0 to 1 (A41).</summary>
+    [Export]
+    public float IceStrength { get; set; }
+
+    /// <summary>How much darker the river's channel lies at the height of winter, 0 to 1 (A41).</summary>
+    [Export]
+    public float RiverWinterDarken { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     internal static ValleyWatercolourLook Current => GD.Load<ValleyWatercolourLook>(Path);
 }

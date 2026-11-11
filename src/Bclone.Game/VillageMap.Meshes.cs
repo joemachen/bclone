@@ -463,7 +463,18 @@ public partial class VillageMap
         Vector2 first = ToTile(Vector2.Zero);
         Vector2 last = ToTile(Size);
         RefreshTheScenery(_world!);
-        DrawThePaintedTrees(Mathf.FloorToInt(first.X), Mathf.CeilToInt(last.X), Mathf.FloorToInt(first.Y), Mathf.CeilToInt(last.Y));
+        int minX = Mathf.FloorToInt(first.X), maxX = Mathf.CeilToInt(last.X), minY = Mathf.FloorToInt(first.Y), maxY = Mathf.CeilToInt(last.Y);
+
+        // ⭐ The trees through the year (A41): the season's atlas, the next one over it while the season turns — two
+        // textures and a share, never a re-mesh (D338: a uniform, never a re-bake).
+        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        (TreeSet from, float fromAlpha, TreeSet to, float toAlpha) = TreeSeasonAt(season);
+        DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha);
+        if (toAlpha > 0f)
+        {
+            DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(to)!, toAlpha);
+        }
+
         _treesNow += Since(started);
     }
 
@@ -472,12 +483,13 @@ public partial class VillageMap
     /// A painted tree reaches further than a crown — its foot up to <c>CanopySpread</c> off its tile and its cell
     /// <see cref="PaintedTreeHalf"/> × 1.1 round that — so a chunk two tiles off the screen's edge can still have leaves on it.
     /// </remarks>
-    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY)
+    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY, CanvasTexture atlasOf, float alpha)
     {
         GeneratedMap map = _sceneryOf!;
         Transform2D toScreen = TileToScreen();
         Rid canvas = GetCanvasItem();
-        Rid atlas = _treeAtlas!.GetRid();
+        Rid atlas = atlasOf.GetRid();
+        Color modulate = Colors.White with { A = alpha };
         const int Reach = 2;
 
         int firstCx = Mathf.Clamp((minX - Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
@@ -492,7 +504,7 @@ public partial class VillageMap
                 ArrayMesh mesh = _scenery[(cy * _chunksAcross) + cx].Trees;
                 if (mesh.GetSurfaceCount() > 0)
                 {
-                    RenderingServer.CanvasItemAddMesh(canvas, mesh.GetRid(), toScreen, Colors.White, atlas);
+                    RenderingServer.CanvasItemAddMesh(canvas, mesh.GetRid(), toScreen, modulate, atlas);
                 }
             }
         }

@@ -92,6 +92,79 @@ public partial class VillageMap
     /// <summary>The tree atlas (<c>tree-sprites.md §3</c>): 4 × 2 cells of 256 px, 128 px of painting a tile (A34).</summary>
     internal const string TreeSpritesPath = "res://textures/trees/tree_sprites.png";
 
+    /// <summary>The autumn trees (A41, <c>tree-sprites.md §9</c>): the same cells, russet, orange and gold.</summary>
+    internal const string TreeSpritesAutumnPath = "res://textures/trees/tree_sprites_autumn.png";
+
+    /// <summary>The winter trees (A41): leafy, birch and willow bare with a little snow; the conifers snow-laden.</summary>
+    internal const string TreeSpritesWinterPath = "res://textures/trees/tree_sprites_winter.png";
+
+    /// <summary>Which set of the painted trees a season draws (A41): spring and summer share the summer set.</summary>
+    internal enum TreeSet
+    {
+        Summer,
+        Autumn,
+        Winter,
+    }
+
+    /// <summary>The autumn and winter atlases, each loaded the first time its season comes (A23's leanness).</summary>
+    private CanvasTexture? _treeAtlasAutumn;
+    private CanvasTexture? _treeAtlasWinter;
+
+    /// <summary>
+    /// ⭐ What the trees draw at a point in the year (A41, Joe: *"Slow crossfade"*): the season's set, and while a season
+    /// turns — <c>TheYearAt</c>'s last third, the grass's and the snow's clock — the next set over it at the turn's share.
+    /// </summary>
+    /// <remarks>
+    /// Into winter the old crowns fade out as the bare branches come in (<c>FromAlpha</c> falls with the turn), so at its
+    /// end no leaf is left over the branches; out of winter the leaves come in over the branches, which stay until covered.
+    /// A <c>static</c> of the season: no tick, no clock of its own (D337).
+    /// </remarks>
+    internal static (TreeSet From, float FromAlpha, TreeSet To, float ToAlpha) TreeSeasonAt(float season)
+    {
+        double whole = Math.Floor(season);
+        int now = (int)(((whole % 4) + 4) % 4);
+        float turn = (float)(season - whole);
+        TreeSet from = SetOf(now), to = SetOf((now + 1) % 4);
+        if (from == to || turn <= 0f)
+        {
+            return (from, 1f, from, 0f);
+        }
+
+        return (from, to == TreeSet.Winter ? 1f - turn : 1f, to, turn);
+
+        static TreeSet SetOf(int quarter) => quarter switch
+        {
+            2 => TreeSet.Autumn,
+            3 => TreeSet.Winter,
+            _ => TreeSet.Summer,
+        };
+    }
+
+    /// <summary>A season's atlas, loaded on first need; a missing one is said loudly and the summer set stands in.</summary>
+    private CanvasTexture? TheTreeAtlasFor(TreeSet set)
+    {
+        if (set == TreeSet.Summer)
+        {
+            return TheTreeAtlas();
+        }
+
+        ref CanvasTexture? held = ref set == TreeSet.Autumn ? ref _treeAtlasAutumn : ref _treeAtlasWinter;
+        if (held is null)
+        {
+            string path = set == TreeSet.Autumn ? TreeSpritesAutumnPath : TreeSpritesWinterPath;
+            Texture2D? atlas = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+            if (atlas is null)
+            {
+                GD.PushError($"[watercolour] the {set} trees {path} did not load — the summer trees stand in");
+                return TheTreeAtlas();
+            }
+
+            held = new CanvasTexture { DiffuseTexture = atlas, TextureFilter = TextureFilterEnum.LinearWithMipmaps };
+        }
+
+        return held;
+    }
+
     /// <summary>Whether the valley is drawn in watercolour — the Settings tick's state.</summary>
     public bool WatercolourShown => _watercolour;
 
@@ -426,8 +499,49 @@ public partial class VillageMap
             faults.Add("no young tree was checked");
         }
 
+        // ⭐ The trees through the year (A41). The two season atlases as imported — the summer one's grid, lossless,
+        // mipmapped — and each drawn mipmapped from its own file.
+        // ⛔ The paths named here, not read off the code's constants (trap 17).
+        foreach ((string path, TreeSet set) in new[] { ("res://textures/trees/tree_sprites_autumn.png", TreeSet.Autumn), ("res://textures/trees/tree_sprites_winter.png", TreeSet.Winter) })
+        {
+            Texture2D? seasonal = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+            Image? pixels = seasonal?.GetImage();
+            if (seasonal is null || pixels is null || seasonal.GetWidth() != 1024 || seasonal.GetHeight() != 1280
+                || pixels.GetFormat() != Image.Format.Rgba8 || !pixels.HasMipmaps())
+            {
+                faults.Add($"{path} is {seasonal?.GetWidth()} × {seasonal?.GetHeight()}, {pixels?.GetFormat()}, mipmaps {pixels?.HasMipmaps()} (want 1024 × 1280, Rgba8, mipmapped)");
+            }
+
+            CanvasTexture? drawn = TheTreeAtlasFor(set);
+            if (drawn?.DiffuseTexture?.ResourcePath != path || drawn.TextureFilter != TextureFilterEnum.LinearWithMipmaps)
+            {
+                faults.Add($"the {set} trees draw {drawn?.DiffuseTexture?.ResourcePath} with {drawn?.TextureFilter} (want {path}, LinearWithMipmaps)");
+            }
+        }
+
+        // The year, at seven moments, named here (Joe, A41: a slow crossfade over each season's turn; into winter the
+        // crowns fade out under the branches). A season value is the season plus how far it has turned.
+        (float At, TreeSet From, float FromAlpha, TreeSet To, float ToAlpha, string When)[] year =
+        {
+            (0.0f, TreeSet.Summer, 1f, TreeSet.Summer, 0f, "spring"),
+            (1.0f, TreeSet.Summer, 1f, TreeSet.Summer, 0f, "summer"),
+            (1.5f, TreeSet.Summer, 1f, TreeSet.Autumn, 0.5f, "summer half turned"),
+            (2.0f, TreeSet.Autumn, 1f, TreeSet.Autumn, 0f, "autumn"),
+            (2.5f, TreeSet.Autumn, 0.5f, TreeSet.Winter, 0.5f, "autumn half turned to winter"),
+            (3.0f, TreeSet.Winter, 1f, TreeSet.Winter, 0f, "winter"),
+            (3.5f, TreeSet.Winter, 1f, TreeSet.Summer, 0.5f, "winter half turned to spring"),
+        };
+        foreach ((float at, TreeSet from, float fromAlpha, TreeSet to, float toAlpha, string when) in year)
+        {
+            (TreeSet f, float fa, TreeSet tt, float ta) = TreeSeasonAt(at);
+            if (f != from || tt != to || Mathf.Abs(fa - fromAlpha) > 1e-4f || Mathf.Abs(ta - toAlpha) > 1e-4f)
+            {
+                faults.Add($"at {when} the trees draw {f} at {fa:F2} then {tt} at {ta:F2} (want {from} at {fromAlpha:F2} then {to} at {toAlpha:F2})");
+            }
+        }
+
         return faults.Count == 0
-            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 1280, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; {conifers} conifers in stands ({coniferShare:P0}), {willows} willows each by water, {birches} birches each at an edge; a fell on a chunk's edge re-meshes {rebuiltForAFell} chunks; the trees tick hides and brings back every tree in either look; off, no painted tree and the canopies to the vertex"
+            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 1280, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; {conifers} conifers in stands ({coniferShare:P0}), {willows} willows each by water, {birches} birches each at an edge; a fell on a chunk's edge re-meshes {rebuiltForAFell} chunks; the trees tick hides and brings back every tree in either look; through the year the summer, autumn and winter atlases (each 1024 × 1280, mipmapped) at seven moments as Joe chose them; off, no painted tree and the canopies to the vertex"
             : $"[widths] painted trees: ⛔ {string.Join("; ", faults)}";
 
         bool Near(Vector2 foot, System.Func<Terrain, bool> wanted)
@@ -523,6 +637,13 @@ public partial class VillageMap
         material.SetShaderParameter("ink_feather_px", watercolour.InkFeatherPx);
         material.SetShaderParameter("pool_strength", watercolour.PoolStrength);
         material.SetShaderParameter("pool_width_px", watercolour.PoolWidthPx);
+        material.SetShaderParameter("snow_peak", watercolour.SnowPeak);
+        material.SetShaderParameter("snow_shadow_srgb", Srgb(watercolour.SnowShadowColour));
+        material.SetShaderParameter("snow_shadow_strength", watercolour.SnowShadowStrength);
+        material.SetShaderParameter("ice_srgb", Srgb(watercolour.IceColour));
+        material.SetShaderParameter("ice_width_tiles", watercolour.IceWidthTiles);
+        material.SetShaderParameter("ice_strength", watercolour.IceStrength);
+        material.SetShaderParameter("river_winter_darken", watercolour.RiverWinterDarken);
 
         // The map's own colours, and Joe's four painted tiles (A13–A21).
         material.SetShaderParameter("beyond_srgb", Srgb(Beyond));
@@ -698,7 +819,8 @@ public partial class VillageMap
         "ground_wood", "ground_stone", "ground_iron", "ground_water", "valley_colour", "ground_map", "ground_map_shares",
         "ground_map_tiles", "valley_origin_px", "valley_size_px", "px_per_tile", "grass_season", "snow_amount", "split_u",
         "ink_srgb", "ink_strength", "ink_width_px", "ink_pressure", "ink_pressure_tiles", "ink_lifts", "ink_feather_px",
-        "pool_strength", "pool_width_px",
+        "pool_strength", "pool_width_px", "snow_peak", "snow_shadow_srgb", "snow_shadow_strength", "ice_srgb",
+        "ice_width_tiles", "ice_strength", "river_winter_darken",
     };
 
     /// <summary>
@@ -781,6 +903,21 @@ public partial class VillageMap
         Near("ink_feather_px", watercolour.InkFeatherPx);
         Near("pool_strength", watercolour.PoolStrength);
         Near("pool_width_px", watercolour.PoolWidthPx);
+        Near("snow_peak", watercolour.SnowPeak);
+        Near("snow_shadow_strength", watercolour.SnowShadowStrength);
+        Near("ice_width_tiles", watercolour.IceWidthTiles);
+        Near("ice_strength", watercolour.IceStrength);
+        Near("river_winter_darken", watercolour.RiverWinterDarken);
+        Same("snow_shadow_srgb", material.GetShaderParameter("snow_shadow_srgb").AsVector3() == Srgb(watercolour.SnowShadowColour));
+        Same("ice_srgb", material.GetShaderParameter("ice_srgb").AsVector3() == Srgb(watercolour.IceColour));
+
+        // ⛔ Winter as A26 call 3 settled it, named here and not read off the file alone (trap 17): patchy — the peak under a
+        // blanket, 0.7–0.8 — with its shadows and its ice, each on.
+        if (watercolour.SnowPeak < 0.7f || watercolour.SnowPeak > 0.8f || watercolour.SnowShadowStrength <= 0f
+            || watercolour.IceStrength <= 0f || watercolour.IceWidthTiles <= 0f || watercolour.RiverWinterDarken <= 0f)
+        {
+            faults.Add($"winter is not A26's: peak {watercolour.SnowPeak} (want 0.7–0.8), shadows {watercolour.SnowShadowStrength}, ice {watercolour.IceStrength} over {watercolour.IceWidthTiles} tiles, the river darker by {watercolour.RiverWinterDarken} (want each above 0)");
+        }
         Same("ink_srgb", material.GetShaderParameter("ink_srgb").AsVector3() == Srgb(watercolour.InkColour));
         if (watercolour.InkStrength <= 0f || watercolour.InkWidthPx <= 0f)
         {
