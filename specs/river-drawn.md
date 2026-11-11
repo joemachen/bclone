@@ -2,7 +2,8 @@
 
 **Status:** ✍️ **SPECCED (A44, 2026-11-11) — JOE'S *"The river drawn"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A45,
 *"All as recommended"*); 🔨 BUILT (A45, §9): THE TABLE, THE CHANNEL, THE ECHO LINES, THE RIPPLES, THE CLOCK, THE *moving water*
-TICK. ⏸️ HIS EYES.** Art lane,
+TICK. 🔁 CALL 1 REVERSED AT HIS WORD (A46, *"Keep the game's speed"*, after a side-by-side trial): THE RIVER NOW RUNS AT THE
+GAME'S SPEED. ⏸️ HIS EYES.** Art lane,
 branch `art`. It is `terrain-shader.md §7` piece 3, and A26's brief is what it is judged against: *"Water drawn, not
 filled — inked bank, two echo lines, a darker channel, flow strokes drifting downstream."* The inked bank is built
 (A27–A28); this is the rest. Owner: Joe + Claude Code.
@@ -110,8 +111,13 @@ downstream.
 - **The ripples run on their own clock**, `flow_seconds`, kept by the map and handed to the shader each frame. It
   **advances only while the game is running**: paused, every ripple holds exactly where it is (A26 call 2). It is a
   *view* clock and never touches the sim, so determinism is untouched.
-- **By call 1 it advances at the same rate at every game speed**: at 1× and at 20× the water moves the same gentle
-  amount. The other answer ties it to game time, so at 20× the ripples race.
+- ~~**By call 1 it advances at the same rate at every game speed**: at 1× and at 20× the water moves the same gentle
+  amount. The other answer ties it to game time, so at 20× the ripples race.~~ *(void — call 1 reversed, A46.)*
+- 🔁 **A46 — it keeps the game's speed** (Joe: *"Keep the game's speed"*, after seeing both as a trial tick): a real
+  second gives the game's speed multiplier in flow seconds — one at 1×, twenty at 20×. `Main`'s refresh hands the map
+  the speed every frame (`SetFlowPace`), and a pause still stops it by `Paused`. ⚠️ At 10× and 20× each ripple lives a
+  fraction of a second (6 s ÷ the speed) and drifts 3.5–7 tiles a second, so it flickers more than it flows; Joe chose
+  it having seen that. If it ever reads wrong, the middle way is a pace that follows the speed but tops out at 2–3×.
 - **It wraps without a jump.** The pattern repeats along the river every few hundred tiles and over about twenty minutes,
   and the clock wraps with that period, so a long sitting never loses a float's precision. Wrapped this way, a frame
   after the wrap is the frame before it plus one step, which the probe checks.
@@ -135,7 +141,8 @@ first and the river waits on it.**
 
 ## 6. Joe's calls (A44), in plain words, each with a recommendation
 
-✅ **Answered (A45): *"All as recommended"*** — the same drift at every game speed; sparse; the echo lines still; a
+✅ **Answered (A45): *"All as recommended"*** — ~~the same drift at every game speed~~ *(call 1 reversed, A46: the river
+keeps the game's speed)*; sparse; the echo lines still; a
 *moving water* tick, on by default.
 
 1. **How fast the water moves.**

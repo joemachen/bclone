@@ -581,6 +581,7 @@ public partial class Main : Control
         GD.Print(_map.TheWatercolourHolds());
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheRiverDrawnHolds());
+        GD.Print(TheRiverKeepsTheGamesSpeed());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
@@ -2913,6 +2914,32 @@ public partial class Main : Control
     /// <summary>Whether the last refresh saw a band on the road (D573) — so the refresh that sees it end can hand the speed back.</summary>
     private bool _walkInWasUnderway;
 
+    /// <summary>
+    /// ⭐ The probe's <c>river pace:</c> line (A46): the refresh hands the map the game's speed, so the ripples run 20 times
+    /// as fast at 20× as at 1× — Joe's <i>"Keep the game's speed"</i>. <c>VillageMap.TheRiverDrawnHolds</c> proves the clock
+    /// uses the pace; this proves the pace is the game's.
+    /// </summary>
+    private string TheRiverKeepsTheGamesSpeed()
+    {
+        double speedWas = _driver.SpeedMultiplier;
+        var faults = new List<string>();
+        foreach (double speed in new[] { 1.0, 2.0, 20.0 })
+        {
+            SetSpeed(speed);
+            Refresh();
+            if (_map.FlowPace != speed)
+            {
+                faults.Add($"at {speed}x the river runs at {_map.FlowPace}x");
+            }
+        }
+
+        SetSpeed(speedWas);
+        Refresh();
+        return faults.Count == 0
+            ? "[widths] river pace: ✅ the river keeps the game's speed — 1×, 2× and 20× hand the map 1, 2 and 20"
+            : $"[widths] river pace: ⛔ {string.Join("; ", faults)}";
+    }
+
     private void SetSpeed(double multiplier)
     {
         // A stopped village stays stopped (D364): nothing sound is left to run.
@@ -2937,6 +2964,7 @@ public partial class Main : Control
         // panel would already be up, and the arrival moment waits for the band to be in (Joe). A walk that begins
         // holds the village at 1× as an alert does; the moment takes the hold over the frame it shows.
         _map.Paused = _driver.IsPaused;
+        _map.SetFlowPace(_driver.SpeedMultiplier); // A46: the river keeps the game's speed
         if (_map.WatchForArrivals(world))
         {
             SlowDownForAnAlert();

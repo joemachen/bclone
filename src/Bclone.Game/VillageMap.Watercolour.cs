@@ -71,8 +71,9 @@ public partial class VillageMap
     private bool _treesShown = true;
 
     /// <summary>
-    /// ⭐ The river's clock (A45, <c>river-drawn.md §4.4</c>): real seconds, summed while the village runs and the
-    /// <i>moving water</i> tick is on, wrapped at <see cref="_flowPeriod"/>. A view clock, never the sim's; 0 at founding,
+    /// ⭐ The river's clock (A45, <c>river-drawn.md §4.4</c>): real seconds times the game's speed (A46,
+    /// <see cref="_flowPace"/>), summed while the village runs and the <i>moving water</i> tick is on, wrapped at
+    /// <see cref="_flowPeriod"/>. A view clock, never the sim's; 0 at founding,
     /// so a render paused at tick 0 is the same picture in any build.
     /// </summary>
     private double _flowClock;
@@ -99,7 +100,20 @@ public partial class VillageMap
     /// <summary>The Settings tick <i>moving water</i> (A45 call 4): off, the ripples are drawn but hold still.</summary>
     public void ShowMovingWater(bool on) => _waterMoves = on;
 
-    /// <summary>The river clock's frame step: real seconds while the village runs and the water moves, nothing otherwise.</summary>
+    /// <summary>
+    /// ⭐ The river keeps the game's speed (A46, Joe: <i>"Keep the game's speed"</i>, reversing A45's call 1 after he saw
+    /// both): how many seconds of flow a real second gives — the game's speed multiplier, set by <c>Main</c> on every
+    /// refresh. 1 at 1×, 20 at 20×; a pause stops the clock by <see cref="Paused"/> whatever this says.
+    /// </summary>
+    private double _flowPace = 1.0;
+
+    /// <summary>How fast the river runs against real time: the game's speed (A46).</summary>
+    internal double FlowPace => _flowPace;
+
+    /// <summary>Sets the river's pace to the game's speed (A46) — <c>Main</c>'s refresh, every frame.</summary>
+    public void SetFlowPace(double pace) => _flowPace = pace;
+
+    /// <summary>The river clock's frame step: real seconds times the game's speed (A46) while the village runs and the water moves, nothing otherwise.</summary>
     private void TickTheFlowClock(double delta)
     {
         // Not before the layer is first built: until then there is nothing to move, and the clock starts at 0 with it.
@@ -108,7 +122,7 @@ public partial class VillageMap
             return;
         }
 
-        _flowClock = (_flowClock + delta) % _flowPeriod;
+        _flowClock = (_flowClock + (delta * _flowPace)) % _flowPeriod;
         if (_watercolour)
         {
             _watercolourMaterial?.SetShaderParameter("flow_seconds", (float)_flowClock);
@@ -1445,11 +1459,13 @@ public partial class VillageMap
             faults.Add($"the clock's period {period:F2} s drifts {drifted:F3} cells (want 256) over {lives:F3} lives of {life:F3} s (want whole, near the file's {look.RippleLifeSeconds})");
         }
 
-        // Paused it stands; the tick off it stands; running it takes the frame's real seconds and nothing else — so it is
-        // the same at every game speed (A45 call 1: the map is never told the speed); at the period it wraps.
+        // Paused it stands; the tick off it stands; running at 1× it takes the frame's real seconds; at 20× twenty times
+        // them (A46: the river keeps the game's speed); at the period it wraps.
         double clockWas = _flowClock;
         bool pausedWas = Paused;
         bool movesWas = _waterMoves;
+        double paceWas = _flowPace;
+        _flowPace = 1.0;
         _flowClock = 10.0;
         Paused = true;
         TickTheFlowClock(1.0);
@@ -1461,22 +1477,27 @@ public partial class VillageMap
         _waterMoves = true;
         TickTheFlowClock(1.0);
         bool ran = Math.Abs(_flowClock - 11.0) < 1e-9 && Math.Abs(material.GetShaderParameter("flow_seconds").AsSingle() - 11f) < 1e-5f;
+        _flowPace = 20.0;
+        TickTheFlowClock(1.0);
+        bool raced = Math.Abs(_flowClock - 31.0) < 1e-9;
+        _flowPace = 1.0;
         _flowClock = _flowPeriod - 0.25;
         TickTheFlowClock(0.5);
         bool wrapped = Math.Abs(_flowClock - 0.25) < 1e-6;
         _flowClock = clockWas;
         Paused = pausedWas;
         _waterMoves = movesWas;
+        _flowPace = paceWas;
         material.SetShaderParameter("flow_seconds", (float)_flowClock);
-        if (!stood || !held || !ran || !wrapped)
+        if (!stood || !held || !ran || !raced || !wrapped)
         {
-            faults.Add($"the clock: paused it stood {stood}, the tick off it held {held}, running it took a second {ran}, at its period it wrapped {wrapped} (want all true)");
+            faults.Add($"the clock: paused it stood {stood}, the tick off it held {held}, running it took a second {ran}, at 20× twenty {raced}, at its period it wrapped {wrapped} (want all true)");
         }
 
         ShowWatercolour(wasOn);
 
         return faults.Count == 0
-            ? $"[widths] river drawn: ✅ the founding valley's table one run a row ({worst}); four made-up rivers run east, south, south-east and north-east, middles and widths as cut; no water, no table; the channel, the echoes at a bank's 0.675 and 0.886 and the ripples on, every value the file's; the clock still paused and with the tick off, real seconds running, wrapping at {period:F0} s"
+            ? $"[widths] river drawn: ✅ the founding valley's table one run a row ({worst}); four made-up rivers run east, south, south-east and north-east, middles and widths as cut; no water, no table; the channel, the echoes at a bank's 0.675 and 0.886 and the ripples on, every value the file's; the clock still paused and with the tick off, the game's speed running (1× a second a second, 20× twenty), wrapping at {period:F0} s"
             : $"[widths] river drawn: ⛔ {string.Join("; ", faults)}";
 
         void Near(string uniform, float want)
