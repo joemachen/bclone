@@ -7,6 +7,8 @@
 ; pressure, lifting where it is lightest, its edge feathered into the paper.
 ; Trees: each crown laid on a disc of the same ink a little wider than itself, so the clumps are outlined.
 ; Pooling: the river's wash darker at its own edge, where watercolour pigment gathers as it dries.
+; Winter (A41, A26 call 3): the snow peaks at three quarters of a blanket, in drifts; a drift's lee washed cool blue-grey;
+; the river darker in its channel with an icy rim inside the bank. First values, for Joe's eyes.
 
 [ext_resource type="Script" path="res://ValleyWatercolourLook.cs" id="1_look"]
 
@@ -22,3 +24,10 @@ InkFeatherPx = 0.7
 TreeInkTiles = 0.05
 PoolStrength = 0.16
 PoolWidthPx = 3.0
+SnowPeak = 0.75
+SnowShadowColour = Color(0.737255, 0.780392, 0.843137, 1)
+SnowShadowStrength = 0.55
+IceColour = Color(0.862745, 0.898039, 0.909804, 1)
+IceWidthTiles = 0.35
+IceStrength = 0.75
+RiverWinterDarken = 0.2

@@ -77,6 +77,17 @@ uniform float ink_feather_px = 0.0;
 uniform float pool_strength = 0.0;
 uniform float pool_width_px = 3.0;
 
+// Winter with structure (A41, `terrain-shader.md §7` piece 4, as A26 call 3 settled it): the snow's peak below a blanket so
+// it lies in patches; cool shadows on the drifts' down-right flanks; the river darker in its channel with an icy rim inside
+// the bank. All scaled by the year's snow (snow_amount), so nothing here shows outside winter.
+uniform float snow_peak = 1.0;
+uniform vec3 snow_shadow_srgb = vec3(1.0);
+uniform float snow_shadow_strength = 0.0;
+uniform vec3 ice_srgb = vec3(1.0);
+uniform float ice_width_tiles = 0.0;
+uniform float ice_strength = 0.0;
+uniform float river_winter_darken = 0.0;
+
 // Hex lattice vertices per repeat: the grass's own (grass_lab.gdshader's HEX_PER_REPEAT).
 const float VALLEY_HEX_PER_REPEAT = 2.0;
 // A share below this moves no byte of the colour (under half a level of 255), so the kind's painting is not read.
@@ -228,8 +239,25 @@ void fragment() {
 
         // Snow on the season's amount (A23), in the approved blend (Lerp, A9): its noise is asked only while there is snow.
         if (snow_amount > 0.0) {
-            float cover = terrain_snow_cover(terrain_snow_threshold(tile, snow_patch_tiles), snow_amount, snow_patchiness);
-            colour = terrain_snow(colour, snow_srgb, cover * terrain_snow_off_water(kinds.a), snow_blend);
+            // The river in winter (A41): darker in its channel, and an icy rim just inside the bank, before the snow (which
+            // keeps off the water) and under the ink.
+            if (kinds.a > 0.0) {
+                colour *= 1.0 - river_winter_darken * snow_amount * kinds.a;
+                float rim = weights.a > 0.5 ? 1.0 - smoothstep(0.0, max(ice_width_tiles * px_per_tile, 1e-3), from_water) : 0.0;
+                colour = mix(colour, ice_srgb, ice_strength * snow_amount * rim * kinds.a);
+            }
+
+            // The snow, peaking at snow_peak of a blanket (A26 call 3: patchy), so the ground shows between its drifts.
+            float threshold = terrain_snow_threshold(tile, snow_patch_tiles);
+            float cover = terrain_snow_cover(threshold, snow_amount * snow_peak, snow_patchiness) * terrain_snow_off_water(kinds.a);
+            colour = terrain_snow(colour, snow_srgb, cover, snow_blend);
+
+            // Cool shadows in the snow (A41): a drift is deep where the threshold is low, so where the field rises toward the
+            // light (up-left) the snow's surface falls away from it — the drift's lee, washed blue-grey.
+            if (snow_shadow_strength > 0.0) {
+                float lee = clamp((threshold - terrain_snow_threshold(tile - vec2(0.45), snow_patch_tiles)) * 6.0, 0.0, 1.0);
+                colour = mix(colour, colour * snow_shadow_srgb, snow_shadow_strength * lee * cover);
+            }
         }
 
         // The ink (A27–A28): a pen stroke on the river's bank — over the snow, so the map still reads in winter, and under

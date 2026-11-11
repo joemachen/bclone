@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Still to build: young trees (piece 2). ✍️ SEASONS (piece 4) SPECCED WITH §7'S WINTER AS ONE PIECE (A40, §9); ⏸️ FOUR CALLS JOE'S.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Still to build: young trees (piece 2). ✍️ SEASONS (piece 4) SPECCED WITH §7'S WINTER AS ONE PIECE (A40, §9); ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A41); 🔨 BUILT (A41): THE AUTUMN AND WINTER ATLASES, THE CROSSFADE, THE WINTER GROUND. ⏸️ HIS EYES.** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -213,6 +213,24 @@ its snow, and `measure_trees.py` reports the share of the cell that is tree.
 
 **Not in this piece:** spring blossom or a fresh-green spring set (spring draws the summer set); felled stumps; falling
 leaves or falling snow (weather is its own layer, A23's *"a later piece if he asks for it"*); the young trees (piece 2).
+
+✅ **Answered (A41), all four as recommended:** bare with a little snow; snow on the conifers; an autumn set; a slow
+crossfade.
+
+**As built (A41).** `textures/trees/tree_sprites_autumn.png` and `tree_sprites_winter.png`, each 1024 × 1280, the summer
+grid. They are painted by the same scripts from the same seeds (`build_tree_sprites.jsx` and `build_tree_kinds.jsx` with
+a season argument; winter's bare trees and conifer snow in `bare_trees.jsxinc`), so autumn's footprint is the summer one
+to the pixel. **Autumn:** the leafy trees russet, orange, gold, amber and one half-turned olive; birches gold; willows
+pale yellow; conifers as summer. **Winter:** leafy, birch and willow bare — an ink trunk and limbs out to where the summer
+lobes were, each limb bent once, twigs at the ends, snow along the limbs' upper-left, a faint see-through twig haze and a
+lacy shadow. The willow's twigs hang as golden strands. A bare tree is 9–18 % as opaque as its summer crown. Conifers
+keep their crowns with snow on each tier's upper-left rim. §4 holds for every autumn tree and every winter conifer.
+**Drawn:** `TreeSeasonAt` (a `static` of `TheYearAt`'s season) picks the set and, while a season turns, the next set over
+it at the turn's share. Into winter the old crowns fade out as the branches come in. Spring draws the summer set. The
+atlases are loaded on first need.
+**The winter ground:** `valley_watercolour.tres` gains `SnowPeak` 0.75 (about 70 % of the land under snow at midwinter, measured
+in a render), a drift's lee washed `SnowShadowColour` at 0.55, an `IceColour` rim 0.35 tiles inside the bank at 0.75, and
+the river 20 % darker. The ink still draws over all of it.
 
 ### Joe's calls (A40), in plain words, each with a recommendation
 
