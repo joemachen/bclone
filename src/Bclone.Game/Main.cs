@@ -580,6 +580,7 @@ public partial class Main : Control
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
         GD.Print(_map.TheWatercolourHolds());
         GD.Print(_map.ThePaintedTreesHold());
+        GD.Print(_map.TheRiverDrawnHolds());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
         GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
@@ -6803,6 +6804,14 @@ public partial class Main : Control
         trees.Toggled += on => _map.ShowTrees(on);
         body.AddChild(trees);
         _viewToggles.Add(("trees", "the trees", trees, () => _map.TreesShown));
+
+        // ⭐ THE WATER MOVING, ON OR OFF (A45 call 4, `river-drawn.md §4.5`). On by default; off, the river's ripples are
+        // drawn but hold still, for a player who finds motion at the edge of the eye a distraction.
+        var movingWater = new CheckBox { Text = "moving water", ButtonPressed = true };
+        movingWater.AddThemeFontSizeOverride("font_size", 12);
+        movingWater.Toggled += on => _map.ShowMovingWater(on);
+        body.AddChild(movingWater);
+        _viewToggles.Add(("moving_water", "the water moving", movingWater, () => _map.MovingWaterShown));
 
         // ⭐⭐ THE THREE PAINTED LAYERS, ONE SWITCH EACH (D340, Joe: *"i would like to be
         // able to toggle these overlays of the painted areas for trees, houses, and farms off in

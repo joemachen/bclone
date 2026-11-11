@@ -1,6 +1,8 @@
 # Spec: The river drawn — echo lines, a darker channel, ripples that drift downstream
 
-**Status:** ✍️ **SPECCED (A44, 2026-11-11) — JOE'S *"The river drawn"*; ⏸️ FOUR CALLS HIS (§6). NOTHING BUILT.** Art lane,
+**Status:** ✍️ **SPECCED (A44, 2026-11-11) — JOE'S *"The river drawn"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A45,
+*"All as recommended"*); 🔨 BUILT (A45, §9): THE TABLE, THE CHANNEL, THE ECHO LINES, THE RIPPLES, THE CLOCK, THE *moving water*
+TICK. ⏸️ HIS EYES.** Art lane,
 branch `art`. It is `terrain-shader.md §7` piece 3, and A26's brief is what it is judged against: *"Water drawn, not
 filled — inked bank, two echo lines, a darker channel, flow strokes drifting downstream."* The inked bank is built
 (A27–A28); this is the rest. Owner: Joe + Claude Code.
@@ -133,6 +135,9 @@ first and the river waits on it.**
 
 ## 6. Joe's calls (A44), in plain words, each with a recommendation
 
+✅ **Answered (A45): *"All as recommended"*** — the same drift at every game speed; sparse; the echo lines still; a
+*moving water* tick, on by default.
+
 1. **How fast the water moves.**
    - **(a) The same gentle drift at every game speed, about a tile every three seconds** *(recommended)*. At 20× the
      village rushes but the river does not. Water that speeds up with the clock reads as a clock, not as water.
@@ -176,3 +181,35 @@ tick and off at 0.
 
 **One piece**: the table, the three marks and the clock together, because none of it reads as a river without the rest.
 Built after Joe's four calls, then it stops for his eyes.
+
+## 9. As built (A45, 2026-11-11)
+
+**Where it lives.** `RiverTable.cs` (the table: `RiverTable.Of`, a pure function of the water tiles and the course, and
+`ToTexture`, one RGBA-float texel a row); `VillageMap.Watercolour.cs` (`HandTheRiverOver`, once a world;
+`TickTheFlowClock`; `BankWeightAt`; the probe's `river drawn:` line); `valley_terrain.gdshader` (`valley_pen`, the bank's
+stroke made a function of its width, pressure, lifts and salt; `valley_ripples`; the channel, the echoes, the ripples);
+eighteen values in `looks/valley_watercolour.tres`; the *moving water* tick in `Main.cs` beside *draw the trees*.
+
+**Two things changed from §3–§4 on the way, both found by measuring:**
+- ⚠️ **The ripples keep off the bank by the water's own weight, not by the table.** The table's middle is smoothed over
+  nine steps, and at the founding valley's sharpest wander it rounds the bend **1.11 tiles** outside that step's water.
+  Measured from the table, a ripple there could reach the bank. So the ripples keep to water weighed above what a
+  straight bank weighs **0.35 tiles** in (`ripple_bank_level`, 0.93 by `BankWeightAt`). That follows the drawn bank step
+  for step. The table now only steers them and darkens the channel. The probe holds the middle within **1.5 tiles** of its
+  step's water (not §7's half a tile, which was written before the smoothing was measured).
+- **The echo lines are contours of the raw water weight at the weight a straight bank has at their depths:** **0.675**
+  at 0.15 tiles and **0.886** at 0.32. `BankWeightAt` reproduces the bake's kernel and averages along the bank. The weight
+  still slopes there; it reaches 1 at about 0.42 tiles. Along a real bank the kernel's 3 × 3 sampling makes a contour
+  wander about ±0.04 tiles a tile. That wander is the line's hand-drawn wobble.
+
+**Measured, 2026-11-11.**
+
+| | |
+|---|---|
+| tick off | byte-identical to the build before (`442ff69`) at four distinct zooms |
+| tick on, the three strengths at 0 | byte-identical to the build before at the same four zooms — which also proves `valley_pen` draws the bank's stroke unchanged |
+| tick on, the file's values | every changed pixel is water or the bank's own pen stroke (at most 4 levels on the stroke, where the drawn water share fades); the bank has not moved |
+| the probe | `river drawn:` ✅ — the founding valley (`we`, 120 rows wet) one run a row, the middle within 1.11 tiles; four made-up rivers downstream east, south, south-east and north-east; the clock; the values. 105 ✅ 0 ⛔ |
+| the motion | running, the ripples move **east** (downstream for this valley) about 0.28–0.29 tiles a second across the screen. The river's own length bends, so that is under the 0.35 down it. Paused through the game's own Space key, **0 pixels** change outside the debug readout, against 2,293 a second while running |
+| GPU, 4K, the 3070, three states a round in order | the river **+0.04 ms** (the clean floors: 1.790 → 1.827 ms); the whole switch about 1.83 ms against the 3.5 ms bar, so the cost split is not needed. ⚠️ A noisy sitting: another project's Godot was rendering on the card, and mid-run the card fell into its twice-slower state (art trap 22), so only rounds paired in order were read, by their floors |
+| red-check | **15 mutants, 13 red** (each scored on the line its guard writes: 14 on `river drawn:`, the shader's on `watercolour:`). **Two zeros, kept and written down:** R14, the founding valley's water read with its rows shifted — the probe reads the water through the same `TheWaterTiles` as the code, so it is blind to that reader; R15, no *moving water* tick in Settings — a Settings tick has no probe line, and it is Joe's eyes. The harness's first run hung: R1's off-by-one row threw out of the probe line, which then never reached `done.` and held a headless Godot for 15 minutes. The line now catches a table that throws and says what threw (HANDOFF trap 29) |

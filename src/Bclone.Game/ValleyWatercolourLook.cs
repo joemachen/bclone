@@ -96,6 +96,80 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float RiverWinterDarken { get; set; }
 
+    /// <summary>
+    /// How much darker the river's wash lies down its middle, easing to nothing at the bank (A45, <c>river-drawn.md §4.2</c>).
+    /// </summary>
+    [Export]
+    public float ChannelStrength { get; set; }
+
+    /// <summary>How dark the two echo lines inside the bank lie, 0 to 1 (A45, §4.1): lighter than the bank's stroke.</summary>
+    [Export]
+    public float EchoStrength { get; set; }
+
+    /// <summary>The echo lines' width as a share of the bank's stroke.</summary>
+    [Export]
+    public float EchoWidthShare { get; set; }
+
+    /// <summary>How far inside the bank the nearer echo lies, in tiles.</summary>
+    [Export]
+    public float EchoNearTiles { get; set; }
+
+    /// <summary>How far inside the bank the farther echo lies, in tiles.</summary>
+    [Export]
+    public float EchoFarTiles { get; set; }
+
+    /// <summary>Where the echo lines' pen lifts — the share of its pressure's range under which they break; about half.</summary>
+    [Export]
+    public float EchoLifts { get; set; }
+
+    /// <summary>How long one swell of the echo lines' pressure is, in tiles: about a dash and its gap.</summary>
+    [Export]
+    public float EchoDashTiles { get; set; }
+
+    /// <summary>An echo closer than this many screen pixels to the bank fades out (the wide zoom), so the bank stays one stroke.</summary>
+    [Export]
+    public float EchoFadePx { get; set; }
+
+    /// <summary>How dark the ripples lie, 0 to 1 (A45, §4.3).</summary>
+    [Export]
+    public float RippleStrength { get; set; }
+
+    /// <summary>A ripple's thickness at its middle, in screen pixels; it tapers to nothing at both ends.</summary>
+    [Export]
+    public float RippleWidthPx { get; set; }
+
+    /// <summary>The ripples' grid in the river's own coordinates, in tiles: X down the river, Y across it.</summary>
+    [Export]
+    public Vector2 RippleCellTiles { get; set; }
+
+    /// <summary>The share of cells that hold a ripple (A45 call 2: sparse, like the concept).</summary>
+    [Export]
+    public float RippleShare { get; set; }
+
+    /// <summary>The shortest and the longest ripple, in tiles.</summary>
+    [Export]
+    public Vector2 RippleLengthTiles { get; set; }
+
+    /// <summary>How far a ripple bows to one side at its middle, in tiles.</summary>
+    [Export]
+    public float RippleBowTiles { get; set; }
+
+    /// <summary>How far the ripples keep off each bank, in tiles — inside the echo lines and off the winter ice.</summary>
+    [Export]
+    public float RippleBankTiles { get; set; }
+
+    /// <summary>How fast the ripples drift downstream, in tiles a real second, at every game speed (A45 call 1).</summary>
+    [Export]
+    public float RippleDriftTilesPerSecond { get; set; }
+
+    /// <summary>How long a ripple lives before it is drawn anew, in seconds (rounded so a whole number fit the clock's period).</summary>
+    [Export]
+    public float RippleLifeSeconds { get; set; }
+
+    /// <summary>Below this many pixels a tile the ripples fade out: a ripple a few pixels long reads as noise.</summary>
+    [Export]
+    public float RippleFadePxPerTile { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     internal static ValleyWatercolourLook Current => GD.Load<ValleyWatercolourLook>(Path);
 }
