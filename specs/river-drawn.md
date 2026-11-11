@@ -3,7 +3,7 @@
 **Status:** ✍️ **SPECCED (A44, 2026-11-11) — JOE'S *"The river drawn"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A45,
 *"All as recommended"*); 🔨 BUILT (A45, §9): THE TABLE, THE CHANNEL, THE ECHO LINES, THE RIPPLES, THE CLOCK, THE *moving water*
 TICK. 🔁 CALL 1 REVERSED AT HIS WORD (A46, *"Keep the game's speed"*, after a side-by-side trial): THE RIVER NOW RUNS AT THE
-GAME'S SPEED. ⏸️ HIS EYES.** Art lane,
+GAME'S SPEED. ⭐ APPROVED (A47, *"Approved"*); NOT MERGED, WHICH WAITS FOR HIS WORD.** Art lane,
 branch `art`. It is `terrain-shader.md §7` piece 3, and A26's brief is what it is judged against: *"Water drawn, not
 filled — inked bank, two echo lines, a darker channel, flow strokes drifting downstream."* The inked bank is built
 (A27–A28); this is the rest. Owner: Joe + Claude Code.

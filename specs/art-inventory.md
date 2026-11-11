@@ -45,7 +45,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
 | **Grass / open ground** | Flat parchment `#e6d6b0` with a ±3.5% bloom in the bake (`VillageMap.cs:71`; `ValleyTexture.cs:608`) | 4 seasons, blended (20 days held, 10 blending — `seasonal-grass.md §6.4`) | B6 — the shader to put it in the valley | ✅ **Look approved** (D632–D633, `looks/grass_approved.tres`, refs in `art/grass/`) — **lab only, not in the valley** |
-| Water and shallows | `#6f97ad` shading to `#9cbccb` by edge confidence — the only shoreline (`VillageMap.cs:123`, `:135`) | Seasonal tint? River never freezes (`fishing.md §10.3`). **🔨 A45 built (✍️ A44): drawn, not filled, with the tick on — echo lines, a darker channel, ripples drifting downstream while time runs (`river-drawn.md`)** | B6 | 🟨 |
+| Water and shallows | `#6f97ad` shading to `#9cbccb` by edge confidence — the only shoreline (`VillageMap.cs:123`, `:135`) | Seasonal tint? River never freezes (`fishing.md §10.3`). **⭐ A47 approved; 🔨 A45 built, A46 at the game's speed (✍️ A44): drawn, not filled, with the tick on — echo lines, a darker channel, ripples drifting downstream while time runs (`river-drawn.md`)** | B6 | 🟨 |
 | Woods ground / young wood | `#9aa47a` / `#b3b98d` with two-octave foliage noise (`ValleyTexture.cs`) | Seasons (no spec asks), far-view bake | B5, B6 | 🟨 interim (D637) |
 | Stone seam / iron seam | `#b4ab99` / `#b9906f` with grain noise | Unworked / worked | B6 | 🟨 |
 | Quarry and mine floor | Traced fills `#a39b8e` / `#bf957c` (`VillageMap.Meshes.cs:486`, `:495`) | Grows as worked | B6 | 🟨 |
