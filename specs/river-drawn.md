@@ -1,0 +1,178 @@
+# Spec: The river drawn — echo lines, a darker channel, ripples that drift downstream
+
+**Status:** ✍️ **SPECCED (A44, 2026-11-11) — JOE'S *"The river drawn"*; ⏸️ FOUR CALLS HIS (§6). NOTHING BUILT.** Art lane,
+branch `art`. It is `terrain-shader.md §7` piece 3, and A26's brief is what it is judged against: *"Water drawn, not
+filled — inked bank, two echo lines, a darker channel, flow strokes drifting downstream."* The inked bank is built
+(A27–A28); this is the rest. Owner: Joe + Claude Code.
+
+---
+
+## 1. What this is, and what it is not
+
+Joe, A26: *"i would like the game to animate this in some way to show flowing water."* And his call 2 there: **the water
+flows only while time runs — pause looks paused.**
+
+Today, with the watercolour tick on, the river is a flat painted blue with lighter shallows along each bank and A28's pen
+stroke on the bank. In the concept (`art/art-direction-2d-hand-drawn-color.jpg`) the water is drawn: short broken pen
+marks just inside each bank that follow its turns, a few loose ripple arcs out in the stream, and the blue deeper down the
+middle than at the edges. This spec draws those three things and sets the ripples moving downstream while the game runs.
+
+- **Behind the watercolour tick**, like every §7 piece. With the tick off the map is byte for byte what it is today.
+- **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
+- **Not in this spec:** relief (§7 piece 5, though §3's table is built so it can reuse it); calmer ground (piece 2);
+  fish, boats, the fishing hut's water; a frozen river — **the river never freezes** (`fishing.md §10.3`), so the
+  ripples run all year and stay off A41's icy rim.
+
+## 2. What the sim says, and must keep saying
+
+- **The river is its tiles.** `Terrain.Water` tiles, cut once by `MapGenerator.CarveRiver` along one of four courses:
+  west to east, north to south, north-west to south-east, south-west to north-east (`river_course`, the new-game
+  screen's *River runs*). **Each names which way is downstream**, so the drawing never has to guess.
+- **No call to `SetTerrain` makes or unmakes water** (checked by grep, 2026-11-11): the river does not change in play.
+  The drawing of it is built once, when the valley's mix is built, and never per frame (CLAUDE.md's rule).
+- ⛔ **The bank stays where the villagers cannot cross** (D342). Nothing here moves the bank's contour or A28's stroke on it.
+  Everything new lies inside the water.
+
+## 3. The river's own coordinates — one small table, built once
+
+To lay marks *along* a river that wanders, the shader needs to know, at any pixel, how far down the river it is and how
+far from its middle. A carved river has one run of water per step along its course (that is how it is carved), so this is
+a short table, **one row per step down the course**:
+
+| column | what it is |
+|---|---|
+| centre | the middle of that step's water, across the course, in tiles (smoothed over ±4 steps, so a wander is a bend, not a stair) |
+| half-width | half that step's water, in tiles (smoothed the same way; a diagonal's measured across, as the carve does) |
+| distance down | how far the river has run to this step along its smoothed middle, in tiles |
+
+- **Built by a pure function of the map's water tiles and the course** (`MapGenerator.CourseOf`, D477), so the same
+  valley always gives the same table and the probe can feed it made-up rivers. A few hundred rows, a 1-D float texture
+  of a few kilobytes beside the mix.
+- **The shader reads one row a pixel**, only where water is drawn: it turns the pixel's tile into *down* (the distance
+  down plus how far along the step) and *across* (from the centre, in tiles). Every mark below is drawn in those two
+  numbers, so it bends with the river and never shears.
+- **Not hashed, not saved** (D335): it restates the map.
+- ⭐ **Relief can reuse it.** Piece 5 asks for *"height above the river"*; on land that is how far a tile is from the
+  table's bank (`|across| − half-width`), so piece 5 does not need a second river field.
+
+## 4. What is drawn
+
+All in A28's ink (`#3a2d20`), over the wash, over the snow, under the paper's grain, the way the bank's stroke is. Every
+value below is a first value in `looks/valley_watercolour.tres`, for Joe's eyes, and **nothing is approved until he says
+so.** Each part is off at 0 strength, and with all three at 0 the river draws byte for byte as it does today.
+
+### 4.1 Echo lines — two, still
+
+The concept's broken marks just inside each bank. Two lines that follow the bank, **0.15 and 0.32 tiles** inside it,
+drawn with the bank's own stroke (`valley_ink_stroke`: pressure, lifts, feathered edge) but **thinner (0.55 of the bank's
+width) and lighter (0.55 strength)**, and **broken far more often**: the pen lifts over about half of each line, so they
+read as dashes, not a second and third outline. Each line has its own noise, so their breaks do not line up.
+
+- **Measured from the same raw weight as the bank and A41's icy rim** (the pixel's distance into the water). ⚠️ That
+  weight's slope runs out somewhere inside the bank (HANDOFF art trap 22). The build measures how far in it holds. If 0.32
+  tiles is past that, the echo lines take their distance from §3's table instead.
+- **They hold still.** They are the bank's echo, not the current (call 3).
+- **They fade out when zoomed out**, wherever an echo would lie closer than 3 screen pixels to the bank, so at the widest
+  zoom the bank stays one clean stroke rather than a smudge three lines thick.
+
+### 4.2 The darker channel
+
+The blue deepens toward the middle of the river: the wash is multiplied darker by **0.12 at the middle**, easing to
+nothing at the bank (`1 − |across| / half-width`, eased). This sits on top of the shallows that are already drawn. Those
+change within half a tile of the bank, while the channel changes across the whole width, so in a wide reach the middle
+reads as deep water.
+
+- In winter, A41's 20 % darkening is applied on top, as it is today.
+- At the widest zoom it is kept: it is a wash, so it reads at any size.
+
+### 4.3 Ripples — the moving part
+
+Short pen marks out in the stream, lying along the current, each one a slight arc like the concept's. They drift
+downstream.
+
+- **Where:** laid on a grid in the river's own coordinates, cells **1.6 tiles down × 0.6 across**. About **45 % of
+  cells** hold a ripple (call 2), placed at random in its cell. Each ripple is **0.5–0.9 tiles long**, **1.1 screen px**
+  thick at its middle, tapering to nothing at both ends, and bowed 0.06 tiles to one side or the other. Strength **0.5**.
+- **They keep 0.35 tiles off each bank**, which puts them inside the echo lines and off the winter ice. So a river under
+  about a tile across has echo lines but no ripples.
+- **They drift downstream at 0.35 tiles a second**, about a tile every three seconds (call 1). The whole grid moves with
+  the water.
+- **They come and go.** Each ripple lives about **6 seconds**: it fades in over the first third and out over the last.
+  It comes back drawn anew (a new place in its cell, a new length, a new bow). So the river never shows a conveyor belt
+  of the same marks, and a ripple never pops on or off.
+- **They fade out when zoomed out**, below about **12 px a tile**, where a ripple would be a few pixels long and read as
+  noise. Zoomed out, the river is the bank, its echoes and the channel.
+
+### 4.4 The clock
+
+- **The ripples run on their own clock**, `flow_seconds`, kept by the map and handed to the shader each frame. It
+  **advances only while the game is running**: paused, every ripple holds exactly where it is (A26 call 2). It is a
+  *view* clock and never touches the sim, so determinism is untouched.
+- **By call 1 it advances at the same rate at every game speed**: at 1× and at 20× the water moves the same gentle
+  amount. The other answer ties it to game time, so at 20× the ripples race.
+- **It wraps without a jump.** The pattern repeats along the river every few hundred tiles and over about twenty minutes,
+  and the clock wraps with that period, so a long sitting never loses a float's precision. Wrapped this way, a frame
+  after the wrap is the frame before it plus one step, which the probe checks.
+- **At founding it is 0**, so a render paused at tick 0 (HANDOFF art trap 21) is the same picture in any build, ripples
+  included. This is what lets the renders below compare byte for byte with the river on.
+
+### 4.5 A Settings tick (call 4)
+
+*Moving water*, on by default, beside *draw the trees*. With it off, the ripples are drawn but hold still, as if paused.
+It is for a player who finds motion at the edge of their eye a distraction. One line in `Main.cs`'s view ticks, as the
+trees' tick was (A36).
+
+## 5. Cost
+
+**One table read and one cell's worth of hashing per river pixel**, only where water is drawn; no extra frames (the map
+already redraws every frame — the game has no low-processor mode). Measured in a 4K SubViewport, alternating rounds,
+A/B against today in one sitting (traps 8, 21, 22). ⚠️ **§7's bar is the thing to watch:** A28 measured the watercolour
+switch close to A23's 3.5 ms at 4K and said *"the cost split (§5.4 piece 3) comes before the river and winter add
+more."* Winter added nothing measurable (A41). **If the river takes the switch over 3.5 ms, the cost split is built
+first and the river waits on it.**
+
+## 6. Joe's calls (A44), in plain words, each with a recommendation
+
+1. **How fast the water moves.**
+   - **(a) The same gentle drift at every game speed, about a tile every three seconds** *(recommended)*. At 20× the
+     village rushes but the river does not. Water that speeds up with the clock reads as a clock, not as water.
+   - (b) Faster with the game speed: at 20× the ripples race downstream.
+2. **How busy the river is.**
+   - **(a) Sparse, like the concept: a ripple every couple of tiles, the blue showing between them** *(recommended)*.
+   - (b) Busy: ripples all over, about twice as many.
+3. **The echo lines just inside the banks.**
+   - **(a) They hold still; only the ripples out in the stream move** *(recommended)*. They are the bank drawn again,
+     and a bank that slides reads as the land moving.
+   - (b) They drift downstream too.
+4. **A tick to stop the water moving.**
+   - **(a) Yes: *Moving water* in Settings beside *draw the trees*, on by default** *(recommended)*. Steady motion at the
+     edge of the eye bothers some players. With it off the river is still drawn, just still.
+   - (b) No tick.
+
+**Settled without asking:** the ripples run all year, because the river never freezes; zoomed out, the ripples fade and
+the echo lines merge into the bank; the table is built once, from the tiles; everything new is behind the watercolour
+tick and off at 0.
+
+## 7. How it is proven
+
+- **Tick off:** renders byte-identical to the build before, at four distinct zooms (art trap 25: the game opens at its
+  closest, so check that the shots differ from each other).
+- **Tick on, the three new strengths at 0:** byte-identical to the build before at the same four zooms, so the river's
+  new code changes nothing until it is asked to.
+- **Tick on, at the file's values:** the renders differ only on water pixels (the diff's mask lies inside the bake's
+  water, within 1 px), and the river's land side is untouched, which proves the bank has not moved.
+- **The probe, a `river drawn:` line:**
+  - the table, from the founding valley: one row a step; every water tile inside its row's span; the centre and
+    half-width within half a tile of the tiles before smoothing; the distance down only ever growing.
+  - the table, from four made-up rivers, one a course: downstream is the course's way each time, named in the probe
+    (trap 17), not read from the code's list.
+  - the clock: still while paused; the same rate at 1× and at 20× (call 1a); a wrap that does not jump.
+  - the new uniforms: declared by the compiled shader (trap 6), and the look file's values reaching the layer.
+- **Red-check every guard and count the reds** (D326), each mutant scored on the line its guard writes (trap 28).
+- **GPU** as in §5. **The four checks** for the commit.
+- **Joe's eyes:** `.\run.bat`, tick the watercolour, watch the river at 1× and 20×, then pause.
+
+## 8. Pieces
+
+**One piece**: the table, the three marks and the clock together, because none of it reads as a river without the rest.
+Built after Joe's four calls, then it stops for his eyes.
