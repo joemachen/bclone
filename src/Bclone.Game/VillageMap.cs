@@ -7324,10 +7324,14 @@ public partial class VillageMap : Control
     /// building (D556), in the building's colour; these are in the site colours no finished building uses
     /// (<c>tree-sprites.md §2</c>).
     /// </remarks>
-    internal System.Collections.Generic.List<(Vector2[] Outline, Color Edge)> SitesThroughTheCanopy()
+    internal System.Collections.Generic.List<(Vector2[] Outline, Color Edge)> SitesThroughTheCanopy() =>
+        _world is SimWorld world ? SitesThroughTheCanopy(world) : new();
+
+    /// <summary><see cref="SitesThroughTheCanopy()"/> of a given world — the probe asks it of a spare valley (D726).</summary>
+    internal System.Collections.Generic.List<(Vector2[] Outline, Color Edge)> SitesThroughTheCanopy(SimWorld world)
     {
         var sites = new System.Collections.Generic.List<(Vector2[] Outline, Color Edge)>();
-        if (!(_paintedTrees && _treesShown) || _world is not SimWorld world)
+        if (!(_paintedTrees && _treesShown))
         {
             return sites;
         }
@@ -7341,10 +7345,40 @@ public partial class VillageMap : Control
             }
         }
 
+        // ⭐ A free building waiting on its ground comes through too (D726): it is exactly the building marked in the woods.
+        foreach ((Vector2 centre, float wide, float deep, ushort facing) in FreeBuildingsWaitingOf(world))
+        {
+            sites.Add((FootprintQuad(centre, wide, deep, facing), HarvestEdge));
+        }
+
         return sites;
     }
 
-    /// <summary>The dashes of <see cref="SitesThroughTheCanopy"/>, drawn straight after the canopy (A53).</summary>
+    /// <summary>
+    /// ⭐ <b>Every free building waiting on its ground, as the map draws it</b> (D726, the 🐞 Joe found playing the art,
+    /// A36: <i>"i placed a builder's hut (at an angle) and the construction outline isn't showing"</i>) — its turned
+    /// footprint, 0.8 of its extent each way like every site, centred on the point it was marked at.
+    /// </summary>
+    /// <remarks>
+    /// A builder's hut or a stockpile costs nothing, so it is never a <see cref="ConstructionSite"/> (D96, D108): marked on
+    /// wooded ground it waits in <see cref="SimWorld.BuildingsWaiting"/> until the last of its tiles is cleared, and the
+    /// map drew only the felling mark. It is drawn as a costed site whose ground is busy is drawn (D350): the clearing's orange,
+    /// with nothing filled in, since there is no work to show. By definition its ground is busy — the moment it is clear
+    /// it stands. No door: a door is the building's, and there is no building yet.
+    /// </remarks>
+    internal System.Collections.Generic.List<(Vector2 Centre, float Wide, float Deep, ushort Facing)> FreeBuildingsWaitingOf(SimWorld world)
+    {
+        var shapes = new System.Collections.Generic.List<(Vector2 Centre, float Wide, float Deep, ushort Facing)>(world.BuildingsWaiting.Count);
+        foreach ((Point position, BuildingKind kind, Angle facing) in world.BuildingsWaiting)
+        {
+            (int width, int height) = world.ExtentOf(kind);
+            shapes.Add((ToScreen(position), width * 0.8f, height * 0.8f, facing.Raw));
+        }
+
+        return shapes;
+    }
+
+    /// <summary>The dashes of <see cref="SitesThroughTheCanopy()"/>, drawn straight after the canopy (A53).</summary>
     private void DrawTheSitesThroughTheCanopy()
     {
         foreach ((Vector2[] outline, Color edge) in SitesThroughTheCanopy())
@@ -7482,6 +7516,122 @@ public partial class VillageMap : Control
                     width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
             }
         }
+
+        // ⭐ AND THE FREE BUILDINGS WAITING ON THEIR GROUND (D726), which are not sites and drew nothing at all (A36):
+        // drawn as a site whose trees still stand, in the clearing's orange.
+        foreach ((Vector2 centre, float wide, float deep, ushort facing) in FreeBuildingsWaitingOf(world))
+        {
+            Vector2[] outline = FootprintQuad(centre, wide, deep, facing);
+            DrawColoredPolygon(outline, HarvestColour with { A = 0.18f });
+            for (int edge = 0; edge < 4; edge++)
+            {
+                DrawLine(outline[edge], outline[(edge + 1) % 4], HarvestEdge, 2f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>free buildings waiting:</c> line (D726, <c>footprints.md §7.5</c>): a builder's hut marked at an
+    /// eighth of a turn on wooded ground is drawn — its own turned 2 × 1 footprint at 0.8 a tile, centred where it was
+    /// marked — and comes through the painted canopy in the clearing's orange; once its ground is cleared it is a building,
+    /// and nothing is drawn as waiting.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Asked of a spare valley from the same config, never the probe's own</b>: a waiting free building cannot be taken
+    /// back, and the probe runs its village twelve years further on, where a hut raised by the clearing would move every
+    /// later line. ⚠️ The 2 × 1 is the spec's table, not <see cref="SimWorld.ExtentOf"/> (art trap 17). It checks what is
+    /// drawn, not that <c>_Draw</c> draws it — that is the render's to show.
+    /// </remarks>
+    internal string TheFreeBuildingsWaitingAreDrawn()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] free buildings waiting: ⛔ no world";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        SimWorld spare = SimFactory.CreatePhase0(world.Config).World;
+        if (FreeBuildingsWaitingOf(spare).Count != 0)
+        {
+            faults.Add($"{FreeBuildingsWaitingOf(spare).Count} drawn as waiting at the founding (want none)");
+        }
+
+        // A builder's hut marked at an eighth of a turn on the first wooded tile out from the founding where it waits.
+        Angle turned = Angle.FromTurnFraction(1, 8);
+        GridPos founding = spare.Map.FoundingSite;
+        Point? marked = null;
+        for (int r = 3; r < 30 && marked is null; r++)
+        {
+            for (int dx = -r; dx <= r && marked is null; dx++)
+            {
+                var tile = new GridPos(founding.X + dx, founding.Y + r);
+                Point at = spare.AnchorOn(BuildingKind.BuilderHut, tile);
+                if (spare.Map.TerrainAt(tile) == Terrain.Forest
+                    && spare.Mark(BuildingKind.BuilderHut, at, turned).Allowed
+                    && spare.BuildingsWaiting.Count == 1)
+                {
+                    marked = at;
+                }
+            }
+        }
+
+        if (marked is not Point hut)
+        {
+            return "[widths] free buildings waiting: ⛔ nowhere in the woods to mark a builder's hut";
+        }
+
+        var drawn = FreeBuildingsWaitingOf(spare);
+        Vector2 centre = ToScreen(hut);
+        if (drawn.Count != 1)
+        {
+            faults.Add($"{drawn.Count} drawn as waiting for the one hut marked (want 1)");
+        }
+        else
+        {
+            (Vector2 c, float wide, float deep, ushort facing) = drawn[0];
+            if (c.DistanceTo(centre) > 0.5f || Mathf.Abs(wide - 1.6f) > 0.001f || Mathf.Abs(deep - 0.8f) > 0.001f || facing != turned.Raw)
+            {
+                faults.Add($"drawn {wide:F2} × {deep:F2} tiles facing {facing} at {c} (want 1.60 × 0.80 facing {turned.Raw} at {centre})");
+            }
+        }
+
+        // Through the painted canopy, with the watercolour and the trees on; and not without them.
+        bool wasOn = _watercolour, wasTrees = _treesShown;
+        ShowWatercolour(true);
+        ShowTrees(true);
+        int through = 0;
+        foreach ((Vector2[] outline, Color edge) in SitesThroughTheCanopy(spare))
+        {
+            Vector2 middle = (outline[0] + outline[1] + outline[2] + outline[3]) / 4f;
+            if (middle.DistanceTo(centre) <= 0.5f && edge == HarvestEdge)
+            {
+                through++;
+            }
+        }
+
+        ShowTrees(false);
+        int hidden = SitesThroughTheCanopy(spare).Count;
+        ShowTrees(wasTrees);
+        ShowWatercolour(wasOn);
+        if (through != 1 || hidden != 0)
+        {
+            faults.Add($"{through} outlines through the canopy in the clearing's orange (want 1), {hidden} with the trees hidden (want 0)");
+        }
+
+        // Cleared: it stands, and nothing is drawn as waiting.
+        foreach (GridPos tile in spare.FootprintOf(BuildingKind.BuilderHut, hut, turned).CoveredTiles())
+        {
+            spare.Harvest(tile);
+        }
+
+        if (spare.BuildingsWaiting.Count != 0 || FreeBuildingsWaitingOf(spare).Count != 0)
+        {
+            faults.Add($"{FreeBuildingsWaitingOf(spare).Count} still drawn as waiting once the ground is cleared (want 0)");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] free buildings waiting: ✅ a builder's hut marked at 1/8 turn in the woods is drawn as its own 2 × 1 footprint in the clearing's orange and comes through the canopy; none with the trees hidden; none once its ground is cleared"
+            : $"[widths] free buildings waiting: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>

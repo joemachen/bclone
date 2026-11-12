@@ -156,7 +156,7 @@ light ones lose it: a reason more for the dark and outlined bands. How the terra
    interim, so the wood is quiet rather than the darkest mass on the map. Canopies are scenery, reported and not failed, but on parchment they decide how the woods look. One
    option is ink-outlined canopies over an in-band green ground (the hand-drawn references in `art/`); another is
    canopies as mid-tone washes without lines. Your eye, before the terrain shader.
-5. ⏸️ **D68 still names *Foundation*** (a painted 3D look) as the art direction's destination. Parchment and `art/`'s
+5. ✅ **Answered (D725, Joe, 2026-11-11: *"2d map only."*) — a 2D drawn map; no 3D front end.** *As put:* **D68 still names *Foundation*** (a painted 3D look) as the art direction's destination. Parchment and `art/`'s
    hand-drawn references point at a 2D drawn map. D68's two observations still hold (intent drawn as painted regions;
    a thin HUD). Whether its destination is retired is yours to say; I have not changed it.
 

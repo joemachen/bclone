@@ -177,6 +177,45 @@ public sealed class FootprintClearingTests
     }
 
     /// <summary>
+    /// ⭐ A free building waiting on its ground can be read whole — kind, place and facing — by the view (D726).
+    /// </summary>
+    /// <remarks>
+    /// Joe, playing the art (A36): <i>"i placed a builder's hut (at an angle) and the construction outline isn't
+    /// showing"</i>. A free building is not a site (D96, D108), and the only public read of the waiting list gave tiles,
+    /// so the map had nothing to draw it from. Red with <c>BuildingsWaiting</c> internal (the view cannot see it), and
+    /// with the waiting entry losing its kind, place or angle.
+    /// </remarks>
+    [Fact]
+    public void AFreeBuildingWaitingOnItsGroundCanBeReadWhole()
+    {
+        SimWorld world = World();
+        GridPos at = BareGround(world);
+        Angle turned = Angle.FromTurnFraction(1, 8);
+        Point anchor = world.AnchorOn(BuildingKind.BuilderHut, at);
+        List<GridPos> tiles = world.FootprintOf(BuildingKind.BuilderHut, anchor, turned).CoveredTiles();
+        Wooded(world, tiles);
+
+        Assert.True(world.Mark(BuildingKind.BuilderHut, anchor, turned).Allowed);
+
+        System.Reflection.PropertyInfo? read = typeof(SimWorld).GetProperty(nameof(SimWorld.BuildingsWaiting));
+        Assert.True(read?.GetMethod?.IsPublic == true, "The waiting list is not public, so the map cannot draw it.");
+        Assert.True(typeof(SimWorld.PendingBuilding).IsNestedPublic, "A waiting building's record is not public.");
+
+        SimWorld.PendingBuilding waiting = Assert.Single(world.BuildingsWaiting);
+        _output.WriteLine($"waiting: {waiting.Kind} at {waiting.Position} facing {waiting.Facing}");
+        Assert.Equal(BuildingKind.BuilderHut, waiting.Kind);
+        Assert.Equal(anchor, waiting.Position);
+        Assert.Equal(turned, waiting.Facing);
+
+        foreach (GridPos tile in tiles)
+        {
+            world.Harvest(tile);
+        }
+
+        Assert.Empty(world.BuildingsWaiting);
+    }
+
+    /// <summary>
     /// ⭐ Played: a house over two trees whose marks were taken off is still raised on bare ground —
     /// the builder clears every tile of it (D138, every tile).
     /// </summary>
