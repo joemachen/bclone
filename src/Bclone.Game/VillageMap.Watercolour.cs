@@ -389,6 +389,151 @@ public partial class VillageMap
         }
     }
 
+    /// <summary>
+    /// ⭐ The painted crops (A61, <c>specs/painted-crops.md</c>): on with the tick, if the shared ground paintings load. Read
+    /// by <c>DrawWorkedGround</c>; with it false the fields are the flat fills, furrows, shoots and stalks, byte for byte.
+    /// </summary>
+    private bool _paintedCrops;
+
+    /// <summary>Every crop painting asked for, by path, loaded once — a path with no file kept as null, so it is asked once.</summary>
+    private readonly System.Collections.Generic.Dictionary<string, CanvasTexture?> _cropPaintings = new();
+
+    /// <summary>How many tiles one painting covers before it repeats: 1024 px at 128 px a tile (§4).</summary>
+    internal const float CropTilesPerRepeat = 8f;
+
+    /// <summary>A point in tile space to its place in a crop painting — world-anchored, so every field's rows line up (call 1).</summary>
+    internal static Vector2 CropUvOf(Vector2 tile) => tile / CropTilesPerRepeat;
+
+    /// <summary>
+    /// Which painting a field stage shows at <paramref name="season"/> (a season and how far it has turned, <c>TheYearAt</c>'s
+    /// clock), and the next one over it at the turn's share (§3): bare ground ploughed in spring and summer and stubble from
+    /// the autumn, crossfading as the season turns; sown ground young in spring and growing after; ripe ground ripe.
+    /// </summary>
+    internal static (string From, string To, float Share) CropStageAt(Terrain stage, float season)
+    {
+        double whole = Math.Floor(season);
+        int now = (int)(((whole % 4) + 4) % 4);
+        float turn = (float)(season - whole);
+        string from = Name(now), to = Name((now + 1) % 4);
+        return from == to || turn <= 0f ? (from, from, 0f) : (from, to, turn);
+
+        string Name(int quarter) => stage switch
+        {
+            Terrain.Field => quarter >= 2 ? "stubble" : "ploughed",
+            Terrain.Sown => quarter == 0 ? "young" : "growing",
+            _ => "ripe",
+        };
+    }
+
+    /// <summary>
+    /// A crop's painting of a stage: <c>textures/crops/&lt;the crop row's name&gt;/&lt;stage&gt;.png</c>, else the shared
+    /// <c>textures/crops/_ground/&lt;stage&gt;.png</c> (turned earth is turned earth); null where neither exists, and the flat
+    /// fill stands in. Repeating, mipmapped.
+    /// </summary>
+    internal CanvasTexture? TheCropPainting(byte crop, string stage)
+    {
+        string? name = null;
+        if (crop != 0 && _world is SimWorld world)
+        {
+            foreach (CropRow row in world.Config.Crops)
+            {
+                name = row.Id == crop ? row.Name : name;
+            }
+        }
+
+        return (name is null ? null : Loaded($"res://textures/crops/{name}/{stage}.png")) ?? Loaded($"res://textures/crops/_ground/{stage}.png");
+
+        CanvasTexture? Loaded(string path)
+        {
+            if (!_cropPaintings.TryGetValue(path, out CanvasTexture? held))
+            {
+                Texture2D? painting = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+                held = painting is null ? null : new CanvasTexture
+                {
+                    DiffuseTexture = painting,
+                    TextureFilter = TextureFilterEnum.LinearWithMipmaps,
+                    TextureRepeat = TextureRepeatEnum.Enabled,
+                };
+                _cropPaintings[path] = held;
+            }
+
+            return held;
+        }
+    }
+
+    /// <summary>One field fill as its crop's painting, the next stage over it while the season turns. False: no painting.</summary>
+    private bool LayThePaintedCrop(Terrain stage, byte crop, Vector2[] onScreen, Vector2[] uvs, int[] indices)
+    {
+        if (stage is not (Terrain.Field or Terrain.Sown or Terrain.Ripe))
+        {
+            return false;
+        }
+
+        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        (string from, string to, float share) = CropStageAt(stage, season);
+        CanvasTexture? under = TheCropPainting(crop, from);
+        if (under is null)
+        {
+            return false;
+        }
+
+        LayTheCrop(onScreen, uvs, indices, under, 1f);
+        if (share > 0f && to != from && TheCropPainting(crop, to) is CanvasTexture over)
+        {
+            LayTheCrop(onScreen, uvs, indices, over, share);
+        }
+
+        return true;
+    }
+
+    private void LayTheCrop(Vector2[] onScreen, Vector2[] uvs, int[] indices, CanvasTexture painting, float alpha) =>
+        RenderingServer.CanvasItemAddTriangleArray(
+            GetCanvasItem(), indices, onScreen, new[] { Colors.White with { A = alpha } }, uvs, texture: painting.GetRid());
+
+    /// <summary>
+    /// Over the painted fields (A61): a soft darker wash along each field's edge — pigment pooling, no ink line (Joe's
+    /// call 4, after A28's <i>"the ground isn't outlined"</i>) — and, in winter, the fields' snow at the valley's own share
+    /// (call 3), its painting's patchiness letting stubble show where it is thin.
+    /// </summary>
+    private void DrawTheFieldsEdgesAndSnow()
+    {
+        foreach (Vector2[] edge in _fieldEdges)
+        {
+            var onScreen = new Vector2[edge.Length + 1];
+            for (int p = 0; p < edge.Length; p++)
+            {
+                onScreen[p] = ToScreen(edge[p]);
+            }
+
+            onScreen[edge.Length] = onScreen[0];
+            DrawPolyline(onScreen, FieldPooling with { A = 0.10f }, Mathf.Max(2f, _pixelsPerTile * 0.16f), antialiased: true);
+            DrawPolyline(onScreen, FieldPooling with { A = 0.14f }, Mathf.Max(1f, _pixelsPerTile * 0.07f), antialiased: true);
+        }
+
+        (float _, float snow) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        if (snow <= 0f || TheCropPainting(0, "snow") is not CanvasTexture white)
+        {
+            return;
+        }
+
+        foreach ((Terrain stage, byte _, Vector2[] triangles, Vector2[] uvs, int[] indices) in _fieldFills)
+        {
+            if (stage is Terrain.Field or Terrain.Sown or Terrain.Ripe)
+            {
+                var onScreen = new Vector2[triangles.Length];
+                for (int p = 0; p < triangles.Length; p++)
+                {
+                    onScreen[p] = ToScreen(triangles[p]);
+                }
+
+                LayTheCrop(onScreen, uvs, indices, white, snow);
+            }
+        }
+    }
+
+    /// <summary>The fields' edge wash: a dark earth, pooled pigment rather than a pen (A61).</summary>
+    private static readonly Color FieldPooling = new("#5b4a33");
+
     /// <summary>Whether the valley is drawn in watercolour — the Settings tick's state.</summary>
     public bool WatercolourShown => _watercolour;
 
@@ -443,6 +588,9 @@ public partial class VillageMap
             _paintedNodes = nodes;
             _sceneryOf = null;
         }
+
+        // The painted crops (A61): on with the tick, if the shared ground paints. Fields are drawn each frame; nothing to re-mesh.
+        _paintedCrops = on && TheCropPainting(0, "ploughed") is not null;
 
         QueueRedraw();
     }
@@ -1595,6 +1743,89 @@ public partial class VillageMap
 
             return (standing, nodes);
         }
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>painted crops:</c> line (A61, <c>painted-crops.md §7</c>): every painting as imported (1024², mipmapped)
+    /// and drawn repeating; wheat's stages from its folder and the shared ground's from <c>_ground</c>; a crop with no folder
+    /// finding no young painting, so its flat fill stands in; the year's stages at named moments; the world-anchored mapping;
+    /// on with the tick and off without it.
+    /// </summary>
+    /// <remarks>⚠️ The fields themselves are drawn by <c>_Draw</c>, never headless (D340): the renders are the draw's evidence.</remarks>
+    internal string ThePaintedCropsHold()
+    {
+        var faults = new System.Collections.Generic.List<string>();
+        bool wasOn = _watercolour;
+        ShowWatercolour(true);
+
+        // ⛔ Named from the spec, not read off the code (trap 17): the five stages and the snow, 1024 × 1024, a folder a crop.
+        (byte Crop, string Stage, string Path)[] paintings =
+        {
+            (0, "ploughed", "res://textures/crops/_ground/ploughed.png"),
+            (0, "stubble", "res://textures/crops/_ground/stubble.png"),
+            (0, "snow", "res://textures/crops/_ground/snow.png"),
+            (1, "young", "res://textures/crops/wheat/young.png"),
+            (1, "growing", "res://textures/crops/wheat/growing.png"),
+            (1, "ripe", "res://textures/crops/wheat/ripe.png"),
+            (1, "ploughed", "res://textures/crops/_ground/ploughed.png"),
+        };
+        foreach ((byte crop, string stage, string path) in paintings)
+        {
+            CanvasTexture? held = TheCropPainting(crop, stage);
+            Image? pixels = (held?.DiffuseTexture as Texture2D)?.GetImage();
+            if (held?.DiffuseTexture?.ResourcePath != path || pixels is null || pixels.GetWidth() != 1024 || pixels.GetHeight() != 1024
+                || !pixels.HasMipmaps() || held.TextureRepeat != TextureRepeatEnum.Enabled || held.TextureFilter != TextureFilterEnum.LinearWithMipmaps)
+            {
+                faults.Add($"crop {crop}'s {stage} is {held?.DiffuseTexture?.ResourcePath} {pixels?.GetWidth()} × {pixels?.GetHeight()} mipmaps {pixels?.HasMipmaps()} repeat {held?.TextureRepeat} (want {path}, 1024 × 1024, mipmapped, repeating)");
+            }
+        }
+
+        // A crop the config has no row for has no painting of its own, and a growing stage has no shared one: flat fill.
+        if (TheCropPainting(200, "young") is not null)
+        {
+            faults.Add("a crop with no row finds a young painting (want none, so its flat fill stands in)");
+        }
+
+        // The year (§3), at named moments: a season, then how far it has turned.
+        (Terrain Stage, float At, string From, string To, float Share)[] year =
+        {
+            (Terrain.Field, 0.0f, "ploughed", "ploughed", 0f),
+            (Terrain.Field, 1.5f, "ploughed", "stubble", 0.5f),
+            (Terrain.Field, 2.0f, "stubble", "stubble", 0f),
+            (Terrain.Field, 3.5f, "stubble", "ploughed", 0.5f),
+            (Terrain.Sown, 0.0f, "young", "young", 0f),
+            (Terrain.Sown, 0.5f, "young", "growing", 0.5f),
+            (Terrain.Sown, 1.0f, "growing", "growing", 0f),
+            (Terrain.Sown, 2.0f, "growing", "growing", 0f),
+            (Terrain.Ripe, 2.0f, "ripe", "ripe", 0f),
+        };
+        foreach ((Terrain stage, float at, string from, string to, float share) in year)
+        {
+            (string f, string t, float s) = CropStageAt(stage, at);
+            if (f != from || t != to || Mathf.Abs(s - share) > 1e-4f)
+            {
+                faults.Add($"{stage} at {at}: {f} → {t} at {s:F2} (want {from} → {to} at {share:F2})");
+            }
+        }
+
+        // World-anchored, eight tiles a repeat (128 px a tile, 1024 px a painting).
+        if (!CropUvOf(Vector2.Zero).IsEqualApprox(Vector2.Zero) || !CropUvOf(new Vector2(8f, 4f)).IsEqualApprox(new Vector2(1f, 0.5f)))
+        {
+            faults.Add($"the mapping puts (8, 4) at {CropUvOf(new Vector2(8f, 4f))} (want (1, 0.5): eight tiles a painting)");
+        }
+
+        bool onWithTheTick = _paintedCrops;
+        ShowWatercolour(false);
+        bool offWithout = !_paintedCrops;
+        ShowWatercolour(wasOn);
+        if (!onWithTheTick || !offWithout)
+        {
+            faults.Add($"painted with the tick on {onWithTheTick}, flat with it off {offWithout} (want both)");
+        }
+
+        return faults.Count == 0
+            ? "[widths] painted crops: ✅ ploughed, stubble and snow shared, wheat's young, growing and ripe its own, each 1024 × 1024, mipmapped, repeating; a crop with no row keeps its flat fill; the year's stages at nine moments; eight tiles a painting, world-anchored; on with the tick, off without"
+            : $"[widths] painted crops: ⛔ {string.Join("; ", faults)}";
     }
 
     internal string TheSitesShowThroughTheCanopy()

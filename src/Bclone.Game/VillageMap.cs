@@ -4539,6 +4539,7 @@ public partial class VillageMap : Control
         _zoneOutlines.Clear();
         _zoneFills.Clear();
         _fieldFills.Clear();
+        _fieldEdges.Clear();
         _palisadePosts.Clear();
 
         var residential = new HashSet<Vector2I>();
@@ -4806,25 +4807,47 @@ public partial class VillageMap : Control
                 // Chaikin rounds every corner of a one-tile-wide strip, and a strip of sown tiles is
                 // not a painted shape; it is progress. D352's sentence stands as written: three
                 // colours that meet along tile edges INSIDE the field.
+                // ⭐ Sown and ripe ground split by CROP too (A61, `painted-crops.md §4`): a crop is a folder of paintings,
+                // so a field of two crops is two sets. With one crop the sets are the stage's, cell for cell.
                 var field = new HashSet<Vector2I>();
-                var sown = new HashSet<Vector2I>();
-                var ripe = new HashSet<Vector2I>();
+                var sown = new SortedDictionary<byte, HashSet<Vector2I>>();
+                var ripe = new SortedDictionary<byte, HashSet<Vector2I>>();
                 foreach (Vector2I cell in byOwner[owners[i]])
                 {
                     GridPos tile = new SubTile(cell.X, cell.Y).Tile;
                     switch (_world.Map.TerrainAt(tile))
                     {
                         case Terrain.Field: field.Add(cell); break;
-                        case Terrain.Sown: field.Add(cell); sown.Add(cell); break;
-                        case Terrain.Ripe: field.Add(cell); ripe.Add(cell); break;
+                        case Terrain.Sown: field.Add(cell); CropCells(sown, _world.Map.CropAt(tile)).Add(cell); break;
+                        case Terrain.Ripe: field.Add(cell); CropCells(ripe, _world.Map.CropAt(tile)).Add(cell); break;
                         default: break;
                     }
                 }
 
-                Vector2[] traced = ZoneOutline.Fill(ZoneOutline.Trace(field, SubTile.PerTile), field);
-                KeepTraced(traced, Terrain.Field);
-                KeepStage(traced, field, sown, Terrain.Sown, field.Count);
-                KeepStage(traced, field, ripe, Terrain.Ripe, field.Count);
+                List<Vector2[]> loops = ZoneOutline.Trace(field, SubTile.PerTile);
+                Vector2[] traced = ZoneOutline.Fill(loops, field);
+                KeepTraced(traced, Terrain.Field, 0);
+                foreach ((byte crop, HashSet<Vector2I> cells) in sown)
+                {
+                    KeepStage(traced, field, cells, Terrain.Sown, crop, field.Count);
+                }
+
+                foreach ((byte crop, HashSet<Vector2I> cells) in ripe)
+                {
+                    KeepStage(traced, field, cells, Terrain.Ripe, crop, field.Count);
+                }
+
+                // The field's own edge, for the painted crops' soft wash along it (A61, Joe's call 4).
+                foreach (Vector2[] loop in loops)
+                {
+                    var edge = new Vector2[loop.Length];
+                    for (int p = 0; p < loop.Length; p++)
+                    {
+                        edge[p] = InTileSpace(loop[p], SubTile.PerTile);
+                    }
+
+                    _fieldEdges.Add(edge);
+                }
             }
 
             // ⭐⭐ A WORKED FACE'S FLOOR IS ITS PAINT, FILLED ALONG THE SAME CURVE (D461) — the farm's
@@ -4846,23 +4869,38 @@ public partial class VillageMap : Control
 
                 if (worked.Count > 0)
                 {
-                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile), worked), seam);
+                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile), worked), seam, 0);
                 }
             }
         }
 
-        void KeepTraced(Vector2[] traced, Terrain stage)
+        void KeepTraced(Vector2[] traced, Terrain stage, byte crop)
         {
             var triangles = new Vector2[traced.Length];
+            var uvs = new Vector2[traced.Length];
+            var indices = new int[traced.Length];
             for (int i = 0; i < traced.Length; i++)
             {
                 triangles[i] = InTileSpace(traced[i], SubTile.PerTile);
+                uvs[i] = CropUvOf(triangles[i]);
+                indices[i] = i;
             }
 
-            _fieldFills.Add((stage, triangles));
+            _fieldFills.Add((stage, crop, triangles, uvs, indices));
         }
 
-        void KeepStage(Vector2[] fieldTraced, HashSet<Vector2I> field, HashSet<Vector2I> cells, Terrain stage, int wholeField)
+        static HashSet<Vector2I> CropCells(SortedDictionary<byte, HashSet<Vector2I>> byCrop, byte crop)
+        {
+            if (!byCrop.TryGetValue(crop, out HashSet<Vector2I>? cells))
+            {
+                cells = new HashSet<Vector2I>();
+                byCrop[crop] = cells;
+            }
+
+            return cells;
+        }
+
+        void KeepStage(Vector2[] fieldTraced, HashSet<Vector2I> field, HashSet<Vector2I> cells, Terrain stage, byte crop, int wholeField)
         {
             if (cells.Count == 0)
             {
@@ -4874,7 +4912,8 @@ public partial class VillageMap : Control
             // stage as its squares alone, and Joe saw them stair-step where sown met the circle.
             KeepTraced(
                 cells.Count == wholeField ? fieldTraced : ZoneOutline.ClipToCells(fieldTraced, cells, field, SubTile.PerTile),
-                stage);
+                stage,
+                crop);
         }
 
         void FillFrom(HashSet<Vector2I> cells, Layer layer, int owner, bool waiting)
@@ -6814,14 +6853,26 @@ public partial class VillageMap : Control
     {
         for (int i = 0; i < _fieldFills.Count; i++)
         {
-            (Terrain stage, Vector2[] triangles) = _fieldFills[i];
+            (Terrain stage, byte crop, Vector2[] triangles, Vector2[] uvs, int[] indices) = _fieldFills[i];
             var onScreen = new Vector2[triangles.Length];
             for (int p = 0; p < triangles.Length; p++)
             {
                 onScreen[p] = ToScreen(triangles[p]);
             }
 
+            // ⭐ The painted crops with the watercolour on (A61): the stage's painting, world-anchored; a crop or stage
+            // with no painting, and the tick off, the flat fill as ever.
+            if (_paintedCrops && LayThePaintedCrop(stage, crop, onScreen, uvs, indices))
+            {
+                continue;
+            }
+
             DrawTriangles(onScreen, FillColourOf(stage));
+        }
+
+        if (_paintedCrops)
+        {
+            DrawTheFieldsEdgesAndSnow();
         }
 
         // ⭐ A LANE WORN THROUGH THE WHEAT IS SEEN (D512, Joe: "so should villagers walking through
@@ -6840,7 +6891,8 @@ public partial class VillageMap : Control
             RenderingServer.CanvasItemAddMesh(GetCanvasItem(), _fieldTrailMesh.GetRid(), TileToScreen());
         }
 
-        if (_pixelsPerTile < TreeZoomFloor)
+        // The painted crops carry their own shoots, stalks and furrows (A61): the per-tile marks are the flat look's.
+        if (_paintedCrops || _pixelsPerTile < TreeZoomFloor)
         {
             return;
         }
@@ -7533,7 +7585,10 @@ public partial class VillageMap : Control
     /// A farm's field as triangles in tile space, one list per stage — <b>the paint's own
     /// shape, cached beside the wash</b> (D352).
     /// </summary>
-    private readonly List<(Terrain Stage, Vector2[] Triangles)> _fieldFills = new();
+    private readonly List<(Terrain Stage, byte Crop, Vector2[] Triangles, Vector2[] Uvs, int[] Indices)> _fieldFills = new();
+
+    /// <summary>Each farm field's outline in tile space, for the painted crops' edge wash (A61) — traced with the fills.</summary>
+    private readonly List<Vector2[]> _fieldEdges = new();
 
     /// <summary>
     /// Marked tiles with nothing left to take — <b>kept, not asked per frame</b> (D343).

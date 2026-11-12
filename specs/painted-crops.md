@@ -2,7 +2,7 @@
 
 **Status:** ✍️ **SPECCED (A59, 2026-11-11) — Joe's *"the wheat farm/crop - wheat will be the default available crop, but
 more crops will be unlockable, so wheat won't be the only crop image we need to create - i just want to see it now"*;
-✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60): ROWS EAST–WEST VALLEY-WIDE, FIVE STAGES, UNDER THE SNOW, A SOFT WASH AT THE EDGE. NOTHING BUILT YET — THE DEPOSITS FIRST.** Art lane, branch `art`.
+✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60): ROWS EAST–WEST VALLEY-WIDE, FIVE STAGES, UNDER THE SNOW, A SOFT WASH AT THE EDGE. 🔨 BUILT (A61, §8). ⏸️ HIS EYES.** Art lane, branch `art`.
 
 ---
 
@@ -100,3 +100,55 @@ agrees.
 - **Renders** of a farm through the year: spring, mid-summer, autumn ripe, after reaping, winter.
 - **GPU:** `measure4k`, A/B, paired runs.
 - **The four checks** in `CLAUDE.md`; Joe's eyes; merged only at his word.
+
+## 8. As built (A61, 2026-11-11)
+
+- **Painted in Python, not Photoshop** (`D:\Projects\brushes\crops\build_crop_stages.py`, seed 61): a tile must not show
+  a seam, and Photoshop's Clouds and Add Noise are not periodic. Every noise field is filtered white noise in Fourier
+  space and every mark wraps, so the paintings tile by construction. Measured: across, the step over each wrap is
+  0.92–1.06× a typical neighbour step. Down, the wrap falls on a crop row's middle, so it is compared with the other row
+  middles, and each matches its own (ploughed 0.97 against 0.97, young 1.53 against 1.46, growing 0.93 against 0.97, ripe
+  0.83 against 0.87, stubble 1.37 against 1.37). The painted files:
+  - `textures/crops/_ground/ploughed.png`, `stubble.png` and `snow.png` (shared);
+  - `textures/crops/wheat/young.png`, `growing.png` and `ripe.png`.
+
+  Each is 1024², 128 px a tile, with rows east–west four to a tile, imported lossless and mipmapped.
+- **Measured** (§4): L\* p50 59–73, dark marks at most 15 %. The means sit in their fills' hue family, except **young**:
+  its mean (89°) is between ploughed (77°) and sown (114°), because a young field is mostly earth with shoots in it,
+  which is what it should look like. The first young and stubble were too faint at the closest zoom, so the shoots and
+  stalks were made stronger. The fields' snow is white with a soft periodic alpha averaging 0.78. The first, at 0.63, made a
+  winter field look like camouflage beside the valley's smooth white.
+- **In the game:**
+  - The farm's tracing splits sown and ripe ground **by crop** (`CropAt`), so a field of two crops is two sets. With one
+    crop the sets are the stage's, cell for cell.
+  - Each fill keeps its texture coordinates (`CropUvOf`, eight tiles a painting) and indices beside its triangles, built
+    once with them.
+  - `DrawWorkedGround` lays each Field, Sown or Ripe fill as its painting with `CanvasItemAddTriangleArray`, the next
+    stage over it at the turn's share (`CropStageAt`: ploughed in spring and summer, stubble from autumn, crossfading as
+    the season turns; young in spring, growing after; ripe).
+  - Then come each field's edge as two soft dark polylines (pooling, no ink line) and, at the year's snow share, the
+    snow painting over every field fill.
+  - The per-tile furrows, shoots and stalks are not drawn while the paintings are on.
+  - A crop's painting is `textures/crops/<row name>/<stage>.png`, falling back to `_ground`. A crop with neither keeps
+    its flat fill.
+- **The probe:** `painted crops:` checks:
+  - the seven paintings asked for, each its file at 1024², mipmapped, repeating (wheat's ploughed falls back to
+    `_ground`);
+  - a crop with no row finding no young painting;
+  - the year at nine named moments;
+  - the mapping (eight tiles a painting);
+  - on with the tick and off without it.
+
+**Verified (A61):**
+- **Watercolour off:** a demo farm was raised by a temporary hook (marked, stocked, worked and completed through the
+  sim's own `Complete`, reached by reflection; the hook was removed before the commit). With it on the map, renders at
+  three zooms are byte-identical to the build before. The opening zoom's off shot was taken before the script switched
+  off, so it is on since A58.
+- **Through a year at 20×, with the demo farm:**
+  - spring shows ploughed, young and ripe strips;
+  - summer turns young to tall green;
+  - autumn ripens the sown strip and turns the ploughed to stubble;
+  - winter lays the snow, stubble and gold showing faintly through it.
+- **GPU:** not measured; Photoshop was holding the card in its slow state (A60). A field is at most two triangle draws,
+  a snow draw and its edge, against the flat look's fill plus a line or 5–12 stalks per tile.
+- **Red-check:** 8 mutants, 6 red (bare ground ploughed all year; sown ground never young; a painting every four tiles; the paintings not repeating; the crop's own folder never read; the crops never painted). **Two zeros, written down:** the fields drawn flat with the tick on, and no snow on the fields. Both are draw-time only (`_Draw`, never headless), and the year's renders are their evidence. The harness crashed once, on a Windows file lock mid-restore. It left C3's mutant in place, which was found by its anchor count and reversed by its own text; the harness now retries a locked write.

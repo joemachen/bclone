@@ -49,7 +49,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Woods ground / young wood | `#9aa47a` / `#b3b98d` with two-octave foliage noise (`ValleyTexture.cs`) | Seasons (no spec asks), far-view bake | B5, B6 | 🟨 interim (D637) |
 | Stone seam / iron seam | `#b4ab99` / `#b9906f` with grain noise | Unworked / worked | B6 | 🟨 |
 | Quarry and mine floor | Traced fills `#a39b8e` / `#bf957c` (`VillageMap.Meshes.cs:486`, `:495`) | Grows as worked | B6 | 🟨 |
-| Ploughed / sown / ripe field | Traced fills `#b39874` / `#a8b07a` / `#d6b55c`, drawn per tile, not baked (`VillageMap.cs:208–219`) | See §4 (crops) | B6 | 🟨 ✍️ **A59: specced, `painted-crops.md`** — a seamless painted texture a stage, a folder a crop; four calls Joe's |
+| Ploughed / sown / ripe field | Traced fills `#b39874` / `#a8b07a` / `#d6b55c`, drawn per tile, not baked (`VillageMap.cs:208–219`) | See §4 (crops) | B6 | 🟨 🔨 **A61 built (✍️ A59, `painted-crops.md`)** — wheat's young, growing and ripe and the shared ploughed, stubble and snow, seamless, world-anchored, rows east–west; a folder a crop; for Joe's eyes |
 | Valley edge and beyond | `#c4b48f` beyond, a 2px `#8c7a5c` edge (`VillageMap.cs:77`, `:4003`) | — | B6 | 🟨 |
 | Optional grid | 1px `#d2c29c` lines (`VillageMap.cs:4016`) | — | — | 🟨 debug aid |
 | **Snow** | ⬜ nothing — no season is drawn anywhere in the valley | Snow cover, melt | B6 (needs a non-Multiply blend) | 🟨 lab only: its own layer, Lerp / Screen / Lighten, behind a switch (A4); ⭐ approved at Joe's tuning (A9): Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles, the amount the season's; the valley waits for house tiers |
