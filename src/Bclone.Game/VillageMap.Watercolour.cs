@@ -1863,7 +1863,8 @@ public partial class VillageMap
         ShowWatercolour(true);
         ShowTrees(true);
         var on = SitesThroughTheCanopy();
-        int sites = world.Workplaces.Count(w => w.Construction is not null);
+        // A free building waiting on its ground comes through as a site does (D726), so it is counted with them.
+        int sites = world.Workplaces.Count(w => w.Construction is not null) + world.BuildingsWaiting.Count;
 
         // ⛔ Named from the spec, not read off SiteShapeOf (trap 17): the site's footprint 0.8 of its extent each way, centred
         // on its place, in the clearing's orange (D350) while its trees stand.

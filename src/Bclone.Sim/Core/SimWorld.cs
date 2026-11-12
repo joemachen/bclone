@@ -1463,11 +1463,14 @@ public sealed partial class SimWorld : IObstacles
     /// loses which way it was turned between the mark and the clearing, and cannot recover it.
     /// </remarks>
     /// <remarks>
-    /// ⚠️ <b><c>internal</c> so <c>StateHash</c> can see the whole record</b> (D329). It used to be
+    /// ⚠️ <b><c>internal</c> so <c>StateHash</c> could see the whole record</b> (D329). It used to be
     /// private, and the only thing outside this class could reach was a flattened list of tiles —
     /// **so which building was waiting, and which way round, was sim state nothing hashed.**
+    /// ⭐ <b>Public since D726, for the second reader that needed all of it: the map.</b> A free building
+    /// marked on wooded ground drew nothing, because the view could reach only the tiles (A36). A
+    /// value type with no setters, so reading it changes nothing.
     /// </remarks>
-    internal readonly record struct PendingBuilding(Point Position, BuildingKind Kind, Angle Facing);
+    public readonly record struct PendingBuilding(Point Position, BuildingKind Kind, Angle Facing);
 
     private readonly List<PendingBuilding> _waitingOnTheGround = new();
 
@@ -1501,8 +1504,11 @@ public sealed partial class SimWorld : IObstacles
         }
     }
 
-    /// <summary>The waiting list itself, for the one thing that needs all of it: the hash.</summary>
-    internal IReadOnlyList<PendingBuilding> BuildingsWaiting => _waitingOnTheGround;
+    /// <summary>
+    /// The waiting list itself — kind, place and facing, in marking order — for the two things that need
+    /// all of it: the hash, and the map that draws each one as a site in the clearing's colour (D726).
+    /// </summary>
+    public IReadOnlyList<PendingBuilding> BuildingsWaiting => _waitingOnTheGround;
 
     /// <summary>
     /// Raise any free building that was waiting for this tile to be cleared.

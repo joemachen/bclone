@@ -1,7 +1,7 @@
 # Spec: Footprints per building — a granary is bigger than a hut
 
 **Decisions:** D382 (this document). Neighbours: D319 (the centre rule), D322 (the longhouse), D329–D331 (free placement, SAT), D344 (a re-take with one reason), D353 (item 4 of Joe's 2026-09-12 list).
-**Status:** ✅ **BUILT (2026-09-16, D382)**; §8 (a footprint is one piece) ✅ **BUILT (D650), MERGED AND PUSHED (D651), PLAYED (D652)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
+**Status:** ✅ **BUILT (2026-09-16, D382)**; §7.6 (a free building waiting on its ground is drawn) 🔨 **BUILT on `slice/free-building-waiting` (D726), unplayed, unmerged**; §8 (a footprint is one piece) ✅ **BUILT (D650), MERGED AND PUSHED (D651), PLAYED (D652)**; §7 (the whole footprint is cleared, B5) ✅ **BUILT (D498), PLAYED AND MERGED (D499)** — the table is Joe's ("Modest", chosen 2026-09-16), played in every build since D382. Owner: Joe + Claude Code.
 
 ---
 
@@ -127,7 +127,8 @@ every tile.
   one. A free building waiting on its ground (`_waitingOnTheGround`) is raised when the **last** of
   its covered tiles comes clear, from whichever tile cleared last.
 - **Shown:** the view draws a site in the clearing's orange while any covered tile still stands
-  (`VillageMap`, the D350 colour) — not only the anchor.
+  (`VillageMap`, the D350 colour) — not only the anchor. ⭐ **And a free building waiting on its ground
+  is drawn the same way (§7.6, D726)** — it drew nothing until then.
 
 ### 7.3 Cost (CLAUDE.md's rule: nothing derivable incrementally is rebuilt per tick)
 
@@ -194,6 +195,33 @@ red each:**
   before and after (one each way; `wood 13` traced: both sites clear by tick 80, the houses 30 tiles
   out never got their logs, everybody froze in the first winter — it scraped through on `main` with
   one house at t497).
+
+### 7.6 A free building waiting on its ground is drawn (D726)
+
+**Status:** 🔨 **BUILT on `slice/free-building-waiting` (D726, 2026-11-11), unplayed, unmerged.** Joe, playing the art
+(A36): *"i placed a builder's hut (at an angle) and the construction outline isn't showing."*
+
+- **Why it drew nothing.** A builder's hut or a stockpile costs nothing, so it is never a construction site (D96,
+  D108). Marked on wooded ground it waits in the waiting list until its **last** covered tile is cleared (§7.2) — and
+  the only public read of that list was `BuildingsWaitingOnTheGround`, tiles only. The map drew the felling mark, which
+  a lone tile traces as a circle (D350), and nothing for the building, with the watercolour on or off.
+- **The read.** `SimWorld.BuildingsWaiting` and its record `PendingBuilding(Position, Kind, Facing)` are public — the
+  list the hash already reads (D329), in marking order. A visibility change only: no state, nothing hashed differently,
+  no golden.
+- **The look.** Each waiting building is drawn as a costed site whose ground is busy is drawn: its turned footprint at 0.8 of
+  its extent each way, centred on the point it was marked at, filled at 0.18 in the clearing's orange with the
+  clearing's edge, and nothing filled in, since there is no work to show. **No door** — a door is the building's, and
+  there is none yet. It is always orange: the moment its ground is clear it stands. Under the painted canopy it comes
+  through dashed, as every site does (`tree-sprites.md §2`, A53). One list, `VillageMap.FreeBuildingsWaitingOf`, for
+  the draw, the canopy and the probe.
+- **Tested.** `FootprintClearingTests.AFreeBuildingWaitingOnItsGroundCanBeReadWhole` — a builder's hut marked at an
+  eighth of a turn on wood reads back its kind, place and angle from a public list, and the list empties when the
+  ground is cleared. The probe's `free buildings waiting:` line, on a spare valley from the same config (a waiting mark
+  cannot be taken back, and the probe runs its own village twelve years on): drawn as its own 2 × 1 at 1/8 turn, through
+  the canopy in the orange, none with the trees hidden, none once cleared. ⛔ **Not guarded: that `_Draw` draws it** —
+  the probe reads the list the draw reads; Joe's eyes are the check, as for every site's look.
+- **Not in it, noticed on the way:** a free building waiting on its ground **cannot be taken back** — no card, no
+  cancel; the player's only lever is the harvest paint under it. A follow-up for Joe if he wants one.
 
 ## 8. A footprint is one piece (D650)
 

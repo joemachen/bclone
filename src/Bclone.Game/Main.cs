@@ -581,6 +581,7 @@ public partial class Main : Control
         GD.Print(_map.TheWatercolourHolds());
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheSitesShowThroughTheCanopy());
+        GD.Print(_map.TheFreeBuildingsWaitingAreDrawn());
         GD.Print(_map.ThePaintedDepositsHold());
         GD.Print(_map.ThePaintedCropsHold());
         GD.Print(_map.TheRiverDrawnHolds());
