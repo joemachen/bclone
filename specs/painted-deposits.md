@@ -1,7 +1,7 @@
 # Spec: Painted deposits — the stone and iron nodes, and room for the kinds to come
 
 **Status:** ✍️ **SPECCED (A59, 2026-11-11) — Joe's *"the art for the stone and iron nodes (with knowledge that we'll create
-more node types later)"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60); 🔨 BUILT (A60, §8). ⭐ APPROVED (A62, *"approved."*); NOT MERGED.** Art lane, branch `art`. It follows the painted trees
+more node types later)"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60); 🔨 BUILT (A60, §8). ⭐ APPROVED (A62, *"approved."*); MERGED INTO `main` AT HIS WORD (A63, `299517e`), NOT PUSHED.** Art lane, branch `art`. It follows the painted trees
 (`tree-sprites.md`): the same hand, the same light, the same atlas-and-mesh way of drawing, so a seam reads as part of the
 same painting as the wood beside it.
 
