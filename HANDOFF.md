@@ -9885,7 +9885,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51). ⏸️ HIS EYES: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE
+- ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51); ⭐ APPROVED (A52, *"everything about saplings looks great"*), not merged. Was for his eyes: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE
   INKED DISCS. NOTHING PAINTED OR BUILT. Four calls his (§6), each with a recommendation:** (1) trees drawn at an angle with trunks
   showing, like the concept (it leans on how buildings are drawn later, B4); (2) one leafy kind first, conifers later; (3) he paints or
   sources eight trees to §3's format (256 px cells, 128 px a tile, anchored at the trunk's foot, ink and wash), the session measures and
