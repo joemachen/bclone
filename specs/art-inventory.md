@@ -95,7 +95,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 
 | State | Stands in now | Needs | Blocked by | State |
 |---|---|---|---|---|
-| **Construction site** | Outline + a fill rising from one edge with progress, `#8f9aa8` / edge `#38424e`; harvest orange while the ground still needs clearing (`VillageMap.cs:283–292`, `:6739–6807`) | Staged art. `art/…asset-pipeline.jpg` shows **three stages: blueprint ghost, under construction, completed** — no spec asks for stages | B1, B4 | 🟨 |
+| **Construction site** | Outline + a fill rising from one edge with progress, `#8f9aa8` / edge `#38424e`; harvest orange while the ground still needs clearing (`VillageMap.cs:283–292`, `:6739–6807`) | Staged art. `art/…asset-pipeline.jpg` shows **three stages: blueprint ghost, under construction, completed** — no spec asks for stages. **A53:** with the watercolour's canopy over the village, a site's outline also comes through the trees, dashed, in its own colours (`tree-sprites.md §2`) | B1, B4 | 🟨 |
 | Placement ghost | Footprint quad in fine `#004c1b` / warned `#523e01` / refused `#7e1b1d` (`VillageMap.cs:3082–3260`) | — | — | 🟨 (functional; may stay drawn) |
 | Demolition | `#b5714a` / `#6a310d`, the fill drains (`VillageMap.cs:283–292`) | Coming-down stages | B4 | 🟨 |
 | **Condition: sound / worn / failing** | Three steps darker-and-duller (`Weathered`, `VillageMap.cs:87–102`) — every kind but the town hall and the stone bridge | Drawn wear or a tint | B9 | ✅ played (D560) as placeholder |

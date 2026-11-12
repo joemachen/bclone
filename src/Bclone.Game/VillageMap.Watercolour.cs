@@ -1251,6 +1251,101 @@ public partial class VillageMap
     /// which way is downstream, the straight rivers' middles and widths, and the bank's weights at the echoes' depths are
     /// written out below, not read from <see cref="RiverTable"/> or the look file.
     /// </remarks>
+    /// <summary>
+    /// ⭐ The probe's <c>sites through the canopy:</c> line (A53, <c>tree-sprites.md §2</c>): a site marked in the woods
+    /// comes through the painted canopy as its outline — its own turned footprint, in the clearing's orange while trees
+    /// stand on its ground — with the watercolour and the trees on, and not otherwise. The site is taken back after.
+    /// ⚠️ It checks what is drawn, not that <c>_Draw</c> draws it: that call is the render's to show (red-check zero).
+    /// </summary>
+    internal string TheSitesShowThroughTheCanopy()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] sites through the canopy: ⛔ no world";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        bool wasOn = _watercolour, wasTrees = _treesShown;
+        int sitesBefore = world.Workplaces.Count(w => w.Construction is not null);
+
+        // A gatherer's hut marked on the first wooded tile out from the founding where one may go.
+        GridPos founding = world.Map.FoundingSite;
+        Workplace? marked = null;
+        for (int r = 3; r < 30 && marked is null; r++)
+        {
+            for (int dx = -r; dx <= r && marked is null; dx++)
+            {
+                var tile = new GridPos(founding.X + dx, founding.Y + r);
+                if (world.Map.TerrainAt(tile) == Terrain.Forest && world.CanBuildAt(BuildingKind.GathererHut, tile).Allowed
+                    && world.Mark(BuildingKind.GathererHut, tile).Allowed)
+                {
+                    marked = world.Workplaces.LastOrDefault(w => w.Construction is not null);
+                }
+            }
+        }
+
+        if (marked is null)
+        {
+            return "[widths] sites through the canopy: ⛔ nowhere in the woods to mark a site";
+        }
+
+        ShowWatercolour(true);
+        ShowTrees(true);
+        var on = SitesThroughTheCanopy();
+        int sites = world.Workplaces.Count(w => w.Construction is not null);
+
+        // ⛔ Named from the spec, not read off SiteShapeOf (trap 17): the site's footprint 0.8 of its extent each way, centred
+        // on its place, in the clearing's orange (D350) while its trees stand.
+        Vector2 centre = ToScreen(marked.Position);
+        float wantWide = marked.ExtentWidth * 0.8f * _pixelsPerTile, wantDeep = marked.ExtentHeight * 0.8f * _pixelsPerTile;
+        bool found = false;
+        foreach ((Vector2[] outline, Color edge) in on)
+        {
+            Vector2 middle = (outline[0] + outline[1] + outline[2] + outline[3]) / 4f;
+            if (middle.DistanceTo(centre) > 0.5f)
+            {
+                continue;
+            }
+
+            found = true;
+            float a = outline[0].DistanceTo(outline[1]), b = outline[1].DistanceTo(outline[2]);
+            bool shaped = (Mathf.Abs(a - wantWide) < 0.5f && Mathf.Abs(b - wantDeep) < 0.5f) || (Mathf.Abs(a - wantDeep) < 0.5f && Mathf.Abs(b - wantWide) < 0.5f);
+            if (!shaped || edge != HarvestEdge)
+            {
+                faults.Add($"the marked site comes through {a:F1} × {b:F1} px in {edge} (want {wantWide:F1} × {wantDeep:F1} in the clearing's orange {HarvestEdge})");
+            }
+        }
+
+        if (!found || on.Count != sites)
+        {
+            faults.Add($"{on.Count} outlines through the canopy for {sites} sites, the marked one found {found} (want one a site, it among them)");
+        }
+
+        // No canopy, nothing to see through: the trees hidden, then the watercolour off.
+        ShowTrees(false);
+        int treesOff = SitesThroughTheCanopy().Count;
+        ShowTrees(true);
+        ShowWatercolour(false);
+        int watercolourOff = SitesThroughTheCanopy().Count;
+        if (treesOff != 0 || watercolourOff != 0)
+        {
+            faults.Add($"{treesOff} outlines with the trees hidden and {watercolourOff} with the watercolour off (want none)");
+        }
+
+        world.CancelConstruction(marked);
+        ShowTrees(wasTrees);
+        ShowWatercolour(wasOn);
+        int sitesAfter = world.Workplaces.Count(w => w.Construction is not null);
+        if (sitesAfter != sitesBefore)
+        {
+            faults.Add($"{sitesAfter} sites after taking the marked one back (want the {sitesBefore} there were)");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] sites through the canopy: ✅ a gatherer's hut marked in the woods comes through the canopy as its own {wantWide:F0} × {wantDeep:F0} px outline in the clearing's orange, one outline a site ({sites}); none with the trees hidden or the watercolour off; taken back after"
+            : $"[widths] sites through the canopy: ⛔ {string.Join("; ", faults)}";
+    }
+
     internal string TheRiverDrawnHolds()
     {
         var faults = new System.Collections.Generic.List<string>();

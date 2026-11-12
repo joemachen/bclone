@@ -3267,10 +3267,14 @@ public partial class VillageMap : Control
         // after every building, heap, cart and villager, so a branch overhanging a house or a path hides it as a real one
         // would. ⚠️ A villager in the woods is hidden too — his call, made knowing it (A36); the *draw the trees* tick is
         // the way to see under. Only what is in the player's hand stays above: the selection, the ghost, the brushful
-        // and the before/after line. With the tick off the order above is the order it always was, to the byte.
+        // and the before/after line — and, dashed, every building site's outline (A53). With the tick off the order above
+        // is the order it always was, to the byte.
         if (canopyOver)
         {
             DrawThePaintedCanopy();
+
+            // ⭐ A building site shows through the leaves as a dashed outline (A53): placement must never be lost under a tree.
+            DrawTheSitesThroughTheCanopy();
             DrawSelectedTile();
         }
 
@@ -7197,6 +7201,101 @@ public partial class VillageMap : Control
         }
     }
 
+    /// <summary>
+    /// A construction site's shape on screen and its colours — the one place they are worked out, for its solid draw in
+    /// <see cref="DrawWorkplaces"/> and its dashes over the painted canopy (A53, <see cref="DrawTheSitesThroughTheCanopy"/>).
+    /// </summary>
+    private (Vector2 Centre, float Wide, float Deep, ushort Facing, Color Fill, Color Edge) SiteShapeOf(SimWorld world, Workplace workplace)
+    {
+        ConstructionSite site = workplace.Construction!;
+        Vector2 centre = ToScreen(workplace.Position);
+
+        // ⛔⛔ THE SITE SHOWS THE GROUND IT WILL TAKE, TURNED THE WAY IT WAS PLACED (D324,
+        // Joe: *"presently it only shows 1 square during the construction phase (and it is
+        // the default orientation, not the rotated/placed orientation)"*). D321 gave a site
+        // its extent and facing in the SIM and D320 taught only the FINISHED branch to draw
+        // them — so a longhouse was a three-tile ghost, a one-tile square for the years it
+        // took to build, and a three-tile building at the end.
+        // ⭐ **The site is the moment the footprint matters MOST**, because it is the last
+        // point at which there is still time to move it.
+        float wide = workplace.ExtentWidth * 0.8f;
+        float deep = workplace.ExtentHeight * 0.8f;
+        ushort facing = workplace.Facing.Raw;
+
+        // ⭐ A BRIDGE'S SITE SHOWS THE WHOLE SPAN IT WILL LAY, bank to bank, filling from the near
+        // bank as it is built (D546) — not the one tile of bank its builders stand on.
+        if (site.BridgeTo is Point far)
+        {
+            // The quad's own bottom is its second end, so it is laid far → near: the band fills from
+            // the bottom, and the deck grows out from where its builders stand.
+            (centre, deep, facing) = LineAsAQuad(far, workplace.Position);
+            wide = BridgeWidth;
+        }
+
+        // ⭐⭐ A DEMOLITION DRAINS WHERE A CONSTRUCTION FILLS, which is *"reverse
+        // construction"* said in the one place the player is actually looking (Joe,
+        // 2026-08-26). A building marked to come down starts full and empties as the crew
+        // work — so **"how far along is it?" reads the same way in both directions**, and a
+        // marked house is obvious the moment you unpaint the ground under it.
+        bool pullingDown = site.Demolishing;
+
+        // ⭐ A SITE WAITING FOR ITS GROUND TO BE CLEARED IS DRAWN IN THE CLEARING'S COLOUR
+        // (D350). Its own harvest mark (D100) is deliberately not traced as a zone — a lone
+        // marked tile rounded into a circle beside a free-placed hut read as a mistake (Joe)
+        // — so the building carries the message instead: orange until the trees are gone,
+        // then the site's own grey. Asked of every tile it covers (B5, D497): the far half
+        // of a house is marked and waited on too, so it stays orange until that tree is down.
+        bool groundIsBusy = !pullingDown && !world.FootprintIsClear(workplace);
+        Color fill = pullingDown
+            ? DemolishColour
+            : groundIsBusy ? HarvestColour with { A = 1f } : SiteColour;
+        Color edge = pullingDown ? DemolishEdge : groundIsBusy ? HarvestEdge : SiteEdge;
+        return (centre, wide, deep, facing, fill, edge);
+    }
+
+    /// <summary>
+    /// ⭐ <b>Every building site's outline, dashed, over the painted canopy</b> (A53, Joe: <i>"can we still show a 'dashed
+    /// lined' version of construction placements 'under' the canopies so the user can see building placement?"</i>) —
+    /// the sites the trees would hide, as <see cref="SiteShapeOf"/> gives them: the turned footprint and the site's own
+    /// edge colour. Empty unless the canopy is over the village (the watercolour and the trees both on).
+    /// </summary>
+    /// <remarks>
+    /// A house's rebuild (D722) is a site on the house's ground and comes through too. ⚠️ Dashed edges are also a fallen-in
+    /// building (D556), in the building's colour; these are in the site colours no finished building uses
+    /// (<c>tree-sprites.md §2</c>).
+    /// </remarks>
+    internal System.Collections.Generic.List<(Vector2[] Outline, Color Edge)> SitesThroughTheCanopy()
+    {
+        var sites = new System.Collections.Generic.List<(Vector2[] Outline, Color Edge)>();
+        if (!(_paintedTrees && _treesShown) || _world is not SimWorld world)
+        {
+            return sites;
+        }
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Construction is not null)
+            {
+                (Vector2 centre, float wide, float deep, ushort facing, Color _, Color edge) = SiteShapeOf(world, workplace);
+                sites.Add((FootprintQuad(centre, wide, deep, facing), edge));
+            }
+        }
+
+        return sites;
+    }
+
+    /// <summary>The dashes of <see cref="SitesThroughTheCanopy"/>, drawn straight after the canopy (A53).</summary>
+    private void DrawTheSitesThroughTheCanopy()
+    {
+        foreach ((Vector2[] outline, Color edge) in SitesThroughTheCanopy())
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                DrawDashedLine(outline[i], outline[(i + 1) % 4], edge, 2f, Mathf.Max(3f, _pixelsPerTile * 0.15f));
+            }
+        }
+    }
+
     private void DrawWorkplaces()
     {
         SimWorld world = _world!;
@@ -7251,51 +7350,13 @@ public partial class VillageMap : Control
             // buildings with labour buys, and it is the one you can actually see.
             if (workplace.Construction is { } site)
             {
-                // ⛔⛔ THE SITE SHOWS THE GROUND IT WILL TAKE, TURNED THE WAY IT WAS PLACED (D324,
-                // Joe: *"presently it only shows 1 square during the construction phase (and it is
-                // the default orientation, not the rotated/placed orientation)"*). D321 gave a site
-                // its extent and facing in the SIM and D320 taught only the FINISHED branch to draw
-                // them — so a longhouse was a three-tile ghost, a one-tile square for the years it
-                // took to build, and a three-tile building at the end.
-                // ⭐ **The site is the moment the footprint matters MOST**, because it is the last
-                // point at which there is still time to move it.
-                float wide = workplace.ExtentWidth * 0.8f;
-                float deep = workplace.ExtentHeight * 0.8f;
-                ushort facing = workplace.Facing.Raw;
-
-                // ⭐ A BRIDGE'S SITE SHOWS THE WHOLE SPAN IT WILL LAY, bank to bank, filling from the near
-                // bank as it is built (D546) — not the one tile of bank its builders stand on.
-                if (site.BridgeTo is Point far)
-                {
-                    // The quad's own bottom is its second end, so it is laid far → near: the band fills from
-                    // the bottom, and the deck grows out from where its builders stand.
-                    (centre, deep, facing) = LineAsAQuad(far, workplace.Position);
-                    wide = BridgeWidth;
-                }
+                (centre, float wide, float deep, ushort facing, Color colourOfWork, Color edgeOfWork) = SiteShapeOf(world, workplace);
+                bool pullingDown = site.Demolishing;
 
                 // Every material plus the work, so a two-material building fills its ring
                 // honestly rather than showing full while its stone is still coming (D213).
                 int total = System.Math.Max(1, site.Recipe.TotalMaterials + site.Recipe.WorkTicks);
                 float done = (site.TotalDelivered + site.WorkDone) / (float)total;
-
-                // ⭐⭐ A DEMOLITION DRAINS WHERE A CONSTRUCTION FILLS, which is *"reverse
-                // construction"* said in the one place the player is actually looking (Joe,
-                // 2026-08-26). A building marked to come down starts full and empties as the crew
-                // work — so **"how far along is it?" reads the same way in both directions**, and a
-                // marked house is obvious the moment you unpaint the ground under it.
-                bool pullingDown = site.Demolishing;
-
-                // ⭐ A SITE WAITING FOR ITS GROUND TO BE CLEARED IS DRAWN IN THE CLEARING'S COLOUR
-                // (D350). Its own harvest mark (D100) is deliberately not traced as a zone — a lone
-                // marked tile rounded into a circle beside a free-placed hut read as a mistake (Joe)
-                // — so the building carries the message instead: orange until the trees are gone,
-                // then the site's own grey. Asked of every tile it covers (B5, D497): the far half
-                // of a house is marked and waited on too, so it stays orange until that tree is down.
-                bool groundIsBusy = !pullingDown && !world.FootprintIsClear(workplace);
-                Color colourOfWork = pullingDown
-                    ? DemolishColour
-                    : groundIsBusy ? HarvestColour with { A = 1f } : SiteColour;
-                Color edgeOfWork = pullingDown ? DemolishEdge : groundIsBusy ? HarvestEdge : SiteEdge;
                 float shown = pullingDown ? 1f - done : done;
 
                 DrawColoredPolygon(
