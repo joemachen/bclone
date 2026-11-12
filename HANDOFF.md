@@ -2554,8 +2554,7 @@
 > 15 → 22**: the race where the woodcutter splits the logs two houses wait on (spec §5.1/§5.3).
 >
 > **▶️ NEXT: Joe's call on the founding race (OPEN, top entry); then he plays `slice/armful`** (`git checkout
-> slice/armful`, `.
-un.bat`): household trips to the market at 2–4×, the founders stopping to eat about every four
+> slice/armful`, `.\run.bat`): household trips to the market at 2–4×, the founders stopping to eat about every four
 > days. Merge `--no-ff` at his word.
 >
 > **(the banner below is the state before D537)**
@@ -9923,8 +9922,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   wires them; (4) fewer, bigger trees — 1–2 a tile, about a tile across. ✅ **ANSWERED (A30), all four as recommended — and the angle
   REVERSED (A31): *"we shouldnt draw at an angle. buildings must rotate."* Trees are crowns seen from above, mirrored along the light's
   diagonal, never turned; every sprite on the map is drawn straight down (B4 answered). ⏸️ WAITING ON JOE'S ATLAS (`tree_sprites.png`,
-  eight leafy crowns to §3), then piece 1.** ✅ **PLAYED (A36, *"this is looking pretty!"*) — AND 🔨 HIS FOUR ASKS BUILT (A36): three more kinds painted and placed (conifers in stands, birches at the edges, willows by the water); the painted canopy over the whole village, the ghost and selection above it (*"Everything under"* — ⚠️ a villager in the woods is hidden: the legibility tension, recorded); a *draw the trees* tick; trees at every zoom (piece 3). ⭐ APPROVED (A37, *"Approved"*) AND MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*, `f48cfab`); `main` merged back into `art`; pushed to `origin` at his word (A39, *"Push main"*).** ⭐ **ATLAS APPROVED AND 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`; with the watercolour tick on, the painted trees replace the crowns (1–2 a tile, mirrored on the light's diagonal); tick off byte-identical at four zooms; probe `painted trees:`; no dearer on the GPU than the inked crowns. ⏸️ HIS EYES: `.
-un.bat`, Settings → *paint the valley in watercolour*.** 🎨 **PAINTED IN PHOTOSHOP BY SCRIPT AT HIS WORD (A34): `D:\Projects\brushes\trees\build_tree_sprites.jsx`, the PSD and PNG in
+  eight leafy crowns to §3), then piece 1.** ✅ **PLAYED (A36, *"this is looking pretty!"*) — AND 🔨 HIS FOUR ASKS BUILT (A36): three more kinds painted and placed (conifers in stands, birches at the edges, willows by the water); the painted canopy over the whole village, the ghost and selection above it (*"Everything under"* — ⚠️ a villager in the woods is hidden: the legibility tension, recorded); a *draw the trees* tick; trees at every zoom (piece 3). ⭐ APPROVED (A37, *"Approved"*) AND MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*, `f48cfab`); `main` merged back into `art`; pushed to `origin` at his word (A39, *"Push main"*).** ⭐ **ATLAS APPROVED AND 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`; with the watercolour tick on, the painted trees replace the crowns (1–2 a tile, mirrored on the light's diagonal); tick off byte-identical at four zooms; probe `painted trees:`; no dearer on the GPU than the inked crowns. ⏸️ HIS EYES: `.\run.bat`, Settings → *paint the valley in watercolour*.** 🎨 **PAINTED IN PHOTOSHOP BY SCRIPT AT HIS WORD (A34): `D:\Projects\brushes\trees\build_tree_sprites.jsx`, the PSD and PNG in
   `Desktop\Art\bclone\`, all eight inside §4, not in the repo until he approves; ⏸️ HIS EYES, THEN PIECE 1.** ✅ **THE SHADOW ANSWERED (A33): (a), *"option a"* — painted, see-through, the one exception.** The call as put (A32): §3 asks for a soft cast shadow, and §4
   says opaque or clear. Recommended: (a) the shadow is a see-through wash and the one exception; or (b) the game draws it. Nothing builds
   before the atlas: the spec allows no stand-in. The §4 measuring script (`measure_trees.py`, 3 of 3 reds on a synthetic atlas) waits in
@@ -10067,8 +10065,7 @@ un.bat`, Settings → *paint the valley in watercolour*.** 🎨 **PAINTED IN PHO
   Slice H (`handcart.md`)**, measured on `ZzLogistics`.
 - ⏸️ **`slice/lane-bridge` (D680) — MERGED AND PUSHED (D681); ON `main` WITH EVERYTHING ELSE SINCE D684; JOE HAS NOT YET SAID WHAT HE SAW IN FERNHOLLOW.** What to look for: the two lanes
   either side of the untrodden column between the horizontal lane and the market both drawn, nothing down the middle; the
-  ladders of October still one lane. His Fernhollow save is format 10 and opens from `main`'s `.
-un.bat` now.
+  ladders of October still one lane. His Fernhollow save is format 10 and opens from `main`'s `.\run.bat` now.
 - ✅ ~~⏸️ **SLICE W — `workshop_unlock_logs`: THE NUMBER IS HIS, AND THE HASH CHOICE WITH IT (D675, `specs/workshop-and-the-carpenter.md
   §4.1a`).**~~ **CLOSED (D676, 2026-11-01): Joe — *"2500 logs"*.** `workshop_unlock_logs` 2,500 (his villages fell 70–100 logs a year
   and stand at 2,600–4,500 after 25–50 years, so Year 25–35; above the mill's 5,000 would be after Year 50 in nearly every village he
