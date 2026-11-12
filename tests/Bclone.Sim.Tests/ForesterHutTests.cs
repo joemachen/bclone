@@ -570,6 +570,205 @@ public sealed class ForesterHutTests
         Assert.NotEqual(StateHash.Compute(untouched), StateHash.Compute(switched));
     }
 
+    // ---------------------------------------------------------------
+    //  ⭐ Planting waits for spring (D728, `forests-and-gathering.md §10`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Planting is every season but winter — the calendar's rule, beside sowing and reaping.</summary>
+    /// <remarks>
+    /// Joe, 2026-11-11: <i>"should a forester plant trees in the winter? seems weird. am i wrong?"</i> He was not:
+    /// the ground is frozen, and this game's winters are white.
+    /// </remarks>
+    [Fact]
+    public void PlantingIsEverySeasonButWinter()
+    {
+        Assert.True(SeasonRules.IsPlanting(Season.Spring));
+        Assert.True(SeasonRules.IsPlanting(Season.Summer));
+        Assert.True(SeasonRules.IsPlanting(Season.Fall));
+        Assert.False(SeasonRules.IsPlanting(Season.Winter));
+    }
+
+    /// <summary>
+    /// ⭐ A forester with only bare ground plants in autumn, plants nothing all winter and says why, and plants again
+    /// in spring.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Counted by the young bit (D220), not by grass turning to sapling.</b> The regrowth sweep seeds grass that
+    /// touches wood in every season, and a seeded sapling carries no young bit — so the sweep cannot pass for a
+    /// forester planting, and a forester planting cannot hide behind the sweep.
+    /// </para>
+    /// <para>
+    /// Stepped one tick at a time across the whole winter, so a planting stint that set out in autumn and finished in
+    /// winter would be seen: <c>SimWorld.Plant</c> is the door every sapling goes in by, and it is the guarantee.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AForesterPlantsNothingInWinterAndPlantsAgainInSpring()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        // ⚠️ More ground than a year of planting covers (D728's first run: 53 tiles, all planted by winter's end under
+        // the old rule, so spring planted 0 there and a spring guard on that ground would have proved nothing).
+        int given = GiveGround(world, hut, 8, wooded: false);
+        Assert.True(given > 80, $"The hut was given {given} bare tiles — too few to outlast a year of planting.");
+        KeepAForesterAt(world, hut);
+
+        // ⚠️ Felling off — a wood that is resting. Under the default the first spring's saplings are trees by the next
+        // spring and are felled before anything is planted (D146's order), so spring planted 0 under both rules.
+        hut.Mode = WorkMode.PlantOnly;
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+
+        // ⚠️ A winter's firewood in every hearth. The founding forester's hut is shut (the pin) and this wood is resting,
+        // so nobody fells, the woodcutters have no logs, and the fixture village froze to the last soul before spring —
+        // and a spring guard on a dead village proved nothing (D728's second run: alive 0 at the end of spring).
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.Receive(Goods.Firewood, System.Math.Min(500, household.Stockpile.FreeSpace));
+        }
+
+        int inAutumn = PlantedOverTheSeason(loop, hut, out _, out _);
+
+        int inWinter = PlantedOverTheSeason(loop, hut, out string? note, out string? card);
+        Assert.Equal(Season.Spring, world.Clock.Season);
+        int inSpring = PlantedOverTheSeason(loop, hut, out _, out _);
+
+        _output.WriteLine($"{given} bare tiles; planted autumn {inAutumn}, winter {inWinter}, spring {inSpring}; "
+            + $"in winter the forester said \"{note}\" and the hut said \"{card}\"");
+
+        Assert.True(inAutumn > 0, "Nothing was planted in autumn either, so winter's zero would prove nothing.");
+        Assert.Equal(0, inWinter);
+        Assert.True(inSpring > 0, "Nothing was planted in spring — the rule stopped planting for good, not for winter.");
+        Assert.Contains("frozen", note ?? string.Empty);
+        Assert.Contains("frozen", card ?? string.Empty);
+    }
+
+    /// <summary>Felling goes on all winter — the rule touches planting and nothing else.</summary>
+    [Fact]
+    public void AForesterFellsInWinter()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        int given = GiveGround(world, hut, 5, wooded: true);
+        Assert.True(given > 0, "The hut was given no wooded ground, so nothing was tested.");
+        KeepAForesterAt(world, hut);
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+        int woodedBefore = CountOwnedForest(world, hut);
+        FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+        int woodedAfter = CountOwnedForest(world, hut);
+
+        _output.WriteLine($"{given} wooded tiles given; wooded {woodedBefore} → {woodedAfter} over the winter");
+        Assert.True(woodedAfter < woodedBefore, "Not one tree came down all winter — the rule stopped the felling too.");
+    }
+
+    /// <summary>The planting demand is zero in winter, as the farm's is out of season.</summary>
+    [Fact]
+    public void NoPlantingSeatsAreWantedInWinter()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        foreach (Workplace other in world.Workplaces.Where(w => w.Kind == JobKind.Forester && !w.IsSite))
+        {
+            world.SetStaffing(other, 0);
+        }
+
+        Workplace hut = RaiseAHut(world, ClearGroundNear(world));
+        Assert.True(GiveGround(world, hut, 3, wooded: false) > 0, "No bare ground given.");
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        int inAutumn = world.ForesterSeatsWithGroundToPlant();
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+        int inWinter = world.ForesterSeatsWithGroundToPlant();
+
+        Assert.Equal(hut.Places, inAutumn);
+        Assert.Equal(0, inWinter);
+    }
+
+    /// <summary>The door itself: <c>Plant</c> refuses grass in winter and takes it in spring.</summary>
+    [Fact]
+    public void PlantRefusesInWinter()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Loop(config);
+        SimWorld world = loop.World;
+
+        GridPos grass = ClearGroundNear(world);
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(grass));
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+        Assert.False(world.Plant(grass));
+        Assert.Equal(Terrain.Grass, world.Map.TerrainAt(grass));
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Spring);
+        Assert.True(world.Plant(grass));
+        Assert.Equal(Terrain.Sapling, world.Map.TerrainAt(grass));
+    }
+
+    /// <summary>
+    /// Step to the start of the next season, one tick at a time, counting the hut's grass that became a <i>young</i>
+    /// sapling — a forester's, never the sweep's (D220) — and the last thing its forester and its card said.
+    /// </summary>
+    private static int PlantedOverTheSeason(SimLoop loop, Workplace hut, out string? note, out string? card)
+    {
+        SimWorld world = loop.World;
+        Season season = world.Clock.Season;
+        IReadOnlyList<int> owned = world.Zones.WorkGroundOf(hut.Id);
+        var was = new Terrain[owned.Count];
+        for (int i = 0; i < owned.Count; i++)
+        {
+            was[i] = world.Map.TerrainAt(world.Zones.PositionOf(owned[i]));
+        }
+
+        int planted = 0;
+        note = null;
+        card = null;
+        // A step runs its systems on the clock it starts on and moves the tick after (`SimLoop.StepOnce`), so every
+        // step taken while the clock reads this season is this season's — the last one, that turns it, included.
+        while (world.Clock.Season == season)
+        {
+            loop.StepOnce();
+
+            for (int i = 0; i < owned.Count; i++)
+            {
+                GridPos at = world.Zones.PositionOf(owned[i]);
+                Terrain now = world.Map.TerrainAt(at);
+                if (now == Terrain.Sapling && was[i] == Terrain.Grass && world.Map.IsYoungSapling(at))
+                {
+                    planted++;
+                }
+
+                was[i] = now;
+            }
+
+            if (world.Clock.Season != season)
+            {
+                break;
+            }
+
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && villager.WorkplaceId == hut.Id && villager.WorkNote.Length > 0)
+                {
+                    note = villager.WorkNote;
+                }
+            }
+
+            card = world.IdleNote(hut) ?? card;
+        }
+
+        return planted;
+    }
+
     private static int CountOwnedForest(SimWorld world, Workplace hut)
     {
         int wooded = 0;

@@ -55,6 +55,21 @@ public static class SeasonRules
     /// is taken by winter instead (Joe — *use it or lose it*).
     /// </remarks>
     public static bool IsReaping(Season season) => season == Season.Fall;
+
+    /// <summary>Every season but winter — a forester's saplings go into ground that is not frozen (D728).</summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, 2026-11-11: <i>"should a forester plant trees in the winter? seems weird. am i wrong?"</i> He was not. Real
+    /// planting is done in the dormant season, but never in frozen ground, and this game's winters are white. So a
+    /// forester with nothing to fell is a spare hand in winter, as a farmer is (`crops-and-orchards.md §5`).
+    /// </para>
+    /// <para>
+    /// <b>Felling is not asked this</b>: timber is cut all year, and winter is when wood is cut. The economy had
+    /// already assumed it — <c>VillageEconomy.YearsToRewoodOnesGround</c> budgets planting on the gatherable
+    /// three-quarters of the year — and the behaviour planted in all four (`forests-and-gathering.md §10`).
+    /// </para>
+    /// </remarks>
+    public static bool IsPlanting(Season season) => season != Season.Winter;
 }
 
 /// <summary>What a villager is doing right now.</summary>

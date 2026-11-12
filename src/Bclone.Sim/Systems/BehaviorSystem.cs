@@ -3644,7 +3644,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // wooded because the village stopped felling reads exactly like a hut that has
                 // run out of work, and the answer — *raise the limit* — is nowhere near the
                 // forester's panel unless the sentence points at it.
-                villager.WorkNote = !world.MayFell(job)
+                //
+                // ⭐ AND WINTER IS A FOURTH (D728): bare ground it would otherwise be planting, in frozen ground. Said
+                // first, because it is the reason whatever else holds — and it says when the work comes back.
+                villager.WorkNote = !SeasonRules.IsPlanting(world.Clock.Season) && world.HasGroundToPlant(job)
+                    ? $"The ground at {job.Name} is frozen — planting waits for spring."
+                    : !world.MayFell(job)
                     ? job.Mode != WorkMode.FellAndPlant
                         ? $"{job.Name} is resting its wood — felling is switched "
                           + "off, and its ground is wooded again."
@@ -5659,6 +5664,18 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         if (onArrival == VillagerState.Cutting)
         {
+            // ⭐ THE SEASON IS RE-ASKED ON ARRIVAL (D728), as the field's is (`ArriveInTheField`): a planting walk that set
+            // out in autumn and arrives in winter finds the ground frozen, and does not start a stint it may not finish.
+            // `SimWorld.Plant` refuses in winter anyway; this keeps the forester from standing on a tile for nothing.
+            if (IsPlantingErrand(world, villager) && !SeasonRules.IsPlanting(world.Clock.Season))
+            {
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                villager.State = VillagerState.Idle;
+                Decide(world, villager);
+                return;
+            }
+
             villager.State = VillagerState.Cutting;
 
             // ⭐ PUTTING A TREE BACK COSTS MORE THAN TAKING ONE DOWN
