@@ -1,7 +1,7 @@
 # Spec: Tree sprites — the concept's trees, painted, in place of the inked discs
 
 **Status:** ✍️ **SPECCED (A29, 2026-11-10); JOE'S FOUR CALLS ANSWERED (A30) — AND THE ANGLE REVERSED AT HIS WORD (A31): TREES ARE
-DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Still to build: young trees (piece 2). ✍️ SEASONS (piece 4) SPECCED WITH §7'S WINTER AS ONE PIECE (A40, §9); ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A41); 🔨 BUILT (A41): THE AUTUMN AND WINTER ATLASES, THE CROSSFADE, THE WINTER GROUND. ⭐ APPROVED BY JOE (A42, *"Approved"*); ⭐ MERGED INTO `main` AND PUSHED AT HIS WORD (A43, *"Merge and push"*, `b04166c`).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
+DRAWN STRAIGHT DOWN, BECAUSE BUILDINGS MUST ROTATE. NOTHING BUILT — THE SHADOW ANSWERED (A33): PAINTED, A SEE-THROUGH WASH, THE ONE EXCEPTION TO THE ALPHA RULE. 🎨 THE ATLAS PAINTED IN PHOTOSHOP BY SCRIPT AT JOE'S WORD (A34), ALL EIGHT TREES INSIDE §4; ⭐ APPROVED BY JOE (A35: *"Approved, build piece 1"*). 🔨 PIECE 1 BUILT (A35): `textures/trees/tree_sprites.png`, the painted trees in place of the crowns behind the watercolour tick, the probe's `painted trees:` line; tick off byte-identical. ✅ JOE PLAYED IT (*"this is looking pretty!"*) AND ASKED FOR FOUR THINGS (A36): THREE MORE KINDS (conifer, birch, willow by the water — PAINTED AND BUILT, §8); THE TREES OVER EVERYTHING BUT THE GHOST (BUILT — §2 changed, a Non-Negotiable tension recorded); A *draw the trees* TICK (BUILT); TREES AT EVERY ZOOM (piece 3, BUILT, at full density). ⭐ APPROVED BY JOE (A37: *"Approved"*) — piece 1, the three kinds, the canopy over the village, the tick, the far view. ⭐ MERGED INTO `main` AT HIS WORD (A38, *"Merge art now"*: `f48cfab`), `main` merged back into `art`; pushed at his word (A39). Young trees (piece 2) — ✍️ SPECCED (A50, §10, Joe's *"Young trees"*); ✅ HIS THREE CALLS ANSWERED, ALL AS RECOMMENDED (A51); 🔨 BUILT (A51, §10): SIXTEEN PAINTED SAPLINGS IN EACH SEASON'S ATLAS, THREE A YOUNG TILE, EACH PLACE'S OWN KIND. ⭐ APPROVED BY JOE (A52, *"everything about saplings looks great"*); NOT MERGED, WHICH WAITS FOR HIS WORD. 🔨 BUILDING SITES DASHED THROUGH THE CANOPY (A53, §2, Joe's ask): BUILT; ⭐ APPROVED (A54, *"Approved"*); NOT MERGED. ✍️ SEASONS (piece 4) SPECCED WITH §7'S WINTER AS ONE PIECE (A40, §9); ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A41); 🔨 BUILT (A41): THE AUTUMN AND WINTER ATLASES, THE CROSSFADE, THE WINTER GROUND. ⭐ APPROVED BY JOE (A42, *"Approved"*); ⭐ MERGED INTO `main` AND PUSHED AT HIS WORD (A43, *"Merge and push"*, `b04166c`).** Art lane, branch `art`. The terrain shader's §7 (*Toward the concept*) is what asked for it: Joe, A28, *"the
 trees themselves have an outline, but the ground isn't outlined … is that fixed with an actual art asset?"* — for the
 trees, yes. Owner: Joe + Claude Code.
 
@@ -41,6 +41,26 @@ fruit and berries (`ForageShown`, its own row).
   flagged to Joe before building and recorded (DESIGN §1, legibility):** a villager walking or working in the woods —
   a woodcutter at their tree — is hidden under the canopy. The answer in the game is the *draw the trees* tick (§8), which
   shows the land and everyone on it. With the watercolour tick off the order is the old one, to the byte.
+- ⭐ **A building site shows through the canopy, dashed** (A53, Joe, after placing a forager's hut in the woods and
+  finding only its selection square: *"can we still show a 'dashed lined' version of construction placements 'under' the
+  canopies so the user can see building placement?"*). With the canopy over the village, **every construction site's
+  outline is drawn again after the trees, as a dashed line**: the same turned footprint and the same edge colour as its solid
+  outline below (the site's grey; the clearing's orange while trees still stand on its ground, D350; the demolition red
+  while it comes down). So a site under the trees reads as a dashed outline through the leaves, and one in the open
+  is unchanged, since the dashes lie on its own solid edge. Only the outline comes through: not the fill that shows how
+  far it is built, which stays under the trees with the building. A house's rebuild (D722) and a bridge's span are sites
+  and come through too. ⚠️ **Dashed edges already mean a building that has fallen in** (D556), drawn in the building's
+  own colour. These are in a site's colours, which no finished building uses, so the two are told apart by colour. Off
+  while the trees are hidden or the watercolour is off (no canopy, nothing to see through). ⛔ A free building waiting
+  on wooded ground (the systems lane's 🐞, A36) is not a site and still draws nothing.
+  **As built (A53):** `VillageMap.SiteShapeOf` is the one place a site's turned footprint and colours are worked out,
+  for its solid draw in `DrawWorkplaces` and for `SitesThroughTheCanopy`, which `DrawTheSitesThroughTheCanopy` dashes
+  straight after the canopy (2 px, the fallen-in building's dash length). **Verified:** with a gatherer's hut marked in
+  the woods and a granary in the open (a temporary hook, removed), watercolour-off renders at four zooms are byte-identical
+  to the build before, which proves the shared shape. With the watercolour on, the only pixels that change are round the
+  woods site: 119 at the opening zoom, 42 at the widest. The probe's `sites through the canopy:` line marks a site in the
+  woods and checks its outline (its own 0.8-of-extent footprint, the clearing's orange), one outline per site, none with
+  the trees hidden or the watercolour off, then takes it back. **Red-check:** 5 mutants, 4 red: outlines with no canopy over them; every site in the site's grey; the outline a quarter too big; only demolitions coming through. **One zero, written down:** the map never calling the dashed draw. The probe checks what would be drawn, not that `_Draw` draws it; the before/after renders are that call's evidence (the dashes through the fir).
 
 ## 3. The file Joe delivers
 
@@ -117,7 +137,7 @@ spec, not from the code; a tile made young for the check); red-checked, 13 mutan
 too big) fixed and red after; GPU at 4K, three back-to-back runs: tick on 2.02 and 1.94 ms with the painted trees against
 2.43 ms with the inked crowns, tick off 0.262 ms in each, so no dearer than the stand-in. Vertices: 22,620 for 3,770 trees
 against the crowns' 316,368 as discs.
-| 2 | **Young trees** — `tree_sprites_young.png`, the sapling tiles | 1 approved, the atlas arrives |
+| 2 | **Young trees** — ~~`tree_sprites_young.png`~~ a sixth row of half-size cells in each season's atlas (§10), the sapling tiles | 1 approved, the atlas arrives — ✍️ **SPECCED (A50, §10)**; 🔨 **BUILT (A51)** at Joe's *"All as recommended"*; ⭐ **approved (A52)** |
 | 3 | **The far view** — trees below 24 px a tile, at a coarser density, so the woods are trees at every zoom as in the concept (cost measured first: the whole valley's trees on screen at once) | 1 approved — 🔨 **BUILT (A36) at full density**: the whole valley's 3,770 trees on screen cost +0.1–0.2 ms at 4K, inside the runs' own spread, so nothing is thinned; the mipmaps draw a tree a few pixels wide |
 | 4 | **Seasons** — autumn tints, winter bare or capped (`terrain-shader.md §7` piece 4 asks the canopies to carry the winter) | after §7's winter piece — ✍️ **SPECCED WITH IT (A40, §9): one piece, winter and the trees; four calls Joe's** |
 
@@ -243,6 +263,96 @@ the river 20 % darker. The ink still draws over all of it.
    birches gold, the willows pale yellow, the conifers stay green. Or no autumn: summer straight to winter.
 4. **How the change shows.** ⭐ **Recommended: a slow crossfade over the season's turn** — the last third of a season, the
    same days the grass and the snow turn, so the woods colour and then bare over about ten days. Or a switch on one day.
+
+## 10. Young trees (A50, piece 2)
+
+**Why.** Joe, asked what next after the river, chose *"Young trees"*. Today a sapling tile, whether a forester planted it
+or it seeded itself at a wood's edge, draws **two of the grown trees shrunk to 0.55** (§5). From a few zooms out a young
+stand is just a thinner wood, so you can't see where the foresters have been or where a cleared wood is coming back.
+§2 has promised since A29 that *"a sapling tile shows young trees"*. This piece keeps that promise.
+
+**What the sim says (unchanged).** A tile is `Sapling` or `Forest`, with nothing in between. A cleared tile next to wood
+becomes a sapling after one regrowth period (72 days, `regrowth_period_days`) and a grown wood after a second; a forester's
+planting is a sapling at once. **So a young stand lasts about 72 days**, more than half a year on the 120-day calendar,
+and usually sees a change of season. The view reads the tile and nothing else. Which young tree stands where is a
+`static` of the tile, as the grown ones are (D337): no tick, no clock, no RNG.
+
+**What it looks like.** Saplings, not small trees: **a few slender young crowns a tile** (call 1), each **about 0.3–0.5
+tiles across**, drawn in the same ink and wash as the grown trees but in a **fresher, lighter green** with a finer pen,
+with the young-wood ground (`#b3b98d`) showing between them. The point is that a young stand reads as young at a glance:
+smaller, lighter and gappier than the wood around it. **Each place grows its own kind** (call 2): young firs in a fir
+grove, young birches at a wood's edge, young willows by the water, by the same `KindOf` the grown trees use. So a felled
+fir grove comes back as little firs and then as firs. **Through the year** (call 3), the young trees turn with the grown
+ones: gold in autumn, bare whips with a little snow in winter, and the little firs keep their green under snow.
+
+**The painting.** By script in Photoshop, as the grown trees were (`D:\Projects\brushes\trees\`, a new
+`build_young_trees.jsx` from the same layers and seeds), measured inside §4 before it is built on:
+- **16 drawings: four of each kind** (leafy, conifer, birch, willow), each with two faces by mirroring across the light's
+  diagonal, as the grown trees.
+- **Half-size cells:** a sapling needs at most a tile of painting with its shadow and margin, so the young trees sit in
+  **128 × 128 cells, eight across**, at the same 128 px a tile. Sixteen drawings take one 256-px strip.
+- **They go into the atlases the grown trees already use, as a sixth row:** `tree_sprites.png`, `_autumn` and `_winter`
+  each grow from 1024 × 1280 to **1024 × 1536**. So the young trees ride the same mesh, the same single draw a chunk and
+  the same seasonal crossfade, with no new texture or draw. The cost is about 1.4 MB more video memory per atlas with
+  mipmaps; the GPU is measured at 4K, A/B, before it is called done.
+- **§4's limits hold for every young drawing:** the middle tone at L\* ≥ 50 and ink and shadow under 20 %. A young
+  tree's green is lighter than the grown trees' but stays in the woods' hue family, so the minimap still reads the woods.
+
+**In the game.** `PaintedTreesOn` gives a young tile its count from call 1, placed by `CanopyOn`, and `PaintedTreeOn`
+picks a young cell by kind at its painted size (no 0.55 shrink). `MeshBuilder.Sprite` learns the half-size cell. The
+probe's `painted trees:` line names the new atlas size, the young cells, and a tile made young drawing young cells and
+not grown ones. **Behind the watercolour tick and the *draw the trees* tick, as every tree:** with the watercolour tick
+off, the saplings stay the inked discs they are today, and the renders compare byte for byte.
+
+**Not in this piece:** a tree that grows gradually from sapling to wood (the sim has one step, so the view does too:
+the day a sapling tile becomes forest, its young trees give way to grown ones); planted rows that tell a forester's
+saplings from self-seeded ones (the sim keeps that difference only until the next regrowth sweep); stumps on a felled
+tile; spring blossom.
+
+### Joe's calls (A50), in plain words, each with a recommendation
+
+1. **How many young trees a tile.** ⭐ **Recommended: three, each a third to half a tile across.** That's enough to read
+   as a stand of saplings, with the young-wood ground showing between them. Or **two** (as today's stand-in, but painted
+   young), or **four or five tiny ones**, like a nursery bed.
+2. **Young trees by kind.** ⭐ **Recommended: each place grows the young of its own kind**: little firs in the fir groves,
+   young birches at the edges, young willows by the water. A felled grove then grows back as what it was. Or **one
+   sapling drawing for everywhere**, which is simpler and the same green throughout.
+3. **Young trees through the year.** ⭐ **Recommended: they turn with the grown trees**, gold in autumn, bare in winter
+   with a little snow, the little firs snowy. A young stand usually lives through a change of season, so summer-green
+   saplings in a white valley would be the problem the winter piece just fixed. Or **summer green all year**.
+
+✅ **Answered (A51): *"All as recommended"*** — three a tile; each place's own kind; turning with the year.
+
+**As built (A51, 2026-11-11).**
+- **Painted** by `D:\Projects\brushes\trees\build_young_trees.jsx` (seed 51, a season argument; winter's bare saplings and
+  the little firs' snow from `bare_trees.jsxinc`). A first painting broke §4: a 2 px outline round a crown a third the
+  size ran 27–33 % ink on the firs and birches. Fixed by **a finer pen** (1 px on the firs and birches, 2 px on the leafy
+  and willow saplings, against the grown trees' 3 and 2), crowns a little larger (leafy 0.38–0.48 tiles across, firs
+  0.31–0.41, birches 0.30–0.38, willows 0.38–0.45), **no inner ink arcs** (a sapling is too small to carry them), and
+  lighter edge pooling. **Measured:** every summer and autumn sapling and every winter fir is inside §4, with crown L\*
+  p50 62–75 and ink under 20 % (the worst 19.9 %). The bare winter saplings are read as the grown bare trees were (§9):
+  mostly transparent, 5–19 % of their cell is tree.
+- **The atlases:** `tree_sprites.png`, `_autumn`, `_winter` each 1024 × 1536, the grown rows unchanged byte for byte
+  and the young strip below them. `MeshBuilder.Sprite` reads cells 20–35 as half-size cells, eight across, in the last
+  row. `PaintedTreesOn` gives a young tile `YoungTreesOnATile` (3), and `PaintedTreeOn` gives cell
+  `20 + kind × 4 + variant` at `YoungTreeHalf` (0.5 tiles) × 0.85–1.10. The 0.55 shrink is gone.
+- **The probe's `painted trees:` line** makes every sixth wooded tile young for the check (419 tiles, 1,257 saplings) and
+  puts them back. It checks the new size (1024 × 1536 for all three atlases), three young cells a young tile, each a whole
+  half-size cell at 0.85–1.10 tiles across, each on a young tile, each kind in its place (young willows by water, young
+  birches at edges), and all 36 drawings used.
+
+**Verified (A51):**
+- **Watercolour off:** windowed renders at four zooms are byte-identical to the build before (`552bf77`).
+- **Watercolour on, at founding** (no young wood): not byte-identical. Up to 2 levels of 255 move on 0.2–0.4 % of pixels,
+  because the grown trees' texture coordinates are now fractions of a taller atlas and its smallest mipmap levels differ.
+  The grown trees' pixels in the atlas are unchanged.
+- **The look:** a render of the founding valley with blocks of the woods made young (a temporary hook, removed before
+  the commit). The young stands read as young at the opening zoom and from further out: smaller, lighter, the ground
+  showing between them.
+- **GPU, 4K, the 3070:** the same blocks of young wood against none, runs paired A B A B. The floors with young wood are
+  1.81–1.87 ms, inside the 1.83–2.05 ms of the runs without it, so no cost can be measured. The switch stays under
+  A23's 3.5 ms.
+- **Red-check:** 9 mutants, 9 red, no zero: three saplings cut to two; young tiles drawing grown cells and grown tiles drawing young ones; every sapling leafy whatever its place (caught only by *24 of 36 drawings used*, since the place checks cover willows and birches); saplings 20 % too big, or at a grown tree's size; young cells laid four across, or read from the top of the atlas; a mirrored sapling's cell stretched. Each read on the `painted trees:` line, the break counted landed once.
 
 ## 7. Verification (each piece)
 

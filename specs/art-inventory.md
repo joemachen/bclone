@@ -73,7 +73,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
 | **Mature tree** | 3–4 discs per forest tile, `#7d8c5c`, r 0.20, per-disc shade; only above ~24 px a tile, the bake below (`VillageMap.Meshes.cs:418–427`; `VillageMap.cs:4947`, `:5118`) | Seasons (leaf colour, bare winter) — `tree-sprites.md` piece 4; felled/stump. **🔨 A35: with the watercolour tick on, Joe's painted atlas (`textures/trees/tree_sprites.png`, 8 crowns from above), 1–2 a tile; A36: + 4 conifers, 4 birches, 4 willows chosen by place, over the whole village, at every zoom, a *draw the trees* tick; A41: through the year — an autumn set, a winter set (deciduous bare, conifers snowy), crossfaded over each turn** | B5, B4 | 🟨 interim (tick off) / 🔨 painted (tick on, piece 1) |
-| Sapling | 2 smaller discs, `#98a56f`, r 0.13 (`Meshes.cs:420`); with the tick on (A35) 2 painted trees at 0.55 until the young atlas | Growth to mature; `tree_sprites_young.png` (piece 2) | B5 | 🟨 |
+| Sapling | 2 smaller discs, `#98a56f`, r 0.13 (`Meshes.cs:420`); with the tick on (A35) 2 painted trees at 0.55 until the young atlas | Growth to mature; ~~`tree_sprites_young.png`~~ young cells in each season's atlas (piece 2) | B5 | 🟨 ⭐ **A52 approved;** 🔨 **A51 built (✍️ A50, `tree-sprites.md §10`): three painted saplings a young tile, each place's kind, through the year — for Joe's eyes** |
 | Tree species | ⬜ — the sim has no species, only Forest and Sapling | — | B10-ish (content) | 💭 |
 | Berry bush (forage) | 3 discs `#840c26` on 1 woodland tile in 16, toggleable (`Meshes.cs:362–382`) | Picked / regrowing, seasons | B5 | 🟨 |
 | Wheat field — ploughed | Field fill + 3 furrow lines at 0.8× | — | B6 | 🟨 |
@@ -95,7 +95,7 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 
 | State | Stands in now | Needs | Blocked by | State |
 |---|---|---|---|---|
-| **Construction site** | Outline + a fill rising from one edge with progress, `#8f9aa8` / edge `#38424e`; harvest orange while the ground still needs clearing (`VillageMap.cs:283–292`, `:6739–6807`) | Staged art. `art/…asset-pipeline.jpg` shows **three stages: blueprint ghost, under construction, completed** — no spec asks for stages | B1, B4 | 🟨 |
+| **Construction site** | Outline + a fill rising from one edge with progress, `#8f9aa8` / edge `#38424e`; harvest orange while the ground still needs clearing (`VillageMap.cs:283–292`, `:6739–6807`) | Staged art. `art/…asset-pipeline.jpg` shows **three stages: blueprint ghost, under construction, completed** — no spec asks for stages. **A53:** with the watercolour's canopy over the village, a site's outline also comes through the trees, dashed, in its own colours (`tree-sprites.md §2`) | B1, B4 | 🟨 |
 | Placement ghost | Footprint quad in fine `#004c1b` / warned `#523e01` / refused `#7e1b1d` (`VillageMap.cs:3082–3260`) | — | — | 🟨 (functional; may stay drawn) |
 | Demolition | `#b5714a` / `#6a310d`, the fill drains (`VillageMap.cs:283–292`) | Coming-down stages | B4 | 🟨 |
 | **Condition: sound / worn / failing** | Three steps darker-and-duller (`Weathered`, `VillageMap.cs:87–102`) — every kind but the town hall and the stone bridge | Drawn wear or a tint | B9 | ✅ played (D560) as placeholder |

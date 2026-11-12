@@ -520,7 +520,7 @@ public partial class VillageMap
         {
             (Vector2 where, float _) = CanopyOn(tile, i);
             (int cell, bool mirrored, float scale) = PaintedTreeOn(tile, i, grown, KindOf(map, tile, i));
-            into.Sprite(where, PaintedTreeHalf * scale, cell, mirrored);
+            into.Sprite(where, (grown ? PaintedTreeHalf : YoungTreeHalf) * scale, cell, mirrored);
         }
     }
 
@@ -635,34 +635,39 @@ public partial class VillageMap
 
     private const int StandSalt = 3307;
 
-    /// <summary>How many painted trees stand on a tile: 1–2 grown (A30, call 4), 2 young ones.</summary>
+    /// <summary>How many painted trees stand on a tile: 1–2 grown (A30, call 4), three young ones (A51, call 1).</summary>
     internal static int PaintedTreesOn(GridPos tile, bool grown) =>
-        grown ? 1 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : 2;
+        grown ? 1 + (int)(Scramble(tile.X + TreeSalt, tile.Y - TreeSalt) % 2) : YoungTreesOnATile;
+
+    /// <summary>The saplings on a young tile (A51, Joe's call 1: three, each a third to half a tile across).</summary>
+    internal const int YoungTreesOnATile = 3;
 
     /// <summary>
     /// ⭐⭐ Which drawing a painted tree is, whether it is mirrored, and how big — <b>a `static` of the tile</b>, D337's
     /// guard: it cannot reach a tick or a clock, so a wood never shimmers and a place always shows the same trees.
     /// </summary>
     /// <remarks>
-    /// Mirrored across the light's diagonal or not (A31: never turned — the light is painted in); × 0.85–1.10 (§5); a young
-    /// tile draws the grown set at <see cref="YoungTreeScale"/> until the young atlas exists (piece 2).
+    /// Mirrored across the light's diagonal or not (A31: never turned — the light is painted in); × 0.85–1.10 (§5). A young
+    /// tile draws the young of its place's kind (A51, Joe's call 2) from the half-size cells, at their painted size.
     /// </remarks>
     internal static (int Cell, bool Mirrored, float Scale) PaintedTreeOn(GridPos tile, int which, bool grown, TreeKind kind)
     {
         uint spin = Scramble(tile.X - PaintedTreeSalt, tile.Y + PaintedTreeSalt) >> (which * 11);
 
-        // The atlas (A36): cells 0–7 the leafy trees, then four each of conifer, birch and willow.
-        int cell = kind == TreeKind.Leafy ? (int)(spin % 8) : 8 + (((int)kind - 1) * 4) + (int)(spin % 4);
+        // The atlas (A36): cells 0–7 the leafy trees, then four each of conifer, birch and willow; then the young (A51),
+        // four of each kind in the same order.
+        int cell = !grown ? MeshBuilder.GrownSprites + ((int)kind * 4) + (int)(spin % 4)
+            : kind == TreeKind.Leafy ? (int)(spin % 8) : 8 + (((int)kind - 1) * 4) + (int)(spin % 4);
         bool mirrored = ((spin >> 3) & 1u) != 0;
         float scale = 0.85f + (((spin >> 4) % 26) / 100f);
-        return (cell, mirrored, grown ? scale : scale * YoungTreeScale);
+        return (cell, mirrored, scale);
     }
 
     /// <summary>Half a painted tree's cell in tiles: 256 px of painting at 128 px a tile (<c>tree-sprites.md §3</c>).</summary>
     internal const float PaintedTreeHalf = 1f;
 
-    /// <summary>A young tile's trees, as a share of a grown one's, until the young atlas exists (§5, piece 2).</summary>
-    internal const float YoungTreeScale = 0.55f;
+    /// <summary>Half a young tree's cell in tiles: 128 px of painting at 128 px a tile (A51, <c>tree-sprites.md §10</c>).</summary>
+    internal const float YoungTreeHalf = 0.5f;
 
     /// <summary>Keeps which painted tree stands where out of step with where it stands (<see cref="TreeSalt"/>).</summary>
     private const int PaintedTreeSalt = 6247;

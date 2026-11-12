@@ -171,12 +171,20 @@ internal sealed class MeshBuilder
     /// texture is drawn as painted. <paramref name="mirrored"/> lays the cell mirrored across its up-left to down-right
     /// diagonal (a transpose) — the one turn that keeps the painted light where it is (A31).
     /// </summary>
-    /// <remarks>⛔ A builder holds sprites or plain fills, never both: <see cref="AddSurfaceTo"/> refuses a mix.</remarks>
+    /// <remarks>
+    /// Cells below <see cref="GrownSprites"/> are the grown trees' 256-px cells, <see cref="SpriteColumns"/> across; from
+    /// it on, the young trees' half-size 128-px cells (A51, <c>tree-sprites.md §10</c>), <see cref="YoungSpriteColumns"/>
+    /// across, in the atlas's last row. ⛔ A builder holds sprites or plain fills, never both: <see cref="AddSurfaceTo"/>
+    /// refuses a mix.
+    /// </remarks>
     public void Sprite(Vector2 centre, float half, int cell, bool mirrored)
     {
-        const float Du = 1f / SpriteColumns, Dv = 1f / SpriteRows;
-        float u0 = (cell % SpriteColumns) * Du, v0 = (cell / SpriteColumns) * Dv;
-        Vector2 Uv(float s, float t) => mirrored ? new Vector2(u0 + (t * Du), v0 + (s * Dv)) : new Vector2(u0 + (s * Du), v0 + (t * Dv));
+        bool young = cell >= GrownSprites;
+        int k = young ? cell - GrownSprites : cell;
+        int across = young ? YoungSpriteColumns : SpriteColumns;
+        float du = 1f / across, dv = (young ? 0.5f : 1f) / SpriteRows;
+        float u0 = (k % across) * du, v0 = ((young ? GrownSpriteRows : 0) + ((k / across) * (young ? 0.5f : 1f))) / SpriteRows;
+        Vector2 Uv(float s, float t) => mirrored ? new Vector2(u0 + (t * du), v0 + (s * dv)) : new Vector2(u0 + (s * du), v0 + (t * dv));
 
         Vector2 tl = centre + new Vector2(-half, -half), tr = centre + new Vector2(half, -half);
         Vector2 br = centre + new Vector2(half, half), bl = centre + new Vector2(-half, half);
@@ -189,12 +197,22 @@ internal sealed class MeshBuilder
     }
 
     /// <summary>
-    /// The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across; 5 down since the three more kinds (A36) — two rows of
-    /// leafy trees, then a row each of conifers, birches and willows.
+    /// The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across; 5 down of grown trees since the three more kinds
+    /// (A36) — two rows of leafy trees, then a row each of conifers, birches and willows — and a sixth of young trees (A51).
     /// </summary>
     internal const int SpriteColumns = 4;
 
-    internal const int SpriteRows = 5;
+    /// <summary>The atlas's rows of 256 px: five of grown trees and one of young ones (A51).</summary>
+    internal const int SpriteRows = 6;
+
+    /// <summary>The grown trees' rows (A36).</summary>
+    internal const int GrownSpriteRows = 5;
+
+    /// <summary>The grown trees' cells, 0–19; the young trees' half-size cells follow (A51).</summary>
+    internal const int GrownSprites = SpriteColumns * GrownSpriteRows;
+
+    /// <summary>The young trees' 128-px cells across the atlas's last row: eight, two rows of them (A51).</summary>
+    internal const int YoungSpriteColumns = SpriteColumns * 2;
 
     /// <summary>Add everything laid down so far as one triangle surface of <paramref name="mesh"/>, in 2D.</summary>
     /// <remarks>

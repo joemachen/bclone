@@ -359,23 +359,28 @@ public partial class VillageMap
         var faults = new System.Collections.Generic.List<string>();
         bool wasOn = _watercolour;
 
-        // ⚠️ The probe's valley has no young wood, so one grown tile is made young for this line and put back after it
-        // (the felling check's way, `TheSceneryIsMeshed`) — or the young trees would go unchecked.
-        int youngAt = -1;
-        for (int i = 0; i < map.Tiles.Count && youngAt < 0; i++)
+        // ⚠️ The probe's valley has no young wood, so every sixth wooded tile is made young for this line and put back after
+        // it (the felling check's way, `TheSceneryIsMeshed`) — or the young trees would go unchecked. Every sixth, not one
+        // (A51): the young trees have sixteen drawings and four kinds by place, and one tile would reach three of them.
+        var planted = new System.Collections.Generic.List<GridPos>();
+        int wooded = 0;
+        for (int i = 0; i < map.Tiles.Count; i++)
         {
-            youngAt = map.Tiles[i] == Terrain.Forest ? i : -1;
+            if (map.Tiles[i] == Terrain.Forest && wooded++ % 6 == 0)
+            {
+                planted.Add(new GridPos(map.MinX + (i % map.Width), map.MinY + (i / map.Width)));
+            }
         }
 
-        GridPos planted = youngAt < 0 ? default : new GridPos(map.MinX + (youngAt % map.Width), map.MinY + (youngAt / map.Width));
-        if (youngAt >= 0)
+        foreach (GridPos young in planted)
         {
-            map.SetTerrain(planted, Terrain.Sapling);
-            _sceneryOf = null;
+            map.SetTerrain(young, Terrain.Sapling);
         }
+
+        _sceneryOf = null;
 
         // What the valley should hold: its crowns' discs with the tick off (36 vertices a disc), its painted trees' squares on.
-        int discs = 0, squares = 0, woodTiles = 0, grownTiles = 0, youngTrees = 0;
+        int discs = 0, squares = 0, woodTiles = 0, grownTiles = 0, youngTiles = 0;
         for (int i = 0; i < map.Tiles.Count; i++)
         {
             if (map.Tiles[i] is Terrain.Forest or Terrain.Sapling)
@@ -386,7 +391,7 @@ public partial class VillageMap
                 squares += PaintedTreesOn(tile, grown) * 6;
                 woodTiles++;
                 grownTiles += grown ? 1 : 0;
-                youngTrees += grown ? 0 : PaintedTreesOn(tile, grown);
+                youngTiles += grown ? 0 : 1;
             }
         }
 
@@ -394,11 +399,11 @@ public partial class VillageMap
         Texture2D? atlas = ResourceLoader.Exists(TreeSpritesPath) ? GD.Load<Texture2D>(TreeSpritesPath) : null;
         Image? image = atlas?.GetImage();
         // ⛔ Named from the spec, not the code (trap 17): 256 px cells, 4 across, 5 down — two rows leafy, then a row each of
-        // conifer, birch and willow (A36).
-        if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 1280
+        // conifer, birch and willow (A36) — and a sixth row of sixteen young trees in 128 px cells (A51, §10): 1024 × 1536.
+        if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 1536
             || image.GetFormat() != Image.Format.Rgba8 || !image.HasMipmaps())
         {
-            faults.Add($"{TreeSpritesPath} is {atlas?.GetWidth()} × {atlas?.GetHeight()}, {image?.GetFormat()}, mipmaps {image?.HasMipmaps()} (want 1024 × 1280, Rgba8, mipmapped)");
+            faults.Add($"{TreeSpritesPath} is {atlas?.GetWidth()} × {atlas?.GetHeight()}, {image?.GetFormat()}, mipmaps {image?.HasMipmaps()} (want 1024 × 1536, Rgba8, mipmapped)");
         }
 
         // Off: no trees mesh, the crowns as ever.
@@ -424,7 +429,9 @@ public partial class VillageMap
             faults.Add($"on, {onTrees} painted-tree vertices (want {squares}) and the standing mesh {offStanding - onStanding} lighter (want the crowns' {discs})");
         }
 
-        // ⛔ Named here, not read off the code's own count (HANDOFF art trap 17): 1–2 trees a grown tile (A30, call 4), both.
+        // ⛔ Named here, not read off the code's own count (HANDOFF art trap 17): 1–2 trees a grown tile (A30, call 4), both;
+        // three a young tile (A51, call 1).
+        int youngTrees = 3 * youngTiles;
         int grownTrees = (onTrees / 6) - youngTrees;
         if (grownTrees <= grownTiles || grownTrees >= 2 * grownTiles)
         {
@@ -432,20 +439,21 @@ public partial class VillageMap
         }
 
         // Every tree a whole cell of the atlas, of a painted tree's size; and the valley uses every drawing, both faces.
-        var cells = new bool[8 + 4 + 4 + 4]; // 8 leafy, 4 each conifer, birch, willow (A36)
-        int conifers = 0, birches = 0, willows = 0, misplaced = 0;
+        var cells = new bool[8 + 4 + 4 + 4 + 16]; // 8 leafy, 4 each conifer, birch, willow (A36); 16 young, 4 a kind (A51)
+        int conifers = 0, birches = 0, willows = 0, misplaced = 0, youngCelled = 0, youngInTheirPlace = 0;
         string? firstMisplaced = null;
         int mirroredTrees = 0, trees = 0, wrong = 0, grownSized = 0, youngSized = 0;
 
         // ⛔ The sizes named here from the spec, not read off the code's constants (trap 17; the first build read
-        // PaintedTreeHalf and a mutant making every tree 30 % too big scored zero): a cell is 256 px of painting at 128 px
-        // a tile, so 2 tiles across, × 0.85–1.10; a young tree × 0.55 of that (`tree-sprites.md §3`, §5).
-        const float CellTiles = 256f / 128f;
+        // PaintedTreeHalf and a mutant making every tree 30 % too big scored zero): a grown cell is 256 px of painting at
+        // 128 px a tile, so 2 tiles across, × 0.85–1.10; a young cell 128 px, so 1 tile, × 0.85–1.10 (`tree-sprites.md
+        // §3`, §10).
+        const float CellTiles = 256f / 128f, YoungCellTiles = 128f / 128f;
         float grownLow = CellTiles * 0.85f, grownHigh = CellTiles * 1.10f;
-        float youngLow = grownLow * 0.55f, youngHigh = grownHigh * 0.55f;
+        float youngLow = YoungCellTiles * 0.85f, youngHigh = YoungCellTiles * 1.10f;
         string? firstWrong = null;
-        const float Du = 256f / 1024f, Dv = 256f / 1280f;
-        const int Across = 4;
+        // The grid, named: grown cells 256 px, 4 across, rows 0–4 of a 1536-px atlas; young cells 128 px, 8 across, from 1280 px down.
+        const float YoungFrom = 1280f / 1536f;
         foreach (SceneryChunk chunk in _scenery)
         {
             if (chunk.Trees.GetSurfaceCount() == 0)
@@ -459,16 +467,23 @@ public partial class VillageMap
             for (int v = 0; v + 5 < at.Length; v += 6)
             {
                 trees++;
-                int cell = (int)((uv[v].X / Du) + 1e-3f) + ((int)((uv[v].Y / Dv) + 1e-3f) * Across);
-                Vector2 corner = new(cell % Across * Du, cell / Across * Dv);
-                bool mirrored = uv[v + 1].IsEqualApprox(corner + new Vector2(0f, Dv));
-                bool plain = uv[v + 1].IsEqualApprox(corner + new Vector2(Du, 0f));
+                bool youngCell = uv[v].Y >= YoungFrom - 1e-4f;
+                float du = youngCell ? 128f / 1024f : 256f / 1024f, dv = youngCell ? 128f / 1536f : 256f / 1536f;
+                int across = youngCell ? 8 : 4;
+                float top = youngCell ? YoungFrom : 0f;
+                int k = (int)((uv[v].X / du) + 1e-3f) + ((int)(((uv[v].Y - top) / dv) + 1e-3f) * across);
+                int cell = Mathf.Clamp((youngCell ? 20 : 0) + k, 0, cells.Length - 1);
+                Vector2 corner = new(k % across * du, top + (k / across * dv));
+                bool mirrored = uv[v + 1].IsEqualApprox(corner + new Vector2(0f, dv));
+                bool plain = uv[v + 1].IsEqualApprox(corner + new Vector2(du, 0f));
                 float side = at[v + 1].X - at[v].X;
-                bool whole = uv[v].IsEqualApprox(corner) && uv[v + 2].IsEqualApprox(corner + new Vector2(Du, Dv)) && (mirrored || plain);
-                bool grownSize = side >= grownLow - 1e-3f && side <= grownHigh + 1e-3f;
-                bool youngSize = side >= youngLow - 1e-3f && side <= youngHigh + 1e-3f;
+                bool whole = uv[v].IsEqualApprox(corner) && uv[v + 2].IsEqualApprox(corner + new Vector2(du, dv)) && (mirrored || plain)
+                    && (youngCell ? k < 16 : k < 20);
+                bool grownSize = !youngCell && side >= grownLow - 1e-3f && side <= grownHigh + 1e-3f;
+                bool youngSize = youngCell && side >= youngLow - 1e-3f && side <= youngHigh + 1e-3f;
                 grownSized += grownSize ? 1 : 0;
                 youngSized += youngSize ? 1 : 0;
+                youngCelled += youngCell ? 1 : 0;
                 bool sized = (grownSize || youngSize)
                     && Mathf.Abs(at[v + 2].Y - at[v].Y - side) < 1e-3f; // tile coordinates near 50 carry float noise past IsEqualApprox's 1e-6
                 if (!whole || !sized)
@@ -484,7 +499,13 @@ public partial class VillageMap
                 // ⭐ Each kind where its place says (A36), read off the tree's own foot — not off KindOf, which is what is
                 // being checked: a willow within reach of water, a birch within reach of open ground.
                 Vector2 foot = (at[v] + at[v + 2]) / 2f;
-                if (cell >= 16)
+
+                // ⭐ A young tree stands on a young tile (its foot within a sapling's reach of one), and a young tree is drawn
+                // as the young of its place's kind (A51, call 2): the young cells go 20–23 leafy, 24–27 conifer, 28–31
+                // birch, 32–35 willow, so its place is checked as the grown kind's is.
+                youngInTheirPlace += youngCell && Near(foot, t => t == Terrain.Sapling) ? 1 : 0;
+                int kindOf = youngCell ? (cell - 20) / 4 : cell < 8 ? 0 : (cell - 4) / 4; // 0 leafy, 1 conifer, 2 birch, 3 willow
+                if (kindOf == 3)
                 {
                     willows++;
                     if (!Near(foot, t => t == Terrain.Water))
@@ -493,7 +514,7 @@ public partial class VillageMap
                         firstMisplaced ??= $"a willow at {foot} with no water near";
                     }
                 }
-                else if (cell >= 12)
+                else if (kindOf == 2)
                 {
                     birches++;
                     if (!Near(foot, t => t is not (Terrain.Forest or Terrain.Sapling or Terrain.Water)))
@@ -502,16 +523,16 @@ public partial class VillageMap
                         firstMisplaced ??= $"a birch at {foot} inside the wood";
                     }
                 }
-                else if (cell >= 8)
+                else if (kindOf == 1)
                 {
                     conifers++;
                 }
             }
         }
 
-        if (grownSized != grownTrees || youngSized != youngTrees)
+        if (grownSized != grownTrees || youngSized != youngTrees || youngCelled != youngTrees || youngInTheirPlace != youngTrees)
         {
-            faults.Add($"{grownSized} trees are a grown tree's size ({grownLow:F2}–{grownHigh:F2} tiles; want {grownTrees}) and {youngSized} a young one's ({youngLow:F2}–{youngHigh:F2}; want {youngTrees})");
+            faults.Add($"{grownSized} trees are a grown cell at a grown tree's size ({grownLow:F2}–{grownHigh:F2} tiles; want {grownTrees}) and {youngSized} a young cell at a young one's ({youngLow:F2}–{youngHigh:F2}; want {youngTrees}); {youngCelled} young cells drawn, {youngInTheirPlace} on young tiles (want {youngTrees}, three on each of {youngTiles})");
         }
 
         // Willows and birches on the valley's water and edges, both; conifers a stand's share, not none and not most.
@@ -587,12 +608,13 @@ public partial class VillageMap
             faults.Add($"with the watercolour off, the trees tick off takes {offStanding - bareStanding} vertices (want the crowns' {discs}) and on gives back to {againStanding} (want {offStanding})");
         }
 
-        if (youngAt >= 0)
+        foreach (GridPos young in planted)
         {
-            map.SetTerrain(planted, Terrain.Forest);
-            _sceneryOf = null;
-            RefreshTheScenery(world);
+            map.SetTerrain(young, Terrain.Forest);
         }
+
+        _sceneryOf = null;
+        RefreshTheScenery(world);
 
         if (youngTrees == 0)
         {
@@ -606,10 +628,10 @@ public partial class VillageMap
         {
             Texture2D? seasonal = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
             Image? pixels = seasonal?.GetImage();
-            if (seasonal is null || pixels is null || seasonal.GetWidth() != 1024 || seasonal.GetHeight() != 1280
+            if (seasonal is null || pixels is null || seasonal.GetWidth() != 1024 || seasonal.GetHeight() != 1536
                 || pixels.GetFormat() != Image.Format.Rgba8 || !pixels.HasMipmaps())
             {
-                faults.Add($"{path} is {seasonal?.GetWidth()} × {seasonal?.GetHeight()}, {pixels?.GetFormat()}, mipmaps {pixels?.HasMipmaps()} (want 1024 × 1280, Rgba8, mipmapped)");
+                faults.Add($"{path} is {seasonal?.GetWidth()} × {seasonal?.GetHeight()}, {pixels?.GetFormat()}, mipmaps {pixels?.HasMipmaps()} (want 1024 × 1536, Rgba8, mipmapped)");
             }
 
             CanvasTexture? drawn = TheTreeAtlasFor(set);
@@ -641,7 +663,7 @@ public partial class VillageMap
         }
 
         return faults.Count == 0
-            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 1280, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown, {youngSized} young on a tile made young for the check), all {cells.Length} drawings, {mirroredTrees} mirrored; {conifers} conifers in stands ({coniferShare:P0}), {willows} willows each by water, {birches} birches each at an edge; a fell on a chunk's edge re-meshes {rebuiltForAFell} chunks; the trees tick hides and brings back every tree in either look; through the year the summer, autumn and winter atlases (each 1024 × 1280, mipmapped) at seven moments as Joe chose them; off, no painted tree and the canopies to the vertex"
+            ? $"[widths] painted trees: ✅ {TreeSpritesPath} 1024 × 1536, lossless, mipmapped, drawn with mipmaps; on, {trees} trees on {woodTiles} wooded tiles as {onTrees} vertices in their own mesh, the crowns' {discs} gone, every tree a whole cell of its size ({grownSized} grown; {youngSized} young, three a tile on the {youngTiles} made young for the check, each the young of its place's kind), all {cells.Length} drawings, {mirroredTrees} mirrored; {conifers} conifers in stands ({coniferShare:P0}), {willows} willows each by water, {birches} birches each at an edge; a fell on a chunk's edge re-meshes {rebuiltForAFell} chunks; the trees tick hides and brings back every tree in either look; through the year the summer, autumn and winter atlases (each 1024 × 1536, mipmapped) at seven moments as Joe chose them; off, no painted tree and the canopies to the vertex"
             : $"[widths] painted trees: ⛔ {string.Join("; ", faults)}";
 
         bool Near(Vector2 foot, System.Func<Terrain, bool> wanted)
@@ -1229,6 +1251,101 @@ public partial class VillageMap
     /// which way is downstream, the straight rivers' middles and widths, and the bank's weights at the echoes' depths are
     /// written out below, not read from <see cref="RiverTable"/> or the look file.
     /// </remarks>
+    /// <summary>
+    /// ⭐ The probe's <c>sites through the canopy:</c> line (A53, <c>tree-sprites.md §2</c>): a site marked in the woods
+    /// comes through the painted canopy as its outline — its own turned footprint, in the clearing's orange while trees
+    /// stand on its ground — with the watercolour and the trees on, and not otherwise. The site is taken back after.
+    /// ⚠️ It checks what is drawn, not that <c>_Draw</c> draws it: that call is the render's to show (red-check zero).
+    /// </summary>
+    internal string TheSitesShowThroughTheCanopy()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] sites through the canopy: ⛔ no world";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        bool wasOn = _watercolour, wasTrees = _treesShown;
+        int sitesBefore = world.Workplaces.Count(w => w.Construction is not null);
+
+        // A gatherer's hut marked on the first wooded tile out from the founding where one may go.
+        GridPos founding = world.Map.FoundingSite;
+        Workplace? marked = null;
+        for (int r = 3; r < 30 && marked is null; r++)
+        {
+            for (int dx = -r; dx <= r && marked is null; dx++)
+            {
+                var tile = new GridPos(founding.X + dx, founding.Y + r);
+                if (world.Map.TerrainAt(tile) == Terrain.Forest && world.CanBuildAt(BuildingKind.GathererHut, tile).Allowed
+                    && world.Mark(BuildingKind.GathererHut, tile).Allowed)
+                {
+                    marked = world.Workplaces.LastOrDefault(w => w.Construction is not null);
+                }
+            }
+        }
+
+        if (marked is null)
+        {
+            return "[widths] sites through the canopy: ⛔ nowhere in the woods to mark a site";
+        }
+
+        ShowWatercolour(true);
+        ShowTrees(true);
+        var on = SitesThroughTheCanopy();
+        int sites = world.Workplaces.Count(w => w.Construction is not null);
+
+        // ⛔ Named from the spec, not read off SiteShapeOf (trap 17): the site's footprint 0.8 of its extent each way, centred
+        // on its place, in the clearing's orange (D350) while its trees stand.
+        Vector2 centre = ToScreen(marked.Position);
+        float wantWide = marked.ExtentWidth * 0.8f * _pixelsPerTile, wantDeep = marked.ExtentHeight * 0.8f * _pixelsPerTile;
+        bool found = false;
+        foreach ((Vector2[] outline, Color edge) in on)
+        {
+            Vector2 middle = (outline[0] + outline[1] + outline[2] + outline[3]) / 4f;
+            if (middle.DistanceTo(centre) > 0.5f)
+            {
+                continue;
+            }
+
+            found = true;
+            float a = outline[0].DistanceTo(outline[1]), b = outline[1].DistanceTo(outline[2]);
+            bool shaped = (Mathf.Abs(a - wantWide) < 0.5f && Mathf.Abs(b - wantDeep) < 0.5f) || (Mathf.Abs(a - wantDeep) < 0.5f && Mathf.Abs(b - wantWide) < 0.5f);
+            if (!shaped || edge != HarvestEdge)
+            {
+                faults.Add($"the marked site comes through {a:F1} × {b:F1} px in {edge} (want {wantWide:F1} × {wantDeep:F1} in the clearing's orange {HarvestEdge})");
+            }
+        }
+
+        if (!found || on.Count != sites)
+        {
+            faults.Add($"{on.Count} outlines through the canopy for {sites} sites, the marked one found {found} (want one a site, it among them)");
+        }
+
+        // No canopy, nothing to see through: the trees hidden, then the watercolour off.
+        ShowTrees(false);
+        int treesOff = SitesThroughTheCanopy().Count;
+        ShowTrees(true);
+        ShowWatercolour(false);
+        int watercolourOff = SitesThroughTheCanopy().Count;
+        if (treesOff != 0 || watercolourOff != 0)
+        {
+            faults.Add($"{treesOff} outlines with the trees hidden and {watercolourOff} with the watercolour off (want none)");
+        }
+
+        world.CancelConstruction(marked);
+        ShowTrees(wasTrees);
+        ShowWatercolour(wasOn);
+        int sitesAfter = world.Workplaces.Count(w => w.Construction is not null);
+        if (sitesAfter != sitesBefore)
+        {
+            faults.Add($"{sitesAfter} sites after taking the marked one back (want the {sitesBefore} there were)");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] sites through the canopy: ✅ a gatherer's hut marked in the woods comes through the canopy as its own {wantWide:F0} × {wantDeep:F0} px outline in the clearing's orange, one outline a site ({sites}); none with the trees hidden or the watercolour off; taken back after"
+            : $"[widths] sites through the canopy: ⛔ {string.Join("; ", faults)}";
+    }
+
     internal string TheRiverDrawnHolds()
     {
         var faults = new System.Collections.Generic.List<string>();
