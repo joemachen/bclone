@@ -581,6 +581,8 @@ public partial class Main : Control
         GD.Print(_map.TheWatercolourHolds());
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheSitesShowThroughTheCanopy());
+        GD.Print(_map.ThePaintedDepositsHold());
+        GD.Print(_map.ThePaintedCropsHold());
         GD.Print(_map.TheRiverDrawnHolds());
         GD.Print(TheRiverKeepsTheGamesSpeed());
         SaveTheValleyBake();
@@ -6812,11 +6814,14 @@ public partial class Main : Control
         _viewToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
 
         // ⭐ THE VALLEY IN WATERCOLOUR (A25, `terrain-shader.md §5`; Joe, A23: *"Yes add a tick box"*, and a before/after
-        // slider *"like in the attached image"*). Off until he approves the look. The art lane's two ticks in this file, at
-        // his word; everything behind them is `VillageMap.Watercolour.cs`.
-        var watercolour = new CheckBox { Text = "paint the valley in watercolour" };
+        // slider *"like in the attached image"*). ⭐ ON BY DEFAULT SINCE A58 (Joe: *"yes, make watercolour the default look"*):
+        // the tick starts pressed and the map is switched on with it here, because a tick pressed in its initializer never
+        // fires its handler. ⚠️ TWO DEFAULTS THAT MOVE TOGETHER, as the grid's: this tick and the map's watercolour. A player
+        // whose settings say off gets it off when they are applied. Everything behind it is `VillageMap.Watercolour.cs`.
+        var watercolour = new CheckBox { Text = "paint the valley in watercolour", ButtonPressed = true };
         watercolour.AddThemeFontSizeOverride("font_size", 12);
         watercolour.Toggled += on => _map.ShowWatercolour(on);
+        _map.ShowWatercolour(watercolour.ButtonPressed);
         body.AddChild(watercolour);
         _viewToggles.Add(("watercolour", "the valley in watercolour", watercolour, () => _map.WatercolourShown));
 

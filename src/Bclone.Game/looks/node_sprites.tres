@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NodeSpriteBands" load_steps=2 format=3]
+
+; The painted deposits (`specs/painted-deposits.md §4`, A59-A60): which band of `textures/nodes/node_sprites.png` each
+; kind of deposit draws from, by the terrain's name. A band is two rows of eight 128-px cells at 128 px a tile: eight
+; natural rocks, then eight worked. A new kind of deposit is a band painted below the last and one line here; a kind with
+; no line keeps its inked discs. The winter atlas, `node_sprites_winter.png`, is the same grid cell for cell.
+[ext_resource type="Script" path="res://NodeSpriteBands.cs" id="1_bands"]
+
+[resource]
+script = ExtResource("1_bands")
+Bands = {
+"IronDeposit": 1,
+"Rock": 0
+}

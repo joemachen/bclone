@@ -163,6 +163,10 @@ public partial class VillageMap
 
         /// <summary>The painted trees (A35) — textured with the atlas, so a mesh of their own; empty with the tick off.</summary>
         public readonly ArrayMesh Trees = new();
+
+        /// <summary>The painted deposits (A60) — textured with the deposit atlas, so a mesh of their own; empty with the tick off.</summary>
+        public readonly ArrayMesh Nodes = new();
+        public int NodeVertices;
         public int StandingVertices;
         public int BerryVertices;
         public int TreeVertices;
@@ -192,6 +196,7 @@ public partial class VillageMap
     private readonly MeshBuilder _standing = new();
     private readonly MeshBuilder _berries = new();
     private readonly MeshBuilder _trees = new();
+    private readonly MeshBuilder _nodes = new();
 
     /// <summary>How long the last scenery build took and how many chunks it touched — for the probe.</summary>
     public double LastSceneryBuildMs { get; private set; }
@@ -345,6 +350,7 @@ public partial class VillageMap
         {
             _standing.Clear();
             _trees.Clear();
+            _nodes.Clear();
             for (int y = fromY; y < toY; y++)
             {
                 for (int x = fromX; x < toX; x++)
@@ -373,7 +379,14 @@ public partial class VillageMap
                 {
                     var tile = new GridPos(x, y);
                     Terrain terrain = map.TerrainAt(tile);
-                    if (terrain is Terrain.Rock or Terrain.IronDeposit)
+                    // ⭐ The painted deposits with the tick on (A60): any kind the look file gives a band, into their own
+                    // textured mesh. A kind with no band, or the tick off, keeps its discs as ever.
+                    if (_paintedNodes && _nodeBands.TryGetValue(terrain, out int band))
+                    {
+                        int at = ((y - map.MinY) * map.Width) + (x - map.MinX);
+                        PaintedNodes(_nodes, tile, band, worked: _faceShadow.Length > at && _faceShadow[at]);
+                    }
+                    else if (terrain is Terrain.Rock or Terrain.IronDeposit)
                     {
                         int index = ((y - map.MinY) * map.Width) + (x - map.MinX);
                         if (_faceShadow.Length > index && _faceShadow[index])
@@ -394,6 +407,9 @@ public partial class VillageMap
             into.Trees.ClearSurfaces();
             _trees.AddSurfaceTo(into.Trees);
             into.TreeVertices = _trees.VertexCount;
+            into.Nodes.ClearSurfaces();
+            _nodes.AddSurfaceTo(into.Nodes);
+            into.NodeVertices = _nodes.VertexCount;
         }
 
         if (berries)
@@ -523,6 +539,38 @@ public partial class VillageMap
             into.Sprite(where, (grown ? PaintedTreeHalf : YoungTreeHalf) * scale, cell, mirrored);
         }
     }
+
+    /// <summary>
+    /// ⭐ The painted deposits on one seam tile (A60, <c>painted-deposits.md §5</c>): two or three rocks (Joe's call 1), one
+    /// fewer on a worked face, each a cell of its kind's band laid on <see cref="LumpOn"/>'s place — the discs' places, so a
+    /// seam keeps its ragged edge. Which drawing, mirrored or not and how big are a <c>static</c> of the tile (D337).
+    /// </summary>
+    private void PaintedNodes(MeshBuilder into, GridPos tile, int band, bool worked)
+    {
+        float du = 1f / NodeColumns, dv = 1f / _nodeRows;
+        int row = (band * 2) + (worked ? 1 : 0);
+        int count = worked ? System.Math.Max(1, PaintedNodesOn(tile) - 1) : PaintedNodesOn(tile);
+        for (int i = 0; i < count; i++)
+        {
+            (Vector2 where, float _, float _) = LumpOn(tile, i);
+            uint spin = Scramble(tile.X - NodeSalt, tile.Y + NodeSalt) >> (i * 9);
+            bool mirrored = ((spin >> 3) & 1u) != 0;
+            float scale = 0.85f + (((spin >> 4) % 26) / 100f);
+            into.SpriteFrom(where, NodeHalf * scale, (int)(spin % NodeColumns) * du, row * dv, du, dv, mirrored);
+        }
+    }
+
+    /// <summary>How many painted rocks stand on a natural seam tile: two or three (A60, Joe's call 1: fewer, bigger).</summary>
+    internal static int PaintedNodesOn(GridPos tile) => 2 + (int)(Scramble(tile.X + DepositSalt, tile.Y - DepositSalt) % 2);
+
+    /// <summary>The deposit atlas's cells across: eight, 128 px each (<c>painted-deposits.md §4</c>).</summary>
+    internal const int NodeColumns = 8;
+
+    /// <summary>Half a deposit cell in tiles: 128 px of painting at 128 px a tile.</summary>
+    internal const float NodeHalf = 0.5f;
+
+    /// <summary>Keeps which rock is drawn out of step with where it lies (<see cref="DepositSalt"/>).</summary>
+    private const int NodeSalt = 5381;
 
     /// <summary>The four kinds of painted tree (A36): what the atlas holds, and what a place grows.</summary>
     internal enum TreeKind
@@ -822,8 +870,25 @@ public partial class VillageMap
     /// Says how many chunks the valley is, how many vertices the standing things and the berries
     /// came to, how long the whole valley took to build once, and — the number the design rests on
     /// — how long ONE chunk takes to rebuild, which is what a fell costs at 20×.
+    /// ⚠️ It counts the inked crowns' vertices, so it runs with the watercolour off and puts it back (A58: on by default now;
+    /// the painted trees' own fell is checked by <c>painted trees:</c>).
     /// </remarks>
     public string TheSceneryIsMeshed()
+    {
+        bool wasOn = _watercolour;
+        ShowWatercolour(false);
+        try
+        {
+            return TheInkedSceneryIsMeshed();
+        }
+        finally
+        {
+            ShowWatercolour(wasOn);
+            RefreshTheScenery(_world!);
+        }
+    }
+
+    private string TheInkedSceneryIsMeshed()
     {
         SimWorld world = _world!;
         RefreshTheScenery(world);
@@ -914,8 +979,25 @@ public partial class VillageMap
     /// in rather than derived — <see cref="TheWorkedFaces"/> is the sim's <c>IsFace</c> rule over the
     /// owner index, guarded in <c>MineTests</c>). Exactly one chunk must rebuild, lighter by one
     /// lump (the floor is a traced fill since D461); handed back, it must return to the same count.
+    /// ⚠️ It counts the discs, so it runs with the watercolour off and puts it back (A60: the painted deposits leave the
+    /// standing mesh; their own worked face is checked by <c>painted deposits:</c>).
     /// </remarks>
     public string TheFacesAreWorked()
+    {
+        bool wasOn = _watercolour;
+        ShowWatercolour(false);
+        try
+        {
+            return TheDiscFacesAreWorked();
+        }
+        finally
+        {
+            ShowWatercolour(wasOn);
+            RefreshTheScenery(_world!);
+        }
+    }
+
+    private string TheDiscFacesAreWorked()
     {
         SimWorld world = _world!;
         RefreshTheScenery(world);
