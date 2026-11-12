@@ -2,7 +2,7 @@
 
 **Status:** ✍️ **SPECCED (A59, 2026-11-11) — Joe's *"the wheat farm/crop - wheat will be the default available crop, but
 more crops will be unlockable, so wheat won't be the only crop image we need to create - i just want to see it now"*;
-⏸️ FOUR CALLS HIS (§6). NOTHING BUILT.** Art lane, branch `art`.
+✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60): ROWS EAST–WEST VALLEY-WIDE, FIVE STAGES, UNDER THE SNOW, A SOFT WASH AT THE EDGE. NOTHING BUILT YET — THE DEPOSITS FIRST.** Art lane, branch `art`.
 
 ---
 

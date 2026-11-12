@@ -210,6 +210,22 @@ public partial class VillageMap
     private CanvasTexture? _treeAtlasAutumn;
     private CanvasTexture? _treeAtlasWinter;
 
+    /// <summary>The painted deposits (A60, <c>painted-deposits.md</c>): the summer atlas, loaded on the tick's first switching on.</summary>
+    internal const string NodeSpritesPath = "res://textures/nodes/node_sprites.png";
+
+    /// <summary>The deposits in winter, cell for cell, snow on each rock's upper-left (A60, Joe's call 4).</summary>
+    internal const string NodeSpritesWinterPath = "res://textures/nodes/node_sprites_winter.png";
+
+    private CanvasTexture? _nodeAtlas;
+    private CanvasTexture? _nodeAtlasWinter;
+
+    /// <summary>Whether the deposits are painted: the tick on, the atlas loaded. Read by <c>BuildChunk</c>.</summary>
+    private bool _paintedNodes;
+
+    /// <summary>Each painted kind's band, from <see cref="NodeSpriteBands"/>; and the atlas's rows of 128 px.</summary>
+    private readonly System.Collections.Generic.Dictionary<Terrain, int> _nodeBands = new();
+    private int _nodeRows = 1;
+
     /// <summary>
     /// ⭐ What the trees draw at a point in the year (A41, Joe: *"Slow crossfade"*): the season's set, and while a season
     /// turns — <c>TheYearAt</c>'s last third, the grass's and the snow's clock — the next set over it at the turn's share.
@@ -265,6 +281,114 @@ public partial class VillageMap
         return held;
     }
 
+    /// <summary>
+    /// The deposit atlas and its bands, loaded on the first switching on and kept (A60). ⛔ A missing atlas or band file is
+    /// said with <c>GD.PushError</c>, and the discs stand in; a band file naming no terrain the sim knows is said too.
+    /// </summary>
+    private CanvasTexture? TheNodeAtlas()
+    {
+        if (_nodeAtlas is not null)
+        {
+            return _nodeAtlas;
+        }
+
+        Texture2D? atlas = ResourceLoader.Exists(NodeSpritesPath) ? GD.Load<Texture2D>(NodeSpritesPath) : null;
+        NodeSpriteBands? bands = NodeSpriteBands.Current;
+        if (atlas is null || bands is null)
+        {
+            GD.PushError($"[watercolour] the deposits' atlas {NodeSpritesPath} or bands {NodeSpriteBands.Path} did not load — the discs stand in");
+            return null;
+        }
+
+        _nodeBands.Clear();
+        foreach (Variant key in bands.Bands.Keys)
+        {
+            if (System.Enum.TryParse(key.AsString(), out Terrain terrain))
+            {
+                _nodeBands[terrain] = bands.Bands[key].AsInt32();
+            }
+            else
+            {
+                GD.PushError($"[watercolour] {NodeSpriteBands.Path} names a deposit \"{key.AsString()}\" the sim has no terrain for");
+            }
+        }
+
+        _nodeRows = System.Math.Max(1, atlas.GetHeight() / 128);
+        _nodeAtlas = new CanvasTexture { DiffuseTexture = atlas, TextureFilter = TextureFilterEnum.LinearWithMipmaps };
+        return _nodeAtlas;
+    }
+
+    /// <summary>The deposits' atlas for a season: winter's from its own file (loaded on first need), the summer one otherwise.</summary>
+    private CanvasTexture? TheNodeAtlasFor(TreeSet set)
+    {
+        if (set != TreeSet.Winter)
+        {
+            return TheNodeAtlas();
+        }
+
+        if (_nodeAtlasWinter is null)
+        {
+            Texture2D? atlas = ResourceLoader.Exists(NodeSpritesWinterPath) ? GD.Load<Texture2D>(NodeSpritesWinterPath) : null;
+            if (atlas is null)
+            {
+                GD.PushError($"[watercolour] the winter deposits {NodeSpritesWinterPath} did not load — the summer ones stand in");
+                return TheNodeAtlas();
+            }
+
+            _nodeAtlasWinter = new CanvasTexture { DiffuseTexture = atlas, TextureFilter = TextureFilterEnum.LinearWithMipmaps };
+        }
+
+        return _nodeAtlasWinter;
+    }
+
+    /// <summary>
+    /// The chunks on screen's deposit meshes, textured (A60): the season's atlas, then, while a season turns into or out
+    /// of winter, the other over it at the turn's share — the rocks keep their shapes and the snow comes and goes on them.
+    /// </summary>
+    private void DrawThePaintedNodes(int minX, int maxX, int minY, int maxY)
+    {
+        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        (TreeSet from, float _, TreeSet to, float toAlpha) = TreeSeasonAt(season);
+        CanvasTexture? under = TheNodeAtlasFor(from), over = TheNodeAtlasFor(to);
+        if (under is null)
+        {
+            return;
+        }
+
+        DrawTheNodeChunks(minX, maxX, minY, maxY, under, 1f);
+        if (toAlpha > 0f && over is not null && over != under)
+        {
+            DrawTheNodeChunks(minX, maxX, minY, maxY, over, toAlpha);
+        }
+    }
+
+    private void DrawTheNodeChunks(int minX, int maxX, int minY, int maxY, CanvasTexture atlasOf, float alpha)
+    {
+        GeneratedMap map = _sceneryOf!;
+        Transform2D toScreen = TileToScreen();
+        Rid canvas = GetCanvasItem();
+        Rid atlas = atlasOf.GetRid();
+        Color modulate = Colors.White with { A = alpha };
+        const int Reach = 1;
+
+        int firstCx = Mathf.Clamp((minX - Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int lastCx = Mathf.Clamp((maxX + Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);
+        int firstCy = Mathf.Clamp((minY - Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+        int lastCy = Mathf.Clamp((maxY + Reach - map.MinY) / ChunkTiles, 0, _chunksDown - 1);
+
+        for (int cy = firstCy; cy <= lastCy; cy++)
+        {
+            for (int cx = firstCx; cx <= lastCx; cx++)
+            {
+                ArrayMesh mesh = _scenery[(cy * _chunksAcross) + cx].Nodes;
+                if (mesh.GetSurfaceCount() > 0)
+                {
+                    RenderingServer.CanvasItemAddMesh(canvas, mesh.GetRid(), toScreen, modulate, atlas);
+                }
+            }
+        }
+    }
+
     /// <summary>Whether the valley is drawn in watercolour — the Settings tick's state.</summary>
     public bool WatercolourShown => _watercolour;
 
@@ -309,6 +433,14 @@ public partial class VillageMap
         if (painted != _paintedTrees)
         {
             _paintedTrees = painted;
+            _sceneryOf = null;
+        }
+
+        // The painted deposits (A60): the same, with their own atlas and bands.
+        bool nodes = on && TheNodeAtlas() is not null;
+        if (nodes != _paintedNodes)
+        {
+            _paintedNodes = nodes;
             _sceneryOf = null;
         }
 
@@ -380,7 +512,7 @@ public partial class VillageMap
         _sceneryOf = null;
 
         // What the valley should hold: its crowns' discs with the tick off (36 vertices a disc), its painted trees' squares on.
-        int discs = 0, squares = 0, woodTiles = 0, grownTiles = 0, youngTiles = 0;
+        int discs = 0, squares = 0, woodTiles = 0, grownTiles = 0, youngTiles = 0, seamDiscs = 0;
         for (int i = 0; i < map.Tiles.Count; i++)
         {
             if (map.Tiles[i] is Terrain.Forest or Terrain.Sapling)
@@ -392,6 +524,13 @@ public partial class VillageMap
                 woodTiles++;
                 grownTiles += grown ? 1 : 0;
                 youngTiles += grown ? 0 : 1;
+            }
+            else if (map.Tiles[i] is Terrain.Rock or Terrain.IronDeposit && _nodeBands.ContainsKey(map.Tiles[i]))
+            {
+                // A seam's discs leave the standing mesh too while the deposits are painted (A60): one fewer, cut, on a face.
+                var tile = new GridPos(map.MinX + (i % map.Width), map.MinY + (i / map.Width));
+                bool face = _faceShadow.Length > i && _faceShadow[i];
+                seamDiscs += (LumpsOn(tile, stone: map.Tiles[i] == Terrain.Rock) - (face ? 1 : 0)) * 36;
             }
         }
 
@@ -424,9 +563,9 @@ public partial class VillageMap
             faults.Add($"on, the trees are painted {_paintedTrees}, the atlas {_treeAtlas?.DiffuseTexture?.ResourcePath} drawn {_treeAtlas?.TextureFilter} (want true, {TreeSpritesPath}, LinearWithMipmaps)");
         }
 
-        if (onTrees != squares || offStanding - onStanding != discs)
+        if (onTrees != squares || offStanding - onStanding != discs + seamDiscs)
         {
-            faults.Add($"on, {onTrees} painted-tree vertices (want {squares}) and the standing mesh {offStanding - onStanding} lighter (want the crowns' {discs})");
+            faults.Add($"on, {onTrees} painted-tree vertices (want {squares}) and the standing mesh {offStanding - onStanding} lighter (want the crowns' {discs} and the painted seams' {seamDiscs})");
         }
 
         // ⛔ Named here, not read off the code's own count (HANDOFF art trap 17): 1–2 trees a grown tile (A30, call 4), both;
@@ -1267,6 +1406,197 @@ public partial class VillageMap
     /// stand on its ground — with the watercolour and the trees on, and not otherwise. The site is taken back after.
     /// ⚠️ It checks what is drawn, not that <c>_Draw</c> draws it: that call is the render's to show (red-check zero).
     /// </summary>
+    /// <summary>
+    /// ⭐ The probe's <c>painted deposits:</c> line (A60, <c>painted-deposits.md §7</c>): the atlases as imported, the bands as
+    /// the look file names them, every seam tile drawing its kind's cells — natural on a natural tile, worked on a worked
+    /// one, two or three a tile — each a whole 128-px cell at its painted size; a kind with no band keeping its discs; winter
+    /// its own atlas; off, nothing painted and the discs back.
+    /// </summary>
+    internal string ThePaintedDepositsHold()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] painted deposits: ⛔ no world";
+        }
+
+        GeneratedMap map = world.Map;
+        var faults = new System.Collections.Generic.List<string>();
+        bool wasOn = _watercolour;
+
+        // ⛔ Named from the spec, not read off the code (trap 17): 1024 × 512, a band of two 128-px rows a kind, stone 0, iron 1.
+        foreach (string path in new[] { "res://textures/nodes/node_sprites.png", "res://textures/nodes/node_sprites_winter.png" })
+        {
+            Texture2D? texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+            Image? pixels = texture?.GetImage();
+            if (texture is null || pixels is null || texture.GetWidth() != 1024 || texture.GetHeight() != 512
+                || pixels.GetFormat() != Image.Format.Rgba8 || !pixels.HasMipmaps())
+            {
+                faults.Add($"{path} is {texture?.GetWidth()} × {texture?.GetHeight()}, {pixels?.GetFormat()}, mipmaps {pixels?.HasMipmaps()} (want 1024 × 512, Rgba8, mipmapped)");
+            }
+        }
+
+        ShowWatercolour(true);
+        if (!_nodeBands.TryGetValue(Terrain.Rock, out int stoneBand) || stoneBand != 0
+            || !_nodeBands.TryGetValue(Terrain.IronDeposit, out int ironBand) || ironBand != 1 || _nodeRows != 4)
+        {
+            faults.Add($"the bands read {string.Join(", ", _nodeBands.Select(b => $"{b.Key} {b.Value}"))} over {_nodeRows} rows (want Rock 0, IronDeposit 1, four rows)");
+        }
+
+        // A stone tile made worked for the check, put back after (the faces are re-derived only when the village moves them).
+        int workedAt = -1;
+        for (int i = 0; i < map.Tiles.Count && workedAt < 0; i++)
+        {
+            workedAt = map.Tiles[i] == Terrain.Rock && (_faceShadow.Length <= i || !_faceShadow[i]) ? i : -1;
+        }
+
+        RefreshTheScenery(world);
+        bool[] withAFace = (bool[])_faceShadow.Clone();
+        if (workedAt >= 0 && workedAt < withAFace.Length)
+        {
+            withAFace[workedAt] = true;
+        }
+
+        // The face set handed in, as `faces:` does: the probe's village has no quarry (D449).
+        _sceneryOf = null;
+        RefreshTheScenery(world, facesForTheProbe: withAFace);
+
+        int natural = 0, worked = 0;
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            if (map.Tiles[i] is Terrain.Rock or Terrain.IronDeposit)
+            {
+                bool isWorked = _faceShadow.Length > i && _faceShadow[i];
+                natural += isWorked ? 0 : 1;
+                worked += isWorked ? 1 : 0;
+            }
+        }
+
+        // Every rock a whole cell of its kind's band and the right row, at a deposit's painted size: a cell is 128 px of
+        // painting at 128 px a tile, × 0.85–1.10.
+        const float Du = 1f / 8f, Dv = 1f / 4f;
+        int rocks = 0, wrong = 0, wrongKind = 0, workedRocks = 0;
+        string? firstWrong = null;
+        var usedCells = new bool[32];
+        foreach (SceneryChunk chunk in _scenery)
+        {
+            if (chunk.Nodes.GetSurfaceCount() == 0)
+            {
+                continue;
+            }
+
+            Godot.Collections.Array arrays = chunk.Nodes.SurfaceGetArrays(0);
+            Vector2[] at = arrays[(int)Mesh.ArrayType.Vertex].AsVector2Array();
+            Vector2[] uv = arrays[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+            for (int v = 0; v + 5 < at.Length; v += 6)
+            {
+                rocks++;
+                int col = (int)((uv[v].X / Du) + 1e-3f), row = (int)((uv[v].Y / Dv) + 1e-3f);
+                Vector2 corner = new(col * Du, row * Dv);
+                float side = at[v + 1].X - at[v].X;
+                bool whole = uv[v].IsEqualApprox(corner) && uv[v + 2].IsEqualApprox(corner + new Vector2(Du, Dv));
+                if (!whole || side < 0.85f - 1e-3f || side > 1.10f + 1e-3f || row > 3)
+                {
+                    wrong++;
+                    firstWrong ??= $"uv {uv[v]}–{uv[v + 2]}, {side:F2} tiles across";
+                    continue;
+                }
+
+                usedCells[(row * 8) + col] = true;
+                workedRocks += (row & 1) == 1 ? 1 : 0;
+
+                // Its kind from the nearest seam tile to its foot: stone in rows 0–1, iron in 2–3; worked in the odd rows.
+                Vector2 foot = (at[v] + at[v + 2]) / 2f;
+                Terrain? kind = null;
+                bool onWorked = false;
+                float best = float.MaxValue;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        var tile = new GridPos(Mathf.RoundToInt(foot.X) + dx, Mathf.RoundToInt(foot.Y) + dy);
+                        Terrain there = map.TerrainAt(tile);
+                        float d = new Vector2(tile.X, tile.Y).DistanceSquaredTo(foot);
+                        if (there is Terrain.Rock or Terrain.IronDeposit && d < best)
+                        {
+                            best = d;
+                            kind = there;
+                            int idx = ((tile.Y - map.MinY) * map.Width) + (tile.X - map.MinX);
+                            onWorked = idx >= 0 && idx < _faceShadow.Length && _faceShadow[idx];
+                        }
+                    }
+                }
+
+                int wantBand = kind == Terrain.IronDeposit ? 1 : 0;
+                if (kind is null || row / 2 != wantBand || ((row & 1) == 1) != onWorked)
+                {
+                    wrongKind++;
+                }
+            }
+        }
+
+        int low = (2 * natural) + worked, high = (3 * natural) + (2 * worked);
+        if (wrong > 0 || wrongKind > rocks / 50 || rocks < low || rocks > high || rocks == low || rocks == high || workedRocks < 1 || workedRocks > 2)
+        {
+            faults.Add($"{rocks} rocks on {natural} natural and {worked} worked seam tiles (want strictly between {low} and {high}: two or three a natural tile, one fewer worked); {wrong} not a whole cell at a deposit's size (first: {firstWrong}); {wrongKind} in the wrong kind's band or row; {workedRocks} worked rocks (want one or two)");
+        }
+
+        // Every natural drawing in the valley (rows 0 and 2), and the worked tile's in a worked row (1 or 3).
+        int used = usedCells.Count(c => c);
+        int naturalUsed = Enumerable.Range(0, 8).Count(c => usedCells[c]) + Enumerable.Range(16, 8).Count(c => usedCells[c]);
+        if (naturalUsed != 16 || used - naturalUsed < 1)
+        {
+            faults.Add($"{naturalUsed} of the 16 natural drawings used and {used - naturalUsed} worked (want all 16, and one or more)");
+        }
+
+        // A kind with no band keeps its discs: iron's band taken away, iron paints nothing and its discs come back.
+        (int standingWith, int rocksWith) = NodeTotals();
+        _nodeBands.Remove(Terrain.IronDeposit);
+        _sceneryOf = null;
+        RefreshTheScenery(world, facesForTheProbe: withAFace);
+        (int standingWithout, int rocksWithout) = NodeTotals();
+        _nodeBands[Terrain.IronDeposit] = 1;
+        if (rocksWithout >= rocksWith || standingWithout <= standingWith)
+        {
+            faults.Add($"with iron's band gone, {rocksWithout} painted vertices (want fewer than {rocksWith}) and {standingWithout} standing (want more than {standingWith})");
+        }
+
+        // Winter's atlas is its own; summer and autumn draw the summer one.
+        if (TheNodeAtlasFor(TreeSet.Winter)?.DiffuseTexture?.ResourcePath != "res://textures/nodes/node_sprites_winter.png"
+            || TheNodeAtlasFor(TreeSet.Autumn)?.DiffuseTexture?.ResourcePath != "res://textures/nodes/node_sprites.png")
+        {
+            faults.Add("the seasons' atlases: winter does not draw node_sprites_winter.png, or autumn not node_sprites.png");
+        }
+
+        // Off: nothing painted.
+        ShowWatercolour(false);
+        RefreshTheScenery(world);
+        (int _, int rocksOff) = NodeTotals();
+        if (rocksOff != 0 || _paintedNodes)
+        {
+            faults.Add($"off, {rocksOff} painted-deposit vertices (want none)");
+        }
+
+        ShowWatercolour(wasOn);
+        _sceneryOf = null;
+        RefreshTheScenery(world, facesForTheProbe: TheWorkedFaces(world));
+
+        return faults.Count == 0
+            ? $"[widths] painted deposits: ✅ node_sprites.png and its winter 1024 × 512, mipmapped; bands Rock 0, IronDeposit 1; {rocks} rocks on {natural} natural and {worked} worked seam tiles, two or three a tile, each a whole cell of its kind's band at its size, {workedRocks} worked on the tile made worked; {used} of 32 drawings; a kind with no band keeps its discs; winter its own atlas; off, nothing painted"
+            : $"[widths] painted deposits: ⛔ {string.Join("; ", faults)}";
+
+        (int Standing, int Nodes) NodeTotals()
+        {
+            int standing = 0, nodes = 0;
+            foreach (SceneryChunk chunk in _scenery)
+            {
+                standing += chunk.StandingVertices;
+                nodes += chunk.NodeVertices;
+            }
+
+            return (standing, nodes);
+        }
+    }
+
     internal string TheSitesShowThroughTheCanopy()
     {
         if (_world is not SimWorld world)

@@ -5453,6 +5453,14 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawTheTrees(int minX, int maxX, int minY, int maxY)
     {
+        // ⭐ The painted deposits (A60) at every zoom, as the painted trees: a mesh a chunk, mipmapped. With the tick off this
+        // draws nothing and the discs below are drawn as ever.
+        if (_paintedNodes)
+        {
+            RefreshTheScenery(_world!);
+            DrawThePaintedNodes(minX, maxX, minY, maxY);
+        }
+
         if (_pixelsPerTile < TreeZoomFloor)
         {
             return;

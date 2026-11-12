@@ -178,7 +178,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 |---|---|---|---|---|
 | **Heaps / goods on the ground** | Square chips in the goods colour, ink edge, side by side beside a building (`VillageMap.cs:7526–7631`) | Per good; **amount** (no size variant today) | B1, B4 | 🟨 |
 | **Store stock** | A crate per good, height = fill, snapped to a quarter turn (D417–D423) | Goods arriving and leaving (B14) | B14, B4 | 🟨 played (D418) |
-| Boulders and ore lumps | Discs `#cdc6b8` / `#5c3424`, 2–4 a tile; a worked face has one fewer, cut to 0.6 (`Meshes.cs:471–498`) | Unworked / worked | B6 | 🟨 ✍️ **A59: specced, `painted-deposits.md`** — painted rocks from an atlas, a band a kind (room for more), worked drawings, winter snow; four calls Joe's |
+| Boulders and ore lumps | Discs `#cdc6b8` / `#5c3424`, 2–4 a tile; a worked face has one fewer, cut to 0.6 (`Meshes.cs:471–498`) | Unworked / worked | B6 | 🟨 🔨 **A60 built (✍️ A59, `painted-deposits.md`)** — painted rocks from an atlas, a band a kind named in `looks/node_sprites.tres`, worked drawings, winter snow; for Joe's eyes |
 | **Trading boat** | 6-point hull `#7a5636`, triangle sail `#efe6d2` (`VillageMap.Boat.cs:13–15`, `:68–88`) | Arriving / docked / leaving (built) | B4 | 🟨 |
 | Fishing boats | ⬜ | — | — | ⬜ |
 | Overland caravan, cart road | ⬜ | — | blocked on carts (`trade.md §4.7`) | 💭 |

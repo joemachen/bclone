@@ -1,7 +1,7 @@
 # Spec: Painted deposits — the stone and iron nodes, and room for the kinds to come
 
 **Status:** ✍️ **SPECCED (A59, 2026-11-11) — Joe's *"the art for the stone and iron nodes (with knowledge that we'll create
-more node types later)"*; ⏸️ FOUR CALLS HIS (§6). NOTHING BUILT.** Art lane, branch `art`. It follows the painted trees
+more node types later)"*; ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60); 🔨 BUILT (A60, §8). ⏸️ HIS EYES.** Art lane, branch `art`. It follows the painted trees
 (`tree-sprites.md`): the same hand, the same light, the same atlas-and-mesh way of drawing, so a seam reads as part of the
 same painting as the wood beside it.
 
@@ -74,6 +74,8 @@ This spec only leaves room for them (§4).
 
 ## 6. Joe's calls (A59), in plain words, each with a recommendation
 
+✅ **Answered (A60), all as recommended:** two or three bigger rocks; rust-streaked rock for iron; painted worked faces; snow on the rocks.
+
 1. **How many rocks a tile.** ⭐ **Recommended: two or three bigger ones, each a third to half a tile across.** A seam
    reads as a rocky outcrop, as the trees went fewer and bigger. Or keep **today's 2–4 small ones**, more like scattered
    stones.
@@ -94,3 +96,44 @@ This spec only leaves room for them (§4).
 - **The limits (§4):** measured, with the numbers to Joe if any drawing falls outside.
 - **GPU:** `measure4k`, A/B, paired runs (HANDOFF art trap 29).
 - **The four checks** in `CLAUDE.md`; Joe's eyes; merged only at his word.
+
+## 8. As built (A60, 2026-11-11)
+
+- **Painted** by `D:\Projects\brushes\nodes\build_node_sprites.jsx` (seed 60, a season argument), 1024 × 512, in
+  `textures/nodes/node_sprites.png` and `node_sprites_winter.png`, imported lossless and mipmapped. **Stone:** pale grey
+  boulders 0.34–0.47 tiles across, cracks in ink, lichen on some. **Iron:** grey-brown faceted rock with rust and ochre
+  stains. **Worked stone:** one or two cut blocks with chips. **Worked iron:** two or three shards, rust on them, spoil
+  gravel round them. **Winter:** a snow rim on every piece's upper-left.
+- **Measured inside §4 in both seasons:** crown L\* p50 56–81, ink and shadow at most 19.5 %. It took five paintings to
+  get there:
+  - the first iron was the dark disc again (half its pixels under L\* 50);
+  - the worked faces' small pieces were mostly outline, so they take a 1 px pen;
+  - the two darkest rusts were lightened.
+
+  Iron's mean hue came out at 66–77°, an ochre brown, not the 51° of §4's `#9a5a3c`. It still reads as rust beside
+  stone's 84–90°, and the minimap draws the palette, not the painting.
+- **`looks/node_sprites.tres`** (`NodeSpriteBands`, a terrain's name to its band) is read once with the atlas. A name the
+  sim has no terrain for is said with `GD.PushError`. `BuildChunk` lays any terrain the bands name into `SceneryChunk.Nodes`:
+  two or three on a natural tile, one fewer on a worked face, at `LumpOn`'s places, with `MeshBuilder.SpriteFrom` (the
+  trees' `Sprite` now lays its cells through it too). `DrawTheTrees` draws them at every zoom before the discs' zoom floor.
+  A season into or out of winter draws the other atlas over at the turn's share (`TreeSeasonAt`).
+- **The probe:** `painted deposits:` checks:
+  - the two atlases' size and import, and the bands as named;
+  - every rock a whole cell of its kind's band and row at 0.85–1.10 tiles, two or three a tile;
+  - a stone tile made worked (handed in as `faces:` does) drawing worked cells;
+  - all 16 natural drawings used;
+  - iron's band taken away bringing its discs back;
+  - winter its own atlas, and off nothing painted.
+
+  `faces:` now counts its discs with the watercolour off, and `painted trees:` expects the seams' discs to leave the
+  standing mesh too.
+
+**Verified (A60):**
+- **Watercolour off:** byte-identical to the build before at four zooms.
+- **Watercolour on:** only the seams change. A stone seam inside an iron one reads as grey boulders ringed by rusty rock.
+- **GPU:** not measured cleanly. Photoshop was holding the card in its slow state (the flat map at 0.58 ms against
+  0.26–0.29 earlier the same day). The ratio of watercolour on to off was 7.1–7.6 against 7.0 earlier: a small
+  rise, if any. Six vertices a rock replace a disc's 36.
+- **Red-check:** 7 mutants, 6 red (every kind from stone's band; a worked face drawn natural; three or four a tile; rocks
+  a fifth too big; the look file's bands ignored; winter drawn with the summer rocks). **One zero, written down:** the
+  map never drawing the rocks. The probe checks the meshes, not `_Draw`; the renders are that call's evidence.

@@ -184,6 +184,16 @@ internal sealed class MeshBuilder
         int across = young ? YoungSpriteColumns : SpriteColumns;
         float du = 1f / across, dv = (young ? 0.5f : 1f) / SpriteRows;
         float u0 = (k % across) * du, v0 = ((young ? GrownSpriteRows : 0) + ((k / across) * (young ? 0.5f : 1f))) / SpriteRows;
+        SpriteFrom(centre, half, u0, v0, du, dv, mirrored);
+    }
+
+    /// <summary>
+    /// One cell of any atlas — its corner <paramref name="u0"/>, <paramref name="v0"/> and size <paramref name="du"/> ×
+    /// <paramref name="dv"/> in the texture's 0–1 — as a square in tile space, mirrored across its light's diagonal or not.
+    /// The trees' <see cref="Sprite"/> and the painted deposits (A60) both lay their cells through here.
+    /// </summary>
+    public void SpriteFrom(Vector2 centre, float half, float u0, float v0, float du, float dv, bool mirrored)
+    {
         Vector2 Uv(float s, float t) => mirrored ? new Vector2(u0 + (t * du), v0 + (s * dv)) : new Vector2(u0 + (s * du), v0 + (t * dv));
 
         Vector2 tl = centre + new Vector2(-half, -half), tr = centre + new Vector2(half, -half);
