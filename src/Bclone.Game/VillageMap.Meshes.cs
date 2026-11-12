@@ -822,8 +822,25 @@ public partial class VillageMap
     /// Says how many chunks the valley is, how many vertices the standing things and the berries
     /// came to, how long the whole valley took to build once, and — the number the design rests on
     /// — how long ONE chunk takes to rebuild, which is what a fell costs at 20×.
+    /// ⚠️ It counts the inked crowns' vertices, so it runs with the watercolour off and puts it back (A58: on by default now;
+    /// the painted trees' own fell is checked by <c>painted trees:</c>).
     /// </remarks>
     public string TheSceneryIsMeshed()
+    {
+        bool wasOn = _watercolour;
+        ShowWatercolour(false);
+        try
+        {
+            return TheInkedSceneryIsMeshed();
+        }
+        finally
+        {
+            ShowWatercolour(wasOn);
+            RefreshTheScenery(_world!);
+        }
+    }
+
+    private string TheInkedSceneryIsMeshed()
     {
         SimWorld world = _world!;
         RefreshTheScenery(world);

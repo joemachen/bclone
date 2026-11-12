@@ -587,11 +587,12 @@ public partial class VillageMap
             faults.Add($"{wrong} of {trees} trees are not a whole cell of a tree's size (first: {firstWrong}); {used} of {cells.Length} drawings used, {mirroredTrees} mirrored (want 0, all, some but not all)");
         }
 
-        // Back as it was: off, the canopies to the vertex.
-        ShowWatercolour(wasOn);
+        // Switched back off: the canopies to the vertex. ⚠️ Off explicitly, not "back as it was": since A58 the valley opens
+        // in watercolour, and these two checks were gated on opening off, so they had quietly stopped running.
+        ShowWatercolour(false);
         RefreshTheScenery(world);
         (int backStanding, int backTrees) = Totals();
-        if (!wasOn && (backTrees != 0 || backStanding != offStanding))
+        if (backTrees != 0 || backStanding != offStanding)
         {
             faults.Add($"switched back off, {backTrees} painted-tree vertices and {backStanding} standing (want 0 and {offStanding})");
         }
@@ -600,13 +601,17 @@ public partial class VillageMap
         ShowTrees(false);
         RefreshTheScenery(world);
         (int bareStanding, int _) = Totals();
-        ShowTrees(wasTrees);
+        ShowTrees(true);
         RefreshTheScenery(world);
         (int againStanding, int _) = Totals();
-        if (!wasOn && wasTrees && (offStanding - bareStanding != discs || againStanding != offStanding))
+        if (offStanding - bareStanding != discs || againStanding != offStanding)
         {
             faults.Add($"with the watercolour off, the trees tick off takes {offStanding - bareStanding} vertices (want the crowns' {discs}) and on gives back to {againStanding} (want {offStanding})");
         }
+
+        ShowTrees(wasTrees);
+        ShowWatercolour(wasOn);
+        RefreshTheScenery(world);
 
         foreach (GridPos young in planted)
         {
@@ -1026,7 +1031,8 @@ public partial class VillageMap
     /// not what it looks like (<c>_Draw</c> never runs there, D340; that is the windowed renders and Joe's eyes).
     /// </summary>
     /// <remarks>
-    /// It opens off with nothing loaded (lean, A23); switched on, the shader compiles and declares every uniform the map
+    /// It opens on, the layer built and showing (A58: the default since Joe's *"make watercolour the default look"*; it opened
+    /// off with nothing loaded until then, A23's leanness); switched on, the shader compiles and declares every uniform the map
     /// sets; every look value is the two look files' and every colour the palette's; the valley's turn of <c>_Draw</c>
     /// hands it a bake that keeps the mix, the valley's rect and the zoom; the line takes a press on it and a drag, and
     /// nothing else; the year's grass and snow land where A23 says on five days; and switched off, the map is as it was.
@@ -1044,9 +1050,10 @@ public partial class VillageMap
         bool wasBeforeAfter = _beforeAfter;
         float wasSplit = _splitShare;
 
-        if (wasOn || wasBeforeAfter || (_watercolourLayer is not null && !wasOn))
+        // ⛔ Named from the decision, not read off the tick (A58): the valley opens in watercolour, the slider off.
+        if (!wasOn || wasBeforeAfter || _watercolourLayer is not { Visible: true })
         {
-            faults.Add($"opens with the tick {wasOn}, the slider {wasBeforeAfter}, a layer {_watercolourLayer is not null} (want all off, nothing loaded)");
+            faults.Add($"opens with the tick {wasOn}, the slider {wasBeforeAfter}, a layer {_watercolourLayer is not null} showing {_watercolourLayer?.Visible} (want the tick on, the slider off, the layer built and showing)");
         }
 
         ShowWatercolour(true);
@@ -1193,9 +1200,9 @@ public partial class VillageMap
         Year(3.9, 3.7f, 0.3f, "nine-tenths into winter: 70 % turned to spring, the snow 30 %");
         Year(0.1, 0f, 0f, "early spring: bare");
 
-        // Off, the map is as it was.
+        // Off, the map is as it was before the watercolour: the layer hidden, no ink on the trees (A28).
         ShowBeforeAfter(wasBeforeAfter);
-        ShowWatercolour(wasOn);
+        ShowWatercolour(false);
         _splitShare = wasSplit;
         if (_watercolour || _watercolourLayer is { Visible: true })
         {
@@ -1203,15 +1210,18 @@ public partial class VillageMap
         }
 
         // ⛔ Off, the trees mesh as they always did: no ink at all, so not one vertex differs (A28).
-        if (!wasOn && _canopyInkTiles != 0f)
+        if (_canopyInkTiles != 0f)
         {
             faults.Add($"switched off, the trees still carry {_canopyInkTiles} tiles of ink");
         }
 
+        // And back as it opened.
+        ShowWatercolour(wasOn);
+
         return Said();
 
         string Said() => faults.Count == 0
-            ? $"[widths] watercolour: ✅ opens off with nothing loaded; on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days, the trees inked; off, as it was"
+            ? $"[widths] watercolour: ✅ opens on, the layer showing (A58); on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days, the trees inked; off, as it was"
             : $"[widths] watercolour: ⛔ {string.Join("; ", faults)}";
 
         void Near(string uniform, float want)
