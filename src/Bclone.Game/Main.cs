@@ -557,6 +557,7 @@ public partial class Main : Control
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
         GD.Print(TheBuildQueueReadsTheQueue());
+        GD.Print(TheHillsAreShadedAndSaid());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
@@ -3783,6 +3784,12 @@ public partial class Main : Control
         };
 
         lines.Add(ground);
+
+        // ⭐ AND HOW STEEP IT IS (D735, `heights.md §6`) — only where it is not flat, for the trail lines' reason below.
+        if (world.SayTheSlope(tile) is string slope)
+        {
+            lines.Add(slope);
+        }
 
         // ⭐ AND WHETHER PEOPLE WALK HERE (D358). The trail on the map is a thing you compare; this
         // is a thing you read. Only where it is true:

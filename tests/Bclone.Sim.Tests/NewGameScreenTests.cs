@@ -95,7 +95,8 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal("moderate", defaults.Values["stone"]);
         Assert.Equal("moderate", defaults.Values["iron"]);
         Assert.Equal("on", defaults.Values["nomads"]);
-        Assert.Equal(new[] { "river", "flow", "woods", "stone", "iron", "nomads" }, Shipped.NewGameOptions.Select(r => r.Id));
+        Assert.Equal("rolling", defaults.Values["hills"]);
+        Assert.Equal(new[] { "river", "flow", "hills", "woods", "stone", "iron", "nomads" }, Shipped.NewGameOptions.Select(r => r.Id));
     }
 
     // ---- §8.3 West to east is today's river ----------------------------------------------------
@@ -296,7 +297,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
     public void TheShareCodeCarriesEveryRowInOrder()
     {
         string code = NewGame.ShareCode(Shipped, NewGame.Defaults(Shipped, "Mossy  Lantern"));
-        Assert.Equal("mossy lantern#river=3,flow=we,woods=35,stone=moderate,iron=moderate,nomads=on", code);
+        Assert.Equal("mossy lantern#river=3,flow=we,hills=rolling,woods=35,stone=moderate,iron=moderate,nomads=on", code);
     }
 
     /// <summary>Every row at both of its ends, written out and read back, is the same settings.</summary>
@@ -336,7 +337,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
     [Theory]
     [InlineData("oak#woods=105", "goes from 0 to 100")]
     [InlineData("oak#woods=37", "in steps of 5")]
-    [InlineData("oak#hills=3", "no setting called \"hills\"")]
+    [InlineData("oak#weather=3", "no setting called \"weather\"")]
     [InlineData("oak#woods", "id=value")]
     [InlineData("oak#stone=heaps", "one of sparse, moderate, rich")]
     [InlineData("#woods=40", "Type a seed")]
@@ -382,9 +383,11 @@ public class NewGameScreenTests(ITestOutputHelper output)
             Values = new Dictionary<string, string>(start.Values)
             {
                 ["river"] = "5", ["flow"] = "nwse", ["woods"] = "45", ["stone"] = "rich", ["iron"] = "sparse", ["nomads"] = "off",
+                ["hills"] = "hilly",
             },
         });
 
+        Assert.Equal(200, set.HillScalePercent);
         Assert.False(set.NomadsEnabled);
         Assert.Equal(5, set.RiverWidthTiles);
         Assert.Equal("nwse", set.RiverCourse);
@@ -562,7 +565,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
             ["woods"] = "20",
             ["stone"] = "rich",
             ["river"] = "99",
-            ["hills"] = "tall",
+            ["weather"] = "tall",
         };
 
         var problems = new List<PlayerSettingsProblem>();
@@ -572,7 +575,7 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal("20", opened.Values["woods"]);
         Assert.Equal("rich", opened.Values["stone"]);
         Assert.Equal(fresh.Values["river"], opened.Values["river"]);
-        Assert.False(opened.Values.ContainsKey("hills"));
+        Assert.False(opened.Values.ContainsKey("weather"));
         Assert.Contains("river=99", Assert.Single(problems).Sentence, StringComparison.Ordinal);
     }
 

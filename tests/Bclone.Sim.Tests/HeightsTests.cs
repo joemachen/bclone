@@ -255,6 +255,65 @@ public sealed class HeightsTests
         Assert.Equal(footPacked, cartPacked);
     }
 
+    #endregion
+
+    #region Step 3: saves, the words (guards 10–11)
+
+    [Fact]
+    public void ASaveFromBeforeHeightsLoadsFlatAndPlaysAsItDid()
+    {
+        // A flat village — what every save before D735 was — saved, then its height layer struck out as an old save has none.
+        SimLoop flat = SimFactory.CreatePhase0(Shipped with { HeightLevels = 1 }, new InMemoryLogSink());
+        flat.Step(200);
+        ulong before = Bclone.Sim.Determinism.StateHash.Compute(flat.World);
+        System.Text.Json.Nodes.JsonObject old = Bclone.Sim.Persistence.SaveGame.Capture(flat, "test", "then", "code");
+        Assert.True(old["world"]!["map"]!.AsObject().Remove("heights"), "the save had no height layer to strike out");
+
+        // ⭐ Loaded by today's build over today's data — which has hills — it is still flat, and the same village.
+        SimLoop loaded = Bclone.Sim.Persistence.SaveGame.Load(
+            System.Text.Json.Nodes.JsonNode.Parse(Bclone.Sim.Persistence.SaveFile.TextOf(old))!.AsObject(), Shipped);
+        Assert.All(loaded.World.Map.Heights, h => Assert.Equal(0, h));
+        Assert.Equal(before, Bclone.Sim.Determinism.StateHash.Compute(loaded.World));
+        loaded.Step(200);
+        flat.Step(200);
+        Assert.Equal(Bclone.Sim.Determinism.StateHash.Compute(flat.World), Bclone.Sim.Determinism.StateHash.Compute(loaded.World));
+    }
+
+    [Fact]
+    public void AHillySaveKeepsItsHills()
+    {
+        SimLoop hilly = SimFactory.CreatePhase0(Shipped, new InMemoryLogSink());
+        hilly.Step(50);
+        System.Text.Json.Nodes.JsonObject saved = Bclone.Sim.Persistence.SaveGame.Capture(hilly, "test", "then", "code");
+        SimLoop loaded = Bclone.Sim.Persistence.SaveGame.Load(
+            System.Text.Json.Nodes.JsonNode.Parse(Bclone.Sim.Persistence.SaveFile.TextOf(saved))!.AsObject(), Shipped);
+        Assert.Equal(hilly.World.Map.Heights, loaded.World.Map.Heights);
+        Assert.Equal(Bclone.Sim.Determinism.StateHash.Compute(hilly.World), Bclone.Sim.Determinism.StateHash.Compute(loaded.World));
+    }
+
+    [Fact]
+    public void WhatsHereNamesTheSlopeAndTheCardSaysClimbing()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Shipped with { HillScalePercent = 200 }, new InMemoryLogSink()).World;
+        GridPos steep = OpenTiles(world, Slope.Steep, 1).Single();
+        GridPos gentle = OpenTiles(world, Slope.Gentle, 1).Single();
+        GridPos flat = OpenTiles(world, Slope.Flat, 1).Single();
+
+        Assert.Contains("Steep ground", world.SayTheSlope(steep));
+        Assert.Contains("gentle slope", world.SayTheSlope(gentle));
+        Assert.Null(world.SayTheSlope(flat));
+
+        Villager walker = world.Villagers.First(v => v.Alive && v.CanWork);
+        walker.StandAt(Point.CentreOf(steep));
+        walker.LegTicks = Fixed.FromInt(1);
+        Assert.True(world.IsClimbing(walker));
+        walker.LegTicks = Fixed.Zero;
+        Assert.False(world.IsClimbing(walker), "standing still on a hill is not climbing it");
+        walker.StandAt(Point.CentreOf(flat));
+        walker.LegTicks = Fixed.FromInt(1);
+        Assert.False(world.IsClimbing(walker));
+    }
+
     /// <summary>Walkable, unbuilt, dry tiles of one slope class, in map order — the first <paramref name="count"/>.</summary>
     private static List<GridPos> OpenTiles(SimWorld world, Slope slope, int count)
     {

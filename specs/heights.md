@@ -6,8 +6,8 @@ paths in the field), D383 (buildings as obstacles), D404 (fences), D473 (a stage
 parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D641 (Phase 5's exit gate),
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
 **Status:** 🔨 **BEING BUILT on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
-✅ (the layer, the stage, the slope classes); step 2 ✅ (the slope in the one cost field, the goldens re-taken); steps
-3–4 not yet.**
+✅ (the layer, the stage, the slope classes); step 2 ✅ (the slope in the one cost field, the goldens re-taken); step 3 ✅
+(saves, the Hilliness row, *What's here*, *climbing*, the wash); step 4 (the measurement, then Joe plays) not yet.**
 Heights is not on Phase 5's exit gate (D641); building it goes past the gate, and that is his to say.
 
 ---
@@ -228,6 +228,21 @@ dearest step (`_largestStep`, 15). `IsUnworn(tile)` (grass's price before the sl
   sees it); the heights unhashed (the goldens); the world never reading the slope (guards 7–8); rounding down (guard 5).
   ⚠️ **The zero, kept:** the cart's slow-on-grass rule on the last fraction of a tile before its target
   (`BehaviorSystem`'s first site) tested by cost again. `WalkedOver` is guarded; that one line is not.
+
+**Step 3, built (D735).** A save keeps its heights (`map.heights`); one without them loads flat and plays exactly as
+it did (guard 10, both ways). `NewGame`'s **Hilliness** row (`hills`: gentle 50 / rolling 100 / hilly 200 of
+`hill_scale_percent`, after *River runs*; the share code carries it, an old code without it opens on *Rolling*).
+`SimWorld.Heights.cs`: `SlopeAt`, `SayTheSlope` (*"Steep ground — slow to cross, up or down."*, *"A gentle slope — a little
+slower to cross."*, nothing on the flat or the water) and `IsClimbing` (on the move across steep ground). *What's here*
+adds the slope's line under the ground's; a villager's card reads *climbing* for *walking* while they cross steep ground.
+`VillageMap.Relief.cs` bakes the wash once per valley — a hillshade lit from the upper left, 8 texels a tile, at most
+0.34 — and draws it over the ground and under the trails; a flat valley bakes nothing. Probe: `relief:` (the wash at the
+valley's size, the steepest tile washed, the flat founding not, a flat valley baking nothing, and the words through the
+real panels — *What's here* and a card posed crossing the steepest tile, put back as found). Two new-game tests had
+used `hills` as their made-up unknown setting; it is `weather` now.
+- **Step 3's red-check: 9 mutants, 9 red.** An old save made to need heights; a hilly save saved flat; the steep
+  sentence dropped; *climbing* while standing still; *Hilly* set to 100 (`ARowSetsItsKeys`); and through the probe,
+  *What's here*'s line, the card's *climbing*, a flat valley baking a wash, a wash that lights nothing.
 
 ## 11. Definition of Done
 
