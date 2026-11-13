@@ -5,7 +5,8 @@ D313 (2026-09-06, the empty-village banner does not stop the game *because nomad
 them), D465/D558 (2026-10-03/11, surnames by hash; the one-surname village *left for the nomads*), D554–D556 (building
 condition — the hard prerequisite, built), D563 (2026-10-11, Joe's four calls), D564 (this spec and its measurement).
 **Status:** ✅ **built — all three commits on `slice/nomads` (D565 the band, D566 the longhouse, D567 re-founding),
-sim and view. ✅ **All six of Joe's notes built and played; MERGED AND PUSHED (D584, 2026-10-16).** *(The
+sim and view. ✅ **All six of Joe's notes built and played; MERGED AND PUSHED (D584, 2026-10-16).** 🔨 **§4.3a's moment
+moved to the slow-down (D732, 2026-11-12) — BUILT on `slice/nomads-moment`, unplayed, unmerged.** *(The
 history below kept as it happened; "unmerged" in it was true until D584.)* ▶️ Played by Joe (D568, §3a): six notes are the next work — ⛔ the longhouse comes out,
 nomads not travellers, a Nomads switch, a walk-in with a marker, "the pile" in the village's words, the paths' gridding
 reviewed. The branch stays unmerged until they are built and played. ✅ Note 2 built (D569): every string says
@@ -284,7 +285,7 @@ speed) each arrival is drawn along the route by arc length, the lowest id leadin
 **0.35 s** later so the band files in, a **chevron** in the huddle's dun bobbing above each head and fading over the
 last half second; over the last 15 % of the walk the point bends to wherever the arrival actually stands (the
 ordinary glide), so the handover never snaps. `DrawnCentre` asks the walk-in first, so a click on a walker lands on
-the dot. **The arrival moment waits** (Joe): `Main.ShowAnyMoment` skips every waiting moment while the map says a walk
+the dot. **The arrival moment waits** (Joe) *(⛔ superseded by D732, below — the moment now shows at the slow-down and the walk waits for it)*: `Main.ShowAnyMoment` skips every waiting moment while the map says a walk
 is underway (passing banners drain as ever), the shell drops the village to **1×** the frame a walk begins
 (`SlowDownForAnAlert`, the alert's own hold) and refuses to hand the speed back while anybody is on the road (since
 D578 the speed comes back at all only when the player ticked *go back to my speed after an alert*); the
@@ -296,6 +297,26 @@ a new world is watched from its own tick. Re-founders (§4.6) walk in by the sam
 saved or read by the sim; the view reads the sim's cost field and writes nothing. ⛔ Not built, said so: the camera
 does not move to show the edge (Joe did not ask; the moment is held so there is time to look), and the sim-side
 `Arriving` state (§3a's alternative). Probe lines: `walk-in:`, `arrival:`, `arrived:` (§9).
+
+**⭐ D732 — the moment shows at the slow-down, and the walk waits for it** (Joe, 2026-11-11, on the art lane: *"the
+pop-up should trigger as soon as the game speed change happens, not when they reach the village. as a player its weird
+that the game slows down and i ahve no idea why until they show up in on screen."*; his pick, 2026-11-12: *"Pop-up at the
+slow-down"*). **It reverses the hold above, his own D573 call**, and keeps what that call was for: the band is never
+walked in behind a panel.
+- `ShowAnyMoment` no longer skips waiting moments during a walk. The arrival moment is raised in the same step that
+  stamps the band, so it shows **the frame the walk begins**, the frame the village drops to 1×.
+- The shell sets **`VillageMap.WalkInHeld`** each refresh, *after* the moment: true while the village is paused or a
+  moment is open (`Main.TheWalkInStandsStill`). The walk clock stands while it is, so **the band waits at the valley's
+  edge while the moment is open**, and on *Go on* they walk in at 1×, people the player now knows about. The 1× hold
+  stays until the last is in, as before.
+- **Any waiting moment holds a walk the same way**, not only the arrival's: one rule, a band never walks behind a panel.
+- ⚠️ **Its own flag, not `Paused`.** The river's clock reads `Paused` (A46), and behind a moment the village runs at 1×,
+  not paused (Joe, 2026-08-30), so the river keeps running under one.
+- View only: no sim change, no golden.
+- **Probe:** `arrival:` rewritten (the moment up the frame the walk begins, a whole walk of frames with it open moves
+  nobody, Go on lets them walk and keeps 1× until they are in, then the speed comes back); `arrived:` learns the live
+  door (a real `Refresh` shows a posed arrival moment and holds the walk; the `Refresh` after Go on lets it go).
+- **Red-check (D326):** 7 mutants, 6 red: the old hold put back (`arrival:` and `arrived:`); the walk clock ignoring the hold (`arrival:`); `Refresh` never setting it (`arrived:`); only a pause holding (both); the hold set before the moment shows (`arrived:`); Go on letting the speed up mid-walk (`arrival:`). ⚠️ **The zero, kept:** the river held under a moment too (`Paused` set from the same flag). No probe line looks at the river while a moment is open.
 
 ### 4.4 Settling — roofless, and then what the village already does
 
@@ -650,7 +671,7 @@ the count; save → load mid-band~~ — gone with the waiting band (D572).
 > file sets off a gap apart and arrives a gap apart; the mark holds on the road and is half faded a quarter second
 > from the end; arrivals are told from founders, natives and the dead (`ArrivalsSince`, posed); the walk clock stands
 > still paused and runs unpaused; a posed walker on the real route is drawn — and clicked — at the edge tile.
-> `arrival:` (the shell): a posed walk-in with a posed waiting moment — the moment stays queued and the panel hidden
+> `arrival:` (the shell) *(as built by D573; rewritten by D732 for the moment at the slow-down, §4.3a)*: a posed walk-in with a posed waiting moment — the moment stays queued and the panel hidden
 > at 1×, a banner fading mid-walk does not hand the speed back, the clock run past the walk shows the moment with its
 > title, *Go on* gives the 4× back. `arrived:` (the live door): one tick on, a villager posed as arrived this tick is
 > walking in after the next `Refresh` at 1× — posed, because the probe's unattended valley met no band in its
