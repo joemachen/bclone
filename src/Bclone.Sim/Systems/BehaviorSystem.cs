@@ -4235,7 +4235,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // Already on the tile and not yet on the thing: the last fraction of a tile is walked
                 // like any other leg, at the tile's own price — and a cart's price on grass (`handcart.md §6`).
                 int entry = world.TravelCost.CostToEnter(target);
-                if (villager.PushingACart && entry == TravelCostField.BaseTileCost)
+                if (villager.PushingACart && world.TravelCost.IsUnworn(target))
                 {
                     entry = entry * world.Config.CartOffPathSlowPercent / 100;
                 }
@@ -4437,7 +4437,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         IReadOnlyList<GridPos> arriving = world.FootprintCovering(target);
         int furthest = 0;
         Point? deckEnd = null;
-        int routeGrass = world.TravelCost.CostToEnter(route[0]) == TravelCostField.BaseTileCost ? 1 : 0;
+        int routeGrass = world.TravelCost.IsUnworn(route[0]) ? 1 : 0;
         for (int i = 1; i < route.Count; i++)
         {
             if (!LineOfSight.Clear(world.Map, world, villager.Position, Point.CentreOf(route[i]), leaving, arriving))
@@ -4460,7 +4460,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             // fan was Joe's blobs (*"i want them to look more like thinner walked paths"*). On bare
             // grass nothing changes — a straight line treads no more tiles than the staircase it
             // replaces — so the walk's clock and the Phase 0 pins are untouched by construction.
-            if (world.TravelCost.CostToEnter(route[i]) == TravelCostField.BaseTileCost)
+            if (world.TravelCost.IsUnworn(route[i]))
             {
                 routeGrass++;
             }
@@ -4644,7 +4644,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         for (int i = 0; i <= furthest; i++)
         {
             int cost = world.TravelCost.CostToEnter(route[i]);
-            bool onGrass = cost == TravelCostField.BaseTileCost;
+            bool onGrass = world.TravelCost.IsUnworn(route[i]);
             grass += onGrass ? 1 : 0;
             if (world.DeckIsSlow(route[i]))
             {
@@ -4683,7 +4683,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         int grass = 0;
         LineOfSight.Footprints(from, to, tile =>
         {
-            if (world.TravelCost.CostToEnter(tile) == TravelCostField.BaseTileCost)
+            if (world.TravelCost.IsUnworn(tile))
             {
                 grass++;
             }

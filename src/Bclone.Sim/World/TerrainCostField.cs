@@ -269,7 +269,7 @@ public sealed class TerrainCostField
         }
 
         TerrainCostField field = Build(map, destination, baseTileCost);
-        field.Refill(baseTileCost, entryCost, new Scratch(map, baseTileCost));
+        field.Refill(baseTileCost, entryCost, new Scratch(map, Math.Max(baseTileCost, entryCost.Length == 0 ? 0 : entryCost.Max())));
         return field;
     }
 
@@ -287,11 +287,14 @@ public sealed class TerrainCostField
         /// <summary>Whether each tile can be walked, by map-order index — asked four times a tile in every refill, so it is a table, not a call.</summary>
         public readonly bool[] Passable;
 
-        public Scratch(GeneratedMap map, int baseTileCost)
+        /// <param name="map">The valley.</param>
+        /// <param name="largestStep">The dearest a step can be — the ring is one bucket longer (Dial's algorithm). ⭐ Not
+        /// <c>BaseTileCost</c> any more (D735): a slope raises a step above it (`heights.md §4.1`).</param>
+        public Scratch(GeneratedMap map, int largestStep)
         {
             int tiles = map.Width * map.Height;
             Queue = new int[tiles];
-            Ring = new List<int>[baseTileCost + 1];
+            Ring = new List<int>[largestStep + 1];
             for (int i = 0; i < Ring.Length; i++)
             {
                 Ring[i] = new List<int>();
@@ -503,10 +506,10 @@ public sealed class TerrainCostField
                 }
 
                 int step = entryCost[index];
-                if (step < 1 || step > baseTileCost)
+                if (step < 1 || step >= ringSize)
                 {
                     throw new InvalidOperationException(
-                        $"A tile's entry cost must be between 1 and {baseTileCost} for the bucket queue (got {step}).");
+                        $"A tile's entry cost must be between 1 and {ringSize - 1} for the bucket queue (got {step}).");
                 }
 
                 int candidate = settling + step;

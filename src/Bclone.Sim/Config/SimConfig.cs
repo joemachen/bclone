@@ -3126,8 +3126,13 @@ public sealed record SimConfig
 
     /// <summary>How many height levels a valley has: 0 (the river's water) to one less than this. <b>1 is a flat
     /// valley</b> — the ablation every re-taken golden is proven against (`heights.md §7`).</summary>
+    /// <remarks>
+    /// ⭐ <b>The code's default is 1, the shipped data's 16</b> — `river_course`'s precedent (`we`, the river every valley
+    /// had before the key): a config built in code is the valley it always was, so a fixture posed on flat ground keeps
+    /// the ground it was written for, and the game, which loads `data/sim.config.json`, has hills (`heights.md §7`).
+    /// </remarks>
     [JsonPropertyName("height_levels")]
-    public int HeightLevels { get; init; } = 16;
+    public int HeightLevels { get; init; } = 1;
 
     /// <summary>The bowl: the ground rises a level for every this-many tiles from the nearest water (`heights.md §5`).</summary>
     [JsonPropertyName("height_bowl_tiles_per_level")]
@@ -3168,6 +3173,15 @@ public sealed record SimConfig
     /// <summary>A tile whose steepness is this or more is <see cref="World.Slope.Steep"/>.</summary>
     [JsonPropertyName("slope_steep_at")]
     public int SlopeSteepAt { get; init; } = 2;
+
+    /// <summary>What crossing a gentle tile costs, as a percent of the same tile on the flat (`heights.md §4`).</summary>
+    [JsonPropertyName("slope_gentle_cost_percent")]
+    public int SlopeGentleCostPercent { get; init; } = 120;
+
+    /// <summary>What crossing a steep tile costs, as a percent of the same tile on the flat: <b>about half again as long</b>
+    /// (Joe: <i>"not 100% slower"</i>). Worn paths multiply with it; a bridge deck ignores it.</summary>
+    [JsonPropertyName("slope_steep_cost_percent")]
+    public int SlopeSteepCostPercent { get; init; } = 150;
 
     /// <summary>
     /// Years between the village sharing out its work again from scratch.
@@ -5880,14 +5894,16 @@ public sealed record SimConfig
         // order. ⛔ `height_levels` 1 is allowed — the flat valley every re-taken golden is proven against.
         if (HeightLevels is < 1 or > 256 || HeightBowlTilesPerLevel < 1 || HeightBowlMaxLevels < 0
             || HeightHillLatticeTiles < 1 || HeightHillMaxLevels < 0 || HillScalePercent is < 0 or > 1000
-            || HeightRiverRampTiles < 1 || HeightFoundingFlatTiles < 0 || SlopeGentleAt < 1 || SlopeSteepAt <= SlopeGentleAt)
+            || HeightRiverRampTiles < 1 || HeightFoundingFlatTiles < 0 || SlopeGentleAt < 1 || SlopeSteepAt <= SlopeGentleAt
+            || SlopeGentleCostPercent < 100 || SlopeSteepCostPercent < SlopeGentleCostPercent || SlopeSteepCostPercent > 250)
         {
             throw new SimConfigException(
                 $"heights: height_levels must be 1-256, the bowl's tiles per level, the lattice and the river ramp at least 1, "
                 + $"the rest not negative, hill_scale_percent 0-1000, and 1 <= slope_gentle_at < slope_steep_at (got levels "
                 + $"{HeightLevels}, bowl {HeightBowlTilesPerLevel}/{HeightBowlMaxLevels}, lattice {HeightHillLatticeTiles}, "
                 + $"hills {HeightHillMaxLevels} at {HillScalePercent} %, ramp {HeightRiverRampTiles}, founding "
-                + $"{HeightFoundingFlatTiles}, slopes {SlopeGentleAt}/{SlopeSteepAt}).");
+                + $"{HeightFoundingFlatTiles}, slopes {SlopeGentleAt}/{SlopeSteepAt} at {SlopeGentleCostPercent}/{SlopeSteepCostPercent} %; "
+                + "the slope costs run 100 <= gentle <= steep <= 250).");
         }
 
         if (SeamAngleScatterPercent is < 0 or > 100 || SeamReachScatterPercent < 0

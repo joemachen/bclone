@@ -439,6 +439,12 @@
   "height_founding_flat_tiles": 8,
   "slope_gentle_at": 1,
   "slope_steep_at": 2,
+  // What a slope costs to cross, against the same tile on the flat: gentle
+  // 120 %, steep 150 % ("not 100% slower"). Worn paths multiply with it; a
+  // bridge deck ignores it. Through the one cost field, so the walk itself
+  // is slower, not only the route.
+  "slope_gentle_cost_percent": 120,
+  "slope_steep_cost_percent": 150,
 
   // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //

@@ -6,7 +6,8 @@ paths in the field), D383 (buildings as obstacles), D404 (fences), D473 (a stage
 parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D641 (Phase 5's exit gate),
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
 **Status:** 🔨 **BEING BUILT on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
-✅ (the layer, the stage, the slope classes: nothing reads them yet, so no golden moves); steps 2–4 not yet.**
+✅ (the layer, the stage, the slope classes); step 2 ✅ (the slope in the one cost field, the goldens re-taken); steps
+3–4 not yet.**
 Heights is not on Phase 5's exit gate (D641); building it goes past the gate, and that is his to say.
 
 ---
@@ -131,6 +132,12 @@ snow lying longer up high, terraforming. Each would be its own call.
   (`RoundTripTicks` and the rest) read `TravelCost`, so they follow on their own. But the generator's *"the
   real distance is twelve tiles, on every seed"* sentences (`SimConfig.cs` ~2905) assumed flat ground: each
   is re-read and re-measured, not assumed.
+- ⭐ **The code's default is flat; the shipped data has hills** (`height_levels`: 1 in `SimConfig`, 16 in
+  `data/sim.config.json`) — `river_course`'s precedent, a new generator key whose code default is the valley as it
+  was. Measured why: with the code default at 16, 21 tests failed, 14 of them posed villages that are about something
+  other than hills (the Phase 0 pinned clock, a √5 diagonal leg, lane-keeping, the hunters' lodge under a met limit)
+  and broke only because their year now played out on a slope. Flat by default, those keep the ground they were written
+  for; the shipped valley, the goldens taken on it and the game have hills.
 - **Every golden that hashes a walk moves, by design** (D734). Each is re-taken with the old value beside
   it, and **proven by ablation**: with Hilliness at a flat setting (`heights.levels: 1`) every old golden
   passes, which proves the change is the heights and nothing else.
@@ -196,6 +203,31 @@ the formula makes redundant; no guard can see it.
 
 **Measured on step 1** (6 seeds, the shipped 120 × 80 valley): steep tiles are about 2 % of a *Gentle* valley, 7.5 %
 of a *Rolling* one and 27 % of a *Hilly* one. Starting points for §8.
+
+**Step 2, built (D735).** `TravelCostField.ReadSlope` builds a slope table once from the map (null on a flat valley,
+which then routes on exactly the old code); `CostToEnter` is the wear price on the tile's slope, half up, a deck level;
+`ComposeTheRouteCost` slopes the whole table, so a hilly valley takes the ring every time; the ring is sized to the
+dearest step (`_largestStep`, 15). `IsUnworn(tile)` (grass's price before the slope) replaces the five
+`CostToEnter == BaseTileCost` grass tests. The heights are hashed, sparsely, so a flat valley mixes nothing.
+- **Goldens re-taken (5), the old values beside them:** `PhaseFiveGoldenTests`' two (2488598668680717856 →
+  3617843879071782529; before-anybody-got-better 7275266205845974493 → 11978217067257029817 — ⚠️ first read as unmoved,
+  because the test stops at its first failed assert), `SkillTests`' shipped fifty years (3174496459823721064 →
+  2791566434779995178), `StockLimitTests`' shipped fifty years (1984555868935464164 → 17224396567075353750), and
+  `MapGenerationTests.DrawOrderIsTheContract`'s map hash moved only while the code default was 16 (it is flat by default
+  now, so it did not move). ⭐ **Proven by ablation:** with `height_levels` 1 in the shipped data, every one of the 21
+  tests that failed passes on its old value.
+- **One test re-read, not re-taken:** `AFinishedBridgeOpensTheFarBank` priced a square crossing at 10 a tile; the bank it
+  sets off from is gentle now (12), so it prices that tile on its own slope (52 for 50).
+- **One bar moved at its measured price, Joe's to disagree:** `TheShippedVillageSurvivesBeingAskedToBuild`. Five
+  valleys, unattended for a century: flat, marked 106 / nothing marked 101; hilly, 94 / 98. Hills cost 3 at the peak with
+  nothing marked and 12 with four buildings marked, nearly all one valley (seed 12345 marked, 33 → 22). Starving is the
+  harness's either way (176 / 179 flat, 166 / 180 hilly). Held at −4 from −3.
+- **Step 2's red-check: 8 mutants, 7 red, one zero kept.** Grass tested by cost again (guard 8 and the goldens); the ring
+  at 10 (12 tests, the walk across steep and the bridge among them; first written as an unused field, which the
+  analyzers refused); the routes unsloped (guard 6 and the bridge); a deck given the slope (⚠️ only the Phase 5 golden
+  sees it); the heights unhashed (the goldens); the world never reading the slope (guards 7–8); rounding down (guard 5).
+  ⚠️ **The zero, kept:** the cart's slow-on-grass rule on the last fraction of a tile before its target
+  (`BehaviorSystem`'s first site) tested by cost again. `WalkedOver` is guarded; that one line is not.
 
 ## 11. Definition of Done
 
