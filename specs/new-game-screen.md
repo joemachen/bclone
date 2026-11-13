@@ -47,7 +47,7 @@ place played again.* The screen is where that becomes something the player does.
   0–100 %** — past the measured line (§7) on purpose: a bare or a solid valley is a hard setting he
   offers knowingly. **The diagonals' cost is accepted** (§7), and **the preview's redraw speed is
   fine** (§3). The button reads **Found a new village**.
-- ⏸️ **Hills, height, slope, mesas, buttes, promontories — after the whole shell** (his call). The
+- ⏸️ **Hills, height, slope, mesas, buttes, promontories — after the whole shell** (his call). *(Height and slope ✍️ specced, not built: `specs/heights.md`, D735.)* The
   sim has no height; it is a new layer of the world whose first question is what height *does*
   (walk cost in the one cost field? building and farming on a slope? the view's shading?). Its own
   spec, its own stage id, and then one more row on this screen.
@@ -303,7 +303,7 @@ ignored **1**, the scale row ignored **1**.
 
 ## 10. Out of scope, on purpose
 
-- **Hills and height** — after the shell (Joe, D477), a stage and a row of their own.
+- **Hills and height** — after the shell (Joe, D477), a stage and a row of their own. *(✍️ Specced, not built: `specs/heights.md`, D735 — the row is *Hilliness — Gentle / Rolling / Hilly*, default *Rolling*.)*
 - **A second archetype** — the Valley row shows one.
 - **Remembering the last settings** — ✅ done by *settings persistence* (D504–D505,
   `settings-persistence.md §4`): the screen opens on the rows of the valley last founded, each through

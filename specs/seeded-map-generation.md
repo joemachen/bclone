@@ -242,6 +242,7 @@ the new-game screen → settings persistence → save/load → title and pause. 
   | 3 | Stone seams | x, y jitter per drawn seam; its seed keys the hashed seams |
   | 4 | Iron seams | the same, for iron |
   | 5 | Woodland | x, y per clump |
+  | *(6)* | *Heights — ✍️ specced, not built (`heights.md §5`, D735)* | *its lattice's noise* |
 
   ⛔ **Soil is not a stage.** Ground quality is removed (D395, built as D470); the
   soil draw, its array, its regions, the founders' cap and its three config keys go with this.
