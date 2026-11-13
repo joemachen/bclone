@@ -649,6 +649,7 @@ public partial class Main
             Warn(PlacementVerdict.Yes(verdict.Reason));
         }
 
+        _buildQueueAsked++;
         RefreshCards(world);
         RefreshInspector(world);
     }
