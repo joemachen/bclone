@@ -556,6 +556,7 @@ public partial class Main : Control
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
+        GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
@@ -3244,6 +3245,7 @@ public partial class Main : Control
         // when the quota is computed is a behaviour change, not housekeeping.
 
         RefreshRoster(world);
+        RefreshBuildQueue(world);
         RefreshInspector(world);
         AppendNewLogLines();
 
@@ -4107,6 +4109,7 @@ public partial class Main : Control
         BuildRosterPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
+        BuildTheBuildQueuePanel();
         BuildTheTreePanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
@@ -5143,6 +5146,7 @@ public partial class Main : Control
         if (site?.Construction is not null)
         {
             _loop.World.MoveInBuildQueue(site, places);
+            _buildQueueAsked++;
             RefreshInspector(_loop.World);
         }
     }
@@ -8299,6 +8303,13 @@ public partial class Main : Control
             wrong.Add("Stock limits should start hidden and unticked");
         }
 
+        // D730 (Joe: *"this panel should be off by default in the settings"*).
+        bool queueStartsHidden = _windows.Exists(w => w.Panel == _buildQueuePanel && !w.Wanted && !w.Panel.Visible);
+        if (!queueStartsHidden)
+        {
+            wrong.Add("Build queue should start hidden and unticked");
+        }
+
         // B1 (Joe, 2026-10-04): the Professions window is shown AND unfolded at the founding.
         if (!_professionsPanel.Visible || !_professionsBody.Visible)
         {
@@ -8312,7 +8323,7 @@ public partial class Main : Control
         }
 
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
