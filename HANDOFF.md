@@ -1,7 +1,7 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — `main` = THE NOMADS' MOMENT AT THE SLOW-DOWN, MERGED AT JOE'S WORD (D733, *"Merge"*), NOT PUSHED (D732). BEFORE IT, THE BUILD QUEUE PANEL, OFF BY DEFAULT, MERGED AT JOE'S WORD (D731, *"Merge"*), NOT PUSHED (D730). BEFORE IT, PLANTING WAITS FOR SPRING, MERGED AT JOE'S WORD (D729, *"merge"*), PUSHED AT HIS WORD (*"Push and start it"*): A FORESTER PLANTS NOTHING IN WINTER (D728). BEFORE IT, THE FREE-BUILDING FIX MERGED AT HIS WORD (D727, *"approved"*): HIS *"2d map only"* RECORDED (B2/B3 ANSWERED, NO 3D FRONT END) AND A FREE BUILDING ON WOODED GROUND DRAWN. PUSHED AT HIS WORD (*"Push and start it"*; origin agrees). NEXT, SYSTEMS: THE ART LANE'S LAST ASK, AT JOE'S WORD, ASKED FIRST — REAL HEIGHTS (WHETHER AND WHAT FOR).**
 
 > **🔀 THE NOMADS' MOMENT AT THE SLOW-DOWN MERGED INTO `main` AT JOE'S WORD (D733, 2026-11-12: *"Merge"*) —
-> `slice/nomads-moment` deleted; NOT PUSHED (his word; `main` six commits ahead of origin).** Main had not moved since the
+> `slice/nomads-moment` deleted; NOT PUSHED (his word; `main` seven commits ahead of origin, this merge with them).** Main had not moved since the
 > slice was cut, so the merge was clean and the code is the branch's byte for byte: D732's four checks stand. **Next,
 > systems, at his word, asked first:** real heights (whether and what for).
 >
