@@ -5,7 +5,8 @@ calls 1–4). Neighbours: D2 (integer costs), D15/§2.6 (one shared cost field),
 paths in the field), D383 (buildings as obstacles), D404 (fences), D473 (a stage per stream), D477 (height
 parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D641 (Phase 5's exit gate),
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
-**Status:** ✍️ **SPECCED (D735, 2026-11-12), on `slice/heights` — not built. Built at Joe's word.**
+**Status:** 🔨 **BEING BUILT on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
+✅ (the layer, the stage, the slope classes: nothing reads them yet, so no golden moves); steps 2–4 not yet.**
 Heights is not on Phase 5's exit gate (D641); building it goes past the gate, and that is his to say.
 
 ---
@@ -183,6 +184,18 @@ and the table above is rewritten with the measured one.
 10. An old save with no height layer loads flat and plays as it did (its own hash unchanged).
 11. The probe: the Hilliness row on the new-game screen (three choices, default *Rolling*, founds the
     valley it says); *What's here* names a steep tile; `bar height` stays 151.
+
+**Step 1's red-check (D326): 8 mutants, 7 red, one equivalent zero kept.** The bank rule off (guard 3); the
+founding ring skipped (guard 3; first written as a deleted call, which the analyzers refused to build); the stage's seed
+pinned (guard 1 — ⚠️ a zero at first: two seeds still differed by their rivers and then by their founding rings, so the
+guard now also compares two valleys with neither); diagonals counted (guard 4); the up-neighbour dropped (guard 4 — ⚠️ a
+zero at first: the posed map's 8 came from below as well, so the corner below is 1 now); the Hilliness scale ignored
+(`HillierValleysAreSteeper`); the class threshold off by one (guard 4). ⚠️ **The zero, kept:** water given the hills'
+formula instead of skipped. The river ramp already fades a hill to nothing at distance 0, so the skip is a work-saver
+the formula makes redundant; no guard can see it.
+
+**Measured on step 1** (6 seeds, the shipped 120 × 80 valley): steep tiles are about 2 % of a *Gentle* valley, 7.5 %
+of a *Rolling* one and 27 % of a *Hilly* one. Starting points for §8.
 
 ## 11. Definition of Done
 

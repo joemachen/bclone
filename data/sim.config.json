@@ -419,6 +419,27 @@
   // too - see SimConfig; a json list here would replace them wholesale.
   "river_course": "we",
 
+  // HEIGHTS (D735, specs/heights.md - Joe: "Uphill is slower", then "Any
+  // slope and as you recommend"). A level per tile from the Heights stage:
+  // a bowl rising a level every 8 tiles from the water to a rim of 4, plus
+  // hills drawn on a lattice every 10 tiles (0-10 levels at 100 %), faded to
+  // nothing over 6 tiles from the water. hill_scale_percent is the new-game
+  // screen's Hilliness row: Gentle 50, Rolling 100, Hilly 200. The founding
+  // ring (8 tiles each way) is flat or gentle. height_levels 1 is a flat
+  // valley. A tile's steepness - its largest step to a four-neighbour - is
+  // gentle at 1, steep at 2 or more. Starting points, measured before
+  // they are final (heights.md section 8).
+  "height_levels": 16,
+  "height_bowl_tiles_per_level": 8,
+  "height_bowl_max_levels": 4,
+  "height_hill_lattice_tiles": 10,
+  "height_hill_max_levels": 10,
+  "hill_scale_percent": 100,
+  "height_river_ramp_tiles": 6,
+  "height_founding_flat_tiles": 8,
+  "slope_gentle_at": 1,
+  "slope_steep_at": 2,
+
   // RETIRED: forage_site_capacity and forager_catchment_tiles.
   //
   // The first was how many hands fit at one berry patch, and there are
