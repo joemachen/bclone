@@ -375,7 +375,9 @@ public sealed class SkillTests
     // and only the two tag bytes unmixed: the earlier `LearnedByDoing` sets `ShownTheTechTree` years before the workshop
     // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
     // 8538422907031301040 (shipped).
-    [InlineData(true, 12313259098049656473UL)]
+    // RE-TAKEN (D728), THE SHIPPED ONE — a forester plants nothing in winter (`forests-and-gathering.md §10`). ⭐ PROVEN BY
+    // ABLATION: with `SeasonRules.IsPlanting` true in every season the old value passes; the fixture's hash did not move. Was 12313259098049656473 (shipped).
+    [InlineData(true, 3174496459823721064UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

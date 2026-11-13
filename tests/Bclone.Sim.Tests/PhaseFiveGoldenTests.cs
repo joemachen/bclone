@@ -60,11 +60,16 @@ public sealed class PhaseFiveGoldenTests
     // RE-TAKEN (D711), BOTH — hay starts at a limit of 2,000 (Joe, 2026-11-07: "Hay at 2,000"); a set limit is hashed. ⭐ PROVEN NOT
     // TO PLAY DIFFERENTLY: a probe over the same twenty years read at most 498 hay held and 5 head, so the 2,000 row never binds.
     // Was 4787056045438129767.
-    private const ulong PhaseFiveGoldenHash = 12846455207324797399UL;
+    // RE-TAKEN (D728), BOTH — a forester plants nothing in winter (Joe, 2026-11-11: "should a forester plant trees in the
+    // winter? seems weird"). This village's foresters plant, so its winters play differently. ⭐ PROVEN BY ABLATION: with
+    // `SeasonRules.IsPlanting` true in every season (which switches the door, the tile-picker, the arrival, the seats and the
+    // notes off at once) both old constants pass. Was 12846455207324797399.
+    private const ulong PhaseFiveGoldenHash = 2488598668680717856UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
     // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 14087957849486892753UL;
+    // Was 14087957849486892753 before D728 (planting waits for spring, as above).
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 7275266205845974493UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);
