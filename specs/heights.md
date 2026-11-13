@@ -7,7 +7,8 @@ parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D6
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
 **Status:** 🔨 **BEING BUILT on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
 ✅ (the layer, the stage, the slope classes); step 2 ✅ (the slope in the one cost field, the goldens re-taken); step 3 ✅
-(saves, the Hilliness row, *What's here*, *climbing*, the wash); step 4 (the measurement, then Joe plays) not yet.**
+(saves, the Hilliness row, *What's here*, *climbing*, the wash); step 4 ✅ measured (§8.1) — the numbers stand.
+⏸️ UNPLAYED, UNMERGED: Joe plays a Rolling valley and a Hilly one (§11), then merges at his word.**
 Heights is not on Phase 5's exit gate (D641); building it goes past the gate, and that is his to say.
 
 ---
@@ -161,6 +162,43 @@ typed into `data/`:
 
 If ×1.5 makes *Rolling* noticeably harder than flat on his saves, the number comes down before it ships,
 and the table above is rewritten with the measured one.
+
+### 8.1 What it measured (D736, 2026-11-13) — the numbers stand
+
+**Joe's villages, copies of his saves, twenty years, flat against hilly.** A save from before heights loads flat, so the
+hilly arm gives each copy its hills from its own river, founding and seed first (the Heights stage's own code). Of the
+twelve copies in the last measurement's folder, ten are foundings or dead valleys the unattended harness freezes either
+way (D447: the harness is not a player), so the six established copies were run too, on *Rolling* and on *Hilly*:
+
+| Village (alive at load) | Flat: alive at the end, walking | *Rolling* | *Hilly* |
+|---|---|---|---|
+| Hollowmere (70) | 78, 34.6 % | 74, 37.5 % | 70, 39.2 % |
+| Oakhaven (24) | 55, 22.5 % | 56, 23.8 % | 53, 24.8 % |
+| Stonebridge (18) | 18, 39.1 % (22 starved) | 19, 39.2 % (22) | 21, 39.1 % (17) |
+| Willowdale, elder-yarrow (16) | 40, 31.7 % | 43, 31.3 % | 37, 32.4 % |
+| Willowdale, hazel-kestrel (12) | 25, 28.5 % | 24, 29.7 % | 24, 30.2 % |
+| **Five together** | **216** | **216** | **205 (−5 %)** |
+
+*Walking* is the share of living villager-ticks spent on a leg. Logs held moved by at most 2 % either way; firewood by
+−9 % at most (Hollowmere on *Rolling*), mostly within a few percent.
+
+**Fresh valleys, 86 seeds, twelve years unattended** (`ShippedConfig.Established()`):
+
+| Setting | Dead valleys | Alive at the end | Starved | Steep share of the land |
+|---|---|---|---|---|
+| flat | 1 | 1,074 | 10 | 0 % |
+| *Gentle* | 0 | 1,061 | 8 | 1.6 % |
+| *Rolling* | 0 | 1,076 | 10 | 6.8 % |
+| *Hilly* | 0 | 1,076 | 8 | 25 % |
+
+**The century survival guard** (five valleys, `ShippedConfigTests`): peaks −3 with nothing marked, −12 with four
+buildings marked, nearly all of it one valley — recorded at its price in step 2.
+
+**Verdict:** ×1.5 at the steepest does **not** make *Rolling* noticeably harder (§8's rule for bringing it down), so the
+numbers in §3–§5 are the shipped ones. *Hilly* costs about 5 % of an established village's people over twenty years and
+puts a quarter of the land on steep ground: a harder valley, by design, and Joe's to say if it is too hard. The field's
+cost (§8.1's first item) was not timed on its own; the suite's wall-clock, which runs the ring every time on every hilly
+valley, did not move (14m39–14m54 against 15m53–18m37 the slices before).
 
 ## 9. Saved, hashed, drawn, told
 

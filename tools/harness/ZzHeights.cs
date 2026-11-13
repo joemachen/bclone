@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Text;
 using System.Text.Json.Nodes;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
@@ -24,16 +26,19 @@ namespace Bclone.Sim.Tests;
 //    villagers' mean walking share (ticks on a leg against all living ticks), flat | hilly.
 //
 // 2. Unattended valleys founded fresh, flat / Gentle / Rolling / Hilly, over the seeds 1–86:
-//      [ZZ_YEARS=12] dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzHeights.FreshValleys"
+//      [ZZ_VALLEY_YEARS=12] dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzHeights.FreshValleys"
 //    One ZZV line a setting: valleys dead by the end, people alive summed, starved and cold summed, the steep share of the land.
+//    ⚠️ ON `ShippedConfig.Established()`, the shipped numbers with the founding buildings standing — `Load()` alone founds a
+//    bare camp that freezes to the last soul in its first winter on every seed, flat or hilly (the first run's 86 of 86).
+// ⚠️ A save is gzip (`SaveFile.Write`): read it through a GZipStream, not as text (the first run's `0x1F`).
 public sealed class ZzHeights
 {
     private readonly ITestOutputHelper _o;
 
     public ZzHeights(ITestOutputHelper o) => _o = o;
 
-    private static int Years(int fallback) =>
-        int.TryParse(Environment.GetEnvironmentVariable("ZZ_YEARS"), out int y) ? y : fallback;
+    private static int Years(string key, int fallback) =>
+        int.TryParse(Environment.GetEnvironmentVariable(key), out int y) ? y : fallback;
 
     public static IEnumerable<object[]> Saves() =>
         Directory.GetFiles(Environment.GetEnvironmentVariable("ZZ_SAVES")!, "*.save").Select(p => new object[] { p });
@@ -42,7 +47,7 @@ public sealed class ZzHeights
     [MemberData(nameof(Saves))]
     public void OnHisSaves(string path)
     {
-        int years = Years(20);
+        int years = Years("ZZ_YEARS", 20);
         string flat = Play(Open(path), years);
         string hillyCopy = WithHills(path);
         string hilly = Play(Open(hillyCopy), years);
@@ -62,11 +67,11 @@ public sealed class ZzHeights
     [MemberData(nameof(Settings))]
     public void FreshValleys(string name, int levels, int hills)
     {
-        int years = Years(12);
+        int years = Years("ZZ_VALLEY_YEARS", 12);
         var results = new (bool Dead, int Alive, int Starved, int Cold, int Steep)[86];
         Parallel.For(0, results.Length, i =>
         {
-            SimConfig config = ShippedConfig.Load() with { Seed = (ulong)(i + 1), HeightLevels = levels, HillScalePercent = hills };
+            SimConfig config = ShippedConfig.Established() with { Seed = (ulong)(i + 1), HeightLevels = levels, HillScalePercent = hills };
             SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
             loop.Step(years * config.TicksPerYear);
             SimWorld world = loop.World;
@@ -104,10 +109,18 @@ public sealed class ZzHeights
         var rng = new DeterministicRandom(MapGenerator.StageSeed(flat.Seed, MapGenerator.Stage.Heights));
         byte[] heights = MapGenerator.RaiseHeights(config, ref rng, map.Tiles.ToArray(), map.FoundingSite, map.Width, map.Height, map.MinX, map.MinY);
 
-        JsonObject document = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        string text;
+        using (FileStream file = File.OpenRead(path))
+        using (var zipped = new GZipStream(file, CompressionMode.Decompress))
+        using (var reader = new StreamReader(zipped, Encoding.UTF8))
+        {
+            text = reader.ReadToEnd();
+        }
+
+        JsonObject document = JsonNode.Parse(text)!.AsObject();
         document["world"]!["map"]!["heights"] = SaveWriter.Bytes(heights);
-        string copy = Path.Combine(Path.GetDirectoryName(path)!, "hilly-" + Path.GetFileName(path) + ".tmp");
-        File.WriteAllText(copy, SaveFile.TextOf(document));
+        string copy = Path.Combine(Path.GetTempPath(), "zzh-hilly-" + Path.GetFileName(path));
+        SaveFile.Write(copy, document);
         return copy;
     }
 
