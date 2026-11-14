@@ -558,6 +558,8 @@ public partial class Main : Control
         GD.Print(TheRosterSortsAsAsked());
         GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheHillsAreShadedAndSaid());
+        GD.Print(TheHomeCardSaysTheShopWalk());
+        GD.Print(AProfessionRowKeepsTheNumberItFinds());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
@@ -5476,12 +5478,16 @@ public partial class Main : Control
         var stepper = new HBoxContainer();
         stepper.AddThemeConstantOverride("separation", 4);
 
-        // ⚠️ SEEDED AT ZERO AND MEANT (D136). Every profession carries an explicit number from the
-        // first frame; a laborer is not an unemployed villager, so an unstaffed founding is four
+        // ⚠️ SEEDED AT ZERO AND MEANT (D136) — FOR A VILLAGE NOBODY HAS STAFFED YET. Every profession carries an
+        // explicit number from the first frame; a laborer is not an unemployed villager, so an unstaffed founding is four
         // people doing the work that is on the map.
-        int asked = 0;
+        // ⛔ BUT SEEDED FROM THE WORLD (D745): a loaded save already holds the player's numbers, and every load reloads
+        // the scene and builds this row again — seeded at a flat 0, the last line below wrote 0 over every one of them
+        // (Joe: *"reloading a save sets all professions to 0"*; his Hollowmere's 51 people idle at Year 66). A number the
+        // world already has is pushed back unchanged, which `SetJobLimit` treats as nothing happening.
+        int asked = _loop.World.JobLimits.For(kind) ?? 0;
 
-        Label amount = Body("0");
+        Label amount = Body($"{asked}");
         amount.CustomMinimumSize = new Vector2(18, 0);
         amount.HorizontalAlignment = HorizontalAlignment.Right;
 

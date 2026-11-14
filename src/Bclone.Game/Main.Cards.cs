@@ -1681,13 +1681,18 @@ public partial class Main
         {
             int share = foodTarget == 0 ? 100 : food * 100 / foodTarget;
             bool cold = fuel == 0 && !SeasonRules.IsGatherable(world.Clock.Season);
+
+            // ⭐ The shop the family walks to and how far (D744, `phase-5-exit-gate.md §4`) — it said "the market" whichever
+            // store they used, and never how far it was.
+            string? walk = world.SayTheShopWalk(home);
+            string shop = walk ?? "the market";
             Status(
                 card,
                 working: share > world.Config.RestockEmergencyPercent && !cold,
                 cold ? $"Cold — no firewood in the house. Larder at {share}%."
-                    : share <= world.Config.RestockEmergencyPercent ? $"Nearly out of food — larder at {share}%; somebody is going for more."
-                    : home.ToppingUpFood ? $"Fed — larder at {share}%, topping it up from the market."
-                    : $"Fed and warm — larder at {share}%; they go to the market at half.");
+                    : share <= world.Config.RestockEmergencyPercent ? $"Nearly out of food — larder at {share}%; somebody is going {(walk is null ? "for more" : $"to {walk}")}."
+                    : home.ToppingUpFood ? $"Fed — larder at {share}%, topping it up from {shop}."
+                    : $"Fed and warm — larder at {share}%; they shop at {shop}, when it falls to half.");
         }
 
         if (rebuilding is not null)
@@ -3600,7 +3605,8 @@ public partial class Main
 
         string longest = $"Being rebuilt as {TierWordOf(BuildingKind.Manor, world.BuildingsCatalog[BuildingKind.Manor]!)} — 12th in "
             + "the queue, 1,234 of 1,440 logs and 1,234 of 4,320 stone delivered, 31 % done.";
-        Status(card, working: true, $"Nearly out of food — larder at 12%; somebody is going for more. {longest}");
+        // The longest the household line can be since D744: the hungry sentence names the shop and calls the walk long.
+        Status(card, working: true, $"Nearly out of food — larder at 12%; somebody is going to Granary 12, 144 tiles away — a long walk. {longest}");
         ForceUpdateTransform();
         float rebuilding = card.Panel.GetCombinedMinimumSize().X;
         if (rebuilding > CardWidth + 1f)

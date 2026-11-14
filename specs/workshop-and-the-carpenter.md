@@ -21,8 +21,7 @@ value unchanged but four — the farm-and-clear pair, which fells 3,180 logs in 
 workshop (§4.1b), and the Phase 5 pair, for the overland neighbour's handcarts (§5; a hashed stock slot, D661's
 precedent) — each proved by switching its one cause off and re-pinned with it**; save format **10**. His answers (§11) stand as built: the workshop **learned by felling wood** — `workshop_unlock_logs`
 **1,500** (2,500 at D676, lowered after play at D682), his number, the quarry's shape, hashed as a learned flag (§4.1a); **no shipped `handcarts` limit**; **`MakeGood`
-now**; the carpenter **after Tailor**. Owner: Joe + Claude Code. **Next: Joe plays on (`.\run.bat`), merges at his word; then
-Slice H (`handcart.md`).**
+now**; the carpenter **after Tailor**. Owner: Joe + Claude Code. **Followed by Slice H (`handcart.md`), built, played and merged (D686–D690).** *(It read "Next: Joe plays on, merges at his word; then Slice H" until D744.)*
 
 > **Where this sits.** Logistics was measured (D668), Joe chose to change the game (D669) and picked two mechanics
 > (D670): *nearby* given a meaning, built as `market_detour_ticks` 4 (D671), and the handcart, thought through in

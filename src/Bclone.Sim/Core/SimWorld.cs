@@ -5842,9 +5842,21 @@ public sealed partial class SimWorld : IObstacles
 
         // ⚠️ Asked BEFORE the tile is painted and it does not read the zone, so the answer is
         // the same either side of the stroke — which is what makes it safe to show in advance.
-        int toWork = NearestForageDistance(tile);
         int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
 
+        // ⭐ BY THE WALK TO THE NEAREST SHOP (D744; D668 outcome 2): since D385 a household eats from a store, never from the
+        // forage, and that walk was a fifth of every adult's ticks in Joe's villages with the brush measuring the wrong one.
+        // Until the village has a shop, the forage is still the honest question.
+        if (NearestShopWalk(tile) is int toShop)
+        {
+            return toShop > budget
+                ? PlacementVerdict.Yes(
+                    $"That corner is {toShop} tiles from the nearest shop; the village budgets {budget}. " +
+                    "Families there will spend their days walking for food.")
+                : PlacementVerdict.Fine;
+        }
+
+        int toWork = NearestForageDistance(tile);
         return toWork > budget
             ? PlacementVerdict.Yes(
                 $"That corner is {toWork} tiles from the nearest food; the village budgets " +

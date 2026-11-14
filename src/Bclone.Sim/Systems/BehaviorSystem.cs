@@ -1621,9 +1621,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         int armfuls = ArmfulsFor(world, villager);
         if (household.ToppingUpFood)
         {
-            StoreBuilding? source = NearestShopHolding(
-                world, villager.Tile, ATripsWorth(config, foodWanted - atHome, armfuls),
-                (store, atLeast) => FoodItWillGiveUp(world, store) >= atLeast);
+            StoreBuilding? source = FoodShopFrom(world, villager.Tile, ATripsWorth(config, foodWanted - atHome, armfuls));
             if (source is not null)
             {
                 return source;
@@ -1654,7 +1652,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// What a fetch would carry — the shortfall, up to an armful (D372), or up to <c>cart_armfuls</c> of them with the
     /// household's handcart in hand (`handcart.md §5`, Slice H).
     /// </summary>
-    private static int ATripsWorth(SimConfig config, int shortfall, int armfuls)
+    internal static int ATripsWorth(SimConfig config, int shortfall, int armfuls)
     {
         int load = config.CarryCapacity * armfuls;
         return shortfall < load ? shortfall : load;
@@ -5000,6 +4998,13 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// errand never fired and the larders ran down in silence beside it (<see cref="FoodItWillGiveUp"/>).
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// ⭐ Where a household fetches food from, from <paramref name="from"/>, for a trip of <paramref name="aTripsWorth"/> —
+    /// the one rule the shopper walks by and the home card says (D744, `phase-5-exit-gate.md §4`), so the two never disagree.
+    /// </summary>
+    internal static StoreBuilding? FoodShopFrom(SimWorld world, GridPos from, int aTripsWorth) =>
+        NearestShopHolding(world, from, aTripsWorth, (store, atLeast) => FoodItWillGiveUp(world, store) >= atLeast);
+
     private static StoreBuilding? NearestShopHolding(
         SimWorld world, GridPos from, int aTripsWorth, Func<StoreBuilding, int, bool> holding)
     {

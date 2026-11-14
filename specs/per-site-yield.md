@@ -20,7 +20,8 @@ see the ground **and now read it in words**. **644 passing, 0 failing, 2 skipped
 four goldens unmoved by D180. Proved by `PerSiteYieldTests` and
 `FarmTests.AFarmsHarvestFallsOffWithDistanceFromItsStore`.
 
-> **🔨 A FOLLOW-ON SLICE IS IN PROGRESS ON `phase/3-skill-and-apprenticeship` — §4.2a and §4.3
+> **✅ (D744: this read *"🔨 a follow-on slice is in progress on `phase/3-skill-and-apprenticeship`"*; that branch is gone and
+> §4.2a and §4.3 stand as built, merged with Phase 3.) THE FOLLOW-ON SLICE — §4.2a and §4.3
 > (D194), which UNPARK THE FARM.** §4.2's sowing cap shipped as a **prediction**, and the ledger
 > says it is short by **one to two tiles at every distance** and leaves a distant farmhand idle
 > for **27–55% of the autumn it is supposedly too busy for**. §4.2a replaces the prediction with

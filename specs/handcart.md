@@ -9,7 +9,7 @@ larder), D372 (the shop walk), D510 (an older save is refused in words), D291 (t
 own commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 19 facts), red-checked and counted (§11: 36 mutants, 39
 reds, three zeros written down); every number measured on `ZzLogistics` before typed; no golden moved. The verdict against
 D668's measurement is `logistics.md §6`: Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49. Merged at his
-word; the marketer's and merchant's carts are the next slice (his call, 2026-11-05).** ✅ Piece 1 — the household's cart: owned,
+word; the marketer's and merchant's carts followed as §13 (D692–D694, merged D695).** ✅ Piece 1 — the household's cart: owned,
 fetched like a coat, walked home, parked, taken from the doorstep, hashed, saved (format 11), said (§3, §4, §9). ✅ Piece 2 —
 seen: the chip beside the home, the rectangle behind the pusher, the card's line, the founders' cart in the cart colour,
 two probe lines (§8). ✅ Piece 3 — what it buys: `cart_armfuls` 3, swept 2/3/4 on the harness and Joe's Hollowmere before typed

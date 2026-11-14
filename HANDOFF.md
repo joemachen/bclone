@@ -1,5 +1,39 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — NEXT, SYSTEMS: THE EXIT GATE ITSELF, AT JOE'S WORD (D743, *"go with phase 5 exit gate"*). `main` = THE GREEN GROUND (A67–A70) OVER REAL HEIGHTS (D742), PUSHED AT HIS WORD (A71, `origin/main` = 637ad86; the A71 and D743 docs commits after it unpushed). ALL FIVE OF THE ART LANE'S SYSTEMS ASKS BUILT, MERGED AND PUSHED (D725–D742). NO BRANCH OPEN BUT `art`, LEVEL WITH `main`.**
 
+> **⛳ WHERE THINGS ARE, 2026-11-14 (D748) — PHASE 5 IS CLOSED. `slice/phase5-gate` MERGED INTO `main` AT JOE'S WORD (*"Merge"*),
+> the branch deleted; NOT PUSHED (`origin/main` = 637ad86 — D743 and the merge are local).**
+> - **The four checks on the merged tree:** suite **2024 / 0 / 5 of 2029 in 17m02**; view build 0 warnings; probe 155 `[widths]` lines, 116 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `shop walk:` and `professions kept:` ✅, `done.` on the first run, no Godot left; goldens 418 → 418, none moved against 6a3d9ca.
+> - **Next, systems: Phase 6 (`DESIGN.md §4`) — its first piece is Joe's to choose.** Nothing claimed.
+> - **Art: idle, nothing claimed.** ⚠️ `art` is now behind `main` by the gate's merge; the art lane's next session runs
+>   `git merge main` into `art` first (the two-tracks rule). It touched `ValleyWatercolourLook.cs` (D746 — one line,
+>   `Current` held) and `VillageMap.Watercolour.cs` (`using`s), both of which the art lane also edits.
+>
+> *(D747's banner, as it stood before the merge:)*
+>
+> **⛳ WHERE THINGS ARE, 2026-11-14 (D747) — PHASE 5'S GATE HOLDS ON `slice/phase5-gate`: JOE WALKED THE CHECKLIST (*"All fine"*,
+> *"Top-up items all look good"*). UNMERGED — Phase 5 ends at the merge, at his word; then the four checks on the merged tree.**
+> - **Next for systems after the merge: Joe's call** — Phase 6 (`DESIGN.md §4`) has no first piece chosen.
+>
+> *(D744's banner, as it stood before the walk:)*
+>
+> **⛳ WHERE THINGS ARE, 2026-11-14 (D744) — PHASE 5'S EXIT GATE BUILT ON `slice/phase5-gate`, UNMERGED; WHAT IS LEFT IS JOE'S WALK.**
+> - **The gate (`specs/phase-5-exit-gate.md`):** item 1 ✅ — every Phase 5 piece has a verdict (§3), logistics' last piece built:
+>   **the shop walk said** — the home card names the store the family walks to and how far (*"they shop at Granary 1, 6 tiles
+>   away"*), and the housing brush warns by the walk to the nearest shop past the village's budget of 8 (D744). Item 2 ✅ (D648).
+>   Item 3 📝 **`specs/phase-5-qa-checklist.md` written — ⏸️ Joe walks it** (two runs: a new game, and his Hollowmere for house
+>   tiers' piece 5, its first play). Item 4 ✅ (nine false status lines made true, the inventory read off the code, five
+>   milestone rows, §6's *Current phase* line stale an eighth time and rewritten). Item 5: the four checks, and Joe's walk's logs
+>   scanned for `ERROR`.
+> - **Four checks on the slice:** **Four checks:** suite **2024 / 0 / 5 of 2029 in 17m24**; view build 0 warnings; probe 154 `[widths]` lines, 115 ✅, 0 ⛔, `shop walk:` ✅, bar **151**, tile centres ✅, new game ✅, `tech tree:` 15 cards at 160, `done.`, no Godot left (on the second run — the first died in the finalizer, the crash above); goldens 418 → 418, none moved.
+> - ✅ **The probe's finalizer crash FIXED (D746):** `ValleyWatercolourLook.Current` loaded once and held — 0 of 6 probe runs
+>   reached `done.` before, 8 of 8 after. *(D744 had it "not fixed", which was true that morning.)*
+> - ✅ **A loaded save keeps its professions (D745)** — the panel wrote 0 over them on every load (Joe's find on the walk).
+> - **Joe's walk:** he played `year-66.save` on to about Year 86 — its log 0 `ERROR`, 0 `WARN`. ⏸️ His checklist verdicts are still
+>   to come (*"walked"* with any ❌ lines).
+> - **Merge and push: Joe's word only.** `origin/main` = 637ad86; D743's docs commit is on `main`, unpushed.
+>
+> *(The banner as it stood at D743 follows.)*
+>
 > **⛳ WHERE THINGS ARE, 2026-11-14 (D743).** `main` = `art` + this docs commit; `origin/main` = 637ad86 (A71, *"Push main"*).
 > ⚠️ So D731, D733 and D742 below are **pushed**, though their lines still say *not pushed* (left as written; this line corrects them).
 > - **Systems, next: Phase 5's exit gate (D641, accepted as written), at Joe's word, *"go with phase 5 exit gate"*.** On its own
@@ -9434,6 +9468,50 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D747 FOUND — "ALL FINE" IS A VERDICT ON WHAT WAS LOOKED AT; THE LOG SAYS WHAT THAT WAS
+
+- **Read the walk's log before writing the walk down.** Joe's first *"All fine"* covered a late village carrying on; the
+  log held no line from either house-tier switch — the very thing the walk existed to play — and no new game past tick
+  0. Put to him in plain words, he did a ten-minute top-up and both switches narrated. **A switch that narrates is
+  checkable from the log; say which lines a walk did not reach, and let Joe decide whether that closes it.**
+
+## ⛔ THE TRAP D746 PAID FOR — A FRESH C# WRAPPER EVERY CALL IS GARBAGE THE FINALIZER RACES
+
+- **`GD.Load<T>` of a C# `Resource` returns the one cached resource but can hand back a wrapper the GC later finalizes;
+  called in a loop, every dropped wrapper is a finalizer job, and one disposed while the main thread loads the next
+  crashes .NET** — *"gchandle.is_released()"* on the finalizer's thread, *"Handle is not initialized"* in
+  `SwapGCHandleForType` on the main thread's `ResourceLoader.Load`. **The finding was in the log the whole time:** the
+  main-thread half of the stack only prints when the race lands inside a load; read every crash's full stack before
+  disposing things on a hunch (D739 and D744 released six `Image`s and moved nothing). **Hold a script-backed resource in
+  a static once loaded** — `NodeSpriteBands.Current` and `GrassLook.Approved` (the art lane's) have the same shape and
+  are candidates if it ever comes back.
+- **Count runs either side before calling a flaky fix** (D744's trap, kept): 0 of 6 before, 8 of 8 after.
+
+## ⛔ THE TRAP D745 PAID FOR — A VIEW THAT PUSHES ITS OWN DEFAULT ON BUILD OVERWRITES WHAT A LOAD JUST READ
+
+- **Every load reloads the scene, so every control is built AFTER the world is read — and a control that pushes its own
+  starting value into the sim on build erases the save.** The professions row was seeded at 0 (D136, right for a
+  founding) and called `SetJobLimit` at the end of building itself; the save held Joe's numbers the whole time and the
+  sim's round-trip guard (`EverySavedFieldComesBackAsItWas`) was green, because the bug was not in the sim. **Seed a
+  control from the world, never from a constant, if it writes back.** Grep for any other `Apply()` at the end of a
+  builder before trusting a settings-shaped control across a load.
+
+## ⛔ THE TRAPS D744 PAID FOR — A PROBE THAT READ ONLY HUNGRY CARDS, AND A FIX MEASURED ON TOO FEW RUNS
+
+- **A probe line that skips a case can pass on nothing but skips.** `shop walk:` read every home card but let a cold or
+  hungry one off the shop check; the founding world houses nobody, so the one family it posed was hungry, and the line
+  printed ✅ having compared nothing. It now counts the cards it actually *asked* and refuses a pass with none — and the
+  hungry sentence names the shop too, which was the better sentence anyway. **Count what a guard compared, not what it
+  visited.**
+- **A crash that comes three runs in four is not fixed by four green runs in a row — or by one.** D739 called the
+  finalizer crash *"very likely fixed"* on a handful of runs; D744 ran it with and without the disposals (3 of 4, 4 of 5):
+  no difference. A flaky failure needs the same number of runs either side of the change before it is called either way.
+- **A status line rots at every merge it does not move with** (D640's trap, met nine more times): seven of the nine false
+  lines said *"on `slice/x`, unmerged"* for branches D710 merged in one sweep. When a merge takes in several branches, grep
+  `specs/` for each branch's name in the same commit.
+- ⚠️ **Zero written down:** the fed lines' shop wording (*"they shop at …"*, *"topping it up from …"*) is read by nothing —
+  the probe's posed family is always hungry and the card is view-only. A mutant there scores 0. The hungry line's scores 1.
+
 ## ⛔ THE TRAPS D737 PAID FOR — A GUARD THAT LOOKED AT THE BANK AND NOT BEHIND IT, AND A LOOK NO PROBE CAN JUDGE
 
 - **A guard on a boundary must look past it.** D736's *"a bank is at most a level above the water"* was true, and
@@ -9441,7 +9519,9 @@ Read `git status` after staging, every time.
   stood for is *"no cliff near the river"*; `TheHillsHaveNoCreases` asks that of every tile now.
 - **A Godot object the code made and dropped is freed on the finalizer's thread, and that is where A45 lives** (D739).
   Release every temporary `Image` (`GetImage()`, `Image.CreateFromData`) with `using`; a big allocation nearby made
-  the crash 3 runs in 4 until they were.
+  the crash 3 runs in 4 until they were. ⚠️ **(D744: not so — measured again, 3 of 4 without this slice's six disposals and
+  4 of 5 with them, dying near `deposits:` / `scenery:`. Keep the `using`s, they are right; the crash's cause is elsewhere.)**
+  ✅ **(D746: it was — a C# resource re-loaded every call, `ValleyWatercolourLook.Current`; held once, 8 of 8 clean.)**
 - **A look is Joe's, and he answers it best beside the one he liked** (D740). Four tries at the hills' look in one
   day; the one that landed was his own valley, rendered in the style of his own favourite screenshot, before any
   code. *Render from his saves, put his favourite beside it, then build.* Contours are out — he hated them.
@@ -10101,7 +10181,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below); not started. The systems lane's next slice, off `main`; its first commit marks this line *🔨 being built on `<branch>`*.
+- ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below). **🔨 being built on `slice/phase5-gate` (2026-11-14).** ✅ **Built (D744): items 1, 2 and 4 hold; ⏸️ Joe's to do — walk `specs/phase-5-qa-checklist.md` (`.\run.bat`), say *"walked"* with any ❌ lines; Claude scans his logs for `ERROR`; then merge at his word.** ✅ **Walked (D747): *"All fine"*, *"Top-up items all look good"*; logs 0 `ERROR`. ⏸️ Only the merge is left — his word.** ⛳ **✅ MERGED (D748, *"Merge"*) — Phase 5 closed; not pushed.**
 - ✅ **B2/B3 ANSWERED (D725, Joe, 2026-11-11: *"2d map only."*) — the 2D drawn map is the shipped look; there is no 3D front end.** B2 (D68's *Foundation* or a 2D drawn map) is a 2D drawn map; B3 (Phases 7–8's `src/Bclone.Game3D`) is withdrawn, and §4's Phase 7 is rewritten to *mods, and release*. So the buildings the art lane paints next are the game's art. ⚠️ **For the art lane's next commit:** `art-inventory.md §1`'s B2 and B3 rows still read ⏸️ / *Roadmap* — its file, not the systems lane's. ⚠️ **For the heights line below:** with no 3D view, real heights show only as shading or relief on the flat map, and in what they do in the sim — Joe is asked whether he still wants them, and for what, before a spec.
 - ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51); ⭐ APPROVED (A52, *"everything about saplings looks great"*); MERGED into `main` (A55, `630f296`) and PUSHED (A56, `origin/main` = `7c46c6e`). Was for his eyes: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE
   INKED DISCS. NOTHING PAINTED OR BUILT. Four calls his (§6), each with a recommendation:** (1) trees drawn at an angle with trunks
