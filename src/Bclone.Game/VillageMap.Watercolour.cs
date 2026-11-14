@@ -684,7 +684,7 @@ public partial class VillageMap
 
         // The atlas as imported (HANDOFF art trap 2): its size, lossless (RGBA8 — a VRAM import would be another format), mipmapped.
         Texture2D? atlas = ResourceLoader.Exists(TreeSpritesPath) ? GD.Load<Texture2D>(TreeSpritesPath) : null;
-        Image? image = atlas?.GetImage();
+        using Image? image = atlas?.GetImage();
         // ⛔ Named from the spec, not the code (trap 17): 256 px cells, 4 across, 5 down — two rows leafy, then a row each of
         // conifer, birch and willow (A36) — and a sixth row of sixteen young trees in 128 px cells (A51, §10): 1024 × 1536.
         if (atlas is null || image is null || atlas.GetWidth() != 1024 || atlas.GetHeight() != 1536
@@ -919,7 +919,7 @@ public partial class VillageMap
         foreach ((string path, TreeSet set) in new[] { ("res://textures/trees/tree_sprites_autumn.png", TreeSet.Autumn), ("res://textures/trees/tree_sprites_winter.png", TreeSet.Winter) })
         {
             Texture2D? seasonal = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
-            Image? pixels = seasonal?.GetImage();
+            using Image? pixels = seasonal?.GetImage();
             if (seasonal is null || pixels is null || seasonal.GetWidth() != 1024 || seasonal.GetHeight() != 1536
                 || pixels.GetFormat() != Image.Format.Rgba8 || !pixels.HasMipmaps())
             {
@@ -1575,7 +1575,7 @@ public partial class VillageMap
         foreach (string path in new[] { "res://textures/nodes/node_sprites.png", "res://textures/nodes/node_sprites_winter.png" })
         {
             Texture2D? texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
-            Image? pixels = texture?.GetImage();
+            using Image? pixels = texture?.GetImage();
             if (texture is null || pixels is null || texture.GetWidth() != 1024 || texture.GetHeight() != 512
                 || pixels.GetFormat() != Image.Format.Rgba8 || !pixels.HasMipmaps())
             {
@@ -1772,7 +1772,7 @@ public partial class VillageMap
         foreach ((byte crop, string stage, string path) in paintings)
         {
             CanvasTexture? held = TheCropPainting(crop, stage);
-            Image? pixels = (held?.DiffuseTexture as Texture2D)?.GetImage();
+            using Image? pixels = (held?.DiffuseTexture as Texture2D)?.GetImage();
             if (held?.DiffuseTexture?.ResourcePath != path || pixels is null || pixels.GetWidth() != 1024 || pixels.GetHeight() != 1024
                 || !pixels.HasMipmaps() || held.TextureRepeat != TextureRepeatEnum.Enabled || held.TextureFilter != TextureFilterEnum.LinearWithMipmaps)
             {

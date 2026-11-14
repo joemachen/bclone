@@ -132,6 +132,7 @@ that the bank guard said was fine. Built now:
 - the founding ring is a **circle**, flattened before the smoothing and wider by the smoothing's reach, so the ring
   itself stays flat or gentle;
 - steepness is counted **land to land** (§3), so a riverbank is not steep and a riverside path not slow;
+- ⭐ **drawn as contour lines and a faint shade (D739)** — Joe, on the shade alone: *"it just looks like dark spots"*; shown his own valley three ways, he picked *"C: contours + shade"*. Thin ink lines every 16 levels, bolder every 64, nothing over the river; the shade faint (0.03 a level), its lit side boosted three times so it shows on parchment; 16 texels a tile so a line stays thin; baked once per valley (~610 ms, at the valley's first draw);
 - the view (`VillageMap.Relief.cs`) softens the wash across a tile and draws water level with its banks, so neither the
   whole-level steps nor the drop to the water show as lines; the wash is **0.06** a level (a level is now 1/16 of the old) — ⚠️ first set at 0.025 from a preview on bare parchment, and Joe saw no hills at all on Hilly under the watercolour and 55 % woods (D738).
 - Each step was chosen by measuring the spread of steepness on eight seeds (the targets the first build had: about 2 %,
