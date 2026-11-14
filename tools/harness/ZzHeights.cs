@@ -58,9 +58,9 @@ public sealed class ZzHeights
     public static IEnumerable<object[]> Settings() => new[]
     {
         new object[] { "flat", 1, 100 },
-        new object[] { "gentle", 16, 50 },
-        new object[] { "rolling", 16, 100 },
-        new object[] { "hilly", 16, 200 },
+        new object[] { "gentle", 256, 50 },
+        new object[] { "rolling", 256, 100 },
+        new object[] { "hilly", 256, 200 },
     };
 
     [Theory]
@@ -103,7 +103,8 @@ public sealed class ZzHeights
         GeneratedMap map = flat.Map;
         SimConfig config = flat.Config with
         {
-            HeightLevels = 16,
+            // ⚠️ The data's 256 since D736 — at 16 the hills topped out at level 15 and measured flat (the first D736 run).
+            HeightLevels = 256,
             HillScalePercent = int.TryParse(Environment.GetEnvironmentVariable("ZZ_HILLS"), out int h) ? h : 100,
         };
         var rng = new DeterministicRandom(MapGenerator.StageSeed(flat.Seed, MapGenerator.Stage.Heights));

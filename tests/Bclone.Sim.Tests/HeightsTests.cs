@@ -59,7 +59,7 @@ public sealed class HeightsTests
     }
 
     [Fact]
-    public void WaterIsLevelZeroItsBanksAtMostOneAndTheFoundingRingFlatOrGentle()
+    public void WaterIsLevelZeroTheRiverRunsAlongTheBottomAndTheFoundingRingIsFlatOrGentle()
     {
         foreach (string hills in new[] { "50", "100", "200" })
         {
@@ -68,6 +68,8 @@ public sealed class HeightsTests
             {
                 GeneratedMap map = MapGenerator.Generate(config, seed);
                 int ring = config.HeightFoundingFlatTiles;
+                var banks = new List<int>();
+                var land = new List<int>();
                 for (int y = map.MinY; y < map.MinY + map.Height; y++)
                 {
                     for (int x = map.MinX; x < map.MinX + map.Width; x++)
@@ -78,20 +80,38 @@ public sealed class HeightsTests
                         {
                             Assert.True(h == 0, $"hills {hills}, seed {seed}: water at {tile} is level {h}");
                         }
-                        else if (BesideWater(map, tile))
+                        else
                         {
-                            Assert.True(h <= 1, $"hills {hills}, seed {seed}: the bank at {tile} is level {h}");
+                            land.Add(h);
+                            if (BesideWater(map, tile))
+                            {
+                                banks.Add(h);
+                            }
                         }
 
-                        int fromFounding = Math.Max(Math.Abs(x - map.FoundingSite.X), Math.Abs(y - map.FoundingSite.Y));
-                        if (fromFounding <= ring)
+                        // The ring is a circle (D736: a square read as a hard-edged plateau).
+                        int dx = x - map.FoundingSite.X;
+                        int dy = y - map.FoundingSite.Y;
+                        int fromFounding = (dx * dx) + (dy * dy);
+                        if (fromFounding <= ring * ring)
                         {
-                            Assert.True(map.SteepnessAt(tile) <= 1,
-                                $"hills {hills}, seed {seed}: {tile}, {fromFounding} from the founding, has steepness {map.SteepnessAt(tile)}");
+                            Assert.True(map.SteepnessAt(tile) < config.SlopeSteepAt,
+                                $"hills {hills}, seed {seed}: {tile}, √{fromFounding} from the founding, has steepness {map.SteepnessAt(tile)}");
                         }
 
                         Assert.InRange(h, 0, config.HeightLevels - 1);
                     }
+                }
+
+                // ⭐ THE RIVER RUNS ALONG THE BOTTOM (D736 — in 256 small levels a bank is no longer "at most 1"; the rule
+                // it stood for is this): nineteen banks in twenty sit below the valley's middle height.
+                banks.Sort();
+                land.Sort();
+                if (banks.Count > 0)
+                {
+                    int lowBanks = banks[banks.Count * 95 / 100];
+                    int middle = land[land.Count / 2];
+                    Assert.True(lowBanks < middle, $"hills {hills}, seed {seed}: the banks' 95th percentile {lowBanks} is not below the land's middle {middle}");
                 }
             }
         }
@@ -108,7 +128,7 @@ public sealed class HeightsTests
             foreach (ulong seed in Seeds)
             {
                 GeneratedMap map = MapGenerator.Generate(Shipped with { HillScalePercent = percent }, seed);
-                count += map.Tiles.Select((_, i) => i).Count(i => map.SteepnessAtIndex(i) >= 2);
+                count += map.Tiles.Select((_, i) => i).Count(i => map.SteepnessAtIndex(i) >= Shipped.SlopeSteepAt);
             }
 
             steep.Add(count);
@@ -117,6 +137,26 @@ public sealed class HeightsTests
         _output.WriteLine($"steep tiles over {Seeds.Length} seeds: gentle {steep[0]}, rolling {steep[1]}, hilly {steep[2]}");
         Assert.True(steep[0] <= steep[1] && steep[1] < steep[2], string.Join(" / ", steep));
         Assert.True(steep[2] > 0);
+    }
+
+    [Fact]
+    public void TheHillsHaveNoCreases()
+    {
+        // ⭐ D736 (Joe, playing Hilly: "things look a little weird"): straight lines between lattice points made flat-faced
+        // panels with creases at their edges, and the hill behind a clamped bank was a cliff. Smoothed, even a Hilly valley
+        // climbs no more than 20 of its 256 levels from one tile to the next on land, anywhere (measured 18).
+        int most = 0;
+        foreach (ulong seed in Seeds)
+        {
+            GeneratedMap map = MapGenerator.Generate(Shipped with { HillScalePercent = 200 }, seed);
+            for (int i = 0; i < map.Heights.Count; i++)
+            {
+                most = Math.Max(most, map.SteepnessAtIndex(i));
+            }
+        }
+
+        _output.WriteLine($"the steepest step in {Seeds.Length} Hilly valleys: {most} levels");
+        Assert.InRange(most, Shipped.SlopeSteepAt, 20);
     }
 
     [Theory]

@@ -419,26 +419,28 @@
   // too - see SimConfig; a json list here would replace them wholesale.
   "river_course": "we",
 
-  // HEIGHTS (D735, specs/heights.md - Joe: "Uphill is slower", then "Any
-  // slope and as you recommend"). A level per tile from the Heights stage:
-  // a bowl rising a level every 8 tiles from the water to a rim of 4, plus
-  // hills drawn on a lattice every 10 tiles (0-10 levels at 100 %), faded to
-  // nothing over 6 tiles from the water. hill_scale_percent is the new-game
-  // screen's Hilliness row: Gentle 50, Rolling 100, Hilly 200. The founding
-  // ring (8 tiles each way) is flat or gentle. height_levels 1 is a flat
-  // valley. A tile's steepness - its largest step to a four-neighbour - is
-  // gentle at 1, steep at 2 or more. Starting points, measured before
-  // they are final (heights.md section 8).
-  "height_levels": 16,
-  "height_bowl_tiles_per_level": 8,
-  "height_bowl_max_levels": 4,
+  // HEIGHTS (D735, D736, specs/heights.md - Joe: "Uphill is slower", then
+  // "Any slope and as you recommend"; smoothed after "things look a little
+  // weird" on Hilly). A height per tile from the Heights stage, in 256 small
+  // levels: a bowl rising 2 a tile from the water to a rim of 64, plus hills
+  // drawn on a lattice every 10 tiles (0-130 at 100 %), faded in gently over
+  // 10 tiles from the water, never rising more than 12 a tile from it, all of
+  // it smoothed across half a lattice cell. hill_scale_percent is the
+  // new-game screen's Hilliness row: Gentle 50, Rolling 100, Hilly 200. The
+  // founding ring (8 tiles round) is flat or gentle. height_levels 1 is a
+  // flat valley. A tile's steepness - its largest step to a four-neighbour
+  // on land - is gentle at 4, steep at 8 or more (heights.md section 8.2).
+  "height_levels": 256,
+  "height_bowl_rise_per_tile": 2,
+  "height_rise_from_water_per_tile": 12,
+  "height_bowl_max_levels": 64,
   "height_hill_lattice_tiles": 10,
-  "height_hill_max_levels": 10,
+  "height_hill_max_levels": 130,
   "hill_scale_percent": 100,
-  "height_river_ramp_tiles": 6,
+  "height_river_ramp_tiles": 10,
   "height_founding_flat_tiles": 8,
-  "slope_gentle_at": 1,
-  "slope_steep_at": 2,
+  "slope_gentle_at": 4,
+  "slope_steep_at": 8,
   // What a slope costs to cross, against the same tile on the flat: gentle
   // 120 %, steep 150 % ("not 100% slower"). Worn paths multiply with it; a
   // bridge deck ignores it. Through the one cost field, so the walk itself

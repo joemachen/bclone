@@ -23,14 +23,22 @@ namespace Bclone.Game;
 /// ground rising towards the upper left faces away and is washed darker, the flat is untouched. Heights are sampled
 /// between tile centres so a slope reads as a slope, not as steps.
 /// </para>
+/// <para>
+/// ⭐ <b>Softened across a tile first</b> (D736; Joe, playing Hilly: <i>"things look a little weird"</i>). The sim's heights
+/// are whole levels, so even a smooth hill is a staircase of one-level steps, and a hillshade of a staircase is hatching.
+/// Two box passes a tile each way, in the view only — the sim's steepness is the steps, as the walk feels them.
+/// </para>
 /// </remarks>
 public partial class VillageMap
 {
     /// <summary>Texels per tile — fine enough that the shading has no visible steps at the usual zoom.</summary>
     internal const int ReliefPerTile = 8;
 
-    /// <summary>How much wash a slope of one level per tile, facing the light squarely, puts down.</summary>
-    private const float ReliefGain = 0.16f;
+    /// <summary>How much wash a slope of one level per tile, facing the light squarely, puts down — a level being one of 256 (D736).</summary>
+    private const float ReliefGain = 0.025f;
+
+    /// <summary>How far the whole-level steps are softened before shading, in tiles (two passes).</summary>
+    private const int ReliefSoftenTiles = 1;
 
     /// <summary>The most wash any slope gets, light or dark — a wash, not a paint.</summary>
     private const float ReliefMostAlpha = 0.34f;
@@ -67,6 +75,7 @@ public partial class VillageMap
             return null;
         }
 
+        float[] soft = Softened(map);
         int width = map.Width * ReliefPerTile;
         int height = map.Height * ReliefPerTile;
         var pixels = new byte[width * height * 4];
@@ -77,8 +86,8 @@ public partial class VillageMap
                 // The texel's centre in tile space, where tile (0, 0)'s centre is (0, 0).
                 float u = ((px + 0.5f) / ReliefPerTile) - 0.5f;
                 float v = ((py + 0.5f) / ReliefPerTile) - 0.5f;
-                float across = HeightBetween(map, u + 0.5f, v) - HeightBetween(map, u - 0.5f, v);
-                float down = HeightBetween(map, u, v + 0.5f) - HeightBetween(map, u, v - 0.5f);
+                float across = HeightBetween(soft, map.Width, map.Height, u + 0.5f, v) - HeightBetween(soft, map.Width, map.Height, u - 0.5f, v);
+                float down = HeightBetween(soft, map.Width, map.Height, u, v + 0.5f) - HeightBetween(soft, map.Width, map.Height, u, v - 0.5f);
                 float lit = (across + down) * ReliefGain;
                 float alpha = Mathf.Min(Mathf.Abs(lit), ReliefMostAlpha);
                 Color colour = lit >= 0f ? ReliefLight : ReliefDark;
@@ -93,22 +102,99 @@ public partial class VillageMap
         return ImageTexture.CreateFromImage(Image.CreateFromData(width, height, false, Image.Format.Rgba8, pixels));
     }
 
-    /// <summary>The height between tile centres, by the four round the point (clamped at the valley's edge).</summary>
-    private static float HeightBetween(GeneratedMap map, float u, float v)
+    /// <summary>The valley's heights softened across <see cref="ReliefSoftenTiles"/>, twice each way (the window cut at the edge).</summary>
+    private static float[] Softened(GeneratedMap map)
     {
-        u = Mathf.Clamp(u, 0f, map.Width - 1);
-        v = Mathf.Clamp(v, 0f, map.Height - 1);
+        int w = map.Width;
+        int h = map.Height;
+        var values = new float[w * h];
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = map.Heights[i];
+        }
+
+        // ⭐ Water is drawn level with its banks (D736): the sim's water is 0, and the drop from a bank to it shaded as a dark
+        // seam all along the river. The mean of a water tile's land neighbours stands in for it, here only.
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int i = (y * w) + x;
+                if (map.Tiles[i] != Terrain.Water)
+                {
+                    continue;
+                }
+
+                float sum = 0f;
+                int count = 0;
+                foreach ((int nx, int ny) in new[] { (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1) })
+                {
+                    if (nx >= 0 && nx < w && ny >= 0 && ny < h && map.Tiles[(ny * w) + nx] != Terrain.Water)
+                    {
+                        sum += map.Heights[(ny * w) + nx];
+                        count++;
+                    }
+                }
+
+                if (count > 0)
+                {
+                    values[i] = sum / count;
+                }
+            }
+        }
+
+        for (int pass = 0; pass < 2; pass++)
+        {
+            values = Along(values, across: true);
+            values = Along(values, across: false);
+        }
+
+        return values;
+
+        float[] Along(float[] from, bool across)
+        {
+            var to = new float[from.Length];
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float sum = 0f;
+                    int count = 0;
+                    for (int k = -ReliefSoftenTiles; k <= ReliefSoftenTiles; k++)
+                    {
+                        int sx = across ? x + k : x;
+                        int sy = across ? y : y + k;
+                        if (sx >= 0 && sx < w && sy >= 0 && sy < h)
+                        {
+                            sum += from[(sy * w) + sx];
+                            count++;
+                        }
+                    }
+
+                    to[(y * w) + x] = sum / count;
+                }
+            }
+
+            return to;
+        }
+    }
+
+    /// <summary>The height between tile centres, by the four round the point (clamped at the valley's edge).</summary>
+    private static float HeightBetween(float[] heights, int width, int height, float u, float v)
+    {
+        u = Mathf.Clamp(u, 0f, width - 1);
+        v = Mathf.Clamp(v, 0f, height - 1);
         int x0 = Mathf.FloorToInt(u);
         int y0 = Mathf.FloorToInt(v);
-        int x1 = Mathf.Min(x0 + 1, map.Width - 1);
-        int y1 = Mathf.Min(y0 + 1, map.Height - 1);
+        int x1 = Mathf.Min(x0 + 1, width - 1);
+        int y1 = Mathf.Min(y0 + 1, height - 1);
         float fx = u - x0;
         float fy = v - y0;
         float top = Mathf.Lerp(At(x0, y0), At(x1, y0), fx);
         float bottom = Mathf.Lerp(At(x0, y1), At(x1, y1), fx);
         return Mathf.Lerp(top, bottom, fy);
 
-        float At(int x, int y) => map.Heights[(y * map.Width) + x];
+        float At(int x, int y) => heights[(y * width) + x];
     }
 
     /// <summary>

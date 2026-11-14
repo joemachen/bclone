@@ -8,7 +8,9 @@ D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's re
 **Status:** 🔨 **BEING BUILT on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
 ✅ (the layer, the stage, the slope classes); step 2 ✅ (the slope in the one cost field, the goldens re-taken); step 3 ✅
 (saves, the Hilliness row, *What's here*, *climbing*, the wash); step 4 ✅ measured (§8.1) — the numbers stand.
-⏸️ UNPLAYED, UNMERGED: Joe plays a Rolling valley and a Hilly one (§11), then merges at his word.**
+🔁 **Then smoothed (D737, 2026-11-13; Joe, playing Hilly: *"things look a little weird"*), §5.1: 256 fine levels, the
+ground smoothed before rounding, steepness land to land; re-measured (§8.2). ⏸️ UNPLAYED (the smoothed build), UNMERGED:
+Joe plays a Rolling valley and a Hilly one (§11), then merges at his word.**
 Heights is not on Phase 5's exit gate (D641); building it goes past the gate, and that is his to say.
 
 ---
@@ -39,18 +41,19 @@ snow lying longer up high, terraforming. Each would be its own call.
 
 ## 3. What a height is
 
-- **A height per tile: a small integer level, `0` at the river's water up to a ceiling** (16 levels,
-  `heights.levels` in `data/`). Integers only (D2): the generator never touches a float in anything the sim
-  reads.
+- **A height per tile: a small integer level, `0` at the river's water up to a ceiling** (`height_levels` in
+  `data/`: **256** since D737; 16 until then, too coarse for a smooth hill — §5.1). Integers only (D2): the generator
+  never touches a float in anything the sim reads.
 - **A pure function of the seed, the generator and the Hilliness row.** It never changes in play. No
   system writes it after generation.
 - **Kept on `GeneratedMap` beside the terrain** (`HeightAt(tile)`), and **saved with the map.** That way a
   save never depends on the generator staying the same (§9, the old saves).
 - **The slope class of a tile is derived once, at generation**, and kept beside it (CLAUDE.md: kept where
   the state changes, and it never changes):
-  - **steepness** = the largest height difference between the tile and any of its four neighbours;
-  - **flat** at a difference of 0, **gentle** at 1, **steep** at 2 or more (`heights.gentle_at`,
-    `heights.steep_at` in `data/`).
+  - **steepness** = the largest height difference between the tile and any of its four neighbours **on land**
+    (D737: nobody walks into the river, so the drop from a bank to the water is not a slope; water's steepness is 0);
+  - **flat** below 4, **gentle** at 4, **steep** at 8 or more (`slope_gentle_at`, `slope_steep_at` in `data/`; 1 and 2
+    of 16 levels until D737).
 
   Three classes, not a continuous number, so it is legible: *What's here* can say *steep ground — slow to
   cross*, and a player can learn the three by sight.
@@ -103,8 +106,9 @@ snow lying longer up high, terraforming. Each would be its own call.
   - **The hills.** Integer value noise on a coarse lattice (one point every 12 tiles), smoothed between
     lattice points with integer weights, added to the bowl. *Hilliness* scales the noise: *Gentle* ½,
     *Rolling* 1, *Hilly* 2.
-  - **Water is level 0, and the banks are low.** A tile beside water is at most level 1, so the river never
-    sits in a ravine and a bridge's ends are never steep.
+  - **Water is level 0, and the banks are low.** *(D735 said "at most level 1" and clamped the bank alone, which
+    left a cliff behind it — §5.1.)* The ground rises no more than 12 a tile from the water and is smoothed after, so
+    the river runs along the bottom with no cliff near it, and a bank is never steep (steepness is land to land).
 - **Kept liveable** (`seeded-map-generation.md §10.4`: every seed survivable, none equally comfortable):
   - **the founding site and its ring** (the tiles the founders' first buildings take) are **smoothed to
     flat or gentle**, so no founding starts on a cliff;
@@ -113,6 +117,26 @@ snow lying longer up high, terraforming. Each would be its own call.
 - **The Hilliness row on the new-game screen** (`new-game-screen.md`: D477's parked line, built here).
   Three choices, default *Rolling*, saved with the game and shown on the pause screen's *About this run*
   like the other rows.
+
+### 5.1 Smoothed (D737, 2026-11-13)
+
+Joe, playing *Hilly*: *"things look a little weird"*. A picture of the shading (the probe cannot judge a look) showed
+why: straight lines between lattice points made every 10 × 10 cell a flat-faced panel with a crease at its edge; whole
+levels of 16 made smooth ground a staircase (hatching in the wash); a square founding ring read as a hard-edged plateau;
+and the bank, clamped to 1 with the hill a tile behind it left standing, put a **cliff of 7 levels behind the river**
+that the bank guard said was fine. Built now:
+- the ground is composed in thousandths of a level — the bowl rising `height_bowl_rise_per_tile` 2 a tile to a rim of
+  64, the hills (0–130 at 100 %) faded in **gently** (by the square of the distance) over `height_river_ramp_tiles` 10,
+  and never rising more than `height_rise_from_water_per_tile` 12 a tile from the water — then **smoothed**, two box
+  passes across half a lattice cell each way, and only then rounded to 256 levels;
+- the founding ring is a **circle**, flattened before the smoothing and wider by the smoothing's reach, so the ring
+  itself stays flat or gentle;
+- steepness is counted **land to land** (§3), so a riverbank is not steep and a riverside path not slow;
+- the view (`VillageMap.Relief.cs`) softens the wash across a tile and draws water level with its banks, so neither the
+  whole-level steps nor the drop to the water show as lines; the wash is 0.025 a level (a level is now 1/16 of the old).
+- Each step was chosen by measuring the spread of steepness on eight seeds (the targets the first build had: about 2 %,
+  7 % and 25 % steep), not by eye alone; the first tries are in D737 — a limit from the water applied after the
+  smoothing capped most of the valley into one ramp, and before it alone left the banks steep.
 
 ## 6. What the player sees
 
@@ -200,6 +224,24 @@ puts a quarter of the land on steep ground: a harder valley, by design, and Joe'
 cost (§8.1's first item) was not timed on its own; the suite's wall-clock, which runs the ring every time on every hilly
 valley, did not move (14m39–14m54 against 15m53–18m37 the slices before).
 
+### 8.2 Re-measured after the smoothing (D737)
+
+| Five established villages, twenty years | Flat | *Rolling* | *Hilly* |
+|---|---|---|---|
+| Hollowmere (70) | 78 | 69 | 72 |
+| Oakhaven (24) | 55 | 56 | 52 |
+| Stonebridge (18) | 18 | 18 | 21 |
+| Willowdale, elder-yarrow (16) | 40 | 44 | 37 |
+| Willowdale, hazel-kestrel (12) | 25 | 24 | 28 |
+| **Together** | **216** | **211 (−2 %)** | **210 (−3 %)** |
+
+Walking took up to 2 points more of their time. ⚠️ **Firewood held runs lower on hills** — Oakhaven 1,600 → 1,275 on
+*Rolling*, Hollowmere 1,682 → 1,406 on *Hilly* — with nobody colder: logs carried over slopes. 86 fresh valleys, twelve
+years: flat 1,074 alive, *Rolling* 1,075, *Hilly* 1,070, one dead in each. Steep ground: *Gentle* 0 %, *Rolling* 4.7 %,
+*Hilly* 30.6 %. The verdict of §8.1 stands — *Rolling* plays as the flat did, *Hilly* a little harder — and the slope's
+costs (×1.2, ×1.5) are unchanged. ⚠️ The harness's first run after the smoothing pinned `height_levels` at the old 16
+and measured flat valleys (hilly equal to flat to the digit, 0 % steep); it uses the data's 256 now.
+
 ## 9. Saved, hashed, drawn, told
 
 - **Saved**: the height layer and the Hilliness setting, with the map. ⚠️ **His old saves**: a save from
@@ -217,9 +259,10 @@ valley, did not move (14m39–14m54 against 15m53–18m37 the slices before).
 1. Same seed, same Hilliness ⇒ the same height layer, byte for byte. A different seed ⇒ a different one.
 2. Stage 6 moves no other stage: on the same seed the river, the founding, the seams and the woods are
    identical with heights on and off.
-3. Water is level 0; a bank tile is at most 1; the founding ring is flat or gentle; the passable valley is
-   one connected piece on every seed of the 86.
-4. The slope classes at their thresholds (0, 1, 2+), posed by hand.
+3. Water is level 0; the river runs along the bottom (nineteen banks in twenty below the land's middle height —
+   *"a bank is at most 1"* until D737); the founding ring is flat or gentle; no step over 20 on *Hilly* anywhere
+   (`TheHillsHaveNoCreases`, D737); the passable valley is one connected piece on every seed of the 86.
+4. The slope classes at their thresholds, posed by hand.
 5. The entry cost on each class, with and without wear, posed by hand: 10 / 12 / 15, worn steep 14, and a
    deck ignores the slope.
 6. The field carries a 15 without throwing, and its answer matches a plain Dijkstra on a posed hilly map.

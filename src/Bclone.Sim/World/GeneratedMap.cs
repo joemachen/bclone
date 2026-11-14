@@ -253,7 +253,7 @@ public sealed class GeneratedMap
         // steepness beside them is worked out once, here, and never again (CLAUDE.md: kept where the state changes).
         // None given — a posed map, or a save from before heights — is a flat valley.
         _height = heights ?? new byte[terrain.Length];
-        _steepness = SteepnessOf(_height, width, height);
+        _steepness = SteepnessOf(_height, terrain, width, height);
 
         // The valley's natural woodland, recorded once. Everything the generator painted as
         // forest is ground a wood may return to; everything else is meadow until somebody
@@ -554,8 +554,15 @@ public sealed class GeneratedMap
     /// <summary>A tile's steepness by its index in <see cref="Tiles"/>' order.</summary>
     public int SteepnessAtIndex(int index) => _steepness[index];
 
-    /// <summary>The largest step from each tile to a four-neighbour in the valley; diagonals never count.</summary>
-    private static byte[] SteepnessOf(byte[] heights, int width, int height)
+    /// <summary>
+    /// The largest step from each tile to a four-neighbour <b>on land</b>; diagonals never count, and water is level (0).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Land to land (D736).</b> Nobody walks into the river, so the drop from a bank to the water is not a slope
+    /// anyone crosses: counted, every riverbank read steep and a riverside path was slow. Water never changes in play, so
+    /// this is worked out once with the heights and stays true.
+    /// </remarks>
+    private static byte[] SteepnessOf(byte[] heights, Terrain[] terrain, int width, int height)
     {
         var steepness = new byte[heights.Length];
         for (int y = 0; y < height; y++)
@@ -563,12 +570,17 @@ public sealed class GeneratedMap
             for (int x = 0; x < width; x++)
             {
                 int i = (y * width) + x;
+                if (terrain[i] == Terrain.Water)
+                {
+                    continue;
+                }
+
                 int here = heights[i];
                 int most = 0;
-                if (x > 0) { most = Math.Max(most, Math.Abs(here - heights[i - 1])); }
-                if (x < width - 1) { most = Math.Max(most, Math.Abs(here - heights[i + 1])); }
-                if (y > 0) { most = Math.Max(most, Math.Abs(here - heights[i - width])); }
-                if (y < height - 1) { most = Math.Max(most, Math.Abs(here - heights[i + width])); }
+                if (x > 0 && terrain[i - 1] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i - 1])); }
+                if (x < width - 1 && terrain[i + 1] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i + 1])); }
+                if (y > 0 && terrain[i - width] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i - width])); }
+                if (y < height - 1 && terrain[i + width] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i + width])); }
                 steepness[i] = (byte)most;
             }
         }

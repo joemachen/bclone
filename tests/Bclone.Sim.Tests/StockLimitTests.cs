@@ -533,7 +533,8 @@ public sealed class StockLimitTests
     // 6661378206269367323.
     // RE-TAKEN (D735) — real heights (`heights.md §7`): the shipped valley has hills and every walk is re-priced.
     // ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) the old value passes. The fixture's did not move. Was 1984555868935464164.
-    private const ulong ShippedFiftyYearHash = 17224396567075353750UL;
+    // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 17224396567075353750.
+    private const ulong ShippedFiftyYearHash = 17613434144534984246UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence
