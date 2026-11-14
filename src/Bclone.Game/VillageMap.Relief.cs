@@ -5,21 +5,22 @@ using Godot;
 namespace Bclone.Game;
 
 /// <summary>
-/// ⭐ The hills, drawn (`specs/heights.md §6`, D735) — <b>contour lines and a faint shade</b> from the sim's heights (D739,
-/// Joe's pick: <i>"C: contours + shade"</i>), so a slope that slows the walk can be seen at all. Without it the change would
-/// show only as slower walking, which would read as a bug.
+/// ⭐ The hills, drawn (`specs/heights.md §6`, D735) — <b>a soft wash of light and shade, in the first build's style</b>
+/// (D740, Joe: <i>"i liked the very first iteration way more"</i>, then <i>"Yes, build 2"</i>), so a slope that slows the walk
+/// can be seen at all. Without it the change would show only as slower walking, which would read as a bug.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The systems lane's stand-in, not the look.</b> The art lane's relief (`terrain-shader.md §7` piece 5, A57) — contour
-/// lines and hachures — may restyle it, drawn from the same <see cref="GeneratedMap.HeightAt"/>.
+/// <b>The systems lane's stand-in, not the look.</b> The art lane's relief (`terrain-shader.md §7` piece 5, A57) may restyle
+/// it, drawn from the same <see cref="GeneratedMap.HeightAt"/>.
 /// </para>
 /// <para>
-/// ⭐ <b>Why lines (D739; Joe, on the shade alone: <i>"it just looks like dark spots"</i>).</b> On a pale parchment map the
-/// lit side of a hill is a light tint on light ground and cannot be seen, so a shade alone shows only the shadowed slopes,
-/// as blotches. Contours are how printed maps solve it: thin ink lines every <see cref="ContourEvery"/> levels, bolder every
-/// <see cref="ContourBoldEvery"/>; close together is steep, far apart is flat. The shade stays, faint, for light and depth.
-/// Nothing is drawn over the river.
+/// ⭐ <b>Grouped into coarse steps for drawing only</b> (D740). The first build's hills came in 16 coarse levels, and each
+/// step, softened, became one of the broad light and dark patches Joe liked; the same steps on the sim's ground made Hilly's
+/// panels and a cliff behind the river (D737). So the sim keeps its smooth 256 levels, and the view groups them into steps
+/// of <see cref="ReliefStep"/> and shades those as the first build did. Shown his own valleys at steps of 8 and 6, he took
+/// 8. ⛔ D737–D739 tried a fainter shade (*"i dont see hills at all"*), a stronger one (*"it just looks like dark spots"*) and
+/// contour lines (*"i hate that"*): the patches are the look.
 /// </para>
 /// <para>
 /// <b>Baked once per valley</b> (CLAUDE.md: never rebuilt per frame): the heights never change in play, so the texture is
@@ -28,42 +29,22 @@ namespace Bclone.Game;
 /// </para>
 /// <para>
 /// A hillshade lit from the upper left: ground rising towards the lower right faces the light and is washed lighter,
-/// ground rising towards the upper left faces away and is washed darker, the flat is untouched. Heights are sampled
-/// between tile centres so a slope reads as a slope, not as steps.
-/// </para>
-/// <para>
-/// ⭐ <b>Softened across a tile first</b> (D736; Joe, playing Hilly: <i>"things look a little weird"</i>). The sim's heights
-/// are whole levels, so even a smooth hill is a staircase of one-level steps, and a hillshade of a staircase is hatching.
-/// Two box passes a tile each way, in the view only — the sim's steepness is the steps, as the walk feels them.
+/// ground rising towards the upper left faces away and is washed darker, the flat is untouched. The steps are softened
+/// across a tile first and sampled between tile centres, so each reads as a soft patch, not a hard band.
 /// </para>
 /// </remarks>
 public partial class VillageMap
 {
-    /// <summary>Texels per tile — fine enough that a contour is a thin line at the usual zoom (16 since D739; 8 for the shade alone).</summary>
-    internal const int ReliefPerTile = 16;
+    /// <summary>Texels per tile — the first build's, enough for a soft wash (16 only for D739's contour lines).</summary>
+    internal const int ReliefPerTile = 8;
 
-    /// <summary>How much shade a slope of one level per tile, facing the light squarely, puts down — a level being one of 256.
-    /// Faint since D739, the contours carrying the shape (0.06 with the shade alone, D738).</summary>
-    private const float ReliefGain = 0.03f;
+    /// <summary>The heights are grouped into steps this many levels (of 256) apart for drawing — Joe's pick, D740.</summary>
+    internal const int ReliefStep = 8;
 
-    /// <summary>The lit side is boosted against the shadowed one: a light tint on parchment needs it to be seen at all (D739).</summary>
-    private const float ReliefLightBoost = 3f;
+    /// <summary>How much wash a slope of one step per tile, facing the light squarely, puts down — the first build's strength.</summary>
+    private const float ReliefGain = 0.16f;
 
-    /// <summary>The most the lit side is lightened.</summary>
-    private const float ReliefMostLight = 0.55f;
-
-    /// <summary>A contour line every this many levels (of 256).</summary>
-    internal const int ContourEvery = 16;
-
-    /// <summary>A bolder contour every this many levels — an index line, as a printed map has.</summary>
-    internal const int ContourBoldEvery = 64;
-
-    private const float ContourAlpha = 0.35f;
-    private const float ContourBoldAlpha = 0.6f;
-
-    private static readonly Color ContourInk = new("#5a4830");
-
-    /// <summary>How far the whole-level steps are softened before shading, in tiles (two passes).</summary>
+    /// <summary>How far the steps are softened before shading, in tiles (two passes).</summary>
     private const int ReliefSoftenTiles = 1;
 
     /// <summary>The most wash any slope gets, light or dark — a wash, not a paint.</summary>
@@ -104,77 +85,35 @@ public partial class VillageMap
         float[] soft = Softened(map);
         int width = map.Width * ReliefPerTile;
         int height = map.Height * ReliefPerTile;
-
-        // The height at every texel's centre (tile space: tile (0, 0)'s centre is (0, 0)), and the band it falls in.
-        var at = new float[width * height];
-        for (int py = 0; py < height; py++)
-        {
-            for (int px = 0; px < width; px++)
-            {
-                at[(py * width) + px] = HeightBetween(soft, map.Width, map.Height, ((px + 0.5f) / ReliefPerTile) - 0.5f, ((py + 0.5f) / ReliefPerTile) - 0.5f);
-            }
-        }
-
         var pixels = new byte[width * height * 4];
         for (int py = 0; py < height; py++)
         {
             for (int px = 0; px < width; px++)
             {
-                int i = (py * width) + px;
-                if (map.Tiles[((py / ReliefPerTile) * map.Width) + (px / ReliefPerTile)] == Terrain.Water)
-                {
-                    continue;
-                }
-
-                // The shade, faint: the lit side boosted so it shows on parchment, the shadowed side as before.
+                // The texel's centre in tile space, where tile (0, 0)'s centre is (0, 0).
                 float u = ((px + 0.5f) / ReliefPerTile) - 0.5f;
                 float v = ((py + 0.5f) / ReliefPerTile) - 0.5f;
                 float across = HeightBetween(soft, map.Width, map.Height, u + 0.5f, v) - HeightBetween(soft, map.Width, map.Height, u - 0.5f, v);
                 float down = HeightBetween(soft, map.Width, map.Height, u, v + 0.5f) - HeightBetween(soft, map.Width, map.Height, u, v - 0.5f);
                 float lit = (across + down) * ReliefGain;
-                Color shade = lit >= 0f ? ReliefLight : ReliefDark;
-                float shadeAlpha = lit >= 0f ? Mathf.Min(lit * ReliefLightBoost, ReliefMostLight) : Mathf.Min(-lit, ReliefMostAlpha);
-
-                // The contour: where this texel's band differs from the one to its left or above — a line one texel wide.
-                float inkAlpha = 0f;
-                if (CrossesALine(at, i, px, py, width, ContourBoldEvery))
-                {
-                    inkAlpha = ContourBoldAlpha;
-                }
-                else if (CrossesALine(at, i, px, py, width, ContourEvery))
-                {
-                    inkAlpha = ContourAlpha;
-                }
-
-                // Ink over shade (Porter-Duff "over"), into one texel.
-                float alpha = inkAlpha + (shadeAlpha * (1f - inkAlpha));
-                Color colour = alpha <= 0f
-                    ? shade
-                    : ((ContourInk * inkAlpha) + (shade * shadeAlpha * (1f - inkAlpha))) / alpha;
-                int b = i * 4;
-                pixels[b] = (byte)(Mathf.Clamp(colour.R, 0f, 1f) * 255f);
-                pixels[b + 1] = (byte)(Mathf.Clamp(colour.G, 0f, 1f) * 255f);
-                pixels[b + 2] = (byte)(Mathf.Clamp(colour.B, 0f, 1f) * 255f);
-                pixels[b + 3] = (byte)(Mathf.Clamp(alpha, 0f, 1f) * 255f);
+                float alpha = Mathf.Min(Mathf.Abs(lit), ReliefMostAlpha);
+                Color colour = lit >= 0f ? ReliefLight : ReliefDark;
+                int at = ((py * width) + px) * 4;
+                pixels[at] = (byte)(colour.R * 255f);
+                pixels[at + 1] = (byte)(colour.G * 255f);
+                pixels[at + 2] = (byte)(colour.B * 255f);
+                pixels[at + 3] = (byte)(alpha * 255f);
             }
         }
 
-        // ⚠️ The image is released here, not left to the finalizer (A45: a temporary Image handed to CreateFromImage and never
-        // kept is the likeliest cause of the `gchandle.is_released()` crash, and this one is 9.8 MB; its 4th sighting came
-        // the first probe after this bake grew, D739).
+        // ⚠️ The image is released here, not left to the finalizer (A45, D739: a temporary Image handed to CreateFromImage
+        // and never kept is the likeliest cause of the `gchandle.is_released()` crash).
         using Image image = Image.CreateFromData(width, height, false, Image.Format.Rgba8, pixels);
         return ImageTexture.CreateFromImage(image);
     }
 
-    /// <summary>Whether a contour every <paramref name="every"/> levels runs between this texel and the one to its left or above.</summary>
-    private static bool CrossesALine(float[] at, int i, int px, int py, int width, int every)
-    {
-        int band = Mathf.FloorToInt(at[i] / every);
-        return (px > 0 && Mathf.FloorToInt(at[i - 1] / every) != band)
-            || (py > 0 && Mathf.FloorToInt(at[i - width] / every) != band);
-    }
-
-    /// <summary>The valley's heights softened across <see cref="ReliefSoftenTiles"/>, twice each way (the window cut at the edge).</summary>
+    /// <summary>The valley's heights grouped into <see cref="ReliefStep"/>s and softened across <see cref="ReliefSoftenTiles"/>,
+    /// twice each way (the window cut at the edge).</summary>
     private static float[] Softened(GeneratedMap map)
     {
         int w = map.Width;
@@ -182,7 +121,7 @@ public partial class VillageMap
         var values = new float[w * h];
         for (int i = 0; i < values.Length; i++)
         {
-            values[i] = map.Heights[i];
+            values[i] = map.Heights[i] / ReliefStep;
         }
 
         // ⭐ Water is drawn level with its banks (D736): the sim's water is 0, and the drop from a bank to it shaded as a dark
@@ -203,7 +142,7 @@ public partial class VillageMap
                 {
                     if (nx >= 0 && nx < w && ny >= 0 && ny < h && map.Tiles[(ny * w) + nx] != Terrain.Water)
                     {
-                        sum += map.Heights[(ny * w) + nx];
+                        sum += map.Heights[(ny * w) + nx] / ReliefStep;
                         count++;
                     }
                 }
@@ -313,24 +252,33 @@ public partial class VillageMap
             }
         }
 
-        // ⭐ The contour lines are drawn (D739): ink-coloured texels at the line's strength. The shade never reaches the
-        // ink's colour (its dark side is far darker, its light side far lighter), so the colour tells them apart.
-        int inked = 0;
+        // ⭐ Patches of both kinds (D740): the lit side and the shadowed side each wash a real share of the valley — a shade that
+        // shows only one side read as "dark spots" (D738).
+        int lit = 0;
+        int shadowed = 0;
         for (int y = 0; y < image.GetHeight(); y++)
         {
             for (int x = 0; x < image.GetWidth(); x++)
             {
                 Color c = image.GetPixel(x, y);
-                if (c.A >= ContourAlpha - 0.02f && Mathf.Abs(c.R - ContourInk.R) < 0.12f && Mathf.Abs(c.B - ContourInk.B) < 0.12f)
+                if (c.A >= 0.1f)
                 {
-                    inked++;
+                    if (c.R > 0.6f)
+                    {
+                        lit++;
+                    }
+                    else
+                    {
+                        shadowed++;
+                    }
                 }
             }
         }
 
-        if (inked < image.GetWidth())
+        int texels = image.GetWidth() * image.GetHeight();
+        if (lit * 50 < texels || shadowed * 50 < texels)
         {
-            faults.Add($"only {inked} texels of contour ink in a hilly valley");
+            faults.Add($"lit patches on {lit * 100 / texels} % of the valley and shadowed on {shadowed * 100 / texels} % — not both showing");
         }
 
         float onSteep = AlphaOver(steepest);
@@ -362,7 +310,7 @@ public partial class VillageMap
         }
 
         return faults.Count == 0
-            ? $"[widths] relief: ✅ the hills drawn {image.GetWidth()} × {image.GetHeight()} in {bakeMs:F0} ms, {inked} texels of contour ink, the steepest tile at {onSteep:F2}, the flat founding at {onFounding:F2}; a flat valley bakes nothing; the steep tile says \"{said}\""
+            ? $"[widths] relief: ✅ the hills drawn {image.GetWidth()} × {image.GetHeight()} in {bakeMs:F0} ms, lit patches on {lit * 100 / texels} % and shadowed on {shadowed * 100 / texels} %, the steepest tile at {onSteep:F2}, the flat founding at {onFounding:F2}; a flat valley bakes nothing; the steep tile says \"{said}\""
             : $"[widths] relief: ⛔ {string.Join("; ", faults)}";
     }
 }
