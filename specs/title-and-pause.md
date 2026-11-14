@@ -7,7 +7,7 @@ persistence → save/load → **title and pause**), D477/D479 (the new-game scre
 pause screen exists"*), D364 (the error boundary — a stopped village is not saved), **D516 (Joe's calls for this
 screen, 2026-10-05 — §2)**.
 **Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** 🔨 **D706 (2026-11-07): the speed keys 1–5 and the bar's focus rule (§5.1, §8.3)
-— on `claude/distracted-cori-b8df71`, view only, unmerged, unplayed.** View only; nothing in
+— ✅ played, merged and pushed (D710, Joe: *"merge and push and commit in the most logical order"*; it read *"on `claude/distracted-cori-b8df71`, unmerged, unplayed"* until D744).** View only; nothing in
 `Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
 ❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,

@@ -2,7 +2,7 @@
 
 **Decisions:** **D107** (this document), and the ones it settles. Neighbours: D14, D29, D30,
 D43, D51, D62, D63, D64, D66, D84, D86, D87, D102–D106.
-**Status:** ⚠️ **Alignment document; the table in §4 is current as of 2026-10-27 (D640)** — the doc truth pass
+**Status:** ⚠️ **Alignment document; the table in §4 is current as of 2026-11-14 (D744; first made true D640)** — the doc truth pass
 added five trades that had shipped without a row (farmer, quarrier, miner, herdsman, merchant) and corrected the
 forester, the smith's tools, the tailor and the market worker. Before that it was current as of D391. It had
 called the fisher and the hunter *"new"* for a fortnight after both shipped (D288, D291) — the
@@ -200,8 +200,8 @@ Joe's list, with what is true today. **Status is about the code, not the design.
 | **Smith** | smithy | — | iron + firewood → tools → warehouse | — | ✅ **BUILT** (D391, `tools-and-the-smith.md`) — every hands-on trade wears the tools; builders, herdsmen and laborers too once a smithy stands (D617); never the carriers (marketer, merchant) |
 | **Miller** | mill | — | wheat → flour → warehouse | 200 flour (a limit) | ✅ **BUILT** (D522, `food-chain.md`) — learned by reaping wheat; never grinds while the village is hungry |
 | **Baker** | bakery | — | flour + a firing of firewood → bread → granary | 1,000 bread (a limit) | ✅ **BUILT** (D522) — learned with the mill (D523); the oven lit once a stint, never with the winter's firewood |
-| **Tailor** | tailor's shop | — | leather → clothing → warehouse | none shipped (the tailor sews toward every adult + a year's wear; Joe's *50* is his to set) | ✅ built, played and merged (D659–D667); two leather a coat; `clothing.md` |
-| **Carpenter** | workshop | — | logs → handcarts → warehouse, the founders' cart or the pile (never the market) | none shipped (the carpenter makes one a household and a spare, then stops; the panel's `handcarts` row is Joe's ceiling) | ✅ built, unplayed (D678, `workshop-and-the-carpenter.md`); ten logs a cart; learned by felling 2,500 logs; a tool wears a use a make; ranked after the tailor |
+| **Tailor** | tailor's shop | — | leather → clothing → warehouse | 50 to begin with (D697, Joe: *"unlocked items should start at 50 by default"*; the tailor sews toward every adult + a year's wear) | ✅ built, played and merged (D659–D667); two leather a coat; `clothing.md` |
+| **Carpenter** | workshop | — | logs → handcarts → warehouse, the founders' cart or the pile (never the market) | 50 to begin with (D697; the carpenter makes one a household and a spare, then stops; the panel's `handcarts` row is Joe's ceiling) | ✅ built, played and merged (D678–D684, `workshop-and-the-carpenter.md`); ten logs a cart; learned by felling 1,500 logs (D682); a tool wears a use a make; ranked after the tailor |
 | **Market worker** | market | — | stocks the market; households shop there (no home deliveries since D372) | 8,000 (D612) | ✅ built (D14, D36, D372) — named *marketer*, plural *traders* (D188, D591) |
 
 **Not exhaustive** (Joe). `buildings-plan.md §4` carries the fuller catalogue — brewer, teacher,

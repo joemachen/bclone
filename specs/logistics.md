@@ -6,7 +6,7 @@ if play shows them."* Phase 5 gate item 1, third of Joe's four (D656: doors → 
 at changing the game"* — outcome 3, a mechanic; the candidates are a design thread in `DESIGN.md §5`, each to
 be measured here before it is typed. ▶️ HIS PICKS (D670, 2026-11-01): (d) *nearby* given a meaning — swept in §5.6,
 `market_detour_ticks` 4, built as D671; and (a) the handcart, thought through across every aspect in `specs/handcart.md`
-(a sketch, all six calls made as proposed — D672 — blocked on the workshop slice).** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
+(all six calls made as proposed — D672 — ✅ built and merged: the household's cart, Slice H, D686–D690; the trades' carts, D692–D695; the cart's night and the restock knob, D700–D707, merged D710).** This spec is the premise and the instrument; §5 holds the numbers (ten of Joe's
 played villages against five unattended ones, the instrument red-checked 2 of 2; §5.5 says where the trips go). **No
 line of `src/` changed.** Gate item 1's logistics entry is decided; what it becomes is the §5 decision. *History: the Marketer (D14, D36, D171) and the laborer's hauling (D63, D96)
 were built before this question existed; a "porter" trade was refused as already built (D357); §4 has carried this entry

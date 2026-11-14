@@ -3,7 +3,7 @@
 > Status: **✅ four of five slices built, and the fifth left this spec.** The building
 > selection panel, the calendar (D49), the buildings the economy had outgrown (D50), the
 > idle winter (D44/D52) and shelter-and-exposure (D45/D53) have all shipped; **clothing is
-> 🔨 in build on `slice/clothing` (D659)** (see `specs/clothing.md`; this said *blocked* until then); and the fifth slice — the **seasonal yield curve** —
+> ✅ built, played and merged (D659–D667)** (see `specs/clothing.md`; this said *blocked*, then *in build on `slice/clothing`*, until D744); and the fifth slice — the **seasonal yield curve** —
 > **is superseded by `crops-and-orchards.md` (D161)**, which is where the last of Phase 2
 > now lives. §5.1 keeps the argument and the derived target; the mechanic moved.
 >

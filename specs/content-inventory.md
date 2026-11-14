@@ -1,18 +1,11 @@
 # Inventory: what the village has, what the documents promise, and where they disagree
 
-> Status: **an audit. ✅ PARTS A AND B REFRESHED 2026-10-07 (D526, Joe: *"refresh the inventory on main"*)**
-> — read off the code on `main` at D519, with the food chain marked 🔨 on `slice/food-chain` (D520–D524); **the food
-> chain merged to `main` at D527 (2026-10-07) and is ✅ below.** Part C (the disagreements) is the August audit, kept as history through D223.
-> ⚠️ **DATED, NOT STALE-BY-ACCIDENT (D640): Parts A and B are `main` at D526.** Built and merged since, and NOT in
-> these tables: bridges (D551), building condition (D560), nomads (D584), trade and the herd — hay, cattle, the barn,
-> the trading post, the merchant (D608), doors (D626), clothing — the good (14), the tailor's shop (building 26) and the tailor
-> (trade 15) (D659–D667); the workshop (building 27), the carpenter (trade 16, skill 10 *carpentry*) and the handcart
-> (good 15) (D678, played D682); the household's cart — owned, fetched, pushed, worn, slow on grass, a path on its first pass
-> (Slice H, D686–D689, `handcart.md`, played and merged D690); the trades' carts — the market's and the trading post's, owned by the
-> workplace, fetched and pushed by the marketer and the merchant (`handcart.md §13`, D692–D694, built on `claude/elastic-dewdney-d55a19`,
-> merged into `main` D695, unplayed; save format 12); the works' cart taken home for the night and the restock knob
-> `restock_short_armfuls_with_cart` (1 as shipped) (`handcart.md §13.2b–c`, D700, on `worktree-slice-cart-home`, unplayed, unmerged).
-> Refreshing it is a Phase 5 gate item (`DESIGN.md §4`).
+> Status: **an audit. ✅ PARTS A AND B REFRESHED 2026-11-14 (D744, Phase 5's exit gate item 4)** — read off the code
+> on `main` at D743 (`BuildingKind`, `JobKind`, `Goods`, `Terrain`, `SimConfig.Skills`, `SimConfig.Techniques`,
+> `TechTree.DefaultNodes`). Part C (the disagreements) is the August audit, kept as history through D223.
+> *(Before: Parts A and B were `main` at D526, 2026-10-07, and D640 marked them dated with what they were missing —
+> bridges, building condition, nomads, trade and the herd, doors, clothing, the workshop and the handcarts. All are in
+> the tables now.)*
 > Not a spec and not a plan — it invents nothing and decides nothing. Owner: Joe + Claude.
 >
 > **Key:** ✅ built on `main` · 🔨 built on an unmerged branch · 📝 a spec exists, not built · 💭 named in
@@ -50,7 +43,7 @@ own warning about it.
 
 ---
 
-## Part A — what the village actually has today (refreshed 2026-10-07, D526)
+## Part A — what the village actually has today (refreshed 2026-11-14, D744)
 
 **Read off the code, not off a document's claim about it** — `SimConfig.DefaultGoods`, `BuildingKind`,
 `JobKind`, `SimConfig.Skills`, `SimConfig.Techniques`, `TechTree.DefaultNodes`. Goods, trades and buildings
@@ -58,14 +51,15 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 
 | | Count on `main` | Members |
 |---|---|---|
-| Goods | **13** | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools, flour, bread |
-| Buildings | **20** | granary, warehouse, market, woodcutter's hut, stockpile, house, builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, ~~longhouse~~ (retired D571 — id 14 ships no row), smithy, well, quarry, iron mine, mill, bakery — and the founders' cart, a store that is not built |
-| Trades | **13**, plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
-| Skills | **8** | foraging, forestry, woodcutting, farming, building, trading, milling, baking. ⚠️ The fisher, hunter, smith, quarrier and miner have **no skill row** (D391) |
+| Goods | **16** | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools, flour, bread, hay, clothing (the coat), the handcart |
+| Buildings | **29** | granary, warehouse, market, woodcutter's hut, stockpile, house (the wooden cabin), builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, ~~longhouse~~ (retired D571 — id 14 ships no row), smithy, well, quarry, iron mine, mill, bakery, wooden bridge, stone bridge, barn, trading post, pasture fence, tailor's shop, workshop, stone cottage, insulated manor — and the founders' cart, a store that is not built |
+| Trades | **17**, plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker, herdsman, merchant, tailor, carpenter. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
+| Skills | **10** | foraging, forestry, woodcutting, farming, building, trading, milling, baking, tailoring, carpentry. ⚠️ The fisher, hunter, smith, quarrier, miner, herdsman and merchant have **no skill row** (D391) |
 | Techniques | **4** | splitting lumber, coppicing, crop rotation, tended patches — see the knowledge table below |
 | Crops | **1** | wheat (`CropRow` — a second crop is a row plus a *"grow…"* control) |
 | Terrain | **9** | grass, water, forest, rock, iron seam, sapling, field, sown, ripe |
-| Painted ground | **4 shapes** | housing land (the village's), harvest marks (the village's), work ground (a building's), house plots (a household's, D386) — plus the red remove brush (D494) |
+| Painted ground | **4 shapes** | housing land (the village's), harvest marks (the village's), work ground (a building's — a farm's field, a herd's pasture), house plots (a household's, D386) — plus the red remove brush (D494) |
+| The ground's height | **a layer** | every tile a height and a slope class (flat, gentle, steep); a slope slows the walk in the one cost field; *Gentle · Rolling · Hilly* on the new-game screen (D734–D742) |
 
 ### Food — the systems
 
@@ -74,10 +68,11 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | Forage | ✅ | Forager's hut, gathered in its wooded ring; nothing in winter; **thins only when the wood is felled** (D297) |
 | Fish | ✅ | Fishing hut, which must touch water; never runs out; works in winter |
 | Meat (+ leather) | ✅ | Hunter's lodge, hunts in the woods within reach |
+| Meat and hides (the herd) | ✅ | Cattle on a fenced pasture, culled by the herdsman, hay put up for winter in the barn; the herd comes by trade (D590–D608) |
 | Wheat | ✅ | Farmhouse and its painted field — sown in spring, reaped in autumn, **rots if left standing into winter** |
 | Flour → bread | ✅ | The mill grinds wheat (never while the village is hungry); the bakery bakes flour, lighting its oven once a stint (never with the winter's firewood). **Bread sates longer** (`Villager.FullFor`). Both learned together at 5,000 wheat reaped |
 | A varied diet | ✅ | Meals and fetches take the best food first, then a share of each in proportion (D523) — before it, **meals took forage first and a forage-fed village never ate its wheat** (D521 §8.1) |
-| The machinery | ✅ | Hunger and meals, granaries and larders, the market, a stock limit per food, the birth gate on stored food, dependants eating half, *"Food"* as the sum of every food (D298) |
+| The machinery | ✅ | Hunger and meals, granaries and larders, the market, a stock limit per food, the birth gate on stored food, dependants eating half, *"Food"* as the sum of every food (D298); **every load to a store** (D385) and a household's shop walk said on its card and the housing brush (D744) |
 
 ### The other resources
 
@@ -86,7 +81,10 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | Building materials | logs (felled), stone (dug by hand or quarried), iron (dug by hand or mined) | logs and stone raise buildings; stone and iron make tools |
 | Fuel | firewood (split from logs) | hearths in winter; the smith's iron tools; the bakery's oven |
 | Tools | stone tools (the founders' cart), iron tools (the smithy) | worn one use per action; a third quicker and a quarter more |
-| Animal products | leather (from hunting) | ⚠️ **nothing yet** |
+| Carrying | the handcart (the workshop's carpenter) | a household's or a trade's cart: more armfuls a trip, slow on grass, worn, a path on its first pass (D678–D707) |
+| Animal products | leather (from hunting), hay (the herd's winter feed) | leather → **coats** at the tailor's shop (D659–D667); hay feeds the herd |
+| Clothing | the coat | a coated villager chills outdoors at a fireless roof's rate — *"a roof you wear"* (D659) |
+| Buildings' upkeep | — | every building wears and is mended by the builders (building condition, D554–D560) |
 | Water | the well — households walk to it | no water good yet (Phase 6) |
 
 ### Knowledge — what the village can know, and how
@@ -105,16 +103,22 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | **The smithy** | ✅ | A **gift** after **50 iron dug by hand** (D444) |
 | **The iron mine** | ✅ | Learned when the smith forges the **first iron tool** (D449) — paid for |
 | **The mill and the bakery** | ✅ | Learned together at **5,000 wheat reaped** (D523, D524) — paid for |
-| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). Nodes: quarry, smithy, library, town hall, iron mine, mill, bakery, and a fogged horizon — **mason's yard → stone cottage, school** |
+| **The tailor's shop** | ✅ | Learned at **50 leather handled** (`tailor_unlock_leather`, D659) — paid for |
+| **The workshop** | ✅ | Learned at **1,500 logs felled**, counted at the stump (`workshop_unlock_logs`, D675, D682) — paid for |
+| **The wooden bridge, the stone bridge** | ✅ | Wooden once the village has held **10 people**; stone after **1,000 crossings** (D547, D702) |
+| **The stone cottage, the insulated manor** | ✅ | The family tree: the cottage at the **3rd generation and 20 people**, the manor at the **5th and 45** (D716–D722); older homes rebuilt one at a time, and Joe's two switches over it (D723) |
+| **The barn and the trading post** | ✅ | Wait on the **town hall** — its gift is trade's permission (D586) |
+| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). **15 nodes:** quarry, smithy, library, town hall, iron mine, mill, bakery, tailor's shop, workshop, wooden bridge, stone bridge, stone cottage, insulated manor, and the fogged **mason's yard** and **school** |
 
 ---
 
-## Part B — what the documents promise (refreshed 2026-10-07)
+## Part B — what the documents promise (refreshed 2026-11-14, D744 — ✅ marks what has shipped since 2026-10-07)
 
 ### Food, planned
 
-- 📝 **Livestock** (`livestock.md`) — a herd on painted pasture, hay for winter, butchery for meat and hides.
-  ⛔ Blocked by D61: animals come by trade. `TECH-EXAMPLE.md` adds goats, ducks and geese, alpaca, yak, bees and silkworms.
+- ✅ **Livestock — cattle** (`livestock.md`, D590–D608) — a herd on fenced pasture, hay for winter, by trade (D61 kept).
+  💭 `TECH-EXAMPLE.md` adds goats, ducks and geese, alpaca, yak, bees and silkworms; **sheep and wool** are recorded for
+  the warmer coat (D723, Phase 6).
 - 📝 **Diet and health** (Phase 6) — food groups, and an immunity a one-food diet wears down.
 - 📝 **Beer / ale** — its shape is recorded (`food-chain.md §13`), waiting on morale and the tavern.
 - 💭 **Wild kinds** — nuts, roots, herbs; venison, boar, rabbit, wildfowl (`food-catalog.md §3`); `TECH-EXAMPLE.md` adds
@@ -129,24 +133,24 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 ### Buildings, planned (`buildings-plan.md §4`, 💭 unless marked)
 
 - **T0:** cemetery.
-- **T1:** pasture zone, butcher, root cellar, smokehouse, sawpit, charcoal burner, tannery, weaver, tailor, brewery,
-  herbalist's cottage, clay pit, kiln, mason's yard, orchard, chapel, bridge.
-- **T2:** creamery, smelter, tool warehouse, scriptorium (deferred, D204), 📝 school, trading post or dock, church,
+- **T1:** ✅ pasture zone, butcher, root cellar, smokehouse, sawpit, charcoal burner, tannery, weaver, ✅ tailor, brewery,
+  herbalist's cottage, clay pit, kiln, mason's yard, orchard, chapel, ✅ bridge.
+- **T2:** creamery, smelter, tool warehouse, scriptorium (deferred, D204), 📝 school, ✅ trading post, church,
   tavern, vineyard and press, apiary, physician's house.
 - **T3 (branches):** crop rotation / fallow (✅ crop rotation shipped as a technique), deep shaft and drainage, coal
   mine, stone bridge / road / granary, selective breeding, better oven / kiln / mill.
-- **From `TECH-EXAMPLE.md`'s 45** (`buildings-plan.md §4.5`): stone cottage and insulated manor (the house ladder,
-  D206), timber and stone barns, compost pit, cartwright, glassworks, paper mill, soapery and candles, cooperage,
+- **From `TECH-EXAMPLE.md`'s 45** (`buildings-plan.md §4.5`): ✅ stone cottage and insulated manor (the house ladder,
+  D206; built D716–D723), ✅ a barn (D590s) and a stone barn, compost pit, cartwright, glassworks, paper mill, soapery and candles, cooperage,
   oil renderer, pigeon aviary, apothecary and infirmary, inn, deep shaft mine, blast furnace, glasshouse, boiler
   house, heated aqueduct, a great library.
 
 ### Trades, planned
 
-📝 herdsman, teacher · 💭 tailor, weaver, tanner, butcher, brewer, dairy hand, smoker or salter, cellarhand, sawyer,
+✅ herdsman, ✅ merchant, ✅ tailor (D659) · 📝 teacher · 💭 weaver, tanner, butcher, brewer, dairy hand, smoker or salter, cellarhand, sawyer,
 charcoal burner, potter or brick burner, mason, ~~carpenter (repairs, once buildings decay — Phase 5)~~ ✅ **carpenter (D678 —
 the workshop's, making handcarts; repairs stayed the builder's, D552)**, ~~cartwright~~ (the carpenter is the cartwright, D678),
 cooper, glassblower, papermaker, scribe, soapmaker, renderer, herbalist or apothecary, physician, priest,
-innkeeper, merchant, beekeeper, administrator.
+innkeeper, beekeeper, administrator.
 
 ### Resources, planned
 
@@ -155,7 +159,7 @@ innkeeper, merchant, beekeeper, administrator.
 | Building materials | 💭 planks, cut stone, clay, bricks, mortar, iron ingots, steel, glass, rope, thatch, slate, iron parts, pipes, hoops — ⚠️ `TECH-EXAMPLE.md` names ~14 materials with 23 spellings (Part C finding 8) |
 | Fuel | 💭 charcoal (the only smelting fuel until coal), coal, lamp oil |
 | Tools | 💭 the builder's hammer (with the workshop); better tools per trade |
-| Animal products and textiles | 📝 clothing (`clothing.md` — makes outdoor winter work possible; needs leather, wool or cotton) · 💭 wool, cloth, hides, tallow, bone, feathers, fur, silk, cotton, hay and silage |
+| Animal products and textiles | ✅ clothing — the leather coat (`clothing.md`, D659–D667) · 💭 the wool coat (D723, Phase 6), wool, cloth, hides, tallow, bone, feathers, fur, silk, cotton, hay and silage |
 | Water and health | 📝 water as a need; herbalists, an infirmary, disease (Phase 6) |
 | Goods and trade | 💭 soap, candles, paper, ink, barrels, salt (mined or traded), luxury goods for trade (§2.4) |
 

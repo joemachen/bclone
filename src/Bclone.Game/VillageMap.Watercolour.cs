@@ -1257,13 +1257,21 @@ public partial class VillageMap
             }
 
             int w = config.MapWidth * HillTexelsPerTile, h = config.MapHeight * HillTexelsPerTile;
-            _hillsTexture = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.Rgbf, bytes));
+            using (Image hills = Image.CreateFromData(w, h, false, Image.Format.Rgbf, bytes)) // ⛔ `using` (A45)
+            {
+                _hillsTexture = ImageTexture.CreateFromImage(hills);
+            }
+
             material.SetShaderParameter("heights_map", _hillsTexture);
 
             // The hachures (A68, `green-ground.md §4`): baked once a world beside the field they are traced on.
             byte[] strokes = HillHachures(field, water, config.MapWidth, config.MapHeight);
-            _hachuresTexture = ImageTexture.CreateFromImage(Image.CreateFromData(
-                config.MapWidth * HachureTexelsPerTile, config.MapHeight * HachureTexelsPerTile, false, Image.Format.Rgba8, strokes));
+            using (Image hachures = Image.CreateFromData(
+                config.MapWidth * HachureTexelsPerTile, config.MapHeight * HachureTexelsPerTile, false, Image.Format.Rgba8, strokes))
+            {
+                _hachuresTexture = ImageTexture.CreateFromImage(hachures);
+            }
+
             material.SetShaderParameter("hachure_map", _hachuresTexture);
         }
         else
@@ -2333,7 +2341,8 @@ public partial class VillageMap
         }
 
         // The texture: four texels a tile, R the height and G the steepness. ⛔ Named from the spec (trap 17): 4 a tile.
-        Image? image = _hillsTexture?.GetImage();
+        // ⛔ `using` (A45): a temporary Image left to the finalizer is the .NET crash at exit.
+        using Image? image = _hillsTexture?.GetImage();
         if (raised > 0 && (image is null || image.GetWidth() != config.MapWidth * 4 || image.GetHeight() != config.MapHeight * 4
             || image.GetFormat() != Image.Format.Rgbf))
         {
@@ -2561,7 +2570,7 @@ public partial class VillageMap
                 steep += world.Map.Tiles[i] != Terrain.Water && world.Map.SteepnessAtIndex(i) >= config.SlopeSteepAt ? 1 : 0;
             }
 
-            Image? image = _hachuresTexture?.GetImage();
+            using Image? image = _hachuresTexture?.GetImage(); // ⛔ `using` (A45)
             int drawn = 0;
             if (image is not null)
             {

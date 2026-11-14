@@ -315,7 +315,8 @@ public sealed class ResidentialZoneTests
         _output.WriteLine(warned!.Value.Warning);
 
         Assert.True(warned.Value.Allowed, "A distant neighbourhood must be allowed, not refused.");
-        Assert.Contains("tiles from the nearest food", warned.Value.Warning, System.StringComparison.Ordinal);
+        // ⭐ In the shop's words since D744 (the village has a store): the walk a family really makes, D385.
+        Assert.Contains("tiles from the nearest shop", warned.Value.Warning, System.StringComparison.Ordinal);
     }
 
     [Fact]

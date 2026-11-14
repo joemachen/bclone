@@ -7,7 +7,7 @@ whole seam it stands by when it is finished, drawn round with a palisade; the br
 green and red-checked: D540's 7 mutants / 12 reds, D561's 4 mutants / 7 reds, no zeros left. No golden moved. ⭐ **D701 (2026-11-07,
 Joe: *"why cant i build a quarry near this particular stone seam. it works for all other seams."*): the reach is measured from the
 building's NEAREST tile, not its anchor tile, in the placement, the claim and the paint rule alike, and the refusal names how far off
-the nearest seam is — on `slice/seam-reach-footprint`, UNPLAYED, UNMERGED.** `TheReachIsMeasuredFromTheNearestTileOfTheBuilding`;
+the nearest seam is — ✅ PLAYED, MERGED AND PUSHED (D710; it read *"on `slice/seam-reach-footprint`, UNPLAYED, UNMERGED"* until D744).** `TheReachIsMeasuredFromTheNearestTileOfTheBuilding`;
 4 mutants, 18 reds (14 of them the rings array thrown past its end), no zero. No golden moved.
 
 ---

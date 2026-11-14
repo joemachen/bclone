@@ -103,7 +103,7 @@ public partial class Minimap : Control
     private void Bake(SimWorld world, int tilesWide, int tilesTall)
     {
         SimConfig config = world.Config;
-        Image image = Image.CreateEmpty(tilesWide, tilesTall, false, Image.Format.Rgba8);
+        using Image image = Image.CreateEmpty(tilesWide, tilesTall, false, Image.Format.Rgba8); // ⛔ `using` (A45)
 
         for (int y = 0; y < tilesTall; y++)
         {

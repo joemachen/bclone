@@ -558,6 +558,7 @@ public partial class Main : Control
         GD.Print(TheRosterSortsAsAsked());
         GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheHillsAreShadedAndSaid());
+        GD.Print(TheHomeCardSaysTheShopWalk());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");

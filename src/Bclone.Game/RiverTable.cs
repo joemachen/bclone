@@ -210,6 +210,7 @@ internal sealed class RiverTable
             BitConverter.TryWriteBytes(bytes.AsSpan((r * 16) + 12, 4), Lean[r]);
         }
 
-        return ImageTexture.CreateFromImage(Image.CreateFromData(Rows, 1, false, Image.Format.Rgbaf, bytes));
+        using Image image = Image.CreateFromData(Rows, 1, false, Image.Format.Rgbaf, bytes); // ⛔ `using` (A45)
+        return ImageTexture.CreateFromImage(image);
     }
 }
