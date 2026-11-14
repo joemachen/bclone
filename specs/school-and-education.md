@@ -1,8 +1,8 @@
 # Spec: The school — what four years of childhood buys
 
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
-> CODE (§11); CALLS 2 AND 3 ANSWERED (D753 — what school gives is two universal benefits, §11.4); ⏸️ CALLS 1, 4 AND 5
-> WITH JOE; NOTHING BUILT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
+> recommended); §12 THE ORDER OF WORK; NOTHING BUILT YET.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -174,17 +174,17 @@ task; no knowledge state may gate it*).
 
 ## 9. Open — for Joe
 
-1. **Does a school still require a library in catchment?** `tech-tree.md §7e` makes this *"the one
+1. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** No library-in-catchment rule. *(As asked:)* **Does a school still require a library in catchment?** `tech-tree.md §7e` makes this *"the one
    place adjacency is structural rather than bonus"*, with a red marker and a refused placement.
    **Joe's model does not mention it**, and D204 already deferred literacy. **Simplest reading: no —
    the school teaches children, it does not copy books.**
 2. **How much is four years worth?** The width of the floor is the whole feel of the system, and
    §4's first two failure modes are its two edges. **Wants a probe, not a guess.**
-3. **Is schooling per-child opt-in, or does the village simply fill the seats it has?** Filling the
+3. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** The village fills the places. *(As asked:)* **Is schooling per-child opt-in, or does the village simply fill the seats it has?** Filling the
    seats is consistent with §2.2 and needs no new control.
-4. **What happens to a pupil when the school is demolished, or the teacher dies mid-cohort?**
+4. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** Credit for the years served. *(As asked:)* **What happens to a pupil when the school is demolished, or the teacher dies mid-cohort?**
    Partial credit for years served is the obvious answer and matches *time on the task*.
-5. **Does a schooled child eat a dependant's share or a full one?** They are `Adult` by age today,
+5. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** A full meal, as today. *(As asked:)* **Does a schooled child eat a dependant's share or a full one?** They are `Adult` by age today,
    so they currently eat a full meal (D156, D191) — worth confirming that stays true while at
    school, since it makes the cost slightly higher again.
 
@@ -227,7 +227,7 @@ clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
 
 ### 11.3 ⏸️ The calls, for Joe — each with a recommendation
 
-1. **When does the school appear?** ⭐ **Recommended: once the library stands** — the tree's node already requires it,
+1. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** *(As recommended:)* **When does the school appear?** ⭐ **Recommended: once the library stands** — the tree's node already requires it,
    and the library is the literacy gift at about Years 15–19, so the first pupils are the children of the village's
    first settled generation. **No *library nearby* placement rule** (§9.1, `tech-tree.md §7e` annotated): it teaches
    children, it does not copy books.
@@ -242,10 +242,10 @@ clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
    *(As it stood:)* **What about the seven trades with no skill?** ⭐ **Recommended: accept it for the first landing** — school helps
    the ten skilled trades, and the panel says so — and record the seven rows as their own later piece (D391's debt), so
    this slice does not grow into re-deriving seven trades.
-4. **Who goes?** ⭐ **Recommended: the player sets how many teachers (staffing, D51); each teacher brings a fixed number
+4. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** *(As recommended:)* **Who goes?** ⭐ **Recommended: the player sets how many teachers (staffing, D51); each teacher brings a fixed number
    of places (a data row — 6 to start, measured); the village fills the places from its 12–15-year-olds by itself, the
    allocator's deterministic pass, never a pick of which child** (§9.3, D15). To school fewer, staff fewer teachers.
-5. **The small ones, as the spec already leans:** a pupil whose school closes or loses its teacher keeps the share of
+5. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** *(As recommended:)* **The small ones, as the spec already leans:** a pupil whose school closes or loses its teacher keeps the share of
    the floor for the years served (§9.4, *time on the task*); pupils eat a full meal (§9.5, as today); a teacher needs
    no skill of their own for the first landing; at school, pupils are under a roof by the same rule as any indoor
    workplace.
@@ -290,6 +290,37 @@ before either is set.
 appealing, but it makes schooling cheaper every generation, which is the ratchet. **Offered and not chosen:** C, a
 graduate keeping a technique alive after its last master dies (the knowledge panel: *"kept by Wren, who went to
 school"*); D, a graduate's first year in any new trade counting double (helps only the ten skilled trades).
+
+## 12. The order of work (D754)
+
+One slice, `slice/school`; each step its own commit with its docs; tests before code (METHODOLOGY §2).
+
+1. **The school in the sim, without its benefits.** `BuildingKind.School` (30) and `JobKind.Teacher` (17) as rows, the
+   tailor's and workshop's shape — the costs typed and said to be typed, never claimed as measured. **Learned once a
+   library stands** (the *school* node's condition; its fogged *"readers"* line rewritten to Joe's model). Each staffed
+   teacher brings `school_places_per_teacher` places (6 to start); **the village fills them by itself** from its
+   villagers aged `adult_age` to `school_leaving_age` − 1 (12–15) who are still within their term, by the allocator's
+   deterministic pass — never a pick of a child (D15, D51). A pupil works at nothing else, is under a roof by the
+   indoor-workplace rule, eats a full meal, and counts the years served; at `school_leaving_age` (16), or when there is
+   no place, they go to work with **credit for the years served**. Life-log lines for starting and finishing.
+   Guards: places from staffing, filling without a pick, the term, the credit, a school-less village unchanged.
+2. **A and B(i), behind sizes in the data** (§11.4) — A: full strength until 30 + `school_vigour_years`, scaled by the
+   years served of the term, lifespan untouched; B(i): a graduate goes in from the cold when the chill of her walk to
+   the nearest fire would carry her past `seek_shelter_percent`, never at a fixed point. Guards that each is *seen* — a
+   graduate's vigour at 34, a graduate leaving the far wood before an ungraduated neighbour and reaching the fire
+   less cold. **The sizes stay at zero until step 3.**
+3. **⭐ The measurement — the numbers before anything is typed** (§9.2). Harness centuries on several seeds, posed so a
+   library and a school stand: no school, a full school, and a half one, across sizes of A and B. What a school costs
+   in work and what it returns in strong years and winter safety; **the size at which it is worth building and
+   schooling every child is not automatically right** (§4's first two rows). Brought to Joe in plain words; **he sets
+   the sizes.**
+4. **The view.** The school on the build bar (once learned), its card (*"14 of 20 places taken"*), the teacher on the
+   professions panel, the villager card's sentences (*"Wren spent four years at the school"*, A's and B's lines), the
+   tree's node, and the village asking for another school by name when the places run out (§6). A probe line for each.
+5. **Saves, the hash, the goldens** — the new state saved and hashed sparsely (a village with no school is
+   byte-identical); the goldens taken last, once, with the reason (D152); the four checks; then Joe plays it.
+
+*B(ii), the Phase 6 pressures' sooner warning, is not on this list — it is each pressure's spec's to build (§11.4).*
 
 ## 10. Definition of Done
 
