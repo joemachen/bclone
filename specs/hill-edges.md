@@ -1,6 +1,6 @@
 # Spec: The hills' drawn edge — an inked lip, a lit side, a shaded bank
 
-**Status:** ✍️ **SPECCED (A66, 2026-11-13). Joe's two calls answered on a mock (*"B: lip, light and shade"*, *"Only steep
+**Status:** ⛔ **THE LOOK REFUSED (A67, 2026-11-13; Joe, in his game: *"i hate it. the big dark areas just look like cloud shadows"*) AND REPLACED BY `green-ground.md` (A68).** What stands from this spec: the heights field (§4), the water filled from the land, and the one inked lip on steep banks. What is gone: the light, the shade and the darker bank (`HillLight`, `HillShade`, `HillBank`, deleted). The rest of this page is as it was written, for the reasoning. *(As it stood:)* ✍️ **SPECCED (A66, 2026-11-13). Joe's two calls answered on a mock (*"B: lip, light and shade"*, *"Only steep
 banks"*). 🔨 BUILT (A66, §7). ⏸️ HIS EYES.** *(Scope, from Joe through the main session, 2026-11-13: "exact style" means the watercolour grass and ground, plus this edge; trees and buildings stay top-down as A31 set, and the panels are later.)* Art lane, branch `art`. It is the first piece of the map *toward Joe's concept* (A65). It is also
 `terrain-shader.md §7` piece 5 (relief), which A57 parked until the sim had real heights. It has them now: `main`,
 D735–D742, `specs/heights.md`.

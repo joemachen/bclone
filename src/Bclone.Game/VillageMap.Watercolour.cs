@@ -564,6 +564,7 @@ public partial class VillageMap
         // The trees' ink (A28): the canopies are meshed once and kept, so a change of ink re-meshes every chunk — once, on
         // the next refresh, by forgetting which map was meshed.
         ValleyWatercolourLook? look = on ? ValleyWatercolourLook.Current : null;
+        _treeTint = look is { GreenOn: true } ? look.TreeTint : Colors.White;
         float inkTiles = look?.TreeInkTiles ?? 0f;
         Color ink = look?.InkColour ?? default;
         if (inkTiles != _canopyInkTiles || ink != _canopyInk)
@@ -1077,9 +1078,41 @@ public partial class VillageMap
         material.SetShaderParameter("ripple_drift", watercolour.RippleDriftTilesPerSecond);
         material.SetShaderParameter("ripple_fade_px", watercolour.RippleFadePxPerTile);
         material.SetShaderParameter("hill_full_tilt_levels", watercolour.HillFullTiltLevels);
-        material.SetShaderParameter("hill_light", watercolour.HillLight);
-        material.SetShaderParameter("hill_shade", watercolour.HillShade);
-        material.SetShaderParameter("hill_bank", watercolour.HillBank);
+        material.SetShaderParameter("green_on", watercolour.GreenOn);
+        material.SetShaderParameter("green_deep", Srgb(watercolour.GreenDeep));
+        material.SetShaderParameter("green_low", Srgb(watercolour.GreenLow));
+        material.SetShaderParameter("green_mid", Srgb(watercolour.GreenMid));
+        material.SetShaderParameter("green_high", Srgb(watercolour.GreenHigh));
+        material.SetShaderParameter("green_crest", Srgb(watercolour.GreenCrest));
+        material.SetShaderParameter("green_warm", Srgb(watercolour.GreenWarm));
+        material.SetShaderParameter("green_cool", Srgb(watercolour.GreenCool));
+        material.SetShaderParameter("green_spring", Srgb(watercolour.GreenSpring));
+        material.SetShaderParameter("green_summer", Srgb(watercolour.GreenSummer));
+        material.SetShaderParameter("green_autumn", Srgb(watercolour.GreenAutumn));
+        material.SetShaderParameter("green_winter", Srgb(watercolour.GreenWinter));
+        material.SetShaderParameter("green_levels", watercolour.GreenLevels);
+        material.SetShaderParameter("green_flat_level", watercolour.GreenFlatLevel);
+        material.SetShaderParameter("green_wander", watercolour.GreenWander);
+        material.SetShaderParameter("green_crest_turn", watercolour.GreenCrestTurn);
+        material.SetShaderParameter("green_hollow", watercolour.GreenHollow);
+        material.SetShaderParameter("green_warm_turn", watercolour.GreenWarmTurn);
+        material.SetShaderParameter("green_cool_turn", watercolour.GreenCoolTurn);
+        material.SetShaderParameter("green_steep", watercolour.GreenSteep);
+        material.SetShaderParameter("green_kinds_share", watercolour.GreenKindsShare);
+        material.SetShaderParameter("green_grass_share", watercolour.GreenGrassShare);
+        material.SetShaderParameter("green_wood", watercolour.GreenWood);
+        material.SetShaderParameter("brush_strength", watercolour.BrushStrength);
+        material.SetShaderParameter("brush_tiles", watercolour.BrushTiles);
+        material.SetShaderParameter("tuft_strength", watercolour.TuftStrength);
+        material.SetShaderParameter("tuft_cell_tiles", watercolour.TuftCellTiles);
+        material.SetShaderParameter("tuft_length_tiles", watercolour.TuftLengthTiles);
+        material.SetShaderParameter("tuft_share", watercolour.TuftShare);
+        material.SetShaderParameter("tuft_width_px", watercolour.TuftWidthPx);
+        material.SetShaderParameter("tuft_fade_px", watercolour.TuftFadePxPerTile);
+        material.SetShaderParameter("hachure_texels_per_tile", (float)HachureTexelsPerTile);
+        material.SetShaderParameter("hachure_strength", watercolour.HachureStrength);
+        material.SetShaderParameter("hachure_width_share", watercolour.HachureWidthShare);
+        material.SetShaderParameter("hachure_fade_px", watercolour.HachureFadePxPerTile);
         material.SetShaderParameter("hill_lip_strength", watercolour.HillLipStrength);
         material.SetShaderParameter("hill_lip_width_share", watercolour.HillLipWidthShare);
         material.SetShaderParameter("ripple_repeat_cells", RippleRepeatCells);
@@ -1186,6 +1219,12 @@ public partial class VillageMap
     /// <summary>The heights texture, for the probe: null on a flat valley.</summary>
     internal ImageTexture? HillsTexture => _hillsTexture;
 
+    /// <summary>The hachures' bake (A68), built with the heights: null on a flat valley.</summary>
+    private ImageTexture? _hachuresTexture;
+
+    /// <summary>The painted crowns' tint (A68, <c>green-ground.md §3.8</c>): the look file's with the tick on.</summary>
+    private Color _treeTint = Colors.White;
+
     /// <summary>
     /// ⭐ The valley's heights to the shader (A66, <c>hill-edges.md §4</c>), once a world: they never change in play. Not
     /// hashed, not saved (D335). The steep threshold is the sim's own, so the lip and the slow ground are the same ground.
@@ -1218,8 +1257,18 @@ public partial class VillageMap
             }
 
             int w = config.MapWidth * HillTexelsPerTile, h = config.MapHeight * HillTexelsPerTile;
-            _hillsTexture = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.Rgf, bytes));
+            _hillsTexture = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.Rgbf, bytes));
             material.SetShaderParameter("heights_map", _hillsTexture);
+
+            // The hachures (A68, `green-ground.md §4`): baked once a world beside the field they are traced on.
+            byte[] strokes = HillHachures(field, water, config.MapWidth, config.MapHeight);
+            _hachuresTexture = ImageTexture.CreateFromImage(Image.CreateFromData(
+                config.MapWidth * HachureTexelsPerTile, config.MapHeight * HachureTexelsPerTile, false, Image.Format.Rgba8, strokes));
+            material.SetShaderParameter("hachure_map", _hachuresTexture);
+        }
+        else
+        {
+            _hachuresTexture = null;
         }
 
         material.SetShaderParameter("hills_on", heights is not null);
@@ -1277,9 +1326,230 @@ public partial class VillageMap
     /// <summary>Texels a tile in the hills' field: enough for a smooth lip at the closest zoom.</summary>
     internal const int HillTexelsPerTile = 4;
 
+    /// <summary>Floats a texel in the hills' field: the height, the steep mask, the crest.</summary>
+    internal const int HillChannels = 3;
+
+    /// <summary>
+    /// ⭐ The crest (A68, <c>green-ground.md §4</c>), a number a tile: above zero where the ground stands above its
+    /// surroundings (a crest, a shoulder), below it in a hollow or at a bank's foot, zero on a plain. The heights blurred
+    /// at 1.2 tiles less the heights blurred at 3.5, plus three tenths of the same at 3 and 8, in sixteenths of a level
+    /// (a level is a sixteenth of a tile's rise, for drawing). No light in it: it is the land's own shape.
+    /// </summary>
+    internal static float[] HillCrest(float[] heights, int width, int height)
+    {
+        float[] near = Blurred(1.2f), wide = Blurred(3.5f), far = Blurred(3f), farther = Blurred(8f);
+        var crest = new float[heights.Length];
+        for (int i = 0; i < crest.Length; i++)
+        {
+            crest[i] = ((near[i] - wide[i]) + (0.3f * (far[i] - farther[i]))) / 16f;
+        }
+
+        return crest;
+
+        float[] Blurred(float sigma)
+        {
+            int reach = (int)MathF.Ceiling(sigma * 3f);
+            var kernel = new float[(2 * reach) + 1];
+            float total = 0f;
+            for (int k = -reach; k <= reach; k++)
+            {
+                kernel[k + reach] = MathF.Exp(-(k * k) / (2f * sigma * sigma));
+                total += kernel[k + reach];
+            }
+
+            var across = new float[heights.Length];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float sum = 0f;
+                    for (int k = -reach; k <= reach; k++)
+                    {
+                        sum += kernel[k + reach] * heights[(y * width) + System.Math.Clamp(x + k, 0, width - 1)];
+                    }
+
+                    across[(y * width) + x] = sum / total;
+                }
+            }
+
+            var down = new float[heights.Length];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float sum = 0f;
+                    for (int k = -reach; k <= reach; k++)
+                    {
+                        sum += kernel[k + reach] * across[(System.Math.Clamp(y + k, 0, height - 1) * width) + x];
+                    }
+
+                    down[(y * width) + x] = sum / total;
+                }
+            }
+
+            return down;
+        }
+    }
+
+    /// <summary>Texels a tile in the hachures' bake: strokes stand a third of a tile apart, so each has texels of its own.</summary>
+    internal const int HachureTexelsPerTile = 8;
+
+    /// <summary>
+    /// ⭐ The hachures (A68, <c>green-ground.md §4</c>): pen strokes from a steep bank's lip down it, baked once a world
+    /// because a stroke cannot be traced per pixel. For each texel, the one stroke nearest it (within two texels): RG where
+    /// it starts, from the texel's own centre, in quarter-texels (128 is none); B its direction, 256 to the circle; A its
+    /// length in 128ths of a tile, 0 where no stroke is near. The shader works the distance out from those, so the pen is
+    /// as thin on screen at every zoom as the bank's own.
+    /// </summary>
+    /// <remarks>
+    /// One stroke per third of a tile of lip, seeded where the steep mask crosses a half on its uphill side (the shader's
+    /// own lip), walked downhill a twelfth of a tile at a time until its length is spent, the ground stops being steep, or
+    /// water is met; long (1.25 tiles) and short (0.6) by a hash of its cell. ⛔ Every choice is a hash of the place: no
+    /// random source, the same strokes every time (D632's rule for the lane).
+    /// </remarks>
+    internal static byte[] HillHachures(float[] field, bool[] water, int width, int height)
+    {
+        const int Cells = 3, Samples = 12;
+        const float Reach = 0.25f, Edge = 2f;
+        int n = HillTexelsPerTile, fw = width * n, fh = height * n;
+        int m = HachureTexelsPerTile, bw = width * m, bh = height * m;
+
+        float At(int channel, float x, float y)
+        {
+            float u = (x * n) - 0.5f, v = (y * n) - 0.5f;
+            int x0 = System.Math.Clamp((int)MathF.Floor(u), 0, fw - 1), x1 = System.Math.Min(x0 + 1, fw - 1);
+            int y0 = System.Math.Clamp((int)MathF.Floor(v), 0, fh - 1), y1 = System.Math.Min(y0 + 1, fh - 1);
+            float fx = System.Math.Clamp(u - x0, 0f, 1f), fy = System.Math.Clamp(v - y0, 0f, 1f);
+            float top = (field[(((y0 * fw) + x0) * HillChannels) + channel] * (1 - fx)) + (field[(((y0 * fw) + x1) * HillChannels) + channel] * fx);
+            float bottom = (field[(((y1 * fw) + x0) * HillChannels) + channel] * (1 - fx)) + (field[(((y1 * fw) + x1) * HillChannels) + channel] * fx);
+            return (top * (1 - fy)) + (bottom * fy);
+        }
+
+        (float X, float Y, float Length) Downhill(float x, float y)
+        {
+            float hx = At(0, x + Reach, y) - At(0, x - Reach, y), hy = At(0, x, y + Reach) - At(0, x, y - Reach);
+            float length = MathF.Sqrt((hx * hx) + (hy * hy));
+            return length < 1e-3f ? (0f, 0f, 0f) : (-hx / length, -hy / length, length);
+        }
+
+        // The seeds: in each third-of-a-tile cell, the sample nearest the mask's halfway line on its uphill side.
+        int cellsAcross = width * Cells, cellsDown = height * Cells;
+        var miss = new float[cellsAcross * cellsDown];
+        var seedX = new float[miss.Length];
+        var seedY = new float[miss.Length];
+        System.Array.Fill(miss, float.MaxValue);
+        for (int j = 0; j < height * Samples; j++)
+        {
+            for (int i = 0; i < width * Samples; i++)
+            {
+                float x = (i + 0.5f) / Samples, y = (j + 0.5f) / Samples;
+                float off = MathF.Abs(At(1, x, y) - 0.5f);
+                if (off >= 0.12f)
+                {
+                    continue;
+                }
+
+                (float dx, float dy, float slope) = Downhill(x, y);
+                float rising = (((At(1, x + Reach, y) - At(1, x - Reach, y)) * dx) + ((At(1, x, y + Reach) - At(1, x, y - Reach)) * dy)) / (2f * Reach);
+                int cell = ((j * Cells / Samples) * cellsAcross) + (i * Cells / Samples);
+                if (slope > 0f && rising > 0.06f && off < miss[cell])
+                {
+                    miss[cell] = off;
+                    seedX[cell] = x;
+                    seedY[cell] = y;
+                }
+            }
+        }
+
+        var bytes = new byte[bw * bh * 4];
+        var nearest = new float[bw * bh];
+        System.Array.Fill(nearest, float.MaxValue);
+        for (int cell = 0; cell < miss.Length; cell++)
+        {
+            if (miss[cell] == float.MaxValue)
+            {
+                continue;
+            }
+
+            int cx = cell % cellsAcross, cy = cell / cellsAcross;
+            float wanted = (HachureRand(cx, cy, 1) < 0.5f ? 1.25f : 0.6f) * (0.75f + (0.45f * HachureRand(cx, cy, 2)));
+            float x = seedX[cell], y = seedY[cell];
+            int taken = 0;
+            for (int steps = (int)(wanted * Samples); taken < steps; taken++)
+            {
+                (float dx, float dy, float slope) = Downhill(x, y);
+                float nx = x + (dx / Samples), ny = y + (dy / Samples);
+                if (slope == 0f || nx < 0f || ny < 0f || nx >= width || ny >= height
+                    || water[((int)ny * width) + (int)nx] || At(1, nx, ny) < 0.15f)
+                {
+                    break;
+                }
+
+                x = nx;
+                y = ny;
+            }
+
+            // The stroke as the shader will read it back: its start on the bake's quarter-texel lattice, its direction in
+            // 256ths of a circle, its length in 128ths of a tile. Measured from those, so the stamp and the pen agree.
+            float quarter = m * 4f;
+            float startX = MathF.Round(seedX[cell] * quarter) / quarter, startY = MathF.Round(seedY[cell] * quarter) / quarter;
+            float length = MathF.Sqrt(((x - startX) * (x - startX)) + ((y - startY) * (y - startY)));
+            if (taken < 4 || length < 0.25f)
+            {
+                continue;
+            }
+
+            int turn = ((int)MathF.Round(MathF.Atan2(y - startY, x - startX) / MathF.Tau * 256f) + 256) % 256;
+            int reach = System.Math.Clamp((int)MathF.Round(length * 128f), 1, 255);
+            float ux = MathF.Cos(turn * MathF.Tau / 256f), uy = MathF.Sin(turn * MathF.Tau / 256f), run = reach / 128f;
+            float endX = startX + (ux * run), endY = startY + (uy * run);
+            int x0 = System.Math.Max(0, (int)MathF.Floor((System.Math.Min(startX, endX) * m) - Edge));
+            int x1 = System.Math.Min(bw - 1, (int)MathF.Ceiling((System.Math.Max(startX, endX) * m) + Edge));
+            int y0 = System.Math.Max(0, (int)MathF.Floor((System.Math.Min(startY, endY) * m) - Edge));
+            int y1 = System.Math.Min(bh - 1, (int)MathF.Ceiling((System.Math.Max(startY, endY) * m) + Edge));
+            for (int ty = y0; ty <= y1; ty++)
+            {
+                for (int tx = x0; tx <= x1; tx++)
+                {
+                    float px = ((tx + 0.5f) / m) - startX, py = ((ty + 0.5f) / m) - startY;
+                    float along = System.Math.Clamp((px * ux) + (py * uy), 0f, run);
+                    float ex = px - (ux * along), ey = py - (uy * along);
+                    float away = MathF.Sqrt((ex * ex) + (ey * ey)) * m;
+                    int at = (ty * bw) + tx;
+                    if (away <= Edge && away < nearest[at])
+                    {
+                        nearest[at] = away;
+                        bytes[at * 4] = (byte)(128 + (int)MathF.Round(((startX * m) - (tx + 0.5f)) * 4f));
+                        bytes[(at * 4) + 1] = (byte)(128 + (int)MathF.Round(((startY * m) - (ty + 0.5f)) * 4f));
+                        bytes[(at * 4) + 2] = (byte)turn;
+                        bytes[(at * 4) + 3] = (byte)reach;
+                    }
+                }
+            }
+        }
+
+        return bytes;
+    }
+
+    /// <summary>A number in [0, 1) for a cell and a salt: an integer hash, the same everywhere and every time.</summary>
+    private static float HachureRand(int x, int y, uint salt)
+    {
+        unchecked
+        {
+            uint h = ((uint)x * 0x9E3779B1u) ^ ((uint)y * 0x85EBCA77u) ^ (salt * 0xC2B2AE3Du);
+            h ^= h >> 15;
+            h *= 0x2C1B3C6Du;
+            h ^= h >> 12;
+            h *= 0x297A2D39u;
+            h ^= h >> 15;
+            return (h >> 8) / 16777216f;
+        }
+    }
+
     /// <summary>
     /// The hills' field (A66): the heights and the steep mask (1 where the sim calls a tile steep), each upsampled to <see cref="HillTexelsPerTile"/> a tile
-    /// (bilinear between tile centres) and softened by two box passes half a tile across, interleaved R height, G steepness.
+    /// (bilinear between tile centres) and softened by two box passes half a tile across, interleaved R height, G steepness,
+    /// and (A68) B the crest (<see cref="HillCrest"/>), brought up the same way.
     /// ⚠️ Softened, because the shader draws the lip where steepness crosses the steep line, and a per-tile field crosses it
     /// in tile-shaped steps: the first build drew blocks at the widest zoom.
     /// </summary>
@@ -1287,11 +1557,13 @@ public partial class VillageMap
     {
         int n = HillTexelsPerTile, w = width * n, h = height * n;
         float[] r = Softened(Upsampled(heights)), g = Softened(Upsampled(steepness));
-        var field = new float[w * h * 2];
+        float[] b = Softened(Upsampled(HillCrest(heights, width, height)));
+        var field = new float[w * h * HillChannels];
         for (int i = 0; i < w * h; i++)
         {
-            field[i * 2] = r[i];
-            field[(i * 2) + 1] = g[i];
+            field[i * HillChannels] = r[i];
+            field[(i * HillChannels) + 1] = g[i];
+            field[(i * HillChannels) + 2] = b[i];
         }
 
         return field;
@@ -1499,8 +1771,13 @@ public partial class VillageMap
         "echo_lifts", "echo_dash_tiles", "echo_fade_px", "ripple_strength", "ripple_width_px", "ripple_cell_tiles",
         "ripple_share", "ripple_length_tiles", "ripple_bow_tiles", "ripple_bank_tiles", "ripple_bank_level", "ripple_drift", "ripple_life_s",
         "ripple_fade_px", "ripple_repeat_cells", "flow_seconds", "flow_period_s", "hills_on", "heights_map",
-        "hill_full_tilt_levels", "hill_light", "hill_shade", "hill_bank", "hill_lip_strength",
-        "hill_lip_width_share",
+        "hill_full_tilt_levels", "hill_lip_strength", "hill_lip_width_share",
+        "green_on", "green_deep", "green_low", "green_mid", "green_high", "green_crest", "green_warm", "green_cool",
+        "green_spring", "green_summer", "green_autumn", "green_winter", "green_levels", "green_flat_level", "green_wander",
+        "green_crest_turn", "green_hollow", "green_warm_turn", "green_cool_turn", "green_steep", "green_kinds_share",
+        "green_grass_share", "green_wood", "brush_strength", "brush_tiles", "tuft_strength", "tuft_cell_tiles", "tuft_length_tiles",
+        "tuft_share", "tuft_width_px", "tuft_fade_px", "hachure_map", "hachure_texels_per_tile", "hachure_strength",
+        "hachure_width_share", "hachure_fade_px",
     };
 
     /// <summary>
@@ -2058,9 +2335,9 @@ public partial class VillageMap
         // The texture: four texels a tile, R the height and G the steepness. ⛔ Named from the spec (trap 17): 4 a tile.
         Image? image = _hillsTexture?.GetImage();
         if (raised > 0 && (image is null || image.GetWidth() != config.MapWidth * 4 || image.GetHeight() != config.MapHeight * 4
-            || image.GetFormat() != Image.Format.Rgf))
+            || image.GetFormat() != Image.Format.Rgbf))
         {
-            faults.Add($"the hills' field is {image?.GetWidth()} × {image?.GetHeight()} {image?.GetFormat()} (want four texels a tile, {config.MapWidth * 4} × {config.MapHeight * 4}, Rgf)");
+            faults.Add($"the hills' field is {image?.GetWidth()} × {image?.GetHeight()} {image?.GetFormat()} (want four texels a tile, {config.MapWidth * 4} × {config.MapHeight * 4}, Rgbf)");
         }
 
         // The field on a made-up terrace: a 12 × 1 strip, flat at 0 then flat at 40 from tile 6 — softened, the height rises
@@ -2074,8 +2351,8 @@ public partial class VillageMap
         }
 
         float[] field = HillField(terraceHeights, terraceSteep, 12, 1);
-        float HeightAtTexel(int x) => field[x * 2];
-        float SteepAtTexel(int x) => field[(x * 2) + 1];
+        float HeightAtTexel(int x) => field[x * HillChannels];
+        float SteepAtTexel(int x) => field[(x * HillChannels) + 1];
         if (HeightAtTexel(2) != 0f || HeightAtTexel(45) != 40f || !(HeightAtTexel(22) < HeightAtTexel(26))
             || SteepAtTexel(2) != 0f || SteepAtTexel(46) != 0f || !(SteepAtTexel(24) > 0.5f)
             // ⚠️ softened, not only upsampled: a tile's bilinear reaches no further than its neighbour's centre, so the mask is
@@ -2138,9 +2415,6 @@ public partial class VillageMap
         ValleyWatercolourLook look = ValleyWatercolourLook.Current;
         if (material is null
             || material.GetShaderParameter("hills_on").AsBool() != (raised > 0)
-            || material.GetShaderParameter("hill_light").AsSingle() != look.HillLight
-            || material.GetShaderParameter("hill_shade").AsSingle() != look.HillShade
-            || material.GetShaderParameter("hill_bank").AsSingle() != look.HillBank
             || material.GetShaderParameter("hill_full_tilt_levels").AsSingle() != look.HillFullTiltLevels
             || material.GetShaderParameter("hill_lip_strength").AsSingle() != look.HillLipStrength
             || material.GetShaderParameter("hill_lip_width_share").AsSingle() != look.HillLipWidthShare)
@@ -2152,6 +2426,229 @@ public partial class VillageMap
         return faults.Count == 0
             ? $"[widths] hill edges: ✅ {raised} of {land} land tiles raised (highest {highest} of 256), {steep} steep at the config's {config.SlopeSteepAt}; the field four texels a tile, the steep mask the sim's own class, water filled from the land; the look's values handed over; a flat valley draws none"
             : $"[widths] hill edges: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>green ground:</c> line (A68, <c>green-ground.md §6</c>): the field's crest on a made-up ridge, the
+    /// hachures' bake on a made-up bank (strokes from the lip downhill, none on flat ground, the same bytes twice), the
+    /// bake the valley was handed, the look's values on the layer, and the crowns' tint with the tick. The draw itself is
+    /// the shader's, never headless (D340): the renders are its evidence.
+    /// </summary>
+    internal string TheGreenGroundHolds()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] green ground: ⛔ no world";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        try
+        {
+            // The crest on a made-up ridge: 61 tiles in a row, flat but for three tiles standing 48 levels up in the middle.
+            var ridge = new float[61];
+            ridge[29] = ridge[30] = ridge[31] = 48f;
+            float[] crest = HillCrest(ridge, 61, 1);
+            if (!(crest[30] > 0.5f) || !(crest[25] < 0f) || !(MathF.Abs(crest[2]) < 0.1f * crest[30]))
+            {
+                faults.Add($"the crest on a ridge: {crest[30]:0.###} on it, {crest[25]:0.###} at its foot, {crest[2]:0.###} far away (want over 0.5, under 0, near 0)");
+            }
+
+            // The hachures on a made-up bank: 12 × 6 tiles, level 0 west of tile 6 and 40 from it, the two tiles at the step
+            // steep. The lip is on the uphill (east) side, so every stroke starts east of the step's middle and runs west.
+            var bankHeights = new float[72];
+            var bankSteep = new float[72];
+            for (int i = 0; i < 72; i++)
+            {
+                bankHeights[i] = i % 12 < 6 ? 0f : 40f;
+                bankSteep[i] = i % 12 is 5 or 6 ? 1f : 0f;
+            }
+
+            var dry = new bool[72];
+            float[] bank = HillField(bankHeights, bankSteep, 12, 6);
+            byte[] strokes = HillHachures(bank, dry, 12, 6);
+
+            // The crest carried into the field's third channel: above zero on the bank's top side, below it at its foot.
+            float CrestAtTile(float x) => bank[((((3 * 4) + 2) * 12 * 4) + (int)(x * 4)) * HillChannels + 2];
+            if (!(CrestAtTile(7.5f) > 0f) || !(CrestAtTile(4.5f) < 0f))
+            {
+                faults.Add($"the field's crest on a bank: {CrestAtTile(7.5f):0.###} on its top side, {CrestAtTile(4.5f):0.###} at its foot (want above 0, below 0)");
+            }
+            int marked = 0, astray = 0, uphill = 0, starts = 0;
+            float firstStart = float.MaxValue, lastStart = float.MinValue;
+            for (int at = 0; at < strokes.Length / 4; at++)
+            {
+                if (strokes[(at * 4) + 3] == 0)
+                {
+                    continue;
+                }
+
+                // ⛔ Named from the spec (trap 17): 8 texels a tile, starts in quarter-texels from the texel's centre.
+                int tx = at % (12 * 8);
+                float texelTile = (tx + 0.5f) / 8f;
+                float startTile = (tx + 0.5f + ((strokes[at * 4] - 128) * 0.25f)) / 8f;
+                int turn = strokes[(at * 4) + 2];
+                marked++;
+                astray += texelTile is < 3.5f or > 9f ? 1 : 0;
+                starts += startTile is < 6f or > 8.5f ? 1 : 0;
+                firstStart = MathF.Min(firstStart, startTile);
+                lastStart = MathF.Max(lastStart, startTile);
+                uphill += turn is < 96 or > 160 ? 1 : 0;
+            }
+
+            // ⚠️ The lip is one straight line here, so the starts lie within the seeds' band of it (0.12 of the mask either
+            // side, about half a tile in all): a wider spread is strokes seeded off the lip (red-check G12 scored zero
+            // until this was asked).
+            if (marked == 0 || astray > 0 || starts > 0 || uphill > 0 || lastStart - firstStart > 0.6f)
+            {
+                faults.Add($"the hachures on a bank: {marked} texels marked, {astray} off the bank, {starts} starting off the lip's side, {uphill} not running downhill, the starts spread over {lastStart - firstStart:0.##} tiles (want some, none of the next three, and under 0.6)");
+            }
+
+            if (!strokes.AsSpan().SequenceEqual(HillHachures(bank, dry, 12, 6)))
+            {
+                faults.Add("the hachures differ between two bakes of the same bank");
+            }
+
+            float[] plain = HillField(new float[72], new float[72], 12, 6);
+            if (HillHachures(plain, dry, 12, 6).Any(b => b != 0))
+            {
+                faults.Add("hachures on flat ground");
+            }
+
+            // A bank that falls into water: the strokes stop at the water. ⚠️ The water reaches the step itself (tile 6),
+            // where the mask is still steep: with it a tile further off no stroke came near it, and the guard scored zero
+            // (red-check G5).
+            var wet = new bool[72];
+            for (int i = 0; i < 72; i++)
+            {
+                wet[i] = i % 12 < 6;
+            }
+
+            byte[] cut = HillHachures(bank, wet, 12, 6);
+            int intoWater = 0;
+            for (int at = 0; at < cut.Length / 4; at++)
+            {
+                if (cut[(at * 4) + 3] == 0)
+                {
+                    continue;
+                }
+
+                int tx = at % (12 * 8);
+                float startTile = (tx + 0.5f + ((cut[at * 4] - 128) * 0.25f)) / 8f;
+                float turn = cut[(at * 4) + 2] * MathF.Tau / 256f;
+                float endTile = startTile + (MathF.Cos(turn) * cut[(at * 4) + 3] / 128f);
+                intoWater += endTile < 5.85f ? 1 : 0;
+            }
+
+            if (intoWater > 0)
+            {
+                faults.Add($"{intoWater} texels name a stroke that runs into the water");
+            }
+
+            // The valley's own bake and the layer's values.
+            SimConfig config = world.Config;
+            bool wasOn = _watercolour;
+            ShowWatercolour(true);
+            _hillsOf = null;
+            ShaderMaterial? material = _watercolourMaterial;
+            if (material is not null)
+            {
+                HandTheHillsOver(material, config);
+            }
+
+            int steep = 0;
+            for (int i = 0; i < world.Map.Tiles.Count; i++)
+            {
+                steep += world.Map.Tiles[i] != Terrain.Water && world.Map.SteepnessAtIndex(i) >= config.SlopeSteepAt ? 1 : 0;
+            }
+
+            Image? image = _hachuresTexture?.GetImage();
+            int drawn = 0;
+            if (image is not null)
+            {
+                byte[] data = image.GetData();
+                for (int at = 3; at < data.Length; at += 4)
+                {
+                    drawn += data[at] != 0 ? 1 : 0;
+                }
+            }
+
+            if (_hillsTexture is not null && (image is null || image.GetWidth() != config.MapWidth * 8 || image.GetHeight() != config.MapHeight * 8
+                || image.GetFormat() != Image.Format.Rgba8 || (steep > 20 && drawn == 0)))
+            {
+                faults.Add($"the valley's hachures are {image?.GetWidth()} × {image?.GetHeight()} {image?.GetFormat()} with {drawn} texels marked over {steep} steep tiles (want eight texels a tile, Rgba8, some marked)");
+            }
+
+            ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+            if (material is null
+                || material.GetShaderParameter("green_on").AsBool() != look.GreenOn
+                || material.GetShaderParameter("green_deep").AsVector3() != Srgb(look.GreenDeep)
+                || material.GetShaderParameter("green_low").AsVector3() != Srgb(look.GreenLow)
+                || material.GetShaderParameter("green_mid").AsVector3() != Srgb(look.GreenMid)
+                || material.GetShaderParameter("green_high").AsVector3() != Srgb(look.GreenHigh)
+                || material.GetShaderParameter("green_crest").AsVector3() != Srgb(look.GreenCrest)
+                || material.GetShaderParameter("green_warm").AsVector3() != Srgb(look.GreenWarm)
+                || material.GetShaderParameter("green_cool").AsVector3() != Srgb(look.GreenCool)
+                || material.GetShaderParameter("green_spring").AsVector3() != Srgb(look.GreenSpring)
+                || material.GetShaderParameter("green_summer").AsVector3() != Srgb(look.GreenSummer)
+                || material.GetShaderParameter("green_autumn").AsVector3() != Srgb(look.GreenAutumn)
+                || material.GetShaderParameter("green_winter").AsVector3() != Srgb(look.GreenWinter)
+                || material.GetShaderParameter("green_levels").AsVector2() != look.GreenLevels
+                || material.GetShaderParameter("green_flat_level").AsSingle() != look.GreenFlatLevel
+                || material.GetShaderParameter("green_wander").AsSingle() != look.GreenWander
+                || material.GetShaderParameter("green_crest_turn").AsVector2() != look.GreenCrestTurn
+                || material.GetShaderParameter("green_hollow").AsSingle() != look.GreenHollow
+                || material.GetShaderParameter("green_warm_turn").AsVector2() != look.GreenWarmTurn
+                || material.GetShaderParameter("green_cool_turn").AsSingle() != look.GreenCoolTurn
+                || material.GetShaderParameter("green_steep").AsSingle() != look.GreenSteep
+                || material.GetShaderParameter("green_kinds_share").AsSingle() != look.GreenKindsShare
+                || material.GetShaderParameter("green_grass_share").AsSingle() != look.GreenGrassShare
+                || material.GetShaderParameter("green_wood").AsVector2() != look.GreenWood
+                || material.GetShaderParameter("brush_strength").AsSingle() != look.BrushStrength
+                || material.GetShaderParameter("brush_tiles").AsVector2() != look.BrushTiles
+                || material.GetShaderParameter("tuft_strength").AsSingle() != look.TuftStrength
+                || material.GetShaderParameter("tuft_cell_tiles").AsSingle() != look.TuftCellTiles
+                || material.GetShaderParameter("tuft_length_tiles").AsVector2() != look.TuftLengthTiles
+                || material.GetShaderParameter("tuft_share").AsSingle() != look.TuftShare
+                || material.GetShaderParameter("tuft_width_px").AsSingle() != look.TuftWidthPx
+                || material.GetShaderParameter("tuft_fade_px").AsSingle() != look.TuftFadePxPerTile
+                || material.GetShaderParameter("hachure_texels_per_tile").AsSingle() != 8f
+                || material.GetShaderParameter("hachure_strength").AsSingle() != look.HachureStrength
+                || material.GetShaderParameter("hachure_width_share").AsSingle() != look.HachureWidthShare
+                || material.GetShaderParameter("hachure_fade_px").AsSingle() != look.HachureFadePxPerTile)
+            {
+                faults.Add("a green ground value on the layer is not the look file's");
+            }
+
+            // The look draws something: the green on, a palette that climbs, the pen and the brush not at nothing; and no
+            // green darker than the ground may go (`ground-textures.md §3`: L* 50, by the palette's own numbers).
+            float Luma(Color c) => (0.2126f * c.R) + (0.7152f * c.G) + (0.0722f * c.B);
+            if (!look.GreenOn || !(Luma(look.GreenDeep) < Luma(look.GreenMid)) || !(Luma(look.GreenMid) < Luma(look.GreenHigh))
+                || !(Luma(look.GreenHigh) < Luma(look.GreenCrest)) || look.HachureStrength <= 0f || look.TuftStrength <= 0f
+                || look.BrushStrength <= 0f || !(look.GreenDeep.G > look.GreenDeep.R && look.GreenCool.G > look.GreenCool.R)
+                || Luma(look.GreenCool) < 0.45f)
+            {
+                faults.Add($"{ValleyWatercolourLook.Path} draws no green ground: on {look.GreenOn}, the palette not climbing from deep to crest, a pen or the brush at nothing, the deep or cool colour not a green, or the cool one too dark");
+            }
+
+            // The crowns' tint: the file's with the tick, none for the winter set, none without the tick.
+            Color tinted = TreeTintFor(TreeSet.Summer), winter = TreeTintFor(TreeSet.Winter);
+            ShowWatercolour(false);
+            Color untinted = TreeTintFor(TreeSet.Summer);
+            ShowWatercolour(wasOn);
+            if (tinted != look.TreeTint || tinted == Colors.White || winter != Colors.White || untinted != Colors.White)
+            {
+                faults.Add($"the crowns' tint is {tinted} with the tick (want the file's {look.TreeTint}), {winter} for the winter set and {untinted} without the tick (want white twice)");
+            }
+
+            return faults.Count == 0
+                ? $"[widths] green ground: ✅ the crest above zero on a ridge and below it at its foot; hachures from the lip downhill, none on flat ground or into water, the same twice; the valley's bake eight texels a tile, {drawn} texels marked over {steep} steep tiles; the look's values handed over; the crowns tinted with the tick, not in winter"
+                : $"[widths] green ground: ⛔ {string.Join("; ", faults)}";
+        }
+        catch (System.Exception e)
+        {
+            // Trap 33: a probe line that throws never reaches `done.` and leaves a headless Godot running.
+            return $"[widths] green ground: ⛔ threw {e.GetType().Name}: {e.Message}";
+        }
     }
 
     internal string TheSitesShowThroughTheCanopy()
