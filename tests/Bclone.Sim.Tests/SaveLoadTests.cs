@@ -402,8 +402,10 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(GeneratedMap), Kept.Saved, new[]
         {
             "_terrain", "_crop", "_youngSapling", "_laidBare", "Width", "Height", "MinX", "MinY", "FoundingSite",
-            "_everWooded",
+            "_everWooded", "_height",
         }),
+        // Each tile's steepness (D735): derived once from the heights, so rebuilt on load from the saved heights.
+        (typeof(GeneratedMap), Kept.Rebuilt, new[] { "_steepness" }),
         (typeof(ZoneMap), Kept.Saved, new[]
         {
             "_residentialSub", "_workGroundSub", "_harvestSub", "_destroySub", "_plot", "_lane", "_plotByOwner",
@@ -430,7 +432,12 @@ public sealed class SaveLoadTests : IDisposable
         }),
         (typeof(PathWear), Kept.Cache, new[] { "Generation" }),
         (typeof(TravelCostField), Kept.Saved, new[] { "_anythingWorn", "_entryCost" }),
-        (typeof(TravelCostField), Kept.Rebuilt, new[] { "_ticksPerBaseTile", "_wornCost", "_packedCost" }),
+        (typeof(TravelCostField), Kept.Rebuilt, new[]
+        {
+            "_ticksPerBaseTile", "_wornCost", "_packedCost",
+            // The slope's prices and the dearest step (D735): from the map's saved heights and today's config.
+            "_slopePercent", "_largestStep",
+        }),
         (typeof(TravelCostField), Kept.Cache, new[]
         {
             // `_map` and `_wear` are the world's own map and wear, compared where they hang; the flow fields

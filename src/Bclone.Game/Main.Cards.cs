@@ -1810,6 +1810,13 @@ public partial class Main
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
         // ⭐ "resting at Eastfield", not "resting at home", for a farmhand out at the steading (D511).
         string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager));
+
+        // ⭐ "climbing home", not "walking home", while the leg crosses steep ground (D735, `heights.md §6`).
+        if (world.IsClimbing(villager) && doing.StartsWith("walking", StringComparison.Ordinal))
+        {
+            doing = "climbing" + doing["walking".Length..];
+        }
+
         Status(card, working: !hungry && !noted, hungry ? $"Hungry — {doing}." : Capitalise(doing) + ".");
 
         // ⭐ A PROBLEM WITH THEIR WORK TURNS THE BANNER AMBER, AND THE REASON IS ITS TOOLTIP (D432,

@@ -3119,6 +3119,78 @@ public sealed record SimConfig
     [JsonPropertyName("river_course")]
     public string RiverCourse { get; init; } = "we";
 
+    // ---------------------------------------------------------------
+    //  Heights (D735, `specs/heights.md`) — the Heights stage (6) reads these, and nothing else does until
+    //  the slope reaches the cost field.
+    // ---------------------------------------------------------------
+
+    /// <summary>How many height levels a valley has: 0 (the river's water) to one less than this. <b>1 is a flat
+    /// valley</b> — the ablation every re-taken golden is proven against (`heights.md §7`).</summary>
+    /// <remarks>
+    /// ⭐ <b>The code's default is 1, the shipped data's 16</b> — `river_course`'s precedent (`we`, the river every valley
+    /// had before the key): a config built in code is the valley it always was, so a fixture posed on flat ground keeps
+    /// the ground it was written for, and the game, which loads `data/sim.config.json`, has hills (`heights.md §7`).
+    /// </remarks>
+    [JsonPropertyName("height_levels")]
+    public int HeightLevels { get; init; } = 1;
+
+    /// <summary>The bowl: the ground rises this many levels for every tile from the nearest water, to its rim (`heights.md §5`).
+    /// ⚠️ A level is one of <see cref="HeightLevels"/>' 256 small steps since D736, not one of 16 (`heights.md §3`).</summary>
+    [JsonPropertyName("height_bowl_rise_per_tile")]
+    public int HeightBowlRisePerTile { get; init; } = 2;
+
+    /// <summary>
+    /// The most the ground may rise for every tile from the water (D736): a bank is at most this above the river beside it,
+    /// and nothing behind a bank is a cliff. Hills lower than this keep their own shape.
+    /// </summary>
+    [JsonPropertyName("height_rise_from_water_per_tile")]
+    public int HeightRiseFromWaterPerTile { get; init; } = 12;
+
+    /// <summary>The bowl's rim: it rises no more than this many levels, however far from the river.</summary>
+    [JsonPropertyName("height_bowl_max_levels")]
+    public int HeightBowlMaxLevels { get; init; } = 64;
+
+    /// <summary>The hills' lattice: one drawn height every this-many tiles each way, smoothed between.</summary>
+    [JsonPropertyName("height_hill_lattice_tiles")]
+    public int HeightHillLatticeTiles { get; init; } = 10;
+
+    /// <summary>A lattice point's tallest hill at <see cref="HillScalePercent"/> 100 — drawn 0 to this, inclusive.</summary>
+    [JsonPropertyName("height_hill_max_levels")]
+    public int HeightHillMaxLevels { get; init; } = 130;
+
+    /// <summary>
+    /// <b>The Hilliness row</b> (`heights.md §5`): the hills scaled by this percent — <i>Gentle</i> 50, <i>Rolling</i>
+    /// 100 (the default), <i>Hilly</i> 200. The bowl is not scaled.
+    /// </summary>
+    [JsonPropertyName("hill_scale_percent")]
+    public int HillScalePercent { get; init; } = 100;
+
+    /// <summary>The hills fade to nothing over this many tiles from the water, so the river never sits in a ravine.</summary>
+    [JsonPropertyName("height_river_ramp_tiles")]
+    public int HeightRiverRampTiles { get; init; } = 10;
+
+    /// <summary>The founding ring: every tile within this many of the founding site (either axis) is flat or gentle,
+    /// and the ground blends back to the hills over as many again (`heights.md §5`).</summary>
+    [JsonPropertyName("height_founding_flat_tiles")]
+    public int HeightFoundingFlatTiles { get; init; } = 8;
+
+    /// <summary>A tile whose steepness is this or more is <see cref="World.Slope.Gentle"/> (`heights.md §3`).</summary>
+    [JsonPropertyName("slope_gentle_at")]
+    public int SlopeGentleAt { get; init; } = 4;
+
+    /// <summary>A tile whose steepness is this or more is <see cref="World.Slope.Steep"/>.</summary>
+    [JsonPropertyName("slope_steep_at")]
+    public int SlopeSteepAt { get; init; } = 8;
+
+    /// <summary>What crossing a gentle tile costs, as a percent of the same tile on the flat (`heights.md §4`).</summary>
+    [JsonPropertyName("slope_gentle_cost_percent")]
+    public int SlopeGentleCostPercent { get; init; } = 120;
+
+    /// <summary>What crossing a steep tile costs, as a percent of the same tile on the flat: <b>about half again as long</b>
+    /// (Joe: <i>"not 100% slower"</i>). Worn paths multiply with it; a bridge deck ignores it.</summary>
+    [JsonPropertyName("slope_steep_cost_percent")]
+    public int SlopeSteepCostPercent { get; init; } = 150;
+
     /// <summary>
     /// Years between the village sharing out its work again from scratch.
     /// </summary>
@@ -5824,6 +5896,22 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"forest_coverage_percent must be 0-100, and river_width_tiles and river_width_wander_tiles "
                 + $"not negative (got {ForestCoveragePercent}, {RiverWidthTiles}, {RiverWidthWanderTiles}).");
+        }
+
+        // Heights (D735): a byte per tile, so at most 256 levels; a lattice and a ramp of at least a tile; the classes in
+        // order. ⛔ `height_levels` 1 is allowed — the flat valley every re-taken golden is proven against.
+        if (HeightLevels is < 1 or > 256 || HeightBowlRisePerTile < 0 || HeightRiseFromWaterPerTile < 1 || HeightBowlMaxLevels < 0
+            || HeightHillLatticeTiles < 1 || HeightHillMaxLevels < 0 || HillScalePercent is < 0 or > 1000
+            || HeightRiverRampTiles < 1 || HeightFoundingFlatTiles < 0 || SlopeGentleAt < 1 || SlopeSteepAt <= SlopeGentleAt
+            || SlopeGentleCostPercent < 100 || SlopeSteepCostPercent < SlopeGentleCostPercent || SlopeSteepCostPercent > 250)
+        {
+            throw new SimConfigException(
+                $"heights: height_levels must be 1-256, the bowl's tiles per level, the lattice and the river ramp at least 1, "
+                + $"the rest not negative, hill_scale_percent 0-1000, and 1 <= slope_gentle_at < slope_steep_at (got levels "
+                + $"{HeightLevels}, bowl {HeightBowlRisePerTile}/{HeightBowlMaxLevels}, from the water {HeightRiseFromWaterPerTile}, lattice {HeightHillLatticeTiles}, "
+                + $"hills {HeightHillMaxLevels} at {HillScalePercent} %, ramp {HeightRiverRampTiles}, founding "
+                + $"{HeightFoundingFlatTiles}, slopes {SlopeGentleAt}/{SlopeSteepAt} at {SlopeGentleCostPercent}/{SlopeSteepCostPercent} %; "
+                + "the slope costs run 100 <= gentle <= steep <= 250).");
         }
 
         if (SeamAngleScatterPercent is < 0 or > 100 || SeamReachScatterPercent < 0

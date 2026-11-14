@@ -186,8 +186,13 @@ public sealed class BridgeTests
         _output.WriteLine($"length {bridge.Length} at {bridge.Near}→{bridge.Far}; reached {reachedBefore} → {reachedAfter} tiles");
         Assert.True(reachedAfter > reachedBefore + 1000, $"reached {reachedBefore} → {reachedAfter}");
 
-        // Square across, the cost is the walk end to end at grass's price.
-        Assert.Equal(bridge.Length * TravelCostField.BaseTileCost, world.TravelCost.Cost(bridge.Near.ToTile(), bridge.Far.ToTile()));
+        // Square across, the cost is the walk end to end at grass's price — ⭐ but for the bank it sets off from, priced on its
+        // own slope (D735: the decks are level; a bank is at most a level above the water, so at most gentle). On the shipped
+        // valley that bank is gentle, 12 for 10: 52 for the 50 a flat valley read.
+        GridPos bank = bridge.Near.ToTile();
+        Assert.Equal(
+            ((bridge.Length - 1) * TravelCostField.BaseTileCost) + world.TravelCost.CostToEnter(bank),
+            world.TravelCost.Cost(bank, bridge.Far.ToTile()));
     }
 
     /// <summary>A building on the far bank is refused for want of a route before the bridge, and allowed after.</summary>

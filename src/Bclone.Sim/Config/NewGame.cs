@@ -165,6 +165,18 @@ public static class NewGame
                 Level("any", "Any way (the seed's)", ("river_course", "\"any\"")),
             },
         },
+        // ⭐ HOW HILLY THE VALLEY IS (D735, `heights.md §5`; Joe: "Any slope and as you recommend") — D477's parked line,
+        // a row of its own. Scales the hills, not the bowl down to the river; Rolling is the shipped file's 100.
+        new NewGameRow
+        {
+            Id = "hills", Label = "Hilliness", Kind = LevelsKind,
+            Levels = new[]
+            {
+                Level("gentle", "Gentle", ("hill_scale_percent", "50")),
+                Level("rolling", "Rolling", ("hill_scale_percent", "100")),
+                Level("hilly", "Hilly", ("hill_scale_percent", "200")),
+            },
+        },
         new NewGameRow
         {
             Id = "woods", Label = "Forest cover", Kind = RangeKind,

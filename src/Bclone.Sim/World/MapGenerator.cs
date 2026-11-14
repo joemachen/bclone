@@ -54,6 +54,10 @@ public static class MapGenerator
         StoneSeams = 3,
         IronSeams = 4,
         Woodland = 5,
+
+        /// <summary>The ground's height (D735, `heights.md §5`) — last, because it reads the river and the founding
+        /// and changes no tile's terrain, so it moves no other stage's valley.</summary>
+        Heights = 6,
     }
 
     /// <summary>A stage's seed: the run's seed and the stage's id through splitmix64 (D473).</summary>
@@ -162,7 +166,257 @@ public static class MapGenerator
         var woodlandRng = new DeterministicRandom(StageSeed(seed, Stage.Woodland));
         PaintWoodland(config, ref woodlandRng, terrain, founding, width, height, minX, minY);
 
-        return new GeneratedMap(width, height, minX, minY, terrain, founding);
+        // ---- 6. Heights (D735, `heights.md §5`) ---------------------
+        // ⭐ A BOWL DOWN TO THE RIVER PLUS ROLLING HILLS (Joe: *"Any slope and as you recommend"*). Last, and reading
+        // only what the stages before it made: it paints no terrain, so the river, the founding, the seams and the
+        // woods are where they were on the same seed. Only the walking will change.
+        var heightRng = new DeterministicRandom(StageSeed(seed, Stage.Heights));
+        byte[] heights = RaiseHeights(config, ref heightRng, terrain, founding, width, height, minX, minY);
+
+        return new GeneratedMap(width, height, minX, minY, terrain, founding, heights);
+    }
+
+    /// <summary>
+    /// The valley's heights (`heights.md §5`): a bowl rising from the nearest water, hills from an integer lattice
+    /// smoothed between its points and faded to nothing near the water, the founding ring brought low and level, and the
+    /// banks kept at most a level above the water. Integers throughout (D2).
+    /// </summary>
+    /// <remarks>
+    /// The lattice is drawn row by row, every point, before anything reads it — so the stage's draws are a fixed count
+    /// for a given valley size, whatever the river did.
+    /// </remarks>
+    internal static byte[] RaiseHeights(
+        SimConfig config, ref DeterministicRandom rng, Terrain[] terrain, GridPos founding, int width, int height, int minX, int minY)
+    {
+        var heights = new byte[terrain.Length];
+        int top = config.HeightLevels - 1;
+        if (top <= 0)
+        {
+            return heights;
+        }
+
+        int[] fromWater = DistanceFromWater(terrain, width, height);
+
+        int cell = config.HeightHillLatticeTiles;
+        int columns = (width / cell) + 2;
+        int rows = (height / cell) + 2;
+        var lattice = new int[columns * rows];
+        for (int i = 0; i < lattice.Length; i++)
+        {
+            lattice[i] = rng.NextInt(0, config.HeightHillMaxLevels + 1);
+        }
+
+        // The hills, in thousandths of a level so nothing is rounded until the end: the four lattice points round each tile,
+        // weighted by how near it is to each, scaled by the Hilliness row.
+        long latticeDenominator = (long)cell * cell * 100;
+        var hills = new int[terrain.Length];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int cx = x / cell;
+                int cy = y / cell;
+                int fx = x % cell;
+                int fy = y % cell;
+                long weighted =
+                    ((long)lattice[(cy * columns) + cx] * (cell - fx) * (cell - fy))
+                    + ((long)lattice[(cy * columns) + cx + 1] * fx * (cell - fy))
+                    + ((long)lattice[((cy + 1) * columns) + cx] * (cell - fx) * fy)
+                    + ((long)lattice[((cy + 1) * columns) + cx + 1] * fx * fy);
+                hills[(y * width) + x] = (int)(((weighted * 1000 * config.HillScalePercent) + (latticeDenominator / 2)) / latticeDenominator);
+            }
+        }
+
+        // The whole ground, still in thousandths: the bowl rising from the water to its rim, and the hills faded in over the
+        // ramp. Water is 0, so the smoothing below runs the banks down to it rather than stepping.
+        int ramp = config.HeightRiverRampTiles;
+        int bowlRim = config.HeightBowlMaxLevels * 1000;
+        var ground = new int[terrain.Length];
+        for (int i = 0; i < ground.Length; i++)
+        {
+            if (terrain[i] == Terrain.Water)
+            {
+                continue;
+            }
+
+            // A valley with no water at all is all hills and no bowl.
+            int away = fromWater[i];
+            int bowl = away == int.MaxValue ? 0 : (int)Math.Min((long)away * 1000 * config.HeightBowlRisePerTile, bowlRim);
+            int faded = away == int.MaxValue ? ramp : Math.Min(away, ramp);
+            long rising = bowl + ((long)hills[i] * faded * faded / ((long)ramp * ramp));
+            long fromTheWater = away == int.MaxValue ? long.MaxValue : (long)away * config.HeightRiseFromWaterPerTile * 1000;
+            ground[i] = (int)Math.Min(rising, fromTheWater);
+        }
+
+        // The founding ring, brought low before the smoothing so its edge is rounded off with everything else — and wider
+        // by the smoothing's reach, so the slope outside is not pulled in over the ring's own edge.
+        int reachOfTheSmoothing = Math.Max(1, cell / 2);
+        BringTheFoundingLow(config, ground, terrain, founding, reachOfTheSmoothing, width, height, minX, minY);
+
+        // ⭐ SMOOTHED, SO A HILL HAS NO CREASES (D736; Joe, playing Hilly: *"things look a little weird"*). Straight lines
+        // between lattice points made every cell a flat-faced panel with a crease at its edge, and the distance from a
+        // tile-jagged bank stepped the bowl column by column: the shading drew rectangles and combs, and the walk slowed in
+        // bands. Two box passes across half a cell each way round all of it off. Integers throughout, edges clamped.
+        for (int pass = 0; pass < 2; pass++)
+        {
+            ground = BoxAlong(ground, width, height, reachOfTheSmoothing, across: true);
+            ground = BoxAlong(ground, width, height, reachOfTheSmoothing, across: false);
+        }
+
+        // ⭐ AND NO HIGHER THAN A LEVEL A TILE FROM THE WATER (D736) — so a bank is at most a level above the river beside it,
+        // and nothing behind it is a cliff. It was the bank alone, clamped to 1 with the hill a tile behind it left where
+        // it stood: a step of seven levels on a Hilly valley, behind a bank the guard said was fine. A level a tile is the
+        // most a slope can rise from the water; the hills keep their own shape wherever they are lower than that.
+        for (int i = 0; i < heights.Length; i++)
+        {
+            if (terrain[i] != Terrain.Water)
+            {
+                heights[i] = (byte)Math.Clamp((ground[i] + 500) / 1000, 0, top);
+            }
+        }
+
+        return heights;
+    }
+
+    /// <summary>
+    /// One box pass along a row (<paramref name="across"/>) or a column: each value the mean of those within
+    /// <paramref name="reach"/> of it, rounded half up, the window cut at the valley's edge. Values are never negative.
+    /// </summary>
+    private static int[] BoxAlong(int[] values, int width, int height, int reach, bool across)
+    {
+        var result = new int[values.Length];
+        int lines = across ? height : width;
+        int length = across ? width : height;
+        for (int line = 0; line < lines; line++)
+        {
+            long sum = 0;
+            int count = 0;
+            int Index(int along) => across ? (line * width) + along : (along * width) + line;
+
+            // The window for position 0, then slid one along at a time.
+            for (int k = 0; k <= Math.Min(reach, length - 1); k++)
+            {
+                sum += values[Index(k)];
+                count++;
+            }
+
+            for (int at = 0; at < length; at++)
+            {
+                result[Index(at)] = (int)((sum + (count / 2)) / count);
+                int leaving = at - reach;
+                int entering = at + reach + 1;
+                if (leaving >= 0)
+                {
+                    sum -= values[Index(leaving)];
+                    count--;
+                }
+
+                if (entering < length)
+                {
+                    sum += values[Index(entering)];
+                    count++;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The founding ring (`heights.md §5`), on the ground in thousandths of a level: every land tile within
+    /// <c>height_founding_flat_tiles</c> of the founding site (a circle, D736 — a square read as a hard-edged plateau) takes
+    /// the founding's own height, never above a level, and the ring out to twice that blends back to the hills. Run before
+    /// the smoothing, so its edge is rounded off too. So no founding starts on a cliff.
+    /// </summary>
+    private static void BringTheFoundingLow(
+        SimConfig config, int[] heights, Terrain[] terrain, GridPos founding, int margin, int width, int height, int minX, int minY)
+    {
+        if (config.HeightFoundingFlatTiles <= 0)
+        {
+            return;
+        }
+
+        int flat = config.HeightFoundingFlatTiles + margin;
+
+        int fx = founding.X - minX;
+        int fy = founding.Y - minY;
+        int level = fx >= 0 && fx < width && fy >= 0 && fy < height
+            ? Math.Min(heights[(fy * width) + fx], config.HeightRiseFromWaterPerTile * 1000)
+            : 0;
+        int reach = flat * 2;
+        for (int y = Math.Max(0, fy - reach); y <= Math.Min(height - 1, fy + reach); y++)
+        {
+            for (int x = Math.Max(0, fx - reach); x <= Math.Min(width - 1, fx + reach); x++)
+            {
+                int i = (y * width) + x;
+                if (terrain[i] == Terrain.Water)
+                {
+                    continue;
+                }
+
+                int dx = x - fx;
+                int dy = y - fy;
+                int squared = (dx * dx) + (dy * dy);
+                if (squared >= reach * reach)
+                {
+                    continue;
+                }
+
+                int inner = flat * flat;
+                heights[i] = squared <= inner
+                    ? level
+                    : level + (int)((long)(heights[i] - level) * (squared - inner) / ((reach * reach) - inner));
+            }
+        }
+    }
+
+    /// <summary>Each tile's four-connected distance from the nearest water: 0 on water, <see cref="int.MaxValue"/> everywhere when there is none.</summary>
+    private static int[] DistanceFromWater(Terrain[] terrain, int width, int height)
+    {
+        var distance = new int[terrain.Length];
+        var queue = new int[terrain.Length];
+        int head = 0;
+        int tail = 0;
+        for (int i = 0; i < terrain.Length; i++)
+        {
+            if (terrain[i] == Terrain.Water)
+            {
+                distance[i] = 0;
+                queue[tail++] = i;
+            }
+            else
+            {
+                distance[i] = int.MaxValue;
+            }
+        }
+
+        while (head < tail)
+        {
+            int current = queue[head++];
+            int x = current % width;
+            int y = current / width;
+            Reach(x + 1, y);
+            Reach(x - 1, y);
+            Reach(x, y + 1);
+            Reach(x, y - 1);
+
+            void Reach(int nx, int ny)
+            {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                {
+                    return;
+                }
+
+                int index = (ny * width) + nx;
+                if (distance[index] == int.MaxValue)
+                {
+                    distance[index] = distance[current] + 1;
+                    queue[tail++] = index;
+                }
+            }
+        }
+
+        return distance;
     }
 
     // `CanonicalForageSites` and `CanonicalTreeStands` are deleted with the things they

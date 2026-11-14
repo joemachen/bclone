@@ -230,9 +230,14 @@ public sealed class GeneratedMap
         int minX,
         int minY,
         Terrain[] terrain,
-        GridPos foundingSite)
+        GridPos foundingSite,
+        byte[]? heights = null)
     {
         ArgumentNullException.ThrowIfNull(terrain);
+        if (heights is not null && heights.Length != terrain.Length)
+        {
+            throw new ArgumentException($"{heights.Length} heights for {terrain.Length} tiles.", nameof(heights));
+        }
 
         Width = width;
         Height = height;
@@ -243,6 +248,12 @@ public sealed class GeneratedMap
         _youngSapling = new bool[terrain.Length];
         _laidBare = new bool[terrain.Length];
         FoundingSite = foundingSite;
+
+        // ⭐ THE HEIGHTS (D735, `heights.md §3`): a pure function of the seed, never written after generation, so the
+        // steepness beside them is worked out once, here, and never again (CLAUDE.md: kept where the state changes).
+        // None given — a posed map, or a save from before heights — is a flat valley.
+        _height = heights ?? new byte[terrain.Length];
+        _steepness = SteepnessOf(_height, terrain, width, height);
 
         // The valley's natural woodland, recorded once. Everything the generator painted as
         // forest is ground a wood may return to; everything else is meadow until somebody
@@ -510,6 +521,73 @@ public sealed class GeneratedMap
     /// <summary>Every tile, in a fixed order — for hashing and for drawing.</summary>
     public IReadOnlyList<Terrain> Tiles => _terrain;
 
+    // ---------------------------------------------------------------
+    //  Heights (D735, `specs/heights.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>A tile's height: a level from 0 (the river's water) up (`heights.md §3`).</summary>
+    private readonly byte[] _height;
+
+    /// <summary>Each tile's steepness — the largest step to a four-neighbour — derived once from the heights.</summary>
+    private readonly byte[] _steepness;
+
+    /// <summary>Every tile's height, in <see cref="Tiles"/>' order — for hashing, saving and drawing.</summary>
+    public IReadOnlyList<byte> Heights => _height;
+
+    /// <summary>A tile's height level. Out-of-bounds reads as 0.</summary>
+    public int HeightAt(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? 0 : _height[index];
+    }
+
+    /// <summary>
+    /// A tile's steepness: the largest height difference between it and any of its four neighbours inside the valley
+    /// (`heights.md §3`). <see cref="Slopes.ClassOf"/> turns it into flat, gentle or steep. Out-of-bounds reads as 0.
+    /// </summary>
+    public int SteepnessAt(GridPos position)
+    {
+        int index = IndexOf(position);
+        return index < 0 ? 0 : _steepness[index];
+    }
+
+    /// <summary>A tile's steepness by its index in <see cref="Tiles"/>' order.</summary>
+    public int SteepnessAtIndex(int index) => _steepness[index];
+
+    /// <summary>
+    /// The largest step from each tile to a four-neighbour <b>on land</b>; diagonals never count, and water is level (0).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Land to land (D736).</b> Nobody walks into the river, so the drop from a bank to the water is not a slope
+    /// anyone crosses: counted, every riverbank read steep and a riverside path was slow. Water never changes in play, so
+    /// this is worked out once with the heights and stays true.
+    /// </remarks>
+    private static byte[] SteepnessOf(byte[] heights, Terrain[] terrain, int width, int height)
+    {
+        var steepness = new byte[heights.Length];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int i = (y * width) + x;
+                if (terrain[i] == Terrain.Water)
+                {
+                    continue;
+                }
+
+                int here = heights[i];
+                int most = 0;
+                if (x > 0 && terrain[i - 1] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i - 1])); }
+                if (x < width - 1 && terrain[i + 1] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i + 1])); }
+                if (y > 0 && terrain[i - width] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i - width])); }
+                if (y < height - 1 && terrain[i + width] != Terrain.Water) { most = Math.Max(most, Math.Abs(here - heights[i + width])); }
+                steepness[i] = (byte)most;
+            }
+        }
+
+        return steepness;
+    }
+
     /// <summary>Crops, in the same order as <see cref="Tiles"/>. Zero means nothing sown.</summary>
     public IReadOnlyList<byte> Crops => _crop;
 
@@ -541,6 +619,7 @@ public sealed class GeneratedMap
             ["young_saplings"] = SaveWriter.Bools(_youngSapling),
             ["laid_bare"] = SaveWriter.Bools(_laidBare),
             ["ever_wooded"] = SaveWriter.Bools(_everWooded),
+            ["heights"] = SaveWriter.Bytes(_height),
         };
     }
 
@@ -562,7 +641,10 @@ public sealed class GeneratedMap
                 : throw new SaveDataException($"ground {bytes[i]}", $"{save.Path}.terrain: ground {bytes[i]}, which this build does not have.");
         }
 
-        var map = new GeneratedMap(width, height, save.Int("min_x"), save.Int("min_y"), terrain, save.GridPos("founding_site"));
+        // ⭐ A save from before heights has none, and loads FLAT (D735, `heights.md §9`, Joe's call): the villages he
+        // built on flat ground are not re-priced under him. No format bump — a missing layer is a flat one.
+        byte[]? heights = save.Has("heights") ? save.Bytes("heights", width * height) : null;
+        var map = new GeneratedMap(width, height, save.Int("min_x"), save.Int("min_y"), terrain, save.GridPos("founding_site"), heights);
         save.BytesInto("crops", map._crop);
         save.BoolsInto("young_saplings", map._youngSapling);
         save.BoolsInto("laid_bare", map._laidBare);

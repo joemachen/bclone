@@ -4416,6 +4416,9 @@ public partial class VillageMap : Control
             DrawTheBakedValley(valley);
         }
 
+        // ⭐ The hills, shaded (D735, `heights.md §6`): over the ground, under everything that stands or is worn on it.
+        DrawTheRelief(valley);
+
         // ⭐ The trails go straight onto the ground, under every field, tree and wash — they ARE
         // ground, worn through (D358).
         long started = System.Diagnostics.Stopwatch.GetTimestamp();

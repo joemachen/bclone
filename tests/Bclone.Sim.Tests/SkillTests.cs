@@ -377,7 +377,11 @@ public sealed class SkillTests
     // 8538422907031301040 (shipped).
     // RE-TAKEN (D728), THE SHIPPED ONE — a forester plants nothing in winter (`forests-and-gathering.md §10`). ⭐ PROVEN BY
     // ABLATION: with `SeasonRules.IsPlanting` true in every season the old value passes; the fixture's hash did not move. Was 12313259098049656473 (shipped).
-    [InlineData(true, 3174496459823721064UL)]
+    // RE-TAKEN (D735), THE SHIPPED ONE — real heights (`heights.md §7`): the shipped valley has hills and every walk is
+    // re-priced. ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) the old value passes. The fixture's (a valley built in code, flat by the code's default) did not move.
+    // Was 3174496459823721064 (shipped).
+    // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 2791566434779995178 (shipped).
+    [InlineData(true, 4364615826142427054UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

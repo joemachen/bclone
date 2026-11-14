@@ -541,7 +541,15 @@ public sealed class ShippedConfigTests
         // (seed 1 −4, seed 12345 +2, seed 5 −1, seven unchanged), nothing marked 222 → 222; at 2 the unmarked valleys lose eight,
         // which is the pair layout turning nearest-first and why 4 is the number. Held at THIS measured price now, so a fourth
         // person lost to marking is a new cause, and this goes red. Joe's to disagree (HANDOFF ⏸️).
-        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak) - 3,
+        //
+        // ⚠️ AND IT WENT RED FOR D735 — FOUR PEOPLE, ON HILLS, RECORDED (`heights.md §8`): the shipped valley has hills, and five
+        // valleys read marked 94 against 98 nothing marked. Flat (`height_levels` 1) the same five read 106 against 101, so hills
+        // cost the unattended villages 3 at the peak with nothing marked and 12 with the four buildings — nearly all of it one
+        // valley (seed 12345 marked, 33 → 22; its four buildings went up on hillier ground than the stores). Starving is the
+        // harness's either way (176 / 179 flat, 166 / 180 hilly). Held at THIS measured price, so a fifth person lost to marking
+        // is a new cause, and this goes red. Measured again on Joe's saves before the slope's numbers are final (§8); his to
+        // disagree.
+        Assert.True(marked.Sum(v => v.Peak) >= unmarked.Sum(v => v.Peak) - 4,
             $"Marking four buildings stalled the villages — they peaked at {marked.Sum(v => v.Peak)} together, "
             + $"against {unmarked.Sum(v => v.Peak)} for the same valleys with nothing marked.");
     }
