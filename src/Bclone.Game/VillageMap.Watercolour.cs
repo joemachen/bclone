@@ -1076,6 +1076,12 @@ public partial class VillageMap
         material.SetShaderParameter("ripple_bank_level", BankWeightAt(watercolour.RippleBankTiles));
         material.SetShaderParameter("ripple_drift", watercolour.RippleDriftTilesPerSecond);
         material.SetShaderParameter("ripple_fade_px", watercolour.RippleFadePxPerTile);
+        material.SetShaderParameter("hill_full_tilt_levels", watercolour.HillFullTiltLevels);
+        material.SetShaderParameter("hill_light", watercolour.HillLight);
+        material.SetShaderParameter("hill_shade", watercolour.HillShade);
+        material.SetShaderParameter("hill_bank", watercolour.HillBank);
+        material.SetShaderParameter("hill_lip_strength", watercolour.HillLipStrength);
+        material.SetShaderParameter("hill_lip_width_share", watercolour.HillLipWidthShare);
         material.SetShaderParameter("ripple_repeat_cells", RippleRepeatCells);
 
         // The clock's period: the grid drifts RippleRepeatCells cells in it, and a whole number of lives fit it, so the wrap
@@ -1136,6 +1142,7 @@ public partial class VillageMap
         material.SetShaderParameter("valley_size_px", valley.Size);
         material.SetShaderParameter("px_per_tile", _pixelsPerTile);
         HandTheRiverOver(material, config);
+        HandTheHillsOver(material, config);
 
         (float season, float snow) = TheYearAt(_world.Tick + _alpha, config.TicksPerSeason);
         material.SetShaderParameter("grass_season", season);
@@ -1170,6 +1177,187 @@ public partial class VillageMap
         material.SetShaderParameter("river_along", _riverTable.Along);
         material.SetShaderParameter("river_across", _riverTable.Across);
         material.SetShaderParameter("river_offset", _riverTable.Offset);
+    }
+
+    /// <summary>The heights handed to the shader, and the world they were built for: once a world (A66).</summary>
+    private ImageTexture? _hillsTexture;
+    private SimWorld? _hillsOf;
+
+    /// <summary>The heights texture, for the probe: null on a flat valley.</summary>
+    internal ImageTexture? HillsTexture => _hillsTexture;
+
+    /// <summary>
+    /// ⭐ The valley's heights to the shader (A66, <c>hill-edges.md §4</c>), once a world: they never change in play. Not
+    /// hashed, not saved (D335). The steep threshold is the sim's own, so the lip and the slow ground are the same ground.
+    /// </summary>
+    private void HandTheHillsOver(ShaderMaterial material, SimConfig config)
+    {
+        if (ReferenceEquals(_hillsOf, _world))
+        {
+            return;
+        }
+
+        _hillsOf = _world;
+        GeneratedMap map = _world!.Map;
+        bool[] water = TheWaterTiles();
+        float[]? heights = HillHeights(map.Heights, water, config.MapWidth, config.MapHeight);
+        _hillsTexture = null;
+        if (heights is not null)
+        {
+            var steepness = new float[heights.Length];
+            for (int i = 0; i < steepness.Length; i++)
+            {
+                steepness[i] = !water[i] && map.SteepnessAtIndex(i) >= config.SlopeSteepAt ? 1f : 0f;
+            }
+
+            float[] field = HillField(heights, steepness, config.MapWidth, config.MapHeight);
+            var bytes = new byte[field.Length * 4];
+            for (int i = 0; i < field.Length; i++)
+            {
+                BitConverter.TryWriteBytes(bytes.AsSpan(i * 4, 4), field[i]);
+            }
+
+            int w = config.MapWidth * HillTexelsPerTile, h = config.MapHeight * HillTexelsPerTile;
+            _hillsTexture = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.Rgf, bytes));
+            material.SetShaderParameter("heights_map", _hillsTexture);
+        }
+
+        material.SetShaderParameter("hills_on", heights is not null);
+    }
+
+    /// <summary>
+    /// The heights as the shader reads them (A66): each land tile's own level, and each water tile the level of the nearest
+    /// land (filled outward from the banks), so the drop to the water is no slope — the sim counts steepness land to land
+    /// (D737). Null where no land stands above level 0: a flat valley, every save from before heights.
+    /// </summary>
+    internal static float[]? HillHeights(IReadOnlyList<byte> heights, bool[] water, int width, int height)
+    {
+        var filled = new float[width * height];
+        var known = new bool[width * height];
+        var frontier = new System.Collections.Generic.Queue<int>();
+        bool any = false;
+        for (int i = 0; i < filled.Length; i++)
+        {
+            if (!water[i])
+            {
+                filled[i] = heights[i];
+                known[i] = true;
+                frontier.Enqueue(i);
+                any |= heights[i] > 0;
+            }
+        }
+
+        if (!any)
+        {
+            return null;
+        }
+
+        while (frontier.Count > 0)
+        {
+            int at = frontier.Dequeue();
+            int x = at % width, y = at / width;
+            foreach ((int dx, int dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+            {
+                int nx = x + dx, ny = y + dy;
+                int next = (ny * width) + nx;
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height || known[next])
+                {
+                    continue;
+                }
+
+                filled[next] = filled[at];
+                known[next] = true;
+                frontier.Enqueue(next);
+            }
+        }
+
+        return filled;
+    }
+
+    /// <summary>Texels a tile in the hills' field: enough for a smooth lip at the closest zoom.</summary>
+    internal const int HillTexelsPerTile = 4;
+
+    /// <summary>
+    /// The hills' field (A66): the heights and the steep mask (1 where the sim calls a tile steep), each upsampled to <see cref="HillTexelsPerTile"/> a tile
+    /// (bilinear between tile centres) and softened by two box passes half a tile across, interleaved R height, G steepness.
+    /// ⚠️ Softened, because the shader draws the lip where steepness crosses the steep line, and a per-tile field crosses it
+    /// in tile-shaped steps: the first build drew blocks at the widest zoom.
+    /// </summary>
+    internal static float[] HillField(float[] heights, float[] steepness, int width, int height)
+    {
+        int n = HillTexelsPerTile, w = width * n, h = height * n;
+        float[] r = Softened(Upsampled(heights)), g = Softened(Upsampled(steepness));
+        var field = new float[w * h * 2];
+        for (int i = 0; i < w * h; i++)
+        {
+            field[i * 2] = r[i];
+            field[(i * 2) + 1] = g[i];
+        }
+
+        return field;
+
+        float[] Upsampled(float[] tiles)
+        {
+            var up = new float[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                float v = ((y + 0.5f) / n) - 0.5f;
+                int y0 = System.Math.Clamp((int)MathF.Floor(v), 0, height - 1), y1 = System.Math.Min(y0 + 1, height - 1);
+                float fy = System.Math.Clamp(v - y0, 0f, 1f);
+                for (int x = 0; x < w; x++)
+                {
+                    float u = ((x + 0.5f) / n) - 0.5f;
+                    int x0 = System.Math.Clamp((int)MathF.Floor(u), 0, width - 1), x1 = System.Math.Min(x0 + 1, width - 1);
+                    float fx = System.Math.Clamp(u - x0, 0f, 1f);
+                    float top = (tiles[(y0 * width) + x0] * (1 - fx)) + (tiles[(y0 * width) + x1] * fx);
+                    float bottom = (tiles[(y1 * width) + x0] * (1 - fx)) + (tiles[(y1 * width) + x1] * fx);
+                    up[(y * w) + x] = (top * (1 - fy)) + (bottom * fy);
+                }
+            }
+
+            return up;
+        }
+
+        float[] Softened(float[] f)
+        {
+            int reach = n / 2;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                var across = new float[f.Length];
+                for (int y = 0; y < h; y++)
+                {
+                    for (int x = 0; x < w; x++)
+                    {
+                        float sum = 0f;
+                        for (int k = -reach; k <= reach; k++)
+                        {
+                            sum += f[(y * w) + System.Math.Clamp(x + k, 0, w - 1)];
+                        }
+
+                        across[(y * w) + x] = sum / ((2 * reach) + 1);
+                    }
+                }
+
+                var down = new float[f.Length];
+                for (int y = 0; y < h; y++)
+                {
+                    for (int x = 0; x < w; x++)
+                    {
+                        float sum = 0f;
+                        for (int k = -reach; k <= reach; k++)
+                        {
+                            sum += across[(System.Math.Clamp(y + k, 0, h - 1) * w) + x];
+                        }
+
+                        down[(y * w) + x] = sum / ((2 * reach) + 1);
+                    }
+                }
+
+                f = down;
+            }
+
+            return f;
+        }
     }
 
     /// <summary>The valley's water, row by row from its north-west corner, as <see cref="RiverTable.Of"/> reads it.</summary>
@@ -1310,7 +1498,9 @@ public partial class VillageMap
         "river_across", "river_offset", "channel_strength", "echo_strength", "echo_width_share", "echo_levels", "echo_tiles",
         "echo_lifts", "echo_dash_tiles", "echo_fade_px", "ripple_strength", "ripple_width_px", "ripple_cell_tiles",
         "ripple_share", "ripple_length_tiles", "ripple_bow_tiles", "ripple_bank_tiles", "ripple_bank_level", "ripple_drift", "ripple_life_s",
-        "ripple_fade_px", "ripple_repeat_cells", "flow_seconds", "flow_period_s",
+        "ripple_fade_px", "ripple_repeat_cells", "flow_seconds", "flow_period_s", "hills_on", "heights_map",
+        "hill_full_tilt_levels", "hill_light", "hill_shade", "hill_bank", "hill_lip_strength",
+        "hill_lip_width_share",
     };
 
     /// <summary>
@@ -1826,6 +2016,142 @@ public partial class VillageMap
         return faults.Count == 0
             ? "[widths] painted crops: ✅ ploughed, stubble and snow shared, wheat's young, growing and ripe its own, each 1024 × 1024, mipmapped, repeating; a crop with no row keeps its flat fill; the year's stages at nine moments; eight tiles a painting, world-anchored; on with the tick, off without"
             : $"[widths] painted crops: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>hill edges:</c> line (A66, <c>hill-edges.md §6</c>): the heights the shader reads — each land tile
+    /// its own level, each water tile its nearest land's, so a riverbank is no cliff — the look file's values and the
+    /// sim's steep threshold handed over, and a flat valley drawing no hills. The draw itself is <c>_Draw</c>'s, never
+    /// headless (D340): the renders are its evidence.
+    /// </summary>
+    internal string TheHillEdgesHold()
+    {
+        if (_world is not SimWorld world)
+        {
+            return "[widths] hill edges: ⛔ no world";
+        }
+
+        var faults = new System.Collections.Generic.List<string>();
+        GeneratedMap map = world.Map;
+        SimConfig config = world.Config;
+        bool wasOn = _watercolour;
+        ShowWatercolour(true);
+        _hillsOf = null;
+        ShaderMaterial? material = _watercolourMaterial;
+        if (material is not null)
+        {
+            HandTheHillsOver(material, config);
+        }
+
+        int land = 0, raised = 0, steep = 0, highest = 0;
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            if (map.Tiles[i] != Terrain.Water)
+            {
+                land++;
+                raised += map.Heights[i] > 0 ? 1 : 0;
+                steep += map.SteepnessAtIndex(i) >= config.SlopeSteepAt ? 1 : 0;
+                highest = System.Math.Max(highest, map.Heights[i]);
+            }
+        }
+
+        // The texture: four texels a tile, R the height and G the steepness. ⛔ Named from the spec (trap 17): 4 a tile.
+        Image? image = _hillsTexture?.GetImage();
+        if (raised > 0 && (image is null || image.GetWidth() != config.MapWidth * 4 || image.GetHeight() != config.MapHeight * 4
+            || image.GetFormat() != Image.Format.Rgf))
+        {
+            faults.Add($"the hills' field is {image?.GetWidth()} × {image?.GetHeight()} {image?.GetFormat()} (want four texels a tile, {config.MapWidth * 4} × {config.MapHeight * 4}, Rgf)");
+        }
+
+        // The field on a made-up terrace: a 12 × 1 strip, flat at 0 then flat at 40 from tile 6 — softened, the height rises
+        // through the step and is flat far from it, and the steepness peaks at the step and is zero far from it.
+        var terraceHeights = new float[12];
+        var terraceSteep = new float[12];
+        for (int i = 0; i < 12; i++)
+        {
+            terraceHeights[i] = i < 6 ? 0f : 40f;
+            terraceSteep[i] = i is 5 or 6 ? 1f : 0f;
+        }
+
+        float[] field = HillField(terraceHeights, terraceSteep, 12, 1);
+        float HeightAtTexel(int x) => field[x * 2];
+        float SteepAtTexel(int x) => field[(x * 2) + 1];
+        if (HeightAtTexel(2) != 0f || HeightAtTexel(45) != 40f || !(HeightAtTexel(22) < HeightAtTexel(26))
+            || SteepAtTexel(2) != 0f || SteepAtTexel(46) != 0f || !(SteepAtTexel(24) > 0.5f)
+            // ⚠️ softened, not only upsampled: a tile's bilinear reaches no further than its neighbour's centre, so the mask is
+            // still 0 at texel 15 (tile 3.75) unless the half-tile passes have carried it there
+            || !(SteepAtTexel(15) > 0f))
+        {
+            faults.Add($"the field on a terrace: height {HeightAtTexel(2)} → {HeightAtTexel(22)},{HeightAtTexel(26)} → {HeightAtTexel(45)} (want 0, rising, 40), the steep mask {SteepAtTexel(2)}, {SteepAtTexel(24)}, {SteepAtTexel(46)} (want 0, over a half at the step, 0)");
+        }
+
+        // The mask from the sim's own class (`slope_steep_at`): a tile the sim calls steep in the middle of a steep patch (all
+        // eight round it steep) reads over 0.9, and a tile with no steep ground within two reads 0.
+        if (image is not null)
+        {
+            int inside = 0, insideWrong = 0, clear = 0, clearWrong = 0;
+            for (int y = 2; y < config.MapHeight - 2; y++)
+            {
+                for (int x = 2; x < config.MapWidth - 2; x++)
+                {
+                    int steepNear = 0, steepWide = 0;
+                    for (int dy = -2; dy <= 2; dy++)
+                    {
+                        for (int dx = -2; dx <= 2; dx++)
+                        {
+                            int i = ((y + dy) * config.MapWidth) + x + dx;
+                            bool s = map.Tiles[i] != Terrain.Water && map.SteepnessAtIndex(i) >= config.SlopeSteepAt;
+                            steepWide += s ? 1 : 0;
+                            steepNear += s && System.Math.Abs(dx) <= 1 && System.Math.Abs(dy) <= 1 ? 1 : 0;
+                        }
+                    }
+
+                    float g = image.GetPixel((x * 4) + 2, (y * 4) + 2).G;
+                    if (steepNear == 9)
+                    {
+                        inside++;
+                        insideWrong += g > 0.9f ? 0 : 1;
+                    }
+                    else if (steepWide == 0)
+                    {
+                        clear++;
+                        clearWrong += g == 0f ? 0 : 1;
+                    }
+                }
+            }
+
+            if (insideWrong > 0 || clearWrong > 0 || clear == 0)
+            {
+                faults.Add($"the steep mask: {insideWrong} of {inside} tiles inside a steep patch under 0.9, {clearWrong} of {clear} tiles two clear of any not 0 (want none, and some clear)");
+            }
+        }
+
+        // The water filled from the land: a made-up strip, land at 5 and 9 either side of three water tiles, and a flat valley.
+        float[]? strip = HillHeights(new byte[] { 5, 0, 0, 0, 9 }, new[] { false, true, true, true, false }, 5, 1);
+        float[]? flat = HillHeights(new byte[] { 0, 0, 0, 0 }, new[] { false, true, false, false }, 4, 1);
+        if (strip is null || strip[1] != 5f || strip[3] != 9f || (strip[2] != 5f && strip[2] != 9f) || flat is not null)
+        {
+            faults.Add($"the water filled {(strip is null ? "null" : string.Join(",", strip))} (want 5,5,5|9,9,9 from the land either side) and a flat valley {(flat is null ? "null" : "filled")} (want null)");
+        }
+
+        // The uniforms: on with heights, the sim's steep threshold, the look file's values.
+        ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+        if (material is null
+            || material.GetShaderParameter("hills_on").AsBool() != (raised > 0)
+            || material.GetShaderParameter("hill_light").AsSingle() != look.HillLight
+            || material.GetShaderParameter("hill_shade").AsSingle() != look.HillShade
+            || material.GetShaderParameter("hill_bank").AsSingle() != look.HillBank
+            || material.GetShaderParameter("hill_full_tilt_levels").AsSingle() != look.HillFullTiltLevels
+            || material.GetShaderParameter("hill_lip_strength").AsSingle() != look.HillLipStrength
+            || material.GetShaderParameter("hill_lip_width_share").AsSingle() != look.HillLipWidthShare)
+        {
+            faults.Add($"the uniforms: hills_on {material?.GetShaderParameter("hills_on")} (want {raised > 0}), or a look value not the file's");
+        }
+
+        ShowWatercolour(wasOn);
+        return faults.Count == 0
+            ? $"[widths] hill edges: ✅ {raised} of {land} land tiles raised (highest {highest} of 256), {steep} steep at the config's {config.SlopeSteepAt}; the field four texels a tile, the steep mask the sim's own class, water filled from the land; the look's values handed over; a flat valley draws none"
+            : $"[widths] hill edges: ⛔ {string.Join("; ", faults)}";
     }
 
     internal string TheSitesShowThroughTheCanopy()

@@ -4417,7 +4417,12 @@ public partial class VillageMap : Control
         }
 
         // ⭐ The hills, shaded (D735, `heights.md §6`): over the ground, under everything that stands or is worn on it.
-        DrawTheRelief(valley);
+        // With the valley in watercolour the shader draws them instead, with a drawn edge (A66, `hill-edges.md`): this
+        // wash is the flat map's.
+        if (!_watercolour)
+        {
+            DrawTheRelief(valley);
+        }
 
         // ⭐ The trails go straight onto the ground, under every field, tree and wash — they ARE
         // ground, worn through (D358).

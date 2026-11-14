@@ -170,6 +170,30 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float RippleFadePxPerTile { get; set; }
 
+    /// <summary>The hills (A66, <c>hill-edges.md</c>): a slope of this many height levels a tile is drawn as a 45° tilt.</summary>
+    [Export]
+    public float HillFullTiltLevels { get; set; }
+
+    /// <summary>How much lighter ground facing the light is washed, a share of its tilt.</summary>
+    [Export]
+    public float HillLight { get; set; }
+
+    /// <summary>How much darker ground facing away is washed, a share of its tilt.</summary>
+    [Export]
+    public float HillShade { get; set; }
+
+    /// <summary>How much darker steep ground is again, most where it faces away.</summary>
+    [Export]
+    public float HillBank { get; set; }
+
+    /// <summary>The steep bank's inked lip: how dark, against the bank's own stroke.</summary>
+    [Export]
+    public float HillLipStrength { get; set; }
+
+    /// <summary>The lip's width, a share of the bank's pen.</summary>
+    [Export]
+    public float HillLipWidthShare { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     internal static ValleyWatercolourLook Current => GD.Load<ValleyWatercolourLook>(Path);
 }

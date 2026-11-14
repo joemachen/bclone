@@ -92,6 +92,18 @@ uniform float river_winter_darken = 0.0;
 // ripples drifting downstream. Off at 0 strength, each. The river's own coordinates come from RiverTable — one row a
 // step down its course (middle, half-width, distance down, lean), read once a water pixel.
 uniform bool river_on = false;
+// The hills (A66, `hill-edges.md`): baked once a valley at four texels a tile — R the height (water filled from the land
+// beside it), G 1 where the sim calls a tile steep (`slope_steep_at`) and 0 elsewhere, both softened over half a tile so a
+// line drawn from them is smooth. Light and shade from the upper left on every slope; steep banks darker; an inked lip
+// along the top of each steep bank, on the steep mask's halfway line.
+uniform bool hills_on = false;
+uniform sampler2D heights_map : hint_default_black, filter_linear, repeat_disable;
+uniform float hill_full_tilt_levels = 8.0;
+uniform float hill_light = 0.55;
+uniform float hill_shade = 0.55;
+uniform float hill_bank = 0.14;
+uniform float hill_lip_strength = 0.8;
+uniform float hill_lip_width_share = 0.8;
 uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
 uniform float river_rows = 1.0;
 uniform vec2 river_along = vec2(1.0, 0.0);
@@ -389,6 +401,41 @@ void fragment() {
                     colour = mix(colour, ink_srgb, ripple_strength * seen * ripple * kinds.a);
                 }
             }
+        }
+
+        // ⭐ The hills (A66, Joe's B on a mock: *"lip, light and shade"*, *"Only steep banks"*). The slope in levels a
+        // tile from a tile's width either side, for the light; the sim's own steepness, softened, for the bank and the lip.
+        if (hills_on) {
+            vec2 at_ = (tile + 0.5 * ground_map_tiles) / ground_map_tiles;
+            vec2 ex = vec2(0.5, 0.0) / ground_map_tiles;
+            vec2 ey = vec2(0.0, 0.5) / ground_map_tiles;
+            vec2 east = textureLod(heights_map, at_ + ex, 0.0).rg, west = textureLod(heights_map, at_ - ex, 0.0).rg;
+            vec2 south = textureLod(heights_map, at_ + ey, 0.0).rg, north = textureLod(heights_map, at_ - ey, 0.0).rg;
+            float sx = east.r - west.r;
+            float sy = south.r - north.r;
+            vec2 here = textureLod(heights_map, at_, 0.0).rg;
+            float land = 1.0 - kinds.a;
+            vec3 normal = normalize(vec3(-sx, -sy, hill_full_tilt_levels));
+            vec3 light = normalize(vec3(-0.62, -0.62, 0.48));
+            float lit = dot(normal, light) - light.z;
+            colour *= 1.0 + land * (lit > 0.0 ? hill_light : hill_shade) * lit;
+            float steep = here.g;
+            float bank = smoothstep(0.3, 0.8, steep) * clamp(0.5 - 2.0 * lit, 0.5, 1.0);
+            colour *= 1.0 - land * hill_bank * bank;
+            // The lip: the steep mask's halfway line, on the uphill side of the band only (going uphill the mask falls, so
+            // its gradient and the height's point opposite ways). ⚠️ The mask, not the steepness itself: a Rolling valley's
+            // banks are only just steep, so a line where the steepness crosses 8 was a faint, uncertain thing; the mask goes
+            // 0 to 1 across a bank's edge however steep the bank. Its distance in screen pixels is taken from the mask's own
+            // slope, sampled a tile across as the light is (⚠️ not screen derivatives: they work in 2 × 2 blocks and inked a
+            // square wherever the line hovered over a patch). A lone steep tile softens below a half and draws no lip.
+            float f = steep - 0.5;
+            vec2 grad_steep = vec2(east.g - west.g, south.g - north.g);
+            float across_tile = length(grad_steep);
+            float f_px = abs(f) / max(across_tile, 1e-3) * px_per_tile;
+            float top = step(dot(grad_steep, vec2(sx, sy)), 0.0);
+            float crisp = smoothstep(0.08, 0.25, across_tile);
+            float lip = valley_pen(tile, f_px, ink_width_px * hill_lip_width_share, ink_pressure_tiles, ink_lifts, 95u);
+            colour = mix(colour, ink_srgb, hill_lip_strength * lip * top * crisp * land);
         }
 
         if (ink_strength > 0.0) {
