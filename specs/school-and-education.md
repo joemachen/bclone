@@ -1,7 +1,8 @@
 # Spec: The school — what four years of childhood buys
 
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
-> CODE (§11); ⏸️ FIVE CALLS WITH JOE (§11.3), NOTHING BUILT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> CODE (§11); CALLS 2 AND 3 ANSWERED (D753 — what school gives is two universal benefits, §11.4); ⏸️ CALLS 1, 4 AND 5
+> WITH JOE; NOTHING BUILT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -80,6 +81,10 @@ do instead of working.**
 | **(a) A starting proficiency floor** — a graduate begins their trade with some years already banked | ⭐ **The most likely reading of Joe's words**, and the one §5 amends the rules to permit. **Bounded: a floor, never a tier** — see §5 |
 | **(b) Faster growth for life** — a graduate accrues proficiency at a better rate | ⚠️ **This is the soft ratchet D196 flagged at +5% and Joe just deleted at +50%.** If it ships at all it wants measuring first |
 | **(c) Literacy** — a graduate can read records | ⛔ **Has no machinery**, because D204 deferred literacy when recording became automatic at mastery |
+
+⛔ **(D753: superseded — Joe: *"i want to come up with a more innovative and novel solution for what school gives - it
+should provide some kind of universal benefit(s)/buffs for all who attend"*, then *"A and B"*. School gives two
+benefits to every pupil whatever trade they take — §11.4. Candidates (a)–(c) are kept below as the August reasoning.)**
 
 **⭐ Recommendation: (a), and only (a), for the first landing.** It is the one that reads as a
 sentence — *"Wren spent four years at school and knows her letters and her numbers"* — and the one
@@ -226,13 +231,15 @@ clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
    and the library is the literacy gift at about Years 15–19, so the first pupils are the children of the village's
    first settled generation. **No *library nearby* placement rule** (§9.1, `tech-tree.md §7e` annotated): it teaches
    children, it does not copy books.
-2. **What does school give?** ⭐ **Recommended: a head start in every trade that has a skill** — at graduation the
+2. ✅ **ANSWERED (D753): two universal benefits, §11.4 — not a trade head start.** *(The recommendation as it stood:)*
+   **What does school give?** ⭐ **Recommended: a head start in every trade that has a skill** — at graduation the
    hidden `Work` of every skill row gets the same floor, so whatever trade a graduate takes, they start some years
    ahead; mastery is still reached by time on the task (§4, `skills-catalog.md §6.7`). Said as a sentence (*"Wren spent
    four years at the school"*), never a number. **How many years ahead is measured, not typed** (§9.2): harness
    villages over a century, no school against a full one, at several floors — the floor that makes it *a decision, not
    an upgrade* (§4's first two rows), brought back as numbers before it is set.
-3. **What about the seven trades with no skill?** ⭐ **Recommended: accept it for the first landing** — school helps
+3. ✅ **MOOT (D753): both benefits are the person's, not the trade's, so a fisher graduate gains as much as a farmer.**
+   *(As it stood:)* **What about the seven trades with no skill?** ⭐ **Recommended: accept it for the first landing** — school helps
    the ten skilled trades, and the panel says so — and record the seven rows as their own later piece (D391's debt), so
    this slice does not grow into re-deriving seven trades.
 4. **Who goes?** ⭐ **Recommended: the player sets how many teachers (staffing, D51); each teacher brings a fixed number
@@ -245,6 +252,44 @@ clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
 
 *Once these are answered: the decisions logged, §3–§9 amended in place and annotated, a §12 order of work, and the
 measurement for call 2 before any number is typed.*
+
+### 11.4 ✅ What school gives — two universal benefits (D753, Joe: *"A and B"*)
+
+Joe asked for *"a more innovative and novel solution … some kind of universal benefit(s)/buffs for all who attend"*.
+Four were offered against the rules every benefit must pass: **no invisible multiplier** (D207 refused them by name),
+**no ratchet** (every generation pays again — D196, D209), **never a gate on mastery** (`skills-catalog.md §6.7`), and
+**seen in what a villager does, said as a sentence** (§1.1). He chose two. Both belong to the **person**, not the trade.
+
+**A — "She learned to look after herself": a graduate keeps her full strength longer.**
+- Today vigour is full until `vigour_full_until_age` (30), then falls in a straight line to `vigour_min_percent` (55)
+  in the final year. **A graduate is at full strength until 30 + `school_vigour_years`**, then falls the same way to
+  the same floor; her **lifespan is unchanged** (school buys strong years, not more years — no story becomes one of
+  schooled immortals).
+- Seen: a graduate of 34 walks and works as a young adult does. Said: *"Still at full strength at 34 — she learned at
+  school how to keep well."*
+- **Generational by construction:** four years paid at 12–15, collected at 30–40, after the player who built the
+  school has moved on (Non-negotiable 5).
+
+**B — "She reads the year": a graduate sees trouble coming.**
+- **(i) Built with the school — she judges the walk to the fire.** Everybody now goes in at `seek_shelter_percent`
+  (50) of the way to freezing, wherever they are (the config's own trade: *"lower and nobody works through a winter;
+  higher and the walk to the fire is itself what kills them"*). **A graduate goes in when the cold she will gather on
+  the walk to the nearest fire would take her past that line** — sooner from the far wood, later beside the village —
+  so she is caught out less **and** works more of the winter, not less. Seen: a graduate leaves the far wood while the
+  others work on. Said: *"Wren left the far wood early — it is a long walk to a fire."*
+- **(ii) A hook for Phase 6's pressures, not built now:** drought, fire and blight are foretold (Phase 6's gate item
+  6); **a village with living graduates hears the warning sooner** — the size of *sooner* is each pressure's spec's to
+  set. Recorded here so those specs do not forget it.
+
+**Sized by measurement, never typed** (§9.2's rule, kept): `school_vigour_years` and B(i)'s effect are measured on
+harness centuries — no school against a full one, at several sizes — to find the size at which a school is worth
+building **and** schooling every child is not automatically right (§4's first two rows). Numbers come back to Joe
+before either is set.
+
+**Refused, with the reason, so it is not proposed again:** a graduate's children needing fewer years of school —
+appealing, but it makes schooling cheaper every generation, which is the ratchet. **Offered and not chosen:** C, a
+graduate keeping a technique alive after its last master dies (the knowledge panel: *"kept by Wren, who went to
+school"*); D, a graduate's first year in any new trade counting double (helps only the ten skilled trades).
 
 ## 10. Definition of Done
 
