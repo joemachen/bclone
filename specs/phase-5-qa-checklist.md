@@ -2,8 +2,15 @@
 
 **Decisions:** D641 (the gate, item 3), D744 (this checklist, `phase-5-exit-gate.md §5`). D164/D168: the document and
 the walk are different items — **only Joe's walk closes item 3.**
-**Status:** 📝 **WRITTEN (D744, 2026-11-14); ⏸️ NOT WALKED.** Joe walks it; his walk is also item 5's played run (its
-log is scanned for `ERROR` afterwards) and house tiers piece 5's play.
+**Status:** ✅ **WALKED BY JOE (D747, 2026-11-14)** — Joe: *"All fine"* (Run B, `year-66.save` on to about Year 86), then *"Top-up items all look good"* (the two switches on `year-66.save`; a new game on *Hilly*). Written D744. His walk is also item 5's played
+run (its logs: 0 `ERROR`) and house tiers piece 5's play.
+**What the logs show the walk reached:** a late village carried on for twenty years (carts, coats, the forester's winter,
+bridges, the home card's shop line); both *Rebuild older homes* directions narrated (*"…leave the older houses as they
+are…"*, then *"…rebuild the older houses again…"*); the Year 66 load keeping its professions (D745 — no *"You asked for 0"*);
+a new game founded on *Hilly*. ⚠️ **Not reached, said plainly:** that new game was left untended — nothing painted for
+houses, so the founders froze in the first winter and four re-founding bands found an empty valley — so Run A's shop-walk
+brush, build queue, nomads' first knock, tailor, mine and workshop lines were not reached *in it* (the Year 66 village
+holds the tailor, the mine, the workshop and the carts). Joe's verdict covers what he looked at; this is the record of it.
 
 ---
 

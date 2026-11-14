@@ -4,9 +4,10 @@
 with phase 5 exit gate"*), D744 (this spec). Neighbours: D169 (Phase 2 closed the same way), D159 / D640 (status lines
 checked against the suite, not themselves), D642–D649 (`phase-5-golden.md`, item 2), METHODOLOGY §3 (QA and the
 played log).
-**Status:** 🔨 **ON `slice/phase5-gate` (D744, 2026-11-14), UNMERGED.** Item 2 ✅ (before this slice); item 1 ✅ but for
-piece 5's play; item 3 📝 written, ⏸️ **not walked**; item 4 ✅; item 5 ⏸️ the four checks on the merged tree and Joe's
-walk's log. **Phase 5 ends when all five hold, and not before** (D641) — **what is left is Joe's walk.**
+**Status:** ✅ **ALL FIVE HOLD ON `slice/phase5-gate` (D747, 2026-11-14), UNMERGED.** Items 1–4 ✅ — Joe walked the
+checklist (*"All fine"*, *"Top-up items all look good"*), which played house tiers' piece 5; item 5 ✅ on the slice (the
+four checks, D746; the walk's logs 0 `ERROR`) and **re-run on the merged tree at the merge**. **Phase 5 ends when all five
+hold, and not before** (D641) — **it ends at the merge, at Joe's word.**
 
 ---
 
@@ -23,11 +24,11 @@ gate, on purpose (D640, D641).
 
 | # | Item (D641) | Where it stands | What closes it |
 |---|---|---|---|
-| 1 | Every Phase 5 item has a verdict | ✅ the legibility sentence built (§4.1); ⏸️ house tiers' piece 5 (merged unplayed at Joe's word, D724) | Piece 5 played in the QA walk (§5) |
+| 1 | Every Phase 5 item has a verdict | ✅ the legibility sentence built (§4.1); ✅ house tiers' piece 5 played in the walk (D747) | — |
 | 2 | A golden that reaches the Phase 5 chains | ✅ **Done** — `PhaseFiveGoldenTests`, a posed village 20 years on seed 12345, and a coverage test that every chain turned over (D648–D649; re-taken since, last D737) | — |
-| 3 | A QA checklist Joe walks | 📝 `specs/phase-5-qa-checklist.md` written (D744); ⏸️ not walked | **Only Joe's walk closes it** (D164/D168) |
+| 3 | A QA checklist Joe walks | ✅ written (D744), **walked by Joe** (D747: *"All fine"*, *"Top-up items all look good"*) — what it reached is in the checklist's status | — |
 | 4 | The docs true at the gate | ✅ done (§6.1) | — |
-| 5 | The four checks on the merged tree, and a played run with no `ERROR` in its log | The baseline below (§7); the run is Joe's | The four checks on the merged tree; Joe's QA walk *is* the played run, and its log is scanned (§7) |
+| 5 | The four checks on the merged tree, and a played run with no `ERROR` in its log | ✅ the played run: Joe's walk, every log 0 `ERROR` (§7); ✅ the four checks on the slice (D746) | The four checks again on the merged tree, at the merge |
 
 ## 3. Item 1 — a verdict on every Phase 5 item
 
@@ -46,7 +47,7 @@ list"*, and the five art-lane asks of D725–D742). **Verdicts are Joe's words o
 | The iron mine | ✅ built, played, merged | D449–D451 |
 | Clothing | ✅ built, played (*"seems to work"*), merged | D659–D667 |
 | Soil depletion | ⛔ **dropped from the game** (*"remove soil depletion from the game completely"*) | D656 |
-| House tiers | ✅ pieces 1–4 built, played and merged; **piece 5's two switches merged unplayed at Joe's word** (*"Merge it now"*) — ⏸️ **played in the QA walk** (§5) | D716–D724 |
+| House tiers | ✅ pieces 1–4 built, played and merged; piece 5's two switches merged unplayed at Joe's word (*"Merge it now"*) — ✅ **played in the QA walk** (*"Top-up items all look good"*; both directions narrated in his log) | D716–D724, D747 |
 | Drought | ➡️ **moved to Phase 6** | D656 |
 | Logistics | ✅ *nearby* (D671), the household's handcart (played, D690), the trades' carts (D692–D698), the cart's night and the restock knob (D700, D707); ⏸️ **the legibility sentence still owed** (D668 outcome 2, D670: *"the brush and the card still owe the player the sentence"*) — **built here (§4)** | D668–D707 |
 | Fire and blight | ➡️ **moved to Phase 6** | D656 |

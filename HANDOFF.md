@@ -1,5 +1,11 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — NEXT, SYSTEMS: THE EXIT GATE ITSELF, AT JOE'S WORD (D743, *"go with phase 5 exit gate"*). `main` = THE GREEN GROUND (A67–A70) OVER REAL HEIGHTS (D742), PUSHED AT HIS WORD (A71, `origin/main` = 637ad86; the A71 and D743 docs commits after it unpushed). ALL FIVE OF THE ART LANE'S SYSTEMS ASKS BUILT, MERGED AND PUSHED (D725–D742). NO BRANCH OPEN BUT `art`, LEVEL WITH `main`.**
 
+> **⛳ WHERE THINGS ARE, 2026-11-14 (D747) — PHASE 5'S GATE HOLDS ON `slice/phase5-gate`: JOE WALKED THE CHECKLIST (*"All fine"*,
+> *"Top-up items all look good"*). UNMERGED — Phase 5 ends at the merge, at his word; then the four checks on the merged tree.**
+> - **Next for systems after the merge: Joe's call** — Phase 6 (`DESIGN.md §4`) has no first piece chosen.
+>
+> *(D744's banner, as it stood before the walk:)*
+>
 > **⛳ WHERE THINGS ARE, 2026-11-14 (D744) — PHASE 5'S EXIT GATE BUILT ON `slice/phase5-gate`, UNMERGED; WHAT IS LEFT IS JOE'S WALK.**
 > - **The gate (`specs/phase-5-exit-gate.md`):** item 1 ✅ — every Phase 5 piece has a verdict (§3), logistics' last piece built:
 >   **the shop walk said** — the home card names the store the family walks to and how far (*"they shop at Granary 1, 6 tiles
@@ -9452,6 +9458,13 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D747 FOUND — "ALL FINE" IS A VERDICT ON WHAT WAS LOOKED AT; THE LOG SAYS WHAT THAT WAS
+
+- **Read the walk's log before writing the walk down.** Joe's first *"All fine"* covered a late village carrying on; the
+  log held no line from either house-tier switch — the very thing the walk existed to play — and no new game past tick
+  0. Put to him in plain words, he did a ten-minute top-up and both switches narrated. **A switch that narrates is
+  checkable from the log; say which lines a walk did not reach, and let Joe decide whether that closes it.**
+
 ## ⛔ THE TRAP D746 PAID FOR — A FRESH C# WRAPPER EVERY CALL IS GARBAGE THE FINALIZER RACES
 
 - **`GD.Load<T>` of a C# `Resource` returns the one cached resource but can hand back a wrapper the GC later finalizes;
@@ -10158,7 +10171,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below). **🔨 being built on `slice/phase5-gate` (2026-11-14).** ✅ **Built (D744): items 1, 2 and 4 hold; ⏸️ Joe's to do — walk `specs/phase-5-qa-checklist.md` (`.\run.bat`), say *"walked"* with any ❌ lines; Claude scans his logs for `ERROR`; then merge at his word.**
+- ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below). **🔨 being built on `slice/phase5-gate` (2026-11-14).** ✅ **Built (D744): items 1, 2 and 4 hold; ⏸️ Joe's to do — walk `specs/phase-5-qa-checklist.md` (`.\run.bat`), say *"walked"* with any ❌ lines; Claude scans his logs for `ERROR`; then merge at his word.** ✅ **Walked (D747): *"All fine"*, *"Top-up items all look good"*; logs 0 `ERROR`. ⏸️ Only the merge is left — his word.**
 - ✅ **B2/B3 ANSWERED (D725, Joe, 2026-11-11: *"2d map only."*) — the 2D drawn map is the shipped look; there is no 3D front end.** B2 (D68's *Foundation* or a 2D drawn map) is a 2D drawn map; B3 (Phases 7–8's `src/Bclone.Game3D`) is withdrawn, and §4's Phase 7 is rewritten to *mods, and release*. So the buildings the art lane paints next are the game's art. ⚠️ **For the art lane's next commit:** `art-inventory.md §1`'s B2 and B3 rows still read ⏸️ / *Roadmap* — its file, not the systems lane's. ⚠️ **For the heights line below:** with no 3D view, real heights show only as shading or relief on the flat map, and in what they do in the sim — Joe is asked whether he still wants them, and for what, before a spec.
 - ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51); ⭐ APPROVED (A52, *"everything about saplings looks great"*); MERGED into `main` (A55, `630f296`) and PUSHED (A56, `origin/main` = `7c46c6e`). Was for his eyes: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE
   INKED DISCS. NOTHING PAINTED OR BUILT. Four calls his (§6), each with a recommendation:** (1) trees drawn at an angle with trunks

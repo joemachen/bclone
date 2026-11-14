@@ -12,7 +12,7 @@ hashed only when true), D709 (every good starts with a limit — firewood at 600
 sets a hashed flag and moved four goldens).
 **Status:** ✍️ **SPECCED (D716), EVERY CALL ANSWERED (D717, D718 — 2026-11-07/08) ON `slice/house-tiers`; THE BUILD
 STARTS WITH PIECE 1, THE GENERATION (§14); ALL FOUR PIECES BUILT (D719–D722) AND PLAYED BY JOE (2026-11-09: *"looks good"*); PIECE 5, HIS TWO SWITCHES (D723),
-BUILT; ✅ MERGED INTO `main` AT HIS WORD (D724, 2026-11-09: *"Merge it now"*) — PIECE 5 MERGED UNPLAYED, HIS CALL.** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
+BUILT; ✅ MERGED INTO `main` AT HIS WORD (D724, 2026-11-09: *"Merge it now"*) — PIECE 5 MERGED UNPLAYED, HIS CALL; ✅ PLAYED IN PHASE 5'S QA WALK (D747, 2026-11-14: *"Top-up items all look good"*).** His answers (§11): one village-wide *Build homes as*, Cabin until changed;
 24 / 12 / 5 first, the cabin's raise measured after; **the family tree gates both rungs** (a new generation born into the
 valley + the village grown to hold it — cottages ~Year 30, manors ~Year 80–90); every house holds 5; a bigger larder and
 its own look each; the three perks *lasts*, *keeps its warmth*, *bears the family's name*; the manor 2×1, drawn bigger.
