@@ -485,10 +485,10 @@ public partial class VillageMap
         // textures and a share, never a re-mesh (D338: a uniform, never a re-bake).
         (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
         (TreeSet from, float fromAlpha, TreeSet to, float toAlpha) = TreeSeasonAt(season);
-        DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha);
+        DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha, TreeTintFor(from));
         if (toAlpha > 0f)
         {
-            DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(to)!, toAlpha);
+            DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(to)!, toAlpha, TreeTintFor(to));
         }
 
         _treesNow += Since(started);
@@ -499,13 +499,19 @@ public partial class VillageMap
     /// A painted tree reaches further than a crown — its foot up to <c>CanopySpread</c> off its tile and its cell
     /// <see cref="PaintedTreeHalf"/> × 1.1 round that — so a chunk two tiles off the screen's edge can still have leaves on it.
     /// </remarks>
-    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY, CanvasTexture atlasOf, float alpha)
+    /// <summary>
+    /// The tint a season's crowns are drawn through (A68, <c>green-ground.md §3.8</c>): the look file's deeper green on the
+    /// green ground, and none for the winter set, whose snow stays white.
+    /// </summary>
+    internal Color TreeTintFor(TreeSet set) => set == TreeSet.Winter ? Colors.White : _treeTint;
+
+    private void DrawThePaintedTrees(int minX, int maxX, int minY, int maxY, CanvasTexture atlasOf, float alpha, Color tint)
     {
         GeneratedMap map = _sceneryOf!;
         Transform2D toScreen = TileToScreen();
         Rid canvas = GetCanvasItem();
         Rid atlas = atlasOf.GetRid();
-        Color modulate = Colors.White with { A = alpha };
+        Color modulate = tint with { A = alpha };
         const int Reach = 2;
 
         int firstCx = Mathf.Clamp((minX - Reach - map.MinX) / ChunkTiles, 0, _chunksAcross - 1);

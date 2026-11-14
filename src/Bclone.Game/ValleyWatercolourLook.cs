@@ -170,6 +170,167 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float RippleFadePxPerTile { get; set; }
 
+    /// <summary>The hills (A66, <c>hill-edges.md</c>): a slope of this many height levels a tile is drawn as a 45° tilt.</summary>
+    [Export]
+    public float HillFullTiltLevels { get; set; }
+
+    /// <summary>
+    /// ⭐ The green ground (A68, <c>specs/green-ground.md</c>, Joe's C on a mock): on, the grass's own ground is a green
+    /// wash by height instead of the parchment. Off, the valley is A64's.
+    /// </summary>
+    [Export]
+    public bool GreenOn { get; set; }
+
+    /// <summary>The green at the river's level, sRGB: the deepest on the sheet, and what a hollow sinks toward.</summary>
+    [Export]
+    public Color GreenDeep { get; set; }
+
+    /// <summary>The green a fifth of the way up.</summary>
+    [Export]
+    public Color GreenLow { get; set; }
+
+    /// <summary>The green of open land, three fifths of the way up.</summary>
+    [Export]
+    public Color GreenMid { get; set; }
+
+    /// <summary>The yellow-green of the highest ground.</summary>
+    [Export]
+    public Color GreenHigh { get; set; }
+
+    /// <summary>What a crest or a shoulder blooms toward.</summary>
+    [Export]
+    public Color GreenCrest { get; set; }
+
+    /// <summary>What a slope facing the light turns toward: warmer and lighter.</summary>
+    [Export]
+    public Color GreenWarm { get; set; }
+
+    /// <summary>What a slope facing away turns toward: a cooler, deeper green. ⛔ A green, never a grey (A67).</summary>
+    [Export]
+    public Color GreenCool { get; set; }
+
+    /// <summary>The seasons' tints over the summer's green (§3.6): spring's.</summary>
+    [Export]
+    public Color GreenSpring { get; set; }
+
+    /// <summary>Summer's tint: white, the palette as written.</summary>
+    [Export]
+    public Color GreenSummer { get; set; }
+
+    /// <summary>Autumn's tint.</summary>
+    [Export]
+    public Color GreenAutumn { get; set; }
+
+    /// <summary>Winter's tint, under the snow.</summary>
+    [Export]
+    public Color GreenWinter { get; set; }
+
+    /// <summary>The height levels the palette runs between: the same green for the same height in every valley.</summary>
+    [Export]
+    public Vector2 GreenLevels { get; set; }
+
+    /// <summary>The level a flat valley (a save from before heights) is painted at.</summary>
+    [Export]
+    public float GreenFlatLevel { get; set; }
+
+    /// <summary>How far the palette wanders with the place, a share of its whole run: the wash's own unevenness.</summary>
+    [Export]
+    public float GreenWander { get; set; }
+
+    /// <summary>The crest's bloom: its gain on the field's crest, and the most it may turn the green.</summary>
+    [Export]
+    public Vector2 GreenCrestTurn { get; set; }
+
+    /// <summary>The hollow's sinking: its gain on the field's crest where that is below zero.</summary>
+    [Export]
+    public float GreenHollow { get; set; }
+
+    /// <summary>The lit slope's turn toward the warm green: its gain on the tilt toward the light, and the most.</summary>
+    [Export]
+    public Vector2 GreenWarmTurn { get; set; }
+
+    /// <summary>The far slope's turn toward the cool green: its gain on the tilt away from the light.</summary>
+    [Export]
+    public float GreenCoolTurn { get; set; }
+
+    /// <summary>How far steep ground turns toward the cool green, whichever way it faces.</summary>
+    [Export]
+    public float GreenSteep { get; set; }
+
+    /// <summary>How much of the same turn the woods' floor and the seams take, 0 to 1 (§3.7).</summary>
+    [Export]
+    public float GreenKindsShare { get; set; }
+
+    /// <summary>
+    /// The woods' floor on the green ground (§3.7): how much of it is the land's own green (the rest its painted tile as
+    /// it was), and how much deeper than the grass beside it that green lies (1 the same).
+    /// </summary>
+    [Export]
+    public Vector2 GreenWood { get; set; }
+
+    /// <summary>How much of the approved grass's strength (D632) lies over the green, 0 to 1.</summary>
+    [Export]
+    public float GreenGrassShare { get; set; }
+
+    /// <summary>The brush (§3.5): how strongly its streaks show in the wash.</summary>
+    [Export]
+    public float BrushStrength { get; set; }
+
+    /// <summary>A streak's length along the brush and its width across it, in tiles.</summary>
+    [Export]
+    public Vector2 BrushTiles { get; set; }
+
+    /// <summary>The tuft marks (§3.5): how dark the pen lies.</summary>
+    [Export]
+    public float TuftStrength { get; set; }
+
+    /// <summary>The cell a mark is hashed in, in tiles.</summary>
+    [Export]
+    public float TuftCellTiles { get; set; }
+
+    /// <summary>A mark's length, shortest and longest, in tiles.</summary>
+    [Export]
+    public Vector2 TuftLengthTiles { get; set; }
+
+    /// <summary>The share of cells that hold a mark.</summary>
+    [Export]
+    public float TuftShare { get; set; }
+
+    /// <summary>A mark's width at its middle, in screen pixels.</summary>
+    [Export]
+    public float TuftWidthPx { get; set; }
+
+    /// <summary>Below this many pixels a tile the marks fade out.</summary>
+    [Export]
+    public float TuftFadePxPerTile { get; set; }
+
+    /// <summary>The hachures (§3.4): how dark, against the bank's own stroke.</summary>
+    [Export]
+    public float HachureStrength { get; set; }
+
+    /// <summary>A hachure's width at the lip, a share of the bank's pen; it tapers to under a third.</summary>
+    [Export]
+    public float HachureWidthShare { get; set; }
+
+    /// <summary>Below this many pixels a tile the hachures fade out.</summary>
+    [Export]
+    public float HachureFadePxPerTile { get; set; }
+
+    /// <summary>
+    /// The painted crowns' tint on the green ground (§3.8, Joe: <i>"Yep!"</i>): about a fifth deeper, so the woods are the
+    /// darkest thing on the land. Not the winter set, whose snow stays white.
+    /// </summary>
+    [Export]
+    public Color TreeTint { get; set; }
+
+    /// <summary>The steep bank's inked lip: how dark, against the bank's own stroke.</summary>
+    [Export]
+    public float HillLipStrength { get; set; }
+
+    /// <summary>The lip's width, a share of the bank's pen.</summary>
+    [Export]
+    public float HillLipWidthShare { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     internal static ValleyWatercolourLook Current => GD.Load<ValleyWatercolourLook>(Path);
 }

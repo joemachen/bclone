@@ -92,6 +92,56 @@ uniform float river_winter_darken = 0.0;
 // ripples drifting downstream. Off at 0 strength, each. The river's own coordinates come from RiverTable — one row a
 // step down its course (middle, half-width, distance down, lean), read once a water pixel.
 uniform bool river_on = false;
+// The hills (A66, `hill-edges.md`): baked once a valley at four texels a tile — R the height (water filled from the land
+// beside it), G 1 where the sim calls a tile steep (`slope_steep_at`) and 0 elsewhere, both softened over half a tile so a
+// line drawn from them is smooth. Light and shade from the upper left on every slope; steep banks darker; an inked lip
+// along the top of each steep bank, on the steep mask's halfway line.
+uniform bool hills_on = false;
+uniform sampler2D heights_map : hint_default_black, filter_linear, repeat_disable;
+uniform float hill_full_tilt_levels = 16.0;
+// ⭐ The green ground (A68, `specs/green-ground.md`, Joe's C on a mock): the grass's own ground a green wash by height
+// instead of the parchment, its hue turned by the land's shape and the light, the brush and the tuft marks laid along
+// the contours, hachures down the steep banks. Placeholders, as every value here: the look is in valley_watercolour.tres.
+uniform bool green_on = false;
+uniform vec3 green_deep = vec3(0.5);
+uniform vec3 green_low = vec3(0.5);
+uniform vec3 green_mid = vec3(0.5);
+uniform vec3 green_high = vec3(0.5);
+uniform vec3 green_crest = vec3(0.5);
+uniform vec3 green_warm = vec3(0.5);
+uniform vec3 green_cool = vec3(0.5);
+uniform vec3 green_spring = vec3(1.0);
+uniform vec3 green_summer = vec3(1.0);
+uniform vec3 green_autumn = vec3(1.0);
+uniform vec3 green_winter = vec3(1.0);
+uniform vec2 green_levels = vec2(0.0, 255.0);
+uniform float green_flat_level = 90.0;
+uniform float green_wander = 0.0;
+uniform vec2 green_crest_turn = vec2(0.0);
+uniform float green_hollow = 0.0;
+uniform vec2 green_warm_turn = vec2(0.0);
+uniform float green_cool_turn = 0.0;
+uniform float green_steep = 0.0;
+uniform float green_kinds_share = 0.0;
+uniform vec2 green_wood = vec2(0.0, 1.0);
+uniform float green_grass_share = 1.0;
+uniform float brush_strength = 0.0;
+uniform vec2 brush_tiles = vec2(0.9, 0.07);
+uniform float tuft_strength = 0.0;
+uniform float tuft_cell_tiles = 1.0;
+uniform vec2 tuft_length_tiles = vec2(0.22, 0.42);
+uniform float tuft_share = 0.7;
+uniform float tuft_width_px = 1.2;
+uniform float tuft_fade_px = 14.0;
+// The hachures (A68): one stroke a texel, baked once a world (VillageMap.HillHachures) - RG where it starts, from the
+// texel's own centre, in quarter-texels; B its direction; A its length, 0 where no stroke is near. Read unfiltered.
+uniform sampler2D hachure_map : hint_default_black, filter_nearest, repeat_disable;
+uniform float hachure_texels_per_tile = 8.0;
+uniform float hachure_strength = 0.0;
+uniform float hachure_width_share = 0.7;
+uniform float hachure_fade_px = 10.0;
+uniform float hill_lip_strength = 0.8;
+uniform float hill_lip_width_share = 0.8;
 uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
 uniform float river_rows = 1.0;
 uniform vec2 river_along = vec2(1.0, 0.0);
@@ -227,6 +277,113 @@ float valley_grain_octave(vec2 tile, float cycle, uint salt) {
     return mix(0.5, at_value_noise(tile / cycle, salt), keep);
 }
 
+// ⭐ The brush (A68): faint streaks in the wash, long along `dir` and thin across it. One streak noise read at four
+// fixed turns, an eighth of a circle apart, and mixed by how near `dir` lies to each (a direction and its opposite are
+// the same stroke, so the weight is the cosine of twice the angle between them): at most two are ever read.
+// World-anchored, and gone before a streak is thinner than a pixel. -1 to 1.
+const vec2 VALLEY_TURNS[4] = vec2[](vec2(1.0, 0.0), vec2(0.70710678, 0.70710678), vec2(0.0, 1.0), vec2(-0.70710678, 0.70710678));
+
+float valley_brush(vec2 tile, vec2 dir) {
+    float keep = smoothstep(1.0, 2.0, brush_tiles.y * px_per_tile);
+    if (keep <= 0.0) {
+        return 0.0;
+    }
+
+    float sum = 0.0;
+    float weights = 0.0;
+    for (int k = 0; k < 4; k++) {
+        vec2 u = VALLEY_TURNS[k];
+        float along = dot(dir, u);
+        float w = max(0.0, 2.0 * along * along - 1.0);
+        if (w > 0.0) {
+            vec2 at_ = vec2(dot(tile, u) / brush_tiles.x, dot(tile, vec2(-u.y, u.x)) / brush_tiles.y);
+            float streak = 0.65 * at_value_noise(at_, 100u + uint(k)) + 0.35 * at_value_noise(at_ * vec2(1.7, 2.3), 104u + uint(k));
+            sum += w * (2.0 * streak - 1.0);
+            weights += w;
+        }
+    }
+
+    return keep * sum / max(weights, 1e-4);
+}
+
+// ⭐ The tuft marks (A68): the reference's short paired pen dashes over the meadows, one hashed mark a cell, lying
+// along `dir`. A mark may sit anywhere in its cell, so the four cells nearest are asked. How dark at this pixel, 0 to 1.
+float valley_tufts(vec2 tile, vec2 dir) {
+    float seen = smoothstep(tuft_fade_px * (2.0 / 3.0), tuft_fade_px, px_per_tile);
+    if (seen <= 0.0) {
+        return 0.0;
+    }
+
+    vec2 across = vec2(-dir.y, dir.x);
+    ivec2 first = ivec2(floor(tile / tuft_cell_tiles - 0.5));
+    float mark = 0.0;
+    for (int j = 0; j < 2; j++) {
+        for (int i = 0; i < 2; i++) {
+            ivec2 cell = first + ivec2(i, j);
+            if (at_rand(cell, 110u) >= tuft_share) {
+                continue;
+            }
+
+            vec2 centre = (vec2(cell) + vec2(at_rand(cell, 111u), at_rand(cell, 112u))) * tuft_cell_tiles;
+            float len = mix(tuft_length_tiles.x, tuft_length_tiles.y, at_rand(cell, 113u));
+            vec2 rel = tile - centre;
+            float a = dot(rel, dir);
+            float b = dot(rel, across);
+            float pressed = mix(0.55, 1.0, at_rand(cell, 114u));
+            // The first dash, and for most marks a second, shorter, beside and a little along it.
+            float x = a / (0.5 * len);
+            if (abs(x) < 1.0) {
+                float edge = 0.5 * tuft_width_px * sqrt(1.0 - x * x);
+                mark = max(mark, pressed * (1.0 - smoothstep(edge - 0.5, edge + 0.5, abs(b) * px_per_tile)));
+            }
+
+            if (at_rand(cell, 115u) < 0.6) {
+                float x2 = (a - 0.25 * len) / (0.4 * len);
+                if (abs(x2) < 1.0) {
+                    float edge = 0.5 * tuft_width_px * sqrt(1.0 - x2 * x2);
+                    mark = max(mark, pressed * (1.0 - smoothstep(edge - 0.5, edge + 0.5, abs(b - 0.4 * len) * px_per_tile)));
+                }
+            }
+        }
+    }
+
+    return seen * mark;
+}
+
+// ⭐ The hachures (A68): pen strokes from a steep bank's lip down it. The bake names, for each texel, the one stroke
+// nearest it; the distance to that stroke is worked out here, so the pen is as thin on screen at every zoom as the
+// bank's own. A stroke tapers toward its tail and bows a touch, as a hand's does. `corner` is tiles from the valley's
+// corner. How dark at this pixel, 0 to 1.
+float valley_hachures(vec2 corner) {
+    float seen = smoothstep(hachure_fade_px * (2.0 / 3.0), hachure_fade_px, px_per_tile);
+    if (seen <= 0.0) {
+        return 0.0;
+    }
+
+    vec2 texel = floor(corner * hachure_texels_per_tile);
+    vec4 s = round(texelFetch(hachure_map, ivec2(texel), 0) * 255.0);
+    if (s.a < 0.5) {
+        return 0.0;
+    }
+
+    vec2 start = (texel + 0.5 + (s.rg - 128.0) * 0.25) / hachure_texels_per_tile;
+    float angle = s.b * (6.28318530718 / 256.0);
+    vec2 d = vec2(cos(angle), sin(angle));
+    float len = s.a / 128.0;
+    vec2 rel = corner - start;
+    float x = dot(rel, d) / len;
+    if (x < 0.0 || x > 1.0) {
+        return 0.0;
+    }
+
+    ivec2 id = ivec2(round(start * hachure_texels_per_tile * 4.0));
+    float bow = (at_rand(id, 120u) - 0.5) * 0.12 * len;
+    float away = abs(dot(rel, vec2(-d.y, d.x)) - bow * 4.0 * x * (1.0 - x)) * px_per_tile;
+    float edge = 0.5 * ink_width_px * hachure_width_share * mix(1.0, 0.3, x);
+    float pressed = mix(0.7, 1.0, at_rand(id, 121u));
+    return seen * pressed * (1.0 - smoothstep(edge - 0.5, edge + 0.5, away));
+}
+
 void fragment() {
     vec2 uv = (local_px - valley_origin_px) / valley_size_px;
     // Tiles from the valley's centre — where the mix's own UV is 0.5 (terrain_weights).
@@ -311,11 +468,87 @@ void fragment() {
             deep = terrain_water(tile, tx, ty, hex_sharpness);
             shallows = terrain_shallows(deep);
         }
-        vec3 ground = terrain_ground(kinds, weights.a, ground_srgb, wood, seam, deep, shallows);
-        strength *= terrain_coverage(grass_weight, coverage_fade);
+        // The hills' field (A66, `hill-edges.md §4`): the height, the steep mask and (A68) the crest at this pixel, and the
+        // first two's slopes from a tile's width either side.
+        vec2 corner = tile + 0.5 * ground_map_tiles;
+        vec2 hill_slope = vec2(0.0);
+        vec2 steep_slope = vec2(0.0);
+        vec3 hill = vec3(green_flat_level, 0.0, 0.0);
+        if (hills_on) {
+            vec2 at_ = corner / ground_map_tiles;
+            vec2 ex = vec2(0.5, 0.0) / ground_map_tiles;
+            vec2 ey = vec2(0.0, 0.5) / ground_map_tiles;
+            vec2 east = textureLod(heights_map, at_ + ex, 0.0).rg, west = textureLod(heights_map, at_ - ex, 0.0).rg;
+            vec2 south = textureLod(heights_map, at_ + ey, 0.0).rg, north = textureLod(heights_map, at_ - ey, 0.0).rg;
+            hill_slope = vec2(east.r - west.r, south.r - north.r);
+            steep_slope = vec2(east.g - west.g, south.g - north.g);
+            hill = textureLod(heights_map, at_, 0.0).rgb;
+        }
+
+        // ⭐ The green ground (A68, `specs/green-ground.md §3`). The grass's own ground: a green by height, the same green
+        // for the same height in every valley; a crest turned toward the crest's yellow and a hollow toward the deep green;
+        // a slope turned warmer facing the light and cooler facing away; steep ground the coolest. ⛔ Every step is a mix
+        // toward a colour, never a multiply toward black: four grey washes were refused as shadows (A67).
+        vec3 own = ground_srgb;
+        vec3 turn = vec3(1.0);
+        vec2 brush_dir = vec2(1.0, 0.0);
+        if (green_on) {
+            vec3 normal = normalize(vec3(-hill_slope, hill_full_tilt_levels));
+            vec3 light = normalize(vec3(-0.62, -0.62, 0.48));
+            float lit = dot(normal, light) - light.z;
+            float t = (hill.r - green_levels.x) / max(green_levels.y - green_levels.x, 1.0);
+            t = clamp(t + green_wander * (2.0 * at_value_noise(tile / 14.0, 70u) - 1.0), 0.0, 1.0);
+            vec3 plain = mix(green_deep, green_low, clamp(t / 0.2, 0.0, 1.0));
+            plain = mix(plain, green_mid, clamp((t - 0.2) / 0.4, 0.0, 1.0));
+            plain = mix(plain, green_high, clamp((t - 0.6) / 0.4, 0.0, 1.0));
+            vec3 g = mix(plain, green_crest, min(max(hill.b, 0.0) * green_crest_turn.x, green_crest_turn.y));
+            g = mix(g, green_deep, clamp(-hill.b * green_hollow, 0.0, 1.0));
+            g = mix(g, green_warm, min(max(lit, 0.0) * green_warm_turn.x, green_warm_turn.y));
+            g = mix(g, green_cool, clamp(-lit * green_cool_turn, 0.0, 1.0));
+            g = mix(g, green_cool, green_steep * hill.g);
+            // The seams keep their own paintings and take a share of the same turn (§3.7).
+            turn = mix(vec3(1.0), g / max(plain, vec3(1e-3)), green_kinds_share);
+            // The season's tint over the summer's green (§3.6), turning as the grass's season turns.
+            float of_year = mod(season, 4.0);
+            vec3 from_tint = of_year < 1.0 ? green_spring : of_year < 2.0 ? green_summer : of_year < 3.0 ? green_autumn : green_winter;
+            vec3 to_tint = of_year < 1.0 ? green_summer : of_year < 2.0 ? green_autumn : of_year < 3.0 ? green_winter : green_spring;
+            own = g * mix(from_tint, to_tint, fract(of_year));
+            strength *= green_grass_share;
+            // The woods' floor (§3.7): the same green a little deeper, carrying its own painting's light and dark (and the
+            // young wood's lift), so a wood stands on the land's colour and not on a pale clearing.
+            wood = mix(wood * turn, own * green_wood.y * wood / max(kind_wood, vec3(1e-3)), green_wood.x);
+            seam *= turn;
+
+            // The brush's direction (§3.5): along the contour where the land slopes, the painter's own wandering hand
+            // where it is flat. Mixed as doubled angles, where a direction and its opposite are one, so it never flips.
+            float tilt = length(hill_slope) / 16.0;
+            float wander = (at_value_noise(tile / 9.0, 71u) - 0.5) * 1.2;
+            vec2 doubled = vec2(cos(2.0 * wander), sin(2.0 * wander));
+            if (tilt > 1e-4) {
+                vec2 contour = vec2(-hill_slope.y, hill_slope.x) / length(hill_slope);
+                vec2 contour2 = vec2(contour.x * contour.x - contour.y * contour.y, 2.0 * contour.x * contour.y);
+                doubled = mix(doubled, contour2, smoothstep(0.12, 0.42, tilt));
+            }
+
+            float lie = 0.5 * atan(doubled.y, doubled.x);
+            brush_dir = vec2(cos(lie), sin(lie));
+        }
+
+        vec3 ground = terrain_ground(kinds, weights.a, own, wood, seam, deep, shallows);
+        float covered = terrain_coverage(grass_weight, coverage_fade);
+        strength *= covered;
 
         vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
         vec3 colour = ground * mix(vec3(1.0), grass, strength);
+        if (green_on) {
+            // The brush in the wash, on all the land; the tuft marks on the grass only, off the steep banks (the
+            // hachures' ground), under the snow.
+            colour *= 1.0 + brush_strength * (1.0 - kinds.a) * valley_brush(tile, brush_dir);
+            if (tuft_strength > 0.0) {
+                float marks = valley_tufts(tile, brush_dir) * covered * (1.0 - smoothstep(0.2, 0.5, hill.g));
+                colour = mix(colour, ink_srgb, tuft_strength * marks);
+            }
+        }
 
         // The river's own coordinates (A45, `river-drawn.md §3`): one row of the table, read only where water is drawn.
         // `across` is square to the river (the lean undoes the course's square), `down` how far it has run.
@@ -388,6 +621,28 @@ void fragment() {
                     float ripple = valley_ripples(river_down, river_across_tiles, weights.a);
                     colour = mix(colour, ink_srgb, ripple_strength * seen * ripple * kinds.a);
                 }
+            }
+        }
+
+        // ⭐ The pen on the hills: A66's lip, and (A68) the hachures down the bank from it. A66's light, shade and darker
+        // bank are gone (A67: Joe, *"cloud shadows"*); the green ground above tells the slope instead.
+        if (hills_on) {
+            float land = 1.0 - kinds.a;
+            // The lip: the steep mask's halfway line, on the uphill side of the band only (going uphill the mask falls, so
+            // its gradient and the height's point opposite ways). ⚠️ The mask, not the steepness itself: a Rolling valley's
+            // banks are only just steep, so a line where the steepness crosses 8 was a faint, uncertain thing; the mask goes
+            // 0 to 1 across a bank's edge however steep the bank. Its distance in screen pixels is taken from the mask's own
+            // slope, sampled a tile across as the light is (⚠️ not screen derivatives: they work in 2 × 2 blocks and inked a
+            // square wherever the line hovered over a patch). A lone steep tile softens below a half and draws no lip.
+            float f = hill.g - 0.5;
+            float across_tile = length(steep_slope);
+            float f_px = abs(f) / max(across_tile, 1e-3) * px_per_tile;
+            float top = step(dot(steep_slope, hill_slope), 0.0);
+            float crisp = smoothstep(0.08, 0.25, across_tile);
+            float lip = valley_pen(tile, f_px, ink_width_px * hill_lip_width_share, ink_pressure_tiles, ink_lifts, 95u);
+            colour = mix(colour, ink_srgb, hill_lip_strength * lip * top * crisp * land);
+            if (hachure_strength > 0.0) {
+                colour = mix(colour, ink_srgb, hachure_strength * valley_hachures(corner) * land);
             }
         }
 
