@@ -5786,6 +5786,14 @@ public partial class VillageMap : Control
     private void DrawTrails()
     {
         CollectTheTrailsIfTheyMoved(_world!);
+
+        // ⭐ With the watercolour on, the tracks are painted into the ground instead (A72, `painted-paths.md`).
+        if (PathsArePainted)
+        {
+            HandThePathsOver();
+            return;
+        }
+
         if (_trailMesh.GetSurfaceCount() == 0)
         {
             return;
@@ -6887,10 +6895,12 @@ public partial class VillageMap : Control
         // fields") — over the fill and under the stalks. Rebuilt only when the trails were
         // re-collected or the ground changed, never a frame (D338).
         int terrainNow = _world!.TerrainGeneration;
-        if (_fieldTrailsAtCollection != _trailCollections || _fieldTrailsAtTerrain != terrainNow)
+        // ⭐ And laid in the painted track's sand with the watercolour on (A72), so a lane is one colour across a field's edge.
+        if (_fieldTrailsAtCollection != _trailCollections || _fieldTrailsAtTerrain != terrainNow || _fieldTrailsPainted != PathsArePainted)
         {
             _fieldTrailsAtCollection = _trailCollections;
             _fieldTrailsAtTerrain = terrainNow;
+            _fieldTrailsPainted = PathsArePainted;
             BuildTheFieldTrailMesh();
         }
 
