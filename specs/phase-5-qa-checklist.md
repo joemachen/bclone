@@ -12,8 +12,9 @@ log is scanned for `ERROR` afterwards) and house tiers piece 5's play.
 - **Start:** `.\run.bat` in PowerShell. The game writes its own log the moment it opens — nothing to switch on. When you
   are done, just quit the game normally; Claude reads the newest logs in `src/Bclone.Game/logs/` and `logs/`.
 - **Two runs cover everything.** **Run A** is a new game you play forward from the founding (sections 1–4). **Run B**
-  is one of your old late saves — your Hollowmere (Year 84, both houses learned) is ideal — for what takes decades to
-  reach (sections 5–6). Fast-forward freely; nothing here needs watching in real time.
+  is a late save for what takes decades to reach (sections 5–6): **your Hollowmere's `year-66.save`** (`hollowmere-rook-hare-85`
+  — it has already learned the cottage and the manor and builds cottages, so every house-tiers switch is there), played on
+  to about Year 84. *(The checklist first named a Year 84 Hollowmere; that save is not on disk — 2026-11-14.)* Fast-forward freely; nothing here needs watching in real time.
 - **Each line:** *do this* → *you should see this*. Tick it, or write one sentence of what you saw instead. A ❌ with a
   sentence is as useful as a ✅ — it is what the walk is for.
 - **Not on this list on purpose:** how the hills, grass and trees *look* (the art lane's), and anything from Phase 4.5's
@@ -71,7 +72,7 @@ log is scanned for `ERROR` afterwards) and house tiers piece 5's play.
 
 ---
 
-## Run B — a late save (your Hollowmere, Year 84)
+## Run B — a late save (your Hollowmere, `year-66.save`, played on to about Year 84)
 
 ### 5. House tiers (cottages from about Year 25–32, manors from about Year 70–86)
 
@@ -80,6 +81,8 @@ their first play.
 
 - [ ] **Load the save.** Cabins, cottages and manors stand as they did. Older houses are rebuilt one at a time, worst
   first.
+- [ ] **The professions panel after the load** shows the numbers you left (Forager 3, Fisher 4, …), not a row of 0s, and
+  nobody is idle for want of them (D745 — until that fix, every load put every trade to 0).
 - [ ] **Build bar → Homes: *Cabins · Cottages · Manors* and a *Rebuild older homes* tickbox beside them** (shown only
   once the cottage is learned). **Untick it:** a rebuild that was waiting is called off (the village says so); one
   already started still finishes. New homes are still built as whatever you picked.

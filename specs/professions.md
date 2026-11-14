@@ -132,6 +132,10 @@ leave — never *mouths ÷ one gatherer* (Joe, with 2,006 food: *"needs 3 forage
 **⭐ And there is no "let the village decide" any more (D109, Joe).** Every workplace carries an
 explicit number. A finished building arrives at **0** and does nothing until the player staffs
 it. The founders arrive as laborers.
+**⛔ A loaded village keeps its numbers (D745).** The panel's rows are seeded from `JobLimits` — 0 only where nothing
+has been asked yet (a founding) — because every load reloads the scene and rebuilds the panel, and a row seeded at a flat
+0 wrote it back over every trade the save held (Joe: *"reloading a save sets all professions to 0"*). The save always
+held them (`job_limits`); only the view threw them away. Probe `professions kept:`.
 
 - **Joe's reason is debuggability, not fidelity:** *"I think manual for now will make debugging
   the core game easier."* A village that only moves when the player moves it has one source of

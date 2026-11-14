@@ -9449,6 +9449,15 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D745 PAID FOR — A VIEW THAT PUSHES ITS OWN DEFAULT ON BUILD OVERWRITES WHAT A LOAD JUST READ
+
+- **Every load reloads the scene, so every control is built AFTER the world is read — and a control that pushes its own
+  starting value into the sim on build erases the save.** The professions row was seeded at 0 (D136, right for a
+  founding) and called `SetJobLimit` at the end of building itself; the save held Joe's numbers the whole time and the
+  sim's round-trip guard (`EverySavedFieldComesBackAsItWas`) was green, because the bug was not in the sim. **Seed a
+  control from the world, never from a constant, if it writes back.** Grep for any other `Apply()` at the end of a
+  builder before trusting a settings-shaped control across a load.
+
 ## ⛔ THE TRAPS D744 PAID FOR — A PROBE THAT READ ONLY HUNGRY CARDS, AND A FIX MEASURED ON TOO FEW RUNS
 
 - **A probe line that skips a case can pass on nothing but skips.** `shop walk:` read every home card but let a cold or
