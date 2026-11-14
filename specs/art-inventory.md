@@ -193,7 +193,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 Zone fills and dashed edges (residential, harvest, destroy, work ground — `VillageMap.cs:295–369`, `:4643–4840`); the
 **paths** — worn `#8c7457` and packed `#8a7056` trail meshes with tapered ends and junction discs (`Meshes.cs:761–883`),
 which are world art as much as overlay (B6) — 🔨 **with the watercolour on, painted into the ground as worn dirt tracks
-with a pen line down each side (A72, `specs/painted-paths.md`, Joe's *"B, painted track"*), for his eyes; the mesh stays the
+with a pen line down each side (A72, `specs/painted-paths.md`, Joe's *"B, painted track"*), the pen lightened (A73), ⭐ merged (A74); the mesh stays the
 flat map's; the wear debug wash; the brush preview; the selection outline; the
 gathering-radius ring; home-to-work route lines. All 🟨, all functional. Whether paths become painted ground is B6's.
 
