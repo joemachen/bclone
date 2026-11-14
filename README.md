@@ -2,10 +2,6 @@
 
 A ground-up, generational village-builder / survival sim — a spiritual successor to *Banished*. You grow a town across generations against a world that pushes back. No combat, no traditional win condition. The game is watching a lineage survive.
 
-![The valley in Year 46 — 29 villagers across 6 households](screenshots/ss002-aug1-2026.png)
-
-*Year 46 of seed 12345, **as the game looked on 2026-08-01**. Everything on screen is explained by something you can click on: what the shed is holding, which work the village wants that nobody is doing, and why a villager walks to the wood they walk to. The shell has been rebuilt twice since (D54/D55, D149) and the generated forage sites this shot shows were retired in step C — it is kept as the record of that date rather than as a current picture (D160).*
-
 **Design & process docs (read these first):**
 - [`DESIGN.md`](./DESIGN.md) — vision, pillars, architecture, build order, progress tracker *(the what)*. §6 is where the project actually is; §7 is why it got there.
 - [`CLAUDE.md`](./CLAUDE.md) — working agreement for AI-assisted development *(the how)*
