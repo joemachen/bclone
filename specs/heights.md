@@ -133,7 +133,7 @@ that the bank guard said was fine. Built now:
   itself stays flat or gentle;
 - steepness is counted **land to land** (§3), so a riverbank is not steep and a riverside path not slow;
 - the view (`VillageMap.Relief.cs`) softens the wash across a tile and draws water level with its banks, so neither the
-  whole-level steps nor the drop to the water show as lines; the wash is 0.025 a level (a level is now 1/16 of the old).
+  whole-level steps nor the drop to the water show as lines; the wash is **0.06** a level (a level is now 1/16 of the old) — ⚠️ first set at 0.025 from a preview on bare parchment, and Joe saw no hills at all on Hilly under the watercolour and 55 % woods (D738).
 - Each step was chosen by measuring the spread of steepness on eight seeds (the targets the first build had: about 2 %,
   7 % and 25 % steep), not by eye alone; the first tries are in D737 — a limit from the water applied after the
   smoothing capped most of the valley into one ramp, and before it alone left the banks steep.

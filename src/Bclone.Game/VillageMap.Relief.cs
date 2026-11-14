@@ -35,7 +35,7 @@ public partial class VillageMap
     internal const int ReliefPerTile = 8;
 
     /// <summary>How much wash a slope of one level per tile, facing the light squarely, puts down — a level being one of 256 (D736).</summary>
-    private const float ReliefGain = 0.025f;
+    private const float ReliefGain = 0.06f;
 
     /// <summary>How far the whole-level steps are softened before shading, in tiles (two passes).</summary>
     private const int ReliefSoftenTiles = 1;
@@ -246,9 +246,11 @@ public partial class VillageMap
             faults.Add($"the steepest tile ({steepest}, steepness {map.SteepnessAt(steepest)}) is washed {onSteep:F2}");
         }
 
-        if (onFounding > 0.01f)
+        // ⚠️ Not "unwashed" (D737): the smoothing lets a nearby bank tilt the ring a little, and a wash strong enough to see
+        // shows it. The claim is that the ground the village starts on does not read as a hill.
+        if (onFounding > onSteep / 4f)
         {
-            faults.Add($"the flat founding site is washed {onFounding:F2}");
+            faults.Add($"the founding site is washed {onFounding:F2}, more than a quarter of the steepest tile's {onSteep:F2}");
         }
 
         var flat = new GeneratedMap(map.Width, map.Height, map.MinX, map.MinY, map.Tiles.ToArray(), map.FoundingSite);

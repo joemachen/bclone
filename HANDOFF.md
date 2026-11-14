@@ -9417,6 +9417,9 @@ Read `git status` after staging, every time.
 - **A guard on a boundary must look past it.** D736's *"a bank is at most a level above the water"* was true, and
   the hill one tile behind the bank stood 7 levels higher: a cliff the guard passed for a whole slice. The rule it
   stood for is *"no cliff near the river"*; `TheHillsHaveNoCreases` asks that of every tile now.
+- **A preview on bare parchment under-doses** (D738): the wash chosen there (0.025) vanished in the game under the
+  watercolour and the woods — *"i dont see hills at all now"*. Preview on his own save's heights, and choose the
+  strength that reads on the busiest ground, not the emptiest.
 - **Draw what the player will see before asking them to look again.** The probe reads facts (the steepest tile is
   shaded, the founding is not) and passed a wash Joe called weird. `shade.py` (the view's hillshade in Python, from a
   heights dump) showed the panels, the hatching and the plateau in one picture, and showed each fix before the game
