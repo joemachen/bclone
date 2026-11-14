@@ -1,7 +1,7 @@
 # Spec: Painted paths — the worn tracks painted into the green ground
 
-**Status:** ✍️ **SPECCED (A72, 2026-11-14)** at Joe's pick on a mock (*"B, painted track"*). 🔨 **BUILT on `art` (A72, §7)**,
-⏸️ for his eyes in his own game; not merged. Art lane. View only: where a path runs, how it wears and what it costs are the
+**Status:** ✍️ **SPECCED (A72, 2026-11-14)** at Joe's pick on a mock (*"B, painted track"*). 🔨 **BUILT on `art` (A72, §7)**; played by Joe (*"looks really good"*) and
+the pen lightened at his word (A73, §7); ⏸️ for his eyes again; not merged. Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
@@ -118,6 +118,9 @@ ruts, the edge's wander, the pen's fade, and the snow thinned on a track. The re
 
 **Not done, and known:**
 - The before/after line's left side draws no paths with the tick on (§3).
-- The pen at the closest zoom is heavy and ragged; its values (`PathPen*`) and every other `Path*` value are first values,
-  for Joe's eyes.
+- Every `Path*` value is a first value, for Joe's eyes (the pen lightened once, A73 below).
 - The minimap, the new-game preview and the title backdrop are still the parchment's (`green-ground.md §4`).
+
+**A73, 2026-11-14 — the pen lightened.** Joe, playing A72: *"looks really good, but like you said it does look a bit
+heavy/ragged. lighten up a tough?"* `PathPenStrength` 0.85 → 0.55, `PathPenWidthShare` 0.65 → 0.5, `PathPenFadePxPerTile`
+14 → 18. The look file only; probe green, view build 0 warnings; A72's suite stands.
