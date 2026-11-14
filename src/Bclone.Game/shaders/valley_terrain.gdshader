@@ -160,6 +160,15 @@ uniform float path_pen_worn_share = 0.5;
 uniform float path_pen_width_share = 0.65;
 uniform float path_pen_fade_px = 14.0;
 uniform float path_snow_clear = 0.65;
+// ⭐ The snow lying from its snowfalls (A76, `specs/snowfall.md`): snow_amount is now how much has fallen, not the
+// calendar's ramp. A frost first (snow_dust: whole by x, strength y + z where its gentle unevenness is fullest), then drifts
+// whose threshold is read off the land (snow_drift: x a unit of the crest, y the light's tilt, z the year's patch noise,
+// w the edge's softness): hollows and slopes turned from the light fill first, crests and lit slopes last, and the thaw
+// clears them in that order reversed. snow_year shifts the patch noise so each winter's shapes are its own.
+uniform float snow_year = 0.0;
+uniform vec3 snow_dust = vec3(0.45, 0.22, 0.2);
+uniform vec4 snow_drift = vec4(0.35, 0.75, 0.35, 0.13);
+uniform vec2 snow_drift_gain = vec2(1.35, 0.12);
 uniform float hill_lip_strength = 0.8;
 uniform float hill_lip_width_share = 0.8;
 uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
@@ -640,9 +649,19 @@ void fragment() {
                 colour = mix(colour, ice_srgb, ice_strength * snow_amount * rim * kinds.a);
             }
 
-            // The snow, peaking at snow_peak of a blanket (A26 call 3: patchy), so the ground shows between its drifts.
-            float threshold = terrain_snow_threshold(tile, snow_patch_tiles);
-            float cover = terrain_snow_cover(threshold, snow_amount * snow_peak, snow_patchiness) * terrain_snow_off_water(kinds.a);
+            // The snow (A76): a frost, then drifts read off the land, peaking at snow_peak (A26 call 3: the crests stay patchy).
+            vec2 snow_shift = vec2(7.3, 5.1) * snow_year;
+            float threshold = terrain_snow_threshold(tile + snow_shift, snow_patch_tiles);
+            vec3 snow_normal = normalize(vec3(-hill_slope, hill_full_tilt_levels));
+            vec3 snow_light = normalize(vec3(-0.62, -0.62, 0.48));
+            float snow_lit = dot(snow_normal, snow_light) - snow_light.z;
+            float frost = smoothstep(0.0, snow_dust.x, snow_amount)
+                * (snow_dust.y + snow_dust.z * (0.7 * at_value_noise(tile, 150u) + 0.3 * at_value_noise(tile / 0.4, 151u)));
+            float land_t = 0.5 + snow_drift.x * clamp(hill.b, -0.75, 0.75) + snow_drift.y * clamp(snow_lit, -0.25, 0.25)
+                + snow_drift.z * (threshold - 0.5);
+            float drift = smoothstep(land_t - snow_drift.w, land_t + snow_drift.w,
+                snow_amount * snow_peak * snow_drift_gain.x - snow_drift_gain.y);
+            float cover = max(frost, drift) * terrain_snow_off_water(kinds.a);
             // Trodden (A72): the snow lies thinner on a track, so the network still reads in winter.
             cover *= 1.0 - path_snow_clear * path_inside;
             colour = terrain_snow(colour, snow_srgb, cover, snow_blend);

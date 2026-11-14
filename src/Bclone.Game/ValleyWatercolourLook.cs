@@ -394,6 +394,79 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float PathSnowClear { get; set; }
 
+    /// <summary>
+    /// The snowfalls (A76, <c>snowfall.md</c>, Joe: <i>"Snowfalls"</i>): how many a year, the least and the most, each year's
+    /// own number drawn from the world's seed and the year.
+    /// </summary>
+    [Export]
+    public Vector2I SnowFallsPerYear { get; set; }
+
+    /// <summary>When the year's snow falls, in seasons into the year (0 spring … 4): autumn's day 18 to winter's day 20.</summary>
+    [Export]
+    public Vector2 SnowFallWindow { get; set; }
+
+    /// <summary>How long a snowfall lasts, in seasons: the shortest and the longest (2 to 4 days of a 30-day season).</summary>
+    [Export]
+    public Vector2 SnowFallSeasons { get; set; }
+
+    /// <summary>The thaw: when it starts and how long it takes, in seasons — over by the end of winter.</summary>
+    [Export]
+    public Vector2 SnowThaw { get; set; }
+
+    /// <summary>
+    /// The first dusting (§3.2): the snow lying by which it is whole (x), and its strength, least (y) and added where the
+    /// gentle unevenness is fullest (z) — an even frost, not blotches.
+    /// </summary>
+    [Export]
+    public Vector3 SnowDust { get; set; }
+
+    /// <summary>
+    /// The drifts' threshold read off the land (§3.2): x per unit of the crest (hollows fill first, crests last), y per unit of
+    /// the light's tilt (slopes turned away fill first), z the year's patch noise, w the drift edge's softness.
+    /// </summary>
+    [Export]
+    public Vector4 SnowDrift { get; set; }
+
+    /// <summary>The snow lying, stretched into the drifts' scale: lying × peak × x − y.</summary>
+    [Export]
+    public Vector2 SnowDriftGain { get; set; }
+
+    /// <summary>The falling flakes (§3.3): a cell a flake, tiles, far layer and near.</summary>
+    [Export]
+    public Vector2 SnowflakeCellTiles { get; set; }
+
+    /// <summary>A flake's radius on screen, px, far and near: constant at every zoom.</summary>
+    [Export]
+    public Vector2 SnowflakeSizePx { get; set; }
+
+    /// <summary>A flake's strength, far and near, at the heaviest fall.</summary>
+    [Export]
+    public Vector2 SnowflakeAlpha { get; set; }
+
+    /// <summary>The share of cells that hold a flake at the heaviest fall.</summary>
+    [Export]
+    public float SnowflakeShare { get; set; }
+
+    /// <summary>The near flakes' drift, tiles a second (x across, y down the map); the far ones drift at 0.7 of it.</summary>
+    [Export]
+    public Vector2 SnowflakeDrift { get; set; }
+
+    /// <summary>A flake's colour.</summary>
+    [Export]
+    public Color SnowflakeColour { get; set; }
+
+    /// <summary>A flake's faint cool rim, so it reads on snow as on grass; its alpha is the rim's share of the flake's strength.</summary>
+    [Export]
+    public Color SnowflakeRim { get; set; }
+
+    /// <summary>Below this many pixels a tile the flakes fade out.</summary>
+    [Export]
+    public float SnowflakeFadePxPerTile { get; set; }
+
+    /// <summary>The most the flakes' clock runs against real time, whatever the game's speed, so they never streak.</summary>
+    [Export]
+    public float SnowfallPaceCap { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     /// <remarks>
     /// ⛔ <b>Loaded once and held</b> (D746, the probe's finalizer crash). `GD.Load` hands back the one cached resource, but a
