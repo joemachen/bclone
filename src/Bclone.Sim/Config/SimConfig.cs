@@ -1289,6 +1289,48 @@ public sealed record SimConfig
     [JsonPropertyName("workshop_unlock_logs")]
     public int WorkshopUnlockLogs { get; init; } = 1500;
 
+    // ---------------------------------------------------------------
+    //  The school (D752–D754, `specs/school-and-education.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a school costs (§12 step 1) — a hall's timber. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_logs")]
+    public int SchoolLogs { get; init; } = 30;
+
+    /// <summary>Stone a school costs (§12 step 1) — a hut's footing and a hearth. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_stone")]
+    public int SchoolStone { get; init; } = 12;
+
+    /// <summary>Work ticks to raise a school — as a hut. ⏳ Typed.</summary>
+    [JsonPropertyName("school_work_ticks")]
+    public int SchoolWorkTicks { get; init; } = 40;
+
+    /// <summary>Teachers a school seats — two, as the smithy's and the workshop's. ⏳ Typed.</summary>
+    [JsonPropertyName("school_capacity")]
+    public int SchoolCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Places each staffed teacher brings (Joe, D754 call 4: *"6 to start"*, measured later). A school's places are its
+    /// teachers at work times this — the player's lever is staffing, never the child (D51, D15).
+    /// </summary>
+    [JsonPropertyName("school_places_per_teacher")]
+    public int SchoolPlacesPerTeacher { get; init; } = 6;
+
+    /// <summary>
+    /// The age a pupil leaves school for work (D209: *"ages 12–16"*). Pupils are those from <see cref="AdultAge"/> to one
+    /// below this; the term is the years between, four as shipped. Validated above <see cref="AdultAge"/>.
+    /// </summary>
+    [JsonPropertyName("school_leaving_age")]
+    public int SchoolLeavingAge { get; init; } = 16;
+
+    /// <summary>Ticks of one lesson — a pupil or a teacher at the school before deciding again (a day, as shipped).</summary>
+    [JsonPropertyName("school_lesson_ticks")]
+    public int SchoolLessonTicks { get; init; } = 4;
+
+    /// <summary>A full term in ticks — the years from <see cref="AdultAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
+    [JsonIgnore]
+    public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - AdultAge) * TicksPerYear;
+
     /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
     [JsonPropertyName("logs_per_handcart")]
     public int LogsPerHandcart { get; init; } = 10;
@@ -3809,6 +3851,17 @@ public sealed record SimConfig
             UsesTool = true,
         },
 
+        // ⭐ THE TEACHER (D754, `school-and-education.md §12` step 1) — at the school; no skill, no tool, nothing made:
+        // what a teacher gives is places, each staffed teacher `school_places_per_teacher` of them.
+        new JobRow
+        {
+            Id = (int)JobKind.Teacher,
+            Name = "teacher",
+            Plural = "teachers",
+            Doing = "teaching",
+            WorksAt = BuildingKind.School,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
         // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
         new JobRow
@@ -4358,6 +4411,23 @@ public sealed record SimConfig
             Seats = WorkshopCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
+        },
+
+        // ⭐ THE SCHOOL (D754, `school-and-education.md §12` step 1) — a workplace for teachers and the places their
+        // pupils fill; a hall's timber. Learned once a library stands. ⏳ Its costs typed, not measured.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.School,
+            Name = "school",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, SchoolLogs),
+                new MaterialCost(World.Goods.Stone, SchoolStone),
+            },
+            WorkTicks = SchoolWorkTicks,
+            Seats = SchoolCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
 
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
@@ -6135,6 +6205,22 @@ public sealed record SimConfig
         }
 
         // The workshop's gate (D678): nought learns it at the first log felled; less is nothing.
+        if (SchoolPlacesPerTeacher < 1)
+        {
+            throw new SimConfigException($"school_places_per_teacher must be at least 1 (got {SchoolPlacesPerTeacher}).");
+        }
+
+        if (SchoolLeavingAge <= AdultAge)
+        {
+            throw new SimConfigException(
+                $"school_leaving_age must be above adult_age ({AdultAge}) — pupils are the years between (got {SchoolLeavingAge}).");
+        }
+
+        if (SchoolLessonTicks < 1)
+        {
+            throw new SimConfigException($"school_lesson_ticks must be at least 1 (got {SchoolLessonTicks}).");
+        }
+
         if (WorkshopUnlockLogs < 0)
         {
             throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");

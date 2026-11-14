@@ -833,7 +833,8 @@ public sealed partial class SimWorld : IObstacles
             int count = 0;
             for (int i = 0; i < Villagers.Count; i++)
             {
-                if (Villagers[i].Alive && Villagers[i].CanWork)
+                // A pupil is not one of the village's hands (D754) — at school instead of at work, which is the cost.
+                if (Villagers[i].Alive && Villagers[i].CanTakeAJob)
                 {
                     count++;
                 }
@@ -4093,6 +4094,11 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ THE WORKSHOP IS LEARNED BY FELLING WOOD (Joe, D675–D676; `workshop-and-the-carpenter.md §4.1a`). ⚠️ The gate
         // reads the FLAG, set where the counter crosses (`Felled`), never the counter — the flag is what is hashed; the
         // sentence reads the counter and the knob so the player can see how far.
+        // ⭐ THE SCHOOL IS LEARNED ONCE A LIBRARY STANDS (Joe, D754 call 1; `school-and-education.md §11.3`). The flag is
+        // the gate, set where a library is raised; no library-in-catchment rule (`tech-tree.md §7e`, withdrawn).
+        BuildingKind.School when !SchoolLearned =>
+            "Nobody here teaches yet — a school comes once the village has a library.",
+
         BuildingKind.Workshop when !WorkshopLearned =>
             $"Nobody here builds carts yet — the village has felled {LogsEverFelled} of the "
             + $"{Config.WorkshopUnlockLogs} logs it takes to learn.",
@@ -4600,6 +4606,29 @@ public sealed partial class SimWorld : IObstacles
     /// we currently have in-game"* — 2,500 (D676), then 1,500 once he had played it (D682: *"it took me too long"*).
     /// </remarks>
     public bool WorkshopLearned { get; internal set; }
+
+    /// <summary>
+    /// Whether the village has learned the school (D754, `school-and-education.md §11.3` call 1) — <b>a latch, set where a
+    /// library is raised</b> (<see cref="LearnTheSchool"/>) and kept if the library later comes down: what was learned is
+    /// not unlearned by a building. Saved as <c>school_learned</c>; hashed only when set.
+    /// </summary>
+    public bool SchoolLearned { get; internal set; }
+
+    /// <summary>A library stands: the school is learned, said once (D754).</summary>
+    internal void LearnTheSchool()
+    {
+        if (SchoolLearned)
+        {
+            return;
+        }
+
+        SchoolLearned = true;
+        Narrate(
+            "With a library standing, somebody thinks to teach the young. Build a school, and each teacher there takes "
+            + $"{Config.SchoolPlacesPerTeacher} of the village's {Config.AdultAge}- to {Config.SchoolLeavingAge - 1}-year-olds "
+            + $"for the years before they work. {Clock.SeasonAndYear()}.",
+            LogCategory.Discovery);
+    }
 
     /// <summary>
     /// <paramref name="amount"/> logs have come off a tree — counted at the stump (D382), and the workshop learned when
@@ -10951,6 +10980,7 @@ public sealed partial class SimWorld : IObstacles
 
             Narrate($"{Capitalised(name)} stands, with {row.Shelves} shelves waiting. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+            LearnTheSchool();
         }
 
         // ⭐ A civic building is a fifth thing (D252) — not a store, not a workplace, not a home,
@@ -15130,6 +15160,7 @@ public sealed partial class SimWorld : IObstacles
             ["coats_ever_sewn"] = CoatsEverSewn,
             ["handcarts_ever_made"] = HandcartsEverMade,
             ["workshop_learned"] = WorkshopLearned,
+            ["school_learned"] = SchoolLearned,
             ["cottage_learned"] = CottageLearned,
             ["manor_learned"] = ManorLearned,
             ["homes_built_as"] = SaveWriter.Enum(HomesBuiltAs),
@@ -15330,6 +15361,10 @@ public sealed partial class SimWorld : IObstacles
         CoatsEverSewn = save.Int("coats_ever_sewn");
         HandcartsEverMade = save.Int("handcarts_ever_made");
         WorkshopLearned = save.Bool("workshop_learned");
+
+        // ⚠️ A save from before the school (D754) has no key, and may already have a library standing: the latch is the
+        // library's, so it is set here from what stands rather than read as false (the knob-lowered load's shape, §4.1a).
+        SchoolLearned = (save.HasValue("school_learned") && save.Bool("school_learned")) || save.Array("libraries").Count > 0;
         CottageLearned = save.Bool("cottage_learned");
         ManorLearned = save.Bool("manor_learned");
         HomesBuiltAs = save.Enum<BuildingKind>("homes_built_as");

@@ -295,6 +295,12 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToMine => true,
         VillagerState.Mining => true,
 
+        // The school (D754): a teacher's day is their trade — it counts, as any trade's walk and stint do, and grows
+        // nothing because the teacher has no skill row; a pupil's day is not a trade at all.
+        VillagerState.WalkingToSchool => true,
+        VillagerState.Teaching => true,
+        VillagerState.AtSchool => false,
+
         // The water trip is a household's errand, not a trade (D427) — like the fetch, it grows
         // nothing. ⚠️ The walk home after it is `TravelingHome`, which counts, exactly as the
         // fetch's walk home always has.

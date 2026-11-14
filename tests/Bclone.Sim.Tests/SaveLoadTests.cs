@@ -326,7 +326,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
-            "HandcartsEverMade", "WorkshopLearned", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
+            "HandcartsEverMade", "WorkshopLearned", "SchoolLearned", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
@@ -367,7 +367,7 @@ public sealed class SaveLoadTests : IDisposable
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
-            "CartForTheWorks", "Generation",
+            "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
         (typeof(Household), Kept.Saved, new[]

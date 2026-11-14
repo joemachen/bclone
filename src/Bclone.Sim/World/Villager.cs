@@ -206,7 +206,25 @@ public sealed class Villager
     /// work when slice B gives the map raw materials to gather.
     /// </para>
     /// </remarks>
-    public bool IsLaborer => CanWork && !HasJob;
+    public bool IsLaborer => CanWork && !HasJob && !IsPupil;
+
+    /// <summary>
+    /// The school this villager is a pupil at — its workplace id — or 0 (D754, `school-and-education.md §12` step 1). Set
+    /// and cleared only by <c>SchoolRoll</c>; a pupil holds no job and is not one of the village's hands.
+    /// </summary>
+    public int SchoolId { get; set; }
+
+    /// <summary>Whether they are at school now (D754).</summary>
+    public bool IsPupil => SchoolId != 0;
+
+    /// <summary>
+    /// Ticks spent as a pupil — <b>the honest calendar, kept for life</b> (D754): a pupil whose school closes keeps the years
+    /// served (call 5's credit), and what school gives is scaled by it against <c>SchoolTermTicks</c> (§11.4).
+    /// </summary>
+    public int SchoolTicks { get; set; }
+
+    /// <summary>Whether they can be offered a job: able, and not at school (D754).</summary>
+    public bool CanTakeAJob => CanWork && !IsPupil;
 
     /// <summary>
     /// Why someone who holds a job is not doing it today, or empty when they are.
@@ -854,6 +872,10 @@ public sealed class Villager
             VillagerState.CollectingForMarket => "collecting goods for the market",
             // The first leg (`handcart.md §13.2a`): empty-handed, to the door the cart is parked at.
             VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
+            // A pupil has no job, so `where` names none of theirs: their words stand without it (D754).
+            VillagerState.WalkingToSchool => IsPupil ? "walking to school" : $"walking to {where}",
+            VillagerState.AtSchool => "at school",
+            VillagerState.Teaching => $"teaching at {where}",
             VillagerState.FetchingMaterials => "fetching materials for the building site",
             VillagerState.Building => "raising a building",
             // Trees, stone or iron — the state does not know which, and "trees" was wrong for a
@@ -983,6 +1005,8 @@ public sealed class Villager
             ["tool_uses"] = ToolUses,
             ["tool_good"] = SaveWriter.Good(ToolGood),
             ["coat_days"] = CoatDays,
+            ["school_id"] = SchoolId,
+            ["school_ticks"] = SchoolTicks,
             ["pushing_a_cart"] = PushingACart,
             ["cart_for_the_works"] = CartForTheWorks,
             ["forges_this_stint"] = ForgesThisStint,
@@ -1044,6 +1068,10 @@ public sealed class Villager
             ToolUses = save.Int("tool_uses"),
             ToolGood = save.Good("tool_good"),
             CoatDays = save.Int("coat_days"),
+
+            // A save from before the school (D754) has neither key: nobody was a pupil.
+            SchoolId = save.NullableInt("school_id") ?? 0,
+            SchoolTicks = save.NullableInt("school_ticks") ?? 0,
             PushingACart = save.Bool("pushing_a_cart"),
             CartForTheWorks = save.Bool("cart_for_the_works"),
             ForgesThisStint = save.Int("forges_this_stint"),

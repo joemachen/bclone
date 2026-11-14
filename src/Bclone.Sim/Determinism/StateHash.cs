@@ -754,6 +754,10 @@ public static class StateHash
             hash = MixByte(hash, 0x7F);
         }
 
+        // ⚠️ NOT YET: the school's latch (D754) joins the fingerprint at `school-and-education.md §12` step 5, with the goldens
+        // taken once (D152). Every golden village raises the library gift around Year 15, so hashing it in step 1 would move
+        // every golden for a flag nothing in an unattended run reads — HANDOFF carries it as debt until step 5.
+
         // ⭐ The houses the family tree has taught, and what the village builds its homes as (`house-tiers.md §7`, D721) —
         // a tag byte each, only when learned or chosen, so a village of cabins hashes byte for byte as before.
         //
@@ -1359,6 +1363,20 @@ public static class StateHash
         if (villager.CartForTheWorks)
         {
             hash = MixUInt32(hash, 10u);
+        }
+
+        // ⭐ The school (D754): where they are a pupil and the term served — both decide what they do and, from §12 step 2,
+        // what school gives them. Sparse and tagged, so a village with no school hashes as it did before schools existed.
+        if (villager.SchoolId != 0)
+        {
+            hash = MixUInt32(hash, 11u);
+            hash = MixUInt32(hash, (uint)villager.SchoolId);
+        }
+
+        if (villager.SchoolTicks != 0)
+        {
+            hash = MixUInt32(hash, 12u);
+            hash = MixUInt32(hash, (uint)villager.SchoolTicks);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

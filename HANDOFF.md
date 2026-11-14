@@ -9475,6 +9475,23 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAPS D755 PAID FOR — A NEW TRADE AND BUILDING TOUCH EVERY HAND-TYPED CATALOGUE, AND A SELF-CORRECTING FAULT HIDES
+
+- **A new built-in trade or building breaks every test that types the catalogue out by hand** (`ModdedJobTests`,
+  `ModdedBuildingTests`, `WorkshopTests.UsesToolAndMadeFromRoundTripThroughJson` — 13 reds for one row each). The loader is
+  right to refuse a catalogue missing a built-in id; the fix is the row in each fixture, the modder's example moved up one
+  id (the boatman, 17 → 18), and the counts bumped. Grep `"name": "carpenter"` to find them all.
+- **The skill system's `_ => throw` on an unclassified state is a guard, not a nuisance**: every new `VillagerState` must say
+  whether it is work. A walk to teach is; a pupil's day is not.
+- **An order by "term left" ties for everyone who has not started** — every new pupil has the whole term ahead. Sort by
+  what actually differs (years before leaving age) before what usually ties.
+- **A fault the next tick undoes is invisible to a state check**: a full-term pupil re-enrolled is sent away by the term
+  system the very next tick, so `IsPupil` reads false either way. The symptom is churn — count the log lines.
+- **A save round trip cannot catch a field left out of the hash** — both sides lack it, so they agree. Ask the fingerprint
+  directly: change the field, the hash must move.
+- **The view's `EarnedYet` falls through to `_ => true`**: every new learned building needs its arm and its latch, or it
+  lights a tab at the founding (the workshop's lesson, D678, met again).
+
 ## ⛔ THE TRAP D747 FOUND — "ALL FINE" IS A VERDICT ON WHAT WAS LOOKED AT; THE LOG SAYS WHAT THAT WAS
 
 - **Read the walk's log before writing the walk down.** Joe's first *"All fine"* covered a late village carrying on; the
@@ -10188,7 +10205,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ✅ **PHASE 6'S EXIT GATE — ACCEPTED AS WRITTEN (D751, *"Accept as written"*)**; *(it read "proposed (D750), Joe's to accept, trim or replace")*. `DESIGN.md §4`, the end of Phase 6: D641's five items and a sixth, every pressure telegraphed, legible and answerable. And **the school is next** (`school-and-education.md`, specced D209, not started) — at his word, on its own `slice/`, claimed here first. **🔨 being built on `slice/school` (2026-11-14, Joe: *"Start the school"*) — first the spec re-read against today's code, then his calls.** ✅ **Re-read (D752): `school-and-education.md §11`. ⏸️ Five calls with Joe (§11.3), each with a recommendation; nothing built.** ✅ **Calls 2–3 (D753): school gives A, full strength longer, and B, reads the year (§11.4). ⏸️ Calls 1, 4 and 5 still his.** ✅ **Calls 1, 4, 5 (D754, *"Yes, all three"*); §12 the order of work — step 1 next.**
+- ✅ **PHASE 6'S EXIT GATE — ACCEPTED AS WRITTEN (D751, *"Accept as written"*)**; *(it read "proposed (D750), Joe's to accept, trim or replace")*. `DESIGN.md §4`, the end of Phase 6: D641's five items and a sixth, every pressure telegraphed, legible and answerable. And **the school is next** (`school-and-education.md`, specced D209, not started) — at his word, on its own `slice/`, claimed here first. **🔨 being built on `slice/school` (2026-11-14, Joe: *"Start the school"*) — first the spec re-read against today's code, then his calls.** ✅ **Re-read (D752): `school-and-education.md §11`. ⏸️ Five calls with Joe (§11.3), each with a recommendation; nothing built.** ✅ **Calls 2–3 (D753): school gives A, full strength longer, and B, reads the year (§11.4). ⏸️ Calls 1, 4 and 5 still his.** ✅ **Calls 1, 4, 5 (D754, *"Yes, all three"*); §12 the order of work — step 1 next.** ✅ **Step 1 built (D755, `school-and-education.md §12.1`). ⚠️ Debt: `SchoolLearned` is saved but NOT hashed until step 5 (every golden raises the library gift); the youngest-first order is this build's, Joe's to overrule. Step 2 next: A and B behind sizes at zero.**
 - ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below). **🔨 being built on `slice/phase5-gate` (2026-11-14).** ✅ **Built (D744): items 1, 2 and 4 hold; ⏸️ Joe's to do — walk `specs/phase-5-qa-checklist.md` (`.\run.bat`), say *"walked"* with any ❌ lines; Claude scans his logs for `ERROR`; then merge at his word.** ✅ **Walked (D747): *"All fine"*, *"Top-up items all look good"*; logs 0 `ERROR`. ⏸️ Only the merge is left — his word.** ⛳ **✅ MERGED (D748, *"Merge"*) — Phase 5 closed; not pushed.**
 - ✅ **B2/B3 ANSWERED (D725, Joe, 2026-11-11: *"2d map only."*) — the 2D drawn map is the shipped look; there is no 3D front end.** B2 (D68's *Foundation* or a 2D drawn map) is a 2D drawn map; B3 (Phases 7–8's `src/Bclone.Game3D`) is withdrawn, and §4's Phase 7 is rewritten to *mods, and release*. So the buildings the art lane paints next are the game's art. ⚠️ **For the art lane's next commit:** `art-inventory.md §1`'s B2 and B3 rows still read ⏸️ / *Roadmap* — its file, not the systems lane's. ⚠️ **For the heights line below:** with no 3D view, real heights show only as shading or relief on the flat map, and in what they do in the sim — Joe is asked whether he still wants them, and for what, before a spec.
 - ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51); ⭐ APPROVED (A52, *"everything about saplings looks great"*); MERGED into `main` (A55, `630f296`) and PUSHED (A56, `origin/main` = `7c46c6e`). Was for his eyes: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE

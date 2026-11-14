@@ -419,6 +419,13 @@ public enum BuildingKind
 
     /// <summary>The Insulated Manor — the third rung (`specs/house-tiers.md`): the same 2×1 ground, drawn bigger.</summary>
     Manor = 29,
+
+    /// <summary>
+    /// The school (D754, `school-and-education.md §12` step 1) — a workplace for teachers, and the places their pupils
+    /// fill. Learned once a library stands (<see cref="SimWorld.SchoolLearned"/>), placed anywhere (`tech-tree.md §7e`
+    /// withdrawn). <b>Appended at 30.</b>
+    /// </summary>
+    School = 30,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

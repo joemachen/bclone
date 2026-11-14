@@ -1098,6 +1098,19 @@
   "make_ticks": 20,
   "makes_per_stint": 1,
 
+  // THE SCHOOL (school-and-education.md 12, D752-D754). Learned once a library
+  // stands, placed anywhere. Each staffed teacher brings places (Joe, D754: "6 to
+  // start"); the village fills them from its villagers aged adult_age to one below
+  // school_leaving_age (12-15) by itself, never a pick of a child. A pupil works at
+  // nothing else and keeps credit for the years served. Costs TYPED, not measured.
+  "school_logs": 30,
+  "school_stone": 12,
+  "school_work_ticks": 40,
+  "school_capacity": 2,
+  "school_places_per_teacher": 6,
+  "school_leaving_age": 16,
+  "school_lesson_ticks": 4,
+
   // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A
   // housed household without one sends a free member to the nearest store that
   // racks tools (the warehouse, the founders' cart, the pile -- never the market)

@@ -700,7 +700,8 @@ public sealed class WorkshopTests
             { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
             { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
             { "id": 15, "name": "tailor",    "plural": "tailors",     "doing": "sewing coats",       "works_at": "TailorShop",    "limited_by": "Clothing" },
-            { "id": 16, "name": "carpenter", "plural": "carpenters",  "doing": "making handcarts",   "works_at": "Workshop",      "limited_by": "Handcart", "uses_tool": true }
+            { "id": 16, "name": "carpenter", "plural": "carpenters",  "doing": "making handcarts",   "works_at": "Workshop",      "limited_by": "Handcart", "uses_tool": true },
+            { "id": 17, "name": "teacher",   "plural": "teachers",    "doing": "teaching",           "works_at": "School" }
           ]
         }
         """;

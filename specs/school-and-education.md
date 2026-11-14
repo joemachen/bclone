@@ -2,7 +2,7 @@
 
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
-> recommended); §12 THE ORDER OF WORK; NOTHING BUILT YET.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1), UNPLAYED — STEP 2 NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -321,6 +321,41 @@ One slice, `slice/school`; each step its own commit with its docs; tests before 
    byte-identical); the goldens taken last, once, with the reason (D152); the four checks; then Joe plays it.
 
 *B(ii), the Phase 6 pressures' sooner warning, is not on this list — it is each pressure's spec's to build (§11.4).*
+
+### 12.1 ✅ Step 1, as built (D755)
+
+- **Rows:** `BuildingKind.School` (30) — 30 logs, 12 stone, 40 work ticks, two teachers' seats, a 2 × 2 footprint, all
+  ⏳ typed; `JobKind.Teacher` (17) — no skill, no tool, nothing made. Config: `school_places_per_teacher` 6,
+  `school_leaving_age` 16, `school_lesson_ticks` 4 (validated: places ≥ 1, leaving age above `adult_age`, a lesson ≥ 1).
+- **Learned:** `SimWorld.SchoolLearned`, a latch set where a library is raised (`LearnTheSchool`, said once in the
+  Discovery log) and, for a save from before the school, from the libraries it holds; kept if the library comes down.
+  The gate is `WhyNotYet` (*"Nobody here teaches yet — a school comes once the village has a library"*), read by the
+  build bar and `Mark`. The tree's *school* node unlocks the school on `TechCondition.LibraryStands`, its line
+  rewritten from *readers* to Joe's model.
+- **Teachers** are only ever the player's number: the quota's want is nobody (`needed` 0), `Asked` and pins as every
+  trade. ⭐ **A teacher is past school age** — the allocator never offers the seat to a villager under
+  `school_leaving_age` (a step-1 rule, so a twelve-year-old does not teach the class they would sit in).
+- **Pupils** (`SchoolRoll`, run by both labour passes **after** the match, so places count only seated teachers): a
+  school's places are its teachers at work × `school_places_per_teacher`; when they fall short, the least served leave
+  first, keeping every tick. Free places go to the living, able, unpinned 12–15-year-olds who have not sat a full term —
+  ⭐ **the youngest first** (the most years before `school_leaving_age`), then the most term still to serve, then the
+  shortest walk from home, then the lowest id: a total order, never a pick. *(The spec had said cost-first; the age key
+  is this build's, because a place is worth most at twelve — Joe's to overrule.)* A pupil keeps the place from pass to
+  pass, holds no job (one held is given up on taking the place), is **not** a hand (`CanTakeAJob`, read by
+  `AbleAdults`, the quota and the candidates) and not a laborer, but still runs the household's errands and takes a coat.
+- **The term** (`SchoolSystem`, after the skill system): a tick served for each tick holding a place; at a full
+  `SchoolTermTicks` (four years) or `school_leaving_age` they leave *"for work"*. Credit is kept for life.
+- **Seen:** a pupil walks to school, sits a lesson of `school_lesson_ticks` (*"at school"*), walks home; a teacher the
+  same (*"teaching at the school"*). Life-log lines for starting and leaving.
+- **Saved and hashed:** `school_id` and `school_ticks` on the villager (read as 0 when absent), `school_learned` on the
+  world. The villager's two are hashed sparsely now (no unattended village builds a school). ⚠️ **The latch is not yet
+  hashed**: every golden village raises the library gift around Year 15, so hashing it now would move every golden for a
+  flag nothing unattended reads — it joins the fingerprint at step 5 with the goldens taken once (HANDOFF's debt).
+- **Guards:** `SchoolTests` (9): learned once a library stands and not before (the gate, the log line, the tree's node);
+  places from staffing and the youngest first, a pupil no hand and no laborer; no teacher, no places; a teacher past
+  school age; the term ends with every tick served and is never sat twice; credit kept when the teacher goes; a pupil
+  seen at the school and a teacher teaching; a pupil and the latch back from a save with the hash equal; a village with
+  no school never sees a pupil.
 
 ## 10. Definition of Done
 

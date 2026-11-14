@@ -115,6 +115,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.SeekingShelter => "going in to get warm",
         VillagerState.CollectingForMarket => "collecting for the market",
         VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
+        VillagerState.WalkingToSchool => "walking to the school",
+        VillagerState.AtSchool => "at the school",
+        VillagerState.Teaching => "teaching at the school",
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
         VillagerState.ClearingAStore => "clearing out a store",
@@ -3122,6 +3125,21 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ A PUPIL GOES TO SCHOOL, AND A TEACHER TEACHES (D754, `school-and-education.md §12` step 1) — after the
+        // household's errands, a coat and a cart, before anybody's trade: a pupil has no trade, and a teacher's is this.
+        // A day at a time: the walk, a lesson of `school_lesson_ticks`, the walk home — the smith's day, nothing made.
+        if (villager.IsPupil && world.FindWorkplace(villager.SchoolId) is Workplace school && !school.IsSite)
+        {
+            GoToSchool(world, villager, school, VillagerState.AtSchool);
+            return;
+        }
+
+        if (villager.CanWork && job is { Kind: JobKind.Teacher, IsSite: false })
+        {
+            GoToSchool(world, villager, job, VillagerState.Teaching);
+            return;
+        }
+
         // ⭐ THE SMITH (D391) — the woodcutter's shape, one good over: a stint at the forge while
         // a store within reach holds a forge's iron and firewood, the tools limit is not met, and
         // ⛔ the sheds hold what the homes want, because a forge that burns the winter's firewood
@@ -5605,6 +5623,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival is VillagerState.AtSchool or VillagerState.Teaching)
+        {
+            BeginALesson(world, villager, onArrival);
+            return;
+        }
+
         if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing or VillagerState.Making)
         {
             BeginBatches(world, villager, onArrival);
@@ -5855,6 +5879,26 @@ public sealed partial class BehaviorSystem : ISimSystem
             _ => JobKind.Baker,
         };
         villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
+    }
+
+    /// <summary>To the school, or straight into a lesson when already there (D754).</summary>
+    private static void GoToSchool(SimWorld world, Villager villager, Workplace school, VillagerState lesson)
+    {
+        if (villager.Tile == school.Tile)
+        {
+            BeginALesson(world, villager, lesson);
+            return;
+        }
+
+        villager.State = VillagerState.WalkingToSchool;
+        Travel(world, villager, school.Position, lesson);
+    }
+
+    /// <summary>A lesson at the school (D754) — a pupil's or a teacher's, <c>school_lesson_ticks</c> long.</summary>
+    private static void BeginALesson(SimWorld world, Villager villager, VillagerState lesson)
+    {
+        villager.State = lesson;
+        villager.ActionTicksRemaining = world.Config.SchoolLessonTicks;
     }
 
     /// <summary>The first forge of a stint at the smithy (D391).</summary>
@@ -7397,6 +7441,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             case VillagerState.Sewing:
             case VillagerState.Making:
                 FinishABatch(world, villager);
+                return;
+
+            // A lesson is a day's (D754): then home, as the smith goes home after a stint.
+            case VillagerState.AtSchool:
+            case VillagerState.Teaching:
+                villager.State = VillagerState.TravelingHome;
                 return;
 
             default:
