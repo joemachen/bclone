@@ -2,7 +2,7 @@
 
 **Status:** ✍️ **SPECCED (A72, 2026-11-14)** at Joe's pick on a mock (*"B, painted track"*). 🔨 **BUILT on `art` (A72, §7)**; played by Joe (*"looks really good"*) and
 the pen lightened at his word (A73, §7); ⭐ **MERGED INTO `main` AT HIS WORD (A74, 2026-11-14: *"Yes, merge it"*,
-`2d84c53`)**; not pushed. Art lane. View only: where a path runs, how it wears and what it costs are the
+`2d84c53`)** and **PUSHED** (A75, `origin/main` = `b88e37a`). Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
