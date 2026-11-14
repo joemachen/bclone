@@ -1,6 +1,7 @@
 # Spec: The school — what four years of childhood buys
 
-> Status: **specced, not started.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
+> CODE (§11); ⏸️ FIVE CALLS WITH JOE (§11.3), NOTHING BUILT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -183,6 +184,67 @@ task; no knowledge state may gate it*).
    school, since it makes the cost slightly higher again.
 
 ---
+
+## 11. Re-read against today's code (D752, 2026-11-14)
+
+The spec was written on 2026-08-24, before goods, trades and buildings became rows, before the tech-tree map, nomads,
+clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
+
+### 11.1 Still true
+
+- **`adult_age` is 12** (`data/sim.config.json`), and D156's note beside it still reserves the dial for this.
+  `leave_home_age` and `fertility_min_age` (18) are separate, so schooling touches neither pairing nor births.
+- **A 12-year-old eats a full meal** (only those under `adult_age` eat `dependant_food_share_percent`) — so §9.5's
+  *"a pupil eats a full share"* is what the code already does.
+- **`SkillProgress`** holds `Ticks` (the honest calendar — *"seventeen years in the woods"*) and `Work` (the weighted,
+  never-shown number mastery is measured against, D183). **A floor belongs in `Work` and never in `Ticks`**: a graduate
+  has not spent years in the woods, and the sentence must not say so.
+- **Enum or row** (§7's question) is answered: goods, trades and buildings are rows with enum aliases since D210, D218 and
+  D222 — the school and the teacher are added as the tailor and the workshop were (`BuildingKind.School` = 30,
+  `JobKind.Teacher` = 17), both rows in `SimConfig`.
+
+### 11.2 What the code changes about the spec
+
+1. **The size of the cost, measured** on Joe's Hollowmere: Year 29 has **no** 12–15-year-olds; Years 44 and 66 have **6**
+   each, **every one working** — **16–21 % of the village's working adults**. A school that took them all would take a
+   fifth of the labour for four years in five. §3.1's *real cost* is real.
+2. **⛔ Seven trades have no skill row** — fisher, hunter, smith, quarrier, miner, herdsman, merchant (D391's debt; 10
+   rows for 17 trades). A floor in `Work` does nothing for them: a schooled child who becomes a fisher gains nothing.
+   Not in the spec, because in August most of those trades did not exist.
+3. **⛔ The tech tree already has a school node, and it says something else.** `TechTree.DefaultNodes`' *"school"* is
+   fogged (`TechCondition.NotYet`), `Requires = library`, and reads *"Where what the library keeps becomes what the young
+   know"* — `tech-tree.md §7d`'s *readers* framing, which that spec annotates as superseded by Joe's *more proficient
+   workers* (D209). **Nothing says how the school is learned** — §3 never asked.
+4. **§3.2(a)'s floor does not say *which* skill.** A pupil at 15 has no trade yet. Either the floor lands in **every**
+   skill row at graduation, or in the **first** trade they take up.
+5. **`tech-tree.md §7e`** (a school refused unless a library is in catchment, a red marker) **still stands in that spec**
+   and is the question §9.1 asks.
+
+### 11.3 ⏸️ The calls, for Joe — each with a recommendation
+
+1. **When does the school appear?** ⭐ **Recommended: once the library stands** — the tree's node already requires it,
+   and the library is the literacy gift at about Years 15–19, so the first pupils are the children of the village's
+   first settled generation. **No *library nearby* placement rule** (§9.1, `tech-tree.md §7e` annotated): it teaches
+   children, it does not copy books.
+2. **What does school give?** ⭐ **Recommended: a head start in every trade that has a skill** — at graduation the
+   hidden `Work` of every skill row gets the same floor, so whatever trade a graduate takes, they start some years
+   ahead; mastery is still reached by time on the task (§4, `skills-catalog.md §6.7`). Said as a sentence (*"Wren spent
+   four years at the school"*), never a number. **How many years ahead is measured, not typed** (§9.2): harness
+   villages over a century, no school against a full one, at several floors — the floor that makes it *a decision, not
+   an upgrade* (§4's first two rows), brought back as numbers before it is set.
+3. **What about the seven trades with no skill?** ⭐ **Recommended: accept it for the first landing** — school helps
+   the ten skilled trades, and the panel says so — and record the seven rows as their own later piece (D391's debt), so
+   this slice does not grow into re-deriving seven trades.
+4. **Who goes?** ⭐ **Recommended: the player sets how many teachers (staffing, D51); each teacher brings a fixed number
+   of places (a data row — 6 to start, measured); the village fills the places from its 12–15-year-olds by itself, the
+   allocator's deterministic pass, never a pick of which child** (§9.3, D15). To school fewer, staff fewer teachers.
+5. **The small ones, as the spec already leans:** a pupil whose school closes or loses its teacher keeps the share of
+   the floor for the years served (§9.4, *time on the task*); pupils eat a full meal (§9.5, as today); a teacher needs
+   no skill of their own for the first landing; at school, pupils are under a roof by the same rule as any indoor
+   workplace.
+
+*Once these are answered: the decisions logged, §3–§9 amended in place and annotated, a §12 order of work, and the
+measurement for call 2 before any number is typed.*
 
 ## 10. Definition of Done
 
