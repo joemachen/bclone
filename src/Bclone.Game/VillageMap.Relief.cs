@@ -41,8 +41,13 @@ public partial class VillageMap
     /// <summary>The heights are grouped into steps this many levels (of 256) apart for drawing — Joe's pick, D740.</summary>
     internal const int ReliefStep = 8;
 
-    /// <summary>How much wash a slope of one step per tile, facing the light squarely, puts down — the first build's strength.</summary>
-    private const float ReliefGain = 0.16f;
+    /// <summary>
+    /// How much wash a slope of one step per tile, facing the light squarely, puts down. ⭐ <b>Matched to the first build by
+    /// measurement</b> (D741): its wash visibly covered (alpha ≥ 0.1) 24 % of Hollowmere's land; the smoothed hills climb
+    /// more gently, so its 0.16 covered 9 % of Millbrook's and Joe saw none (*"i dont detect any hills on any setting"*).
+    /// 0.26 covers about 29 % of a Rolling valley, a little over the build he liked.
+    /// </summary>
+    private const float ReliefGain = 0.26f;
 
     /// <summary>How far the steps are softened before shading, in tiles (two passes).</summary>
     private const int ReliefSoftenTiles = 1;
