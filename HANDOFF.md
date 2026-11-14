@@ -1,5 +1,8 @@
 # Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — NEXT, SYSTEMS: THE EXIT GATE ITSELF, AT JOE'S WORD (D743, *"go with phase 5 exit gate"*). `main` = THE GREEN GROUND (A67–A70) OVER REAL HEIGHTS (D742), PUSHED AT HIS WORD (A71, `origin/main` = 637ad86; the A71 and D743 docs commits after it unpushed). ALL FIVE OF THE ART LANE'S SYSTEMS ASKS BUILT, MERGED AND PUSHED (D725–D742). NO BRANCH OPEN BUT `art`, LEVEL WITH `main`.**
 
+> **⛳ PUSHED AT JOE'S WORD (D749, 2026-11-14: *"Push main"*): `origin/main` 637ad86..2667ede** — D743 and the gate's merge are on
+> origin; the line below saying *not pushed* is left as written and corrected here. *(This record's own commit is local.)*
+>
 > **⛳ WHERE THINGS ARE, 2026-11-14 (D748) — PHASE 5 IS CLOSED. `slice/phase5-gate` MERGED INTO `main` AT JOE'S WORD (*"Merge"*),
 > the branch deleted; NOT PUSHED (`origin/main` = 637ad86 — D743 and the merge are local).**
 > - **The four checks on the merged tree:** suite **2024 / 0 / 5 of 2029 in 17m02**; view build 0 warnings; probe 155 `[widths]` lines, 116 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `shop walk:` and `professions kept:` ✅, `done.` on the first run, no Godot left; goldens 418 → 418, none moved against 6a3d9ca.
