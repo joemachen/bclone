@@ -1116,6 +1116,7 @@ public partial class VillageMap
         material.SetShaderParameter("hill_lip_strength", watercolour.HillLipStrength);
         material.SetShaderParameter("hill_lip_width_share", watercolour.HillLipWidthShare);
         material.SetShaderParameter("ripple_repeat_cells", RippleRepeatCells);
+        HandThePathLookOver(material, watercolour);
 
         // The clock's period: the grid drifts RippleRepeatCells cells in it, and a whole number of lives fit it, so the wrap
         // is not seen (§4.4). The life the shader is given is the file's, rounded to fit.

@@ -140,6 +140,26 @@ uniform float hachure_texels_per_tile = 8.0;
 uniform float hachure_strength = 0.0;
 uniform float hachure_width_share = 0.7;
 uniform float hachure_fade_px = 10.0;
+// ⭐ The painted paths (A72, `specs/painted-paths.md`): the worn tracks painted into the ground from a field baked once a
+// network (VillageMap.PathField) — R the signed distance to a track's edge (path_field_range, tiles, inside negative), G
+// its half-width (thousandths of a tile), B packed. Off until a field is handed over: unset, it reads "inside" everywhere.
+uniform bool paths_on = false;
+uniform sampler2D path_map : hint_default_black, filter_linear, repeat_disable;
+uniform vec2 path_field_range = vec2(-0.25, 0.6);
+uniform vec3 path_worn_srgb = vec3(0.85, 0.78, 0.61);
+uniform vec3 path_packed_srgb = vec3(0.82, 0.73, 0.54);
+uniform vec3 path_halo_srgb = vec3(0.72, 0.68, 0.42);
+uniform vec2 path_halo_tiles = vec2(0.1, 0.14);
+uniform vec2 path_halo_strength = vec2(0.45, 0.45);
+uniform vec2 path_mottle = vec2(0.2, 0.08);
+uniform vec2 path_rim = vec2(0.16, 0.07);
+uniform float path_ruts = 0.07;
+uniform float path_wobble_tiles = 0.035;
+uniform float path_pen_strength = 0.0;
+uniform float path_pen_worn_share = 0.5;
+uniform float path_pen_width_share = 0.65;
+uniform float path_pen_fade_px = 14.0;
+uniform float path_snow_clear = 0.65;
 uniform float hill_lip_strength = 0.8;
 uniform float hill_lip_width_share = 0.8;
 uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
@@ -550,6 +570,40 @@ void fragment() {
             }
         }
 
+        // ⭐ The painted paths (A72, `painted-paths.md §3`): over the grass's marks (the track covers them), under the snow.
+        // The yellowed grass where feet stray, then the dirt: mottled, granulated, pooled at its rim, rutted where packed.
+        // The edge wanders a little, so a lane's two sides are never ruled parallel; the pen follows the wandered edge.
+        float path_s = 1.0;
+        float path_inside = 0.0;
+        float path_packed = 0.0;
+        if (paths_on) {
+            vec3 pf = textureLod(path_map, corner / ground_map_tiles, 0.0).rgb;
+            path_s = mix(path_field_range.x, path_field_range.y, pf.r);
+            if (path_s < path_halo_tiles.x + path_halo_tiles.y + path_wobble_tiles) {
+                float on_land = 1.0 - kinds.a;
+                path_packed = pf.b;
+                float path_half = max(pf.g * 0.255, 1e-3);
+                path_s += path_wobble_tiles * (2.0 * at_value_noise(tile / 0.9, 130u) - 1.0);
+                float patch = at_value_noise(tile / 0.7, 131u);
+                float reach = path_halo_tiles.x + path_halo_tiles.y * patch;
+                float halo = (1.0 - smoothstep(0.0, reach, path_s)) * (path_halo_strength.x + path_halo_strength.y * patch);
+                colour = mix(colour, path_halo_srgb, clamp(halo * mix(0.7, 1.0, path_packed), 0.0, 1.0) * on_land);
+
+                float aa = 0.6 / max(px_per_tile, 1e-3);
+                path_inside = (1.0 - smoothstep(-aa, aa, path_s)) * on_land;
+                float mottle = 0.6 * at_value_noise(tile / 0.45, 132u) + 0.3 * at_value_noise(tile / 0.22, 133u)
+                    + 0.1 * at_value_noise(tile / 0.11, 134u);
+                float granules = valley_grain_octave(tile, 0.035, 135u);
+                vec3 dirt = mix(path_worn_srgb, path_packed_srgb, path_packed);
+                dirt *= (1.0 + path_mottle.x * (mottle - 0.5)) * (1.0 + path_mottle.y * (granules - 0.5));
+                dirt *= 1.0 - path_rim.x * smoothstep(-path_rim.y, -0.005, path_s);
+                float across = clamp((path_s + path_half) / path_half, 0.0, 2.0);
+                float rut = exp(-pow((across - 0.45) / 0.12, 2.0)) * path_packed * (0.5 + 0.5 * at_value_noise(tile / 0.5, 136u));
+                dirt *= 1.0 - path_ruts * rut;
+                colour = mix(colour, dirt, path_inside * mix(0.8, 0.95, path_packed));
+            }
+        }
+
         // The river's own coordinates (A45, `river-drawn.md §3`): one row of the table, read only where water is drawn.
         // `across` is square to the river (the lean undoes the course's square), `down` how far it has run.
         float river_down = 0.0;
@@ -589,6 +643,8 @@ void fragment() {
             // The snow, peaking at snow_peak of a blanket (A26 call 3: patchy), so the ground shows between its drifts.
             float threshold = terrain_snow_threshold(tile, snow_patch_tiles);
             float cover = terrain_snow_cover(threshold, snow_amount * snow_peak, snow_patchiness) * terrain_snow_off_water(kinds.a);
+            // Trodden (A72): the snow lies thinner on a track, so the network still reads in winter.
+            cover *= 1.0 - path_snow_clear * path_inside;
             colour = terrain_snow(colour, snow_srgb, cover, snow_blend);
 
             // Cool shadows in the snow (A41): a drift is deep where the threshold is low, so where the field rises toward the
@@ -644,6 +700,16 @@ void fragment() {
             if (hachure_strength > 0.0) {
                 colour = mix(colour, ink_srgb, hachure_strength * valley_hachures(corner) * land);
             }
+        }
+
+        // The pen down each side of a track (A72): the bank's ink, over the snow, full on packed ground and fainter and more
+        // broken on lightly worn; faded out where the valley is small on screen.
+        if (paths_on && path_pen_strength > 0.0 && path_s < 0.2) {
+            float seen = smoothstep(path_pen_fade_px * (2.0 / 3.0), path_pen_fade_px, px_per_tile);
+            float pen = valley_pen(tile, abs(path_s) * px_per_tile, ink_width_px * path_pen_width_share,
+                ink_pressure_tiles * 0.3, ink_lifts + mix(0.25, 0.1, path_packed), 137u);
+            float strength = path_pen_strength * mix(path_pen_worn_share, 1.0, path_packed);
+            colour = mix(colour, ink_srgb, strength * seen * pen * (1.0 - kinds.a));
         }
 
         if (ink_strength > 0.0) {

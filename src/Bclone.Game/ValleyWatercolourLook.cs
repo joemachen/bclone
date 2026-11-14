@@ -331,6 +331,69 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float HillLipWidthShare { get; set; }
 
+    /// <summary>
+    /// The painted paths (A72, <c>painted-paths.md</c>, Joe: <i>"B, painted track"</i>): the worn tracks painted into the
+    /// ground with the tick on, the mesh not drawn. Off, the mesh is drawn as with the tick off.
+    /// </summary>
+    [Export]
+    public bool PathOn { get; set; }
+
+    /// <summary>The dirt of a lightly worn track (§3.2).</summary>
+    [Export]
+    public Color PathWorn { get; set; }
+
+    /// <summary>The dirt of a packed track, a little deeper (§3.2).</summary>
+    [Export]
+    public Color PathPacked { get; set; }
+
+    /// <summary>The drier, yellowed grass where feet stray off the track (§3.3).</summary>
+    [Export]
+    public Color PathHalo { get; set; }
+
+    /// <summary>The halo's reach past the edge, tiles: x where it is least, y added where the patches are fullest.</summary>
+    [Export]
+    public Vector2 PathHaloTiles { get; set; }
+
+    /// <summary>The halo's strength: x where it is least, y added where the patches are fullest; worn ground takes 0.7 of it.</summary>
+    [Export]
+    public Vector2 PathHaloStrength { get; set; }
+
+    /// <summary>The wash's mottling (x, a share of its colour) and its granulation (y).</summary>
+    [Export]
+    public Vector2 PathMottle { get; set; }
+
+    /// <summary>Pigment pooled inside the edge: how much darker (x) over how many tiles in (y).</summary>
+    [Export]
+    public Vector2 PathRim { get; set; }
+
+    /// <summary>The ruts on a packed track: how much darker.</summary>
+    [Export]
+    public float PathRuts { get; set; }
+
+    /// <summary>How far the edge wanders either way, tiles, so a lane's two sides are never ruled parallel.</summary>
+    [Export]
+    public float PathWobbleTiles { get; set; }
+
+    /// <summary>The pen down each side: how dark on packed ground, against the bank's own stroke.</summary>
+    [Export]
+    public float PathPenStrength { get; set; }
+
+    /// <summary>The pen on lightly worn ground, a share of the packed pen's strength.</summary>
+    [Export]
+    public float PathPenWornShare { get; set; }
+
+    /// <summary>The pen's width, a share of the bank's pen.</summary>
+    [Export]
+    public float PathPenWidthShare { get; set; }
+
+    /// <summary>Below this many pixels a tile the pen fades out.</summary>
+    [Export]
+    public float PathPenFadePxPerTile { get; set; }
+
+    /// <summary>How much of the snow a track clears (trodden), so the network reads in winter.</summary>
+    [Export]
+    public float PathSnowClear { get; set; }
+
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
     /// <remarks>
     /// ⛔ <b>Loaded once and held</b> (D746, the probe's finalizer crash). `GD.Load` hands back the one cached resource, but a

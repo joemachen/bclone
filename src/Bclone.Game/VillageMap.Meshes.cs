@@ -1116,6 +1116,12 @@ public partial class VillageMap
         LayTrails(_fieldTrailMesh, _fieldTrailTiles);
     }
 
+    /// <summary>Whether the field overlay was last laid in the painted track's sand (A72) — a change re-lays it, once.</summary>
+    private bool _fieldTrailsPainted;
+
+    /// <summary>How much of the crop a lane laid in the painted track's sand covers (A72).</summary>
+    private const float FieldLanePaintedAlpha = 0.85f;
+
     /// <summary>The field overlay of the trails (D512) — see <see cref="BuildTheFieldTrailMesh"/>.</summary>
     private readonly ArrayMesh _fieldTrailMesh = new();
 
@@ -1145,6 +1151,12 @@ public partial class VillageMap
         for (byte pass = 1; pass <= 2; pass++)
         {
             Color colour = pass == 2 ? PackedPath : WornPath;
+            if (only is not null && _fieldTrailsPainted)
+            {
+                ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+                colour = pass == 2 ? look.PathPacked with { A = FieldLanePaintedAlpha } : look.PathWorn with { A = FieldLanePaintedAlpha };
+            }
+
             float half = pass == 2 ? TrailHalfWidth : WornTrailHalfWidth;
             _trailBuilder.Clear();
 
