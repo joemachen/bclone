@@ -1463,11 +1463,14 @@ public sealed partial class SimWorld : IObstacles
     /// loses which way it was turned between the mark and the clearing, and cannot recover it.
     /// </remarks>
     /// <remarks>
-    /// ⚠️ <b><c>internal</c> so <c>StateHash</c> can see the whole record</b> (D329). It used to be
+    /// ⚠️ <b><c>internal</c> so <c>StateHash</c> could see the whole record</b> (D329). It used to be
     /// private, and the only thing outside this class could reach was a flattened list of tiles —
     /// **so which building was waiting, and which way round, was sim state nothing hashed.**
+    /// ⭐ <b>Public since D726, for the second reader that needed all of it: the map.</b> A free building
+    /// marked on wooded ground drew nothing, because the view could reach only the tiles (A36). A
+    /// value type with no setters, so reading it changes nothing.
     /// </remarks>
-    internal readonly record struct PendingBuilding(Point Position, BuildingKind Kind, Angle Facing);
+    public readonly record struct PendingBuilding(Point Position, BuildingKind Kind, Angle Facing);
 
     private readonly List<PendingBuilding> _waitingOnTheGround = new();
 
@@ -1501,8 +1504,11 @@ public sealed partial class SimWorld : IObstacles
         }
     }
 
-    /// <summary>The waiting list itself, for the one thing that needs all of it: the hash.</summary>
-    internal IReadOnlyList<PendingBuilding> BuildingsWaiting => _waitingOnTheGround;
+    /// <summary>
+    /// The waiting list itself — kind, place and facing, in marking order — for the two things that need
+    /// all of it: the hash, and the map that draws each one as a site in the clearing's colour (D726).
+    /// </summary>
+    public IReadOnlyList<PendingBuilding> BuildingsWaiting => _waitingOnTheGround;
 
     /// <summary>
     /// Raise any free building that was waiting for this tile to be cleared.
@@ -3966,6 +3972,12 @@ public sealed partial class SimWorld : IObstacles
             return null;
         }
 
+        // ⭐ Winter, with bare ground it would otherwise be planting: the frost is the reason, whatever else holds (D728).
+        if (!SeasonRules.IsPlanting(Clock.Season) && HasGroundToPlant(hut))
+        {
+            return $"{hut.Name} is waiting out the winter — its ground is frozen, and planting waits for spring.";
+        }
+
         if (hut.Mode != WorkMode.PlantOnly && LimitIsMet(Goods.Logs))
         {
             return $"{hut.Name} has stopped — you asked the village to keep "
@@ -4888,30 +4900,51 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public static bool IsGroundToPlant(Terrain terrain) => terrain == Terrain.Grass;
 
+    /// <summary>Seats at forester's huts that still have bare ground of their own to plant — the planting demand.</summary>
+    /// <remarks>
+    /// <b>Zero in winter (D728)</b>, as <see cref="FarmerSeatsWithGroundToWork"/> is out of season: nothing is planted
+    /// in frozen ground, so a capped hut's hands are spare until spring and wanted again then.
+    /// </remarks>
     public int ForesterSeatsWithGroundToPlant()
     {
+        if (!SeasonRules.IsPlanting(Clock.Season))
+        {
+            return 0;
+        }
+
         int seats = 0;
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
             Workplace workplace = Workplaces[i];
-            if (workplace.Kind != JobKind.Forester || workplace.IsSite)
+            if (workplace.Kind == JobKind.Forester && !workplace.IsSite && HasGroundToPlant(workplace))
             {
-                continue;
-            }
-
-            IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
-            for (int t = 0; t < owned.Count; t++)
-            {
-                if (IsGroundToPlant(Map.TerrainAt(Zones.PositionOf(owned[t]))))
-                {
-                    seats += workplace.Places;
-                    break;
-                }
+                seats += workplace.Places;
             }
         }
 
         return seats;
+    }
+
+    /// <summary>Whether any of this workplace's own ground is bare grass a forester could plant.</summary>
+    /// <remarks>
+    /// The season is not asked here: it is the ground's question. The seat count asks the season; the notes ask both,
+    /// to say <i>frozen</i> only of a hut that would otherwise be planting (D728).
+    /// </remarks>
+    public bool HasGroundToPlant(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(workplace.Id);
+        for (int t = 0; t < owned.Count; t++)
+        {
+            if (IsGroundToPlant(Map.TerrainAt(Zones.PositionOf(owned[t]))))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public GridPos? NextGroundToWork(Workplace workplace, GridPos from)
@@ -4944,6 +4977,13 @@ public sealed partial class SimWorld : IObstacles
         }
 
         bool wantsTrees = mayFell && anyStanding;
+
+        // ⭐ NOTHING BARE IS WORKED IN WINTER (D728): the ground is frozen. Felling goes on — timber is cut all year — so
+        // a forester with trees to fell fells, and one with only bare ground is a spare hand until spring, as a farmer is.
+        if (!wantsTrees && !SeasonRules.IsPlanting(Clock.Season))
+        {
+            return null;
+        }
 
         GridPos? best = null;
         int bestCost = int.MaxValue;
@@ -5291,7 +5331,12 @@ public sealed partial class SimWorld : IObstacles
         // A planted tile now grows up on the same clock as one that came back by itself —
         // *"sapling for the first six months, mature tree after a year"* — so the two kinds
         // of recovery cost the same time and only differ in who started them.
-        if (!IsGroundToPlant(Map.TerrainAt(tile)) || !SetTerrain(tile, Terrain.Sapling))
+        // ⭐ AND NOT IN FROZEN GROUND (D728, Joe: *"should a forester plant trees in the winter? seems weird"*). The
+        // door every forester's sapling goes in by, so it is the guarantee: whatever sends a forester to bare ground —
+        // a walk set out in autumn, a stint begun on its last day — no sapling goes in in winter.
+        if (!SeasonRules.IsPlanting(Clock.Season)
+            || !IsGroundToPlant(Map.TerrainAt(tile))
+            || !SetTerrain(tile, Terrain.Sapling))
         {
             return false;
         }

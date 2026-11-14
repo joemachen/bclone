@@ -7,6 +7,7 @@ Supersedes in part: `building-placement.md §12.5(3)`, `§12.6`; `professions.md
 **Status:** ✅ **BUILT AND MERGED TO `main`** as step C (2026-08-15 on `phase/2-wood-fuel-and-tools`, merged with Phase 2 on 2026-08-22; *that branch no longer exists — corrected 2026-08-28*)
 (D112–D130, then D142–D158). Written before the code (METHODOLOGY §2), and it stayed marked
 *"specced, not built"* for a week after it shipped — see D159.
+**§10 (planting waits for spring):** ✅ **BUILT (D728), MERGED INTO `main` AT JOE'S WORD (D729, 2026-11-12).**
 
 > ⭐ **What the build added that this document did not predict.** The distance fences came down
 > (D120: the catchment was never binding — the furthest commute anybody holds is three tiles),
@@ -197,7 +198,8 @@ Each leaves the suite green and is measured against the cold start's five ticks.
    nothing home**, which is why it is a mode rather than a second job. Measured: 53 owned tiles
    go 53 → 33 wooded in three years of felling, and 68 bare tiles go 0 → 22 in five of planting.
    - **⭐ THE TOGGLE IS FELLING, NOT PLANTING (Joe, D146).** Painting ground for a hut *is* the
-     instruction to keep it wooded, so planting is unconditional and what the player decides is
+     instruction to keep it wooded, so planting is unconditional *(save in winter, when the ground is frozen —
+     §10, D728)* and what the player decides is
      whether timber comes out. `WorkMode.PlantOnly` is a wood that is resting; `FellAndPlant`
      is the default. **A met Logs limit is the same instruction at another distance** — felling
      off for a while — and `SimWorld.MayFell` is the single place that answers both, so the
@@ -330,3 +332,112 @@ which they do, since a hut's ring regrows and is worked continuously.
 5. `professions.md §6.1`, `§6.2`, `§7` and `building-placement.md §12.5`, `§12.6` reconciled.
 6. Joe's QA pass: place a gatherer's hut, fell half its ring, and **read the consequence off the
    screen** before the granary empties.
+
+---
+
+## 10. Planting waits for spring (D728)
+
+**Status:** ✅ **BUILT (D728), MERGED INTO `main` AT JOE'S WORD (D729, 2026-11-12).** Measured before and after.
+
+Joe, 2026-11-11, playing the art: *"should a forester plant trees in the winter? seems weird. am i wrong?"* He is
+not. Real planting is done in the dormant season, but not in frozen ground, and this game's winters are white.
+`SimWorld.Plant` asked only whether the ground was grass. `SeasonRules` gated sowing (spring) and gathering (not
+winter), but nothing gated planting. He took the recommendation: *no planting in winter* (`"Push and start it"`).
+
+### 10.1 The rule
+
+1. **`SeasonRules.IsPlanting(season)`, true in every season but winter**, beside `IsSowing` and `IsReaping`, so
+   the calendar's rules stay with the calendar.
+2. **Felling goes on all winter.** Unchanged: timber is fellable year-round, and winter is when wood is cut. A
+   forester with trees standing on their ground fells them in winter, as before.
+3. **`SimWorld.Plant` refuses in winter.** It is the one door a forester's sapling goes in by, so this is the
+   guarantee: whatever sends a forester to bare ground, no sapling goes in between the first and last day of
+   winter.
+4. **`NextGroundToWork` sends nobody to bare ground in winter.** A forester with nothing to fell is a **spare
+   hand**: tidying, helping clear, or home. This is the farmer's winter (`crops-and-orchards.md §5`: *"when there
+   is nothing to farm, the marginal hand is worth more at the wood"*).
+5. **The ground is asked again on arrival** (the field's rule, `ArriveInTheField`). A planting walk that set out
+   in autumn and arrives in winter does not start its stint. The forester decides again.
+6. **The demand falls to zero in winter.** `ForesterSeatsWithGroundToPlant` is zero in winter, as
+   `FarmerSeatsWithGroundToWork` is. It only staffs a hut whose log limit is met (D146), so in winter that hut's
+   hands go to other work and come back in spring.
+7. **Said out loud (§7.1).** The forester's note and the hut's idle line say *"the ground is frozen — planting
+   waits for spring"* when it is winter and the hut has bare ground it would otherwise plant. Without that line,
+   a forester standing idle beside bare ground is the silent stall §1.1 forbids.
+
+### 10.2 What it costs — the economy had already assumed it
+
+⭐ **`VillageEconomy.YearsToRewoodOnesGround` already budgets planting on three-quarters of the year** (the
+gatherable year, `TicksPerYear × 3/4`). The derivation behind §5's *"~2 years for the ground one pair of hands
+keeps"* already assumed no winter planting. The behaviour planted all four seasons and never matched it. So no
+number in `data/` changes, and the derived one is unmoved.
+
+**Measured before and after, in one sitting** (`tools/harness/ZzForesterWinter.cs`). The runs used copies of
+Joe's own saves, ten years on. 24 of 94 folders' newest saves load at today's format, and 8 of them have a
+forester's hut with painted ground. The *before* arm is `main`'s code in a scratch worktree; the *after* arm is
+this slice. A sapling counts as planted when grass becomes a *young* sapling (D220), so the sweep's own seeding
+is counted apart. Each step is counted in the season its clock read when it began: ⚠️ the first after-run read
+the season after the step and counted autumn's last-tick saplings as winter's.
+
+| village (year at load, people) | ground | planted sp / su / fa / **wi**, before → after | wooded/young/bare at +10y, before → after | people at +10y |
+|---|---|---|---|---|
+| Hollowmere (Y84, 70) | 126 | 10/15/8/**10** = 43 → 20/11/7/**0** = 38 | 114/12/0 → 115/8/3 | 77 → 77 |
+| Oakhaven (Y28, 24) | 115 | 7/6/8/**6** = 27 → 9/7/5/**0** = 21 | 113/2/0 → 113/2/0 | 41 → 41 |
+| Stonebridge (Y23, 18) | 109 | 6/8/7/**5** = 26 → 8/11/9/**0** = 28 | 105/2/2 → 106/1/2 | 31 → 29 |
+| Willowdale, elder-yarrow (Y22, 16) | 187 | 1/1/1/**0** = 3 → 1/1/1/**0** = 3 | 181/4/0 → 181/4/0 | 27 → 27 |
+| Willowdale, hazel-kestrel (Y14, 12) | 145 | 4/3/5/**3** = 15 → 7/4/4/**0** = 15 | 143/2/0 → 143/2/0 | 17 → 17 |
+| Fernhollow (Y4, 4) | 107 | 0/2/12/**0** = 14 → the same | 107/0/0 → 107/0/0 | 10 → 10 |
+| Ashbourne (Y1, a founding) | 328 | 21/72/83/**42** = 218 → 19/81/83/**0** = 183 | 196/86/46 → 177/70/81 | 3 → 5 |
+| Larkspur (Y1, a founding) | 239 | 12/46/63/**35** = 156 → 13/55/62/**0** = 130 | 168/48/23 → 142/49/48 | 2 → 4 |
+
+- **Before, 101 of 502 saplings (20 %) went in in winter. After, none did, and 432 went in: 14 % fewer.**
+- **The six established villages plant 7 % fewer (128 → 119).** Their ground is wooded to within a tile or two,
+  so planting there is bounded by bare tiles, not by days. The winter's saplings go in in spring instead
+  (Hollowmere's spring 10 → 20), and the woods end the same to within four tiles. **Over twenty years, 307 → 283
+  (−8 %)**, Hollowmere's spring 19 → 41.
+- **The two foundings plant 16 % fewer (374 → 313)**, and their ground is 25–35 tiles barer after ten years. They
+  have hundreds of bare tiles, so planting is bounded by days, and winter's fifth is real. ⚠️ Both are a harness
+  playing a Year-1 village unattended, and it freezes in both arms (cold 14 → 12, 10 → 8). That is the harness
+  playing badly, not a design loss. Their planting counts are the measurement; their survival is not.
+- **Felling rose slightly** where planting fell (Hollowmere 1134 → 1151 logs, Oakhaven 510 → 528, Stonebridge
+  531 → 546). A forester who is not planting in winter has more time for the trees. In the foundings it fell
+  (165 → 150, 120 → 105), because fewer saplings had grown into trees. **Winter at the trees**, in forester
+  hand-ticks: Hollowmere 248 → 106, with 0 → 45 spent clearing and tidying instead. The spare hand is visible.
+- **Survival: none of it is this change.** Ten years: the same in five of six established villages; Stonebridge
+  ends 31 → 29 with 2 starved. Twenty years: Stonebridge starves in **both** arms (14 → 22) and Fernhollow
+  freezes in both, so those are the harness playing an unattended village badly. The other four end at
+  73 → 78, 54 → 55, 41 → 40 and 28 → 25: noise.
+- **D666's bar is untouched.** A forester feeds the woodcutter by felling, and felling did not fall.
+
+### 10.3 Tests
+
+- `PlantingIsEverySeasonButWinter`: the rule, four seasons.
+- `AForesterPlantsNothingInWinterAndPlantsAgainInSpring`: a hut with only bare ground, its forester kept on. It
+  plants in autumn (anti-vacuity), plants nothing from the first tick of winter to the last (counted by the
+  young bit, so the sweep's seeding cannot pass for planting), says the ground is frozen on the forester's note
+  and on the hut's card, and plants again in spring. **Three things had to be true for the spring half to mean
+  anything, and each was found by the guard returning 0 under the old rule too:**
+  - ground that outlasts a year (radius 8, 143 tiles; at radius 5 all 53 were planted by winter's end);
+  - felling off (`PlantOnly`), or the first spring's saplings, trees by the next spring, are felled first;
+  - a winter's firewood in every hearth, or the fixture village, with its only forester resting a wood, freezes
+    before spring.
+- `AForesterFellsInWinter`: wooded ground, felling on. Logs come off it in winter, so the rule touched
+  planting only.
+- `NoPlantingSeatsAreWantedInWinter`: `ForesterSeatsWithGroundToPlant` is the hut's places in autumn and zero
+  in winter.
+- `PlantRefusesInWinter`: the door itself.
+- **Red-check (D326): 8 mutants, 7 red.**
+  - The rule always true: 4 guards fail.
+  - `Plant`'s season check removed: `PlantRefusesInWinter` fails.
+  - The tile-picker's winter check removed: **the test host dies of a stack overflow**. The arrival check
+    refuses the tile and decides again, and the picker hands the same tile straight back. The two must agree;
+    in the shipped code they cannot disagree.
+  - The seat count's winter zero removed: `NoPlantingSeatsAreWantedInWinter` fails.
+  - The card's line or the forester's note removed: the winter guard fails on its `frozen` assertions.
+  - `Plant`'s check and the arrival check removed together: `PlantRefusesInWinter` fails.
+  - ⚠️ **The zero, kept:** the arrival check removed alone. No planting walk crossed into winter in these
+    fixtures, and `Plant` would refuse it anyway. The arrival check saves a forester a stint for nothing; no
+    guard sees it.
+- **Goldens: three moved, re-taken with the old values beside them** (`PhaseFiveGoldenTests`' two, `SkillTests`' shipped
+  fifty years). Each is proven by ablation: with `IsPlanting` true in every season, all three old constants pass.
+  The fixture's fifty years did not move.

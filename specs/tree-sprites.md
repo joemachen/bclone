@@ -51,8 +51,9 @@ fruit and berries (`ForageShown`, its own row).
   far it is built, which stays under the trees with the building. A house's rebuild (D722) and a bridge's span are sites
   and come through too. ⚠️ **Dashed edges already mean a building that has fallen in** (D556), drawn in the building's
   own colour. These are in a site's colours, which no finished building uses, so the two are told apart by colour. Off
-  while the trees are hidden or the watercolour is off (no canopy, nothing to see through). ⛔ A free building waiting
-  on wooded ground (the systems lane's 🐞, A36) is not a site and still draws nothing.
+  while the trees are hidden or the watercolour is off (no canopy, nothing to see through). ~~⛔ A free building waiting
+  on wooded ground (the systems lane's 🐞, A36) is not a site and still draws nothing.~~ ✅ It is drawn now, as a site
+  in the clearing's orange, and comes through the canopy with the sites (D726, `footprints.md §7.6`).
   **As built (A53):** `VillageMap.SiteShapeOf` is the one place a site's turned footprint and colours are worked out,
   for its solid draw in `DrawWorkplaces` and for `SitesThroughTheCanopy`, which `DrawTheSitesThroughTheCanopy` dashes
   straight after the canopy (2 px, the fallen-in building's dash length). **Verified:** with a gatherer's hut marked in

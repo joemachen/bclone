@@ -24,8 +24,9 @@ namespace Bclone.Game;
 /// <b>Real seconds, like the meal mark (D531)</b>, so the walk reads the same at every speed — but <b>frozen while
 /// the village is paused</b> (<see cref="Paused"/>): a paused village is a still picture. A load never replays a
 /// walk-in: a new world is watched from its own tick. Re-founders (D567) walk in by the same rule; the first four
-/// founders (<c>ArrivedAtTick</c> 0) never do. The shell holds the arrival moment until the last of them is in
-/// (<c>Main.ShowAnyMoment</c>) and keeps the village at 1× meanwhile.
+/// founders (<c>ArrivedAtTick</c> 0) never do. The shell shows the arrival moment the frame the walk begins and holds
+/// the walk at the edge while it is open (<see cref="WalkInHeld"/>, D732 — it waited for the last of them until then,
+/// D573), and keeps the village at 1× until they are in.
 /// </para>
 /// </remarks>
 public partial class VillageMap
@@ -65,6 +66,12 @@ public partial class VillageMap
 
     /// <summary>Whether the village is paused — set by the shell each refresh; the walk-in's clock stands still while it is.</summary>
     public bool Paused { get; set; }
+
+    /// <summary>
+    /// Whether a moment is open over the village — set by the shell each refresh (D732). The walk-in stands at the edge
+    /// while it is, so a band never walks in behind a panel; the river (which reads only <see cref="Paused"/>) runs on.
+    /// </summary>
+    public bool WalkInHeld { get; set; }
 
     /// <summary>Whether anybody is still walking in — the shell holds the arrival moment and the 1× until nobody is.</summary>
     public bool WalkInUnderway
@@ -393,10 +400,10 @@ public partial class VillageMap
         }
     }
 
-    /// <summary>The walk clock's frame step: real seconds while the village runs, nothing while it is paused.</summary>
+    /// <summary>The walk clock's frame step: real seconds while the village runs, nothing while it is paused or a moment is open (D732).</summary>
     private void TickTheWalkClock(double delta)
     {
-        if (!Paused)
+        if (!Paused && !WalkInHeld)
         {
             _walkClock += delta;
         }
@@ -404,6 +411,9 @@ public partial class VillageMap
 
     /// <summary>The probe's hands on the walk clock: run it forward without a frame.</summary>
     internal void AdvanceTheWalkClockForTheProbe(double seconds) => _walkClock += seconds;
+
+    /// <summary>The probe's hands on the frame step itself — what a frame does to the walk clock, held or not.</summary>
+    internal void StepTheWalkClockForTheProbe(double delta) => TickTheWalkClock(delta);
 
     /// <summary>The probe's broom: drop every posed or live walk-in so the lines after read as they did.</summary>
     internal void ClearWalkInsForTheProbe() => _walkIns.Clear();
@@ -583,8 +593,11 @@ public partial class VillageMap
         }
 
         // (e) Paused, the clock stands still — the frame step run by hand.
+        // ⚠️ Run with the walk unheld (D732): a moment open when this line runs would hold the clock and read as a fault.
         double clockWas = _walkClock;
         bool pausedWas = Paused;
+        bool heldWas = WalkInHeld;
+        WalkInHeld = false;
         Paused = true;
         TickTheWalkClock(1.0);
         bool stoodStill = _walkClock == clockWas;
@@ -592,6 +605,7 @@ public partial class VillageMap
         TickTheWalkClock(1.0);
         bool ran = _walkClock == clockWas + 1.0;
         Paused = pausedWas;
+        WalkInHeld = heldWas;
         _walkClock = clockWas;
         if (!stoodStill || !ran)
         {

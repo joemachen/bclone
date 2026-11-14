@@ -535,7 +535,7 @@ public partial class Main : Control
         GD.Print(TheCardsHoldTheirShape());
         GD.Print(TheWearReadsTrue(_loop.World.Config));
         GD.Print(TheNomadsTickIsTheVillages());
-        GD.Print(TheArrivalMomentWaitsForTheWalkIn());
+        GD.Print(TheArrivalMomentShowsAtTheSlowDown());
         GD.Print(TheMomentSpeaksInParagraphs());
         GD.Print(TheAlertLeavesTheVillageAt1x());
         GD.Print(NothingUnlearnedIsOffered());
@@ -556,6 +556,7 @@ public partial class Main : Control
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
+        GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheMarketCardStopsAtTheRoom());
         GD.Print(TheClaimedSeamIsStakedRound());
         ProbeASelfScroller("vlog", _villageLog, _villageLog.GetParsedText().Length, "chars");
@@ -581,6 +582,7 @@ public partial class Main : Control
         GD.Print(_map.TheWatercolourHolds());
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheSitesShowThroughTheCanopy());
+        GD.Print(_map.TheFreeBuildingsWaitingAreDrawn());
         GD.Print(_map.ThePaintedDepositsHold());
         GD.Print(_map.ThePaintedCropsHold());
         GD.Print(_map.TheRiverDrawnHolds());
@@ -861,11 +863,12 @@ public partial class Main : Control
     }
 
     /// <summary>
-    /// ⭐ The arrival moment waits for the walk-in (D573, Joe): while a band is on the road a waiting moment stays in
-    /// the queue and the village is held at 1×; the frame the last of them is in, the moment shows; dismissed, the
-    /// player's speed comes back.
+    /// ⭐ The arrival moment shows at the slow-down, and the walk waits for it (D732, Joe: <i>"the pop-up should trigger as
+    /// soon as the game speed change happens, not when they reach the village"</i>; it waited for the walk-in from D573):
+    /// the frame a band starts walking the village drops to 1× and the moment shows; while it is open the walk stands at
+    /// the edge; on Go on they walk in at 1×, and once they are in the player's speed comes back (the tick on).
     /// </summary>
-    private string TheArrivalMomentWaitsForTheWalkIn()
+    private string TheArrivalMomentShowsAtTheSlowDown()
     {
         var faults = new List<string>();
         SimWorld world = _loop.World;
@@ -873,6 +876,8 @@ public partial class Main : Control
         double speedWas = _driver.SpeedMultiplier;
         bool slowedWas = _slowedForAnAlert;
         double beforeWas = _speedBeforeTheAlert;
+        bool heldWas = _map.WalkInHeld;
+        bool pausedWas = _map.Paused;
         _slowedForAnAlert = false;
         SetSpeed(4.0);
 
@@ -889,26 +894,56 @@ public partial class Main : Control
             }
         }
 
+        double wholeWalk = VillageMap.WalkInSeconds + (ids.Count * VillageMap.WalkInFileGapSeconds) + 0.01;
         _map.BeginWalkIn(new List<GridPos> { new(0, 0), new(1, 0), new(2, 0) }, ids);
         if (!_map.WalkInUnderway)
         {
             faults.Add("a walk-in just begun is not underway");
         }
 
-        // What `Refresh` does the frame a walk begins.
+        // What `Refresh` does the frame a walk begins: slow down, show any moment, then set the walk's clock.
         SlowDownForAnAlert();
-
         var posed = new Moment { Title = "Posed arrival", Body = "posed by the probe", WaitsToBeDismissed = true };
         world.Moments.Add(posed);
         ShowAnyMoment(world);
-        if (!world.Moments.Contains(posed) || _momentPanel is { Visible: true })
+        _map.Paused = _driver.IsPaused;
+        _map.WalkInHeld = TheWalkInStandsStill();
+        if (world.Moments.Contains(posed) || _momentPanel is not { Visible: true } || _momentTitle.Text != posed.Title)
         {
-            faults.Add("the moment showed while the band was still on the road");
+            faults.Add("the moment did not show the frame the band started walking");
         }
 
         if (_driver.SpeedMultiplier != 1.0)
         {
-            faults.Add($"the village ran at {_driver.SpeedMultiplier}x while the band walked in");
+            faults.Add($"the village ran at {_driver.SpeedMultiplier}x with the band at the edge");
+        }
+
+        // ⚠️ Running at 1×, not paused: the probe's village starts paused, and a paused map would stand the walk still
+        // whatever the moment did — this check would pass for the wrong reason (the first run's red found it).
+        if (_map.Paused)
+        {
+            faults.Add("the map thinks the village is paused, so the hold below proves nothing");
+        }
+
+        // A whole walk's worth of frames with the moment open: the band has not moved.
+        _map.StepTheWalkClockForTheProbe(wholeWalk);
+        if (!_map.WalkInUnderway)
+        {
+            faults.Add("the band walked in behind the open moment");
+        }
+
+        // Go on: the moment goes, the walk sets off, and the village stays at 1× while they walk.
+        DismissTheMoment();
+        _map.Paused = _driver.IsPaused;
+        _map.WalkInHeld = TheWalkInStandsStill();
+        if (_map.WalkInHeld)
+        {
+            faults.Add("the walk is still held after Go on");
+        }
+
+        if (_driver.SpeedMultiplier != 1.0)
+        {
+            faults.Add($"Go on let the village up to {_driver.SpeedMultiplier}x before the band was in");
         }
 
         // A discovery banner fading mid-walk asks for the speed back; the walk keeps the hold.
@@ -918,22 +953,17 @@ public partial class Main : Control
             faults.Add($"a banner fading mid-walk let the village back up to {_driver.SpeedMultiplier}x");
         }
 
-        _map.AdvanceTheWalkClockForTheProbe(VillageMap.WalkInSeconds + (ids.Count * VillageMap.WalkInFileGapSeconds) + 0.01);
+        _map.StepTheWalkClockForTheProbe(wholeWalk);
         if (_map.WalkInUnderway)
         {
             faults.Add("the walk-in did not end when the last was in");
         }
 
-        ShowAnyMoment(world);
-        if (world.Moments.Contains(posed) || _momentPanel is not { Visible: true } || _momentTitle.Text != posed.Title)
-        {
-            faults.Add("the moment did not show once the band was in");
-        }
-
-        DismissTheMoment();
+        // What `Refresh` does the frame the walk ends.
+        LetTheVillageBackUpToSpeed();
         if (_driver.SpeedMultiplier != 4.0)
         {
-            faults.Add($"Go on gave back {_driver.SpeedMultiplier}x, not the 4x the walk found");
+            faults.Add($"once they were in the village came back to {_driver.SpeedMultiplier}x, not the 4x the walk found");
         }
 
         _map.ClearWalkInsForTheProbe();
@@ -942,10 +972,12 @@ public partial class Main : Control
         _slowedForAnAlert = slowedWas;
         _speedBeforeTheAlert = beforeWas;
         _alertsGiveTheSpeedBack = givesBackWas;
+        _map.WalkInHeld = heldWas;
+        _map.Paused = pausedWas;
         SetSpeed(speedWas);
 
         return faults.Count == 0
-            ? "[widths] arrival: ✅ a waiting moment waits for the band to walk in at 1×, shows the frame they are in, and Go on gives the speed back (the tick on)"
+            ? "[widths] arrival: ✅ the moment shows the frame the band starts walking, the village at 1×; while it is open they stand at the edge; on Go on they walk in at 1×, and once in the speed comes back (the tick on)"
             : $"[widths] arrival: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -1165,6 +1197,16 @@ public partial class Main : Control
         };
         world.Villagers.Add(posed);
 
+        // ⭐ And the arrival moment the sim raises in the same step (D732): the refresh — the game's own path — shows it
+        // this frame and holds the walk at the edge; the refresh after Go on lets the band walk.
+        // ⚠️ The run's own moments are set aside first and put back after: one queued ahead of this would show first,
+        // and Go on would bring this one up — the game right, the check wrong (its first run).
+        DismissTheMoment();
+        var queued = world.Moments.ToList();
+        world.Moments.Clear();
+        var arrival = new Moment { Title = "Posed band", Body = "posed by the probe's arrived line", WaitsToBeDismissed = true };
+        world.Moments.Add(arrival);
+
         Refresh();
         if (!_map.WalkInUnderway)
         {
@@ -1176,6 +1218,21 @@ public partial class Main : Control
             faults.Add($"the village ran at {_driver.SpeedMultiplier}x while the posed arrival walked in");
         }
 
+        if (_momentPanel is not { Visible: true } || _momentTitle.Text != arrival.Title || !_map.WalkInHeld)
+        {
+            faults.Add($"the refresh that began the walk did not show the moment and hold the walk (shown {_momentPanel is { Visible: true }}, held {_map.WalkInHeld})");
+        }
+
+        DismissTheMoment();
+        Refresh();
+        if (_map.WalkInHeld || !_map.WalkInUnderway || _driver.SpeedMultiplier != 1.0)
+        {
+            faults.Add($"after Go on the refresh left the walk held {_map.WalkInHeld}, underway {_map.WalkInUnderway}, at {_driver.SpeedMultiplier}x");
+        }
+
+        world.Moments.Remove(arrival);
+        _celebrated.Remove(arrival.LogLine);
+        world.Moments.AddRange(queued);
         world.Villagers.Remove(posed);
         _map.ClearWalkInsForTheProbe();
         _slowedForAnAlert = slowedWas;
@@ -1186,7 +1243,7 @@ public partial class Main : Control
         string natural = $"{world.BandsEverKnocked} band(s) knocked in the run, {arrivedAlive} of theirs alive"
             + (naturalWalk ? ", walking in" : string.Empty);
         return faults.Count == 0
-            ? $"[widths] arrived: ✅ a villager stamped as arrived in the step just taken (the tick before the clock, as the sim stamps it) is walking in from the edge after the next refresh, at 1× — {natural}"
+            ? $"[widths] arrived: ✅ a villager stamped as arrived in the step just taken (the tick before the clock, as the sim stamps it) is walking in from the edge after the next refresh, at 1×, its moment up and the walk held until Go on — {natural}"
             : $"[widths] arrived: ⛔ {string.Join("; ", faults)} — {natural}";
     }
 
@@ -2681,14 +2738,10 @@ public partial class Main : Control
             return;
         }
 
-        // ⭐ THE ARRIVAL MOMENT WAITS FOR THE WALK-IN (D573, Joe): a band on the road is the thing to watch, and the
-        // panel saying they have settled would cover it. Every waiting moment waits those few seconds; the passing
-        // banners drained above as ever.
-        if (_map.WalkInUnderway)
-        {
-            return;
-        }
-
+        // ⭐ THE MOMENT SHOWS AT THE SLOW-DOWN, AND THE WALK WAITS FOR IT (D732, Joe: *"the pop-up should trigger as
+        // soon as the game speed change happens, not when they reach the village"* — reversing D573's hold). The band
+        // never walks behind a panel either way: while one is open the walk-in stands at the edge
+        // (`TheWalkInStandsStill`), and on Go on they walk in at 1×, people the player now knows about.
         for (int i = 0; i < world.Moments.Count; i++)
         {
             if (!world.Moments[i].WaitsToBeDismissed)
@@ -2914,6 +2967,16 @@ public partial class Main : Control
         }
     }
 
+    /// <summary>
+    /// Whether the walk-in stands still this frame: the village is paused, or a moment is open over it (D732) — so a band
+    /// never walks in behind a panel, and on Go on walks in for the player to watch.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Its own flag, not <c>Paused</c>.</b> The river's clock reads <c>Paused</c> (A46), and the village runs on at
+    /// 1× behind a moment as it always has (Joe, 2026-08-30), so the river must keep running under one.
+    /// </remarks>
+    private bool TheWalkInStandsStill() => _driver.IsPaused || _momentPanel is { Visible: true };
+
     /// <summary>Whether the last refresh saw a band on the road (D573) — so the refresh that sees it end can hand the speed back.</summary>
     private bool _walkInWasUnderway;
 
@@ -2963,10 +3026,9 @@ public partial class Main : Control
     {
         SimWorld world = _loop.World;
 
-        // ⭐ THE NOMADS' WALK-IN IS NOTICED HERE, BEFORE ANY MOMENT (D573): the map's own draw runs after the moment
-        // panel would already be up, and the arrival moment waits for the band to be in (Joe). A walk that begins
-        // holds the village at 1× as an alert does; the moment takes the hold over the frame it shows.
-        _map.Paused = _driver.IsPaused;
+        // ⭐ THE NOMADS' WALK-IN IS NOTICED HERE, BEFORE ANY MOMENT (D573): a walk that begins holds the village at 1×
+        // as an alert does, and the arrival moment raised in the same tick shows this same frame (D732, Joe). The
+        // walk's clock is set AFTER the moment, so the frame the panel goes up the band already stands still.
         _map.SetFlowPace(_driver.SpeedMultiplier); // A46: the river keeps the game's speed
         if (_map.WatchForArrivals(world))
         {
@@ -2974,6 +3036,8 @@ public partial class Main : Control
         }
 
         ShowAnyMoment(world);
+        _map.Paused = _driver.IsPaused;
+        _map.WalkInHeld = TheWalkInStandsStill();
 
         // A walk that ended with no moment behind it (there always is one) hands the speed back itself.
         bool walkInUnderway = _map.WalkInUnderway;
@@ -3243,6 +3307,7 @@ public partial class Main : Control
         // when the quota is computed is a behaviour change, not housekeeping.
 
         RefreshRoster(world);
+        RefreshBuildQueue(world);
         RefreshInspector(world);
         AppendNewLogLines();
 
@@ -4106,6 +4171,7 @@ public partial class Main : Control
         BuildRosterPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
+        BuildTheBuildQueuePanel();
         BuildTheTreePanel();
 
         // Top of the right-hand column, which is where Banished puts it and where Joe's
@@ -5142,6 +5208,7 @@ public partial class Main : Control
         if (site?.Construction is not null)
         {
             _loop.World.MoveInBuildQueue(site, places);
+            _buildQueueAsked++;
             RefreshInspector(_loop.World);
         }
     }
@@ -8298,6 +8365,13 @@ public partial class Main : Control
             wrong.Add("Stock limits should start hidden and unticked");
         }
 
+        // D730 (Joe: *"this panel should be off by default in the settings"*).
+        bool queueStartsHidden = _windows.Exists(w => w.Panel == _buildQueuePanel && !w.Wanted && !w.Panel.Visible);
+        if (!queueStartsHidden)
+        {
+            wrong.Add("Build queue should start hidden and unticked");
+        }
+
         // B1 (Joe, 2026-10-04): the Professions window is shown AND unfolded at the founding.
         if (!_professionsPanel.Visible || !_professionsBody.Visible)
         {
@@ -8311,7 +8385,7 @@ public partial class Main : Control
         }
 
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits starts hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
