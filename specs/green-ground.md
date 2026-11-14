@@ -1,7 +1,7 @@
 # Spec: The green ground — the hills told by the grass itself
 
 **Status:** ✍️ **SPECCED (A68, 2026-11-13)** at Joe's pick on a mock (*"C"*, and *"Yep!"* to deeper trees).
-🔨 **BUILT on `art` (A68, §7).** ⭐ **APPROVED BY JOE in his own game (A69, 2026-11-14: *"Looks good"*).** ⭐ **MERGED INTO `main` AT HIS WORD (A70, 2026-11-14: *"Merge"*, `917f505`), not pushed.** Art lane. It replaces the *look* of
+🔨 **BUILT on `art` (A68, §7).** ⭐ **APPROVED BY JOE in his own game (A69, 2026-11-14: *"Looks good"*).** ⭐ **MERGED INTO `main` AT HIS WORD (A70, 2026-11-14: *"Merge"*, `917f505`), and PUSHED at his word (A71: *"Push main"*).** Art lane. It replaces the *look* of
 `hill-edges.md` (A66, refused: A67) and keeps that spec's field and its lip. Neighbours: `terrain-shader.md` (the
 valley's shader), `grass-look.md` (D632, the approved grass), `heights.md` (D735–D742, the sim's heights),
 `ground-textures.md §3` (how dark the ground may go), `tree-sprites.md` (the crowns).
