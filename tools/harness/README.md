@@ -209,6 +209,11 @@ against a number from an older commit.
   12, how many homes would walk to a storehouse because the market is more than X one-way ticks further, and the median /
   p90 / max ticks each would save, read off the end state with no sim change. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
   while nothing else (a meal does not change state; shelter does) interrupts it. Copy in, `-c Release --filter ZzLogistics`, delete.
+- `ZzSchool.cs` + `school.py` — D757's measurement for `specs/school-and-education.md §12.3`: what a school costs and what
+  A (`school_vigour_years`, `ZZ_VIGOUR`) and B (`school_heed_percent`, `ZZ_HEED`) return over a century. `ZZ_SCHOOL=1` poses
+  the school learned at Year 10 and marks one (its stone given); `ZZ_TEACHERS` (1); seeds 200–299 (`ZZ_SEEDS`), `ZZ_YEARS`
+  (100), `ZZ_LABEL`. One ZZS line a run, including strength-weighted work (the able adults' vigour summed). Copy in,
+  `-c Release --filter ZzSchool --logger "console;verbosity=detailed"` per arm, delete; `school.py <file>` prints the means.
 - `ZzWorkshop.cs` — D678's table for `specs/workshop-and-the-carpenter.md §10`: what a workshop costs a village before any
   cart does anything. The played opening on the shipped config (ZzBase's), seeds 200–299 (`ZZ_SEEDS` narrows; §10 used
   200–254), fifty years; `ZZ_WORKSHOP=1` poses the workshop learned at Year 5, marks one beside the founding and **gives it

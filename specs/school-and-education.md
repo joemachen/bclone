@@ -2,8 +2,8 @@
 
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
-> recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2), UNPLAYED — STEP 3, THE
-> MEASUREMENT, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
+> §12.3) — ⏸️ TWO CALLS WITH JOE: THE SCHOOL DOES NOT PAY AT ANY SIZE TRIED, AND IT IS COLD IN WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -249,7 +249,7 @@ clothing, house tiers and the Phase 5 chains. Read against `main` at D751:
 5. ✅ **ANSWERED (D754, Joe: *"Yes, all three"*) — as recommended in §11.3.** *(As recommended:)* **The small ones, as the spec already leans:** a pupil whose school closes or loses its teacher keeps the share of
    the floor for the years served (§9.4, *time on the task*); pupils eat a full meal (§9.5, as today); a teacher needs
    no skill of their own for the first landing; at school, pupils are under a roof by the same rule as any indoor
-   workplace.
+   workplace. *(⛔ void — there is no such rule: every workplace is open ground for the cold; measured D757, §12.3.)*
 
 *Once these are answered: the decisions logged, §3–§9 amended in place and annotated, a §12 order of work, and the
 measurement for call 2 before any number is typed.*
@@ -377,6 +377,46 @@ One slice, `slice/school`; each step its own commit with its docs; tests before 
   inert) and `AGraduateJudgesTheWalkToTheFire` (on near home, early from the far wood, half a term needed, nought
   inert). **4 mutants, 4 red** — one first scored zero because it did not compile (an unused parameter is an error
   here); rewritten to compile, red.
+
+### 12.3 ✅ Step 3, the measurement (D757) — ⏸️ two calls for Joe
+
+`tools/harness/ZzSchool.cs` + `school.py`: the shipped cold start, the opening played, a granary and a warehouse at
+Year 3; in the school arms the school posed learned at Year 10, marked beside the founding (its stone given — no harness
+village holds stone), one teacher asked for once it stands; a century on seeds 200–299. **Strength-weighted work** is the
+able adults' vigour summed — the work a village's strength is actually worth.
+
+| Arm (100 seeds, a century each) | Dead valleys | Alive at 100 | Starved | Froze | Pupil-years | Graduates | Strong years | Shelter days | Work-years | Strength-weighted work |
+|---|---|---|---|---|---|---|---|---|---|---|
+| no school | 12 | 10.3 | 15.4 | 12.9 | 0 | 0 | 3.3 | 1,116 | 1,015 | 870 |
+| school, sizes 0 | 13 | 10.7 | 15.6 | 13.3 | 44.6 | 11.4 | 3.3 | 2,164 | 950 | 809 |
+| A 3 | 14 | 11.0 | 15.1 | 13.3 | 45.5 | 11.6 | 16.6 | 2,175 | 954 | — |
+| A 5 | 14 | 10.8 | 15.1 | 13.3 | 45.0 | 11.5 | 29.0 | 2,201 | 951 | 814 |
+| A 8 | 14 | 11.1 | 14.8 | 13.3 | 44.8 | 11.4 | 47.2 | 2,173 | 953 | — |
+| A 15 | 13 | 11.1 | 15.0 | 13.3 | 45.4 | 11.6 | 85.6 | 2,184 | 958 | 830 |
+| B 70 | 14 | 10.7 | 15.4 | 13.3 | 44.9 | 11.4 | 3.3 | 2,038 | 951 | — |
+| B 80 | 13 | 10.9 | 15.6 | 13.3 | 44.4 | 11.3 | 3.3 | 1,968 | 950 | — |
+| B 90 | 13 | 11.0 | 15.0 | 13.3 | 43.7 | 11.1 | 3.2 | 1,922 | 939 | — |
+| A 5 + B 80 | 13 | 11.0 | 15.2 | 13.3 | 45.1 | 11.5 | 29.1 | 1,967 | 952 | 815 |
+
+**What it says, in plain words:**
+
+1. **The cost is real and measured:** one teacher and six places take **61 strength-weighted work-years a century** —
+   about 7 % of the village's work — for ~11 graduates. Dead valleys 12 → 13–14 (inside the noise).
+2. **⛔ A gives back very little work, at any size.** A 33-year-old who never went to school is already ~96 % strong
+   (the decline runs from 30 to the lifespan), so extra strong years past 30 are worth little: **A 5 returns 5 of the 61;
+   A 15 returns 21.** Nobody's survival moves.
+3. **B shortens the winter's shelter time** — 6 % at 70, **9 % at 80**, 11 % at 90 — and saves no lives (the frozen
+   are the unhoused and the hearthless, whom reading the year cannot help); at 90 the days actually caught out rise.
+4. **⛔ So at every size tried the school is §4's second failure mode — *never correct* — on the economy alone.**
+5. **⛔ A school in winter is open ground.** Only a home gives shelter (`SimWorld.ShelterAt`); **every workplace is
+   outdoors** for the cold, so the teacher, standing in it all winter, logs ~800–860 shelter days a century, and the
+   pupils 150–850 — the school **doubles** the village's shelter days by itself. ⚠️ §11.3 call 5's *"a roof by the
+   indoor-workplace rule"* was wrong: there is no such rule (void inline in §11.3).
+
+**⏸️ The calls (Joe's):** whether a school that is a story more than an investment is acceptable, or the benefit must
+grow (a bigger A, a slower decline rather than a later one, or C/D back on the table) or the cost shrink (a shorter
+term); and what a school is in winter (closed — a holiday at home by the family's fire; warm — it burns firewood like a
+house; or cold, as now).
 
 ## 10. Definition of Done
 
