@@ -9,8 +9,11 @@
 >   milestone rows, §6's *Current phase* line stale an eighth time and rewritten). Item 5: the four checks, and Joe's walk's logs
 >   scanned for `ERROR`.
 > - **Four checks on the slice:** **Four checks:** suite **2024 / 0 / 5 of 2029 in 17m24**; view build 0 warnings; probe 154 `[widths]` lines, 115 ✅, 0 ⛔, `shop walk:` ✅, bar **151**, tile centres ✅, new game ✅, `tech tree:` 15 cards at 160, `done.`, no Godot left (on the second run — the first died in the finalizer, the crash above); goldens 418 → 418, none moved.
-> - ⚠️ **The probe's finalizer crash is NOT fixed** (D739's *"very likely fixed"* voided inline): about three runs in four die near
->   `deposits:` / `scenery:`, with or without the image disposals. Not in any of Joe's played logs. Systems, unclaimed.
+> - ✅ **The probe's finalizer crash FIXED (D746):** `ValleyWatercolourLook.Current` loaded once and held — 0 of 6 probe runs
+>   reached `done.` before, 8 of 8 after. *(D744 had it "not fixed", which was true that morning.)*
+> - ✅ **A loaded save keeps its professions (D745)** — the panel wrote 0 over them on every load (Joe's find on the walk).
+> - **Joe's walk:** he played `year-66.save` on to about Year 86 — its log 0 `ERROR`, 0 `WARN`. ⏸️ His checklist verdicts are still
+>   to come (*"walked"* with any ❌ lines).
 > - **Merge and push: Joe's word only.** `origin/main` = 637ad86; D743's docs commit is on `main`, unpushed.
 >
 > *(The banner as it stood at D743 follows.)*
@@ -9449,6 +9452,18 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D746 PAID FOR — A FRESH C# WRAPPER EVERY CALL IS GARBAGE THE FINALIZER RACES
+
+- **`GD.Load<T>` of a C# `Resource` returns the one cached resource but can hand back a wrapper the GC later finalizes;
+  called in a loop, every dropped wrapper is a finalizer job, and one disposed while the main thread loads the next
+  crashes .NET** — *"gchandle.is_released()"* on the finalizer's thread, *"Handle is not initialized"* in
+  `SwapGCHandleForType` on the main thread's `ResourceLoader.Load`. **The finding was in the log the whole time:** the
+  main-thread half of the stack only prints when the race lands inside a load; read every crash's full stack before
+  disposing things on a hunch (D739 and D744 released six `Image`s and moved nothing). **Hold a script-backed resource in
+  a static once loaded** — `NodeSpriteBands.Current` and `GrassLook.Approved` (the art lane's) have the same shape and
+  are candidates if it ever comes back.
+- **Count runs either side before calling a flaky fix** (D744's trap, kept): 0 of 6 before, 8 of 8 after.
+
 ## ⛔ THE TRAP D745 PAID FOR — A VIEW THAT PUSHES ITS OWN DEFAULT ON BUILD OVERWRITES WHAT A LOAD JUST READ
 
 - **Every load reloads the scene, so every control is built AFTER the world is read — and a control that pushes its own
@@ -9483,6 +9498,7 @@ Read `git status` after staging, every time.
   Release every temporary `Image` (`GetImage()`, `Image.CreateFromData`) with `using`; a big allocation nearby made
   the crash 3 runs in 4 until they were. ⚠️ **(D744: not so — measured again, 3 of 4 without this slice's six disposals and
   4 of 5 with them, dying near `deposits:` / `scenery:`. Keep the `using`s, they are right; the crash's cause is elsewhere.)**
+  ✅ **(D746: it was — a C# resource re-loaded every call, `ValleyWatercolourLook.Current`; held once, 8 of 8 clean.)**
 - **A look is Joe's, and he answers it best beside the one he liked** (D740). Four tries at the hills' look in one
   day; the one that landed was his own valley, rendered in the style of his own favourite screenshot, before any
   code. *Render from his saves, put his favourite beside it, then build.* Contours are out — he hated them.

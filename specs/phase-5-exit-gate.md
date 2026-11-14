@@ -159,4 +159,9 @@ and the walk are different items). His walk is also item 5's played run (§7) an
   132) on **about three runs in four**, around the `deposits:` / `scenery:` lines — the same with and without this
   slice's six image disposals (3 of 4 without, 4 of 5 with), so the disposals are kept as correct and **D739's *"very
   likely fixed"* was wrong**. None of Joe's played logs holds it. The four checks take a run that reaches `done.`; the
-  crash is HANDOFF's to chase, not the gate's.
+  crash is HANDOFF's to chase, not the gate's. ✅ **Fixed the same day (D746):** a crash's full stack caught the main
+  thread inside `GD.Load<ValleyWatercolourLook>` while the finalizer disposed an earlier wrapper; the look is loaded once
+  and held — **0 of 6 runs reached `done.` before, 8 of 8 after.**
+- ✅ **Joe's walk, the played run (D745):** `year-66.save` played on to about Year 86 on D744's build —
+  `bclone-20261114-122034.log`, 85,317 lines, **0 `ERROR`, 0 `WARN`**; `run_20261114_121945.log` 0 `ERROR`. ⏸️ His checklist
+  verdicts close item 3.

@@ -332,5 +332,13 @@ public sealed partial class ValleyWatercolourLook : Resource
     public float HillLipWidthShare { get; set; }
 
     /// <summary>The values as they stand in <see cref="Path"/>.</summary>
-    internal static ValleyWatercolourLook Current => GD.Load<ValleyWatercolourLook>(Path);
+    /// <remarks>
+    /// ⛔ <b>Loaded once and held</b> (D746, the probe's finalizer crash). `GD.Load` hands back the one cached resource, but a
+    /// fresh C# wrapper each call — every one dropped became garbage, and the finalizer disposing one while the main thread
+    /// loaded the next crashed .NET (*"gchandle.is_released()"*, then `SwapGCHandleForType`: *"Handle is not initialized"*,
+    /// caught in both stacks at once). The values are the same either way; one held reference is never finalized.
+    /// </remarks>
+    internal static ValleyWatercolourLook Current => _current ??= GD.Load<ValleyWatercolourLook>(Path);
+
+    private static ValleyWatercolourLook? _current;
 }
