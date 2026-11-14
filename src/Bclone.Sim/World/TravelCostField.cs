@@ -132,10 +132,10 @@ public sealed class TravelCostField
         Forget();
     }
 
-    /// <summary>What it costs to step onto this tile — a bridge's deck, grass, a worn path, or a packed one.</summary>
+    /// <summary>What it costs to step onto this tile — a bridge's deck, grass, a worn path, or a packed one, on its slope.</summary>
     /// <remarks>
     /// ⭐ A deck first (D546): it takes no wear, so a bridge costs what it is made of — planks or stone —
-    /// however many feet have crossed it.
+    /// however many feet have crossed it. ⭐ And no slope (D735): a deck is level.
     /// </remarks>
     public int CostToEnter(GridPos tile)
     {
@@ -144,8 +144,75 @@ public sealed class TravelCostField
             return deck;
         }
 
-        return WearCostToEnter(tile);
+        return Sloped(WearCostToEnter(tile), _map is null ? -1 : IndexOfTile(tile));
     }
+
+    /// <summary>
+    /// ⭐ Whether a tile costs grass's price <b>before its slope</b> — not worn, not a deck at another price (D735,
+    /// `heights.md §4.1.3`). The question the cart's slow-on-grass rule and the route's grass counts ask.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ They asked <c>CostToEnter(tile) == BaseTileCost</c>, which was a grass test only while the ground was flat: an
+    /// unworn tile on a slope costs 12 or 15, and every one of them would quietly have stopped treating it as grass.
+    /// On flat ground this is exactly that old question, so a flat valley answers as it always did.
+    /// </remarks>
+    public bool IsUnworn(GridPos tile)
+    {
+        int unsloped = _obstacles is not null && _obstacles.DeckOn(tile) is byte deck and > 0 ? deck : WearCostToEnter(tile);
+        return unsloped == BaseTileCost;
+    }
+
+    // ---------------------------------------------------------------
+    //  The slope (D735, `specs/heights.md §4`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Each tile's slope, as the percent its crossing costs — null when the valley is flat (every route then exactly as before).</summary>
+    private byte[]? _slopePercent;
+
+    /// <summary>The dearest a step can be: the bucket ring is sized to it.</summary>
+    private int _largestStep = BaseTileCost;
+
+    /// <summary>
+    /// ⭐ Let the field read the ground's slope (`heights.md §4`): a gentle tile costs <paramref name="gentlePercent"/> of
+    /// its flat price, a steep one <paramref name="steepPercent"/>. Worked out once — the heights never change in play.
+    /// </summary>
+    /// <remarks>
+    /// <b>The same entry cost worn paths lower</b>, so movement, catchment, routing and the economy keep reading one field
+    /// and nothing else (§2.6). A valley with no slope anywhere keeps no table, so it routes on exactly the old code.
+    /// </remarks>
+    public void ReadSlope(int gentleAt, int steepAt, int gentlePercent, int steepPercent)
+    {
+        if (_map is null)
+        {
+            return;
+        }
+
+        var percent = new byte[_map.Width * _map.Height];
+        bool anySlope = false;
+        for (int i = 0; i < percent.Length; i++)
+        {
+            percent[i] = Slopes.ClassOf(_map.SteepnessAtIndex(i), gentleAt, steepAt) switch
+            {
+                Slope.Steep => (byte)steepPercent,
+                Slope.Gentle => (byte)gentlePercent,
+                _ => (byte)100,
+            };
+            anySlope |= percent[i] != 100;
+        }
+
+        _slopePercent = anySlope ? percent : null;
+        _largestStep = Math.Max(BaseTileCost, OnSlope(BaseTileCost, steepPercent));
+        Forget();
+    }
+
+    /// <summary>A flat price on a tile's slope: × its percent, rounded half up, never below one.</summary>
+    private int Sloped(int cost, int index) =>
+        _slopePercent is null || index < 0 ? cost : OnSlope(cost, _slopePercent[index]);
+
+    private static int OnSlope(int cost, int percent) => Math.Max(1, ((cost * percent) + 50) / 100);
+
+    private int IndexOfTile(GridPos tile) =>
+        _map!.Contains(tile) ? ((tile.Y - _map.MinY) * _map.Width) + (tile.X - _map.MinX) : -1;
 
     /// <summary>What the ground's wear alone makes a step cost — last spring's price table is taken from this.</summary>
     private int WearCostToEnter(GridPos tile)
@@ -416,7 +483,7 @@ public sealed class TravelCostField
 
         if (_scratch is null)
         {
-            _scratch = new TerrainCostField.Scratch(_map!, BaseTileCost);
+            _scratch = new TerrainCostField.Scratch(_map!, _largestStep);
             if (_obstacles is not null)
             {
                 _scratch.Block(_map!, _obstacles);
@@ -528,7 +595,7 @@ public sealed class TravelCostField
         return walls.ToArray();
     }
 
-    /// <summary>The wear table with every deck priced in — or null when every tile costs grass (D179's sweep is exact).</summary>
+    /// <summary>The wear table on its slopes with every deck priced in — or null when every tile costs grass (D179's sweep is exact).</summary>
     private byte[]? _routeCost;
 
     private (int Wear, int Standing) _routeCostBuiltAt = (-1, -1);
@@ -536,12 +603,24 @@ public sealed class TravelCostField
     private byte[]? ComposeTheRouteCost()
     {
         byte[]? worn = _anythingWorn ? _entryCost : null;
-        if (_obstacles is null || _map is null)
+
+        // ⭐ THE SLOPE (D735): every tile's wear price on its slope. On a valley with any slope the table always exists, so
+        // the ring runs every time — D179's sweep is exact only on uniform ground (`heights.md §4.1`, measured in §8).
+        byte[]? composed = null;
+        if (_slopePercent is not null)
         {
-            return worn;
+            composed = new byte[_slopePercent.Length];
+            for (int j = 0; j < composed.Length; j++)
+            {
+                composed[j] = (byte)OnSlope(worn is null ? BaseTileCost : worn[j], _slopePercent[j]);
+            }
         }
 
-        byte[]? composed = null;
+        if (_obstacles is null || _map is null)
+        {
+            return composed ?? worn;
+        }
+
         int width = _map.Width;
         for (int i = 0; i < width * _map.Height; i++)
         {

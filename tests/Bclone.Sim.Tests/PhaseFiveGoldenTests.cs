@@ -64,12 +64,19 @@ public sealed class PhaseFiveGoldenTests
     // winter? seems weird"). This village's foresters plant, so its winters play differently. ⭐ PROVEN BY ABLATION: with
     // `SeasonRules.IsPlanting` true in every season (which switches the door, the tile-picker, the arrival, the seats and the
     // notes off at once) both old constants pass. Was 12846455207324797399.
-    private const ulong PhaseFiveGoldenHash = 2488598668680717856UL;
+    // RE-TAKEN (D735), THE POSED ONE — real heights (Joe: "Uphill is slower", "Any slope and as you recommend"): the shipped
+    // valley has hills, a slope raises a tile's price in the one cost field, so every walk is re-priced, and the heights are
+    // hashed. ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) both old values pass. Was 2488598668680717856.
+    // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 3617843879071782529.
+    private const ulong PhaseFiveGoldenHash = 1863475448240955389UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
     // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
     // Was 14087957849486892753 before D728 (planting waits for spring, as above).
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 7275266205845974493UL;
+    // Was 7275266205845974493 before D735 (real heights, as above). ⚠️ First read as unmoved: the test stops at its first
+    // failed assert, and the posed hash above failed first, hiding this one until it was re-taken.
+    // Was 11978217067257029817 before D736 (the hills smoothed, as above) — caught on the re-run this time.
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 4967655042257212333UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

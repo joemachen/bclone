@@ -12133,6 +12133,7 @@ public sealed partial class SimWorld : IObstacles
         TravelCost.ReadWearFrom(
             Paths, config.PathWornAt, config.PathPackedAt, config.PathWornTileCost, config.PathPackedTileCost,
             config.PathHoldsFor);
+        TravelCost.ReadSlope(config.SlopeGentleAt, config.SlopeSteepAt, config.SlopeGentleCostPercent, config.SlopeSteepCostPercent);
         Paths.CapAt(config.PathWearCeiling);
 
         if (save is not null)

@@ -1139,6 +1139,18 @@ public static class StateHash
             }
         }
 
+        // ⭐ THE HEIGHTS (D735, `heights.md §9`) — world state the walking reads, so in the hash. ⭐ SPARSE, in the crop
+        // layer's shape and for its reason: a flat valley (`height_levels` 1, and every save from before heights) mixes
+        // nothing at all, which is what lets every re-taken golden be proven against the flat valley by ablation.
+        for (int i = 0; i < map.Heights.Count; i++)
+        {
+            if (map.Heights[i] != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixByte(hash, map.Heights[i]);
+            }
+        }
+
         // Which saplings were planted and have not yet been passed over (D220). ⭐ SPARSE, in
         // the same shape and for the same reason as the crop layer above: a village whose
         // forester has never planted mixes *nothing at all*, so this is invisible to every run
