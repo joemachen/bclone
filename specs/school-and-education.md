@@ -2,7 +2,8 @@
 
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
-> recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1), UNPLAYED — STEP 2 NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2), UNPLAYED — STEP 3, THE
+> MEASUREMENT, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -356,6 +357,26 @@ One slice, `slice/school`; each step its own commit with its docs; tests before 
   school age; the term ends with every tick served and is never sat twice; credit kept when the teacher goes; a pupil
   seen at the school and a teacher teaching; a pupil and the latch back from a save with the hash equal; a village with
   no school never sees a pupil.
+
+### 12.2 ✅ Step 2, as built (D756) — both benefits, at size nought
+
+- **A:** `school_vigour_years` (0 shipped). `AgeingSystem.StrongYearsFromSchool` — the knob scaled by the term served,
+  never more than a full term's — moves the end of full strength from `vigour_full_until_age` to that plus the years,
+  never past the year before the last; the decline after runs to the same floor in the same final year, so **the
+  lifespan is untouched**.
+- **B(i):** `school_heed_percent` (0 shipped; validated 0–95). A villager **reads the year** with the knob on and at
+  least **half the term** served. The one rule both kinds go in by is `BehaviorSystem.GoesInForWarmth`: everybody at
+  `seek_shelter_percent` of the way to freezing; a reader when her cold **plus the chill of her walk to the nearest
+  fire** (its ticks by the one cost field, at her open-ground rate, a coat's if she wears one) reaches
+  `school_heed_percent`. Her line is her own, so beside the village she works on past halfway, and from the far wood
+  she leaves before it. ⭐ **Her words are said when she goes** — *"Wren heads in early — it is a long walk to a fire"*
+  short of halfway, *"Wren goes in to get warm, the fire near enough to have worked on until now"* past it — and the
+  halfway warning (*"…is dangerously cold … going in to get warm"*) is not said of her, because it would be untrue.
+- **At nought nothing changes:** a non-reader's decision is the old one, line for line (no golden moved).
+- **Guards:** `AGraduateKeepsFullStrengthLonger` (the scale, the cap, full at 34, the same floor at the end, nought
+  inert) and `AGraduateJudgesTheWalkToTheFire` (on near home, early from the far wood, half a term needed, nought
+  inert). **4 mutants, 4 red** — one first scored zero because it did not compile (an unused parameter is an error
+  here); rewritten to compile, red.
 
 ## 10. Definition of Done
 

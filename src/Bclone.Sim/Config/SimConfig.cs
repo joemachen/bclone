@@ -1327,6 +1327,23 @@ public sealed record SimConfig
     [JsonPropertyName("school_lesson_ticks")]
     public int SchoolLessonTicks { get; init; } = 4;
 
+    /// <summary>
+    /// ⭐ A — <i>"she learned to look after herself"</i> (Joe, D753; `school-and-education.md §11.4`): years a graduate of a
+    /// full term stays at full strength past <see cref="VigourFullUntilAge"/>, scaled by the term served; the decline after,
+    /// and the lifespan, are everyone's. <b>Nought ships until §12 step 3 measures it</b> — nought is today's game.
+    /// </summary>
+    [JsonPropertyName("school_vigour_years")]
+    public int SchoolVigourYears { get; init; }
+
+    /// <summary>
+    /// ⭐ B(i) — <i>"she reads the year"</i> (Joe, D753; §11.4): the share of the way to freezing a graduate lets herself
+    /// reach <b>by the time she is at the fire</b> — she goes in when her cold and the chill of her walk to the nearest fire
+    /// would reach it, where everybody else goes in at <see cref="SeekShelterPercent"/> wherever they are. Needs half the
+    /// term served. <b>Nought ships until step 3 measures it</b> — nought is today's rule for everyone.
+    /// </summary>
+    [JsonPropertyName("school_heed_percent")]
+    public int SchoolHeedPercent { get; init; }
+
     /// <summary>A full term in ticks — the years from <see cref="AdultAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
     [JsonIgnore]
     public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - AdultAge) * TicksPerYear;
@@ -6214,6 +6231,17 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"school_leaving_age must be above adult_age ({AdultAge}) — pupils are the years between (got {SchoolLeavingAge}).");
+        }
+
+        if (SchoolVigourYears < 0)
+        {
+            throw new SimConfigException($"school_vigour_years cannot be negative (got {SchoolVigourYears}).");
+        }
+
+        if (SchoolHeedPercent is < 0 or > 95)
+        {
+            throw new SimConfigException(
+                $"school_heed_percent must be between 0 (off) and 95 — at the fire short of freezing (got {SchoolHeedPercent}).");
         }
 
         if (SchoolLessonTicks < 1)

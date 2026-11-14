@@ -89,7 +89,7 @@ public sealed class AgeingTests
     /// <para>
     /// If a day in old age costs no more than a day in youth, ageing is just a countdown and
     /// Phase 0 is a spreadsheet. This is the guard that says it shows up in a lived run rather
-    /// than only in <see cref="AgeingSystem.ComputeVigour"/>'s arithmetic.
+    /// than only in <see cref="AgeingSystem.ComputeVigour(int, int, Bclone.Sim.Config.SimConfig)"/>'s arithmetic.
     /// </para>
     /// <para>
     /// <b>⛔ IT COUNTED FORAGING TRIPS PER SEASON, AND THAT METRIC CANNOT SEE THE THING (D151).</b>

@@ -296,6 +296,75 @@ public sealed class SchoolTests
         Assert.Equal(before, StateHash.Compute(world));
     }
 
+    // ---------------------------------------------------------------
+    //  §11.4 — what school gives (step 2, its sizes at nought until step 3)
+    // ---------------------------------------------------------------
+
+    /// <summary>A — <i>"she learned to look after herself"</i>: full strength longer, by the term served; the lifespan untouched.</summary>
+    [Fact]
+    public void AGraduateKeepsFullStrengthLonger()
+    {
+        SimConfig config = VillageFixtures.Village with { SchoolVigourYears = 5 };
+        IReadOnlyList<Villager> people = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World.Villagers;
+        (Villager graduate, Villager halfway, Villager never) = (people[0], people[1], people[2]);
+        graduate.SchoolTicks = config.SchoolTermTicks;
+        halfway.SchoolTicks = config.SchoolTermTicks / 2;
+
+        Assert.Equal(5, AgeingSystem.StrongYearsFromSchool(config, graduate));
+        Assert.Equal(2, AgeingSystem.StrongYearsFromSchool(config, halfway));
+        Assert.Equal(0, AgeingSystem.StrongYearsFromSchool(config, never));
+
+        // ⛔ Never more than a full term's, however long the ticks run.
+        graduate.SchoolTicks = config.SchoolTermTicks * 3;
+        Assert.Equal(5, AgeingSystem.StrongYearsFromSchool(config, graduate));
+
+        int fullUntil = config.VigourFullUntilAge, lifespan = 67;
+        int at34 = fullUntil + 4;
+        Assert.Equal(100, AgeingSystem.ComputeVigour(at34, lifespan, config, 5));
+        Assert.True(AgeingSystem.ComputeVigour(at34, lifespan, config, 0) < 100, "an ungraduated 34-year-old is at full strength already");
+
+        // The same floor in the same final year: school buys strong years, not more years.
+        Assert.Equal(config.VigourMinPercent, AgeingSystem.ComputeVigour(lifespan, lifespan, config, 5));
+        Assert.Equal(AgeingSystem.ComputeVigour(lifespan, lifespan, config, 0), AgeingSystem.ComputeVigour(lifespan, lifespan, config, 5));
+
+        // At nought — as shipped until step 3 — nobody's strength moves.
+        Assert.Equal(0, AgeingSystem.StrongYearsFromSchool(VillageFixtures.Village, graduate));
+    }
+
+    /// <summary>
+    /// B(i) — <i>"she reads the year"</i>: a graduate goes in by the walk, not at the halfway line — on near home, early from
+    /// the far wood. Asked of the one rule both kinds of villager go in by.
+    /// </summary>
+    [Fact]
+    public void AGraduateJudgesTheWalkToTheFire()
+    {
+        SimConfig config = VillageFixtures.Village with { SchoolHeedPercent = 80 };
+        int threshold = config.ExposureThreshold;
+        IReadOnlyList<Villager> people = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World.Villagers;
+        (Villager graduate, Villager neighbour, Villager aYear) = (people[0], people[1], people[2]);
+        graduate.SchoolTicks = config.SchoolTermTicks;
+        Assert.True(BehaviorSystem.ReadsTheYear(config, graduate));
+        Assert.False(BehaviorSystem.ReadsTheYear(config, neighbour));
+
+        // Beside the village, at 60 % of the way: the neighbour is past the halfway line and goes in; she works on.
+        int near = threshold * 2 / 100;
+        graduate.Cold = neighbour.Cold = threshold * 60 / 100;
+        Assert.True(BehaviorSystem.GoesInForWarmth(config, neighbour, readsTheYear: false, walkChill: near));
+        Assert.False(BehaviorSystem.GoesInForWarmth(config, graduate, readsTheYear: true, walkChill: near));
+
+        // In the far wood at 30 %, the walk itself worth 55 %: the neighbour works on toward a walk that will take them past
+        // 80; she heads in now.
+        int far = threshold * 55 / 100;
+        graduate.Cold = neighbour.Cold = threshold * 30 / 100;
+        Assert.False(BehaviorSystem.GoesInForWarmth(config, neighbour, readsTheYear: false, walkChill: far));
+        Assert.True(BehaviorSystem.GoesInForWarmth(config, graduate, readsTheYear: true, walkChill: far));
+
+        // ⛔ It takes half the term, and the knob: a year at school does not teach it, and at nought nobody has it.
+        aYear.SchoolTicks = (config.SchoolTermTicks / 2) - 1;
+        Assert.False(BehaviorSystem.ReadsTheYear(config, aYear));
+        Assert.False(BehaviorSystem.ReadsTheYear(VillageFixtures.Village, graduate));
+    }
+
     [Fact]
     public void AVillageWithNoSchoolNeverSeesAPupil()
     {

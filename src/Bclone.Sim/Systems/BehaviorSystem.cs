@@ -2762,28 +2762,75 @@ public sealed partial class BehaviorSystem : ISimSystem
         // Once they are here they stay until they are properly warm, not merely until
         // they are back under the line they came in over.
         bool alreadyComingIn = villager.State == VillagerState.SeekingShelter;
-        int line = threshold * config.SeekShelterPercent / 100;
-
-        if (villager.Cold < line && !(alreadyComingIn && villager.Cold > 0))
-        {
-            return false;
-        }
-
         if (villager.Cold == 0)
         {
             return false;
         }
 
-        GridPos? fire = NearestFire(world, villager.Tile);
+        // ⭐ B(i), SHE READS THE YEAR (Joe, D753; `school-and-education.md §11.4`): a graduate weighs the walk — she goes in
+        // when her cold and the chill of the walk to the nearest fire would reach `school_heed_percent`, so she leaves the
+        // far wood early and works on beside the village. Everybody else goes in at the halfway line wherever they are.
+        bool readsTheYear = ReadsTheYear(config, villager);
+        GridPos? fire = readsTheYear || villager.Cold >= threshold * config.SeekShelterPercent / 100 || alreadyComingIn
+            ? NearestFire(world, villager.Tile)
+            : null;
+        int walkChill = readsTheYear && fire is GridPos to ? ChillOfTheWalk(world, villager, to) : 0;
+        if (!alreadyComingIn && !GoesInForWarmth(config, villager, readsTheYear, walkChill))
+        {
+            return false;
+        }
+
         if (fire is null)
         {
             return false;
+        }
+
+        // ⭐ Said when she goes, in her own terms (B, D753) — the halfway warning is not hers (`HearthSystem`).
+        if (readsTheYear && !alreadyComingIn)
+        {
+            world.Narrate(
+                villager.Cold < threshold * config.SeekShelterPercent / 100
+                    ? $"{villager.Name} heads in early — it is a long walk to a fire. {world.Clock.SeasonAndYear()}."
+                    : $"{villager.Name} goes in to get warm, the fire near enough to have worked on until now. {world.Clock.SeasonAndYear()}.",
+                Logging.LogCategory.Warning);
         }
 
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.SeekingShelter;
         Travel(world, villager, fire.Value, VillagerState.SeekingShelter);
         return true;
+    }
+
+    /// <summary>Whether a villager reads the year (B, D753): the knob on, and at least half the term served.</summary>
+    internal static bool ReadsTheYear(SimConfig config, Villager villager) =>
+        config.SchoolHeedPercent > 0 && config.SchoolTermTicks > 0 && villager.SchoolTicks * 2 >= config.SchoolTermTicks;
+
+    /// <summary>
+    /// ⭐ The one rule for when the cold sends somebody in (D45; B, D753) — pure, so the guard asks it directly. Everybody:
+    /// at <c>seek_shelter_percent</c> of the way to freezing. A graduate who reads the year: when her cold and
+    /// <paramref name="walkChill"/> — what the walk to the fire will add — reach <c>school_heed_percent</c>.
+    /// </summary>
+    internal static bool GoesInForWarmth(SimConfig config, Villager villager, bool readsTheYear, int walkChill)
+    {
+        int threshold = config.ExposureThreshold;
+        return readsTheYear
+            ? villager.Cold + Math.Max(0, walkChill) >= threshold * config.SchoolHeedPercent / 100
+            : villager.Cold >= threshold * config.SeekShelterPercent / 100;
+    }
+
+    /// <summary>The cold a walk to <paramref name="fire"/> adds — its ticks by the one cost field, at their open-ground rate.</summary>
+    private static int ChillOfTheWalk(SimWorld world, Villager villager, GridPos fire)
+    {
+        SimConfig config = world.Config;
+        int cost = world.TravelCost.Cost(villager.Tile, fire);
+        if (cost == TravelCostField.Unreachable)
+        {
+            return 0;
+        }
+
+        int ticks = ((cost * config.TravelTicksPerUnit) + TravelCostField.BaseTileCost - 1) / TravelCostField.BaseTileCost;
+        int perTick = villager.CoatDays > 0 ? config.ExposurePerTickSheltered : config.ExposurePerTickOutdoors;
+        return ticks * perTick;
     }
 
     /// <summary>The closest home with somebody in it and firewood still in the pile.</summary>

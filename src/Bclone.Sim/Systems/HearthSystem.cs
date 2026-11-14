@@ -249,7 +249,9 @@ public sealed class HearthSystem : ISimSystem
             // to get warm — so the sentence a player reads and the decision the villager
             // makes are the same moment. Crossing it downward is somebody thawing out,
             // and saying it again then would train them to ignore it.
-            if (before < warnAt && villager.Cold >= warnAt && warnAt > 0)
+            // ⚠️ Not for a graduate who reads the year (B, D753): she goes in at her own moment, which may be well past this
+            // line beside a fire or short of it in the far wood, so the sentence is said when she goes (`TrySeekWarmth`).
+            if (before < warnAt && villager.Cold >= warnAt && warnAt > 0 && !BehaviorSystem.ReadsTheYear(config, villager))
             {
                 // ⭐ THE SENTENCE SAYS WHETHER THERE IS A COAT, AND HOW LONG THEY HAVE BEEN IN THE COLD (D691). Joe, on
                 // a winter log of these with 23 coats in the warehouse: *"why are so many people cold when I have so

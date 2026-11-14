@@ -55,7 +55,7 @@ public sealed class AgeingSystem : ISimSystem
             return;
         }
 
-        villager.Vigour = ComputeVigour(villager.AgeYears, villager.LifespanYears, world.Config);
+        villager.Vigour = ComputeVigour(villager.AgeYears, villager.LifespanYears, world.Config, StrongYearsFromSchool(world.Config, villager));
         villager.LifeStage = StageForAge(villager.AgeYears, villager.Vigour, world.Config);
 
         VigourStage stage = StageFor(villager.Vigour);
@@ -92,11 +92,31 @@ public sealed class AgeingSystem : ISimSystem
     /// Integer arithmetic throughout, per decision D2 — this feeds gather yield,
     /// which feeds the stockpile, which decides whether the villager lives.
     /// </remarks>
-    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config)
+    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config) =>
+        ComputeVigour(ageYears, lifespanYears, config, strongYearsFromSchool: 0);
+
+    /// <summary>
+    /// ⭐ A (D753, `school-and-education.md §11.4`): the years school adds to a villager's full strength —
+    /// <c>school_vigour_years</c> scaled by the term served, never more than a full term's.
+    /// </summary>
+    public static int StrongYearsFromSchool(SimConfig config, Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(villager);
+        int term = config.SchoolTermTicks;
+        return config.SchoolVigourYears <= 0 || term <= 0 || villager.SchoolTicks <= 0
+            ? 0
+            : config.SchoolVigourYears * Math.Min(villager.SchoolTicks, term) / term;
+    }
+
+    /// <summary>Vigour with school's strong years (A, D753): full until 30 + them, then the same decline to the same floor.</summary>
+    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config, int strongYearsFromSchool)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        int fullUntil = config.VigourFullUntilAge;
+        // ⚠️ Never past the year before the last: a decline of nought years would make the final year's floor a cliff.
+        int fullUntil = Math.Min(config.VigourFullUntilAge + Math.Max(0, strongYearsFromSchool),
+            Math.Max(config.VigourFullUntilAge, lifespanYears - 1));
         int floor = config.VigourMinPercent;
 
         if (ageYears <= fullUntil)
